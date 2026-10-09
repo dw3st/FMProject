@@ -1,3 +1,4 @@
+import { withJsonErrors } from "@/backend/routeErrors";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
@@ -12,6 +13,9 @@ import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
 import { youthCompRoutes } from "@/backend/youthCompRoutes";
 import { matchSetupReferee, refereeRoutes } from "@/backend/refereeRoutes";
+import { registrationRoutes } from "@/backend/registrationRoutes";
+import { matchRegistration, registrationDayCtx } from "@/backend/registrationWorld";
+import { registeredPool, type MatchRegistration } from "@/Domain/advanceDay/matchSimulationLineups";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
@@ -42,6 +46,7 @@ import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
+import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
@@ -80,9 +85,10 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
   return _clubProfileLeagueDataCache;
 }
 
-export const apiRoutes = {
+export const apiRoutes = withJsonErrors({
   ...authRoutes,
   ...reportRoutes,
+  ...presenceRoutes,
   ...faceRoutes,
   ...staticAssetRoutes,
   ...saveRoutes,
@@ -97,6 +103,7 @@ export const apiRoutes = {
   ...youthRoutes,
   ...youthCompRoutes,
   ...refereeRoutes,
+  ...registrationRoutes,
   ...facilityRoutes,
   ...rebornRoutes,
   ...managerRoutes,
@@ -501,18 +508,35 @@ export const apiRoutes = {
     // the fixture is played — `resolveUserLineup` swaps out any starter injured on `matchDate` for
     // the best eligible bench player, and we surface which slots changed (`injuredReplaced`) so the
     // preview screen can warn the user before kickoff.
+    // Registration (`.claude/rules/game/registration.md`): only registered players of both sides; the first list is
+    // computed when absent (not stored here — the day advance stores it).
+    let myReg: MatchRegistration | undefined;
+    let oppReg: MatchRegistration | undefined;
+    if (saveIdParam && matchFixture && opponentSquad && matchDate) {
+      const regIndex = await saveService.getSquadIndex(save.id);
+      const dctx = await registrationDayCtx(saveService, save.id, save, regIndex, matchDate);
+      myReg = (await matchRegistration(dctx, mySquad, regIndex.byId(myInternalId)?.leagueSlug ?? save.leagueSlug, matchFixture.competition))?.reg;
+      oppReg = (await matchRegistration(dctx, opponentSquad, regIndex.byId(opponentSquad.id)?.leagueSlug ?? "", matchFixture.competition))?.reg;
+    }
     const resolved = resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? [], matchDate, {
       assistantRotation: myTactics.assistantRotation,
       override: save.rotationOverride,
-    });
+    }, myReg);
     myTactics = { ...myTactics, lineup: resolved.lineup };
     // Player instructions: slot instructions fitted to the formation actually played, today's
     // man-marking, and the opponent's probable XI (the marking target picker).
     const slotInstructions = sanitizeSlotInstructions(resolvedMyFormation, myTactics.slotInstructions);
     myTactics = { ...myTactics, slotInstructions: slotInstructions.length > 0 ? slotInstructions : undefined };
-    const oppLineup = opponentSquad && oppFormation && matchDate
-      ? autoLineupForFormationWithFitness(opponentSquad, oppFormation, matchDate)
+    const oppPool = opponentSquad ? registeredPool(opponentSquad, oppReg) : null;
+    const oppLineup = oppPool && oppFormation && matchDate
+      ? autoLineupForFormationWithFitness(oppPool, oppFormation, matchDate)
       : [];
+    const registered = myReg || oppReg
+      ? {
+          mine: resolved.pool ? [...resolved.pool] : mySquad.players.map((p) => p.id),
+          opp: (oppPool ?? opponentSquad)?.players.map((p) => p.id) ?? [],
+        }
+      : null;
     const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
     // Pitch of the stadium the match is played in (`src/Domain/facilities/pitch.ts`).
     let pitchCondition: number | null = null;
@@ -547,6 +571,7 @@ export const apiRoutes = {
       rotationSuggestion: resolved.rotationSuggestion,
       rotationApplied: resolved.rotationApplied,
       oppLineup,
+      registered,
       matchMarking,
       pitchCondition,
       crowd,
@@ -715,4 +740,4 @@ export const apiRoutes = {
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },
-} as const;
+} as const);

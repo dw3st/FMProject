@@ -144,10 +144,17 @@ e o Continuar com a borda direita.
   técnica, Ligas, Transferências, Olheiro, Estatísticas. Com a aba a mais, a regra de encolher para só ícone continua
   valendo (`useCompactTabs`).
 - `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
-  primeira aba; abas no centro (ícone 16px + rótulo `font-display font-bold uppercase text-sm`,
+  primeira aba; abas no centro (ícone 18px com a cor da seção, só tokens `primary`/`chart-*` — #133 —
+  + rótulo `font-display font-bold uppercase text-sm`,
   `gap-3.5`, ativa sublinhada com `border-b-2 border-primary`, `whitespace-nowrap`). Quando o
-  conjunto rotulado não cabe entre o logo e o bloco do dia, as abas viram só ícone (rótulo em
-  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs`), nunca transbordam a moldura.
+  conjunto rotulado não cabe entre o logo e o bloco do dia, primeiro o espaçamento aperta (`gap-2`
+  entre abas, `gap-0.5` ícone–rótulo) e só se nem assim couber as abas viram só ícone (rótulo em
+  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs` → `compactTabsFor`, sobre uma cópia
+  invisível com rótulos, refeito em resize, fontes, visibilidade e volta do cache — #138, #139), nunca
+  transbordam a moldura. Na moldura cheia (1440px) as abas em português têm rótulo, mesmo com o
+  report e o botão de avançar.
+  O botão de report (só testers) fica fora das abas, só a bandeirinha, no começo do bloco do dia
+  (sem divisor próprio, #139).
 - **Bloco do dia** (à direita, separado por divisor `border-l border-border pl-4`): data numa linha
   (`Icon calendar` + "Dom, 07/02/2027" via `Intl`, `text-sm font-semibold text-muted-foreground
   whitespace-nowrap`); botão com borda (`h-9 rounded-md border border-border bg-card`) com ícone +
@@ -155,7 +162,7 @@ e o Continuar com a borda direita.
   (mostra troféu + "Jogo", com o adversário no `title`/`aria-label`); botão só ícone (`w-9`, mesmo estilo) "Avançar até o próximo jogo", com
   `title`/`aria-label`, só quando o próximo jogo está a mais de 2 dias; Continuar (`h-9`, primário),
   sempre o último.
-- `StatusBar` (36px): orçamento, mensagens, jogadores à esquerda; à direita a versão (`v3.x`, abre as
+- `StatusBar` (36px): orçamento, mensagens, jogadores e "N online" (#134: `usePresence` pinga `POST /api/presence/ping` a cada 60 s com a página visível; o servidor, `src/backend/presence.ts`, conta em memória os usuários distintos com ping nos últimos 2,5 min e só devolve o número) à esquerda; à direita a versão (`v3.x`, abre as
   Novidades), a pílula "Novo: vX" ao lado dela (sempre numa linha, `whitespace-nowrap`) e
   Configurações. A data fica só no bloco do dia.
 

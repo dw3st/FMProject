@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { RefereeBadge, type RefereeBadgeData } from "@/GameInterface/Referees/RefereeBadge";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
-import { readableOnDark } from "@/GameInterface/matchTeamColors";
+import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import type { TeamMeta } from "@/GameInterface/ScoreBar";
 
 /** Live team numbers shown in the "Resumo" panel (both sides). */
 export interface SummaryTeamStats {
@@ -50,15 +51,29 @@ function StatRow({ label, a, b }: { label: string; a: string | number; b: string
   );
 }
 
+function TeamCrest({ team, fallback }: { team?: TeamMeta; fallback: string }) {
+  const name = team?.name ?? fallback;
+  return (
+    <span title={name} className="flex shrink-0 items-center">
+      <ClubLogo
+        logoUrl={team?.logoUrl}
+        primaryColor={team?.primaryColor}
+        secondaryColor={team?.secondaryColor}
+        className="w-8 h-8 rounded-full shrink-0"
+        imgClassName="w-full h-full object-contain p-0.5"
+      />
+      <span className="sr-only">{name}</span>
+    </span>
+  );
+}
+
 /**
  * Live "Resumo" panel of the match screen (Etapa 12, #17/#19): team stats for both sides and the
  * event feed with minutes. Dumb component — `MatchScreen` collects the feed and the numbers.
  */
 export function MatchSummaryPanel({
-  nameA,
-  nameB,
-  colorA,
-  colorB,
+  teamA,
+  teamB,
   statsA,
   statsB,
   possessionA,
@@ -66,16 +81,15 @@ export function MatchSummaryPanel({
   extra,
   referee,
 }: {
-  nameA?: string;
-  nameB?: string;
-  colorA: string;
-  colorB: string;
+  /** Displayed left (home) and right sides: crest, colours and name (tooltip / screen readers). */
+  teamA?: TeamMeta;
+  teamB?: TeamMeta;
   statsA: SummaryTeamStats;
   statsB: SummaryTeamStats;
   /** Share of possession of team A, 0..1 (B = 1 − A). */
   possessionA: number;
   feed: MatchFeedItem[];
-  /** Extra block between the numbers and the feed (the live heat map, Etapa 35). */
+  /** Extra block below the feed (the live heat map, Etapa 35; below the feed since #127). */
   extra?: ReactNode;
   /** Referee of the match (`referees.md`): face, name and flag under the team names. */
   referee?: RefereeBadgeData | null;
@@ -85,11 +99,13 @@ export function MatchSummaryPanel({
   const cards = (s: SummaryTeamStats) => `${s.yellowCards} / ${s.redCards}`;
   return (
     <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0 overflow-y-auto">
-      <div className="px-4 pt-4 pb-3 border-b border-border">
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("match.summary.title")}</h3>
-        <div className="mt-2 flex items-center justify-between text-base font-semibold">
-          <span className="truncate" style={{ color: readableOnDark(colorA) }}>{nameA ?? "A"}</span>
-          <span className="truncate text-right" style={{ color: readableOnDark(colorB) }}>{nameB ?? "B"}</span>
+      {/* Crests instead of the (often long) names (#128), home side on the left (#98): the name stays in
+          the tooltip and for screen readers. */}
+      <div className="px-4 pt-3 pb-3 border-b border-border">
+        <div className="flex items-center justify-between gap-2">
+          <TeamCrest team={teamA} fallback="A" />
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0 text-center">{t("match.summary.title")}</h3>
+          <TeamCrest team={teamB} fallback="B" />
         </div>
         {referee && (
           <div className="mt-3" title={t("referees.referee")}>
@@ -107,13 +123,14 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
-      {extra && <div className="px-4 pt-4">{extra}</div>}
       <div className="px-4 pt-4 pb-1">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}
         </span>
       </div>
-      <ol className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 m-0 list-none">
+      {/* The feed scrolls on its own and never shrinks below ~5 lines (#127): before, the panel scrolled
+          as a whole and the feed (`min-h-0`) was squeezed to nothing under the heat map. */}
+      <ol className="flex-1 min-h-[9rem] overflow-y-auto px-4 pb-3 m-0 list-none">
         {feed.length === 0 && <li className="text-sm text-muted-foreground py-2">{t("match.summary.noEvents")}</li>}
         {[...feed].reverse().map((e, i) => (
           <li
@@ -128,6 +145,7 @@ export function MatchSummaryPanel({
           </li>
         ))}
       </ol>
+      {extra && <div className="shrink-0 px-4 pt-3 pb-4 border-t border-border">{extra}</div>}
     </aside>
   );
 }

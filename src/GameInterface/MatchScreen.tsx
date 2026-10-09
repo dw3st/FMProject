@@ -1,4 +1,5 @@
 import { shirtName } from "@/Domain/shirtName";
+import { readJsonBody } from "@/GameInterface/readJsonBody";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
@@ -6,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
@@ -313,7 +314,7 @@ export function MatchScreen() {
 
     fetch(url)
       .then(async (r) => {
-        const body = (await r.json()) as Record<string, unknown>;
+        const body = await readJsonBody(r);
         if (!r.ok) {
           const msg = typeof body.error === "string" ? body.error : `match-setup failed (${r.status})`;
           throw new Error(msg);
@@ -334,6 +335,8 @@ export function MatchScreen() {
           managers?: MatchManagers | null;
           /** Referee of the match (`referees.md`): his rigor plays in the engine, the screens show the band. */
           referee?: MatchSetupReferee | null;
+          /** Players each side may name for this competition (registration); null = everyone. */
+          registered?: { mine: string[]; opp: string[] } | null;
         };
       })
       .then((data) => {
@@ -387,10 +390,14 @@ export function MatchScreen() {
         // player must never be available as a substitute either). `data.myLineup` is already
         // injury-aware (`/api/match-setup` → `resolveUserLineup`), but the full squad list itself
         // (used here as the bench source too) is not filtered until now.
+        // Registration (`.claude/rules/game/registration.md`): a player not registered for this competition (or
+        // over the per-match foreign limit) is out of the pool too, starters and bench.
         const matchDate = data.fixture.date;
-        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate));
+        const mineOk = data.registered ? new Set(data.registered.mine) : null;
+        const oppOk = data.registered ? new Set(data.registered.opp) : null;
+        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate) && (!mineOk || mineOk.has(p.id)));
         const opponentPlayers = (data.opponentSquad?.players ?? data.mySquad.players).filter(
-          (p) => !isUnavailable(p, matchDate),
+          (p) => !isUnavailable(p, matchDate) && (!oppOk || !data.opponentSquad || oppOk.has(p.id)),
         );
         // Morale (`.claude/rules/game/morale.md`): every player at his own stored value — the AI side
         // stores none (neutral). No team override from another screen may leak into a real match.
@@ -413,6 +420,8 @@ export function MatchScreen() {
           ),
           knockout: data.fixture.knockout === true,
           ...(data.referee ? { referee: { id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness } } : {}),
+          // #140: the user picks the replacement of an injured player (the AI side stays automatic).
+          manualInjurySubs: { A: true },
           ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
@@ -569,6 +578,13 @@ export function MatchScreen() {
           t("match.injuryNotice", { player: shirtName(data.playerName), severity: t(`match.injurySeverity.${data.severity}`) }),
           "danger",
         );
+      }),
+      // #140: an injured player of the user's side left with no replacement: pause and open the
+      // substitutions, with the injured player and the suggested bench player marked.
+      gameBus.on("injuryNeedsSub", (e) => {
+        if (e.team !== "A") return;
+        setPaused(true);
+        setShowSubPanel(true);
       }),
       gameBus.on("offsideCalled", (e) => {
         push({ minute: minuteNow(), team: e.team, kind: "offside", player: nameOf(e.receiverId) });
@@ -799,6 +815,13 @@ export function MatchScreen() {
     setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, key, value));
   }
 
+  // #136: reporting a problem pauses the match so the text is not lost when the match ends. Closing
+  // the report never resumes on its own (the tester resumes with Play when ready).
+  function handleOpenReport() {
+    setPaused(true);
+    setReportOpen(true);
+  }
+
   function handleOpenSubPanel() {
     setPaused(true);
     setShowSubPanel(true);
@@ -822,6 +845,11 @@ export function MatchScreen() {
   /** Two starters swap positions (#115): no substitution used, only this match. */
   function handleSwapPositions(aId: number, bId: number) {
     setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
+  }
+
+  /** #140: bench player `inId` takes the slot an injured player left (uses a substitution). */
+  function handleFillVacancy(injuredId: number, inId: number) {
+    setGameState((prev) => (prev ? fillInjuryVacancy(prev, "A", injuredId, inId) : prev));
   }
 
   /** Live instruction change (player instructions): only this match, never saved. */
@@ -879,7 +907,8 @@ export function MatchScreen() {
     const crowd = touchline?.crowd;
     const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
     const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
-    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id };
+    // A stand under works (only a home game of the human club) is drawn empty, as a building site.
+    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id, ...(crowd?.works ? { works: crowd.works } : {}) };
   }, [matchFixture, crestIds, touchline]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
@@ -1093,7 +1122,7 @@ export function MatchScreen() {
             {isTester && (
               <button
                 type="button"
-                onClick={() => setReportOpen(true)}
+                onClick={handleOpenReport}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer bg-secondary/50 border-border hover:border-primary/50 text-foreground"
                 aria-label={t("nav.report")}
               >
@@ -1217,10 +1246,8 @@ export function MatchScreen() {
         </div>
 
         <MatchSummaryPanel
-          nameA={shownTeams.A?.name}
-          nameB={shownTeams.B?.name}
-          colorA={shownKits.A}
-          colorB={shownKits.B}
+          teamA={shownTeams.A}
+          teamB={shownTeams.B}
           statsA={summaryStats(sides.left)}
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}
@@ -1237,6 +1264,7 @@ export function MatchScreen() {
           ratings={ratings}
           onQueueSub={handleQueueSub}
           onSwapPositions={handleSwapPositions}
+          onFillVacancy={handleFillVacancy}
           onChangeFormation={handleChangeFormation}
           onInstruction={handleInstruction}
           onManMarks={handleManMarks}

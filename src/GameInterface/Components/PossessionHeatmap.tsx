@@ -13,6 +13,24 @@ import { Icon } from "@/GameInterface/Icons";
 const REFRESH_MS = 1000;
 const CELL_W = PITCH_LENGTH / HEATMAP_COLS;
 const CELL_H = PITCH_WIDTH / HEATMAP_ROWS;
+/** Per-viewer convenience: whether the card is expanded (#127). Never required: absent = open. */
+const OPEN_KEY = "fm.match.heatmapOpen";
+
+function readOpen(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(OPEN_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writeOpen(open: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(OPEN_KEY, open ? "1" : "0");
+  } catch {
+    // Private window / blocked storage: the choice just isn't remembered.
+  }
+}
 
 /**
  * Small possession heat map of the live match (Etapa 35, #108): where the ball was while the chosen team
@@ -35,8 +53,15 @@ export function PossessionHeatmap({
   const [period, setPeriod] = useState<HeatmapWindow>("recent");
   const team = side === "mine" ? teams.A : teams.B;
   const [cells, setCells] = useState<Float64Array>(() => new Float64Array(HEATMAP_CELLS));
+  const [open, setOpen] = useState<boolean>(readOpen);
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    writeOpen(next);
+  };
 
   useEffect(() => {
+    if (!open) return;
     const read = () => {
       const acc = heatmap.current;
       if (acc) setCells(heatmapCells(acc, team, period));
@@ -47,7 +72,7 @@ export function PossessionHeatmap({
       read();
     }, REFRESH_MS);
     return () => clearInterval(id);
-  }, [heatmap, team, period]);
+  }, [heatmap, team, period, open]);
 
   let max = 0;
   for (const v of cells) if (v > max) max = v;
@@ -56,9 +81,17 @@ export function PossessionHeatmap({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        title={t(open ? "match.heatmap.hide" : "match.heatmap.show")}
+        className="flex min-h-8 items-center justify-between gap-2 bg-transparent border-0 p-0 cursor-pointer font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground hover:text-foreground"
+      >
         {t("match.heatmap.title")}
-      </span>
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} />
+      </button>
+      {open && <>
       <OptionChips
         aria-label={t("match.heatmap.team")}
         options={[
@@ -112,6 +145,7 @@ export function PossessionHeatmap({
         {dir === 1 && <Icon name="arrow-right" size={16} />}
       </span>
       {max === 0 && <span className="text-sm text-muted-foreground">{t("match.heatmap.empty")}</span>}
+      </>}
     </div>
   );
 }

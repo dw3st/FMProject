@@ -579,6 +579,9 @@
     "upcomingSubtitle": "What we are working on next"
   },
   "status": {
+    "onlineShort": "{{count}} online",
+    "online_one": "{{count}} person playing now",
+    "online_other": "{{count}} people playing now",
     "budget": "Budget",
     "unread": "Unread",
     "players": "Players"
@@ -908,7 +911,9 @@
       "all": "Whole match",
       "aria": "Where the ball was with {{team}} ({{window}})",
       "attack": "Attacking direction",
-      "empty": "No possession yet"
+      "empty": "No possession yet",
+      "show": "Show the possession map",
+      "hide": "Hide the possession map"
     },
     "liveTactics": {
       "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
@@ -1241,6 +1246,16 @@
     "seasonTitle": "{{league}} {{season}}",
     "yearTitle": "{{year}}"
   },
+  "schedule": {
+    "rescheduledFrom": "Rescheduled from {{date}}",
+    "subjectOne": "Match rescheduled",
+    "subjectMany": "{{count}} matches rescheduled",
+    "preview": "{{opponent}}: {{from}} → {{to}}",
+    "intro": "These league matches clashed with another game of ours (same day or the day before/after) and were moved:",
+    "home": "vs {{opponent}}",
+    "away": "at {{opponent}}",
+    "line": "{{from}} → {{to}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferences",
@@ -1342,7 +1357,9 @@
       "facilities": "Facilities",
       "manager_news": "Managers",
       "scouting": "Scouting",
-      "awards": "Awards"
+      "awards": "Awards",
+      "registration": "Registration",
+      "schedule": "Schedule"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1533,6 +1550,24 @@
         "transferred": "moved to another club",
         "retired": "retired"
       }
+    },
+    "registration": {
+      "subject": {
+        "auto_list": "{{competition}}: squad list registered",
+        "not_fit": "{{competition}}: no room on the squad list",
+        "waiting": "{{competition}}: registration closed",
+        "closing": "{{competition}}: registration closes soon",
+        "exception": "{{competition}}: list completed to 18 players"
+      },
+      "body": {
+        "auto_list": "Your squad list for {{competition}} was registered automatically. You can change it in the Registration tab of the squad while the deadline is open.",
+        "not_fit": "{{players}} did not fit on the {{competition}} list (full, foreign limit or not enough home-grown players) and cannot play it.",
+        "waiting": "{{players}} arrived with the {{competition}} registration closed and can only play it from {{date}}.",
+        "closing": "The {{competition}} registration closes on {{date}}. After that the list is frozen.",
+        "exception": "Your squad could not reach 18 players within the {{competition}} rules, so the best remaining players were added."
+      },
+      "counts": "Registered {{counted}}/{{max}} · foreign {{foreign}} · home-grown {{formed}} · free {{free}}",
+      "open": "Open the registration"
     }
   },
   "finances": {
@@ -1873,7 +1908,8 @@
     "tabSquad": "Squad",
     "tabYouth": "Academy",
     "tabHistory": "History",
-    "tabDepth": "Depth"
+    "tabDepth": "Depth",
+    "tabRegistration": "Registration"
   },
   "squadDepth": {
     "loading": "Loading depth...",
@@ -2024,7 +2060,9 @@
     "rotationUndo": "Undo",
     "suspendedReplaced": "{{out}} suspended, replaced by {{in}}",
     "expectedCrowd": "Expected crowd",
-    "pitch": "Pitch"
+    "pitch": "Pitch",
+    "unregisteredReplaced": "{{out}} is not registered for this competition; {{in}} plays instead",
+    "foreignLimitReplaced": "Foreign player limit: {{out}} makes way for {{in}}"
   },
   "matchResult": {
     "matchdayRound": "Matchday {{round}} • {{competition}}",
@@ -2056,6 +2094,10 @@
     "remaining": "{{remaining}}/5 remaining",
     "pending": "{{count}} pending",
     "playerSwap": "Player swap",
+    "injuredLabel": "Injured",
+    "pickReplacement": "pick a replacement:",
+    "noSubsLeft": "no substitutions left, the team plays on one short",
+    "suggested": "Suggested",
     "formation": "Formation",
     "pendingSubstitutions": "Pending (next dead ball)",
     "chooseBench": "Pick a substitute to bring on.",
@@ -2070,6 +2112,7 @@
     "tabTactics": "Tactics",
     "pickBenchOrSwap": "Pick a substitute to bring on, or another starter to swap positions.",
     "pickSwap": "No substitutions left: pick another starter to swap positions.",
+    "playingAs": "Playing as {{role}}",
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
     "injured": "Injured"
@@ -3471,5 +3514,68 @@
     "penalties": "Pen",
     "penaltiesLong": "Penalties awarded",
     "nextHighlighted": "Highlighted: the referee of your next match."
+  },
+  "registration": {
+    "loading": "Loading registration…",
+    "loadFailed": "Could not load the registration lists.",
+    "none": "Your club has no competition with a squad list.",
+    "competitions": "Competitions",
+    "openUntil": "Registration open until {{date}}",
+    "closedOpens": "Registration closed — opens on {{date}}",
+    "closed": "Registration closed",
+    "stageStarted": "Stage under way — the list is closed for the season",
+    "manual": "Edited by hand: new arrivals are added only if they fit; players you removed stay out.",
+    "rule": {
+      "list": "List of {{n}}",
+      "noList": "The whole squad can be registered",
+      "free": "Under-{{age}}s free",
+      "freeFormed": "Home-grown under-{{age}}s free",
+      "formed": "At least {{n}} home-grown",
+      "foreign": "At most {{n}} foreign",
+      "foreignMatchday": "At most {{n}} foreign per match"
+    },
+    "counters": {
+      "registered": "Registered",
+      "foreign": "Foreign",
+      "formed": "Home-grown",
+      "formedLost": "Home-grown · {{n}} places lost",
+      "free": "Free"
+    },
+    "cols": {
+      "pos": "Pos",
+      "player": "Player",
+      "age": "Age",
+      "nation": "Nation",
+      "status": "Status",
+      "rating": "Rating",
+      "action": "Action"
+    },
+    "tags": {
+      "registered": "Registered",
+      "out": "Not registered",
+      "free": "Free",
+      "foreign": "Foreign",
+      "clubTrained": "Trained at the club",
+      "nationTrained": "Trained in the country"
+    },
+    "reason": {
+      "listFull": "The list is full",
+      "foreign": "Foreign player limit reached",
+      "formed": "Not enough home-grown players for another place"
+    },
+    "freeHint": "Always registered: does not take a place",
+    "add": "Add",
+    "remove": "Remove",
+    "auto": "Automatic",
+    "autoConfirmTitle": "Back to the automatic list?",
+    "autoConfirmBody": "The list is rebuilt with the best players within the rules and your changes are lost.",
+    "exception": "The rules left fewer than 18 players, so the list was completed with the best remaining ones.",
+    "errors": {
+      "closed": "The registration deadline is closed.",
+      "notYourPlayer": "That player is not in your squad.",
+      "failed": "Could not save the list."
+    },
+    "notRegistered": "Not registered",
+    "notRegisteredFor": "Not registered for {{competition}}"
   }
 }

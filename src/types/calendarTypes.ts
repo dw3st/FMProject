@@ -33,6 +33,11 @@ export interface Fixture {
   cancelled?:  true;
   /** Youth competition only: original date of a postponed game. */
   postponedFrom?: string;
+  /**
+   * League only: original date of a game moved because one of its clubs had another official game the same day
+   * or the day before/after (`.claude/rules/game/rescheduling.md`). The first original date when moved twice.
+   */
+  rescheduledFrom?: string;
 }
 
 export interface SeasonData {

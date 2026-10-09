@@ -128,6 +128,21 @@ está apto). `clearHealed(player, date)` — pura, nunca muta — remove `injury
   energia final dele.
 - **`GameState.injuries: InjuryRecord[]`** — todas as lesões da partida, em ordem cronológica.
 
+### Troca manual na partida ao vivo (#140, 4.14.4)
+
+- `GameState.manualInjurySubs?: { A?: true }` — só o `MatchScreen` liga, para o time do usuário. Com a opção, uma
+  lesão do time com trocas e banco **não** troca sozinha: `leaveInjuryVacancy` tira o lesionado (o time joga com um a
+  menos), guarda a vaga em `GameState.injuryVacancies[time]` (`InjuryVacancy`: lesionado, vaga, reserva sugerido por
+  `findBestBenchForRole`) e emite `injuryNeedsSub`. O `MatchScreen` pausa e abre o painel de substituições, aba Troca de
+  jogador, com o bloco do lesionado (`InjuryVacancyPanel`) e o reserva sugerido destacado; escolher chama
+  `fillInjuryVacancy` (usa uma troca; o recém-chegado ocupa a vaga, o registro de substituição sai com o lesionado).
+- Goleiro lesionado: `ensureCompetentGK` põe um jogador de linha no gol na hora; a vaga é a de onde ele saiu. Se entra
+  um goleiro, ele vai para o gol e o goleiro de emergência volta para a vaga dele.
+- Sem troca livre (as vagas abertas já reservam uma troca e um reserva cada): o lesionado sai e o time segue com um a
+  menos, sem vaga e sem troca automática. IA, `simulateMatch`, avanço do dia e `/test` sem o
+  toggle: automático, como antes. `/test`: botão "Manual injury subs" (time A, abre o painel no evento). Teste:
+  `src/GameEngine/Domain/ManualInjurySubs.engine.test.ts`.
+
 ## 3. quickSim (calibração)
 
 `rollSideInjuries` (`src/Domain/advanceDay/quickSim.ts`) não tem banco nem substituição — todo
@@ -329,3 +344,9 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
   (`trainingGroundEffectsOf(squad).injuryDurationMult` = nível × condição: ×1,25 em 0%/interditada; nível
   ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15; neutra na largada). A IA não muda.
 - Medido (M1/M2): ver a tabela de medições em `facilities.md`.
+
+## Inscrição (Etapa 37, 4.15)
+
+`replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
+`unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
+`foreignLimit`. Ver `.claude/rules/game/registration.md`.

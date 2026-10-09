@@ -517,6 +517,31 @@ try {
     vacancySince: new Map<string, string>(), vacancyFilled: 0, vacancyLate: [] as string[],
   };
 
+  // ── Inscrição (see "Inscrição" section below, `.claude/rules/game/registration.md`) ──
+  const { registrationDayCtx: regDayCtx, matchRegistration: regMatch } = await import("@/backend/registrationWorld");
+  const { validateList: regValidate } = await import("@/Domain/registration/rules");
+  const { isStale: regIsStale } = await import("@/Domain/registration/lists");
+  const { cupSlugOf: regCupSlugOf } = await import("@/Domain/cups/cupIds");
+  const { isContinentalSlug: regIsContinental } = await import("@/Domain/continental/competitions");
+  const regTrack = {
+    session: "", matches: 0, checked: 0, violations: [] as string[], logViolations: 0,
+    closedPut: 0, openPut: 0, removed: "", removedOn: "", removedStayedOut: null as boolean | null,
+    setupTried: false, setupSwap: null as boolean | null,
+    arrival: "", arrivalOn: "", arrivalPlayedClosed: 0, arrivalJoined: "" as string,
+  };
+  /** Official competitions of the player's country (leagues, its cup) and every continental one. */
+  const regOfficial = (slug: string) =>
+    playerCountrySlugs.has(slug) || (playerCountry ? slug === regCupSlugOf(playerCountry) : false) || regIsContinental(slug);
+  const regCall = async (route: string, method: string, path: string, params: Record<string, string>, body?: unknown) => {
+    const { apiRoutes } = await import("@/backend/routes");
+    const handler = apiRoutes[route as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    if (!regTrack.session) regTrack.session = (await import("@/backend/auth/AuthService")).devAutoLogin("smoke-reborn@test.local").session.token;
+    return handler(Object.assign(new Request(`http://localhost${path}`, {
+      method, headers: { cookie: `fs_session=${regTrack.session}`, "content-type": "application/json" },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }), { params: { saveId: saveId!, ...params } }));
+  };
+
   // ── Prêmios (see "Prêmios" section below, `.claude/rules/game/awards.md`) ──
   const { AWARDS } = await import("@/Domain/awards/awardsConfig");
   const { awardKindsByPlayer } = await import("@/Domain/awards/awardEffects");
@@ -874,6 +899,78 @@ try {
     // Referees: the appointments of the day as the eve left them (the match preview reads these).
     const preDayAppointments = (await plain().getRefereeState(saveId))?.assignments[date] ?? null;
     if (!refTrack.startDate) refTrack.startDate = date;
+    // Inscrição: the registered set of every club of today's official matches (player's country + continental),
+    // read before the day like the injuries; the route checks run on the human club's own deadline.
+    const regPre = new Map<string, Set<string>>();
+    const regPost: { club: string; slug: string; league: string }[] = [];
+    {
+      const fixturesReg = (await svc.getFixturesForDate(saveId, date)).filter((f) => regOfficial(f.competition));
+      const idxR = await svc.getSquadIndex(saveId);
+      const dctx = await regDayCtx(svc, saveId, meta, idxR, date);
+      for (const f of fixturesReg) {
+        for (const club of [f.home, f.away]) {
+          const sq = await svc.getSquadById(saveId, club);
+          const league = idxR.byId(club)?.leagueSlug;
+          if (!sq || !league) continue;
+          const r = await regMatch(dctx, sq, league, f.competition);
+          if (!r) continue;
+          regPre.set(`${f.id}|${club}`, r.reg.ids);
+          regPost.push({ club, slug: f.competition, league });
+        }
+      }
+      const humanReg = meta.clubId ? await svc.getSquadById(saveId, meta.clubId) : null;
+      const humanLeague = meta.clubId ? idxR.byId(meta.clubId)?.leagueSlug : undefined;
+      const info = humanReg && humanLeague ? await dctx.infoFor(humanReg, humanLeague, humanLeague) : null;
+      if (humanReg && humanLeague && info) {
+        const list = humanReg.registrations?.[humanLeague];
+        const ids = (list?.ids ?? []).filter((id) => humanReg.players.some((p) => p.id === id));
+        const leaguePath = `/api/saves/${saveId}/registration/${humanLeague}`;
+        // A day with the deadline closed: a change is refused (409), and a player arriving now waits.
+        if (!info.status.open && list && !regTrack.closedPut) {
+          regTrack.closedPut = (await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids })).status;
+          const donor = humanReg.players.find((p) => p.contract && p.nationality === playerCountry) ?? humanReg.players.find((p) => p.contract) ?? humanReg.players[0]!;
+          const arrival = { ...donor, id: "smoke_reg_arrival", name: "Smoke Arrival", age: 26, overallAvg: (donor.overallAvg ?? 5) + 1, injury: undefined, suspension: undefined };
+          const e = idxR.byId(meta.clubId)!;
+          await svc.saveSquad(saveId, e.leagueSlug, e.stem, { ...humanReg, players: [...humanReg.players, arrival] });
+          regTrack.arrival = arrival.id;
+          regTrack.arrivalOn = date;
+        }
+        // A day with the deadline open: the worst registered player is taken off by hand (200) and stays off.
+        if (info.status.open && list && !regTrack.openPut) {
+          const worst = humanReg.players
+            .filter((p) => ids.includes(p.id) && p.age > 21)
+            .sort((a, b) => (a.overallAvg ?? 0) - (b.overallAvg ?? 0))[0];
+          if (worst) {
+            regTrack.openPut = (await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: ids.filter((id) => id !== worst.id) })).status;
+            regTrack.removed = worst.id;
+            regTrack.removedOn = date;
+          }
+        }
+        // match-setup on a human league match day with the deadline open: the saved starter taken off the list
+        // is swapped (`unregistered`); the list goes back to automatic right after.
+        if (info.status.open && list && playerFixtureToday && !regTrack.setupTried && regTrack.openPut === 200) {
+          regTrack.setupTried = true;
+          const tacticsBefore = await svc.getTactics(saveId);
+          const { autoLineupForFormation: regAuto } = await import("@/Domain/advanceDay/matchSimulationLineups");
+          const { formationForTactics: regFormation } = await import("@/Domain/matchFormations");
+          const fresh = (await svc.getSquadById(saveId, meta.clubId))!;
+          const lineup = tacticsBefore?.lineup?.length === 11 ? tacticsBefore.lineup : regAuto(fresh, regFormation(tacticsBefore ?? { formation: meta.formation ?? "4-3-3" }), date);
+          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, { ...tacticsBefore, lineup });
+          const listNow = fresh.registrations![humanLeague]!.ids;
+          const starter = lineup.find((id) => listNow.includes(id) && fresh.players.find((p) => p.id === id)!.age > 21);
+          if (starter) {
+            await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: listNow.filter((id) => id !== starter) });
+            const { apiRoutes } = await import("@/backend/routes");
+            const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, { headers: { cookie: `fs_session=${regTrack.session}` } }));
+            const body = (await res.json()) as { injuredReplaced?: { out: string; reason?: string }[] };
+            regTrack.setupSwap = res.status === 200 && (body.injuredReplaced ?? []).some((r) => r.out === starter && r.reason === "unregistered");
+            await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: listNow });
+          }
+          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, tacticsBefore);
+        }
+      }
+    }
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -883,6 +980,50 @@ try {
     }
     days++;
     dayMsTotal += ms;
+    // Inscrição: no player of an official match outside his club's registered set (before or after the day:
+    // the human club's morning step may register a signing of today), and the day log counter at 0.
+    {
+      const logR = await plain().getDayLog(saveId, date);
+      regTrack.logViolations += logR?.registrationViolations ?? 0;
+      const postSets = new Map<string, Set<string>>();
+      for (const p of regPost) {
+        const sq = await plain().getSquadById(saveId, p.club);
+        const list = sq?.registrations?.[p.slug];
+        postSets.set(`${p.club}|${p.slug}`, new Set(list?.ids ?? []));
+      }
+      for (const e of logR?.events ?? []) {
+        const ev = e as { kind: string; id?: string; fixtureId?: string; competition?: string; home?: string; away?: string; playerStats?: Record<string, unknown> };
+        if (ev.kind !== "match" || !ev.competition || !regOfficial(ev.competition)) continue;
+        const fid = ev.fixtureId ?? ev.id ?? "";
+        regTrack.matches++;
+        for (const club of [ev.home!, ev.away!]) {
+          const pre = regPre.get(`${fid}|${club}`);
+          if (!pre) continue;
+          const sq = await plain().getSquadById(saveId, club);
+          const mine = new Set(sq?.players.map((p) => p.id) ?? []);
+          const post = postSets.get(`${club}|${ev.competition}`) ?? new Set<string>();
+          for (const id of Object.keys(ev.playerStats ?? {})) {
+            if (!mine.has(id)) continue;
+            regTrack.checked++;
+            if (!pre.has(id) && !post.has(id)) regTrack.violations.push(`${date} ${ev.competition} ${club} ${id}`);
+          }
+        }
+      }
+      if (regTrack.removed && regTrack.removedOn !== date && regTrack.removedStayedOut === null) {
+        const sqR = meta.clubId ? await plain().getSquadById(saveId, meta.clubId) : null;
+        const l = sqR?.registrations?.[meta.leagueSlug];
+        regTrack.removedStayedOut = !!l && !l.ids.includes(regTrack.removed) && (l.out ?? []).includes(regTrack.removed);
+      }
+      if (regTrack.arrival && !regTrack.arrivalJoined) {
+        const sqA = meta.clubId ? await plain().getSquadById(saveId, meta.clubId) : null;
+        const l = sqA?.registrations?.[meta.leagueSlug];
+        if (l?.ids.includes(regTrack.arrival)) regTrack.arrivalJoined = date;
+        else for (const e of logR?.events ?? []) {
+          const ev = e as { kind: string; playerStats?: Record<string, unknown> };
+          if (ev.kind === "match" && ev.playerStats && regTrack.arrival in ev.playerStats) regTrack.arrivalPlayedClosed++;
+        }
+      }
+    }
     // Torneios de base: the day's games (off `events`), the human club's players, no past unplayed game
     // in the player's country, the call-up played and cleared, the rollover date of each competition.
     {
@@ -1722,6 +1863,50 @@ try {
   }
   console.log(`  ${adjacentInstances} continental fixture/club instance(s) (${adjacentClubs.size} distinct clubs) fall the day `
     + `before/after a league or cup fixture for that club (informational only, not a failure)`);
+
+  // ── Remarcação (`.claude/rules/game/rescheduling.md`): the league game of a clash moves ──────────
+  console.log("\n── Remarcação ──");
+  {
+    const { countConflicts } = await import("@/Domain/calendar/rescheduling");
+    const entries = [...fixturesBySlugEnd].flatMap(([slug, fx]) =>
+      isYouthCompSlug(slug)
+        ? []
+        : fx.map((fixture) => ({
+            competition: slug,
+            kind: (isCupSlug(slug) ? "cup" : isContinentalSlug(slug) ? "continental" : "league") as "cup" | "continental" | "league",
+            fixture,
+          })),
+    );
+    const k = countConflicts(entries);
+    const rescheduled = entries.filter((e) => e.fixture.rescheduledFrom);
+    check(k.sameDayPairs === 0, `no club has two official games on the same day (${k.sameDayPairs} pairs)`);
+    // Left only when nothing can move: cup × continental, or a league game with no free day in its window.
+    const ADJACENT_LIMIT = 15;
+    check(k.adjacentPairs <= ADJACENT_LIMIT,
+      `official games on consecutive days: ${k.adjacentPairs} pairs (${k.adjacentClubs} clubs), limit ${ADJACENT_LIMIT}`);
+    check(rescheduled.length > 0, `league games were rescheduled off a clash (${rescheduled.length} on the calendars at the end)`);
+    check(rescheduled.every((e) => e.kind === "league" && e.fixture.rescheduledFrom !== e.fixture.date),
+      "only league games carry rescheduledFrom, always with a different date");
+    const leagueMetas = new Map<string, { start: string; end: string }>();
+    for (const slug of new Set(rescheduled.map((e) => e.competition))) {
+      const m = await plain().getLeagueMeta(smokeSaveId, slug);
+      if (m) leagueMetas.set(slug, { start: m.start, end: m.end });
+    }
+    const outOfWindow = rescheduled.filter((e) => {
+      const w = leagueMetas.get(e.competition);
+      return !w || e.fixture.date < w.start || e.fixture.date > w.end;
+    });
+    check(outOfWindow.length === 0, `every rescheduled game stays inside its league window (${outOfWindow.length} outside)`);
+    // The date index lists every rescheduled game's round on its new date.
+    let missingFromIndex = 0;
+    for (const slug of new Set(rescheduled.map((e) => e.competition))) {
+      const idx = (await plain().getDateIndex(smokeSaveId, slug)) ?? {};
+      for (const e of rescheduled.filter((x) => x.competition === slug)) {
+        if (!(idx[e.fixture.date] ?? []).includes(e.fixture.round)) missingFromIndex++;
+      }
+    }
+    check(missingFromIndex === 0, `rescheduled games are in their league's date index (${missingFromIndex} missing)`);
+  }
 
   // 6. Europe: the first season's UCL/UEL must have gone through the European continental
   //    rollover by the end of this run (hard requirement — every European cross-year tier-1
@@ -2752,6 +2937,45 @@ try {
   }
 
   delete process.env.FM_NO_RIVALS;
+
+  // ── Inscrição (`.claude/rules/game/registration.md`) ──
+  // Only registered players in official matches (engine stats checked against the lists, quickSim through the day
+  // log counter); every list of the world valid by its rule (or an `exception`); the deadline closes the lists to
+  // the routes; a hand-removed player stays out; a signing with the deadline closed waits and joins when it opens;
+  // match-setup swaps an unregistered starter.
+  console.log("\n── Inscrição ──");
+  {
+    check(regTrack.matches > 0 && regTrack.violations.length === 0,
+      `inscrição: ${regTrack.checked} player appearances in ${regTrack.matches} official matches, none unregistered (${regTrack.violations.slice(0, 5).join("; ") || "ok"})`);
+    check(regTrack.logViolations === 0, `inscrição: registrationViolations summed over the day logs = ${regTrack.logViolations}`);
+    const metaR = (await plain().getMeta(saveId))!;
+    const idxR = await plain().getSquadIndex(saveId);
+    const dctx = await regDayCtx(plain(), saveId, metaR, idxR, metaR.currentDate!);
+    let lists = 0, exceptions = 0, reduced = 0;
+    const invalid: string[] = [];
+    for (const sq of await plain().getAllSquads(saveId)) {
+      const league = idxR.byId(sq.id)?.leagueSlug;
+      if (!league) continue;
+      for (const info of await dctx.infosFor(sq, league)) {
+        const l = sq.registrations?.[info.slug];
+        if (!l || regIsStale(l, info.season)) continue;
+        lists++;
+        if (l.exception) exceptions++;
+        const v = regValidate(l.ids, sq.players, info.rule, info.ctx, l.exception);
+        if (v.length > 0) invalid.push(`${sq.id} ${info.slug} ${v.map((x) => x.kind).join(",")}`);
+        const counted = l.ids.filter((id) => sq.players.some((p) => p.id === id)).length;
+        if (info.rule.maxList != null && info.rule.minFormed && counted < info.rule.maxList && sq.players.length > counted) reduced++;
+      }
+    }
+    console.log(`  ${lists} current lists in the world, ${exceptions} completed by the 18 floor, ${reduced} shorter than the cap (informative)`);
+    check(lists > 0 && invalid.length === 0, `inscrição: every current list valid by its rule (${invalid.slice(0, 5).join("; ") || "ok"})`);
+    check(regTrack.closedPut === 409, `inscrição: a change with the deadline closed is refused (${regTrack.closedPut})`);
+    check(regTrack.openPut === 200 && regTrack.removedStayedOut === true,
+      `inscrição: a hand removal with the deadline open is accepted (${regTrack.openPut}) and the player stays out (${String(regTrack.removedStayedOut)})`);
+    check(!!regTrack.arrival && regTrack.arrivalPlayedClosed === 0 && !!regTrack.arrivalJoined,
+      `inscrição: a signing on ${regTrack.arrivalOn} (deadline closed) did not play before joining the list on ${regTrack.arrivalJoined || "never"}`);
+    check(regTrack.setupSwap === true, `inscrição: match-setup swaps a starter taken off the list (unregistered) (${String(regTrack.setupSwap)})`);
+  }
 
   // ── Mercado vivo (`.claude/rules/game/transfer-windows.md`, Etapa 25) ──
   // Every fee transfer / loan start inside the buyer's window, transfers in both windows crossed; one

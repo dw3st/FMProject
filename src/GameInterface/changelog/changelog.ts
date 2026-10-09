@@ -36,6 +36,72 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    version: "4.16",
+    date: "2026-10-09",
+    items: [
+      { pt: "Jogo da liga que cairia no mesmo dia ou colado em um jogo de copa ou continental do clube é remarcado para o meio de semana livre mais próximo", en: "A league match that would fall on the same day as, or right next to, a club's cup or continental match is moved to the nearest free midweek day" },
+      { pt: "Aviso na caixa de entrada quando um jogo do seu clube muda de data, e \"Remarcado de…\" na prévia, na semana do Painel e na tabela de jogos", en: "An inbox message when one of your club's matches changes date, and \"Rescheduled from…\" in the preview, the Dashboard week and the fixtures list" },
+      { pt: "Os clubes do mundo começam com o técnico atual de cada um", en: "Clubs around the world start with their current head coach" },
+    ],
+    fixes: [
+      { pt: "Técnicos desatualizados corrigidos: o PSG é de Luis Enrique, não mais de Carlo Ancelotti", en: "Outdated head coaches fixed: PSG is managed by Luis Enrique, no longer Carlo Ancelotti" },
+    ],
+  },
+  {
+    version: "4.15",
+    date: "2026-10-09",
+    items: [
+      { pt: "Inscrição por competição: cada clube tem uma lista de inscritos na liga, na copa e no torneio continental, com as regras de cada lugar (limite de estrangeiros, mínimo de formados no clube ou no país, sub-21 livres)", en: "Registration per competition: every club has a squad list for the league, the cup and the continental tournament, with each one's rules (foreign player limit, minimum of home-grown players, under-21s free)" },
+      { pt: "A lista só muda com a janela de transferências aberta (no torneio continental, também antes de cada fase); quem chega fora do prazo espera a próxima janela", en: "The list only changes with the transfer window open (in the continental tournament, also before each stage); a player arriving after the deadline waits for the next window" },
+      { pt: "A inscrição é automática e você ajusta na nova aba Inscritos do Elenco: incluir, tirar ou voltar ao automático", en: "Registration is automatic and you adjust it on the Squad's new Registration tab: add, remove or go back to automatic" },
+      { pt: "Um jogador não inscrito sai da escalação com aviso na prévia da partida; no Brasileirão vale o limite de 9 estrangeiros relacionados por jogo", en: "An unregistered player leaves the lineup with a warning on the match preview; in the Brasileirão the limit of 9 foreign players named per match applies" },
+    ],
+  },
+  {
+    version: "4.14.4",
+    date: "2026-10-09",
+    items: [
+      { pt: "As abas da barra superior mostram de novo os nomes quando há espaço", en: "The top bar tabs show their names again when there is room" },
+      { pt: "Na partida, quando um jogador seu se lesiona, o jogo pausa e você escolhe quem entra", en: "In the match, when one of your players gets injured, the game pauses and you choose who comes on" },
+    ],
+  },
+  {
+    version: "4.14.3",
+    date: "2026-10-09",
+    items: [
+      { pt: "Barra superior com ícones maiores e coloridos, mais fáceis de reconhecer", en: "Top bar with bigger, coloured icons that are easier to recognise" },
+      { pt: "A barra inferior mostra quantas pessoas estão jogando agora", en: "The bottom bar shows how many people are playing right now" },
+      { pt: "Na partida, um setor do estádio em obra aparece vazio e como canteiro de obras", en: "In the match, a stand under construction shows empty, as a building site" },
+      { pt: "Abrir o relato de problema durante a partida pausa o jogo", en: "Opening the problem report during a match pauses the game" },
+    ],
+    fixes: [
+      { pt: "As assistências no resultado da partida não parecem mais uma inicial antes do nome", en: "Assists on the match result no longer look like an initial before the name" },
+      { pt: "A posição de cada jogador na partida é a mesma do elenco", en: "Each player's position in the match is the same as in the squad" },
+      { pt: "As abas da barra superior voltam a mostrar os nomes ao sair da partida", en: "The top bar tabs show their names again after leaving a match" },
+    ],
+  },
+  {
+    version: "4.14.2",
+    date: "2026-10-09",
+    items: [
+      { pt: "As notas dos jogadores foram reajustadas posição por posição: goleiros, defensores, meias e atacantes mantêm o nível de cada setor da liga", en: "Player ratings were readjusted position by position: goalkeepers, defenders, midfielders and forwards keep the level of each line of their league" },
+    ],
+    fixes: [
+      { pt: "Os gols por partida voltaram ao normal nas ligas: o Brasileirão deixou de ter jogos com gols demais", en: "Goals per match are back to normal across the leagues: the Brasileirão no longer has too many goals" },
+    ],
+  },
+  {
+    version: "4.14.1",
+    date: "2026-10-09",
+    items: [
+      { pt: "Na partida, os lances do Resumo ficam sempre visíveis, com rolagem própria; o mapa de posse foi para baixo deles e pode ser recolhido", en: "In the match, the Summary's events are always visible, with their own scroll; the possession map moved below them and can be collapsed" },
+      { pt: "O Resumo da partida mostra os escudos dos clubes no lugar dos nomes, com o mandante à esquerda", en: "The match Summary shows the club crests instead of the names, with the home side on the left" },
+    ],
+    fixes: [
+      { pt: "Uma falha do servidor ao abrir a prévia ou a partida mostra uma mensagem de erro legível, em vez de um erro de leitura", en: "A server failure when opening the match preview or the match shows a readable error message instead of a parsing error" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [
@@ -1128,8 +1194,12 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
+  { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
+  { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
+  { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },
+  { pt: "Imprensa: coletivas e notícias do mundo do futebol", en: "Press conferences and football news" },
+  { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
 ];

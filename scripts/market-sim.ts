@@ -12,8 +12,12 @@
  * separate rng so the market sequence matches the run without it) and get `awardBoost`; the summary prints
  * how many winners were sold and their fee ÷ value without the boost.
  *
- * Usage: bun scripts/market-sim.ts [seasons=3] [--no-windows] [--no-market] [--awards] [--seed N]
+ * `--registration` (Etapa 37, `.claude/rules/game/registration.md`): the AI league lists follow the real refresh rule
+ * every day and each AI fee signing is checked when its buyer's window closes (registered or left out).
+ *
+ * Usage: bun scripts/market-sim.ts [seasons=3] [--no-windows] [--no-market] [--awards] [--registration] [--seed N]
  */
+import { createRegistrationProbe } from "@/../scripts/registration/probe";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { fileURLToPath } from "node:url";
@@ -63,6 +67,7 @@ const WINDOWS_ON = !args.includes("--no-windows");
 /** Managers only (fast calibration of sackings / hirings / the free pool). */
 const MARKET_ON = !args.includes("--no-market");
 const AWARDS_ON = args.includes("--awards");
+const REGISTRATION_ON = args.includes("--registration");
 const seedArg = args.indexOf("--seed");
 const SEED = seedArg >= 0 ? Number(args[seedArg + 1]) : 12345;
 const START_YEAR = 2026;
@@ -71,6 +76,9 @@ const catalog = JSON.parse(readFileSync(join(DATA, "leagueData.json"), "utf8")) 
 const pyramids = JSON.parse(readFileSync(join(DATA, "pyramids.json"), "utf8")) as Pyramids;
 const countries = JSON.parse(readFileSync(join(DATA, "countries.json"), "utf8")) as Record<string, { continent?: string }>;
 const countryOf = new Map(catalog.map((l) => [l.slug, l.country ?? ""] as const));
+const regProbe = REGISTRATION_ON
+  ? createRegistrationProbe({ countryOf: (l) => countryOf.get(l) ?? "", continentOf: (c) => countries[c]?.continent })
+  : null;
 const zonesOf = new Map(catalog.map((l) => [l.slug, l.zones ?? []] as const));
 const tierOfLeague = new Map<string, number>();
 for (const p of Object.values(pyramids)) for (const lv of p.levels) for (const g of lv.groups) tierOfLeague.set(g.leagueSlug, lv.tier);
@@ -317,6 +325,10 @@ for (let season = 0; season < seasons; season++) {
       pool = pool.filter((f) => !fa.signedIds.has(f.player.id));
       freeSigned += fa.signedIds.size;
     }
+    if (regProbe) {
+      regProbe.bought(completedTransfers);
+      squads = regProbe.day(squads, date, String(year), (l) => statusOfLeague(l, date));
+    }
 
     // Rival probe (once a week, open windows): a mock human club bids for 10 random AI players.
     if (isMonday && WINDOWS_ON && MARKET_ON) {
@@ -425,6 +437,7 @@ for (let season = 0; season < seasons; season++) {
   console.log(`  manager changes: tier 1 ${t1}/${tierOne.size} (${(100 * t1 / tierOne.size).toFixed(1)}%), tier 2+ ${t2}/${squads.length - tierOne.size} (${(100 * t2 / (squads.length - tierOne.size)).toFixed(1)}%); ` +
     `in-season ${changes.filter((c) => c.kind === "sack").length}, rollover ${changes.filter((c) => c.kind === "rollover").length}; ` +
     `free pool ${freePool} (${(freePool / squads.length).toFixed(3)} × clubs); invariant breaks ${breaks.missing.length + breaks.doubled.length}`);
+  if (regProbe) console.log(regProbe.summary());
   if (AWARDS_ON) console.log(`  awards: ${awardedDrawn} winners drawn, ${awardedSold} winners sold (fee ÷ value without the boost ${(awardedFeeRatio / Math.max(1, awardedSold)).toFixed(2)})`);
   report("hiring state, sampled monthly", seasonCounts);
 }

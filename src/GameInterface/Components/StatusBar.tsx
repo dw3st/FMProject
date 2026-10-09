@@ -6,6 +6,7 @@ import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticeP
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { formatEuros } from "@/Domain/money";
+import { usePresence } from "@/GameInterface/usePresence";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 const ICON_BTN =
@@ -31,6 +32,8 @@ export function StatusBar({
   const budgetLabel = session != null && !noClub ? formatEuros(session.budget) : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
+  // People with the game open right now (#134): only the number, never who.
+  const online = usePresence();
 
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
@@ -54,6 +57,12 @@ export function StatusBar({
             <Icon name="staff" size={18} />
             {playersLabel}
           </span>
+          {online !== null && (
+            <span className={ITEM} title={t("status.online", { count: online })} aria-label={t("status.online", { count: online })}>
+              <span className="w-2 h-2 rounded-full bg-chart-2 shrink-0" aria-hidden="true" />
+              {t("status.onlineShort", { count: online })}
+            </span>
+          )}
         </div>
         {/* Owner's credit, required in the footer of every public project (global rule). */}
         <span className="hidden md:inline text-sm text-muted-foreground whitespace-nowrap">

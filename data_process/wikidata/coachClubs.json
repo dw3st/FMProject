@@ -1,0 +1,4132 @@
+{
+ "33": {
+  "qid": "Q18656",
+  "via": "pilot",
+  "name": "Manchester United"
+ },
+ "34": {
+  "qid": "Q18716",
+  "via": "pilot",
+  "name": "Newcastle"
+ },
+ "35": {
+  "qid": "Q19568",
+  "via": "pilot",
+  "name": "Bournemouth"
+ },
+ "36": {
+  "qid": "Q18708",
+  "via": "pilot",
+  "name": "Fulham"
+ },
+ "39": {
+  "qid": "Q19500",
+  "via": "sparql",
+  "name": "Wolves"
+ },
+ "40": {
+  "qid": "Q1130849",
+  "via": "pilot",
+  "name": "Liverpool"
+ },
+ "42": {
+  "qid": "Q9617",
+  "via": "pilot",
+  "name": "Arsenal"
+ },
+ "44": {
+  "qid": "Q19458",
+  "via": "sparql",
+  "name": "Burnley"
+ },
+ "45": {
+  "qid": "Q5794",
+  "via": "pilot",
+  "name": "Everton"
+ },
+ "47": {
+  "qid": "Q18741",
+  "via": "pilot",
+  "name": "Tottenham"
+ },
+ "48": {
+  "qid": "Q18747",
+  "via": "sparql",
+  "name": "West Ham"
+ },
+ "49": {
+  "qid": "Q9616",
+  "via": "pilot",
+  "name": "Chelsea"
+ },
+ "50": {
+  "qid": "Q50602",
+  "via": "pilot",
+  "name": "Manchester City"
+ },
+ "51": {
+  "qid": "Q19453",
+  "via": "pilot",
+  "name": "Brighton"
+ },
+ "52": {
+  "qid": "Q19467",
+  "via": "pilot",
+  "name": "Crystal Palace"
+ },
+ "55": {
+  "qid": "Q19571",
+  "via": "pilot",
+  "name": "Brentford"
+ },
+ "63": {
+  "qid": "Q1128631",
+  "via": "pilot",
+  "name": "Leeds"
+ },
+ "65": {
+  "qid": "Q19490",
+  "via": "pilot",
+  "name": "Nottingham Forest"
+ },
+ "66": {
+  "qid": "Q18711",
+  "via": "pilot",
+  "name": "Aston Villa"
+ },
+ "77": {
+  "qid": "Q845137",
+  "via": "pilot",
+  "name": "Angers"
+ },
+ "79": {
+  "qid": "Q19516",
+  "via": "pilot",
+  "name": "Lille"
+ },
+ "80": {
+  "qid": "Q704",
+  "via": "pilot",
+  "name": "Lyon"
+ },
+ "81": {
+  "qid": "Q132885",
+  "via": "pilot",
+  "name": "Marseille"
+ },
+ "83": {
+  "qid": "Q192071",
+  "via": "sparql",
+  "name": "Nantes"
+ },
+ "84": {
+  "qid": "Q185163",
+  "via": "pilot",
+  "name": "Nice"
+ },
+ "85": {
+  "qid": "Q483020",
+  "via": "pilot",
+  "name": "Paris Saint Germain"
+ },
+ "91": {
+  "qid": "Q180305",
+  "via": "pilot",
+  "name": "Monaco"
+ },
+ "94": {
+  "qid": "Q19509",
+  "via": "pilot",
+  "name": "Rennes"
+ },
+ "95": {
+  "qid": "Q126334",
+  "via": "pilot",
+  "name": "Strasbourg"
+ },
+ "96": {
+  "qid": "Q19518",
+  "via": "pilot",
+  "name": "Toulouse"
+ },
+ "97": {
+  "qid": "Q48911",
+  "via": "pilot",
+  "name": "Lorient"
+ },
+ "106": {
+  "qid": "Q218372",
+  "via": "pilot",
+  "name": "Stade Brestois 29"
+ },
+ "108": {
+  "qid": "Q182876",
+  "via": "pilot",
+  "name": "Auxerre"
+ },
+ "111": {
+  "qid": "Q328658",
+  "via": "pilot",
+  "name": "Le Havre"
+ },
+ "112": {
+  "qid": "Q221525",
+  "via": "sparql",
+  "name": "Metz"
+ },
+ "114": {
+  "qid": "Q1051013",
+  "via": "pilot",
+  "name": "Paris FC"
+ },
+ "116": {
+  "qid": "Q191843",
+  "via": "pilot",
+  "name": "Lens"
+ },
+ "118": {
+  "qid": "Q198032",
+  "via": "pilot",
+  "name": "Bahia"
+ },
+ "119": {
+  "qid": "Q80845",
+  "via": "pilot",
+  "name": "Internacional"
+ },
+ "120": {
+  "qid": "Q80958",
+  "via": "pilot",
+  "name": "Botafogo"
+ },
+ "121": {
+  "qid": "Q80964",
+  "via": "pilot",
+  "name": "Palmeiras"
+ },
+ "123": {
+  "qid": "Q219098",
+  "via": "sparql",
+  "name": "Sport Recife"
+ },
+ "124": {
+  "qid": "Q80987",
+  "via": "pilot",
+  "name": "Fluminense"
+ },
+ "125": {
+  "qid": "Q338285",
+  "via": "sparql",
+  "name": "América Mineiro"
+ },
+ "126": {
+  "qid": "Q38568",
+  "via": "pilot",
+  "name": "São Paulo"
+ },
+ "127": {
+  "qid": "Q17479",
+  "via": "pilot",
+  "name": "Flamengo"
+ },
+ "128": {
+  "qid": "Q80955",
+  "via": "pilot",
+  "name": "Santos"
+ },
+ "129": {
+  "qid": "Q1052219",
+  "via": "sparql",
+  "name": "Ceará"
+ },
+ "130": {
+  "qid": "Q221695",
+  "via": "pilot",
+  "name": "Grêmio"
+ },
+ "131": {
+  "qid": "Q35933",
+  "via": "pilot",
+  "name": "Corinthians"
+ },
+ "132": {
+  "qid": "Q2536715",
+  "via": "pilot",
+  "name": "Chapecoense"
+ },
+ "133": {
+  "qid": "Q5014111",
+  "via": "pilot",
+  "name": "Vasco da Gama"
+ },
+ "134": {
+  "qid": "Q506832",
+  "via": "pilot",
+  "name": "Athletico Paranaense"
+ },
+ "135": {
+  "qid": "Q188277",
+  "via": "pilot",
+  "name": "Cruzeiro"
+ },
+ "136": {
+  "qid": "Q274465",
+  "via": "pilot",
+  "name": "Vitória"
+ },
+ "137": {
+  "qid": "Q218334",
+  "via": "sparql",
+  "name": "Figueirense"
+ },
+ "138": {
+  "qid": "Q1133475",
+  "via": "sparql",
+  "name": "Guarani"
+ },
+ "139": {
+  "qid": "Q219120",
+  "via": "sparql",
+  "name": "Ponte Preta"
+ },
+ "140": {
+  "qid": "Q598834",
+  "via": "sparql",
+  "name": "Criciúma"
+ },
+ "144": {
+  "qid": "Q198034",
+  "via": "sparql",
+  "name": "Atlético Goianiense"
+ },
+ "145": {
+  "qid": "Q374069",
+  "via": "sparql",
+  "name": "Avaí"
+ },
+ "146": {
+  "qid": "Q1024264",
+  "via": "sparql",
+  "name": "CRB"
+ },
+ "147": {
+  "qid": "Q478317",
+  "via": "pilot",
+  "name": "Coritiba"
+ },
+ "149": {
+  "qid": "Q1508285",
+  "via": "sparql",
+  "name": "Paysandu"
+ },
+ "151": {
+  "qid": "Q816779",
+  "via": "sparql",
+  "name": "Goiás"
+ },
+ "152": {
+  "qid": "Q910453",
+  "via": "sparql",
+  "name": "Juventude"
+ },
+ "154": {
+  "qid": "Q188841",
+  "via": "sparql",
+  "name": "Fortaleza"
+ },
+ "157": {
+  "qid": "Q15789",
+  "via": "pilot",
+  "name": "Bayern München"
+ },
+ "160": {
+  "qid": "Q106394",
+  "via": "pilot",
+  "name": "SC Freiburg"
+ },
+ "162": {
+  "qid": "Q51976",
+  "via": "pilot",
+  "name": "Werder Bremen"
+ },
+ "163": {
+  "qid": "Q101959",
+  "via": "pilot",
+  "name": "Borussia Mönchengladbach"
+ },
+ "164": {
+  "qid": "Q105254",
+  "via": "pilot",
+  "name": "FSV Mainz 05"
+ },
+ "165": {
+  "qid": "Q41420",
+  "via": "pilot",
+  "name": "Borussia Dortmund"
+ },
+ "167": {
+  "qid": "Q22707",
+  "via": "pilot",
+  "name": "1899 Hoffenheim"
+ },
+ "168": {
+  "qid": "Q104761",
+  "via": "pilot",
+  "name": "Bayer Leverkusen"
+ },
+ "169": {
+  "qid": "Q38245",
+  "via": "pilot",
+  "name": "Eintracht Frankfurt"
+ },
+ "170": {
+  "qid": "Q15755",
+  "via": "pilot",
+  "name": "FC Augsburg"
+ },
+ "172": {
+  "qid": "Q4512",
+  "via": "pilot",
+  "name": "VfB Stuttgart"
+ },
+ "173": {
+  "qid": "Q702455",
+  "via": "pilot",
+  "name": "RB Leipzig"
+ },
+ "175": {
+  "qid": "Q51974",
+  "via": "pilot",
+  "name": "Hamburger SV"
+ },
+ "182": {
+  "qid": "Q141971",
+  "via": "pilot",
+  "name": "Union Berlin"
+ },
+ "192": {
+  "qid": "Q104770",
+  "via": "pilot",
+  "name": "1. FC Köln"
+ },
+ "487": {
+  "qid": "Q2609",
+  "via": "pilot",
+  "name": "Lazio"
+ },
+ "488": {
+  "qid": "Q8603",
+  "via": "pilot",
+  "name": "Sassuolo"
+ },
+ "489": {
+  "qid": "Q1543",
+  "via": "pilot",
+  "name": "AC Milan"
+ },
+ "490": {
+  "qid": "Q1900",
+  "via": "pilot",
+  "name": "Cagliari"
+ },
+ "492": {
+  "qid": "Q2641",
+  "via": "pilot",
+  "name": "Napoli"
+ },
+ "494": {
+  "qid": "Q2798",
+  "via": "pilot",
+  "name": "Udinese"
+ },
+ "495": {
+  "qid": "Q2074",
+  "via": "pilot",
+  "name": "Genoa"
+ },
+ "496": {
+  "qid": "Q1422",
+  "via": "pilot",
+  "name": "Juventus"
+ },
+ "497": {
+  "qid": "Q2739",
+  "via": "pilot",
+  "name": "AS Roma"
+ },
+ "499": {
+  "qid": "Q1886",
+  "via": "pilot",
+  "name": "Atalanta"
+ },
+ "500": {
+  "qid": "Q1893",
+  "via": "pilot",
+  "name": "Bologna"
+ },
+ "502": {
+  "qid": "Q2052",
+  "via": "pilot",
+  "name": "Fiorentina"
+ },
+ "503": {
+  "qid": "Q2768",
+  "via": "pilot",
+  "name": "Torino"
+ },
+ "504": {
+  "qid": "Q8639",
+  "via": "sparql",
+  "name": "Hellas Verona"
+ },
+ "505": {
+  "qid": "Q631",
+  "via": "pilot",
+  "name": "Inter"
+ },
+ "520": {
+  "qid": "Q759482",
+  "via": "sparql",
+  "name": "Cremonese"
+ },
+ "523": {
+  "qid": "Q2693",
+  "via": "pilot",
+  "name": "Parma"
+ },
+ "529": {
+  "qid": "Q7156",
+  "via": "pilot",
+  "name": "Barcelona"
+ },
+ "530": {
+  "qid": "Q8701",
+  "via": "pilot",
+  "name": "Atletico Madrid"
+ },
+ "531": {
+  "qid": "Q8687",
+  "via": "pilot",
+  "name": "Athletic Club"
+ },
+ "532": {
+  "qid": "Q10333",
+  "via": "pilot",
+  "name": "Valencia"
+ },
+ "533": {
+  "qid": "Q12297",
+  "via": "pilot",
+  "name": "Villarreal"
+ },
+ "536": {
+  "qid": "Q10329",
+  "via": "pilot",
+  "name": "Sevilla"
+ },
+ "538": {
+  "qid": "Q8749",
+  "via": "pilot",
+  "name": "Celta Vigo"
+ },
+ "539": {
+  "qid": "Q8823",
+  "via": "pilot",
+  "name": "Levante"
+ },
+ "540": {
+  "qid": "Q8780",
+  "via": "pilot",
+  "name": "Espanyol"
+ },
+ "541": {
+  "qid": "Q8682",
+  "via": "pilot",
+  "name": "Real Madrid"
+ },
+ "542": {
+  "qid": "Q223620",
+  "via": "pilot",
+  "name": "Alaves"
+ },
+ "543": {
+  "qid": "Q8723",
+  "via": "pilot",
+  "name": "Real Betis"
+ },
+ "546": {
+  "qid": "Q8806",
+  "via": "pilot",
+  "name": "Getafe"
+ },
+ "547": {
+  "qid": "Q11945",
+  "via": "sparql",
+  "name": "Girona"
+ },
+ "548": {
+  "qid": "Q10315",
+  "via": "pilot",
+  "name": "Real Sociedad"
+ },
+ "718": {
+  "qid": "Q271574",
+  "via": "sparql",
+  "name": "Oviedo"
+ },
+ "727": {
+  "qid": "Q10286",
+  "via": "pilot",
+  "name": "Osasuna"
+ },
+ "728": {
+  "qid": "Q10300",
+  "via": "pilot",
+  "name": "Rayo Vallecano"
+ },
+ "746": {
+  "qid": "Q18739",
+  "via": "pilot",
+  "name": "Sunderland"
+ },
+ "753": {
+  "qid": "Q508440",
+  "via": "sparql",
+  "name": "Santa Cruz"
+ },
+ "794": {
+  "qid": "Q541744",
+  "via": "pilot",
+  "name": "Red Bull Bragantino"
+ },
+ "797": {
+  "qid": "Q10512",
+  "via": "pilot",
+  "name": "Elche"
+ },
+ "798": {
+  "qid": "Q8835",
+  "via": "sparql",
+  "name": "Mallorca"
+ },
+ "801": {
+  "qid": "Q289613",
+  "via": "sparql",
+  "name": "Pisa"
+ },
+ "867": {
+  "qid": "Q13391",
+  "via": "pilot",
+  "name": "Lecce"
+ },
+ "895": {
+  "qid": "Q1120838",
+  "via": "pilot",
+  "name": "Como"
+ },
+ "1062": {
+  "qid": "Q270995",
+  "via": "pilot",
+  "name": "Atlético Mineiro"
+ },
+ "1193": {
+  "qid": "Q2945011",
+  "via": "sparql",
+  "name": "Cuiabá"
+ },
+ "1198": {
+  "qid": "Q2552872",
+  "via": "pilot",
+  "name": "Remo"
+ },
+ "1201": {
+  "qid": "Q286409",
+  "via": "sparql",
+  "name": "Inter de Limeira"
+ },
+ "2618": {
+  "qid": "Q2332493",
+  "via": "sparql",
+  "name": "Botafogo-SP"
+ },
+ "7770": {
+  "qid": "Q1703589",
+  "via": "sparql",
+  "name": "Caxias"
+ },
+ "7772": {
+  "qid": "Q739701",
+  "via": "sparql",
+  "name": "Confiança"
+ },
+ "7779": {
+  "qid": "Q1675351",
+  "via": "sparql",
+  "name": "Ituano"
+ },
+ "7814": {
+  "qid": "Q2553450",
+  "via": "sparql",
+  "name": "Volta Redonda"
+ },
+ "7848": {
+  "qid": "Q2622870",
+  "via": "pilot",
+  "name": "Mirassol"
+ },
+ "es_133": {
+  "qid": "Q32494",
+  "via": "pilot",
+  "name": "Schalke 04"
+ },
+ "es_143": {
+  "qid": "Q854167",
+  "via": "pilot",
+  "name": "Fortuna Sittard"
+ },
+ "es_151": {
+  "qid": "Q209895",
+  "via": "pilot",
+  "name": "Sparta Rotterdam"
+ },
+ "es_170": {
+  "qid": "Q501693",
+  "via": "pilot",
+  "name": "Troyes"
+ },
+ "es_171": {
+  "qid": "Q459148",
+  "via": "sparql",
+  "name": "Guingamp"
+ },
+ "es_178": {
+  "qid": "Q19521",
+  "via": "sparql",
+  "name": "Saint-Étienne"
+ },
+ "es_226": {
+  "qid": "Q849949",
+  "via": "sparql",
+  "name": "Atlante"
+ },
+ "es_229": {
+  "qid": "Q1280895",
+  "via": "sparql",
+  "name": "Necaxa"
+ },
+ "es_245": {
+  "qid": "Q216661",
+  "via": "sparql",
+  "name": "Tenerife"
+ },
+ "es_274": {
+  "qid": "Q19513",
+  "via": "sparql",
+  "name": "Montpellier"
+ },
+ "es_314": {
+  "qid": "Q18519",
+  "via": "sparql",
+  "name": "Lincoln City"
+ },
+ "es_318": {
+  "qid": "Q18659",
+  "via": "sparql",
+  "name": "Swansea City"
+ },
+ "es_352": {
+  "qid": "Q18529",
+  "via": "sparql",
+  "name": "Wrexham"
+ },
+ "es_376": {
+  "qid": "Q18732",
+  "via": "sparql",
+  "name": "Southampton"
+ },
+ "es_381": {
+  "qid": "Q18721",
+  "via": "sparql",
+  "name": "Norwich City"
+ },
+ "es_383": {
+  "qid": "Q18744",
+  "via": "sparql",
+  "name": "West Bromwich Albion"
+ },
+ "es_385": {
+  "qid": "Q19604",
+  "via": "sparql",
+  "name": "Portsmouth"
+ },
+ "es_388": {
+  "qid": "Q19580",
+  "via": "pilot",
+  "name": "Coventry City"
+ },
+ "es_391": {
+  "qid": "Q19487",
+  "via": "sparql",
+  "name": "Millwall"
+ },
+ "es_395": {
+  "qid": "Q2714",
+  "via": "sparql",
+  "name": "Watford"
+ },
+ "es_398": {
+  "qid": "Q19607",
+  "via": "sparql",
+  "name": "Sheffield United"
+ },
+ "es_607": {
+  "qid": "Q723489",
+  "via": "sparql",
+  "name": "Silkeborg IF"
+ },
+ "es_620": {
+  "qid": "Q205685",
+  "via": "sparql",
+  "name": "SK Brann"
+ },
+ "es_789": {
+  "qid": "Q1423118",
+  "via": "sparql",
+  "name": "Goztepe"
+ },
+ "es_995": {
+  "qid": "Q513237",
+  "via": "sparql",
+  "name": "Kocaelispor"
+ },
+ "es_2697": {
+  "qid": "Q210864",
+  "via": "pilot",
+  "name": "Le Mans"
+ },
+ "es_3039": {
+  "qid": "Q216131",
+  "via": "sparql",
+  "name": "Fredrikstad"
+ },
+ "es_3243": {
+  "qid": "Q208228",
+  "via": "sparql",
+  "name": "Stade de Reims"
+ },
+ "es_3307": {
+  "qid": "Q160532",
+  "via": "pilot",
+  "name": "SC Paderborn 07"
+ },
+ "es_3393": {
+  "qid": "Q620499",
+  "via": "sparql",
+  "name": "Tokyo Verdy 1969"
+ },
+ "es_3472": {
+  "qid": "Q216459",
+  "via": "pilot",
+  "name": "Nacional"
+ },
+ "es_3585": {
+  "qid": "Q289286",
+  "via": "sparql",
+  "name": "AC Horsens"
+ },
+ "es_3610": {
+  "qid": "Q364698",
+  "via": "sparql",
+  "name": "Cercle Brugge KSV"
+ },
+ "es_3696": {
+  "qid": "Q1346314",
+  "via": "pilot",
+  "name": "Moreirense"
+ },
+ "es_3706": {
+  "qid": "Q749589",
+  "via": "pilot",
+  "name": "Go Ahead Eagles"
+ },
+ "es_3735": {
+  "qid": "Q1071713",
+  "via": "pilot",
+  "name": "Telstar"
+ },
+ "es_4129": {
+  "qid": "Q1103684",
+  "via": "sparql",
+  "name": "Everton CD"
+ },
+ "es_4411": {
+  "qid": "Q392310",
+  "via": "sparql",
+  "name": "LASK Linz"
+ },
+ "es_5480": {
+  "qid": "Q332863",
+  "via": "sparql",
+  "name": "Boyacá Chicó FC"
+ },
+ "es_5570": {
+  "qid": "Q603060",
+  "via": "sparql",
+  "name": "Sport Boys"
+ },
+ "es_5807": {
+  "qid": "Q196160",
+  "via": "sparql",
+  "name": "Union St.-Gilloise"
+ },
+ "es_6097": {
+  "qid": "Q1926287",
+  "via": "sparql",
+  "name": "2 de Mayo"
+ },
+ "es_6672": {
+  "qid": "Q496190",
+  "via": "sparql",
+  "name": "Kristiansund BK"
+ },
+ "es_6907": {
+  "qid": "Q699746",
+  "via": "sparql",
+  "name": "TSV Hartberg"
+ },
+ "es_6994": {
+  "qid": "Q209509",
+  "via": "sparql",
+  "name": "Grenoble"
+ },
+ "es_7079": {
+  "qid": "Q451635",
+  "via": "sparql",
+  "name": "AmaZulu"
+ },
+ "es_7104": {
+  "qid": "Q823384",
+  "via": "sparql",
+  "name": "Shimizu S-Pulse"
+ },
+ "es_7109": {
+  "qid": "Q855809",
+  "via": "sparql",
+  "name": "Cerezo Osaka"
+ },
+ "es_7111": {
+  "qid": "Q646204",
+  "via": "sparql",
+  "name": "JEF United Ichihara-Chiba"
+ },
+ "es_7320": {
+  "qid": "Q600232",
+  "via": "sparql",
+  "name": "Eldense"
+ },
+ "es_7427": {
+  "qid": "Q2317539",
+  "via": "sparql",
+  "name": "Ñublense"
+ },
+ "es_7656": {
+  "qid": "Q272712",
+  "via": "sparql",
+  "name": "Caykur Rizespor"
+ },
+ "es_7719": {
+  "qid": "Q292231",
+  "via": "sparql",
+  "name": "Rodez Aveyron"
+ },
+ "es_7732": {
+  "qid": "Q1815297",
+  "via": "sparql",
+  "name": "Dunkerque"
+ },
+ "es_7860": {
+  "qid": "Q635654",
+  "via": "sparql",
+  "name": "Lyngby Boldklub"
+ },
+ "es_7869": {
+  "qid": "Q309400",
+  "via": "sparql",
+  "name": "Boulogne"
+ },
+ "es_8110": {
+  "qid": "Q2317166",
+  "via": "sparql",
+  "name": "Deportes Concepcion"
+ },
+ "es_8186": {
+  "qid": "Q2407595",
+  "via": "sparql",
+  "name": "Coquimbo Unido"
+ },
+ "es_8221": {
+  "qid": "Q754339",
+  "via": "sparql",
+  "name": "IF Brommapojkarna"
+ },
+ "es_8222": {
+  "qid": "Q391789",
+  "via": "sparql",
+  "name": "GAIS"
+ },
+ "es_8547": {
+  "qid": "Q1471336",
+  "via": "sparql",
+  "name": "IK Sirius"
+ },
+ "es_10080": {
+  "qid": "Q603085",
+  "via": "sparql",
+  "name": "Rubio Ñú"
+ },
+ "es_10388": {
+  "qid": "Q692691",
+  "via": "pilot",
+  "name": "SV Elversberg"
+ },
+ "es_10678": {
+  "qid": "Q288419",
+  "via": "sparql",
+  "name": "Pau"
+ },
+ "es_11429": {
+  "qid": "Q430107",
+  "via": "sparql",
+  "name": "Samsunspor"
+ },
+ "es_11487": {
+  "qid": "Q12260",
+  "via": "sparql",
+  "name": "CD Sabadell"
+ },
+ "es_15720": {
+  "qid": "Q13408349",
+  "via": "sparql",
+  "name": "Atlético de San Luis"
+ },
+ "es_17544": {
+  "qid": "Q732002",
+  "via": "sparql",
+  "name": "Antwerp"
+ },
+ "es_17671": {
+  "qid": "Q2980003",
+  "via": "sparql",
+  "name": "Sportivo San Lorenzo"
+ },
+ "es_17851": {
+  "qid": "Q20051399",
+  "via": "sparql",
+  "name": "FC Juarez"
+ },
+ "es_18066": {
+  "qid": "Q1140695",
+  "via": "sparql",
+  "name": "Annecy"
+ },
+ "es_18153": {
+  "qid": "Q5151530",
+  "via": "sparql",
+  "name": "Comerciantes Unidos"
+ },
+ "es_18794": {
+  "qid": "Q686659",
+  "via": "sparql",
+  "name": "WSG Swarovski Tirol"
+ },
+ "es_19001": {
+  "qid": "Q3029309",
+  "via": "sparql",
+  "name": "V-Varen Nagasaki"
+ },
+ "es_20301": {
+  "qid": "Q749138",
+  "via": "sparql",
+  "name": "Mjällby AIF"
+ },
+ "es_20729": {
+  "qid": "Q118919",
+  "via": "sparql",
+  "name": "Eyupspor"
+ },
+ "es_20856": {
+  "qid": "Q1140767",
+  "via": "sparql",
+  "name": "Degerfors IF"
+ },
+ "es_21361": {
+  "qid": "Q1047535",
+  "via": "sparql",
+  "name": "Kyoto Sanga"
+ },
+ "es_21380": {
+  "qid": "Q1130961",
+  "via": "sparql",
+  "name": "Hamarkameratene"
+ },
+ "es_21540": {
+  "qid": "Q696507",
+  "via": "sparql",
+  "name": "Austria Lustenau"
+ },
+ "es_21607": {
+  "qid": "Q2410944",
+  "via": "pilot",
+  "name": "Académico de Viseu"
+ },
+ "es_21610": {
+  "qid": "Q838134",
+  "via": "pilot",
+  "name": "Estrela da Amadora"
+ },
+ "es_21613": {
+  "qid": "Q1386850",
+  "via": "pilot",
+  "name": "Alverca"
+ },
+ "es_21833": {
+  "qid": "Q2620016",
+  "via": "sparql",
+  "name": "Abha"
+ },
+ "es_21846": {
+  "qid": "Q659780",
+  "via": "sparql",
+  "name": "Grazer AK"
+ },
+ "es_22163": {
+  "qid": "Q1680249",
+  "via": "sparql",
+  "name": "Västerås SK"
+ },
+ "es_22165": {
+  "qid": "Q3432730",
+  "via": "sparql",
+  "name": "KFUM Oslo"
+ },
+ "es_22167": {
+  "qid": "Q1366905",
+  "via": "sparql",
+  "name": "Machida Zelvia"
+ },
+ "es_22348": {
+  "qid": "Q1899447",
+  "via": "sparql",
+  "name": "Durban City"
+ },
+ "es_22522": {
+  "qid": "Q595489",
+  "via": "sparql",
+  "name": "Fagiano Okayama"
+ },
+ "es_130899": {
+  "qid": "Q12247491",
+  "via": "sparql",
+  "name": "Neom SC"
+ },
+ "es_131552": {
+  "qid": "Q297906",
+  "via": "sparql",
+  "name": "Örgryte IS"
+ },
+ "es_131701": {
+  "qid": "Q1060184",
+  "via": "sparql",
+  "name": "Mito Hollyhock"
+ },
+ "es_131858": {
+  "qid": "Q2311865",
+  "via": "sparql",
+  "name": "RC Celta Fortuna"
+ },
+ "es_132335": {
+  "qid": "Q1231804",
+  "via": "sparql",
+  "name": "Amed SFK"
+ },
+ "of_ae_al_ain": {
+  "qid": "Q812720",
+  "via": "sparql",
+  "name": "Al Ain"
+ },
+ "of_ae_al_dhafra": {
+  "qid": "Q426874",
+  "via": "sparql",
+  "name": "Al Dhafra"
+ },
+ "of_ae_al_jazira": {
+  "qid": "Q429630",
+  "via": "sparql",
+  "name": "Al Jazira"
+ },
+ "of_ae_al_nasr": {
+  "qid": "Q812723",
+  "via": "sparql",
+  "name": "Al Nasr"
+ },
+ "of_ae_al_wahda": {
+  "qid": "Q283767",
+  "via": "sparql",
+  "name": "Al Wahda"
+ },
+ "of_ae_emirates_club": {
+  "qid": "Q1191998",
+  "via": "sparql",
+  "name": "Emirates Club"
+ },
+ "of_ae_sharjah": {
+  "qid": "Q286801",
+  "via": "sparql",
+  "name": "Sharjah"
+ },
+ "of_al_dinamo_city": {
+  "qid": "Q34120",
+  "via": "sparql",
+  "name": "Dinamo City"
+ },
+ "of_al_egnatia_rrogozhine": {
+  "qid": "Q1302027",
+  "via": "sparql",
+  "name": "Egnatia Rrogozhinë"
+ },
+ "of_al_flamurtari": {
+  "qid": "Q60495",
+  "via": "sparql",
+  "name": "Flamurtari"
+ },
+ "of_al_teuta_durres": {
+  "qid": "Q81635",
+  "via": "sparql",
+  "name": "Teuta Durrës"
+ },
+ "of_al_vllaznia_shkoder": {
+  "qid": "Q81566",
+  "via": "sparql",
+  "name": "Vllaznia Shkodër"
+ },
+ "of_am_alashkert": {
+  "qid": "Q2035339",
+  "via": "sparql",
+  "name": "Alashkert"
+ },
+ "of_am_ararat": {
+  "qid": "Q332702",
+  "via": "sparql",
+  "name": "Ararat"
+ },
+ "of_am_ararat_armenia": {
+  "qid": "Q39056364",
+  "via": "sparql",
+  "name": "Ararat-Armenia"
+ },
+ "of_am_gandzasar": {
+  "qid": "Q847326",
+  "via": "sparql",
+  "name": "Gandzasar"
+ },
+ "of_am_noah": {
+  "qid": "Q34479193",
+  "via": "sparql",
+  "name": "Noah"
+ },
+ "of_am_pyunik": {
+  "qid": "Q244317",
+  "via": "sparql",
+  "name": "Pyunik"
+ },
+ "of_am_shirak": {
+  "qid": "Q666827",
+  "via": "sparql",
+  "name": "Shirak"
+ },
+ "of_am_urartu": {
+  "qid": "Q757253",
+  "via": "sparql",
+  "name": "Urartu"
+ },
+ "of_am_van": {
+  "qid": "Q74112200",
+  "via": "sparql",
+  "name": "Van"
+ },
+ "of_ar_aldosivi": {
+  "qid": "Q971490",
+  "via": "pilot",
+  "name": "Aldosivi"
+ },
+ "of_ar_almagro": {
+  "qid": "Q1102935",
+  "via": "sparql",
+  "name": "Almagro"
+ },
+ "of_ar_almirante_brown": {
+  "qid": "Q1102931",
+  "via": "sparql",
+  "name": "Almirante Brown"
+ },
+ "of_ar_argentinos_juniors": {
+  "qid": "Q220621",
+  "via": "pilot",
+  "name": "Argentinos Juniors"
+ },
+ "of_ar_atlanta": {
+  "qid": "Q1022904",
+  "via": "sparql",
+  "name": "Atlanta"
+ },
+ "of_ar_atletico_tucuman": {
+  "qid": "Q757470",
+  "via": "pilot",
+  "name": "Atlético Tucumán"
+ },
+ "of_ar_banfield": {
+  "qid": "Q692646",
+  "via": "pilot",
+  "name": "Banfield"
+ },
+ "of_ar_barracas_central": {
+  "qid": "Q2469894",
+  "via": "pilot",
+  "name": "Barracas Central"
+ },
+ "of_ar_belgrano": {
+  "qid": "Q59962",
+  "via": "pilot",
+  "name": "Belgrano"
+ },
+ "of_ar_boca_juniors": {
+  "qid": "Q170703",
+  "via": "pilot",
+  "name": "Boca Juniors"
+ },
+ "of_ar_central_cordoba_sde": {
+  "qid": "Q5060684",
+  "via": "pilot",
+  "name": "Central Córdoba SdE"
+ },
+ "of_ar_chaco_for_ever": {
+  "qid": "Q3781627",
+  "via": "sparql",
+  "name": "Chaco For Ever"
+ },
+ "of_ar_colon_de_santa_fe": {
+  "qid": "Q80897",
+  "via": "sparql",
+  "name": "Colón"
+ },
+ "of_ar_defensa_y_justicia": {
+  "qid": "Q1024338",
+  "via": "pilot",
+  "name": "Defensa y Justicia"
+ },
+ "of_ar_estudiantes": {
+  "qid": "Q214940",
+  "via": "pilot",
+  "name": "Estudiantes"
+ },
+ "of_ar_estudiantes_de_buenos_aires": {
+  "qid": "Q2333719",
+  "via": "pilot",
+  "name": "Estudiantes"
+ },
+ "of_ar_estudiantes_de_rio_cuarto": {
+  "qid": "Q8206935",
+  "via": "pilot",
+  "name": "Estudiantes"
+ },
+ "of_ar_ferro_carril_oeste": {
+  "qid": "Q910444",
+  "via": "sparql",
+  "name": "Ferro Carril Oeste"
+ },
+ "of_ar_gimnasia_la_plata": {
+  "qid": "Q18640",
+  "via": "pilot",
+  "name": "Gimnasia La Plata"
+ },
+ "of_ar_gimnasia_y_esgrima_de_jujuy": {
+  "qid": "Q1022923",
+  "via": "sparql",
+  "name": "Gimnasia y Esgrima"
+ },
+ "of_ar_gimnasia_y_esgrima_de_mendoza": {
+  "qid": "Q2707037",
+  "via": "pilot",
+  "name": "Gimnasia y Esgrima"
+ },
+ "of_ar_godoy_cruz": {
+  "qid": "Q80882",
+  "via": "sparql",
+  "name": "Godoy Cruz"
+ },
+ "of_ar_huracan": {
+  "qid": "Q327172",
+  "via": "pilot",
+  "name": "Huracán"
+ },
+ "of_ar_independiente": {
+  "qid": "Q214978",
+  "via": "pilot",
+  "name": "Independiente"
+ },
+ "of_ar_independiente_rivadavia": {
+  "qid": "Q2454482",
+  "via": "pilot",
+  "name": "Independiente Rivadavia"
+ },
+ "of_ar_instituto": {
+  "qid": "Q1421829",
+  "via": "pilot",
+  "name": "Instituto"
+ },
+ "of_ar_lanus": {
+  "qid": "Q324589",
+  "via": "pilot",
+  "name": "Lanús"
+ },
+ "of_ar_mitre_de_santiago_del_estero": {
+  "qid": "Q5487437",
+  "via": "sparql",
+  "name": "Mitre"
+ },
+ "of_ar_moron": {
+  "qid": "Q2318771",
+  "via": "sparql",
+  "name": "Morón"
+ },
+ "of_ar_newells_old_boys": {
+  "qid": "Q221882",
+  "via": "pilot",
+  "name": "Newell's Old Boys"
+ },
+ "of_ar_platense": {
+  "qid": "Q151907",
+  "via": "pilot",
+  "name": "Platense"
+ },
+ "of_ar_quilmes": {
+  "qid": "Q775966",
+  "via": "sparql",
+  "name": "Quilmes"
+ },
+ "of_ar_racing_club": {
+  "qid": "Q276533",
+  "via": "pilot",
+  "name": "Racing Club"
+ },
+ "of_ar_riestra": {
+  "qid": "Q4382304",
+  "via": "pilot",
+  "name": "Deportivo Riestra"
+ },
+ "of_ar_river_plate": {
+  "qid": "Q15799",
+  "via": "pilot",
+  "name": "River Plate"
+ },
+ "of_ar_rosario_central": {
+  "qid": "Q318307",
+  "via": "pilot",
+  "name": "Rosario Central"
+ },
+ "of_ar_san_lorenzo": {
+  "qid": "Q218282",
+  "via": "pilot",
+  "name": "San Lorenzo"
+ },
+ "of_ar_sarmiento": {
+  "qid": "Q519966",
+  "via": "pilot",
+  "name": "Sarmiento"
+ },
+ "of_ar_talleres": {
+  "qid": "Q1022939",
+  "via": "pilot",
+  "name": "Talleres"
+ },
+ "of_ar_talleres_de_remedios_de_escalada": {
+  "qid": "Q1022941",
+  "via": "sparql",
+  "name": "Talleres"
+ },
+ "of_ar_tigre": {
+  "qid": "Q80886",
+  "via": "pilot",
+  "name": "Tigre"
+ },
+ "of_ar_union_de_santa_fe": {
+  "qid": "Q80899",
+  "via": "pilot",
+  "name": "Unión de Santa Fe"
+ },
+ "of_ar_velez_sarsfield": {
+  "qid": "Q215163",
+  "via": "pilot",
+  "name": "Vélez"
+ },
+ "of_at_austria_wien": {
+  "qid": "Q131209",
+  "via": "sparql",
+  "name": "Austria Wien"
+ },
+ "of_at_red_bull_salzburg": {
+  "qid": "Q994811",
+  "via": "sparql",
+  "name": "Red Bull Salzburg"
+ },
+ "of_at_sturm_graz": {
+  "qid": "Q124007617",
+  "via": "sparql",
+  "name": "Sturm Graz"
+ },
+ "of_at_sv_ried": {
+  "qid": "Q457460",
+  "via": "sparql",
+  "name": "SV Ried"
+ },
+ "of_at_wolfsberger_ac": {
+  "qid": "Q694484",
+  "via": "sparql",
+  "name": "Wolfsberger AC"
+ },
+ "of_au_adelaide_united": {
+  "qid": "Q354059",
+  "via": "sparql",
+  "name": "Adelaide United"
+ },
+ "of_au_brisbane_roar": {
+  "qid": "Q839997",
+  "via": "sparql",
+  "name": "Brisbane Roar"
+ },
+ "of_au_central_coast_mariners": {
+  "qid": "Q762294",
+  "via": "sparql",
+  "name": "Central Coast Mariners"
+ },
+ "of_au_macarthur": {
+  "qid": "Q59773416",
+  "via": "sparql",
+  "name": "Macarthur FC"
+ },
+ "of_au_melbourne_city": {
+  "qid": "Q748725",
+  "via": "sparql",
+  "name": "Melbourne City"
+ },
+ "of_au_melbourne_victory": {
+  "qid": "Q316789",
+  "via": "sparql",
+  "name": "Melbourne Victory"
+ },
+ "of_au_newcastle_jets": {
+  "qid": "Q732929",
+  "via": "sparql",
+  "name": "Newcastle Jets"
+ },
+ "of_au_perth_glory": {
+  "qid": "Q852033",
+  "via": "sparql",
+  "name": "Perth Glory"
+ },
+ "of_au_sydney_fc": {
+  "qid": "Q330143",
+  "via": "sparql",
+  "name": "Sydney FC"
+ },
+ "of_au_western_sydney_wanderers": {
+  "qid": "Q999035",
+  "via": "sparql",
+  "name": "Western Sydney Wanderers"
+ },
+ "of_be_anderlecht": {
+  "qid": "Q187528",
+  "via": "sparql",
+  "name": "Anderlecht"
+ },
+ "of_be_club_brugge": {
+  "qid": "Q190916",
+  "via": "sparql",
+  "name": "Club Brugge"
+ },
+ "of_be_genk": {
+  "qid": "Q216032",
+  "via": "sparql",
+  "name": "Racing Genk"
+ },
+ "of_be_gent": {
+  "qid": "Q18232",
+  "via": "sparql",
+  "name": "KAA Gent"
+ },
+ "of_be_kortrijk": {
+  "qid": "Q618620",
+  "via": "sparql",
+  "name": "KV Kortrijk"
+ },
+ "of_be_mechelen": {
+  "qid": "Q113000",
+  "via": "sparql",
+  "name": "KV Mechelen"
+ },
+ "of_be_oh_leuven": {
+  "qid": "Q916199",
+  "via": "sparql",
+  "name": "OH Leuven"
+ },
+ "of_be_sint_truiden": {
+  "qid": "Q138248",
+  "via": "sparql",
+  "name": "Sint-Truiden"
+ },
+ "of_be_standard_liege": {
+  "qid": "Q190561",
+  "via": "sparql",
+  "name": "Standard Liege"
+ },
+ "of_be_waasland_beveren": {
+  "qid": "Q509170",
+  "via": "sparql",
+  "name": "Waasland-Beveren"
+ },
+ "of_be_westerlo": {
+  "qid": "Q849544",
+  "via": "sparql",
+  "name": "Westerlo"
+ },
+ "of_be_zulte_waregem": {
+  "qid": "Q376635",
+  "via": "sparql",
+  "name": "Zulte Waregem"
+ },
+ "of_bg_arda_1924": {
+  "qid": "Q5424818",
+  "via": "sparql",
+  "name": "Arda"
+ },
+ "of_bg_beroe": {
+  "qid": "Q374254",
+  "via": "sparql",
+  "name": "Beroe"
+ },
+ "of_bg_botev_plovdiv": {
+  "qid": "Q597250",
+  "via": "sparql",
+  "name": "Botev Plovdiv"
+ },
+ "of_bg_botev_vratsa": {
+  "qid": "Q634701",
+  "via": "sparql",
+  "name": "Botev Vratsa"
+ },
+ "of_bg_levski": {
+  "qid": "Q144190",
+  "via": "sparql",
+  "name": "Levski"
+ },
+ "of_bg_lokomotiv_1929_sofia": {
+  "qid": "Q309025",
+  "via": "sparql",
+  "name": "Lokomotiv Sofia"
+ },
+ "of_bg_lokomotiv_plovdiv": {
+  "qid": "Q1124841",
+  "via": "sparql",
+  "name": "Lokomotiv Plovdiv"
+ },
+ "of_bg_ludogorets": {
+  "qid": "Q1339086",
+  "via": "sparql",
+  "name": "Ludogorets"
+ },
+ "of_bg_montana_1921": {
+  "qid": "Q1462564",
+  "via": "sparql",
+  "name": "Montana"
+ },
+ "of_bg_slavia_sofia": {
+  "qid": "Q643434",
+  "via": "sparql",
+  "name": "Slavia Sofia"
+ },
+ "of_by_arsenal_dzerzhinsk": {
+  "qid": "Q61768552",
+  "via": "sparql",
+  "name": "Arsenal Dzerzhinsk"
+ },
+ "of_by_baranovichi": {
+  "qid": "Q2496995",
+  "via": "sparql",
+  "name": "Baranovichi"
+ },
+ "of_by_belshina": {
+  "qid": "Q756110",
+  "via": "sparql",
+  "name": "Belshina"
+ },
+ "of_by_bumprom_gomel": {
+  "qid": "Q51838185",
+  "via": "sparql",
+  "name": "Bumprom Gomel"
+ },
+ "of_by_dinamo_brest": {
+  "qid": "Q772725",
+  "via": "sparql",
+  "name": "Dinamo Brest"
+ },
+ "of_by_dnepr_mogilev": {
+  "qid": "Q834555",
+  "via": "sparql",
+  "name": "Dnepr Mogilev"
+ },
+ "of_by_gomel": {
+  "qid": "Q726285",
+  "via": "sparql",
+  "name": "Gomel"
+ },
+ "of_by_isloch": {
+  "qid": "Q11624718",
+  "via": "sparql",
+  "name": "Isloch"
+ },
+ "of_by_lida": {
+  "qid": "Q2134369",
+  "via": "sparql",
+  "name": "Lida"
+ },
+ "of_by_minsk": {
+  "qid": "Q594092",
+  "via": "sparql",
+  "name": "Minsk"
+ },
+ "of_by_molodechno": {
+  "qid": "Q2633110",
+  "via": "sparql",
+  "name": "Molodechno"
+ },
+ "of_by_naftan": {
+  "qid": "Q840765",
+  "via": "sparql",
+  "name": "Naftan"
+ },
+ "of_by_neman": {
+  "qid": "Q545869",
+  "via": "sparql",
+  "name": "Neman"
+ },
+ "of_by_orsha": {
+  "qid": "Q2590293",
+  "via": "sparql",
+  "name": "Orsha"
+ },
+ "of_by_osipovichi": {
+  "qid": "Q2574904",
+  "via": "sparql",
+  "name": "Osipovichi"
+ },
+ "of_by_ostrovets": {
+  "qid": "Q90922797",
+  "via": "sparql",
+  "name": "Ostrovets"
+ },
+ "of_by_slavia_mozyr": {
+  "qid": "Q1165833",
+  "via": "sparql",
+  "name": "Slavia Mozyr"
+ },
+ "of_by_slonim": {
+  "qid": "Q4423940",
+  "via": "sparql",
+  "name": "Slonim"
+ },
+ "of_by_slutsk": {
+  "qid": "Q281878",
+  "via": "sparql",
+  "name": "Slutsk"
+ },
+ "of_by_smorgon": {
+  "qid": "Q929339",
+  "via": "sparql",
+  "name": "Smorgon"
+ },
+ "of_by_vitebsk": {
+  "qid": "Q846362",
+  "via": "sparql",
+  "name": "Vitebsk"
+ },
+ "of_by_volna_pinsk": {
+  "qid": "Q2498749",
+  "via": "sparql",
+  "name": "Volna Pinsk"
+ },
+ "of_ch_fc_basel": {
+  "qid": "Q189671",
+  "via": "sparql",
+  "name": "FC Basel"
+ },
+ "of_ch_fc_lugano": {
+  "qid": "Q633521",
+  "via": "sparql",
+  "name": "FC Lugano"
+ },
+ "of_ch_fc_luzern": {
+  "qid": "Q223262",
+  "via": "sparql",
+  "name": "FC Luzern"
+ },
+ "of_ch_fc_sion": {
+  "qid": "Q321061",
+  "via": "sparql",
+  "name": "FC Sion"
+ },
+ "of_ch_fc_st_gallen": {
+  "qid": "Q659212",
+  "via": "sparql",
+  "name": "FC St. Gallen"
+ },
+ "of_ch_fc_thun": {
+  "qid": "Q464775",
+  "via": "sparql",
+  "name": "FC Thun"
+ },
+ "of_ch_fc_vaduz": {
+  "qid": "Q216773",
+  "via": "sparql",
+  "name": "FC Vaduz"
+ },
+ "of_ch_fc_zurich": {
+  "qid": "Q206692",
+  "via": "sparql",
+  "name": "FC Zurich"
+ },
+ "of_ch_grasshopper": {
+  "qid": "Q201360",
+  "via": "sparql",
+  "name": "Grasshopper"
+ },
+ "of_ch_young_boys": {
+  "qid": "Q190526",
+  "via": "sparql",
+  "name": "Young Boys"
+ },
+ "of_cl_audax_italiano": {
+  "qid": "Q758689",
+  "via": "sparql",
+  "name": "Audax Italiano"
+ },
+ "of_cl_cobresal": {
+  "qid": "Q642669",
+  "via": "sparql",
+  "name": "Cobresal"
+ },
+ "of_cl_huachipato": {
+  "qid": "Q1023191",
+  "via": "sparql",
+  "name": "Huachipato"
+ },
+ "of_cl_ohiggins": {
+  "qid": "Q719722",
+  "via": "sparql",
+  "name": "O'Higgins"
+ },
+ "of_cl_palestino": {
+  "qid": "Q719719",
+  "via": "sparql",
+  "name": "Palestino"
+ },
+ "of_cl_union_la_calera": {
+  "qid": "Q719383",
+  "via": "sparql",
+  "name": "Union La Calera"
+ },
+ "of_cl_universidad_catolica": {
+  "qid": "Q427446",
+  "via": "sparql",
+  "name": "Universidad Catolica"
+ },
+ "of_cl_universidad_de_concepcion": {
+  "qid": "Q721560",
+  "via": "sparql",
+  "name": "Universidad de Concepcion"
+ },
+ "of_co_atletico_nacional": {
+  "qid": "Q332605",
+  "via": "sparql",
+  "name": "Atletico Nacional"
+ },
+ "of_co_barranquilla": {
+  "qid": "Q3293573",
+  "via": "sparql",
+  "name": "Barranquilla"
+ },
+ "of_co_deportivo_cali": {
+  "qid": "Q663400",
+  "via": "sparql",
+  "name": "Deportivo Cali"
+ },
+ "of_co_deportivo_pereira": {
+  "qid": "Q515178",
+  "via": "sparql",
+  "name": "Deportivo Pereira"
+ },
+ "of_co_independiente_medellin": {
+  "qid": "Q332527",
+  "via": "sparql",
+  "name": "Independiente Medellin"
+ },
+ "of_co_jaguares": {
+  "qid": "Q5924752",
+  "via": "sparql",
+  "name": "Jaguares"
+ },
+ "of_co_junior": {
+  "qid": "Q332524",
+  "via": "sparql",
+  "name": "Junior"
+ },
+ "of_co_llaneros_co": {
+  "qid": "Q6661327",
+  "via": "sparql",
+  "name": "Llaneros"
+ },
+ "of_co_millonarios": {
+  "qid": "Q391984",
+  "via": "sparql",
+  "name": "Millonarios"
+ },
+ "of_co_once_caldas": {
+  "qid": "Q47533",
+  "via": "sparql",
+  "name": "Once Caldas"
+ },
+ "of_co_patriotas": {
+  "qid": "Q391600",
+  "via": "sparql",
+  "name": "Patriotas"
+ },
+ "of_co_real_cartagena": {
+  "qid": "Q392284",
+  "via": "sparql",
+  "name": "Real Cartagena"
+ },
+ "of_co_santa_fe": {
+  "qid": "Q1424072",
+  "via": "sparql",
+  "name": "Santa Fe"
+ },
+ "of_cy_ael_limassol": {
+  "qid": "Q291471",
+  "via": "sparql",
+  "name": "AEL"
+ },
+ "of_cy_anorthosis": {
+  "qid": "Q141688",
+  "via": "sparql",
+  "name": "Anorthosis"
+ },
+ "of_cy_ethnikos_achnas": {
+  "qid": "Q862791",
+  "via": "sparql",
+  "name": "Ethnikos Achnas"
+ },
+ "of_cy_nea_salamis": {
+  "qid": "Q714581",
+  "via": "sparql",
+  "name": "Nea Salamis"
+ },
+ "of_cy_omonoia": {
+  "qid": "Q240783",
+  "via": "sparql",
+  "name": "Omonoia"
+ },
+ "of_cy_pafos": {
+  "qid": "Q17442894",
+  "via": "sparql",
+  "name": "Pafos"
+ },
+ "of_cz_banik_ostrava": {
+  "qid": "Q329471",
+  "via": "sparql",
+  "name": "Banik Ostrava"
+ },
+ "of_cz_bohemians_1905": {
+  "qid": "Q849221",
+  "via": "sparql",
+  "name": "Bohemians 1905"
+ },
+ "of_cz_brno": {
+  "qid": "Q724832",
+  "via": "sparql",
+  "name": "Zbrojovka Brno"
+ },
+ "of_cz_dukla_prague": {
+  "qid": "Q2757426",
+  "via": "sparql",
+  "name": "Dukla Prague"
+ },
+ "of_cz_jablonec": {
+  "qid": "Q425599",
+  "via": "sparql",
+  "name": "Jablonec"
+ },
+ "of_cz_mlada_boleslav": {
+  "qid": "Q328332",
+  "via": "sparql",
+  "name": "Mlada Boleslav"
+ },
+ "of_cz_pribram": {
+  "qid": "Q162472",
+  "via": "sparql",
+  "name": "Pribram"
+ },
+ "of_cz_sigma_olomouc": {
+  "qid": "Q385518",
+  "via": "sparql",
+  "name": "Sigma Olomouc"
+ },
+ "of_cz_slavia_prague": {
+  "qid": "Q194393",
+  "via": "sparql",
+  "name": "Slavia Prague"
+ },
+ "of_cz_slovacko": {
+  "qid": "Q847499",
+  "via": "sparql",
+  "name": "Slovacko"
+ },
+ "of_cz_slovan_liberec": {
+  "qid": "Q221671",
+  "via": "sparql",
+  "name": "Slovan Liberec"
+ },
+ "of_cz_sparta_prague": {
+  "qid": "Q193481",
+  "via": "sparql",
+  "name": "Sparta Prague"
+ },
+ "of_cz_teplice": {
+  "qid": "Q738886",
+  "via": "sparql",
+  "name": "Teplice"
+ },
+ "of_cz_viktoria_plzen": {
+  "qid": "Q206838",
+  "via": "sparql",
+  "name": "Viktoria Plzen"
+ },
+ "of_cz_zlin": {
+  "qid": "Q39183",
+  "via": "sparql",
+  "name": "Zlin"
+ },
+ "of_dk_aarhus": {
+  "qid": "Q301431",
+  "via": "sparql",
+  "name": "AGF"
+ },
+ "of_dk_brondby": {
+  "qid": "Q211906",
+  "via": "sparql",
+  "name": "Brondby"
+ },
+ "of_dk_fc_midtjylland": {
+  "qid": "Q618520",
+  "via": "sparql",
+  "name": "FC Midtjylland"
+ },
+ "of_dk_fc_nordsjaelland": {
+  "qid": "Q210025",
+  "via": "sparql",
+  "name": "FC Nordsjaelland"
+ },
+ "of_dk_odense": {
+  "qid": "Q211912",
+  "via": "sparql",
+  "name": "OB"
+ },
+ "of_dk_randers": {
+  "qid": "Q729560",
+  "via": "sparql",
+  "name": "Randers"
+ },
+ "of_dk_sonderjyske": {
+  "qid": "Q3511548",
+  "via": "sparql",
+  "name": "SonderjyskE"
+ },
+ "of_dz_cs_constantine": {
+  "qid": "Q591230",
+  "via": "sparql",
+  "name": "CS Constantine"
+ },
+ "of_dz_js_kabylie": {
+  "qid": "Q862218",
+  "via": "sparql",
+  "name": "JS Kabylie"
+ },
+ "of_dz_mc_alger": {
+  "qid": "Q1044640",
+  "via": "sparql",
+  "name": "MC Alger"
+ },
+ "of_dz_paradou": {
+  "qid": "Q428782",
+  "via": "sparql",
+  "name": "Paradou"
+ },
+ "of_eg_el_masry": {
+  "qid": "Q286490",
+  "via": "sparql",
+  "name": "El Masry"
+ },
+ "of_eg_petrojet": {
+  "qid": "Q2274233",
+  "via": "sparql",
+  "name": "Petrojet"
+ },
+ "of_eg_wadi_degla": {
+  "qid": "Q1966238",
+  "via": "sparql",
+  "name": "Wadi Degla"
+ },
+ "of_eg_zamalek": {
+  "qid": "Q286504",
+  "via": "sparql",
+  "name": "Zamalek"
+ },
+ "of_es_almeria": {
+  "qid": "Q10407",
+  "via": "sparql",
+  "name": "Almería"
+ },
+ "of_es_burgos": {
+  "qid": "Q852079",
+  "via": "sparql",
+  "name": "Burgos"
+ },
+ "of_es_cadiz": {
+  "qid": "Q460448",
+  "via": "sparql",
+  "name": "Cádiz"
+ },
+ "of_es_castellon": {
+  "qid": "Q743557",
+  "via": "sparql",
+  "name": "Castellón"
+ },
+ "of_es_ceuta": {
+  "qid": "Q290841",
+  "via": "sparql",
+  "name": "Ceuta"
+ },
+ "of_es_cordoba": {
+  "qid": "Q10499",
+  "via": "sparql",
+  "name": "Córdoba"
+ },
+ "of_es_deportivo": {
+  "qid": "Q8760",
+  "via": "pilot",
+  "name": "Deportivo La Coruña"
+ },
+ "of_es_eibar": {
+  "qid": "Q770740",
+  "via": "sparql",
+  "name": "Eibar"
+ },
+ "of_es_fc_andorra": {
+  "qid": "Q1386854",
+  "via": "sparql",
+  "name": "Andorra"
+ },
+ "of_es_las_palmas": {
+  "qid": "Q11979",
+  "via": "sparql",
+  "name": "Las Palmas"
+ },
+ "of_es_leganes": {
+  "qid": "Q856119",
+  "via": "sparql",
+  "name": "Leganés"
+ },
+ "of_es_malaga": {
+  "qid": "Q8857",
+  "via": "pilot",
+  "name": "Málaga"
+ },
+ "of_es_racing_santander": {
+  "qid": "Q12236",
+  "via": "pilot",
+  "name": "Racing Santander"
+ },
+ "of_es_real_sociedad_b": {
+  "qid": "Q1067750",
+  "via": "sparql",
+  "name": "Real Sociedad B"
+ },
+ "of_es_valladolid": {
+  "qid": "Q10319",
+  "via": "sparql",
+  "name": "Valladolid"
+ },
+ "of_fi_fc_lahti": {
+  "qid": "Q476880",
+  "via": "sparql",
+  "name": "FC Lahti"
+ },
+ "of_fi_ff_jaro": {
+  "qid": "Q746853",
+  "via": "sparql",
+  "name": "FF Jaro"
+ },
+ "of_fi_hifk": {
+  "qid": "Q11336634",
+  "via": "sparql",
+  "name": "HIFK"
+ },
+ "of_fi_hjk": {
+  "qid": "Q208584",
+  "via": "sparql",
+  "name": "HJK"
+ },
+ "of_fi_ifk_mariehamn": {
+  "qid": "Q252276",
+  "via": "sparql",
+  "name": "IFK Mariehamn"
+ },
+ "of_fi_ilves": {
+  "qid": "Q2608062",
+  "via": "sparql",
+  "name": "Ilves"
+ },
+ "of_fi_inter_turku": {
+  "qid": "Q222877",
+  "via": "sparql",
+  "name": "Inter Turku"
+ },
+ "of_fi_kotp": {
+  "qid": "Q368117",
+  "via": "sparql",
+  "name": "KTP"
+ },
+ "of_fi_seinajoki": {
+  "qid": "Q2185704",
+  "via": "sparql",
+  "name": "SJK"
+ },
+ "of_fi_vps": {
+  "qid": "Q726266",
+  "via": "sparql",
+  "name": "VPS"
+ },
+ "of_fj_labasa": {
+  "qid": "Q1557366",
+  "via": "sparql",
+  "name": "Labasa"
+ },
+ "of_fr_clermont": {
+  "qid": "Q870182",
+  "via": "sparql",
+  "name": "Clermont Foot"
+ },
+ "of_fr_dijon": {
+  "qid": "Q503317",
+  "via": "sparql",
+  "name": "Dijon"
+ },
+ "of_fr_laval": {
+  "qid": "Q760736",
+  "via": "sparql",
+  "name": "Stade Lavallois"
+ },
+ "of_fr_nancy": {
+  "qid": "Q19523",
+  "via": "sparql",
+  "name": "AS Nancy"
+ },
+ "of_fr_red_star": {
+  "qid": "Q522283",
+  "via": "sparql",
+  "name": "Red Star"
+ },
+ "of_fr_sochaux": {
+  "qid": "Q19512",
+  "via": "sparql",
+  "name": "Sochaux"
+ },
+ "of_gb_birmingham_city": {
+  "qid": "Q19444",
+  "via": "sparql",
+  "name": "Birmingham City"
+ },
+ "of_gb_bolton": {
+  "qid": "Q19451",
+  "via": "sparql",
+  "name": "Bolton Wanderers"
+ },
+ "of_gb_bristol_city": {
+  "qid": "Q19456",
+  "via": "sparql",
+  "name": "Bristol City"
+ },
+ "of_gb_cardiff_city": {
+  "qid": "Q18662",
+  "via": "sparql",
+  "name": "Cardiff City"
+ },
+ "of_gb_charlton": {
+  "qid": "Q19462",
+  "via": "sparql",
+  "name": "Charlton Athletic"
+ },
+ "of_gb_derby_county": {
+  "qid": "Q19470",
+  "via": "sparql",
+  "name": "Derby County"
+ },
+ "of_gb_hull_city": {
+  "qid": "Q19477",
+  "via": "pilot",
+  "name": "Hull City"
+ },
+ "of_gb_ipswich_town": {
+  "qid": "Q9653",
+  "via": "pilot",
+  "name": "Ipswich Town"
+ },
+ "of_gb_middlesbrough": {
+  "qid": "Q18661",
+  "via": "sparql",
+  "name": "Middlesbrough"
+ },
+ "of_gb_preston": {
+  "qid": "Q19612",
+  "via": "sparql",
+  "name": "Preston North End"
+ },
+ "of_gb_qpr": {
+  "qid": "Q18723",
+  "via": "sparql",
+  "name": "Queens Park Rangers"
+ },
+ "of_ge_dinamo_batumi": {
+  "qid": "Q1346756",
+  "via": "sparql",
+  "name": "Dinamo Batumi"
+ },
+ "of_ge_dinamo_tbilisi": {
+  "qid": "Q201006",
+  "via": "sparql",
+  "name": "Dinamo Tbilisi"
+ },
+ "of_ge_samtredia": {
+  "qid": "Q1071313",
+  "via": "sparql",
+  "name": "Samtredia"
+ },
+ "of_ge_torpedo_kutaisi": {
+  "qid": "Q38781",
+  "via": "sparql",
+  "name": "Torpedo Kutaisi"
+ },
+ "of_gh_asante_kotoko": {
+  "qid": "Q578491",
+  "via": "sparql",
+  "name": "Asante Kotoko"
+ },
+ "of_gh_hearts_of_oak": {
+  "qid": "Q339560",
+  "via": "sparql",
+  "name": "Hearts of Oak"
+ },
+ "of_gr_atromitos": {
+  "qid": "Q757754",
+  "via": "sparql",
+  "name": "Atromitos"
+ },
+ "of_gr_levadiakos": {
+  "qid": "Q824450",
+  "via": "sparql",
+  "name": "Levadiakos"
+ },
+ "of_gr_panathinaikos": {
+  "qid": "Q4122219",
+  "via": "sparql",
+  "name": "Panathinaikos"
+ },
+ "of_gr_panetolikos": {
+  "qid": "Q1460053",
+  "via": "sparql",
+  "name": "Panetolikos"
+ },
+ "of_gr_volos": {
+  "qid": "Q43375974",
+  "via": "sparql",
+  "name": "Volos NPS"
+ },
+ "of_hr_cibalia": {
+  "qid": "Q726271",
+  "via": "sparql",
+  "name": "Cibalia"
+ },
+ "of_hr_dinamo_zagreb": {
+  "qid": "Q172803",
+  "via": "sparql",
+  "name": "Dinamo Zagreb"
+ },
+ "of_hr_gorica": {
+  "qid": "Q918425",
+  "via": "sparql",
+  "name": "HNK Gorica"
+ },
+ "of_hr_hajduk_split": {
+  "qid": "Q181216",
+  "via": "sparql",
+  "name": "Hajduk Split"
+ },
+ "of_hr_hrvatski_dragovoljac": {
+  "qid": "Q1258871",
+  "via": "sparql",
+  "name": "Hrvatski Dragovoljac"
+ },
+ "of_hr_istra_1961": {
+  "qid": "Q725916",
+  "via": "sparql",
+  "name": "Istra 1961"
+ },
+ "of_hr_lokomotiva_zagreb": {
+  "qid": "Q959086",
+  "via": "sparql",
+  "name": "Lokomotiva Zagreb"
+ },
+ "of_hr_osijek": {
+  "qid": "Q738876",
+  "via": "sparql",
+  "name": "NK Osijek"
+ },
+ "of_hr_rijeka": {
+  "qid": "Q318969",
+  "via": "sparql",
+  "name": "HNK Rijeka"
+ },
+ "of_hr_slaven_belupo": {
+  "qid": "Q368909",
+  "via": "sparql",
+  "name": "Slaven Belupo"
+ },
+ "of_hr_varazdin": {
+  "qid": "Q16958147",
+  "via": "sparql",
+  "name": "NK Varazdin"
+ },
+ "of_hr_vukovar_1991": {
+  "qid": "Q31198354",
+  "via": "sparql",
+  "name": "HNK Vukovar 1991"
+ },
+ "of_hu_debrecen": {
+  "qid": "Q205732",
+  "via": "sparql",
+  "name": "Debrecen"
+ },
+ "of_hu_diosgyor": {
+  "qid": "Q767400",
+  "via": "sparql",
+  "name": "Diosgyor"
+ },
+ "of_hu_fehervar": {
+  "qid": "Q326811",
+  "via": "sparql",
+  "name": "Fehervar"
+ },
+ "of_hu_ferencvaros": {
+  "qid": "Q208396",
+  "via": "sparql",
+  "name": "Ferencvaros"
+ },
+ "of_hu_honved": {
+  "qid": "Q275612",
+  "via": "sparql",
+  "name": "Honved"
+ },
+ "of_hu_mtk_budapest": {
+  "qid": "Q208406",
+  "via": "sparql",
+  "name": "MTK Budapest"
+ },
+ "of_hu_paksi": {
+  "qid": "Q915352",
+  "via": "sparql",
+  "name": "Paksi"
+ },
+ "of_hu_puskas_akademia": {
+  "qid": "Q1241654",
+  "via": "sparql",
+  "name": "Puskas Akademia"
+ },
+ "of_hu_ujpest": {
+  "qid": "Q244595",
+  "via": "sparql",
+  "name": "Ujpest"
+ },
+ "of_hu_vasas": {
+  "qid": "Q255296",
+  "via": "sparql",
+  "name": "Vasas"
+ },
+ "of_id_persebaya": {
+  "qid": "Q3375671",
+  "via": "sparql",
+  "name": "Persebaya"
+ },
+ "of_id_psm": {
+  "qid": "Q1209713",
+  "via": "sparql",
+  "name": "PSM"
+ },
+ "of_id_semen_padang": {
+  "qid": "Q767073",
+  "via": "sparql",
+  "name": "Semen Padang"
+ },
+ "of_il_beitar_jerusalem": {
+  "qid": "Q223727",
+  "via": "sparql",
+  "name": "Beitar Jerusalem"
+ },
+ "of_il_bnei_sakhnin": {
+  "qid": "Q1130570",
+  "via": "sparql",
+  "name": "Bnei Sakhnin"
+ },
+ "of_il_bnei_yehuda": {
+  "qid": "Q737714",
+  "via": "sparql",
+  "name": "Bnei Yehuda"
+ },
+ "of_il_hapoel_beer_sheva": {
+  "qid": "Q986529",
+  "via": "sparql",
+  "name": "Hapoel Beer Sheva"
+ },
+ "of_il_hapoel_haifa": {
+  "qid": "Q455991",
+  "via": "sparql",
+  "name": "Hapoel Haifa"
+ },
+ "of_il_hapoel_kfar_saba": {
+  "qid": "Q761583",
+  "via": "sparql",
+  "name": "Hapoel Kfar Saba"
+ },
+ "of_il_hapoel_tel_aviv": {
+  "qid": "Q206585",
+  "via": "sparql",
+  "name": "Hapoel Tel Aviv"
+ },
+ "of_il_maccabi_haifa": {
+  "qid": "Q2129100",
+  "via": "sparql",
+  "name": "Maccabi Haifa"
+ },
+ "of_il_maccabi_netanya": {
+  "qid": "Q426513",
+  "via": "sparql",
+  "name": "Maccabi Netanya"
+ },
+ "of_il_maccabi_petach_tikva": {
+  "qid": "Q49711",
+  "via": "sparql",
+  "name": "Maccabi Petach Tikva"
+ },
+ "of_il_maccabi_tel_aviv": {
+  "qid": "Q223728",
+  "via": "sparql",
+  "name": "Maccabi Tel Aviv"
+ },
+ "of_ir_esteghlal": {
+  "qid": "Q455971",
+  "via": "sparql",
+  "name": "Esteghlal"
+ },
+ "of_ir_foolad": {
+  "qid": "Q862851",
+  "via": "sparql",
+  "name": "Foolad"
+ },
+ "of_ir_malavan": {
+  "qid": "Q537201",
+  "via": "sparql",
+  "name": "Malavan"
+ },
+ "of_ir_persepolis": {
+  "qid": "Q242260",
+  "via": "sparql",
+  "name": "Persepolis"
+ },
+ "of_ir_saipa": {
+  "qid": "Q782983",
+  "via": "sparql",
+  "name": "Saipa"
+ },
+ "of_ir_sepahan": {
+  "qid": "Q31660",
+  "via": "sparql",
+  "name": "Sepahan"
+ },
+ "of_ir_tractor": {
+  "qid": "Q32358",
+  "via": "sparql",
+  "name": "Tractor"
+ },
+ "of_ir_zob_ahan": {
+  "qid": "Q218033",
+  "via": "sparql",
+  "name": "Zob Ahan"
+ },
+ "of_is_fh_hafnarfjordur": {
+  "qid": "Q498536",
+  "via": "sparql",
+  "name": "FH"
+ },
+ "of_is_fjolnir": {
+  "qid": "Q971326",
+  "via": "sparql",
+  "name": "Fjolnir"
+ },
+ "of_is_fylkir": {
+  "qid": "Q291723",
+  "via": "sparql",
+  "name": "Fylkir"
+ },
+ "of_is_ia_akranes": {
+  "qid": "Q291691",
+  "via": "sparql",
+  "name": "IA"
+ },
+ "of_is_ibv_vestmannaeyjar": {
+  "qid": "Q291716",
+  "via": "sparql",
+  "name": "IBV"
+ },
+ "of_is_keflavik": {
+  "qid": "Q835853",
+  "via": "sparql",
+  "name": "Keflavik"
+ },
+ "of_is_kr_reykjavik": {
+  "qid": "Q221702",
+  "via": "sparql",
+  "name": "KR"
+ },
+ "of_is_stjarnan": {
+  "qid": "Q279886",
+  "via": "sparql",
+  "name": "Stjarnan"
+ },
+ "of_is_valur": {
+  "qid": "Q597715",
+  "via": "sparql",
+  "name": "Valur"
+ },
+ "of_is_vikingur_reykjavik": {
+  "qid": "Q1140538",
+  "via": "sparql",
+  "name": "Vikingur"
+ },
+ "of_it_albinoleffe": {
+  "qid": "Q752483",
+  "via": "sparql",
+  "name": "AlbinoLeffe"
+ },
+ "of_it_alcione_milano": {
+  "qid": "Q120881664",
+  "via": "sparql",
+  "name": "Alcione Milano"
+ },
+ "of_it_arezzo": {
+  "qid": "Q297430",
+  "via": "sparql",
+  "name": "Arezzo"
+ },
+ "of_it_ascoli": {
+  "qid": "Q6630",
+  "via": "sparql",
+  "name": "Ascoli"
+ },
+ "of_it_avellino": {
+  "qid": "Q298217",
+  "via": "sparql",
+  "name": "Avellino"
+ },
+ "of_it_bari": {
+  "qid": "Q6641",
+  "via": "sparql",
+  "name": "Bari"
+ },
+ "of_it_benevento": {
+  "qid": "Q652516",
+  "via": "sparql",
+  "name": "Benevento"
+ },
+ "of_it_carrarese": {
+  "qid": "Q650365",
+  "via": "sparql",
+  "name": "Carrarese"
+ },
+ "of_it_casertana": {
+  "qid": "Q1886341",
+  "via": "sparql",
+  "name": "Casertana"
+ },
+ "of_it_catania": {
+  "qid": "Q2018",
+  "via": "sparql",
+  "name": "Catania"
+ },
+ "of_it_catanzaro": {
+  "qid": "Q501372",
+  "via": "sparql",
+  "name": "Catanzaro"
+ },
+ "of_it_cavese": {
+  "qid": "Q1520422",
+  "via": "sparql",
+  "name": "Cavese"
+ },
+ "of_it_cittadella": {
+  "qid": "Q6673",
+  "via": "sparql",
+  "name": "Cittadella"
+ },
+ "of_it_cosenza": {
+  "qid": "Q1136016",
+  "via": "sparql",
+  "name": "Cosenza"
+ },
+ "of_it_crotone": {
+  "qid": "Q6690",
+  "via": "sparql",
+  "name": "Crotone"
+ },
+ "of_it_empoli": {
+  "qid": "Q6703",
+  "via": "sparql",
+  "name": "Empoli"
+ },
+ "of_it_foggia": {
+  "qid": "Q139399",
+  "via": "sparql",
+  "name": "Foggia"
+ },
+ "of_it_forli": {
+  "qid": "Q3077308",
+  "via": "sparql",
+  "name": "Forli"
+ },
+ "of_it_frosinone": {
+  "qid": "Q845043",
+  "via": "pilot",
+  "name": "Frosinone"
+ },
+ "of_it_gubbio": {
+  "qid": "Q298314",
+  "via": "sparql",
+  "name": "Gubbio"
+ },
+ "of_it_juve_stabia": {
+  "qid": "Q6748",
+  "via": "sparql",
+  "name": "Juve Stabia"
+ },
+ "of_it_latina": {
+  "qid": "Q2118510",
+  "via": "sparql",
+  "name": "Latina"
+ },
+ "of_it_lecco": {
+  "qid": "Q944876",
+  "via": "sparql",
+  "name": "Lecco"
+ },
+ "of_it_livorno": {
+  "qid": "Q6767",
+  "via": "sparql",
+  "name": "Livorno"
+ },
+ "of_it_mantova": {
+  "qid": "Q430993",
+  "via": "sparql",
+  "name": "Mantova"
+ },
+ "of_it_modena": {
+  "qid": "Q8408",
+  "via": "sparql",
+  "name": "Modena"
+ },
+ "of_it_monza": {
+  "qid": "Q289482",
+  "via": "pilot",
+  "name": "Monza"
+ },
+ "of_it_novara": {
+  "qid": "Q8416",
+  "via": "sparql",
+  "name": "Novara"
+ },
+ "of_it_padova": {
+  "qid": "Q8428",
+  "via": "sparql",
+  "name": "Padova"
+ },
+ "of_it_palermo": {
+  "qid": "Q2674",
+  "via": "sparql",
+  "name": "Palermo"
+ },
+ "of_it_pergolettese": {
+  "qid": "Q1968070",
+  "via": "sparql",
+  "name": "Pergolettese"
+ },
+ "of_it_perugia": {
+  "qid": "Q16344",
+  "via": "sparql",
+  "name": "Perugia"
+ },
+ "of_it_pescara": {
+  "qid": "Q2710",
+  "via": "sparql",
+  "name": "Pescara"
+ },
+ "of_it_picerno": {
+  "qid": "Q64876680",
+  "via": "sparql",
+  "name": "Picerno"
+ },
+ "of_it_pontedera": {
+  "qid": "Q1056821",
+  "via": "sparql",
+  "name": "Pontedera"
+ },
+ "of_it_potenza": {
+  "qid": "Q2457991",
+  "via": "sparql",
+  "name": "Potenza"
+ },
+ "of_it_pro_patria": {
+  "qid": "Q777337",
+  "via": "sparql",
+  "name": "Pro Patria"
+ },
+ "of_it_pro_vercelli": {
+  "qid": "Q8455",
+  "via": "sparql",
+  "name": "Pro Vercelli"
+ },
+ "of_it_reggiana": {
+  "qid": "Q289707",
+  "via": "sparql",
+  "name": "Reggiana"
+ },
+ "of_it_salernitana": {
+  "qid": "Q847587",
+  "via": "sparql",
+  "name": "Salernitana"
+ },
+ "of_it_sambenedettese": {
+  "qid": "Q1785447",
+  "via": "sparql",
+  "name": "Sambenedettese"
+ },
+ "of_it_sampdoria": {
+  "qid": "Q1457",
+  "via": "sparql",
+  "name": "Sampdoria"
+ },
+ "of_it_sorrento": {
+  "qid": "Q1508747",
+  "via": "sparql",
+  "name": "Sorrento"
+ },
+ "of_it_spezia": {
+  "qid": "Q8615",
+  "via": "sparql",
+  "name": "Spezia"
+ },
+ "of_it_sudtirol": {
+  "qid": "Q1387710",
+  "via": "sparql",
+  "name": "Südtirol"
+ },
+ "of_it_triestina": {
+  "qid": "Q13381",
+  "via": "sparql",
+  "name": "Triestina"
+ },
+ "of_it_union_brescia": {
+  "qid": "Q135415841",
+  "via": "sparql",
+  "name": "Union Brescia"
+ },
+ "of_it_venezia": {
+  "qid": "Q501245",
+  "via": "pilot",
+  "name": "Venezia"
+ },
+ "of_it_virtus_entella": {
+  "qid": "Q2276413",
+  "via": "sparql",
+  "name": "Virtus Entella"
+ },
+ "of_jp_avispa_fukuoka": {
+  "qid": "Q791164",
+  "via": "sparql",
+  "name": "Avispa Fukuoka"
+ },
+ "of_jp_fc_tokyo": {
+  "qid": "Q856619",
+  "via": "sparql",
+  "name": "FC Tokyo"
+ },
+ "of_jp_gamba_osaka": {
+  "qid": "Q738423",
+  "via": "sparql",
+  "name": "Gamba Osaka"
+ },
+ "of_jp_kashima_antlers": {
+  "qid": "Q16932",
+  "via": "sparql",
+  "name": "Kashima Antlers"
+ },
+ "of_jp_kashiwa_reysol": {
+  "qid": "Q844931",
+  "via": "sparql",
+  "name": "Kashiwa Reysol"
+ },
+ "of_jp_kawasaki_frontale": {
+  "qid": "Q874016",
+  "via": "sparql",
+  "name": "Kawasaki Frontale"
+ },
+ "of_jp_nagoya_grampus": {
+  "qid": "Q249662",
+  "via": "sparql",
+  "name": "Nagoya Grampus"
+ },
+ "of_jp_sanfrecce_hiroshima": {
+  "qid": "Q630279",
+  "via": "sparql",
+  "name": "Sanfrecce Hiroshima"
+ },
+ "of_jp_urawa_reds": {
+  "qid": "Q218883",
+  "via": "sparql",
+  "name": "Urawa Reds"
+ },
+ "of_jp_vissel_kobe": {
+  "qid": "Q844271",
+  "via": "sparql",
+  "name": "Vissel Kobe"
+ },
+ "of_jp_yokohama_f_marinos": {
+  "qid": "Q854932",
+  "via": "sparql",
+  "name": "Yokohama F. Marinos"
+ },
+ "of_kz_aktobe": {
+  "qid": "Q194170",
+  "via": "sparql",
+  "name": "Aktobe"
+ },
+ "of_kz_atyrau": {
+  "qid": "Q733451",
+  "via": "sparql",
+  "name": "Atyrau"
+ },
+ "of_kz_kairat": {
+  "qid": "Q420594",
+  "via": "sparql",
+  "name": "Kairat"
+ },
+ "of_kz_okzhetpes": {
+  "qid": "Q931971",
+  "via": "sparql",
+  "name": "Okzhetpes"
+ },
+ "of_kz_ordabasy": {
+  "qid": "Q849889",
+  "via": "sparql",
+  "name": "Ordabasy"
+ },
+ "of_kz_taraz": {
+  "qid": "Q1042829",
+  "via": "sparql",
+  "name": "Taraz"
+ },
+ "of_kz_tobol": {
+  "qid": "Q477814",
+  "via": "sparql",
+  "name": "Tobol"
+ },
+ "of_kz_zhetysu": {
+  "qid": "Q546557",
+  "via": "sparql",
+  "name": "Zhetysu"
+ },
+ "of_mt_birkirkara": {
+  "qid": "Q803976",
+  "via": "sparql",
+  "name": "Birkirkara"
+ },
+ "of_mt_floriana": {
+  "qid": "Q728557",
+  "via": "sparql",
+  "name": "Floriana"
+ },
+ "of_mt_gzira_united": {
+  "qid": "Q393302",
+  "via": "sparql",
+  "name": "Gzira United"
+ },
+ "of_mt_hamrun_spartans": {
+  "qid": "Q343030",
+  "via": "sparql",
+  "name": "Hamrun Spartans"
+ },
+ "of_mt_hibernians": {
+  "qid": "Q936187",
+  "via": "sparql",
+  "name": "Hibernians"
+ },
+ "of_mt_marsaxlokk": {
+  "qid": "Q386670",
+  "via": "sparql",
+  "name": "Marsaxlokk"
+ },
+ "of_mt_sliema_wanderers": {
+  "qid": "Q1289495",
+  "via": "sparql",
+  "name": "Sliema Wanderers"
+ },
+ "of_mt_valletta": {
+  "qid": "Q331589",
+  "via": "sparql",
+  "name": "Valletta"
+ },
+ "of_mt_zabbar_st_patrick": {
+  "qid": "Q300812",
+  "via": "sparql",
+  "name": "Zabbar St. Patrick"
+ },
+ "of_mx_atlas": {
+  "qid": "Q1023532",
+  "via": "sparql",
+  "name": "Atlas"
+ },
+ "of_mx_club_america": {
+  "qid": "Q459090",
+  "via": "sparql",
+  "name": "Club America"
+ },
+ "of_mx_cruz_azul": {
+  "qid": "Q845859",
+  "via": "sparql",
+  "name": "Cruz Azul"
+ },
+ "of_mx_guadalajara": {
+  "qid": "Q503321",
+  "via": "sparql",
+  "name": "Guadalajara"
+ },
+ "of_mx_leon": {
+  "qid": "Q633223",
+  "via": "sparql",
+  "name": "Leon"
+ },
+ "of_mx_monterrey": {
+  "qid": "Q768253",
+  "via": "sparql",
+  "name": "Monterrey"
+ },
+ "of_mx_puebla": {
+  "qid": "Q646596",
+  "via": "sparql",
+  "name": "Puebla"
+ },
+ "of_mx_pumas": {
+  "qid": "Q1143000",
+  "via": "sparql",
+  "name": "Pumas UNAM"
+ },
+ "of_mx_queretaro": {
+  "qid": "Q606210",
+  "via": "sparql",
+  "name": "Queretaro"
+ },
+ "of_mx_santos_laguna": {
+  "qid": "Q745246",
+  "via": "sparql",
+  "name": "Santos Laguna"
+ },
+ "of_mx_tigres": {
+  "qid": "Q849823",
+  "via": "sparql",
+  "name": "Tigres"
+ },
+ "of_mx_tijuana": {
+  "qid": "Q1103168",
+  "via": "sparql",
+  "name": "Tijuana"
+ },
+ "of_mx_toluca": {
+  "qid": "Q670186",
+  "via": "sparql",
+  "name": "Toluca"
+ },
+ "of_ng_enyimba": {
+  "qid": "Q1051147",
+  "via": "sparql",
+  "name": "Enyimba"
+ },
+ "of_ng_remo_stars": {
+  "qid": "Q28407049",
+  "via": "sparql",
+  "name": "Remo Stars"
+ },
+ "of_nl_ado_den_haag": {
+  "qid": "Q24904",
+  "via": "pilot",
+  "name": "ADO Den Haag"
+ },
+ "of_nl_ajax": {
+  "qid": "Q81888",
+  "via": "pilot",
+  "name": "Ajax"
+ },
+ "of_nl_az": {
+  "qid": "Q191264",
+  "via": "pilot",
+  "name": "AZ"
+ },
+ "of_nl_cambuur": {
+  "qid": "Q875120",
+  "via": "pilot",
+  "name": "Cambuur"
+ },
+ "of_nl_excelsior": {
+  "qid": "Q370712",
+  "via": "pilot",
+  "name": "Excelsior"
+ },
+ "of_nl_fc_groningen": {
+  "qid": "Q24711",
+  "via": "pilot",
+  "name": "FC Groningen"
+ },
+ "of_nl_fc_twente": {
+  "qid": "Q19603",
+  "via": "pilot",
+  "name": "FC Twente"
+ },
+ "of_nl_fc_utrecht": {
+  "qid": "Q24680",
+  "via": "pilot",
+  "name": "FC Utrecht"
+ },
+ "of_nl_feyenoord": {
+  "qid": "Q134241",
+  "via": "pilot",
+  "name": "Feyenoord"
+ },
+ "of_nl_nec": {
+  "qid": "Q318348",
+  "via": "pilot",
+  "name": "NEC"
+ },
+ "of_nl_pec_zwolle": {
+  "qid": "Q269151",
+  "via": "pilot",
+  "name": "PEC Zwolle"
+ },
+ "of_nl_psv": {
+  "qid": "Q11938",
+  "via": "pilot",
+  "name": "PSV"
+ },
+ "of_nl_sc_heerenveen": {
+  "qid": "Q200321",
+  "via": "pilot",
+  "name": "SC Heerenveen"
+ },
+ "of_nl_willem_ii": {
+  "qid": "Q332664",
+  "via": "pilot",
+  "name": "Willem II"
+ },
+ "of_no_aalesund": {
+  "qid": "Q214992",
+  "via": "sparql",
+  "name": "Aalesund"
+ },
+ "of_no_bodo_glimt": {
+  "qid": "Q478167",
+  "via": "sparql",
+  "name": "Bodo/Glimt"
+ },
+ "of_no_lillestrom": {
+  "qid": "Q214374",
+  "via": "sparql",
+  "name": "Lillestrom"
+ },
+ "of_no_molde": {
+  "qid": "Q208552",
+  "via": "sparql",
+  "name": "Molde"
+ },
+ "of_no_rosenborg": {
+  "qid": "Q186785",
+  "via": "sparql",
+  "name": "Rosenborg"
+ },
+ "of_no_sandefjord": {
+  "qid": "Q861524",
+  "via": "sparql",
+  "name": "Sandefjord"
+ },
+ "of_no_sarpsborg": {
+  "qid": "Q1151909",
+  "via": "sparql",
+  "name": "Sarpsborg 08"
+ },
+ "of_no_start": {
+  "qid": "Q737947",
+  "via": "sparql",
+  "name": "IK Start"
+ },
+ "of_no_tromso": {
+  "qid": "Q212490",
+  "via": "sparql",
+  "name": "Tromso"
+ },
+ "of_no_valerenga": {
+  "qid": "Q212819",
+  "via": "sparql",
+  "name": "Valerenga"
+ },
+ "of_no_viking": {
+  "qid": "Q211177",
+  "via": "sparql",
+  "name": "Viking"
+ },
+ "of_pe_alianza_lima": {
+  "qid": "Q572957",
+  "via": "sparql",
+  "name": "Alianza Lima"
+ },
+ "of_pe_universitario": {
+  "qid": "Q19066",
+  "via": "sparql",
+  "name": "Universitario"
+ },
+ "of_pe_utc": {
+  "qid": "Q971843",
+  "via": "sparql",
+  "name": "UTC"
+ },
+ "of_pl_cracovia": {
+  "qid": "Q24074158",
+  "via": "sparql",
+  "name": "Cracovia"
+ },
+ "of_pl_gornik_leczna": {
+  "qid": "Q1198779",
+  "via": "sparql",
+  "name": "Gornik Leczna"
+ },
+ "of_pl_gornik_zabrze": {
+  "qid": "Q134255",
+  "via": "sparql",
+  "name": "Gornik Zabrze"
+ },
+ "of_pl_jagiellonia": {
+  "qid": "Q189170",
+  "via": "sparql",
+  "name": "Jagiellonia"
+ },
+ "of_pl_korona": {
+  "qid": "Q730219",
+  "via": "sparql",
+  "name": "Korona"
+ },
+ "of_pl_lechia": {
+  "qid": "Q734785",
+  "via": "sparql",
+  "name": "Lechia"
+ },
+ "of_pl_wisla_krakow": {
+  "qid": "Q190943",
+  "via": "sparql",
+  "name": "Wisla Krakow"
+ },
+ "of_pl_zaglebie": {
+  "qid": "Q140487",
+  "via": "sparql",
+  "name": "Zaglebie"
+ },
+ "of_pt_arouca": {
+  "qid": "Q1386869",
+  "via": "pilot",
+  "name": "Arouca"
+ },
+ "of_pt_benfica": {
+  "qid": "Q131499",
+  "via": "pilot",
+  "name": "Benfica"
+ },
+ "of_pt_braga": {
+  "qid": "Q75684",
+  "via": "pilot",
+  "name": "SC Braga"
+ },
+ "of_pt_casa_pia": {
+  "qid": "Q1046440",
+  "via": "pilot",
+  "name": "Casa Pia"
+ },
+ "of_pt_estoril": {
+  "qid": "Q634829",
+  "via": "pilot",
+  "name": "Estoril Praia"
+ },
+ "of_pt_famalicao": {
+  "qid": "Q1387105",
+  "via": "pilot",
+  "name": "Famalicão"
+ },
+ "of_pt_gil_vicente": {
+  "qid": "Q926438",
+  "via": "pilot",
+  "name": "Gil Vicente"
+ },
+ "of_pt_maritimo": {
+  "qid": "Q216503",
+  "via": "pilot",
+  "name": "Marítimo"
+ },
+ "of_pt_porto": {
+  "qid": "Q128446",
+  "via": "pilot",
+  "name": "FC Porto"
+ },
+ "of_pt_rio_ave": {
+  "qid": "Q622432",
+  "via": "pilot",
+  "name": "Rio Ave"
+ },
+ "of_pt_santa_clara": {
+  "qid": "Q740637",
+  "via": "pilot",
+  "name": "Santa Clara"
+ },
+ "of_pt_sporting_cp": {
+  "qid": "Q75729",
+  "via": "pilot",
+  "name": "Sporting CP"
+ },
+ "of_pt_vitoria_guimaraes": {
+  "qid": "Q223450",
+  "via": "pilot",
+  "name": "Vitória de Guimarães"
+ },
+ "of_py_cerro_porteno": {
+  "qid": "Q914086",
+  "via": "sparql",
+  "name": "Cerro Porteno"
+ },
+ "of_py_guarani": {
+  "qid": "Q605044",
+  "via": "sparql",
+  "name": "Guarani"
+ },
+ "of_py_libertad": {
+  "qid": "Q848642",
+  "via": "sparql",
+  "name": "Libertad"
+ },
+ "of_py_nacional_py": {
+  "qid": "Q603101",
+  "via": "sparql",
+  "name": "Nacional"
+ },
+ "of_py_olimpia": {
+  "qid": "Q604589",
+  "via": "sparql",
+  "name": "Olimpia"
+ },
+ "of_py_sportivo_luqueno": {
+  "qid": "Q602515",
+  "via": "sparql",
+  "name": "Sportivo Luqueno"
+ },
+ "of_rs_crvena_zvezda": {
+  "qid": "Q173009",
+  "via": "sparql",
+  "name": "Crvena Zvezda"
+ },
+ "of_rs_cukaricki": {
+  "qid": "Q213161",
+  "via": "sparql",
+  "name": "Cukaricki"
+ },
+ "of_rs_javor_matis": {
+  "qid": "Q218724",
+  "via": "sparql",
+  "name": "Javor-Matis"
+ },
+ "of_rs_mladost_lucani": {
+  "qid": "Q1945740",
+  "via": "sparql",
+  "name": "Mladost Lucani"
+ },
+ "of_rs_novi_pazar": {
+  "qid": "Q995069",
+  "via": "sparql",
+  "name": "Novi Pazar"
+ },
+ "of_rs_ofk_beograd": {
+  "qid": "Q209619",
+  "via": "sparql",
+  "name": "OFK Beograd"
+ },
+ "of_rs_partizan": {
+  "qid": "Q188656",
+  "via": "sparql",
+  "name": "Partizan"
+ },
+ "of_rs_radnicki_1923": {
+  "qid": "Q421665",
+  "via": "sparql",
+  "name": "Radnicki 1923"
+ },
+ "of_rs_radnicki_nis": {
+  "qid": "Q1137993",
+  "via": "sparql",
+  "name": "Radnicki Nis"
+ },
+ "of_rs_radnik_surdulica": {
+  "qid": "Q5426356",
+  "via": "sparql",
+  "name": "Radnik Surdulica"
+ },
+ "of_rs_spartak_subotica": {
+  "qid": "Q94605",
+  "via": "sparql",
+  "name": "Spartak Subotica"
+ },
+ "of_rs_tsc": {
+  "qid": "Q828297",
+  "via": "sparql",
+  "name": "TSC"
+ },
+ "of_rs_vojvodina": {
+  "qid": "Q207501",
+  "via": "sparql",
+  "name": "Vojvodina"
+ },
+ "of_rs_zeleznicar_pancevo": {
+  "qid": "Q12760457",
+  "via": "sparql",
+  "name": "Zeleznicar Pancevo"
+ },
+ "of_ru_akhmat": {
+  "qid": "Q240444",
+  "via": "sparql",
+  "name": "Akhmat Grozny"
+ },
+ "of_ru_akron": {
+  "qid": "Q65124755",
+  "via": "sparql",
+  "name": "Akron"
+ },
+ "of_ru_amkar_perm": {
+  "qid": "Q274642",
+  "via": "sparql",
+  "name": "Amkar"
+ },
+ "of_ru_avangard_kursk": {
+  "qid": "Q791604",
+  "via": "sparql",
+  "name": "Avangard"
+ },
+ "of_ru_cska_moscow": {
+  "qid": "Q176371",
+  "via": "sparql",
+  "name": "CSKA Moscow"
+ },
+ "of_ru_dinamo_bryansk": {
+  "qid": "Q1269086",
+  "via": "sparql",
+  "name": "Dinamo Bryansk"
+ },
+ "of_ru_dinamo_kirov": {
+  "qid": "Q1974544",
+  "via": "sparql",
+  "name": "Dinamo Kirov"
+ },
+ "of_ru_dinamo_vologda": {
+  "qid": "Q1974492",
+  "via": "sparql",
+  "name": "Dinamo Vologda"
+ },
+ "of_ru_fakel": {
+  "qid": "Q1388889",
+  "via": "sparql",
+  "name": "Fakel"
+ },
+ "of_ru_fc_kaluga": {
+  "qid": "Q4210385",
+  "via": "sparql",
+  "name": "Kaluga"
+ },
+ "of_ru_fc_murom": {
+  "qid": "Q30891079",
+  "via": "sparql",
+  "name": "Murom"
+ },
+ "of_ru_fc_ryazan": {
+  "qid": "Q1989296",
+  "via": "sparql",
+  "name": "Ryazan"
+ },
+ "of_ru_kamaz": {
+  "qid": "Q1140106",
+  "via": "sparql",
+  "name": "KAMAZ"
+ },
+ "of_ru_krasnodar": {
+  "qid": "Q220854",
+  "via": "sparql",
+  "name": "Krasnodar"
+ },
+ "of_ru_krylya_sovetov": {
+  "qid": "Q274778",
+  "via": "sparql",
+  "name": "Krylya Sovetov"
+ },
+ "of_ru_leningradets": {
+  "qid": "Q54871945",
+  "via": "sparql",
+  "name": "Leningradets"
+ },
+ "of_ru_lokomotiv_moscow": {
+  "qid": "Q29115",
+  "via": "sparql",
+  "name": "Lokomotiv Moscow"
+ },
+ "of_ru_nosta_novotroitsk": {
+  "qid": "Q510091",
+  "via": "sparql",
+  "name": "Nosta"
+ },
+ "of_ru_pari_nn": {
+  "qid": "Q20740338",
+  "via": "sparql",
+  "name": "Pari Nizhniy Novgorod"
+ },
+ "of_ru_rostov": {
+  "qid": "Q182930",
+  "via": "sparql",
+  "name": "Rostov"
+ },
+ "of_ru_rotor": {
+  "qid": "Q1059186",
+  "via": "sparql",
+  "name": "Rotor"
+ },
+ "of_ru_saturn_ramenskoe": {
+  "qid": "Q477073",
+  "via": "sparql",
+  "name": "Saturn"
+ },
+ "of_ru_shinnik": {
+  "qid": "Q43477",
+  "via": "sparql",
+  "name": "Shinnik"
+ },
+ "of_ru_ska_khabarovsk": {
+  "qid": "Q927084",
+  "via": "sparql",
+  "name": "SKA Khabarovsk"
+ },
+ "of_ru_sochi": {
+  "qid": "Q54834034",
+  "via": "sparql",
+  "name": "Sochi"
+ },
+ "of_ru_spartak_kostroma": {
+  "qid": "Q1827860",
+  "via": "sparql",
+  "name": "Spartak Kostroma"
+ },
+ "of_ru_torpedo_moscow": {
+  "qid": "Q324338",
+  "via": "sparql",
+  "name": "Torpedo Moscow"
+ },
+ "of_ru_ufa": {
+  "qid": "Q2137561",
+  "via": "sparql",
+  "name": "Ufa"
+ },
+ "of_ru_veles": {
+  "qid": "Q30891083",
+  "via": "sparql",
+  "name": "Veles"
+ },
+ "of_ru_yenisey": {
+  "qid": "Q546034",
+  "via": "sparql",
+  "name": "Yenisey"
+ },
+ "of_ru_znamya_truda_orekhovo_zuevo": {
+  "qid": "Q2619299",
+  "via": "sparql",
+  "name": "Znamya Truda"
+ },
+ "of_sa_al_ahli": {
+  "qid": "Q44441",
+  "via": "sparql",
+  "name": "Al-Ahli"
+ },
+ "of_sa_al_ettifaq": {
+  "qid": "Q72844",
+  "via": "sparql",
+  "name": "Al-Ettifaq"
+ },
+ "of_sa_al_fateh": {
+  "qid": "Q2701659",
+  "via": "sparql",
+  "name": "Al-Fateh"
+ },
+ "of_sa_al_hilal": {
+  "qid": "Q73965",
+  "via": "sparql",
+  "name": "Al-Hilal"
+ },
+ "of_sa_al_ittihad": {
+  "qid": "Q309480",
+  "via": "sparql",
+  "name": "Al-Ittihad"
+ },
+ "of_sa_al_nassr": {
+  "qid": "Q482764",
+  "via": "sparql",
+  "name": "Al-Nassr"
+ },
+ "of_sa_al_raed": {
+  "qid": "Q2986998",
+  "via": "sparql",
+  "name": "Al-Ra'ed"
+ },
+ "of_sa_al_shoulla": {
+  "qid": "Q769204",
+  "via": "sparql",
+  "name": "Al-Shoulla"
+ },
+ "of_sa_al_taee": {
+  "qid": "Q2470164",
+  "via": "sparql",
+  "name": "Al-Ta'ee"
+ },
+ "of_sa_damac": {
+  "qid": "Q12247594",
+  "via": "sparql",
+  "name": "Damac"
+ },
+ "of_sa_najran": {
+  "qid": "Q1963926",
+  "via": "sparql",
+  "name": "Najran"
+ },
+ "of_se_aik": {
+  "qid": "Q221602",
+  "via": "sparql",
+  "name": "AIK"
+ },
+ "of_se_djurgarden": {
+  "qid": "Q622430",
+  "via": "sparql",
+  "name": "Djurgarden"
+ },
+ "of_se_elfsborg": {
+  "qid": "Q211753",
+  "via": "sparql",
+  "name": "IF Elfsborg"
+ },
+ "of_se_hacken": {
+  "qid": "Q639723",
+  "via": "sparql",
+  "name": "BK Hacken"
+ },
+ "of_se_hammarby": {
+  "qid": "Q460724",
+  "via": "sparql",
+  "name": "Hammarby"
+ },
+ "of_se_ifk_goteborg": {
+  "qid": "Q201567",
+  "via": "sparql",
+  "name": "IFK Goteborg"
+ },
+ "of_se_kalmar_ff": {
+  "qid": "Q644157",
+  "via": "sparql",
+  "name": "Kalmar FF"
+ },
+ "of_se_malmo_ff": {
+  "qid": "Q204881",
+  "via": "sparql",
+  "name": "Malmo FF"
+ },
+ "of_si_koper": {
+  "qid": "Q44305",
+  "via": "sparql",
+  "name": "Koper"
+ },
+ "of_si_nd_gorica": {
+  "qid": "Q637514",
+  "via": "sparql",
+  "name": "ND Gorica"
+ },
+ "of_si_nk_celje": {
+  "qid": "Q31533",
+  "via": "sparql",
+  "name": "NK Celje"
+ },
+ "of_si_nk_maribor": {
+  "qid": "Q210530",
+  "via": "sparql",
+  "name": "NK Maribor"
+ },
+ "of_si_olimpija_ljubljana": {
+  "qid": "Q31932",
+  "via": "sparql",
+  "name": "Olimpija Ljubljana"
+ },
+ "of_si_rudar_velenje": {
+  "qid": "Q44300",
+  "via": "sparql",
+  "name": "Rudar Velenje"
+ },
+ "of_sk_dac_dunajska_streda": {
+  "qid": "Q841378",
+  "via": "sparql",
+  "name": "DAC Dunajska Streda"
+ },
+ "of_sk_ruzomberok": {
+  "qid": "Q757110",
+  "via": "sparql",
+  "name": "MFK Ruzomberok"
+ },
+ "of_sk_skalica": {
+  "qid": "Q629843",
+  "via": "sparql",
+  "name": "MFK Skalica"
+ },
+ "of_sk_slovan_bratislava": {
+  "qid": "Q192253",
+  "via": "sparql",
+  "name": "Slovan Bratislava"
+ },
+ "of_sk_spartak_myjava": {
+  "qid": "Q1391701",
+  "via": "sparql",
+  "name": "Spartak Myjava"
+ },
+ "of_sk_spartak_trnava": {
+  "qid": "Q459218",
+  "via": "sparql",
+  "name": "Spartak Trnava"
+ },
+ "of_sk_trencin": {
+  "qid": "Q223264",
+  "via": "sparql",
+  "name": "AS Trencin"
+ },
+ "of_sk_zilina": {
+  "qid": "Q209640",
+  "via": "sparql",
+  "name": "MSK Zilina"
+ },
+ "of_sk_zlate_moravce": {
+  "qid": "Q664127",
+  "via": "sparql",
+  "name": "Zlate Moravce"
+ },
+ "of_tr_alanyaspor": {
+  "qid": "Q1636019",
+  "via": "sparql",
+  "name": "Alanyaspor"
+ },
+ "of_tr_basaksehir": {
+  "qid": "Q857938",
+  "via": "sparql",
+  "name": "Basaksehir"
+ },
+ "of_tr_besiktas": {
+  "qid": "Q172567",
+  "via": "sparql",
+  "name": "Besiktas"
+ },
+ "of_tr_fenerbahce": {
+  "qid": "Q6601875",
+  "via": "sparql",
+  "name": "Fenerbahce"
+ },
+ "of_tr_galatasaray": {
+  "qid": "Q495299",
+  "via": "sparql",
+  "name": "Galatasaray"
+ },
+ "of_tr_gaziantep": {
+  "qid": "Q824850",
+  "via": "sparql",
+  "name": "Gaziantep FK"
+ },
+ "of_tr_kasimpasa": {
+  "qid": "Q138230",
+  "via": "sparql",
+  "name": "Kasimpasa"
+ },
+ "of_tr_konyaspor": {
+  "qid": "Q513840",
+  "via": "sparql",
+  "name": "Konyaspor"
+ },
+ "of_tr_trabzonspor": {
+  "qid": "Q192641",
+  "via": "sparql",
+  "name": "Trabzonspor"
+ },
+ "of_ua_chornomorets": {
+  "qid": "Q44296",
+  "via": "sparql",
+  "name": "Chornomorets"
+ },
+ "of_ua_dynamo_kyiv": {
+  "qid": "Q179075",
+  "via": "sparql",
+  "name": "Dynamo Kyiv"
+ },
+ "of_ua_epicentr": {
+  "qid": "Q25446408",
+  "via": "sparql",
+  "name": "Epicentr"
+ },
+ "of_ua_inhulets": {
+  "qid": "Q20073460",
+  "via": "sparql",
+  "name": "Inhulets"
+ },
+ "of_ua_karpaty": {
+  "qid": "Q223360",
+  "via": "sparql",
+  "name": "Karpaty"
+ },
+ "of_ua_kolos": {
+  "qid": "Q20077871",
+  "via": "sparql",
+  "name": "Kolos"
+ },
+ "of_ua_kudrivka": {
+  "qid": "Q120458868",
+  "via": "sparql",
+  "name": "Kudrivka"
+ },
+ "of_ua_metalurh_zaporizhzhia": {
+  "qid": "Q56246619",
+  "via": "sparql",
+  "name": "Metalurh Zaporizhzhia"
+ },
+ "of_ua_oleksandriya": {
+  "qid": "Q128390",
+  "via": "sparql",
+  "name": "Oleksandriya"
+ },
+ "of_ua_shakhtar": {
+  "qid": "Q172969",
+  "via": "sparql",
+  "name": "Shakhtar"
+ },
+ "of_ua_zorya": {
+  "qid": "Q754307",
+  "via": "sparql",
+  "name": "Zorya"
+ },
+ "of_us_atlanta_united_fc": {
+  "qid": "Q16836317",
+  "via": "pilot",
+  "name": "Atlanta United FC"
+ },
+ "of_us_austin_fc": {
+  "qid": "Q60643348",
+  "via": "pilot",
+  "name": "Austin FC"
+ },
+ "of_us_cf_montreal": {
+  "qid": "Q167615",
+  "via": "pilot",
+  "name": "CF Montreal"
+ },
+ "of_us_charlotte_football_club": {
+  "qid": "Q78944434",
+  "via": "pilot",
+  "name": "Charlotte Football Club"
+ },
+ "of_us_chicago_fire": {
+  "qid": "Q308683",
+  "via": "pilot",
+  "name": "Chicago Fire"
+ },
+ "of_us_colorado_rapids": {
+  "qid": "Q642408",
+  "via": "pilot",
+  "name": "Colorado Rapids"
+ },
+ "of_us_columbus_crew": {
+  "qid": "Q457163",
+  "via": "pilot",
+  "name": "Columbus Crew"
+ },
+ "of_us_dc_united": {
+  "qid": "Q238593",
+  "via": "pilot",
+  "name": "DC United"
+ },
+ "of_us_fc_cincinnati": {
+  "qid": "Q20855983",
+  "via": "pilot",
+  "name": "FC Cincinnati"
+ },
+ "of_us_fc_dallas": {
+  "qid": "Q642291",
+  "via": "pilot",
+  "name": "FC Dallas"
+ },
+ "of_us_houston_dynamo": {
+  "qid": "Q328313",
+  "via": "pilot",
+  "name": "Houston Dynamo"
+ },
+ "of_us_inter_miami_cf": {
+  "qid": "Q16844931",
+  "via": "pilot",
+  "name": "Inter Miami CF"
+ },
+ "of_us_la_galaxy": {
+  "qid": "Q204357",
+  "via": "pilot",
+  "name": "LA Galaxy"
+ },
+ "of_us_los_angeles_football_club": {
+  "qid": "Q18380286",
+  "via": "pilot",
+  "name": "Los Angeles Football Club"
+ },
+ "of_us_minnesota_united_fc": {
+  "qid": "Q19828435",
+  "via": "pilot",
+  "name": "Minnesota United FC"
+ },
+ "of_us_nashville_sc": {
+  "qid": "Q47518754",
+  "via": "pilot",
+  "name": "Nashville SC"
+ },
+ "of_us_new_england_revolution": {
+  "qid": "Q309095",
+  "via": "pilot",
+  "name": "New England Revolution"
+ },
+ "of_us_new_york_city": {
+  "qid": "Q13361030",
+  "via": "pilot",
+  "name": "New York City"
+ },
+ "of_us_new_york_red_bulls": {
+  "qid": "Q204220",
+  "via": "pilot",
+  "name": "New York Red Bulls"
+ },
+ "of_us_orlando_city": {
+  "qid": "Q15214308",
+  "via": "pilot",
+  "name": "Orlando City"
+ },
+ "of_us_philadelphia_union": {
+  "qid": "Q689874",
+  "via": "pilot",
+  "name": "Philadelphia Union"
+ },
+ "of_us_portland_timbers": {
+  "qid": "Q1031200",
+  "via": "pilot",
+  "name": "Portland Timbers"
+ },
+ "of_us_real_salt_lake": {
+  "qid": "Q391353",
+  "via": "pilot",
+  "name": "Real Salt Lake"
+ },
+ "of_us_san_diego_football_club": {
+  "qid": "Q118945347",
+  "via": "pilot",
+  "name": "San Diego Football Club"
+ },
+ "of_us_san_jose_earthquakes": {
+  "qid": "Q575370",
+  "via": "pilot",
+  "name": "San Jose Earthquakes"
+ },
+ "of_us_seattle_sounders": {
+  "qid": "Q632511",
+  "via": "pilot",
+  "name": "Seattle Sounders"
+ },
+ "of_us_sporting_kansas_city": {
+  "qid": "Q329812",
+  "via": "pilot",
+  "name": "Sporting Kansas City"
+ },
+ "of_us_st_louis_city_sc": {
+  "qid": "Q66642491",
+  "via": "pilot",
+  "name": "St. Louis CITY SC"
+ },
+ "of_us_toronto_fc": {
+  "qid": "Q327238",
+  "via": "pilot",
+  "name": "Toronto FC"
+ },
+ "of_us_vancouver_whitecaps": {
+  "qid": "Q196107",
+  "via": "pilot",
+  "name": "Vancouver Whitecaps"
+ },
+ "of_uy_atenas": {
+  "qid": "Q386543",
+  "via": "sparql",
+  "name": "Atenas"
+ },
+ "of_uy_danubio": {
+  "qid": "Q584316",
+  "via": "sparql",
+  "name": "Danubio"
+ },
+ "of_uy_defensor_sporting": {
+  "qid": "Q844238",
+  "via": "sparql",
+  "name": "Defensor Sporting"
+ },
+ "of_uy_deportivo_maldonado": {
+  "qid": "Q1023199",
+  "via": "sparql",
+  "name": "Deportivo Maldonado"
+ },
+ "of_uy_liverpool_montevideo": {
+  "qid": "Q1131189",
+  "via": "sparql",
+  "name": "Liverpool Montevideo"
+ },
+ "of_uy_nacional": {
+  "qid": "Q499616",
+  "via": "sparql",
+  "name": "Nacional"
+ },
+ "of_uy_rampla_juniors": {
+  "qid": "Q509801",
+  "via": "sparql",
+  "name": "Rampla Juniors"
+ },
+ "of_uy_river_plate_montevideo": {
+  "qid": "Q980573",
+  "via": "sparql",
+  "name": "River Plate"
+ },
+ "of_uz_bunyodkor": {
+  "qid": "Q628763",
+  "via": "sparql",
+  "name": "Bunyodkor"
+ },
+ "of_uz_neftchi": {
+  "qid": "Q870279",
+  "via": "sparql",
+  "name": "Neftchi"
+ },
+ "of_uz_pakhtakor": {
+  "qid": "Q732106",
+  "via": "sparql",
+  "name": "Pakhtakor"
+ },
+ "of_ve_carabobo": {
+  "qid": "Q1035297",
+  "via": "sparql",
+  "name": "Carabobo"
+ },
+ "of_ve_caracas": {
+  "qid": "Q1130244",
+  "via": "sparql",
+  "name": "Caracas"
+ },
+ "of_ve_estudiantes_merida": {
+  "qid": "Q786500",
+  "via": "sparql",
+  "name": "Estudiantes de Merida"
+ },
+ "of_ve_metropolitanos": {
+  "qid": "Q6012105",
+  "via": "sparql",
+  "name": "Metropolitanos"
+ },
+ "of_ve_zamora": {
+  "qid": "Q145885",
+  "via": "sparql",
+  "name": "Zamora"
+ },
+ "of_za_chippa_united": {
+  "qid": "Q5101632",
+  "via": "sparql",
+  "name": "Chippa United"
+ },
+ "of_za_golden_arrows": {
+  "qid": "Q1525804",
+  "via": "sparql",
+  "name": "Golden Arrows"
+ },
+ "of_za_kaizer_chiefs": {
+  "qid": "Q247731",
+  "via": "sparql",
+  "name": "Kaizer Chiefs"
+ },
+ "of_za_mamelodi_sundowns": {
+  "qid": "Q784965",
+  "via": "sparql",
+  "name": "Mamelodi Sundowns"
+ },
+ "of_za_orlando_pirates": {
+  "qid": "Q607939",
+  "via": "sparql",
+  "name": "Orlando Pirates"
+ },
+ "of_za_polokwane_city": {
+  "qid": "Q7225920",
+  "via": "sparql",
+  "name": "Polokwane City"
+ }
+}

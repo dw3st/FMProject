@@ -28,6 +28,7 @@ bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmid
 bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
 bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 bun scripts/applyClubNameCorrections.ts  # nomes de exibição dos clubes (acentos, sem sufixos) — ver abaixo
+bun scripts/applyCoaches.ts            # técnico atual (Wikidata + correções manuais) — ver "Técnicos"
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -216,6 +217,45 @@ grafia de dados (issue #121): sem acento ("Sao Paulo", "Gremio"), com sufixo ("C
   origem (chaves sem acento) e nunca vê o nome corrigido. Os nativos em `data_process/native` continuam com a
   grafia de origem.
 
+## Técnicos
+
+O `coach` que vinha dos dados (nativos e open-football de 2024/25, ESPN só em 66 de 618 clubes, alguns velhos: o PSG
+com Ancelotti) é trocado pelo técnico atual de cada clube no **Wikidata** (CC0).
+
+- `bun scripts/fetchWikidataCoaches.ts [--today YYYY-MM-DD]` (único passo com rede; lógica pura em
+  `scripts/wikidata/coachesSource.ts`, com teste) grava `data_process/wikidata/coaches.json`
+  (`squadId → { name, nationality?, birthDate?, wikidataQid }`, nada de imagem) e `coachClubs.json` (o mapa clube →
+  item, para conferir). Respostas em `data_process/wikidata/cache/coaches/` (gitignored), User-Agent do projeto,
+  pausa entre requisições.
+  - **Clube → item:** `data_process/wikidata/clubs.json` (piloto dos rostos, 10 ligas, revisado) primeiro; o resto por
+    país (SPARQL dos clubes P31 Q476028 com P17 do país — e Canadá na MLS, Mônaco na Ligue 1, Liechtenstein na Suíça,
+    Andorra na Espanha — que têm P286), casados pelo `clubKey` e depois pelo `looseClubKey` (`.` tirado antes:
+    "F.C." vira ruído), únicos dos dois lados. `data_process/wikidata/coachClubOverrides.json`
+    (`squadId → item`, `""` bloqueia) vence os dois (hoje só bloqueia o Torpedo-BelAZ, casado com o time reserva).
+  - **Técnico:** declarações P286 não depreciadas e sem fim (P582) passado; a de início (P580) mais recente vence,
+    preferida no empate. Sem nenhuma datada, só uma sem data sozinha (ou uma preferida sozinha). Técnico falecido
+    (P570) fora. Rejeitada quando ele está em outro time a partir de uma data posterior, confirmado dos dois lados
+    (P6087 aberto dele **e** P286 aberto do outro time — só o P6087 tem erro de edição, ex. Simeone no Napoli). O
+    mesmo técnico em dois clubes nossos fica só no de início mais recente (empate: nenhum).
+  - Nome: rótulo en, senão pt/es/fr/de/it. Nacionalidade: P1532 (país no esporte, dá "England") senão P27, na
+    convenção do mundo (`normalizeNationality`); "United Kingdom" sozinho fica sem nacionalidade. Nascimento P569 só
+    com precisão de dia.
+- `data_process/curated/coachCorrections.json` (`{ "<squadId>": { "name", "nationality"?, "age"? } }`) vence tudo,
+  tomada inteira (nada misturado do Wikidata, que pode ser outra pessoa): nomes completos do rótulo trocados pelo
+  nome de futebol (Levante, Celta, Racing, Málaga) e clubes sem técnico atual no Wikidata com o técnico salvo velho
+  ou errado (Chapecoense, Vasco, Cruzeiro).
+- `bun scripts/applyCoaches.ts` (lógica pura em `scripts/curated/coaches.ts`, com teste) roda logo depois do
+  `applyClubNameCorrections`: correção > Wikidata > o técnico que o elenco já tem. Troca `squad.coach` inteiro por
+  `{ id, name, nationality?, age? }` (`id` estável por clube + nome, `coachId`; idade em `COACH_AGE_ON` = 2026-07-01,
+  como a dos jogadores). Falha alto com id inexistente ou repetido no mundo, nome vazio/com espaço nas pontas ou com
+  entidade HTML, campo desconhecido. Idempotente; grava só os elencos alterados, no formato original.
+- Efeito no jogo: `buildInitialManagers` (`createSave`) cria `managers.json` de `squad.coach` (`coach_<id>`, nome),
+  então o ranking de técnicos e os rostos (pelo id) já saem com o técnico atual. Os start kits guardam os elencos
+  com o `coach` de quando foram gerados: regenere os kits depois de mudar os técnicos.
+- Cobertura (2026-10-09): 700 de 1273 clubes (693 Wikidata + 7 correções); Premier, La Liga, Serie A e Ligue 1
+  completas, Bundesliga 16/18, Brasileirão 17/20; ligas africanas e da Ásia Central quase sem dado. Os demais mantêm o
+  técnico dos dados.
+
 ## Recalibração pelo valor de mercado
 
 Spec: `docs/superpowers/specs/2026-10-07-market-value-recalibration-design.md`. Os elencos do mundo são casados com
@@ -226,8 +266,19 @@ valor de mercado reordena as notas dentro de cada liga.
   `src/example_data/squads` **logo depois do `importEspn`** (antes de qualquer recalibração) e grava
   `data_process/transfermarkt/derived.json`: por jogador `targetOverall`, `naturalPosition`, `birthDate`, `heightCm`
   e `nationality` (só quando falta), mais o resumo por liga. Uma liga só é reordenada com cobertura ≥ 40% **e** pelo
-  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela a
-  multiset de notas da liga não muda, só quem recebe qual.
+  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela o
+  valor de mercado só decide quem recebe qual nota **dentro de cada linha** (4.14.2, `reorderLeague`):
+  - a linha de um jogador é a final (a do Transfermarkt, ou `positions[0]` quando o Transfermarkt não tem posição);
+  - os valorados da linha final L recebem as notas que os valorados da linha **antiga** L (`positions[0]` antes da
+    recalibração) tinham, cada uma tirada na posição antiga (`computeOverallAvg` do mundo do `importEspn`), em ordem de
+    nível (desempate pelo id);
+  - mesmo tamanho: a multiset da linha fica igual. Tamanho diferente (alguém trocou de linha pelo Transfermarkt): os n
+    alvos são os quantis da multiset antiga, por interpolação linear entre os valores ordenados (`quantileTargets`;
+    um alvo só = a mediana). Linha sem nenhum valorado antigo: quantis da multiset antiga da liga inteira;
+  - uma nota nunca passa de uma linha para outra. Até a 4.14.1 a multiset era a da liga inteira, e as notas mudavam de
+    linha (Premier: goleiro médio 4,80 → 4,46, meio 5,00 → 5,10; Brasileirão: zagueiro 4,28 → 4,09), o que deixava a
+    Premier com −13% de gols no motor e o Brasileirão com +16% (`.claude/rules/non-player-games.md`).
+  Os não valorados ficam com a nota deles (salvo o teto dos jovens, `youthCaps`, sobre a mediana dos valorados do clube).
 - `bun scripts/applyMarketRecalibration.ts` aplica o `derived.json` (lógica pura em `scripts/transfermarkt/apply.ts`,
   com teste): grava `naturalPosition` (e troca a linha de `positions[0]` quando a do Transfermarkt é outra), reescala
   os atributos até a nota-alvo com o mesmo `rescaleToOverall` das correções manuais, copia nascimento e altura e

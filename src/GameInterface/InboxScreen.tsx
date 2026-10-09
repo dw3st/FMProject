@@ -34,10 +34,12 @@ const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
 const JobIcon = iconOf("file-signature");
+const RegistrationIcon = iconOf("clipboard");
 const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
 const AwardIcon = iconOf("award");
+const CalendarIcon = iconOf("calendar");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -185,6 +187,20 @@ const CATEGORY_META: Record<
     bg: "bg-chart-4/15",
     border: "border-chart-4/30",
     Icon: AwardIcon,
+  },
+  registration: {
+    labelKey: "inbox.categories.registration",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: RegistrationIcon,
+  },
+  schedule: {
+    labelKey: "inbox.categories.schedule",
+    color: "text-chart-3",
+    bg: "bg-chart-3/15",
+    border: "border-chart-3/30",
+    Icon: CalendarIcon,
   },
 };
 
@@ -485,6 +501,12 @@ function leaguePrizeTexts(
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
+  if (message.category === "registration") {
+    return {
+      subject: t(`inbox.registration.subject.${message.kind}`, { competition: message.competitionName }),
+      preview: (message.players ?? []).map((p) => p.name).join(", ") || message.competitionName,
+    };
+  }
   if (message.category === "job") {
     return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
   }
@@ -501,6 +523,15 @@ function leaguePrizeTexts(
     return { subject: x.subject, preview: x.body };
   }
   if (message.category === "awards") return awardsTexts(message, t);
+  if (message.category === "schedule") {
+    const first = message.games[0];
+    return {
+      subject: message.games.length === 1
+        ? t("schedule.subjectOne")
+        : t("schedule.subjectMany", { count: message.games.length }),
+      preview: first ? t("schedule.preview", { opponent: first.opponentName, from: formatInboxDate(first.from), to: formatInboxDate(first.to) }) : "",
+    };
+  }
   if (message.category === "contract" && message.kind === "director_summary") {
     return { subject: t("inbox.contract.directorSummarySubject"), preview: message.preview };
   }
@@ -643,6 +674,8 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
         {message.category === "awards" && <AwardsInboxBody message={message} />}
+        {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
+        {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -664,6 +697,61 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Registration news: the list made, an arrival out of the list, the deadline closing (`registration.md`). */
+function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMessage, { category: "registration" }>; leagues: LeagueData[] }) {
+  const { t, i18n } = useTranslation();
+  const { session } = useGameSave();
+  const competition = competitionName(message.competition, leagues, i18n.language) || message.competitionName;
+  const c = message.counts;
+  const href = session
+    ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}?tab=registration`
+    : undefined;
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <p className="m-0 text-foreground">
+        {t(`inbox.registration.body.${message.kind}`, {
+          competition,
+          players: (message.players ?? []).map((p) => p.name).join(", "),
+          date: formatInboxDate(message.opensOn ?? message.until ?? ""),
+        })}
+      </p>
+      {c && (
+        <p className="m-0 text-muted-foreground tabular-nums">
+          {t("inbox.registration.counts", { counted: c.counted, max: c.max ?? "—", foreign: c.foreign, formed: c.formed, free: c.free })}
+        </p>
+      )}
+      {href && (
+        <a href={href} className="font-semibold text-primary hover:underline w-fit">{t("inbox.registration.open")}</a>
+      )}
+    </div>
+  );
+}
+
+/** League games of the club moved off a clash: competition, opponent (home/away), old → new date. */
+function ScheduleBody({ message, leagues }: { message: Extract<InboxMessage, { category: "schedule" }>; leagues: LeagueData[] }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <p className="m-0 text-foreground">{t("schedule.intro")}</p>
+      <ul className="m-0 p-0 list-none flex flex-col gap-2">
+        {message.games.map((g) => (
+          <li key={`${g.competition}-${g.opponentId}-${g.from}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="font-semibold text-foreground">
+              {t(g.home ? "schedule.home" : "schedule.away", { opponent: g.opponentName })}
+            </span>
+            <span className="text-muted-foreground">
+              {leagues.length > 0 ? competitionName(g.competition, leagues, i18n.language) : g.competitionName}
+            </span>
+            <span className="tabular-nums text-foreground">
+              {t("schedule.line", { from: formatFullDate(g.from), to: formatFullDate(g.to) })}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

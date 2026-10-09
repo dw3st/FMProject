@@ -312,7 +312,11 @@ export interface GameEvents {
     /** Substitution panel (`/test`): queue a substitution (engine ids, flushed at the next stoppage). */
     | { type: 'queueSub'; team: import('@/GameEngine/types').TeamId; outId: number; inId: number }
     /** Substitution panel (`/test`): two starters swap slots (`swapPlayerPositions`, no substitution used). */
-    | { type: 'swapPositions'; team: import('@/GameEngine/types').TeamId; aId: number; bId: number };
+    | { type: 'swapPositions'; team: import('@/GameEngine/types').TeamId; aId: number; bId: number }
+    /** Manual injury substitutions (`/test`, #140): the team picks the replacement of an injured player. */
+    | { type: 'setManualInjurySubs'; team: import('@/GameEngine/types').TeamId; on: boolean }
+    /** Substitution panel (`/test`, #140): a bench player fills an injury vacancy (`fillInjuryVacancy`). */
+    | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).
@@ -350,6 +354,8 @@ export interface GameEvents {
    * §1 "Na partida" and `Domain/injury/injury.ts`.
    */
   injury: { playerId: number; playerName: string; team: TeamId; minute: number; severity: import('@/Domain/injury/injury').InjurySeverity };
+  /** An injured player of a `manualInjurySubs` team left the pitch with no replacement: the manager picks one (#140). */
+  injuryNeedsSub: { team: TeamId; injuredId: number; injuredName: string; slotIndex: number; suggestedInId: number | null };
 
   // ── Match flow events ─────────────────────────────────────────────────────
   /**

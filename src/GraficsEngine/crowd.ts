@@ -6,6 +6,7 @@ import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { contrastRatio } from "@/GraficsEngine/playerFaces";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import type { StandId } from "@/types/facilityTypes";
 
 export type StandSide = "top" | "bottom" | "left" | "right";
 
@@ -31,6 +32,28 @@ export interface CrowdInput {
   neutral: boolean;
   /** Fixture id (or "test"): the same game fills the same seats. */
   seed: string;
+  /** Drawn sides whose stand is under works (#137): empty, drawn as a building site. */
+  works?: StandSide[];
+}
+
+/**
+ * Drawn side of a club stand (#137). The facilities screen draws the stadium upright (north on top,
+ * west on the left); the live pitch lies on its side with the engine's x = 0 end on the left, so
+ * north is that end, south the other one, west (the main stand) the bottom touchline — where the
+ * technical areas are — and east the top. The mirror (#98) swaps the two ends only.
+ */
+export function standSideOf(id: StandId, mirror: boolean): StandSide {
+  switch (id) {
+    case "north": return mirror ? "right" : "left";
+    case "south": return mirror ? "left" : "right";
+    case "west": return "bottom";
+    case "east": return "top";
+  }
+}
+
+/** Drawn sides of the stands under works (none when absent). */
+export function worksSides(ids: readonly StandId[] | undefined, mirror: boolean): StandSide[] {
+  return (ids ?? []).map((id) => standSideOf(id, mirror));
 }
 
 export interface CrowdSeat extends SeatCell { team: "home" | "away"; color: number }
@@ -43,9 +66,9 @@ const BRIGHTNESS_SPREAD = 0.12;
 const MIN_STAND_CONTRAST = 1.6;
 const LIGHTEN = 0.35;
 
-interface SideRect { side: StandSide; x: number; y: number; w: number; h: number }
+export interface SideRect { side: StandSide; x: number; y: number; w: number; h: number }
 
-function sideRects(s: StandGeometry): SideRect[] {
+export function standSideRects(s: StandGeometry): SideRect[] {
   const { outer, inner } = s;
   const innerR = inner.x + inner.w, innerB = inner.y + inner.h;
   return [
@@ -62,7 +85,7 @@ const isConcrete = (k: number) => k % (STADIUM.CONCRETE_EVERY + 1) === STADIUM.C
 function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concrete: ConcreteRow[] } {
   const seats: SeatCell[] = [];
   const concrete: ConcreteRow[] = [];
-  for (const r of sideRects(stand)) {
+  for (const r of standSideRects(stand)) {
     const horizontal = r.side === "top" || r.side === "bottom";
     const depth = horizontal ? r.h : r.w;
     const length = horizontal ? r.w : r.h;
@@ -151,7 +174,8 @@ export function crowdBaseColor(hex: number): number {
  */
 export function crowdSeats(input: CrowdInput): CrowdSeat[] {
   const fill = Math.max(0, Math.min(1, Number.isFinite(input.fill) ? input.fill : 0));
-  const grid = standSeatGrid(input.stand);
+  const closed = new Set(input.works ?? []);
+  const grid = standSeatGrid(input.stand).filter((s) => !closed.has(s.side));
   const target = Math.round(fill * grid.length);
   if (target === 0) return [];
   const key = (s: SeatCell) => `${input.seed}:${s.side}:${s.row}:${s.col}`;
@@ -165,7 +189,9 @@ export function crowdSeats(input: CrowdInput): CrowdSeat[] {
     const mid = input.stand.outer.x + input.stand.outer.w / 2;
     for (const s of filled) if (s.x >= mid) away.add(s);
   } else {
-    const end: StandSide = input.homeSide === "left" ? "right" : "left";
+    const end0: StandSide = input.homeSide === "left" ? "right" : "left";
+    // The away end under works: the away block moves to the top stand (or the bottom one).
+    const end: StandSide = !closed.has(end0) ? end0 : !closed.has("top") ? "top" : "bottom";
     const want = Math.round(STADIUM.AWAY_SHARE * filled.length);
     const block = filled.filter((s) => s.side === end).sort((a, b) => a.y - b.y || a.x - b.x);
     for (const s of block.slice(0, want)) away.add(s);

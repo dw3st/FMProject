@@ -3,6 +3,7 @@
  * horizontally, with prev/next week navigation. A future non-match day switches between training
  * and rest on click (`toggleDayType` → `POST .../rest-days`). Replaces the old right-hand column.
  */
+import { RescheduledNote } from "@/GameInterface/Components/RescheduledNote";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
@@ -166,6 +167,7 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
         label,
         outcome,
         youth: youthDayEntries(youthFixtures, dateStr, mySquadId),
+        rescheduledFrom: myFixture?.rescheduledFrom,
       };
     });
   }, [fixtures, youthFixtures, mySquadId, currentDate, leagues, weekOffset, restSet, lang, t]);
@@ -260,6 +262,9 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
                 <div className={chip} title={day.label}>
                   {content}
                 </div>
+              )}
+              {day.rescheduledFrom && (
+                <RescheduledNote from={day.rescheduledFrom} className="truncate" />
               )}
               {day.youth.map((y) => {
                 const opponent = teamDisplayNameFromLeagues(y.opponentId, leagues);

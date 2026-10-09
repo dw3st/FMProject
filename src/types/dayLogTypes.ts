@@ -247,6 +247,8 @@ export interface StoredDayLog {
   transfers?: DayTransfer[];
   /** Youth-competition games of the day — kept out of `events` so no first-team flow sees them. */
   youthMatches?: YouthMatchLog[];
+  /** Players fielded (XI or match stats) without being registered for the competition — always 0 (`registration.md`). */
+  registrationViolations?: number;
 }
 
 // ── API-facing (resolved): full TransferEvent ──────────────────────────────

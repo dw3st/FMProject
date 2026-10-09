@@ -10,6 +10,7 @@ import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { addDays } from "@/Domain/dates";
 import { roundFeeUp } from "@/Domain/negotiation/negotiation";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
@@ -35,11 +36,14 @@ describe("negotiation routes", () => {
   const human = async () => (await saveService.getSquadById(saveId, meta.clubId))!;
 
   /** An AI club of the league and one of its ordinary midfielders (not a starter-level star) it can sell. */
-  async function aiTarget(skip: string[] = []): Promise<{ club: Squad; player: RosterPlayer }> {
+  async function aiTarget(skip: string[] = [], opts: { benchOnly?: boolean } = {}): Promise<{ club: Squad; player: RosterPlayer }> {
     const clubs = (await saveService.getSquadsInLeague(saveId, meta.leagueSlug)).filter((s) => s.id !== meta.clubId && !skip.includes(s.id));
     for (const club of clubs) {
       const avg = teamAvgRating(club);
+      // A loan is refused for a starter of the club's automatic XI: the loan test needs a bench player.
+      const starters = opts.benchOnly ? new Set(autoLineupDefaultFormation(club)) : new Set<string>();
       const p = club.players.find((q) => q.positions[0] && ["CM", "CDM", "Midfielder"].includes(q.positions[0]) && Math.abs(playerOverallRating(q) - avg) < 0.3 && !q.loan
+        && !starters.has(q.id)
         // He can leave: selling him keeps his club above the depth minimums.
         && !squadDepthBlocked(q, club, false));
       if (p && club.players.length >= 20) return { club, player: p };
@@ -145,7 +149,7 @@ describe("negotiation routes", () => {
   }, 60_000);
 
   test("loan in: a counter on the wage share, accepted, then he goes back on the date", async () => {
-    const { club, player } = await aiTarget();
+    const { club, player } = await aiTarget([], { benchOnly: true });
     const ask = (wageShare: number, fee = 0) => route("/api/saves/:saveId/loans")(
       req(`/api/saves/${saveId}/loans`, "POST", { saveId }, { playerId: player.id, fromSquadId: club.id, wageShare, fee }),
     );

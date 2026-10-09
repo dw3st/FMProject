@@ -1093,6 +1093,20 @@ export class SaveService {
       logError("continental", `save ${id}: failed to generate continental competitions`, e);
     }
 
+    // League games that clash with a club's cup / continental game (same day or the day before/after) move to
+    // a free midweek day (`.claude/rules/game/rescheduling.md`). Before the youth competitions, which read the
+    // league dates. A start kit applied later is fixed again by the presimulate route.
+    if (meta.currentDate) {
+      try {
+        const { getLeagueData } = await import("@/backend/advanceDay");
+        const { rescheduleFixtureConflicts, syncPlayerRestDays } = await import("@/backend/reschedulingWorld");
+        const r = await rescheduleFixtureConflicts({ service: this, saveId: id, minDate: meta.currentDate, catalog: await getLeagueData() });
+        await syncPlayerRestDays(this, id, r.moves);
+      } catch (e) {
+        logError("calendar", `save ${id}: failed to reschedule clashing league games`, e);
+      }
+    }
+
     // Youth competitions (under-21 / under-19 of every tier-1 league): after the cups and the
     // continentals, whose dates they avoid. One try/catch per country inside.
     try {

@@ -542,7 +542,8 @@ export function MatchResultScreen() {
                       key={pid}
                       className="text-base font-semibold text-chart-3/90 flex items-center gap-1"
                     >
-                      <span className="font-black">A</span>
+                      <Icon name="handshake" className="w-4 h-4 shrink-0" />
+                      <span className="sr-only">{t("matchResult.assist")}:</span>
                       {matchEvent.playerNames[pid] ?? pid}
                       {(ps.assists ?? 0) > 1 ? ` (${ps.assists} ${t("matchResult.assists")})` : ` (${t("matchResult.assist")})`}
                       <span className="text-muted-foreground/60">

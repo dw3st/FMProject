@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
@@ -7,27 +7,41 @@ import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import type { LeagueData } from "@/types/playerTypes";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
+import { compactTabsFor, type TabsMode } from "@/GameInterface/Components/compactTabs";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
 interface NavItem {
   icon: IconName;
+  /** Icon colour of the section (theme tokens only, #133). */
+  tone: string;
   labelKey: string;
   href: string;
 }
 
+/** Top-bar icon size (#133). */
+const NAV_ICON = 18;
+/**
+ * Spacing of the tabs: normal (`gap-3.5` between tabs, `gap-1` icon to label) and tighter (`gap-2`,
+ * `gap-0.5`), used before collapsing to icons (#139).
+ */
+const TAB_GAP = 14;
+const TAB_GAP_TIGHT = 8;
+const ICON_GAP = 4;
+const ICON_GAP_TIGHT = 2;
+
 const navItems: NavItem[] = [
-  { icon: "home", labelKey: "nav.dashboard",   href: "/dashboard" },
-  // `/squad` is a prefix: the real link is the player's own club (see `hrefOf`).
-  { icon: "squad", labelKey: "nav.squad",       href: "/squad" },
-  { icon: "building", labelKey: "nav.club",     href: "/club" },
-  { icon: "formation", labelKey: "nav.formation",   href: "/formation" },
-  { icon: "trend-up", labelKey: "nav.development", href: "/development" },
-  { icon: "finances", labelKey: "nav.finances",    href: "/finances" },
-  { icon: "staff", labelKey: "nav.staff",       href: "/staff" },
-  { icon: "trophy", labelKey: "nav.leagues",     href: "/leagues" },
-  { icon: "transfers", labelKey: "nav.transfers",   href: "/transfers" },
-  { icon: "search", labelKey: "nav.scout",       href: "/scout" },
-  { icon: "stats", labelKey: "nav.stats",       href: "/stats" },
+  { icon: "dashboard", tone: "text-primary", labelKey: "nav.dashboard", href: "/dashboard" },
+  // `/squad` is a prefix: the real link is the player's own club.
+  { icon: "squad", tone: "text-chart-2", labelKey: "nav.squad", href: "/squad" },
+  { icon: "stadium", tone: "text-chart-3", labelKey: "nav.club", href: "/club" },
+  { icon: "tactics", tone: "text-chart-2", labelKey: "nav.formation", href: "/formation" },
+  { icon: "trend-up", tone: "text-primary", labelKey: "nav.development", href: "/development" },
+  { icon: "wallet", tone: "text-chart-4", labelKey: "nav.finances", href: "/finances" },
+  { icon: "staff-coach", tone: "text-chart-3", labelKey: "nav.staff", href: "/staff" },
+  { icon: "trophy", tone: "text-chart-4", labelKey: "nav.leagues", href: "/leagues" },
+  { icon: "arrow-right-left", tone: "text-chart-5", labelKey: "nav.transfers", href: "/transfers" },
+  { icon: "binoculars", tone: "text-chart-3", labelKey: "nav.scout", href: "/scout" },
+  { icon: "stats", tone: "text-primary", labelKey: "nav.stats", href: "/stats" },
 ];
 
 interface Props {
@@ -48,59 +62,55 @@ function formatTopBarDate(date: string, lang: string): string {
 }
 
 /**
- * Tabs show their labels while the whole row fits the space between the logo and the day block;
- * below that they collapse to icons (label kept for screen readers and as a tooltip), so the bar
- * never overflows the frame at any width (#65). `fullWidth` remembers how wide the labelled row
- * was, so the labels come back as soon as there is room for them again.
+ * Tabs show their labels while the whole labelled row fits the space between the logo and the day
+ * block; below that they collapse to icons (label kept for screen readers and as a tooltip), so
+ * the bar never overflows the frame at any width (#65). The labelled row is measured on an
+ * invisible copy (`measureRef`), so the answer never depends on the mode currently shown, and it is
+ * measured again on every resize of the bar or of the copy (fonts, language), when the fonts
+ * arrive, when the page becomes visible again and when it comes back from the back/forward cache
+ * (#138: back from the match the bar stayed in icons with plenty of room). When the labelled row
+ * only fits with tighter gaps it keeps the labels with those gaps (#139: in Portuguese, with the
+ * tester's report button, the row was ~60px short at the full frame and fell back to icons).
  */
-function useCompactTabs(lang: string, itemCount: number) {
+function useCompactTabs(tabCount: number) {
   const outerRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const fullWidth = useRef(0);
-  const measuredFor = useRef("");
-  const [compact, setCompact] = useState(false);
-  // The web fonts load after the first paint (separate files since 3.4.2): a row measured with the
-  // fallback font is wider, so measure again once they are in.
-  const [fontsEpoch, setFontsEpoch] = useState(0);
-  useEffect(() => {
-    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
-    if (!fonts) return;
-    const bump = () => setFontsEpoch((n) => n + 1);
-    fonts.ready.then(bump);
-    fonts.addEventListener("loadingdone", bump);
-    return () => fonts.removeEventListener("loadingdone", bump);
-  }, []);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<TabsMode>("labels");
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
-    // Labels change with the language (or a tab appears, or the fonts arrive): show them again and re-measure.
-    const key = `${lang}:${itemCount}:${fontsEpoch}`;
-    if (measuredFor.current !== key) {
-      measuredFor.current = key;
-      fullWidth.current = 0;
-      if (compact) {
-        setCompact(false);
-        return;
-      }
-    }
+    const measure = measureRef.current;
+    if (!outer || !measure) return;
+    let alive = true;
     const check = () => {
-      if (!compact) {
-        fullWidth.current = inner.offsetWidth;
-        if (inner.offsetWidth > outer.clientWidth) setCompact(true);
-      } else if (fullWidth.current > 0 && outer.clientWidth >= fullWidth.current) {
-        setCompact(false);
-      }
+      if (!alive) return;
+      const tightSaving =
+        Math.max(0, tabCount - 1) * (TAB_GAP - TAB_GAP_TIGHT) + tabCount * (ICON_GAP - ICON_GAP_TIGHT);
+      const next = compactTabsFor(measure.offsetWidth, outer.clientWidth, tightSaving);
+      if (next !== null) setMode(next);
     };
     check();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(check);
-    ro.observe(outer);
-    return () => ro.disconnect();
-  }, [compact, lang, itemCount, fontsEpoch]);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    ro?.observe(outer);
+    ro?.observe(measure);
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    void fonts?.ready.then(check);
+    fonts?.addEventListener("loadingdone", check);
+    const onVisible = () => { if (!document.hidden) check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", check);
+    window.addEventListener("resize", check);
+    return () => {
+      alive = false;
+      ro?.disconnect();
+      fonts?.removeEventListener("loadingdone", check);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [tabCount]);
 
-  return { outerRef, innerRef, compact };
+  return { outerRef, measureRef, mode };
 }
 
 export function TopNavigation({
@@ -122,7 +132,8 @@ export function TopNavigation({
   const currentUser = useCurrentUser();
   const isTester = !!currentUser?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
-  const { outerRef, innerRef, compact } = useCompactTabs(lang, navItems.length + (isTester ? 1 : 0));
+  const { outerRef, measureRef, mode } = useCompactTabs(navItems.length);
+  const compact = mode === "icons";
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -154,8 +165,8 @@ export function TopNavigation({
     dayTitle = t("weekCalendar.switchToTraining");
   }
 
-  const tabClass = (active: boolean) =>
-    `flex items-center gap-1 border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
+  const tabClass = (active: boolean, tight = false) =>
+    `flex items-center ${tight ? "gap-0.5" : "gap-1"} border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
       active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
     }`;
   const dayButton =
@@ -173,9 +184,22 @@ export function TopNavigation({
         <nav
           ref={outerRef}
           aria-label={t("nav.main")}
-          className="flex-1 min-w-0 self-stretch flex justify-center overflow-hidden"
+          className="relative flex-1 min-w-0 self-stretch flex justify-center overflow-hidden"
         >
-          <div ref={innerRef} className="flex w-max items-stretch gap-3.5">
+          {/* Invisible labelled copy: its width decides labels vs icons (#138). */}
+          <div
+            ref={measureRef}
+            aria-hidden="true"
+            className="invisible pointer-events-none absolute left-0 top-0 h-full flex w-max items-stretch gap-3.5"
+          >
+            {navItems.map((item) => (
+              <span key={item.labelKey} className={tabClass(false)}>
+                <Icon name={item.icon} size={NAV_ICON} className="shrink-0" />
+                <span>{t(item.labelKey)}</span>
+              </span>
+            ))}
+          </div>
+          <div className={`flex w-max items-stretch ${mode === "tight" ? "gap-2" : "gap-3.5"}`}>
             {navItems.map((item) => {
               const label = t(item.labelKey);
               const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
@@ -189,31 +213,32 @@ export function TopNavigation({
                 <a
                   key={item.labelKey}
                   href={href}
-                  className={tabClass(active)}
+                  className={tabClass(active, mode === "tight")}
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon name={item.icon} size={16} className="shrink-0" />
+                  <Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />
                   <span className={compact ? "sr-only" : undefined}>{label}</span>
                 </a>
               );
             })}
-            {isTester && (
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                className={`${tabClass(false)} cursor-pointer`}
-                title={t("nav.report")}
-              >
-                <Icon name="report" size={16} className="shrink-0" />
-                <span className={compact ? "sr-only" : undefined}>{t("nav.report")}</span>
-              </button>
-            )}
           </div>
         </nav>
 
-        {/* Day block: today's date and type, then the day controls (#65). */}
+        {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
+            costs no divider of its own), today's date and type, then the day controls (#65). */}
         <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
+          {isTester && (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              title={t("nav.report")}
+              aria-label={t("nav.report")}
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-destructive cursor-pointer hover:bg-muted/50"
+            >
+              <Icon name="report" size={NAV_ICON} />
+            </button>
+          )}
           {currentDate && (
             <>
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
