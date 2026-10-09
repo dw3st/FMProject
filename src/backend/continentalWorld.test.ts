@@ -120,20 +120,43 @@ describe("createSave generates continental competitions", () => {
     const dates = cont.stages.flatMap((s) => s.dates);
     const weekday = CONTINENTAL[slug as keyof typeof CONTINENTAL].weekday;
 
-    const leagueDatesCache = new Map<string, Set<string>>();
-    const datesOfLeague = async (leagueSlug: string): Promise<Set<string>> => {
-      const cached = leagueDatesCache.get(leagueSlug);
+    // Each club's OWN league games (rescheduling, 4.16, moves single league games onto free midweek days, so a
+    // continental date can share a day with a league game of other clubs of the country — never with one of the
+    // club's own) plus the country's cup dates (country-wide: later cup rounds are not drawn yet).
+    const cupDatesCache = new Map<string, Set<string>>();
+    const cupDatesOf = async (country: string): Promise<Set<string>> => {
+      const cached = cupDatesCache.get(country);
       if (cached) return cached;
-      const country = countryOf.get(leagueSlug);
-      const d = await leagueBusyDates(saveService, saveId, country ? [leagueSlug, cupSlugOf(country)] : [leagueSlug]);
-      leagueDatesCache.set(leagueSlug, d);
+      const d = await leagueBusyDates(saveService, saveId, [cupSlugOf(country)]);
+      cupDatesCache.set(country, d);
       return d;
+    };
+    const leagueRoundsCache = new Map<string, RoundFixtures[]>();
+    const roundsOf = async (leagueSlug: string): Promise<RoundFixtures[]> => {
+      const cached = leagueRoundsCache.get(leagueSlug);
+      if (cached) return cached;
+      const meta = await saveService.getLeagueMeta(saveId, leagueSlug);
+      const rounds: RoundFixtures[] = [];
+      for (let r = 1; r <= (meta?.totalRounds ?? 0); r++) {
+        const round = await saveService.getRound(saveId, leagueSlug, r);
+        if (round) rounds.push(round);
+      }
+      leagueRoundsCache.set(leagueSlug, rounds);
+      return rounds;
     };
 
     const participantDates: Set<string>[] = [];
     for (const clubId of clubs) {
       const leagueSlug = index.byId(clubId)?.leagueSlug;
-      participantDates.push(leagueSlug ? await datesOfLeague(leagueSlug) : new Set());
+      const own = new Set<string>();
+      if (leagueSlug) {
+        for (const r of await roundsOf(leagueSlug)) {
+          for (const f of r.fixtures) if (f.home === clubId || f.away === clubId) own.add(f.date);
+        }
+        const country = countryOf.get(leagueSlug);
+        if (country) for (const d of await cupDatesOf(country)) own.add(d);
+      }
+      participantDates.push(own);
     }
 
     let sameDayCount = 0;
