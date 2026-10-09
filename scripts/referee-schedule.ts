@@ -83,6 +83,10 @@ export async function schedule(): Promise<void> {
     }
     console.log(`dias ${days}, partidas com árbitro ${appointments}, sem escala ${unassigned}`);
     console.log(`jogos por árbitro: p10 ${pct(counts, 0.1)} · p50 ${pct(counts, 0.5)} · p90 ${pct(counts, 0.9)} · máx ${Math.max(...counts)} (árbitros ${counts.length})`);
+    const refs = pool.referees.filter((r) => r.role === "referee");
+    const idle = refs.filter((r) => !matchesOf.has(r.id));
+    const meanQ = (xs: { quality: number }[]) => (xs.length ? xs.reduce((s, r) => s + r.quality, 0) / xs.length : 0).toFixed(1);
+    console.log(`sem jogos: ${idle.length} (${((idle.length / refs.length) * 100).toFixed(1)}%), qualidade média ${meanQ(idle)} × ${meanQ(refs.filter((r) => matchesOf.has(r.id)))} dos que apitaram; países com alguém parado: ${new Set(idle.map((r) => r.country)).size}`);
     console.log(`mesmo dia duas vezes: ${sameDay}; descanso < ${REFEREE.REST_DAYS} dias (relaxado): ${restRelax}; rodízio relaxado: ${rotationRelax}`);
     console.log(`maior sequência do mesmo árbitro com um clube: ${longest}`);
     console.log(`1ª divisão: ${topMatches} jogos, ${((topByBest / Math.max(1, topMatches)) * 100).toFixed(1)}% com os 25% melhores do país`);

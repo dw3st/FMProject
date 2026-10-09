@@ -101,7 +101,16 @@ Desvio do spec: o bônus de clássico (`isDerby`) ficou de fora (exigiria ler as
 
 ## Medições
 
-Ver a spec §7 (tabelas M1–M3 de 2026-10-09).
+Ver a spec §7 (tabelas M1–M3 de 2026-10-09). Resultados em §11:
+
+- **M1** (motor, Premier + Championship, 2 sementes, 2 400 jogos por braço, mundo da 4.16): faltas +0,3%, amarelos +0,6%,
+  vermelhos +13% (~200 eventos, ruído ±14%), pênaltis −0,6%, gols +0,9%; quickSim pareado com `CARD_NORM` 1,01: faltas
+  −0,2%, amarelos −0,4%, vermelhos +0,3%.
+- **M2** (mesmo clube, 400 jogos): ±0,75 amarelos ×1,31, faltas ×1,06; ±1 amarelos ×1,55, faltas ×1,07.
+- **M3** (escala de 365 dias): nenhum árbitro duas vezes no dia, descanso relaxado em 0,9% das escalas, maior sequência
+  com um clube 2, 49% dos jogos da 1ª divisão com os 25% melhores, continental 0 do país dos clubes; 10,6% do quadro
+  (os de menor qualidade) não apita.
+- **Custo do dia** (`bench-advance-day.ts --buffered`): +1,4% sem o motor completo, +0,8% com ele.
 
 ## Testes e smoke
 

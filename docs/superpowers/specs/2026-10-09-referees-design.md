@@ -361,6 +361,18 @@ de faixas opostas fica claramente diferente na aba Árbitros.
 - **Transfermarkt:** a API local não tem rota de árbitro; os totais vêm da página de perfil (`/-/profil/schiedsrichter/<id>/saison_id/0`), cache gitignored.
 - **Clássico** fora da importância (exigiria ler as cidades dos elencos do dia).
 - **`CARD_NORM` = 1,01** (quickSim, 26 ligas × 1000 pareado: com 1,0 os vermelhos subiam +4,9% / +2,3% em duas sementes; com 1,01, amarelos −0,4%, vermelhos +0,3%, faltas −0,2%).
-- **M1 motor** (Premier + Championship, 600 + 600 por braço, não pareado): faltas −0,5%, amarelos −5,0%, vermelhos −17% (~100 eventos), pênaltis −10%, gols −2,6% — dentro do ruído do motor por braço (amarelos ±2,7%); segunda semente pendente.
+- **M1 motor, primeira rodada** (mundo antes da 4.16; Premier + Championship, 600 + 600 por braço, não pareado): faltas −0,5%, amarelos −5,0%, vermelhos −17% (~100 eventos), pênaltis −10%, gols −2,6%.
+- **M1 motor, refeito no mundo da 4.16** (`world <liga> 600 [--neutral] --engine-seed 11|22 --seed 1|2`, Premier + Championship, duas sementes somadas: 2 400 jogos por braço; por jogo, os dois times):
+
+  | | sem árbitro (s = 0) | rigor do mundo | Δ |
+  |---|---|---|---|
+  | Faltas | 10,686 | 10,713 | +0,3% |
+  | Amarelos | 2,317 | 2,331 | +0,6% |
+  | Vermelhos | 0,0765 (~184) | 0,0865 (~208) | +13% (intervalo de ±14% pelo Poisson) |
+  | Pênaltis | 0,353 | 0,351 | −0,6% |
+  | Gols / chutes | 1,984 / 5,08 | 2,002 / 5,15 | +0,9% / +1,4% |
+
+  Por semente (média das duas ligas): semente 11 faltas +1,9%, amarelos +2,8%; semente 22 faltas −1,3%, amarelos −1,5%. Somadas, faltas e amarelos dentro de ±3% (aceite); vermelhos e pênaltis dentro do ruído; `CARD_NORM` não mudou.
 - **M2** (Premier, mesmo clube, 400 jogos): ±0,75 amarelos ×1,31, faltas ×1,06, vermelhos ×2,3; ±1 amarelos ×1,55, faltas ×1,07, vermelhos ×3,1. Faltas um pouco abaixo da meta (×1,08–1,2): a chance de falta tem teto e só existe em disputas.
-- **M3** (escala) e bench do avanço do dia: pendentes.
+- **M3 escala** (`referee-measure.ts schedule 365`, save novo da Premier, 365 dias a partir do início do mundo (2026-08-15, sem kit nem virada), só calendário): 18 055 partidas com árbitro, nenhuma sem escala; jogos por árbitro p10 0 · p50 16 · p90 39 · máx 60 (999 árbitros); nenhum árbitro duas vezes no mesmo dia; descanso abaixo de 3 dias relaxado 151–159 vezes (0,9% das escalas), rodízio por clube relaxado 20–22; maior sequência do mesmo árbitro com um clube: 2; 1ª divisão: 49% dos jogos com os 25% melhores do país (o dobro da parcela deles); continental: 384 jogos, 0 com árbitro do país de um dos clubes. 106 árbitros (10,6%, de 32 países) não apitam: são os de menor qualidade (média 21 × 45 dos que apitam), reservas do quadro de 1,5 × as partidas da rodada — aceito, sem mudança.
+- **Custo do avanço do dia** (`bench-advance-day.ts --buffered --days 14`, carreira da Premier, duas rodadas alternadas main 4.16 × branch): média sem o motor completo 3 453 → 3 502 ms (+1,4%); dias sem jogo do jogador 2 948 → 3 010 ms (+2,1%); média com o motor 4 510 → 4 545 ms (+0,8%). Meta ≤ +5%: ok.
