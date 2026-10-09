@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14.4",
+    date: "2026-10-09",
+    items: [
+      { pt: "As abas da barra superior mostram de novo os nomes quando há espaço", en: "The top bar tabs show their names again when there is room" },
+      { pt: "Na partida, quando um jogador seu se lesiona, o jogo pausa e você escolhe quem entra", en: "In the match, when one of your players gets injured, the game pauses and you choose who comes on" },
+    ],
+  },
+  {
     version: "4.14.3",
     date: "2026-10-09",
     items: [
