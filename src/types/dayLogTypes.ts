@@ -161,6 +161,8 @@ export interface MatchEvent {
   compact?: true;
   /** Condition 0..100 of the pitch the match was played on (`matchPitchCondition`). Absent: not tracked. */
   pitchCondition?: number;
+  /** The referee of the match, from the day's appointments (`.claude/rules/game/referees.md`). Absent: none. */
+  referee?: import("@/types/refereeTypes").MatchReferee;
 }
 
 // ── Training event ─────────────────────────────────────────────────────────
