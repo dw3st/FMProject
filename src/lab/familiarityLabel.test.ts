@@ -25,3 +25,10 @@ describe("lab: pitch condition in the variant label", () => {
     expect(variantAutoLabel(v({ pitchCondition: 20 }))).toBe("4-3-3 · Possession · pitch 20%");
   });
 });
+
+describe("lab: referee rigor in the variant label", () => {
+  test("absent = no suffix; set = ' · ref ±N'", () => {
+    expect(variantAutoLabel(v({ refereeStrictness: 0.75 }))).toBe("4-3-3 · Possession · ref +0.75");
+    expect(variantAutoLabel(v({ refereeStrictness: -1 }))).toBe("4-3-3 · Possession · ref -1");
+  });
+});

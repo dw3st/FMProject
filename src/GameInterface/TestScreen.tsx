@@ -29,7 +29,9 @@ import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import type { TestScenario } from "@/GameEngine/Support/TestCases";
-import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot, withReferee } from "@/GameEngine/Domain/gameState";
+import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
+import { refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { variantsForRole } from "@/GameEngine/Configs/RoleVariantConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";
@@ -102,6 +104,14 @@ const MORALE_TEST_OPTIONS = [undefined, 0, 25, 50, 65, 80, 100] as const;
 const TEMPERAMENT_TEST_OPTIONS = [undefined, 1, 5, 10, 15, 20] as const;
 /** Pitch condition of the whole match (`src/Domain/facilities/pitch.ts`; 90 = default, x1 from 40% up). */
 const PITCH_TEST_OPTIONS = [100, 90, 60, 40, 20, 0] as const;
+
+/** Referee rigor of the whole match (`referees.md`): null = Off (no referee, or the scenario's own). */
+const REFEREE_TEST_OPTIONS = [null, -1, -0.5, 0, 0.5, 1] as const;
+const TEST_REFEREE = { id: 'ref_test', name: 'Test Referee', country: 'England' };
+/** The state with the test referee of rigor `s`; null keeps the state's own (a scenario's, or none). */
+function withTestReferee(state: GameState, s: number | null): GameState {
+  return s === null ? state : withReferee(state, { ...TEST_REFEREE, strictness: s });
+}
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
 function withPitch(state: GameState, pitch: number): GameState {
@@ -402,6 +412,8 @@ export function TestScreen() {
   const [tempB, setTempB] = useState<number | undefined>(undefined);
   // Pitch condition of the whole match (both sides): injury risk below 40%.
   const [pitch, setPitch] = useState<number>(90);
+  // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
+  const [refS, setRefS] = useState<number | null>(null);
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   // Player instructions per team (`player-instructions.md`): slot variants / pressing, man-marking.
@@ -611,7 +623,7 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
+    let state: GameState = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
@@ -623,7 +635,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -631,7 +643,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
+    const state = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
@@ -652,12 +664,12 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
+    const state = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1051,6 +1063,25 @@ export function TestScreen() {
             ))}
           </div>
 
+          {/* Referee rigor (referees.md): fouls x(1 + 0.08 s), yellows x(1 + 0.15 s), straight reds x(1 + 0.25 s) */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Referee ({refS === null ? 'off' : `s ${refS} · foul x${refereeFoulMult(refS).toFixed(2)} · yellow x${refereeYellowMult(refS).toFixed(2)}`})</p>
+            <div className="flex gap-1 flex-wrap">
+              {REFEREE_TEST_OPTIONS.map(v => (
+                <button
+                  key={String(v)}
+                  onClick={() => setRefS(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                    refS === v
+                      ? 'bg-primary/20 border-primary/40 text-primary'
+                      : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {v === null ? 'Off' : v === -1 ? 'Lenient -1' : v === 1 ? 'Strict +1' : v > 0 ? `+${v}` : String(v)}
+                </button>
+              ))}
+            </div>
+          </div>
           {/* Pitch of the whole match (both sides): injury risk x1 from 40%, x1.6 at 0% */}
           <div className="space-y-1">
             <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Pitch ({pitch}% · injury x{pitchInjuryMult(pitch).toFixed(2)})</p>
@@ -1567,7 +1598,7 @@ export function TestScreen() {
           <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
         </div>
       )}
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} refereeStrictness={refS ?? undefined} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel
@@ -1615,7 +1646,7 @@ export function TestScreen() {
         >
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}
@@ -1634,7 +1665,7 @@ export function TestScreen() {
               captureRef={pitchCaptureRef}
               perfRef={pitchPerfRef}
               stadium={pitchStadium}
-              officials={officialsOn}
+              officials={officialsOn && refS !== null ? { refereeFace: refereeFaceUrl(TEST_REFEREE.id, TEST_REFEREE.country, 40) } : officialsOn}
               coaches={TEST_COACHES}
             />
           ) : (

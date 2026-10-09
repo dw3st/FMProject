@@ -112,6 +112,11 @@ export interface Variant {
    */
   pitchCondition?: number;
   /**
+   * Referee rigor −1..1 of the match (`.claude/rules/game/referees.md`): fouls and cards of both sides. Variant A
+   * sets it for the match (like the pitch). Absent = no referee (neutral).
+   */
+  refereeStrictness?: number;
+  /**
    * Player instructions of this side (`player-instructions.md`): per-slot role variant / pressing
    * (index = slot of `formation`). Absent = default. Full engine only (the quickSim ignores them).
    */
@@ -211,6 +216,8 @@ export interface TeamRawStats {
   temperament: number;
   /** Pitch condition the match was played on (90 when absent), summed across games. */
   pitchCondition: number;
+  /** Referee rigor of the match (0 when absent), summed across games. */
+  refereeStrictness: number;
   // Discipline (`.claude/rules/game-engine/fouls.md`), summed across games.
   /** Fouls committed. */
   fouls: number;
@@ -357,6 +364,8 @@ export interface PerMatchView {
   avgTemperament: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
+  /** Referee rigor of the matches (−1..1, 0 = neutral). */
+  avgRefereeStrictness: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;
@@ -456,6 +465,8 @@ export interface VariantSummary {
   avgTemperament: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
+  /** Referee rigor of the matches (−1..1, 0 = neutral). */
+  avgRefereeStrictness: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;
