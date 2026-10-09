@@ -1126,28 +1126,43 @@ gols de cabeça no mundo todo. Revertido antes da coleta; ver `formations.md` �
 (`TEMPERAMENT_FOUL_NORM` = 1, `TEMPERAMENT_CARD_NORM` = 1,04); `homeTemperament`/`awayTemperament` sobrepõem o lado
 (lab, `/test`). Medição em `.claude/rules/game/personality.md`.
 
-## Recalibração pelo valor de mercado (4.5) — medição, sem constante mexida
+## Recalibração pelo valor de mercado (4.5) e reordenação por linha (4.14.2) — sem constante mexida
 
 O mundo da 4.5 tem notas e posições reordenadas pelo valor do Transfermarkt e atributos com uma casa decimal
-(`.claude/rules/data/espn-import.md` → "Recalibração pelo valor de mercado"). Nenhuma constante do motor nem do
-quickSim mudou; medido para decidir.
+(`.claude/rules/data/espn-import.md` → "Recalibração pelo valor de mercado"). Na 4.5 a reordenação mantinha a multiset de
+notas da **liga**, e as notas mudavam de linha (Premier: goleiro médio 4,80 → 4,46, meio 5,00 → 5,10; Brasileirão:
+zagueiro 4,28 → 4,09, goleiro 4,10 → 3,89). Decisão do usuário (4.14.2): reordenar **por linha** (cada linha mantém as
+notas que tinha antes; o valor só decide quem recebe qual), sem mexer em constante do motor nem do quickSim.
 
-**Motor, gols e chutes** (`bun scripts/ai-formation-goals.ts --leagues premier_league,brazil_serie_a --engine 800
---modes ai`, duas rodadas de 800 somadas por lado; "antes" = mundo do commit base da branch, num worktree descartável):
+**Motor** (`bun scripts/ai-formation-goals.ts --leagues premier_league,brazil_serie_a --engine 3200 --modes ai --quick 0`,
+motor de 2026-10-09 em todas as linhas, trocando só os elencos das duas ligas em `src/Data/squads`):
 
-| Liga | gols antes | gols depois | Δ | chutes antes | chutes depois | Δ |
-|---|---|---|---|---|---|---|
-| premier_league | 2,500 | 2,168 | **−13%** | 5,86 | 5,39 | **−8%** |
-| brazil_serie_a | 1,908 | 2,210 | **+16%** | 5,36 | 5,87 | **+10%** |
+| Mundo | Premier gols | Δ | Premier chutes | Δ | Brasileirão gols | Δ | Brasileirão chutes | Δ |
+|---|---|---|---|---|---|---|---|---|
+| antes da 4.5 (referência) | 2,477 | — | 5,83 | — | 1,857 | — | 5,40 | — |
+| 4.5 sem recalibração (só `importEspn`) | 2,365 | −4,5% | 5,58 | −4,3% | 1,833 | −1,3% | 5,40 | 0% |
+| 4.5–4.14.1 (multiset da liga) | 2,242 | −9,5% | 5,45 | −6,5% | 2,192 | **+18,0%** | 5,92 | +9,6% |
+| **4.14.2 (por linha)**, 2 × 1600 | 2,276 | **−8,1%** | 5,43 | −6,9% | 1,892 | **+1,9%** | 5,29 | −2,0% |
 
-Fora da meta de ±5% (ruído ~±2,5% com 1600 jogos). A multiset de notas de cada liga reordenada não mudou, mas mudou
-de linha: na Premier o goleiro médio caiu 4,80 → 4,46 e o meio subiu 5,00 → 5,10; no Brasileirão o zagueiro caiu
-4,28 → 4,09 e o goleiro 4,10 → 3,89 (mais gols). **Pendente de decisão do usuário** antes de mexer em qualquer
-constante.
+Ruído ~±2% com 3200 jogos. O Brasileirão volta à faixa. A Premier quase não muda com a regra por linha (a troca de
+linha não era o que tirava gols dela): −4,5% vem do mundo da 4.5 antes de qualquer recalibração (atributos decimais,
+corte do elenco, snapshot) e ~−3,5% de quem recebe qual nota dentro de cada linha. Fica fora da meta de ±5%; nenhuma
+constante foi mexida (decisão pendente com o usuário). A medição antiga (2,500 / 1,908, motor de 2026-10-07) não serve
+mais de referência: o motor mudou depois (piso de goleiro, cache de intenções defensivas).
+
+Média de nota por linha (`bun scripts/lineAverages.ts [pasta]`, `positions[0]`, elenco inteiro):
+
+| Liga | antes da 4.5 GK / DEF / MID / FWD | 4.14.1 | 4.14.2 |
+|---|---|---|---|
+| premier_league | 4,80 / 5,26 / 5,00 / 5,29 | 4,46 / 5,13 / 5,09 / 5,24 | 4,82 / 5,28 / 4,94 / 5,28 |
+| la_liga | 4,55 / 5,01 / 4,79 / 4,95 | 4,43 / 4,83 / 4,85 / 4,95 | 4,56 / 5,00 / 4,73 / 4,97 |
+| bundesliga | 4,24 / 4,84 / 4,57 / 4,62 | 4,08 / 4,65 / 4,60 / 4,64 | 4,24 / 4,83 / 4,52 / 4,64 |
+| serie_a | 4,61 / 4,89 / 4,65 / 4,67 | 4,21 / 4,70 / 4,72 / 4,83 | 4,60 / 4,92 / 4,64 / 4,69 |
+| ligue_1 | 4,22 / 4,57 / 4,17 / 4,31 | 3,94 / 4,33 / 4,24 / 4,37 | 4,18 / 4,55 / 4,13 / 4,33 |
+| brazil_serie_a | 4,10 / 4,28 / 4,04 / 4,15 | 3,89 / 4,10 / 4,11 / 4,17 | 4,03 / 4,27 / 3,99 / 4,14 |
 
 **quickSim** (`quicksim-spread.ts collect <liga> 100 2 --fitness 88 --ai` + `analyze`, 200 jogos do motor): Premier
-motor 2,34 × quick 2,38 (+1,5%), Brasileirão 2,15 × 2,31 (+7,4%) — dentro de ±10%. O quickSim acompanha o mundo
-novo sozinho (ele lê as mesmas notas), então não foi recalibrado.
+motor 2,19 × quick 2,36 (+8%), Brasileirão 2,06 × 1,99 (−3,2%) — dentro de ±10%; não recalibrado.
 
 ## Gols da partida (Etapa 32)
 

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14.2",
+    date: "2026-10-09",
+    items: [
+      { pt: "As notas dos jogadores foram reajustadas posição por posição: goleiros, defensores, meias e atacantes mantêm o nível de cada setor da liga", en: "Player ratings were readjusted position by position: goalkeepers, defenders, midfielders and forwards keep the level of each line of their league" },
+    ],
+    fixes: [
+      { pt: "Os gols por partida voltaram ao normal nas ligas: o Brasileirão deixou de ter jogos com gols demais", en: "Goals per match are back to normal across the leagues: the Brasileirão no longer has too many goals" },
+    ],
+  },
+  {
     version: "4.14.1",
     date: "2026-10-09",
     items: [

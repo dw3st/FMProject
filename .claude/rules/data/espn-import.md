@@ -226,8 +226,19 @@ valor de mercado reordena as notas dentro de cada liga.
   `src/example_data/squads` **logo depois do `importEspn`** (antes de qualquer recalibração) e grava
   `data_process/transfermarkt/derived.json`: por jogador `targetOverall`, `naturalPosition`, `birthDate`, `heightCm`
   e `nationality` (só quando falta), mais o resumo por liga. Uma liga só é reordenada com cobertura ≥ 40% **e** pelo
-  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela a
-  multiset de notas da liga não muda, só quem recebe qual.
+  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela o
+  valor de mercado só decide quem recebe qual nota **dentro de cada linha** (4.14.2, `reorderLeague`):
+  - a linha de um jogador é a final (a do Transfermarkt, ou `positions[0]` quando o Transfermarkt não tem posição);
+  - os valorados da linha final L recebem as notas que os valorados da linha **antiga** L (`positions[0]` antes da
+    recalibração) tinham, cada uma tirada na posição antiga (`computeOverallAvg` do mundo do `importEspn`), em ordem de
+    nível (desempate pelo id);
+  - mesmo tamanho: a multiset da linha fica igual. Tamanho diferente (alguém trocou de linha pelo Transfermarkt): os n
+    alvos são os quantis da multiset antiga, por interpolação linear entre os valores ordenados (`quantileTargets`;
+    um alvo só = a mediana). Linha sem nenhum valorado antigo: quantis da multiset antiga da liga inteira;
+  - uma nota nunca passa de uma linha para outra. Até a 4.14.1 a multiset era a da liga inteira, e as notas mudavam de
+    linha (Premier: goleiro médio 4,80 → 4,46, meio 5,00 → 5,10; Brasileirão: zagueiro 4,28 → 4,09), o que deixava a
+    Premier com −13% de gols no motor e o Brasileirão com +16% (`.claude/rules/non-player-games.md`).
+  Os não valorados ficam com a nota deles (salvo o teto dos jovens, `youthCaps`, sobre a mediana dos valorados do clube).
 - `bun scripts/applyMarketRecalibration.ts` aplica o `derived.json` (lógica pura em `scripts/transfermarkt/apply.ts`,
   com teste): grava `naturalPosition` (e troca a linha de `positions[0]` quando a do Transfermarkt é outra), reescala
   os atributos até a nota-alvo com o mesmo `rescaleToOverall` das correções manuais, copia nascimento e altura e
