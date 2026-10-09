@@ -78,7 +78,9 @@ Carreira na Premier League (início 2026-08-15, sem kit), mundo inteiro, 2026-10
 | Depois de 330 dias (2027-07-11; 20 963 jogos no disco, 144 remarcados) | Europa | 0 / 0 → 0 / 0 | 169 / 169 → 0 / 0 |
 | | América do Sul | 0 / 0 → 0 / 0 | 37 / 63 → 4 / 4 |
 
-Os 4 pares que sobram são copa × continental (nenhum dos dois se move); nenhum jogo de liga ficou sem dia livre
+Os 4 pares que sobram (6 numa segunda rodada igual, 41 / 69 antes) são todos copa × continental: Libertadores na terça
+(2027-05-11) e Copa do Brasil na quarta seguinte para Bahia, São Paulo, Flamengo, Vasco e Athletico; Copa Argentina ×
+Sul-Americana para o Vélez. Nenhum dos dois se move; nenhum jogo de liga ficou sem dia livre
 (nenhum `logError("calendar")`). O "depois de 330 dias" conta o que está em disco no fim (a temporada europeia
 2026-27 já foi substituída pela 2027-28 na virada).
 
