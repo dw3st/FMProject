@@ -1,4 +1,5 @@
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { readJsonBody } from "@/GameInterface/readJsonBody";
 import { useState, useEffect, useMemo } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
@@ -678,7 +679,7 @@ export function MatchPreviewScreen() {
         setFixture(todayFixture);
 
         const setupRes = await fetch(`/api/match-setup?saveId=${encodeURIComponent(s.saveId)}`);
-        const setupJson = (await setupRes.json()) as Record<string, unknown>;
+        const setupJson = await readJsonBody(setupRes);
         if (!setupRes.ok) {
           throw new Error(typeof setupJson.error === "string" ? setupJson.error : `match-setup failed (${setupRes.status})`);
         }

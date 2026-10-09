@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14.1",
+    date: "2026-10-09",
+    items: [
+      { pt: "Na partida, os lances do Resumo ficam sempre visíveis, com rolagem própria; o mapa de posse foi para baixo deles e pode ser recolhido", en: "In the match, the Summary's events are always visible, with their own scroll; the possession map moved below them and can be collapsed" },
+      { pt: "O Resumo da partida mostra os escudos dos clubes no lugar dos nomes, com o mandante à esquerda", en: "The match Summary shows the club crests instead of the names, with the home side on the left" },
+    ],
+    fixes: [
+      { pt: "Uma falha do servidor ao abrir a prévia ou a partida mostra uma mensagem de erro legível, em vez de um erro de leitura", en: "A server failure when opening the match preview or the match shows a readable error message instead of a parsing error" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [

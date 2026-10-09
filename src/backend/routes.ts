@@ -1,3 +1,4 @@
+import { withJsonErrors } from "@/backend/routeErrors";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
@@ -79,7 +80,7 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
   return _clubProfileLeagueDataCache;
 }
 
-export const apiRoutes = {
+export const apiRoutes = withJsonErrors({
   ...authRoutes,
   ...reportRoutes,
   ...faceRoutes,
@@ -709,4 +710,4 @@ export const apiRoutes = {
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },
-} as const;
+} as const);

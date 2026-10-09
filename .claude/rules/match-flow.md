@@ -389,7 +389,8 @@ side; a neutral venue (`fixture.neutral`) keeps the user on the left. With it:
 
 - scoreboard, goal / half-time / full-time overlays, aggregate and penalty scores, shootout strip
   rows and the "Resumo" panel get their A/B pairs through `toDisplayPair` / `displayTeam`
-  (display slot A = left);
+  (display slot A = left); the "Resumo" header shows the two crests (`ClubLogo` 32px, name in `title` and
+  `sr-only`, #128) instead of the names;
 - the pitch is drawn mirrored on x (`PixiPitch` `mirror`, `GraficsEngine/pitchMirror.ts`);
 - the left team list still opens on the user's own team (#51), flip to see the opponent;
 - the result screen (`MatchResultScreen`) already lists the fixture's home side on the left.
@@ -404,7 +405,8 @@ exist only outside production (#97).
 Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
 
 - **Possession heat map** (`src/Domain/match/possessionHeatmap.ts`, card `Components/PossessionHeatmap.tsx`,
-  below the "Resumo" numbers): where the ball was while each team had it (holder, or the passer while a pass
+  at the bottom of the "Resumo" panel, below the event feed, collapsible (#127: the feed scrolls on its own with a
+  minimum height so the map never squeezes it out; open/closed kept per viewer in `localStorage`)): where the ball was while each team had it (holder, or the passer while a pass
   is in the air), 12 × 8 grid, "Meu time"/"Adversário" × "Últimos 10 min"/"Jogo todo". Sampled in the
   `stateChanged` handler (the same one that accumulates possession, so it keeps counting with the tab
   hidden), weighted by the game-seconds since the previous emission, live phases only; fixed arrays (whole

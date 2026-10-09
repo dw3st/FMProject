@@ -1,4 +1,5 @@
 import { shirtName } from "@/Domain/shirtName";
+import { readJsonBody } from "@/GameInterface/readJsonBody";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
@@ -312,7 +313,7 @@ export function MatchScreen() {
 
     fetch(url)
       .then(async (r) => {
-        const body = (await r.json()) as Record<string, unknown>;
+        const body = await readJsonBody(r);
         if (!r.ok) {
           const msg = typeof body.error === "string" ? body.error : `match-setup failed (${r.status})`;
           throw new Error(msg);
@@ -1205,10 +1206,8 @@ export function MatchScreen() {
         </div>
 
         <MatchSummaryPanel
-          nameA={shownTeams.A?.name}
-          nameB={shownTeams.B?.name}
-          colorA={shownKits.A}
-          colorB={shownKits.B}
+          teamA={shownTeams.A}
+          teamB={shownTeams.B}
           statsA={summaryStats(sides.left)}
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}
