@@ -36,11 +36,16 @@ export interface YouthMatchApplied {
   healedPlayerIds: string[];
 }
 
-/** DP multiplier of a youth game: the same factors as a club match × `YOUTH_COMP.DP_MULT`. */
+/** The youth-game growth factor by age: `DP_MULT` up to 21, `DP_MULT_OVERAGE` for the over-age reserves. */
+export function youthCompDpMult(age: number): number {
+  return age > YOUTH_COMP.MAX_AGE.u21 ? YOUTH_COMP.DP_MULT_OVERAGE : YOUTH_COMP.DP_MULT;
+}
+
+/** DP multiplier of a youth game: the same factors as a club match × `DP_MULT` (× `DP_MULT_OVERAGE` above 21). */
 export function youthDpMult(squad: Squad, p: RosterPlayer): number {
   const { devMult } = staffEffectsOf(squad);
   const { matchDevMult } = trainingGroundEffectsOf(squad);
-  return devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * YOUTH_COMP.DP_MULT;
+  return devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age);
 }
 
 /**

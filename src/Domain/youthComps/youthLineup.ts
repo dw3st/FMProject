@@ -29,8 +29,11 @@ export interface YouthLineupInput {
   age: YouthCompAge;
   /** `players` + `youth` (the academy only exists at the human club). */
   squad: Squad;
-  /** First-team starters: never in the youth XI unless called up. */
-  firstTeamXI: ReadonlySet<string>;
+  /**
+   * First-team starters: never in the youth XI unless called up. A function is evaluated lazily, only
+   * when an eligible candidate needs the check (an AI under-19 without youngsters never computes it).
+   */
+  firstTeamXI: ReadonlySet<string> | (() => ReadonlySet<string>);
   /** Human club call-ups (empty for the AI). */
   callUps: readonly string[];
   /** Real players who already played a youth game today. */
@@ -106,7 +109,9 @@ function sortGroup(ps: RosterPlayer[]): RosterPlayer[] {
  * taking one slot of his own line (GK 1, DEF 4, MID 3, FWD 3); missing slots get generated youngsters.
  */
 export function pickYouthLineup(input: YouthLineupInput): YouthLineup {
-  const { age, squad, firstTeamXI, callUps, playedToday, date } = input;
+  const { age, squad, callUps, playedToday, date } = input;
+  let xi: ReadonlySet<string> | null = typeof input.firstTeamXI === "function" ? null : input.firstTeamXI;
+  const firstTeamXI = (): ReadonlySet<string> => (xi ??= (input.firstTeamXI as () => ReadonlySet<string>)());
   const maxAge = YOUTH_COMP.MAX_AGE[age];
   const players = squad.players;
   const youth = squad.youth ?? [];
@@ -114,7 +119,7 @@ export function pickYouthLineup(input: YouthLineupInput): YouthLineup {
 
   const alwaysOut = (p: RosterPlayer) => isUnavailable(p, date) || playedToday.has(p.id);
   const fit = (p: RosterPlayer) => fitnessOf(p) >= YOUTH_COMP.MIN_FITNESS;
-  const free = (p: RosterPlayer) => !alwaysOut(p) && fit(p) && !firstTeamXI.has(p.id);
+  const free = (p: RosterPlayer) => !alwaysOut(p) && fit(p) && !firstTeamXI().has(p.id);
 
   const callUpSet = new Set(callUps);
   const called = sortGroup(

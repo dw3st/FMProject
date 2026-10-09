@@ -18,6 +18,7 @@ import { applyYouthMatch, postponeDate, updateLeaders, youthMatchLog, type Youth
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
+import { isUnavailable } from "@/Domain/discipline/discipline";
 import {
   buildYouthCompArchive,
   generateYouthComp,
@@ -267,6 +268,29 @@ export async function youthCompsOfCountry(
 
 // ── The day ─────────────────────────────────────────────────────────────────────
 
+const STAT_KEYS = ["passing", "vision", "finishing", "dribbling", "speed", "acceleration", "tackling", "pressing",
+  "stamina", "heading", "strength", "reflex", "jump"] as const;
+const XI_CACHE_MAX = 4000;
+const xiCache = new Map<string, string[]>();
+
+/**
+ * The AI club's first-team XI (`autoLineupForFormation`), memoised by everything it reads (formation,
+ * each available player's id, positions, natural position, foot and attributes): a pure cache — the
+ * same squad gives the same XI — that spares the aptitude work on the days the squad did not change.
+ */
+function firstTeamLineup(squad: Squad, formationId: string | undefined, date: string): string[] {
+  const available = squad.players.filter((p) => !isUnavailable(p, date));
+  const key = `${squad.id}#${formationId ?? ""}#${available
+    .map((p) => `${p.id}|${p.positions.join(",")}|${p.naturalPosition ?? ""}|${p.preferredFoot}|${STAT_KEYS.map((k) => p.stats[k] ?? "").join(",")}`)
+    .join(";")}`;
+  const hit = xiCache.get(key);
+  if (hit) return hit;
+  const xi = autoLineupForFormation({ ...squad, players: available }, formationForSimId(formationId));
+  if (xiCache.size >= XI_CACHE_MAX) xiCache.delete(xiCache.keys().next().value!);
+  xiCache.set(key, xi);
+  return xi;
+}
+
 export interface YouthDayInjury {
   squadId: string;
   playerId: string;
@@ -374,6 +398,7 @@ export async function playYouthDay(args: {
     return sets;
   };
 
+  const firstTeamXIs = new Map<string, Set<string>>();
   const squadNow = async (id: string): Promise<Squad | null> => out.squads.get(id) ?? (await args.squadOf(id));
   const consume = (age: YouthCompAge) => {
     if (!out.consumedCallUps.includes(age)) out.consumedCallUps.push(age);
@@ -440,12 +465,20 @@ export async function playYouthDay(args: {
       const filler = { saveId, slug, year: meta.year };
       const side = (squad: Squad) => {
         const human = squad.id === humanClubId;
-        const saved = human ? (args.tactics?.lineup ?? []).filter((id) => id) : [];
-        const xi = saved.length > 0
-          ? saved
-          : autoLineupForFormation(squad, formationForSimId(human ? args.tactics?.formation : squad.aiFormation?.id), date);
+        // The club's first-team XI, computed only when a candidate needs it and once per club a day.
+        const firstTeamXI = () => {
+          let xi = firstTeamXIs.get(squad.id);
+          if (!xi) {
+            const saved = human ? (args.tactics?.lineup ?? []).filter((id) => id) : [];
+            xi = new Set(saved.length > 0
+              ? saved
+              : firstTeamLineup(squad, human ? args.tactics?.formation : squad.aiFormation?.id, date));
+            firstTeamXIs.set(squad.id, xi);
+          }
+          return xi;
+        };
         return pickYouthLineup({
-          age, squad, firstTeamXI: new Set(xi), callUps: human ? (args.callUps?.[age] ?? []) : [],
+          age, squad, firstTeamXI, callUps: human ? (args.callUps?.[age] ?? []) : [],
           playedToday: out.participants, date, filler, nationality: country,
         });
       };

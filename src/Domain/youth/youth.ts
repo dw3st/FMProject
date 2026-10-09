@@ -43,8 +43,24 @@ function assistantLevelBonus(rating: number): number {
   return clamp((rating - 5.5) / 4.5, -1, 1) * Y.ASSISTANT_BONUS;
 }
 
-/** Attribute vector for `target` overall in `specific` role, shaped by the role's weights. */
+const STATS_CACHE_MAX = 20000;
+const statsCache = new Map<string, PlayerStatsRecord>();
+
+/**
+ * Attribute vector for `target` overall in `specific` role, shaped by the role's weights. Pure, so it is
+ * memoised (bounded): the youth-competition fillers ask for the same youngsters every round.
+ */
 export function statsFor(id: string, specific: string, target: number): PlayerStatsRecord {
+  const key = `${id}|${specific}|${target}`;
+  const hit = statsCache.get(key);
+  if (hit) return { ...hit };
+  const out = computeStatsFor(id, specific, target);
+  if (statsCache.size >= STATS_CACHE_MAX) statsCache.delete(statsCache.keys().next().value!);
+  statsCache.set(key, out);
+  return { ...out };
+}
+
+function computeStatsFor(id: string, specific: string, target: number): PlayerStatsRecord {
   const weights = (ROLES as Record<string, { attrWeights?: Record<string, number> }>)[specific]?.attrWeights ?? {};
   const ws = STAT_KEYS.map((k) => weights[k] ?? 0);
   const wMax = Math.max(...ws, 0.001);

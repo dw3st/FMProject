@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyYouthMatch, postponeDate, updateLeaders, youthDpMult, youthMatchLog } from "@/Domain/youthComps/youthMatch";
+import { applyYouthMatch, postponeDate, updateLeaders, youthCompDpMult, youthDpMult, youthMatchLog } from "@/Domain/youthComps/youthMatch";
 import { areaMultsOf } from "@/Domain/staff/staff";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
@@ -91,9 +91,12 @@ describe("applyYouthMatch", () => {
     expect(b.stats).toEqual(b0.stats);
   });
 
-  test("youthDpMult is the match multiplier × DP_MULT", () => {
+  test("youthDpMult is the match multiplier × DP_MULT (over-age × DP_MULT_OVERAGE)", () => {
+    expect(youthCompDpMult(19)).toBe(YOUTH_COMP.DP_MULT);
+    expect(youthCompDpMult(21)).toBe(YOUTH_COMP.DP_MULT);
+    expect(youthCompDpMult(22)).toBe(YOUTH_COMP.DP_MULT_OVERAGE);
     const p0 = squad().players[0]!;
-    const withoutYouth = youthDpMult(squad(), p0) / YOUTH_COMP.DP_MULT;
+    const withoutYouth = youthDpMult(squad(), p0) / youthCompDpMult(p0.age);
     expect(withoutYouth).toBeGreaterThan(0.5);
     expect(withoutYouth).toBeLessThan(2);
   });
