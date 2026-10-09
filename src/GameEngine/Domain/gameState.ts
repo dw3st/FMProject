@@ -1,4 +1,4 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -743,6 +743,15 @@ export function forceInjurySubstitution(
 
   const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
   const bench    = team === 'A' ? s.benchA         : s.benchB;
+  // #140: the manager picks the replacement. The injured player leaves now (the team plays with
+  // one fewer meanwhile, a keeper replaced in goal by `ensureCompetentGK`) and the slot waits.
+  // Open vacancies already hold a substitution and a bench player each: beyond that the team plays
+  // on one short, as without the option.
+  const openVacancies = s.injuryVacancies?.[team]?.length ?? 0;
+  if (s.manualInjurySubs?.[team]) {
+    if (subsLeft > openVacancies && bench.length > openVacancies) return leaveInjuryVacancy(s, player, bench);
+    return ensureCompetentGK(removeInjuredPlayer(s, player), team);
+  }
   let result: GameState;
   if (subsLeft > 0 && bench.length > 0) {
     const best = findBestBenchForRole(bench, player.role);
@@ -751,6 +760,115 @@ export function forceInjurySubstitution(
     result = removeInjuredPlayer(s, player);
   }
   return ensureCompetentGK(result, team);
+}
+
+/**
+ * #140: the injured player of a `manualInjurySubs` team leaves without a replacement; the slot goes
+ * to `injuryVacancies` and `injuryNeedsSub` is emitted (the live match pauses and opens the panel).
+ * An injured keeper is replaced in goal by an outfielder meanwhile (`ensureCompetentGK`); the empty
+ * slot is then the one that outfielder came from.
+ */
+function leaveInjuryVacancy(state: GameState, player: GamePlayer, bench: GamePlayer[]): GameState {
+  const team = player.team;
+  const before = new Map(state.players.filter(p => p.team === team).map(p => [p.id, p] as const));
+  const s = ensureCompetentGK(removeInjuredPlayer(state, player), team);
+  const promoted = player.role === 'GK'
+    ? s.players.find(p => p.team === team && p.role === 'GK' && before.get(p.id)?.role !== 'GK')
+    : undefined;
+  const best = findBestBenchForRole(bench, player.role);
+  const vacancy: InjuryVacancy = {
+    injuredId:       player.id,
+    injuredName:     player.name,
+    injuredRosterId: player.rosterId,
+    injuredEnergy:   player.energy,
+    injuredRole:     player.role,
+    slotIndex:       promoted ? before.get(promoted.id)!.slotIndex : player.slotIndex,
+    suggestedInId:   best?.id ?? null,
+    ...(promoted ? { promotedId: promoted.id } : {}),
+  };
+  gameBus.emit('injuryNeedsSub', {
+    team, injuredId: player.id, injuredName: player.name, slotIndex: vacancy.slotIndex, suggestedInId: vacancy.suggestedInId,
+  });
+  debugLog('injury', `${player.name} (team ${team}) off injured — the manager picks the replacement`, {
+    playerId: player.id, data: { slot: vacancy.slotIndex, suggested: vacancy.suggestedInId, promoted: promoted?.id ?? null },
+  });
+  const vacancies = s.injuryVacancies?.[team] ?? [];
+  return { ...s, injuryVacancies: { ...s.injuryVacancies, [team]: [...vacancies, vacancy] } };
+}
+
+/**
+ * #140: brings bench player `inId` on for the injury vacancy of `injuredId` (uses a substitution).
+ * The newcomer takes the empty slot; a keeper coming on for an injured keeper goes in goal and the
+ * emergency keeper goes back to his slot. Refused (state unchanged) without the vacancy, the bench
+ * player or a substitution left.
+ */
+export function fillInjuryVacancy(state: GameState, team: TeamId, injuredId: number, inId: number): GameState {
+  const vacancies = state.injuryVacancies?.[team] ?? [];
+  const vacancy = vacancies.find(v => v.injuredId === injuredId);
+  const bench = team === 'A' ? state.benchA : state.benchB;
+  const inPlayer = bench.find(p => p.id === inId);
+  const subsLeft = team === 'A' ? state.subsRemainingA : state.subsRemainingB;
+  if (!vacancy || !inPlayer || subsLeft <= 0) return state;
+
+  const formation = team === 'A' ? state.formationA : state.formationB;
+  const instructions = state.slotInstructions?.[team];
+  const teammates = state.players.filter(p => p.team === team);
+  const attackDir = teammates[0]?.attackDir ?? inPlayer.attackDir;
+  const promoted = vacancy.promotedId !== undefined
+    ? teammates.find(p => p.id === vacancy.promotedId && p.role === 'GK')
+    : undefined;
+
+  let players = state.players;
+  let targetSlot = vacancy.slotIndex;
+  if (promoted && inPlayer.role === 'GK') {
+    // The keeper goes in goal; the emergency keeper back to the slot he left.
+    targetSlot = promoted.slotIndex;
+    const back = placeInSlot(promoted, vacancy.slotIndex, formation, instructions);
+    players = players.map(p => (p.id === promoted.id ? back : p));
+  }
+  const used = new Set(players.filter(p => p.team === team).map(p => p.slotIndex));
+  if (used.has(targetSlot)) {
+    const free = formation.attacking.findIndex((_, i) => !used.has(i));
+    if (free < 0) return state;
+    targetSlot = free;
+  }
+  const placed = placeInSlot({ ...inPlayer, team, attackDir }, targetSlot, formation, instructions);
+  const incoming: GamePlayer = {
+    ...placed,
+    x:              placed.basePosition.x,
+    y:              placed.basePosition.y,
+    targetPosition: placed.basePosition,
+    recoveryTime:   0,
+    justReceivedTicks: 0,
+  };
+
+  const record: import('../types').SubstitutionRecord = {
+    team,
+    playerOutId:       vacancy.injuredId,
+    playerOutName:     vacancy.injuredName,
+    playerOutRosterId: vacancy.injuredRosterId,
+    playerOutEnergy:   vacancy.injuredEnergy,
+    playerInId:        inPlayer.id,
+    playerInName:      inPlayer.name,
+    playerInRosterId:  inPlayer.rosterId,
+    matchMinute:       matchMinute(state),
+  };
+  gameBus.emit('playerSubstituted', { outId: vacancy.injuredId, inId: inPlayer.id, team, outEnergy: vacancy.injuredEnergy, reason: 'injury' });
+  debugLog('injury', `${inPlayer.name} on for the injured ${vacancy.injuredName} (team ${team})`, {
+    playerId: inPlayer.id, data: { slot: targetSlot },
+  });
+
+  const newBench = bench.filter(p => p.id !== inId);
+  return ensureCompetentGK(refreshManMarks({
+    ...state,
+    players:        [...players, incoming].sort((a, b) => a.id - b.id),
+    benchA:         team === 'A' ? newBench : state.benchA,
+    benchB:         team === 'B' ? newBench : state.benchB,
+    subsRemainingA: team === 'A' ? state.subsRemainingA - 1 : state.subsRemainingA,
+    subsRemainingB: team === 'B' ? state.subsRemainingB - 1 : state.subsRemainingB,
+    substitutions:  [...state.substitutions, record],
+    injuryVacancies: { ...state.injuryVacancies, [team]: vacancies.filter(v => v !== vacancy) },
+  }), team);
 }
 
 /** Per-tick, per-player injury roll: `injuryRatePerMinute` scaled to the game-minutes elapsed this tick. */
@@ -1238,6 +1356,45 @@ export function changeFormation(
   });
 }
 
+/**
+ * `p` re-built for `slotIndex` of `formation`: the slot's role, anchor, bounds and instruction, and
+ * the engine stats for that role with the out-of-position factor (players without `fit` keep
+ * theirs). Energy and pitch position stay. Shared by the position swap (#115) and the injury
+ * vacancy (#140).
+ */
+function placeInSlot(
+  p: GamePlayer,
+  slotIndex: number,
+  formation: Formation,
+  instructions: (SlotInstruction | null)[] | undefined,
+): GamePlayer {
+  const slotDef = formation.attacking[slotIndex];
+  if (!slotDef) return p;
+  const role = slotDef.role;
+  const setup = slotSetup(slotDef, slotIndex, p.attackDir, formation, instructions?.[slotIndex]);
+  const baseStats = p.fit
+    ? teamLineup(scaleStats(p.fit.stats, factorFromAptitudes(p.fit.aptitudes, role)), role)
+    : p.baseStats;
+  const next: GamePlayer = {
+    ...p,
+    role,
+    slotIndex,
+    basePosition:    setup.basePosition,
+    bounds:          setup.bounds,
+    ballSupportScale: roleEngine(role).ballSupportScale,
+    baseStats,
+    runtimeStats:    getRuntimeLineup(baseStats, { energy: p.energy }),
+    fatigueBaselineEnergy: p.energy,
+    decisionMemory:  EMPTY_DECISION_MEMORY,
+  };
+  delete next.engine;
+  delete next.instruction;
+  delete next.manMarkTargetId;
+  if (setup.engine) next.engine = setup.engine;
+  if (setup.instruction) next.instruction = setup.instruction;
+  return next;
+}
+
 // ── Swap two starters' positions mid-match (#115) ─────────────────────────────
 
 /**
@@ -1256,33 +1413,7 @@ export function swapPlayerPositions(state: GameState, team: TeamId, idA: number,
   const formation = team === 'A' ? state.formationA : state.formationB;
   const instructions = state.slotInstructions?.[team];
 
-  const moveTo = (p: GamePlayer, slotIndex: number): GamePlayer => {
-    const slotDef = formation.attacking[slotIndex];
-    if (!slotDef) return p;
-    const role = slotDef.role;
-    const setup = slotSetup(slotDef, slotIndex, p.attackDir, formation, instructions?.[slotIndex]);
-    const baseStats = p.fit
-      ? teamLineup(scaleStats(p.fit.stats, factorFromAptitudes(p.fit.aptitudes, role)), role)
-      : p.baseStats;
-    const next: GamePlayer = {
-      ...p,
-      role,
-      slotIndex,
-      basePosition:    setup.basePosition,
-      bounds:          setup.bounds,
-      ballSupportScale: roleEngine(role).ballSupportScale,
-      baseStats,
-      runtimeStats:    getRuntimeLineup(baseStats, { energy: p.energy }),
-      fatigueBaselineEnergy: p.energy,
-      decisionMemory:  EMPTY_DECISION_MEMORY,
-    };
-    delete next.engine;
-    delete next.instruction;
-    delete next.manMarkTargetId;
-    if (setup.engine) next.engine = setup.engine;
-    if (setup.instruction) next.instruction = setup.instruction;
-    return next;
-  };
+  const moveTo = (p: GamePlayer, slotIndex: number): GamePlayer => placeInSlot(p, slotIndex, formation, instructions);
 
   const nextA = moveTo(a, b.slotIndex);
   const nextB = moveTo(b, a.slotIndex);

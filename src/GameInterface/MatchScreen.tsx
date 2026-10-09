@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
@@ -416,6 +416,8 @@ export function MatchScreen() {
             },
           ),
           knockout: data.fixture.knockout === true,
+          // #140: the user picks the replacement of an injured player (the AI side stays automatic).
+          manualInjurySubs: { A: true },
           ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
@@ -572,6 +574,13 @@ export function MatchScreen() {
           t("match.injuryNotice", { player: shirtName(data.playerName), severity: t(`match.injurySeverity.${data.severity}`) }),
           "danger",
         );
+      }),
+      // #140: an injured player of the user's side left with no replacement: pause and open the
+      // substitutions, with the injured player and the suggested bench player marked.
+      gameBus.on("injuryNeedsSub", (e) => {
+        if (e.team !== "A") return;
+        setPaused(true);
+        setShowSubPanel(true);
       }),
       gameBus.on("offsideCalled", (e) => {
         push({ minute: minuteNow(), team: e.team, kind: "offside", player: nameOf(e.receiverId) });
@@ -832,6 +841,11 @@ export function MatchScreen() {
   /** Two starters swap positions (#115): no substitution used, only this match. */
   function handleSwapPositions(aId: number, bId: number) {
     setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
+  }
+
+  /** #140: bench player `inId` takes the slot an injured player left (uses a substitution). */
+  function handleFillVacancy(injuredId: number, inId: number) {
+    setGameState((prev) => (prev ? fillInjuryVacancy(prev, "A", injuredId, inId) : prev));
   }
 
   /** Live instruction change (player instructions): only this match, never saved. */
@@ -1237,6 +1251,7 @@ export function MatchScreen() {
           ratings={ratings}
           onQueueSub={handleQueueSub}
           onSwapPositions={handleSwapPositions}
+          onFillVacancy={handleFillVacancy}
           onChangeFormation={handleChangeFormation}
           onInstruction={handleInstruction}
           onManMarks={handleManMarks}

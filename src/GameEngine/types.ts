@@ -258,6 +258,28 @@ export interface PendingSub {
 }
 
 /** One entry in the match injury log (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */
+/**
+ * A slot left empty by an injury of a team whose manager picks the replacement (#140,
+ * `GameState.manualInjurySubs`): the injured player already left the pitch; the team plays with
+ * one fewer until `fillInjuryVacancy` brings a bench player on.
+ */
+export interface InjuryVacancy {
+  /** Engine id of the injured player (gone from the pitch). */
+  injuredId: number;
+  injuredName: string;
+  injuredRosterId: string;
+  /** Energy of the injured player when he went off (for the substitution record). */
+  injuredEnergy: number;
+  /** Role of the injured player (what the suggestion is for). */
+  injuredRole: PlayerRole;
+  /** Empty slot to fill (a keeper's injury: the slot the emergency keeper came from). */
+  slotIndex: number;
+  /** Best bench player for the injured player's role (`findBestBenchForRole`), when any. */
+  suggestedInId: number | null;
+  /** Injured keeper: the outfielder put in goal meanwhile (`ensureCompetentGK`). */
+  promotedId?: number;
+}
+
 export interface InjuryRecord {
   team: TeamId;
   /** Engine player ID of the player who got injured. */
@@ -646,6 +668,13 @@ export interface GameState {
    * The AI never sets this.
    */
   setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /**
+   * Teams whose manager picks the replacement of an injured player (#140, the human team of the
+   * live match). Absent = automatic (`forceInjurySubstitution`): AI, `simulateMatch`, `/test`.
+   */
+  manualInjurySubs?: Partial<Record<TeamId, true>>;
+  /** Slots left empty by injuries of a `manualInjurySubs` team, waiting for the manager (#140). */
+  injuryVacancies?: Partial<Record<TeamId, InjuryVacancy[]>>;
   /**
    * Manager's per-slot instructions per team (index = slot; `player-instructions.md`). Kept so a
    * formation change or a substitute re-resolves the slot's tuning. The AI never sets this.

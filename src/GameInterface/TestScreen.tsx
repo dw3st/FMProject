@@ -494,6 +494,8 @@ export function TestScreen() {
   const [liveGameState, setLiveGameState]       = useState<GameState | null>(null);
   // Live substitution panel for Team A (#115): same panel as the match, via test commands.
   const [showSubs, setShowSubs] = useState(false);
+  // #140: team A picks the replacement of an injured player (as the live match does).
+  const [manualInjA, setManualInjA] = useState(false);
   const liveStateRef = useRef<GameState | null>(null);
   const [livePlayer, setLivePlayer] = useState<GamePlayer | null>(null);
   const lastDefensiveScoresRef = useRef<Record<number, unknown>>({});
@@ -722,6 +724,15 @@ export function TestScreen() {
       gameBus.emit('testCommand', { type: 'setTeamIntent', team: 'A', intent: intentOverrideA });
     }
   }, [intentOverrideA, liveBallHolder]);
+  // #140: keep the engine flag in sync (re-sent like the intent pin, so a rebuilt state gets it).
+  useEffect(() => {
+    gameBus.emit('testCommand', { type: 'setManualInjurySubs', team: 'A', on: manualInjA });
+  }, [manualInjA, liveBallHolder]);
+  useEffect(() => gameBus.on('injuryNeedsSub', e => {
+    if (e.team !== 'A') return;
+    setPaused(true);
+    setShowSubs(true);
+  }), []);
   useEffect(() => {
     if (intentOverrideB !== 'auto') {
       gameBus.emit('testCommand', { type: 'setTeamIntent', team: 'B', intent: intentOverrideB });
@@ -1374,6 +1385,14 @@ export function TestScreen() {
             <Icon name="arrow-right-left" size={14} />Subs A
           </button>
         )}
+        {mode === '11v11' && (
+          <button onClick={() => setManualInjA(v => !v)} title="Team A picks the replacement of an injured player (#140)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
+              manualInjA ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
+            }`}>
+            <Icon name="heart-pulse" size={14} />Manual injury subs
+          </button>
+        )}
         <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/30 p-0.5">
           {SPEEDS.map(s => (
             <button key={s.value} onClick={() => setSpeed(s.value)}
@@ -1804,6 +1823,7 @@ export function TestScreen() {
           playerTeam="A"
           onQueueSub={sub => gameBus.emit('testCommand', { type: 'queueSub', team: 'A', outId: sub.outId, inId: sub.inId })}
           onSwapPositions={(aId, bId) => gameBus.emit('testCommand', { type: 'swapPositions', team: 'A', aId, bId })}
+          onFillVacancy={(injuredId, inId) => gameBus.emit('testCommand', { type: 'fillVacancy', team: 'A', injuredId, inId })}
           onClose={() => setShowSubs(false)}
         />
       )}
