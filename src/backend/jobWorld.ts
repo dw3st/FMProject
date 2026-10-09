@@ -280,7 +280,17 @@ export async function releaseHumanClub(
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).
-  const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant) };
+  // Registration lists stay (the AI keeps the registered players) without the human club's bookkeeping.
+  const registrations = rest.registrations
+    ? Object.fromEntries(Object.entries(rest.registrations).map(([slug, l]) => {
+        const { manual: _m, out: _o, notified: _n, waiting: _w, ...list } = l;
+        return [slug, list];
+      }))
+    : undefined;
+  const ai: Squad = {
+    ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant),
+    ...(registrations ? { registrations } : {}),
+  };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
   const leaving = [...trimmed.released, ...academy.released];
   if (leaving.length > 0) {

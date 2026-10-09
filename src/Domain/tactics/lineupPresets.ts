@@ -161,7 +161,8 @@ export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[],
   // 2. Injured or suspended starters.
   const swapped = replaceUnavailableStarters(slots, lineup, players, date);
   for (const r of swapped.replaced) {
-    replaced.push({ out: r.out, in: r.in, slot: lineup.indexOf(r.out), reason: r.reason });
+    // Presets never pass a registered set: only injured or suspended swaps come back here.
+    replaced.push({ out: r.out, in: r.in, slot: lineup.indexOf(r.out), reason: r.reason === "injured" ? "injured" : "suspended" });
   }
   // 3. Unavailable starters nobody could replace (squad too thin): they stay, flagged.
   swapped.lineup.forEach((id, slot) => {

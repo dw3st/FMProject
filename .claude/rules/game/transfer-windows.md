@@ -163,3 +163,8 @@ abrir, e Convites).
 
 `PreferenceInput.facilitiesAppeal` (só o clube do jogador): `preferenceScore` desconta até 0,10 com o CT abaixo de
 50%; `preferredClub` pode dar o motivo `facilities` (`prefers_rival` traduzido). Ver `facilities.md`.
+
+## Inscrição (Etapa 37, 4.15)
+
+A lista de inscritos de cada competição só muda com a janela do país do clube aberta (na continental, também antes
+da fase seguinte); fora dela fica congelada e quem chega espera a próxima janela. Ver `.claude/rules/game/registration.md`.

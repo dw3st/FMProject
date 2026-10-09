@@ -329,3 +329,9 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
   (`trainingGroundEffectsOf(squad).injuryDurationMult` = nível × condição: ×1,25 em 0%/interditada; nível
   ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15; neutra na largada). A IA não muda.
 - Medido (M1/M2): ver a tabela de medições em `facilities.md`.
+
+## Inscrição (Etapa 37, 4.15)
+
+`replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
+`unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
+`foreignLimit`. Ver `.claude/rules/game/registration.md`.

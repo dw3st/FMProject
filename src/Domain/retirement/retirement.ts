@@ -186,6 +186,7 @@ export function generateReborn(args: {
     positions: retired.positions, stats: stats as unknown as PlayerStatsRecord, profile: retired.profile,
     nationality: retired.nationality,
     reborn: { fromId: retired.id },
+    academyOf: squad.id,
   };
   return { ...player, contract: renewalContract(player, squad, nextSeasonEnd, YOUTH.CONTRACT_YEARS) };
 }

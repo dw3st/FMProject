@@ -87,6 +87,7 @@ describe("reborn routes", () => {
     expect(born.age).toBe(17);
     expect(born.name).toBe("Legend b");
     expect(born.contract?.until).toBeTruthy();
+    expect(born.academyOf).toBe(squad.id);
     expect((await saveService.getRetired(saveId)).find((r) => r.id === "b")!.rebornOffer).toBe("accepted");
 
     // Full academy blocks the accept (offer stays pending).

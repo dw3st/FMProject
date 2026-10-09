@@ -5,6 +5,7 @@ import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/mora
 import type { Personality, PersonalityView } from "@/types/personalityTypes";
 import type { ScoutView } from "@/types/scoutingTypes";
 import type { PlayerAward } from "@/types/awardTypes";
+import type { RegistrationList } from "@/types/registrationTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -197,6 +198,11 @@ export interface RosterPlayer {
    * it replaces the attribute-derived natural role and the overall is that role's score.
    */
   naturalPosition?: DetailedRole;
+  /**
+   * Club whose academy formed the player when the id does not say it (a scouted prospect signed for
+   * the academy, an accepted reborn). Counts as formed at the club (`.claude/rules/game/registration.md`).
+   */
+  academyOf?: string;
 }
 
 /** The 14 detailed positions (`src/Data/roles.json`). */
@@ -329,6 +335,11 @@ export interface Squad {
    * store it; a club switch clears it (old club) and starts it empty (new club).
    */
   moraleClub?: ClubMoraleState;
+  /**
+   * Registered players per competition slug (league, cup, continental; never youth competitions),
+   * `.claude/rules/game/registration.md`. Absent or stale list = built automatically on first need.
+   */
+  registrations?: Record<string, RegistrationList>;
 }
 
 /** AI club's formation for a season (`chooseAiFormation`). */
