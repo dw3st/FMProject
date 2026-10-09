@@ -908,7 +908,9 @@
       "all": "Jogo todo",
       "aria": "Onde a bola esteve com {{team}} ({{window}})",
       "attack": "Direção do ataque",
-      "empty": "Ainda sem posse"
+      "empty": "Ainda sem posse",
+      "show": "Mostrar o mapa de posse",
+      "hide": "Esconder o mapa de posse"
     },
     "liveTactics": {
       "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",

@@ -908,7 +908,9 @@
       "all": "Whole match",
       "aria": "Where the ball was with {{team}} ({{window}})",
       "attack": "Attacking direction",
-      "empty": "No possession yet"
+      "empty": "No possession yet",
+      "show": "Show the possession map",
+      "hide": "Hide the possession map"
     },
     "liveTactics": {
       "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
