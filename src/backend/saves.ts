@@ -1,6 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { SeasonData } from "@/types/calendarTypes";
+import type { Fixture, SeasonData } from "@/types/calendarTypes";
+import { youthCompsOfCountry } from "@/backend/youthCompWorld";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
@@ -116,11 +117,22 @@ export const saveRoutes = {
           const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures].sort((a, b) =>
             a.date.localeCompare(b.date),
           );
+          const country = (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country;
+          const youthCalendar: Fixture[] = [];
+          if (country && myId) {
+            const comps = await youthCompsOfCountry(saveService, id, country);
+            for (const slug of [comps.u21, comps.u19]) {
+              if (!slug) continue;
+              youthCalendar.push(...(await saveService.getAllFixturesForLeague(id, slug)).filter((f) => f.home === myId || f.away === myId));
+            }
+            youthCalendar.sort((a, b) => a.date.localeCompare(b.date));
+          }
           season = {
             year: playerLeagueState.year,
             start: playerLeagueState.start,
             end: playerLeagueState.end,
             calendar: fullCalendar,
+            ...(youthCalendar.length > 0 ? { youthCalendar } : {}),
             restDays: playerLeagueState.restDays ?? [],
           };
         }

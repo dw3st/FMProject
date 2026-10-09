@@ -474,6 +474,8 @@ export async function acceptJobOffer(
     rotationOverride: undefined,
     directorDecisions: undefined,
     matchMarking: undefined,
+    youthCallUps: undefined,
+    youthCallUpsSkipped: undefined,
     style_focus: undefined,
   });
 }

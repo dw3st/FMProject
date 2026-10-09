@@ -82,7 +82,10 @@ describe("jobs: sacking, offers, changing club", () => {
     // D3: the offer carries the compensation the new club pays (what the card shows).
     const offerCompensation = compensationFee((await saveService.getMeta(meta.id))!.managerContract, date);
     const accepted = { ...(await offerFor(meta, target, addDays(date, 3))), budget: 7_777_777, compensation: offerCompensation };
-    await saveService.updateMeta(meta.id, { jobOffers: [declined, expired, accepted] });
+    await saveService.updateMeta(meta.id, {
+      jobOffers: [declined, expired, accepted],
+      youthCallUps: { u21: ["x"] }, youthCallUpsSkipped: { u21: { date, players: ["x"] } },
+    });
     // A reborn offer pending at the old club, and the new club's best player out of contract this season.
     const legend = (id: string): RetiredPlayer => ({
       id, name: id, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
@@ -124,6 +127,8 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(after.clubId).toBe(target);
     expect(after.leagueSlug).toBe("la_liga");
     expect(after.jobOffers).toEqual([]);
+    expect(after.youthCallUps).toBeUndefined();
+    expect(after.youthCallUpsSkipped).toBeUndefined();
     expect(after.board).toMatchObject({ board: 60, fans: 60 });
     expect(after.board?.objective?.leagueSlug).toBe("la_liga");
     const ll = after.activeLeagues!.find((l) => l.leagueSlug === "la_liga")!;

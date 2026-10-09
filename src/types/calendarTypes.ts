@@ -41,6 +41,11 @@ export interface SeasonData {
   end:      string;
   calendar: Fixture[];
   /**
+   * The club's youth-competition games (under-21 / under-19), kept apart from `calendar`: a youth
+   * game is never "the match day" (`.claude/rules/game/youth-competitions.md`).
+   */
+  youthCalendar?: Fixture[];
+  /**
    * ISO dates that are rest days (recovery, no training).
    * Pre-seeded with the day before and after each match date.
    * Players can toggle future non-game days between "training" and "rest".
