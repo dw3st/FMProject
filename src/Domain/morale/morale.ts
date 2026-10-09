@@ -5,6 +5,7 @@
  * `Squad.moraleClub`). AI clubs store nothing: every reader here treats an absent value as the
  * neutral start (65), whose match effect is exactly zero.
  */
+import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { AWARDS } from "@/Domain/awards/awardsConfig";
 import type { AwardKind } from "@/types/awardTypes";
@@ -138,9 +139,21 @@ export function windowMatches(minutes: number[]): number | null {
  * more), inside it 0, below it −1.5 per missing match (rounded, at least −1, at most −6).
  * `excused` (injured or suspended) never loses morale for missing minutes.
  */
-export function minutesDelta(status: SquadStatus, minutes: number[], excused = false): number {
+export function minutesDelta(status: SquadStatus, minutes: number[], excused = false, youthMinutes?: number[]): number {
   const p = windowMatches(minutes);
   if (p === null) return 0;
+  const base = deltaFor(status, p, excused);
+  // Youth-competition games only soften a loss for missing minutes (youth, backup, rotation); they
+  // never give the "played above the expectation" bonus (`.claude/rules/game/youth-competitions.md`).
+  if (base >= 0 || !youthMinutes?.length || !YOUTH_MINUTES_ROLES.has(status)) return base;
+  const y = (youthMinutes.reduce((a, m) => a + Math.min(1, m / 90), 0) * MORALE.WINDOW) / youthMinutes.length;
+  return Math.min(0, deltaFor(status, p + YOUTH_COMP.MORALE_YOUTH_WEIGHT * y, excused));
+}
+
+const YOUTH_MINUTES_ROLES: ReadonlySet<SquadStatus> = new Set<SquadStatus>(["youth", "backup", "rotation"]);
+
+/** Minutes delta for `p` full-match equivalents over the window (see `minutesDelta`). */
+function deltaFor(status: SquadStatus, p: number, excused: boolean): number {
   const [lo, hi] = expectedRange(status);
   if (p >= hi) return Math.min(MORALE.MINUTES_MAX_DELTA, 1 + Math.floor(p - hi));
   if (p >= lo) return 0;
@@ -415,7 +428,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       // The window only counts again once new matches entered it (breaks, off-season: no change).
       const fresh = (log.newMatches ?? 0) > 0;
       // Personality: an ambitious player feels missing minutes more; every event × temperament.
-      const md = fresh ? minutesDelta(status, log.minutes, excused) : 0;
+      const md = fresh ? minutesDelta(status, log.minutes, excused, log.youthMinutes) : 0;
       let v = moraleOf(p0) + (md < 0 ? md * minutesDeficitMult(p0) : md) * moraleVolatility(p0);
       v += (MORALE.NEUTRAL - v) * MORALE.DRIFT;
       let p: RosterPlayer = { ...p0, morale: clampMorale(v), ...(p0.moraleLog ? { moraleLog: { ...log, newMatches: 0 } } : {}) };

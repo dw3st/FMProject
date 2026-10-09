@@ -131,6 +131,24 @@ describe("squad status and minutes", () => {
     expect(minutesDelta("key", five(0), true)).toBe(0);
     expect(minutesDelta("key", [0, 0])).toBe(0);
   });
+
+  test("youth-competition minutes soften the loss of youth/backup/rotation, never a bonus", () => {
+    const five = (n: number) => [...Array(n).fill(90), ...Array(5 - n).fill(0)];
+    const youth5 = [90, 90, 90, 90, 90];
+    // rotation expects 2-3: one match = deficit; five youth games soften it, never above 0.
+    expect(minutesDelta("rotation", five(1))).toBeLessThan(0);
+    expect(minutesDelta("rotation", five(1), false, youth5)).toBeGreaterThan(minutesDelta("rotation", five(1)));
+    expect(minutesDelta("rotation", five(1), false, youth5)).toBeLessThanOrEqual(0);
+    expect(minutesDelta("rotation", five(0), false, youth5)).toBeLessThanOrEqual(0);
+    // key/starter: unchanged.
+    expect(minutesDelta("key", five(0), false, youth5)).toBe(minutesDelta("key", five(0)));
+    expect(minutesDelta("starter", five(2), false, youth5)).toBe(minutesDelta("starter", five(2)));
+    // no deficit: no bonus from youth games.
+    expect(minutesDelta("rotation", five(3), false, youth5)).toBe(minutesDelta("rotation", five(3)));
+    expect(minutesDelta("backup", five(0), false, youth5)).toBe(0);
+    // absent / empty = today's behaviour.
+    expect(minutesDelta("rotation", five(1), false, [])).toBe(minutesDelta("rotation", five(1)));
+  });
 });
 
 describe("moraleDay", () => {
@@ -161,6 +179,19 @@ describe("moraleDay", () => {
     expect(f0.morale).toBeCloseTo(33.7, 1);
     expect(out.squad.moraleClub!.talks.map((t) => t.reason)).toEqual(["minutes"]);
     expect(out.news.some((n) => n.kind === "talk" && n.playerId === "f0")).toBe(true);
+  });
+
+  test("Monday: youth-competition minutes soften a rotation player's loss", () => {
+    const run = (youthMinutes?: number[]) => {
+      const sq = fullSquad();
+      sq.players = sq.players.map((p) =>
+        p.id === "f0"
+          ? { ...p, squadStatus: "rotation" as const, morale: 60, moraleLog: { minutes: [90, 0, 0, 0, 0], trend: [], newMatches: 2, ...(youthMinutes ? { youthMinutes } : {}) } }
+          : p);
+      const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId });
+      return out.squad.players.find((x) => x.id === "f0")!.morale!;
+    };
+    expect(run([90, 90, 90, 90, 90])).toBeGreaterThan(run());
   });
 
   test("Monday without a new match in the window: no minutes delta (international break, off-season)", () => {
