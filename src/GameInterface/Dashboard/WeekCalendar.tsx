@@ -11,6 +11,8 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { HomeCard } from "@/GameInterface/Dashboard/HomeCards";
 import { RESULT_CHIP } from "@/GameInterface/formColors";
+import { youthCompAgeOf } from "@/Domain/youthComps/youthCompIds";
+import type { YouthCompAge } from "@/types/youthCompTypes";
 
 type MatchOutcome = "W" | "D" | "L";
 type DayEventType = "match" | "training" | "rest";
@@ -51,6 +53,36 @@ export function matchEventLabel(
   return { label: `${outcome} ${myGoals}–${oppGoals} ${prefix} ${opponentName}`, outcome };
 }
 
+/** A youth-competition game of the club on one day (`season.youthCalendar`): never a match day. */
+export interface YouthDayEntry {
+  age: YouthCompAge;
+  opponentId: string;
+  isHome: boolean;
+  /** "W 2–1", "D 0–0"…, `null` before it is played; cancelled games carry `cancelled`. */
+  score: string | null;
+  cancelled: boolean;
+}
+
+/** The club's youth games of `date` (under-19 first). */
+export function youthDayEntries(fixtures: Fixture[], date: string, mySquadId: string): YouthDayEntry[] {
+  return fixtures
+    .filter((f) => f.date === date && (f.home === mySquadId || f.away === mySquadId) && youthCompAgeOf(f.competition))
+    .map((f) => {
+      const isHome = f.home === mySquadId;
+      const played = f.played && f.result != null;
+      return {
+        age: youthCompAgeOf(f.competition)!,
+        opponentId: isHome ? f.away : f.home,
+        isHome,
+        score: played
+          ? `${matchOutcomeFor(f, isHome)} ${isHome ? f.result!.home : f.result!.away}–${isHome ? f.result!.away : f.result!.home}`
+          : null,
+        cancelled: !!f.cancelled,
+      };
+    })
+    .sort((a, b) => (a.age === b.age ? 0 : a.age === "u19" ? -1 : 1));
+}
+
 function getMondayOf(dateStr: string): Date {
   const d = new Date(dateStr + "T12:00:00");
   const dow = d.getDay();
@@ -64,6 +96,8 @@ function toDateStr(d: Date): string {
 
 interface Props {
   fixtures:        Fixture[];
+  /** The club's youth-competition games (shown under the day, never a match day). */
+  youthFixtures?:  Fixture[];
   restDays:        string[];
   mySquadId:       string;
   currentDate:     string;
@@ -80,7 +114,7 @@ function eventClass(type: DayEventType, outcome: MatchOutcome | null): string {
   return "bg-primary/20 text-primary border-primary/40";
 }
 
-export function WeekCard({ fixtures, restDays, mySquadId, currentDate, leagues, onToggleDayType }: Props) {
+export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, currentDate, leagues, onToggleDayType }: Props) {
   const { t, i18n } = useTranslation();
   const [weekOffset, setWeekOffset] = useState(0);
   const restSet = useMemo(() => new Set(restDays), [restDays]);
@@ -131,9 +165,10 @@ export function WeekCard({ fixtures, restDays, mySquadId, currentDate, leagues, 
         eventType,
         label,
         outcome,
+        youth: youthDayEntries(youthFixtures, dateStr, mySquadId),
       };
     });
-  }, [fixtures, mySquadId, currentDate, leagues, weekOffset, restSet, lang, t]);
+  }, [fixtures, youthFixtures, mySquadId, currentDate, leagues, weekOffset, restSet, lang, t]);
 
   if (!currentDate || weekDays.length === 0) return null;
 
@@ -226,6 +261,20 @@ export function WeekCard({ fixtures, restDays, mySquadId, currentDate, leagues, 
                   {content}
                 </div>
               )}
+              {day.youth.map((y) => {
+                const opponent = teamDisplayNameFromLeagues(y.opponentId, leagues);
+                const text = y.cancelled
+                  ? t("youthComps.cancelled")
+                  : `${y.score ? `${y.score} ` : ""}${y.isHome ? "vs" : "@"} ${opponent}`;
+                return (
+                  <div key={y.age} className="flex items-center gap-1.5 min-w-0 text-sm text-muted-foreground" title={`${t(`youthComps.${y.age}`)} · ${text}`}>
+                    <span className="shrink-0 rounded border border-chart-5/40 bg-chart-5/10 px-1.5 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-chart-5">
+                      {t(`youthComps.badge.${y.age}`)}
+                    </span>
+                    <span className="truncate min-w-0">{text}</span>
+                  </div>
+                );
+              })}
             </li>
           );
         })}

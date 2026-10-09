@@ -131,6 +131,24 @@ describe("squad status and minutes", () => {
     expect(minutesDelta("key", five(0), true)).toBe(0);
     expect(minutesDelta("key", [0, 0])).toBe(0);
   });
+
+  test("youth-competition minutes soften the loss of youth/backup/rotation, never a bonus", () => {
+    const five = (n: number) => [...Array(n).fill(90), ...Array(5 - n).fill(0)];
+    const youth5 = [90, 90, 90, 90, 90];
+    // rotation expects 2-3: one match = deficit; five youth games soften it, never above 0.
+    expect(minutesDelta("rotation", five(1))).toBeLessThan(0);
+    expect(minutesDelta("rotation", five(1), false, youth5)).toBeGreaterThan(minutesDelta("rotation", five(1)));
+    expect(minutesDelta("rotation", five(1), false, youth5)).toBeLessThanOrEqual(0);
+    expect(minutesDelta("rotation", five(0), false, youth5)).toBeLessThanOrEqual(0);
+    // key/starter: unchanged.
+    expect(minutesDelta("key", five(0), false, youth5)).toBe(minutesDelta("key", five(0)));
+    expect(minutesDelta("starter", five(2), false, youth5)).toBe(minutesDelta("starter", five(2)));
+    // no deficit: no bonus from youth games.
+    expect(minutesDelta("rotation", five(3), false, youth5)).toBe(minutesDelta("rotation", five(3)));
+    expect(minutesDelta("backup", five(0), false, youth5)).toBe(0);
+    // absent / empty = today's behaviour.
+    expect(minutesDelta("rotation", five(1), false, [])).toBe(minutesDelta("rotation", five(1)));
+  });
 });
 
 describe("moraleDay", () => {
@@ -163,6 +181,19 @@ describe("moraleDay", () => {
     expect(out.news.some((n) => n.kind === "talk" && n.playerId === "f0")).toBe(true);
   });
 
+  test("Monday: youth-competition minutes soften a rotation player's loss", () => {
+    const run = (youthMinutes?: number[]) => {
+      const sq = fullSquad();
+      sq.players = sq.players.map((p) =>
+        p.id === "f0"
+          ? { ...p, squadStatus: "rotation" as const, morale: 60, moraleLog: { minutes: [90, 0, 0, 0, 0], trend: [], newMatches: 2, ...(youthMinutes ? { youthMinutes } : {}) } }
+          : p);
+      const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId });
+      return out.squad.players.find((x) => x.id === "f0")!.morale!;
+    };
+    expect(run([90, 90, 90, 90, 90])).toBeGreaterThan(run());
+  });
+
   test("Monday without a new match in the window: no minutes delta (international break, off-season)", () => {
     const sq = fullSquad();
     sq.players = sq.players.map((p) =>
@@ -178,7 +209,7 @@ describe("moraleDay", () => {
       ...fullSquad(),
       moraleClub: { talks: [], promises: [{ id: "p1", playerId: "d4", playerName: "x", kind: "minutes" as const, madeOn: "2027-03-01", target: 1, matches: 0, played: 0 }] },
     };
-    sq.players = sq.players.map((p) => (p.id === "d4" ? { ...p, moraleLog: { minutes: [90], trend: [] } } : p));
+    sq.players = sq.players.map((p) => (p.id === "d4" ? { ...p, moraleLog: { minutes: [90], trend: [], youthMinutes: [90] } } : p));
     const out = moraleDay({
       squad: sq, date: "2027-03-03", monday: false, bids: [], sellList: [], newId,
       matches: [{ result: "D", minutes: {}, goals: {}, ratings: {} }], unavailable: new Set(["d4"]),
@@ -188,6 +219,7 @@ describe("moraleDay", () => {
     expect(out.squad.moraleClub!.promises[0]!.matches).toBe(0);
     const rolled = moraleDay({ squad: out.squad, date: "2027-03-04", monday: false, matches: [], bids: [], sellList: [], seasonRolled: true, newId });
     expect(rolled.squad.players.find((x) => x.id === "d4")!.moraleLog!.minutes).toEqual([]);
+    expect(rolled.squad.players.find((x) => x.id === "d4")!.moraleLog!.youthMinutes).toEqual([]);
   });
 
   test("the weekly cap of talk requests covers wants_move talks", () => {

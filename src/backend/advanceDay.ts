@@ -110,6 +110,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
+import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -672,6 +673,21 @@ export async function advanceOneDay(
     // Full-engine league matches only (quickSim events carry no `goals`); idempotent by key.
     await recordSeasonGoals(saveService, saveId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"), activeLeagues);
 
+    // ── Youth competitions (under-21 / under-19, `.claude/rules/game/youth-competitions.md`) ──
+    // After the first-team matches (the day knows `teamsPlayingToday`) and before training: who
+    // played a youth game neither trains nor rests; the games stay out of `dayEvents`.
+    const youthDay = await playYouthDay({
+      service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
+      callUps: meta.youthCallUps, tactics, teamsPlayingToday,
+      squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+    });
+    for (const [id, squad] of youthDay.squads) {
+      const e = index.byId(id);
+      if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
+    }
+    for (const inj of youthDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
+    for (const h of youthDay.healed) injuryInboxEvents.push({ kind: "returned", ...h });
+
     // ── Aggregate development messages for user's club ────────────────────────
     // One message per player per day, merging stat changes across multiple matches.
     if (playerSquadId) {
@@ -736,11 +752,12 @@ export async function advanceOneDay(
       for (const row of index.inLeague(league)) {
         if (teamsPlayingToday.has(row.squadId)) continue;
         const club = index.byId(row.squadId)!.stem;
-        const squad = await saveService.getSquad(saveId, league, club);
+        // A youth game today already changed this squad: build on it, never on the disk copy.
+        const squad = squadWrites.get(row.squadId)?.squad ?? await saveService.getSquad(saveId, league, club);
         if (!squad) continue;
 
         if (isRestDay) {
-          const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate);
+          const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate, { skipPlayerIds: youthDay.participants });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
           for (const playerId of healedPlayerIds) {
@@ -753,7 +770,7 @@ export async function advanceOneDay(
             { ...meta, style_focus: meta.style_focus ?? tactics?.tactical_style }, club, row.squadId,
           );
           const { event, updatedSquad, healedPlayerIds, newInjuries } =
-            buildTrainingEvent(row.squadId, squad, policy, currentDate);
+            buildTrainingEvent(row.squadId, squad, policy, currentDate, Math.random, { skipPlayerIds: youthDay.participants });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
           for (const playerId of healedPlayerIds) {
@@ -1245,6 +1262,7 @@ export async function advanceOneDay(
       saveId, date: currentDate,
       events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
       ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
+      ...(youthDay.logs.length > 0 ? { youthMatches: youthDay.logs } : {}),
     });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
@@ -2342,6 +2360,15 @@ export async function advanceOneDay(
       }
     }
 
+    // ── Youth competitions: archived and regenerated when the country's tier-1 league rolled (same
+    // trigger as the cups, after the continentals so the new continental dates are known). Fail-fast. ──
+    if (due.units.length > 0 || due.resync.length > 0) {
+      await regenerateYouthComps({
+        service: saveService, saveId, today: currentDate, index,
+        catalog: await getLeagueData(), pyramids: await getPyramids(), updatedActiveLeagues,
+      });
+    }
+
     // ── Board and fans: daily review (warning, ultimatum, praise, sacking) + today's snapshot ──
     // A sacking leaves the manager without a club (`.claude/rules/game/jobs.md`): the club becomes
     // an AI club today and the career goes on, with offers arriving every two weeks.
@@ -2681,6 +2708,18 @@ export async function advanceOneDay(
     if (directorDecided) metaPatch.directorDecisions = directorDecided;
     // Man-marking is chosen per match day (player instructions): the advance clears it.
     if (meta.matchMarking) metaPatch.matchMarking = undefined;
+    if (youthDay.consumedCallUps.length > 0) {
+      const callUps = { ...meta.youthCallUps };
+      const skipped = { ...meta.youthCallUpsSkipped };
+      for (const age of youthDay.consumedCallUps) {
+        delete callUps[age];
+        const ids = youthDay.skippedCallUps[age] ?? [];
+        if (ids.length > 0) skipped[age] = { date: currentDate, players: ids };
+        else delete skipped[age];
+      }
+      metaPatch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
+      metaPatch.youthCallUpsSkipped = skipped.u21 || skipped.u19 ? skipped : undefined;
+    }
     if (ended) {
       metaPatch.managerContract = undefined;
       metaPatch.managerRenewal = undefined;
@@ -2689,6 +2728,8 @@ export async function advanceOneDay(
       metaPatch.clubId = "";
       metaPatch.board = undefined;
       metaPatch.rotationOverride = undefined;
+      metaPatch.youthCallUps = undefined;
+      metaPatch.youthCallUpsSkipped = undefined;
     }
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (!ended && playerHome && playerHome !== meta.leagueSlug) {
@@ -2736,6 +2777,22 @@ export const advanceDayRoutes = {
     // (presimulatePreStart) is reserved for the offline kit generator — running it
     // here would block for minutes.
     const result = await applyRandomStartKit(saveId);
+
+    // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
+    // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
+    {
+      const m = await saveService.getMeta(saveId);
+      if (m?.currentDate) {
+        try {
+          await ensureYouthCompetitions({
+            service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId),
+            catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues: m.activeLeagues ?? [],
+          });
+        } catch (e) {
+          logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+        }
+      }
+    }
 
     // Continental season-start news, read from whatever is on disk AFTER the kit decision above
     // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.

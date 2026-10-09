@@ -1159,3 +1159,8 @@ temporada. Os demais prêmios valem em todas as ligas. Ver `.claude/rules/game/a
 `QuickSimInput.pitchCondition` (o gramado do mandante, `matchPitchCondition`) multiplica o `staffMult` das lesões dos
 dois lados por `pitchInjuryMult` (×1 a partir de 40%, até ×1,6). Ausente/90 = o sorteio de antes, idêntico. Medição
 em `.claude/rules/game/facilities.md` → "Medições".
+
+## Torneios de base (Etapa 36)
+
+Os jogos de base também rodam no quickSim (`playYouthDay`, 4-3-3, gramado 90, sem moral nem familiaridade), sem
+calibração própria: o volume do mundo não é medido contra o motor. Ver `.claude/rules/game/youth-competitions.md`.

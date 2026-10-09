@@ -5,6 +5,7 @@ import { saveService } from "@/backend/SaveService";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -69,9 +70,9 @@ export function stripHumanOnly(squad: Squad): Squad {
 /** Read a save's full world into a serialisable snapshot. */
 async function buildKitWorld(saveId: string): Promise<KitWorld> {
   const meta = await saveService.getMeta(saveId);
-  // Leagues from activeLeagues + every cup and continental folder (neither is a league state).
+  // Leagues from activeLeagues + every cup, continental and youth folder (none is a league state).
   const knockoutSlugs = (await saveService.listCompetitionSlugs(saveId)).filter(
-    (s) => isCupSlug(s) || isContinentalSlug(s),
+    (s) => isCupSlug(s) || isContinentalSlug(s) || isYouthCompSlug(s),
   );
   const leagueSlugs = [...(meta?.activeLeagues ?? []).map((l) => l.leagueSlug), ...knockoutSlugs];
 

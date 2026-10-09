@@ -55,6 +55,11 @@ export interface PlayerSeasonLog {
   /** Continental competition games only (ucl/uel/lib/sud) — the fields above are the season total. */
   continental?: { appearances: number; goals: number; assists: number };
   /**
+   * Youth competition (under-21 / under-19) games only — OUTSIDE the season totals above (unlike
+   * cup/continental, which are inside them): rankings, stars, history and form never see them.
+   */
+  youthCup?: { appearances: number; goals: number; assists: number; ratingSum: number };
+  /**
    * Cards this season, all competitions together (league + cup + continental share one count —
    * `.claude/rules/game/discipline.md`). A second yellow adds one yellow and one red. Absent = 0.
    */

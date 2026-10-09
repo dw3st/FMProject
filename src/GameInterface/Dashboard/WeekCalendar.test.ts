@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchEventLabel, matchOutcomeFor } from "@/GameInterface/Dashboard/WeekCalendar";
+import { matchEventLabel, matchOutcomeFor, youthDayEntries } from "@/GameInterface/Dashboard/WeekCalendar";
 import type { Fixture } from "@/types/calendarTypes";
 
 function fixture(overrides: Partial<Fixture> = {}): Fixture {
@@ -64,5 +64,24 @@ describe("matchEventLabel", () => {
     });
     expect(matchEventLabel(f, "Rivals", true)).toEqual({ label: "W 1–1 vs Rivals", outcome: "W" });
     expect(matchEventLabel(f, "Rivals", false)).toEqual({ label: "L 1–1 @ Rivals", outcome: "L" });
+  });
+});
+
+describe("youthDayEntries", () => {
+  test("the club's youth games of the day, under-19 first, with score and cancellation", () => {
+    const list = [
+      fixture({ id: "a", competition: "u21_england", home: "me", away: "x", result: { home: 2, away: 1 } }),
+      fixture({ id: "b", competition: "u19_england", home: "y", away: "me", played: false, result: null }),
+      fixture({ id: "c", competition: "u19_england", home: "y", away: "z" }),
+      fixture({ id: "d", competition: "premier_league", home: "me", away: "z" }),
+      fixture({ id: "e", date: "2027-03-02", competition: "u21_england", home: "me", away: "z", result: null, cancelled: true }),
+    ];
+    expect(youthDayEntries(list, "2027-03-01", "me")).toEqual([
+      { age: "u19", opponentId: "y", isHome: false, score: null, cancelled: false },
+      { age: "u21", opponentId: "x", isHome: true, score: "W 2–1", cancelled: false },
+    ]);
+    expect(youthDayEntries(list, "2027-03-02", "me")).toEqual([
+      { age: "u21", opponentId: "z", isHome: true, score: null, cancelled: true },
+    ]);
   });
 });

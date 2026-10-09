@@ -112,3 +112,8 @@ dia, como as lesões) num XI da liga do jogador; pelo menos uma suspensão cumpr
 
 No quickSim o temperamento do XI escala o número de faltas do lado, quem as comete e os cartões do infrator (os
 mesmos fatores do motor); um XI neutro sorteia o mesmo de antes. Ver `.claude/rules/game/personality.md`.
+
+## Torneios de base (Etapa 36)
+
+Cartões dos jogos de base são ignorados: não entram no `seasonLog`, não suspendem e a base não cumpre a suspensão do time
+principal (`.claude/rules/game/youth-competitions.md`).

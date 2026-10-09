@@ -617,6 +617,67 @@ try {
     }
   }
 
+  // Torneios de base (`.claude/rules/game/youth-competitions.md`): created for every country with an
+  // active tier-1 league; played every day off the first-team flows; a call-up through the route.
+  const { youthCompSlugOf, isYouthCompSlug } = await import("@/Domain/youthComps/youthCompIds");
+  const { youthCountries, youthCompFixtures } = await import("@/backend/youthCompWorld");
+  const { computeStandings } = await import("@/Domain/season/computeStandings");
+  const { youthStandingsBase } = await import("@/Domain/youthComps/generateYouthComp");
+  const youthTrack = {
+    games: 0, cancelled: 0, humanPlayersSeen: new Set<string>(), pastUnplayed: [] as string[],
+    /** Youth games of each real player in the day logs since the career began (any club). */
+    appsLogged: new Map<string, number>(),
+    callUp: null as null | { playerId: string; fixtureId: string; date: string; status: number; played?: boolean; cleared?: boolean },
+    playerCountrySlugs: [] as string[], startYear: new Map<string, number>(), rolledOn: new Map<string, string>(),
+  };
+  console.log("\n── Torneios de base (criação) ──");
+  {
+    const m = (await plain().getMeta(saveId))!;
+    const idx = await plain().getSquadIndex(saveId);
+    const catalog = leagueData as unknown as Parameters<typeof youthCountries>[0];
+    const countries = youthCountries(catalog, pyramids, (m.activeLeagues ?? []) as LeagueSeasonState[])
+      .filter((c) => idx.inLeague(c.league).length >= 2);
+    const bad: string[] = [];
+    for (const c of countries) {
+      const n = idx.inLeague(c.league).length;
+      const perLeg = n % 2 === 0 ? n - 1 : n;
+      for (const age of ["u21", "u19"] as const) {
+        const slug = youthCompSlugOf(c.country, age);
+        const ym = await plain().getLeagueMeta(saveId, slug);
+        const table = await plain().getLeagueStandings(saveId, slug);
+        const rounds = ym?.youth?.singleLeg ? perLeg : 2 * perLeg;
+        if (!ym?.youth || ym.totalRounds !== rounds || table?.length !== n) {
+          bad.push(`${slug}: ${ym ? `${ym.totalRounds} rounds/${rounds}, table ${table?.length}/${n}` : "missing"}`);
+        }
+        if (c.country === playerCountry) {
+          youthTrack.playerCountrySlugs.push(slug);
+          if (ym) youthTrack.startYear.set(slug, ym.year);
+        }
+      }
+    }
+    check(countries.length > 0 && bad.length === 0,
+      `base (torneios): ${countries.length} countries with an under-21 and an under-19, rounds and table sizes right (${bad.slice(0, 5).join("; ") || "ok"})`);
+    // The generation avoids every first-team date known at creation (league, cup stages, continental):
+    // right after creation no youth game falls on a first-team day of either club.
+    const atCreation = new Map<string, string[]>();
+    for (const slug of await plain().listCompetitionSlugs(saveId)) {
+      const lm = await plain().getLeagueMeta(saveId, slug);
+      if (!lm) continue;
+      for (const f of await youthCompFixtures(plain(), saveId, lm)) {
+        for (const club of [f.home, f.away]) {
+          const key = `${f.date}|${club}`;
+          atCreation.set(key, [...(atCreation.get(key) ?? []), slug]);
+        }
+      }
+    }
+    const youthClashes = [...atCreation.entries()].filter(([, comps]) => {
+      const first = comps.filter((c) => !isYouthCompSlug(c)).length;
+      return first > 0 && first < comps.length;
+    });
+    check(youthClashes.length === 0,
+      `base (torneios): no youth game on a first-team day of its clubs at creation (${youthClashes.length} clashes${youthClashes.length ? `: ${youthClashes.slice(0, 5).map(([k, c]) => `${k}→${c.join(",")}`).join("; ")}` : ""})`);
+  }
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -772,6 +833,34 @@ try {
       if (staffMonday) staffBillBefore = squadStaffWages((await plain().getSquadById(saveId, playerSquadId))?.staff);
     }
 
+    // Torneios de base: once, call up a first-team player for the club's next under-21 game (route).
+    if (!youthTrack.callUp && days >= 3 && youthTrack.playerCountrySlugs.length > 0) {
+      const u21 = youthTrack.playerCountrySlugs.find((x) => x.startsWith("u21_"));
+      const ym = u21 ? await svc.getLeagueMeta(saveId, u21) : null;
+      const next = ym
+        ? (await youthCompFixtures(svc, saveId, ym))
+            .filter((f) => !f.played && f.date > date && (f.home === playerSquadId || f.away === playerSquadId))
+            .sort((a, b) => a.date.localeCompare(b.date))[0]
+        : undefined;
+      const sqC = await svc.getSquadById(saveId, playerSquadId);
+      const pick = sqC?.players.filter((p) => !p.injury && !p.loan && p.positions[0] !== "GK")
+        .sort((a, b) => (b.seasonLog?.appearances ?? 0) - (a.seasonLog?.appearances ?? 0) || a.id.localeCompare(b.id))[0];
+      if (next && pick) {
+        const { apiRoutes } = await import("@/backend/routes");
+        const { devAutoLogin } = await import("@/backend/auth/AuthService");
+        const { session } = devAutoLogin("smoke-reborn@test.local");
+        const handler = apiRoutes["/api/saves/:saveId/youth-callups" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+        const res = await handler(Object.assign(
+          new Request(`http://localhost/api/saves/${saveId}/youth-callups`, {
+            method: "PUT", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+            body: JSON.stringify({ u21: [pick.id] }),
+          }),
+          { params: { saveId } },
+        ));
+        youthTrack.callUp = { playerId: pick.id, fixtureId: next.id, date: next.date, status: res.status };
+      }
+    }
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -781,6 +870,35 @@ try {
     }
     days++;
     dayMsTotal += ms;
+    // Torneios de base: the day's games (off `events`), the human club's players, no past unplayed game
+    // in the player's country, the call-up played and cleared, the rollover date of each competition.
+    {
+      const log = await plain().getDayLog(saveId, date);
+      for (const ym of log?.youthMatches ?? []) {
+        if (!ym.score) { youthTrack.cancelled++; continue; }
+        youthTrack.games++;
+        for (const id of [...ym.players.home, ...ym.players.away]) youthTrack.appsLogged.set(id, (youthTrack.appsLogged.get(id) ?? 0) + 1);
+        if (ym.home === playerSquadId) for (const id of ym.players.home) youthTrack.humanPlayersSeen.add(id);
+        if (ym.away === playerSquadId) for (const id of ym.players.away) youthTrack.humanPlayersSeen.add(id);
+      }
+      if ((log?.events ?? []).some((e) => "competition" in e && isYouthCompSlug(String((e as { competition?: string }).competition ?? "")))) {
+        check(false, `base (torneios) ${date}: a youth game in the day's first-team events`);
+      }
+      const next = (await plain().getMeta(saveId))!.currentDate!;
+      for (const slug of youthTrack.playerCountrySlugs) {
+        const ym = await plain().getLeagueMeta(saveId, slug);
+        if (!ym) continue;
+        if (ym.year !== youthTrack.startYear.get(slug) && !youthTrack.rolledOn.has(slug)) youthTrack.rolledOn.set(slug, date);
+        const late = (await youthCompFixtures(plain(), saveId, ym)).filter((f) => !f.played && f.date < next);
+        if (late.length > 0) youthTrack.pastUnplayed.push(`${date} ${slug}: ${late.length}`);
+      }
+      const cu = youthTrack.callUp;
+      if (cu && cu.date === date && cu.played === undefined) {
+        const game = (log?.youthMatches ?? []).find((m) => m.fixtureId === cu.fixtureId);
+        cu.played = !!game?.score && [...game.players.home, ...game.players.away].includes(cu.playerId);
+        cu.cleared = !(await plain().getMeta(saveId))!.youthCallUps?.u21?.length;
+      }
+    }
     // Instalações vivas: the human club's items wear (0..100, never up except on a delivery day);
     // after a week the stadium pitch is forced to 45%, the `worn` message comes, a small repair to
     // 100% is paid through the route, and its delivery sends `repaired`.
@@ -1158,6 +1276,10 @@ try {
         const p0 = prePlayerSquad.players.find((p) => postSquad.players.some((q) => q.id === p.id));
         const p1 = p0 && postSquad.players.find((q) => q.id === p0.id);
         check(!!p0 && !!p1 && p1.age === p0.age + 1, `player ${p0?.name ?? "?"}: age ${p0?.age} → ${p1?.age}`);
+        // Torneios de base: the season counters of the squad AND of the academy restart (youth games).
+        const carried = [...postSquad.players, ...(postSquad.youth ?? [])].filter((p) => (p.seasonLog?.youthCup?.appearances ?? 0) > 0);
+        check(carried.length === 0,
+          `base (torneios): youth games restart at the rollover, academy included (${carried.slice(0, 5).map((p) => `${p.id} ${p.seasonLog!.youthCup!.appearances}`).join(", ") || "ok"})`);
         const b0 = prePlayerSquad.finances?.budget ?? 0;
         const b1 = postSquad.finances?.budget ?? 0;
         const tv = prePlayerSquad.finances?.broadcasting ?? 0;
@@ -1449,18 +1571,36 @@ try {
 
   // 3. No club has two fixtures (league + cup, any competitions) on the same date.
   const byClubDate = new Map<string, string[]>(); // "date|squadId" → competitions playing them that day
+  const futureYouth: string[] = []; // "date|squadId" of the youth games not played yet
   for (const [slug, fx] of fixturesBySlugEnd) {
     for (const f of fx) {
+      // A cancelled youth game never takes place (it is cancelled because of the clash).
+      if (f.cancelled) continue;
+      // A youth game not played yet may still clash with a first-team date that appeared after its
+      // generation (a regenerated youth season does not know the next continental dates): the day
+      // postpones it. Only the youth games already played count here (their date is the real one).
+      if (isYouthCompSlug(slug) && !f.played) {
+        for (const club of [f.home, f.away]) futureYouth.push(`${f.date}|${club}`);
+        continue;
+      }
       for (const club of [f.home, f.away]) {
         const key = `${f.date}|${club}`;
         byClubDate.set(key, [...(byClubDate.get(key) ?? []), slug]);
       }
     }
   }
-  const doubleBooked = [...byClubDate.entries()].filter(([, comps]) => comps.length > 1);
+  // Two first-team games, or a youth game with a first-team game, is a clash; an under-19 and an
+  // under-21 game of the same club the same day are not (different players: nobody plays both).
+  const doubleBooked = [...byClubDate.entries()].filter(([, comps]) => {
+    const first = comps.filter((c) => !isYouthCompSlug(c)).length;
+    return first > 1 || (first === 1 && comps.length > 1);
+  });
   check(doubleBooked.length === 0,
     `no club has two fixtures on the same date across ${allSlugsEnd.length} competitions (${doubleBooked.length} clashes)`
     + (doubleBooked.length ? `: ${doubleBooked.slice(0, 5).map(([k, comps]) => `${k}→${comps.join(",")}`).join("; ")}` : ""));
+  const futureYouthClashes = futureYouth.filter((k) => (byClubDate.get(k) ?? []).some((c) => !isYouthCompSlug(c)));
+  console.log(`  (info) ${futureYouthClashes.length} youth games still to play fall on a first-team day of a club (postponed on the day)`
+    + (futureYouthClashes.length ? `: ${futureYouthClashes.slice(0, 5).join("; ")}` : ""));
 
   // ── Continental competitions ────────────────────────────────────────────
   console.log("\n── Continental competitions ──");
@@ -2018,6 +2158,93 @@ try {
     check(new Set(allIds).size === allIds.length, `base: player ids unique across the world (${allIds.length - new Set(allIds).size} dupes)`);
     const inbox = await plain().getInbox(saveId);
     check(inbox.some((m) => m.category === "youth" && m.kind === "intake"), "base: inbox has the intake message");
+  }
+
+  // ── Torneios de base (`.claude/rules/game/youth-competitions.md`) ──
+  console.log("\n── Torneios de base ──");
+  {
+    const youthSlugs = allSlugsEnd.filter(isYouthCompSlug);
+    let played = 0;
+    let cancelled = 0;
+    let postponed = 0;
+    let unplayedPast = 0;
+    const gamesByClub = new Map<string, number>();
+    for (const slug of youthSlugs) {
+      for (const f of fixturesBySlugEnd.get(slug) ?? []) {
+        if (f.postponedFrom) postponed++;
+        if (f.cancelled) { cancelled++; continue; }
+        if (!f.played && f.date < endDate) unplayedPast++;
+        if (f.played && f.result) {
+          played++;
+          for (const c of [f.home, f.away]) gamesByClub.set(c, (gamesByClub.get(c) ?? 0) + 1);
+        }
+      }
+    }
+    console.log(`  ${youthSlugs.length} competitions · ${played} games played (day logs ${youthTrack.games}), ${postponed} postponed, ${cancelled} cancelled`);
+    check(unplayedPast === 0 && youthTrack.pastUnplayed.length === 0,
+      `base (torneios): no youth game left unplayed in the past (${unplayedPast} at the end; daily ${youthTrack.pastUnplayed.slice(0, 3).join(", ") || "ok"})`);
+    const total = played + cancelled;
+    check(total > 0 && cancelled / total < 0.01, `base (torneios): cancelled ${cancelled}/${total} (< 1%)`);
+    check(youthTrack.humanPlayersSeen.size > 0, `base (torneios): ${youthTrack.humanPlayersSeen.size} players of the human club played youth games`);
+    const human = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
+    check([...(human?.players ?? []), ...(human?.youth ?? [])].some((p) => (p.seasonLog?.youthCup?.appearances ?? 0) > 0)
+      || youthTrack.rolledOn.size > 0,
+      "base (torneios): a human-club player has youth appearances this season (or the season just rolled)");
+    // Per player, over the season of his own log: `seasonLog.youthCup` follows him through transfers
+    // (and is reset only at the rollover of the league he is in), so the bound is the youth games he
+    // played in the day logs since the career began, at any club — never his current club's games.
+    const tooMany: string[] = [];
+    for (const { squad } of allFiles) {
+      for (const p of [...squad.players, ...(squad.youth ?? [])]) {
+        const apps = p.seasonLog?.youthCup?.appearances ?? 0;
+        const logged = youthTrack.appsLogged.get(p.id) ?? 0;
+        if (apps > logged) tooMany.push(`${p.id}@${squad.id} ${apps}>${logged}`);
+      }
+    }
+    check(tooMany.length === 0, `base (torneios): nobody has more youth appearances than the youth games he played in the day logs (${tooMany.slice(0, 5).join(", ") || "ok"})`);
+    // The academy's season counters restart at its club's rollover (the academy is not in the squad,
+    // and its players never change club): an academy player never has more youth games than his club
+    // played this season. Only the human club has an academy.
+    const humanNow = (await plain().getMeta(saveId))!.clubId;
+    const academyCarry: string[] = [];
+    for (const { squad } of allFiles) {
+      if (squad.id !== humanNow) continue;
+      for (const p of squad.youth ?? []) {
+        const apps = p.seasonLog?.youthCup?.appearances ?? 0;
+        if (apps > (gamesByClub.get(squad.id) ?? 0)) academyCarry.push(`${p.id}@${squad.id} ${apps}>${gamesByClub.get(squad.id) ?? 0}`);
+      }
+    }
+    check(academyCarry.length === 0, `base (torneios): no academy player has more youth games than his club this season (${academyCarry.slice(0, 5).join(", ") || "ok"})`);
+    const badTables: string[] = [];
+    for (const slug of youthTrack.playerCountrySlugs) {
+      const ym = await plain().getLeagueMeta(saveId, slug);
+      const table = await plain().getLeagueStandings(saveId, slug);
+      if (!ym || !table) { badTables.push(`${slug} missing`); continue; }
+      const fx = await youthCompFixtures(plain(), saveId, ym);
+      const sum = (k: "w" | "d" | "l" | "mp") => table.reduce((a, r) => a + r[k], 0);
+      const playedFx = fx.filter((f) => f.played && f.result).length;
+      if (sum("w") !== sum("l")) badTables.push(`${slug} W ${sum("w")} != L ${sum("l")}`);
+      if (sum("mp") !== 2 * playedFx) badTables.push(`${slug} mp ${sum("mp")} != 2x${playedFx}`);
+      if (table.some((r) => r.pts !== 3 * r.w + r.d)) badTables.push(`${slug} points`);
+      if (JSON.stringify(table) !== JSON.stringify(computeStandings(youthStandingsBase(ym), fx, slug))) badTables.push(`${slug} != recomputed`);
+    }
+    check(badTables.length === 0, `base (torneios): the player's country tables are coherent (${badTables.join("; ") || "ok"})`);
+    const cu = youthTrack.callUp;
+    check(!!cu && cu.status === 200 && cu.played === true && cu.cleared === true,
+      `base (torneios): a call-up through the route plays the next under-21 game and is cleared (${cu ? `${cu.status} ${cu.date} played=${cu.played} cleared=${cu.cleared}` : "never set"})`);
+    for (const slug of youthTrack.playerCountrySlugs) {
+      const rolled = youthTrack.rolledOn.get(slug);
+      const ym = await plain().getLeagueMeta(saveId, slug);
+      const old = youthTrack.startYear.get(slug)!;
+      if (!rolled || !ym) {
+        check(false, `base (torneios): ${slug} rolled to a new season during the run`);
+        continue;
+      }
+      const archive = await plain().readLeagueSeasonArchive(saveId, slug, old);
+      const early = (await youthCompFixtures(plain(), saveId, ym)).filter((f) => f.date <= rolled);
+      check(ym.year > old && archive?.titles.length === 1 && early.length === 0,
+        `base (torneios): ${slug} ${old} -> ${ym.year} on ${rolled}, archive with ${archive?.titles.length ?? 0} title, ${early.length} new games on/before the rollover`);
+    }
   }
 
   // ── Histórico ────────────────────────────────────────────────────────────

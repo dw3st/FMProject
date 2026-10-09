@@ -301,3 +301,9 @@ partir do `country` cru do `leagueData` (não do `Intl.DisplayNames`, para não 
 usado no resto da UI) — em inglês `"<País> Cup"`, em português `"Copa nacional (<país>)"` com o
 país localizado por `Intl.DisplayNames` quando há `iso2`. Slug de copa desconhecido cai no
 `titleCase` genérico, igual a qualquer slug fora do catálogo.
+
+## Outras competições fora de `activeLeagues`
+
+As pastas `u21_<país>`/`u19_<país>` (torneios de base, `.claude/rules/game/youth-competitions.md`) também moram em
+`leagues/` fora de `activeLeagues`, regeneradas no mesmo gatilho das copas (depois das continentais), mas ficam fora das
+leituras de "jogos de hoje" (`getFixturesForDate`).

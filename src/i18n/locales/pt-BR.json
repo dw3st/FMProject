@@ -860,7 +860,11 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
-    "effects": { "save": "DEFESA", "wide": "PRA FORA", "offside": "IMPEDIMENTO" },
+    "effects": {
+      "save": "DEFESA",
+      "wide": "PRA FORA",
+      "offside": "IMPEDIMENTO"
+    },
     "playerEvents": {
       "goals": "Gols: {{count}}",
       "assists": "Assistências: {{count}}",
@@ -3384,5 +3388,57 @@
     "vacant": "Sem olheiro-chefe",
     "openMap": "Países que este olheiro conhece",
     "observeHint": "O número ao lado de cada olheiro é o conhecimento dele em {{country}}: quanto maior, mais rápido ele aprende."
+  },
+  "youthComps": {
+    "tab": "Base",
+    "u21": "Sub-21",
+    "u19": "Sub-19",
+    "badge": {
+      "u21": "Sub-21",
+      "u19": "Sub-19"
+    },
+    "table": "Tabela",
+    "results": "Resultados",
+    "round": "Rodada {{round}} de {{total}}",
+    "prevRound": "Rodada anterior",
+    "nextRound": "Próxima rodada",
+    "postponed": "Adiado de {{date}}",
+    "cancelled": "Cancelado",
+    "highlights": "Destaques",
+    "topScorers": "Artilheiros",
+    "topRatings": "Melhores notas",
+    "goals": "Gols",
+    "rating": "Nota",
+    "minApps": "Notas: mínimo de {{n}} jogos.",
+    "noLeaders": "Nenhum jogo ainda.",
+    "none": "Este país não tem torneios de base.",
+    "champion": "Campeão",
+    "cols": {
+      "apps": "J base",
+      "goals": "G base"
+    },
+    "player": {
+      "title": "Jogos da base",
+      "apps": "Jogos",
+      "goals": "Gols",
+      "assists": "Assistências",
+      "rating": "Nota"
+    },
+    "callUps": {
+      "title": "Jogos da base",
+      "hint": "Convoque até {{n}} jogadores para o próximo jogo. Convocados jogam mesmo sendo titulares do time principal.",
+      "next": "Próximo: {{opponent}} ({{venue}}) em {{date}}",
+      "venue": {
+        "home": "em casa",
+        "away": "fora"
+      },
+      "noGame": "Sem jogo marcado",
+      "count": "{{n}} / {{max}} convocados",
+      "save": "Salvar convocação",
+      "saved": "Salvo",
+      "skipped": "Convocados que não jogaram em {{date}}: {{names}}",
+      "fitness": "fôlego {{n}}",
+      "failed": "Não foi possível salvar a convocação."
+    }
   }
 }

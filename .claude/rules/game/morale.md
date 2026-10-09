@@ -215,3 +215,9 @@ Com o diretor cuidando dos contratos, a conversa de motivo `contract` não vira 
 `afterAward(squad, playerId, kinds)`: o premiado do clube do jogador ganha moral pelo `withEventDelta` (melhor jogador /
 mundial +10, revelação / artilheiro / goleiro +8, seleção +5, gol da temporada +4; o maior prêmio da virada). Ver
 `.claude/rules/game/awards.md`.
+
+## Torneios de base (Etapa 36)
+
+`moraleLog.youthMinutes` guarda os minutos dos últimos 5 jogos de base (`.claude/rules/game/youth-competitions.md`). Na
+segunda, para `youth`, `backup` e `rotation` com déficit, a base reduz a perda por minutos (`p + 0,5 × y`), nunca dá
+bônus; zera na virada como `minutes`.

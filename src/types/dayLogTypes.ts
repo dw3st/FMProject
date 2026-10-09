@@ -1,4 +1,5 @@
 import type { ClubMove } from "@/types/pyramidTypes";
+import type { YouthMatchLog } from "@/types/youthCompTypes";
 
 // ── Match event ────────────────────────────────────────────────────────────
 
@@ -242,6 +243,8 @@ export interface StoredDayLog {
   events: StoredDayEvent[];
   /** Every player move of the day (checked against the buyer's window by the season smoke). */
   transfers?: DayTransfer[];
+  /** Youth-competition games of the day — kept out of `events` so no first-team flow sees them. */
+  youthMatches?: YouthMatchLog[];
 }
 
 // ── API-facing (resolved): full TransferEvent ──────────────────────────────

@@ -1,3 +1,5 @@
+import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { describe, expect, test } from "bun:test";
 import {
   buildRestEvent,
@@ -253,5 +255,23 @@ describe("buildRestEvent — injuries", () => {
     const { updatedSquad, healedPlayerIds } = buildRestEvent("s", squad, "2027-03-10");
     expect(updatedSquad.players[0]!.injury).toEqual({ severity: "severe", returnDate: "2027-06-01" });
     expect(healedPlayerIds).toEqual([]);
+  });
+});
+
+describe("buildRestEvent and the youth competitions", () => {
+  test("skipped players stay identical; the academy recovers by the rest curve", () => {
+    const played = basePlayer({ id: "a", name: "A", seasonLog: makeSeasonLog({ fitness: 40, load: 90 }) });
+    const other = basePlayer({ id: "b", name: "B", seasonLog: makeSeasonLog({ fitness: 40 }) });
+    const kid = basePlayer({ id: "y", name: "Y", age: 17, seasonLog: makeSeasonLog({ fitness: 50, load: 90 }) });
+    const fresh = basePlayer({ id: "z", name: "Z", age: 17, seasonLog: undefined });
+    const squad = { ...baseSquad([played, other]), youth: [kid, fresh] };
+    const { updatedSquad, event } = buildRestEvent("s", squad, "2027-02-05", { skipPlayerIds: new Set(["a"]) });
+    expect(updatedSquad.players[0]).toBe(played);
+    expect(event.effects.map((e) => e.playerId)).toEqual(["b"]);
+    const y = updatedSquad.youth![0]!;
+    expect(y.seasonLog!.fitness).toBeCloseTo(recoverDay(50, { age: 17, load: 90, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult }), 5);
+    expect(y.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
+    expect(y.seasonLog!.trainingSessions).toBe(3);
+    expect(updatedSquad.youth![1]).toEqual(fresh);
   });
 });

@@ -116,3 +116,8 @@ frontend (`GameSaveProvider.sessionFromSaveJson`) atualiza liga e clube da sess�
   (`POST /api/saves/:id/advance-until`, ver spec seção 3) atravessa a entressafra dia a dia.
 - `generateLeagueCalendar` mantém toda rodada dentro de `[start, end]` (`fitRoundsToWindow`):
   uma rodada depois do `end` se perderia na virada.
+
+## Pastas que não são ligas
+
+`leagues/` também guarda copas (`cup_*`), continentais (`ucl`/`uel`/`lib`/`sud`) e torneios de base (`u21_*`/`u19_*`):
+nenhuma entra em `activeLeagues` nem muda o pertencimento; a tabela da base usa `meta.youth.clubs`, não o índice.

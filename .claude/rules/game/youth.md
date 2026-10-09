@@ -130,3 +130,10 @@ Ultima rodada (2026-10-01): todas as checagens passaram; 77 de 83 clubes da IA d
 
 Os jovens da safra têm personalidade pelo próprio id; a DP da base × profissionalismo. Ver
 `.claude/rules/game/personality.md`.
+
+## Torneios de base (Etapa 36)
+
+Os jovens da base jogam o sub-19 e o sub-21 do país (`.claude/rules/game/youth-competitions.md`): DP de partida da base,
+fôlego e carga. Por isso a base recupera fôlego todo dia pela curva de descanso (`restAcademy`, sem DP de treino); o
+treino anual da virada (`developYouthSeason`) não mudou. A aba Base do Elenco mostra os jogos e gols de base e o bloco de
+convocação.

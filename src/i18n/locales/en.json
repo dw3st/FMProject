@@ -860,7 +860,11 @@
     "subbedOff": "Substituted off at {{minute}}'"
   },
   "match": {
-    "effects": { "save": "SAVE", "wide": "WIDE", "offside": "OFFSIDE" },
+    "effects": {
+      "save": "SAVE",
+      "wide": "WIDE",
+      "offside": "OFFSIDE"
+    },
     "playerEvents": {
       "goals": "Goals: {{count}}",
       "assists": "Assists: {{count}}",
@@ -3384,5 +3388,57 @@
     "vacant": "No chief scout",
     "openMap": "Countries this scout knows",
     "observeHint": "The number next to each scout is his knowledge of {{country}}: the higher, the faster he learns."
+  },
+  "youthComps": {
+    "tab": "Youth",
+    "u21": "Under-21",
+    "u19": "Under-19",
+    "badge": {
+      "u21": "U21",
+      "u19": "U19"
+    },
+    "table": "Table",
+    "results": "Results",
+    "round": "Round {{round}} of {{total}}",
+    "prevRound": "Previous round",
+    "nextRound": "Next round",
+    "postponed": "Postponed from {{date}}",
+    "cancelled": "Cancelled",
+    "highlights": "Highlights",
+    "topScorers": "Top scorers",
+    "topRatings": "Best ratings",
+    "goals": "Goals",
+    "rating": "Rating",
+    "minApps": "Ratings: at least {{n}} games.",
+    "noLeaders": "No games played yet.",
+    "none": "This country has no youth competitions.",
+    "champion": "Champion",
+    "cols": {
+      "apps": "Youth GP",
+      "goals": "Youth G"
+    },
+    "player": {
+      "title": "Youth games",
+      "apps": "Games",
+      "goals": "Goals",
+      "assists": "Assists",
+      "rating": "Rating"
+    },
+    "callUps": {
+      "title": "Youth games",
+      "hint": "Call up to {{n}} players for the next game. Called-up players play even if they are first-team starters.",
+      "next": "Next: {{opponent}} ({{venue}}) on {{date}}",
+      "venue": {
+        "home": "home",
+        "away": "away"
+      },
+      "noGame": "No game scheduled",
+      "count": "{{n}} / {{max}} called up",
+      "save": "Save call-ups",
+      "saved": "Saved",
+      "skipped": "Called up but did not play on {{date}}: {{names}}",
+      "fitness": "fitness {{n}}",
+      "failed": "Could not save the call-ups."
+    }
   }
 }

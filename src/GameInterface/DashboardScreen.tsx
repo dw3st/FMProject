@@ -275,6 +275,7 @@ export function DashboardScreen() {
 
       <WeekCard
         fixtures={fixtures}
+        youthFixtures={save?.season?.youthCalendar}
         restDays={restDays}
         mySquadId={mySquadId}
         currentDate={currentDate}

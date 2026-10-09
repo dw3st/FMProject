@@ -105,6 +105,26 @@ describe("runSeasonTransition", () => {
     expect(betaOut.squad.finances?.budget ?? 0).toBe(0);
   });
 
+  test("academy players: the season counters (youth games included) restart, fitness and age stay", () => {
+    const base = minimalSquad("a", "a", "A", {});
+    const kid = {
+      ...base.players[0]!, id: "y_a", age: 17,
+      seasonLog: { ...emptySeasonLog(), fitness: 92, load: 40, injuries: 1, youthCup: { appearances: 30, goals: 4, assists: 2, ratingSum: 190 } },
+    };
+    const squad: Squad = { ...base, youth: [kid] };
+    const result = runSeasonTransition({
+      endingSeason: { year: 2025, start: "2025-08-15", end: "2026-05-20", calendar: [] },
+      leagueSlug: "x", leagueTeams: [{ squadId: "a", name: "A", colors: ["#000", "#fff"] }],
+      squadsInLeague: [squad], playerClubSquadId: "a",
+    });
+    const out = result.squadsToSave[0]!.squad.youth![0]!;
+    expect(out.seasonLog!.youthCup).toBeUndefined();
+    expect(out.seasonLog!.injuries ?? 0).toBe(0);
+    expect(out.seasonLog!.fitness).toBe(92);
+    expect(out.seasonLog!.load).toBe(40);
+    expect(out.age).toBe(17);
+  });
+
   test("AI club gets no broadcasting money (its transfer budget comes from its tier)", () => {
     const leagueTeams: LeagueTeam[] = [
       { squadId: "a", name: "A", colors: ["#000", "#fff"] },

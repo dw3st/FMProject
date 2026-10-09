@@ -1,4 +1,4 @@
-import type { Squad } from "@/types/playerTypes";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { RestEvent } from "@/types/dayLogTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
@@ -57,15 +57,24 @@ export function rollRestOutcome(
  * - `load` decays by one day's half-life (`decayLoad`) — a rest day is a low-intensity day.
  * - `trainingSessions` (points) never goes below 0.
  */
-export function buildRestEvent(squadId: string, squad: Squad, date: string): RestResult {
+export function buildRestEvent(
+  squadId: string,
+  squad: Squad,
+  date: string,
+  opts: { skipPlayerIds?: ReadonlySet<string> } = {},
+): RestResult {
   // Staff × training ground (`.claude/rules/game/facilities.md`).
   const recoveryMult = staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
+  const skip = opts.skipPlayerIds;
   // Clear a healed injury before anything else, same as `matches.ts` / `dailyTraining.ts`.
   const healedPlayerIds: string[] = [];
-  const players = squad.players.map((p) => {
+  const all = squad.players.map((p) => {
+    if (skip?.has(String(p.id))) return p;
     if (p.injury && !clearHealed(p, date).injury) healedPlayerIds.push(String(p.id));
     return clearHealed(p, date);
   });
+  // Who played a youth game today already had his match day (`youth-competitions.md`).
+  const players = all.filter((p) => !skip?.has(String(p.id)));
 
   const effects = players.map((p) => {
     const log = ensureSeasonLog(p).seasonLog!;
@@ -78,7 +87,9 @@ export function buildRestEvent(squadId: string, squad: Squad, date: string): Res
 
   const updatedSquad: Squad = {
     ...squad,
-    players: players.map((p) => {
+    ...(squad.youth ? { youth: restAcademy(squad.youth, date, recoveryMult, skip) } : {}),
+    players: all.map((p) => {
+      if (skip?.has(String(p.id))) return p;
       const pl = ensureSeasonLog(p);
       const log = { ...pl.seasonLog! };
       const eff = effectMap.get(String(p.id));
@@ -92,4 +103,28 @@ export function buildRestEvent(squadId: string, squad: Squad, date: string): Res
   };
 
   return { event: { kind: "rest", squadId, effects }, updatedSquad, healedPlayerIds };
+}
+
+/**
+ * Daily recovery of the academy (`squad.youth`, human club): the youngsters play youth games, so a
+ * tired one recovers by the rest curve every day (no training DP — that is yearly). Only those with a
+ * season log (who ever played) and who did not play today; a healed injury is cleared.
+ */
+export function restAcademy(
+  youth: RosterPlayer[],
+  date: string,
+  recoveryMult: number,
+  skip?: ReadonlySet<string>,
+): RosterPlayer[] {
+  return youth.map((p) => {
+    if (skip?.has(String(p.id))) return p;
+    const healed = clearHealed(p, date);
+    if (!healed.seasonLog) return healed;
+    const log = { ...healed.seasonLog };
+    log.fitness = Math.min(100, recoverDay(log.fitness, {
+      age: healed.age, load: log.load ?? 0, stamina: healed.stats.stamina ?? DEFAULT_STAMINA, recoveryMult,
+    }));
+    log.load = decayLoad(log.load ?? 0);
+    return { ...healed, seasonLog: log };
+  });
 }

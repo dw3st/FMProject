@@ -616,13 +616,13 @@ function removeInjuredPlayer(state: GameState, player: GamePlayer): GameState {
  *  aren't an automatic save-chance of exactly zero. 0..1 scale, same as `runtimeStats`. */
 const GK_EMERGENCY_STAT_FLOOR = 0.2;
 
-/** True when a GK-role player actually has GK-specific stats built (i.e. `teamLineup` built them
- *  as a real keeper) — false for an outfielder whose role got relabelled 'GK' by a substitution
- *  slot but whose `baseStats` were never recomputed for the position (see `performSubstitution`'s
- *  "we don't have their raw PlayerStatsRecord anymore" comment). */
+/** True when every keeper stat of a GK-role player is at least the emergency floor. An outfielder
+ *  put in goal by a substitution slot can come out with some keeper stats above zero and others at
+ *  zero (positioning from pressing, no jump → diving 0), so "any stat above zero" is not enough. */
 function hasRealGkStats(p: GamePlayer): boolean {
   const s = p.baseStats.withoutBall;
-  return s.gkPositioning > 0 || s.gkReflex > 0 || s.gkDiving > 0;
+  return s.gkPositioning >= GK_EMERGENCY_STAT_FLOOR && s.gkReflex >= GK_EMERGENCY_STAT_FLOOR
+    && s.gkDiving >= GK_EMERGENCY_STAT_FLOOR;
 }
 
 function withGkStatFloor(p: GamePlayer): GamePlayer {

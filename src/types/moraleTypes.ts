@@ -21,6 +21,8 @@ export type TalkAnswer = "promise_minutes" | "promise_sale" | "promise_renewal" 
 export interface PlayerMoraleLog {
   /** Minutes in the club's last official matches (newest last, at most 5); skips matches he was unavailable for. */
   minutes: number[];
+  /** Minutes in the last youth-competition games (newest last, at most 5). */
+  youthMinutes?: number[];
   /** Window entries added since the last Monday evaluation: no new match, no minutes delta. */
   newMatches?: number;
   /** Daily morale values (newest last, at most 8): the 7-day trend. */

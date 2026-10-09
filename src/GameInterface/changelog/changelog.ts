@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14",
+    date: "2026-10-09",
+    items: [
+      { pt: "Torneios sub-21 e sub-19 em cada país, com os clubes da primeira divisão, jogados no meio da semana", en: "Under-21 and under-19 tournaments in every country, with the top-flight clubs, played midweek" },
+      { pt: "Jovens da base e reservas sem minutos jogam esses torneios: evoluem, ganham ritmo e reclamam menos da falta de jogos", en: "Academy youngsters and reserves without minutes play these tournaments: they improve, get match fitness and complain less about missing games" },
+      { pt: "Nova aba Base na tela de Ligas, com tabela, resultados por rodada, artilheiros e melhores notas", en: "New Youth tab on the Leagues screen, with the table, results by round, top scorers and best ratings" },
+      { pt: "Jogos da base do seu clube na semana do Painel e na ficha do jogador", en: "Your club's youth games in the Dashboard week and on the player profile" },
+      { pt: "Convoque até 11 jogadores para o próximo jogo de cada torneio na aba Base do Elenco", en: "Call up to 11 players for the next game of each tournament on the Squad's Youth tab" },
+    ],
+  },
+  {
     version: "4.13.1",
     date: "2026-10-08",
     items: [
@@ -1106,8 +1117,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
+  { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
 ];
