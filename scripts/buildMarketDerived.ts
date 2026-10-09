@@ -168,9 +168,13 @@ for (const [league, squads] of squadsByLeague) {
       }
       const line = getMainRole(match?.position ?? p.positions[0] ?? "CM");
       current.set(p.id, computeOverallAvg(p));
-      // The league multiset is taken at the Transfermarkt position (a keeper filed as an outfielder has a junk score).
+      // Each line keeps its old notes (`fromLine`, `fromOverall`); `overall` is the note at the Transfermarkt position.
       const overall = computeOverallAvg(withPosition(p, match?.position ?? undefined));
-      all.push({ id: p.id, squadId: squad.id, league, age: p.age, overall, line, match, seedOverall: seedOverallOf.get(p.id) });
+      const fromLine = getMainRole(p.positions[0] ?? "CM");
+      all.push({
+        id: p.id, squadId: squad.id, league, age: p.age, overall, line, fromLine, fromOverall: current.get(p.id)!, match,
+        seedOverall: seedOverallOf.get(p.id),
+      });
     }
   }
 }
@@ -186,7 +190,7 @@ const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 log(`Recalibração pelo valor de mercado — ${new Date().toISOString().slice(0, 10)}`);
 log(`Mínimo para reordenar: ${pct(COVERAGE_MIN)} de cobertura e ${MIN_VALUED_PLAYERS} jogadores casados com valor`);
-log("Efeitos de idade e linha: prêmio de mercado a habilidade igual (nota do seed open-football); um conjunto de notas por liga");
+log("Efeitos de idade e linha: prêmio de mercado a habilidade igual (nota do seed open-football); um conjunto de notas por linha em cada liga");
 log();
 log("== Cobertura por liga (valorados ÷ jogadores) ==");
 for (const [slug, s] of Object.entries(derived.leagues)) {
