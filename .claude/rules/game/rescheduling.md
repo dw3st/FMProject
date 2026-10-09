@@ -60,7 +60,18 @@ O antigo `logEuropeanCalendarClashes` (só logava o choque das ligas europeias d
 "Antes" é o mesmo calendário com cada jogo remarcado de volta à data original. Pares por clube (um par = dois jogos
 do clube a menos de 2 dias); a região é a do país da liga do clube.
 
-MEASUREMENT_TABLE
+Carreira na Premier League (início 2026-08-15, sem kit), mundo inteiro, 2026-10-09. "Clubes / pares":
+
+| Momento | Região | Mesmo dia antes → depois | Dias seguidos antes → depois |
+|---|---|---|---|
+| Criação da carreira (20 709 jogos, 72 remarcados) | Europa | 0 / 0 → 0 / 0 | 80 / 84 → 0 / 0 |
+| | América do Sul | 0 / 0 → 0 / 0 | 24 / 30 → 0 / 0 |
+| Depois de 330 dias (2027-07-11; 20 963 jogos no disco, 144 remarcados) | Europa | 0 / 0 → 0 / 0 | 169 / 169 → 0 / 0 |
+| | América do Sul | 0 / 0 → 0 / 0 | 37 / 63 → 4 / 4 |
+
+Os 4 pares que sobram são copa × continental (nenhum dos dois se move); nenhum jogo de liga ficou sem dia livre
+(nenhum `logError("calendar")`). O "depois de 330 dias" conta o que está em disco no fim (a temporada europeia
+2026-27 já foi substituída pela 2027-28 na virada).
 
 Passo do mundo inteiro sem nada a mover (só leitura): ~0,55–0,7 s.
 

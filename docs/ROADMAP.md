@@ -280,8 +280,8 @@ etapas ou quando a área correspondente for revisitada.
 
 | # | Pendência | Onde |
 |---|---|---|
-| 1 | Taxa de dia adjacente da América do Sul entre Libertadores/Sul-Americana e a liga/copa do mesmo clube (~13%, 54/416) por causa das rodadas de meio de semana do Brasil e da Argentina — estruturalmente maior que a Europa, não dá para baixar sem violar o piso de 3 dias entre datas da própria competição | `Domain/continental/continentalDates.ts` |
-| 2 | Ligas europeias de ano civil (Bielorrússia, Finlândia, Geórgia, Islândia, Noruega, Suécia) só têm o choque de data com a UCL/UEL do mesmo clube **logado** na própria virada (dezembro); a rodada não é reagendada, porque mover a rodada inteira da liga para evitar o jogo de 1-2 clubes desalinharia o calendário de todo mundo | `logEuropeanCalendarClashes` (`backend/continentalWorld.ts`) |
+| 1 | ~~Taxa de dia adjacente da América do Sul (Libertadores/Sul-Americana × liga do mesmo clube, ~13%)~~ **Resolvido na 4.16:** o jogo da liga em conflito (mesmo dia ou dias seguidos) é remarcado para o meio de semana livre mais próximo; numa temporada medida, 37 clubes / 63 pares em dias seguidos → 4 / 4 (só copa × continental, que não se movem) | `.claude/rules/game/rescheduling.md` |
+| 2 | ~~Ligas europeias de ano civil com choque de data com UCL/UEL só logado~~ **Resolvido na 4.16:** só a partida da liga do clube é remarcada (nunca a rodada inteira), na virada e nos sorteios; Europa numa temporada medida: 169 clubes em dias seguidos → 0, nenhum no mesmo dia | `.claude/rules/game/rescheduling.md` |
 
 ---
 
