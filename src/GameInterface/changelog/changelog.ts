@@ -30,6 +30,10 @@ export const changelog: ChangelogEntry[] = [
     items: [
       { pt: "Jogo da liga que cairia no mesmo dia ou colado em um jogo de copa ou continental do clube é remarcado para o meio de semana livre mais próximo", en: "A league match that would fall on the same day as, or right next to, a club's cup or continental match is moved to the nearest free midweek day" },
       { pt: "Aviso na caixa de entrada quando um jogo do seu clube muda de data, e \"Remarcado de…\" na prévia, na semana do Painel e na tabela de jogos", en: "An inbox message when one of your club's matches changes date, and \"Rescheduled from…\" in the preview, the Dashboard week and the fixtures list" },
+      { pt: "Os clubes do mundo começam com o técnico atual de cada um", en: "Clubs around the world start with their current head coach" },
+    ],
+    fixes: [
+      { pt: "Técnicos desatualizados corrigidos: o PSG é de Luis Enrique, não mais de Carlo Ancelotti", en: "Outdated head coaches fixed: PSG is managed by Luis Enrique, no longer Carlo Ancelotti" },
     ],
   },
   {
@@ -1174,7 +1178,6 @@ export const upcoming: ChangelogText[] = [
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
-  { pt: "Técnicos atuais dos clubes, com os nomes reais", en: "Clubs' current managers, with their real names" },
   { pt: "Árbitros reais nas principais ligas, cada um com o seu rigor e com rosto em campo", en: "Real referees in the top leagues, each with their own strictness and a face on the pitch" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
   { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },

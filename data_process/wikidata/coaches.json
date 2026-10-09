@@ -1,0 +1,4138 @@
+{
+ "33": {
+  "name": "Michael Carrick",
+  "nationality": "England",
+  "birthDate": "1981-07-28",
+  "wikidataQid": "Q29566"
+ },
+ "34": {
+  "name": "Matthias Jaissle",
+  "nationality": "Germany",
+  "birthDate": "1988-04-05",
+  "wikidataQid": "Q690028"
+ },
+ "35": {
+  "name": "Marco Rose",
+  "nationality": "Germany",
+  "birthDate": "1976-09-11",
+  "wikidataQid": "Q542990"
+ },
+ "36": {
+  "name": "Álvaro Arbeloa",
+  "nationality": "Spain",
+  "birthDate": "1983-01-17",
+  "wikidataQid": "Q250901"
+ },
+ "39": {
+  "name": "César Peixoto",
+  "nationality": "Portugal",
+  "birthDate": "1980-05-12",
+  "wikidataQid": "Q981657"
+ },
+ "40": {
+  "name": "Andoni Iraola",
+  "nationality": "Spain",
+  "birthDate": "1982-06-22",
+  "wikidataQid": "Q317216"
+ },
+ "42": {
+  "name": "Mikel Arteta",
+  "nationality": "Spain",
+  "birthDate": "1982-03-26",
+  "wikidataQid": "Q185572"
+ },
+ "44": {
+  "name": "Nicky Hayen",
+  "nationality": "Belgium",
+  "birthDate": "1980-08-16",
+  "wikidataQid": "Q605304"
+ },
+ "45": {
+  "name": "David Moyes",
+  "nationality": "Scotland",
+  "birthDate": "1963-04-25",
+  "wikidataQid": "Q297252"
+ },
+ "47": {
+  "name": "Roberto De Zerbi",
+  "nationality": "Italy",
+  "birthDate": "1979-06-06",
+  "wikidataQid": "Q2032119"
+ },
+ "48": {
+  "name": "Nuno Espírito Santo",
+  "nationality": "Portugal",
+  "birthDate": "1974-01-25",
+  "wikidataQid": "Q372372"
+ },
+ "49": {
+  "name": "Xabi Alonso",
+  "nationality": "Spain",
+  "birthDate": "1981-11-25",
+  "wikidataQid": "Q208104"
+ },
+ "50": {
+  "name": "Enzo Maresca",
+  "nationality": "Italy",
+  "birthDate": "1981-02-10",
+  "wikidataQid": "Q317282"
+ },
+ "51": {
+  "name": "Fabian Hürzeler",
+  "nationality": "Germany",
+  "birthDate": "1993-02-26",
+  "wikidataQid": "Q115819313"
+ },
+ "52": {
+  "name": "Pierre Sage",
+  "nationality": "France",
+  "birthDate": "1979-05-05",
+  "wikidataQid": "Q123584452"
+ },
+ "55": {
+  "name": "Keith Andrews",
+  "birthDate": "1980-09-13",
+  "wikidataQid": "Q316704"
+ },
+ "63": {
+  "name": "Daniel Farke",
+  "nationality": "Germany",
+  "birthDate": "1976-10-30",
+  "wikidataQid": "Q30015253"
+ },
+ "65": {
+  "name": "Oliver Glasner",
+  "nationality": "Austria",
+  "birthDate": "1974-08-28",
+  "wikidataQid": "Q874777"
+ },
+ "66": {
+  "name": "Unai Emery",
+  "nationality": "Spain",
+  "birthDate": "1971-11-03",
+  "wikidataQid": "Q295610"
+ },
+ "77": {
+  "name": "Stéphane Gilli",
+  "nationality": "France",
+  "birthDate": "1974-04-30",
+  "wikidataQid": "Q121891089"
+ },
+ "79": {
+  "name": "Davide Ancelotti",
+  "nationality": "Italy",
+  "birthDate": "1989-07-22",
+  "wikidataQid": "Q113627113"
+ },
+ "80": {
+  "name": "Paulo Fonseca",
+  "nationality": "Portugal",
+  "birthDate": "1973-03-05",
+  "wikidataQid": "Q10346582"
+ },
+ "81": {
+  "name": "Bruno Génésio",
+  "nationality": "France",
+  "birthDate": "1966-09-01",
+  "wikidataQid": "Q2926833"
+ },
+ "83": {
+  "name": "Grégory Poirier",
+  "nationality": "France",
+  "birthDate": "1982-07-09",
+  "wikidataQid": "Q5612783"
+ },
+ "84": {
+  "name": "Olivier Pantaloni",
+  "nationality": "France",
+  "birthDate": "1966-12-13",
+  "wikidataQid": "Q2073968"
+ },
+ "85": {
+  "name": "Luis Enrique",
+  "nationality": "Spain",
+  "birthDate": "1970-05-08",
+  "wikidataQid": "Q222789"
+ },
+ "91": {
+  "name": "Filipe Luís",
+  "nationality": "Brazil",
+  "birthDate": "1985-08-09",
+  "wikidataQid": "Q350547"
+ },
+ "94": {
+  "name": "Franck Haise",
+  "nationality": "France",
+  "birthDate": "1971-04-15",
+  "wikidataQid": "Q3082153"
+ },
+ "95": {
+  "name": "Hugo Oliveira",
+  "nationality": "Portugal",
+  "birthDate": "1979-06-22",
+  "wikidataQid": "Q131452135"
+ },
+ "96": {
+  "name": "Jens Berthel Askou",
+  "nationality": "Denmark",
+  "birthDate": "1982-08-19",
+  "wikidataQid": "Q3807922"
+ },
+ "97": {
+  "name": "Alexandre Dujeux",
+  "nationality": "France",
+  "birthDate": "1976-01-08",
+  "wikidataQid": "Q2833638"
+ },
+ "106": {
+  "name": "Julien Lachuer",
+  "nationality": "France",
+  "birthDate": "1976-11-15",
+  "wikidataQid": "Q3189545"
+ },
+ "108": {
+  "name": "Will Still",
+  "nationality": "Belgium",
+  "birthDate": "1992-10-14",
+  "wikidataQid": "Q42097340"
+ },
+ "111": {
+  "name": "Didier Digard",
+  "nationality": "France",
+  "birthDate": "1986-07-12",
+  "wikidataQid": "Q267128"
+ },
+ "112": {
+  "name": "Luc Holtz",
+  "nationality": "Luxembourg",
+  "birthDate": "1969-06-14",
+  "wikidataQid": "Q981251"
+ },
+ "114": {
+  "name": "Liam Rosenior",
+  "nationality": "England",
+  "birthDate": "1984-07-09",
+  "wikidataQid": "Q1336865"
+ },
+ "116": {
+  "name": "Yannick Cahuzac",
+  "nationality": "France",
+  "birthDate": "1985-01-18",
+  "wikidataQid": "Q27789"
+ },
+ "118": {
+  "name": "Rogério Ceni",
+  "nationality": "Brazil",
+  "birthDate": "1973-01-22",
+  "wikidataQid": "Q1249859"
+ },
+ "119": {
+  "name": "Pablo de Toledo",
+  "nationality": "Brazil",
+  "birthDate": "1975-04-21",
+  "wikidataQid": "Q130742265"
+ },
+ "120": {
+  "name": "Rodrigo Bellão",
+  "nationality": "Brazil",
+  "birthDate": "1987-02-20",
+  "wikidataQid": "Q138842747"
+ },
+ "121": {
+  "name": "Abel Ferreira",
+  "nationality": "Portugal",
+  "birthDate": "1978-12-22",
+  "wikidataQid": "Q318415"
+ },
+ "123": {
+  "name": "Jair Ventura",
+  "nationality": "Brazil",
+  "birthDate": "1979-03-19",
+  "wikidataQid": "Q27057682"
+ },
+ "124": {
+  "name": "Marco Aurélio de Oliveira",
+  "nationality": "Brazil",
+  "birthDate": "1972-07-22",
+  "wikidataQid": "Q1218393"
+ },
+ "125": {
+  "name": "Alberto Valentim",
+  "nationality": "Brazil",
+  "birthDate": "1975-03-22",
+  "wikidataQid": "Q2276922"
+ },
+ "126": {
+  "name": "Dorival Júnior",
+  "nationality": "Brazil",
+  "birthDate": "1962-04-25",
+  "wikidataQid": "Q1608978"
+ },
+ "128": {
+  "name": "Cuca",
+  "nationality": "Brazil",
+  "birthDate": "1963-06-07",
+  "wikidataQid": "Q2600663"
+ },
+ "129": {
+  "name": "Ricardinho",
+  "nationality": "Brazil",
+  "birthDate": "1976-05-23",
+  "wikidataQid": "Q72886"
+ },
+ "130": {
+  "name": "Luís Castro",
+  "nationality": "Portugal",
+  "birthDate": "1961-09-03",
+  "wikidataQid": "Q15896123"
+ },
+ "131": {
+  "name": "Ramón Díaz",
+  "nationality": "Argentina",
+  "birthDate": "1959-08-29",
+  "wikidataQid": "Q348557"
+ },
+ "134": {
+  "name": "Mauricio Barbieri",
+  "nationality": "Brazil",
+  "birthDate": "1981-09-30",
+  "wikidataQid": "Q51924094"
+ },
+ "137": {
+  "name": "Adilson Batista",
+  "nationality": "Brazil",
+  "birthDate": "1968-03-15",
+  "wikidataQid": "Q380411"
+ },
+ "140": {
+  "name": "Zé Ricardo",
+  "nationality": "Brazil",
+  "birthDate": "1971-06-05",
+  "wikidataQid": "Q24338838"
+ },
+ "144": {
+  "name": "Rafael dos Santos Lacerda",
+  "nationality": "Brazil",
+  "birthDate": "1984-06-12",
+  "wikidataQid": "Q15831145"
+ },
+ "145": {
+  "name": "Sérgio Soares",
+  "nationality": "Brazil",
+  "birthDate": "1967-01-11",
+  "wikidataQid": "Q955965"
+ },
+ "146": {
+  "name": "Ramon Menezes",
+  "nationality": "Brazil",
+  "birthDate": "1972-06-30",
+  "wikidataQid": "Q181139"
+ },
+ "147": {
+  "name": "António Oliveira",
+  "nationality": "Portugal",
+  "birthDate": "1992-10-09",
+  "wikidataQid": "Q85810066"
+ },
+ "149": {
+  "name": "João Brigatti",
+  "nationality": "Brazil",
+  "birthDate": "1964-03-14",
+  "wikidataQid": "Q79488672"
+ },
+ "154": {
+  "name": "Thiago Carpini",
+  "nationality": "Brazil",
+  "birthDate": "1984-07-16",
+  "wikidataQid": "Q7783831"
+ },
+ "157": {
+  "name": "Vincent Kompany",
+  "nationality": "Belgium",
+  "birthDate": "1986-04-10",
+  "wikidataQid": "Q201381"
+ },
+ "160": {
+  "name": "Julian Schuster",
+  "nationality": "Germany",
+  "birthDate": "1985-04-15",
+  "wikidataQid": "Q66301"
+ },
+ "162": {
+  "name": "Daniel Thioune",
+  "nationality": "Germany",
+  "birthDate": "1974-07-21",
+  "wikidataQid": "Q123126"
+ },
+ "163": {
+  "name": "Jan-Moritz Lichte",
+  "nationality": "Germany",
+  "birthDate": "1980-01-12",
+  "wikidataQid": "Q72200628"
+ },
+ "164": {
+  "name": "Urs Fischer",
+  "nationality": "Switzerland",
+  "birthDate": "1966-02-20",
+  "wikidataQid": "Q347771"
+ },
+ "165": {
+  "name": "Niko Kovač",
+  "nationality": "Croatia",
+  "birthDate": "1971-10-15",
+  "wikidataQid": "Q154305"
+ },
+ "167": {
+  "name": "Christian Ilzer",
+  "nationality": "Austria",
+  "birthDate": "1977-10-21",
+  "wikidataQid": "Q32592613"
+ },
+ "168": {
+  "name": "Carles Martínez Novell",
+  "nationality": "Spain",
+  "birthDate": "1984-01-01",
+  "wikidataQid": "Q119505783"
+ },
+ "169": {
+  "name": "Adi Hütter",
+  "nationality": "Austria",
+  "birthDate": "1970-02-11",
+  "wikidataQid": "Q362506"
+ },
+ "172": {
+  "name": "Sebastian Hoeneß",
+  "nationality": "Germany",
+  "birthDate": "1982-05-12",
+  "wikidataQid": "Q64626953"
+ },
+ "173": {
+  "name": "Martín Demichelis",
+  "nationality": "Argentina",
+  "birthDate": "1980-12-20",
+  "wikidataQid": "Q150947"
+ },
+ "182": {
+  "name": "Mauro Lustrinelli",
+  "nationality": "Switzerland",
+  "birthDate": "1976-02-26",
+  "wikidataQid": "Q578345"
+ },
+ "192": {
+  "name": "René Wagner",
+  "nationality": "Germany",
+  "birthDate": "1988-07-17",
+  "wikidataQid": "Q138763771"
+ },
+ "487": {
+  "name": "Gennaro Gattuso",
+  "nationality": "Italy",
+  "birthDate": "1978-01-09",
+  "wikidataQid": "Q116980"
+ },
+ "488": {
+  "name": "Alberto Aquilani",
+  "nationality": "Italy",
+  "birthDate": "1984-07-07",
+  "wikidataQid": "Q191151"
+ },
+ "489": {
+  "name": "Ruben Amorim",
+  "nationality": "Portugal",
+  "birthDate": "1985-01-27",
+  "wikidataQid": "Q368682"
+ },
+ "490": {
+  "name": "Fabio Pisacane",
+  "nationality": "Italy",
+  "birthDate": "1986-01-28",
+  "wikidataQid": "Q3737807"
+ },
+ "492": {
+  "name": "Massimiliano Allegri",
+  "nationality": "Italy",
+  "birthDate": "1967-08-11",
+  "wikidataQid": "Q354529"
+ },
+ "494": {
+  "name": "Kosta Runjaić",
+  "nationality": "Germany",
+  "birthDate": "1971-06-04",
+  "wikidataQid": "Q1785131"
+ },
+ "495": {
+  "name": "Daniele De Rossi",
+  "nationality": "Italy",
+  "birthDate": "1983-07-24",
+  "wikidataQid": "Q168497"
+ },
+ "496": {
+  "name": "Luciano Spalletti",
+  "nationality": "Italy",
+  "birthDate": "1959-03-07",
+  "wikidataQid": "Q310813"
+ },
+ "497": {
+  "name": "Gian Piero Gasperini",
+  "nationality": "Italy",
+  "birthDate": "1958-01-26",
+  "wikidataQid": "Q367846"
+ },
+ "499": {
+  "name": "Maurizio Sarri",
+  "nationality": "Italy",
+  "birthDate": "1959-01-10",
+  "wikidataQid": "Q3852721"
+ },
+ "500": {
+  "name": "Raffaele Palladino",
+  "nationality": "Italy",
+  "birthDate": "1984-04-17",
+  "wikidataQid": "Q282551"
+ },
+ "502": {
+  "name": "Paolo Vanoli",
+  "nationality": "Italy",
+  "birthDate": "1972-08-12",
+  "wikidataQid": "Q3362674"
+ },
+ "503": {
+  "name": "Ignazio Abate",
+  "nationality": "Italy",
+  "birthDate": "1986-11-12",
+  "wikidataQid": "Q213007"
+ },
+ "504": {
+  "name": "Paolo Sammarco",
+  "nationality": "Italy",
+  "birthDate": "1983-03-17",
+  "wikidataQid": "Q2706967"
+ },
+ "505": {
+  "name": "Cristian Chivu",
+  "nationality": "Romania",
+  "birthDate": "1980-10-26",
+  "wikidataQid": "Q210491"
+ },
+ "523": {
+  "name": "Alberto Gilardino",
+  "nationality": "Italy",
+  "birthDate": "1982-07-05",
+  "wikidataQid": "Q182451"
+ },
+ "529": {
+  "name": "Hansi Flick",
+  "nationality": "Germany",
+  "birthDate": "1965-02-24",
+  "wikidataQid": "Q577384"
+ },
+ "530": {
+  "name": "Diego Simeone",
+  "nationality": "Argentina",
+  "birthDate": "1970-04-28",
+  "wikidataQid": "Q258115"
+ },
+ "531": {
+  "name": "Edin Terzić",
+  "nationality": "Croatia",
+  "birthDate": "1982-10-30",
+  "wikidataQid": "Q61709977"
+ },
+ "532": {
+  "name": "Javier Aguirre",
+  "nationality": "Mexico",
+  "birthDate": "1958-12-01",
+  "wikidataQid": "Q194311"
+ },
+ "533": {
+  "name": "Iñigo Pérez",
+  "nationality": "Spain",
+  "birthDate": "1988-01-18",
+  "wikidataQid": "Q2499750"
+ },
+ "536": {
+  "name": "Luis García Plaza",
+  "nationality": "Spain",
+  "birthDate": "1972-12-01",
+  "wikidataQid": "Q2531438"
+ },
+ "538": {
+  "name": "Claudio Giráldez González",
+  "nationality": "Spain",
+  "birthDate": "1988-02-24",
+  "wikidataQid": "Q20534503"
+ },
+ "539": {
+  "name": "Luís Manuel Ferreira de Castro",
+  "nationality": "Portugal",
+  "birthDate": "1980-05-07",
+  "wikidataQid": "Q112860643"
+ },
+ "540": {
+  "name": "Manolo González",
+  "nationality": "Spain",
+  "birthDate": "1979-01-14",
+  "wikidataQid": "Q107613083"
+ },
+ "541": {
+  "name": "José Mourinho",
+  "nationality": "Portugal",
+  "birthDate": "1963-01-26",
+  "wikidataQid": "Q79983"
+ },
+ "542": {
+  "name": "Quique Sánchez Flores",
+  "nationality": "Spain",
+  "birthDate": "1965-02-05",
+  "wikidataQid": "Q352313"
+ },
+ "543": {
+  "name": "Manuel Pellegrini",
+  "nationality": "Chile",
+  "birthDate": "1953-09-16",
+  "wikidataQid": "Q296036"
+ },
+ "546": {
+  "name": "José Bordalás",
+  "nationality": "Spain",
+  "birthDate": "1964-03-05",
+  "wikidataQid": "Q3323802"
+ },
+ "547": {
+  "name": "Quique Álvarez",
+  "nationality": "Spain",
+  "birthDate": "1975-07-20",
+  "wikidataQid": "Q939408"
+ },
+ "548": {
+  "name": "Pellegrino Matarazzo",
+  "nationality": "USA",
+  "birthDate": "1977-11-28",
+  "wikidataQid": "Q80310717"
+ },
+ "718": {
+  "name": "Julián Calero Fernández",
+  "nationality": "Spain",
+  "birthDate": "1970-10-26",
+  "wikidataQid": "Q24565063"
+ },
+ "727": {
+  "name": "Luis Miguel Ramis",
+  "nationality": "Spain",
+  "birthDate": "1970-07-25",
+  "wikidataQid": "Q3323952"
+ },
+ "728": {
+  "name": "Beñat San José",
+  "nationality": "Spain",
+  "birthDate": "1979-09-24",
+  "wikidataQid": "Q10556689"
+ },
+ "746": {
+  "name": "Régis Le Bris",
+  "nationality": "France",
+  "birthDate": "1975-12-06",
+  "wikidataQid": "Q3455749"
+ },
+ "753": {
+  "name": "Márcio Bittencourt",
+  "nationality": "Brazil",
+  "birthDate": "1964-10-19",
+  "wikidataQid": "Q919307"
+ },
+ "794": {
+  "name": "Fernando Seabra",
+  "wikidataQid": "Q125404072"
+ },
+ "797": {
+  "name": "Martín Anselmi",
+  "nationality": "Argentina",
+  "birthDate": "1985-07-11",
+  "wikidataQid": "Q110278664"
+ },
+ "798": {
+  "name": "Luis García Fernández",
+  "nationality": "Spain",
+  "birthDate": "1981-02-06",
+  "wikidataQid": "Q440855"
+ },
+ "801": {
+  "name": "Paolo Bianco",
+  "nationality": "Italy",
+  "birthDate": "1977-08-20",
+  "wikidataQid": "Q1444184"
+ },
+ "867": {
+  "name": "Eusebio Di Francesco",
+  "nationality": "Italy",
+  "birthDate": "1969-09-08",
+  "wikidataQid": "Q396154"
+ },
+ "895": {
+  "name": "Cesc Fàbregas",
+  "nationality": "Spain",
+  "birthDate": "1987-05-04",
+  "wikidataQid": "Q17499"
+ },
+ "1062": {
+  "name": "Jorge Sampaoli",
+  "nationality": "Argentina",
+  "birthDate": "1960-03-13",
+  "wikidataQid": "Q1089864"
+ },
+ "1193": {
+  "name": "Bernardo Franco",
+  "nationality": "Brazil",
+  "birthDate": "1986-04-26",
+  "wikidataQid": "Q130442899"
+ },
+ "1198": {
+  "name": "Guto Ferreira",
+  "nationality": "Brazil",
+  "birthDate": "1965-09-07",
+  "wikidataQid": "Q5621833"
+ },
+ "2618": {
+  "name": "Claudinei Oliveira",
+  "nationality": "Brazil",
+  "birthDate": "1969-09-29",
+  "wikidataQid": "Q13459484"
+ },
+ "7779": {
+  "name": "Vinícius Bergantin",
+  "nationality": "Brazil",
+  "birthDate": "1980-07-31",
+  "wikidataQid": "Q1529293"
+ },
+ "7814": {
+  "name": "Cairo Roberto da Lima",
+  "nationality": "Brazil",
+  "birthDate": "1976-09-16",
+  "wikidataQid": "Q2783200"
+ },
+ "es_133": {
+  "name": "Miron Muslić",
+  "nationality": "Austria",
+  "birthDate": "1982-09-14",
+  "wikidataQid": "Q59336294"
+ },
+ "es_143": {
+  "name": "Danny Buijs",
+  "nationality": "Netherlands",
+  "birthDate": "1982-06-21",
+  "wikidataQid": "Q779338"
+ },
+ "es_151": {
+  "name": "Rogier Meijer",
+  "nationality": "Netherlands",
+  "birthDate": "1981-09-05",
+  "wikidataQid": "Q965974"
+ },
+ "es_170": {
+  "name": "Stéphane Dumont",
+  "nationality": "France",
+  "birthDate": "1982-09-06",
+  "wikidataQid": "Q2180092"
+ },
+ "es_171": {
+  "name": "Sylvain Ripoll",
+  "nationality": "France",
+  "birthDate": "1971-08-15",
+  "wikidataQid": "Q3507117"
+ },
+ "es_178": {
+  "name": "Ian Cathro",
+  "birthDate": "1986-07-11",
+  "wikidataQid": "Q18205458"
+ },
+ "es_226": {
+  "name": "Alex Diego",
+  "nationality": "Mexico",
+  "birthDate": "1985-07-01",
+  "wikidataQid": "Q4716918"
+ },
+ "es_229": {
+  "name": "Nicolás Larcamón",
+  "nationality": "Argentina",
+  "birthDate": "1984-08-11",
+  "wikidataQid": "Q32981622"
+ },
+ "es_245": {
+  "name": "Álvaro Cervera",
+  "nationality": "Spain",
+  "birthDate": "1965-09-20",
+  "wikidataQid": "Q250859"
+ },
+ "es_274": {
+  "name": "Zoumana Camara",
+  "nationality": "France",
+  "birthDate": "1979-04-03",
+  "wikidataQid": "Q227053"
+ },
+ "es_314": {
+  "name": "Michael Skubala",
+  "birthDate": "1982-10-31",
+  "wikidataQid": "Q116741718"
+ },
+ "es_318": {
+  "name": "Alan Sheehan",
+  "birthDate": "1986-09-14",
+  "wikidataQid": "Q3607774"
+ },
+ "es_352": {
+  "name": "Phil Parkinson",
+  "birthDate": "1967-12-01",
+  "wikidataQid": "Q797757"
+ },
+ "es_376": {
+  "name": "Tonda Eckert",
+  "nationality": "Germany",
+  "birthDate": "1993-01-31",
+  "wikidataQid": "Q136700977"
+ },
+ "es_381": {
+  "name": "Philippe Clement",
+  "nationality": "Belgium",
+  "birthDate": "1974-03-22",
+  "wikidataQid": "Q1338480"
+ },
+ "es_383": {
+  "name": "Ryan Mason",
+  "nationality": "England",
+  "birthDate": "1991-06-13",
+  "wikidataQid": "Q4459692"
+ },
+ "es_385": {
+  "name": "John Mousinho",
+  "birthDate": "1986-04-30",
+  "wikidataQid": "Q6249659"
+ },
+ "es_388": {
+  "name": "Frank Lampard",
+  "nationality": "England",
+  "birthDate": "1978-06-20",
+  "wikidataQid": "Q41533"
+ },
+ "es_391": {
+  "name": "Alex Neil",
+  "birthDate": "1981-06-09",
+  "wikidataQid": "Q1828808"
+ },
+ "es_395": {
+  "name": "Alessio Dionisi",
+  "nationality": "Italy",
+  "birthDate": "1980-04-01",
+  "wikidataQid": "Q65127311"
+ },
+ "es_398": {
+  "name": "Chris Wilder",
+  "birthDate": "1967-09-23",
+  "wikidataQid": "Q5108471"
+ },
+ "es_607": {
+  "name": "Kent Nielsen",
+  "nationality": "Denmark",
+  "birthDate": "1961-12-28",
+  "wikidataQid": "Q984175"
+ },
+ "es_789": {
+  "name": "Stanimir Stoilov",
+  "nationality": "Bulgaria",
+  "birthDate": "1967-02-13",
+  "wikidataQid": "Q1376437"
+ },
+ "es_995": {
+  "name": "Selçuk İnan",
+  "nationality": "Türkiye",
+  "birthDate": "1985-02-10",
+  "wikidataQid": "Q936379"
+ },
+ "es_2697": {
+  "name": "Patrick Videira",
+  "nationality": "France",
+  "birthDate": "1977-04-26",
+  "wikidataQid": "Q105071491"
+ },
+ "es_3039": {
+  "name": "Casper Røjkjær",
+  "nationality": "Denmark",
+  "birthDate": "1992-09-23",
+  "wikidataQid": "Q139860908"
+ },
+ "es_3243": {
+  "name": "Nicolas Usaï",
+  "nationality": "France",
+  "birthDate": "1974-05-01",
+  "wikidataQid": "Q24192128"
+ },
+ "es_3307": {
+  "name": "Ralf Kettemann",
+  "nationality": "Germany",
+  "birthDate": "1986-08-20",
+  "wikidataQid": "Q2129274"
+ },
+ "es_3393": {
+  "name": "Hiroshi Jofuku",
+  "nationality": "Japan",
+  "birthDate": "1961-03-21",
+  "wikidataQid": "Q3245381"
+ },
+ "es_3472": {
+  "name": "Tiago Margarido",
+  "nationality": "Portugal",
+  "birthDate": "1989-01-02",
+  "wikidataQid": "Q126213496"
+ },
+ "es_3585": {
+  "name": "Joakim Persson",
+  "nationality": "Sweden",
+  "birthDate": "1975-04-03",
+  "wikidataQid": "Q1379017"
+ },
+ "es_3610": {
+  "name": "Onur Cinel",
+  "nationality": "Türkiye",
+  "birthDate": "1985-06-17",
+  "wikidataQid": "Q119647823"
+ },
+ "es_3696": {
+  "name": "Vasco Botelho da Costa",
+  "nationality": "Portugal",
+  "birthDate": "1989-03-02",
+  "wikidataQid": "Q118524578"
+ },
+ "es_3706": {
+  "name": "Joseph Oosting",
+  "nationality": "Netherlands",
+  "birthDate": "1972-01-29",
+  "wikidataQid": "Q2287077"
+ },
+ "es_3735": {
+  "name": "Henk Brugge",
+  "nationality": "Netherlands",
+  "birthDate": "1977-07-31",
+  "wikidataQid": "Q132862669"
+ },
+ "es_4411": {
+  "name": "Dietmar Kühbauer",
+  "nationality": "Austria",
+  "birthDate": "1971-04-04",
+  "wikidataQid": "Q700139"
+ },
+ "es_5480": {
+  "name": "Mario García",
+  "nationality": "Mexico",
+  "birthDate": "1980-09-14",
+  "wikidataQid": "Q6764687"
+ },
+ "es_5807": {
+  "name": "David Hubert",
+  "nationality": "Belgium",
+  "birthDate": "1988-02-12",
+  "wikidataQid": "Q765038"
+ },
+ "es_6097": {
+  "name": "Félix Ricardo Torres",
+  "nationality": "Paraguay",
+  "birthDate": "1962-04-28",
+  "wikidataQid": "Q5511638"
+ },
+ "es_6672": {
+  "name": "Amund Skiri",
+  "nationality": "Norway",
+  "birthDate": "1978-02-25",
+  "wikidataQid": "Q2627976"
+ },
+ "es_6907": {
+  "name": "Manfred Schmid",
+  "nationality": "Austria",
+  "birthDate": "1971-02-20",
+  "wikidataQid": "Q1549973"
+ },
+ "es_6994": {
+  "name": "Olivier Frapolli",
+  "nationality": "France",
+  "birthDate": "1971-09-27",
+  "wikidataQid": "Q3351042"
+ },
+ "es_7104": {
+  "name": "Takayuki Yoshida",
+  "nationality": "Japan",
+  "birthDate": "1977-03-14",
+  "wikidataQid": "Q304367"
+ },
+ "es_7109": {
+  "name": "Miguel Ángel Lotina",
+  "nationality": "Spain",
+  "birthDate": "1957-06-18",
+  "wikidataQid": "Q444619"
+ },
+ "es_7111": {
+  "name": "Yoshiyuki Kobayashi",
+  "nationality": "Japan",
+  "birthDate": "1978-01-27",
+  "wikidataQid": "Q641557"
+ },
+ "es_7320": {
+  "name": "José Luis Oltra",
+  "nationality": "Spain",
+  "birthDate": "1969-03-24",
+  "wikidataQid": "Q1377271"
+ },
+ "es_7427": {
+  "name": "Carlos Rojas",
+  "nationality": "Chile",
+  "birthDate": "1956-01-18",
+  "wikidataQid": "Q10886975"
+ },
+ "es_7656": {
+  "name": "Recep Uçar",
+  "nationality": "Türkiye",
+  "birthDate": "1975-09-22",
+  "wikidataQid": "Q112902036"
+ },
+ "es_7719": {
+  "name": "Didier Santini",
+  "nationality": "France",
+  "birthDate": "1968-09-07",
+  "wikidataQid": "Q3027192"
+ },
+ "es_7732": {
+  "name": "Albert Sánchez Saura",
+  "nationality": "Spain",
+  "birthDate": "1987-04-01",
+  "wikidataQid": "Q127869813"
+ },
+ "es_7860": {
+  "name": "Andreas Bjelland",
+  "nationality": "Denmark",
+  "birthDate": "1988-07-11",
+  "wikidataQid": "Q348674"
+ },
+ "es_7869": {
+  "name": "Fabien Dagneaux",
+  "wikidataQid": "Q135914679"
+ },
+ "es_8110": {
+  "name": "Esteban Eduardo González Herrera",
+  "nationality": "Chile",
+  "birthDate": "1982-05-22",
+  "wikidataQid": "Q5849048"
+ },
+ "es_8186": {
+  "name": "Fernando Díaz",
+  "nationality": "Chile",
+  "birthDate": "1961-12-27",
+  "wikidataQid": "Q5444686"
+ },
+ "es_8221": {
+  "name": "Ulf Kristiansson",
+  "nationality": "Sweden",
+  "birthDate": "1983-06-05",
+  "wikidataQid": "Q131753158"
+ },
+ "es_8222": {
+  "name": "Fredrik Holmberg",
+  "nationality": "Sweden",
+  "birthDate": "1979-11-03",
+  "wikidataQid": "Q115628009"
+ },
+ "es_8547": {
+  "name": "Andreas Engelmark",
+  "nationality": "Sweden",
+  "birthDate": "1984-01-19",
+  "wikidataQid": "Q122923116"
+ },
+ "es_10080": {
+  "name": "Carlos Jara Saguier",
+  "nationality": "Paraguay",
+  "birthDate": "1950-11-01",
+  "wikidataQid": "Q2064087"
+ },
+ "es_10388": {
+  "name": "Horst Steffen",
+  "nationality": "Germany",
+  "birthDate": "1969-03-03",
+  "wikidataQid": "Q1629978"
+ },
+ "es_10678": {
+  "name": "Thierry Debès",
+  "nationality": "France",
+  "birthDate": "1974-01-13",
+  "wikidataQid": "Q555684"
+ },
+ "es_11429": {
+  "name": "Thorsten Fink",
+  "nationality": "Germany",
+  "birthDate": "1967-10-29",
+  "wikidataQid": "Q558041"
+ },
+ "es_15720": {
+  "name": "Domènec Torrent",
+  "nationality": "Spain",
+  "birthDate": "1962-07-14",
+  "wikidataQid": "Q24082703"
+ },
+ "es_17671": {
+  "name": "Aldo Bobadilla",
+  "nationality": "Paraguay",
+  "birthDate": "1976-04-20",
+  "wikidataQid": "Q362301"
+ },
+ "es_17851": {
+  "name": "Martín Varini",
+  "nationality": "Uruguay",
+  "birthDate": "1991-08-02",
+  "wikidataQid": "Q106594336"
+ },
+ "es_18066": {
+  "name": "Laurent Guyot",
+  "nationality": "France",
+  "birthDate": "1969-12-17",
+  "wikidataQid": "Q2734541"
+ },
+ "es_18153": {
+  "name": "José Eugenio Hernández",
+  "nationality": "Colombia",
+  "birthDate": "1956-03-18",
+  "wikidataQid": "Q2736794"
+ },
+ "es_18794": {
+  "name": "Philipp Semlic",
+  "nationality": "Austria",
+  "birthDate": "1983-04-21",
+  "wikidataQid": "Q80817741"
+ },
+ "es_19001": {
+  "name": "Takuya Takagi",
+  "nationality": "Japan",
+  "birthDate": "1967-11-12",
+  "wikidataQid": "Q1365312"
+ },
+ "es_20301": {
+  "name": "Anders Torstensson",
+  "nationality": "Sweden",
+  "birthDate": "1966-02-19",
+  "wikidataQid": "Q6214012"
+ },
+ "es_21361": {
+  "name": "Ranko Popović",
+  "nationality": "Serbia",
+  "birthDate": "1967-06-26",
+  "wikidataQid": "Q3301248"
+ },
+ "es_21380": {
+  "name": "Thomas Myhre",
+  "nationality": "Norway",
+  "birthDate": "1973-10-16",
+  "wikidataQid": "Q353623"
+ },
+ "es_21540": {
+  "name": "Markus Mader",
+  "nationality": "Austria",
+  "birthDate": "1968-05-21",
+  "wikidataQid": "Q64627236"
+ },
+ "es_21610": {
+  "name": "João Nuno Rodrigues Carromeu",
+  "nationality": "Portugal",
+  "birthDate": "1985-09-09",
+  "wikidataQid": "Q137217927"
+ },
+ "es_21613": {
+  "name": "Custódio Castro",
+  "nationality": "Portugal",
+  "birthDate": "1983-05-24",
+  "wikidataQid": "Q314155"
+ },
+ "es_21833": {
+  "name": "Damir Burić",
+  "nationality": "Croatia",
+  "birthDate": "1964-07-07",
+  "wikidataQid": "Q628380"
+ },
+ "es_21846": {
+  "name": "Ferdinand Feldhofer",
+  "nationality": "Austria",
+  "birthDate": "1979-10-23",
+  "wikidataQid": "Q685295"
+ },
+ "es_22165": {
+  "name": "Johannes Moesgaard",
+  "nationality": "Norway",
+  "birthDate": "1984-03-01",
+  "wikidataQid": "Q116256922"
+ },
+ "es_22167": {
+  "name": "Go Kuroda",
+  "nationality": "Japan",
+  "birthDate": "1970-05-26",
+  "wikidataQid": "Q28692368"
+ },
+ "es_22522": {
+  "name": "Takashi Kiyama",
+  "nationality": "Japan",
+  "birthDate": "1972-02-18",
+  "wikidataQid": "Q1185878"
+ },
+ "es_130899": {
+  "name": "Christophe Galtier",
+  "nationality": "France",
+  "birthDate": "1966-08-23",
+  "wikidataQid": "Q129023"
+ },
+ "es_131552": {
+  "name": "Andreas Holmberg",
+  "nationality": "Sweden",
+  "birthDate": "1984-08-17",
+  "wikidataQid": "Q19976816"
+ },
+ "es_131701": {
+  "name": "Daisuke Kimori",
+  "nationality": "Japan",
+  "birthDate": "1977-07-28",
+  "wikidataQid": "Q5209644"
+ },
+ "es_131858": {
+  "name": "Alfredo Álvarez Paredes",
+  "nationality": "Spain",
+  "birthDate": "1976-02-27",
+  "wikidataQid": "Q12382798"
+ },
+ "es_132335": {
+  "name": "Taner Taşkın",
+  "nationality": "Türkiye",
+  "birthDate": "1972-10-27",
+  "wikidataQid": "Q6085895"
+ },
+ "of_ae_al_ain": {
+  "name": "Leonardo Jardim",
+  "nationality": "Portugal",
+  "birthDate": "1974-08-01",
+  "wikidataQid": "Q2162382"
+ },
+ "of_ae_al_dhafra": {
+  "name": "Alen Horvat",
+  "nationality": "Croatia",
+  "birthDate": "1973-09-13",
+  "wikidataQid": "Q16214451"
+ },
+ "of_ae_al_jazira": {
+  "name": "Cosmin Olăroiu",
+  "nationality": "Romania",
+  "birthDate": "1969-06-10",
+  "wikidataQid": "Q484971"
+ },
+ "of_ae_emirates_club": {
+  "name": "Walter Zenga",
+  "nationality": "Romania",
+  "birthDate": "1960-04-28",
+  "wikidataQid": "Q294302"
+ },
+ "of_al_dinamo_city": {
+  "name": "Ilir Daja",
+  "nationality": "Albania",
+  "birthDate": "1966-10-20",
+  "wikidataQid": "Q21932138"
+ },
+ "of_al_egnatia_rrogozhine": {
+  "name": "Edlir Tetova",
+  "nationality": "Albania",
+  "birthDate": "1983-04-14",
+  "wikidataQid": "Q5338790"
+ },
+ "of_al_flamurtari": {
+  "name": "Francesco Moriero",
+  "nationality": "Italy",
+  "birthDate": "1969-03-31",
+  "wikidataQid": "Q585252"
+ },
+ "of_al_teuta_durres": {
+  "name": "Enkeleid Dobi",
+  "nationality": "Albania",
+  "birthDate": "1975-05-23",
+  "wikidataQid": "Q5379017"
+ },
+ "of_al_vllaznia_shkoder": {
+  "name": "Edi Martini",
+  "nationality": "Albania",
+  "birthDate": "1975-01-02",
+  "wikidataQid": "Q3047567"
+ },
+ "of_am_ararat_armenia": {
+  "name": "Tulipa",
+  "nationality": "Portugal",
+  "birthDate": "1972-10-16",
+  "wikidataQid": "Q7852081"
+ },
+ "of_am_gandzasar": {
+  "name": "Karen Barseghyan",
+  "nationality": "Armenia",
+  "birthDate": "1975-03-15",
+  "wikidataQid": "Q113017353"
+ },
+ "of_am_noah": {
+  "name": "Sandro Perković",
+  "nationality": "Croatia",
+  "birthDate": "1984-04-15",
+  "wikidataQid": "Q117632572"
+ },
+ "of_am_pyunik": {
+  "name": "Artak Òseyan",
+  "nationality": "Armenia",
+  "birthDate": "1987-05-16",
+  "wikidataQid": "Q3624059"
+ },
+ "of_am_urartu": {
+  "name": "Robert Arzumanyan",
+  "nationality": "Armenia",
+  "birthDate": "1985-07-24",
+  "wikidataQid": "Q373390"
+ },
+ "of_ar_almagro": {
+  "name": "Norberto Paparatto",
+  "nationality": "Argentina",
+  "birthDate": "1984-01-03",
+  "wikidataQid": "Q7050417"
+ },
+ "of_ar_almirante_brown": {
+  "name": "Fabián Nardozza",
+  "nationality": "Argentina",
+  "birthDate": "1965-09-23",
+  "wikidataQid": "Q5851781"
+ },
+ "of_ar_atlanta": {
+  "name": "Cristian Pellerano",
+  "nationality": "Argentina",
+  "birthDate": "1982-02-01",
+  "wikidataQid": "Q1989059"
+ },
+ "of_ar_banfield": {
+  "name": "Javier Sanguinetti",
+  "nationality": "Argentina",
+  "birthDate": "1971-01-08",
+  "wikidataQid": "Q3807487"
+ },
+ "of_ar_boca_juniors": {
+  "name": "Rodolfo Arruabarrena",
+  "nationality": "Argentina",
+  "birthDate": "1975-07-20",
+  "wikidataQid": "Q371806"
+ },
+ "of_ar_chaco_for_ever": {
+  "name": "Daniel Cravero",
+  "nationality": "Argentina",
+  "birthDate": "1965-07-28",
+  "wikidataQid": "Q5577668"
+ },
+ "of_ar_colon_de_santa_fe": {
+  "name": "Rodolfo De Paoli",
+  "nationality": "Argentina",
+  "birthDate": "1978-10-26",
+  "wikidataQid": "Q23641691"
+ },
+ "of_ar_defensa_y_justicia": {
+  "name": "Sebastián Beccacece",
+  "nationality": "Argentina",
+  "birthDate": "1980-12-17",
+  "wikidataQid": "Q7442628"
+ },
+ "of_ar_estudiantes": {
+  "name": "Eduardo Domínguez",
+  "nationality": "Argentina",
+  "birthDate": "1978-09-01",
+  "wikidataQid": "Q3288172"
+ },
+ "of_ar_ferro_carril_oeste": {
+  "name": "Walter Perazzo",
+  "nationality": "Argentina",
+  "birthDate": "1962-08-02",
+  "wikidataQid": "Q7965816"
+ },
+ "of_ar_gimnasia_la_plata": {
+  "name": "Néstor Gorosito",
+  "nationality": "Argentina",
+  "birthDate": "1964-05-14",
+  "wikidataQid": "Q696463"
+ },
+ "of_ar_gimnasia_y_esgrima_de_jujuy": {
+  "name": "Matías Módolo",
+  "nationality": "Argentina",
+  "birthDate": "1987-04-09",
+  "wikidataQid": "Q123688987"
+ },
+ "of_ar_godoy_cruz": {
+  "name": "Sebastián Méndez",
+  "nationality": "Italy",
+  "birthDate": "1977-07-04",
+  "wikidataQid": "Q3823801"
+ },
+ "of_ar_huracan": {
+  "name": "Israel Damonte",
+  "nationality": "Argentina",
+  "birthDate": "1982-01-06",
+  "wikidataQid": "Q6086898"
+ },
+ "of_ar_independiente": {
+  "name": "Jadson Viera",
+  "nationality": "Brazil",
+  "birthDate": "1981-08-04",
+  "wikidataQid": "Q1336120"
+ },
+ "of_ar_instituto": {
+  "name": "Lucas Bovaglio",
+  "nationality": "Argentina",
+  "birthDate": "1979-04-19",
+  "wikidataQid": "Q5981840"
+ },
+ "of_ar_lanus": {
+  "name": "Mauricio Pellegrino",
+  "nationality": "Argentina",
+  "birthDate": "1971-10-05",
+  "wikidataQid": "Q313131"
+ },
+ "of_ar_mitre_de_santiago_del_estero": {
+  "name": "Mario Sciaqua",
+  "nationality": "Argentina",
+  "birthDate": "1970-08-30",
+  "wikidataQid": "Q5999054"
+ },
+ "of_ar_quilmes": {
+  "name": "Alfredo Grelak",
+  "nationality": "Argentina",
+  "birthDate": "1970-06-20",
+  "wikidataQid": "Q2835602"
+ },
+ "of_ar_racing_club": {
+  "name": "Gustavo Costas",
+  "nationality": "Argentina",
+  "birthDate": "1963-02-28",
+  "wikidataQid": "Q3294412"
+ },
+ "of_ar_river_plate": {
+  "name": "Leonardo Ponzio",
+  "nationality": "Argentina",
+  "birthDate": "1982-01-29",
+  "wikidataQid": "Q964030"
+ },
+ "of_ar_rosario_central": {
+  "name": "Roberto Bonano",
+  "nationality": "Argentina",
+  "birthDate": "1970-01-24",
+  "wikidataQid": "Q464567"
+ },
+ "of_ar_san_lorenzo": {
+  "name": "Rubén Darío Insúa",
+  "nationality": "Argentina",
+  "birthDate": "1961-04-17",
+  "wikidataQid": "Q3298704"
+ },
+ "of_ar_talleres": {
+  "name": "Carlos Tevez",
+  "nationality": "Argentina",
+  "birthDate": "1984-02-05",
+  "wikidataQid": "Q50600"
+ },
+ "of_ar_talleres_de_remedios_de_escalada": {
+  "name": "Rodrigo Bilbao",
+  "nationality": "Argentina",
+  "birthDate": "1975-06-03",
+  "wikidataQid": "Q6110644"
+ },
+ "of_ar_tigre": {
+  "name": "Juan Carlos Blengio",
+  "nationality": "Argentina",
+  "birthDate": "1980-06-26",
+  "wikidataQid": "Q10419524"
+ },
+ "of_ar_union_de_santa_fe": {
+  "name": "Leonardo Madelón",
+  "nationality": "Argentina",
+  "birthDate": "1963-01-25",
+  "wikidataQid": "Q6526021"
+ },
+ "of_ar_velez_sarsfield": {
+  "name": "Gabriel Heinze",
+  "nationality": "Argentina",
+  "birthDate": "1978-04-19",
+  "wikidataQid": "Q63659"
+ },
+ "of_at_austria_wien": {
+  "name": "Stephan Helm",
+  "nationality": "Austria",
+  "birthDate": "1983-04-10",
+  "wikidataQid": "Q107177839"
+ },
+ "of_at_red_bull_salzburg": {
+  "name": "Danny Röhl",
+  "nationality": "Germany",
+  "birthDate": "1989-04-28",
+  "wikidataQid": "Q107447008"
+ },
+ "of_at_sturm_graz": {
+  "name": "Fabio Ingolitsch",
+  "nationality": "Austria",
+  "birthDate": "1992-04-10",
+  "wikidataQid": "Q112147168"
+ },
+ "of_at_sv_ried": {
+  "name": "Maximilian Senft",
+  "nationality": "Austria",
+  "birthDate": "1989-08-04",
+  "wikidataQid": "Q116949575"
+ },
+ "of_at_wolfsberger_ac": {
+  "name": "Thomas Silberberger",
+  "nationality": "Austria",
+  "birthDate": "1973-06-03",
+  "wikidataQid": "Q21279031"
+ },
+ "of_au_adelaide_united": {
+  "name": "Guillermo Amor",
+  "nationality": "Spain",
+  "birthDate": "1967-12-04",
+  "wikidataQid": "Q342808"
+ },
+ "of_au_brisbane_roar": {
+  "name": "Ruben Zadkovich",
+  "nationality": "Australia",
+  "birthDate": "1986-05-23",
+  "wikidataQid": "Q934727"
+ },
+ "of_au_macarthur": {
+  "name": "Mile Sterjovski",
+  "nationality": "Australia",
+  "birthDate": "1979-05-27",
+  "wikidataQid": "Q266282"
+ },
+ "of_au_melbourne_city": {
+  "name": "Warren Joyce",
+  "birthDate": "1965-01-20",
+  "wikidataQid": "Q2427511"
+ },
+ "of_au_melbourne_victory": {
+  "name": "Kevin Muscat",
+  "nationality": "Australia",
+  "birthDate": "1973-08-07",
+  "wikidataQid": "Q301236"
+ },
+ "of_au_newcastle_jets": {
+  "name": "Mark Jones",
+  "nationality": "Australia",
+  "birthDate": "1966-06-05",
+  "wikidataQid": "Q6768277"
+ },
+ "of_au_perth_glory": {
+  "name": "Kenny Lowe",
+  "birthDate": "1961-11-06",
+  "wikidataQid": "Q6391132"
+ },
+ "of_au_sydney_fc": {
+  "name": "Ufuk Talay",
+  "nationality": "Australia",
+  "birthDate": "1976-03-26",
+  "wikidataQid": "Q3547772"
+ },
+ "of_be_anderlecht": {
+  "name": "Vítor Bruno",
+  "nationality": "Portugal",
+  "wikidataQid": "Q126406885"
+ },
+ "of_be_club_brugge": {
+  "name": "Ivan Leko",
+  "nationality": "Croatia",
+  "birthDate": "1978-02-07",
+  "wikidataQid": "Q381805"
+ },
+ "of_be_gent": {
+  "name": "Rik De Mil",
+  "nationality": "Belgium",
+  "birthDate": "1981-09-15",
+  "wikidataQid": "Q102032779"
+ },
+ "of_be_kortrijk": {
+  "name": "Michiel Jonckheere",
+  "nationality": "Belgium",
+  "birthDate": "1990-01-03",
+  "wikidataQid": "Q13850692"
+ },
+ "of_be_mechelen": {
+  "name": "Frederik Vanderbiest",
+  "nationality": "Belgium",
+  "birthDate": "1977-10-10",
+  "wikidataQid": "Q2317709"
+ },
+ "of_be_oh_leuven": {
+  "name": "Felice Mazzù",
+  "nationality": "Belgium",
+  "birthDate": "1966-03-12",
+  "wikidataQid": "Q14107962"
+ },
+ "of_be_standard_liege": {
+  "name": "Vincent Euvrard",
+  "nationality": "Belgium",
+  "birthDate": "1982-03-12",
+  "wikidataQid": "Q2647509"
+ },
+ "of_be_waasland_beveren": {
+  "name": "Marc Schneider",
+  "nationality": "Switzerland",
+  "birthDate": "1980-07-23",
+  "wikidataQid": "Q670062"
+ },
+ "of_be_westerlo": {
+  "name": "Issame Charaï",
+  "nationality": "Morocco",
+  "birthDate": "1982-05-11",
+  "wikidataQid": "Q969256"
+ },
+ "of_be_zulte_waregem": {
+  "name": "Sven Vandenbroeck",
+  "nationality": "Belgium",
+  "birthDate": "1979-09-22",
+  "wikidataQid": "Q2367533"
+ },
+ "of_bg_arda_1924": {
+  "name": "Aleksandar Tunchev",
+  "nationality": "Bulgaria",
+  "birthDate": "1981-07-10",
+  "wikidataQid": "Q2503365"
+ },
+ "of_bg_beroe": {
+  "name": "Josu Uribe",
+  "nationality": "Spain",
+  "birthDate": "1969-05-25",
+  "wikidataQid": "Q3328765"
+ },
+ "of_bg_botev_plovdiv": {
+  "name": "Dimitar Dimitrov",
+  "nationality": "Bulgaria",
+  "birthDate": "1959-06-09",
+  "wikidataQid": "Q725348"
+ },
+ "of_bg_botev_vratsa": {
+  "name": "Todor Simov",
+  "nationality": "Bulgaria",
+  "birthDate": "1985-01-26",
+  "wikidataQid": "Q7812837"
+ },
+ "of_bg_levski": {
+  "name": "Julio Velázquez",
+  "nationality": "Spain",
+  "birthDate": "1981-10-05",
+  "wikidataQid": "Q901237"
+ },
+ "of_bg_lokomotiv_1929_sofia": {
+  "name": "Stanislav Genchev",
+  "nationality": "Bulgaria",
+  "birthDate": "1981-03-20",
+  "wikidataQid": "Q1359536"
+ },
+ "of_bg_lokomotiv_plovdiv": {
+  "name": "Dušan Kosič",
+  "nationality": "Slovenia",
+  "birthDate": "1971-04-23",
+  "wikidataQid": "Q3716763"
+ },
+ "of_bg_montana_1921": {
+  "name": "Akis Vavalis",
+  "nationality": "Greece",
+  "birthDate": "1985-09-21",
+  "wikidataQid": "Q133887828"
+ },
+ "of_bg_slavia_sofia": {
+  "name": "Ratko Dostanić",
+  "nationality": "Serbia",
+  "birthDate": "1959-10-25",
+  "wikidataQid": "Q282776"
+ },
+ "of_by_arsenal_dzerzhinsk": {
+  "name": "Ihor Voronkov",
+  "nationality": "Ukraine",
+  "birthDate": "1981-04-24",
+  "wikidataQid": "Q2130687"
+ },
+ "of_by_baranovichi": {
+  "name": "Raman Kirenkin",
+  "nationality": "Ukraine",
+  "birthDate": "1981-02-20",
+  "wikidataQid": "Q7288875"
+ },
+ "of_by_belshina": {
+  "name": "Alyaksandr Valadzko",
+  "nationality": "Belarus",
+  "birthDate": "1986-06-18",
+  "wikidataQid": "Q2529399"
+ },
+ "of_by_bumprom_gomel": {
+  "name": "Denis Drigalev",
+  "nationality": "Belarus",
+  "birthDate": "1993-01-27",
+  "wikidataQid": "Q16235337"
+ },
+ "of_by_dinamo_brest": {
+  "name": "Aleksandr Sednyov",
+  "nationality": "Belarus",
+  "birthDate": "1973-08-16",
+  "wikidataQid": "Q3543717"
+ },
+ "of_by_dnepr_mogilev": {
+  "name": "Igor Kriushenko",
+  "nationality": "Belarus",
+  "birthDate": "1964-02-10",
+  "wikidataQid": "Q1980219"
+ },
+ "of_by_gomel": {
+  "name": "Andrey Harawtsow",
+  "nationality": "Belarus",
+  "birthDate": "1981-04-02",
+  "wikidataQid": "Q4759174"
+ },
+ "of_by_isloch": {
+  "name": "Dzmitry Kamarowski",
+  "nationality": "Belarus",
+  "birthDate": "1986-10-10",
+  "wikidataQid": "Q2683432"
+ },
+ "of_by_lida": {
+  "name": "Aliaksiej Dabravoĺski",
+  "nationality": "Belarus",
+  "birthDate": "1985-04-15",
+  "wikidataQid": "Q56023776"
+ },
+ "of_by_minsk": {
+  "name": "Artsyom Chelyadzinski",
+  "nationality": "Belarus",
+  "birthDate": "1977-12-29",
+  "wikidataQid": "Q2546026"
+ },
+ "of_by_molodechno": {
+  "name": "Yuri Puntus",
+  "nationality": "Belarus",
+  "birthDate": "1960-10-08",
+  "wikidataQid": "Q4383789"
+ },
+ "of_by_naftan": {
+  "name": "Alyaksandr Hrapkowski",
+  "nationality": "Belarus",
+  "birthDate": "1975-03-12",
+  "wikidataQid": "Q4738585"
+ },
+ "of_by_neman": {
+  "name": "Igor Kovalevich",
+  "nationality": "Belarus",
+  "birthDate": "1968-02-03",
+  "wikidataQid": "Q3917553"
+ },
+ "of_by_osipovichi": {
+  "name": "Andrey Pyshnik",
+  "nationality": "Belarus",
+  "birthDate": "1968-02-01",
+  "wikidataQid": "Q18377948"
+ },
+ "of_by_ostrovets": {
+  "name": "Ivan Mihaĺ",
+  "nationality": "Belarus",
+  "birthDate": "1985-03-19",
+  "wikidataQid": "Q130293439"
+ },
+ "of_by_slavia_mozyr": {
+  "name": "Ivan Bionchik",
+  "nationality": "Belarus",
+  "birthDate": "1985-10-07",
+  "wikidataQid": "Q55584367"
+ },
+ "of_by_smorgon": {
+  "name": "Vyacheslav Geraschenko",
+  "nationality": "Belarus",
+  "birthDate": "1972-07-25",
+  "wikidataQid": "Q4136107"
+ },
+ "of_by_vitebsk": {
+  "name": "Sergei Gurenko",
+  "nationality": "Belarus",
+  "birthDate": "1972-09-30",
+  "wikidataQid": "Q705929"
+ },
+ "of_by_volna_pinsk": {
+  "name": "Andrej Prakapiuk",
+  "nationality": "Belarus",
+  "birthDate": "1978-10-21",
+  "wikidataQid": "Q75540759"
+ },
+ "of_ch_fc_lugano": {
+  "name": "Mattia Croci-Torti",
+  "nationality": "Switzerland",
+  "birthDate": "1982-04-10",
+  "wikidataQid": "Q108743489"
+ },
+ "of_ch_fc_luzern": {
+  "name": "Mario Frick",
+  "nationality": "Liechtenstein",
+  "birthDate": "1974-09-07",
+  "wikidataQid": "Q315787"
+ },
+ "of_ch_fc_sion": {
+  "name": "Didier Tholot",
+  "nationality": "France",
+  "birthDate": "1964-04-02",
+  "wikidataQid": "Q1210598"
+ },
+ "of_ch_fc_st_gallen": {
+  "name": "Enrico Maaßen",
+  "birthDate": "1984-03-10",
+  "wikidataQid": "Q107207828"
+ },
+ "of_ch_fc_vaduz": {
+  "name": "Alessandro Mangiarratti",
+  "nationality": "Switzerland",
+  "birthDate": "1978-09-15",
+  "wikidataQid": "Q3610110"
+ },
+ "of_ch_fc_zurich": {
+  "name": "Dennis Hediger",
+  "nationality": "Switzerland",
+  "birthDate": "1986-09-22",
+  "wikidataQid": "Q462150"
+ },
+ "of_ch_grasshopper": {
+  "name": "Gerald Scheiblehner",
+  "nationality": "Austria",
+  "birthDate": "1977-02-25",
+  "wikidataQid": "Q21063536"
+ },
+ "of_ch_young_boys": {
+  "name": "Gerardo Seoane",
+  "nationality": "Switzerland",
+  "birthDate": "1978-10-30",
+  "wikidataQid": "Q339173"
+ },
+ "of_cl_audax_italiano": {
+  "name": "Juan José Ribera",
+  "nationality": "Chile",
+  "birthDate": "1980-08-07",
+  "wikidataQid": "Q5950468"
+ },
+ "of_cl_cobresal": {
+  "name": "José Cantillana",
+  "nationality": "Chile",
+  "birthDate": "1966-10-01",
+  "wikidataQid": "Q6291787"
+ },
+ "of_cl_ohiggins": {
+  "name": "Pablo de Muner",
+  "nationality": "Argentina",
+  "birthDate": "1981-04-14",
+  "wikidataQid": "Q7121796"
+ },
+ "of_cl_palestino": {
+  "name": "Emiliano Astorga",
+  "nationality": "Chile",
+  "birthDate": "1960-09-21",
+  "wikidataQid": "Q5830862"
+ },
+ "of_cl_union_la_calera": {
+  "name": "Néstor Craviotto",
+  "nationality": "Argentina",
+  "birthDate": "1963-10-03",
+  "wikidataQid": "Q2436152"
+ },
+ "of_cl_universidad_catolica": {
+  "name": "Tiago Nunes",
+  "nationality": "Brazil",
+  "birthDate": "1980-02-15",
+  "wikidataQid": "Q55759831"
+ },
+ "of_cl_universidad_de_concepcion": {
+  "name": "Francisco Bozán",
+  "nationality": "Chile",
+  "wikidataQid": "Q17632502"
+ },
+ "of_co_atletico_nacional": {
+  "name": "Lucas González Vélez",
+  "nationality": "Colombia",
+  "birthDate": "1981-06-07",
+  "wikidataQid": "Q116245148"
+ },
+ "of_co_barranquilla": {
+  "name": "Roberto Peñaloza",
+  "nationality": "Colombia",
+  "birthDate": "1979-07-04",
+  "wikidataQid": "Q6109921"
+ },
+ "of_co_deportivo_cali": {
+  "name": "Rafael Dudamel",
+  "nationality": "Venezuela",
+  "birthDate": "1973-01-07",
+  "wikidataQid": "Q2304904"
+ },
+ "of_co_deportivo_pereira": {
+  "name": "Leonel Álvarez",
+  "nationality": "Colombia",
+  "birthDate": "1965-07-29",
+  "wikidataQid": "Q720014"
+ },
+ "of_co_jaguares": {
+  "name": "Hubert Bodhert",
+  "nationality": "Colombia",
+  "birthDate": "1972-01-17",
+  "wikidataQid": "Q5903996"
+ },
+ "of_co_llaneros_co": {
+  "name": "Jairo Patiño",
+  "nationality": "Colombia",
+  "birthDate": "1978-04-05",
+  "wikidataQid": "Q2323750"
+ },
+ "of_co_millonarios": {
+  "name": "Hernán Torres Oliveros",
+  "nationality": "Colombia",
+  "birthDate": "1961-05-31",
+  "wikidataQid": "Q5896299"
+ },
+ "of_co_once_caldas": {
+  "name": "Hernán Darío Herrera",
+  "nationality": "Colombia",
+  "birthDate": "1957-10-28",
+  "wikidataQid": "Q14851373"
+ },
+ "of_co_patriotas": {
+  "name": "Diego Andrés Corredor",
+  "nationality": "Colombia",
+  "birthDate": "1981-06-30",
+  "wikidataQid": "Q22082619"
+ },
+ "of_co_real_cartagena": {
+  "name": "José Santa",
+  "nationality": "Colombia",
+  "birthDate": "1970-09-12",
+  "wikidataQid": "Q922195"
+ },
+ "of_co_santa_fe": {
+  "name": "Pablo Repetto",
+  "nationality": "Uruguay",
+  "birthDate": "1974-03-14",
+  "wikidataQid": "Q6056375"
+ },
+ "of_cy_anorthosis": {
+  "name": "Mauro Camoranesi",
+  "nationality": "Italy",
+  "birthDate": "1976-10-04",
+  "wikidataQid": "Q189716"
+ },
+ "of_cy_nea_salamis": {
+  "name": "Ángel López Pérez",
+  "nationality": "Spain",
+  "birthDate": "1983-04-05",
+  "wikidataQid": "Q69322087"
+ },
+ "of_cy_omonoia": {
+  "name": "Henning Berg",
+  "nationality": "Norway",
+  "birthDate": "1969-09-01",
+  "wikidataQid": "Q343093"
+ },
+ "of_cz_banik_ostrava": {
+  "name": "Roman Skuhravý",
+  "nationality": "Czechia",
+  "birthDate": "1975-01-06",
+  "wikidataQid": "Q7362182"
+ },
+ "of_cz_bohemians_1905": {
+  "name": "Jaroslav Veselý",
+  "nationality": "Czechia",
+  "birthDate": "1977-08-08",
+  "wikidataQid": "Q117757413"
+ },
+ "of_cz_brno": {
+  "name": "Martin Svědík",
+  "birthDate": "1974-06-27",
+  "wikidataQid": "Q4414785"
+ },
+ "of_cz_dukla_prague": {
+  "name": "Pavel Šustr",
+  "nationality": "Czechia",
+  "birthDate": "1974-10-13",
+  "wikidataQid": "Q12044343"
+ },
+ "of_cz_jablonec": {
+  "name": "Luboš Kozel",
+  "nationality": "Czechia",
+  "birthDate": "1971-03-16",
+  "wikidataQid": "Q720326"
+ },
+ "of_cz_mlada_boleslav": {
+  "name": "Aleš Majer",
+  "nationality": "Czechia",
+  "birthDate": "1979-10-10",
+  "wikidataQid": "Q134699808"
+ },
+ "of_cz_pribram": {
+  "name": "Tomáš Zápotočný",
+  "nationality": "Czechia",
+  "birthDate": "1980-09-13",
+  "wikidataQid": "Q723915"
+ },
+ "of_cz_sigma_olomouc": {
+  "name": "Pavel Hapal",
+  "nationality": "Czechia",
+  "birthDate": "1969-07-27",
+  "wikidataQid": "Q2064606"
+ },
+ "of_cz_slavia_prague": {
+  "name": "Jindřich Trpišovský",
+  "nationality": "Czechia",
+  "birthDate": "1976-02-27",
+  "wikidataQid": "Q20303124"
+ },
+ "of_cz_slovacko": {
+  "name": "Jan Jelínek",
+  "nationality": "Czechia",
+  "birthDate": "1982-03-22",
+  "wikidataQid": "Q6149153"
+ },
+ "of_cz_slovan_liberec": {
+  "name": "Branislav Fodrek",
+  "nationality": "Slovakia",
+  "birthDate": "1981-02-05",
+  "wikidataQid": "Q269396"
+ },
+ "of_cz_sparta_prague": {
+  "name": "Brian Priske",
+  "nationality": "Denmark",
+  "birthDate": "1977-05-14",
+  "wikidataQid": "Q912982"
+ },
+ "of_cz_teplice": {
+  "name": "Zdenko Frťala",
+  "nationality": "Slovakia",
+  "birthDate": "1970-08-03",
+  "wikidataQid": "Q10532645"
+ },
+ "of_cz_viktoria_plzen": {
+  "name": "Radoslav Kováč",
+  "nationality": "Czechia",
+  "birthDate": "1979-11-27",
+  "wikidataQid": "Q299604"
+ },
+ "of_cz_zlin": {
+  "name": "Pavel Hoftych",
+  "nationality": "Czechia",
+  "birthDate": "1967-05-09",
+  "wikidataQid": "Q545646"
+ },
+ "of_dk_aarhus": {
+  "name": "Jakob Poulsen",
+  "nationality": "Denmark",
+  "birthDate": "1983-07-07",
+  "wikidataQid": "Q310703"
+ },
+ "of_dk_brondby": {
+  "name": "Steve Cooper",
+  "birthDate": "1979-12-10",
+  "wikidataQid": "Q24183505"
+ },
+ "of_dk_fc_midtjylland": {
+  "name": "Mike Tullberg",
+  "nationality": "Denmark",
+  "birthDate": "1985-12-25",
+  "wikidataQid": "Q460260"
+ },
+ "of_dk_fc_nordsjaelland": {
+  "name": "Jens Olsen",
+  "nationality": "Denmark",
+  "birthDate": "1975-05-30",
+  "wikidataQid": "Q129768591"
+ },
+ "of_dk_odense": {
+  "name": "Alexander Zorniger",
+  "nationality": "Germany",
+  "birthDate": "1967-10-08",
+  "wikidataQid": "Q12813535"
+ },
+ "of_dk_randers": {
+  "name": "Rasmus Bertelsen",
+  "nationality": "Denmark",
+  "birthDate": "1983-12-21",
+  "wikidataQid": "Q54104978"
+ },
+ "of_dk_sonderjyske": {
+  "name": "Thomas Nørgaard",
+  "nationality": "Denmark",
+  "birthDate": "1982-04-13",
+  "wikidataQid": "Q35836301"
+ },
+ "of_dz_cs_constantine": {
+  "name": "Roger Lemerre",
+  "nationality": "France",
+  "birthDate": "1941-06-18",
+  "wikidataQid": "Q255858"
+ },
+ "of_dz_mc_alger": {
+  "name": "Patrice Beaumelle",
+  "nationality": "France",
+  "birthDate": "1978-04-24",
+  "wikidataQid": "Q7145369"
+ },
+ "of_dz_paradou": {
+  "name": "Khaled Lounici",
+  "nationality": "Algeria",
+  "birthDate": "1967-07-09",
+  "wikidataQid": "Q3195976"
+ },
+ "of_eg_el_masry": {
+  "name": "Ali Maher",
+  "nationality": "Egypt",
+  "birthDate": "1973-12-03",
+  "wikidataQid": "Q16214501"
+ },
+ "of_eg_petrojet": {
+  "name": "Talaat Youssef",
+  "nationality": "Egypt",
+  "birthDate": "1955-01-21",
+  "wikidataQid": "Q7678766"
+ },
+ "of_eg_wadi_degla": {
+  "name": "Walter Meeuws",
+  "nationality": "Belgium",
+  "birthDate": "1951-07-11",
+  "wikidataQid": "Q1337018"
+ },
+ "of_eg_zamalek": {
+  "name": "José Manuel Gomes",
+  "nationality": "Portugal",
+  "birthDate": "1970-08-28",
+  "wikidataQid": "Q4342579"
+ },
+ "of_es_almeria": {
+  "name": "García Pimienta",
+  "nationality": "Spain",
+  "birthDate": "1974-08-03",
+  "wikidataQid": "Q2671442"
+ },
+ "of_es_burgos": {
+  "name": "Sergio Francisco",
+  "nationality": "Spain",
+  "birthDate": "1979-03-19",
+  "wikidataQid": "Q3824000"
+ },
+ "of_es_cadiz": {
+  "name": "Albert Celades",
+  "nationality": "Spain",
+  "birthDate": "1975-09-29",
+  "wikidataQid": "Q459099"
+ },
+ "of_es_ceuta": {
+  "name": "Andoni Goikoetxea",
+  "nationality": "Spain",
+  "birthDate": "1956-08-23",
+  "wikidataQid": "Q358424"
+ },
+ "of_es_cordoba": {
+  "name": "Iván Ania",
+  "nationality": "Spain",
+  "birthDate": "1977-10-24",
+  "wikidataQid": "Q3779635"
+ },
+ "of_es_deportivo": {
+  "name": "Antonio Hidalgo",
+  "nationality": "Spain",
+  "birthDate": "1979-02-08",
+  "wikidataQid": "Q602465"
+ },
+ "of_es_fc_andorra": {
+  "name": "Carles Manso",
+  "nationality": "Spain",
+  "birthDate": "1992-11-05",
+  "wikidataQid": "Q137211507"
+ },
+ "of_es_leganes": {
+  "name": "Rubén Albés",
+  "nationality": "Spain",
+  "birthDate": "1985-02-24",
+  "wikidataQid": "Q20021323"
+ },
+ "of_es_malaga": {
+  "name": "Juan Francisco Funes Arjona",
+  "nationality": "Spain",
+  "wikidataQid": "Q111423428"
+ },
+ "of_es_racing_santander": {
+  "name": "José Alberto López Menéndez",
+  "nationality": "Spain",
+  "birthDate": "1982-05-21",
+  "wikidataQid": "Q58839682"
+ },
+ "of_es_valladolid": {
+  "name": "Fran Escribá",
+  "nationality": "Spain",
+  "birthDate": "1965-05-03",
+  "wikidataQid": "Q3259945"
+ },
+ "of_fi_fc_lahti": {
+  "name": "Gonçalo Pereira",
+  "wikidataQid": "Q131756039"
+ },
+ "of_fi_ff_jaro": {
+  "name": "Niklas Widjeskog",
+  "nationality": "Finland",
+  "birthDate": "1969-02-24",
+  "wikidataQid": "Q16338324"
+ },
+ "of_fi_hjk": {
+  "name": "Toni Korkeakunnas",
+  "nationality": "Finland",
+  "birthDate": "1968-05-15",
+  "wikidataQid": "Q6581952"
+ },
+ "of_fi_ifk_mariehamn": {
+  "name": "Gary Williams",
+  "nationality": "England",
+  "birthDate": "1977-12-07",
+  "wikidataQid": "Q11860306"
+ },
+ "of_fi_ilves": {
+  "name": "Joonas Rantanen",
+  "nationality": "Finland",
+  "birthDate": "1987-07-27",
+  "wikidataQid": "Q91998895"
+ },
+ "of_fi_inter_turku": {
+  "name": "Vesa Vasara",
+  "nationality": "Finland",
+  "birthDate": "1976-08-16",
+  "wikidataQid": "Q4405706"
+ },
+ "of_fi_kotp": {
+  "name": "Jonas Nyholm",
+  "nationality": "Finland",
+  "birthDate": "1992-06-23",
+  "wikidataQid": "Q124854056"
+ },
+ "of_fi_seinajoki": {
+  "name": "Stevie Grieve",
+  "nationality": "Scotland",
+  "birthDate": "1986-12-31",
+  "wikidataQid": "Q123669549"
+ },
+ "of_fi_vps": {
+  "name": "Jussi Nuorela",
+  "nationality": "Finland",
+  "birthDate": "1974-08-11",
+  "wikidataQid": "Q1865706"
+ },
+ "of_fj_labasa": {
+  "name": "Bal Sanju Reddy",
+  "nationality": "Fiji",
+  "wikidataQid": "Q23673793"
+ },
+ "of_fr_clermont": {
+  "name": "David Guion",
+  "nationality": "France",
+  "birthDate": "1967-09-30",
+  "wikidataQid": "Q5234461"
+ },
+ "of_fr_dijon": {
+  "name": "Baptiste Ridira",
+  "nationality": "France",
+  "birthDate": "1983-06-13",
+  "wikidataQid": "Q139827258"
+ },
+ "of_fr_laval": {
+  "name": "David Vignes",
+  "birthDate": "1973-06-21",
+  "wikidataQid": "Q135443560"
+ },
+ "of_fr_nancy": {
+  "name": "Oswald Tanchot",
+  "nationality": "France",
+  "birthDate": "1973-08-07",
+  "wikidataQid": "Q7108172"
+ },
+ "of_fr_red_star": {
+  "name": "Damien Perrinelle",
+  "nationality": "France",
+  "birthDate": "1983-09-12",
+  "wikidataQid": "Q388530"
+ },
+ "of_fr_sochaux": {
+  "name": "Vincent Hognon",
+  "nationality": "France",
+  "birthDate": "1974-08-16",
+  "wikidataQid": "Q1383750"
+ },
+ "of_gb_birmingham_city": {
+  "name": "Chris Davies",
+  "nationality": "Wales",
+  "birthDate": "1985-03-27",
+  "wikidataQid": "Q18637275"
+ },
+ "of_gb_bolton": {
+  "name": "Steven Schumacher",
+  "nationality": "England",
+  "birthDate": "1984-04-30",
+  "wikidataQid": "Q7615248"
+ },
+ "of_gb_bristol_city": {
+  "name": "Roy Hodgson",
+  "nationality": "England",
+  "birthDate": "1947-08-09",
+  "wikidataQid": "Q203781"
+ },
+ "of_gb_charlton": {
+  "name": "Nathan Jones",
+  "birthDate": "1973-05-28",
+  "wikidataQid": "Q10387537"
+ },
+ "of_gb_derby_county": {
+  "name": "John Eustace",
+  "birthDate": "1979-11-03",
+  "wikidataQid": "Q10718"
+ },
+ "of_gb_hull_city": {
+  "name": "Sergej Jakirović",
+  "birthDate": "1976-12-23",
+  "wikidataQid": "Q1444714"
+ },
+ "of_gb_ipswich_town": {
+  "name": "Gary O'Neil",
+  "birthDate": "1983-05-18",
+  "wikidataQid": "Q731946"
+ },
+ "of_gb_middlesbrough": {
+  "name": "Kim Hellberg",
+  "nationality": "Sweden",
+  "birthDate": "1988-02-01",
+  "wikidataQid": "Q47068280"
+ },
+ "of_gb_preston": {
+  "name": "Jason Euell",
+  "birthDate": "1977-02-06",
+  "wikidataQid": "Q982625"
+ },
+ "of_gb_qpr": {
+  "name": "Julien Stéphan",
+  "nationality": "France",
+  "birthDate": "1980-09-18",
+  "wikidataQid": "Q59390957"
+ },
+ "of_ge_dinamo_batumi": {
+  "name": "Giorgi Chiabrishvili",
+  "nationality": "Georgia",
+  "birthDate": "1979-10-07",
+  "wikidataQid": "Q97361028"
+ },
+ "of_ge_dinamo_tbilisi": {
+  "name": "Vladimir Kakashvili",
+  "nationality": "Georgia",
+  "birthDate": "1980-09-04",
+  "wikidataQid": "Q120264784"
+ },
+ "of_ge_samtredia": {
+  "name": "Mikheil Ashvetia",
+  "nationality": "Georgia",
+  "birthDate": "1977-11-10",
+  "wikidataQid": "Q920143"
+ },
+ "of_ge_torpedo_kutaisi": {
+  "name": "Dirk Schuster",
+  "nationality": "Germany",
+  "birthDate": "1967-12-29",
+  "wikidataQid": "Q463936"
+ },
+ "of_gh_asante_kotoko": {
+  "name": "Maxwell Konadu",
+  "nationality": "Ghana",
+  "birthDate": "1972-12-04",
+  "wikidataQid": "Q5918427"
+ },
+ "of_gh_hearts_of_oak": {
+  "name": "Charles Kwabla Akonnor",
+  "nationality": "Germany",
+  "birthDate": "1974-03-12",
+  "wikidataQid": "Q543156"
+ },
+ "of_gr_atromitos": {
+  "name": "Dušan Kerkez",
+  "birthDate": "1976-05-01",
+  "wikidataQid": "Q3511735"
+ },
+ "of_gr_levadiakos": {
+  "name": "Elias Charalambous",
+  "nationality": "Cyprus",
+  "birthDate": "1980-09-25",
+  "wikidataQid": "Q1329030"
+ },
+ "of_gr_panathinaikos": {
+  "name": "Jacob Neestrup",
+  "nationality": "Denmark",
+  "birthDate": "1988-03-08",
+  "wikidataQid": "Q4275558"
+ },
+ "of_gr_panetolikos": {
+  "name": "Giannis Anastasiou",
+  "nationality": "Greece",
+  "birthDate": "1973-03-05",
+  "wikidataQid": "Q2081290"
+ },
+ "of_gr_volos": {
+  "name": "Kostas Bratsos",
+  "nationality": "Greece",
+  "birthDate": "1977-04-26",
+  "wikidataQid": "Q113653004"
+ },
+ "of_hr_cibalia": {
+  "name": "Miroslav Bojko",
+  "nationality": "Croatia",
+  "birthDate": "1971-09-30",
+  "wikidataQid": "Q6873900"
+ },
+ "of_hr_dinamo_zagreb": {
+  "name": "Mario Kovačević",
+  "nationality": "Croatia",
+  "birthDate": "1975-05-17",
+  "wikidataQid": "Q6764751"
+ },
+ "of_hr_gorica": {
+  "name": "Mario Carević",
+  "nationality": "Croatia",
+  "birthDate": "1982-03-29",
+  "wikidataQid": "Q659612"
+ },
+ "of_hr_hajduk_split": {
+  "name": "Gonzalo García García",
+  "nationality": "Uruguay",
+  "birthDate": "1983-10-13",
+  "wikidataQid": "Q259002"
+ },
+ "of_hr_hrvatski_dragovoljac": {
+  "name": "Krešimir Sunara",
+  "birthDate": "1970-03-10",
+  "wikidataQid": "Q108068428"
+ },
+ "of_hr_istra_1961": {
+  "name": "Oriol Riera",
+  "nationality": "Spain",
+  "birthDate": "1986-07-03",
+  "wikidataQid": "Q2105658"
+ },
+ "of_hr_lokomotiva_zagreb": {
+  "name": "Nikica Jelavić",
+  "nationality": "Croatia",
+  "birthDate": "1985-08-27",
+  "wikidataQid": "Q221233"
+ },
+ "of_hr_osijek": {
+  "name": "Tomislav Radotić",
+  "nationality": "Croatia",
+  "birthDate": "1981-12-13",
+  "wikidataQid": "Q16221535"
+ },
+ "of_hr_rijeka": {
+  "name": "Víctor Sánchez",
+  "nationality": "Spain",
+  "birthDate": "1976-02-23",
+  "wikidataQid": "Q545968"
+ },
+ "of_hr_slaven_belupo": {
+  "name": "Mario Gregurina",
+  "nationality": "Croatia",
+  "birthDate": "1988-03-23",
+  "wikidataQid": "Q6764704"
+ },
+ "of_hr_varazdin": {
+  "name": "Nikola Šafarić",
+  "nationality": "Croatia",
+  "birthDate": "1981-03-11",
+  "wikidataQid": "Q331069"
+ },
+ "of_hr_vukovar_1991": {
+  "name": "Silvijo Čabraja",
+  "wikidataQid": "Q111597839"
+ },
+ "of_hu_debrecen": {
+  "name": "Sergio Navarro",
+  "nationality": "Spain",
+  "birthDate": "1979-10-17",
+  "wikidataQid": "Q30319404"
+ },
+ "of_hu_diosgyor": {
+  "name": "Vladimir Radenković",
+  "nationality": "Serbia",
+  "birthDate": "1978-01-22",
+  "wikidataQid": "Q131118691"
+ },
+ "of_hu_fehervar": {
+  "name": "Tamás Pető",
+  "nationality": "Hungary",
+  "birthDate": "1974-06-08",
+  "wikidataQid": "Q751929"
+ },
+ "of_hu_ferencvaros": {
+  "name": "Robbie Keane",
+  "birthDate": "1980-07-08",
+  "wikidataQid": "Q184612"
+ },
+ "of_hu_honved": {
+  "name": "Tam Courts",
+  "birthDate": "1981-08-10",
+  "wikidataQid": "Q16204859"
+ },
+ "of_hu_paksi": {
+  "name": "György Bognár",
+  "nationality": "Hungary",
+  "birthDate": "1961-11-05",
+  "wikidataQid": "Q833390"
+ },
+ "of_hu_puskas_akademia": {
+  "name": "Zsolt Hornyák",
+  "nationality": "Slovakia",
+  "birthDate": "1973-05-01",
+  "wikidataQid": "Q8074815"
+ },
+ "of_hu_ujpest": {
+  "name": "Zoltán Szélesi",
+  "nationality": "Hungary",
+  "birthDate": "1981-11-22",
+  "wikidataQid": "Q219041"
+ },
+ "of_id_persebaya": {
+  "name": "Paul Munster",
+  "nationality": "Northern Ireland",
+  "birthDate": "1982-02-09",
+  "wikidataQid": "Q3494978"
+ },
+ "of_id_psm": {
+  "name": "Bernardo Tavares",
+  "nationality": "Portugal",
+  "birthDate": "1980-05-02",
+  "wikidataQid": "Q19904154"
+ },
+ "of_id_semen_padang": {
+  "name": "Weliansyah",
+  "nationality": "Indonesia",
+  "birthDate": "1966-01-19",
+  "wikidataQid": "Q25465326"
+ },
+ "of_il_beitar_jerusalem": {
+  "name": "Barak Yitzhaki",
+  "nationality": "Israel",
+  "birthDate": "1984-09-25",
+  "wikidataQid": "Q429606"
+ },
+ "of_il_bnei_sakhnin": {
+  "name": "Yossi Abukasis",
+  "nationality": "Israel",
+  "birthDate": "1970-09-10",
+  "wikidataQid": "Q2906816"
+ },
+ "of_il_bnei_yehuda": {
+  "name": "Nissim Avitan",
+  "nationality": "Israel",
+  "birthDate": "1971-09-29",
+  "wikidataQid": "Q54911485"
+ },
+ "of_il_hapoel_beer_sheva": {
+  "name": "Ran Kojok",
+  "nationality": "Israel",
+  "birthDate": "1981-01-12",
+  "wikidataQid": "Q7290596"
+ },
+ "of_il_hapoel_haifa": {
+  "name": "Haim Silvas",
+  "nationality": "Israel",
+  "birthDate": "1975-11-21",
+  "wikidataQid": "Q5639313"
+ },
+ "of_il_hapoel_kfar_saba": {
+  "name": "Yaron Hochenboim",
+  "nationality": "Israel",
+  "birthDate": "1971-07-24",
+  "wikidataQid": "Q8049442"
+ },
+ "of_il_hapoel_tel_aviv": {
+  "name": "Elyaniv Barda",
+  "nationality": "Israel",
+  "birthDate": "1981-12-15",
+  "wikidataQid": "Q553972"
+ },
+ "of_il_maccabi_haifa": {
+  "name": "Barak Bakhar",
+  "nationality": "Israel",
+  "birthDate": "1979-09-21",
+  "wikidataQid": "Q4858229"
+ },
+ "of_il_maccabi_netanya": {
+  "name": "Ronny Levy",
+  "nationality": "Israel",
+  "birthDate": "1966-11-14",
+  "wikidataQid": "Q1889587"
+ },
+ "of_il_maccabi_petach_tikva": {
+  "name": "Noam Shoham",
+  "nationality": "Israel",
+  "birthDate": "1970-04-04",
+  "wikidataQid": "Q7045530"
+ },
+ "of_il_maccabi_tel_aviv": {
+  "name": "Ronny Deila",
+  "nationality": "Norway",
+  "birthDate": "1975-09-21",
+  "wikidataQid": "Q1784080"
+ },
+ "of_ir_esteghlal": {
+  "name": "Farhad Majidi",
+  "nationality": "Iran",
+  "birthDate": "1976-06-03",
+  "wikidataQid": "Q942253"
+ },
+ "of_ir_foolad": {
+  "name": "Javad Nekounam",
+  "nationality": "Iran",
+  "birthDate": "1980-09-07",
+  "wikidataQid": "Q315008"
+ },
+ "of_ir_malavan": {
+  "name": "Mohammad Ahmadzadeh",
+  "nationality": "Iran",
+  "birthDate": "1961-01-10",
+  "wikidataQid": "Q6891723"
+ },
+ "of_ir_saipa": {
+  "name": "Mojtaba Taghavi",
+  "nationality": "Iran",
+  "birthDate": "1968-02-02",
+  "wikidataQid": "Q6895174"
+ },
+ "of_ir_sepahan": {
+  "name": "José Morais",
+  "nationality": "Portugal",
+  "birthDate": "1965-07-27",
+  "wikidataQid": "Q4353621"
+ },
+ "of_ir_tractor": {
+  "name": "Masoud Shojaei",
+  "nationality": "Iran",
+  "birthDate": "1984-06-09",
+  "wikidataQid": "Q350867"
+ },
+ "of_is_fh_hafnarfjordur": {
+  "name": "Heimir Guðjónsson",
+  "nationality": "Iceland",
+  "birthDate": "1969-04-03",
+  "wikidataQid": "Q24006864"
+ },
+ "of_is_fjolnir": {
+  "name": "Ásmundur Arnarsson",
+  "nationality": "Iceland",
+  "birthDate": "1972-03-14",
+  "wikidataQid": "Q25591246"
+ },
+ "of_is_ia_akranes": {
+  "name": "Jón Þór Hauksson",
+  "nationality": "Iceland",
+  "birthDate": "1978-05-02",
+  "wikidataQid": "Q103867396"
+ },
+ "of_is_keflavik": {
+  "name": "Haraldur Freyr Guðmundsson",
+  "nationality": "Iceland",
+  "birthDate": "1981-12-14",
+  "wikidataQid": "Q2451821"
+ },
+ "of_is_kr_reykjavik": {
+  "name": "Óskar Hrafn Þorvaldsson",
+  "nationality": "Iceland",
+  "birthDate": "1973-10-25",
+  "wikidataQid": "Q7000322"
+ },
+ "of_is_stjarnan": {
+  "name": "Jökull Ingason Elísabetarson",
+  "nationality": "Iceland",
+  "birthDate": "1984-04-26",
+  "wikidataQid": "Q3811790"
+ },
+ "of_is_valur": {
+  "name": "Srdjan Tufegdzic",
+  "nationality": "Serbia",
+  "birthDate": "1980-04-06",
+  "wikidataQid": "Q48450537"
+ },
+ "of_is_vikingur_reykjavik": {
+  "name": "Sölvi Ottesen",
+  "nationality": "Iceland",
+  "birthDate": "1984-02-18",
+  "wikidataQid": "Q1766810"
+ },
+ "of_it_alcione_milano": {
+  "name": "Giovanni Cusatis",
+  "nationality": "Italy",
+  "birthDate": "1967-02-01",
+  "wikidataQid": "Q5563825"
+ },
+ "of_it_ascoli": {
+  "name": "Valerio Bertotto",
+  "nationality": "Italy",
+  "birthDate": "1973-01-15",
+  "wikidataQid": "Q1408854"
+ },
+ "of_it_carrarese": {
+  "name": "Antonio Calabro",
+  "nationality": "Italy",
+  "birthDate": "1976-08-10",
+  "wikidataQid": "Q33821072"
+ },
+ "of_it_catanzaro": {
+  "name": "Vincenzo Vivarini",
+  "nationality": "Italy",
+  "birthDate": "1966-09-05",
+  "wikidataQid": "Q26972310"
+ },
+ "of_it_cittadella": {
+  "name": "Roberto Venturato",
+  "nationality": "Italy",
+  "birthDate": "1963-04-14",
+  "wikidataQid": "Q26520275"
+ },
+ "of_it_crotone": {
+  "name": "Franco Lerda",
+  "nationality": "Italy",
+  "birthDate": "1967-08-19",
+  "wikidataQid": "Q2657704"
+ },
+ "of_it_empoli": {
+  "name": "Fabio Caserta",
+  "nationality": "Italy",
+  "birthDate": "1978-09-24",
+  "wikidataQid": "Q267797"
+ },
+ "of_it_forli": {
+  "name": "Massimo Paci",
+  "nationality": "Italy",
+  "birthDate": "1978-05-09",
+  "wikidataQid": "Q2548011"
+ },
+ "of_it_frosinone": {
+  "name": "Leandro Greco",
+  "nationality": "Italy",
+  "birthDate": "1986-07-19",
+  "wikidataQid": "Q935117"
+ },
+ "of_it_juve_stabia": {
+  "name": "Guido Pagliuca",
+  "nationality": "Italy",
+  "birthDate": "1976-02-17",
+  "wikidataQid": "Q123920027"
+ },
+ "of_it_latina": {
+  "name": "Fabio Pecchia",
+  "nationality": "Italy",
+  "birthDate": "1973-08-24",
+  "wikidataQid": "Q1087530"
+ },
+ "of_it_livorno": {
+  "name": "Roberto Breda",
+  "nationality": "Italy",
+  "birthDate": "1969-10-21",
+  "wikidataQid": "Q1466614"
+ },
+ "of_it_monza": {
+  "name": "Ivan Jurić",
+  "nationality": "Croatia",
+  "birthDate": "1975-08-25",
+  "wikidataQid": "Q556688"
+ },
+ "of_it_novara": {
+  "name": "Eugenio Corini",
+  "nationality": "Italy",
+  "birthDate": "1970-07-30",
+  "wikidataQid": "Q511092"
+ },
+ "of_it_palermo": {
+  "name": "Filippo Inzaghi",
+  "nationality": "Italy",
+  "birthDate": "1973-08-09",
+  "wikidataQid": "Q126503"
+ },
+ "of_it_pergolettese": {
+  "name": "Alberto Villa",
+  "wikidataQid": "Q42167319"
+ },
+ "of_it_perugia": {
+  "name": "Fabrizio Castori",
+  "nationality": "Italy",
+  "birthDate": "1954-07-11",
+  "wikidataQid": "Q3737975"
+ },
+ "of_it_pescara": {
+  "name": "Alberto Colombo",
+  "nationality": "Italy",
+  "birthDate": "1974-02-24",
+  "wikidataQid": "Q1871054"
+ },
+ "of_it_picerno": {
+  "name": "Domenico Giacomarro",
+  "nationality": "Italy",
+  "birthDate": "1963-01-29",
+  "wikidataQid": "Q3713054"
+ },
+ "of_it_pontedera": {
+  "name": "Piero Braglia",
+  "nationality": "Italy",
+  "birthDate": "1955-01-10",
+  "wikidataQid": "Q1465982"
+ },
+ "of_it_potenza": {
+  "name": "Pietro De Giorgio",
+  "nationality": "Italy",
+  "birthDate": "1983-02-16",
+  "wikidataQid": "Q3903821"
+ },
+ "of_it_pro_patria": {
+  "name": "Ivan Javorčić",
+  "nationality": "Croatia",
+  "birthDate": "1979-01-24",
+  "wikidataQid": "Q3804721"
+ },
+ "of_it_reggiana": {
+  "name": "Alessandro Nesta",
+  "nationality": "Italy",
+  "birthDate": "1976-03-19",
+  "wikidataQid": "Q227892"
+ },
+ "of_it_salernitana": {
+  "name": "Pasquale Marino",
+  "nationality": "Italy",
+  "birthDate": "1962-07-13",
+  "wikidataQid": "Q2305065"
+ },
+ "of_it_sampdoria": {
+  "name": "Angelo Gregucci",
+  "nationality": "Italy",
+  "birthDate": "1964-06-10",
+  "wikidataQid": "Q742534"
+ },
+ "of_it_sorrento": {
+  "name": "Luca Fusco",
+  "nationality": "Italy",
+  "birthDate": "1977-08-31",
+  "wikidataQid": "Q1079931"
+ },
+ "of_it_spezia": {
+  "name": "Roberto Donadoni",
+  "nationality": "Italy",
+  "birthDate": "1963-09-09",
+  "wikidataQid": "Q294718"
+ },
+ "of_it_sudtirol": {
+  "name": "Stefano Vecchi",
+  "nationality": "Italy",
+  "birthDate": "1971-07-20",
+  "wikidataQid": "Q15706885"
+ },
+ "of_it_union_brescia": {
+  "name": "Aimo Diana",
+  "nationality": "Italy",
+  "birthDate": "1978-01-02",
+  "wikidataQid": "Q405636"
+ },
+ "of_it_venezia": {
+  "name": "Giovanni Stroppa",
+  "nationality": "Italy",
+  "birthDate": "1968-01-24",
+  "wikidataQid": "Q2656692"
+ },
+ "of_jp_avispa_fukuoka": {
+  "name": "Shinya Tsukahara",
+  "nationality": "Japan",
+  "birthDate": "1985-04-02",
+  "wikidataQid": "Q79809270"
+ },
+ "of_jp_fc_tokyo": {
+  "name": "Rikizo Matsuhashi",
+  "nationality": "Japan",
+  "birthDate": "1968-08-22",
+  "wikidataQid": "Q1824545"
+ },
+ "of_jp_gamba_osaka": {
+  "name": "Levir Culpi",
+  "nationality": "Brazil",
+  "birthDate": "1953-02-28",
+  "wikidataQid": "Q2398473"
+ },
+ "of_jp_kashiwa_reysol": {
+  "name": "Ricardo Rodríguez",
+  "nationality": "Spain",
+  "birthDate": "1974-04-03",
+  "wikidataQid": "Q10877452"
+ },
+ "of_jp_kawasaki_frontale": {
+  "name": "Shigetoshi Hasebe",
+  "nationality": "Japan",
+  "birthDate": "1971-04-23",
+  "wikidataQid": "Q1254696"
+ },
+ "of_jp_nagoya_grampus": {
+  "name": "Kenta Hasegawa",
+  "nationality": "Japan",
+  "birthDate": "1965-09-25",
+  "wikidataQid": "Q2428438"
+ },
+ "of_jp_urawa_reds": {
+  "name": "Tsuyoshi Otsuki",
+  "nationality": "Japan",
+  "birthDate": "1972-12-01",
+  "wikidataQid": "Q11436489"
+ },
+ "of_jp_vissel_kobe": {
+  "name": "Michael Skibbe",
+  "nationality": "Germany",
+  "birthDate": "1965-08-04",
+  "wikidataQid": "Q550732"
+ },
+ "of_jp_yokohama_f_marinos": {
+  "name": "Steve Holland",
+  "birthDate": "1970-04-30",
+  "wikidataQid": "Q7612868"
+ },
+ "of_kz_aktobe": {
+  "name": "Nikolay Kostov",
+  "nationality": "Bulgaria",
+  "birthDate": "1963-07-02",
+  "wikidataQid": "Q2496680"
+ },
+ "of_kz_atyrau": {
+  "name": "Vladimir Cheburin",
+  "nationality": "Kazakhstan",
+  "birthDate": "1965-07-07",
+  "wikidataQid": "Q19916923"
+ },
+ "of_kz_kairat": {
+  "name": "Rafael Urazbakhtin",
+  "nationality": "Kazakhstan",
+  "birthDate": "1978-11-20",
+  "wikidataQid": "Q4476581"
+ },
+ "of_kz_ordabasy": {
+  "name": "Andrei Martin",
+  "nationality": "Moldova",
+  "birthDate": "1974-06-27",
+  "wikidataQid": "Q23828076"
+ },
+ "of_kz_taraz": {
+  "name": "Nurmat Mirzabaev",
+  "nationality": "Kazakhstan",
+  "birthDate": "1972-11-11",
+  "wikidataQid": "Q7070155"
+ },
+ "of_kz_tobol": {
+  "name": "Miroslav Romaschenko",
+  "nationality": "Belarus",
+  "birthDate": "1973-12-16",
+  "wikidataQid": "Q4397539"
+ },
+ "of_kz_zhetysu": {
+  "name": "Kairat Nurdauletov",
+  "nationality": "Kazakhstan",
+  "birthDate": "1982-11-06",
+  "wikidataQid": "Q978489"
+ },
+ "of_mt_birkirkara": {
+  "name": "Paul Zammit",
+  "nationality": "Malta",
+  "birthDate": "1969-08-21",
+  "wikidataQid": "Q4320324"
+ },
+ "of_mt_gzira_united": {
+  "name": "Darren Abdilla",
+  "nationality": "Malta",
+  "birthDate": "1979-07-10",
+  "wikidataQid": "Q123134651"
+ },
+ "of_mt_hamrun_spartans": {
+  "name": "Giacomo Modica",
+  "nationality": "Italy",
+  "birthDate": "1964-05-31",
+  "wikidataQid": "Q3762191"
+ },
+ "of_mt_hibernians": {
+  "name": "Branko Nišević",
+  "nationality": "Serbia",
+  "birthDate": "1971-08-31",
+  "wikidataQid": "Q138573151"
+ },
+ "of_mt_sliema_wanderers": {
+  "name": "Pablo Doffo",
+  "nationality": "Argentina",
+  "birthDate": "1983-03-06",
+  "wikidataQid": "Q2034154"
+ },
+ "of_mt_zabbar_st_patrick": {
+  "name": "Gilbert Agius",
+  "nationality": "Malta",
+  "birthDate": "1974-02-21",
+  "wikidataQid": "Q745555"
+ },
+ "of_mx_atlas": {
+  "name": "Gonzalo Pineda",
+  "nationality": "Mexico",
+  "birthDate": "1982-10-19",
+  "wikidataQid": "Q954160"
+ },
+ "of_mx_club_america": {
+  "name": "André Jardine",
+  "nationality": "Brazil",
+  "birthDate": "1979-09-08",
+  "wikidataQid": "Q58755430"
+ },
+ "of_mx_cruz_azul": {
+  "name": "Joel Huiqui",
+  "nationality": "Mexico",
+  "birthDate": "1983-02-18",
+  "wikidataQid": "Q9012356"
+ },
+ "of_mx_guadalajara": {
+  "name": "Óscar García Junyent",
+  "nationality": "Spain",
+  "birthDate": "1973-04-26",
+  "wikidataQid": "Q293353"
+ },
+ "of_mx_leon": {
+  "name": "Eduardo Berizzo",
+  "nationality": "Argentina",
+  "birthDate": "1969-11-13",
+  "wikidataQid": "Q586415"
+ },
+ "of_mx_monterrey": {
+  "name": "Matías Almeyda",
+  "nationality": "Argentina",
+  "birthDate": "1973-12-21",
+  "wikidataQid": "Q359494"
+ },
+ "of_mx_puebla": {
+  "name": "Pablo Guede",
+  "nationality": "Argentina",
+  "birthDate": "1974-11-12",
+  "wikidataQid": "Q6056049"
+ },
+ "of_mx_pumas": {
+  "name": "Gustavo Lema",
+  "nationality": "Argentina",
+  "birthDate": "1968-11-01",
+  "wikidataQid": "Q123789386"
+ },
+ "of_mx_queretaro": {
+  "name": "Esteban González",
+  "nationality": "Chile",
+  "birthDate": "1998-10-16",
+  "wikidataQid": "Q115625669"
+ },
+ "of_mx_santos_laguna": {
+  "name": "Fernando Ortiz",
+  "nationality": "Argentina",
+  "birthDate": "1977-12-25",
+  "wikidataQid": "Q933948"
+ },
+ "of_mx_tijuana": {
+  "name": "Juan Carlos Osorio",
+  "nationality": "Colombia",
+  "birthDate": "1961-06-08",
+  "wikidataQid": "Q3298076"
+ },
+ "of_mx_toluca": {
+  "name": "Antonio Mohamed",
+  "nationality": "Argentina",
+  "birthDate": "1970-04-02",
+  "wikidataQid": "Q603690"
+ },
+ "of_ng_enyimba": {
+  "name": "Yemi Daniel Olanrewaju",
+  "birthDate": "1992-05-02",
+  "wikidataQid": "Q125948828"
+ },
+ "of_ng_remo_stars": {
+  "name": "Daniel Ogunmodede",
+  "nationality": "Nigeria",
+  "birthDate": "1980-05-19",
+  "wikidataQid": "Q119889038"
+ },
+ "of_nl_ado_den_haag": {
+  "name": "Robin Peter",
+  "nationality": "Germany",
+  "birthDate": "1987-07-31",
+  "wikidataQid": "Q130693618"
+ },
+ "of_nl_ajax": {
+  "name": "Miguel Ángel Sánchez Muñoz",
+  "nationality": "Spain",
+  "birthDate": "1975-10-30",
+  "wikidataQid": "Q2637295"
+ },
+ "of_nl_az": {
+  "name": "Lee-Roy Echteld",
+  "nationality": "Netherlands",
+  "birthDate": "1968-09-30",
+  "wikidataQid": "Q2418751"
+ },
+ "of_nl_cambuur": {
+  "name": "Johan Plat",
+  "nationality": "Netherlands",
+  "birthDate": "1987-02-26",
+  "wikidataQid": "Q1692065"
+ },
+ "of_nl_excelsior": {
+  "name": "Ruben den Uil",
+  "nationality": "Netherlands",
+  "birthDate": "1991-02-03",
+  "wikidataQid": "Q127268869"
+ },
+ "of_nl_fc_groningen": {
+  "name": "Dick Lukkien",
+  "nationality": "Netherlands",
+  "birthDate": "1972-03-28",
+  "wikidataQid": "Q20972402"
+ },
+ "of_nl_fc_twente": {
+  "name": "John van den Brom",
+  "nationality": "Netherlands",
+  "birthDate": "1966-10-04",
+  "wikidataQid": "Q733609"
+ },
+ "of_nl_feyenoord": {
+  "name": "Giovanni van Bronckhorst",
+  "nationality": "Netherlands",
+  "birthDate": "1975-02-05",
+  "wikidataQid": "Q173360"
+ },
+ "of_nl_nec": {
+  "name": "Dick Schreuder",
+  "nationality": "Netherlands",
+  "birthDate": "1971-08-12",
+  "wikidataQid": "Q2212041"
+ },
+ "of_nl_pec_zwolle": {
+  "name": "Henry van der Vegt",
+  "nationality": "Netherlands",
+  "birthDate": "1972-02-18",
+  "wikidataQid": "Q2588496"
+ },
+ "of_nl_psv": {
+  "name": "Peter Bosz",
+  "nationality": "Netherlands",
+  "birthDate": "1963-11-21",
+  "wikidataQid": "Q1029982"
+ },
+ "of_nl_sc_heerenveen": {
+  "name": "Robin Veldman",
+  "nationality": "Netherlands",
+  "birthDate": "1985-12-24",
+  "wikidataQid": "Q113733533"
+ },
+ "of_nl_willem_ii": {
+  "name": "John Stegeman",
+  "nationality": "Netherlands",
+  "birthDate": "1976-08-27",
+  "wikidataQid": "Q3284509"
+ },
+ "of_no_aalesund": {
+  "name": "Kjetil Rekdal",
+  "nationality": "Norway",
+  "birthDate": "1968-11-06",
+  "wikidataQid": "Q431107"
+ },
+ "of_no_bodo_glimt": {
+  "name": "Kjetil Knutsen",
+  "nationality": "Norway",
+  "birthDate": "1968-10-02",
+  "wikidataQid": "Q12716110"
+ },
+ "of_no_lillestrom": {
+  "name": "Hans Erik Ødegaard",
+  "nationality": "Norway",
+  "birthDate": "1974-01-20",
+  "wikidataQid": "Q3783136"
+ },
+ "of_no_molde": {
+  "name": "Martin Falk",
+  "nationality": "Sweden",
+  "birthDate": "1995-03-28",
+  "wikidataQid": "Q131466270"
+ },
+ "of_no_rosenborg": {
+  "name": "Alfred Johansson",
+  "nationality": "Sweden",
+  "birthDate": "1990-09-13",
+  "wikidataQid": "Q123808017"
+ },
+ "of_no_sandefjord": {
+  "name": "Andreas Tegström",
+  "nationality": "Sweden",
+  "birthDate": "1979-01-18",
+  "wikidataQid": "Q1778217"
+ },
+ "of_no_sarpsborg": {
+  "name": "Even Sel",
+  "nationality": "Norway",
+  "birthDate": "1989-10-14",
+  "wikidataQid": "Q110795395"
+ },
+ "of_no_start": {
+  "name": "Azar Karadaş",
+  "nationality": "Norway",
+  "birthDate": "1981-08-09",
+  "wikidataQid": "Q725150"
+ },
+ "of_no_tromso": {
+  "name": "Jørgen Vik",
+  "nationality": "Norway",
+  "birthDate": "1990-04-26",
+  "wikidataQid": "Q43014285"
+ },
+ "of_no_valerenga": {
+  "name": "Geir Bakke",
+  "nationality": "Norway",
+  "birthDate": "1969-10-23",
+  "wikidataQid": "Q3759228"
+ },
+ "of_no_viking": {
+  "name": "Morten Jensen",
+  "nationality": "Norway",
+  "birthDate": "1980-03-09",
+  "wikidataQid": "Q104882652"
+ },
+ "of_pe_alianza_lima": {
+  "name": "Guillermo Salas",
+  "nationality": "Peru",
+  "birthDate": "1974-10-21",
+  "wikidataQid": "Q980630"
+ },
+ "of_pe_universitario": {
+  "name": "Ángel Comizzo",
+  "nationality": "Argentina",
+  "birthDate": "1962-04-27",
+  "wikidataQid": "Q526276"
+ },
+ "of_pe_utc": {
+  "name": "Carlos Bustos",
+  "nationality": "Argentina",
+  "birthDate": "1966-04-16",
+  "wikidataQid": "Q14438367"
+ },
+ "of_pl_cracovia": {
+  "name": "Bartosz Grzelak",
+  "nationality": "Sweden",
+  "birthDate": "1978-11-02",
+  "wikidataQid": "Q33044098"
+ },
+ "of_pl_gornik_zabrze": {
+  "name": "Michal Gašparík",
+  "nationality": "Slovakia",
+  "birthDate": "1981-12-19",
+  "wikidataQid": "Q3509274"
+ },
+ "of_pl_jagiellonia": {
+  "name": "Adrian Siemieniec",
+  "nationality": "Poland",
+  "birthDate": "1992-01-13",
+  "wikidataQid": "Q123015265"
+ },
+ "of_pl_korona": {
+  "name": "Jacek Zieliński",
+  "nationality": "Poland",
+  "birthDate": "1961-03-22",
+  "wikidataQid": "Q1392227"
+ },
+ "of_pl_lechia": {
+  "name": "John Carver",
+  "nationality": "England",
+  "birthDate": "1965-01-16",
+  "wikidataQid": "Q1330261"
+ },
+ "of_pl_wisla_krakow": {
+  "name": "Mariusz Jop",
+  "nationality": "Poland",
+  "birthDate": "1978-08-03",
+  "wikidataQid": "Q361341"
+ },
+ "of_pl_zaglebie": {
+  "name": "Marek Saganowski",
+  "nationality": "Poland",
+  "birthDate": "1978-10-31",
+  "wikidataQid": "Q359894"
+ },
+ "of_pt_arouca": {
+  "name": "Vasco Seabra",
+  "nationality": "Portugal",
+  "birthDate": "1983-09-15",
+  "wikidataQid": "Q29866591"
+ },
+ "of_pt_benfica": {
+  "name": "Marco Silva",
+  "nationality": "Portugal",
+  "birthDate": "1977-07-12",
+  "wikidataQid": "Q6757714"
+ },
+ "of_pt_braga": {
+  "name": "Carlos Vicens",
+  "nationality": "Spain",
+  "birthDate": "1983-02-12",
+  "wikidataQid": "Q111889218"
+ },
+ "of_pt_casa_pia": {
+  "name": "Álvaro Pacheco",
+  "nationality": "Portugal",
+  "birthDate": "1971-06-25",
+  "wikidataQid": "Q108032921"
+ },
+ "of_pt_porto": {
+  "name": "Francesco Farioli",
+  "nationality": "Italy",
+  "birthDate": "1989-04-10",
+  "wikidataQid": "Q106247695"
+ },
+ "of_pt_rio_ave": {
+  "name": "Sotiris Silaidopoulos",
+  "birthDate": "1979-02-08",
+  "wikidataQid": "Q92166836"
+ },
+ "of_pt_santa_clara": {
+  "name": "Petit",
+  "nationality": "Portugal",
+  "birthDate": "1976-09-25",
+  "wikidataQid": "Q294881"
+ },
+ "of_pt_sporting_cp": {
+  "name": "Rui Borges",
+  "nationality": "Portugal",
+  "birthDate": "1981-07-07",
+  "wikidataQid": "Q121147850"
+ },
+ "of_pt_vitoria_guimaraes": {
+  "name": "Luís Pinto",
+  "nationality": "Portugal",
+  "birthDate": "1989-01-01",
+  "wikidataQid": "Q131632229"
+ },
+ "of_py_cerro_porteno": {
+  "name": "Jorge Bava",
+  "nationality": "Uruguay",
+  "birthDate": "1981-08-02",
+  "wikidataQid": "Q259149"
+ },
+ "of_py_guarani": {
+  "name": "Diego Alonso",
+  "nationality": "Uruguay",
+  "birthDate": "1975-04-16",
+  "wikidataQid": "Q2144609"
+ },
+ "of_py_libertad": {
+  "name": "Nelson Valdez",
+  "nationality": "Paraguay",
+  "birthDate": "1983-11-28",
+  "wikidataQid": "Q157584"
+ },
+ "of_py_nacional_py": {
+  "name": "Gustavo Morínigo",
+  "nationality": "Paraguay",
+  "birthDate": "1977-01-23",
+  "wikidataQid": "Q2618060"
+ },
+ "of_py_olimpia": {
+  "name": "Ever Hugo Almeida",
+  "nationality": "Paraguay",
+  "birthDate": "1948-07-01",
+  "wikidataQid": "Q2731629"
+ },
+ "of_py_sportivo_luqueno": {
+  "name": "Hernán Rodrigo López",
+  "nationality": "Uruguay",
+  "birthDate": "1978-01-21",
+  "wikidataQid": "Q2303595"
+ },
+ "of_rs_crvena_zvezda": {
+  "name": "Dejan Stanković",
+  "nationality": "Serbia",
+  "birthDate": "1978-09-11",
+  "wikidataQid": "Q192640"
+ },
+ "of_rs_cukaricki": {
+  "name": "Milan Lešnjak",
+  "nationality": "Serbia",
+  "birthDate": "1975-09-09",
+  "wikidataQid": "Q2194568"
+ },
+ "of_rs_javor_matis": {
+  "name": "Radovan Ćurčić",
+  "nationality": "Serbia",
+  "birthDate": "1972-01-10",
+  "wikidataQid": "Q1768491"
+ },
+ "of_rs_mladost_lucani": {
+  "name": "Dragiša Žunić",
+  "nationality": "Serbia",
+  "birthDate": "1978-06-29",
+  "wikidataQid": "Q5304980"
+ },
+ "of_rs_novi_pazar": {
+  "name": "Vladimir Gaćinović",
+  "birthDate": "1966-01-03",
+  "wikidataQid": "Q55362489"
+ },
+ "of_rs_ofk_beograd": {
+  "name": "Jovan Damjanović",
+  "nationality": "Serbia",
+  "birthDate": "1982-10-04",
+  "wikidataQid": "Q1709946"
+ },
+ "of_rs_partizan": {
+  "name": "Saša Ilić",
+  "nationality": "Serbia",
+  "birthDate": "1977-12-30",
+  "wikidataQid": "Q316737"
+ },
+ "of_rs_radnicki_1923": {
+  "name": "Božidar Bandović",
+  "nationality": "Montenegro",
+  "birthDate": "1969-08-30",
+  "wikidataQid": "Q3303298"
+ },
+ "of_rs_radnicki_nis": {
+  "name": "Takis Lemonis",
+  "nationality": "Greece",
+  "birthDate": "1960-01-13",
+  "wikidataQid": "Q1840390"
+ },
+ "of_rs_radnik_surdulica": {
+  "name": "Marko Jakšić",
+  "nationality": "Serbia",
+  "birthDate": "1983-08-10",
+  "wikidataQid": "Q10514448"
+ },
+ "of_rs_spartak_subotica": {
+  "name": "Miloš Kruščić",
+  "nationality": "Serbia",
+  "birthDate": "1976-10-03",
+  "wikidataQid": "Q4242678"
+ },
+ "of_rs_vojvodina": {
+  "name": "Marko Savić",
+  "nationality": "Serbia",
+  "birthDate": "1984-07-19",
+  "wikidataQid": "Q6771248"
+ },
+ "of_rs_zeleznicar_pancevo": {
+  "name": "Radomir Koković",
+  "nationality": "Serbia",
+  "birthDate": "1984-01-06",
+  "wikidataQid": "Q7281546"
+ },
+ "of_ru_akhmat": {
+  "name": "Stanislav Cherchesov",
+  "nationality": "Russia",
+  "birthDate": "1963-09-02",
+  "wikidataQid": "Q699557"
+ },
+ "of_ru_akron": {
+  "name": "Zaur Tedeyev",
+  "nationality": "Russia",
+  "birthDate": "1981-03-02",
+  "wikidataQid": "Q8067177"
+ },
+ "of_ru_amkar_perm": {
+  "name": "Erik Ashurbekov",
+  "nationality": "Ukraine",
+  "birthDate": "1973-01-05",
+  "wikidataQid": "Q4073576"
+ },
+ "of_ru_avangard_kursk": {
+  "name": "Igor Zazulin",
+  "nationality": "Russia",
+  "birthDate": "1974-04-13",
+  "wikidataQid": "Q4184161"
+ },
+ "of_ru_cska_moscow": {
+  "name": "Fabio Celestini",
+  "nationality": "Switzerland",
+  "birthDate": "1975-10-31",
+  "wikidataQid": "Q443937"
+ },
+ "of_ru_dinamo_bryansk": {
+  "name": "Yevgeny Perevertaylo",
+  "nationality": "Russia",
+  "wikidataQid": "Q106972957"
+ },
+ "of_ru_dinamo_kirov": {
+  "name": "Aleksandr Saitov",
+  "nationality": "Russia",
+  "birthDate": "1958-08-29",
+  "wikidataQid": "Q4715393"
+ },
+ "of_ru_dinamo_vologda": {
+  "name": "Sergei Galkin",
+  "nationality": "Russia",
+  "birthDate": "1964-11-06",
+  "wikidataQid": "Q7453533"
+ },
+ "of_ru_fakel": {
+  "name": "Oleg Vasilenko",
+  "nationality": "Russia",
+  "birthDate": "1973-10-06",
+  "wikidataQid": "Q4104358"
+ },
+ "of_ru_fc_kaluga": {
+  "name": "Konstantin Dzutsev",
+  "nationality": "Russia",
+  "birthDate": "1970-10-22",
+  "wikidataQid": "Q6429913"
+ },
+ "of_ru_fc_ryazan": {
+  "name": "Garnik Avalyan",
+  "nationality": "Armenia",
+  "birthDate": "1962-09-06",
+  "wikidataQid": "Q4055321"
+ },
+ "of_ru_kamaz": {
+  "name": "Vladimir Klontsak",
+  "nationality": "Russia",
+  "birthDate": "1968-02-27",
+  "wikidataQid": "Q4224078"
+ },
+ "of_ru_krasnodar": {
+  "name": "Murad Musayev",
+  "nationality": "Russia",
+  "birthDate": "1983-11-10",
+  "wikidataQid": "Q51331259"
+ },
+ "of_ru_krylya_sovetov": {
+  "name": "Magomed Adiev",
+  "nationality": "Russia",
+  "birthDate": "1977-06-30",
+  "wikidataQid": "Q4057573"
+ },
+ "of_ru_lokomotiv_moscow": {
+  "name": "Mikhail Galaktionov",
+  "nationality": "Russia",
+  "birthDate": "1984-05-21",
+  "wikidataQid": "Q42678015"
+ },
+ "of_ru_nosta_novotroitsk": {
+  "name": "Oleg Sinelobov",
+  "nationality": "Uzbekistan",
+  "birthDate": "1962-10-05",
+  "wikidataQid": "Q7086137"
+ },
+ "of_ru_pari_nn": {
+  "name": "Vadim Garanin",
+  "nationality": "Russia",
+  "birthDate": "1970-11-29",
+  "wikidataQid": "Q112651657"
+ },
+ "of_ru_rostov": {
+  "name": "Jonatan Alba",
+  "nationality": "Spain",
+  "birthDate": "1981-11-16",
+  "wikidataQid": "Q132883898"
+ },
+ "of_ru_rotor": {
+  "name": "Artyom Kulikov",
+  "nationality": "Russia",
+  "birthDate": "1980-01-30",
+  "wikidataQid": "Q18217535"
+ },
+ "of_ru_saturn_ramenskoe": {
+  "name": "Artyom Gorlov",
+  "nationality": "Russia",
+  "birthDate": "1987-06-23",
+  "wikidataQid": "Q18217324"
+ },
+ "of_ru_shinnik": {
+  "name": "Denis Boyarintsev",
+  "nationality": "Russia",
+  "birthDate": "1978-02-06",
+  "wikidataQid": "Q945319"
+ },
+ "of_ru_ska_khabarovsk": {
+  "name": "Aleksei Poddubskiy",
+  "nationality": "Russia",
+  "birthDate": "1972-06-13",
+  "wikidataQid": "Q4715865"
+ },
+ "of_ru_sochi": {
+  "name": "Igor Osinkin",
+  "nationality": "Russia",
+  "birthDate": "1965-06-04",
+  "wikidataQid": "Q5993552"
+ },
+ "of_ru_spartak_kostroma": {
+  "name": "Rinat Bilyaletdinov",
+  "nationality": "Russia",
+  "birthDate": "1957-08-17",
+  "wikidataQid": "Q4086801"
+ },
+ "of_ru_ufa": {
+  "name": "Yevgeni Kharlachyov",
+  "nationality": "Russia",
+  "birthDate": "1974-01-20",
+  "wikidataQid": "Q600705"
+ },
+ "of_ru_veles": {
+  "name": "Aleksei Stukalov",
+  "nationality": "Russia",
+  "birthDate": "1983-11-24",
+  "wikidataQid": "Q30061399"
+ },
+ "of_ru_yenisey": {
+  "name": "Yuri Gazzaev",
+  "nationality": "Russia",
+  "birthDate": "1960-11-27",
+  "wikidataQid": "Q1993639"
+ },
+ "of_ru_znamya_truda_orekhovo_zuevo": {
+  "name": "Vyacheslav Lugovkin",
+  "nationality": "Russia",
+  "birthDate": "1968-02-13",
+  "wikidataQid": "Q7943818"
+ },
+ "of_sa_al_ahli": {
+  "name": "Marino Pušić",
+  "nationality": "Netherlands",
+  "birthDate": "1971-08-18",
+  "wikidataQid": "Q42259949"
+ },
+ "of_sa_al_ettifaq": {
+  "name": "Arthur Papas",
+  "nationality": "Australia",
+  "birthDate": "1980-02-12",
+  "wikidataQid": "Q4799912"
+ },
+ "of_sa_al_hilal": {
+  "name": "Simone Inzaghi",
+  "nationality": "Italy",
+  "birthDate": "1976-04-05",
+  "wikidataQid": "Q314670"
+ },
+ "of_sa_al_ittihad": {
+  "name": "Sérgio Conceição",
+  "nationality": "Portugal",
+  "birthDate": "1974-11-15",
+  "wikidataQid": "Q317298"
+ },
+ "of_sa_al_nassr": {
+  "name": "Ange Postecoglou",
+  "nationality": "Australia",
+  "birthDate": "1965-08-27",
+  "wikidataQid": "Q2849301"
+ },
+ "of_sa_al_raed": {
+  "name": "Igor Jovićević",
+  "nationality": "Croatia",
+  "birthDate": "1973-11-30",
+  "wikidataQid": "Q1027459"
+ },
+ "of_sa_al_shoulla": {
+  "name": "Ahmad Al-Ajlani",
+  "nationality": "Tunisia",
+  "birthDate": "1960-11-30",
+  "wikidataQid": "Q4695238"
+ },
+ "of_sa_al_taee": {
+  "name": "Carlos Inarejos",
+  "nationality": "Spain",
+  "birthDate": "1984-05-27",
+  "wikidataQid": "Q105396686"
+ },
+ "of_sa_damac": {
+  "name": "Fábio Carille",
+  "nationality": "Brazil",
+  "birthDate": "1973-09-26",
+  "wikidataQid": "Q27057684"
+ },
+ "of_se_aik": {
+  "name": "Mikkjal Thomassen",
+  "nationality": "Faroe Islands",
+  "birthDate": "1976-01-12",
+  "wikidataQid": "Q6849956"
+ },
+ "of_se_djurgarden": {
+  "name": "Jani Honkavaara",
+  "nationality": "Finland",
+  "birthDate": "1976-02-02",
+  "wikidataQid": "Q17320972"
+ },
+ "of_se_elfsborg": {
+  "name": "Björn Hamberg",
+  "birthDate": "1985-06-05",
+  "wikidataQid": "Q117812747"
+ },
+ "of_se_hacken": {
+  "name": "Jens Gustafsson",
+  "nationality": "Sweden",
+  "birthDate": "1978-10-15",
+  "wikidataQid": "Q525145"
+ },
+ "of_se_ifk_goteborg": {
+  "name": "Stefan Billborn",
+  "nationality": "Sweden",
+  "birthDate": "1972-11-15",
+  "wikidataQid": "Q16213188"
+ },
+ "of_se_kalmar_ff": {
+  "name": "Toni Koskela",
+  "nationality": "Finland",
+  "birthDate": "1983-02-16",
+  "wikidataQid": "Q1785688"
+ },
+ "of_se_malmo_ff": {
+  "name": "Gaute Helstrup",
+  "nationality": "Norway",
+  "birthDate": "1976-05-15",
+  "wikidataQid": "Q61081028"
+ },
+ "of_si_koper": {
+  "name": "Zoran Zeljkovič",
+  "nationality": "Slovenia",
+  "birthDate": "1980-05-09",
+  "wikidataQid": "Q4024808"
+ },
+ "of_si_nd_gorica": {
+  "name": "Miran Srebrnič",
+  "nationality": "Slovenia",
+  "birthDate": "1970-01-08",
+  "wikidataQid": "Q6872771"
+ },
+ "of_si_nk_celje": {
+  "name": "Vítor Campelos",
+  "nationality": "Portugal",
+  "birthDate": "1975-05-11",
+  "wikidataQid": "Q106809143"
+ },
+ "of_si_nk_maribor": {
+  "name": "Feđa Dudić",
+  "birthDate": "1983-02-01",
+  "wikidataQid": "Q5446186"
+ },
+ "of_si_olimpija_ljubljana": {
+  "name": "Federico Bessone",
+  "nationality": "Argentina",
+  "birthDate": "1984-01-23",
+  "wikidataQid": "Q617904"
+ },
+ "of_si_rudar_velenje": {
+  "name": "Almir Sulejmanovič",
+  "nationality": "Slovenia",
+  "birthDate": "1978-01-26",
+  "wikidataQid": "Q4733831"
+ },
+ "of_sk_ruzomberok": {
+  "name": "Jaroslav Köstl",
+  "nationality": "Czechia",
+  "birthDate": "1989-12-04",
+  "wikidataQid": "Q97052661"
+ },
+ "of_sk_skalica": {
+  "name": "Roman Hudec",
+  "nationality": "Slovakia",
+  "birthDate": "1986-06-10",
+  "wikidataQid": "Q137356556"
+ },
+ "of_sk_slovan_bratislava": {
+  "name": "Yaya Touré",
+  "birthDate": "1983-05-13",
+  "wikidataQid": "Q184277"
+ },
+ "of_sk_spartak_myjava": {
+  "name": "Mikuláš Radványi",
+  "nationality": "Slovakia",
+  "birthDate": "1968-11-22",
+  "wikidataQid": "Q10515429"
+ },
+ "of_sk_spartak_trnava": {
+  "name": "Antonio Muñoz",
+  "nationality": "Spain",
+  "birthDate": "1989-09-23",
+  "wikidataQid": "Q416657"
+ },
+ "of_sk_trencin": {
+  "name": "Ricardo Moniz",
+  "nationality": "Netherlands",
+  "birthDate": "1964-06-17",
+  "wikidataQid": "Q264409"
+ },
+ "of_sk_zilina": {
+  "name": "Pavol Staňo",
+  "nationality": "Slovakia",
+  "birthDate": "1977-09-29",
+  "wikidataQid": "Q749251"
+ },
+ "of_tr_alanyaspor": {
+  "name": "João Pereira",
+  "nationality": "Portugal",
+  "birthDate": "1984-02-25",
+  "wikidataQid": "Q192565"
+ },
+ "of_tr_basaksehir": {
+  "name": "Nuri Şahin",
+  "nationality": "Türkiye",
+  "birthDate": "1988-09-05",
+  "wikidataQid": "Q75857"
+ },
+ "of_tr_besiktas": {
+  "name": "Vincenzo Italiano",
+  "nationality": "Italy",
+  "birthDate": "1977-12-10",
+  "wikidataQid": "Q1091404"
+ },
+ "of_tr_fenerbahce": {
+  "name": "İsmail Kartal",
+  "nationality": "Türkiye",
+  "birthDate": "1961-06-15",
+  "wikidataQid": "Q8080212"
+ },
+ "of_tr_galatasaray": {
+  "name": "Okan Buruk",
+  "nationality": "Türkiye",
+  "birthDate": "1973-10-19",
+  "wikidataQid": "Q444318"
+ },
+ "of_tr_kasimpasa": {
+  "name": "Emre Belözoğlu",
+  "nationality": "Türkiye",
+  "birthDate": "1980-09-07",
+  "wikidataQid": "Q202569"
+ },
+ "of_tr_konyaspor": {
+  "name": "İlhan Palut",
+  "nationality": "Türkiye",
+  "birthDate": "1976-11-12",
+  "wikidataQid": "Q78498047"
+ },
+ "of_tr_trabzonspor": {
+  "name": "Thomas Reis",
+  "nationality": "Germany",
+  "birthDate": "1973-10-04",
+  "wikidataQid": "Q2426747"
+ },
+ "of_ua_chornomorets": {
+  "name": "Roman Hryhorchuk",
+  "nationality": "Ukraine",
+  "birthDate": "1965-03-22",
+  "wikidataQid": "Q2604017"
+ },
+ "of_ua_dynamo_kyiv": {
+  "name": "Ihor Kostyuk",
+  "nationality": "Ukraine",
+  "birthDate": "1975-09-14",
+  "wikidataQid": "Q2033134"
+ },
+ "of_ua_epicentr": {
+  "name": "Serhiy Nahornyak",
+  "nationality": "Ukraine",
+  "birthDate": "1971-09-05",
+  "wikidataQid": "Q2471488"
+ },
+ "of_ua_inhulets": {
+  "name": "Vasyl Kobin",
+  "nationality": "Ukraine",
+  "birthDate": "1985-05-24",
+  "wikidataQid": "Q733895"
+ },
+ "of_ua_karpaty": {
+  "name": "Francisco Javier Fernández Díaz",
+  "nationality": "Spain",
+  "birthDate": "1980-03-20",
+  "wikidataQid": "Q28873450"
+ },
+ "of_ua_kolos": {
+  "name": "Ruslan Kostyshyn",
+  "nationality": "Ukraine",
+  "birthDate": "1977-01-08",
+  "wikidataQid": "Q2042467"
+ },
+ "of_ua_kudrivka": {
+  "name": "Vasyl Baranov",
+  "nationality": "Ukraine",
+  "birthDate": "1979-10-20",
+  "wikidataQid": "Q4077730"
+ },
+ "of_ua_metalurh_zaporizhzhia": {
+  "name": "Ivan Bohatyr",
+  "nationality": "Ukraine",
+  "birthDate": "1975-04-24",
+  "wikidataQid": "Q18015134"
+ },
+ "of_ua_oleksandriya": {
+  "name": "Kyrylo Nesterenko",
+  "nationality": "Ukraine",
+  "birthDate": "1992-03-01",
+  "wikidataQid": "Q15623643"
+ },
+ "of_ua_shakhtar": {
+  "name": "Arda Turan",
+  "nationality": "Türkiye",
+  "birthDate": "1987-01-30",
+  "wikidataQid": "Q487459"
+ },
+ "of_ua_zorya": {
+  "name": "Viktor Skrypnyk",
+  "nationality": "Ukraine",
+  "birthDate": "1969-11-19",
+  "wikidataQid": "Q126001"
+ },
+ "of_us_austin_fc": {
+  "name": "Nicolás Estévez Martínez",
+  "nationality": "Spain",
+  "birthDate": "1980-01-29",
+  "wikidataQid": "Q16611709"
+ },
+ "of_us_charlotte_football_club": {
+  "name": "Dean Smith",
+  "nationality": "England",
+  "birthDate": "1971-03-19",
+  "wikidataQid": "Q5246473"
+ },
+ "of_us_chicago_fire": {
+  "name": "Gregg Berhalter",
+  "nationality": "USA",
+  "birthDate": "1973-08-01",
+  "wikidataQid": "Q708694"
+ },
+ "of_us_colorado_rapids": {
+  "name": "Chris Armas",
+  "nationality": "USA",
+  "birthDate": "1972-08-27",
+  "wikidataQid": "Q303090"
+ },
+ "of_us_dc_united": {
+  "name": "René Weiler",
+  "nationality": "Switzerland",
+  "birthDate": "1973-09-13",
+  "wikidataQid": "Q7313817"
+ },
+ "of_us_fc_cincinnati": {
+  "name": "Pat Noonan",
+  "nationality": "USA",
+  "birthDate": "1980-08-02",
+  "wikidataQid": "Q2629192"
+ },
+ "of_us_fc_dallas": {
+  "name": "Eric Quill",
+  "nationality": "USA",
+  "birthDate": "1978-02-28",
+  "wikidataQid": "Q5387312"
+ },
+ "of_us_houston_dynamo": {
+  "name": "Ben Olsen",
+  "nationality": "USA",
+  "birthDate": "1977-05-03",
+  "wikidataQid": "Q816579"
+ },
+ "of_us_inter_miami_cf": {
+  "name": "Kily González",
+  "nationality": "Argentina",
+  "birthDate": "1974-08-04",
+  "wikidataQid": "Q314761"
+ },
+ "of_us_la_galaxy": {
+  "name": "Greg Vanney",
+  "nationality": "USA",
+  "birthDate": "1974-06-11",
+  "wikidataQid": "Q2605384"
+ },
+ "of_us_los_angeles_football_club": {
+  "name": "Steve Cherundolo",
+  "nationality": "USA",
+  "birthDate": "1979-02-19",
+  "wikidataQid": "Q310928"
+ },
+ "of_us_minnesota_united_fc": {
+  "name": "Eric Ramsay",
+  "nationality": "Wales",
+  "birthDate": "1992-02-14",
+  "wikidataQid": "Q124050223"
+ },
+ "of_us_nashville_sc": {
+  "name": "B. J. Callaghan",
+  "nationality": "USA",
+  "birthDate": "1981-07-01",
+  "wikidataQid": "Q118874099"
+ },
+ "of_us_new_york_city": {
+  "name": "Pascal Jansen",
+  "nationality": "Netherlands",
+  "birthDate": "1973-01-27",
+  "wikidataQid": "Q20978395"
+ },
+ "of_us_new_york_red_bulls": {
+  "name": "Michael Bradley",
+  "nationality": "USA",
+  "birthDate": "1987-07-31",
+  "wikidataQid": "Q208425"
+ },
+ "of_us_orlando_city": {
+  "name": "Óscar Pareja",
+  "nationality": "Colombia",
+  "birthDate": "1968-08-10",
+  "wikidataQid": "Q4025482"
+ },
+ "of_us_philadelphia_union": {
+  "name": "Bradley Carnell",
+  "nationality": "South Africa",
+  "birthDate": "1977-01-21",
+  "wikidataQid": "Q478499"
+ },
+ "of_us_portland_timbers": {
+  "name": "Martí Cifuentes",
+  "nationality": "Spain",
+  "birthDate": "1982-07-07",
+  "wikidataQid": "Q68772002"
+ },
+ "of_us_real_salt_lake": {
+  "name": "Pablo Mastroeni",
+  "nationality": "USA",
+  "birthDate": "1976-08-29",
+  "wikidataQid": "Q710184"
+ },
+ "of_us_san_jose_earthquakes": {
+  "name": "Bruce Arena",
+  "nationality": "USA",
+  "birthDate": "1951-09-21",
+  "wikidataQid": "Q431216"
+ },
+ "of_us_seattle_sounders": {
+  "name": "Brian Schmetzer",
+  "nationality": "USA",
+  "birthDate": "1962-08-18",
+  "wikidataQid": "Q4965230"
+ },
+ "of_us_sporting_kansas_city": {
+  "name": "Kerry Zavagnin",
+  "nationality": "USA",
+  "birthDate": "1974-07-02",
+  "wikidataQid": "Q327415"
+ },
+ "of_us_st_louis_city_sc": {
+  "name": "Olof Mellberg",
+  "nationality": "Sweden",
+  "birthDate": "1977-09-03",
+  "wikidataQid": "Q192491"
+ },
+ "of_us_toronto_fc": {
+  "name": "Robin Fraser",
+  "nationality": "USA",
+  "birthDate": "1966-12-17",
+  "wikidataQid": "Q898414"
+ },
+ "of_us_vancouver_whitecaps": {
+  "name": "Jesper Sørensen",
+  "nationality": "Denmark",
+  "birthDate": "1973-06-10",
+  "wikidataQid": "Q6185885"
+ },
+ "of_uy_atenas": {
+  "name": "Wilmar Cabrera",
+  "nationality": "Uruguay",
+  "birthDate": "1959-07-31",
+  "wikidataQid": "Q2093448"
+ },
+ "of_uy_defensor_sporting": {
+  "name": "Eduardo Acevedo",
+  "nationality": "Uruguay",
+  "birthDate": "1959-09-25",
+  "wikidataQid": "Q584244"
+ },
+ "of_uy_deportivo_maldonado": {
+  "name": "Julio César Ribas",
+  "nationality": "Uruguay",
+  "birthDate": "1957-01-08",
+  "wikidataQid": "Q2302873"
+ },
+ "of_uy_liverpool_montevideo": {
+  "name": "Joaquín Papa",
+  "birthDate": "1986-10-23",
+  "wikidataQid": "Q130642608"
+ },
+ "of_uy_rampla_juniors": {
+  "name": "Juan Guillermo Castillo",
+  "nationality": "China",
+  "birthDate": "1978-04-17",
+  "wikidataQid": "Q350326"
+ },
+ "of_uy_river_plate_montevideo": {
+  "name": "Guillermo Almada",
+  "nationality": "Uruguay",
+  "birthDate": "1969-06-18",
+  "wikidataQid": "Q5888276"
+ },
+ "of_uz_bunyodkor": {
+  "name": "Mirjalol Qosimov",
+  "nationality": "Uzbekistan",
+  "birthDate": "1970-09-17",
+  "wikidataQid": "Q622183"
+ },
+ "of_uz_neftchi": {
+  "name": "Islombek Ismoilov",
+  "nationality": "Uzbekistan",
+  "birthDate": "1992-07-19",
+  "wikidataQid": "Q133803983"
+ },
+ "of_uz_pakhtakor": {
+  "name": "Shota Arveladze",
+  "nationality": "Georgia",
+  "birthDate": "1973-02-22",
+  "wikidataQid": "Q314365"
+ },
+ "of_ve_carabobo": {
+  "name": "Julio César Baldivieso",
+  "nationality": "Bolivia",
+  "birthDate": "1971-12-02",
+  "wikidataQid": "Q558955"
+ },
+ "of_ve_caracas": {
+  "name": "Leonardo Alberto González",
+  "nationality": "Venezuela",
+  "birthDate": "1972-07-14",
+  "wikidataQid": "Q3830324"
+ },
+ "of_ve_estudiantes_merida": {
+  "name": "José de Jesús Vera",
+  "nationality": "Venezuela",
+  "birthDate": "1969-02-09",
+  "wikidataQid": "Q3810594"
+ },
+ "of_ve_metropolitanos": {
+  "name": "Rafael Santana",
+  "nationality": "Spain",
+  "birthDate": "1945-03-03",
+  "wikidataQid": "Q3928972"
+ },
+ "of_ve_zamora": {
+  "name": "Francesco Stifano",
+  "nationality": "Venezuela",
+  "birthDate": "1979-07-19",
+  "wikidataQid": "Q85719050"
+ },
+ "of_za_chippa_united": {
+  "name": "Teboho Moloi",
+  "nationality": "South Africa",
+  "birthDate": "1968-07-02",
+  "wikidataQid": "Q7692078"
+ },
+ "of_za_golden_arrows": {
+  "name": "Clinton Larsen",
+  "nationality": "South Africa",
+  "birthDate": "1971-02-17",
+  "wikidataQid": "Q3680819"
+ },
+ "of_za_kaizer_chiefs": {
+  "name": "Steve Komphela",
+  "nationality": "South Africa",
+  "birthDate": "1967-05-24",
+  "wikidataQid": "Q3498983"
+ },
+ "of_za_polokwane_city": {
+  "name": "Luc Eymael",
+  "nationality": "Belgium",
+  "birthDate": "1959-09-20",
+  "wikidataQid": "Q17485941"
+ }
+}
