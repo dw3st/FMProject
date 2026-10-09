@@ -23,7 +23,7 @@ import type {
   PlayerInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
-import type { ManagerNewsInboxMessage } from "@/types/inboxTypes";
+import type { ManagerNewsInboxMessage, RescheduledGame, ScheduleInboxMessage } from "@/types/inboxTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
@@ -503,6 +503,26 @@ export function buildManagerNewsMessage(date: string, items: ManagerNewsInboxMes
     subject,
     preview: items.map((i) => i.clubName).join(", "),
     items,
+  };
+}
+
+/**
+ * League games of the human club moved off a clash (`.claude/rules/game/rescheduling.md`): one message per day.
+ * English fallback subject/preview; the screen translates.
+ */
+export function buildScheduleMessage(date: string, games: RescheduledGame[]): ScheduleInboxMessage {
+  const sorted = [...games].sort((a, b) => a.to.localeCompare(b.to));
+  const first = sorted[0];
+  return {
+    id:        `schedule-${date}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "schedule",
+    kind:      "rescheduled",
+    subject:   sorted.length === 1 ? "Match rescheduled" : `${sorted.length} matches rescheduled`,
+    preview:   first ? `${first.opponentName}: ${first.from} → ${first.to}` : "",
+    games:     sorted,
   };
 }
 

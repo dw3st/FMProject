@@ -126,7 +126,9 @@ import type { AwardsInboxMessage } from "@/types/inboxTypes";
 import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
-import { buildManagerNewsMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
+import { buildManagerNewsMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
+import { drawnLeaguesOf, rescheduleFixtureConflicts } from "@/backend/reschedulingWorld";
+import { rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
 import { ageStaff, staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
 import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
@@ -146,7 +148,6 @@ import {
   continentalGoodClubsThisSeason,
   continentalQualificationOf,
   continentalTier1LeagueStates,
-  logEuropeanCalendarClashes,
   seasonDefiningYear,
 } from "@/backend/continentalWorld";
 
@@ -873,6 +874,19 @@ export async function advanceOneDay(
     const continentalPlayed = new Map<string, number[]>();
     for (const [slug, rounds] of roundUpdates) if (isContinentalSlug(slug)) continentalPlayed.set(slug, [...rounds.keys()]);
     const continentalChanges = await advanceContinentalStages(saveService, saveId, continentalPlayed);
+
+    // ── League games that clash with the dates just drawn (same day or the day before/after for a club) move
+    // to a free midweek day (`.claude/rules/game/rescheduling.md`). Scope: the leagues of the drawn clubs. ──
+    const rescheduleMoves: FixtureMove[] = [];
+    {
+      const scope = await drawnLeaguesOf({ service: saveService, saveId, index, cupChanges, continentalChanges });
+      if (scope.size > 0) {
+        const r = await rescheduleFixtureConflicts({
+          service: saveService, saveId, minDate: addOneDay(currentDate), catalog: await getLeagueData(), scope,
+        });
+        rescheduleMoves.push(...r.moves);
+      }
+    }
 
     // ── Board and fans: today's official matches of the human club (standings already written) ──
     if (board && playerSquadId) {
@@ -2244,15 +2258,6 @@ export async function advanceOneDay(
       }
     }
 
-    // A calendar-year European league (Belarus, Finland, Georgia, Iceland, Norway, Sweden — see
-    // .claude/rules/game/continental.md) rolls over on its own December schedule, independently of
-    // the Europe-wide continental rollover below (which only tracks cross-year leagues) — so its
-    // brand-new Y+1 calendar is generated with no knowledge of UCL/UEL dates already fixed for the
-    // season in progress. Logged only, never rescheduled: see `logEuropeanCalendarClashes`.
-    if (rolledLeagueFixtures.size > 0) {
-      await logEuropeanCalendarClashes(saveService, saveId, rolledLeagueFixtures);
-    }
-
     // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
     // Also runs on a resync-only day (a rollover already applied on disk, only activeLeagues was
     // stale) — the cup must still regenerate then, not just on a day that itself ran the rollover.
@@ -2358,6 +2363,16 @@ export async function advanceOneDay(
           }),
         );
       }
+    }
+
+    // ── Clashing league games, whole world: the new league calendars (a calendar-year European league rolls in
+    // December with the UCL/UEL dates of the season in progress already fixed), cups and continental
+    // competitions generated today. Before the youth competitions, which read the league dates. ──
+    if (due.units.length > 0 || due.resync.length > 0) {
+      const r = await rescheduleFixtureConflicts({
+        service: saveService, saveId, minDate: addOneDay(currentDate), catalog: await getLeagueData(),
+      });
+      rescheduleMoves.push(...r.moves);
     }
 
     // ── Youth competitions: archived and regenerated when the country's tier-1 league rolled (same
@@ -2628,6 +2643,16 @@ export async function advanceOneDay(
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
     // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
     for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
+    // The human club's league games moved today (draws / rollover): one message, after any `clearInbox`.
+    if (playerSquadId && rescheduleMoves.length > 0) {
+      const catalog = await getLeagueData();
+      const games = rescheduledGamesOf(
+        rescheduleMoves, playerSquadId,
+        (id) => index.byId(id)?.name ?? id,
+        (slug) => competitionName(slug, catalog as unknown as LeagueData[], "en"),
+      );
+      if (games.length > 0) await emitInboxMessage(saveId, buildScheduleMessage(currentDate, games), saveService);
+    }
     // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
     if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
@@ -2777,6 +2802,19 @@ export const advanceDayRoutes = {
     // (presimulatePreStart) is reserved for the offline kit generator — running it
     // here would block for minutes.
     const result = await applyRandomStartKit(saveId);
+
+    // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
+    // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
+    if (result.applied) {
+      const m = await saveService.getMeta(saveId);
+      if (m?.currentDate) {
+        try {
+          await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
+        } catch (e) {
+          logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
+        }
+      }
+    }
 
     // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
     // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.

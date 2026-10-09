@@ -1241,6 +1241,16 @@
     "seasonTitle": "{{league}} {{season}}",
     "yearTitle": "{{year}}"
   },
+  "schedule": {
+    "rescheduledFrom": "Remarcado de {{date}}",
+    "subjectOne": "Jogo remarcado",
+    "subjectMany": "{{count}} jogos remarcados",
+    "preview": "{{opponent}}: {{from}} → {{to}}",
+    "intro": "Estes jogos da liga caíam no mesmo dia ou colados em outro jogo nosso e foram remarcados:",
+    "home": "x {{opponent}} (casa)",
+    "away": "x {{opponent}} (fora)",
+    "line": "{{from}} → {{to}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferências",
@@ -1342,7 +1352,8 @@
       "facilities": "Instalações",
       "manager_news": "Técnicos",
       "scouting": "Olheiros",
-      "awards": "Prêmios"
+      "awards": "Prêmios",
+      "schedule": "Calendário"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",

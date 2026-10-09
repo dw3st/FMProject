@@ -26,7 +26,8 @@ export type InboxCategory =
   | "facilities"
   | "manager_news"
   | "scouting"
-  | "awards";
+  | "awards"
+  | "schedule";
 
 interface InboxMessageBase {
   id:        string;
@@ -390,6 +391,25 @@ export interface AwardsInboxMessage extends InboxMessageBase {
   world?: WorldAwards;
 }
 
+/** One league game of the human club moved to another date (`.claude/rules/game/rescheduling.md`). */
+export interface RescheduledGame {
+  competition:  string;
+  /** English fallback name, shown until the league catalog loads. */
+  competitionName: string;
+  opponentId:   string;
+  opponentName: string;
+  home:         boolean;
+  from:         string;
+  to:           string;
+}
+
+/** League games of the human club moved off a clash with a cup / continental game (one message per day). */
+export interface ScheduleInboxMessage extends InboxMessageBase {
+  category: "schedule";
+  kind:     "rescheduled";
+  games:    RescheduledGame[];
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -409,4 +429,5 @@ export type InboxMessage =
   | FacilityInboxMessage
   | ManagerNewsInboxMessage
   | ScoutingInboxMessage
-  | AwardsInboxMessage;
+  | AwardsInboxMessage
+  | ScheduleInboxMessage;

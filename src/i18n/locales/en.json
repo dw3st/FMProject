@@ -1241,6 +1241,16 @@
     "seasonTitle": "{{league}} {{season}}",
     "yearTitle": "{{year}}"
   },
+  "schedule": {
+    "rescheduledFrom": "Rescheduled from {{date}}",
+    "subjectOne": "Match rescheduled",
+    "subjectMany": "{{count}} matches rescheduled",
+    "preview": "{{opponent}}: {{from}} → {{to}}",
+    "intro": "These league matches clashed with another game of ours (same day or the day before/after) and were moved:",
+    "home": "vs {{opponent}}",
+    "away": "at {{opponent}}",
+    "line": "{{from}} → {{to}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferences",
@@ -1342,7 +1352,8 @@
       "facilities": "Facilities",
       "manager_news": "Managers",
       "scouting": "Scouting",
-      "awards": "Awards"
+      "awards": "Awards",
+      "schedule": "Schedule"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",

@@ -38,6 +38,7 @@ const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
 const AwardIcon = iconOf("award");
+const CalendarIcon = iconOf("calendar");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -185,6 +186,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-4/15",
     border: "border-chart-4/30",
     Icon: AwardIcon,
+  },
+  schedule: {
+    labelKey: "inbox.categories.schedule",
+    color: "text-chart-3",
+    bg: "bg-chart-3/15",
+    border: "border-chart-3/30",
+    Icon: CalendarIcon,
   },
 };
 
@@ -501,6 +509,15 @@ function leaguePrizeTexts(
     return { subject: x.subject, preview: x.body };
   }
   if (message.category === "awards") return awardsTexts(message, t);
+  if (message.category === "schedule") {
+    const first = message.games[0];
+    return {
+      subject: message.games.length === 1
+        ? t("schedule.subjectOne")
+        : t("schedule.subjectMany", { count: message.games.length }),
+      preview: first ? t("schedule.preview", { opponent: first.opponentName, from: formatInboxDate(first.from), to: formatInboxDate(first.to) }) : "",
+    };
+  }
   if (message.category === "contract" && message.kind === "director_summary") {
     return { subject: t("inbox.contract.directorSummarySubject"), preview: message.preview };
   }
@@ -643,6 +660,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
         {message.category === "awards" && <AwardsInboxBody message={message} />}
+        {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -664,6 +682,31 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** League games of the club moved off a clash: competition, opponent (home/away), old → new date. */
+function ScheduleBody({ message, leagues }: { message: Extract<InboxMessage, { category: "schedule" }>; leagues: LeagueData[] }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <p className="m-0 text-foreground">{t("schedule.intro")}</p>
+      <ul className="m-0 p-0 list-none flex flex-col gap-2">
+        {message.games.map((g) => (
+          <li key={`${g.competition}-${g.opponentId}-${g.from}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="font-semibold text-foreground">
+              {t(g.home ? "schedule.home" : "schedule.away", { opponent: g.opponentName })}
+            </span>
+            <span className="text-muted-foreground">
+              {leagues.length > 0 ? competitionName(g.competition, leagues, i18n.language) : g.competitionName}
+            </span>
+            <span className="tabular-nums text-foreground">
+              {t("schedule.line", { from: formatFullDate(g.from), to: formatFullDate(g.to) })}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
