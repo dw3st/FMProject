@@ -1,5 +1,6 @@
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { readJsonBody } from "@/GameInterface/readJsonBody";
+import { RescheduledNote } from "@/GameInterface/Components/RescheduledNote";
 import { useState, useEffect, useMemo } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
@@ -1112,6 +1113,9 @@ export function MatchPreviewScreen() {
               (same "extra time / penalties if level" info) — don't repeat it here. */}
           {fixture?.knockout && !fixture.aggregate && (
             <p className="text-sm text-muted-foreground text-center mt-3 mb-0">{t("cups.knockoutNote")}</p>
+          )}
+          {fixture?.rescheduledFrom && (
+            <p className="text-center mt-3 mb-0"><RescheduledNote from={fixture.rescheduledFrom} /></p>
           )}
         </div>
       </div>

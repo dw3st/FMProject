@@ -7,7 +7,7 @@ import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import type { LeagueData } from "@/types/playerTypes";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
-import { compactTabsFor } from "@/GameInterface/Components/compactTabs";
+import { compactTabsFor, type TabsMode } from "@/GameInterface/Components/compactTabs";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
 interface NavItem {
@@ -20,6 +20,14 @@ interface NavItem {
 
 /** Top-bar icon size (#133). */
 const NAV_ICON = 18;
+/**
+ * Spacing of the tabs: normal (`gap-3.5` between tabs, `gap-1` icon to label) and tighter (`gap-2`,
+ * `gap-0.5`), used before collapsing to icons (#139).
+ */
+const TAB_GAP = 14;
+const TAB_GAP_TIGHT = 8;
+const ICON_GAP = 4;
+const ICON_GAP_TIGHT = 2;
 
 const navItems: NavItem[] = [
   { icon: "dashboard", tone: "text-primary", labelKey: "nav.dashboard", href: "/dashboard" },
@@ -60,12 +68,14 @@ function formatTopBarDate(date: string, lang: string): string {
  * invisible copy (`measureRef`), so the answer never depends on the mode currently shown, and it is
  * measured again on every resize of the bar or of the copy (fonts, language), when the fonts
  * arrive, when the page becomes visible again and when it comes back from the back/forward cache
- * (#138: back from the match the bar stayed in icons with plenty of room).
+ * (#138: back from the match the bar stayed in icons with plenty of room). When the labelled row
+ * only fits with tighter gaps it keeps the labels with those gaps (#139: in Portuguese, with the
+ * tester's report button, the row was ~60px short at the full frame and fell back to icons).
  */
-function useCompactTabs() {
+function useCompactTabs(tabCount: number) {
   const outerRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
-  const [compact, setCompact] = useState(false);
+  const [mode, setMode] = useState<TabsMode>("labels");
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
@@ -74,8 +84,10 @@ function useCompactTabs() {
     let alive = true;
     const check = () => {
       if (!alive) return;
-      const next = compactTabsFor(measure.offsetWidth, outer.clientWidth);
-      if (next !== null) setCompact(next);
+      const tightSaving =
+        Math.max(0, tabCount - 1) * (TAB_GAP - TAB_GAP_TIGHT) + tabCount * (ICON_GAP - ICON_GAP_TIGHT);
+      const next = compactTabsFor(measure.offsetWidth, outer.clientWidth, tightSaving);
+      if (next !== null) setMode(next);
     };
     check();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
@@ -96,9 +108,9 @@ function useCompactTabs() {
       window.removeEventListener("pageshow", check);
       window.removeEventListener("resize", check);
     };
-  }, []);
+  }, [tabCount]);
 
-  return { outerRef, measureRef, compact };
+  return { outerRef, measureRef, mode };
 }
 
 export function TopNavigation({
@@ -120,7 +132,8 @@ export function TopNavigation({
   const currentUser = useCurrentUser();
   const isTester = !!currentUser?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
-  const { outerRef, measureRef, compact } = useCompactTabs();
+  const { outerRef, measureRef, mode } = useCompactTabs(navItems.length);
+  const compact = mode === "icons";
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -152,8 +165,8 @@ export function TopNavigation({
     dayTitle = t("weekCalendar.switchToTraining");
   }
 
-  const tabClass = (active: boolean) =>
-    `flex items-center gap-1 border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
+  const tabClass = (active: boolean, tight = false) =>
+    `flex items-center ${tight ? "gap-0.5" : "gap-1"} border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
       active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
     }`;
   const dayButton =
@@ -186,7 +199,7 @@ export function TopNavigation({
               </span>
             ))}
           </div>
-          <div className="flex w-max items-stretch gap-3.5">
+          <div className={`flex w-max items-stretch ${mode === "tight" ? "gap-2" : "gap-3.5"}`}>
             {navItems.map((item) => {
               const label = t(item.labelKey);
               const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
@@ -200,7 +213,7 @@ export function TopNavigation({
                 <a
                   key={item.labelKey}
                   href={href}
-                  className={tabClass(active)}
+                  className={tabClass(active, mode === "tight")}
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
@@ -212,23 +225,20 @@ export function TopNavigation({
           </div>
         </nav>
 
-        {/* Report (testers only): apart from the tabs, icon only (#133, #138). */}
-        {isTester && (
-          <div className="flex items-center shrink-0 h-8 pl-4 border-l border-border">
+        {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
+            costs no divider of its own), today's date and type, then the day controls (#65). */}
+        <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
+          {isTester && (
             <button
               type="button"
               onClick={() => setReportOpen(true)}
               title={t("nav.report")}
               aria-label={t("nav.report")}
-              className="flex items-center justify-center w-9 h-9 rounded-md border border-border bg-card text-destructive cursor-pointer hover:bg-muted/50"
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-destructive cursor-pointer hover:bg-muted/50"
             >
               <Icon name="report" size={NAV_ICON} />
             </button>
-          </div>
-        )}
-
-        {/* Day block: today's date and type, then the day controls (#65). */}
-        <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
+          )}
           {currentDate && (
             <>
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">

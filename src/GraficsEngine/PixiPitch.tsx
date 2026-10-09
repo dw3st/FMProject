@@ -12,7 +12,7 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -1858,6 +1858,14 @@ export function PixiPitch({
         } else if (cmd.type === 'swapPositions') {
           stateRef.current = swapPlayerPositions(stateRef.current, cmd.team, cmd.aId, cmd.bId);
           gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the new slots
+        } else if (cmd.type === 'setManualInjurySubs') {
+          const s = stateRef.current;
+          const manual = { ...s.manualInjurySubs };
+          if (cmd.on) manual[cmd.team] = true; else delete manual[cmd.team];
+          stateRef.current = { ...s, manualInjurySubs: manual };
+        } else if (cmd.type === 'fillVacancy') {
+          stateRef.current = fillInjuryVacancy(stateRef.current, cmd.team, cmd.injuredId, cmd.inId);
+          gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the newcomer
         } else if (cmd.type === 'queueSub') {
           const s = stateRef.current;
           const key = cmd.team === 'A' ? 'pendingSubsA' : 'pendingSubsB';

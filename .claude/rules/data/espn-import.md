@@ -28,6 +28,7 @@ bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmid
 bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
 bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 bun scripts/applyClubNameCorrections.ts  # nomes de exibição dos clubes (acentos, sem sufixos) — ver abaixo
+bun scripts/applyCoaches.ts            # técnico atual (Wikidata + correções manuais) — ver "Técnicos"
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -215,6 +216,45 @@ grafia de dados (issue #121): sem acento ("Sao Paulo", "Gremio"), com sufixo ("C
 - Fica no fim da cadeia de propósito: o casamento de clubes do `importOpenFootball`/`importEspn` usa os nomes de
   origem (chaves sem acento) e nunca vê o nome corrigido. Os nativos em `data_process/native` continuam com a
   grafia de origem.
+
+## Técnicos
+
+O `coach` que vinha dos dados (nativos e open-football de 2024/25, ESPN só em 66 de 618 clubes, alguns velhos: o PSG
+com Ancelotti) é trocado pelo técnico atual de cada clube no **Wikidata** (CC0).
+
+- `bun scripts/fetchWikidataCoaches.ts [--today YYYY-MM-DD]` (único passo com rede; lógica pura em
+  `scripts/wikidata/coachesSource.ts`, com teste) grava `data_process/wikidata/coaches.json`
+  (`squadId → { name, nationality?, birthDate?, wikidataQid }`, nada de imagem) e `coachClubs.json` (o mapa clube →
+  item, para conferir). Respostas em `data_process/wikidata/cache/coaches/` (gitignored), User-Agent do projeto,
+  pausa entre requisições.
+  - **Clube → item:** `data_process/wikidata/clubs.json` (piloto dos rostos, 10 ligas, revisado) primeiro; o resto por
+    país (SPARQL dos clubes P31 Q476028 com P17 do país — e Canadá na MLS, Mônaco na Ligue 1, Liechtenstein na Suíça,
+    Andorra na Espanha — que têm P286), casados pelo `clubKey` e depois pelo `looseClubKey` (`.` tirado antes:
+    "F.C." vira ruído), únicos dos dois lados. `data_process/wikidata/coachClubOverrides.json`
+    (`squadId → item`, `""` bloqueia) vence os dois (hoje só bloqueia o Torpedo-BelAZ, casado com o time reserva).
+  - **Técnico:** declarações P286 não depreciadas e sem fim (P582) passado; a de início (P580) mais recente vence,
+    preferida no empate. Sem nenhuma datada, só uma sem data sozinha (ou uma preferida sozinha). Técnico falecido
+    (P570) fora. Rejeitada quando ele está em outro time a partir de uma data posterior, confirmado dos dois lados
+    (P6087 aberto dele **e** P286 aberto do outro time — só o P6087 tem erro de edição, ex. Simeone no Napoli). O
+    mesmo técnico em dois clubes nossos fica só no de início mais recente (empate: nenhum).
+  - Nome: rótulo en, senão pt/es/fr/de/it. Nacionalidade: P1532 (país no esporte, dá "England") senão P27, na
+    convenção do mundo (`normalizeNationality`); "United Kingdom" sozinho fica sem nacionalidade. Nascimento P569 só
+    com precisão de dia.
+- `data_process/curated/coachCorrections.json` (`{ "<squadId>": { "name", "nationality"?, "age"? } }`) vence tudo,
+  tomada inteira (nada misturado do Wikidata, que pode ser outra pessoa): nomes completos do rótulo trocados pelo
+  nome de futebol (Levante, Celta, Racing, Málaga) e clubes sem técnico atual no Wikidata com o técnico salvo velho
+  ou errado (Chapecoense, Vasco, Cruzeiro).
+- `bun scripts/applyCoaches.ts` (lógica pura em `scripts/curated/coaches.ts`, com teste) roda logo depois do
+  `applyClubNameCorrections`: correção > Wikidata > o técnico que o elenco já tem. Troca `squad.coach` inteiro por
+  `{ id, name, nationality?, age? }` (`id` estável por clube + nome, `coachId`; idade em `COACH_AGE_ON` = 2026-07-01,
+  como a dos jogadores). Falha alto com id inexistente ou repetido no mundo, nome vazio/com espaço nas pontas ou com
+  entidade HTML, campo desconhecido. Idempotente; grava só os elencos alterados, no formato original.
+- Efeito no jogo: `buildInitialManagers` (`createSave`) cria `managers.json` de `squad.coach` (`coach_<id>`, nome),
+  então o ranking de técnicos e os rostos (pelo id) já saem com o técnico atual. Os start kits guardam os elencos
+  com o `coach` de quando foram gerados: regenere os kits depois de mudar os técnicos.
+- Cobertura (2026-10-09): 700 de 1273 clubes (693 Wikidata + 7 correções); Premier, La Liga, Serie A e Ligue 1
+  completas, Bundesliga 16/18, Brasileirão 17/20; ligas africanas e da Ásia Central quase sem dado. Os demais mantêm o
+  técnico dos dados.
 
 ## Recalibração pelo valor de mercado
 

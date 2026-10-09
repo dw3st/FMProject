@@ -117,6 +117,13 @@ frontend (`GameSaveProvider.sessionFromSaveJson`) atualiza liga e clube da sess�
 - `generateLeagueCalendar` mantém toda rodada dentro de `[start, end]` (`fitRoundsToWindow`):
   uma rodada depois do `end` se perderia na virada.
 
+## Jogos remarcados
+
+Um jogo de liga pode sair da data da rodada (`rescheduledFrom`) quando um dos clubes tem copa ou
+continental no mesmo dia ou colado; a rodada passa a ter mais de uma data no `date-index`. Todo leitor de
+jogos filtra por `fixture.date`, e a virada continua pela data de fim da liga (o jogo remarcado nunca passa
+dela). Ver `.claude/rules/game/rescheduling.md`.
+
 ## Pastas que não são ligas
 
 `leagues/` também guarda copas (`cup_*`), continentais (`ucl`/`uel`/`lib`/`sud`) e torneios de base (`u21_*`/`u19_*`):

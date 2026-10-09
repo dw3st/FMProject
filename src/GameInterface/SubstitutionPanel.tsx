@@ -12,6 +12,7 @@ import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
 import { SubsPitchView, averageRating, displayRating10 } from "@/GameInterface/Components/SubsPitchView";
 import type { SlotInstruction } from "@/types/tacticsTypes";
 import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
+import { InjuryVacancyPanel } from "@/GameInterface/Components/InjuryVacancyPanel";
 import type { ComponentProps } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -24,6 +25,8 @@ export interface SubstitutionPanelProps {
   onQueueSub: (sub: PendingSub) => void;
   /** Two starters swap positions on the pitch (no substitution used, #115). */
   onSwapPositions?: (aId: number, bId: number) => void;
+  /** A bench player takes the slot an injured player left (#140, manual injury substitutions). */
+  onFillVacancy?: (injuredId: number, inId: number) => void;
   /** Live formation change; absent hides the Formation tab (`/test` has its own selector). */
   onChangeFormation?: (formationId: string) => void;
   /** Live slot instruction change (player instructions) — this match only. */
@@ -45,6 +48,7 @@ export function SubstitutionPanel({
   ratings,
   onQueueSub,
   onSwapPositions,
+  onFillVacancy,
   onChangeFormation,
   onInstruction,
   onManMarks,
@@ -132,6 +136,15 @@ export function SubstitutionPanel({
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {activeTab === "subs" && onFillVacancy && (
+            <InjuryVacancyPanel
+              vacancies={gameState.injuryVacancies?.[playerTeam] ?? []}
+              bench={availableBench}
+              ratings={ratings}
+              canSub={subsRemaining > 0}
+              onFill={onFillVacancy}
+            />
+          )}
           {activeTab === "subs" && (
             <SubsPitchView
               gameState={gameState}

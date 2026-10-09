@@ -147,11 +147,14 @@ e o Continuar com a borda direita.
   primeira aba; abas no centro (ícone 18px com a cor da seção, só tokens `primary`/`chart-*` — #133 —
   + rótulo `font-display font-bold uppercase text-sm`,
   `gap-3.5`, ativa sublinhada com `border-b-2 border-primary`, `whitespace-nowrap`). Quando o
-  conjunto rotulado não cabe entre o logo e o bloco do dia, as abas viram só ícone (rótulo em
-  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs`, sobre uma cópia invisível com
-  rótulos, refeito em resize, fontes, visibilidade e volta do cache — #138), nunca transbordam a moldura.
-  O botão de report (só testers) fica fora das abas, só a bandeirinha, num bloco com divisor antes
-  do bloco do dia.
+  conjunto rotulado não cabe entre o logo e o bloco do dia, primeiro o espaçamento aperta (`gap-2`
+  entre abas, `gap-0.5` ícone–rótulo) e só se nem assim couber as abas viram só ícone (rótulo em
+  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs` → `compactTabsFor`, sobre uma cópia
+  invisível com rótulos, refeito em resize, fontes, visibilidade e volta do cache — #138, #139), nunca
+  transbordam a moldura. Na moldura cheia (1440px) as abas em português têm rótulo, mesmo com o
+  report e o botão de avançar.
+  O botão de report (só testers) fica fora das abas, só a bandeirinha, no começo do bloco do dia
+  (sem divisor próprio, #139).
 - **Bloco do dia** (à direita, separado por divisor `border-l border-border pl-4`): data numa linha
   (`Icon calendar` + "Dom, 07/02/2027" via `Intl`, `text-sm font-semibold text-muted-foreground
   whitespace-nowrap`); botão com borda (`h-9 rounded-md border border-border bg-card`) com ícone +

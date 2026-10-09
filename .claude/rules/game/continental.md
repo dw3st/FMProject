@@ -29,13 +29,12 @@
 | `src/Domain/continental/generateContinental.ts` | `generateContinental` — meta + rodadas dos grupos + date-index de uma temporada nova |
 | `src/Domain/continental/knockout.ts` | `drawRoundOf16`, `drawFree`, `twoLegFixtures`, `withAggregate`, `tieWinner`, `finalWinner` |
 | `src/Domain/continental/continentalProgress.ts` | `advanceContinental` (avanço por rodada), `continentsToRegenerate`, `buildContinentalArchive` |
-| `src/backend/continentalWorld.ts` | E/S: `clubLevel`, `topLeagueOf`, `createContinentalSeason`, `advanceContinentalStages`, `continentalTier1LeagueStates`, `logEuropeanCalendarClashes` (choque liga de ano civil × datas continentais) |
+| `src/backend/continentalWorld.ts` | E/S: `clubLevel`, `topLeagueOf`, `createContinentalSeason`, `advanceContinentalStages`, `continentalTier1LeagueStates` |
 | `src/backend/SaveService.ts` | `createSave` gera as 4 competições depois das copas nacionais (falhas logadas com `logError("continental", …)`) |
 | `src/backend/advanceDay.ts` | joga fixtures continentais, chaina o squad de um clube com dois jogos no mesmo dia (`squadWrites`, ver `.claude/rules/game/membership.md`), avança fases, arquiva e regenera por continente, auto-cura um continente sem competição alguma |
 | `src/backend/startKits.ts` | kits guardam as pastas continentais junto com as de copa |
 | `src/backend/cupWorld.ts` | `createCountryCup` também evita as datas continentais do país (`continentalSlugsOf`) |
 | `scripts/season-rollover-smoke.ts` | seção "Continental competitions" |
-| `src/backend/continentalWorld.clashes.test.ts` | `logEuropeanCalendarClashes` isolado |
 | `src/backend/continentalWorld.selfHeal.test.ts` | continente sem `ucl`/`uel` nenhuma se recupera na próxima virada |
 | `src/backend/advanceDay.doubleBooking.test.ts` | clube com duas fixtures no mesmo dia — squad chaina em vez de uma escrita apagar a outra |
 
@@ -266,17 +265,11 @@ seguinte:
 
 ## Choque entre a virada de liga de ano civil europeia e as datas continentais fixas
 
-`logEuropeanCalendarClashes` (`src/backend/continentalWorld.ts`) roda logo após o laço de virada
-por país em `advanceDay.ts`, sobre o calendário novo que cada liga acabou de escrever. Para cada
-clube que participa de `ucl`/`uel`, junta o conjunto de datas da competição (todas as 13, sorteadas
-ou não) e verifica se alguma rodada nova da liga do clube cai exatamente numa dessas datas — se sim,
-`logError("continental", …)` com liga, competição, clube e data. Roda para toda liga que virou no
-dia (não só as 6 de ano civil europeias listadas acima), mas só encontra choque de verdade nelas:
-uma liga de calendário cruzado (Big-5 etc.) vira junto da própria virada continental da Europa, e
-as datas da temporada continental **antiga** (que ainda está em disco no momento da checagem, antes
-do bloco de regeneração mais abaixo) sempre terminam em maio, meses antes do agosto em que a liga
-nova começa — nunca há sobreposição de datas possível nesse caso. Só loga; não reagenda (ver
-"Limitações conhecidas" acima para o motivo).
+As ligas europeias de ano civil viram em dezembro com as datas de UCL/UEL da temporada em curso já
+fixadas. Desde a 4.16 o jogo da liga de um clube que cai no mesmo dia ou colado num jogo continental
+dele é **remarcado** (só aquela partida, para o meio de semana livre mais próximo): passo do mundo
+inteiro na virada, depois das continentais regeneradas. O antigo `logEuropeanCalendarClashes` (só
+logava) saiu. Ver `.claude/rules/game/rescheduling.md`.
 
 ## Arquivo (`buildContinentalArchive`)
 
@@ -358,26 +351,11 @@ da semana com mais frequência que as europeias, deixando menos dias realmente l
 
 ## Limitações conhecidas
 
-- **Vizinhança sul-americana.** A taxa de dia adjacente da Libertadores/Sul-Americana (54/416,
-  ~13%) é estruturalmente maior que a europeia por causa das rodadas de meio de semana comuns nas
-  ligas brasileira e argentina — não há como baixar isso sem violar o piso de 3 dias entre datas da
-  própria competição continental ou aceitar mais choques de dia da semana.
-- **Ligas de calendário europeu vs. datas continentais fixas.** Belarus, Finlândia, Geórgia,
-  Islândia, Noruega e Suécia são europeias de ano civil (`crossYear: false`) — não entram no
-  cálculo de "ligas que definem a temporada" (de propósito, ver a seção "Virada" acima), então o
-  `fim` da janela europeia nunca é puxado por elas. Mas isso também significa que a virada
-  **delas mesmas** (dezembro, independente da virada continental da Europa) gera o calendário
-  Y+1 sem nenhum conhecimento das datas de UCL/UEL já fixadas para a temporada europeia em
-  andamento — uma rodada nova pode cair no mesmo dia de um jogo continental de um clube do país.
-  Corrigido só parcialmente: `logEuropeanCalendarClashes` (`src/backend/continentalWorld.ts`,
-  chamada em `advanceDay.ts` logo depois do laço de virada por país) detecta e loga
-  (`logError("continental", …)`) todo choque de mesmo dia entre a rodada nova de uma dessas ligas
-  e uma data de UCL/UEL do mesmo clube — mas **não reagenda**: uma data de rodada de liga vale para
-  todos os clubes da liga ao mesmo tempo, enquanto o choque continental só interessa a 1-2 clubes
-  do país; mover a rodada inteira para evitar o jogo de um clube desalinharia o calendário de todo
-  mundo sem necessidade. As copas nacionais de ano civil (se algum dia existirem fora da América do
-  Sul) já mitigam esse mesmo tipo de colisão para si mesmas via `continentalSlugsOf`, mas essa
-  mitigação nunca existiu para o calendário da liga em si.
+- **Vizinhança sul-americana e ligas europeias de ano civil.** O otimizador de datas continua só
+  evitando o dia adjacente como custo (54/416 na Libertadores/Sul-Americana), mas desde a 4.16 o jogo
+  da liga que cai colado (ou no mesmo dia) num jogo continental do clube é remarcado — na geração, na
+  virada e nos sorteios de mata-mata (`.claude/rules/game/rescheduling.md`). Sobra só o par copa ×
+  continental em dias seguidos (nenhum dos dois se move) e o raro jogo de liga sem dia livre na janela.
 - **Issue #2 (recalibração do quickSim entre ligas de força muito diferente)** ainda não foi
   medida/ajustada. A interface (aba Continental, inbox, prévia de partida, `seasonLog.continental`)
   foi implementada no Plano 3 — ver seção "Interface" abaixo.
