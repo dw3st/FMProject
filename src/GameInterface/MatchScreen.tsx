@@ -795,6 +795,13 @@ export function MatchScreen() {
     setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, key, value));
   }
 
+  // #136: reporting a problem pauses the match so the text is not lost when the match ends. Closing
+  // the report never resumes on its own (the tester resumes with Play when ready).
+  function handleOpenReport() {
+    setPaused(true);
+    setReportOpen(true);
+  }
+
   function handleOpenSubPanel() {
     setPaused(true);
     setShowSubPanel(true);
@@ -1081,7 +1088,7 @@ export function MatchScreen() {
             {isTester && (
               <button
                 type="button"
-                onClick={() => setReportOpen(true)}
+                onClick={handleOpenReport}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer bg-secondary/50 border-border hover:border-primary/50 text-foreground"
                 aria-label={t("nav.report")}
               >
