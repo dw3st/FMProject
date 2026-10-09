@@ -29,6 +29,8 @@
  */
 import { fileURLToPath } from "node:url";
 import { readdir } from "fs/promises";
+import { matchesPerRoundByCountry } from "@/backend/refereeWorld";
+import { ageOn, poolSizeFor } from "@/Domain/referees/pool";
 import { seasonLabel } from "@/Domain/history/history";
 import { rankManagers } from "@/Domain/managers/managers";
 import { comfortPriceMult } from "@/Domain/facilities/facilities";
@@ -471,6 +473,14 @@ try {
   const trackedSuspended = new Map<string, number>(); // playerId → matches left last observed
   let suspensionsServedObserved = 0;
 
+  // ── Árbitros (see "Árbitros" section below, `.claude/rules/game/referees.md`) ──
+  const refTrack = {
+    matches: 0, withRef: 0, missing: [] as string[], youthWithRef: 0, sameDay: [] as string[],
+    continental: 0, continentalSameCountry: [] as string[], yellows: 0, reds: 0,
+    humanChecked: 0, humanMismatch: [] as string[], startDate: "",
+  };
+  const continentalCountryOf = new Map<string, Record<string, string>>();
+
   // ── Contratos (see "Contratos" section below) ────────────────────────────
   // Contract end per player at career start; weekly-wage ledger line vs the sum of contracts.
   const startContractUntil = new Map<string, string>();
@@ -861,6 +871,9 @@ try {
       }
     }
 
+    // Referees: the appointments of the day as the eve left them (the match preview reads these).
+    const preDayAppointments = (await plain().getRefereeState(saveId))?.assignments[date] ?? null;
+    if (!refTrack.startDate) refTrack.startDate = date;
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -1104,8 +1117,33 @@ try {
       }
     }
     if (dayLog) {
+      const refsToday = new Set<string>();
       for (const event of dayLog.events) {
         if (event.kind !== "match") continue;
+        refTrack.matches++;
+        if (isYouthCompSlug(event.competition)) { if (event.referee) refTrack.youthWithRef++; }
+        else if (!event.referee) refTrack.missing.push(`${date} ${event.competition}:${event.fixtureId}`);
+        if (event.referee) {
+          refTrack.withRef++;
+          if (refsToday.has(event.referee.id)) refTrack.sameDay.push(`${date} ${event.referee.id}`);
+          refsToday.add(event.referee.id);
+          for (const c of event.cards ?? []) { if (c.card === "yellow") refTrack.yellows++; else refTrack.reds++; }
+          if (isContinentalSlug(event.competition)) {
+            refTrack.continental++;
+            if (!continentalCountryOf.has(event.competition)) {
+              continentalCountryOf.set(event.competition, (await plain().getLeagueMeta(saveId, event.competition))?.continental?.countryOf ?? {});
+            }
+            const cc = continentalCountryOf.get(event.competition)!;
+            if (event.referee.country === cc[event.home] || event.referee.country === cc[event.away]) {
+              refTrack.continentalSameCountry.push(`${date} ${event.competition} ${event.referee.country}`);
+            }
+          }
+          if ((event.home === meta.clubId || event.away === meta.clubId) && preDayAppointments) {
+            refTrack.humanChecked++;
+            const planned = preDayAppointments[`${event.competition}:${event.fixtureId}`]?.refereeId;
+            if (planned !== event.referee.id) refTrack.humanMismatch.push(`${date} planned ${planned} got ${event.referee.id}`);
+          }
+        }
         totalMatchesLogged++;
         totalMatchInjuries += event.injuries?.length ?? 0;
         const th = event.teamStats.home;
@@ -1896,6 +1934,44 @@ try {
   check(suspendedXIViolations === 0,
     `disciplina: no suspended player appeared in a played XI (${suspendedXIViolations} of ${suspendedXIChecks} violated)`);
   check(suspensionsServedObserved > 0, `disciplina: at least one suspension served during the run (${suspensionsServedObserved} observed)`);
+
+  // ── Árbitros ─────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/referees.md`: every first-team match with the appointed referee, none twice a day,
+  // continental from another country, stats = the logged cards, the human club's referee = the eve's appointment,
+  // and every rolled country's pool complete with nobody aged 51+.
+  console.log("\n── Árbitros ──");
+  {
+    console.log(`  ${refTrack.withRef} of ${refTrack.matches} logged matches with a referee; ${refTrack.continental} continental`);
+    check(refTrack.withRef > 0, `árbitros: ${refTrack.withRef} match(es) with a referee`);
+    check(refTrack.missing.length === 0, `árbitros: every league/cup/continental match has a referee (${refTrack.missing.length} without, e.g. ${refTrack.missing.slice(0, 3).join(", ")})`);
+    check(refTrack.youthWithRef === 0, `árbitros: no youth match with a referee (${refTrack.youthWithRef})`);
+    check(refTrack.sameDay.length === 0, `árbitros: no referee twice on the same day (${refTrack.sameDay.slice(0, 3).join(", ")})`);
+    check(refTrack.continentalSameCountry.length === 0,
+      `árbitros: continental referees always from another country (${refTrack.continentalSameCountry.length} not, e.g. ${refTrack.continentalSameCountry.slice(0, 3).join(", ")})`);
+    check(refTrack.humanChecked > 0 && refTrack.humanMismatch.length === 0,
+      `árbitros: the human club's referee is the eve's appointment (${refTrack.humanChecked} checked, ${refTrack.humanMismatch.length} differ: ${refTrack.humanMismatch.slice(0, 2).join("; ")})`);
+    const state = await plain().getRefereeState(saveId);
+    const archives = await Promise.all((await plain().listRefereeSeasons(saveId!)).map((k) => plain().getRefereeSeason(saveId!, k)));
+    const sums = [state?.stats ?? {}, ...archives.map((a) => a?.stats ?? {})].flatMap((x) => Object.values(x))
+      .reduce((a, x) => ({ matches: a.matches + x.matches, yellows: a.yellows + x.yellows, reds: a.reds + x.reds }), { matches: 0, yellows: 0, reds: 0 });
+    console.log(`  stats: ${sums.matches} matches, ${sums.yellows} yellows, ${sums.reds} reds (logs: ${refTrack.withRef} / ${refTrack.yellows} / ${refTrack.reds}); ${archives.length} archived season(s)`);
+    check(sums.matches === refTrack.withRef && sums.yellows === refTrack.yellows && sums.reds === refTrack.reds,
+      `árbitros: season stats (state + archives) = the logged matches and cards`);
+    const pool = await plain().getRefereePool(saveId);
+    const endDate = (await plain().getMeta(saveId))!.currentDate!;
+    const perRound = await matchesPerRoundByCountry(plain(), saveId);
+    const rolled = Object.entries(pool?.renewed ?? {}).filter(([, d]) => d > refTrack.startDate).map(([c]) => c);
+    console.log(`  countries renewed during the run: ${rolled.length} (${rolled.slice(0, 6).join(", ")}${rolled.length > 6 ? "…" : ""})`);
+    for (const country of rolled) {
+      const size = poolSizeFor(perRound.get(country) ?? 0);
+      const refs = pool!.referees.filter((r) => r.country === country);
+      check(refs.filter((r) => r.role === "referee").length === size.referees && refs.filter((r) => r.role === "assistant").length === size.assistants,
+        `árbitros: ${country} pool complete after its rollover (${refs.length} of ${size.referees + size.assistants})`);
+      const old = refs.filter((r) => ageOn(r.birthDate, endDate) >= 51);
+      check(old.length === 0, `árbitros: nobody aged 51+ in ${country}'s pool (${old.length})`);
+    }
+    check(rolled.length > 0, `árbitros: at least one country's pool renewed during the run`);
+  }
 
   // ── Equipe técnica ───────────────────────────────────────────────────────
   // See `.claude/rules/game/staff.md`. Every role filled and the coaches within the tier's limit; no

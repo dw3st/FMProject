@@ -210,5 +210,5 @@ async function quick(): Promise<void> {
 if (MODE === "world") await world();
 else if (MODE === "pair") await pair();
 else if (MODE === "quick") await quick();
-// schedule (M3): added with the world I/O (Task 9).
+else if (MODE === "schedule") await (await import("@/../scripts/referee-schedule")).schedule();
 else throw new Error(`modo desconhecido: ${MODE}`);
