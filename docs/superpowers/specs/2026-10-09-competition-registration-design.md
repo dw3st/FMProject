@@ -106,7 +106,7 @@ Regra real → simplificação (pesquisa de 2026-10, regulamentos 2024/25–2025
 | **México** | Até 9 "não formados no México" | `maxForeign 9` |
 | **MLS (EUA)** | 8 vagas internacionais (negociáveis; green card conta como doméstico) | `maxForeign 10` (8 vagas + green card simplificado), domésticos EUA + Canadá |
 | **Champions / Europa League** | Lista A 25, mín. 8 formados localmente (máx. 4 da associação), lista B sub-21 formados no clube | `maxList 25`, `free ≤ 21` formados, `minFormed 8` |
-| **Libertadores / Sul-Americana** | Lista de até 50, sem limite de estrangeiros nem de formados | `maxList 30`, `minFormed 8` (como aprovado; ver Ponto aberto 1) |
+| **Libertadores / Sul-Americana** | Lista de até 50, sem limite de estrangeiros nem de formados | `maxList 50`, sem mínimo de formados nem limite de estrangeiros (a regra real; decisão do usuário 2026-10-09) |
 | **Copa nacional** | — | **a regra da liga do clube** (lista própria, mesmo prazo) |
 | **Padrão Europa** | (Bélgica, Holanda, Escócia, Portugal, Turquia… usam variações de 25 + formados) | `maxList 25`, `free ≤ 21` formados, `minFormed 8` |
 | **Padrão América do Sul** | — | `maxForeign 6` |
@@ -293,13 +293,12 @@ evento ou estatística nova. O `/test` e o `/lab` usam elencos sintéticos sem c
 | `scripts/registration-measure.ts` | Medição |
 | `.claude/rules/game/registration.md` | Regra nova |
 
-## Pontos abertos
+## Pontos abertos (decididos pelo usuário em 2026-10-09)
 
-1. **Libertadores / Sul-Americana com "8 formados no clube/país":** o regulamento real da CONMEBOL não tem mínimo de
-   formados nem limite de estrangeiros (lista de até 50, com trocas por fase). Implementado como aprovado
-   (`maxList 30`, `minFormed 8`); o efeito medido é nulo nos clubes brasileiros e argentinos (≥ 17 domésticos).
-   Confirmar com o usuário se fica assim ou se a regra real (sem limites, só o prazo) é preferível.
-2. **Isenções `ibero`/`acp` na La Liga e na Ligue 1:** detalhamento feito aqui para a regra estrita não tirar 1,5–2
-   titulares por clube (§1.1, §8). Não muda a decisão aprovada, mas é uma escolha de dado que o usuário pode querer ver.
-3. **Brasileirão "por jogo":** como aprovado, o limite é dos relacionados (XI + banco), não da lista; a lista
-   brasileira é o elenco inteiro e só serve ao congelamento.
+1. **Libertadores / Sul-Americana:** segue a regra real da CONMEBOL — lista de até 50, **sem** mínimo de formados nem
+   limite de estrangeiros (`conmebol`: `maxList 50`). Só o prazo vale.
+2. **Isenções `ibero`/`acp` na La Liga e na Ligue 1:** mantidas (latino-americanos e países do acordo de Cotonou contam
+   como comunitários, §1.1).
+3. **Brasileirão:** limite de estrangeiros por jogo (XI + banco, `maxForeignMatchday 9`); a lista é o elenco inteiro e
+   só serve para congelar fora da janela.
+4. **Bundesliga:** sem a exigência de 12 alemães (`maxList 30`, `minFormed 8`).
