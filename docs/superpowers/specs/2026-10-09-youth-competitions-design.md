@@ -208,7 +208,7 @@ Escolhidos os 11, `autoFillLineup` distribui pelas vagas do 4-3-3.
 
 `youthFillers(seed, squad, age, line, n)` — mesma receita de `generateIntake` (nível = média da linha do elenco −
 `YOUTH.LEVEL_OFFSET` + bônus de tier, ruído determinístico, `statsFor`, nome do próprio elenco, nacionalidade do
-clube), idade 16–19 (sub-19) ou 17–21 (sub-21). **Desvio de detalhe (ponto aberto 1):** a semente é
+clube), idade 16–19 (sub-19) ou 17–21 (sub-21). **Desvio de detalhe (ponto 1, decidido):** a semente é
 `${saveId}:${squadId}:${slug}:${ano}:${linha}:${i}` — uma "turma" estável por clube, competição e temporada
 (`FILLER_POOL` GK 2, DEF 5, MID 4, FWD 3), da qual cada rodada toma os primeiros que faltam. Com a semente por rodada
 (texto do desenho), cada rodada teria jogadores novos e a artilharia ficaria cheia de nomes de um jogo só. Ids
@@ -262,7 +262,7 @@ Para cada jogador real que jogou (nos dois lados, em `players` ou `youth` do squ
   país com o próprio try/catch (`logError("youthComps", …)`).
 - **Start kits:** `buildKitWorld` inclui as pastas de base (como as copas). Os kits precisam ser **regenerados** (a
   pré-simulação de agosto a fevereiro joga as rodadas de base das ligas europeias; sem isso uma carreira com kit
-  nasceria com ~25 rodadas de base no passado sem jogar). Ponto aberto 2.
+  nasceria com ~25 rodadas de base no passado sem jogar). Ponto 2, decidido: regenerar.
 - **Sem kit / kit antigo (rede de segurança):** `ensureYouthCompetitions(saveId, currentDate)` depois de
   `applyRandomStartKit` (rota `presimulate`): uma competição que falta é criada, e uma com jogo não jogado datado antes
   de `currentDate` é regerada com a janela começando amanhã (compressão de §2.4).
@@ -345,7 +345,21 @@ Todas com `requireSaveOwner`.
 | `src/GameInterface/LeagueTableScreen.tsx`, `Components/YouthCompView.tsx`, `Dashboard/WeekCalendar.tsx`, `PlayerScreen.tsx`, `Components/YouthTable.tsx`, `Squad/YouthCallUpsPanel.tsx` | Telas |
 | `scripts/youth-comp-measure.ts`, `scripts/season-rollover-smoke.ts` | Medição e smoke |
 
-## Pontos abertos
+## Pontos decididos (2026-10-09)
+
+Os cinco pontos abertos foram aceitos pelo usuário como estavam propostos:
+
+1. **Decidido:** jovens gerados por clube, competição e temporada (uma turma estável; cada rodada usa os primeiros que
+   faltam), não por rodada. Nada é gravado no elenco.
+2. **Decidido:** os start kits são regenerados no fim da etapa (Task 13), com a rede de segurança de §8 para kits
+   antigos.
+3. **Decidido:** datas continentais da temporada nova cobertas pelo adiamento do dia; cancelamento só sem dia livre em
+   14 dias, com o limite de 1% dos jogos conferido no smoke.
+4. **Decidido:** a base (`squad.youth`) não tem moral; o DP de partida da base fica por cima do treino anual e é
+   controlado por `DP_MULT`, medido (§9.2).
+5. **Decidido:** cartões da base são ignorados (nem suspensão, nem `seasonLog`).
+
+Texto original dos pontos:
 
 1. **Jovens gerados por temporada, não por rodada.** O desenho diz "determinístico pelo save/clube/rodada"; a spec
    usa uma turma estável por clube, competição e temporada (cada rodada usa os primeiros que faltam), para a
