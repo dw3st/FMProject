@@ -353,3 +353,14 @@ de faixas opostas fica claramente diferente na aba Árbitros.
 3. **Árbitras:** incluídas.
 4. **Base:** sem árbitro.
 5. **Inglaterra:** aceita árbitros do Reino Unido (escoceses, galeses).
+
+## 11. Implementação (2026-10-09)
+
+- **Escopo dos reais (decisão do usuário):** só os 10 países das ligas principais (`LEAGUES` de `scripts/faces/wikidata.ts`); os outros países têm quadro só gerado. Gerados só homens (o livro de nomes não tem nomes femininos).
+- **Dados:** 237 reais (236 árbitros, 1 assistente; 53 mulheres; 205 com ID do Transfermarkt; 172 com rigor real, ≥ 20 jogos). No quadro de um save: 999 árbitros + 1 998 assistentes, 206 árbitros reais (37 mulheres), 147 com rigor real. Rigor real: média 0,000, dp 0,373; faixas 14% / 70% / 16%. Sorteado: 21% / 53% / 21% (o §2.4 dizia 30/40/30: a triangular dá 21% em cada ponta). Média do mundo 0,004.
+- **Transfermarkt:** a API local não tem rota de árbitro; os totais vêm da página de perfil (`/-/profil/schiedsrichter/<id>/saison_id/0`), cache gitignored.
+- **Clássico** fora da importância (exigiria ler as cidades dos elencos do dia).
+- **`CARD_NORM` = 1,01** (quickSim, 26 ligas × 1000 pareado: com 1,0 os vermelhos subiam +4,9% / +2,3% em duas sementes; com 1,01, amarelos −0,4%, vermelhos +0,3%, faltas −0,2%).
+- **M1 motor** (Premier + Championship, 600 + 600 por braço, não pareado): faltas −0,5%, amarelos −5,0%, vermelhos −17% (~100 eventos), pênaltis −10%, gols −2,6% — dentro do ruído do motor por braço (amarelos ±2,7%); segunda semente pendente.
+- **M2** (Premier, mesmo clube, 400 jogos): ±0,75 amarelos ×1,31, faltas ×1,06, vermelhos ×2,3; ±1 amarelos ×1,55, faltas ×1,07, vermelhos ×3,1. Faltas um pouco abaixo da meta (×1,08–1,2): a chance de falta tem teto e só existe em disputas.
+- **M3** (escala) e bench do avanço do dia: pendentes.
