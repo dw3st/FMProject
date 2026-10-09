@@ -124,6 +124,11 @@ import { recordLeagueAwards, recordSeasonGoals, runWorldCeremony } from "@/backe
 import { tierFactor } from "@/Domain/awards/awardsConfig";
 import type { AwardsInboxMessage } from "@/types/inboxTypes";
 import { loadWindowContext } from "@/backend/marketWindowWorld";
+import {
+  humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
+} from "@/backend/registrationWorld";
+import { buildRegistrationMessage } from "@/Domain/inbox/registrationMessage";
+import type { RegistrationNotice } from "@/types/registrationTypes";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
 import { buildManagerNewsMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
@@ -436,6 +441,21 @@ export async function advanceOneDay(
     // Player moves of the day, written to the day log (`StoredDayLog.transfers`) after the market.
     const dayMoves: DayTransfer[] = [];
 
+    // Competition registration (`.claude/rules/game/registration.md`): the human club's lists move in the
+    // morning (before the matches, so a signing made today by a route can play today with the deadline open);
+    // every club's list is ensured at match time; the AI refreshes after the market. News deferred past `clearInbox`.
+    const regCtx = await registrationDayCtx(saveService, saveId, meta, index, currentDate, windows);
+    const registrationNotices: RegistrationNotice[] = [];
+    let registrationViolations = 0;
+    if (playerSquadId && playerEntry && !options.marketFrozen) {
+      const humanReg = await saveService.getSquadById(saveId, playerSquadId);
+      if (humanReg) {
+        const r = await humanRegistrationDay(regCtx, humanReg, playerEntry.leagueSlug);
+        if (r.changed) await saveService.saveSquadById(saveId, r.squad);
+        registrationNotices.push(...r.notices);
+      }
+    }
+
     // Morale (`.claude/rules/game/morale.md`): who could not play today (injured / suspended before
     // the matches) — those matches never count against his minutes.
     const moraleUnavailable = new Set<string>();
@@ -497,7 +517,7 @@ export async function advanceOneDay(
             }
           }
 
-          const [homeSquad, awaySquad] = await Promise.all([
+          const [homeSquadRaw, awaySquadRaw] = await Promise.all([
             squadWrites.has(rawFixture.home)
               ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.home)!.squad)
               : saveService.getSquadById(saveId, rawFixture.home),
@@ -505,7 +525,24 @@ export async function advanceOneDay(
               ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.away)!.squad)
               : saveService.getSquadById(saveId, rawFixture.away),
           ]);
-          if (!homeSquad || !awaySquad) continue;
+          if (!homeSquadRaw || !awaySquadRaw) continue;
+          // Registered players of each side for this competition (first list built on need).
+          const regHome = await matchRegistration(regCtx, homeSquadRaw, homeEntry.leagueSlug, leagueSlug);
+          const regAway = await matchRegistration(regCtx, awaySquadRaw, awayEntry.leagueSlug, leagueSlug);
+          const homeSquad = regHome?.squad ?? homeSquadRaw;
+          const awaySquad = regAway?.squad ?? awaySquadRaw;
+          if (!options.marketFrozen) registrationNotices.push(...(regHome?.notices ?? []), ...(regAway?.notices ?? []));
+          const registration = { ...(regHome ? { home: regHome.reg } : {}), ...(regAway ? { away: regAway.reg } : {}) };
+          // Ids of a side that are not registered for this competition (always 0 — checked by the season smoke).
+          const unregisteredOf = (ids: Iterable<string>) => {
+            let n = 0;
+            for (const id of ids) {
+              if (!id) continue;
+              const reg = homeSquad.players.some((p) => p.id === id) ? regHome?.reg : awaySquad.players.some((p) => p.id === id) ? regAway?.reg : undefined;
+              if (reg && !reg.ids.has(id)) n++;
+            }
+            return n;
+          };
 
           // Continental second leg with no aggregate yet: the first-leg round's advanceContinental
           // step normally writes it the day the first leg completes, but a failure there (or a
@@ -572,6 +609,10 @@ export async function advanceOneDay(
                 return { ok: false, status: 400, error: "knockout recording without a winner" };
               }
             }
+            const recorded = new Set([...Object.keys(playedMatchOverride.playerStats), ...Object.keys(playedMatchOverride.playerEnergy ?? {})]);
+            if (unregisteredOf(recorded) > 0) {
+              return { ok: false, status: 400, error: "unregistered player in recording" };
+            }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
             squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
@@ -606,7 +647,9 @@ export async function advanceOneDay(
             };
             playedMatchOverride = null;
           } else {
-            const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride, meta.matchMarking);
+            const sim = computeMatchSimulationLineups(
+              fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride, meta.matchMarking, registration,
+            );
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
             const mode = userPlays
               ? "full"
@@ -618,6 +661,7 @@ export async function advanceOneDay(
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition });
+            registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
             const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
@@ -1263,6 +1307,7 @@ export async function advanceOneDay(
       events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
       ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
       ...(youthDay.logs.length > 0 ? { youthMatches: youthDay.logs } : {}),
+      registrationViolations,
     });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
@@ -1506,6 +1551,20 @@ export async function advanceOneDay(
           await saveService.writeFreeAgents(saveId, freeAgentPool.filter((f) => !fa.signedIds.has(f.player.id)));
         }
       }
+
+      // Registration: AI clubs with an open deadline rebuild their lists when the squad changed (a signing on the
+      // last day of the window is registered). Clubs that moved today are re-read; the rest are the market snapshot.
+      const touched = new Set<string>([
+        ...completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]), ...sellOnPaidTo,
+      ]);
+      for (const m of dayMoves) if (m.to) touched.add(m.to);
+      const regSquads: { squad: Squad; leagueSlug: string }[] = [];
+      for (const sq of allSquadsMarket) {
+        const cur = touched.has(sq.id) ? await saveService.getSquadById(saveId, sq.id) : sq;
+        const league = cur?.leagueSlug ?? index.byId(sq.id)?.leagueSlug;
+        if (cur && league) regSquads.push({ squad: cur, leagueSlug: league });
+      }
+      for (const sq of await refreshAiRegistrations(regCtx, regSquads)) await saveService.saveSquadById(saveId, sq);
     }
 
     // ── Transfer windows: news for the human club's country (open / closing / closed) ──────────
@@ -2638,6 +2697,19 @@ export async function advanceOneDay(
       await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: directorOutcomes }), saveService);
     }
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
+    if (registrationNotices.length > 0 && meta.clubId && !options.marketFrozen) {
+      const humanNow = await saveService.getSquadById(saveId, meta.clubId);
+      const nameOf = (id: string) => humanNow?.players.find((p) => p.id === id)?.name ?? id;
+      const catalog = await getLeagueData();
+      for (const notice of registrationNotices) {
+        await emitInboxMessage(saveId, buildRegistrationMessage({
+          date: currentDate,
+          notice,
+          competitionName: competitionName(notice.competition, catalog as unknown as LeagueData[], "en"),
+          ...(notice.playerIds ? { players: notice.playerIds.map((id) => ({ id, name: nameOf(id) })) } : {}),
+        }), saveService);
+      }
+    }
     for (const msg of facilityMessages) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of scouting.messages) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService);

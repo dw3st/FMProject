@@ -34,6 +34,7 @@ const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
 const JobIcon = iconOf("file-signature");
+const RegistrationIcon = iconOf("clipboard");
 const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
@@ -185,6 +186,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-4/15",
     border: "border-chart-4/30",
     Icon: AwardIcon,
+  },
+  registration: {
+    labelKey: "inbox.categories.registration",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: RegistrationIcon,
   },
 };
 
@@ -485,6 +493,12 @@ function leaguePrizeTexts(
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
+  if (message.category === "registration") {
+    return {
+      subject: t(`inbox.registration.subject.${message.kind}`, { competition: message.competitionName }),
+      preview: (message.players ?? []).map((p) => p.name).join(", ") || message.competitionName,
+    };
+  }
   if (message.category === "job") {
     return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
   }
@@ -643,6 +657,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
         {message.category === "awards" && <AwardsInboxBody message={message} />}
+        {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -664,6 +679,36 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Registration news: the list made, an arrival out of the list, the deadline closing (`registration.md`). */
+function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMessage, { category: "registration" }>; leagues: LeagueData[] }) {
+  const { t, i18n } = useTranslation();
+  const { session } = useGameSave();
+  const competition = competitionName(message.competition, leagues, i18n.language) || message.competitionName;
+  const c = message.counts;
+  const href = session
+    ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}?tab=registration`
+    : undefined;
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <p className="m-0 text-foreground">
+        {t(`inbox.registration.body.${message.kind}`, {
+          competition,
+          players: (message.players ?? []).map((p) => p.name).join(", "),
+          date: formatInboxDate(message.opensOn ?? message.until ?? ""),
+        })}
+      </p>
+      {c && (
+        <p className="m-0 text-muted-foreground tabular-nums">
+          {t("inbox.registration.counts", { counted: c.counted, max: c.max ?? "—", foreign: c.foreign, formed: c.formed, free: c.free })}
+        </p>
+      )}
+      {href && (
+        <a href={href} className="font-semibold text-primary hover:underline w-fit">{t("inbox.registration.open")}</a>
+      )}
     </div>
   );
 }

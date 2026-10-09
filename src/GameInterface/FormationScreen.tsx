@@ -34,7 +34,7 @@ import {
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
 import { applyLineupPreset, buildLineupPreset } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
-import type { RosterPlayer } from "@/types/playerTypes";
+import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
 import { getMainRole } from "@/Domain/roles";
 import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
@@ -66,6 +66,8 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
+import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
+import { competitionName } from "@/Domain/world/labels";
 
 interface FormationOption {
   id: string;
@@ -87,8 +89,39 @@ function getEnergyColor(energy: number) {
 }
 
 export function FormationScreen() {
-  const { t } = useTranslation();
-  const { session, squad, save, loading: saveLoading, mergeSession, currentDate } = useGameSave();
+  const { t, i18n } = useTranslation();
+  const { session, squad, save, loading: saveLoading, mergeSession, currentDate, fixtures } = useGameSave();
+  // Registration (`.claude/rules/game/registration.md`): players not registered for the competition of the next
+  // match carry a badge; they stay selectable (the match-day swap replaces them, with a warning).
+  const nextCompetition = useMemo(() => {
+    const clubId = squad?.id;
+    if (!clubId) return null;
+    return fixtures
+      .filter((f) => !f.played && f.date >= (currentDate ?? "") && (f.home === clubId || f.away === clubId))
+      .sort((a, b) => a.date.localeCompare(b.date))[0]?.competition ?? null;
+  }, [fixtures, currentDate, squad?.id]);
+  const [unregistered, setUnregistered] = useState<{ competition: string; ids: Set<string> } | null>(null);
+  const [regLeagues, setRegLeagues] = useState<LeagueData[]>([]);
+  useEffect(() => {
+    if (!session?.saveId || !nextCompetition) {
+      setUnregistered(null);
+      return;
+    }
+    let live = true;
+    fetchRegistration(session.saveId)
+      .then((d) => {
+        const comp = d.competitions.find((c) => c.slug === nextCompetition);
+        if (live) setUnregistered(comp ? { competition: comp.slug, ids: new Set(comp.rows.filter((r) => !r.registered).map((r) => r.id)) } : null);
+      })
+      .catch(() => { if (live) setUnregistered(null); });
+    void fetch("/api/leagues")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d: LeagueData[]) => { if (live) setRegLeagues(Array.isArray(d) ? d : []); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [session?.saveId, nextCompetition]);
+  const unregisteredLabel = (id: string) =>
+    unregistered?.ids.has(id) ? competitionName(unregistered.competition, regLeagues, i18n.language) : undefined;
   // Today's man-marking (chosen in the match preview): the marker slots show a target icon.
   const markedSlots = new Set(
     save?.matchMarking && save.matchMarking.date === currentDate ? save.matchMarking.marks.map((m) => m.slot) : [],
@@ -839,6 +872,7 @@ export function FormationScreen() {
                           aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
                           onClick={() => handleSlotClick(idx)}
                           injured={isUnavailable(player, currentDate)}
+                          unregisteredFor={unregisteredLabel(player.id)}
                         />
                       ) : (
                         <button
@@ -880,6 +914,7 @@ export function FormationScreen() {
                             onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
                             highlight={selectedSlotIdx !== null && !injured}
                             injured={injured}
+                            unregisteredFor={unregisteredLabel(player.id)}
                           />
                         );
                       })
@@ -1053,7 +1088,10 @@ function SquadPlayerRow({
   injured,
   rowProps,
   dropHover,
+  unregisteredFor,
 }: {
+  /** Name of the next match's competition when the player is not registered for it. */
+  unregisteredFor?: string;
   rowProps?: Record<string, unknown>;
   /** A dragged item is hovering over this row. */
   dropHover?: boolean;
@@ -1129,6 +1167,14 @@ function SquadPlayerRow({
                 title={t(`formations.injurySeverity.${player.injury.severity}` as never)}
               >
                 {t("formations.injuredUntil", { date: player.injury.returnDate })}
+              </span>
+            )}
+            {unregisteredFor && (
+              <span
+                className="text-sm font-black px-2 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/40 shrink-0"
+                title={t("registration.notRegisteredFor", { competition: unregisteredFor })}
+              >
+                {t("registration.notRegistered")}
               </span>
             )}
             {injured && isSuspended(player) && (

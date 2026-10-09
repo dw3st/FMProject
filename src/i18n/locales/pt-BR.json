@@ -1347,7 +1347,8 @@
       "facilities": "Instalações",
       "manager_news": "Técnicos",
       "scouting": "Olheiros",
-      "awards": "Prêmios"
+      "awards": "Prêmios",
+      "registration": "Inscrição"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1538,6 +1539,24 @@
         "transferred": "mudou de clube",
         "retired": "se aposentou"
       }
+    },
+    "registration": {
+      "subject": {
+        "auto_list": "{{competition}}: lista de inscritos montada",
+        "not_fit": "{{competition}}: sem vaga na lista de inscritos",
+        "waiting": "{{competition}}: inscrição fechada",
+        "closing": "{{competition}}: prazo de inscrição acabando",
+        "exception": "{{competition}}: lista completada até 18 jogadores"
+      },
+      "body": {
+        "auto_list": "Sua lista de inscritos da {{competition}} foi montada automaticamente. Você pode mudá-la na aba Inscritos do Elenco enquanto o prazo estiver aberto.",
+        "not_fit": "{{players}} não coube na lista da {{competition}} (cheia, limite de estrangeiros ou poucos formados) e não pode jogá-la.",
+        "waiting": "{{players}} chegou com a inscrição da {{competition}} fechada e só pode jogá-la a partir de {{date}}.",
+        "closing": "A inscrição da {{competition}} fecha em {{date}}. Depois disso a lista fica congelada.",
+        "exception": "Seu elenco não chegou a 18 jogadores dentro das regras da {{competition}}; os melhores que sobraram foram incluídos."
+      },
+      "counts": "Inscritos {{counted}}/{{max}} · estrangeiros {{foreign}} · formados {{formed}} · livres {{free}}",
+      "open": "Abrir a inscrição"
     }
   },
   "finances": {
@@ -1878,7 +1897,8 @@
     "tabSquad": "Elenco",
     "tabYouth": "Base",
     "tabHistory": "História",
-    "tabDepth": "Profundidade"
+    "tabDepth": "Profundidade",
+    "tabRegistration": "Inscritos"
   },
   "squadDepth": {
     "loading": "Carregando profundidade...",
@@ -2029,7 +2049,9 @@
     "rotationUndo": "Desfazer",
     "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}",
     "expectedCrowd": "Público esperado",
-    "pitch": "Gramado"
+    "pitch": "Gramado",
+    "unregisteredReplaced": "{{out}} não está inscrito nesta competição; {{in}} entra",
+    "foreignLimitReplaced": "Limite de estrangeiros: {{out}} dá lugar a {{in}}"
   },
   "matchResult": {
     "matchdayRound": "Rodada {{round}} • {{competition}}",
@@ -3446,5 +3468,68 @@
       "fitness": "fôlego {{n}}",
       "failed": "Não foi possível salvar a convocação."
     }
+  },
+  "registration": {
+    "loading": "Carregando a inscrição…",
+    "loadFailed": "Não foi possível carregar as listas de inscritos.",
+    "none": "Seu clube não joga nenhuma competição com lista de inscritos.",
+    "competitions": "Competições",
+    "openUntil": "Inscrição aberta até {{date}}",
+    "closedOpens": "Inscrição fechada — abre em {{date}}",
+    "closed": "Inscrição fechada",
+    "stageStarted": "Fase em andamento — a lista está fechada na temporada",
+    "manual": "Editada à mão: quem chega só entra se couber; quem você tirou fica fora.",
+    "rule": {
+      "list": "Lista de {{n}}",
+      "noList": "O elenco inteiro pode ser inscrito",
+      "free": "Sub-{{age}} livres",
+      "freeFormed": "Formados sub-{{age}} livres",
+      "formed": "Mínimo de {{n}} formados",
+      "foreign": "No máximo {{n}} estrangeiros",
+      "foreignMatchday": "No máximo {{n}} estrangeiros por jogo"
+    },
+    "counters": {
+      "registered": "Inscritos",
+      "foreign": "Estrangeiros",
+      "formed": "Formados",
+      "formedLost": "Formados · {{n}} vagas a menos",
+      "free": "Livres"
+    },
+    "cols": {
+      "pos": "Pos",
+      "player": "Jogador",
+      "age": "Idade",
+      "nation": "Nação",
+      "status": "Situação",
+      "rating": "Nota",
+      "action": "Ação"
+    },
+    "tags": {
+      "registered": "Inscrito",
+      "out": "Não inscrito",
+      "free": "Livre",
+      "foreign": "Estrangeiro",
+      "clubTrained": "Formado no clube",
+      "nationTrained": "Formado no país"
+    },
+    "reason": {
+      "listFull": "A lista está cheia",
+      "foreign": "Limite de estrangeiros atingido",
+      "formed": "Sem formados suficientes para mais uma vaga"
+    },
+    "freeHint": "Sempre inscrito: não ocupa vaga",
+    "add": "Incluir",
+    "remove": "Tirar",
+    "auto": "Automático",
+    "autoConfirmTitle": "Voltar à lista automática?",
+    "autoConfirmBody": "A lista é refeita com os melhores dentro das regras e as suas mudanças se perdem.",
+    "exception": "As regras deixavam menos de 18 jogadores; a lista foi completada com os melhores que sobraram.",
+    "errors": {
+      "closed": "O prazo de inscrição está fechado.",
+      "notYourPlayer": "Esse jogador não é do seu elenco.",
+      "failed": "Não foi possível salvar a lista."
+    },
+    "notRegistered": "Não inscrito",
+    "notRegisteredFor": "Não inscrito na {{competition}}"
   }
 }

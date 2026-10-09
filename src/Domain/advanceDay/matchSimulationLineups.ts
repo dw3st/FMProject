@@ -18,6 +18,26 @@ import {
   applyRotation,
   type InjuredReplacement,
 } from "@/Domain/lineupHelpers";
+import type { RegistrationRule } from "@/types/registrationTypes";
+import { limitForeignPool, matchdayPool } from "@/Domain/registration/rules";
+import { isUnavailable } from "@/Domain/discipline/discipline";
+
+/**
+ * Registered players of one side for the competition of a match (`.claude/rules/game/registration.md`): the
+ * lineup and the bench only come from `ids`; `rule.maxForeignMatchday` limits the foreigners named (XI + bench).
+ */
+export interface MatchRegistration {
+  ids: Set<string>;
+  rule: RegistrationRule;
+  country: string;
+}
+
+/** The players an AI side may name for a match: registered, then the per-match foreign limit. */
+export function registeredPool(squad: Squad, reg: MatchRegistration | undefined): Squad {
+  if (!reg) return squad;
+  const registered = squad.players.filter((p) => reg.ids.has(p.id));
+  return { ...squad, players: limitForeignPool(registered, reg.rule, reg.country) };
+}
 
 function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
   return getFormationSlots(formation as unknown as FormationShape, "attacking");
@@ -48,6 +68,7 @@ export function resolveUserLineup(
   savedLineup: string[],
   date?: string,
   rotation?: { assistantRotation?: boolean; override?: RotationOverride | null },
+  registration?: MatchRegistration,
 ): {
   lineup: string[];
   injuredReplaced: InjuredReplacement[];
@@ -55,30 +76,47 @@ export function resolveUserLineup(
   rotationSuggestion: { out: string; in: string }[];
   /** Tired-starter swaps already applied (assistant on, or accepted override). */
   rotationApplied: { out: string; in: string }[];
+  /** Players allowed on the team sheet (XI + bench) when registration applies; absent = everyone. */
+  pool?: Set<string>;
 } {
   const slots = slotsFor(formation);
   // No saved lineup (e.g. a career that never touched the formation screen) falls back to the same
   // fitness-aware auto-fill the AI uses, not the plain rating-only fill. See
   // `docs/superpowers/specs/2026-09-27-stamina-design.md` section 2.
   if (!savedLineup.length) {
+    const pool = registeredPool(squad, registration);
     return {
-      lineup: autoFillLineupWithFitness(slots, squad.players, date),
+      lineup: autoFillLineupWithFitness(slots, pool.players, date),
       injuredReplaced: [],
       rotationSuggestion: [],
       rotationApplied: [],
+      ...(registration ? { pool: new Set(pool.players.map((p) => p.id)) } : {}),
     };
   }
   const aligned = buildSlotAlignedLineup(squad.players, savedLineup);
   const lineup = aligned.map((p) => p?.id ?? "");
   if (!date) return { lineup, injuredReplaced: [], rotationSuggestion: [], rotationApplied: [] };
-  const { lineup: fixed, replaced } = replaceUnavailableStarters(slots, lineup, squad.players, date);
+  const swapped = replaceUnavailableStarters(slots, lineup, squad.players, date, registration?.ids);
+  let fixed = swapped.lineup;
+  const replaced = [...swapped.replaced];
+  let poolPlayers = squad.players;
+  let pool: Set<string> | undefined;
+  if (registration) {
+    const available = squad.players.filter((p) => registration.ids.has(p.id) && !isUnavailable(p, date));
+    const day = matchdayPool(slots, fixed, available, registration.rule, registration.country);
+    fixed = day.lineup;
+    replaced.push(...day.replaced);
+    const fixedSet = new Set(fixed.filter(Boolean));
+    poolPlayers = [...squad.players.filter((p) => fixedSet.has(p.id)), ...day.bench];
+    pool = new Set(poolPlayers.map((p) => p.id));
+  }
 
-  const suggestions = suggestRotation(slots, fixed, squad.players, date);
+  const suggestions = suggestRotation(slots, fixed, poolPlayers, date);
   const override = rotation?.override?.date === date ? rotation.override : null;
   let applied: { out: string; in: string }[] = [];
   let pending = suggestions;
   if (override) {
-    applied = override.optOut ? [] : override.swaps.filter((s) => fixed.includes(s.out));
+    applied = override.optOut ? [] : override.swaps.filter((s) => fixed.includes(s.out) && (!pool || pool.has(s.in)));
     const appliedOut = new Set(applied.map((s) => s.out));
     pending = suggestions.filter((s) => !appliedOut.has(s.out));
   } else if (rotation?.assistantRotation) {
@@ -90,6 +128,7 @@ export function resolveUserLineup(
     injuredReplaced: replaced,
     rotationSuggestion: pending,
     rotationApplied: applied,
+    ...(pool ? { pool } : {}),
   };
 }
 
@@ -168,6 +207,7 @@ export function computeMatchSimulationLineups(
   tactics: TacticsSave | null,
   rotationOverride?: RotationOverride | null,
   matchMarking?: MatchMarking | null,
+  registration?: { home?: MatchRegistration; away?: MatchRegistration },
 ): {
   homeFormation: Formation;
   homeLineup: string[];
@@ -180,7 +220,12 @@ export function computeMatchSimulationLineups(
   tactics: { A: TeamTactics; B: TeamTactics };
   /** Season formation records of the AI sides, for the caller to store on the squads. */
   aiFormations: { home?: AiFormationRecord; away?: AiFormationRecord };
+  /** Players each side may name (XI + bench) when registration applies; absent = everyone available. */
+  pools: { home?: Set<string>; away?: Set<string> };
 } {
+  const homePool = registeredPool(homeSquad, registration?.home);
+  const awayPool = registeredPool(awaySquad, registration?.away);
+  const idsOf = (s: Squad) => new Set(s.players.map((p) => p.id));
   const date = fixture.date;
   // AI clubs follow the implicit familiarity rule (`src/Domain/familiarity`), nothing stored.
   const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE) };
@@ -192,13 +237,17 @@ export function computeMatchSimulationLineups(
     const away = aiMatchFormation(awaySquad, homeSquad, date);
     return {
       homeFormation: home.formation,
-      homeLineup: autoLineupForFormationWithFitness(homeSquad, home.formation, date),
+      homeLineup: autoLineupForFormationWithFitness(homePool, home.formation, date),
       awayFormation: away.formation,
-      awayLineup: autoLineupForFormationWithFitness(awaySquad, away.formation, date),
+      awayLineup: autoLineupForFormationWithFitness(awayPool, away.formation, date),
       userInjuredReplaced: [],
       userRotationApplied: [],
       tactics: { A: aiTactics, B: aiTactics },
       aiFormations: { home: home.record, away: away.record },
+      pools: {
+        ...(registration?.home ? { home: idsOf(homePool) } : {}),
+        ...(registration?.away ? { away: idsOf(awayPool) } : {}),
+      },
     };
   }
 
@@ -220,31 +269,39 @@ export function computeMatchSimulationLineups(
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {
-    const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot);
+    const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot, registration?.home);
     const ai = aiMatchFormation(awaySquad, homeSquad, date);
     return {
       homeFormation: userFormation,
       homeLineup: user.lineup,
       awayFormation: ai.formation,
-      awayLineup: autoLineupForFormationWithFitness(awaySquad, ai.formation, date),
+      awayLineup: autoLineupForFormationWithFitness(awayPool, ai.formation, date),
       userInjuredReplaced: user.injuredReplaced,
       userRotationApplied: user.rotationApplied,
       tactics: { A: userTactics, B: aiTactics },
       aiFormations: { away: ai.record },
+      pools: {
+        ...(user.pool ? { home: user.pool } : {}),
+        ...(registration?.away ? { away: idsOf(awayPool) } : {}),
+      },
     };
   }
 
-  const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot);
+  const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot, registration?.away);
   const ai = aiMatchFormation(homeSquad, awaySquad, date);
   return {
     homeFormation: ai.formation,
-    homeLineup: autoLineupForFormationWithFitness(homeSquad, ai.formation, date),
+    homeLineup: autoLineupForFormationWithFitness(homePool, ai.formation, date),
     awayFormation: userFormation,
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
     userRotationApplied: user.rotationApplied,
     tactics: { A: aiTactics, B: userTactics },
     aiFormations: { home: ai.record },
+    pools: {
+      ...(registration?.home ? { home: idsOf(homePool) } : {}),
+      ...(user.pool ? { away: user.pool } : {}),
+    },
   };
 }
 

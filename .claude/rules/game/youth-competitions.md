@@ -156,3 +156,8 @@ num dia do time principal surgido depois da geração (a base regerada não conh
 - Título de base não entra em histórico nem ranking.
 - A IA não convoca nem tem moral; os gerados não existem no mundo.
 - O custo do dia sobe nos dias de base (ver §9.1 da spec).
+
+## Inscrição (Etapa 37)
+
+Os torneios de base não têm lista de inscritos nem filtro: são automáticos, com jovens e reservas
+(`.claude/rules/game/registration.md`).

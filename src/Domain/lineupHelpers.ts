@@ -7,6 +7,7 @@ import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { isInjured } from "@/Domain/injury/injury";
 import { isUnavailable } from "@/Domain/discipline/discipline";
+import type { ReplacementReason } from "@/types/registrationTypes";
 
 /** Same default as `ensureSeasonLog`/`emptySeasonLog` — a player never touched by the fitness model yet. */
 const DEFAULT_FITNESS = emptySeasonLog().fitness;
@@ -17,8 +18,12 @@ const DEFAULT_FITNESS = emptySeasonLog().fitness;
  * `date` is omitted the pool is returned unchanged: some callers (continental club-strength
  * ratings, `/test` and `/lab` tooling) deliberately compare squads on their own terms, independent
  * of any specific matchday, and must not have injuries silently filtered in.
+ *
+ * `registered`, when given, also keeps only the players registered for the competition
+ * (`.claude/rules/game/registration.md`) — with or without a date.
  */
-function eligiblePool(players: RosterPlayer[], date: string | undefined): RosterPlayer[] {
+function eligiblePool(players: RosterPlayer[], date: string | undefined, registered?: Set<string>): RosterPlayer[] {
+  if (registered) players = players.filter((p) => registered.has(p.id));
   if (!date) return players;
   return players.filter((p) => !isUnavailable(p, date));
 }
@@ -40,8 +45,9 @@ export function autoFillLineup(
   slots: FormationSlot[],
   players: RosterPlayer[],
   date?: string,
+  registered?: Set<string>,
 ): string[] {
-  players = eligiblePool(players, date);
+  players = eligiblePool(players, date, registered);
   const used = new Set<string>();
   const result: string[] = new Array(slots.length).fill("");
 
@@ -209,8 +215,9 @@ export function autoFillLineupWithFitness(
   slots: FormationSlot[],
   players: RosterPlayer[],
   date?: string,
+  registered?: Set<string>,
 ): string[] {
-  players = eligiblePool(players, date);
+  players = eligiblePool(players, date, registered);
   const plain = autoFillLineup(slots, players);
   return applyRotation(plain, suggestRotation(slots, plain, players, date));
 }
@@ -231,8 +238,9 @@ export function suggestRotation(
   lineupIds: string[],
   players: RosterPlayer[],
   date?: string,
+  registered?: Set<string>,
 ): { out: string; in: string }[] {
-  const pool = eligiblePool(players, date);
+  const pool = eligiblePool(players, date, registered);
   const byId = new Map(players.map((p) => [p.id, p]));
   const usedIds = new Set(lineupIds.filter((id) => id));
   const swaps: { out: string; in: string }[] = [];
@@ -322,11 +330,14 @@ export function slotRoleFitRank(player: RosterPlayer, slotRole: string): number 
   return 0;
 }
 
-/** One starter swapped out because they were injured or suspended on the match date. */
+/**
+ * One starter swapped out because he was injured or suspended on the match date, not registered for the
+ * competition, or over the per-match foreign limit (`.claude/rules/game/registration.md`).
+ */
 export interface InjuredReplacement {
   out: string;
   in: string;
-  reason: "injured" | "suspended";
+  reason: ReplacementReason;
 }
 
 /**
@@ -345,6 +356,7 @@ export function replaceUnavailableStarters(
   lineupIds: string[],
   players: RosterPlayer[],
   date: string,
+  registered?: Set<string>,
 ): { lineup: string[]; replaced: InjuredReplacement[] } {
   const byId = new Map(players.map((p) => [p.id, p]));
   const used = new Set(lineupIds.filter((id): id is string => Boolean(id)));
@@ -355,11 +367,14 @@ export function replaceUnavailableStarters(
     const starterId = lineupIds[i];
     if (!starterId) continue;
     const starter = byId.get(starterId);
-    if (!starter || !isUnavailable(starter, date)) continue;
+    const unregistered = !!registered && !!starter && !registered.has(starter.id);
+    if (!starter || (!isUnavailable(starter, date) && !unregistered)) continue;
 
     const role = slots[i]!.role;
     const roleMain = getMainRole(role);
-    const eligible = players.filter((p) => !used.has(p.id) && !isUnavailable(p, date));
+    const eligible = players.filter(
+      (p) => !used.has(p.id) && !isUnavailable(p, date) && (!registered || registered.has(p.id)),
+    );
     const sameRole = eligible.filter(
       (p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain,
     );
@@ -379,7 +394,8 @@ export function replaceUnavailableStarters(
     used.delete(starterId);
     used.add(best.id);
     result[i] = best.id;
-    replaced.push({ out: starterId, in: best.id, reason: isInjured(starter, date) ? "injured" : "suspended" });
+    const reason: ReplacementReason = isInjured(starter, date) ? "injured" : isUnavailable(starter, date) ? "suspended" : "unregistered";
+    replaced.push({ out: starterId, in: best.id, reason });
   }
 
   return { lineup: result, replaced };
