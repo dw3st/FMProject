@@ -390,3 +390,9 @@ seção "Fôlego" roda dentro da mesma corrida, sem flag própria).
   todas dentro de ±10% do motor; `of_allsvenskan` não é um outlier nessa rodada (a pior é
   `la_liga`, +9,8%). Se uma recalibração futura do motor mover esse número de novo, o processo é o
   mesmo descrito em `.claude/rules/non-player-games.md` → "Fadiga" → "Volume de gols do quickSim".
+
+## Torneios de base (Etapa 36)
+
+Um jogo de base conta como partida de 90 minutos no fôlego e na carga (`applyMatchFitness`); quem jogou a base no dia
+não treina nem descansa (`skipPlayerIds`). A base do clube do jogador recupera todo dia (`restAcademy`). Ver
+`.claude/rules/game/youth-competitions.md`.

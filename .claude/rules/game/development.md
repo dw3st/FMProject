@@ -371,3 +371,9 @@ ganha menos DP de partida: × `effectAt(CT_MATCH_DEV_MIN 0,82, média da condiç
 Só o crescimento; o declínio por idade não muda. IA e condição ≥ 40%: × 1. Medição (`bun scripts/development-pace.ts
 --ct 20 [--sessions 200]`): Δ da média dos 13 atributos −6,5% na média de 18/21/24 anos, linha e goleiro. Ver
 `.claude/rules/game/facilities.md` → M3.
+
+## Torneios de base (Etapa 36)
+
+Um jogo de base dá DP de crescimento com os fatores de uma partida × `YOUTH_COMP.DP_MULT` (1,0 até 21 anos) ou
+`DP_MULT_OVERAGE` (0,18 acima), sem declínio por idade (ele já vem dos jogos do clube). Medição em
+`.claude/rules/game/youth-competitions.md` → "Medições".

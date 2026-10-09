@@ -279,6 +279,22 @@ Para cada jogador real que jogou (nos dois lados, em `players` ou `youth` do squ
    de DP). Aceite: o jovem que joga ganha **+0,10 a +0,30** na média dos 13 atributos a mais que o que não joga; o
    reserva, no máximo o que ganharia jogando 1/3 dos jogos oficiais do time principal. Ajustar `DP_MULT` até caber e
    registrar a tabela em `.claude/rules/game/youth-competitions.md`.
+   **Medido (2026-10-09, mesma máquina, carreira da Premier sem kit, `--buffered`, médias por dia em ms):**
+
+   | Janela | Caso | `main` (f1c83cbc) | branch | Δ |
+   |---|---|---|---|---|
+   | 14 dias × 3 | dia sem jogo do usuário | 1777 (1795 / 1775 / 1760) | 1889 (1881 / 1903 / 1884) | +6,3% |
+   | 14 dias × 3 | dia de rodada do usuário | 9559 | 9634 | +0,8% |
+   | 28 dias × 1 | dia sem jogo do usuário | 1663 | 1823 | +9,6% |
+   | 28 dias × 1 | dia de rodada do usuário | 8654 | 8532 | −1,4% (ruído) |
+
+   Os jogos de base só começam na 2ª semana (janela = início da liga + 7). Num dia cheio de base (~290 jogos no mundo,
+   terça do sub-21 / quinta do sub-19) o dia custa +450–700 ms (+28% a +46%); o resto da semana quase nada. Otimizado
+   antes de medir: XI do time principal da IA calculado só quando um candidato precisa e memoizado por conteúdo,
+   `statsFor` memoizado (jovens gerados), o que levou `playYouthDay` de ~3,6 para ~1,6 ms por jogo. O que sobra é
+   leitura das 38 rodadas de cada competição jogada no dia (tabela recalculada inteira) e a escalação.
+   **Evolução — medido:** ver `.claude/rules/game/youth-competitions.md` → "Medições" (`DP_MULT` 1,0 até 21 anos,
+   `DP_MULT_OVERAGE` 0,18 acima; um fator único não cumpre as duas metas).
 3. **Volume do mundo:** jogos de base por temporada, adiamentos e cancelamentos (`season-rollover-smoke`). Meta:
    cancelamentos < 1% dos jogos.
 

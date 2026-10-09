@@ -38,3 +38,9 @@ melhores dessa faixa. Rota `GET /api/saves/:id/stars` -> `{ stars: Record<id, ki
 
 `/stats?tab=awards`: seletores de ano e liga (`GET /api/saves/:id/awards`), mundiais do ano, prêmios individuais,
 seleção, técnico e gol da temporada da liga. Ver `.claude/rules/game/awards.md`.
+
+## Torneios de base (Etapa 36)
+
+`seasonLog.youthCup` (J, G, A, soma das notas) fica **fora** dos totais da temporada: rankings, estrelas e histórico não
+mudam. Artilharia e notas da base ficam em `meta.youth.leaders` e na aba Base de Ligas
+(`.claude/rules/game/youth-competitions.md`).
