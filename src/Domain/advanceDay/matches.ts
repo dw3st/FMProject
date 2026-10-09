@@ -1,3 +1,4 @@
+import type { EngineReferee } from "@/types/refereeTypes";
 import { moraleDpMult } from "@/Domain/morale/morale";
 import { personalDpMult, professionalismDecayMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
@@ -474,6 +475,8 @@ export function buildMatchEvent(
     tactics?: { A: TeamTactics; B: TeamTactics };
     /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
     pitchCondition?: number;
+    /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
+    referee?: EngineReferee;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -496,6 +499,7 @@ export function buildMatchEvent(
       knockout: fixture.knockout === true,
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
+      ...(sim.referee ? { referee: sim.referee } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
     },
   );
@@ -721,7 +725,7 @@ export function buildMatchEvent(
       : {}),
   };
 
-  const withPitch = sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event;
+  const withPitch = withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee);
   return { event: withPitch, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
@@ -751,6 +755,8 @@ export function buildQuickMatchEvent(
     awayFormation?: Formation;
     /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
     pitchCondition?: number;
+    /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
+    referee?: EngineReferee;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -767,6 +773,7 @@ export function buildQuickMatchEvent(
       neutral: fixture.neutral === true,
       aggregate: fixture.aggregate,
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
+      ...(sim.referee ? { refereeStrictness: sim.referee.strictness } : {}),
     },
     rng,
   );
@@ -774,5 +781,10 @@ export function buildQuickMatchEvent(
   // `fullMinutesForInjured` doc comment) — skip the synthetic sub-out the engine path needs.
   const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng, true);
   const event = compactMatchEvent(r.event);
-  return { ...r, event: sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event };
+  return { ...r, event: withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee) };
+}
+
+/** The referee's name goes to the day log (never his rigor). */
+export function withRefereeLog(event: MatchEvent, referee: EngineReferee | undefined): MatchEvent {
+  return referee ? { ...event, referee: { id: referee.id, name: referee.name, country: referee.country } } : event;
 }

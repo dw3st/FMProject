@@ -110,6 +110,9 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
+import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees } from "@/backend/refereeWorld";
+import { fixtureKey } from "@/Domain/referees/assign";
+import { withRefereeLog } from "@/Domain/advanceDay/matches";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
@@ -450,6 +453,17 @@ export async function advanceOneDay(
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
 
+    // Referees of today's matches (`.claude/rules/game/referees.md`): the appointments the match preview and the live
+    // match already read; a save without referees plays without (neutral rigor).
+    const refereesToday = await ensureAssignments(saveService, saveId, currentDate);
+    const refereePool = Object.keys(refereesToday).length > 0 ? await saveService.getRefereePool(saveId) : null;
+    const refereeById = new Map((refereePool?.referees ?? []).map((r) => [r.id, r]));
+    const refereeOf = (f: Fixture) => {
+      const a = refereesToday[fixtureKey(f.competition, f.id)];
+      const r = a ? refereeById.get(a.refereeId) : undefined;
+      return r ? engineReferee(r) : undefined;
+    };
+
     // Group updates per league for round file writes
     const roundUpdates = new Map<string, Map<number, Fixture[]>>();
 
@@ -573,6 +587,7 @@ export async function advanceOneDay(
               }
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
+            r.event = withRefereeLog(r.event, refereeOf(fixture));
             dayEvents.push(r.event);
             squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
@@ -615,9 +630,10 @@ export async function advanceOneDay(
                 : resolveSimMode(leagueSlug, meta);
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
             const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
+            const referee = refereeOf(fixture);
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition })
-              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition });
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee })
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee });
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
             const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
@@ -1254,6 +1270,7 @@ export async function advanceOneDay(
       }
       return e as StoredDayLog["events"][number];
     });
+    await recordRefereeDay(saveService, saveId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"));
     const dayLog = { saveId, date: currentDate, events: dayEvents };
     // Keep what the routes already logged today (transfers bought / sold / loaned before advancing):
     // their `transfer_ref` events and `transfers` moves.
@@ -1754,6 +1771,8 @@ export async function advanceOneDay(
       const unitCountry = unit.country ?? (await managerTracker.countryOfLeague(unit.leagues[0]!));
       const unitState = updatedActiveLeagues[stateIdx(unit.leagues[0]!)]!;
       const unitWeight = await managerTracker.weightOf(unitCountry, seasonLabel(unitState.year, unitState.start, unitState.end));
+      // Referees: the country's season stats go to the archive and its pool is renewed (`referees.md`).
+      if (unitCountry) await rolloverReferees(saveService, saveId, unitCountry, currentDate, seasonLabel(unitState.year, unitState.start, unitState.end));
 
       // Cup + continental fixtures for the club-history records, read once for the unit.
       let unitCupFixtures: Fixture[] | undefined;
@@ -2689,6 +2708,8 @@ export async function advanceOneDay(
     if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService);
 
     await managerTracker.flush();
+    // Tomorrow's referees, after today's matches (rest) and rollovers (renewed pools): the preview reads them.
+    await ensureTomorrow(saveService, saveId, currentDate);
     await saveService.appendDayTransfers(saveId, currentDate, dayMoves);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).

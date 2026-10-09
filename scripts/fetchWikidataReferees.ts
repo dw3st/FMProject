@@ -162,5 +162,4 @@ for (const name of [...REAL_COUNTRIES].sort()) {
   const c = report.get(name) ?? { ref: 0, ast: 0, women: 0, tm: 0 };
   console.log(`${name.padEnd(22)} árbitros ${String(c.ref).padStart(2)}  assistentes ${String(c.ast).padStart(2)}  mulheres ${c.women}  com Transfermarkt ${c.tm}`);
 }
-const ref12 = [...report.values()].filter((c) => c.ref >= 12).length;
 console.log(`\npessoas no Wikidata (nascidas ${YEAR - 51}–${YEAR - 26}): ${people.size}; no arquivo: ${out.length} (${out.filter((r) => r.role === "referee").length} árbitros, ${out.filter((r) => r.role === "assistant").length} assistentes, ${out.filter((r) => r.gender === "female").length} mulheres, ${out.filter((r) => r.tmId).length} com ID do Transfermarkt); países: ${report.size}`);

@@ -6,8 +6,8 @@ export const REFEREE = {
   YELLOW_WEIGHT: 0.15,
   /** Direct red per foul × (1 + RED_WEIGHT × s). */
   RED_WEIGHT: 0.25,
-  /** Both cards ÷ this when s ≠ 0 (world volume normaliser; 1 = none). */
-  CARD_NORM: 1,
+  /** Both cards ÷ this when s ≠ 0: the rigor spread is convex in the reds (second yellows), so the world volume needs a small normaliser (`referee-measure.ts quick`). */
+  CARD_NORM: 1.01,
   /** |s| ≥ BAND: strict / lenient. */
   BAND: 0.35,
   MIN_POOL: 10,
