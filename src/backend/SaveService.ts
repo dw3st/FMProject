@@ -97,6 +97,8 @@ export interface SaveMeta {
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
   /** Man-marking chosen for the match on `date` (player instructions, max 2 pairs); cleared by the next advance. */
   matchMarking?: MatchMarking;
+  /** Human club call-ups for the next game of each youth competition. */
+  youthCallUps?: { u21?: string[]; u19?: string[] };
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
   board?: BoardState;
   /** New-game option: the board may sack the manager (default on). */

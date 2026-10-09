@@ -1,14 +1,18 @@
 /** Cup identity helpers. One national cup per leagueData `country`. */
 
-/** `cup_` + country name lower-cased, accents stripped, non-alphanumerics → `_`. */
-export function cupSlugOf(country: string): string {
-  const base = country
+/** Country name lower-cased, accents stripped, non-alphanumerics → `_` (shared by the cup and youth slugs). */
+export function countryKey(country: string): string {
+  return country
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-  return `cup_${base}`;
+}
+
+/** `cup_` + `countryKey(country)`. */
+export function cupSlugOf(country: string): string {
+  return `cup_${countryKey(country)}`;
 }
 
 export function isCupSlug(slug: string): boolean {

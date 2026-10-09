@@ -1,4 +1,5 @@
 import type { PlayerSeasonLog, StandingRow } from "@/types/playerTypes";
+import type { YouthCompMetaData } from "@/types/youthCompTypes";
 
 /** How a knockout fixture was decided after 90 minutes, from the home/away point of view. */
 export interface MatchDecider {
@@ -28,6 +29,10 @@ export interface Fixture {
   leg?:        1 | 2;
   /** Second leg only: first-leg goals from THIS fixture's home/away point of view. */
   aggregate?:  { home: number; away: number };
+  /** Youth competition only: no free day for the game — `played: true`, `result: null`, out of the table. */
+  cancelled?:  true;
+  /** Youth competition only: original date of a postponed game. */
+  postponedFrom?: string;
 }
 
 export interface SeasonData {
@@ -127,10 +132,11 @@ export interface LeagueSeasonMeta {
   totalRounds:  number;
   /** Rest days for the player's league (shown in training calendar UI) */
   restDays?:    string[];
-  /** "cup" for a national cup, "continental" for UCL/UEL/Lib/Sud; absent for a league. */
-  kind?:        "cup" | "continental";
+  /** "cup" for a national cup, "continental" for UCL/UEL/Lib/Sud, "youth" for an under-21/under-19; absent for a league. */
+  kind?:        "cup" | "continental" | "youth";
   cup?:         CupMetaData;
   continental?: ContinentalMetaData;
+  youth?:       YouthCompMetaData;
 }
 
 /** All fixtures for a single round of one league */
