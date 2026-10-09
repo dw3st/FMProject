@@ -347,6 +347,7 @@ export const scoutingRoutes = {
       const player: RosterPlayer = {
         ...prospect.player,
         squadId: h.squad.id,
+        academyOf: h.squad.id,
         contract: renewalContract(prospect.player, h.squad, seasonEnd, YOUTH.CONTRACT_YEARS),
       };
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, { ...h.squad, youth: [...(h.squad.youth ?? []), player] });

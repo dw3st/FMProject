@@ -126,6 +126,7 @@ describe("scouting routes and the weekly step", () => {
     expect((await call(SIGN, "POST", session.token, undefined, { prospectId: "pr_ok" })).status).toBe(200);
     const after = (await saveService.getSquadById(saveId, "33"))!;
     expect(after.youth!.some((p) => p.id === "pr_ok" && !!p.contract)).toBe(true);
+    expect(after.youth!.find((p) => p.id === "pr_ok")!.academyOf).toBe(after.id);
     expect(after.finances!.budget).toBe(budgetBefore - 120_000);
 
     // Academy full.

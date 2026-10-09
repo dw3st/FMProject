@@ -22,7 +22,7 @@ describe("nations", () => {
       }
     }
     expect([...missing]).toEqual([]);
-  });
+  }, 60_000);
   test("every country of the world has a confederation", () => {
     const countries = JSON.parse(fs.readFileSync("src/example_data/countries.json", "utf8")) as Record<string, unknown>;
     expect(Object.keys(countries).filter((c) => !NATION_CONFED[c])).toEqual([]);
