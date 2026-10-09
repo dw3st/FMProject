@@ -70,3 +70,14 @@ export interface RegCounts {
   lostSlots: number;
   free: number;
 }
+
+/** Something the human club is told about its lists (turned into a `registration` inbox message). */
+export interface RegistrationNotice {
+  kind: "auto_list" | "not_fit" | "waiting" | "closing" | "exception";
+  competition: string;
+  season: string;
+  playerIds?: string[];
+  opensOn?: string;
+  until?: string;
+  counts?: RegCounts;
+}
