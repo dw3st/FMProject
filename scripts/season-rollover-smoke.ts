@@ -1685,6 +1685,50 @@ try {
   console.log(`  ${adjacentInstances} continental fixture/club instance(s) (${adjacentClubs.size} distinct clubs) fall the day `
     + `before/after a league or cup fixture for that club (informational only, not a failure)`);
 
+  // ── Remarcação (`.claude/rules/game/rescheduling.md`): the league game of a clash moves ──────────
+  console.log("\n── Remarcação ──");
+  {
+    const { countConflicts } = await import("@/Domain/calendar/rescheduling");
+    const entries = [...fixturesBySlugEnd].flatMap(([slug, fx]) =>
+      isYouthCompSlug(slug)
+        ? []
+        : fx.map((fixture) => ({
+            competition: slug,
+            kind: (isCupSlug(slug) ? "cup" : isContinentalSlug(slug) ? "continental" : "league") as "cup" | "continental" | "league",
+            fixture,
+          })),
+    );
+    const k = countConflicts(entries);
+    const rescheduled = entries.filter((e) => e.fixture.rescheduledFrom);
+    check(k.sameDayPairs === 0, `no club has two official games on the same day (${k.sameDayPairs} pairs)`);
+    // Left only when nothing can move: cup × continental, or a league game with no free day in its window.
+    const ADJACENT_LIMIT = 15;
+    check(k.adjacentPairs <= ADJACENT_LIMIT,
+      `official games on consecutive days: ${k.adjacentPairs} pairs (${k.adjacentClubs} clubs), limit ${ADJACENT_LIMIT}`);
+    check(rescheduled.length > 0, `league games were rescheduled off a clash (${rescheduled.length} on the calendars at the end)`);
+    check(rescheduled.every((e) => e.kind === "league" && e.fixture.rescheduledFrom !== e.fixture.date),
+      "only league games carry rescheduledFrom, always with a different date");
+    const leagueMetas = new Map<string, { start: string; end: string }>();
+    for (const slug of new Set(rescheduled.map((e) => e.competition))) {
+      const m = await plain().getLeagueMeta(smokeSaveId, slug);
+      if (m) leagueMetas.set(slug, { start: m.start, end: m.end });
+    }
+    const outOfWindow = rescheduled.filter((e) => {
+      const w = leagueMetas.get(e.competition);
+      return !w || e.fixture.date < w.start || e.fixture.date > w.end;
+    });
+    check(outOfWindow.length === 0, `every rescheduled game stays inside its league window (${outOfWindow.length} outside)`);
+    // The date index lists every rescheduled game's round on its new date.
+    let missingFromIndex = 0;
+    for (const slug of new Set(rescheduled.map((e) => e.competition))) {
+      const idx = (await plain().getDateIndex(smokeSaveId, slug)) ?? {};
+      for (const e of rescheduled.filter((x) => x.competition === slug)) {
+        if (!(idx[e.fixture.date] ?? []).includes(e.fixture.round)) missingFromIndex++;
+      }
+    }
+    check(missingFromIndex === 0, `rescheduled games are in their league's date index (${missingFromIndex} missing)`);
+  }
+
   // 6. Europe: the first season's UCL/UEL must have gone through the European continental
   //    rollover by the end of this run (hard requirement — every European cross-year tier-1
   //    league ends 05-16..05-18, so the rollover is always reached well within a run that goes

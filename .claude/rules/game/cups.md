@@ -302,6 +302,12 @@ usado no resto da UI) — em inglês `"<País> Cup"`, em português `"Copa nacio
 país localizado por `Intl.DisplayNames` quando há `iso2`. Slug de copa desconhecido cai no
 `titleCase` genérico, igual a qualquer slug fora do catálogo.
 
+## Remarcação da liga
+
+A copa nunca muda de data depois do sorteio. Um jogo de liga de um clube que caia no mesmo dia ou colado
+num jogo de copa dele (a fase recém-sorteada, ou uma copa gerada depois da liga) é que é remarcado, no
+mesmo dia do sorteio — ver `.claude/rules/game/rescheduling.md`.
+
 ## Outras competições fora de `activeLeagues`
 
 As pastas `u21_<país>`/`u19_<país>` (torneios de base, `.claude/rules/game/youth-competitions.md`) também moram em
