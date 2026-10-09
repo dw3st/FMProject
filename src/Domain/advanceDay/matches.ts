@@ -474,6 +474,8 @@ export function buildMatchEvent(
     tactics?: { A: TeamTactics; B: TeamTactics };
     /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
     pitchCondition?: number;
+    /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
+    pools?: { home?: Set<string>; away?: Set<string> };
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -483,8 +485,17 @@ export function buildMatchEvent(
   // pool otherwise still comes straight from the full roster. Filter injured players out here too,
   // so an injured player is never subbed on mid-match. `homeSquad`/`awaySquad` themselves (used
   // below for name/roster-id mapping and post-match writes) stay the full, unfiltered roster.
-  const eligibleHome = { ...homeSquad, players: homeSquad.players.filter((p) => !isUnavailable(p, fixture.date)) };
-  const eligibleAway = { ...awaySquad, players: awaySquad.players.filter((p) => !isUnavailable(p, fixture.date)) };
+  // Not registered for the competition (or over the per-match foreign limit) → never on the bench either.
+  const homePool = sim.pools?.home;
+  const awayPool = sim.pools?.away;
+  const eligibleHome = {
+    ...homeSquad,
+    players: homeSquad.players.filter((p) => !isUnavailable(p, fixture.date) && (!homePool || homePool.has(p.id))),
+  };
+  const eligibleAway = {
+    ...awaySquad,
+    players: awaySquad.players.filter((p) => !isUnavailable(p, fixture.date) && (!awayPool || awayPool.has(p.id))),
+  };
   const result = simulateMatch(
     eligibleHome,
     eligibleAway,
