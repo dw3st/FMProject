@@ -222,29 +222,31 @@ lista sozinha. Depois o piso de 18. Determinístico (desempate por id). `maxFore
 
 ## 8. Medição
 
-Protótipo (2026-10-09, mundo 4.14, o mesmo algoritmo de §5, nação normalizada; "titulares fora" = dos 11 melhores do
-clube por overall, quantos ficam fora da lista):
+Medição final (2026-10-09, `bun scripts/registration-measure.ts`, código real, mundo 4.14; "Lista" inclui os livres;
+"Reduzida" = lista abaixo do teto por falta de formados; "titulares fora" = dos 11 melhores do clube por overall,
+quantos ficam fora da lista):
 
-| Regra | Clubes | Elenco | Lista | Lista reduzida (formados) | < 18 (piso) | Estrangeiros fora / clube | Titulares fora / clube |
+| Regra | Clubes | Elenco | Lista | Reduzida (formados) | < 18 (piso) | Estrangeiros fora / clube | Titulares fora / clube |
 |---|---|---|---|---|---|---|---|
-| Premier League | 20 | 28,9 | 25,6 | 10 | 0 | 2,80 | 0,00 |
-| La Liga (com isenções) | 20 | 29,3 | 28,3 | 3 | 0 | 0,35 | 0,10 |
-| La Liga (estrita, 3 extracomunitários) | 20 | 29,3 | 24,9 | 17 | 1 | 4,30 | 1,45 |
-| Serie A | 20 | 29,1 | 25,8 | 12 | 0 | 3,00 | 0,00 |
-| Bundesliga | 18 | 28,7 | 28,6 | 2 | 0 | 0,11 | 0,00 |
-| Ligue 1 (com isenção) | 18 | 28,6 | 27,6 | 7 | 0 | 1,00 | 0,33 |
-| Ligue 1 (estrita) | 18 | 28,6 | 22,4 | 18 | 1 | 6,17 | 2,06 |
-| Brasil (lista) | 60 | 29,4 | 29,3 | 0 | 0 | — | 0,00 |
-| Padrão Europa | 622 | 28,3 | 27,5 | 67 | 0 | 0,55 | 0,00 |
-| Padrão América do Sul | 187 | 29,5 | 29,0 | 0 | 0 | 0,48 | 0,07 |
-| Padrão Ásia | 98 | 28,9 | 27,6 | 0 | 0 | 1,33 | 0,02 |
+| Padrão Europa | 482 | 28,2 | 27,5 | 84 | 0 | 0,45 | 0,00 |
+| Padrão América do Sul | 121 | 29,4 | 28,8 | 0 | 0 | 0,66 | 0,09 |
 | Padrão África | 108 | 28,7 | 28,6 | 0 | 0 | 0,08 | 0,00 |
-| Padrão Oceania | 22 | 28,3 | 26,9 | 0 | 2 | 1,41 | 0,50 |
-| MLS (10, EUA + Canadá) | 30 | 29,3 | 24,1 | 0 | 0 | 5,23 | 0,73 |
+| Padrão Ásia | 98 | 28,9 | 27,6 | 0 | 0 | 1,33 | 0,02 |
+| Serie A (pirâmide) | 96 | 28,8 | 28,4 | 11 | 0 | 0,21 | 0,00 |
+| Argentina | 66 | 29,5 | 29,4 | 0 | 0 | 0,15 | 0,03 |
+| Brasil (lista) | 60 | 29,4 | 29,4 | 0 | 0 | 0,00 | 0,00 |
+| Premier League (pirâmide) | 44 | 28,9 | 28,4 | 16 | 0 | 0,34 | 0,00 |
+| La Liga (com isenções) | 42 | 29,1 | 28,3 | 1 | 0 | 0,19 | 0,05 |
+| Ligue 1 (com isenção) | 36 | 28,8 | 28,3 | 0 | 0 | 0,50 | 0,17 |
 | Arábia Saudita | 32 | 27,5 | 27,1 | 0 | 0 | 0,34 | 0,06 |
-| México | 18 | 29,2 | 28,6 | 0 | 0 | 0,56 | 0,00 |
-| UEFA (todo o mundo, como se jogasse) | 1273 | 28,7 | 27,6 | 119 | 0 | 0,54 | 0,00 |
+| MLS (10, EUA + Canadá) | 30 | 29,3 | 24,1 | 0 | 0 | 5,23 | 0,73 |
+| Padrão Oceania | 22 | 28,3 | 27,7 | 0 | 2 | 0,59 | 0,00 |
+| Bundesliga | 18 | 28,7 | 28,7 | 1 | 0 | 0,00 | 0,00 |
+| México | 18 | 29,2 | 28,0 | 0 | 0 | 1,17 | 0,00 |
+| UEFA (todo o mundo, como se jogasse) | 1273 | 28,7 | 27,7 | 141 | 0 | 0,42 | 0,00 |
+| CONMEBOL (todo o mundo, regra real) | 1273 | 28,7 | 28,7 | 0 | 0 | 0,00 | 0,00 |
 
+- **Mercado** (`bun scripts/market-sim.ts 1 --registration`, semente 12345): 684 contratações da IA com taxa conferidas no fecho da janela do comprador, **14 fora da lista (2,0%)** — LOW 0/161, MEDIUM 10/451 (2,2%), HIGH 4/72 (5,6%). Abaixo dos 5% no total: nenhum issue aberto; o mercado da IA não foi mudado.
 - **Quem não cumpre:** a falta de formados reduz a lista em ~10% dos clubes europeus (Premier 10 de 20, Serie A 12,
   Portugal/Turquia mais); nenhum fica abaixo de 18 nas grandes. O que acontece: **inscreve menos** (a vaga fica
   vazia), e os excluídos são reservas estrangeiros. O piso de 18 age em 2 clubes da Oceania.

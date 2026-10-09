@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.15",
+    date: "2026-10-09",
+    items: [
+      { pt: "Inscrição por competição: cada clube tem uma lista de inscritos na liga, na copa e no torneio continental, com as regras de cada lugar (limite de estrangeiros, mínimo de formados no clube ou no país, sub-21 livres)", en: "Registration per competition: every club has a squad list for the league, the cup and the continental tournament, with each one's rules (foreign player limit, minimum of home-grown players, under-21s free)" },
+      { pt: "A lista só muda com a janela de transferências aberta (no torneio continental, também antes de cada fase); quem chega fora do prazo espera a próxima janela", en: "The list only changes with the transfer window open (in the continental tournament, also before each stage); a player arriving after the deadline waits for the next window" },
+      { pt: "A inscrição é automática e você ajusta na nova aba Inscritos do Elenco: incluir, tirar ou voltar ao automático", en: "Registration is automatic and you adjust it on the Squad's new Registration tab: add, remove or go back to automatic" },
+      { pt: "Um jogador não inscrito sai da escalação com aviso na prévia da partida; no Brasileirão vale o limite de 9 estrangeiros relacionados por jogo", en: "An unregistered player leaves the lineup with a warning on the match preview; in the Brasileirão the limit of 9 foreign players named per match applies" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [
@@ -1117,7 +1127,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },

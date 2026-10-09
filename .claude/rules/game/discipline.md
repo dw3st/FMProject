@@ -117,3 +117,9 @@ mesmos fatores do motor); um XI neutro sorteia o mesmo de antes. Ver `.claude/ru
 
 Cartões dos jogos de base são ignorados: não entram no `seasonLog`, não suspendem e a base não cumpre a suspensão do time
 principal (`.claude/rules/game/youth-competitions.md`).
+
+## Inscrição (Etapa 37, 4.15)
+
+`replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
+`unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
+`foreignLimit`. Ver `.claude/rules/game/registration.md`.
