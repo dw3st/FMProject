@@ -8,7 +8,7 @@ const HTML_ENTITIES: Record<string, string> = {
   "&amp;": "&",
 };
 
-function decodeHtmlEntities(s: string): string {
+export function decodeHtmlEntities(s: string): string {
   return s.replace(/&(?:apos|#39|quot|amp);/g, (m) => HTML_ENTITIES[m] ?? m);
 }
 
