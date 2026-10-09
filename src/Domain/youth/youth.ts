@@ -44,7 +44,7 @@ function assistantLevelBonus(rating: number): number {
 }
 
 /** Attribute vector for `target` overall in `specific` role, shaped by the role's weights. */
-function statsFor(id: string, specific: string, target: number): PlayerStatsRecord {
+export function statsFor(id: string, specific: string, target: number): PlayerStatsRecord {
   const weights = (ROLES as Record<string, { attrWeights?: Record<string, number> }>)[specific]?.attrWeights ?? {};
   const ws = STAT_KEYS.map((k) => weights[k] ?? 0);
   const wMax = Math.max(...ws, 0.001);
@@ -94,6 +94,46 @@ function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
 }
 
 /**
+ * A generated young player (no contract): name from the club's own squad, age in `ageRange`, foot and
+ * attributes from the seed. Shared by the yearly intake and the youth-competition fillers
+ * (`src/Domain/youthComps/youthLineup.ts`). Deterministic per `seed` + `i`.
+ */
+export function makeAcademyPlayer(args: {
+  id: string;
+  seed: string;
+  i: number;
+  squad: Squad;
+  specific: string;
+  level: number;
+  ageRange: readonly [number, number];
+  nationality: string | null;
+  promise?: boolean;
+}): RosterPlayer {
+  const { id, seed, i, squad, specific, level, ageRange, nationality, promise } = args;
+  const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}`) * squad.players.length)];
+  const parts = donor?.name.trim().split(" ") ?? ["Silva"];
+  const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}`) * squad.players.length)]?.name.trim()[0] ?? "J";
+  return {
+    id,
+    name: `${initial}. ${parts[parts.length - 1]}`,
+    age: ageRange[0] + Math.floor(unit(`${seed}:age:${i}`) * (ageRange[1] - ageRange[0] + 1)),
+    squadId: squad.id,
+    preferredFoot: unit(`${seed}:foot:${i}`) < 0.5 ? "left" : "right",
+    positions: [specific],
+    stats: statsFor(id, specific, level),
+    profile: {
+      summary: promise ? "Exceptional academy prospect." : "Young prospect from the academy.",
+      archetype: promise ? "Wonderkid" : "Prospect",
+    },
+    nationality,
+  };
+}
+
+/** Deterministic unit draw / standard normal from a key (shared with the youth-competition fillers). */
+export const academyUnit = unit;
+export const academyGauss = gauss;
+
+/**
  * Deterministic intake size (3-5; 3-6 with a level-5 academy, `.claude/rules/game/facilities.md`)
  * for a club + year.
  */
@@ -134,23 +174,11 @@ export function generateIntake(args: {
         + (promise ? Y.PROMISE_BONUS : 0),
       Y.LEVEL_MIN, Y.LEVEL_MAX,
     );
-    const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}`) * squad.players.length)];
-    const parts = donor?.name.trim().split(" ") ?? ["Silva"];
-    const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}`) * squad.players.length)]?.name.trim()[0] ?? "J";
-    const player: RosterPlayer = {
-      id,
-      name: `${initial}. ${parts[parts.length - 1]}`,
-      age: Y.INTAKE_AGE_MIN + Math.floor(unit(`${seed}:age:${i}`) * (Y.INTAKE_AGE_MAX - Y.INTAKE_AGE_MIN + 1)),
-      squadId: squad.id,
-      preferredFoot: unit(`${seed}:foot:${i}`) < 0.5 ? "left" : "right",
-      positions: [specific],
-      stats: statsFor(id, specific, level),
-      profile: {
-        summary: promise ? "Exceptional academy prospect." : "Young prospect from the academy.",
-        archetype: promise ? "Wonderkid" : "Prospect",
-      },
+    const player = makeAcademyPlayer({
+      id, seed, i, squad, specific, level, promise,
+      ageRange: [Y.INTAKE_AGE_MIN, Y.INTAKE_AGE_MAX],
       nationality: squad.country ?? null,
-    };
+    });
     out.push({ ...player, contract: renewalContract(player, squad, nextSeasonEnd, Y.CONTRACT_YEARS) });
   }
   return out;
