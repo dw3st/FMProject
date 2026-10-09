@@ -1,3 +1,4 @@
+import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { initClubMorale } from "@/Domain/morale/morale";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
@@ -676,8 +677,16 @@ export class SaveService {
    * Returns Map<leagueSlug, roundNumbers[]>.
    * Only reads date-index.json per league (tiny files).
    */
-  async getActiveRoundsForDate(saveId: string, date: string): Promise<Map<string, number[]>> {
-    const slugs = await this.dal.listActiveLeaguesSlugs(saveId);
+  async getActiveRoundsForDate(
+    saveId: string,
+    date: string,
+    opts: { includeYouth?: boolean; onlyYouth?: boolean } = {},
+  ): Promise<Map<string, number[]>> {
+    // Youth competitions (u21_/u19_) are never "today's first-team games": the match day, match setup,
+    // marking and the day's events must not see them (`.claude/rules/game/youth-competitions.md`).
+    const slugs = (await this.dal.listActiveLeaguesSlugs(saveId)).filter((s) =>
+      opts.onlyYouth ? isYouthCompSlug(s) : opts.includeYouth || !isYouthCompSlug(s),
+    );
     const result = new Map<string, number[]>();
     await Promise.all(
       slugs.map(async (slug) => {
@@ -704,6 +713,19 @@ export class SaveService {
         }
       }),
     );
+    return result;
+  }
+
+  /** Unplayed youth-competition fixtures of `date` (only the u21_/u19_ folders). */
+  async getYouthFixturesForDate(saveId: string, date: string): Promise<Fixture[]> {
+    const activeRounds = await this.getActiveRoundsForDate(saveId, date, { onlyYouth: true });
+    const result: Fixture[] = [];
+    for (const [slug, rounds] of [...activeRounds.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const roundData = await Promise.all(rounds.map((r) => this.dal.readRound(saveId, slug, r)));
+      for (const rd of roundData) {
+        if (rd) result.push(...rd.fixtures.filter((f) => f.date === date && !f.played));
+      }
+    }
     return result;
   }
 
