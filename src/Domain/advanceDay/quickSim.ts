@@ -28,6 +28,7 @@ import { familiarityFactor } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { moraleQuickSimMult } from "@/Domain/morale/morale";
 import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
+import { refereeFoulMult, refereeRedMult, refereeYellowMult } from "@/Domain/referees/strictness";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -96,6 +97,8 @@ export interface QuickSimInput {
    * multiplies both sides' injury risk (× 1.6 at 0%). Absent = 90 (no change, no extra draw).
    */
   pitchCondition?: number;
+  /** Referee rigor −1..1 (`src/Domain/referees`): fouls, penalties and cards of both sides. Absent / 0 = no change. */
+  refereeStrictness?: number;
 }
 
 export interface QuickSimResult {
@@ -496,6 +499,7 @@ function rollDiscipline(
   cards: MatchCard[],
   rng: Rng,
   temperamentOverride?: number,
+  refereeStrictness?: number,
 ): { committed: number; yellow: number; red: number; oppPenalties: number; oppPenaltyGoals: number; oppOffsides: number } {
   const W = RATING_WEIGHTS;
   const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppPenaltyGoals: 0, oppOffsides: 0 };
@@ -507,7 +511,9 @@ function rollDiscipline(
   const gk = xi.find((x) => groupOf(x) === "GK");
   const keeper = gk ? { id: gk.p.id, reflex: stat(gk.p, "reflex") / 10, diving: stat(gk.p, "jump") / 10 } : null;
   const c = taker ? penaltyChance(Math.min(0.95, stat(taker.p, "finishing") / 10), keeper) : 0;
-  const lam = C.PENALTIES_PER_SIDE;
+  // Referee rigor (`referees.md`): more fouls, so more penalties too (the score never changes). s = 0 → × 1.
+  const refFoul = refereeFoulMult(refereeStrictness);
+  const lam = C.PENALTIES_PER_SIDE * refFoul;
   const converted: GoalRecord[] = [];
   if (taker && oppGoals.length > 0) {
     const q = Math.min(0.9, (lam * c) / Math.max(oppXg, lam * c));
@@ -543,7 +549,7 @@ function rollDiscipline(
   };
 
   // Fouls by `xi` (penalty fouls included), in minute order so a second yellow follows the first.
-  const n = Math.max(samplePoisson(C.FOULS_PER_SIDE * sideFoulMult, rng), out.oppPenalties);
+  const n = Math.max(samplePoisson(C.FOULS_PER_SIDE * sideFoulMult * refFoul, rng), out.oppPenalties);
   const minutes = Array.from({ length: n }, () => 1 + Math.floor(rng() * minutesTotal)).sort((a, b) => a - b);
   const booked = new Set<string>();
   const sentOff = new Set<string>();
@@ -562,7 +568,7 @@ function rollDiscipline(
     if (penaltyFoulIdx.has(i)) add(W.PENALTY_CONCEDED);
     const card = (kind: "yellow" | "red", secondYellow: boolean) =>
       cards.push({ team, playerId: id, playerName: fouler.p.name, card: kind, secondYellow, matchMinute: minute });
-    if (rng() < C.DIRECT_RED_PER_FOUL * cardMult(temperamentRedMult, id)) {
+    if (rng() < C.DIRECT_RED_PER_FOUL * cardMult(temperamentRedMult, id) * refereeRedMult(refereeStrictness)) {
       card("red", false);
       sentOff.add(id);
       out.red++;
@@ -570,7 +576,7 @@ function rollDiscipline(
       return;
     }
     const wasBooked = booked.has(id);
-    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1) * cardMult(temperamentYellowMult, id)) {
+    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1) * cardMult(temperamentYellowMult, id) * refereeYellowMult(refereeStrictness)) {
       card("yellow", false);
       out.yellow++;
       add(W.YELLOW_CARD);
@@ -833,9 +839,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const cards: MatchCard[] = [];
   const ratingDelta: Record<string, number> = {};
   const homeDisc = rollDiscipline(homeXI, "home", awayXI, awayGoals, xgAwayDay,
-    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng, input.homeTemperament);
+    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng, input.homeTemperament, input.refereeStrictness);
   const awayDisc = rollDiscipline(awayXI, "away", homeXI, homeGoals, xgHomeDay,
-    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng, input.awayTemperament);
+    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng, input.awayTemperament, input.refereeStrictness);
   cards.sort((a, b) => a.matchMinute - b.matchMinute);
 
   // Aerial play last (`aerial.md`), so every earlier rng draw is unchanged by it.
