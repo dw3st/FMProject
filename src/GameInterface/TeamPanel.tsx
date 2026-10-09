@@ -8,6 +8,7 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { Icon } from "@/GameInterface/Icons";
+import { gamePlayerNaturalRole } from "@/GameInterface/positionHelpers";
 import { kitDotStyle, readableOnDark } from "@/GameInterface/matchTeamColors";
 import type { PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 
@@ -120,7 +121,7 @@ function PlayerRow({
     >
       <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className="w-2 h-2 rounded-full shrink-0" style={kitDotStyle(color)} />
-        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{player.role}</span>
+        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{t(`roles.detailedAbbr.${gamePlayerNaturalRole(player)}`, { defaultValue: gamePlayerNaturalRole(player) })}</span>
         <span className={`flex-1 min-w-0 text-sm font-semibold text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
           <span className="truncate" title={player.name}>{shirtName(player.name)}</span>
           {starKind && <StarBadge kind={starKind} />}

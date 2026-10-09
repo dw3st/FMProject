@@ -2070,6 +2070,7 @@
     "tabTactics": "Tactics",
     "pickBenchOrSwap": "Pick a substitute to bring on, or another starter to swap positions.",
     "pickSwap": "No substitutions left: pick another starter to swap positions.",
+    "playingAs": "Playing as {{role}}",
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
     "injured": "Injured"

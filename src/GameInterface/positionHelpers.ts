@@ -7,6 +7,16 @@
 
 import ROLES from "@/Data/roles.json";
 import { getMainRole, type MainRole } from "@/Domain/roles";
+import { naturalFromAptitudes } from "@/Domain/positions/positionAptitude";
+import type { GamePlayer } from "@/GameEngine/types";
+
+/**
+ * A match player's own position: his natural role (`preferredRole`), the same the squad screens
+ * show — never the slot he happens to fill nor the raw line code of a bench player (#135).
+ */
+export function gamePlayerNaturalRole(p: Pick<GamePlayer, "role" | "fit">): string {
+  return naturalFromAptitudes(p.fit?.aptitudes, p.role);
+}
 
 
 type RolesWithAttrWeights = Record<string, { attrWeights?: Record<string, number> }>;

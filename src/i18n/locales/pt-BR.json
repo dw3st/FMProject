@@ -2070,6 +2070,7 @@
     "tabTactics": "Tática",
     "pickBenchOrSwap": "Escolha um reserva para entrar, ou outro titular para trocar de posição.",
     "pickSwap": "Sem substituições restantes: escolha outro titular para trocar de posição.",
+    "playingAs": "Jogando de {{role}}",
     "pickStarter": "Escolha o titular que sai.",
     "booked": "Amarelo",
     "injured": "Lesionado"
