@@ -646,6 +646,8 @@ export interface GameState {
    * The AI never sets this.
    */
   setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /** Referee of the match (`.claude/rules/game/referees.md`): his rigor scales fouls and cards. Absent = neutral. */
+  referee?: import('@/types/refereeTypes').EngineReferee;
   /**
    * Manager's per-slot instructions per team (index = slot; `player-instructions.md`). Kept so a
    * formation change or a substitute re-resolves the slot's tuning. The AI never sets this.
