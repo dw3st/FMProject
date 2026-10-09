@@ -31,7 +31,7 @@ const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { getCountries } = await import("@/backend/continentalWorld");
 const { rescheduleFixtureConflicts } = await import("@/backend/reschedulingWorld");
-const { countConflicts } = await import("@/Domain/calendar/rescheduling");
+const { countConflicts, findClubConflicts } = await import("@/Domain/calendar/rescheduling");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
 const { isContinentalSlug } = await import("@/Domain/continental/competitions");
 const { isYouthCompSlug } = await import("@/Domain/youthComps/youthCompIds");
@@ -95,6 +95,12 @@ async function report(saveId: string, label: string): Promise<void> {
   );
   const moved = entries.filter((e) => e.fixture.rescheduledFrom).length;
   console.log(`\n${label}: ${entries.length} official games, ${moved} rescheduled`);
+  // The pairs left (nothing could move): club, the two games, whether played.
+  for (const c of findClubConflicts(entries)) {
+    const g = (e: CalendarEntry) =>
+      `${e.competition} ${e.fixture.date} ${e.fixture.home}-${e.fixture.away}${e.fixture.played ? " (played)" : ""}${e.fixture.rescheduledFrom ? ` (from ${e.fixture.rescheduledFrom})` : ""}`;
+    console.log(`  left: ${continentOf(c.club)} club ${c.club} (${index.byId(c.club)?.name ?? "?"}): ${g(c.a)} | ${g(c.b)}`);
+  }
   console.log("region          | same day (clubs / pairs) before → after | consecutive days (clubs / pairs) before → after");
   for (const region of ["Europe", "South America", "other", "all"]) {
     // A pair counts in a region by the club's own league country.

@@ -46,6 +46,15 @@ jogos remarcados; os kits antigos são corrigidos pelo passo da rota `/presimula
 
 O antigo `logEuropeanCalendarClashes` (só logava o choque das ligas europeias de ano civil) saiu.
 
+## Clube do jogador
+
+- **Dias de descanso:** os pré-semeados (véspera e dia seguinte de cada jogo, `activeLeagues[].restDays`) seguem o jogo
+  remarcado (`shiftRestDays`): os da data antiga saem se nenhum outro jogo da liga do clube os justifica, a data nova
+  deixa de ser descanso e os vizinhos dela entram (se não forem dia de jogo); os outros dias (escolhas do jogador)
+  ficam. Na criação, depois do kit (`syncPlayerRestDays`) e no avanço do dia (`playerRestDaysAfterMoves`).
+- **Proposta de emprego da virada (`season_end`):** a validade usa o primeiro jogo da temporada nova já com as
+  remarcações do dia (`firstMatchAfterMoves`).
+
 ## Inbox e telas
 
 - Categoria `schedule` (`ScheduleInboxMessage`, `kind: "rescheduled"`, `games`: competição, adversário, casa/fora,
@@ -84,5 +93,3 @@ liga e no `date-index`.
 ## Limitações
 
 - O par copa × continental em dias seguidos fica (nenhum dos dois se move).
-- Os dias de descanso pré-semeados (`restDays`, véspera e dia seguinte de cada jogo) não acompanham a data nova.
-- A validade da proposta de emprego da virada usa o primeiro jogo da liga nova antes das remarcações.

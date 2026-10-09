@@ -127,8 +127,8 @@ import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
 import { buildManagerNewsMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
-import { drawnLeaguesOf, rescheduleFixtureConflicts } from "@/backend/reschedulingWorld";
-import { rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
+import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts, syncPlayerRestDays } from "@/backend/reschedulingWorld";
+import { firstMatchAfterMoves, rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
 import { ageStaff, staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
 import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
@@ -2375,6 +2375,17 @@ export async function advanceOneDay(
       rescheduleMoves.push(...r.moves);
     }
 
+    // The human club's seeded rest days (day before / after each match) follow its rescheduled games.
+    if (playerSquadId && rescheduleMoves.length > 0) {
+      const i = stateIdx(index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug);
+      if (i >= 0) {
+        const restDays = await playerRestDaysAfterMoves({
+          service: saveService, saveId, state: updatedActiveLeagues[i]!, clubId: playerSquadId, moves: rescheduleMoves,
+        });
+        if (restDays) updatedActiveLeagues[i] = { ...updatedActiveLeagues[i]!, restDays };
+      }
+    }
+
     // ── Youth competitions: archived and regenerated when the country's tier-1 league rolled (same
     // trigger as the cups, after the continentals so the new continental dates are known). Fail-fast. ──
     if (due.units.length > 0 || due.resync.length > 0) {
@@ -2472,9 +2483,8 @@ export async function advanceOneDay(
       const playerState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug));
       if (seasonEnded && playerState) {
         // Valid until the eve of the club's first match of the new season.
-        const firstMatch = (rolledLeagueFixtures.get(playerState.leagueSlug) ?? [])
-          .filter((f) => f.home === playerSquadId || f.away === playerSquadId)
-          .map((f) => f.date).sort()[0] ?? null;
+        // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
+        const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(playerState.leagueSlug) ?? [], rescheduleMoves, playerSquadId);
         newOffers.push(...await generateJobOffers(saveService, saveId, {
           window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
           managers: await managerTracker.list(), board: boardAtSeasonEnd ?? board.board,
@@ -2809,7 +2819,8 @@ export const advanceDayRoutes = {
       const m = await saveService.getMeta(saveId);
       if (m?.currentDate) {
         try {
-          await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
+          const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
+          await syncPlayerRestDays(saveService, saveId, r.moves);
         } catch (e) {
           logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
         }

@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture, LeagueDateIndex } from "@/types/calendarTypes";
 import {
   applyMovesToDateIndex,
+  applyMovesToFixtures,
+  shiftRestDays,
   countConflicts,
   findClubConflicts,
   rescheduledGamesOf,
@@ -186,5 +188,32 @@ describe("fixture ids repeat across competitions", () => {
     });
     expect(r.moves).toHaveLength(1);
     expect(r.moves[0]!.competition).toBe("lg");
+  });
+});
+
+describe("shiftRestDays", () => {
+  test("moves the seeded days with the game and keeps the player's own choices", () => {
+    // Games Sat 10-02 (moved to Wed 10-06) and Sat 10-09. Seeded: 10-01, 10-03, 10-08, 10-10. Manual: 10-15.
+    const rest = ["2027-10-01", "2027-10-03", "2027-10-08", "2027-10-10", "2027-10-15"];
+    const out = shiftRestDays(rest, [{ from: "2027-10-02", to: "2027-10-06" }], new Set(["2027-10-06", "2027-10-09"]));
+    expect(out).toEqual(["2027-10-05", "2027-10-07", "2027-10-08", "2027-10-10", "2027-10-15"]);
+  });
+
+  test("a day still next to another match stays; the new match day is never a rest day", () => {
+    // Games 10-02 → 10-05 and 10-04: 10-03 is next to 10-04, kept. 10-05 was a seeded rest day (after 10-04).
+    const rest = ["2027-10-01", "2027-10-03", "2027-10-05"];
+    const out = shiftRestDays(rest, [{ from: "2027-10-02", to: "2027-10-07" }], new Set(["2027-10-04", "2027-10-07"]));
+    expect(out).toEqual(["2027-10-03", "2027-10-05", "2027-10-06", "2027-10-08"]);
+    const onRest = shiftRestDays(["2027-10-05"], [{ from: "2027-10-02", to: "2027-10-05" }], new Set(["2027-10-05"]));
+    expect(onRest).toEqual(["2027-10-04", "2027-10-06"]);
+  });
+});
+
+describe("applyMovesToFixtures", () => {
+  test("only the moved game of that competition changes", () => {
+    const a = { id: "x1", competition: "lg", round: 1, date: "2027-10-02", home: "A", away: "B", played: false, result: null };
+    const b = { ...a, competition: "lg2" };
+    const out = applyMovesToFixtures([a, b], [{ competition: "lg", round: 1, fixtureId: "x1", home: "A", away: "B", from: "2027-10-02", to: "2027-10-06" }]);
+    expect(out.map((f) => [f.date, f.rescheduledFrom])).toEqual([["2027-10-06", "2027-10-02"], ["2027-10-02", undefined]]);
   });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { drawnLeaguesOf, rescheduleFixtureConflicts } from "@/backend/reschedulingWorld";
+import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts } from "@/backend/reschedulingWorld";
+import { seasonEndExpiry } from "@/backend/jobWorld";
+import { firstMatchAfterMoves } from "@/Domain/calendar/rescheduling";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { Fixture, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -106,5 +108,31 @@ describe("drawnLeaguesOf", () => {
       continentalChanges: [{ slug: "ucl", events: [{ kind: "drawn", stage: "r16", round: 7, ties: [{ home: "X", away: "Y", firstLegDate: "2028-02-15" }] }] }],
     });
     expect([...out].sort()).toEqual(["lg1", "lg2", "lg3"]);
+  });
+});
+
+describe("human club after the moves", () => {
+  test("rest days follow the moved game, from the league fixtures on disk", async () => {
+    const fixtures = [
+      { ...fx("l1", "lg", 1, "2027-10-06", "A", "B"), rescheduledFrom: "2027-10-02" },
+      fx("l3", "lg", 2, "2027-10-09", "A", "C"),
+    ];
+    const service = { getAllFixturesForLeague: async () => fixtures } as unknown as SaveService;
+    const moves = [{ competition: "lg", round: 1, fixtureId: "l1", home: "A", away: "B", from: "2027-10-02", to: "2027-10-06" }];
+    const out = await playerRestDaysAfterMoves({
+      service, saveId: "s", clubId: "A", moves,
+      state: { leagueSlug: "lg", restDays: ["2027-10-01", "2027-10-03", "2027-10-08", "2027-10-10", "2027-10-20"] },
+    });
+    expect(out).toEqual(["2027-10-05", "2027-10-07", "2027-10-08", "2027-10-10", "2027-10-20"]);
+    expect(await playerRestDaysAfterMoves({ service, saveId: "s", clubId: "Z", moves, state: { leagueSlug: "lg", restDays: [] } })).toBeNull();
+  });
+
+  test("the season-end job offer expires on the eve of the first game after the moves", () => {
+    const fixtures = [fx("l1", "lg", 1, "2027-08-14", "A", "B"), fx("l2", "lg", 2, "2027-08-21", "A", "C")];
+    const moves = [{ competition: "lg", round: 1, fixtureId: "l1", home: "A", away: "B", from: "2027-08-14", to: "2027-08-18" }];
+    const first = firstMatchAfterMoves(fixtures, moves, "A");
+    expect(first).toBe("2027-08-18");
+    expect(seasonEndExpiry("2027-05-20", first)).toBe("2027-08-17");
+    expect(firstMatchAfterMoves(fixtures, moves, "Z")).toBeNull();
   });
 });
