@@ -1,9 +1,11 @@
 {
- "538": { "name": "Claudio Giráldez", "nationality": "Spain", "age": 38 },
- "539": { "name": "Luís Castro", "nationality": "Portugal", "age": 46 },
- "of_es_racing_santander": { "name": "José Alberto", "nationality": "Spain", "age": 44 },
- "of_es_malaga": { "name": "Juanfran Funes", "nationality": "Spain" },
- "132": { "name": "Gilmar Dal Pozzo", "nationality": "Brazil" },
- "133": { "name": "Fernando Diniz", "nationality": "Brazil", "age": 52 },
- "135": { "name": "Tite", "nationality": "Brazil", "age": 65 }
+ "538": {"name": "Claudio Giráldez", "nationality": "Spain", "age": 38},
+ "539": {"name": "Luís Castro", "nationality": "Portugal", "age": 46},
+ "of_es_racing_santander": {"name": "José Alberto", "nationality": "Spain", "age": 44},
+ "of_es_malaga": {"name": "Juanfran Funes", "nationality": "Spain"},
+ "132": {"name": "Rafael Lacerda", "nationality": "Brazil"},
+ "133": {"name": "Pedro Emanuel", "nationality": "Portugal", "age": 51},
+ "135": {"name": "Artur Jorge", "nationality": "Portugal", "age": 54},
+ "127": {"name": "Leonardo Jardim", "nationality": "Portugal", "age": 51},
+ "136": {"name": "Jair Ventura", "nationality": "Brazil", "age": 47}
 }
