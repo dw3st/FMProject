@@ -14,6 +14,7 @@ import {
   trainingAgeCostFactor,
 } from "@/types/developmentTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { restAcademy } from "@/Domain/advanceDay/dailyRest";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import {
@@ -147,7 +148,9 @@ export function buildTrainingEvent(
   policy: TrainingPolicy,
   date: string,
   rng: () => number = Math.random,
+  opts: { skipPlayerIds?: ReadonlySet<string> } = {},
 ): TrainingResult {
+  const skip = opts.skipPlayerIds;
   const staffFx = staffEffectsOf(squad);
   // Training ground (`.claude/rules/game/facilities.md`): stacks with the staff, training only.
   const ground = trainingGroundEffectsOf(squad);
@@ -159,10 +162,12 @@ export function buildTrainingEvent(
   // Clear a healed injury BEFORE eligibility/training is decided — a player who returns today can
   // train (or be ineligible on fitness) the same day, same as `matches.ts`.
   const healedPlayerIds: string[] = [];
-  const players = squad.players.map((p) => {
+  // Who played a youth game today already had his match day (`youth-competitions.md`): untouched.
+  const players = squad.players.filter((p) => !skip?.has(String(p.id))).map((p) => {
     if (p.injury && !clearHealed(p, date).injury) healedPlayerIds.push(String(p.id));
     return clearHealed(p, date);
   });
+  const trainedById = new Map(players.map((p) => [String(p.id), p]));
 
   const eligibleIds = new Set(
     players
@@ -230,7 +235,10 @@ export function buildTrainingEvent(
           ),
         }
       : {}),
-    players: players.map((p) => {
+    ...(squad.youth ? { youth: restAcademy(squad.youth, date, recoveryMult, skip) } : {}),
+    players: squad.players.map((orig) => {
+      const p = trainedById.get(String(orig.id));
+      if (!p) return orig;
       const didTrain = eligibleIds.has(String(p.id));
       const eff = effectMap.get(String(p.id));
       const trained = eff != null && eff.trainingPoints > 0;

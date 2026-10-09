@@ -100,6 +100,8 @@ export interface SaveMeta {
   matchMarking?: MatchMarking;
   /** Human club call-ups for the next game of each youth competition. */
   youthCallUps?: { u21?: string[]; u19?: string[] };
+  /** Call-ups of the last youth game of each competition who did not play (shown on the call-up panel). */
+  youthCallUpsSkipped?: { u21?: { date: string; players: string[] }; u19?: { date: string; players: string[] } };
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
   board?: BoardState;
   /** New-game option: the board may sack the manager (default on). */
@@ -1055,6 +1057,19 @@ export class SaveService {
       }
     } catch (e) {
       logError("continental", `save ${id}: failed to generate continental competitions`, e);
+    }
+
+    // Youth competitions (under-21 / under-19 of every tier-1 league): after the cups and the
+    // continentals, whose dates they avoid. One try/catch per country inside.
+    try {
+      const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
+      const { createYouthCompetitions } = await import("@/backend/youthCompWorld");
+      await createYouthCompetitions({
+        service: this, saveId: id, index: await this.getSquadIndex(id),
+        catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues,
+      });
+    } catch (e) {
+      logError("youthComps", `save ${id}: failed to generate the youth competitions`, e);
     }
 
     return meta;

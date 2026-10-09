@@ -209,7 +209,7 @@ describe("moraleDay", () => {
       ...fullSquad(),
       moraleClub: { talks: [], promises: [{ id: "p1", playerId: "d4", playerName: "x", kind: "minutes" as const, madeOn: "2027-03-01", target: 1, matches: 0, played: 0 }] },
     };
-    sq.players = sq.players.map((p) => (p.id === "d4" ? { ...p, moraleLog: { minutes: [90], trend: [] } } : p));
+    sq.players = sq.players.map((p) => (p.id === "d4" ? { ...p, moraleLog: { minutes: [90], trend: [], youthMinutes: [90] } } : p));
     const out = moraleDay({
       squad: sq, date: "2027-03-03", monday: false, bids: [], sellList: [], newId,
       matches: [{ result: "D", minutes: {}, goals: {}, ratings: {} }], unavailable: new Set(["d4"]),
@@ -219,6 +219,7 @@ describe("moraleDay", () => {
     expect(out.squad.moraleClub!.promises[0]!.matches).toBe(0);
     const rolled = moraleDay({ squad: out.squad, date: "2027-03-04", monday: false, matches: [], bids: [], sellList: [], seasonRolled: true, newId });
     expect(rolled.squad.players.find((x) => x.id === "d4")!.moraleLog!.minutes).toEqual([]);
+    expect(rolled.squad.players.find((x) => x.id === "d4")!.moraleLog!.youthMinutes).toEqual([]);
   });
 
   test("the weekly cap of talk requests covers wants_move talks", () => {

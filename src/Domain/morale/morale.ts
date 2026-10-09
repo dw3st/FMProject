@@ -414,7 +414,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
   // ── Season over: the minutes windows start again ──
   if (input.seasonRolled) {
     for (const p of [...players.values()]) {
-      if (p.moraleLog) set({ ...p, moraleLog: { ...p.moraleLog, minutes: [], newMatches: 0 } });
+      if (p.moraleLog) set({ ...p, moraleLog: { ...p.moraleLog, minutes: [], youthMinutes: [], newMatches: 0 } });
     }
   }
 

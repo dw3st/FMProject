@@ -12,7 +12,12 @@ import { CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
-import { youthCompSlugOf } from "@/Domain/youthComps/youthCompIds";
+import { youthCompAgeOf, youthCompSlugOf } from "@/Domain/youthComps/youthCompIds";
+import { pickYouthLineup } from "@/Domain/youthComps/youthLineup";
+import { applyYouthMatch, postponeDate, updateLeaders, youthMatchLog, type YouthPlayerInfo } from "@/Domain/youthComps/youthMatch";
+import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
+import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { formationForSimId } from "@/Domain/matchFormations";
 import {
   buildYouthCompArchive,
   generateYouthComp,
@@ -23,7 +28,9 @@ import {
 } from "@/Domain/youthComps/generateYouthComp";
 import type { Fixture, LeagueCalendarResult, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import type { Pyramids } from "@/types/pyramidTypes";
-import type { YouthCompAge, YouthCompMetaData } from "@/types/youthCompTypes";
+import type { YouthCompAge, YouthCompMetaData, YouthMatchLog } from "@/types/youthCompTypes";
+import type { Squad } from "@/types/playerTypes";
+import type { TacticsSave } from "@/types/tacticsTypes";
 import { logError } from "@/Logger";
 
 const AGES: readonly YouthCompAge[] = YOUTH_COMP.AGES;
@@ -254,6 +261,245 @@ export async function youthCompsOfCountry(
   for (const age of AGES) {
     const slug = youthCompSlugOf(country, age);
     if ((await service.getLeagueMeta(saveId, slug))?.youth) out[age] = slug;
+  }
+  return out;
+}
+
+// ── The day ─────────────────────────────────────────────────────────────────────
+
+export interface YouthDayInjury {
+  squadId: string;
+  playerId: string;
+  playerName: string;
+  severity: "light" | "medium" | "severe";
+  returnDate: string;
+}
+
+export interface YouthDayResult {
+  /** Squads changed by today's youth games (to merge into the day's `squadWrites`). */
+  squads: Map<string, Squad>;
+  /** Real players who played a youth game today (they neither train nor rest). */
+  participants: Set<string>;
+  logs: YouthMatchLog[];
+  injuries: YouthDayInjury[];
+  /** Players whose injury cleared at a youth game today ("returned" inbox message). */
+  healed: { squadId: string; playerId: string; playerName: string }[];
+  /** Ages whose call-ups of the human club were used today (played or cancelled). */
+  consumedCallUps: YouthCompAge[];
+  /** Human call-ups of a game played today who did not play, per age. */
+  skippedCallUps: Partial<Record<YouthCompAge, string[]>>;
+  postponed: number;
+  cancelled: number;
+}
+
+/**
+ * Plays today's youth-competition games (`.claude/rules/game/youth-competitions.md` → "O dia"): a game
+ * whose club plays for the first team today is postponed (or cancelled with no free day), the
+ * under-19 is played before the under-21 (nobody plays twice), each side gets its automatic youth XI,
+ * quickSim, and the youth post-match. Rounds, the table and the leaders are written once per
+ * competition played today.
+ */
+export async function playYouthDay(args: {
+  service: SaveService;
+  saveId: string;
+  date: string;
+  index: SquadIndex;
+  /** Human club (`meta.clubId`, "" when unemployed). */
+  humanClubId: string;
+  callUps?: { u21?: string[]; u19?: string[] };
+  tactics: TacticsSave | null;
+  teamsPlayingToday: ReadonlySet<string>;
+  squadOf: (id: string) => Promise<Squad | null>;
+  rng?: () => number;
+}): Promise<YouthDayResult> {
+  const { service, saveId, date, index, humanClubId } = args;
+  const rng = args.rng ?? Math.random;
+  const out: YouthDayResult = {
+    squads: new Map(), participants: new Set(), logs: [], injuries: [], healed: [], consumedCallUps: [],
+    skippedCallUps: {}, postponed: 0, cancelled: 0,
+  };
+  const todays = await service.getYouthFixturesForDate(saveId, date);
+  if (todays.length === 0) return out;
+
+  const bySlug = new Map<string, Fixture[]>();
+  for (const f of todays) (bySlug.get(f.competition) ?? bySlug.set(f.competition, []).get(f.competition)!).push(f);
+  const ageRank = (s: string) => (youthCompAgeOf(s) === "u19" ? 0 : 1);
+  const slugs = [...bySlug.keys()].sort((a, b) => ageRank(a) - ageRank(b) || a.localeCompare(b));
+
+  // First-team dates of a club (league date index, cup stages of its country, continental dates),
+  // memoised per league / country for the day.
+  const leagueDates = new Map<string, Set<string>>();
+  const cupDates = new Map<string, Set<string>>();
+  let continental: { clubs: Set<string>; dates: Set<string> }[] | null = null;
+  const datesOfLeague = async (slug: string) => {
+    let s = leagueDates.get(slug);
+    if (!s) {
+      s = new Set(Object.keys((await service.getDateIndex(saveId, slug)) ?? {}));
+      leagueDates.set(slug, s);
+    }
+    return s;
+  };
+  const datesOfCup = async (country: string) => {
+    let s = cupDates.get(country);
+    if (!s) {
+      const cup = await service.getLeagueMeta(saveId, cupSlugOf(country));
+      s = new Set((cup?.cup?.stages ?? []).map((st) => st.date));
+      cupDates.set(country, s);
+    }
+    return s;
+  };
+  const continentalOf = async () => {
+    if (!continental) {
+      const list: { clubs: Set<string>; dates: Set<string> }[] = [];
+      for (const slug of CONTINENTAL_SLUGS) {
+        const cm = (await service.getLeagueMeta(saveId, slug))?.continental;
+        if (!cm) continue;
+        list.push({ clubs: new Set(cm.groups.flatMap((g) => g.clubs)), dates: new Set(cm.stages.flatMap((s) => s.dates)) });
+      }
+      continental = list;
+    }
+    return continental;
+  };
+  const busySets = new Map<string, Set<string>[]>();
+  const busySetsOf = async (club: string, country: string) => {
+    let sets = busySets.get(club);
+    if (!sets) {
+      sets = [];
+      const league = index.byId(club)?.leagueSlug;
+      if (league) sets.push(await datesOfLeague(league));
+      sets.push(await datesOfCup(country));
+      for (const c of await continentalOf()) if (c.clubs.has(club)) sets.push(c.dates);
+      busySets.set(club, sets);
+    }
+    return sets;
+  };
+
+  const squadNow = async (id: string): Promise<Squad | null> => out.squads.get(id) ?? (await args.squadOf(id));
+  const consume = (age: YouthCompAge) => {
+    if (!out.consumedCallUps.includes(age)) out.consumedCallUps.push(age);
+  };
+
+  for (const slug of slugs) {
+    const age = youthCompAgeOf(slug)!;
+    const meta = await service.getLeagueMeta(saveId, slug);
+    if (!meta?.youth) continue;
+    const country = meta.youth.country;
+    const all = await youthCompFixtures(service, saveId, meta);
+    const changedRounds = new Set<number>();
+    const dateIndex = (await service.getDateIndex(saveId, slug)) ?? {};
+    let dateIndexChanged = false;
+    let leaders = meta.youth.leaders;
+    let played = false;
+    const replace = (f: Fixture) => {
+      const i = all.findIndex((x) => x.id === f.id);
+      if (i >= 0) all[i] = f;
+      changedRounds.add(f.round);
+    };
+    const sameCompDates = new Map<string, Set<string>>();
+    for (const f of all) {
+      if (f.played) continue;
+      for (const c of [f.home, f.away]) (sameCompDates.get(c) ?? sameCompDates.set(c, new Set()).get(c)!).add(f.date);
+    }
+    const cancel = (fx: Fixture) => {
+      replace({ ...fx, played: true, result: null, cancelled: true });
+      out.cancelled++;
+      out.logs.push({
+        competition: slug, fixtureId: fx.id, home: fx.home, away: fx.away, score: null, scorers: [], best: null,
+        players: { home: [], away: [] }, ...(fx.postponedFrom ? { postponedFrom: fx.postponedFrom } : {}),
+      });
+    };
+
+    for (const fx of bySlug.get(slug)!) {
+      const humanSide = fx.home === humanClubId || fx.away === humanClubId;
+      if (args.teamsPlayingToday.has(fx.home) || args.teamsPlayingToday.has(fx.away)) {
+        const homeSets = await busySetsOf(fx.home, country);
+        const awaySets = await busySetsOf(fx.away, country);
+        const busy = (club: string, d: string) => (club === fx.home ? homeSets : awaySets).some((s) => s.has(d));
+        const next = postponeDate({ date, end: meta.end, busy, home: fx.home, away: fx.away, sameCompDates });
+        if (next) {
+          replace({ ...fx, date: next, postponedFrom: fx.postponedFrom ?? fx.date });
+          for (const c of [fx.home, fx.away]) sameCompDates.get(c)?.add(next);
+          if (!(dateIndex[next] ?? []).includes(fx.round)) {
+            dateIndex[next] = [...(dateIndex[next] ?? []), fx.round].sort((a, b) => a - b);
+            dateIndexChanged = true;
+          }
+          out.postponed++;
+          continue;
+        }
+        cancel(fx);
+        if (humanSide) consume(age);
+        continue;
+      }
+
+      const home = await squadNow(fx.home);
+      const away = await squadNow(fx.away);
+      if (!home || !away) {
+        cancel(fx);
+        continue;
+      }
+      const filler = { saveId, slug, year: meta.year };
+      const side = (squad: Squad) => {
+        const human = squad.id === humanClubId;
+        const saved = human ? (args.tactics?.lineup ?? []).filter((id) => id) : [];
+        const xi = saved.length > 0
+          ? saved
+          : autoLineupForFormation(squad, formationForSimId(human ? args.tactics?.formation : squad.aiFormation?.id), date);
+        return pickYouthLineup({
+          age, squad, firstTeamXI: new Set(xi), callUps: human ? (args.callUps?.[age] ?? []) : [],
+          playedToday: out.participants, date, filler, nationality: country,
+        });
+      };
+      const hl = side(home);
+      const al = side(away);
+      if (home.id === humanClubId) out.skippedCallUps[age] = hl.skippedCallUps;
+      if (away.id === humanClubId) out.skippedCallUps[age] = al.skippedCallUps;
+      const roles = slotRoles(formationForSimId("4-3-3"));
+      const { recording } = quickSimMatch({
+        fixtureId: fx.id,
+        home: { ...home, players: hl.matchPlayers },
+        away: { ...away, players: al.matchPlayers },
+        homeLineup: hl.lineup, awayLineup: al.lineup, homeRoles: roles, awayRoles: roles,
+        pitchCondition: YOUTH_COMP.PITCH,
+      }, rng);
+
+      const generated = new Set([...hl.generatedIds, ...al.generatedIds]);
+      const names = new Map<string, YouthPlayerInfo>();
+      for (const [squad, lineup] of [[home, hl], [away, al]] as const) {
+        for (const p of lineup.matchPlayers) {
+          names.set(p.id, { name: p.name, squadId: squad.id, ...(generated.has(p.id) ? { generated: true as const } : {}) });
+        }
+      }
+      const info = (id: string): YouthPlayerInfo => names.get(id) ?? { name: id, squadId: "" };
+
+      for (const squad of [home, away]) {
+        const res = applyYouthMatch(squad, recording, { date, rng, trackMorale: squad.id === humanClubId });
+        out.squads.set(squad.id, res.squad);
+        for (const id of res.participants) out.participants.add(id);
+        for (const inj of res.injuriesApplied) {
+          out.injuries.push({
+            squadId: squad.id, playerId: inj.playerId, playerName: inj.playerName, severity: inj.severity, returnDate: inj.returnDate,
+          });
+        }
+        const roster = [...squad.players, ...(squad.youth ?? [])];
+        for (const id of res.healedPlayerIds) {
+          out.healed.push({ squadId: squad.id, playerId: id, playerName: roster.find((p) => p.id === id)?.name ?? id });
+        }
+      }
+      leaders = updateLeaders(leaders, recording, info);
+      out.logs.push(youthMatchLog(fx, recording, info, { home: hl.lineup, away: al.lineup }, generated));
+      replace({ ...fx, played: true, result: { ...recording.score } });
+      played = true;
+      if (humanSide) consume(age);
+    }
+
+    for (const r of changedRounds) {
+      await service.writeRound(saveId, slug, r, { leagueSlug: slug, round: r, fixtures: all.filter((f) => f.round === r) });
+    }
+    if (dateIndexChanged) await service.writeDateIndex(saveId, slug, dateIndex);
+    if (changedRounds.size > 0) {
+      await service.writeLeagueStandings(saveId, slug, computeStandings(youthStandingsBase(meta), all, slug));
+    }
+    if (played) await service.writeLeagueMeta(saveId, { ...meta, youth: { ...meta.youth, leaders } });
   }
   return out;
 }

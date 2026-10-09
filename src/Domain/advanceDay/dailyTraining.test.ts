@@ -577,3 +577,23 @@ describe("coaching staff on a training day", () => {
     expect(withAssistant).toBeCloseTo(g3, 6);
   });
 });
+
+describe("buildTrainingEvent and the youth competitions", () => {
+  test("skipped players stay identical; the academy recovers without training DP", () => {
+    const played = basePlayer({ id: "a", name: "A", seasonLog: makeSeasonLog({ fitness: 90 }) });
+    const other = basePlayer({ id: "b", name: "B", seasonLog: makeSeasonLog({ fitness: 90 }) });
+    const kid = basePlayer({ id: "y", name: "Y", age: 17, seasonLog: makeSeasonLog({ fitness: 50, load: 90 }) });
+    const squad: Squad = { id: "s", name: "S", colors: ["#000", "#fff"], money: 0, players: [played, other], youth: [kid] };
+    const policy = { minEnergyToTrain: 50, intensity: "normal" as const };
+    const { updatedSquad, event } = buildTrainingEvent("s", squad, policy, "2027-02-05", () => 0.99, {
+      skipPlayerIds: new Set(["a"]),
+    });
+    expect(updatedSquad.players[0]).toBe(played);
+    expect(event.effects.map((e) => e.playerId)).toEqual(["b"]);
+    const y = updatedSquad.youth![0]!;
+    expect(y.stats).toEqual(kid.stats);
+    expect(y.seasonLog!.trainingSessions).toBe(kid.seasonLog!.trainingSessions);
+    expect(y.seasonLog!.fitness).toBeCloseTo(recoverDay(50, { age: 17, load: 90, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult }), 5);
+    expect(y.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
+  });
+});
