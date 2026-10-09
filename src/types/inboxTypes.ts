@@ -6,6 +6,7 @@ import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 import type { BoardRefusal, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
 import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
+import type { RegCounts, RegistrationNotice } from "@/types/registrationTypes";
 
 export type InboxCategory =
   | "development"
@@ -26,7 +27,8 @@ export type InboxCategory =
   | "facilities"
   | "manager_news"
   | "scouting"
-  | "awards";
+  | "awards"
+  | "registration";
 
 interface InboxMessageBase {
   id:        string;
@@ -390,6 +392,23 @@ export interface AwardsInboxMessage extends InboxMessageBase {
   world?: WorldAwards;
 }
 
+/**
+ * Competition registration of the human club (`.claude/rules/game/registration.md`): the automatic list was made,
+ * an arrival did not fit or waits for the deadline, the deadline closes in 3 days, the list needed the 18 floor.
+ */
+export interface RegistrationInboxMessage extends InboxMessageBase {
+  category: "registration";
+  kind: RegistrationNotice["kind"];
+  competition: string;
+  /** English fallback; the screen translates by slug. */
+  competitionName: string;
+  season: string;
+  players?: { id: string; name: string }[];
+  opensOn?: string;
+  until?: string;
+  counts?: RegCounts;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -409,4 +428,5 @@ export type InboxMessage =
   | FacilityInboxMessage
   | ManagerNewsInboxMessage
   | ScoutingInboxMessage
-  | AwardsInboxMessage;
+  | AwardsInboxMessage
+  | RegistrationInboxMessage;

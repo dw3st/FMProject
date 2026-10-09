@@ -1342,7 +1342,8 @@
       "facilities": "Facilities",
       "manager_news": "Managers",
       "scouting": "Scouting",
-      "awards": "Awards"
+      "awards": "Awards",
+      "registration": "Registration"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1533,6 +1534,24 @@
         "transferred": "moved to another club",
         "retired": "retired"
       }
+    },
+    "registration": {
+      "subject": {
+        "auto_list": "{{competition}}: squad list registered",
+        "not_fit": "{{competition}}: no room on the squad list",
+        "waiting": "{{competition}}: registration closed",
+        "closing": "{{competition}}: registration closes soon",
+        "exception": "{{competition}}: list completed to 18 players"
+      },
+      "body": {
+        "auto_list": "Your squad list for {{competition}} was registered automatically. You can change it in the Registration tab of the squad while the deadline is open.",
+        "not_fit": "{{players}} did not fit on the {{competition}} list (full, foreign limit or not enough home-grown players) and cannot play it.",
+        "waiting": "{{players}} arrived with the {{competition}} registration closed and can only play it from {{date}}.",
+        "closing": "The {{competition}} registration closes on {{date}}. After that the list is frozen.",
+        "exception": "Your squad could not reach 18 players within the {{competition}} rules, so the best remaining players were added."
+      },
+      "counts": "Registered {{counted}}/{{max}} · foreign {{foreign}} · home-grown {{formed}} · free {{free}}",
+      "open": "Open the registration"
     }
   },
   "finances": {

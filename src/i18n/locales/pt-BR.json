@@ -1342,7 +1342,8 @@
       "facilities": "Instalações",
       "manager_news": "Técnicos",
       "scouting": "Olheiros",
-      "awards": "Prêmios"
+      "awards": "Prêmios",
+      "registration": "Inscrição"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1533,6 +1534,24 @@
         "transferred": "mudou de clube",
         "retired": "se aposentou"
       }
+    },
+    "registration": {
+      "subject": {
+        "auto_list": "{{competition}}: lista de inscritos montada",
+        "not_fit": "{{competition}}: sem vaga na lista de inscritos",
+        "waiting": "{{competition}}: inscrição fechada",
+        "closing": "{{competition}}: prazo de inscrição acabando",
+        "exception": "{{competition}}: lista completada até 18 jogadores"
+      },
+      "body": {
+        "auto_list": "Sua lista de inscritos da {{competition}} foi montada automaticamente. Você pode mudá-la na aba Inscritos do Elenco enquanto o prazo estiver aberto.",
+        "not_fit": "{{players}} não coube na lista da {{competition}} (cheia, limite de estrangeiros ou poucos formados) e não pode jogá-la.",
+        "waiting": "{{players}} chegou com a inscrição da {{competition}} fechada e só pode jogá-la a partir de {{date}}.",
+        "closing": "A inscrição da {{competition}} fecha em {{date}}. Depois disso a lista fica congelada.",
+        "exception": "Seu elenco não chegou a 18 jogadores dentro das regras da {{competition}}; os melhores que sobraram foram incluídos."
+      },
+      "counts": "Inscritos {{counted}}/{{max}} · estrangeiros {{foreign}} · formados {{formed}} · livres {{free}}",
+      "open": "Abrir a inscrição"
     }
   },
   "finances": {
