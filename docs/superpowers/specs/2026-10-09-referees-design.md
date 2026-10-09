@@ -2,7 +2,7 @@
 
 Desenho de 2026-10-09 a partir das decisões do usuário (nomes reais do Wikidata por país, rigor que mexe um pouco em
 faltas e cartões sem mudar o volume do mundo, rosto `facesjs` no campo e nas telas, nomes gerados onde o Wikidata não
-cobre). Versão prevista **4.15** (uma etapa nova do `docs/ROADMAP.md`, antes da 39 · VAR, que vai usar a escala e o
+cobre). Versão **4.17** (a 4.15 é a inscrição e a 4.16 a remarcação, em outras branches; uma etapa nova do `docs/ROADMAP.md`, antes da 39 · VAR, que vai usar a escala e o
 rigor daqui). Regras atuais que esta etapa toca: `.claude/rules/game-engine/fouls.md`, `game/discipline.md`,
 `non-player-games.md` (quickSim), `graphics-engine.md` (`officials.ts`, `touchlineRender.ts`), `match-flow.md`
 (Etapa 38), `ui-world.md` (rostos), `game/staff.md` (livro de nomes), `game/stats.md`, `ui-standard.md`,
@@ -15,13 +15,15 @@ rigor daqui). Regras atuais que esta etapa toca: `.claude/rules/game-engine/foul
 | Quem existe | Por país do mundo (os 60 de `countries.json`): um **quadro de árbitros** e um **quadro de assistentes**. Reais do Wikidata (CC0) onde houver, completados com gerados do livro de nomes da comissão (`staffNameBook`) |
 | Dado commitado | `data_process/wikidata/referees.json` (saída do script, revisável) → copiado para `src/example_data/referees.json`. Só reais; os gerados nunca são commitados |
 | No save | `saves/{id}/referees/pool.json` (quadro do mundo, gerado no `createSave`, renovado na virada de cada país) e `saves/{id}/referees/state.json` (escala do dia, rodízio, estatísticas da temporada) |
-| Rigor | `strictness` s ∈ [−1, 1], média 0 no mundo, determinístico pelo id; mexe na chance de falta e nos cartões no motor (`foulChance`, `cardRoll`) e no quickSim (`rollDiscipline`); s = 0 / ausente = exatamente o jogo de antes |
+| Rigor | `strictness` s ∈ [−1, 1], média 0 no mundo: **real** (cartões por jogo da carreira no Transfermarkt, relativos ao país) para quem tem o ID P3699, **sorteado** pelo id para os demais; mexe na chance de falta e nos cartões no motor (`foulChance`, `cardRoll`) e no quickSim (`rollDiscipline`); s = 0 / ausente = exatamente o jogo de antes |
 | Qualidade | `quality` 0..100 (fama no Wikidata, árbitro FIFA, idade); só decide a escala (jogos grandes, continental). Nenhum efeito de partida nesta etapa (a 39 usa para o erro do juiz) |
 | Escala | Por dia e por país, determinística (save + data + país); o melhor árbitro livre no jogo mais importante; descanso mínimo; o mesmo árbitro não apita o mesmo clube em sequência; continental com árbitro de outro país do continente; **torneios de base sem árbitro** (cartões da base já não contam) |
 | Onde aparece | Prévia (rosto, nome, bandeira, rigor), Resumo da partida ao vivo, tela de resultado, resumo do dia; aba **Árbitros** em Estatísticas (cartões por árbitro); rosto no árbitro e nos bandeirinhas do campo |
 | Rosto | A rota que já existe `GET /api/faces/person/:id.svg` (id `ref_*`), cores do uniforme de árbitro, idade real |
 | `/test`, `/lab` | `/test`: seletor de rigor, rigor no `EnergyPanel` e nos logs `foul`/`card`, cenário `strict-referee`; `/lab`: `Variant.refereeStrictness` e linha "Referee" no `PairDetail` |
 | `Statistics.ts` | Nada novo: faltas e cartões já existem; as estatísticas por árbitro são agregadas no servidor a partir do day log |
+| Árbitras | Mulheres incluídas no quadro (Wikidata P21 feminino); rosto `facesjs` feminino |
+| Inglaterra | O P27 do Wikidata é Reino Unido: escoceses, galeses e norte-irlandeses entram no quadro da Inglaterra |
 | Saves antigos | Sem migração (protótipo): save sem `referees/` não tem árbitros (partidas como antes, s = 0) |
 
 ## 1. Dados do Wikidata
@@ -39,8 +41,7 @@ rigor daqui). Regras atuais que esta etapa toca: `.claude/rules/game-engine/foul
 - Campos úteis em quem nasceu de 1976 em diante (2 367): data de nascimento 100%, sexo ~100%, país ~85%, ID de árbitro
   do Transfermarkt (P3699) ~53%, imagem 24%, `wikibase:sitelinks` (número de Wikipédias, mediana 1, p90 10, máximo
   46). Há ruído: pessoas com cargos políticos (P39 de parlamentar) que também apitaram — filtradas.
-- Nenhum dado de cartões ou de categoria nacional. O Transfermarkt tem as estatísticas reais de cada árbitro (ID P3699),
-  mas isso fica para depois (ponto em aberto 1).
+- Nenhum dado de cartões ou de categoria nacional no Wikidata. Os cartões vêm do Transfermarkt (ID P3699, §1.3).
 
 ### 1.2 Script `scripts/fetchWikidataReferees.ts`
 
@@ -51,7 +52,7 @@ Mesmo molde do `fetchWikidataCoaches.ts` (worktree `data/current-coaches`, ainda
 1. Uma consulta por ocupação (Q859528, Q223291): item, rótulo (en, depois as línguas de `NAME_LANGS`), P27 → ISO2,
    P1532 (país do esporte) quando houver, P569, P570 (morto = fora), P21, `sitelinks`, P39 = Q20994440 com
    P580/P582, P3699 (só guardado).
-2. Filtro: humano, homem (os rostos e as ligas do jogo são masculinos; ponto em aberto 3), sem data de morte, idade em
+2. Filtro: humano, homem ou mulher (P21; decisão do usuário: árbitras incluídas), sem data de morte, idade em
    2027 entre 27 e 50, nenhum P39 que não seja "FIFA referee", país do esporte (P1532) antes da cidadania, país mapeado
    para os 60 do jogo pela mesma convenção do `normalizeNationality` (ISO2 `GB` = Inglaterra).
 3. Por país, ordenado por `fifa` (cargo aberto ou terminado em 2024+), depois `sitelinks`, depois nascimento mais
@@ -66,13 +67,37 @@ interface RefereeSource {
   country: string;         // nome do país do jogo ("England")
   birthDate: string;       // YYYY-MM-DD
   role: "referee" | "assistant";
+  gender: "male" | "female";
   fifa: boolean;
   sitelinks: number;
+  tmId?: string;           // P3699 (só para o passo do Transfermarkt; não vai para o example_data)
+  strictness?: number;     // rigor real derivado (§1.3), duas casas; ausente = sorteado pelo id
+  tmMatches?: number;      // jogos na carreira usados no rigor (amostra; o número de cartões nunca é guardado)
 }
 ```
 
 `src/example_data/referees.json` = cópia (o `importOpenFootball`/`importEspn` não mexem nele). Tamanho esperado:
-~1 300 entradas, ~150 KB. Nada de foto: só nome, país, nascimento e os dois sinais de fama.
+~1 300 entradas, ~150 KB. Nada de foto: só nome, país, nascimento, sexo, os dois sinais de fama e o rigor derivado.
+
+### 1.3 Rigor real (Transfermarkt)
+
+A API local do Transfermarkt (`C:/Projects/transfermarkt-api`, a mesma de `fetchTransfermarkt.ts`) não tem rota de
+árbitro, e a rota `/referee/:id` da tmapi só devolve o perfil (sem números). Os números da carreira saem da página de
+perfil do árbitro (`transfermarkt.com/-/profil/schiedsrichter/<id>/saison_id/0`, linha de totais: jogos, amarelos,
+segundo amarelo, vermelhos, pênaltis), baixada por `scripts/fetchTransfermarktReferees.ts` com cache em
+`data_process/transfermarkt/cache/referees/` (gitignored, como o resto do cache do Transfermarkt) e pausa entre
+pedidos. Só o rigor derivado entra no repositório (`strictness` e `tmMatches` em `referees.json`), nunca os cartões.
+
+```
+taxa      = (amarelos + 2º amarelo + 2 × vermelhos) / jogos            (só com jogos ≥ 20)
+referência = mediana da taxa dos árbitros do país (≥ 5 com taxa), senão a mediana do mundo
+z         = ln(taxa / referência) × jogos / (jogos + 40)                (encolhe amostras pequenas)
+s         = clamp(z × k, −1, 1), k tal que o desvio-padrão dos reais = 0,41 (o do sorteado)
+          − média dos reais (a parte real fica com média 0)
+```
+
+Relativo ao país porque o motor tem a mesma disciplina em todas as ligas (a cultura de cartões de cada liga não entra
+aqui, só a do árbitro dentro dela).
 
 ## 2. Quadro do save (`referees/pool.json`)
 
@@ -107,7 +132,8 @@ assistentes (~350 KB no save). Os reais entram primeiro; o resto é gerado.
 
 ### 2.2 Gerados
 
-`drawStaffOrigin(book, rng, país)` (o mesmo livro de nomes da comissão), sempre do próprio país (nunca outro país do
+`drawStaffOrigin(book, rng, país)` (o mesmo livro de nomes da comissão; ~8% mulheres, nome feminino do livro quando
+houver, senão o mesmo livro), sempre do próprio país (nunca outro país do
 continente), semente `referee:<save>:<país>:<n>`; idade 30–44 sorteada; `quality` 15–55 (uniforme), `fifa` falso.
 Sem o livro (testes, `/lab`) as listas embutidas de `staffNames.ts`.
 
@@ -125,8 +151,9 @@ melhores gerados apitam a 1ª divisão — é a regra, não falha.
 ### 2.4 Rigor
 
 ```
-u1, u2 = mulberry32(seedFrom("referee-strict:<id>"))  // o mesmo id dá o mesmo rigor em qualquer carreira
-strictness = (u1 + u2) − 1                             // triangular em [−1, 1], média 0, dp 0,41
+real (referees.json com strictness): esse valor (§1.3)
+senão: u1, u2 = mulberry32(seedFrom("referee-strict:<id>"))  // o mesmo id dá o mesmo rigor em qualquer carreira
+       strictness = (u1 + u2) − 1                             // triangular em [−1, 1], média 0, dp 0,41
 ```
 
 Faixas mostradas: **Tolerante** (s ≤ −0,35), **Equilibrado**, **Rigoroso** (s ≥ 0,35) — ~30% / 40% / 30% do mundo. O
@@ -309,19 +336,20 @@ de faixas opostas fica claramente diferente na aba Árbitros.
 
 ## 9. Limitações
 
-- Sem estatísticas reais (o rigor é sorteado pelo id); sem categoria nacional (só fama e FIFA).
-- Árbitras e árbitros de futebol feminino ficam de fora (o jogo é masculino).
+- Rigor real só para quem tem ID do Transfermarkt; os demais (e todos os gerados) têm rigor sorteado. Sem categoria
+  nacional (só fama e FIFA).
+- O rigor real é a carreira inteira (eras antigas misturadas), relativo ao país.
 - Sem erro do juiz, VAR ou reclamação (Etapa 39); a qualidade não muda a partida.
 - O mesmo rigor para faltas dos dois lados (sem "caseiro").
 - Torneios de base sem árbitro.
 - O uniforme é sempre preto: um clube de camisa preta fica parecido com o árbitro no campo.
 
-## 10. Pontos em aberto para o usuário
+## 10. Decisões do usuário (2026-10-09)
 
-1. **Rigor real pelo Transfermarkt?** 53% dos árbitros recentes têm o ID do Transfermarkt; a API local poderia dar os
-   cartões por jogo reais e o rigor sairia deles (o sorteado ficaria só para quem não tem). Fora desta etapa por padrão.
-2. **Mostrar o rigor antes do jogo?** Proposta: a faixa (Tolerante/Equilibrado/Rigoroso) aparece sempre, como fama
-   pública; alternativa: só os números da temporada, sem faixa.
-3. **Árbitras:** filtradas (P21 masculino). Incluir também mulheres no quadro?
-4. **Base com árbitro?** Proposta: sem árbitro (os cartões da base já não contam).
-5. **Inglaterra com escoceses/galeses:** o P27 do Wikidata é Reino Unido; aceitar ou filtrar pelo local de nascimento.
+1. **Rigor real pelo Transfermarkt:** sim, para quem tem o ID (§1.3); só o rigor derivado vai para o repositório; a
+   média do mundo continua neutra e o volume é medido (±3%).
+2. **Mostrar o rigor:** a faixa (Tolerante / Equilibrado / Rigoroso) sempre visível (prévia, aba Árbitros), junto com
+   os números da temporada.
+3. **Árbitras:** incluídas.
+4. **Base:** sem árbitro.
+5. **Inglaterra:** aceita árbitros do Reino Unido (escoceses, galeses).
