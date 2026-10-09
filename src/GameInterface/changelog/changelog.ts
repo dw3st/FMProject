@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.17",
+    date: "2026-10-09",
+    items: [
+      { pt: "Árbitros com nome, rosto e nacionalidade em todos os jogos; nas principais ligas, os árbitros e árbitras de verdade", en: "Referees with a name, face and nationality in every match; in the main leagues, the real referees" },
+      { pt: "Cada árbitro tem um estilo: tolerante, equilibrado ou rigoroso, com mais ou menos faltas e cartões", en: "Every referee has a style: lenient, balanced or strict, with more or fewer fouls and cards" },
+      { pt: "O árbitro do jogo aparece na prévia, no resumo da partida, no resultado e no campo com os bandeirinhas", en: "The match referee shows up in the preview, the match summary, the result and on the pitch with the assistants" },
+      { pt: "Os melhores árbitros apitam os jogos grandes; nas copas continentais, sempre um árbitro de outro país", en: "The best referees take the big matches; in continental cups, always a referee from another country" },
+      { pt: "Nova aba Árbitros em Estatísticas, com jogos e cartões por jogo de cada árbitro na temporada", en: "New Referees tab in Stats, with each referee's matches and cards per match in the season" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [

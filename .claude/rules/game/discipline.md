@@ -117,3 +117,9 @@ mesmos fatores do motor); um XI neutro sorteia o mesmo de antes. Ver `.claude/ru
 
 Cartões dos jogos de base são ignorados: não entram no `seasonLog`, não suspendem e a base não cumpre a suspensão do time
 principal (`.claude/rules/game/youth-competitions.md`).
+
+## Árbitros (Etapa 38b, 4.17)
+
+No quickSim, `rollDiscipline(..., refereeStrictness)`: faltas do lado e `PENALTIES_PER_SIDE` × (1 + 0,08 s), amarelo e
+vermelho direto como o motor (÷ `CARD_NORM`); o placar não muda. As estatísticas por árbitro (jogos, faltas, cartões,
+pênaltis) são agregadas do day log (`MatchEvent.referee`). Ver `.claude/rules/game/referees.md`.

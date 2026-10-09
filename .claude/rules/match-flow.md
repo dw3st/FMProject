@@ -461,3 +461,10 @@ Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (
 - Changing the mentality plays the human manager's gesture (`coachCue`: attack / defend / balanced, a new `seq`
   each time); a goal makes the scoring team's manager celebrate. The AI never changes mentality.
 - `/test`: chips Stadium, Officials, the crowd (0/25/50/Default 65/75/100%) and Neutral; off by default.
+
+# Referee of the match (Etapa 38b, 4.17)
+
+`POST /api/match-setup` returns `referee` (the appointment the day advance will use, `.claude/rules/game/referees.md`).
+`MatchScreen` puts `{ id, name, country, strictness }` on `GameState.referee` (fouls and cards scale with the rigor),
+shows him in the "Resumo" panel and draws the referee and the assistants with their faces. The day advance logs the
+same referee (`MatchEvent.referee`, never taken from the client's recording).

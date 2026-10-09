@@ -40,3 +40,10 @@ alwaysApply: false
 - `officials.ts` / `coaches.ts` / `touchlineRender.ts` — referee (diagonal behind the play, ≥ 6 yd from the ball, smoothed, snaps past 30 yd; after a card its target is locked on the last foul spot for 1.5 s and the card shows over his head), assistants (level with the offside line of their half, flag raised on `offsideCalled`) and both managers (technical areas at 40% / 60% of the drawn pitch, below the bottom touchline; face from the server via `loadFaceCanvas`; gestures on the human's mentality change — `coachCue` — and on a goal). Engine yards in, drawn through `toPixel` (mirror included). Props `officials`, `coaches`, `coachCue`, `stadium` of `PixiPitch` (read at mount: switching the stadium / officials on or off remounts — put it in the `key`)
 - `playerAnims.ts` — long shot (≥ 20 yd), header and save animations: an offset / lift / scale / rotation on top of the interpolated marker, on the effects clock; nothing queued with the tab hidden
 - Draw meter (`/test`, `perfRef`): FPS and average frame-callback ms every 30 frames. Measured for the stadium + officials (Etapa 38): their per-frame logic costs ~6 µs (headless bench, 3600 frames of `11v11-classic`) and the crowd data for a bake ~8 ms once (4–5k fans); the crowd is one sprite, so no per-frame draw cost. The in-browser FPS before/after could not be read on the dev machine (the automated Chrome tab reports `document.hidden`, so the ticker never runs) — pending a manual read in `/test` (Stadium + Officials, crowd 100%)
+
+## Officials' faces (Etapa 38b, 4.17)
+
+`officials` also takes `{ refereeFace?, assistantFaces? }` (server URLs, `refereeFaceUrl`): `makeOfficial` has a "head"
+container where the face sprite (rasterised once by `loadFaceCanvas`, like the managers) goes over the kit disc; `true`
+keeps the plain disc. Read at mount (the match screen puts the appointment in the pitch `key`). See
+`.claude/rules/game/referees.md`.

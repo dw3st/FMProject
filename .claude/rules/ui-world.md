@@ -112,6 +112,12 @@ Mesmo estilo `facesjs`, mesmo princípio (SVG gerado no servidor, o cliente só 
   novo jogo (editor 128px, resumo do passo do clube 40px). Componentes: `FaceImage` (`PlayerFace.tsx`, genérico por URL),
   `StaffFace` e `ManagerFaceImage` (`Components/PersonFace.tsx`).
 
+### Rostos dos árbitros (4.17)
+
+Mesma rota `GET /api/faces/person/:id.svg` (ids `ref_*`): `refereeFaceUrl` põe a camisa preta com gola amarela e a
+idade real; `g=f` desenha o rosto feminino do `facesjs` (árbitras do Wikidata). `PERSON_FACE_VERSION` não mudou (o rosto
+masculino é o mesmo). Ver `.claude/rules/game/referees.md`.
+
 ### Traços reais (piloto, ESPN)
 
 Piloto em 4 ligas (`brazil_serie_a`, `premier_league`, `la_liga`, `ligue_1`): cor da pele (7 tons) e
