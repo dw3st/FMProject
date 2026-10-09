@@ -144,10 +144,14 @@ e o Continuar com a borda direita.
   técnica, Ligas, Transferências, Olheiro, Estatísticas. Com a aba a mais, a regra de encolher para só ícone continua
   valendo (`useCompactTabs`).
 - `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
-  primeira aba; abas no centro (ícone 16px + rótulo `font-display font-bold uppercase text-sm`,
+  primeira aba; abas no centro (ícone 18px com a cor da seção, só tokens `primary`/`chart-*` — #133 —
+  + rótulo `font-display font-bold uppercase text-sm`,
   `gap-3.5`, ativa sublinhada com `border-b-2 border-primary`, `whitespace-nowrap`). Quando o
   conjunto rotulado não cabe entre o logo e o bloco do dia, as abas viram só ícone (rótulo em
-  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs`), nunca transbordam a moldura.
+  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs`, sobre uma cópia invisível com
+  rótulos, refeito em resize, fontes, visibilidade e volta do cache — #138), nunca transbordam a moldura.
+  O botão de report (só testers) fica fora das abas, só a bandeirinha, num bloco com divisor antes
+  do bloco do dia.
 - **Bloco do dia** (à direita, separado por divisor `border-l border-border pl-4`): data numa linha
   (`Icon calendar` + "Dom, 07/02/2027" via `Intl`, `text-sm font-semibold text-muted-foreground
   whitespace-nowrap`); botão com borda (`h-9 rounded-md border border-border bg-card`) com ícone +
