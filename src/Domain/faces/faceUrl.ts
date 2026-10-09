@@ -91,3 +91,12 @@ export function managerFaceUrl(
     ? managerAvatarUrl(manager.face, manager.nationality, clubColors)
     : personFaceUrl(manager.id, manager.nationality, clubColors);
 }
+
+/** Referee kit for the face: black shirt, yellow collar . */
+export const REFEREE_FACE_COLORS = ["#111418", "#111418", "#f5d020"] as const;
+
+/** Face of a referee or an assistant (`referees.md`): the person face in the referee kit, a woman's with `female`. */
+export function refereeFaceUrl(id: string, country?: string | null, age?: number | null, female = false): string {
+  const url = personFaceUrl(id, country, REFEREE_FACE_COLORS, age);
+  return female ? `${url}&g=f` : url;
+}

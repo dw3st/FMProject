@@ -54,6 +54,11 @@ export function makeOfficial(playerR: number, assistant: boolean): Container {
   const c = new Container();
   c.addChild(shadowOf(r));
   c.addChild(new Graphics().circle(0, 0, r).fill(OFFICIAL_LOOK.KIT).stroke({ width: 1.5, color: OFFICIAL_LOOK.EDGE, alpha: 0.9 }));
+  // The face (referees.md) goes here once loaded, inside the kit's edge; empty = the plain kit disc.
+  const head = new Container() as Container & { faceR?: number };
+  head.label = "head";
+  head.faceR = r - 1.5;
+  c.addChild(head);
   if (assistant) {
     const up = flag(r, true);
     up.visible = false;

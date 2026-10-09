@@ -25,6 +25,4 @@ export const REFEREE = {
   GENERATED_QUALITY: [15, 55] as const,
   QUALITY_LIMITS: [15, 98] as const,
   GENERATED_FIFA_QUALITY: 80,
-  /** Referee kit for the face: black shirt, yellow collar. */
-  FACE_COLORS: ["#111418", "#111418", "#f5d020"] as const,
 } as const;

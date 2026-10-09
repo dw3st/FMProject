@@ -102,10 +102,12 @@ export interface PersonFaceRequest {
   nationality: string | null;
   colors: (string | undefined)[];
   age: number | null;
+  /** `g=f`: a woman's face (referees). */
+  female?: boolean;
 }
 
 /**
- * `GET /api/faces/person/:id.svg?v=&nat=&colors=&age=` (staff member / manager). `"notFound"` for a
+ * `GET /api/faces/person/:id.svg?v=&nat=&colors=&age=&g=` (staff member / manager). `"notFound"` for a
  * bad file name, `"badRequest"` for an invalid age.
  */
 export function parsePersonFaceRequest(file: string, search: URLSearchParams): PersonFaceRequest | "notFound" | "badRequest" {
@@ -119,12 +121,14 @@ export function parsePersonFaceRequest(file: string, search: URLSearchParams): P
     age = Number(ageRaw);
     if (age < MIN_FACE_AGE || age > MAX_FACE_AGE) return "badRequest";
   }
-  return { personId, nationality: parseNationality(search), colors: parseColors(search), age };
+  const g = search.get("g");
+  if (g !== null && g !== "f") return "badRequest";
+  return { personId, nationality: parseNationality(search), colors: parseColors(search), age, ...(g === "f" ? { female: true } : {}) };
 }
 
 function renderPersonFace(req: PersonFaceRequest): string {
-  const key = `person|${req.personId}|${faceRegionOf(req.nationality)}|${colorsKey(req.colors)}|${req.age ?? ""}`;
-  return cached(key, () => croppedPersonFaceSvg(req.personId, req.nationality, req.colors, { age: req.age }));
+  const key = `person|${req.personId}|${faceRegionOf(req.nationality)}|${colorsKey(req.colors)}|${req.age ?? ""}|${req.female ? "f" : ""}`;
+  return cached(key, () => croppedPersonFaceSvg(req.personId, req.nationality, req.colors, { age: req.age, ...(req.female ? { female: true } : {}) }));
 }
 
 export interface ManagerAvatarRequest {

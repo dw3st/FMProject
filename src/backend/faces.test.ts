@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { faceRoutes, parseFaceRequest, parsePersonFaceRequest } from "@/backend/faces";
+import { refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { croppedPersonFaceSvg } from "@/Domain/faces/personFaceSvg";
 import { croppedPlayerFaceSvg } from "@/Domain/faces/playerFaceSvg";
 import { faceUrl, managerAvatarUrl, personFaceUrl } from "@/Domain/faces/faceUrl";
@@ -88,6 +89,17 @@ describe("GET /api/faces/person/:id.svg and /api/faces/manager/avatar.svg", () =
       expect(getFrom(personRoute, "/api/faces/person/", `/api/faces/person/s1.svg?age=${age}`).status).toBe(400);
     }
     expect(parsePersonFaceRequest("s1.svg", new URLSearchParams({ age: "61" }))).toMatchObject({ personId: "s1", age: 61 });
+  });
+
+  test("referee faces: referee kit, female face with g=f, 400 on another g", async () => {
+    const url = refereeFaceUrl("ref_Q42", "England", 41);
+    expect(url).toContain("colors=111418%2C111418%2Cf5d020");
+    const res = getFrom(personRoute, "/api/faces/person/", url);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(croppedPersonFaceSvg("ref_Q42", "England", ["#111418", "#111418", "#f5d020"], { age: 41 }));
+    const female = getFrom(personRoute, "/api/faces/person/", refereeFaceUrl("ref_Q43", "Brazil", 35, true));
+    expect(await female.text()).toBe(croppedPersonFaceSvg("ref_Q43", "Brazil", ["#111418", "#111418", "#f5d020"], { age: 35, female: true }));
+    expect(getFrom(personRoute, "/api/faces/person/", "/api/faces/person/ref_Q1.svg?g=x").status).toBe(400);
   });
 
   test("manager avatar: rendered from the parameters, 400 on invalid ones, 404 on another file", async () => {
