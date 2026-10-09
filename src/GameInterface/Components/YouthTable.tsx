@@ -102,6 +102,16 @@ export function YouthTable() {
       ),
     },
     {
+      key: "youthApps",
+      header: t("youthComps.cols.apps"),
+      cell: (r) => <span className="tabular-nums text-muted-foreground">{r.player.seasonLog?.youthCup?.appearances ?? 0}</span>,
+    },
+    {
+      key: "youthGoals",
+      header: t("youthComps.cols.goals"),
+      cell: (r) => <span className="tabular-nums text-muted-foreground">{r.player.seasonLog?.youthCup?.goals ?? 0}</span>,
+    },
+    {
       key: "actions",
       header: "",
       className: "text-right",

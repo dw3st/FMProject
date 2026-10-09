@@ -48,6 +48,7 @@ describe("youth competition routes", () => {
     expect(data.standings.length).toBe(20);
     expect(Object.keys(data.names).length).toBe(20);
     expect(data.leaders).toEqual({});
+    expect(data.leagueOf[data.meta.youth.clubs[0]]).toBe("premier_league");
     expect((await call(key, "/x", "GET", undefined, token, { slug: "cup_england" })).status).toBe(400);
     expect((await call(key, "/x", "GET", undefined, token, { slug: "u21_atlantis" })).status).toBe(404);
     expect((await call(key, "/x", "GET", undefined, other, { slug: "u21_england" })).status).toBeGreaterThanOrEqual(403);

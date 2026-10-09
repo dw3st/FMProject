@@ -118,7 +118,11 @@ export const youthCompRoutes = {
     const standings = (await saveService.getLeagueStandings(saveId!, slug!)) ?? [];
     const index = await saveService.getSquadIndex(saveId!);
     const names = Object.fromEntries(meta.youth.clubs.map((id) => [id, index.byId(id)?.name ?? meta.youth!.teams[id]?.name ?? id]));
-    return Response.json({ meta, fixtures, standings, names, leaders: meta.youth.leaders });
+    const leagueOf = Object.fromEntries(meta.youth.clubs.flatMap((id) => {
+      const league = index.byId(id)?.leagueSlug;
+      return league ? [[id, league]] : [];
+    }));
+    return Response.json({ meta, fixtures, standings, names, leaders: meta.youth.leaders, leagueOf });
   },
 
   /** `GET` the human club's next youth games, call-ups and eligible players; `PUT { u21?, u19? }`. */

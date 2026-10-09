@@ -9,6 +9,7 @@ import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
+import { YouthCallUpsPanel } from "@/GameInterface/Squad/YouthCallUpsPanel";
 import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
 import { SquadDepthView } from "@/GameInterface/Components/SquadDepthView";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
@@ -134,7 +135,10 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         ) : tab === "depth" && squad.id === mySquadId ? (
           <SquadDepthView squad={squad} leagueSlug={league} clubSlug={club} />
         ) : tab === "youth" && squad.id === mySquadId ? (
-          <YouthTable />
+          <div className="space-y-6">
+            <YouthCallUpsPanel />
+            <YouthTable />
+          </div>
         ) : tab === "loans" && squad.id === mySquadId && session ? (
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (

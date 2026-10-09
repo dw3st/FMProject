@@ -22,6 +22,7 @@ import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable"
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import { CupBracket, type CupBracketData } from "@/GameInterface/Components/CupBracket";
 import { ContinentalView, type ContinentalData } from "@/GameInterface/Components/ContinentalView";
+import { YouthCompTab, type YouthSlugs } from "@/GameInterface/Components/YouthCompTab";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
 import countriesRaw from "@/Data/countries.json";
@@ -500,7 +501,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental">("table");
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental" | "youth">("table");
+  // Youth competitions of the selected league's country (`GET /youth-comps?country=`).
+  const [youthSlugs, setYouthSlugs] = useState<YouthSlugs | null>(null);
   // Club finances of the selected league — fetched only while the Finances tab is open.
   const [financeRows, setFinanceRows] = useState<ClubFinanceRow[] | null>(null);
   // National cup bracket of the selected league's country — fetched only while the Cup tab is open.
@@ -627,6 +630,30 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
       cancelled = true;
     };
   }, [tab, session?.saveId, cupSlug]);
+
+  // Youth competitions of the country: the "Youth" tab only exists when it has one; switching to a
+  // country without them drops back to the table (same as the Cup tab).
+  const youthCountry = active?.country ?? null;
+  useEffect(() => {
+    if (!session?.saveId || !youthCountry) {
+      setYouthSlugs(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/saves/${session.saveId}/youth-comps?country=${encodeURIComponent(youthCountry)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<YouthSlugs>) : null))
+      .catch(() => null)
+      .then((d) => {
+        if (!cancelled) setYouthSlugs(d);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.saveId, youthCountry]);
+  const hasYouth = !!(youthSlugs?.u21 || youthSlugs?.u19);
+  useEffect(() => {
+    if (tab === "youth" && youthSlugs && !hasYouth) setTab("table");
+  }, [tab, youthSlugs, hasYouth]);
 
   // Default continental competition: the one the player's club is actually playing this season
   // (from the player calendar), else the continent of the currently selected league.
@@ -821,6 +848,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   ? [{ key: "cup" as const, label: competitionName(cupSlug, leagues, i18n.language), disabled: !session }]
                   : []),
                 { key: "continental" as const, label: t("continental.tab"), disabled: !session },
+                ...(hasYouth ? [{ key: "youth" as const, label: t("youthComps.tab"), disabled: !session }] : []),
               ]}
               active={tab}
               onChange={setTab}
@@ -894,6 +922,12 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
                 )}
               </div>
+            ) : tab === "youth" ? (
+              session?.saveId && youthSlugs && hasYouth ? (
+                <YouthCompTab key={youthCountry ?? ""} saveId={session.saveId} slugs={youthSlugs} myClubId={session.clubId ?? ""} />
+              ) : (
+                <p className="text-muted-foreground text-sm p-6">{t("youthComps.none")}</p>
+              )
             ) : (
               <FixturesPanel
                 fixtures={leagueFixtures}
