@@ -331,6 +331,8 @@ export function MatchScreen() {
           matchMarking?: { date: string; marks: { slot: number; targetId: string }[] } | null;
           crowd?: MatchCrowd | null;
           managers?: MatchManagers | null;
+          /** Players each side may name for this competition (registration); null = everyone. */
+          registered?: { mine: string[]; opp: string[] } | null;
         };
       })
       .then((data) => {
@@ -384,10 +386,14 @@ export function MatchScreen() {
         // player must never be available as a substitute either). `data.myLineup` is already
         // injury-aware (`/api/match-setup` → `resolveUserLineup`), but the full squad list itself
         // (used here as the bench source too) is not filtered until now.
+        // Registration (`.claude/rules/game/registration.md`): a player not registered for this competition (or
+        // over the per-match foreign limit) is out of the pool too, starters and bench.
         const matchDate = data.fixture.date;
-        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate));
+        const mineOk = data.registered ? new Set(data.registered.mine) : null;
+        const oppOk = data.registered ? new Set(data.registered.opp) : null;
+        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate) && (!mineOk || mineOk.has(p.id)));
         const opponentPlayers = (data.opponentSquad?.players ?? data.mySquad.players).filter(
-          (p) => !isUnavailable(p, matchDate),
+          (p) => !isUnavailable(p, matchDate) && (!oppOk || !data.opponentSquad || oppOk.has(p.id)),
         );
         // Morale (`.claude/rules/game/morale.md`): every player at his own stored value — the AI side
         // stores none (neutral). No team override from another screen may leak into a real match.

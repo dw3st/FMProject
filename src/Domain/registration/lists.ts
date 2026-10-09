@@ -93,6 +93,7 @@ export function humanDay(squad: Squad, info: CompInfo, date: string): { squad: S
   const roster = new Set(squad.players.map((p) => p.id));
   const notified = new Set((list.notified ?? []).filter((id) => roster.has(id)));
   const out = new Set((list.out ?? []).filter((id) => roster.has(id)));
+  const waiting = new Set((list.waiting ?? []).filter((id) => roster.has(id)));
   const notices: RegistrationNotice[] = [];
   let next: RegistrationList = list;
 
@@ -104,17 +105,20 @@ export function humanDay(squad: Squad, info: CompInfo, date: string): { squad: S
       }
     } else {
       let ids = list.ids.filter((id) => roster.has(id));
+      // Only arrivals: new players and those told to wait; a player left out earlier stays out.
       for (const p of outsiders(squad.players, ids, info)) {
-        if (out.has(p.id)) continue;
+        if (out.has(p.id) || (notified.has(p.id) && !waiting.has(p.id))) continue;
         if (canAdd(ids, p, squad.players, info.rule, info.ctx).ok) ids = [...ids, p.id];
       }
       if (!sameIds(ids, list.ids)) next = { ...list, ids, updatedOn: date, sig: rosterSig(squad.players) };
     }
-    const left = outsiders(squad.players, next.ids, info).filter((p) => !notified.has(p.id) && !out.has(p.id));
+    const left = outsiders(squad.players, next.ids, info)
+      .filter((p) => (!notified.has(p.id) || waiting.has(p.id)) && !out.has(p.id));
     if (left.length > 0) {
       notices.push({ kind: "not_fit", competition: info.slug, season: info.season, playerIds: left.map((p) => p.id) });
       for (const p of left) notified.add(p.id);
     }
+    waiting.clear();
     if (info.status.until && daysBetween(date, info.status.until) === CLOSING_NOTICE_DAYS) {
       notices.push({
         kind: "closing", competition: info.slug, season: info.season, until: info.status.until,
@@ -128,21 +132,26 @@ export function humanDay(squad: Squad, info: CompInfo, date: string): { squad: S
         kind: "waiting", competition: info.slug, season: info.season, playerIds: left.map((p) => p.id),
         ...(info.status.opensOn ? { opensOn: info.status.opensOn } : {}),
       });
-      for (const p of left) notified.add(p.id);
+      for (const p of left) {
+        notified.add(p.id);
+        waiting.add(p.id);
+      }
     }
   }
 
   const notifiedArr = [...notified];
   const outArr = [...out];
+  const waitingArr = [...waiting];
   const bookkeepingChanged =
-    !sameIds(notifiedArr, list.notified ?? []) || !sameIds(outArr, list.out ?? []);
+    !sameIds(notifiedArr, list.notified ?? []) || !sameIds(outArr, list.out ?? []) || !sameIds(waitingArr, list.waiting ?? []);
   if (next === list && !bookkeepingChanged) return { squad, changed: false, notices };
-  const { notified: _n, out: _o, ...base } = next;
+  const { notified: _n, out: _o, waiting: _w, ...base } = next;
   const final: RegistrationList = {
     ...base,
     ...(list.manual ? { manual: true as const } : {}),
     ...(notifiedArr.length > 0 ? { notified: notifiedArr } : {}),
     ...(outArr.length > 0 && list.manual ? { out: outArr } : {}),
+    ...(waitingArr.length > 0 ? { waiting: waitingArr } : {}),
   };
   return { squad: withList(squad, info.slug, final), changed: true, notices };
 }
@@ -152,17 +161,23 @@ export function manualList(squad: Squad, info: CompInfo, ids: string[], date: st
   const prev = squad.registrations?.[info.slug];
   const unique = [...new Set(ids)];
   const keep = new Set(unique);
-  const removed = (prev?.ids ?? []).filter((id) => !keep.has(id));
+  // Free players are always registered (the screen never sends them): leaving them out is not a removal.
+  const freeIds = new Set(
+    squad.players.filter((p) => isFree(p, info.rule, info.ctx.country, info.ctx.squadId, info.ctx)).map((p) => p.id),
+  );
+  const removed = (prev?.ids ?? []).filter((id) => !keep.has(id) && !freeIds.has(id));
   const out = [...new Set([...(prev?.out ?? []).filter((id) => !keep.has(id)), ...removed])];
   const roster = new Set(squad.players.map((p) => p.id));
   const notified = [...new Set([...(prev?.notified ?? []), ...outsiders(squad.players, unique, info).map((p) => p.id)])]
     .filter((id) => roster.has(id));
+  const waiting = (prev?.waiting ?? []).filter((id) => roster.has(id) && !keep.has(id));
   return {
     season: info.season,
     ids: unique,
     updatedOn: date,
     sig: rosterSig(squad.players),
     manual: true,
+    ...(waiting.length > 0 ? { waiting } : {}),
     ...(out.length > 0 ? { out } : {}),
     ...(notified.length > 0 ? { notified } : {}),
   };

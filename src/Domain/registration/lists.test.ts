@@ -70,6 +70,19 @@ describe("lists", () => {
     const open = humanDay(r.squad, info(true), "2027-01-01");
     expect(open.squad.registrations!.premier_league!.ids).toContain("new");
   });
+  test("manual mode: a player left out earlier is not added back, a waiting arrival is", () => {
+    const base = ensureList(squadOf(28), info(true), D).squad; // p25..p27 left out (and told)
+    const ids = base.registrations!.premier_league!.ids.filter((id) => id !== "p0");
+    let s: Squad = { ...base, registrations: { premier_league: manualList(base, info(true), ids, D) } };
+    s = humanDay(s, info(true), D).squad;
+    expect(s.registrations!.premier_league!.ids).not.toContain("p25");
+    s = humanDay({ ...s, players: [...s.players, mk("late", 9)] }, info(false), D).squad;
+    expect(s.registrations!.premier_league!.waiting).toEqual(["late"]);
+    const open = humanDay(s, info(true), "2027-01-01").squad.registrations!.premier_league!;
+    expect(open.ids).toContain("late");
+    expect(open.ids).not.toContain("p25");
+    expect(open.waiting).toBeUndefined();
+  });
   test("closing notice three days before the deadline", () => {
     const s = ensureList(squadOf(20), info(true), D).squad;
     const r = humanDay(s, info(true), "2026-08-28");

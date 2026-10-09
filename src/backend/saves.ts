@@ -8,6 +8,7 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { isFamiliarityKey } from "@/types/familiarityTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { humanMatchRegistrationToday } from "@/backend/registrationWorld";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
@@ -373,11 +374,15 @@ export const saveRoutes = {
       const squad = await saveService.getSquadById(id, meta.clubId);
       if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
       const tactics = await saveService.getTactics(id);
+      // Same registered pool as the preview (`match-setup`), so its suggestions validate here.
+      const reg = await humanMatchRegistrationToday(saveService, id, meta, squad);
       const valid = resolveUserLineup(
         squad,
         formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" }),
         tactics?.lineup ?? [],
         meta.currentDate,
+        undefined,
+        reg ?? undefined,
       ).rotationSuggestion;
       const ok = swaps.every((s) => valid.some((v) => v.out === s.out && v.in === s.in));
       if (!ok) return Response.json({ error: "swap not in today's suggestion" }, { status: 400 });

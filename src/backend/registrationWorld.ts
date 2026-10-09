@@ -133,6 +133,24 @@ export async function matchRegistration(
   };
 }
 
+/** Registration of the human club for its official match on the save's current date (null = no match today). */
+export async function humanMatchRegistrationToday(
+  service: SaveService,
+  saveId: string,
+  meta: SaveMeta,
+  squad: Squad,
+): Promise<MatchRegistration | null> {
+  const date = meta.currentDate ?? "";
+  if (!date) return null;
+  const fixture = (await service.getFixturesForDate(saveId, date))
+    .find((f) => !f.played && (f.home === squad.id || f.away === squad.id));
+  if (!fixture) return null;
+  const index = await service.getSquadIndex(saveId);
+  const league = index.byId(squad.id)?.leagueSlug ?? meta.leagueSlug;
+  const dctx = await registrationDayCtx(service, saveId, meta, index, date);
+  return (await matchRegistration(dctx, squad, league, fixture.competition))?.reg ?? null;
+}
+
 /** The human club's morning step over all its competitions. */
 export async function humanRegistrationDay(
   dctx: RegistrationDayCtx,

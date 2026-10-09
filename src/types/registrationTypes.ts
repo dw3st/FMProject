@@ -39,8 +39,10 @@ export interface RegistrationList {
   manual?: true;
   /** Human club: removed by hand (the automatic fill never puts them back). */
   out?: string[];
-  /** Human club: arrivals already told they did not fit / must wait. */
+  /** Human club: players already told they are out (did not fit / must wait); never told twice. */
   notified?: string[];
+  /** Human club: arrivals told to wait for the deadline — tried (with new arrivals) when it opens. */
+  waiting?: string[];
   /** Completed by the 18-player floor, ignoring the limits. */
   exception?: true;
 }
@@ -80,4 +82,36 @@ export interface RegistrationNotice {
   opensOn?: string;
   until?: string;
   counts?: RegCounts;
+}
+
+/** One player of a competition list on the Registration screen. */
+export interface RegistrationRowView {
+  id: string;
+  name: string;
+  age: number;
+  nationality: string | null;
+  /** Natural detailed position. */
+  role: string;
+  overall: number;
+  registered: boolean;
+  foreign: boolean;
+  clubTrained: boolean;
+  nationTrained: boolean;
+  free: boolean;
+  /** Not registered: can he be added now (deadline aside)? */
+  canAdd: boolean;
+  reason?: RegViolationKind;
+}
+
+/** One competition of the human club (`GET /api/saves/:id/registration`). */
+export interface RegistrationCompView {
+  slug: string;
+  kind: RegistrationCompKind;
+  season: string;
+  rule: RegistrationRule;
+  status: RegistrationStatus;
+  manual: boolean;
+  exception: boolean;
+  counts: RegCounts;
+  rows: RegistrationRowView[];
 }
