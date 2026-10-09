@@ -579,7 +579,7 @@ interface MatchSetupData {
   myLineup: string[];
   myTactics?: TacticsSave;
   /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
-  injuredReplaced?: { out: string; in: string; reason?: "injured" | "suspended" }[];
+  injuredReplaced?: { out: string; in: string; reason?: "injured" | "suspended" | "unregistered" | "foreignLimit" }[];
   /** Tired-starter swaps the user can accept for this match. */
   rotationSuggestion?: { out: string; in: string }[];
   /** Tired-starter swaps already in the XI (assistant on, or accepted). */
@@ -985,7 +985,10 @@ export function MatchPreviewScreen() {
   const awaySquadName    = isHome ? opponentName           : session.clubName;
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
-  const oppAutoLineup = opponentSquad
+  // The server's probable XI already respects the opponent's registration (`registration.md`).
+  const oppAutoLineup = matchSetup?.oppLineup?.length
+    ? matchSetup.oppLineup
+    : opponentSquad
     ? autoFillLineupWithFitness(
         oppFormationSlots as Parameters<typeof autoFillLineupWithFitness>[0],
         opponentSquad.players,
@@ -1201,7 +1204,13 @@ export function MatchPreviewScreen() {
             <div className="text-sm text-destructive m-0 space-y-0.5">
               {matchSetup.injuredReplaced.map((swap, i) => (
                 <p key={i} className="m-0">
-                  {t(swap.reason === "suspended" ? "matchPreview.suspendedReplaced" : "matchPreview.injuredReplaced", { out: playerName(swap.out), in: playerName(swap.in) })}
+                  {t(
+                    swap.reason === "suspended" ? "matchPreview.suspendedReplaced"
+                    : swap.reason === "unregistered" ? "matchPreview.unregisteredReplaced"
+                    : swap.reason === "foreignLimit" ? "matchPreview.foreignLimitReplaced"
+                    : "matchPreview.injuredReplaced",
+                    { out: playerName(swap.out), in: playerName(swap.in) },
+                  )}
                 </p>
               ))}
             </div>
