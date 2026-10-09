@@ -1205,10 +1205,8 @@ export function MatchScreen() {
         </div>
 
         <MatchSummaryPanel
-          nameA={shownTeams.A?.name}
-          nameB={shownTeams.B?.name}
-          colorA={shownKits.A}
-          colorB={shownKits.B}
+          teamA={shownTeams.A}
+          teamB={shownTeams.B}
           statsA={summaryStats(sides.left)}
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}

@@ -389,7 +389,8 @@ side; a neutral venue (`fixture.neutral`) keeps the user on the left. With it:
 
 - scoreboard, goal / half-time / full-time overlays, aggregate and penalty scores, shootout strip
   rows and the "Resumo" panel get their A/B pairs through `toDisplayPair` / `displayTeam`
-  (display slot A = left);
+  (display slot A = left); the "Resumo" header shows the two crests (`ClubLogo` 32px, name in `title` and
+  `sr-only`, #128) instead of the names;
 - the pitch is drawn mirrored on x (`PixiPitch` `mirror`, `GraficsEngine/pitchMirror.ts`);
 - the left team list still opens on the user's own team (#51), flip to see the opponent;
 - the result screen (`MatchResultScreen`) already lists the fixture's home side on the left.

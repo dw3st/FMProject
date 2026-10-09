@@ -29,6 +29,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-10-09",
     items: [
       { pt: "Na partida, os lances do Resumo ficam sempre visíveis, com rolagem própria; o mapa de posse foi para baixo deles e pode ser recolhido", en: "In the match, the Summary's events are always visible, with their own scroll; the possession map moved below them and can be collapsed" },
+      { pt: "O Resumo da partida mostra os escudos dos clubes no lugar dos nomes, com o mandante à esquerda", en: "The match Summary shows the club crests instead of the names, with the home side on the left" },
     ],
   },
   {
