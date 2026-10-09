@@ -48,7 +48,11 @@ Visual: `.claude/rules/ui-standard.md`. Base do clube (safra, promoção): `yout
 - Ocupação por clube: todos os jogos da liga do clube, toda data de fase da copa do país (conservador) e as 13 datas da
   continental em que ele está nos grupos. Dia comum da rodada pelos dias preferidos (sub-21: ter, qua, seg, qui, sex;
   sub-19: qui, qua, sex, ter, seg) e o menor custo (1000 por jogo no mesmo dia de um jogo do time principal, 1 na
-  véspera/dia seguinte); o jogo de um clube ocupado vai para o dia livre mais próximo da semana, ou até 6 dias depois.
+  véspera/dia seguinte); o jogo de um clube ocupado vai para o dia livre mais próximo da semana, ou até 6 dias depois,
+  ou, sem nada livre antes da rodada seguinte, para o dia livre mais próximo entre a rodada anterior e a seguinte
+  (fim de semana e dias antes da data comum incluídos). Sem a última busca, uma semana de duas rodadas com liga na
+  segunda, Libertadores na terça e copa na quarta deixava os clubes da Libertadores no dia da liga (sub-19 argentino,
+  2027-10-04, 12 clubes).
 - **Adiamento no dia** (`playYouthDay`): jogo de um clube que joga pelo time principal hoje vai para o próximo dia livre
   dos dois (até 14 dias, antes do fim; `postponedFrom`, `date-index` regravado); sem dia, **cancelado** (`played: true`,
   `result: null`, `cancelled: true`, fora da tabela).
@@ -67,7 +71,8 @@ Visual: `.claude/rules/ui-standard.md`. Base do clube (safra, promoção): `yout
 
 ## Pós-jogo (`applyYouthMatch`)
 
-`seasonLog.youthCup` (J, G, A, soma das notas), fôlego e carga de 90 minutos (`applyMatchFitness`), DP de crescimento ×
+`seasonLog.youthCup` (J, G, A, soma das notas; zera na virada da liga do clube, a base também — `runSeasonTransition`
+zera os contadores da base e mantém fôlego e carga; acompanha o jogador numa transferência, como o resto do `seasonLog`), fôlego e carga de 90 minutos (`applyMatchFitness`), DP de crescimento ×
 `youthDpMult` (staff, CT, renascido, personalidade, moral × `DP_MULT` até 21 anos ou `DP_MULT_OVERAGE` acima; sem
 declínio por idade), lesões (médico/fisioterapia; inbox `injury` do clube do jogador, inclusive a volta), cartões
 ignorados. Quem jogou não treina nem descansa no dia (`skipPlayerIds`). A base (`squad.youth`) recupera fôlego todo dia
@@ -135,10 +140,14 @@ bun test src/Domain/youthComps src/backend/youthCompWorld.test.ts src/backend/yo
 
 `scripts/season-rollover-smoke.ts`, seções "Torneios de base (criação)" e "Torneios de base": competições e tamanhos na
 criação; nenhum jogo de base nos `events` do dia; nenhum jogo de base não jogado no passado; cancelamentos < 1%;
-jogadores do clube do jogador nos jogos; ninguém com mais `youthCup` que os jogos do clube; tabelas do país do jogador
+jogadores do clube do jogador nos jogos; ninguém com mais `youthCup` que os jogos de base dele nos logs do dia (em
+qualquer clube); nenhum jogador da base com mais jogos que o clube na temporada; o `youthCup` do elenco e da base zera
+na virada do clube do jogador; nenhum jogo de base num dia do time principal logo depois da criação; tabelas do país do jogador
 coerentes e iguais à recalculada; convocação pela rota joga e some; na virada, ano novo, arquivo com 1 título e nenhum
-jogo novo antes da data. A checagem de dupla marcação conta a base (jogo de base no dia de um jogo do time principal é
-choque; sub-19 e sub-21 no mesmo dia não são; cancelados não contam).
+jogo novo antes da data. A checagem de dupla marcação conta a base já jogada (jogo de base jogado no dia de um jogo do time
+principal é choque; sub-19 e sub-21 no mesmo dia não são; cancelados não contam). Um jogo de base ainda por jogar que cai
+num dia do time principal surgido depois da geração (a base regerada não conhece as continentais da temporada nova) só
+é informado: o adiamento do dia resolve.
 
 ## Limitações
 

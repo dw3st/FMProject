@@ -173,7 +173,20 @@ export function scheduleYouthSeason(args: {
             }
           }
         }
-        // No free day: stays on the common day; the postponement of the day decides.
+        if (!moved) {
+          // Nothing free ahead before the next round (two rounds a week, first-team games on every
+          // weekday left): any free day between the previous and the next round, weekend and days
+          // before the common one included, nearest first (later on a tie).
+          for (let k = 1; k <= 7 && !moved; k++) {
+            for (const d of [addDays(common, k), addDays(common, -k)]) {
+              if (inRange(d) && free(home, away, d)) {
+                moved = d;
+                break;
+              }
+            }
+          }
+        }
+        // No free day at all: stays on the common day; the postponement of the day decides.
         if (moved) date = moved;
       }
       for (const c of [home, away]) {

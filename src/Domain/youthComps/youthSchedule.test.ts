@@ -95,6 +95,28 @@ describe("scheduleYouthSeason", () => {
     const out = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, "s"), window: { start: "2026-08-12", end: "2027-05-09" }, busyByClub: new Map(), age: "u21" })!;
     expect(out.fixtures.every((f) => f.date >= "2026-08-17")).toBe(true);
   });
+  test("a game with no free weekday ahead moves back to a free day after the previous round (weekend included)", () => {
+    // Quatro clubes, 6 rodadas em 3 semanas: duas por semana (sub-19 seg + qui). c1 joga pelo time
+    // principal seg, ter e qua da 2ª semana (liga, continental, copa): a rodada de segunda (17/08) não
+    // tem dia livre até a quinta seguinte, mas sexta, sábado e domingo depois da rodada anterior estão livres.
+    const four = ["c1", "c2", "c3", "c4"];
+    const busy = new Map(four.map((c) => [c, new Set<string>()]));
+    for (const d of ["2026-08-17", "2026-08-18", "2026-08-19"]) busy.get("c1")!.add(d);
+    const out = scheduleYouthSeason({
+      rounds: roundRobinPairings(four, "s"), window: { start: "2026-08-10", end: "2026-08-30" }, busyByClub: busy, age: "u19",
+    })!;
+    expect(out.roundDates[2]).toBe("2026-08-17");
+    const seen = new Set<string>();
+    for (const f of out.fixtures) {
+      expect(busy.get(f.home)!.has(f.date) || busy.get(f.away)!.has(f.date)).toBe(false);
+      for (const c of [f.home, f.away]) {
+        expect(seen.has(`${c}@${f.date}`)).toBe(false);
+        seen.add(`${c}@${f.date}`);
+      }
+    }
+    const moved = out.fixtures.find((f) => f.round === 3 && (f.home === "c1" || f.away === "c1"))!;
+    expect(moved.date > out.roundDates[1]! && moved.date < out.roundDates[3]!).toBe(true);
+  });
   test("deterministic", () => {
     const a = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, "s"), window, busyByClub: new Map(), age: "u19" });
     const b = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, "s"), window, busyByClub: new Map(), age: "u19" });
