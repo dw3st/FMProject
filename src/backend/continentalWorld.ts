@@ -434,63 +434,6 @@ export async function createContinentalSeason(args: {
 }
 
 /**
- * Logs (never reschedules) a same-day clash between a club's brand-new domestic round date and one
- * of its own European continental (UCL/UEL) fixture dates.
- *
- * Calendar-year European leagues (Belarus, Finland, Georgia, Iceland, Norway, Sweden — see
- * `.claude/rules/game/continental.md`) roll over on their own schedule (around December),
- * independently of the Europe-wide continental rollover (`continentsToRegenerate` only tracks
- * cross-year leagues). By the time one of these leagues writes its Y+1 calendar, UCL/UEL dates
- * for the European season already in progress were fixed with no knowledge of it — a brand-new
- * domestic round date can land on the same day as one of a participating club's own continental
- * fixtures. Rescheduling is deliberately not attempted: a league round date is shared by every
- * club in that league, while a continental clash concerns only the 1-2 clubs of the country that
- * actually play in Europe — moving the whole round to dodge one club's fixture would misalign
- * every other match in that round for no benefit. `leagueFixtures` is every league's brand-new
- * next-season fixtures from this same rollover (any league, any continent — a league with no
- * European continental participant simply never matches). Returns the number of clashes logged
- * (0 when none), so a caller can assert on it.
- */
-export async function logEuropeanCalendarClashes(
-  service: SaveService,
-  saveId: string,
-  leagueFixtures: Map<string, Fixture[]>,
-): Promise<number> {
-  const clubDates = new Map<string, { slug: ContinentalSlug; dates: Set<string> }[]>();
-  for (const slug of CONTINENTAL_SLUGS) {
-    if (CONTINENTAL[slug].continent !== "Europe") continue;
-    const meta = await service.getLeagueMeta(saveId, slug);
-    const cont = meta?.continental;
-    if (!cont) continue;
-    const dates = new Set(cont.stages.flatMap((s) => s.dates));
-    for (const club of cont.groups.flatMap((g) => g.clubs)) {
-      const list = clubDates.get(club) ?? [];
-      list.push({ slug, dates });
-      clubDates.set(club, list);
-    }
-  }
-  if (clubDates.size === 0) return 0;
-
-  let clashes = 0;
-  for (const [leagueSlug, fixtures] of leagueFixtures) {
-    for (const f of fixtures) {
-      for (const club of [f.home, f.away]) {
-        for (const { slug: contSlug, dates } of clubDates.get(club) ?? []) {
-          if (!dates.has(f.date)) continue;
-          clashes++;
-          logError(
-            "continental",
-            `save ${saveId}: ${leagueSlug} round ${f.round} (${f.date}) for club ${club} clashes with a ${contSlug} fixture date`,
-            { leagueSlug, continentalSlug: contSlug, squadId: club, date: f.date, fixtureId: f.id },
-          );
-        }
-      }
-    }
-  }
-  return clashes;
-}
-
-/**
  * After a day's continental fixtures are written: advances every continental competition with
  * rounds played today (group tables → r16 draw, leg1 → aggregate, leg2 → next draw/champion — see
  * `advanceContinental`). Returns what changed, for the Plan 3 inbox. An `undecidedTie` event (a

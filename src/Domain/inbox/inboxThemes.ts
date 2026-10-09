@@ -35,6 +35,7 @@ const THEME_OF: Record<InboxCategory, InboxTheme> = {
   continental: "competitions",
   awards: "competitions",
   registration: "competitions",
+  schedule: "competitions",
   job: "jobs",
   manager_news: "jobs",
 };

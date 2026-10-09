@@ -1,3 +1,4 @@
+import { RescheduledNote, shortDateLabel } from "@/GameInterface/Components/RescheduledNote";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
@@ -158,7 +159,7 @@ function FixturesPanel({
   currentDate: string;
   onClickFixture: (fixture: Fixture) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const leagueFixtures = fixtures.filter(f => f.competition === activeLeagueSlug);
   const maxRound = leagueFixtures.reduce((m, f) => Math.max(m, f.round), 0);
 
@@ -190,8 +191,12 @@ function FixturesPanel({
     );
   }
 
-  const roundDate = roundFixtures[0]?.date
-    ? new Date(roundFixtures[0].date + "T12:00:00").toLocaleDateString("en-GB", {
+  // The round's own date: the one most of its games share (a rescheduled game shows its date on its row).
+  const dateCounts = new Map<string, number>();
+  for (const f of roundFixtures) dateCounts.set(f.rescheduledFrom ?? f.date, (dateCounts.get(f.rescheduledFrom ?? f.date) ?? 0) + 1);
+  const mainDate = [...dateCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
+  const roundDate = mainDate
+    ? new Date(mainDate + "T12:00:00").toLocaleDateString("en-GB", {
         day: "numeric", month: "long", year: "numeric",
       })
     : "";
@@ -274,6 +279,13 @@ function FixturesPanel({
                 />
                 <span className="font-semibold text-foreground text-sm">{teamName(f.away)}</span>
               </div>
+              {f.rescheduledFrom && (
+                <p className="col-span-3 text-center m-0 mt-1 text-sm text-muted-foreground">
+                  <span className="tabular-nums">{shortDateLabel(f.date, i18n.language)}</span>
+                  {" · "}
+                  <RescheduledNote from={f.rescheduledFrom} />
+                </p>
+              )}
             </div>
           );
         })}
