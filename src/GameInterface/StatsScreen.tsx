@@ -19,11 +19,12 @@ import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { AwardsView } from "@/GameInterface/Awards/AwardsView";
+import { RefereesTab } from "@/GameInterface/Referees/RefereesTab";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
-type Tab = "rankings" | "team" | "retired" | "managers" | "awards";
-const TABS: Tab[] = ["rankings", "team", "retired", "managers", "awards"];
+type Tab = "rankings" | "team" | "retired" | "managers" | "awards" | "referees";
+const TABS: Tab[] = ["rankings", "team", "retired", "managers", "awards", "referees"];
 type TableKey = keyof CompetitionRankings;
 const TABLES: TableKey[] = ["scorers", "assists", "ratings", "appearances"];
 /** Column label of each ranking table's value. */
@@ -331,6 +332,7 @@ export function StatsScreen() {
             { key: "retired" as const, label: t("statsScreen.retired.tab") },
             { key: "managers" as const, label: t("statsScreen.managers.tab") },
             { key: "awards" as const, label: t("statsScreen.awards.tab") },
+            { key: "referees" as const, label: t("statsScreen.referees.tab") },
           ]}
           active={tab}
           onChange={setTab}
@@ -354,6 +356,8 @@ export function StatsScreen() {
           session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
         ) : tab === "managers" ? (
           session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} /> : null
+        ) : tab === "referees" ? (
+          session?.saveId ? <RefereesTab saveId={session.saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} refreshKey={currentDate ?? undefined} /> : null
         ) : tab === "awards" ? (
           session?.saveId ? (
             <AwardsView

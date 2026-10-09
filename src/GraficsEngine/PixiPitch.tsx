@@ -286,12 +286,20 @@ interface Props {
    * re-bake the crowd texture. Absent / null: the plain pitch.
    */
   stadium?: PitchStadium | null;
-  /** Referee, assistants and both managers on the touchline (§3–§4). Read at mount. */
-  officials?: boolean;
+  /**
+   * Referee, assistants and both managers on the touchline (§3–§4). Read at mount. An object also gives the
+   * officials' faces (server URLs, `refereeFaceUrl`); `true` = officials without faces (a disc in the kit).
+   */
+  officials?: boolean | PitchOfficials;
   /** Managers' face (server URL) and club colour (CSS hex) per engine team; no face = a disc in the colour. */
   coaches?: Partial<Record<TeamId, { faceUrl?: string; color: string }>>;
   /** A new `seq` plays the gesture on that team's manager (the human's mentality change). */
   coachCue?: { team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null;
+}
+
+export interface PitchOfficials {
+  refereeFace?: string;
+  assistantFaces?: [string | undefined, string | undefined];
 }
 
 export interface PitchStadium {
@@ -972,12 +980,34 @@ export function PixiPitch({
       });
 
       // ── Referee, assistants, managers (spec 2026-10-08-match-visual §3–§4) ──
-      const officialsOn = officials;
+      const officialsOn = !!officials;
+      const officialFaces = typeof officials === "object" ? officials : {};
       const referee = officialsOn ? makeOfficial(markerR, false) : null;
       const assistantC: Record<AssistantSide, Container | null> = {
         top: officialsOn ? makeOfficial(markerR, true) : null,
         bottom: officialsOn ? makeOfficial(markerR, true) : null,
       };
+      /** The face (server SVG, rasterised once) over the official's kit disc; until it loads, the disc. */
+      const attachOfficialFace = (c: Container | null, url: string | undefined) => {
+        const head = c?.getChildByLabel("head") as Container | null | undefined;
+        if (!c || !head || !url) return;
+        const r = (head as Container & { faceR?: number }).faceR ?? markerR * 0.6;
+        void loadFaceCanvas(url, faceRasterSize(r, app.renderer.resolution)).then((canvas) => {
+          if (!canvas || facesDisposed || c.destroyed) return;
+          let texture = faceTextures.get(url);
+          if (!texture) {
+            texture = new Texture({ source: new CanvasSource({ resource: canvas, transparent: true }) });
+            faceTextures.set(url, texture);
+          }
+          const face = new Sprite(texture);
+          face.anchor.set(0.5);
+          face.width = face.height = r * 2;
+          head.addChild(face);
+        });
+      };
+      attachOfficialFace(referee, officialFaces.refereeFace);
+      attachOfficialFace(assistantC.top, officialFaces.assistantFaces?.[0]);
+      attachOfficialFace(assistantC.bottom, officialFaces.assistantFaces?.[1]);
       // Just under the players' layer: a player is never covered by an official.
       for (const c of [referee, assistantC.top, assistantC.bottom]) if (c) { c.zIndex = -0.5; world.addChild(c); }
       let refPos: YdPos | null = null;

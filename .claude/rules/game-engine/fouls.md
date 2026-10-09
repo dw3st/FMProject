@@ -156,3 +156,10 @@ sem barreira; o tiro livre perigoso usa o layout fixo da formação; o expulso �
 `FoulContext.temperament` / `CardContext.temperament` (t do infrator, `GamePlayer.temperament`): falta × (1 + 0,45 t),
 amarelo × (1 + 0,2 t), vermelho direto × (1 + 0,4 t) ÷ `TEMPERAMENT_CARD_NORM` (1,04). t = 0 / ausente devolve
 exatamente o de antes. Override por time em `PersonalityMatchConfig.ts`. Ver `.claude/rules/game/personality.md`.
+
+## Rigor do árbitro (Etapa 38b, 4.17)
+
+`FoulContext.strictness` / `CardContext.strictness` (s do árbitro, `GameState.referee`, `withReferee`): falta ×
+(1 + 0,08 s), amarelo × (1 + 0,15 s), vermelho direto × (1 + 0,25 s), os cartões ÷ `REFEREE.CARD_NORM` (1,01) com s ≠ 0.
+s = 0 / ausente devolve exatamente o de antes (nenhum sorteio novo). Logs `foul`/`card` com `refMult`. Ver
+`.claude/rules/game/referees.md`.

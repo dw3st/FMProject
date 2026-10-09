@@ -44,3 +44,8 @@ seleção, técnico e gol da temporada da liga. Ver `.claude/rules/game/awards.m
 `seasonLog.youthCup` (J, G, A, soma das notas) fica **fora** dos totais da temporada: rankings, estrelas e histórico não
 mudam. Artilharia e notas da base ficam em `meta.youth.leaders` e na aba Base de Ligas
 (`.claude/rules/game/youth-competitions.md`).
+
+## Aba Árbitros (Etapa 38b)
+
+`/stats?tab=referees`: jogos, faltas/J, amarelos/J, vermelhos e pênaltis por árbitro, por competição e temporada
+(`GET /api/saves/:id/referees`). Ver `.claude/rules/game/referees.md`.

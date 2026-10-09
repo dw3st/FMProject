@@ -1,6 +1,7 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
+import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -29,6 +30,13 @@ function seasonArchivePath(saveId: string, year: number) {
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
 function staffPoolPath(saveId: string) { return `${SAVES_DIR}/${saveId}/staffPool.json`; }
+function refereesDir(saveId: string) { return `${SAVES_DIR}/${saveId}/referees`; }
+/** Archive keys are `<country>-<season>`; anything outside this shape never reaches a path. */
+const REFEREE_SEASON_KEY = /^[A-Za-z0-9 _.-]{1,80}$/;
+function refereeSeasonPath(saveId: string, key: string) {
+  if (!REFEREE_SEASON_KEY.test(key) || key.includes("..")) throw new Error(`invalid referee season key: ${key}`);
+  return `${refereesDir(saveId)}/seasons/${key}.json`;
+}
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
 function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
@@ -158,6 +166,47 @@ export class FileSystemDAL implements ISaveDAL {
   async writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(staffPoolPath(saveId), JSON.stringify(pool));
+  }
+
+  async readRefereePool(saveId: string): Promise<RefereePool | null> {
+    const file = Bun.file(`${refereesDir(saveId)}/pool.json`);
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<RefereePool>;
+  }
+
+  async writeRefereePool(saveId: string, pool: RefereePool): Promise<void> {
+    await mkdir(refereesDir(saveId), { recursive: true });
+    await Bun.write(`${refereesDir(saveId)}/pool.json`, JSON.stringify(pool));
+  }
+
+  async readRefereeState(saveId: string): Promise<RefereeState | null> {
+    const file = Bun.file(`${refereesDir(saveId)}/state.json`);
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<RefereeState>;
+  }
+
+  async writeRefereeState(saveId: string, state: RefereeState): Promise<void> {
+    await mkdir(refereesDir(saveId), { recursive: true });
+    await Bun.write(`${refereesDir(saveId)}/state.json`, JSON.stringify(state));
+  }
+
+  async readRefereeSeason(saveId: string, key: string): Promise<RefereeSeasonArchive | null> {
+    const file = Bun.file(refereeSeasonPath(saveId, key));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<RefereeSeasonArchive>;
+  }
+
+  async writeRefereeSeason(saveId: string, key: string, archive: RefereeSeasonArchive): Promise<void> {
+    await mkdir(`${refereesDir(saveId)}/seasons`, { recursive: true });
+    await Bun.write(refereeSeasonPath(saveId, key), JSON.stringify(archive));
+  }
+
+  async listRefereeSeasons(saveId: string): Promise<string[]> {
+    try {
+      return (await readdir(`${refereesDir(saveId)}/seasons`)).filter((n) => n.endsWith(".json")).map((n) => n.slice(0, -5)).sort();
+    } catch {
+      return [];
+    }
   }
 
   async readScouting(saveId: string): Promise<ScoutingState | null> {

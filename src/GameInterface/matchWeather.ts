@@ -26,11 +26,3 @@ export function weatherIconName({ weather, night }: Pick<MatchConditions, "weath
 export function weatherLabelKey(weather: MatchWeather): string {
   return `dashboard.home.weather.${weather}`;
 }
-
-const REFEREES = ["M. Oliver", "A. Taylor", "S. Attwell", "P. Tierney", "C. Kavanagh"];
-
-/** Cosmetic referee name, picked from the match date (no referees in the simulation). */
-export function refereeFor(date: string): string {
-  const seed = parseInt(date.replace(/-/g, ""), 10) || 0;
-  return REFEREES[seed % REFEREES.length]!;
-}

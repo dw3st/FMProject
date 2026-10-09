@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
@@ -24,7 +24,9 @@ import {
 import { addOneDay } from "@/Domain/dates";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { matchConditions } from "@/Domain/matchday/matchConditions";
-import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
+import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 const Clock = iconOf("clock");
 const MapPin = iconOf("map-pin");
@@ -455,7 +457,6 @@ export function MatchResultScreen() {
   const homeLogoUrl = squadLogoUrl(matchEvent.home);
   const awayLogoUrl = squadLogoUrl(matchEvent.away);
 
-  const referee = refereeFor(resolvedDate);
   // Same kickoff/weather as the dashboard card and the preview: the fixture + the home club's country.
   const fixture = fixtures.find(
     (f) => f.date === resolvedDate && f.home === matchEvent.home && f.away === matchEvent.away,
@@ -740,7 +741,12 @@ export function MatchResultScreen() {
             <InfoCell icon={iconOf(weatherIconName(conditions))} label={t("matchResult.weather")}
               value={`${t(weatherLabelKey(conditions.weather))} · ${conditions.kickoff}`} />
             <InfoCell icon={Clock} label={t("matchResult.date")} value={resolvedDate} />
-            <InfoCell icon={User} label={t("matchResult.officials")} value={referee} />
+            <InfoCell icon={User} label={t("matchResult.officials")} value={matchEvent.referee ? (
+              <span className="inline-flex items-center gap-2">
+                {matchEvent.referee.name}
+                {nationalityFlagCode(matchEvent.referee.country) && <Flag code={nationalityFlagCode(matchEvent.referee.country)!} />}
+              </span>
+            ) : "—"} />
           </div>
         </div>
       </div>
@@ -757,7 +763,7 @@ function InfoCell({
 }: {
   icon: typeof MapPin;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="space-y-1">

@@ -64,6 +64,8 @@ import { withTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
 import { matchTemperamentOf } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { temperamentFoulMult } from '@/Domain/personality/personality';
+import { refereeFoulMult, refereeRedMult, refereeYellowMult } from '@/Domain/referees/strictness';
+import type { EngineReferee } from '@/types/refereeTypes';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
@@ -919,6 +921,15 @@ function angleFromModifier(mod: number): RelativePosition {
   return 'side';
 }
 
+/** Puts the match referee on the state (his rigor scales fouls and cards); `null` removes him. */
+export function withReferee(state: GameState, referee: EngineReferee | null | undefined): GameState {
+  if (!referee) {
+    const { referee: _r, ...rest } = state;
+    return rest;
+  }
+  return { ...state, referee: { id: referee.id, name: referee.name, country: referee.country, strictness: referee.strictness } };
+}
+
 /**
  * Records a card (and the red that a second yellow becomes), emits `card`, and sends the player
  * off on a red: removed outright, no substitute (same path as an injured player with no bench),
@@ -933,7 +944,7 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
     gameBus.emit('card', { playerId: player.id, playerName: player.name, team: player.team, card: c, secondYellow, minute });
     const label = c === 'red' ? (secondYellow ? 'Second yellow -> RED' : 'RED card') : 'Yellow card';
     debugLog('card', `${label}: ${player.name} (team ${player.team}), minute ${minute}`, {
-      playerId: player.id, data: { card: c, secondYellow, minute, tempMult: temperamentFoulMult(player.temperament ?? 0) },
+      playerId: player.id, data: { card: c, secondYellow, minute, tempMult: temperamentFoulMult(player.temperament ?? 0), refMult: c === 'red' ? refereeRedMult(state.referee?.strictness) : refereeYellowMult(state.referee?.strictness) },
     });
   };
 
@@ -1231,8 +1242,9 @@ export function maybeFoul(
                          'side';
   const onYellow = yellowsOf(state, offender.id) > 0;
   const temperament = offender.temperament ?? 0;
+  const strictness = state.referee?.strictness;
   const chance = foulChance({
-    kind, angle, inOwnBox, tackleWon, onYellow, temperament,
+    kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     tackling:   offender.runtimeStats.withoutBall.tackling,
     energy:     offender.energy,
@@ -1246,7 +1258,7 @@ export function maybeFoul(
     x: spot.x, y: spot.y, inBox: inOwnBox, minute,
   });
   debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
-    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament) },
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness) },
   });
 
   let s: GameState = {
@@ -1254,7 +1266,7 @@ export function maybeFoul(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament }, rng);
+  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness }, rng);
   if (card !== 'none') s = bookPlayer(s, s.players.find(p => p.id === offender.id) ?? offender, card, minute);
   return awardFoulRestart(s, fouled.team, spot, inOwnBox, offender.id, minute);
 }

@@ -121,6 +121,8 @@ export interface SimulateMatchOptions {
    * scripts) — `tactics[team]` takes precedence when given.
    */
   instructions?: { A?: TeamInstructions; B?: TeamInstructions };
+  /** Referee of the match (his rigor scales fouls and cards, `src/Domain/referees`). Absent = neutral. */
+  referee?: import('@/types/refereeTypes').EngineReferee;
 }
 
 /** Player instructions of one side (`player-instructions.md`). */
@@ -233,6 +235,7 @@ export function simulateMatch(
     presentationCountdown: 0,
     knockout:              options.knockout === true,
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
+    ...(options.referee ? { referee: options.referee } : {}),
     ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
       ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
       : {}),

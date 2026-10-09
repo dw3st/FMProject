@@ -11,6 +11,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
+import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
@@ -247,6 +248,30 @@ export class SaveService {
 
   writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
     return this.dal.writeStaffPool(saveId, pool);
+  }
+
+  // ── Referees (`.claude/rules/game/referees.md`) ─────────────────────────────
+
+  getRefereePool(saveId: string): Promise<RefereePool | null> {
+    return this.dal.readRefereePool(saveId);
+  }
+  writeRefereePool(saveId: string, pool: RefereePool): Promise<void> {
+    return this.dal.writeRefereePool(saveId, pool);
+  }
+  getRefereeState(saveId: string): Promise<RefereeState | null> {
+    return this.dal.readRefereeState(saveId);
+  }
+  writeRefereeState(saveId: string, state: RefereeState): Promise<void> {
+    return this.dal.writeRefereeState(saveId, state);
+  }
+  getRefereeSeason(saveId: string, key: string): Promise<RefereeSeasonArchive | null> {
+    return this.dal.readRefereeSeason(saveId, key);
+  }
+  writeRefereeSeason(saveId: string, key: string, archive: RefereeSeasonArchive): Promise<void> {
+    return this.dal.writeRefereeSeason(saveId, key, archive);
+  }
+  listRefereeSeasons(saveId: string): Promise<string[]> {
+    return this.dal.listRefereeSeasons(saveId);
   }
 
   // ── Manager ranking ────────────────────────────────────────────────────────
@@ -967,6 +992,15 @@ export class SaveService {
       const startDate = meta.currentDate ?? playerLeagueStart ?? "";
       const { getStaffNameBook } = await import("@/backend/staffNameBook");
       await this.dal.writeStaffPool(id, generatePool(id, String(homeYear ?? startDate.slice(0, 4)), startDate, await getStaffNameBook()));
+    }
+
+    // Referees of every country (`.claude/rules/game/referees.md`). A failure leaves the career without referees
+    // (matches as before), never without a save.
+    try {
+      const { createRefereePool } = await import("@/backend/refereeWorld");
+      await createRefereePool(this, id, meta.currentDate ?? playerLeagueStart ?? now.slice(0, 10));
+    } catch (e) {
+      logError("referees", `save ${id}: failed to build the referee pool`, e);
     }
 
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own

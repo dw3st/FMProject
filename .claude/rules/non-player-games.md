@@ -1179,3 +1179,9 @@ em `.claude/rules/game/facilities.md` → "Medições".
 
 Os jogos de base também rodam no quickSim (`playYouthDay`, 4-3-3, gramado 90, sem moral nem familiaridade), sem
 calibração própria: o volume do mundo não é medido contra o motor. Ver `.claude/rules/game/youth-competitions.md`.
+
+## Árbitros no quickSim (Etapa 38b, 4.17)
+
+`QuickSimInput.refereeStrictness` (o árbitro da escala do dia): faltas, pênaltis e cartões dos dois lados; s = 0 /
+ausente sorteia exatamente o de antes. Medição do volume do mundo (26 ligas, pareado) em
+`.claude/rules/game/referees.md` → spec §7.

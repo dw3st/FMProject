@@ -1,5 +1,6 @@
 import { shirtName } from "@/Domain/shirtName";
 import type { ReactNode } from "react";
+import { RefereeBadge, type RefereeBadgeData } from "@/GameInterface/Referees/RefereeBadge";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
@@ -78,6 +79,7 @@ export function MatchSummaryPanel({
   possessionA,
   feed,
   extra,
+  referee,
 }: {
   /** Displayed left (home) and right sides: crest, colours and name (tooltip / screen readers). */
   teamA?: TeamMeta;
@@ -89,6 +91,8 @@ export function MatchSummaryPanel({
   feed: MatchFeedItem[];
   /** Extra block below the feed (the live heat map, Etapa 35; below the feed since #127). */
   extra?: ReactNode;
+  /** Referee of the match (`referees.md`): face, name and flag under the team names. */
+  referee?: RefereeBadgeData | null;
 }) {
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
@@ -97,10 +101,17 @@ export function MatchSummaryPanel({
     <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0 overflow-y-auto">
       {/* Crests instead of the (often long) names (#128), home side on the left (#98): the name stays in
           the tooltip and for screen readers. */}
-      <div className="px-4 pt-3 pb-3 border-b border-border flex items-center justify-between gap-2">
-        <TeamCrest team={teamA} fallback="A" />
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0 text-center">{t("match.summary.title")}</h3>
-        <TeamCrest team={teamB} fallback="B" />
+      <div className="px-4 pt-3 pb-3 border-b border-border">
+        <div className="flex items-center justify-between gap-2">
+          <TeamCrest team={teamA} fallback="A" />
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0 text-center">{t("match.summary.title")}</h3>
+          <TeamCrest team={teamB} fallback="B" />
+        </div>
+        {referee && (
+          <div className="mt-3" title={t("referees.referee")}>
+            <RefereeBadge referee={referee} size={32} compact />
+          </div>
+        )}
       </div>
       <div className="px-4">
         <StatRow label={t("match.summary.possession")} a={`${pA}%`} b={`${100 - pA}%`} />

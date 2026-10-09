@@ -668,6 +668,8 @@ export interface GameState {
    * The AI never sets this.
    */
   setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /** Referee of the match (`.claude/rules/game/referees.md`): his rigor scales fouls and cards. Absent = neutral. */
+  referee?: import('@/types/refereeTypes').EngineReferee;
   /**
    * Teams whose manager picks the replacement of an injured player (#140, the human team of the
    * live match). Absent = automatic (`forceInjurySubstitution`): AI, `simulateMatch`, `/test`.

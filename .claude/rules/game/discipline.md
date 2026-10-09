@@ -123,3 +123,9 @@ principal (`.claude/rules/game/youth-competitions.md`).
 `replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
 `unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
 `foreignLimit`. Ver `.claude/rules/game/registration.md`.
+
+## Árbitros (Etapa 38b, 4.17)
+
+No quickSim, `rollDiscipline(..., refereeStrictness)`: faltas do lado e `PENALTIES_PER_SIDE` × (1 + 0,08 s), amarelo e
+vermelho direto como o motor (÷ `CARD_NORM`); o placar não muda. As estatísticas por árbitro (jogos, faltas, cartões,
+pênaltis) são agregadas do day log (`MatchEvent.referee`). Ver `.claude/rules/game/referees.md`.

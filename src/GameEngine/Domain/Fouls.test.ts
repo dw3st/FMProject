@@ -1,3 +1,4 @@
+import { REFEREE } from '@/Domain/referees/refereeConfig';
 import { describe, expect, test } from 'bun:test';
 import { foulChance, cardRoll, isClearChance, type FoulContext } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG as C } from '@/GameEngine/Configs/FoulConfig';
@@ -91,5 +92,22 @@ describe('temperament (personality)', () => {
     expect(hot.redChance).toBeCloseTo(plain.redChance * 1.4 / C.TEMPERAMENT_CARD_NORM, 9);
     const calm = cardRoll({ ...ctx, temperament: -1 }, () => 0.99);
     expect(calm.yellowChance).toBeLessThan(plain.yellowChance);
+  });
+});
+
+describe('referee rigor', () => {
+  test('s = 0 gives exactly the plain result; s = +1 scales the foul chance by 1.08', () => {
+    const front = { ...base, angle: 'front' as const };
+    expect(foulChance({ ...front, strictness: 0 })).toBe(foulChance(front));
+    expect(foulChance({ ...front, strictness: 1 })).toBeCloseTo(foulChance(front) * 1.08, 9);
+    expect(foulChance({ ...front, strictness: -1 })).toBeCloseTo(foulChance(front) * 0.92, 9);
+  });
+  test('cards: yellow × 1.15, red × 1.25 on s = +1 (÷ card norm), same draws', () => {
+    const ctx = { angle: 'side' as const, clearChance: false, onYellow: false };
+    const plain = cardRoll(ctx, () => 0.99);
+    expect(cardRoll({ ...ctx, strictness: 0 }, () => 0.99)).toEqual(plain);
+    const strict = cardRoll({ ...ctx, strictness: 1 }, () => 0.99);
+    expect(strict.yellowChance).toBeCloseTo(plain.yellowChance * 1.15 / REFEREE.CARD_NORM, 9);
+    expect(strict.redChance).toBeCloseTo(plain.redChance * 1.25 / REFEREE.CARD_NORM, 9);
   });
 });

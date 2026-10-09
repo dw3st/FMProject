@@ -2429,6 +2429,9 @@
         "contract": "fim de contrato",
         "interim": "interino"
       }
+    },
+    "referees": {
+      "tab": "Árbitros"
     }
   },
   "players": {
@@ -3483,6 +3486,34 @@
       "fitness": "fôlego {{n}}",
       "failed": "Não foi possível salvar a convocação."
     }
+  },
+  "referees": {
+    "band": {
+      "lenient": "Tolerante",
+      "balanced": "Equilibrado",
+      "strict": "Rigoroso"
+    },
+    "seasonLine": "{{matches}} jogos · {{yellows}} amarelos/jogo",
+    "noMatches": "Sem jogos na temporada",
+    "assistants": "Assistentes: {{names}}",
+    "refereeLine": "Árbitro: {{name}}",
+    "referee": "Árbitro",
+    "face": "Rosto",
+    "rigor": "Estilo",
+    "season": "Temporada",
+    "currentSeason": "Esta temporada",
+    "empty": "Nenhum árbitro apitou nesta competição ainda.",
+    "matches": "J",
+    "matchesLong": "Jogos",
+    "fouls": "Faltas/J",
+    "foulsLong": "Faltas por jogo",
+    "yellows": "Amar/J",
+    "yellowsLong": "Cartões amarelos por jogo",
+    "reds": "Verm",
+    "redsLong": "Cartões vermelhos",
+    "penalties": "Pên",
+    "penaltiesLong": "Pênaltis marcados",
+    "nextHighlighted": "Em destaque: o árbitro do seu próximo jogo."
   },
   "registration": {
     "loading": "Carregando a inscrição…",

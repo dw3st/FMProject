@@ -248,6 +248,23 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         <span className="text-white/80 w-14 text-right">{variant.pitchCondition ?? 90}%</span>
       </div>
 
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Referee rigor of the match (variant A sets it): fouls x(1 + 0.08 s), yellows x(1 + 0.15 s); 0 = no referee">Referee</span>
+        <input
+          type="range"
+          min={-1}
+          max={1}
+          step={0.25}
+          value={variant.refereeStrictness ?? 0}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            patch({ refereeStrictness: v === 0 ? undefined : v });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.refereeStrictness ?? 0}</span>
+      </div>
+
       <label className="flex items-center gap-2 text-xs cursor-pointer">
         <span className="text-white/50 w-20">Positions</span>
         <input

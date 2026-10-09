@@ -30,6 +30,8 @@ export interface PersonFaceOptions {
   age?: number | null;
   /** The human manager's saved avatar: seed + picked traits replace the id-based draw. */
   custom?: ManagerFace;
+  /** A woman (referees, `referees.md`): facesjs female face; no thinning hair, long hair kept. */
+  female?: boolean;
 }
 
 interface AgeFace {
@@ -48,13 +50,13 @@ function pick<T>(list: readonly T[], rng: () => number): T {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 /** Ages the drawn face in place (lines, grey and thinning hair, glasses). Pure given the RNG. */
-export function ageFace(face: AgeFace, age: number, rng: () => number): void {
+export function ageFace(face: AgeFace, age: number, rng: () => number, female = false): void {
   const a = Math.max(18, Math.min(90, age));
   if (rng() < clamp01((a - 30) / 25)) face.eyeLine.id = pick(EYE_LINES, rng);
   if (rng() < clamp01((a - 35) / 30)) face.smileLine = { id: pick(SMILE_LINES, rng), size: 1 };
   face.miscLine.id = rng() < clamp01((a - 38) / 30) ? pick(FOREHEAD_LINES, rng) : "none";
-  if (a > 42 && LONG_HAIR.has(face.hair.id)) face.hair.id = pick(GROWN_UP_SHORT, rng);
-  if (rng() < clamp01((a - 38) / 40) * 0.55) face.hair.id = pick(THINNING, rng);
+  if (!female && a > 42 && LONG_HAIR.has(face.hair.id)) face.hair.id = pick(GROWN_UP_SHORT, rng);
+  if (rng() < clamp01((a - 38) / 40) * 0.55 && !female) face.hair.id = pick(THINNING, rng);
   const grey = rng();
   if (grey < clamp01((a - 50) / 25)) face.hair.color = SILVER;
   else if (grey < clamp01((a - 38) / 30)) face.hair.color = GREY;
@@ -79,11 +81,11 @@ export function personFaceSvg(
   try {
     const face = generate(
       { teamColors, jersey: { id: SHIRT }, glasses: { id: "none" }, accessories: { id: "none" } },
-      { gender: "male", race },
+      { gender: options.female ? "female" : "male", race },
     );
     const ageRng = mulberry32(seedFrom(`face-age:${key}`));
     const age = options.age ?? 38 + Math.floor(ageRng() * 25);
-    ageFace(face as unknown as AgeFace, age, ageRng);
+    ageFace(face as unknown as AgeFace, age, ageRng, options.female === true);
     const custom = options.custom;
     if (custom) {
       const traits: FaceTraits = {

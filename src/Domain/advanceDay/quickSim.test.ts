@@ -610,6 +610,40 @@ describe("quickSimMatch — pitch condition (Etapa 34)", () => {
   });
 });
 
+describe("quickSimMatch — referee rigor", () => {
+  const home = makeSquad("h", 5);
+  const away = makeSquad("a", 5);
+  const input = (refereeStrictness?: number) => ({
+    fixtureId: "f1", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away),
+    ...(refereeStrictness !== undefined ? { refereeStrictness } : {}),
+  });
+
+  test("s = 0 changes nothing: same rng, same recording", () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const a = { ...quickSimMatch(input(0), mulberry32(seed)).recording, durationMs: 0 };
+      const b = { ...quickSimMatch(input(), mulberry32(seed)).recording, durationMs: 0 };
+      expect(a).toEqual(b);
+    }
+  });
+
+  test("strict (+1) shows more fouls, cards and penalties than lenient (−1); the score never changes", () => {
+    const sum = { strict: { fouls: 0, cards: 0, pens: 0 }, lenient: { fouls: 0, cards: 0, pens: 0 } };
+    for (let seed = 1; seed <= 2000; seed++) {
+      const s = quickSimMatch(input(1), mulberry32(seed)).recording;
+      const l = quickSimMatch(input(-1), mulberry32(seed)).recording;
+      expect(s.score).toEqual(l.score);
+      for (const [k, r] of [["strict", s], ["lenient", l]] as const) {
+        sum[k].fouls += (r.teamStats.home.fouls ?? 0) + (r.teamStats.away.fouls ?? 0);
+        sum[k].cards += r.cards?.length ?? 0;
+        sum[k].pens += (r.teamStats.home.penaltiesAwarded ?? 0) + (r.teamStats.away.penaltiesAwarded ?? 0);
+      }
+    }
+    expect(sum.strict.fouls / sum.lenient.fouls).toBeGreaterThan(1.1);
+    expect(sum.strict.cards / sum.lenient.cards).toBeGreaterThan(1.4);
+    expect(sum.strict.pens).toBeGreaterThan(sum.lenient.pens);
+  });
+});
+
 describe("quickSimMatch — injuries", () => {
   function extremeRiskSquad(id: string): Squad {
     const s = makeSquad(id, 5);

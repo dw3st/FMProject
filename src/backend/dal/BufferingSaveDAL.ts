@@ -2,6 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
+import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -164,6 +165,29 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
     this.buffer(`staffPool:${saveId}`, pool, () => this.inner.writeStaffPool(saveId, pool));
+  }
+
+  // ── Referees ──────────────────────────────────────────────────────────────────
+  readRefereePool(saveId: string): Promise<RefereePool | null> {
+    return this.readThrough(`refereePool:${saveId}`, () => this.inner.readRefereePool(saveId));
+  }
+  async writeRefereePool(saveId: string, pool: RefereePool): Promise<void> {
+    this.buffer(`refereePool:${saveId}`, pool, () => this.inner.writeRefereePool(saveId, pool));
+  }
+  readRefereeState(saveId: string): Promise<RefereeState | null> {
+    return this.readThrough(`refereeState:${saveId}`, () => this.inner.readRefereeState(saveId));
+  }
+  async writeRefereeState(saveId: string, state: RefereeState): Promise<void> {
+    this.buffer(`refereeState:${saveId}`, state, () => this.inner.writeRefereeState(saveId, state));
+  }
+  readRefereeSeason(saveId: string, key: string): Promise<RefereeSeasonArchive | null> {
+    return this.readThrough(`refereeSeason:${saveId}:${key}`, () => this.inner.readRefereeSeason(saveId, key));
+  }
+  async writeRefereeSeason(saveId: string, key: string, archive: RefereeSeasonArchive): Promise<void> {
+    this.buffer(`refereeSeason:${saveId}:${key}`, archive, () => this.inner.writeRefereeSeason(saveId, key, archive));
+  }
+  listRefereeSeasons(saveId: string): Promise<string[]> {
+    return this.inner.listRefereeSeasons(saveId);
   }
 
   // ── Manager ranking ───────────────────────────────────────────────────────────

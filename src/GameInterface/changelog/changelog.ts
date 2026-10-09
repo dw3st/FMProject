@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.17",
+    date: "2026-10-09",
+    items: [
+      { pt: "Árbitros com nome, rosto e nacionalidade em todos os jogos; nas principais ligas, os árbitros e árbitras de verdade", en: "Referees with a name, face and nationality in every match; in the main leagues, the real referees" },
+      { pt: "Cada árbitro tem um estilo: tolerante, equilibrado ou rigoroso, com mais ou menos faltas e cartões", en: "Every referee has a style: lenient, balanced or strict, with more or fewer fouls and cards" },
+      { pt: "O árbitro do jogo aparece na prévia, no resumo da partida, no resultado e no campo com os bandeirinhas", en: "The match referee shows up in the preview, the match summary, the result and on the pitch with the assistants" },
+      { pt: "Os melhores árbitros apitam os jogos grandes; nas copas continentais, sempre um árbitro de outro país", en: "The best referees take the big matches; in continental cups, always a referee from another country" },
+      { pt: "Nova aba Árbitros em Estatísticas, com jogos e cartões por jogo de cada árbitro na temporada", en: "New Referees tab in Stats, with each referee's matches and cards per match in the season" },
+    ],
+  },
+  {
     version: "4.16",
     date: "2026-10-09",
     items: [
@@ -1186,7 +1197,6 @@ export const upcoming: ChangelogText[] = [
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
-  { pt: "Árbitros reais nas principais ligas, cada um com o seu rigor e com rosto em campo", en: "Real referees in the top leagues, each with their own strictness and a face on the pitch" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
   { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
   { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },

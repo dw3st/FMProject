@@ -45,6 +45,18 @@ export interface ISaveDAL {
   readStaffPool(saveId: string): Promise<StaffPool | null>;
   writeStaffPool(saveId: string, pool: StaffPool): Promise<void>;
 
+  // ── Referees (`.claude/rules/game/referees.md`) ────────────────────────────
+  /** `null` when the save has no referees (older saves: matches without a referee). */
+  readRefereePool(saveId: string): Promise<import("@/types/refereeTypes").RefereePool | null>;
+  writeRefereePool(saveId: string, pool: import("@/types/refereeTypes").RefereePool): Promise<void>;
+  readRefereeState(saveId: string): Promise<import("@/types/refereeTypes").RefereeState | null>;
+  writeRefereeState(saveId: string, state: import("@/types/refereeTypes").RefereeState): Promise<void>;
+  /** Archived season of a country (`<country>-<season>`). */
+  readRefereeSeason(saveId: string, key: string): Promise<import("@/types/refereeTypes").RefereeSeasonArchive | null>;
+  writeRefereeSeason(saveId: string, key: string, archive: import("@/types/refereeTypes").RefereeSeasonArchive): Promise<void>;
+  /** Keys of the archived seasons on disk (not buffered). */
+  listRefereeSeasons(saveId: string): Promise<string[]>;
+
   // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ─────────────
   /** `null` when nothing was ever observed. */
   readScouting(saveId: string): Promise<ScoutingState | null>;

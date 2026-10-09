@@ -16,7 +16,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, forceInjurySubstitution, maybeFoul, setManMarksBySlot } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, forceInjurySubstitution, maybeFoul, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -443,6 +443,17 @@ export const TEST_SCENARIOS: TestScenario[] = [
         ...p, personality: { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament },
       }));
       return createMatchState(temper(teamRedPlayers, 20), f433, temper(teamBluePlayers, 1), f433);
+    },
+  },
+
+  {
+    id:          'strict-referee',
+    name:        '11v11 — Strict referee (+1)',
+    description: 'A referee at rigor +1 (`.claude/rules/game/referees.md`): every foul chance x1.08, yellow per foul x1.15, straight red x1.25 (÷ the card normaliser). The Referee selector overrides it (Off = no referee). Watch the foul/card log entries (`refMult`) and the Energy panel header (`ref s`).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      return withReferee(base, { id: 'ref_test', name: 'Test Referee', country: 'England', strictness: 1 });
     },
   },
 
