@@ -22,7 +22,7 @@ describe("jobs: sacking, offers, changing club", () => {
   const created: string[] = [];
   afterAll(async () => {
     for (const id of created) await saveService.deleteSave(id);
-  });
+  }, 120_000); // several whole-world saves to delete: the default 5 s is too short on a busy disk
 
   const create = async () => {
     const meta = await saveService.createSave({
