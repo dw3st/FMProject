@@ -2386,6 +2386,9 @@
         "contract": "contract ended",
         "interim": "interim spell"
       }
+    },
+    "referees": {
+      "tab": "Referees"
     }
   },
   "players": {
@@ -3440,5 +3443,33 @@
       "fitness": "fitness {{n}}",
       "failed": "Could not save the call-ups."
     }
+  },
+  "referees": {
+    "band": {
+      "lenient": "Lenient",
+      "balanced": "Balanced",
+      "strict": "Strict"
+    },
+    "seasonLine": "{{matches}} matches · {{yellows}} yellows/match",
+    "noMatches": "No matches this season",
+    "assistants": "Assistants: {{names}}",
+    "refereeLine": "Referee: {{name}}",
+    "referee": "Referee",
+    "face": "Face",
+    "rigor": "Style",
+    "season": "Season",
+    "currentSeason": "This season",
+    "empty": "No referee has officiated in this competition yet.",
+    "matches": "M",
+    "matchesLong": "Matches",
+    "fouls": "Fouls/M",
+    "foulsLong": "Fouls per match",
+    "yellows": "Yel/M",
+    "yellowsLong": "Yellow cards per match",
+    "reds": "Red",
+    "redsLong": "Red cards",
+    "penalties": "Pen",
+    "penaltiesLong": "Penalties awarded",
+    "nextHighlighted": "Highlighted: the referee of your next match."
   }
 }

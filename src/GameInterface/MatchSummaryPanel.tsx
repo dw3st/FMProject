@@ -1,5 +1,6 @@
 import { shirtName } from "@/Domain/shirtName";
 import type { ReactNode } from "react";
+import { RefereeBadge, type RefereeBadgeData } from "@/GameInterface/Referees/RefereeBadge";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { readableOnDark } from "@/GameInterface/matchTeamColors";
@@ -63,6 +64,7 @@ export function MatchSummaryPanel({
   possessionA,
   feed,
   extra,
+  referee,
 }: {
   nameA?: string;
   nameB?: string;
@@ -75,6 +77,8 @@ export function MatchSummaryPanel({
   feed: MatchFeedItem[];
   /** Extra block between the numbers and the feed (the live heat map, Etapa 35). */
   extra?: ReactNode;
+  /** Referee of the match (`referees.md`): face, name and flag under the team names. */
+  referee?: RefereeBadgeData | null;
 }) {
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
@@ -87,6 +91,11 @@ export function MatchSummaryPanel({
           <span className="truncate" style={{ color: readableOnDark(colorA) }}>{nameA ?? "A"}</span>
           <span className="truncate text-right" style={{ color: readableOnDark(colorB) }}>{nameB ?? "B"}</span>
         </div>
+        {referee && (
+          <div className="mt-3" title={t("referees.referee")}>
+            <RefereeBadge referee={referee} size={32} compact />
+          </div>
+        )}
       </div>
       <div className="px-4">
         <StatRow label={t("match.summary.possession")} a={`${pA}%`} b={`${100 - pA}%`} />

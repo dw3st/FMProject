@@ -1226,6 +1226,7 @@ export function MatchScreen() {
           possessionA={awayView ? 1 - possessionA : possessionA}
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} />}
+          referee={touchline?.referee ?? null}
         />
       </main>
 

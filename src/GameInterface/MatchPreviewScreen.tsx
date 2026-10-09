@@ -23,7 +23,9 @@ import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { matchConditions } from "@/Domain/matchday/matchConditions";
-import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
+import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
+import { RefereeBadge } from "@/GameInterface/Referees/RefereeBadge";
+import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { Player } from "@/Domain/Player";
@@ -43,7 +45,7 @@ import {
 const Clock = iconOf("clock");
 const Sprout = iconOf("sprout");
 /** Info grid columns by number of cells (literal classes for Tailwind). */
-const INFO_COLS: Record<number, string> = { 4: "sm:grid-cols-4", 5: "sm:grid-cols-5", 6: "sm:grid-cols-6" };
+const INFO_COLS: Record<number, string> = { 3: "sm:grid-cols-3", 4: "sm:grid-cols-4", 5: "sm:grid-cols-5" };
 const Cloud = iconOf("cloud");
 const MapPin = iconOf("map-pin");
 const Users = iconOf("squad");
@@ -592,6 +594,8 @@ interface MatchSetupData {
   pitchCondition?: number | null;
   /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
+  /** Referee of the match (`referees.md`); null = none appointed. */
+  referee?: MatchSetupReferee | null;
 }
 
 export function MatchPreviewScreen() {
@@ -947,7 +951,7 @@ export function MatchPreviewScreen() {
   const oppTactics: TacticalStyle = DEFAULT_TACTICAL_STYLE;
 
   const currentDate = session.currentDate ?? "";
-  const referee = refereeFor(currentDate);
+  const referee = matchSetup?.referee ?? null;
   // Home ground: ours or the opponent's, none on a neutral ground — same rule as the dashboard card,
   // so the kickoff and the weather (`matchConditions`) match it.
   const homeGround = !fixture || fixture.neutral ? null : isHome ? matchSetup?.mySquad ?? null : opponentSquad;
@@ -1089,7 +1093,7 @@ export function MatchPreviewScreen() {
       {/* Match info */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md px-6 py-4">
-          <div className={`grid grid-cols-2 ${INFO_COLS[4 + (expectedCrowd ? 1 : 0) + (pitch !== null ? 1 : 0)]} gap-6`}>
+          <div className={`grid grid-cols-2 ${INFO_COLS[3 + (expectedCrowd ? 1 : 0) + (pitch !== null ? 1 : 0)]} gap-6`}>
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
             {pitch !== null && (
               <InfoCell icon={Sprout} label={t("matchPreview.pitch")} value={`${Math.round(pitch)}%`}
@@ -1102,8 +1106,21 @@ export function MatchPreviewScreen() {
             <InfoCell icon={conditions ? iconOf(weatherIconName(conditions)) : Cloud} label={t("matchPreview.weather")}
               value={conditions ? t(weatherLabelKey(conditions.weather)) : "—"} />
             <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value={conditions?.kickoff ?? "—"} />
-            <InfoCell icon={User} label={t("matchPreview.officials")} value={referee} />
           </div>
+          {referee && (
+            <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-2">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <User className="w-4 h-4" />
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{t("matchPreview.officials")}</span>
+              </div>
+              <RefereeBadge referee={referee} size={48} />
+              {referee.assistants.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {t("referees.assistants", { names: referee.assistants.map((a) => a.name).join(", ") })}
+                </span>
+              )}
+            </div>
+          )}
           {/* A 2nd leg with an aggregate already shows continental.aggregateNote under the header
               (same "extra time / penalties if level" info) — don't repeat it here. */}
           {fixture?.knockout && !fixture.aggregate && (

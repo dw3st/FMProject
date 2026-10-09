@@ -1,3 +1,5 @@
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -310,6 +312,12 @@ function MatchCard({
           <StatCell label={t("daySummary.passes")} home={event.teamStats.home.passesCompleted} away={event.teamStats.away.passesCompleted} />
           <StatCell label={t("daySummary.tackles")} home={event.teamStats.home.tackles} away={event.teamStats.away.tackles} />
         </div>
+        {event.referee && (
+          <p className="mt-3 mb-0 text-sm text-muted-foreground text-center inline-flex w-full items-center justify-center gap-2">
+            {t("referees.refereeLine", { name: event.referee.name })}
+            {nationalityFlagCode(event.referee.country) && <Flag code={nationalityFlagCode(event.referee.country)!} />}
+          </p>
+        )}
       </div>
     </div>
   );
