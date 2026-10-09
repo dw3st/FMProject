@@ -1157,4 +1157,12 @@ export const upcoming: ChangelogText[] = [
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
+  { pt: "Jogos remarcados quando o seu clube teria dois jogos seguidos", en: "Matches rescheduled when your club would play on back-to-back days" },
+  { pt: "Técnicos atuais dos clubes, com os nomes reais", en: "Clubs' current managers, with their real names" },
+  { pt: "Árbitros reais nas principais ligas, cada um com o seu rigor e com rosto em campo", en: "Real referees in the top leagues, each with their own strictness and a face on the pitch" },
+  { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
+  { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
+  { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },
+  { pt: "Imprensa: coletivas e notícias do mundo do futebol", en: "Press conferences and football news" },
+  { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
 ];
