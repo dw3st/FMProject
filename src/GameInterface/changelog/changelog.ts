@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.16",
+    date: "2026-10-09",
+    items: [
+      { pt: "Os clubes do mundo começam com o técnico atual de cada um", en: "Clubs around the world start with their current head coach" },
+    ],
+    fixes: [
+      { pt: "Técnicos desatualizados corrigidos: o PSG é de Luis Enrique, não mais de Carlo Ancelotti", en: "Outdated head coaches fixed: PSG is managed by Luis Enrique, no longer Carlo Ancelotti" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [
