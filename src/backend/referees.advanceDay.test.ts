@@ -10,18 +10,32 @@ import { poolSizeFor } from "@/Domain/referees/pool";
 import { fixtureKey } from "@/Domain/referees/assign";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import type { MatchEvent } from "@/types/dayLogTypes";
+import { apiRoutes } from "@/backend/routes";
+import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 const HUMAN = "33";
 
 describe("referees in the save", () => {
   let saveId = "";
   let day = "";
+  let token = "";
+  let other = "";
+  const call = async (key: string, path: string, tok = token) => {
+    const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    return handler(Object.assign(new Request(`http://localhost${path}`, { headers: { cookie: `fs_session=${tok}` } }), { params: { saveId } }));
+  };
   beforeAll(async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: HUMAN, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    const { user, session } = devAutoLogin("referees-route@test.local");
+    token = session.token;
+    other = devAutoLogin("referees-other@test.local").session.token;
+    recordSaveOwnership(saveId, user.id);
     const idx = (await saveService.getDateIndex(saveId, "premier_league"))!;
     day = Object.keys(idx).filter((d) => d >= (meta.currentDate ?? "")).sort()[0]!;
   }, 240_000);
@@ -77,6 +91,41 @@ describe("referees in the save", () => {
     expect(Object.keys(state.assignments)).toContain(day);
   }, 240_000);
 
+  test("match-setup gives the appointed referee (band, age, two assistants; no raw rigor on screen fields)", async () => {
+    const idx = (await saveService.getDateIndex(saveId, "premier_league"))!;
+    let next = "";
+    for (const d of Object.keys(idx).filter((x) => x > day).sort()) {
+      if ((await saveService.getFixturesForDate(saveId, d)).some((f) => f.home === HUMAN || f.away === HUMAN)) { next = d; break; }
+    }
+    await saveService.updateMeta(saveId, { currentDate: next });
+    await saveService.saveTactics(saveId, { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation((await saveService.getSquadById(saveId, HUMAN))!) });
+    const res = await call("/api/match-setup", `/api/match-setup?saveId=${saveId}`);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.referee).not.toBeNull();
+    expect(["lenient", "balanced", "strict"]).toContain(body.referee.band);
+    expect(body.referee.assistants).toHaveLength(2);
+    expect(typeof body.referee.age).toBe("number");
+    const state = (await saveService.getRefereeState(saveId))!;
+    const ids = Object.values(state.assignments[body.fixture.date] ?? {}).map((a) => a.refereeId);
+    expect(ids).toContain(body.referee.id);
+  }, 120_000);
+
+  test("referees route: owner, validation, rows per match", async () => {
+    expect((await call("/api/saves/:saveId/referees", `/api/saves/${saveId}/referees`, other)).status).toBe(404);
+    expect((await call("/api/saves/:saveId/referees", `/api/saves/${saveId}/referees?competition=../x`)).status).toBe(400);
+    expect((await call("/api/saves/:saveId/referees", `/api/saves/${saveId}/referees?season=2010-11`)).status).toBe(404);
+    const res = await call("/api/saves/:saveId/referees", `/api/saves/${saveId}/referees?competition=premier_league`);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.items.length).toBeGreaterThan(0);
+    for (const r of body.items) {
+      expect(r.matches).toBeGreaterThan(0);
+      expect("strictness" in r).toBe(false);
+      expect(["lenient", "balanced", "strict"]).toContain(r.band);
+    }
+  });
+
   test("a country's rollover archives its stats and renews only its pool", async () => {
     const before = (await saveService.getRefereePool(saveId))!;
     await rolloverReferees(saveService, saveId, "England", "2027-06-01", "2026-27");
@@ -90,5 +139,8 @@ describe("referees in the save", () => {
     expect(Object.keys(state.stats).some((id) => englishIds.has(id))).toBe(false);
     await rolloverReferees(saveService, saveId, "England", "2027-06-01", "2026-27");
     expect(await saveService.getRefereePool(saveId)).toEqual(after);
+    const old = await call("/api/saves/:saveId/referees", `/api/saves/${saveId}/referees?season=2026-27`);
+    expect(old.status).toBe(200);
+    expect(((await old.json()) as any).seasons).toContain("2026-27");
   });
 });

@@ -11,6 +11,7 @@ import { scoutingRoutes } from "@/backend/scoutingRoutes";
 import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
 import { youthCompRoutes } from "@/backend/youthCompRoutes";
+import { matchSetupReferee, refereeRoutes } from "@/backend/refereeRoutes";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
@@ -95,6 +96,7 @@ export const apiRoutes = {
   ...moraleRoutes,
   ...youthRoutes,
   ...youthCompRoutes,
+  ...refereeRoutes,
   ...facilityRoutes,
   ...rebornRoutes,
   ...managerRoutes,
@@ -528,6 +530,9 @@ export const apiRoutes = {
       ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id))
       : null;
 
+    // Referee of the match (`.claude/rules/game/referees.md`): the appointment the day advance will use.
+    const referee = saveIdParam && matchFixture && matchDate ? await matchSetupReferee(save.id, matchDate, matchFixture) : null;
+
     return Response.json({
       save,
       mySquad,
@@ -546,6 +551,7 @@ export const apiRoutes = {
       pitchCondition,
       crowd,
       managers,
+      referee,
     });
   },
 
