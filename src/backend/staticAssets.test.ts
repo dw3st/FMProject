@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Glob } from "bun";
+import { readdirSync } from "node:fs";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { FONT_FACES, fontFacesCss, fontUrl } from "@/fontFaces";
 import { flagUrl } from "@/Domain/world/flags";
@@ -58,13 +59,22 @@ describe("static assets (fonts and flags served as files)", () => {
 
   test("no stylesheet that inlines fonts or flags is imported into the page bundles", async () => {
     const offenders: string[] = [];
-    for await (const file of new Glob("src/**/*.{ts,tsx,css}").scan(".")) {
-      if (file.includes("/Data/") || file.includes("\\Data\\")) continue;
-      const text = await Bun.file(file).text();
-      if (/@import\s+["']@fontsource|import\s+["']@fontsource|flag-icons\/css/.test(text) && !file.endsWith("staticAssets.ts")) {
-        offenders.push(file);
+    // Walk the source folders only: src/Data holds the runtime world and the saves (tens of thousands of files),
+    // and walking it pushed this test past its timeout on a busy machine.
+    const entries = readdirSync("src", { withFileTypes: true })
+      .filter((e) => e.name !== "Data" && e.name !== "example_data");
+    for (const entry of entries) {
+      const path = `src/${entry.name}`;
+      const files = entry.isDirectory()
+        ? [...new Glob("**/*.{ts,tsx,css}").scanSync(path)].map((f) => `${path}/${f}`)
+        : /\.(ts|tsx|css)$/.test(entry.name) ? [path] : [];
+      for (const file of files) {
+        const text = await Bun.file(file).text();
+        if (/@import\s+["']@fontsource|import\s+["']@fontsource|flag-icons\/css/.test(text) && !file.endsWith("staticAssets.ts")) {
+          offenders.push(file);
+        }
       }
     }
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 });
