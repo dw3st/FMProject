@@ -7,6 +7,7 @@ import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { managerFaceCountry, type ManagerFace } from "@/Domain/faces/managerFace";
 import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
+import type { ClubFacilities, StandId } from "@/types/facilityTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { Squad } from "@/types/playerTypes";
 
@@ -19,6 +20,8 @@ export interface MatchCrowd {
   importance: number;
   /** false: no data (neutral venue) — the screen uses the default fill. */
   known: boolean;
+  /** Stands of the human club under works on the match day (#137): drawn empty on the pitch. */
+  works?: StandId[];
 }
 
 export interface MatchManagers {
@@ -63,7 +66,16 @@ export async function matchCrowd(
     date: fixture.date,
     ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
   });
-  return { attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true };
+  const works = standsUnderWorksOn(mySquad.facilities, fixture.date);
+  return {
+    attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true,
+    ...(works.length > 0 ? { works } : {}),
+  };
+}
+
+/** Stands whose works are still running on `date` (the same rule `effectiveCapacity` halves). */
+export function standsUnderWorksOn(f: ClubFacilities, date: string): StandId[] {
+  return f.projects.filter((p) => p.kind === "stand" && p.stand && p.end > date).map((p) => p.stand!);
 }
 
 /** Country (leagueData) of the league a club plays in; null when unknown. */

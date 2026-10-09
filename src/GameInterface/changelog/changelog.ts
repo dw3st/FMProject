@@ -25,6 +25,42 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14.3",
+    date: "2026-10-09",
+    items: [
+      { pt: "Barra superior com ícones maiores e coloridos, mais fáceis de reconhecer", en: "Top bar with bigger, coloured icons that are easier to recognise" },
+      { pt: "A barra inferior mostra quantas pessoas estão jogando agora", en: "The bottom bar shows how many people are playing right now" },
+      { pt: "Na partida, um setor do estádio em obra aparece vazio e como canteiro de obras", en: "In the match, a stand under construction shows empty, as a building site" },
+      { pt: "Abrir o relato de problema durante a partida pausa o jogo", en: "Opening the problem report during a match pauses the game" },
+    ],
+    fixes: [
+      { pt: "As assistências no resultado da partida não parecem mais uma inicial antes do nome", en: "Assists on the match result no longer look like an initial before the name" },
+      { pt: "A posição de cada jogador na partida é a mesma do elenco", en: "Each player's position in the match is the same as in the squad" },
+      { pt: "As abas da barra superior voltam a mostrar os nomes ao sair da partida", en: "The top bar tabs show their names again after leaving a match" },
+    ],
+  },
+  {
+    version: "4.14.2",
+    date: "2026-10-09",
+    items: [
+      { pt: "As notas dos jogadores foram reajustadas posição por posição: goleiros, defensores, meias e atacantes mantêm o nível de cada setor da liga", en: "Player ratings were readjusted position by position: goalkeepers, defenders, midfielders and forwards keep the level of each line of their league" },
+    ],
+    fixes: [
+      { pt: "Os gols por partida voltaram ao normal nas ligas: o Brasileirão deixou de ter jogos com gols demais", en: "Goals per match are back to normal across the leagues: the Brasileirão no longer has too many goals" },
+    ],
+  },
+  {
+    version: "4.14.1",
+    date: "2026-10-09",
+    items: [
+      { pt: "Na partida, os lances do Resumo ficam sempre visíveis, com rolagem própria; o mapa de posse foi para baixo deles e pode ser recolhido", en: "In the match, the Summary's events are always visible, with their own scroll; the possession map moved below them and can be collapsed" },
+      { pt: "O Resumo da partida mostra os escudos dos clubes no lugar dos nomes, com o mandante à esquerda", en: "The match Summary shows the club crests instead of the names, with the home side on the left" },
+    ],
+    fixes: [
+      { pt: "Uma falha do servidor ao abrir a prévia ou a partida mostra uma mensagem de erro legível, em vez de um erro de leitura", en: "A server failure when opening the match preview or the match shows a readable error message instead of a parsing error" },
+    ],
+  },
+  {
     version: "4.14",
     date: "2026-10-09",
     items: [
@@ -1121,4 +1157,12 @@ export const upcoming: ChangelogText[] = [
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
+  { pt: "Jogos remarcados quando o seu clube teria dois jogos seguidos", en: "Matches rescheduled when your club would play on back-to-back days" },
+  { pt: "Técnicos atuais dos clubes, com os nomes reais", en: "Clubs' current managers, with their real names" },
+  { pt: "Árbitros reais nas principais ligas, cada um com o seu rigor e com rosto em campo", en: "Real referees in the top leagues, each with their own strictness and a face on the pitch" },
+  { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
+  { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
+  { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },
+  { pt: "Imprensa: coletivas e notícias do mundo do futebol", en: "Press conferences and football news" },
+  { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
 ];

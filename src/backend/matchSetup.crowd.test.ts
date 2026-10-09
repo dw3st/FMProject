@@ -62,6 +62,21 @@ describe("match crowd", () => {
     expect(derby.attendance).toBeLessThanOrEqual(derby.capacity);
   });
 
+  test("a stand under works on the match day goes with the crowd (#137)", async () => {
+    const me = { ...squad("me", "Town", 40000) };
+    me.facilities = initialFacilities(me, 1);
+    const project = {
+      id: "w1", kind: "stand" as const, stand: "north" as const, seats: 2000, start: "2026-10-01", end: "2026-12-01",
+      cost: 1, boardShare: 0, instalments: 1, paid: 1,
+    };
+    me.facilities = { ...me.facilities, projects: [project as never] };
+    const opp = squad("opp", "Elsewhere", 30000);
+    expect((await matchCrowd(fakeService([me, opp]), meta, fixture(), me, opp)).works).toEqual(["north"]);
+    // On the day the works end the stand is open again; away games never carry it.
+    expect((await matchCrowd(fakeService([me, opp]), meta, fixture({ date: "2026-12-01" }), me, opp)).works).toBeUndefined();
+    expect((await matchCrowd(fakeService([me, opp]), meta, fixture({ home: "opp", away: "me" }), me, opp)).works).toBeUndefined();
+  });
+
   test("away: the AI rule; neutral: unknown", async () => {
     const me = squad("me", "Town", 40000);
     const opp = squad("opp", "Elsewhere", 30000);

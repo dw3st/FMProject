@@ -579,6 +579,9 @@
     "upcomingSubtitle": "What we are working on next"
   },
   "status": {
+    "onlineShort": "{{count}} online",
+    "online_one": "{{count}} person playing now",
+    "online_other": "{{count}} people playing now",
     "budget": "Budget",
     "unread": "Unread",
     "players": "Players"
@@ -908,7 +911,9 @@
       "all": "Whole match",
       "aria": "Where the ball was with {{team}} ({{window}})",
       "attack": "Attacking direction",
-      "empty": "No possession yet"
+      "empty": "No possession yet",
+      "show": "Show the possession map",
+      "hide": "Hide the possession map"
     },
     "liveTactics": {
       "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
@@ -2070,6 +2075,7 @@
     "tabTactics": "Tactics",
     "pickBenchOrSwap": "Pick a substitute to bring on, or another starter to swap positions.",
     "pickSwap": "No substitutions left: pick another starter to swap positions.",
+    "playingAs": "Playing as {{role}}",
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
     "injured": "Injured"

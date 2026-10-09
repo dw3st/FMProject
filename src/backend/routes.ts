@@ -1,3 +1,4 @@
+import { withJsonErrors } from "@/backend/routeErrors";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
@@ -41,6 +42,7 @@ import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
+import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
@@ -79,9 +81,10 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
   return _clubProfileLeagueDataCache;
 }
 
-export const apiRoutes = {
+export const apiRoutes = withJsonErrors({
   ...authRoutes,
   ...reportRoutes,
+  ...presenceRoutes,
   ...faceRoutes,
   ...staticAssetRoutes,
   ...saveRoutes,
@@ -709,4 +712,4 @@ export const apiRoutes = {
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },
-} as const;
+} as const);

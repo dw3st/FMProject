@@ -23,6 +23,10 @@ export interface LeaguePlayer {
   overall: number;
   /** Main line for the line premium: the Transfermarkt position's line when known, else positions[0]. */
   line: MainRole;
+  /** Line before the recalibration (positions[0]); the reorder keeps each line's old notes. Defaults to `line`. */
+  fromLine?: MainRole;
+  /** Overall before the recalibration, at the old position (the old multiset of `fromLine`). Defaults to `overall`. */
+  fromOverall?: number;
   /** open-football seed overall, when the player comes from the seed (covariate of the age fit). */
   seedOverall?: number;
   match?: MatchInfo;
@@ -52,7 +56,7 @@ const round4 = (x: number) => Math.round(x * 1e4) / 1e4;
 
 /**
  * Age and line effects (seed covariate) over every valued match, then per league: coverage = valued ÷ players; at or above
- * `COVERAGE_MIN` (and with at least `MIN_VALUED_PLAYERS` valued) the valued players are reordered by level and unmatched youths capped. Positions, birth
+ * `COVERAGE_MIN` (and with at least `MIN_VALUED_PLAYERS` valued) the valued players are reordered by level, line by line, and unmatched youths capped. Positions, birth
  * date, height and nationality are taken from every match regardless of coverage.
  */
 export function buildDerived(
@@ -83,7 +87,9 @@ export function buildDerived(
       reordered,
     };
     if (!reordered) continue;
-    const order = reorderLeague(inLeague.map((p) => ({ id: p.id, overall: p.overall, level: level.get(p.id)! })));
+    const order = reorderLeague(inLeague.map((p) => ({
+      id: p.id, overall: p.fromOverall ?? p.overall, fromLine: p.fromLine ?? p.line, line: p.line, level: level.get(p.id)!,
+    })));
     for (const [id, t] of order) targets.set(id, t);
     const caps = youthCaps(
       list.map((p) => ({ id: p.id, squadId: p.squadId, age: p.age, overall: p.overall, matched: level.has(p.id) })),

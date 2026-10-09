@@ -156,6 +156,18 @@ export function factorFromAptitudes(
   return POSITION_PENALTY[aptitudes?.[role] ?? "natural"];
 }
 
+/**
+ * The natural role in a plain aptitude record (what `GamePlayer.fit` stores) — the same role as
+ * `preferredRole` of the roster player. `fallback` when the record is missing or has no natural.
+ */
+export function naturalFromAptitudes(
+  aptitudes: Partial<Record<string, Aptitude>> | undefined,
+  fallback: string,
+): string {
+  for (const [role, apt] of Object.entries(aptitudes ?? {})) if (apt === "natural") return role;
+  return fallback;
+}
+
 /** Multiplier on the player's attributes when fielded as `role`. */
 export function positionFactor(player: RosterPlayer, role: string): number {
   return POSITION_PENALTY[aptitudeFor(player, role)];

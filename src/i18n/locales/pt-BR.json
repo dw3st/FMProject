@@ -579,6 +579,9 @@
     "upcomingSubtitle": "No que estamos trabalhando agora"
   },
   "status": {
+    "onlineShort": "{{count}} online",
+    "online_one": "{{count}} pessoa jogando agora",
+    "online_other": "{{count}} pessoas jogando agora",
     "budget": "Orçamento",
     "unread": "Não lidas",
     "players": "Jogadores"
@@ -908,7 +911,9 @@
       "all": "Jogo todo",
       "aria": "Onde a bola esteve com {{team}} ({{window}})",
       "attack": "Direção do ataque",
-      "empty": "Ainda sem posse"
+      "empty": "Ainda sem posse",
+      "show": "Mostrar o mapa de posse",
+      "hide": "Esconder o mapa de posse"
     },
     "liveTactics": {
       "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
@@ -2070,6 +2075,7 @@
     "tabTactics": "Tática",
     "pickBenchOrSwap": "Escolha um reserva para entrar, ou outro titular para trocar de posição.",
     "pickSwap": "Sem substituições restantes: escolha outro titular para trocar de posição.",
+    "playingAs": "Jogando de {{role}}",
     "pickStarter": "Escolha o titular que sai.",
     "booked": "Amarelo",
     "injured": "Lesionado"
