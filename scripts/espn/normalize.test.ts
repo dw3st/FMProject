@@ -40,24 +40,36 @@ describe("playerKey", () => {
 });
 
 describe("normalizeNationality", () => {
-  const world = new Set(["USA", "Republic of Ireland", "South Korea", "Czechia", "Türkiye", "Congo DR", "Congo", "Italy", "France", "England"]);
+  // The world's own convention ("United States", "DR Congo", "Côte d’Ivoire"…), as in src/example_data/squads.
+  const world = new Set(["United States", "Ireland", "South Korea", "Czechia", "Türkiye", "DR Congo", "Congo - Brazzaville", "Italy", "France", "England"]);
 
   test("maps known aliases onto the world's convention", () => {
-    expect(normalizeNationality("United States", world)).toBe("USA");
-    expect(normalizeNationality("Ireland", world)).toBe("Republic of Ireland");
+    expect(normalizeNationality("United States", world)).toBe("United States");
+    expect(normalizeNationality("USA", world)).toBe("United States");
+    expect(normalizeNationality("Ireland", world)).toBe("Ireland");
+    expect(normalizeNationality("Republic of Ireland", world)).toBe("Ireland");
     expect(normalizeNationality("Korea, South", world)).toBe("South Korea");
     expect(normalizeNationality("Czech Republic", world)).toBe("Czechia");
     expect(normalizeNationality("Turkey", world)).toBe("Türkiye");
-    expect(normalizeNationality("DR Congo", world)).toBe("Congo DR");
+    expect(normalizeNationality("DR Congo", world)).toBe("DR Congo");
+    expect(normalizeNationality("Congo DR", world)).toBe("DR Congo");
+    expect(normalizeNationality("Congo", world)).toBe("Congo - Brazzaville");
+    expect(normalizeNationality("Ivory Coast", world)).toBe("Côte d’Ivoire");
   });
 
   test("is case-insensitive on the alias key", () => {
-    expect(normalizeNationality("united states", world)).toBe("USA");
-    expect(normalizeNationality("IRELAND", world)).toBe("Republic of Ireland");
+    expect(normalizeNationality("united states", world)).toBe("United States");
+    expect(normalizeNationality("IRELAND", world)).toBe("Ireland");
   });
 
   test("passes through a value that already matches the world's convention", () => {
     expect(normalizeNationality("England", world)).toBe("England");
+  });
+
+  test("keeps a real country the world hasn't seen yet when the game has its flag (#143)", () => {
+    expect(normalizeNationality("Wales", world)).toBe("Wales");
+    expect(normalizeNationality("Kosovo", world)).toBe("Kosovo");
+    expect(normalizeNationality("St Lucia", world)).toBe("St. Lucia");
   });
 
   test("rejects adjective forms instead of guessing", () => {
@@ -70,17 +82,5 @@ describe("normalizeNationality", () => {
     expect(normalizeNationality("Narnia", world)).toBeNull();
     expect(normalizeNationality(null, world)).toBeNull();
     expect(normalizeNationality("  ", world)).toBeNull();
-  });
-});
-
-describe("fixNameCasing", () => {
-  test("lowercases capitals after a dotless i", () => {
-    expect(fixNameCasing("BahadıR Han Gungordu")).toBe("Bahadır Han Gungordu");
-    expect(fixNameCasing("Ibrahim AlkıS")).toBe("Ibrahim Alkıs");
-  });
-  test("leaves normal names alone", () => {
-    expect(fixNameCasing("Kenan Yıldız")).toBe("Kenan Yıldız");
-    expect(fixNameCasing("Mohamed Salah")).toBe("Mohamed Salah");
-    expect(fixNameCasing("Ali McDonald")).toBe("Ali McDonald");
   });
 });

@@ -17,6 +17,31 @@ describe("nationalityFlagCode", () => {
     expect(nationalityFlagCode("Atlantis")).toBeUndefined();
   });
 
+  test("ESPN spellings of a country also get the flag (#143)", () => {
+    expect(nationalityFlagCode("Congo DR")).toBe("cd");
+    expect(nationalityFlagCode("Cape Verde Islands")).toBe("cv");
+    expect(nationalityFlagCode("Republic of Ireland")).toBe("ie");
+    expect(nationalityFlagCode("St Lucia")).toBe("lc");
+    expect(nationalityFlagCode("St Kitts and Nevis")).toBe("kn");
+    expect(nationalityFlagCode("Comoros Islands")).toBe("km");
+    expect(nationalityFlagCode("Palestine")).toBe("ps");
+    expect(nationalityFlagCode("Congo")).toBe("cg");
+    expect(nationalityFlagCode("Lesotho")).toBe("ls");
+    expect(nationalityFlagCode("Malawi")).toBe("mw");
+    expect(nationalityFlagCode("India")).toBe("in");
+    expect(nationalityFlagCode("Grenada")).toBe("gd");
+  });
+
+  test("every ESPN citizenship of the snapshot has a flag (#143)", () => {
+    const path = fileURLToPath(new URL("../../../data_process/espn/snapshot.json", import.meta.url));
+    const snap = JSON.parse(readFileSync(path, "utf8")) as { leagues: { teams: { athletes?: { citizenship?: string | null }[] }[] }[] };
+    const missing = new Set<string>();
+    for (const l of snap.leagues) for (const t of l.teams) for (const a of t.athletes ?? []) {
+      if (a.citizenship && !nationalityFlagCode(a.citizenship)) missing.add(a.citizenship);
+    }
+    expect([...missing]).toEqual([]);
+  });
+
   test("every code is a valid flag file stem and every world nationality is covered", () => {
     const root = fileURLToPath(new URL("../../example_data/squads/", import.meta.url));
     const missing = new Set<string>();
