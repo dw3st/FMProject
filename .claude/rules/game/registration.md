@@ -22,7 +22,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 | `src/types/registrationTypes.ts` | `RegistrationRule`, `RegistrationList`, `RegistrationStatus`, `RegistrationNotice`, `RegCounts`, visões da tela |
 | `src/Domain/registration/registrationConfig.ts` | `REGISTRATION_RULES`, `RULE_BY_COUNTRY`, `RULE_BY_CONTINENT`, `RULE_BY_CONTINENTAL`, `MIN_REGISTERED` (18), `LINE_MINIMUMS`, `DOMESTIC_EXTRA` |
 | `src/Domain/registration/nations.ts` (+ teste) | `normalizeNation` (`Czechia`, `United States`, `Türkiye`), `NATION_CONFED` (172 nações), grupos `EU`, `ibero`, `acp` |
-| `src/Domain/registration/formed.ts` (+ teste) | `clubTrained`, `nationTrained`, `isFormed`, `isForeign`, `isFree`, `domesticNations` |
+| `src/Domain/registration/formed.ts` (+ teste) | `clubTrained`, `nationTrained`, `isFormed`, `isForeign`, `isFree`, `domesticNations`; green card: `foreignByNation`, `originGreenCard`, `arrivalAge`, `hasGreenCard`, `isGreenCardHolder` |
 | `src/Domain/registration/rules.ts` (+ teste) | `ruleFor`, `autoRegister`, `validateList`, `canAdd`, `countsOf`, `registeredSet`, `rosterSig`, `limitForeignPool`, `matchdayPool` |
 | `src/Domain/registration/deadlines.ts` (+ teste) | `registrationStatus` (janela + fases da continental) |
 | `src/Domain/registration/lists.ts` (+ teste) | `ensureList` (primeira lista), `aiRefresh`, `humanDay`, `manualList`, `automaticList` |
@@ -33,14 +33,15 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 | `src/backend/routes.ts` (`match-setup`), `saves.ts` (rotação), `jobWorld.ts` | Partida ao vivo e prévia só com inscritos; troca de clube |
 | `src/Domain/inbox/registrationMessage.ts`, `inboxTypes.ts`, `inboxTopics.ts`, `inboxThemes.ts` | Inbox `registration` (tópico `competitions`) |
 | `src/GameInterface/Squad/RegistrationView.tsx`, `registrationApi.ts`, `SquadScreen.tsx`, `FormationScreen.tsx`, `MatchPreviewScreen.tsx`, `MatchScreen.tsx`, `InboxScreen.tsx` | Telas |
-| `scripts/registration-measure.ts`, `scripts/registration/probe.ts` (`market-sim.ts --registration`) | Medição |
+| `scripts/registration-measure.ts`, `scripts/registration/probe.ts` (`market-sim.ts --registration`), `scripts/registration/greenCardProbe.ts` | Medição |
 
 ## Definições
 
 - **Estrangeiro** (`isForeign`): nação (normalizada) fora dos domésticos (`país + rule.domestic + DOMESTIC_EXTRA`:
   Inglaterra + País de Gales; EUA + Canadá). `nonEU` (La Liga, Ligue 1): também fora da UE/EEE e das isenções — La Liga
   isenta `ibero` (CONMEBOL + México/América Central/Caribe hispânico, a dupla nacionalidade espanhola) e `acp` (Cotonou);
-  Ligue 1 só `acp`. Nacionalidade ausente = doméstico.
+  Ligue 1 só `acp`. Nacionalidade ausente = doméstico. Regra com `greenCard` (só a MLS): quem tem green card é
+  doméstico (ver "Green card (MLS)").
 - **Formado no clube** (`clubTrained`): id `youth_<clube>_…` / `es_youth_<clube>_…`, `RosterPlayer.academyOf` (prospecto
   contratado para a base, renascido aceito) ou ≥ 3 temporadas distintas no `history` no clube com ≤ 21 anos.
 - **Formado no país** (`nationTrained`): nação doméstica (ou ausente) — a formação antes da carreira não existe nos
@@ -59,7 +60,8 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 | Ligue 1 (França) | 30, até 4 extracomunitários (`acp` isento) |
 | Brasileirão (pirâmide) | elenco inteiro; **até 9 estrangeiros por jogo** (XI + banco) |
 | Argentina | elenco inteiro, até 6 estrangeiros |
-| Arábia Saudita · México · MLS | elenco inteiro, até 10 · 9 · 10 estrangeiros (MLS: EUA + Canadá domésticos) |
+| Arábia Saudita · México | elenco inteiro, até 10 · 9 estrangeiros |
+| MLS (4.17.1) | elenco inteiro, até 8 internacionais (EUA + Canadá domésticos; green card = doméstico) |
 | Champions / Europa League | 25, sub-21 formados livres, 8 formados |
 | Libertadores / Sul-Americana | 50, sem limite de estrangeiros nem de formados (a regra real) |
 | Copa nacional | a regra da liga do clube (lista própria) |
@@ -68,6 +70,38 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 `ruleFor`: continental → país do clube (liga e copa) → continente do país → Europa. A falta de formados **reduz**
 a lista (não formados contados ≤ teto − mínimo). Mínimos de linha da escolha automática (GK 2 · DEF 5 · MID 5 · FWD 3);
 piso de 18 inscritos completado ignorando os limites (`exception`).
+
+## Green card (MLS, 4.17.1)
+
+O jogo não sabe quem tem green card; ele é simulado (`formed.ts`, `GREEN_CARD` em `registrationConfig.ts`). Um
+estrangeiro pela nacionalidade num clube da MLS conta como **doméstico** quando (`hasGreenCard`):
+
+- (a) tem `SEASONS` (3)+ temporadas no clube atual (`seasonsAtClub` da personalidade: linhas do `history` sem
+  empréstimo + a temporada em andamento já começada); ou
+- (b) chegou ao clube com ≤ `MAX_ARRIVAL_AGE` (21) anos (`arrivalAge`: início da passagem atual pelo `history`; última
+  linha em outro clube = chegou nesta temporada, idade de hoje; sem `history` = desconhecido, ignorado); ou
+- (c) tem o **green card de origem**: `mulberry32(seedFrom("greencard:<id>"))() < ORIGIN` (0,6) — derivado, nada
+  gravado, sempre o mesmo para o jogador (contratados depois também).
+
+(a) e (b) precisam do clube (`ForeignHolder { squadId, ctx }`, passado por `infoOf`/rotas); sem ele só (c) vale (o
+limite por jogo `limitForeignPool`/`matchdayPool` não passa o clube — a MLS não tem limite por jogo). Outras regras
+ignoram o green card. Tela: selo "Green card" (com a explicação no `title`) na aba Inscritos (`isGreenCardHolder`,
+`RegistrationRowView.greenCard`) e "Green card conta como doméstico" na linha da regra.
+
+Calibração do `ORIGIN` (`bun scripts/registration/greenCardProbe.ts [p,…]`, mundo inicial
+`src/example_data/squads/of_major_league_soccer`, 30 clubes, sem `history` — só (c) age; limite 8):
+
+| p | Internacionais por clube (mín / mediana / máx) | Clubes ≤ 8 | Estrangeiros fora / clube | Dos 11 melhores fora (clubes) |
+|---|---|---|---|---|
+| sem green card | 10 / 16 / 20 | 0 de 30 | 7,07 | 28 (16) |
+| 0,4 | 3 / 8 / 14 | 16 | 1,53 | 2 (1) |
+| 0,5 | 3 / 7 / 12 | 22 | 0,63 | 0 |
+| 0,55 | 3 / 7 / 12 | 24 (80%) | 0,43 | 0 |
+| **0,6** | **2 / 6 / 11** | **26 (87%)** | **0,33** | **0** |
+| 0,7 | 0 / 4 / 9 | 29 | 0,03 | 0 |
+
+0,6: o menor com folga sobre as metas (nenhum dos 11 melhores fora, ≥ 80% dos clubes com ≤ 8). Antes (4.17, limite 10
+sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
 
 ## Prazo (`registrationStatus`)
 
@@ -142,7 +176,7 @@ lista abaixo do teto por falta de formados):
 | la_liga | 42 | 29,1 | 28,3 | 1 | 0 | 0,19 | 0,05 |
 | ligue_1 | 36 | 28,8 | 28,3 | 0 | 0 | 0,50 | 0,17 |
 | saudi | 32 | 27,5 | 27,1 | 0 | 0 | 0,34 | 0,06 |
-| mls | 30 | 29,3 | 24,1 | 0 | 0 | 5,23 | 0,73 |
+| mls (4.17.1: 8 + green card; antes 10: lista 24,1, 5,23, 0,73) | 30 | 29,3 | 29,0 | 0 | 0 | 0,37 | 0,00 |
 | oceania | 22 | 28,3 | 27,7 | 0 | 2 | 0,59 | 0,00 |
 | bundesliga | 18 | 28,7 | 28,7 | 1 | 0 | 0,00 | 0,00 |
 | mexico | 18 | 29,2 | 28,0 | 0 | 0 | 1,17 | 0,00 |

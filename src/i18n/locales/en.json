@@ -3532,7 +3532,8 @@
       "freeFormed": "Home-grown under-{{age}}s free",
       "formed": "At least {{n}} home-grown",
       "foreign": "At most {{n}} foreign",
-      "foreignMatchday": "At most {{n}} foreign per match"
+      "foreignMatchday": "At most {{n}} foreign per match",
+      "greenCard": "Green card holder: counts as domestic"
     },
     "counters": {
       "registered": "Registered",
@@ -3556,7 +3557,9 @@
       "free": "Free",
       "foreign": "Foreign",
       "clubTrained": "Trained at the club",
-      "nationTrained": "Trained in the country"
+      "nationTrained": "Trained in the country",
+      "greenCard": "Green card",
+      "greenCardHint": "Counts as domestic: 3+ seasons at the club, arrived at the club aged 21 or under, or holds a green card"
     },
     "reason": {
       "listFull": "The list is full",

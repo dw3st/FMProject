@@ -22,9 +22,9 @@ function formatDay(date: string, lang: string): string {
 }
 
 /** A small text badge (foreign, home-grown, free) in a row. */
-function Tag({ children, tone = "muted" }: { children: string; tone?: "muted" | "primary" | "warn" }) {
+function Tag({ children, tone = "muted", title }: { children: string; tone?: "muted" | "primary" | "warn"; title?: string }) {
   const cls = tone === "primary" ? "border-primary/40 text-primary" : tone === "warn" ? "border-chart-4/40 text-chart-4" : "border-border text-muted-foreground";
-  return <span className={`inline-flex items-center rounded border px-2 py-0.5 text-sm whitespace-nowrap ${cls}`}>{children}</span>;
+  return <span title={title} className={`inline-flex items-center rounded border px-2 py-0.5 text-sm whitespace-nowrap ${cls}`}>{children}</span>;
 }
 
 function Counter({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
@@ -120,6 +120,7 @@ export function RegistrationView() {
     rule.free ? t(rule.free.formedOnly ? "registration.rule.freeFormed" : "registration.rule.free", { age: rule.free.maxAge }) : null,
     rule.minFormed && rule.maxList != null ? t("registration.rule.formed", { n: rule.minFormed }) : null,
     rule.maxForeign != null ? t("registration.rule.foreign", { n: rule.maxForeign }) : null,
+    rule.greenCard ? t("registration.rule.greenCard") : null,
     rule.maxForeignMatchday != null ? t("registration.rule.foreignMatchday", { n: rule.maxForeignMatchday }) : null,
   ].filter(Boolean);
   const reasonText = (r: RegistrationRowView) => (r.reason ? t(`registration.reason.${r.reason}`) : "");
@@ -201,6 +202,7 @@ export function RegistrationView() {
                         {r.registered ? <Tag tone="primary">{t("registration.tags.registered")}</Tag> : <Tag tone="warn">{t("registration.tags.out")}</Tag>}
                         {r.free && <Tag>{t("registration.tags.free")}</Tag>}
                         {r.foreign && <Tag>{t("registration.tags.foreign")}</Tag>}
+                        {r.greenCard && <Tag title={t("registration.tags.greenCardHint")}>{t("registration.tags.greenCard")}</Tag>}
                         {r.clubTrained ? <Tag>{t("registration.tags.clubTrained")}</Tag> : r.nationTrained ? <Tag>{t("registration.tags.nationTrained")}</Tag> : null}
                       </span>
                     </td>
