@@ -66,6 +66,9 @@ import { matchTemperamentOf } from '@/GameEngine/Configs/PersonalityMatchConfig'
 import { temperamentFoulMult } from '@/Domain/personality/personality';
 import { refereeFoulMult, refereeRedMult, refereeYellowMult } from '@/Domain/referees/strictness';
 import type { EngineReferee } from '@/types/refereeTypes';
+import { rollError, varChecksCorrect, varCorrects, type RefereeErrorKind } from '@/GameEngine/Domain/Var';
+import { VAR_CONFIG } from '@/GameEngine/Configs/VarConfig';
+import type { VarApply, VarReviewState } from '@/GameEngine/types';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
@@ -927,7 +930,138 @@ export function withReferee(state: GameState, referee: EngineReferee | null | un
     const { referee: _r, ...rest } = state;
     return rest;
   }
-  return { ...state, referee: { id: referee.id, name: referee.name, country: referee.country, strictness: referee.strictness } };
+  return {
+    ...state,
+    referee: {
+      id: referee.id, name: referee.name, country: referee.country, strictness: referee.strictness,
+      ...(typeof referee.quality === 'number' ? { quality: referee.quality } : {}),
+      ...(referee.var ? { var: true } : {}),
+    },
+  };
+}
+
+// ── Referee errors and VAR (`.claude/rules/game/var.md`) ──────────────────────
+// Pure chances in `Domain/Var.ts`. Without a referee (or without his quality) no roll ever draws a
+// number, so the match is exactly the one before this stage.
+
+/** Referee rigor on the fouls/cards of `team`: his own plus a complaint's bias against that team. */
+function strictnessFor(state: GameState, team: TeamId): number | undefined {
+  const s = state.referee?.strictness;
+  const bias = state.refereeBias && state.refereeBias.team === team ? state.refereeBias.amount : 0;
+  if (!bias) return s;
+  return (s ?? 0) + bias;
+}
+
+/** An error roll at an opportunity (`rollError`), honouring the `/test` forced error. */
+function refereeErrs(state: GameState, kind: RefereeErrorKind, rng: () => number): boolean {
+  return rollError(kind, state.referee, rng, state.forcedRefError);
+}
+
+/** VAR correction of an error: a forced error (`/test`) is always corrected when the match has VAR. */
+function varFixes(state: GameState, kind: RefereeErrorKind, rng: () => number): boolean {
+  if (state.forcedRefError === kind) return state.referee?.var === true;
+  return varCorrects(state.referee, rng);
+}
+
+/** Records and emits a referee error (and clears a forced error of that kind). */
+function recordRefereeError(
+  state: GameState, kind: RefereeErrorKind, harmed: TeamId, playerId: number, corrected: boolean, minute: number,
+): GameState {
+  gameBus.emit('refereeError', { kind, team: harmed, playerId, corrected, minute });
+  debugLog('var', `Referee error: ${kind} (hurts team ${harmed})${corrected ? ' — the VAR will correct it' : ''}`, {
+    playerId, data: { kind, harmed, corrected, quality: state.referee?.quality },
+  });
+  return {
+    ...state,
+    refereeErrors: [...(state.refereeErrors ?? []), { kind, team: harmed, playerId, minute, corrected }],
+    ...(state.forcedRefError === kind ? { forcedRefError: null } : {}),
+  };
+}
+
+/** Starts a VAR check: play stops for `REVIEW_SECONDS` real seconds (no game time), then `endVarReview`. */
+export function startVarReview(state: GameState, review: Omit<VarReviewState, 'countdown'>): GameState {
+  if (state.varReview) return state; // one check at a time — the first stands
+  gameBus.emit('varCheck', { kind: review.kind, minute: matchMinute(state) });
+  debugLog('var', `VAR check: ${review.kind} (${review.outcome})`, { playerId: review.playerId, data: { ...review } });
+  return { ...state, varReview: { ...review, countdown: VAR_CONFIG.REVIEW_SECONDS } };
+}
+
+/** Ends the VAR check: emits the decision and applies it (`VarApply`). */
+export function endVarReview(state: GameState): GameState {
+  const r = state.varReview;
+  if (!r) return state;
+  const minute = matchMinute(state);
+  gameBus.emit('varReview', {
+    kind: r.kind, outcome: r.outcome, against: r.against, playerId: r.playerId,
+    ...(r.offenderId !== undefined ? { offenderId: r.offenderId } : {}), minute,
+  });
+  let s: GameState = {
+    ...state,
+    varReview: null,
+    varReviews: [...(state.varReviews ?? []), { kind: r.kind, outcome: r.outcome, against: r.against, playerId: r.playerId, minute }],
+  };
+  const a: VarApply = r.apply;
+  if (a.type === 'cancel_penalty') {
+    // Indirect free kick to the defending side where the challenge happened.
+    s = awardFoulRestart({ ...s, setPiece: null }, a.defendingTeam, { x: a.x, y: a.y }, false, a.attackerId, minute);
+  } else if (a.type === 'disallow_goal') {
+    const score = { ...s.score, [a.team]: Math.max(0, s.score[a.team] - 1) };
+    gameBus.emit('goalDisallowed', {
+      team: a.team, scorerId: a.scorerId, score, minute,
+      ...(a.assistId !== undefined ? { assistId: a.assistId } : {}),
+      ...(a.header ? { header: true } : {}),
+      ...(a.setPiece ? { setPiece: a.setPiece } : {}),
+    });
+    s = { ...s, score };
+    const offender = s.players.find(p => p.id === a.offenderId);
+    if (offender) s = aerialOffsideFreeKick(s, offender, { x: a.x, y: a.y }, a.lineX);
+  }
+  return s;
+}
+
+/** The assistant misses an offside: the error is logged, play goes on, a goal of that side soon after is checked. */
+function missOffside(state: GameState, receiver: GamePlayer, at: { x: number; y: number }, lineX?: number): GameState {
+  const harmed: TeamId = receiver.team === 'A' ? 'B' : 'A';
+  const s = recordRefereeError(state, 'missed_offside', harmed, receiver.id, false, matchMinute(state));
+  return {
+    ...s,
+    missedOffside: {
+      team: receiver.team, playerId: receiver.id, until: state.matchTime + VAR_CONFIG.GOAL_CHAIN_SECONDS,
+      x: at.x, y: at.y, ...(lineX !== undefined ? { lineX } : {}),
+    },
+  };
+}
+
+/**
+ * After a goal (state already reset to the kickoff): a goal of the side of a missed offside, still inside the chain,
+ * is checked and ruled out by the VAR (`varCorrects`). The chain is consumed either way.
+ */
+function checkGoalForOffside(
+  stateBefore: GameState, after: GameState,
+  goal: { team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: import('@/GameEngine/types').SetPieceGoalKind },
+  rng: () => number = Math.random,
+): GameState {
+  const chain = stateBefore.missedOffside;
+  if (!chain) return after;
+  let s: GameState = { ...after, missedOffside: null };
+  if (chain.team !== goal.team || stateBefore.matchTime > chain.until) return s;
+  if (!varCorrects(s.referee, rng)) return s;
+  const errors = [...(s.refereeErrors ?? [])];
+  for (let i = errors.length - 1; i >= 0; i--) {
+    if (errors[i]!.kind === 'missed_offside' && errors[i]!.playerId === chain.playerId) { errors[i] = { ...errors[i]!, corrected: true }; break; }
+  }
+  s = { ...s, refereeErrors: errors };
+  return startVarReview(s, {
+    kind: 'goal', outcome: 'overturned', against: goal.team, playerId: goal.scorerId, offenderId: chain.playerId,
+    apply: {
+      type: 'disallow_goal', team: goal.team, scorerId: goal.scorerId, offenderId: chain.playerId,
+      x: chain.x, y: chain.y,
+      ...(goal.assistId !== undefined ? { assistId: goal.assistId } : {}),
+      ...(goal.header ? { header: true } : {}),
+      ...(goal.setPiece ? { setPiece: goal.setPiece } : {}),
+      ...(chain.lineX !== undefined ? { lineX: chain.lineX } : {}),
+    },
+  });
 }
 
 /**
@@ -1144,6 +1278,8 @@ function awardFoulRestart(
   minute: number,
 ): GameState {
   const oppTeam: TeamId = fouledTeam === 'A' ? 'B' : 'A';
+  // A restart ends a missed offside's chain (`var.md`).
+  if (state.missedOffside) state = { ...state, missedOffside: null };
   const awarded = state.players.filter(p => p.team === fouledTeam);
   if (awarded.length === 0) return state;
   const outfield = awarded.filter(p => p.role !== 'GK');
@@ -1232,6 +1368,22 @@ export function maybeFoul(
   tackleWon: boolean,
   rng: () => number = Math.random,
 ): GameState | null {
+  return foulCheck(state, offender, fouled, kind, tackleWon, rng).foul;
+}
+
+/**
+ * `maybeFoul` with the state of a challenge that was not whistled: `foul` = the restart state (a foul, or a
+ * phantom penalty), else `null` and `state` carries what changed anyway (a missed penalty is logged as a referee
+ * error, `var.md`). Without a referee `state` is the input object itself.
+ */
+export function foulCheck(
+  state: GameState,
+  offender: GamePlayer,
+  fouled: GamePlayer,
+  kind: FoulKind,
+  tackleWon: boolean,
+  rng: () => number = Math.random,
+): { foul: GameState | null; state: GameState } {
   const ownGoalX = offender.attackDir === 1 ? 0 : PITCH_LENGTH;
   const inOwnBox = isInGoalScoreArea(fouled.x, fouled.y, ownGoalX);
   // Tackle: real approach angle. Dribble: head-on when the defender won it, from behind when he was
@@ -1242,17 +1394,34 @@ export function maybeFoul(
                          'side';
   const onYellow = yellowsOf(state, offender.id) > 0;
   const temperament = offender.temperament ?? 0;
-  const strictness = state.referee?.strictness;
+  const strictness = strictnessFor(state, offender.team);
   const chance = foulChance({
     kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     tackling:   offender.runtimeStats.withoutBall.tackling,
     energy:     offender.energy,
   });
-  if (rng() >= chance) return null;
-
   const minute = matchMinute(state);
   const spot = { x: fouled.x, y: fouled.y };
+  if (rng() >= chance) {
+    // Not a foul — but a challenge in the box can still be whistled as a penalty (`var.md` §2).
+    if (!inOwnBox || !refereeErrs(state, 'phantom_penalty', rng)) return { foul: null, state };
+    const ph = phantomPenalty(state, offender, fouled, kind, spot, minute, rng);
+    return { foul: ph, state: ph };
+  }
+
+  // A foul in the box the referee does not see: play goes on (`missed_penalty`), unless the VAR steps in.
+  let review: Omit<VarReviewState, 'countdown'> | null = null;
+  let errState: GameState = state;
+  if (inOwnBox && refereeErrs(state, 'missed_penalty', rng)) {
+    const corrected = varFixes(state, 'missed_penalty', rng);
+    errState = recordRefereeError(state, 'missed_penalty', fouled.team, fouled.id, corrected, minute);
+    if (!corrected) return { foul: null, state: errState };
+    review = { kind: 'missed_penalty', outcome: 'overturned', against: offender.team, playerId: fouled.id, offenderId: offender.id, apply: { type: 'none' } };
+  } else if (inOwnBox && varChecksCorrect(state.referee, rng)) {
+    review = { kind: 'penalty', outcome: 'confirmed', against: offender.team, playerId: fouled.id, offenderId: offender.id, apply: { type: 'none' } };
+  }
+  state = errState;
   gameBus.emit('foul', {
     offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
     x: spot.x, y: spot.y, inBox: inOwnBox, minute,
@@ -1266,9 +1435,52 @@ export function maybeFoul(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness }, rng);
+  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness }, rng);
+  // Wrong card (`var.md` §2): a yellow shown as a straight red, a straight red shown as a yellow.
+  if (card === 'yellow' && !onYellow && refereeErrs(s, 'wrong_red', rng)) {
+    const corrected = varFixes(s, 'wrong_red', rng);
+    s = recordRefereeError(s, 'wrong_red', offender.team, offender.id, corrected, minute);
+    if (corrected) review ??= { kind: 'red_card', outcome: 'overturned', against: fouled.team, playerId: offender.id, apply: { type: 'none' } };
+    else card = 'red';
+  } else if (card === 'red' && !onYellow && refereeErrs(s, 'missed_red', rng)) {
+    const corrected = varFixes(s, 'missed_red', rng);
+    s = recordRefereeError(s, 'missed_red', fouled.team, offender.id, corrected, minute);
+    if (corrected) review ??= { kind: 'missed_red', outcome: 'overturned', against: offender.team, playerId: offender.id, apply: { type: 'none' } };
+    else card = 'yellow';
+  } else if (card === 'red' && !review && varChecksCorrect(s.referee, rng)) {
+    review = { kind: 'red_card', outcome: 'confirmed', against: offender.team, playerId: offender.id, apply: { type: 'none' } };
+  }
   if (card !== 'none') s = bookPlayer(s, s.players.find(p => p.id === offender.id) ?? offender, card, minute);
-  return awardFoulRestart(s, fouled.team, spot, inOwnBox, offender.id, minute);
+  const restarted = awardFoulRestart(s, fouled.team, spot, inOwnBox, offender.id, minute);
+  const out = review ? startVarReview(restarted, review) : restarted;
+  return { foul: out, state: out };
+}
+
+/**
+ * A penalty for a challenge that was not a foul (`phantom_penalty`): whistled like a foul (no card). With the VAR
+ * correcting it, a check follows and rules it out (indirect free kick to the defending side).
+ */
+function phantomPenalty(
+  state: GameState, offender: GamePlayer, fouled: GamePlayer, kind: FoulKind,
+  spot: { x: number; y: number }, minute: number, rng: () => number,
+): GameState {
+  const corrected = varFixes(state, 'phantom_penalty', rng);
+  let s = recordRefereeError(state, 'phantom_penalty', offender.team, offender.id, corrected, minute);
+  gameBus.emit('foul', {
+    offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
+    x: spot.x, y: spot.y, inBox: true, minute,
+  });
+  s = {
+    ...s,
+    players: s.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
+  };
+  s = awardFoulRestart(s, fouled.team, spot, true, offender.id, minute);
+  if (!corrected) return s;
+  const takerId = s.setPiece?.takerId ?? fouled.id;
+  return startVarReview(s, {
+    kind: 'penalty', outcome: 'overturned', against: fouled.team, playerId: takerId, offenderId: offender.id,
+    apply: { type: 'cancel_penalty', defendingTeam: offender.team, x: spot.x, y: spot.y, attackerId: fouled.id },
+  });
 }
 
 /**
@@ -1627,7 +1839,8 @@ function onPossessionTransfer(state: GameState, prevHolderId: number): GameState
   if (!next) return state;
   if (prev && prev.team === next.team) return state; // same team — no recompute
 
-  return reevaluateTeamIntents(state);
+  // A missed offside's chain ends when the other side has the ball (`var.md`).
+  return reevaluateTeamIntents(state.missedOffside ? { ...state, missedOffside: null } : state);
 }
 
 /**
@@ -1846,6 +2059,7 @@ function switchSides(
   const prevHolderId = state.ballHolderId;
   return onPossessionTransfer({
     ...state,
+    missedOffside:         null,
     players:               positioned,
     ballHolderId:          kickoffHolder.id,
     pass:                  null,
@@ -2389,6 +2603,8 @@ function resolveOOBSetPiece(
   cornerSource:  CornerSource = 'loose',
 ): TickResult {
   const oppositeTeam: TeamId = awardedTeam === 'A' ? 'B' : 'A';
+  // A restart ends a missed offside's chain (`var.md`).
+  if (s.missedOffside) s = { ...s, missedOffside: null };
 
   const position = computeOOBRestartPosition(kind, exitX, exitY, awardedTeam, s.players);
   if (kind === 'corner') return awardCorner(s, awardedTeam, position, fromPasserId, source, cornerSource);
@@ -2642,9 +2858,14 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   };
 
   // ── Offside enforcement — only if the intended runner is the one who collects
-  const flaggedOffside =
+  let flaggedOffside =
     (lb.receiverOffside && lb.intendedRunnerId !== null && winner.id === lb.intendedRunnerId) ||
     (winner.team === lb.fromTeamLastTouch && (lb.offsideIds ?? []).includes(winner.id));
+  // The assistant may miss it (`var.md`): play goes on, a goal soon after is checked by the VAR.
+  if (flaggedOffside && refereeErrs(s, 'missed_offside', Math.random)) {
+    s = missOffside(s, winner, { x: lb.x, y: lb.y }, lb.offsideLineX);
+    flaggedOffside = false;
+  }
 
   if (flaggedOffside) {
     gameBus.emit('offsideCalled', { team: winner.team, receiverId: winner.id, lineX: lb.offsideLineX });
@@ -2678,7 +2899,9 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     const pa = s.players.find(p => p.id === aId)!;
     const pb = s.players.find(p => p.id === bId)!;
     const [offender, victim] = Math.random() < 0.5 ? [pa, pb] : [pb, pa];
-    const fouledState = maybeFoul(s, offender, victim, 'duel', false);
+    const fc = foulCheck(s, offender, victim, 'duel', false);
+    s = fc.state;
+    const fouledState = fc.foul;
     if (fouledState) {
       if (victim.team === lb.fromTeamLastTouch) {
         if (isTB) gameBus.emit('throughBallCompleted', { player: lb.fromPasserId, winnerId: victim.id, intendedRunnerId: lb.intendedRunnerId });
@@ -3032,7 +3255,9 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     // At a set piece most fouls in the air are the attacker's (pushing, blocking the keeper).
     const attackerFouls = rng() < (setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_ATTACKER_FOUL_SHARE : 0.5);
     const [offender, victim] = attackerFouls ? [pa, pd] : [pd, pa];
-    const fouled = maybeFoul(s, offender, victim, 'aerial', false, rng);
+    const fc = foulCheck(s, offender, victim, 'aerial', false, rng);
+    s = fc.state;
+    const fouled = fc.foul;
     if (fouled) {
       resolved(victim.id, victim.team === passerTeam, 'foul');
       return done(fouled);
@@ -3265,6 +3490,13 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     return noop(state); // frozen — no further simulation
   }
 
+  // ── VAR check (`var.md`): play frozen for real seconds, no game time; the decision is applied at the end.
+  if (state.varReview) {
+    const countdown = state.varReview.countdown - dt;
+    if (countdown > 0) return noop({ ...state, varReview: { ...state.varReview, countdown } });
+    return noop(endVarReview(state));
+  }
+
   // ── Clock advancement (the four live periods) ─────────────────────────────
   const newMatchTime = state.matchTime + dt * TIME_SCALE;
   const periodEnd =
@@ -3348,6 +3580,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const subsB = evaluateAiSubstitutions(s, 'B');
     if (subsB.length > 0) {
       s = { ...s, pendingSubsB: [...s.pendingSubsB, ...subsB] };
+    }
+    // The human side's assistant (manager banned or sent off, `var.md` §4) makes the changes by the same rule.
+    if (s.autoSubs?.A) {
+      const subsA = evaluateAiSubstitutions(s, 'A');
+      if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
   }
 
@@ -3722,8 +3959,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           fromX: s.shot.fromX, fromY: s.shot.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
         });
         const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
+        const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
         return {
-          state: resetToKickoff({ ...s, score: newScore }, concedingTeam),
+          state: s.missedOffside
+            ? checkGoalForOffside(s, kicked, {
+              team: shooter.team, scorerId: shooter.id, ...(assistId !== undefined ? { assistId } : {}),
+              header: s.shot.header === true, ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+            })
+            : kicked,
           passCompleted: false, tackled: false, goalScored: shooter.team,
         };
       } else if (!inPosts && !defendingGK) {
@@ -3850,7 +4093,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad);
         // Foul check (`.claude/rules/game-engine/fouls.md`): a foul overturns the challenge — the
         // holder's team gets a free kick / penalty even when the tackle itself won the ball.
-        const fouled = maybeFoul(s, tacklerNow, updatedHolder, 'tackle', success);
+        const fc = foulCheck(s, tacklerNow, updatedHolder, 'tackle', success);
+        s = fc.state;
+        const fouled = fc.foul;
         gameBus.emit('tackle', { player: tackler.id, targetId: updatedHolder.id, success: success && fouled === null, chance });
         if (fouled) {
           s = rollContactInjuries(fouled, [tackler.id, updatedHolder.id], matchMinute(fouled));
@@ -4016,7 +4261,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         // Foul check (`.claude/rules/game-engine/fouls.md`): the defender may bring the dribbler
         // down — beaten (a cynical stop) or winning the ball unfairly; either way the attacker's
         // team gets the restart.
-        const fouledDribble = maybeFoul(s, defender, attacker, 'dribble', !attackerWins);
+        const fcD = foulCheck(s, defender, attacker, 'dribble', !attackerWins);
+        s = fcD.state;
+        const fouledDribble = fcD.foul;
         gameBus.emit('dribble', { player: attacker.id, targetId: defender.id, success: attackerWins || fouledDribble !== null, chance: winProb });
         if (fouledDribble) {
           return { state: fouledDribble, passCompleted: false, tackled: false, goalScored: null };
@@ -4175,7 +4422,13 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // ── Offside enforcement ─────────────────────────────────────────────────
     // The offside position was determined when the pass was played (at t=0).
     // Enforce only at the moment the receiver would touch the ball (t=1).
-    if (activePass.receiverOffside) {
+    // The assistant may miss it (`var.md`): play goes on, a goal soon after is checked by the VAR.
+    let flagged = activePass.receiverOffside;
+    if (flagged && refereeErrs(s, 'missed_offside', Math.random)) {
+      s = missOffside(s, receiver, { x: receiver.x, y: receiver.y }, activePass.offsideLineX);
+      flagged = false;
+    }
+    if (flagged) {
       gameBus.emit('offsideCalled', { team: receiver.team, receiverId: receiver.id, lineX: activePass.offsideLineX });
       gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
       // Award possession to the defending team's player nearest to the receiver

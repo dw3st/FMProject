@@ -53,13 +53,13 @@ export function rollError(
 
 /** The VAR corrects a reviewable error (only with VAR on the match; draws one number). */
 export function varCorrects(referee: ErrorReferee | null | undefined, rng: () => number): boolean {
-  if (!referee?.var) return false;
+  if (!referee?.var || !canErr(referee)) return false;
   return rng() < C.CORRECTION;
 }
 
 /** The VAR checks a correct penalty / straight red anyway (always confirmed). */
 export function varChecksCorrect(referee: ErrorReferee | null | undefined, rng: () => number): boolean {
-  if (!referee?.var) return false;
+  if (!referee?.var || !canErr(referee)) return false;
   return rng() < C.CHECK_CORRECT;
 }
 

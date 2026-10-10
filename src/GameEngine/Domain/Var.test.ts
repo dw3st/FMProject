@@ -46,9 +46,10 @@ describe("VAR", () => {
     expect(c.calls()).toBe(0);
   });
   test("with VAR: CORRECTION and CHECK_CORRECT", () => {
-    expect(varCorrects({ var: true }, () => VAR_CONFIG.CORRECTION - 0.01)).toBe(true);
-    expect(varCorrects({ var: true }, () => VAR_CONFIG.CORRECTION + 0.01)).toBe(false);
-    expect(varChecksCorrect({ var: true }, () => VAR_CONFIG.CHECK_CORRECT - 0.01)).toBe(true);
+    expect(varCorrects({ var: true, quality: 50 }, () => VAR_CONFIG.CORRECTION - 0.01)).toBe(true);
+    expect(varCorrects({ var: true, quality: 50 }, () => VAR_CONFIG.CORRECTION + 0.01)).toBe(false);
+    expect(varChecksCorrect({ var: true, quality: 50 }, () => VAR_CONFIG.CHECK_CORRECT - 0.01)).toBe(true);
+    expect(varCorrects({ var: true }, () => 0)).toBe(false);
   });
 });
 

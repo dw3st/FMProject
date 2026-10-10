@@ -130,6 +130,12 @@ export interface TeamStats extends PlayerStats {
   fatigueSubstitutions: number;
   /** Count of in-match injuries suffered by this team (`injury` event). */
   injuries: number;
+  /** Referee errors that hurt this team (`refereeError`, `.claude/rules/game/var.md`). Match total = A + B. */
+  refereeErrors: number;
+  /** VAR checks whose final decision went against this team. Match total = A + B. */
+  varReviews: number;
+  /** Of those, overturned calls (the original call favoured this team). */
+  varOverturned: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -195,9 +201,9 @@ const store = new Map<number, PlayerStats>();
 const playerTeam = new Map<number, TeamId>();
 
 /** Team-level knockout flags (not derivable from player sums). */
-const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number }> = {
-  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 },
-  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 },
+const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; refereeErrors: number; varReviews: number; varOverturned: number }> = {
+  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 },
+  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 },
 };
 
 /**
@@ -346,6 +352,33 @@ gameBus.on('penaltyAwarded', e => {
 gameBus.on('penaltyResolved', e => { if (e.scored) { get(e.takerId).penaltyGoals++; notify(); } });
 gameBus.on('offsideCalled', e => { get(e.receiverId).offsides++; notify(); });
 
+// ── Referee errors and VAR (`.claude/rules/game/var.md`) ──────────────────────
+gameBus.on('refereeError', e => { teamFlags[e.team].refereeErrors++; notify(); });
+gameBus.on('varReview', e => {
+  teamFlags[e.against].varReviews++;
+  if (e.outcome === 'overturned') {
+    teamFlags[e.against].varOverturned++;
+    // A penalty ruled out: no longer awarded / conceded.
+    if (e.kind === 'penalty') {
+      get(e.playerId).penaltiesAwarded = Math.max(0, get(e.playerId).penaltiesAwarded - 1);
+      if (e.offenderId !== undefined) get(e.offenderId).penaltiesConceded = Math.max(0, get(e.offenderId).penaltiesConceded - 1);
+    }
+  }
+  notify();
+});
+gameBus.on('goalDisallowed', e => {
+  const s = get(e.scorerId);
+  s.goals = Math.max(0, s.goals - 1);
+  if (e.header) s.headerGoals = Math.max(0, s.headerGoals - 1);
+  if (e.setPiece) s.setPieceGoals = Math.max(0, s.setPieceGoals - 1);
+  if (e.setPiece === 'direct_free_kick') s.directFreeKickGoals = Math.max(0, s.directFreeKickGoals - 1);
+  if (e.assistId != null) get(e.assistId).assists = Math.max(0, get(e.assistId).assists - 1);
+  for (let i = goalLog.length - 1; i >= 0; i--) {
+    if (goalLog[i]!.scorerId === e.scorerId && goalLog[i]!.team === e.team) { goalLog.splice(i, 1); break; }
+  }
+  notify();
+});
+
 // ── Aerial stats ──────────────────────────────────────────────────────────────
 gameBus.on('crossStarted',    e => { get(e.player).crosses++; notify(); });
 gameBus.on('longBallStarted', e => { get(e.player).longBalls++; notify(); });
@@ -387,8 +420,8 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   endEnergy.clear();
   goalLog = [];
   markedNow = new Set();
-  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
-  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
+  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 };
+  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 };
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
@@ -478,7 +511,7 @@ export interface StatsSnapshot {
   players:   Array<[number, PlayerStats]>;
   teams:     Array<[number, TeamId]>;
   endEnergy: Array<[number, { team: TeamId; energy: number }]>;
-  teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number }>;
+  teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; refereeErrors: number; varReviews: number; varOverturned: number }>;
   /** Goals so far (absent in snapshots taken before the goal log existed). */
   goals?: GoalLogEntry[];
 }

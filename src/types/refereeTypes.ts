@@ -68,4 +68,10 @@ export interface RefereeSeasonArchive {
 export interface MatchReferee { id: string; name: string; country: string }
 
 /** The referee the engine reads (`GameState.referee`). */
-export interface EngineReferee extends MatchReferee { strictness: number }
+export interface EngineReferee extends MatchReferee {
+  strictness: number;
+  /** 0..100: how often he gets a call wrong (`.claude/rules/game/var.md`). Absent = never errs (no draw at all). */
+  quality?: number;
+  /** This fixture has VAR (`hasVar`): reviewable errors are corrected, some correct calls checked. */
+  var?: boolean;
+}
