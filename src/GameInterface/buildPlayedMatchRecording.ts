@@ -3,7 +3,8 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
-import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
+import { matchVarStats, toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
+import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { getGoalLog, getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
 import { goalGeometry } from "@/Domain/awards/goalOfSeason";
 import { getPlayerRating } from "@/GameEngine/Domain/PlayerRating";
@@ -37,6 +38,8 @@ export function buildPlayedMatchRecording(
   mySquadId: string,
   homeSquad: Squad,
   awaySquad: Squad,
+  /** Cards the user's manager got after complaints (`var.md` §4). */
+  managerCards: ManagerCardRecord[] = [],
 ): PlayedMatchRecording {
   const myIsHome = fixture.home === mySquadId;
   const th = getTeamStats("A");
@@ -223,5 +226,7 @@ export function buildPlayedMatchRecording(
     goals,
     durationMs,
     ...(decider ? { decider } : {}),
+    ...(typeof gameState.referee?.quality === "number" ? { var: matchVarStats(th, ta) } : {}),
+    ...(managerCards.length > 0 ? { managerCards } : {}),
   };
 }

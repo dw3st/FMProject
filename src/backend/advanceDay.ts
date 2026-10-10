@@ -110,7 +110,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
-import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees } from "@/backend/refereeWorld";
+import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
 import { withRefereeLog } from "@/Domain/advanceDay/matches";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
@@ -479,10 +479,12 @@ export async function advanceOneDay(
     const refereesToday = await ensureAssignments(saveService, saveId, currentDate);
     const refereePool = Object.keys(refereesToday).length > 0 ? await saveService.getRefereePool(saveId) : null;
     const refereeById = new Map((refereePool?.referees ?? []).map((r) => [r.id, r]));
-    const refereeOf = (f: Fixture) => {
+    const fixtureHasVar = varLookup(saveService, saveId);
+    // The referee with his quality (errors) and the fixture's VAR (`.claude/rules/game/var.md`).
+    const refereeOf = async (f: Fixture) => {
       const a = refereesToday[fixtureKey(f.competition, f.id)];
       const r = a ? refereeById.get(a.refereeId) : undefined;
-      return r ? engineReferee(r) : undefined;
+      return r ? engineReferee(r, await fixtureHasVar(f)) : undefined;
     };
 
     // Group updates per league for round file writes
@@ -629,7 +631,7 @@ export async function advanceOneDay(
               return { ok: false, status: 400, error: "unregistered player in recording" };
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
-            r.event = withRefereeLog(r.event, refereeOf(fixture));
+            r.event = withRefereeLog(r.event, await refereeOf(fixture));
             dayEvents.push(r.event);
             squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
@@ -674,7 +676,7 @@ export async function advanceOneDay(
                 : resolveSimMode(leagueSlug, meta);
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
             const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
-            const referee = refereeOf(fixture);
+            const referee = await refereeOf(fixture);
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee });

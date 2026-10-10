@@ -138,7 +138,7 @@ describe("referee errors in the engine", () => {
     let s: GameState = {
       ...base,
       ballHolderId: passer.id,
-      pass: { fromId: passer.id, toId: attacker.id, toX: attacker.x, toY: attacker.y, kind: "short", t: 0.999, distance: 20, receiverOffside: true, intendedRunnerId: null } as GameState["pass"],
+      pass: { fromId: passer.id, toId: attacker.id, toX: attacker.x, toY: attacker.y, kind: "regular", t: 0.999, distance: 20, receiverOffside: true, intendedRunnerId: null } as GameState["pass"],
     };
     initStats(s.players.map((p) => ({ id: p.id, team: p.team })));
     s = tickState(s, 0.05).state;

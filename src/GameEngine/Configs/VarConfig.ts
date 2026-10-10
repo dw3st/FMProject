@@ -13,11 +13,11 @@ export const VAR_CONFIG = {
    * Calibrated with `scripts/var-measure.ts` (≈ 0.25 errors per match, goals ±3%).
    */
   BASE: {
-    phantom_penalty: 0.0035,
-    missed_penalty:  0.12,
-    missed_offside:  0.06,
-    wrong_red:       0.012,
-    missed_red:      0.15,
+    phantom_penalty: 0.0175,
+    missed_penalty:  0.1,
+    missed_offside:  0.053,
+    wrong_red:       0.013,
+    missed_red:      0.3,
   } satisfies Record<RefereeErrorKind, number>,
   /** `qualityMult(q) = QUALITY_HI − QUALITY_SLOPE × q / 100` (≈ 1.5 worst, ≈ 0.7 best, 1 at 62.5). */
   QUALITY_HI: 1.5,
@@ -32,6 +32,13 @@ export const VAR_CONFIG = {
   REVIEW_SECONDS: 3,
   /** Game seconds after a missed offside in which a goal of that team is reviewed. */
   GOAL_CHAIN_SECONDS: 15,
+  // ── quickSim (statistics only, `quickVarStats`) ───────────────────────────
+  /** Errors per match of an average referee (the engine's measured rate, M1). */
+  QUICK_ERRORS_PER_MATCH: 0.25,
+  /** Share of the errors the VAR corrects (engine, M1). */
+  QUICK_CORRECTED_SHARE: 0.5,
+  /** Correct calls checked and confirmed per match with VAR (engine, M1). */
+  QUICK_CONFIRMED_CHECKS_PER_MATCH: 0.08,
   // ── Manager complaint (live match, the human team) ────────────────────────
   /** Real seconds the "Complain" button stays after a call against the team. */
   COMPLAINT_WINDOW: 6,

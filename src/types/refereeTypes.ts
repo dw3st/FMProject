@@ -36,7 +36,11 @@ export interface RefereeAssignment {
   assistantIds: [string, string];
 }
 
-export interface RefereeCompStats { matches: number; fouls: number; yellows: number; reds: number; penalties: number }
+export interface RefereeCompStats {
+  matches: number; fouls: number; yellows: number; reds: number; penalties: number;
+  /** Referee errors / VAR checks / overturned calls (`.claude/rules/game/var.md`); absent before any. */
+  errors?: number; reviews?: number; overturned?: number;
+}
 
 export interface RefereeSeasonStats extends RefereeCompStats {
   byCompetition: Record<string, RefereeCompStats>;

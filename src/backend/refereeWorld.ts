@@ -10,6 +10,7 @@ import { assignDay, fixtureKey, matchImportance, type DayMatch, type ImportanceI
 import { ageOn, buildCountryPool, countrySlug, renewCountryPool, type RealReferee } from "@/Domain/referees/pool";
 import { closeCountrySeason, emptyRefereeState, pruneRefereeState, recordMatches } from "@/Domain/referees/stats";
 import { strictnessBand } from "@/Domain/referees/strictness";
+import { hasVar } from "@/Domain/referees/var";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
@@ -163,7 +164,25 @@ export async function officialsFor(service: SaveService, saveId: string, date: s
   return { referee, assistants: a.assistantIds.map((id) => byId.get(id)).filter((r): r is Referee => !!r) };
 }
 
-export const engineReferee = (r: Referee): EngineReferee => ({ id: r.id, name: r.name, country: r.country, strictness: r.strictness });
+/** The referee the engine reads: rigor, quality (errors) and whether the fixture has VAR (`var.md`). */
+export const engineReferee = (r: Referee, withVar = false): EngineReferee => ({
+  id: r.id, name: r.name, country: r.country, strictness: r.strictness, quality: r.quality, ...(withVar ? { var: true } : {}),
+});
+
+/**
+ * VAR of a fixture (`hasVar`): reads the cup's stage when needed, memoized per competition for one lookup object
+ * (one per advanced day / request).
+ */
+export function varLookup(service: SaveService, saveId: string): (f: Pick<Fixture, "competition" | "round">) => Promise<boolean> {
+  const cupMetas = new Map<string, Promise<LeagueSeasonMeta | null>>();
+  return async (f) => {
+    if (!isCupSlug(f.competition)) return hasVar({ competition: f.competition });
+    let m = cupMetas.get(f.competition);
+    if (!m) { m = service.getLeagueMeta(saveId, f.competition); cupMetas.set(f.competition, m); }
+    const stage = (await m)?.cup?.stages.find((s) => s.round === f.round)?.name ?? null;
+    return hasVar({ competition: f.competition, cupStage: stage });
+  };
+}
 export const matchReferee = (r: Referee): MatchReferee => ({ id: r.id, name: r.name, country: r.country });
 
 /** Adds the day's logged matches to the season stats (idempotent per fixture). */
