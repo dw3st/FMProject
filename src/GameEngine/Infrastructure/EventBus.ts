@@ -329,7 +329,12 @@ export interface GameEvents {
     /** Manual injury substitutions (`/test`, #140): the team picks the replacement of an injured player. */
     | { type: 'setManualInjurySubs'; team: import('@/GameEngine/types').TeamId; on: boolean }
     /** Substitution panel (`/test`, #140): a bench player fills an injury vacancy (`fillInjuryVacancy`). */
-    | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number };
+    | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number }
+    /**
+     * Referee / VAR fields of the running match (`var.md`): a complaint's bias, the assistant's subs (manager sent
+     * off), `/test`'s forced error and referee. Merged into the pitch's state as given.
+     */
+    | { type: 'varPatch'; patch: Partial<Pick<import('@/GameEngine/types').GameState, 'refereeBias' | 'autoSubs' | 'forcedRefError' | 'referee'>> };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).

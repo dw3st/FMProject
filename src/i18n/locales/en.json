@@ -941,7 +941,12 @@
         "red": "Red card — {{player}}",
         "offside": "Offside — {{player}}",
         "sub": "{{playerIn}} on for {{player}}",
-        "injury": "Injury — {{player}}"
+        "injury": "Injury — {{player}}",
+        "varConfirmed": "{{what}}",
+        "varOverturned": "{{what}}",
+        "goalDisallowed": "Goal ruled out — {{player}}",
+        "managerYellow": "Yellow for the manager",
+        "managerRed": "Manager sent off"
       }
     },
     "notice": {
@@ -1359,7 +1364,8 @@
       "scouting": "Scouting",
       "awards": "Awards",
       "registration": "Registration",
-      "schedule": "Schedule"
+      "schedule": "Schedule",
+      "discipline": "Discipline"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -3513,7 +3519,11 @@
     "redsLong": "Red cards",
     "penalties": "Pen",
     "penaltiesLong": "Penalties awarded",
-    "nextHighlighted": "Highlighted: the referee of your next match."
+    "nextHighlighted": "Highlighted: the referee of your next match.",
+    "errors": "Err/M",
+    "errorsLong": "Big referee mistakes per match",
+    "reviews": "VAR",
+    "reviewsLong": "VAR checks (calls changed)"
   },
   "registration": {
     "loading": "Loading registration…",
@@ -3580,5 +3590,55 @@
     },
     "notRegistered": "Not registered",
     "notRegisteredFor": "Not registered for {{competition}}"
+  },
+  "complaint": {
+    "button": "Complain",
+    "calm": "The referee heard you out",
+    "bias": "The referee is watching the opponent's fouls more closely",
+    "yellow": "Yellow card for the manager!",
+    "red": "Manager sent off! The assistant takes over the changes",
+    "banned": "Manager banned",
+    "sentOff": "Manager sent off",
+    "previewBanned": "You are banned: you watch from the stands and your assistant makes the substitutions.",
+    "inbox": {
+      "subject": "You were sent off",
+      "body_one": "Banned for {{count}} match: you watch from the stands and your assistant makes the substitutions.",
+      "body_other": "Banned for {{count}} matches: you watch from the stands and your assistant makes the substitutions."
+    }
+  },
+  "var": {
+    "badge": "VAR",
+    "checking": "VAR: checking {{what}}…",
+    "kind": {
+      "penalty": "the penalty",
+      "missed_penalty": "a possible penalty",
+      "goal": "the goal",
+      "red_card": "the red card",
+      "missed_red": "a possible red card"
+    },
+    "decision": {
+      "penalty": {
+        "confirmed": "VAR: penalty stands",
+        "overturned": "VAR: penalty overturned"
+      },
+      "missed_penalty": {
+        "confirmed": "VAR: no penalty",
+        "overturned": "VAR: penalty given"
+      },
+      "goal": {
+        "confirmed": "VAR: goal stands",
+        "overturned": "VAR: goal ruled out for offside"
+      },
+      "red_card": {
+        "confirmed": "VAR: red card stands",
+        "overturned": "VAR: red downgraded to yellow"
+      },
+      "missed_red": {
+        "confirmed": "VAR: yellow stands",
+        "overturned": "VAR: straight red"
+      }
+    },
+    "resultLine_one": "VAR: {{count}} check, {{overturned}} call changed",
+    "resultLine_other": "VAR: {{count}} checks, {{overturned}} calls changed"
   }
 }

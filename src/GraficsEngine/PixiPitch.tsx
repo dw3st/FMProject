@@ -295,6 +295,11 @@ interface Props {
   coaches?: Partial<Record<TeamId, { faceUrl?: string; color: string }>>;
   /** A new `seq` plays the gesture on that team's manager (the human's mentality change). */
   coachCue?: { team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null;
+  /**
+   * A new `seq` shows a card over that team's manager (`var.md` §4, a complaint). A red also takes him off the
+   * touchline once the card is gone (sent to the stands).
+   */
+  coachCard?: { team: TeamId; card: "yellow" | "red"; seq: number } | null;
 }
 
 export interface PitchOfficials {
@@ -346,6 +351,7 @@ export function PixiPitch({
   officials = false,
   coaches,
   coachCue = null,
+  coachCard = null,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -369,6 +375,7 @@ export function PixiPitch({
   const redrawCrowdRef           = useRef<(() => void) | null>(null);
   /** Set by the Pixi setup: plays a gesture on a team's manager. */
   const coachCueFnRef            = useRef<((team: TeamId, kind: CoachGestureKind) => void) | null>(null);
+  const coachCardFnRef           = useRef<((team: TeamId, card: "yellow" | "red") => void) | null>(null);
   const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
@@ -398,6 +405,9 @@ export function PixiPitch({
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (coachCard) coachCardFnRef.current?.(coachCard.team, coachCard.card);
+  }, [coachCard?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
   useEffect(() => {
@@ -1071,6 +1081,13 @@ export function PixiPitch({
         coachGest[team] = { kind, at: effectNow };
       };
       coachCueFnRef.current = startGesture;
+      // Manager cards (`var.md` §4): shown like the referee's; a red sends him off once it is gone.
+      const coachCards: Partial<Record<TeamId, { card: "yellow" | "red"; until: number }>> = {};
+      const coachOff: Partial<Record<TeamId, true>> = {};
+      coachCardFnRef.current = (team, cardKind) => {
+        coachCards[team] = { card: cardKind, until: effectNow + EFFECT_DURATION.card };
+        if (cardKind === "red") coachOff[team] = true;
+      };
       const unsubCoachGoal = gameBus.on("goalScored", (e) => startGesture(e.team, "celebrate"));
 
       /** Moves and draws the officials and the managers (once per frame, engine yards in). */
@@ -1115,6 +1132,10 @@ export function PixiPitch({
           const dir = st.players.find((p) => p.team === entry.team)?.attackDir ?? 1;
           drawCoachArms(entry.sprite, markerR, pose, (dir * xSign()) as 1 | -1);
           entry.sprite.root.y = coachSpot[side].y - pose.jumpPx;
+          const shown = coachCards[entry.team];
+          if (shown && effectNow >= shown.until) delete coachCards[entry.team];
+          showCard(entry.sprite.root, coachCards[entry.team]?.card ?? null);
+          entry.sprite.root.visible = !coachOff[entry.team] || !!coachCards[entry.team];
         }
       };
 
@@ -1883,6 +1904,8 @@ export function PixiPitch({
           };
         } else if (cmd.type === 'patchPlayers') {
           stateRef.current = { ...stateRef.current, players: cmd.players };
+        } else if (cmd.type === 'varPatch') {
+          stateRef.current = { ...stateRef.current, ...cmd.patch };
         } else if (cmd.type === 'setInstruction') {
           stateRef.current = applyPlayerInstruction(stateRef.current, cmd.team, cmd.slot, cmd.instruction);
         } else if (cmd.type === 'swapPositions') {
@@ -1987,6 +2010,7 @@ export function PixiPitch({
         unsubCoachGoal();
         redrawCrowdRef.current = null;
         coachCueFnRef.current = null;
+        coachCardFnRef.current = null;
         crowdTexture?.destroy(true);
         crowdTexture = null;
         for (const txt of effectTexts.values()) txt.destroy();

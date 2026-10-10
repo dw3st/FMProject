@@ -941,7 +941,12 @@
         "red": "Cartão vermelho — {{player}}",
         "offside": "Impedimento — {{player}}",
         "sub": "Entra {{playerIn}}, sai {{player}}",
-        "injury": "Lesão — {{player}}"
+        "injury": "Lesão — {{player}}",
+        "varConfirmed": "{{what}}",
+        "varOverturned": "{{what}}",
+        "goalDisallowed": "Gol anulado — {{player}}",
+        "managerYellow": "Amarelo para o técnico",
+        "managerRed": "Técnico expulso"
       }
     },
     "notice": {
@@ -1359,7 +1364,8 @@
       "scouting": "Olheiros",
       "awards": "Prêmios",
       "registration": "Inscrição",
-      "schedule": "Calendário"
+      "schedule": "Calendário",
+      "discipline": "Disciplina"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -3513,7 +3519,11 @@
     "redsLong": "Cartões vermelhos",
     "penalties": "Pên",
     "penaltiesLong": "Pênaltis marcados",
-    "nextHighlighted": "Em destaque: o árbitro do seu próximo jogo."
+    "nextHighlighted": "Em destaque: o árbitro do seu próximo jogo.",
+    "errors": "Erros/J",
+    "errorsLong": "Erros importantes do árbitro por jogo",
+    "reviews": "VAR",
+    "reviewsLong": "Revisões do VAR (decisões alteradas)"
   },
   "registration": {
     "loading": "Carregando a inscrição…",
@@ -3580,5 +3590,55 @@
     },
     "notRegistered": "Não inscrito",
     "notRegisteredFor": "Não inscrito na {{competition}}"
+  },
+  "complaint": {
+    "button": "Reclamar",
+    "calm": "O árbitro ouviu a reclamação",
+    "bias": "O árbitro ficou mais atento às faltas do adversário",
+    "yellow": "Cartão amarelo para o técnico!",
+    "red": "Técnico expulso! O auxiliar assume as substituições",
+    "banned": "Técnico suspenso",
+    "sentOff": "Técnico expulso",
+    "previewBanned": "Você está suspenso: assiste da arquibancada e o auxiliar faz as substituições.",
+    "inbox": {
+      "subject": "Você foi expulso",
+      "body_one": "Suspenso por {{count}} jogo: você assiste da arquibancada e o auxiliar faz as substituições.",
+      "body_other": "Suspenso por {{count}} jogos: você assiste da arquibancada e o auxiliar faz as substituições."
+    }
+  },
+  "var": {
+    "badge": "Com VAR",
+    "checking": "VAR: checando {{what}}…",
+    "kind": {
+      "penalty": "o pênalti",
+      "missed_penalty": "possível pênalti",
+      "goal": "o gol",
+      "red_card": "o vermelho",
+      "missed_red": "possível vermelho"
+    },
+    "decision": {
+      "penalty": {
+        "confirmed": "VAR: pênalti confirmado",
+        "overturned": "VAR: pênalti anulado"
+      },
+      "missed_penalty": {
+        "confirmed": "VAR: sem pênalti",
+        "overturned": "VAR: pênalti marcado"
+      },
+      "goal": {
+        "confirmed": "VAR: gol confirmado",
+        "overturned": "VAR: gol anulado por impedimento"
+      },
+      "red_card": {
+        "confirmed": "VAR: vermelho confirmado",
+        "overturned": "VAR: o vermelho vira amarelo"
+      },
+      "missed_red": {
+        "confirmed": "VAR: fica o amarelo",
+        "overturned": "VAR: vermelho direto"
+      }
+    },
+    "resultLine_one": "VAR: {{count}} revisão, {{overturned}} decisão alterada",
+    "resultLine_other": "VAR: {{count}} revisões, {{overturned}} decisões alteradas"
   }
 }
