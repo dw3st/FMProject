@@ -8,7 +8,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { registrationDayCtx, type RegistrationDayCtx } from "@/backend/registrationWorld";
 import { automaticList, ensureList, manualList, withList, type CompInfo } from "@/Domain/registration/lists";
 import { canAdd, countsOf, validateList } from "@/Domain/registration/rules";
-import { clubTrained, domesticNations, isForeign, isFree, nationTrained } from "@/Domain/registration/formed";
+import { clubTrained, domesticNations, isForeign, isFree, isGreenCardHolder, nationTrained } from "@/Domain/registration/formed";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { overallAvg } from "@/Domain/playerRating";
 import type { Squad } from "@/types/playerTypes";
@@ -21,6 +21,7 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
   const withFirst = ensureList(squad, info, date).squad;
   const list = withFirst.registrations![info.slug]!;
   const listed = new Set(list.ids);
+  const holder = { squadId: info.ctx.squadId, ctx: info.ctx };
   const rows: RegistrationRowView[] = squad.players.map((p) => {
     const free = isFree(p, info.rule, info.ctx.country, info.ctx.squadId, info.ctx);
     const registered = free || listed.has(p.id);
@@ -28,7 +29,8 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
     return {
       id: p.id, name: p.name, age: p.age, nationality: p.nationality ?? null, role: preferredRole(p), overall: overallAvg(p),
       registered,
-      foreign: isForeign(p, info.rule, info.ctx.country),
+      foreign: isForeign(p, info.rule, info.ctx.country, holder),
+      greenCard: isGreenCardHolder(p, info.rule, info.ctx.country, holder),
       clubTrained: clubTrained(p, info.ctx.squadId, info.ctx),
       nationTrained: nationTrained(p, info.ctx.country, info.ctx, domesticNations(info.rule, info.ctx.country)),
       free,

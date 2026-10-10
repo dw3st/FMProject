@@ -51,7 +51,7 @@ function infoOf(p: RosterPlayer, rule: RegistrationRule, ctx: RegCtx): PlayerInf
     p,
     free: isFree(p, rule, ctx.country, ctx.squadId, ctx),
     formed: isFormed(p, rule, ctx.country, ctx.squadId, ctx),
-    foreign: isForeign(p, rule, ctx.country),
+    foreign: isForeign(p, rule, ctx.country, { squadId: ctx.squadId, ctx }),
   };
 }
 

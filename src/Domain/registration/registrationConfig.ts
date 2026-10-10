@@ -26,8 +26,8 @@ export const REGISTRATION_RULES: Record<string, RegistrationRule> = {
   saudi: { id: "saudi", maxList: null, maxForeign: 10, foreign: "nationality" },
   // Liga MX: up to 9 not trained in Mexico.
   mexico: { id: "mexico", maxList: null, maxForeign: 9, foreign: "nationality" },
-  // MLS: 8 international slots (tradeable; green card = domestic) → 10, USA + Canada domestic.
-  mls: { id: "mls", maxList: null, maxForeign: 10, foreign: "nationality", domestic: ["Canada"] },
+  // MLS: 8 international slots, USA + Canada domestic; a green card holder counts as domestic (`hasGreenCard`).
+  mls: { id: "mls", maxList: null, maxForeign: 8, foreign: "nationality", domestic: ["Canada"], greenCard: true },
   // Champions / Europa League: list A 25, at least 8 locally trained; list B U21 trained at the club.
   uefa: { id: "uefa", maxList: 25, free: { maxAge: 21, formedOnly: true }, minFormed: 8, foreign: "nationality" },
   // Libertadores / Sudamericana: list of up to 50, no foreign or trained limit (only the deadline).
@@ -78,3 +78,9 @@ export const CLOSING_NOTICE_DAYS = 3;
 /** Distinct seasons at the club up to FORMED_MAX_AGE to count as formed there. */
 export const FORMED_SEASONS = 3;
 export const FORMED_MAX_AGE = 21;
+
+/**
+ * Green card (MLS, `hasGreenCard`): a foreign player counts as domestic after SEASONS at his club, when he arrived
+ * there aged ≤ MAX_ARRIVAL_AGE, or with the "origin" green card — a fixed draw by id (nothing stored), chance ORIGIN.
+ */
+export const GREEN_CARD = { SEASONS: 3, MAX_ARRIVAL_AGE: 21, ORIGIN: 0.6 } as const;

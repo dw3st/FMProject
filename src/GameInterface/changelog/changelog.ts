@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.17.1",
+    date: "2026-10-09",
+    items: [
+      {
+        pt: "MLS: volta o limite real de 8 estrangeiros, e quem tem green card conta como doméstico (3 temporadas no clube, chegada ao clube com até 21 anos ou green card próprio). O selo \"Green card\" aparece na aba Inscritos.",
+        en: "MLS: back to the real limit of 8 international players, and green card holders count as domestic (3 seasons at the club, joined the club aged 21 or under, or their own green card). A \"Green card\" tag shows in the Registration tab.",
+      },
+    ],
+  },
+  {
     version: "4.17",
     date: "2026-10-09",
     items: [

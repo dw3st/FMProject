@@ -3532,7 +3532,8 @@
       "freeFormed": "Formados sub-{{age}} livres",
       "formed": "Mínimo de {{n}} formados",
       "foreign": "No máximo {{n}} estrangeiros",
-      "foreignMatchday": "No máximo {{n}} estrangeiros por jogo"
+      "foreignMatchday": "No máximo {{n}} estrangeiros por jogo",
+      "greenCard": "Green card conta como doméstico"
     },
     "counters": {
       "registered": "Inscritos",
@@ -3556,7 +3557,9 @@
       "free": "Livre",
       "foreign": "Estrangeiro",
       "clubTrained": "Formado no clube",
-      "nationTrained": "Formado no país"
+      "nationTrained": "Formado no país",
+      "greenCard": "Green card",
+      "greenCardHint": "Conta como doméstico: 3+ temporadas no clube, chegou ao clube com até 21 anos ou tem green card"
     },
     "reason": {
       "listFull": "A lista está cheia",

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { clubTrained, nationTrained, isForeign, isFree, isFormed, type FormedCtx } from "@/Domain/registration/formed";
+import {
+  arrivalAge, clubTrained, hasGreenCard, isGreenCardHolder, nationTrained, isForeign, isFree, isFormed, originGreenCard, type FormedCtx,
+} from "@/Domain/registration/formed";
+import { GREEN_CARD } from "@/Domain/registration/registrationConfig";
 import { REGISTRATION_RULES as R } from "@/Domain/registration/registrationConfig";
 import type { PlayerHistoryRow, RosterPlayer } from "@/types/playerTypes";
 
@@ -53,5 +56,58 @@ describe("formed", () => {
     expect(isFree(p({ age: 21, nationality: "Japan" }), R.premier_league!, "England", "c1", ctx)).toBe(true);
     expect(isFree(p({ age: 22 }), R.premier_league!, "England", "c1", ctx)).toBe(false);
     expect(isFree(p({ age: 18 }), R.brazil!, "Brazil", "c1", ctx)).toBe(false); // no list B
+  });
+
+  describe("green card (MLS)", () => {
+    const idWith = (has: boolean) => {
+      for (let i = 0; ; i++) if (originGreenCard(`gc_${i}`) === has) return `gc_${i}`;
+    };
+    const noCard = idWith(false);
+    const holder = { squadId: "c1", ctx };
+    const mlsRow = (season: string, squadId: string) => row(season, squadId, "of_major_league_soccer");
+
+    test("origin draw is fixed by id and near the chance", () => {
+      expect(originGreenCard("abc")).toBe(originGreenCard("abc"));
+      let n = 0;
+      for (let i = 0; i < 4000; i++) if (originGreenCard(`p_${i}`)) n++;
+      expect(Math.abs(n / 4000 - GREEN_CARD.ORIGIN)).toBeLessThan(0.03);
+    });
+    test("origin green card makes a foreign MLS player domestic, only under the MLS rule", () => {
+      const yes = p({ id: idWith(true), nationality: "Argentina" });
+      expect(isForeign(yes, R.mls!, "USA")).toBe(false);
+      expect(isGreenCardHolder(yes, R.mls!, "USA")).toBe(true);
+      expect(isForeign(yes, R.argentina!, "Argentina")).toBe(false); // domestic anyway
+      expect(isForeign(yes, R.brazil!, "Brazil")).toBe(true); // no green card outside the MLS
+      const no = p({ id: noCard, nationality: "Argentina" });
+      expect(isForeign(no, R.mls!, "USA", holder)).toBe(true);
+      expect(isGreenCardHolder(no, R.mls!, "USA", holder)).toBe(false);
+      // a domestic player is never a "green card holder"
+      expect(isGreenCardHolder(p({ id: idWith(true), nationality: "USA" }), R.mls!, "USA")).toBe(false);
+    });
+    test("three seasons at the club (history plus the season in progress)", () => {
+      const h = [mlsRow("2025", "c1"), mlsRow("2026", "c1")];
+      const two = p({ id: noCard, nationality: "Brazil", age: 30, history: h });
+      expect(hasGreenCard(two, holder)).toBe(false);
+      const playing = { ...two, seasonLog: { appearances: 3 } as never };
+      expect(hasGreenCard(playing, holder)).toBe(true);
+      expect(hasGreenCard(playing, { squadId: "c2", ctx })).toBe(false);
+      expect(hasGreenCard(playing)).toBe(false); // no club given: only the origin draw
+    });
+    test("arrived at the club aged 21 or less", () => {
+      // at c1 since 2026 (age 21 then), now 22
+      const young = p({ id: noCard, nationality: "Ghana", age: 22, history: [mlsRow("2025", "x"), mlsRow("2026", "c1")] });
+      expect(arrivalAge(young, "c1", ctx)).toBe(21);
+      expect(hasGreenCard(young, holder)).toBe(true);
+      // arrived this season (last row elsewhere): his current age
+      const now = p({ id: noCard, nationality: "Ghana", age: 23, history: [mlsRow("2026", "x")] });
+      expect(arrivalAge(now, "c1", ctx)).toBe(23);
+      expect(hasGreenCard(now, holder)).toBe(false);
+      // unknown (no history): ignored
+      expect(arrivalAge(p({ id: noCard, age: 19 }), "c1", ctx)).toBeNull();
+      expect(hasGreenCard(p({ id: noCard, nationality: "Ghana", age: 19 }), holder)).toBe(false);
+      // a loan row does not count as arriving
+      const loanRow = { ...mlsRow("2026", "c1"), loan: true as const };
+      expect(arrivalAge(p({ id: noCard, age: 22, history: [mlsRow("2025", "x"), loanRow] }), "c1", ctx)).toBe(22);
+    });
   });
 });

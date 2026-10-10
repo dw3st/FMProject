@@ -25,6 +25,8 @@ export interface RegistrationRule {
   exempt?: NationGroup[];
   /** Nations counted as domestic beyond the club's country. */
   domestic?: string[];
+  /** MLS: a foreign player with a green card (`hasGreenCard`) counts as domestic. */
+  greenCard?: true;
 }
 
 export interface RegistrationList {
@@ -95,6 +97,8 @@ export interface RegistrationRowView {
   overall: number;
   registered: boolean;
   foreign: boolean;
+  /** Foreign by nationality, but domestic under the rule's green card (MLS). */
+  greenCard: boolean;
   clubTrained: boolean;
   nationTrained: boolean;
   free: boolean;

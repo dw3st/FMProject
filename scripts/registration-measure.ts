@@ -47,7 +47,7 @@ const add = (key: string, squad: Squad, rule: RegistrationRule) => {
   a.list += ids.size;
   if (c.lostSlots > 0 && rule.maxList != null && c.counted < rule.maxList) a.reduced++;
   if (r.exception) a.exception++;
-  a.foreignOut += squad.players.filter((p) => !ids.has(p.id) && isForeign(p, rule, country)).length;
+  a.foreignOut += squad.players.filter((p) => !ids.has(p.id) && isForeign(p, rule, country, { squadId: squad.id, ctx })).length;
   a.topOut += top.filter((p) => !ids.has(p.id)).length;
   acc.set(key, a);
 };
