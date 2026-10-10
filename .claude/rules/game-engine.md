@@ -70,7 +70,7 @@ Full map of attribute → stat → effect: `game-engine/player-stats-usage.md`.
 
 ## Formations
 17 ready formations in `src/Data/formations/*.json` plus the custom formation
-(`game/formations.md`, `tatics.md`). Team B is x-mirrored; every role has movement `bounds`
+(`game/formations.md`, `tatics.md`). A team attacking −x (team B, and team A after half-time) uses the slots turned 180° — x and y mirrored, so a left winger stays on his team's left (#142); every role has movement `bounds`
 (`game-engine/movement-bounds.md`).
 
 ## Debug

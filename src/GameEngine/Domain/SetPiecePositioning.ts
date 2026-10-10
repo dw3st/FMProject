@@ -2,8 +2,8 @@
  * SetPiecePositioning — applies a set piece layout to players.
  *
  * Slots are defined in the Team A (attackDir=+1) reference frame.
- * When a player's attackDir is -1, the x coordinate is mirrored:
- *   engineX = PITCH_LENGTH - slot.x
+ * When a player's attackDir is -1, the frame is turned 180° (#142):
+ *   engineX = PITCH_LENGTH - slot.x, engineY = PITCH_WIDTH - slot.y
  *
  * Role assignment for multi-instance roles (e.g. two CBs, two STs):
  * Players are matched to slots in formation-slot-index order (slotIndex ascending).
@@ -12,7 +12,7 @@
 
 import type { GamePlayer, PlayerRole, TeamId } from '@/GameEngine/types';
 import type { SetPieceLayout } from '@/GameEngine/Domain/SetPieceLayouts';
-import { PITCH_LENGTH, PITCH_MID_X } from '@/GameEngine/Domain/pitch';
+import { PITCH_LENGTH, PITCH_MID_X, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 
 const CENTRE_X = PITCH_MID_X;
 const CENTRE_Y = 37; // PITCH_WIDTH / 2
@@ -59,7 +59,8 @@ export function applySetPieceToTeam(
 
     const slot = slots[idx]!;
     const engineX = attackDir === 1 ? slot.x : PITCH_LENGTH - slot.x;
-    updates.set(player.id, { x: engineX, y: slot.y });
+    const engineY = attackDir === 1 ? slot.y : PITCH_WIDTH - slot.y;
+    updates.set(player.id, { x: engineX, y: engineY });
   }
 
   // Apply updates — players teleport to set piece position (deterministic, no randomness)

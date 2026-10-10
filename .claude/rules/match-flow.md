@@ -391,7 +391,7 @@ side; a neutral venue (`fixture.neutral`) keeps the user on the left. With it:
   rows and the "Resumo" panel get their A/B pairs through `toDisplayPair` / `displayTeam`
   (display slot A = left); the "Resumo" header shows the two crests (`ClubLogo` 32px, name in `title` and
   `sr-only`, #128) instead of the names;
-- the pitch is drawn mirrored on x (`PixiPitch` `mirror`, `GraficsEngine/pitchMirror.ts`);
+- the pitch is drawn turned 180° (x and y, `PixiPitch` `mirror`, `GraficsEngine/pitchMirror.ts`; #142);
 - the left team list still opens on the user's own team (#51), flip to see the opponent;
 - the result screen (`MatchResultScreen`) already lists the fixture's home side on the left.
 
@@ -412,7 +412,7 @@ Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
   hidden), weighted by the game-seconds since the previous emission, live phases only; fixed arrays (whole
   match + a ring of 10 one-minute buckets of played time — its own continuous clock, since the displayed
   minute repeats after half-time stoppage). Stored with team A attacking +x (the half-time switch undone);
-  drawn mirrored on x when the user plays away, like the pitch, with an arrow for the shown team's attack.
+  drawn turned 180° when the user plays away, like the pitch, with an arrow for the shown team's attack.
   The card re-reads once a second (never per tick); the accumulator lives in a ref and goes into the resume
   snapshot (`ui.heatmap`). Drawing only: no `GameState` field, no engine read. `/test`: "Heatmap" button.
 - **Live tactics:** "Tática" tab of the substitution panel (`Components/LiveTacticsPanel.tsx`): tactical

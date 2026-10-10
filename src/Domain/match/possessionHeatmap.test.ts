@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { GameState } from "@/GameEngine/types";
 import {
-  HEATMAP_CELLS, HEATMAP_COLS, addSample, cellOf, createPossessionHeatmap, displayAttackDir, displayColRow,
+  HEATMAP_CELLS, HEATMAP_COLS, HEATMAP_ROWS, addSample, cellOf, createPossessionHeatmap, displayAttackDir, displayColRow,
   exportPossessionHeatmap, heatmapCells, importPossessionHeatmap, possessingTeam, samplePossessionHeatmap,
 } from "@/Domain/match/possessionHeatmap";
-import { PITCH_LENGTH } from "@/GameEngine/Domain/pitch";
+import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
 function state(over: Partial<{ holder: number | null; dirA: 1 | -1; ballX: number; ballY: number; time: number; phase: string }>): GameState {
   const dirA = over.dirA ?? 1;
@@ -57,7 +57,7 @@ describe("possession heat map", () => {
     samplePossessionHeatmap(acc, state({ time: 0, dirA: -1, ballX: 5, ballY: 5 }));
     samplePossessionHeatmap(acc, state({ time: 2, dirA: -1, ballX: 5, ballY: 5 }));
     const cells = heatmapCells(acc, "A", "all");
-    expect(cells[cellOf(PITCH_LENGTH - 5, 5)]).toBe(2);
+    expect(cells[cellOf(PITCH_LENGTH - 5, PITCH_WIDTH - 5)]).toBe(2);
     expect(cells[cellOf(5, 5)]).toBe(0);
   });
 
@@ -72,10 +72,10 @@ describe("possession heat map", () => {
     expect(sum(heatmapCells(acc, "A", "all"))).toBe(12 * 60 + 1);
   });
 
-  test("display mirrors the columns and the attack direction when away", () => {
+  test("display turns the map 180° and flips the attack direction when away", () => {
     expect(displayColRow(0, false)).toEqual({ col: 0, row: 0 });
-    expect(displayColRow(0, true)).toEqual({ col: HEATMAP_COLS - 1, row: 0 });
-    expect(displayColRow(HEATMAP_COLS + 2, true)).toEqual({ col: HEATMAP_COLS - 3, row: 1 });
+    expect(displayColRow(0, true)).toEqual({ col: HEATMAP_COLS - 1, row: HEATMAP_ROWS - 1 });
+    expect(displayColRow(HEATMAP_COLS + 2, true)).toEqual({ col: HEATMAP_COLS - 3, row: HEATMAP_ROWS - 2 });
     expect(displayAttackDir("A", false)).toBe(1);
     expect(displayAttackDir("A", true)).toBe(-1);
     expect(displayAttackDir("B", true)).toBe(1);
