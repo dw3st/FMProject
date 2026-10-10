@@ -5,6 +5,7 @@
  * `Squad.moraleClub`). AI clubs store nothing: every reader here treats an absent value as the
  * neutral start (65), whose match effect is exactly zero.
  */
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { AWARDS } from "@/Domain/awards/awardsConfig";
@@ -670,6 +671,14 @@ export function afterAward(squad: Squad, playerId: string, kinds: AwardKind[], k
     ? { ...moved, moraleLog: { ...logOf(moved), awards: [...(logOf(moved).awards ?? []), key].slice(-MORALE.AWARD_KEYS) } }
     : moved;
   return { ...squad, players: squad.players.map((p) => (p.id === playerId ? next : p)) };
+}
+
+/**
+ * The manager complained with the referee and got away with it (`.claude/rules/game/var.md` §4): the squad backs
+ * him (`VAR_CONFIG.COMPLAINT_MORALE`, once per match — the live match sends it at most once).
+ */
+export function afterManagerComplaint(squad: Squad): Squad {
+  return { ...squad, players: squad.players.map((p) => withEventDelta(p, VAR_CONFIG.COMPLAINT_MORALE)) };
 }
 
 /** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */

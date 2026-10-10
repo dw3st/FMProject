@@ -40,6 +40,7 @@ const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
 const AwardIcon = iconOf("award");
 const CalendarIcon = iconOf("calendar");
+const DisciplineIcon = iconOf("alert");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -201,6 +202,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-3/15",
     border: "border-chart-3/30",
     Icon: CalendarIcon,
+  },
+  discipline: {
+    labelKey: "inbox.categories.discipline",
+    color: "text-destructive",
+    bg: "bg-destructive/15",
+    border: "border-destructive/30",
+    Icon: DisciplineIcon,
   },
 };
 
@@ -498,6 +506,9 @@ function leaguePrizeTexts(
     const x = facilityTexts(message, t);
     return { subject: x.subject, preview: x.body };
   }
+  if (message.category === "discipline") {
+    return { subject: t("complaint.inbox.subject"), preview: t("complaint.inbox.body", { count: message.matches }) };
+  }
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
@@ -676,6 +687,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "awards" && <AwardsInboxBody message={message} />}
         {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
+        {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

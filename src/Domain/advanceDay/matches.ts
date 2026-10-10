@@ -166,6 +166,8 @@ export interface PlayedMatchRecording {
   var?: import("@/types/dayLogTypes").MatchVarStats;
   /** Cards shown to the human club's manager in the live match (`var.md` §4). Never from the engine. */
   managerCards?: ManagerCardRecord[];
+  /** The user's manager complained at least once without a card (squad morale +1, `var.md` §4). */
+  complaintMorale?: true;
 }
 
 /** A card shown to the human club's manager after a complaint (live match only). */
