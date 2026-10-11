@@ -102,3 +102,21 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
   `.claude/rules/game/finances.md` → "Extrato").
 - A prévia da mensagem na lista da inbox mostra o slug da liga em "melhor posição" (a lista não carrega o
   catálogo de ligas); o corpo da mensagem mostra o nome.
+
+## Ídolos, lendas e fatos (#151, 4.19)
+
+- **Totais por jogador no clube:** `ClubScorer` ganhou `titles` (títulos das linhas de temporada dele no clube) e
+  `awards` (prêmios de temporada), somados em `applySeason` junto de jogos/gols/assistências (as linhas parciais de
+  venda não trazem títulos).
+- **Regra (`legendTier`, constantes `CLUB_LEGENDS` em `clubHistory.ts`):**
+  - **Lenda:** 200 jogos no clube, ou 120 jogos com 60 gols, 3 títulos ou 2 prêmios.
+  - **Ídolo:** 100 jogos, ou 50 jogos com 25 gols, 2 títulos ou 1 prêmio.
+  Um titular regular faz ~40–50 jogos por temporada: ídolo em 2–3 temporadas (antes se ganhar títulos/prêmios),
+  lenda em 4–5. `clubLegends` ordena lendas primeiro, depois jogos, gols e nome.
+- **Fatos (`clubFacts`):** temporadas, títulos (sem acessos), acessos/rebaixamentos, gols na liga, melhor campanha
+  (mais pontos), mais gols numa temporada, maior artilheiro e quem mais jogou.
+- **Rota:** `legends` (com `current`/`retired`; nem um nem outro = saiu do clube) e `facts` em `ClubHistoryResponse`.
+- **Tela (aba História):** depois da galeria de títulos (que mostra todo título das linhas de temporada, inclusive
+  copa e continental pendentes que entram na virada), o painel "Ídolos e lendas" (cartões: coroa = lenda, estrela =
+  ídolo; situação: no elenco com link, aposentado ou saiu; jogos · gols · títulos; a regra numa linha) e "Fatos e
+  curiosidades" (só com alguma temporada fechada). Os recordes continuam no fim.

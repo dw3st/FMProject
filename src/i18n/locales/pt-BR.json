@@ -2021,7 +2021,37 @@
     },
     "inboxCategory": "Recorde do clube",
     "inboxSubject": "Novo recorde do clube: {{record}}",
-    "inboxBody": "{{record}}: {{value}} ({{detail}})."
+    "inboxBody": "{{record}}: {{value}} ({{detail}}).",
+    "legends": "Ídolos e lendas",
+    "legendsAbout": "Ídolo: {{idolApps}} jogos, ou {{idolWith}} com {{idolGoals}} gols, {{idolTitles}} títulos ou um prêmio. Lenda: {{legendApps}} jogos, ou {{legendWith}} com {{legendGoals}} gols, {{legendTitles}} títulos ou {{legendAwards}} prêmios.",
+    "noLegends": "Nenhum ídolo ainda.",
+    "tier": {
+      "legend": "Lenda",
+      "idol": "Ídolo"
+    },
+    "status": {
+      "current": "No elenco",
+      "retired": "Aposentado",
+      "left": "Saiu do clube"
+    },
+    "legendLine": "{{apps}} jogos · {{goals}} gols · {{titles}} títulos",
+    "facts": "Fatos e curiosidades",
+    "fact": {
+      "seasons": "Temporadas",
+      "titles": "Títulos conquistados",
+      "moves": "Acessos / rebaixamentos",
+      "leagueGoals": "Gols na liga",
+      "bestSeason": "Melhor campanha",
+      "mostTeamGoals": "Mais gols numa temporada",
+      "topScorer": "Maior artilheiro",
+      "mostApps": "Mais jogos"
+    },
+    "factDetail": {
+      "points": "{{points}} pts · {{season}}",
+      "goals": "{{league}} · {{season}}",
+      "player": "{{name}}",
+      "position": "{{position}}º"
+    }
   },
   "youth": {
     "loading": "Carregando a base...",

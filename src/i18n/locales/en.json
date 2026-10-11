@@ -2021,7 +2021,37 @@
     },
     "inboxCategory": "Club record",
     "inboxSubject": "New club record: {{record}}",
-    "inboxBody": "{{record}}: {{value}} ({{detail}})."
+    "inboxBody": "{{record}}: {{value}} ({{detail}}).",
+    "legends": "Idols and legends",
+    "legendsAbout": "Idol: {{idolApps}} games, or {{idolWith}} with {{idolGoals}} goals, {{idolTitles}} titles or an award. Legend: {{legendApps}} games, or {{legendWith}} with {{legendGoals}} goals, {{legendTitles}} titles or {{legendAwards}} awards.",
+    "noLegends": "No idol yet.",
+    "tier": {
+      "legend": "Legend",
+      "idol": "Idol"
+    },
+    "status": {
+      "current": "In the squad",
+      "retired": "Retired",
+      "left": "Left the club"
+    },
+    "legendLine": "{{apps}} games · {{goals}} goals · {{titles}} titles",
+    "facts": "Facts",
+    "fact": {
+      "seasons": "Seasons",
+      "titles": "Titles won",
+      "moves": "Promotions / relegations",
+      "leagueGoals": "League goals",
+      "bestSeason": "Best season",
+      "mostTeamGoals": "Most goals in a season",
+      "topScorer": "All-time top scorer",
+      "mostApps": "Most games"
+    },
+    "factDetail": {
+      "points": "{{points}} pts · {{season}}",
+      "goals": "{{league}} · {{season}}",
+      "player": "{{name}}",
+      "position": "#{{position}}"
+    }
   },
   "youth": {
     "loading": "Loading academy...",
