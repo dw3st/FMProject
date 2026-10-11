@@ -339,6 +339,15 @@ que inflava demais um clube recém-promovido (ex.: Coventry City virava clube EL
 com orçamento de transferência de ~€149M só porque a mediana da Premier League é alta). Ver
 `.claude/rules/AI-clubs/finance.md` para tier/orçamento a partir das finanças.
 
+## Nacionalidade dos atletas da ESPN (#143)
+
+`normalizeNationality` (`scripts/espn/normalize.ts`) leva a `citizenship` da ESPN para a grafia do mundo ("USA" →
+"United States", "Congo DR" → "DR Congo", "Ivory Coast" → "Côte d’Ivoire", "Republic of Ireland" → "Ireland"…) e aceita
+qualquer país com bandeira (`nationalityFlagCode`), mesmo que nenhum elenco do mundo base o tenha (País de Gales,
+Kosovo). Até a 4.17.1 os destinos eram as grafias da própria ESPN, que o mundo não usa: 82 atletas novos (`es_*`) com
+nacionalidade na ESPN ficaram sem nenhuma (52 dos EUA, ex. três do Inter Miami). Vale na próxima regeneração do mundo.
+Outros 1256 `es_*` não têm `citizenship` na ESPN; continuam sem nacionalidade (sem bandeira).
+
 ## Caixa de nomes turcos (#13)
 
 A ESPN grava alguns nomes turcos com a cauda da palavra em maiúsculas depois de `ı` (`BahadıR Han

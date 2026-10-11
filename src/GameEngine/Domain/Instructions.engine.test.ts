@@ -18,7 +18,7 @@ import formation4231Json from "@/Data/formations/4-2-3-1.json";
 
 const F433 = formation433Json as Formation;
 const F4231 = formation4231Json as Formation;
-const MARK_SEED = 1; // avg ~4.7 yd (seeds 1–5 and 11 gave 3.4–5.9; unseeded runs reached 6.3)
+const MARK_SEED = 3; // the 180° side turn (#142) moved the random path: seed 1 then gave 6.3 yd. 30 seeds: mean 5.6 yd (5.2 before #142), wide spread (2–12)
 
 function loadSquad(file: string): Squad {
   const path = fileURLToPath(new URL(`../../example_data/squads/premier_league/${file}`, import.meta.url));

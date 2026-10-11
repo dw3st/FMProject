@@ -5,6 +5,7 @@ import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { RegistrationCompView } from "@/types/registrationTypes";
+import { compareSquadPositions } from "@/Domain/positions/positionSort";
 
 const HUMAN = "33";
 
@@ -50,6 +51,10 @@ describe("registration routes", () => {
     expect(pl.rows.length).toBeGreaterThan(18);
     expect(pl.rows.filter((r) => r.registered).length).toBeGreaterThanOrEqual(18);
     expect(data.competitions.some((c) => c.slug === "cup_england")).toBe(true);
+    // #146: the rows come in squad position order (GK, DEF, MID, FWD, then name).
+    const order = pl.rows.map((r) => ({ pos: r.role, natural: r.role, name: r.name }));
+    expect(order).toEqual([...order].sort((a, b) => compareSquadPositions(a, b)));
+    expect(pl.rows[0]!.role).toBe("GK");
   }, 60_000);
 
   test("PUT and auto with the deadline open; errors", async () => {

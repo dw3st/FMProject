@@ -27,7 +27,7 @@ import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
-import { mirrorX } from "@/GraficsEngine/pitchMirror";
+import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
 import { drawStand, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { worksSides } from "@/GraficsEngine/crowd";
@@ -457,10 +457,10 @@ export function PixiPitch({
 
       const m = buildMetrics(canvasWidth, canvasHeight, { stadium: !!stadiumRef.current });
 
-      // Converts game yards → canvas pixels (mirrored on x when `mirror` is set — drawing only)
+      // Converts game yards → canvas pixels (turned 180° when `mirror` is set — drawing only, #142)
       const toPixel = (x: number, y: number) => ({
         px: m.marginX + mirrorX(x, mirrorRef.current) * m.scale,
-        py: m.marginY + y * m.scale,
+        py: m.marginY + mirrorY(y, mirrorRef.current) * m.scale,
       });
 
       const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
@@ -1146,7 +1146,7 @@ export function PixiPitch({
 
         // Logical canvas → game (yards). m is built from logical dims, so this works.
         const gameX = mirrorX((logicalX - m.marginX) / m.scale, mirrorRef.current);
-        const gameY = (logicalY - m.marginY) / m.scale;
+        const gameY = mirrorY((logicalY - m.marginY) / m.scale, mirrorRef.current);
 
         if (playerCb) {
           let nearest: (typeof stateRef.current.players)[0] | null = null;
@@ -1240,9 +1240,10 @@ export function PixiPitch({
           const off = anim ? animOffset(anim, effectNow) : null;
           const liftPx = off ? off.liftYds * m.scale * BALL.LIFT_PX_PER_YD : 0;
           g.x = px + (off ? xSign() * off.dx * m.scale : 0);
-          g.y = py + (off ? off.dy * m.scale : 0) - liftPx;
+          g.y = py + (off ? xSign() * off.dy * m.scale : 0) - liftPx;
           g.scale.set(off ? off.scale : 1);
-          g.rotation = off ? xSign() * off.rotation : 0;
+          // The mirror is a 180° turn (#142): the offset flips on both axes, an angle stays as is.
+          g.rotation = off ? off.rotation : 0;
           const markerShadow = g.children[0];
           if (markerShadow) {
             // The shadow stays on the ground while the marker lifts (header), and shrinks.
@@ -1252,7 +1253,7 @@ export function PixiPitch({
           if (anim?.kind === "longShot" && off) {
             // Three short "force lines" behind the shooter.
             const k = (effectNow - anim.startedAt) / anim.duration;
-            const ux = -xSign() * anim.dir.x, uy = -anim.dir.y;
+            const ux = -xSign() * anim.dir.x, uy = -xSign() * anim.dir.y;
             const nx = -uy, ny = ux;
             for (const s of [-1, 0, 1]) {
               const bx0 = g.x + ux * markerR * 1.2 + nx * s * markerR * 0.5;
@@ -1320,7 +1321,7 @@ export function PixiPitch({
               const color = (cr << 16) | (cg << 8) | cb;
               const alpha = 0.18 + s * 0.45;
               const px0 = Math.min(toPixel(cell.x - CELL_W / 2, 0).px, toPixel(cell.x + CELL_W / 2, 0).px);
-              const py0 = m.marginY + (cell.y - CELL_H / 2) * m.scale;
+              const py0 = Math.min(toPixel(0, cell.y - CELL_H / 2).py, toPixel(0, cell.y + CELL_H / 2).py);
               throughBallGfx.rect(px0, py0, cellW, cellH).fill({ color, alpha });
             }
             // Best cell — gold ring
@@ -1795,7 +1796,7 @@ export function PixiPitch({
                   const cb2 = Math.round(255 + (baseColor.b - 255) * t);
                   const color = (cr << 16) | (cg << 8) | cb2;
                   const px0 = Math.min(toPixel(c * CELL_W, 0).px, toPixel((c + 1) * CELL_W, 0).px);
-                  const py0 = m.marginY + r * CELL_H * m.scale;
+                  const py0 = Math.min(toPixel(0, r * CELL_H).py, toPixel(0, (r + 1) * CELL_H).py);
                   // Per-cell alpha scales with intensity so weak cells barely show.
                   const alpha = 0.15 + t * 0.45;
                   crowdHeatmapGfx.rect(px0, py0, cellW, cellH).fill({ color, alpha });

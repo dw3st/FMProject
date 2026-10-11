@@ -89,8 +89,10 @@ export function samplePossessionHeatmap(acc: PossessionHeatmap, gs: GameState): 
   if (!team) return;
   const dirA = gs.players.find((p) => p.team === "A")?.attackDir ?? 1;
   const ball = getBallPos(gs);
+  // The side switch is a 180° turn (#142): undo it on both axes.
   const x = dirA === 1 ? ball.x : PITCH_LENGTH - ball.x;
-  addSample(acc, team, x, ball.y, Math.min(dt, MAX_SAMPLE_SECONDS));
+  const y = dirA === 1 ? ball.y : PITCH_WIDTH - ball.y;
+  addSample(acc, team, x, y, Math.min(dt, MAX_SAMPLE_SECONDS));
 }
 
 /** The cells of `team` in the window: whole match, or the last `WINDOW_MINUTES` played minutes (current one included). */
@@ -107,11 +109,11 @@ export function heatmapCells(acc: PossessionHeatmap, team: TeamId, window: Heatm
   return out;
 }
 
-/** Display cell (col, row) of a stored cell; `mirror` = the user plays away (pitch drawn flipped on x). */
+/** Display cell (col, row) of a stored cell; `mirror` = the user plays away (pitch drawn turned 180°, #142). */
 export function displayColRow(cell: number, mirror: boolean): { col: number; row: number } {
   const col = cell % HEATMAP_COLS;
   const row = Math.floor(cell / HEATMAP_COLS);
-  return { col: mirror ? HEATMAP_COLS - 1 - col : col, row };
+  return mirror ? { col: HEATMAP_COLS - 1 - col, row: HEATMAP_ROWS - 1 - row } : { col, row };
 }
 
 /** Drawn attacking direction of `team` (+1 = right). Stored frame: A right, B left; mirrored when away. */

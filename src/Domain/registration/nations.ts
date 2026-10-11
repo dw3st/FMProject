@@ -28,14 +28,14 @@ const CONMEBOL = ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuado
 const CONCACAF = [
   "Barbados", "Canada", "Cayman Islands", "Costa Rica", "Cuba", "Curaçao", "Dominican Republic", "El Salvador",
   "French Guiana", "Guadeloupe", "Guatemala", "Guyana", "Haiti", "Honduras", "Jamaica", "Martinique", "Mexico", "Panama",
-  "Puerto Rico", "St. Kitts & Nevis", "St. Vincent & Grenadines", "Suriname", "Trinidad & Tobago", "USA", "Nicaragua",
+  "Puerto Rico", "St. Kitts & Nevis", "St. Lucia", "St. Vincent & Grenadines", "Suriname", "Trinidad & Tobago", "USA", "Nicaragua",
 ];
 const CAF = [
   "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cameroon", "Cape Verde", "Central African Republic",
   "Chad", "Comoros", "Congo - Brazzaville", "Côte d’Ivoire", "DR Congo", "Egypt", "Equatorial Guinea", "Eritrea",
-  "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Liberia", "Libya",
+  "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya",
   "Madagascar", "Mali", "Mauritania", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "Senegal",
-  "Seychelles", "Sierra Leone", "Somalia", "South Africa", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia",
+  "Seychelles", "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia",
   "Zimbabwe",
 ];
 const AFC = [

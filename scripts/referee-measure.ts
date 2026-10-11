@@ -4,7 +4,8 @@
  *
  *   world <league> <n> [--neutral] [--engine-seed s] [--seed s] [--out f]
  *       M1, engine: n matches (auto 4-3-3, both `balanced`, fitness 88), each with a referee drawn from the world's
- *       rigor distribution (`worldStrictness`), or `--neutral` (s = 0 = the engine before the referees).
+ *       rigor distribution (`worldStrictness`), or `--neutral` (s = 0 = the engine before the referees). Also prints
+ *       the yellow cards per match: percentiles, share of matches with 5+/6+/7+ and the histogram (#144).
  *   quick [n per league=400] [leagues,...]
  *       M1, quickSim: the same fixtures and seeds with a drawn rigor vs s = 0 (paired, exact).
  *   pair <league> <n> --strict a --lenient b [--engine-seed s] [--out f]
@@ -69,7 +70,7 @@ const roles = formation.attacking.map((s) => s.role);
 const ref = (strictness: number) => ({ id: "ref_measure", name: "Measure", country: "England", strictness });
 
 interface Side { fouls: number; yellows: number; reds: number; penalties: number; goals: number; shots: number }
-interface Totals { matches: number; a: Side; b: Side; label?: string }
+interface Totals { matches: number; a: Side; b: Side; label?: string; yellowsPerMatch?: number[] }
 const side = (): Side => ({ fouls: 0, yellows: 0, reds: 0, penalties: 0, goals: 0, shots: 0 });
 const empty = (): Totals => ({ matches: 0, a: side(), b: side() });
 
@@ -83,10 +84,23 @@ function add(dst: Side, t: Record<string, number>, goals: number): void {
 }
 const keys: (keyof Side)[] = ["fouls", "yellows", "reds", "penalties", "goals", "shots"];
 
+/** Yellow cards per match (both teams, a second yellow counts): histogram and tail (#144). */
+function yellowTail(ys: number[]): void {
+  if (ys.length === 0) return;
+  const sorted = [...ys].sort((a, b) => a - b);
+  const q = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))]!;
+  const hist = new Map<number, number>();
+  for (const y of ys) hist.set(y, (hist.get(y) ?? 0) + 1);
+  const pct = (k: number) => ((100 * ys.filter((y) => y >= k).length) / ys.length).toFixed(1);
+  console.log(`  yellows/match: p50 ${q(0.5)}  p90 ${q(0.9)}  p99 ${q(0.99)}  max ${sorted[sorted.length - 1]}  ≥5 ${pct(5)}%  ≥6 ${pct(6)}%  ≥7 ${pct(7)}%`);
+  console.log(`  histogram: ${[...hist].sort((a, b) => a[0] - b[0]).map(([k, v]) => `${k}:${v}`).join(" ")}`);
+}
+
 function report(t: Totals, label: string, sides: [string, string] | null): void {
   const n = Math.max(1, t.matches);
   const per = (v: number) => (v / n).toFixed(3);
   console.log(`${label}: n=${t.matches}  per match (both teams): ${keys.map((k) => `${k} ${per(t.a[k] + t.b[k])}`).join("  ")}`);
+  if (t.yellowsPerMatch) yellowTail(t.yellowsPerMatch);
   if (sides) {
     // pair: a = matches with the strict referee, b = with the lenient one (each n/2): totals per match of each arm.
     const half = Math.max(1, t.matches / 2);
@@ -103,6 +117,7 @@ if (SUM) {
   for (const r of all) {
     t.matches += r.matches;
     for (const k of keys) { t.a[k] += r.a[k]; t.b[k] += r.b[k]; }
+    if (r.yellowsPerMatch) (t.yellowsPerMatch ??= []).push(...r.yellowsPerMatch);
   }
   report(t, `sum of ${all.length}`, all[0]?.sides ?? null);
   process.exit(0);
@@ -128,6 +143,7 @@ async function world(): Promise<void> {
     });
     add(t.a, m.teamStats.A as unknown as Record<string, number>, m.score.A);
     add(t.b, m.teamStats.B as unknown as Record<string, number>, m.score.B);
+    (t.yellowsPerMatch ??= []).push((m.teamStats.A.yellowCards ?? 0) + (m.teamStats.B.yellowCards ?? 0));
     t.matches++;
   }
   report(t, `${league} ${neutral ? "neutral (s = 0)" : `world rigor (mean s ${(sSum / n).toFixed(3)})`} [${((performance.now() - start) / 1000).toFixed(0)}s]`, null);

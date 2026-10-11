@@ -36,6 +36,10 @@ const FLAG_OF: Record<string, string> = {
   Bangladesh: "bd", Bonaire: "bq", China: "cn", "Curaçao": "cw", Libya: "ly", Malaysia: "my", "New Caledonia": "nc",
   Pakistan: "pk", "Papua New Guinea": "pg", "São Tomé & Príncipe": "st", "South Sudan": "ss", Syria: "sy",
   "Timor-Leste": "tl",
+  // ESPN citizenship spellings (data_process/espn/snapshot.json, #143) and the few countries only ESPN lists
+  "Congo DR": "cd", Congo: "cg", "Cape Verde Islands": "cv", "Republic of Ireland": "ie", "St Lucia": "lc",
+  "St Kitts and Nevis": "kn", "Comoros Islands": "km", Palestine: "ps", Lesotho: "ls", Malawi: "mw", India: "in",
+  Grenada: "gd", "North Korea": "kp",
 };
 
 export function nationalityFlagCode(nationality: string | null | undefined): string | undefined {

@@ -144,8 +144,8 @@ sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
 ## Telas
 
 - **Elenco → Inscritos** (`?tab=registration`, só o próprio clube): competições em `SegmentedTabs compact`, prazo,
-  regra em uma linha, contadores (inscritos, estrangeiros, formados com vagas perdidas, livres), tabela padrão com
-  posição, idade, nação, selos (Inscrito/Não inscrito, Livre, Estrangeiro, Formado no clube/país), nota e
+  regra em uma linha, contadores (inscritos, estrangeiros, formados com vagas perdidas, livres), tabela padrão (na ordem
+  das posições, como o Elenco, #146) com posição, idade, nação, selos (Inscrito/Não inscrito, Livre, Estrangeiro, Formado no clube/país), nota e
   Incluir/Tirar (desligado fora do prazo, com o motivo); "Automático" (confirmação quando editada à mão).
 - **Formação:** selo "Não inscrito" (competição do próximo jogo no `title`); o jogador continua escolhível.
 - **Prévia:** trocas `unregistered` / `foreignLimit` na lista de avisos.

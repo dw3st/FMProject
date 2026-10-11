@@ -1804,14 +1804,16 @@ function switchSides(
     return {
       ...p,
       attackDir: (-p.attackDir) as 1 | -1,
+      // Turned 180° (x and y, #142): the left winger keeps playing on his team's left.
       x:           PITCH_LENGTH - p.x,
-      basePosition:   { x: PITCH_LENGTH - p.basePosition.x, y: p.basePosition.y },
-      targetPosition: { x: PITCH_LENGTH - p.targetPosition.x, y: p.targetPosition.y },
+      y:           PITCH_WIDTH - p.y,
+      basePosition:   { x: PITCH_LENGTH - p.basePosition.x, y: PITCH_WIDTH - p.basePosition.y },
+      targetPosition: { x: PITCH_LENGTH - p.targetPosition.x, y: PITCH_WIDTH - p.targetPosition.y },
       bounds: {
         minX: PITCH_LENGTH - p.bounds.maxX,
         maxX: PITCH_LENGTH - p.bounds.minX,
-        minY: p.bounds.minY,
-        maxY: p.bounds.maxY,
+        minY: PITCH_WIDTH - p.bounds.maxY,
+        maxY: PITCH_WIDTH - p.bounds.minY,
       },
       energy: recoveredEnergy,
       runtimeStats: energyChanged

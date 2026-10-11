@@ -10,6 +10,7 @@ import { automaticList, ensureList, manualList, withList, type CompInfo } from "
 import { canAdd, countsOf, validateList } from "@/Domain/registration/rules";
 import { clubTrained, domesticNations, isForeign, isFree, isGreenCardHolder, nationTrained } from "@/Domain/registration/formed";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
+import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { overallAvg } from "@/Domain/playerRating";
 import type { Squad } from "@/types/playerTypes";
 import type { RegistrationCompView, RegistrationRowView } from "@/types/registrationTypes";
@@ -38,7 +39,10 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
       ...(add && !add.ok ? { reason: add.reason } : {}),
     };
   });
-  rows.sort((a, b) => Number(b.registered) - Number(a.registered) || b.overall - a.overall || a.id.localeCompare(b.id));
+  // Squad position order, like the Squad tab (#146): GK, DEF, MID, FWD, then the detailed position and the name.
+  rows.sort((a, b) =>
+    compareSquadPositions({ pos: a.role, natural: a.role, name: a.name }, { pos: b.role, natural: b.role, name: b.name })
+    || a.id.localeCompare(b.id));
   return {
     slug: info.slug, kind: info.kind, season: info.season, rule: info.rule, status: info.status,
     manual: !!list.manual, exception: !!list.exception,

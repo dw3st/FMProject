@@ -50,6 +50,8 @@ export interface DisplayPlayer {
   /** Last day of the contract (pre-contract eligibility, Etapa 25). */
   contractEnd?: string;
   value: string;
+  /** Matches played this season, every competition (`seasonLog.appearances`). */
+  appearances: number;
   goals: number;
   assists: number;
   avgRating: number;
@@ -175,6 +177,7 @@ export function toDisplayPlayer(
     valueMillions: domain.valueMillions,
     nationality: nat,
     ownNationality: (player.nationality && String(player.nationality).trim()) || "",
+    appearances: log?.appearances ?? 0,
     goals: log?.goals ?? 0,
     assists: log?.assists ?? 0,
     avgRating: log ? Math.round((log.avgRating ?? 0) * 10) / 10 : 0,

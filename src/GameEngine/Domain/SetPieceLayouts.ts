@@ -5,7 +5,7 @@
  * The moment the ball is touched, the normal AI decision system takes over.
  *
  * All coordinates are in absolute yards, Team A reference frame (attackDir = +1).
- * Team B positions are mirrored automatically at runtime.
+ * A team attacking −x gets the layout turned 180° (x and y) at runtime (#142).
  *
  * Layouts are defined for: 4-3-3, 4-4-2, 3-5-2.
  */

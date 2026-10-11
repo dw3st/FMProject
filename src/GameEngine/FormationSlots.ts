@@ -2,14 +2,15 @@
  * FormationSlots — resolves absolute player positions from formation slot definitions.
  *
  * Each formation JSON defines attacking and defending slot arrays. Each slot names a role
- * and provides absolute x/y position (Team A reference frame).
+ * and provides absolute x/y position (Team A reference frame). A team attacking −x uses that frame
+ * turned 180° (both x and y mirrored), so left stays the team's own left.
  *
  * resolveBasePosition() is called every tick by Positioning.ts to get the phase-appropriate
  * anchor for a player.
  */
 
 import type { Formation, FormationSlotDef, Phase } from '@/GameEngine/types';
-import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
+import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { applyAnchorOffset, instructionAnchor } from '@/GameEngine/Configs/RoleVariantConfig';
 
@@ -33,8 +34,10 @@ export function resolveBasePosition(
   const slots: FormationSlotDef[] = phase === 'attacking' ? formation.attacking : formation.defending;
   const slot = slots[slotIndex];
   if (!slot) return { x: 57, y: 37 };
+  // A team attacking −x is Team A's frame turned 180° (x AND y), so its left winger plays on its
+  // own left (#142); mirroring x only would put him on the other flank.
   return attackDir === -1
-    ? { x: PITCH_LENGTH - slot.x, y: slot.y }
+    ? { x: PITCH_LENGTH - slot.x, y: PITCH_WIDTH - slot.y }
     : { x: slot.x, y: slot.y };
 }
 
