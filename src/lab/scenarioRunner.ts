@@ -186,6 +186,9 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgTemperament: r2(t.temperament / matches),
     avgPitchCondition: r2(t.pitchCondition / matches),
     avgRefereeStrictness: r2(t.refereeStrictness / matches),
+    avgRefereeErrors: r2(t.refereeErrors / matches),
+    avgVarReviews: r2(t.varReviews / matches),
+    avgVarOverturned: r2(t.varOverturned / matches),
     avgFouls: r2(t.fouls / matches),
     avgYellowCards: r2(t.yellowCards / matches),
     avgRedCards: r2(t.redCards / matches),
@@ -230,7 +233,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -274,6 +277,9 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.temperament           += src.temperament;
   dst.pitchCondition        += src.pitchCondition;
   dst.refereeStrictness     += src.refereeStrictness;
+  dst.refereeErrors += src.refereeErrors;
+  dst.varReviews += src.varReviews;
+  dst.varOverturned += src.varOverturned;
   dst.fouls                 += src.fouls;
   dst.yellowCards           += src.yellowCards;
   dst.redCards              += src.redCards;
@@ -345,6 +351,9 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgTemperament: r2(totals.temperament / games),
     avgPitchCondition: r2(totals.pitchCondition / games),
     avgRefereeStrictness: r2(totals.refereeStrictness / games),
+    avgRefereeErrors: r2(totals.refereeErrors / games),
+    avgVarReviews: r2(totals.varReviews / games),
+    avgVarOverturned: r2(totals.varOverturned / games),
     avgFouls: r2(totals.fouls / games),
     avgYellowCards: r2(totals.yellowCards / games),
     avgRedCards: r2(totals.redCards / games),

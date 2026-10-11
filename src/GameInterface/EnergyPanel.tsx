@@ -1,4 +1,5 @@
 import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
+import { qualityMult } from "@/GameEngine/Domain/Var";
 import { useMemo, useRef } from "react";
 import type { GameState, GamePlayer } from "@/GameEngine/types";
 import type { StaffEffects } from "@/Domain/staff/staff";
@@ -87,6 +88,10 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
           {gameState.referee && (
             <span className="ml-2 normal-case tabular-nums">
               · ref s {gameState.referee.strictness} · foul x{refereeFoulMult(gameState.referee.strictness).toFixed(2)} · yellow x{refereeYellowMult(gameState.referee.strictness).toFixed(2)}
+              {typeof gameState.referee.quality === "number" && ` · q ${gameState.referee.quality} · err x${qualityMult(gameState.referee.quality).toFixed(2)}`}
+              {gameState.referee.var && " · VAR"}
+              {gameState.refereeBias && ` · bias ${gameState.refereeBias.team} +${gameState.refereeBias.amount}`}
+              {gameState.forcedRefError && ` · forced ${gameState.forcedRefError}`}
             </span>
           )}
         </h3>

@@ -32,6 +32,9 @@ import type { TestScenario } from "@/GameEngine/Support/TestCases";
 import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot, withReferee } from "@/GameEngine/Domain/gameState";
 import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
 import { refereeFaceUrl } from "@/Domain/faces/faceUrl";
+import { REFEREE_ERROR_KINDS, resolveComplaint, type RefereeErrorKind } from "@/GameEngine/Domain/Var";
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
+import { debugLog } from "@/GameEngine/Support/DebugLog";
 import { variantsForRole } from "@/GameEngine/Configs/RoleVariantConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";
@@ -108,9 +111,24 @@ const PITCH_TEST_OPTIONS = [100, 90, 60, 40, 20, 0] as const;
 /** Referee rigor of the whole match (`referees.md`): null = Off (no referee, or the scenario's own). */
 const REFEREE_TEST_OPTIONS = [null, -1, -0.5, 0, 0.5, 1] as const;
 const TEST_REFEREE = { id: 'ref_test', name: 'Test Referee', country: 'England' };
-/** The state with the test referee of rigor `s`; null keeps the state's own (a scenario's, or none). */
+/** Referee errors / VAR of /test (`var.md`): 'off' = no errors, 'auto' = rolled, a kind = forced on its next chance. */
+type RefErrorOption = 'off' | 'auto' | RefereeErrorKind;
+const REF_ERROR_OPTIONS: readonly RefErrorOption[] = ['off', 'auto', ...REFEREE_ERROR_KINDS];
+/** Read by `withTestReferee` (kept in sync with the panel's state). */
+const testVar: { err: RefErrorOption; var: boolean } = { err: 'off', var: false };
+/**
+ * The state with the test referee of rigor `s`; null keeps the state's own (a scenario's, or none) unless errors
+ * are on (then a neutral referee). Errors give him quality 62.5 (average), VAR on its chip.
+ */
 function withTestReferee(state: GameState, s: number | null): GameState {
-  return s === null ? state : withReferee(state, { ...TEST_REFEREE, strictness: s });
+  const errorsOn = testVar.err !== 'off';
+  if (s === null && !errorsOn) return state;
+  const base = s === null ? (state.referee ?? { ...TEST_REFEREE, strictness: 0 }) : { ...TEST_REFEREE, strictness: s };
+  const ref = errorsOn
+    ? { ...base, quality: 62.5, ...(testVar.var ? { var: true } : {}) }
+    : { id: base.id, name: base.name, country: base.country, strictness: base.strictness };
+  const out = withReferee(state, ref);
+  return { ...out, forcedRefError: testVar.err !== 'off' && testVar.err !== 'auto' ? testVar.err : null };
 }
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
@@ -414,6 +432,11 @@ export function TestScreen() {
   const [pitch, setPitch] = useState<number>(90);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
+  // Referee errors and VAR (`var.md`): rebuilt like the rigor.
+  const [refErr, setRefErr] = useState<RefErrorOption>('off');
+  const [varOn, setVarOn] = useState(false);
+  testVar.err = refErr;
+  testVar.var = varOn;
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   // Player instructions per team (`player-instructions.md`): slot variants / pressing, man-marking.
@@ -504,6 +527,18 @@ export function TestScreen() {
   const [liveOffBallIntents, setLiveOffBallIntents] = useState<Record<number, OffBallIntentKey>>({});
   const [liveBallHolder, setLiveBallHolder]     = useState<number>(-1);
   const [liveGameState, setLiveGameState]       = useState<GameState | null>(null);
+  // Manager complaints of team A in /test (`var.md` §4): outcome to the debug log, a bias patched into the match.
+  const testComplaintsRef = useRef<{ made: number; yellow: boolean }>({ made: 0, yellow: false });
+  const handleTestComplain = () => {
+    const gs = liveGameState ?? (mode === 'scenario' ? scenarioState : matchState);
+    const c = testComplaintsRef.current;
+    const out = resolveComplaint({ made: c.made, strictness: gs?.referee?.strictness, onYellow: c.yellow }, Math.random);
+    c.made++;
+    if (out.card === 'yellow') c.yellow = true;
+    debugLog('var', `Complaint #${c.made} of team A: ${out.card === 'none' ? (out.bias ? 'no card, referee stricter on B' : 'no card') : `${out.card} card`}`, { data: { ...out } });
+    if (out.bias) gameBus.emit('testCommand', { type: 'varPatch', patch: { refereeBias: { team: 'B', amount: VAR_CONFIG.COMPLAINT_BIAS } } });
+    if (out.card === 'red') gameBus.emit('testCommand', { type: 'varPatch', patch: { autoSubs: { A: true } } });
+  };
   // Live substitution panel for Team A (#115): same panel as the match, via test commands.
   const [showSubs, setShowSubs] = useState(false);
   // #140: team A picks the replacement of an injured player (as the live match does).
@@ -640,7 +675,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -674,7 +709,7 @@ export function TestScreen() {
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1094,6 +1129,40 @@ export function TestScreen() {
                   {v === null ? 'Off' : v === -1 ? 'Lenient -1' : v === 1 ? 'Strict +1' : v > 0 ? `+${v}` : String(v)}
                 </button>
               ))}
+            </div>
+          </div>
+          {/* Referee errors and VAR (var.md): Off = none, Auto = rolled by quality, a kind = forced on its next chance */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Ref error ({refErr}{varOn ? ' · VAR' : ''})</p>
+            <div className="flex gap-1 flex-wrap">
+              {REF_ERROR_OPTIONS.map(v => (
+                <button
+                  key={v}
+                  onClick={() => setRefErr(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                    refErr === v
+                      ? 'bg-primary/20 border-primary/40 text-primary'
+                      : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+              <button
+                onClick={() => setVarOn(x => !x)}
+                className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                  varOn ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                VAR
+              </button>
+              <button
+                onClick={handleTestComplain}
+                className="px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground"
+                title="Team A manager complains (resolveComplaint); the outcome goes to the 'var' debug log"
+              >
+                Complain A
+              </button>
             </div>
           </div>
           {/* Pitch of the whole match (both sides): injury risk x1 from 40%, x1.6 at 0% */}

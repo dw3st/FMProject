@@ -265,6 +265,27 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         <span className="text-white/80 w-14 text-right">{variant.refereeStrictness ?? 0}</span>
       </div>
 
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Referee quality of the match (variant A sets it): errors x(1.5 - 0.8 q/100); 0 = no errors (var.md)">Ref quality</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={10}
+          value={variant.refereeQuality ?? 0}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            patch({ refereeQuality: v === 0 ? undefined : v });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.refereeQuality ?? "off"}</span>
+      </div>
+      <label className="flex items-center gap-2 text-xs cursor-pointer" title="The match has VAR (variant A; only with a referee quality)">
+        <input type="checkbox" checked={variant.var === true} onChange={(e) => patch({ var: e.target.checked || undefined })} />
+        <span className="text-white/70">VAR</span>
+      </label>
+
       <label className="flex items-center gap-2 text-xs cursor-pointer">
         <span className="text-white/50 w-20">Positions</span>
         <input

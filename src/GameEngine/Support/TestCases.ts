@@ -558,6 +558,33 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'var-penalty',
+    name:        '11v11 — VAR: phantom penalty overturned',
+    description: 'Team B CB challenges Team A ST in the box cleanly, but the referee (quality 30, VAR on) gives a penalty (forced `phantom_penalty`). The VAR check freezes play for 3 s and rules it out: indirect free kick to Team B. Watch the "var" debug log and the EnergyPanel referee line (`.claude/rules/game/var.md`).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      if (!st || !cb) return base;
+      const goalX = st.attackDir === 1 ? PITCH_LENGTH : 0;
+      const x = goalX - st.attackDir * 10;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        ballHolderId: st.id,
+        referee: { id: 'ref_test', name: 'Test Referee', country: 'England', strictness: 0, quality: 30, var: true },
+        forcedRefError: 'phantom_penalty',
+        players: base.players.map(p =>
+          p.id === st.id ? { ...p, x, y: 37 } :
+          p.id === cb.id ? { ...p, x: x - st.attackDir * 1.5, y: 37 } : p),
+      };
+      // Roll: no foul (0.99) — the referee whistles anyway.
+      return maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => 0.99) ?? placed;
+    },
+  },
+
+  {
     id:          'corner-attack',
     name:        '11v11 — Corner (box layout)',
     description: 'Team A corner from the left flag: the two best aerial defenders, the centre-forward and the next best headers go up, a midfielder waits on the edge of the box, a short option by the flag; Team B marks every attacker goal-side, a man on the near post, its fastest forward left up. Turn on the "Set pieces" overlay to see the delivery options (near post / penalty spot / far post / short) and the "setPiece" / "aerial" debug log.',
