@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Depois de uma bola dividida, quem perdeu a corrida volta para a posição em vez de continuar correndo para cima de quem ficou com a bola: menos jogadores amontoados perto da bola e menos espaço aberto no resto do campo.",
+        en: "After a contested ball, the players who lost the race head back to their positions instead of running on at whoever won it: fewer players bunched around the ball and less open space elsewhere.",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [
