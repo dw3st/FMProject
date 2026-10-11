@@ -34,6 +34,10 @@ export interface MatchTeamStats {
   /** Goals straight from a direct free kick / from any set piece (penalties included) — part of the score. */
   directFreeKickGoals?: number;
   setPieceGoals?:       number;
+  /** Referee errors that hurt this team / VAR checks against it / overturned (`.claude/rules/game/var.md`). */
+  refereeErrors?:       number;
+  varReviews?:          number;
+  varOverturned?:       number;
 }
 
 export interface MatchPlayerStats {
@@ -163,7 +167,12 @@ export interface MatchEvent {
   pitchCondition?: number;
   /** The referee of the match, from the day's appointments (`.claude/rules/game/referees.md`). Absent: none. */
   referee?: import("@/types/refereeTypes").MatchReferee;
+  /** Referee errors and VAR checks of the match (`.claude/rules/game/var.md`). Absent: no referee. */
+  var?: MatchVarStats;
 }
+
+/** Referee errors and VAR checks of one match (both teams). `overturned` ≤ `errors` (every overturn fixes an error). */
+export interface MatchVarStats { errors: number; reviews: number; overturned: number }
 
 // ── Training event ─────────────────────────────────────────────────────────
 

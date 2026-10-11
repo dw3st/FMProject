@@ -85,6 +85,9 @@ import { GoalOverlay } from "@/GameInterface/GoalOverlay";
 import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
+import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
+import { resolveComplaint } from "@/GameEngine/Domain/Var";
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
 import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
@@ -190,6 +193,17 @@ export function MatchScreen() {
   const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null } | null>(null);
   /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
   const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
+  // ── Complaint and VAR (`.claude/rules/game/var.md` §4) ──
+  /** A call against the user's side opens the "Complain" button (`seq` = the call, one complaint per call). */
+  const [complaint, setComplaint] = useState<{ seq: number; until: number } | null>(null);
+  const complaintSeqRef = useRef(0);
+  const complainedSeqRef = useRef(-1);
+  const complaintsMadeRef = useRef(0);
+  const managerCardsRef = useRef<ManagerCardRecord[]>([]);
+  const complaintMoraleRef = useRef(false);
+  /** The user's manager is off the touchline: banned before the match or sent off in it. */
+  const [managerOut, setManagerOut] = useState<"banned" | "sentOff" | null>(null);
+  const [coachCard, setCoachCard] = useState<{ team: TeamId; card: "yellow" | "red"; seq: number } | null>(null);
   /** Team A's saved tactical style — set once from match-setup, read by mentality changes. */
   const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
   const myAxesOverrideRef = useRef<TacticsSave["axesOverride"]>(undefined);
@@ -337,6 +351,8 @@ export function MatchScreen() {
           referee?: MatchSetupReferee | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;
+          /** The user's manager serves a touchline ban in this match (`var.md` §4). */
+          managerBanned?: boolean;
         };
       })
       .then((data) => {
@@ -419,9 +435,15 @@ export function MatchScreen() {
             },
           ),
           knockout: data.fixture.knockout === true,
-          ...(data.referee ? { referee: { id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness } } : {}),
-          // #140: the user picks the replacement of an injured player (the AI side stays automatic).
-          manualInjurySubs: { A: true },
+          ...(data.referee ? { referee: {
+            id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness,
+            // Errors and VAR (`var.md`): the quality the day advance uses too.
+            ...(typeof data.referee.quality === "number" ? { quality: data.referee.quality } : {}),
+            ...(data.referee.var ? { var: true } : {}),
+          } } : {}),
+          // #140: the user picks the replacement of an injured player (the AI side stays automatic). A banned
+          // manager watches from the stands: his assistant makes every change by the AI rule (`var.md` §4).
+          ...(data.managerBanned ? { autoSubs: { A: true as const } } : { manualInjurySubs: { A: true as const } }),
           ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
@@ -488,6 +510,7 @@ export function MatchScreen() {
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
         setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null });
+        if (data.managerBanned) setManagerOut("banned");
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
           B: { players: opponentPlayers, clubColors: data.opponentSquad?.colors ?? data.save.clubColors },
@@ -609,9 +632,80 @@ export function MatchScreen() {
         penaltyGoalPendingRef.current = false;
         push({ minute: minuteNow(), team: e.team, kind, player: nameOf(e.scorerId) });
       }),
+      // VAR (`var.md` §3): the check shows as a notice, the decision in the feed.
+      gameBus.on("varCheck", (e) => {
+        showNotice(t("var.checking", { what: t(`var.kind.${e.kind}`) }), "info");
+      }),
+      gameBus.on("varReview", (e) => {
+        const overturned = e.outcome === "overturned";
+        showNotice(t(`var.decision.${e.kind}.${e.outcome}`), overturned ? "warn" : "info");
+        if (e.kind !== "goal") {
+          push({ minute: minuteNow(), team: e.against === "A" ? "B" : "A", kind: overturned ? "varOverturned" : "varConfirmed", player: "", what: t(`var.decision.${e.kind}.${e.outcome}`) });
+        }
+      }),
+      gameBus.on("goalDisallowed", (e) => {
+        push({ minute: minuteNow(), team: e.team, kind: "goalDisallowed", player: nameOf(e.scorerId) });
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, [t, showNotice]);
+
+  // Complaint (`var.md` §4): a call against the user's side (a foul, a card, a penalty, an offside, a VAR check)
+  // opens the button for COMPLAINT_WINDOW real seconds; never with the manager off the touchline or no referee.
+  useEffect(() => {
+    const open = () => {
+      if (!gameStateRef.current?.referee) return;
+      complaintSeqRef.current++;
+      setComplaint({ seq: complaintSeqRef.current, until: Date.now() + VAR_CONFIG.COMPLAINT_WINDOW * 1000 });
+    };
+    const offs = [
+      gameBus.on("foul", (e) => { if (e.team === "A") open(); }),
+      gameBus.on("card", (e) => { if (e.team === "A") open(); }),
+      gameBus.on("penaltyAwarded", (e) => { if (e.team === "B") open(); }),
+      gameBus.on("offsideCalled", (e) => { if (e.team === "A") open(); }),
+      gameBus.on("varReview", (e) => { if (e.against === "A") open(); }),
+    ];
+    return () => offs.forEach((off) => off());
+  }, []);
+  useEffect(() => {
+    if (!complaint) return;
+    const id = setTimeout(() => setComplaint((c) => (c?.seq === complaint.seq ? null : c)), Math.max(0, complaint.until - Date.now()));
+    return () => clearTimeout(id);
+  }, [complaint]);
+
+  /** Patches the referee/VAR fields of the running match (the pitch's state and the React copy). */
+  const patchVarState = useCallback((patch: Partial<Pick<GameState, "refereeBias" | "autoSubs">>) => {
+    gameBus.emit("testCommand", { type: "varPatch", patch });
+    setGameState((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  function handleComplain() {
+    const gs = gameStateRef.current;
+    if (!gs || !complaint || managerOut || complainedSeqRef.current === complaint.seq || Date.now() > complaint.until) return;
+    complainedSeqRef.current = complaint.seq;
+    setComplaint(null);
+    const made = complaintsMadeRef.current++;
+    const onYellow = managerCardsRef.current.some((c) => c.card === "yellow");
+    const out = resolveComplaint({ made, strictness: gs.referee?.strictness, onYellow }, Math.random);
+    const minute = matchMinute(gs) + 1;
+    if (out.card === "none") {
+      complaintMoraleRef.current = true;
+      if (out.bias && !gs.refereeBias) patchVarState({ refereeBias: { team: "B", amount: VAR_CONFIG.COMPLAINT_BIAS } });
+      showNotice(t(out.bias ? "complaint.bias" : "complaint.calm"), "info");
+      return;
+    }
+    managerCardsRef.current = [...managerCardsRef.current, { card: out.card, minute, complaint: made + 1 }];
+    setCoachCard((prev) => ({ team: "A", card: out.card as "yellow" | "red", seq: (prev?.seq ?? 0) + 1 }));
+    setEventFeed((f) => [...f, { minute: minute - 1, team: "A", kind: out.card === "red" ? "managerRed" : "managerYellow", player: "" }]);
+    showNotice(t(out.card === "red" ? "complaint.red" : "complaint.yellow"), out.card === "red" ? "danger" : "warn");
+    if (out.card === "red") {
+      // Sent to the stands: the assistant makes the changes (AI rule), injuries included.
+      setManagerOut("sentOff");
+      setShowSubPanel(false);
+      patchVarState({ autoSubs: { A: true } });
+      gameBus.emit("testCommand", { type: "setManualInjurySubs", team: "A", on: false });
+    }
+  }
 
   // Layout effect: the first value is set before the overlay paints (never the previous break's 100%).
   useLayoutEffect(() => {
@@ -693,13 +787,17 @@ export function MatchScreen() {
               const payload =
                 ctx && gs
                   ? JSON.stringify({
-                      playedMatch: buildPlayedMatchRecording(
-                        gs,
-                        ctx.fixture,
-                        ctx.mySquadId,
-                        ctx.homeSquad,
-                        ctx.awaySquad,
-                      ),
+                      playedMatch: {
+                        ...buildPlayedMatchRecording(
+                          gs,
+                          ctx.fixture,
+                          ctx.mySquadId,
+                          ctx.homeSquad,
+                          ctx.awaySquad,
+                          managerCardsRef.current,
+                        ),
+                        ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
+                      },
                     })
                   : null;
               const res = await fetch(`/api/advance-day/${encodeURIComponent(saveId)}`, {
@@ -1087,12 +1185,30 @@ export function MatchScreen() {
               active={String(gameSpeed)}
               onChange={(k) => setGameSpeed(Number(k) as typeof gameSpeed)}
             />
-            <SegmentedTabs
-              compact
-              tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
-              active={mentality}
-              onChange={handleMentalityChange}
-            />
+            {managerOut ? (
+              <span className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm">
+                <Icon name="alert" className="w-4 h-4" />
+                {t(managerOut === "banned" ? "complaint.banned" : "complaint.sentOff")}
+              </span>
+            ) : (
+              <SegmentedTabs
+                compact
+                tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
+                active={mentality}
+                onChange={handleMentalityChange}
+              />
+            )}
+            {complaint && !managerOut && (
+              <button
+                type="button"
+                onClick={handleComplain}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-chart-4/60 bg-chart-4/15 text-chart-4 font-semibold text-sm cursor-pointer hover:bg-chart-4/25"
+              >
+                <Icon name="message-square" className="w-4 h-4" />
+                {t("complaint.button")}
+              </button>
+            )}
+            {!managerOut && (
             <button
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
@@ -1106,6 +1222,7 @@ export function MatchScreen() {
               <Icon name="arrow-right-left" className="w-4 h-4" />
               {t("match.subs", { remaining: gameState.subsRemainingA })}
             </button>
+            )}
             {DEV_TOOLS && (
             <button
               onClick={() => setShowStats((s) => !s)}
@@ -1204,6 +1321,7 @@ export function MatchScreen() {
                   officials={officials}
                   coaches={coaches}
                   coachCue={coachCue}
+                  coachCard={coachCard}
                 />
                 {notice && (
                   <div

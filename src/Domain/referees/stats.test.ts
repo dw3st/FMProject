@@ -41,6 +41,21 @@ describe("recordMatches", () => {
   });
 });
 
+describe("VAR numbers", () => {
+  test("errors, reviews and overturned add up and reach the rows", () => {
+    const st = recordMatches(emptyRefereeState(), "2027-01-10", [
+      ev("f1", "r1", { var: { errors: 1, reviews: 2, overturned: 1 } }),
+      ev("f2", "r1", { var: { errors: 0, reviews: 1, overturned: 0 } }),
+      ev("f3", "r2"),
+    ]);
+    expect(st.stats.r1).toMatchObject({ errors: 1, reviews: 3, overturned: 1 });
+    expect(st.stats.r2!.errors).toBeUndefined();
+    const info = (id: string) => ({ name: id, country: "England", strictness: 0, fifa: false, gender: "male" as const, age: 40 });
+    const row = refereeRows(st.stats, info, "all").find((r) => r.id === "r1")!;
+    expect(row).toMatchObject({ errorsPerMatch: 0.5, reviews: 3, overturned: 1 });
+  });
+});
+
 describe("prune and close", () => {
   test("prune keeps yesterday on", () => {
     const st = { ...emptyRefereeState(), assignments: { "2027-01-01": {}, "2027-01-09": {}, "2027-01-10": {} }, lastWorked: { x: "2026-12-01", y: "2027-01-08" } };

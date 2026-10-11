@@ -29,6 +29,10 @@ import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { moraleQuickSimMult } from "@/Domain/morale/morale";
 import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
 import { refereeFoulMult, refereeRedMult, refereeYellowMult } from "@/Domain/referees/strictness";
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
+import { qualityMult } from "@/GameEngine/Domain/Var";
+import { mulberry32, seedFrom } from "@/Domain/rng";
+import type { MatchVarStats } from "@/types/dayLogTypes";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -99,6 +103,26 @@ export interface QuickSimInput {
   pitchCondition?: number;
   /** Referee rigor −1..1 (`src/Domain/referees`): fouls, penalties and cards of both sides. Absent / 0 = no change. */
   refereeStrictness?: number;
+  /**
+   * Referee quality 0..100 (`.claude/rules/game/var.md`): errors (and with `refereeVar` VAR checks) drawn as
+   * statistics only, from their own seeded stream — score, events and every other draw are unchanged. Absent = none.
+   */
+  refereeQuality?: number;
+  refereeVar?: boolean;
+}
+
+/**
+ * Referee errors / VAR checks of a quickSim match (statistics only): Poisson counts from a stream seeded by the
+ * fixture, so the match's own `rng` is never touched (`var.md` §3).
+ */
+export function quickVarStats(fixtureId: string, quality: number, withVar: boolean): MatchVarStats {
+  const r = mulberry32(seedFrom(`var:${fixtureId}`));
+  const errors = samplePoisson(VAR_CONFIG.QUICK_ERRORS_PER_MATCH * qualityMult(quality), r);
+  if (!withVar) return { errors, reviews: 0, overturned: 0 };
+  let overturned = 0;
+  for (let i = 0; i < errors; i++) if (r() < VAR_CONFIG.QUICK_CORRECTED_SHARE) overturned++;
+  const confirmed = samplePoisson(VAR_CONFIG.QUICK_CONFIRMED_CHECKS_PER_MATCH, r);
+  return { errors, reviews: overturned + confirmed, overturned };
 }
 
 export interface QuickSimResult {
@@ -898,6 +922,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     ...(decider ? { decider } : {}),
     ...(injuries.length > 0 ? { injuries } : {}),
     ...(cards.length > 0 ? { cards } : {}),
+    ...(input.refereeQuality !== undefined ? { var: quickVarStats(input.fixtureId, input.refereeQuality, input.refereeVar === true) } : {}),
   };
 
   return { recording, breakdown: { home, away, xgHome, xgAway } };

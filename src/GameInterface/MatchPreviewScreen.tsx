@@ -598,6 +598,8 @@ interface MatchSetupData {
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
   /** Referee of the match (`referees.md`); null = none appointed. */
   referee?: MatchSetupReferee | null;
+  /** The user's manager serves a touchline ban in this match (`var.md` §4). */
+  managerBanned?: boolean;
 }
 
 export function MatchPreviewScreen() {
@@ -1124,6 +1126,11 @@ export function MatchPreviewScreen() {
                   {t("referees.assistants", { names: referee.assistants.map((a) => a.name).join(", ") })}
                 </span>
               )}
+              {referee.var && (
+                <span className="rounded border border-chart-3/50 bg-chart-3/10 px-2 py-0.5 text-sm font-semibold text-chart-3">
+                  {t("var.badge")}
+                </span>
+              )}
             </div>
           )}
           {/* A 2nd leg with an aggregate already shows continental.aggregateNote under the header
@@ -1214,6 +1221,16 @@ export function MatchPreviewScreen() {
             >
               {t("matchPreview.rotationUndo")}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* The manager's touchline ban (`var.md` §4): he watches, the assistant makes the changes. */}
+      {matchSetup?.managerBanned && (
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
+          <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
+            <p className="text-sm text-destructive m-0">{t("complaint.previewBanned")}</p>
           </div>
         </div>
       )}

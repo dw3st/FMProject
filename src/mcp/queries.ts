@@ -468,6 +468,11 @@ export function querySummary(state: GameState): {
   players: Array<{ id: number; name: string; team: TeamId; role: string; x: number; y: number; variant?: string; press?: string; manMarks?: number }>;
   /** Man-marking pairs per team (player instructions). */
   manMarks: GameState['manMarks'] | null;
+  /** Referee (rigor, quality, VAR), the VAR check in progress, a complaint's bias, the referee errors (`var.md`). */
+  referee: GameState['referee'] | null;
+  varReview: GameState['varReview'] | null;
+  refereeBias: GameState['refereeBias'] | null;
+  refereeErrors: NonNullable<GameState['refereeErrors']>;
 } {
   const holder = state.ballHolderId != null ? state.players.find(p => p.id === state.ballHolderId) : null;
   return {
@@ -487,5 +492,9 @@ export function querySummary(state: GameState): {
       }))
       .sort((a, b) => a.id - b.id),
     manMarks: state.manMarks ?? null,
+    referee: state.referee ?? null,
+    varReview: state.varReview ?? null,
+    refereeBias: state.refereeBias ?? null,
+    refereeErrors: state.refereeErrors ?? [],
   };
 }

@@ -133,3 +133,10 @@ ninguém com 51+.
 - Sem erro do juiz, VAR ou reclamação (Etapa 39); a qualidade não muda a partida. O mesmo rigor para os dois lados.
 - Torneios de base sem árbitro. Uniforme sempre preto.
 - O cache local do Transfermarkt vem da página de perfil (a API local não tem rota de árbitro).
+
+## Erros e VAR (Etapa 39, 4.18)
+
+A **qualidade** passa a ter efeito de partida: o árbitro erra (pênalti inventado ou não marcado, impedimento que passa,
+cartão errado) com chance × `1,5 − 0,8 × q/100`; nas fixtures com VAR a maioria é corrigida. `EngineReferee` ganhou
+`quality` e `var` (`engineReferee(r, hasVar)`); as estatísticas por árbitro ganharam erros, revisões e decisões
+alteradas (colunas Erros/J e VAR). Sem qualidade, nada muda. Ver `.claude/rules/game/var.md`.

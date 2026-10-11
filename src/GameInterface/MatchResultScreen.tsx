@@ -748,6 +748,12 @@ export function MatchResultScreen() {
               </span>
             ) : "—"} />
           </div>
+          {/* VAR checks of the match (`var.md`): how many, how many calls changed. */}
+          {matchEvent.var && matchEvent.var.reviews > 0 && (
+            <p className="text-sm text-muted-foreground m-0 mt-3">
+              {t("var.resultLine", { count: matchEvent.var.reviews, overturned: matchEvent.var.overturned })}
+            </p>
+          )}
         </div>
       </div>
 

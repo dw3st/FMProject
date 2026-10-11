@@ -104,7 +104,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -145,6 +145,9 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.temperament                 += src.temperament;
   dst.pitchCondition              += src.pitchCondition;
   dst.refereeStrictness           += src.refereeStrictness;
+  dst.refereeErrors += src.refereeErrors;
+  dst.varReviews += src.varReviews;
+  dst.varOverturned += src.varOverturned;
   dst.fouls                       += src.fouls;
   dst.yellowCards                 += src.yellowCards;
   dst.redCards                    += src.redCards;
@@ -221,6 +224,9 @@ let sideTemperament: { A?: number; B?: number } = {};
 let matchPitch: number | undefined;
 /** Referee rigor of the match (variant A sets it, like the pitch). */
 let matchReferee: number | undefined;
+/** Referee quality (errors) and VAR of the match (variant A, `var.md`). */
+let matchRefQuality: number | undefined;
+let matchVar = false;
 /** Player instructions of each side (set per worker message): full engine only. */
 let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
 
@@ -282,7 +288,12 @@ function runOneMatch(
       awayTemperament: sideTemperament.B,
       ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
       ...(matchReferee !== undefined ? { refereeStrictness: matchReferee } : {}),
+      ...(matchRefQuality !== undefined ? { refereeQuality: matchRefQuality, refereeVar: matchVar } : {}),
     });
+    const qv = q.recording.var;
+    if (qv) {
+      for (const t of [teamA, teamB]) { t.refereeErrors += qv.errors; t.varReviews += qv.reviews; t.varOverturned += qv.overturned; }
+    }
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
     const assists = (side: "A" | "B") =>
@@ -336,7 +347,12 @@ function runOneMatch(
     temperament: sideTemperament,
     instructions: sideInstructions,
     ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
-    ...(matchReferee !== undefined ? { referee: { id: "ref_lab", name: "Lab referee", country: "England", strictness: matchReferee } } : {}),
+    ...(matchReferee !== undefined || matchRefQuality !== undefined
+      ? { referee: {
+          id: "ref_lab", name: "Lab referee", country: "England", strictness: matchReferee ?? 0,
+          ...(matchRefQuality !== undefined ? { quality: matchRefQuality, ...(matchVar ? { var: true } : {}) } : {}),
+        } }
+      : {}),
     onTick: slotCollector.onTick,
   });
   const slotRaws = slotCollector.finish(r);
@@ -370,6 +386,12 @@ function runOneMatch(
   teamA.avgEndEnergySum      += sA.avgEndEnergy;         teamB.avgEndEnergySum      += sB.avgEndEnergy;
   teamA.fatigueSubstitutions += sA.fatigueSubstitutions; teamB.fatigueSubstitutions += sB.fatigueSubstitutions;
   teamA.injuries += sA.injuries; teamB.injuries += sB.injuries;
+  // Referee errors / VAR (`var.md`): match totals on both sides (a match property, like the rigor).
+  for (const t of [teamA, teamB]) {
+    t.refereeErrors += sA.refereeErrors + sB.refereeErrors;
+    t.varReviews += sA.varReviews + sB.varReviews;
+    t.varOverturned += sA.varOverturned + sB.varOverturned;
+  }
   teamA.fouls            += sA.fouls;            teamB.fouls            += sB.fouls;
   teamA.yellowCards      += sA.yellowCards;      teamB.yellowCards      += sB.yellowCards;
   teamA.redCards         += sA.redCards;         teamB.redCards         += sB.redCards;
@@ -429,6 +451,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
     matchPitch = variantA.pitchCondition;
     matchReferee = variantA.refereeStrictness;
+    matchRefQuality = variantA.refereeQuality;
+    matchVar = variantA.var === true;
     sideInstructions = {
       A: { slotInstructions: variantA.slotInstructions, manMarks: variantA.manMarks },
       B: { slotInstructions: variantB.slotInstructions, manMarks: variantB.manMarks },

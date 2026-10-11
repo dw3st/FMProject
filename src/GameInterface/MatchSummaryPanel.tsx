@@ -24,10 +24,15 @@ export interface SummaryTeamStats {
 export interface MatchFeedItem {
   minute: number;
   team: TeamId;
-  kind: "goal" | "penaltyGoal" | "penaltyMissed" | "yellow" | "red" | "offside" | "sub" | "injury";
+  kind:
+    | "goal" | "penaltyGoal" | "penaltyMissed" | "yellow" | "red" | "offside" | "sub" | "injury"
+    /** VAR (`var.md`): a call checked and kept / changed, a goal ruled out; the manager's cards. */
+    | "varConfirmed" | "varOverturned" | "goalDisallowed" | "managerYellow" | "managerRed";
   player: string;
   /** Substitution only: the player coming on. */
   playerIn?: string;
+  /** VAR lines: what was checked (already translated). */
+  what?: string;
 }
 
 const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
@@ -39,6 +44,11 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
   offside: "bg-muted-foreground",
   sub: "bg-chart-2",
   injury: "bg-destructive",
+  varConfirmed: "bg-chart-3",
+  varOverturned: "bg-chart-3",
+  goalDisallowed: "bg-chart-3",
+  managerYellow: "bg-card-yellow",
+  managerRed: "bg-destructive",
 };
 
 function StatRow({ label, a, b }: { label: string; a: string | number; b: string | number }) {
@@ -140,7 +150,7 @@ export function MatchSummaryPanel({
             <span className="w-8 shrink-0 font-display font-bold tabular-nums text-muted-foreground">{e.minute}'</span>
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_MARK[e.kind]}`} aria-hidden />
             <span className="min-w-0 flex-1 text-foreground">
-              {t(`match.summary.kind.${e.kind}`, { player: shirtName(e.player), playerIn: e.playerIn ? shirtName(e.playerIn) : "" })}
+              {t(`match.summary.kind.${e.kind}`, { player: e.player ? shirtName(e.player) : "", playerIn: e.playerIn ? shirtName(e.playerIn) : "", what: e.what ?? "" })}
             </span>
           </li>
         ))}

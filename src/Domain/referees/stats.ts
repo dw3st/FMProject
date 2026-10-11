@@ -21,6 +21,9 @@ function add(into: RefereeCompStats, d: RefereeCompStats): void {
   into.yellows += d.yellows;
   into.reds += d.reds;
   into.penalties += d.penalties;
+  for (const k of ["errors", "reviews", "overturned"] as const) {
+    if (d[k] !== undefined) into[k] = (into[k] ?? 0) + d[k]!;
+  }
 }
 
 /** What one match adds to its referee's record. */
@@ -32,6 +35,7 @@ export function matchLine(e: MatchEvent): RefereeCompStats {
     yellows: cards.filter((c) => c.card === "yellow").length,
     reds: cards.filter((c) => c.card === "red").length,
     penalties: (e.teamStats.home.penaltiesAwarded ?? 0) + (e.teamStats.away.penaltiesAwarded ?? 0),
+    ...(e.var ? { errors: e.var.errors, reviews: e.var.reviews, overturned: e.var.overturned } : {}),
   };
 }
 
@@ -111,6 +115,10 @@ export interface RefereeRow {
   yellowsPerMatch: number;
   reds: number;
   penalties: number;
+  /** Referee errors per match / VAR checks / overturned (`var.md`). */
+  errorsPerMatch: number;
+  reviews: number;
+  overturned: number;
 }
 
 export interface RefereeInfo { name: string; country: string; strictness: number; fifa: boolean; gender: "male" | "female"; age: number | null }
@@ -128,6 +136,7 @@ export function refereeRows(stats: Record<string, RefereeSeasonStats>, info: (id
     rows.push({
       id, name: who.name, country: who.country, gender: who.gender, age: who.age, band: strictnessBand(who.strictness), fifa: who.fifa,
       matches: c.matches, foulsPerMatch: round2(fouls / c.matches), yellowsPerMatch: round2(c.yellows / c.matches), reds: c.reds, penalties: c.penalties,
+      errorsPerMatch: round2((c.errors ?? 0) / c.matches), reviews: c.reviews ?? 0, overturned: c.overturned ?? 0,
     });
   }
   return rows.sort((a, b) => b.yellowsPerMatch - a.yellowsPerMatch || b.matches - a.matches || a.name.localeCompare(b.name));

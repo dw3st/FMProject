@@ -163,3 +163,10 @@ exatamente o de antes. Override por time em `PersonalityMatchConfig.ts`. Ver `.c
 (1 + 0,08 s), amarelo × (1 + 0,15 s), vermelho direto × (1 + 0,25 s), os cartões ÷ `REFEREE.CARD_NORM` (1,01) com s ≠ 0.
 s = 0 / ausente devolve exatamente o de antes (nenhum sorteio novo). Logs `foul`/`card` com `refMult`. Ver
 `.claude/rules/game/referees.md`.
+
+## Erros do juiz e VAR (Etapa 39, 4.18)
+
+`foulCheck` (o `maybeFoul` com o estado do lance não apitado) rola os erros do árbitro: pênalti inventado num desarme
+limpo na área, pênalti não marcado (o jogo segue), amarelo mostrado como vermelho e vermelho como amarelo; com VAR a
+correção vira uma revisão (`GameState.varReview`). O rigor usa `strictnessFor` (+ o viés de uma reclamação do técnico).
+Sem qualidade do árbitro nenhum sorteio novo. Ver `.claude/rules/game/var.md`.

@@ -115,6 +115,8 @@ export function makeCoach(playerR: number, color: number): CoachSprite {
   head.y = -bodyH * 0.35;
   head.addChild(new Graphics().circle(0, 0, headR).fill(color).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 }));
   root.addChild(head);
+  // A card over his head after a complaint (`.claude/rules/game/var.md` §4), like the referee's.
+  root.addChild(card(playerR, OFFICIAL_LOOK.CARD_YELLOW, "cardYellow"), card(playerR, OFFICIAL_LOOK.CARD_RED, "cardRed"));
   return { root, head, arms, headR };
 }
 

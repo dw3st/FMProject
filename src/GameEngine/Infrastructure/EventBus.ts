@@ -134,6 +134,19 @@ export interface GameEvents {
   /** Emitted when a pass completion is cancelled due to the receiver being offside. */
   offsideCalled: { team: TeamId; receiverId: number; lineX?: number };
 
+  // ── Referee errors and VAR (`.claude/rules/game/var.md`) ──────────────────
+  /** The referee got a call wrong; `team` = the side the mistake hurt. `corrected` = the VAR fixes it now. */
+  refereeError: { kind: import('@/GameEngine/Domain/Var').RefereeErrorKind; team: TeamId; playerId: number; corrected: boolean; minute: number };
+  /** A VAR check starts (play stops for `VAR_CONFIG.REVIEW_SECONDS`). */
+  varCheck: { kind: import('@/GameEngine/Domain/Var').VarReviewKind; minute: number };
+  /**
+   * A VAR check ends. `against` = the side the final decision goes against (overturned: the side the original call
+   * favoured). `playerId` = the player at the centre of the call (taker, offender, scorer).
+   */
+  varReview: { kind: import('@/GameEngine/Domain/Var').VarReviewKind; outcome: 'confirmed' | 'overturned'; against: TeamId; playerId: number; offenderId?: number; minute: number };
+  /** A goal ruled out by the VAR: score, stats and ratings of the goal are undone. */
+  goalDisallowed: { team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; score: { A: number; B: number }; minute: number };
+
   // ── Debug events ──────────────────────────────────────────────────────────
   /** Emitted every tick for the ball holder when debug mode is on. */
   decisionScores: {
@@ -316,7 +329,12 @@ export interface GameEvents {
     /** Manual injury substitutions (`/test`, #140): the team picks the replacement of an injured player. */
     | { type: 'setManualInjurySubs'; team: import('@/GameEngine/types').TeamId; on: boolean }
     /** Substitution panel (`/test`, #140): a bench player fills an injury vacancy (`fillInjuryVacancy`). */
-    | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number };
+    | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number }
+    /**
+     * Referee / VAR fields of the running match (`var.md`): a complaint's bias, the assistant's subs (manager sent
+     * off), `/test`'s forced error and referee. Merged into the pitch's state as given.
+     */
+    | { type: 'varPatch'; patch: Partial<Pick<import('@/GameEngine/types').GameState, 'refereeBias' | 'autoSubs' | 'forcedRefError' | 'referee'>> };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).

@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.18",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "O árbitro agora erra de vez em quando: pênalti inventado ou não marcado, impedimento que passa, cartão errado. Árbitros piores erram mais.",
+        en: "Referees now get calls wrong now and then: a soft or missed penalty, an offside let go, the wrong card. Weaker referees make more mistakes.",
+      },
+      {
+        pt: "VAR na 1ª divisão das 10 ligas principais, nas competições continentais e nas copas a partir das quartas: a maioria dos erros é corrigida numa revisão rápida, e um gol pode ser anulado.",
+        en: "VAR in the top division of the 10 main leagues, in continental competitions and in cups from the quarter-finals: most mistakes are fixed in a quick check, and a goal can be ruled out.",
+      },
+      {
+        pt: "Reclame com o árbitro depois de um lance contra o seu time: às vezes ele fica mais atento ao adversário, mas você pode levar cartão e ser suspenso (o auxiliar faz as substituições).",
+        en: "Complain to the referee after a call against your team: sometimes he watches the opponent more closely, but you may be booked and banned (your assistant makes the substitutions).",
+      },
+      {
+        pt: "Estatísticas → Árbitros mostra os erros por jogo e as revisões do VAR.",
+        en: "Stats → Referees shows mistakes per match and VAR checks.",
+      },
+    ],
+  },
+  {
     version: "4.17.2",
     date: "2026-10-11",
     items: [
@@ -39,8 +61,8 @@ export const changelog: ChangelogEntry[] = [
         en: "Wingers and full-backs play on the correct side in the match: the left one stays on the left in both halves, for the away side and the opponent too.",
       },
       {
-        pt: "Jogadores novos que vieram sem nacionalidade (por exemplo, três do Inter Miami) passam a ter a bandeira quando o mundo for atualizado.",
-        en: "New players who came without a nationality (for example, three at Inter Miami) get their flag once the world is updated.",
+        pt: "Jogadores novos que vieram sem nacionalidade (por exemplo, três do Inter Miami) agora têm a bandeira.",
+        en: "New players who came without a nationality (for example, three at Inter Miami) now have their flag.",
       },
     ],
   },
@@ -1224,7 +1246,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },

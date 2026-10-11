@@ -29,7 +29,8 @@ export type InboxCategory =
   | "scouting"
   | "awards"
   | "registration"
-  | "schedule";
+  | "schedule"
+  | "discipline";
 
 interface InboxMessageBase {
   id:        string;
@@ -450,4 +451,13 @@ export type InboxMessage =
   | ScoutingInboxMessage
   | AwardsInboxMessage
   | RegistrationInboxMessage
-  | ScheduleInboxMessage;
+  | ScheduleInboxMessage
+  | DisciplineInboxMessage;
+
+/** The human manager was sent off for complaining and is banned from the touchline (`.claude/rules/game/var.md` §4). */
+export interface DisciplineInboxMessage extends InboxMessageBase {
+  category: "discipline";
+  kind: "manager_banned";
+  /** Official matches of the ban. */
+  matches: number;
+}

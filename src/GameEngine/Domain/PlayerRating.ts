@@ -39,6 +39,14 @@ gameBus.on('interception',  e => { if (e.success) adjust(e.player, RATING_WEIGHT
 gameBus.on('card',          e => adjust(e.playerId, e.card === 'yellow' ? RATING_WEIGHTS.YELLOW_CARD : RATING_WEIGHTS.RED_CARD));
 gameBus.on('penaltyAwarded', e => adjust(e.offenderId, RATING_WEIGHTS.PENALTY_CONCEDED));
 gameBus.on('aerialDuel',    e => adjust(e.winnerId, RATING_WEIGHTS.AERIAL_DUEL_WON));
+// VAR (`.claude/rules/game/var.md`): a goal ruled out / a penalty ruled out no longer counts.
+gameBus.on('goalDisallowed', e => {
+  adjust(e.scorerId, -RATING_WEIGHTS.GOAL);
+  if (e.assistId != null) adjust(e.assistId, -RATING_WEIGHTS.ASSIST);
+});
+gameBus.on('varReview', e => {
+  if (e.kind === 'penalty' && e.outcome === 'overturned' && e.offenderId !== undefined) adjust(e.offenderId, -RATING_WEIGHTS.PENALTY_CONCEDED);
+});
 
 // ── Public API ────────────────────────────────────────────────────────────────
 

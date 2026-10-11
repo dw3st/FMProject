@@ -87,6 +87,8 @@ export function RefereesTab({ saveId, leagues, countryByName, refreshKey }: {
               <StatsHead align="center" title={t("referees.yellowsLong")}>{t("referees.yellows")}</StatsHead>
               <StatsHead align="center" title={t("referees.redsLong")}>{t("referees.reds")}</StatsHead>
               <StatsHead align="center" title={t("referees.penaltiesLong")}>{t("referees.penalties")}</StatsHead>
+              <StatsHead align="center" title={t("referees.errorsLong")}>{t("referees.errors")}</StatsHead>
+              <StatsHead align="center" title={t("referees.reviewsLong")}>{t("referees.reviews")}</StatsHead>
             </>
           }
         >
@@ -107,6 +109,8 @@ export function RefereesTab({ saveId, leagues, countryByName, refreshKey }: {
                 <NumberCell strong>{r.yellowsPerMatch.toFixed(2)}</NumberCell>
                 <NumberCell>{r.reds}</NumberCell>
                 <NumberCell>{r.penalties}</NumberCell>
+                <NumberCell>{r.errorsPerMatch.toFixed(2)}</NumberCell>
+                <NumberCell>{r.reviews > 0 ? `${r.reviews} (${r.overturned})` : "0"}</NumberCell>
               </StatsRow>
             );
           })}
