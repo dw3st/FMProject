@@ -304,28 +304,38 @@ the ball within 8 yards of it, per live tick):
 
 | | 4-3-3 before | after | AI formations before | after |
 |---|---|---|---|---|
-| def. near the ball (mean) | 1.053 | 1.012 | 1.002 | 0.957 |
-| ticks with 3+ def. near | 8.1% | 6.8% | 7.0% | 5.6% |
-| ticks with 4+ def. near | 2.8% | 2.5% | 2.6% | 2.2% |
-| ball held, 3+ def. near | 5.8% | 4.4% | 4.7% | 3.1% |
-| ball held, a stale chaser on the pitch | 14.8% | 3.7% | 13.9% | 3.5% |
-| attackers (incl. holder) 3+ near | 7.1% | 6.6% | 6.4% | 5.9% |
-| hole: largest gap goal-side of the ball (yd) / open cells | 37.4 / 21.6 | 37.8 / 22.2 | 37.2 / 21.4 | 37.8 / 22.1 |
-| goals | 2.27 | 2.32 (+2.2%) | 2.30 | 2.25 (−2.2%) |
-| shots | 5.47 | 5.23 (−4.4%) | 5.40 | 5.05 (−6.5%) |
-| passes | 41.6 | 42.4 (+1.9%) | 41.6 | 42.2 (+1.4%) |
-| tackles | 4.15 | 4.40 (+6.0%) | 4.05 | 4.21 (+4.0%) |
-| fouls | 10.25 | 10.38 (+1.3%) | 10.52 | 10.44 (−0.8%) |
+| def. near the ball (mean) | 1.053 | 1.008 | 1.002 | 0.961 |
+| ticks with 3+ def. near | 8.1% | 6.7% | 7.0% | 5.7% |
+| ticks with 4+ def. near | 2.8% | 2.5% | 2.6% | 2.3% |
+| ball held, 3+ def. near | 5.8% | 4.3% | 4.7% | 3.3% |
+| ball held, a stale chaser on the pitch | 14.8% | 3.8% | 13.9% | 3.5% |
+| attackers (incl. holder) 3+ near | 7.1% | 6.6% | 6.4% | 6.0% |
+| hole: largest gap goal-side of the ball (yd) / open cells | 37.4 / 21.6 | 37.9 / 22.3 | 37.2 / 21.4 | 37.8 / 22.2 |
+| goals | 2.27 | 2.32 (+2.2%) | 2.30 | 2.29 (−0.4%) |
+| shots | 5.47 | 5.51 (+0.7%) | 5.40 | 5.43 (+0.6%) |
+| passes | 41.6 | 42.5 (+2.1%) | 41.6 | 42.0 (+0.9%) |
+| tackles | 4.15 | 4.21 (+1.4%) | 4.05 | 4.06 (+0.2%) |
+| fouls | 10.25 | 10.43 (+1.8%) | 10.52 | 10.58 (+0.6%) |
 
-Both arms together: goals 0%, shots −5.4%, passes +1.7%, tackles +5.0%, fouls +0.2%. The engine is
-unseeded: one 800-match run moves goals ±2.3%, shots ±1.6%, tackles ±1.7%.
+**Volume compensation (two global levers).** The fix alone left shots −5.4% and successful tackles
++5.0% (goals 0%, passes +1.7%, fouls +0.2%): with the losers back in the shape the holders find fewer
+clear chances and more tackles reach them at once. No duration × speed of the recovery puts both inside
+±3% (4 ticks at speed 0 kept the shots but cost −10% tackles and +5% goals; 5 ticks at 0.05: −5% tackles
+and fouls). Two global levers, no per-formation term:
+- `SHOOT_STRONG_RAW` 1.8 → **1.6** (`DecisionTree.ts`): a holder shoots a little earlier from the same
+  chance;
+- `TACKLE_SUCCESS_SCALE` **0.97** (`ActionOutcomes.ts`, on the tackle success chance).
 
-**Limitations.** Shots stay ~5% under and tackles ~5% over: no duration × speed of the recovery
-puts both inside ±3% (4 ticks at speed 0 kept the shots but cost −10% tackles and +5% goals; 5 ticks
-at 0.05: −5% tackles and fouls). The hole metric (gap goal-side of the ball) does not improve: the
-ball sits more often with the holder, and the losers recover where they lost the race. The
-in-flight chasers are unchanged (high balls commit up to 3 per side, set pieces 4): 5+ chasers in
-~19% of the flight ticks. Formation matrix (`formation-matrix.ts --matches 80`, 320 matches per formation): amplitude of the edge 19.4 → 18.4 p.p. (noise ±5 p.p. per formation).
+Tried: tackle scale 0.93 alone → tackles −4%, fouls +4%, shots still −5%; 1.6 + 0.96 → tackles −3.2%
+(AI). Final: 1.6 + 0.97, the table above. The engine is unseeded: one 800-match run moves goals ±2.3%,
+shots ±1.6%, tackles ±1.7%. Goals did not move, so the quickSim calibration stands.
+
+**Limitations.** The hole metric (gap goal-side of the ball) does not improve: the ball sits more often
+with the holder, and the losers recover where they lost the race. The in-flight chasers are unchanged
+(high balls commit up to 3 per side, set pieces 4): 5+ chasers in ~19% of the flight ticks. Formation
+matrix (`formation-matrix.ts --matches 80`): amplitude of the edge 19.4 p.p. before (320 matches per
+formation) → 17.0 p.p. after (two runs summed, 640 per formation; one run alone gave 24.7: noise
+±5 p.p. per formation at 320).
 
 ## Loose-Ball Duel
 
