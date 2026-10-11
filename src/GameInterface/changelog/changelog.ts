@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.17.2",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Elenco: novas colunas de jogos (J) e assistências (A), e cada sigla da tabela explicada no cabeçalho e numa legenda. A aba Inscritos lista os jogadores por posição.",
+        en: "Squad: new matches played (MP) and assists (A) columns, with every column abbreviation explained in its header and in a legend. The Registration tab lists the players by position.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Os pontas e laterais jogam do lado certo na partida: o da esquerda fica na esquerda nos dois tempos, também no time visitante e no adversário.",
+        en: "Wingers and full-backs play on the correct side in the match: the left one stays on the left in both halves, for the away side and the opponent too.",
+      },
+      {
+        pt: "Jogadores novos que vieram sem nacionalidade (por exemplo, três do Inter Miami) passam a ter a bandeira quando o mundo for atualizado.",
+        en: "New players who came without a nationality (for example, three at Inter Miami) get their flag once the world is updated.",
+      },
+    ],
+  },
+  {
     version: "4.17.1",
     date: "2026-10-09",
     items: [
