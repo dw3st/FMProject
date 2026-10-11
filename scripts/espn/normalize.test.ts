@@ -84,3 +84,15 @@ describe("normalizeNationality", () => {
     expect(normalizeNationality("  ", world)).toBeNull();
   });
 });
+
+describe("fixNameCasing", () => {
+  test("lowercases capitals after a dotless i", () => {
+    expect(fixNameCasing("BahadıR Han Gungordu")).toBe("Bahadır Han Gungordu");
+    expect(fixNameCasing("Ibrahim AlkıS")).toBe("Ibrahim Alkıs");
+  });
+  test("leaves normal names alone", () => {
+    expect(fixNameCasing("Kenan Yıldız")).toBe("Kenan Yıldız");
+    expect(fixNameCasing("Mohamed Salah")).toBe("Mohamed Salah");
+    expect(fixNameCasing("Ali McDonald")).toBe("Ali McDonald");
+  });
+});
