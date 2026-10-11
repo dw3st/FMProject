@@ -2383,6 +2383,11 @@
   "statsScreen": {
     "allLeagues": "All leagues",
     "competition": "Competition",
+    "favorites": {
+      "label": "Favourites",
+      "add": "Add to favourites",
+      "remove": "Remove from favourites"
+    },
     "title": "Stats",
     "rankings": "Rankings",
     "myTeam": "My team",

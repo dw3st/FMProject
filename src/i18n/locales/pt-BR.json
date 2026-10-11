@@ -2383,6 +2383,11 @@
   "statsScreen": {
     "allLeagues": "Geral (todas as ligas)",
     "competition": "Competição",
+    "favorites": {
+      "label": "Favoritas",
+      "add": "Marcar como favorita",
+      "remove": "Tirar das favoritas"
+    },
     "title": "Estatísticas",
     "rankings": "Rankings",
     "myTeam": "Meu time",
