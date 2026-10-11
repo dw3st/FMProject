@@ -2332,13 +2332,41 @@
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",
       "freeAgentsOnly": "Só jogadores livres",
-      "awardedOnly": "Só premiados"
+      "awardedOnly": "Só premiados",
+      "affordableOnly": "Cabe no orçamento",
+      "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
+      "search": "Pesquisar",
+      "changed": "Filtros alterados"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
-      "description": "Clique na faixa para definir mín–máx (0–100)",
+      "description": "Digite mínimo e máximo (1–100)",
       "clearAll": "Limpar todos os atributos",
-      "any": "qualquer"
+      "any": "qualquer",
+      "minOf": "{{attr}} mínimo",
+      "maxOf": "{{attr}} máximo",
+      "groups": {
+        "physical": "Físico",
+        "attack": "Técnica e ataque",
+        "defense": "Defesa",
+        "goalkeeper": "Goleiro"
+      }
+    },
+    "savedFilters": {
+      "title": "Filtros salvos",
+      "load": "Carregar e pesquisar",
+      "remove": "Apagar \"{{name}}\"",
+      "namePlaceholder": "Dê um nome a estes filtros",
+      "nameLabel": "Nome dos filtros salvos",
+      "save": "Salvar filtros"
+    },
+    "interest": {
+      "interested": "Interessado",
+      "hesitant": "Hesitante",
+      "not_coming": "Não viria",
+      "interestedHint": "Seu olheiro acha que ele gostaria de vir para o seu clube",
+      "hesitantHint": "Seu olheiro acha que ele tem dúvidas: clube rival, o nível dele, lealdade ou o tamanho do seu clube",
+      "not_comingHint": "Seu olheiro acha que ele recusaria o seu clube"
     },
     "table": {
       "forSale": "À venda",
@@ -2356,7 +2384,9 @@
       "action": "Ação",
       "offer": "Oferta",
       "sign": "Contratar",
-      "signFree": "Contratar como jogador livre"
+      "signFree": "Contratar como jogador livre",
+      "interest": "Interesse",
+      "noClub": "Sem clube"
     }
   },
   "fastForward": {
