@@ -36,3 +36,15 @@ export function playerMatchEvents(
   }
   return out;
 }
+
+/** A count cell: empty instead of 0 (#149). */
+export function countCell(n: number | undefined): string {
+  return n && n > 0 ? String(n) : "";
+}
+
+/** Row tint of a booked player (#149): red wins over yellow. */
+export function cardRowClass(events?: PlayerMatchEvents): string {
+  if (events?.red) return "bg-destructive/10";
+  if (events && events.yellows > 0) return "bg-card-yellow/10";
+  return "";
+}

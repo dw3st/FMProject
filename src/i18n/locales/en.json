@@ -956,6 +956,23 @@
       "red": "Red card! {{player}} ({{team}}) is sent off",
       "secondYellow": "Second yellow: {{player}} ({{team}}) is sent off",
       "penalty": "Penalty to {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Player",
+      "rating": "Rat",
+      "ratingFull": "Match rating",
+      "fitness": "Fit",
+      "fitnessFull": "Fitness",
+      "goals": "G",
+      "goalsFull": "Goals",
+      "assists": "A",
+      "assistsFull": "Assists"
+    },
+    "stadium": {
+      "label": "Stadium",
+      "attendance": "{{crowd}} fans",
+      "neutral": "Neutral venue"
     }
   },
   "broadcast": {

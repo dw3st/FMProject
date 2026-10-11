@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { CardRecord } from "@/GameEngine/types";
-import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
+import { cardRowClass, countCell, playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 
 function card(playerId: number, kind: "yellow" | "red", secondYellow = false): CardRecord {
   return { team: "A", playerId, playerName: `P${playerId}`, playerRosterId: `r${playerId}`, card: kind, secondYellow, matchMinute: 10, energy: 80 };
@@ -19,5 +19,20 @@ describe("playerMatchEvents", () => {
     expect(ev.has(3)).toBe(false);
     expect(ev.get(4)).toEqual({ goals: 0, assists: 0, yellows: 1, red: true });
     expect(ev.get(5)).toEqual({ goals: 0, assists: 0, yellows: 0, red: true });
+  });
+});
+
+describe("lineup columns (#149)", () => {
+  test("a count is empty instead of 0", () => {
+    expect(countCell(0)).toBe("");
+    expect(countCell(undefined)).toBe("");
+    expect(countCell(2)).toBe("2");
+  });
+
+  test("a booked player is tinted, red over yellow", () => {
+    expect(cardRowClass(undefined)).toBe("");
+    expect(cardRowClass({ goals: 1, assists: 0, yellows: 0, red: false })).toBe("");
+    expect(cardRowClass({ goals: 0, assists: 0, yellows: 1, red: false })).toBe("bg-card-yellow/10");
+    expect(cardRowClass({ goals: 0, assists: 0, yellows: 2, red: true })).toBe("bg-destructive/10");
   });
 });

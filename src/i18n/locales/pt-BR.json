@@ -956,6 +956,23 @@
       "red": "Cartão vermelho! {{player}} ({{team}}) expulso",
       "secondYellow": "Segundo amarelo: {{player}} ({{team}}) expulso",
       "penalty": "Pênalti para {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Jogador",
+      "rating": "Nota",
+      "ratingFull": "Nota na partida",
+      "fitness": "Fôl",
+      "fitnessFull": "Fôlego",
+      "goals": "G",
+      "goalsFull": "Gols",
+      "assists": "A",
+      "assistsFull": "Assistências"
+    },
+    "stadium": {
+      "label": "Estádio",
+      "attendance": "{{crowd}} torcedores",
+      "neutral": "Campo neutro"
     }
   },
   "broadcast": {
