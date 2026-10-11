@@ -52,6 +52,9 @@ describe("normalizeNationality", () => {
     expect(normalizeNationality("Czech Republic", world)).toBe("Czechia");
     expect(normalizeNationality("Turkey", world)).toBe("Türkiye");
     expect(normalizeNationality("DR Congo", world)).toBe("DR Congo");
+    expect(normalizeNationality("Bosnia and Herzegovina", world)).toBe("Bosnia & Herzegovina");
+    expect(normalizeNationality("Trinidad and Tobago", world)).toBe("Trinidad & Tobago");
+    expect(normalizeNationality("Saint Vincent and the Grenadines", world)).toBe("St. Vincent & Grenadines");
     expect(normalizeNationality("Congo DR", world)).toBe("DR Congo");
     expect(normalizeNationality("Congo", world)).toBe("Congo - Brazzaville");
     expect(normalizeNationality("Ivory Coast", world)).toBe("Côte d’Ivoire");
