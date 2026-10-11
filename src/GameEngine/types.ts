@@ -383,6 +383,11 @@ export interface GamePlayer {
    * While > 0 and an opponent is within 6 yards, the receiver bursts away to create space.
    */
   justReceivedTicks: number;
+  /**
+   * Movement multiplier during the current `recoveryTime` when it differs from the duel default
+   * (`DUEL_RECOVERY_SPEED_FACTOR`): the race losers of a contested ball (#145). Cleared with the recovery.
+   */
+  recoverySpeed?: number;
   /** Short-term decision memory — prevents re-deciding every tick for stable decisions. */
   decisionMemory: import('./Domain/DecisionTree').DecisionMemory;
   /**
