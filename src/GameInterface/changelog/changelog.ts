@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Central de Olheiros: a busca só roda ao clicar em Pesquisar (ou Enter), os atributos ficam em grupos com valores digitados (1–100), dá para salvar quantos filtros quiser com nome, e cada linha mostra a bandeira e o escudo do clube.",
+        en: "Scouting centre: the search runs only when you click Search (or press Enter), attributes are grouped with typed values (1–100), you can save as many named filters as you like, and each row shows the flag and the club crest.",
+      },
+      {
+        pt: "Na busca do olheiro: filtro \"Cabe no orçamento\" (taxa e salário que o clube pode pagar) e o interesse de cada jogador em vir para o seu clube (Interessado, Hesitante, Não viria), pelo que o olheiro percebe.",
+        en: "In the scout search: a \"Fits the budget\" filter (fee and wage your club can pay) and each player's interest in joining your club (Interested, Hesitant, Would not come), as your scout reads it.",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [
