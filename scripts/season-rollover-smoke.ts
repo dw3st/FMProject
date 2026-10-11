@@ -542,6 +542,14 @@ try {
     }), { params: { saveId: saveId!, ...params } }));
   };
 
+  // ── VAR (see "VAR" section below, `.claude/rules/game/var.md`) ──
+  const { varLookup: smokeVarLookup } = await import("@/backend/refereeWorld");
+  const smokeHasVar = smokeVarLookup(plain(), saveId!);
+  const varTrack = {
+    matches: 0, errors: 0, reviews: 0, overturned: 0, withoutReferee: [] as string[], reviewsOutside: [] as string[],
+    scoreMismatch: [] as string[], banDate: "", banSetup: null as boolean | null, banServed: null as boolean | null,
+  };
+
   // ── Prêmios (see "Prêmios" section below, `.claude/rules/game/awards.md`) ──
   const { AWARDS } = await import("@/Domain/awards/awardsConfig");
   const { awardKindsByPlayer } = await import("@/Domain/awards/awardEffects");
@@ -971,6 +979,17 @@ try {
       }
     }
 
+    // VAR: a ban forced on the human club's first league match day after the registration checks; match-setup must
+    // say so, and the day's match serves it (gone after the day).
+    if (playerFixtureToday && !varTrack.banDate && regTrack.setupTried) {
+      varTrack.banDate = date;
+      await svc.updateMeta(saveId, { managerBan: { matches: 1, since: date } });
+      if (!regTrack.session) regTrack.session = (await import("@/backend/auth/AuthService")).devAutoLogin("smoke-reborn@test.local").session.token;
+      const { apiRoutes } = await import("@/backend/routes");
+      const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, { headers: { cookie: `fs_session=${regTrack.session}` } }));
+      varTrack.banSetup = res.status === 200 && ((await res.json()) as { managerBanned?: boolean }).managerBanned === true;
+    }
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -978,6 +997,7 @@ try {
       check(false, `runBufferedDay ${date}: ${outcome.status} ${outcome.error}`);
       break;
     }
+    if (varTrack.banDate === date) varTrack.banServed = (await plain().getMeta(saveId))!.managerBan === undefined;
     days++;
     dayMsTotal += ms;
     // Inscrição: no player of an official match outside his club's registered set (before or after the day:
@@ -1283,6 +1303,24 @@ try {
             refTrack.humanChecked++;
             const planned = preDayAppointments[`${event.competition}:${event.fixtureId}`]?.refereeId;
             if (planned !== event.referee.id) refTrack.humanMismatch.push(`${date} planned ${planned} got ${event.referee.id}`);
+          }
+        }
+        // VAR: errors/reviews only with a referee, reviews only where the fixture has VAR, never a ruled-out goal in
+        // the score (full events: the scorers' goals add up to the score).
+        if (!isYouthCompSlug(event.competition)) {
+          varTrack.matches++;
+          if (event.var) {
+            if (!event.referee) varTrack.withoutReferee.push(`${date} ${event.fixtureId}`);
+            varTrack.errors += event.var.errors;
+            varTrack.reviews += event.var.reviews;
+            varTrack.overturned += event.var.overturned;
+            if (event.var.reviews > 0 && !(await smokeHasVar({ competition: event.competition, round: event.round }))) {
+              varTrack.reviewsOutside.push(`${date} ${event.competition}:${event.fixtureId}`);
+            }
+          }
+          if (!event.compact && event.var && event.var.overturned > 0 && !event.decider) {
+            const goals = Object.values(event.playerStats).reduce((a, s) => a + (s.goals ?? 0), 0);
+            if (goals !== event.score.home + event.score.away) varTrack.scoreMismatch.push(`${date} ${event.fixtureId}`);
           }
         }
         totalMatchesLogged++;
@@ -2119,6 +2157,22 @@ try {
   check(suspendedXIViolations === 0,
     `disciplina: no suspended player appeared in a played XI (${suspendedXIViolations} of ${suspendedXIChecks} violated)`);
   check(suspensionsServedObserved > 0, `disciplina: at least one suspension served during the run (${suspensionsServedObserved} observed)`);
+
+  // ── VAR ──────────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/var.md`: errors and reviews only with a referee, reviews only in fixtures with VAR, no
+  // ruled-out goal in the score, a forced manager ban served by one match.
+  console.log("\n── VAR ──");
+  {
+    const m = Math.max(1, varTrack.matches);
+    console.log(`  ${varTrack.matches} first-team matches: ${(varTrack.errors / m).toFixed(3)} errors, ${(varTrack.reviews / m).toFixed(3)} VAR checks, ${(varTrack.overturned / m).toFixed(3)} overturned per match`);
+    check(varTrack.errors > 0, `var: referee errors happened (${varTrack.errors})`);
+    check(varTrack.withoutReferee.length === 0, `var: VAR numbers only with a referee (${varTrack.withoutReferee.slice(0, 3).join(", ")})`);
+    check(varTrack.reviews > 0 && varTrack.reviewsOutside.length === 0,
+      `var: VAR checks only in fixtures with VAR (${varTrack.reviews} checks, ${varTrack.reviewsOutside.length} outside, e.g. ${varTrack.reviewsOutside.slice(0, 3).join(", ")})`);
+    check(varTrack.scoreMismatch.length === 0, `var: no ruled-out goal in the score (${varTrack.scoreMismatch.slice(0, 3).join(", ")})`);
+    check(varTrack.banSetup === true, `var: match-setup shows the forced manager ban (${String(varTrack.banSetup)} on ${varTrack.banDate})`);
+    check(varTrack.banServed === true, `var: the forced ban is served by the day's match (${String(varTrack.banServed)})`);
+  }
 
   // ── Árbitros ─────────────────────────────────────────────────────────────
   // See `.claude/rules/game/referees.md`: every first-team match with the appointed referee, none twice a day,
