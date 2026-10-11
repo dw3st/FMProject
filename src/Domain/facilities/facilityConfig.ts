@@ -149,6 +149,11 @@ export const FACILITIES = {
     STEP: 5,
     UPGRADE_WEEKS_SHARE: 0.6,
   },
+  /**
+   * Works size (#152): item works scale with the item's level — weeks of repair/rebuild/upgrade and
+   * the upgrade cost × (SIZE_BASE + SIZE_STEP × level), 1 at level 6. One works per group at a time.
+   */
+  WORKS: { SIZE_BASE: 0.4, SIZE_STEP: 0.1 },
   /** Groundskeeper wear multiplier on pitches (stars 1/3/5; nobody = NONE; × EXTRA per extra one). */
   GROUNDSKEEPER: { CURVE: [1.3, 1, 0.75] as [number, number, number], NONE: 1.6, EXTRA: 0.9 },
   /** AI home pitch: START − DROP × fraction of the home club's league window. Neutral venue: NEUTRAL. */

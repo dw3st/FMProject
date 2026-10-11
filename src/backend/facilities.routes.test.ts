@@ -251,6 +251,25 @@ describe("facility item requests", () => {
     const inbox = await saveService.getInbox(saveId);
     expect(inbox.some((m) => m.category === "facilities" && m.kind === "approved" && (m as any).item === "seats")).toBe(true);
 
+    // One works per group (#152): the stadium (seats) and the training ground (pitches) are busy.
+    const standBusy = await call("/request", "POST", { kind: "stand", stand: "east", seats: 1000 });
+    expect(standBusy.status).toBe(409);
+    expect(await standBusy.json()).toMatchObject({ error: "busy", group: "stadium" });
+    const poolBusy = await call("/request", "POST", { kind: "upgrade", item: "pool" });
+    expect(poolBusy.status).toBe(409);
+    expect(await poolBusy.json()).toMatchObject({ error: "busy", group: "training" });
+    // A small repair paid now does not take the slot, even with the stadium busy.
+    await setItems({ stadiumStructure: { level: 6, wear: wearFor(60) } });
+    const smallNow = await (await call("/request", "POST", { kind: "repair", item: "stadiumStructure", to: 100 })).json() as any;
+    expect(smallNow).toMatchObject({ approved: true, paidByClub: true });
+    // The third group is free: the academy works start; then all three are busy.
+    const acad = await (await call("/request", "POST", { kind: "upgrade", item: "academyLodging" })).json() as any;
+    expect(acad.approved).toBe(true);
+    expect(acad.view.busyGroups).toEqual(["stadium", "training", "academy"]);
+    expect((await call("/request", "POST", { kind: "upgrade", item: "academyPitches" })).status).toBe(409);
+    const running = (await human()).facilities!.projects.filter((p) => !p.paidNow);
+    expect(running).toHaveLength(3);
+
     // Match setup: the pitch of the stadium the match is played in.
     let fixture: { date: string; home: string; away: string; neutral?: boolean } | null = null;
     for (let r = 1; r <= 38 && !fixture; r++) {

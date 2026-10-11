@@ -3074,7 +3074,10 @@
       "injuryDays": "Dias fora por lesão {{pct}}",
       "intakeQuality": "Nível da safra {{value}}",
       "promise": "Chance de promessa {{pct}}"
-    }
+    },
+    "groupBusy": "{{group}}: já há uma obra em andamento. Uma obra por vez em cada área.",
+    "groupWorks": "Obra em andamento",
+    "slots": "Obras em andamento: {{count}} de {{max}}"
   },
   "transferWindows": {
     "tab": "Janelas",

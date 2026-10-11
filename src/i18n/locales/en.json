@@ -3074,7 +3074,10 @@
       "injuryDays": "Days out when injured {{pct}}",
       "intakeQuality": "Intake level {{value}}",
       "promise": "Wonderkid chance {{pct}}"
-    }
+    },
+    "groupBusy": "{{group}}: works already under way. One works at a time in each area.",
+    "groupWorks": "Works under way",
+    "slots": "Works under way: {{count}} of {{max}}"
   },
   "transferWindows": {
     "tab": "Windows",
