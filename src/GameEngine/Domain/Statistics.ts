@@ -13,6 +13,7 @@
 
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
+import { BALL_CLUSTER_CONFIG } from '@/GameEngine/Domain/BallCluster';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -132,6 +133,14 @@ export interface TeamStats extends PlayerStats {
   injuries: number;
   /** Referee errors that hurt this team (`refereeError`, `.claude/rules/game/var.md`). Match total = A + B. */
   refereeErrors: number;
+  /**
+   * Ball cluster (#145): live ticks this team spent defending (ball held, passed or loose, by the
+   * other side), the sum of its outfield players within 8 yards of the ball over those ticks, and
+   * the ticks with 3+ of them there (`ballCluster` event, `Domain/BallCluster.ts`).
+   */
+  ballNearTicks: number;
+  ballNearSum: number;
+  ballCrowdTicks: number;
   /** VAR checks whose final decision went against this team. Match total = A + B. */
   varReviews: number;
   /** Of those, overturned calls (the original call favoured this team). */
@@ -200,11 +209,17 @@ const store = new Map<number, PlayerStats>();
 /** Map from playerId → teamId — needed to derive team stats. */
 const playerTeam = new Map<number, TeamId>();
 
-/** Team-level knockout flags (not derivable from player sums). */
-const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; refereeErrors: number; varReviews: number; varOverturned: number }> = {
-  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 },
-  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 },
+/** Team-level counters (not derivable from player sums). */
+type TeamFlags = {
+  extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number;
+  refereeErrors: number; varReviews: number; varOverturned: number;
+  ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
 };
+const emptyTeamFlags = (): TeamFlags => ({
+  extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+  ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0,
+});
+const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
 /**
  * Every player's end-of-match energy — recorded once, either when they're substituted off
@@ -337,6 +352,15 @@ gameBus.on('injury', e => {
   notify();
 });
 
+// ── Ball cluster (#145) ───────────────────────────────────────────────────────
+// Counted every live tick, no notify (the panels refresh on the other events).
+gameBus.on('ballCluster', e => {
+  const f = teamFlags[e.defendingTeam];
+  f.ballNearTicks++;
+  f.ballNearSum += e.defendersNear;
+  if (e.defendersNear >= BALL_CLUSTER_CONFIG.CROWD_COUNT) f.ballCrowdTicks++;
+});
+
 // ── Discipline stats ──────────────────────────────────────────────────────────
 gameBus.on('foul', e => { get(e.offenderId).fouls++; notify(); });
 gameBus.on('card', e => {
@@ -420,8 +444,8 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   endEnergy.clear();
   goalLog = [];
   markedNow = new Set();
-  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 };
-  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0 };
+  teamFlags.A = emptyTeamFlags();
+  teamFlags.B = emptyTeamFlags();
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
@@ -511,7 +535,7 @@ export interface StatsSnapshot {
   players:   Array<[number, PlayerStats]>;
   teams:     Array<[number, TeamId]>;
   endEnergy: Array<[number, { team: TeamId; energy: number }]>;
-  teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; refereeErrors: number; varReviews: number; varOverturned: number }>;
+  teamFlags: Record<TeamId, Partial<TeamFlags>>;
   /** Goals so far (absent in snapshots taken before the goal log existed). */
   goals?: GoalLogEntry[];
 }
@@ -536,7 +560,7 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, team] of snap.teams) playerTeam.set(id, team);
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
-  teamFlags.A = { ...teamFlags.A, ...snap.teamFlags.A };
-  teamFlags.B = { ...teamFlags.B, ...snap.teamFlags.B };
+  teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
+  teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();
 }

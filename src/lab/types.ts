@@ -214,6 +214,13 @@ export interface TeamRawStats {
   fatigueSubstitutions: number;
   /** In-match injuries suffered by this team, summed across `matches` games. */
   injuries: number;
+  /**
+   * Ball cluster (#145), summed across games: live ticks spent defending, outfield players within
+   * 8 yards of the ball over those ticks, ticks with 3+ of them (`Statistics.ts`, `BallCluster.ts`).
+   */
+  ballNearTicks: number;
+  ballNearSum: number;
+  ballCrowdTicks: number;
   /** Starters with `training`/`unsuitable` aptitude for their slot, summed across games. */
   outOfPosition: number;
   /** Morale the side played at (`Variant.morale`, 65 when absent), summed across games. */
@@ -367,6 +374,10 @@ export interface PerMatchView {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  /** Outfield players within 8 yards of the ball per tick while defending (#145). */
+  avgNearBall: number;
+  /** Share (0–100) of the defending ticks with 3+ of them there. */
+  crowdedPct: number;
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
@@ -472,6 +483,10 @@ export interface VariantSummary {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  /** Outfield players within 8 yards of the ball per tick while defending (#145). */
+  avgNearBall: number;
+  /** Share (0–100) of the defending ticks with 3+ of them there. */
+  crowdedPct: number;
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
