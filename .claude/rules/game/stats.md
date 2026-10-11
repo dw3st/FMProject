@@ -20,6 +20,14 @@ calendário e todas as ligas do catálogo (rótulos só por `src/Domain/world/la
   para a liga (mínimo 5 jogos); copa e continental omitem essa tabela.
 - Não há minutos jogados no `seasonLog`, então "Meu time" mostra jogos/gols/assistências/nota.
 
+## Competições favoritas (#150, 4.19)
+
+Na aba Rankings, a estrela ao lado do seletor marca/desmarca a competição ativa; as favoritas (até 6, a mais antiga sai
+quando passa) viram `Chip`s ao lado do seletor e trocam a competição com um clique. Guardadas por navegador no
+`localStorage` (`fm.stats.favoriteCompetitions`, leitura e escrita em try/catch; sem armazenamento a tela funciona sem
+elas), lógica pura em `src/Domain/stats/favoriteCompetitions.ts` (+ teste), hook `useFavoriteCompetitions`. Uma favorita
+que não está mais nas opções (liga que saiu do mundo) não aparece.
+
 ## Estrelas
 
 `computeStars` (`src/Domain/world/stars.ts`), uma por jogador (gold > blue > green): **gold** top

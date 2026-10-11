@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Estatísticas: marque competições como favoritas na estrela ao lado da lista e troque entre elas com um clique.",
+        en: "Stats: star your favourite competitions next to the list and switch between them with one click.",
+      },
+      {
+        pt: "Relatório de problema: capture uma área da tela arrastando um retângulo, sem precisar salvar um print.",
+        en: "Problem report: capture an area of the screen by dragging a rectangle, no saved screenshot needed.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Nomes de clubes com acento e sem sufixos de dado em mais ligas (Beşiktaş, Peñarol, Atlético Madrid, León...).",
+        en: "Club names with their accents and without data suffixes in more leagues (Beşiktaş, Peñarol, Atlético Madrid, León...).",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [

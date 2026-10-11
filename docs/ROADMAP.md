@@ -113,10 +113,16 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 38 ✅ | Visual da partida e estádio (4.12) | #107, #99 | Árbitro e bandeirinhas que seguem o lance (cartão e bandeira), técnicos à beira do campo com o rosto e gestos pela mentalidade e no gol, animações de chute de longe, cabeçada e defesa, tudo só no desenho; estádio numa faixa fina em volta do campo (campo ×0,9) com a torcida proporcional ao público, assada numa textura; público do clube do jogador ×1,20 no clássico, ×1,15 no mata-mata de copa, ×1,25 no continental (teto ×1,30), só na demanda (bilheteria da temporada: mediana +1,7% a +3,0%); `match-setup` com público e técnicos; `/test` com estádio, árbitros, público e medidor de desenho. Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md`, regras `graphics-engine.md`, `match-flow.md`, `game/facilities.md` |
 | 38b ✅ | Árbitros com nome, rigor e rosto (4.17) | — | Quadro de árbitros e assistentes por país (reais do Wikidata nas 10 ligas principais, homens e mulheres, Reino Unido na Inglaterra; o resto gerado do livro de nomes), escala determinística (os melhores nos jogos grandes, descanso de 3 dias, rodízio por clube, continental de outro país, base sem árbitro), rigor −1..1 (real pelos cartões da carreira no Transfermarkt, senão sorteado) que mexe pouco em faltas e cartões no motor e no quickSim com o volume do mundo neutro, rosto no campo, prévia, Resumo, resultado, resumo do dia e aba Árbitros em Estatísticas; a 39 (VAR) usa a escala e a qualidade |
 | 39 ✅ | VAR e reclamação do técnico (4.18) | #109 | O árbitro erra no motor (pênalti inventado ou não marcado, impedimento que passa, vermelho errado ou não dado), mais quanto pior a qualidade (≈ 0,25 erro por jogo com o árbitro médio, gols e pênaltis do mundo neutros); VAR na 1ª divisão das 10 ligas principais, nas continentais e nas copas a partir das quartas corrige ~80% dos erros revisáveis numa pausa de 3 s (gol anulado desfaz placar, estatística e nota); quickSim só estatística; botão Reclamar na partida ao vivo (moral +1, às vezes mais rigor com o adversário; amarelo/vermelho ao técnico, diretoria −1/−3, suspensão de 1–2 jogos cumprida no avanço do dia, o auxiliar faz as trocas); prévia, Resumo, resultado, aba Árbitros, inbox `discipline`, `/test`, `/lab`, MCP. Spec `docs/superpowers/specs/2026-10-10-var-design.md`, regra `.claude/rules/game/var.md` |
+| 39c | Olheiro: busca e interesse (4.19) | #147, #123 | Busca com botão Pesquisar, atributos por grupo com valores digitados (1–100), filtros salvos sem limite, bandeira e escudo nas linhas; filtro "Cabe no orçamento" e selo de interesse do jogador em vir para o clube |
+| 39d | Clube: instalações visuais, obras e ídolos (4.19) | #132, #152, #151 | CT e base desenhados como o estádio, com painel de melhoria; no máximo uma obra por grupo (estádio, CT, base) ao mesmo tempo, prazo e custo crescendo com o tamanho; ídolos e lendas, títulos e curiosidades no histórico do clube |
+| 39e | Partida: estádio, lista de jogadores, lances e visual 2 (4.19) | #148, #149, #129 | Estádio e público no topo; lista ao lado do campo com posição, nota, fôlego, gols e assistências e cartões destacados; lances numa janela opcional; mapa de calor com botões lado a lado; maca, técnicos andando, banco de reservas, rede balançando, torcida vibrando |
+| 39f | Estatísticas, report e nomes de clubes (4.19) | #150, #125, #121 | Competições favoritas como atalhos no ranking; capturar uma área da tela ao anexar imagem no report; nomes de clubes corrigidos além do português |
+| 39g | Posicionamento (4.19) | #145 | Menos jogadores indo juntos na bola e buracos menores no campo, sem mudar o volume de gols |
 | 40 | Conquistas | #95 | Desafios com recompensas (itens de perfil, atributos do técnico, jogador criado ou lenda aposentada) |
 | 41 | Seleções nacionais | — | Convocações, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking |
 | 42 | Imprensa e notícias | — | Coletivas com efeito na moral e na diretoria, página de notícias do mundo |
 | 43 | Multiplayer | #106 | Vários técnicos humanos no mesmo mundo; precisa de desenho próprio |
+| 44 | Chat e amigos | #153 | Chat global e por país/idioma, lista de amigos com status e bloqueio; depende do multiplayer |
 
 ### Próximas etapas em detalhe
 
@@ -187,9 +193,11 @@ Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etap
 **40 · Conquistas (#95).**
 - Lista de desafios por carreira com recompensas cosméticas e algumas de jogo (jogador criado na base, lenda aposentada); desenho próprio antes.
 
-**41–43 · Seleções nacionais, imprensa e multiplayer:** cada uma com desenho próprio quando chegar a vez.
+**39c–39g · Melhorias dos testers (4.19):** feitas em paralelo, uma branch por grupo; decidido (2026-10-11): obras no máximo uma por grupo (estádio, CT, base).
 
-**Depois (sem ordem ainda):** nada no momento; tudo que chegou está nas etapas 30–43.
+**41–44 · Seleções nacionais, imprensa, multiplayer e chat:** cada uma com desenho próprio quando chegar a vez.
+
+**Depois (sem ordem ainda):** pênalti com câmera em primeira pessoa (#130), deixado para depois pelo usuário (2026-10-11).
 
 **Mais tarde:** tudo que estava aqui foi encaixado nas etapas 30–43 (acima); escolha de ligas no novo jogo descartada por enquanto (#101: ganho só nos dias sem jogo; save de 44 MB não é problema).
 

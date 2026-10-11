@@ -205,8 +205,11 @@ grafia de dados (issue #121): sem acento ("Sao Paulo", "Gremio"), com sufixo ("C
 { "<squadId>": { "name": "São Paulo", "shortName"?: "SPFC" } }
 ```
 
-- Escopo atual: clubes de língua portuguesa (Brasil A/B/C e a liga portuguesa). Só entra o que está errado; nome
-  próprio não é traduzido. Os demais idiomas ficam para depois.
+- Escopo: Brasil A/B/C e Portugal e, desde a 4.19, as ligas principais de Espanha, França, Itália, Argentina,
+  México, Turquia, Chile, Colômbia, Peru, Paraguai, Uruguai, Venezuela, Bélgica e Suíça (73 clubes no total):
+  acentos ("Beşiktaş", "Peñarol", "Atlético Madrid"), sufixos de dado ("Boyacá Chicó FC"), abreviações ("Gijón" →
+  "Sporting Gijón") e homônimos na mesma liga ("Estudiantes de Río Cuarto"). Só entra o que está errado; nome
+  próprio não é traduzido. Alemanha, Holanda e Áustria já vinham certas.
 - `bun scripts/applyClubNameCorrections.ts` (lógica pura em `scripts/curated/clubNames.ts`, com teste) roda logo
   depois do `applyPlayerCorrections`, sobre `src/example_data`: troca o `name` do elenco (e o `shortName`, se a
   correção trouxer um) e o `name` da entrada de `standings` do `leagueData.json` (um `shortName` só onde a entrada

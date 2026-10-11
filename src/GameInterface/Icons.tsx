@@ -47,6 +47,7 @@ import {
   Flame,
   Sparkles,
   Image as ImageIcon,
+  Crop,
   Swords,
   Dumbbell,
   Moon,
@@ -176,6 +177,7 @@ export type IconName =
   | "load"
   | "sparkles"
   | "image"
+  | "crop"
   | "match"
   | "training"
   | "rest"
@@ -305,6 +307,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "load":         Flame,
   "sparkles":     Sparkles,
   "image":        ImageIcon,
+  "crop":         Crop,
   "match":        Swords,
   "training":     Dumbbell,
   "rest":         Moon,
