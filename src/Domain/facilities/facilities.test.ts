@@ -9,6 +9,7 @@ import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
 import { academyEffectsOf, committedSpend, itemBusy, itemValue, payRepairNow, projectRunning, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { comfortLevelPriceMult, facilitiesAppeal } from "@/Domain/facilities/facilities";
+import { busyGroups, groupBusy, projectGroup, requestGroup, worksSizeFactor } from "@/Domain/facilities/facilities";
 import { FACILITY_ITEMS, conditionOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { FacilityItemId } from "@/types/facilityTypes";
@@ -399,13 +400,49 @@ describe("item projects: repair, rebuild, upgrade", () => {
     expect(quoteProject(at("gym", 60), { kind: "rebuild", item: "gym" }, ctx)).toBeNull();
     const r = quoteProject(at("gym", 10), { kind: "rebuild", item: "gym" }, ctx)!;
     expect(r.cost).toBe(Math.round(itemValue(rev, "gym", f0.items.gym.level)));
-    expect(r.weeks).toBe(F.ITEMS.gym.rebuildWeeks);
+    expect(r.weeks).toBe(Math.ceil(F.ITEMS.gym.rebuildWeeks * worksSizeFactor(f0.items.gym.level)));
     expect(quoteProject(at("gym", 60, { condemned: true }), { kind: "rebuild", item: "gym" }, ctx)).not.toBeNull();
     const u = quoteProject(f0, { kind: "upgrade", item: "gym" }, ctx)!;
     expect(u.level).toBe(f0.items.gym.level + 1);
-    expect(u.cost).toBe(Math.round(itemValue(rev, "gym", f0.items.gym.level + 1) * 0.6));
-    expect(u.weeks).toBe(Math.ceil(F.ITEMS.gym.rebuildWeeks * 0.6));
+    const lv = f0.items.gym.level + 1;
+    expect(u.cost).toBe(Math.round(itemValue(rev, "gym", lv) * 0.6 * worksSizeFactor(lv)));
+    expect(u.weeks).toBe(Math.ceil(F.ITEMS.gym.rebuildWeeks * 0.6 * worksSizeFactor(lv)));
     expect(quoteProject(at("gym", 60, { level: 10 }), { kind: "upgrade", item: "gym" }, ctx)).toBeNull();
+  });
+
+  test("bigger works take longer and cost more: high levels, more seats", () => {
+    const up = (level: number) => quoteProject(at("seats", 80, { level }), { kind: "upgrade", item: "seats" }, ctx)!;
+    expect(up(9).weeks).toBeGreaterThan(up(5).weeks);
+    expect(up(9).weeks).toBeGreaterThan(up(2).weeks);
+    expect(up(9).cost / up(5).cost).toBeGreaterThan(10 / 6);
+    const rep = (level: number) => quoteProject(at("seats", 20, { level }), { kind: "repair", item: "seats", to: 100 }, ctx)!;
+    expect(rep(10).weeks).toBeGreaterThan(rep(3).weeks);
+    // A level-9 upgrade takes longer than a full repair of the same item.
+    expect(up(9).weeks).toBeGreaterThan(rep(9).weeks);
+    const stand = (seats: number) => quoteProject(f0, { kind: "stand", stand: "east", seats }, ctx)!;
+    expect(stand(10000).weeks).toBeGreaterThan(stand(1000).weeks);
+    expect(stand(10000).cost).toBe(10 * stand(1000).cost);
+    expect(worksSizeFactor(6)).toBe(1);
+  });
+
+  test("one works per group at a time; small repairs paid now do not count", () => {
+    const big = quoteProject(at("gym", 30), { kind: "upgrade", item: "gym" }, ctx)!;
+    const f = startProject(f0, big, { id: "u", date: "2027-01-01", boardShare: 0 });
+    expect(projectGroup(f.projects[0]!)).toBe("training");
+    expect(groupBusy(f, "training")).toBe(true);
+    expect(groupBusy(f, "stadium")).toBe(false);
+    expect(groupBusy(f, "academy")).toBe(false);
+    expect(requestGroup({ kind: "stand", stand: "east", seats: 1000 })).toBe("stadium");
+    expect(requestGroup({ kind: "comfort" })).toBe("stadium");
+    expect(requestGroup({ kind: "academy" })).toBe("academy");
+    expect(requestGroup({ kind: "repair", item: "pool", to: 100 })).toBe("training");
+    expect(busyGroups(f)).toEqual(["training"]);
+    // Small repair: marked paid now, never takes the slot.
+    const small = quoteProject(at("stadiumPitch", 30), { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)!;
+    const s = payRepairNow(f0, small, { id: "s", date: "2027-01-01" }).facilities;
+    expect(s.projects[0]!.paidNow).toBe(true);
+    expect(groupBusy(s, "stadium")).toBe(false);
+    expect(busyGroups(s)).toEqual([]);
   });
 
   test("busy: one project per item; group works take the whole group", () => {

@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture } from "@/types/calendarTypes";
 import type { StandingRow } from "@/types/playerTypes";
 import {
-  applySeason, applyTransfer, clubMatchesOf, emptyClubHistory, longestUnbeaten, titleGallery, topPlayers,
+  CLUB_LEGENDS, applySeason, applyTransfer, clubFacts, clubLegends, clubMatchesOf, emptyClubHistory, legendTier, longestUnbeaten,
+  titleGallery, topPlayers,
   type ClubMatch, type ClubSeasonInput,
 } from "@/Domain/clubHistory/clubHistory";
 
@@ -131,5 +132,57 @@ describe("helpers", () => {
     const s = { a: { name: "A", goals: 3, apps: 10, assists: 0 }, b: { name: "B", goals: 9, apps: 5, assists: 0 }, c: { name: "C", goals: 0, apps: 40, assists: 0 } };
     expect(topPlayers(s, "goals").map((x) => x.playerId)).toEqual(["b", "a"]);
     expect(topPlayers(s, "apps").map((x) => x.playerId)).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("legends and facts (#151)", () => {
+  test("titles and awards at the club add up in the totals", () => {
+    const { history } = applySeason(emptyClubHistory("A"), input({
+      players: [{ playerId: "p1", name: "Striker", row: { goals: 20, apps: 30, assists: 3, titles: ["league:pl", "cup:x"], awards: [{ kind: "best_player", league: "pl" }] } }],
+    }));
+    expect(history.scorers.p1).toMatchObject({ goals: 20, apps: 30, titles: 2, awards: 1 });
+    const again = applySeason(history, input({
+      season: "2027-28",
+      players: [{ playerId: "p1", name: "Striker", row: { goals: 1, apps: 10, assists: 0, titles: ["league:pl"] } }],
+    })).history;
+    expect(again.scorers.p1).toMatchObject({ goals: 21, apps: 40, titles: 3, awards: 1 });
+  });
+
+  test("legend / idol rule", () => {
+    const L = CLUB_LEGENDS;
+    const s = (apps: number, goals = 0, titles = 0, awards = 0) => ({ name: "X", apps, goals, assists: 0, titles, awards });
+    expect(legendTier(s(L.LEGEND_APPS))).toBe("legend");
+    expect(legendTier(s(L.LEGEND_APPS_WITH, L.LEGEND_GOALS))).toBe("legend");
+    expect(legendTier(s(L.LEGEND_APPS_WITH, 0, L.LEGEND_TITLES))).toBe("legend");
+    expect(legendTier(s(L.LEGEND_APPS_WITH - 1, L.LEGEND_GOALS))).toBe("idol");
+    expect(legendTier(s(L.IDOL_APPS))).toBe("idol");
+    expect(legendTier(s(L.IDOL_APPS_WITH, L.IDOL_GOALS))).toBe("idol");
+    expect(legendTier(s(L.IDOL_APPS_WITH, 0, L.IDOL_TITLES))).toBe("idol");
+    expect(legendTier(s(L.IDOL_APPS_WITH, 0, 0, L.IDOL_AWARDS))).toBe("idol");
+    expect(legendTier(s(L.IDOL_APPS_WITH - 1, 99, 9, 9))).toBeNull();
+    expect(legendTier(s(L.IDOL_APPS - 1))).toBeNull();
+    // Legends first, then by apps.
+    const list = clubLegends({
+      a: s(L.IDOL_APPS + 5), b: s(L.LEGEND_APPS), c: s(10), d: s(L.IDOL_APPS + 30),
+    });
+    expect(list.map((x) => [x.playerId, x.tier])).toEqual([["b", "legend"], ["d", "idol"], ["a", "idol"]]);
+  });
+
+  test("facts from the seasons and the scorers", () => {
+    let h = applySeason(emptyClubHistory("A"), input({ titles: ["league:pl"], standing: standing({ pts: 80, gf: 70 }) })).history;
+    h = applySeason(h, input({ season: "2027-28", titles: ["promotion:pl"], move: "promoted", standing: standing({ pts: 60, gf: 90 }) })).history;
+    h = applySeason(h, input({ season: "2028-29", move: "relegated", standing: standing({ pts: 30, gf: 20 }) })).history;
+    const f = clubFacts(h);
+    expect(f.seasons).toBe(3);
+    expect(f.titles).toBe(1);
+    expect(f.promotions).toBe(1);
+    expect(f.relegations).toBe(1);
+    expect(f.leagueGoals).toBe(180);
+    expect(f.bestSeason).toMatchObject({ season: "2026-27", points: 80 });
+    expect(f.mostTeamGoals).toMatchObject({ season: "2027-28", goals: 90 });
+    expect(f.topScorer).toMatchObject({ playerId: "p1", goals: 60 });
+    expect(f.mostApps).toMatchObject({ playerId: "p2", apps: 102 });
+    expect(clubFacts(emptyClubHistory("A"))).toMatchObject({ seasons: 0, titles: 0 });
+    expect(clubFacts(emptyClubHistory("A")).bestSeason).toBeUndefined();
   });
 });

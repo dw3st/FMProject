@@ -33,7 +33,7 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
       ...squadA,
       players: squadA.players.map((p) => p.id === striker.id
         ? { ...p, history: [{ season: "2026-27", squadId: squadA.id, clubName: squadA.name, league: "premier_league",
-            apps: 30, goals: 18, assists: 2, avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }] }
+            apps: 55, goals: 30, assists: 2, avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }] }
         : p),
     };
     const row = (id: string, pts: number) => ({ squadId: id, name: id, mp: 38, w: 20, d: 10, l: 8, gf: 60, ga: 40, gd: 20, pts, form: [] }) as unknown as StandingRow;
@@ -69,7 +69,18 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
     expect(res.seasons).toHaveLength(1);
     expect(res.seasons[0]).toMatchObject({ position: 1, points: 80, titles: ["league:premier_league"] });
     expect(res.titles).toEqual([{ title: "league:premier_league", seasons: ["2026-27"] }]);
-    expect(res.topScorers[0]).toMatchObject({ playerId: striker.id, goals: 18, current: true, retired: false });
+    expect(res.topScorers[0]).toMatchObject({ playerId: striker.id, goals: 30, current: true, retired: false });
+    // Idols and legends (#151): the striker (55 games, 30 goals) is an idol, still at the club.
+    expect(res.legends).toEqual([expect.objectContaining({ playerId: striker.id, tier: "idol", current: true })]);
+    expect(res.facts).toMatchObject({ seasons: 1, titles: 1, leagueGoals: 60, topScorer: { playerId: striker.id, goals: 30 } });
+
+    // A legend who left: 210 games at the club, not in the squad any more.
+    const histA = (await saveService.getClubHistory(saveId, squadA.id))!;
+    await saveService.writeClubHistory(saveId, {
+      ...histA, scorers: { ...histA.scorers, gone_legend: { name: "Old Legend", goals: 12, apps: 210, assists: 30 } },
+    });
+    const res2 = (await (await call(squadA.id)).json()) as ClubHistoryResponse;
+    expect(res2.legends.map((l) => [l.playerId, l.tier, l.current])).toEqual([["gone_legend", "legend", false], [striker.id, "idol", true]]);
     expect(res.records.biggestWin).toMatchObject({ gf: 4, ga: 1, opponentId: squadB.id });
     expect(res.records.recordSigning).toMatchObject({ playerId: bought.id, fee: 12_000_000, clubId: squadB.id });
 

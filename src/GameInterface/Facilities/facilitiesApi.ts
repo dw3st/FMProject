@@ -46,6 +46,8 @@ export interface FacilitiesViewData {
   balance: number;
   board: number;
   weeklyUpkeep: number;
+  /** Groups with a works running: one at a time per group (#152). */
+  busyGroups?: FacilityGroup[];
   committed: number;
   demandInput: { followers: number; tier: number; fans: number };
   season: { start: string; end: string } | null;
@@ -62,7 +64,7 @@ export interface FacilitiesViewData {
 
 export type RequestOutcome =
   | { approved: true; boardShare: number; project: FacilityProject; paidByClub?: boolean }
-  | { approved: false; reason: BoardRefusal | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error" };
+  | { approved: false; reason: BoardRefusal | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error"; group?: FacilityGroup };
 
 /** Facilities of the human club; `request` asks the board for a project and refreshes the view. */
 export function useFacilities(saveId: string | undefined, refreshKey?: string | null) {
@@ -90,7 +92,11 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
       const body = await r.json().catch(() => ({})) as Record<string, unknown>;
       if (!r.ok) {
         const reason = typeof body.error === "string" && ["busy", "maxLevel", "noClub", "invalidRequest"].includes(body.error) ? body.error : "error";
-        return { approved: false, reason: reason as "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error" };
+        const group = reason === "busy" && typeof body.group === "string" ? (body.group as FacilityGroup) : undefined;
+        return {
+          approved: false, reason: reason as "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error",
+          ...(group ? { group } : {}),
+        };
       }
       if (body.view) setData(body.view as FacilitiesViewData);
       return body.approved

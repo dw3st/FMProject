@@ -55,6 +55,8 @@ export interface FacilityProject {
   /** Monthly instalments in total and already charged. */
   instalments: number;
   paid: number;
+  /** Small repair paid on the spot: does not take the group's works slot. */
+  paidNow?: true;
 }
 
 /** A finished project, kept for the dashboard card ("finished in the last 7 days"). */
