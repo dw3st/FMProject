@@ -1,10 +1,13 @@
 import { shirtName } from "@/Domain/shirtName";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { RefereeBadge, type RefereeBadgeData } from "@/GameInterface/Referees/RefereeBadge";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 import type { TeamMeta } from "@/GameInterface/ScoreBar";
+import { Icon } from "@/GameInterface/Icons";
+import { MatchFeedWindow } from "@/GameInterface/Components/MatchFeedWindow";
+import { readFeedWindow, writeFeedWindow, type FeedWindowState } from "@/GameInterface/feedWindow";
 
 /** Live team numbers shown in the "Resumo" panel (both sides). */
 export interface SummaryTeamStats {
@@ -77,6 +80,28 @@ function TeamCrest({ team, fallback }: { team?: TeamMeta; fallback: string }) {
   );
 }
 
+/** The event lines, newest first (the panel and the floating window, #148). */
+export function MatchFeedList({ feed, className = "" }: { feed: MatchFeedItem[]; className?: string }) {
+  const { t } = useTranslation();
+  return (
+    <ol className={`m-0 list-none p-0 ${className}`}>
+      {feed.length === 0 && <li className="text-sm text-muted-foreground py-2">{t("match.summary.noEvents")}</li>}
+      {[...feed].reverse().map((e, i) => (
+        <li
+          key={`${e.minute}-${e.kind}-${i}`}
+          className={`flex items-start gap-2 border-t border-border py-1.5 text-sm ${e.team === "B" ? "flex-row-reverse text-right" : ""}`}
+        >
+          <span className="w-8 shrink-0 font-display font-bold tabular-nums text-muted-foreground">{e.minute}'</span>
+          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_MARK[e.kind]}`} aria-hidden />
+          <span className="min-w-0 flex-1 text-foreground">
+            {t(`match.summary.kind.${e.kind}`, { player: e.player ? shirtName(e.player) : "", playerIn: e.playerIn ? shirtName(e.playerIn) : "", what: e.what ?? "" })}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /**
  * Live "Resumo" panel of the match screen (Etapa 12, #17/#19): team stats for both sides and the
  * event feed with minutes. Dumb component — `MatchScreen` collects the feed and the numbers.
@@ -107,6 +132,12 @@ export function MatchSummaryPanel({
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
   const cards = (s: SummaryTeamStats) => `${s.yellowCards} / ${s.redCards}`;
+  // The events can live in a floating window the user moves and closes (#148), per viewer.
+  const [win, setWin] = useState<FeedWindowState>(readFeedWindow);
+  const updateWin = (next: FeedWindowState) => {
+    setWin(next);
+    writeFeedWindow(next);
+  };
   return (
     <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0 overflow-y-auto">
       {/* Crests instead of the (often long) names (#128), home side on the left (#98): the name stays in
@@ -133,28 +164,38 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
-      <div className="px-4 pt-4 pb-1">
+      <div className="px-4 pt-4 pb-1 flex items-center justify-between gap-2">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}
         </span>
+        <button
+          type="button"
+          onClick={() => updateWin({ ...win, open: !win.open })}
+          aria-pressed={win.open}
+          aria-label={t(win.open ? "match.feedWindow.dock" : "match.feedWindow.open")}
+          title={t(win.open ? "match.feedWindow.dock" : "match.feedWindow.open")}
+          className="w-8 h-8 flex items-center justify-center rounded border border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-primary/50 cursor-pointer"
+        >
+          <Icon name={win.open ? "arrow-down-left" : "arrow-up-right"} size={16} />
+        </button>
       </div>
-      {/* The feed scrolls on its own and never shrinks below ~5 lines (#127): before, the panel scrolled
-          as a whole and the feed (`min-h-0`) was squeezed to nothing under the heat map. */}
-      <ol className="flex-1 min-h-[9rem] overflow-y-auto px-4 pb-3 m-0 list-none">
-        {feed.length === 0 && <li className="text-sm text-muted-foreground py-2">{t("match.summary.noEvents")}</li>}
-        {[...feed].reverse().map((e, i) => (
-          <li
-            key={`${e.minute}-${e.kind}-${i}`}
-            className={`flex items-start gap-2 border-t border-border py-1.5 text-sm ${e.team === "B" ? "flex-row-reverse text-right" : ""}`}
-          >
-            <span className="w-8 shrink-0 font-display font-bold tabular-nums text-muted-foreground">{e.minute}'</span>
-            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_MARK[e.kind]}`} aria-hidden />
-            <span className="min-w-0 flex-1 text-foreground">
-              {t(`match.summary.kind.${e.kind}`, { player: e.player ? shirtName(e.player) : "", playerIn: e.playerIn ? shirtName(e.playerIn) : "", what: e.what ?? "" })}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {/* The feed scrolls on its own and never shrinks below ~5 lines (#127); in the floating window
+          (#148) the panel keeps one line and the heat map gets the room. */}
+      {win.open ? (
+        <p className="m-0 px-4 pb-3 text-sm text-muted-foreground">{t("match.feedWindow.inWindow")}</p>
+      ) : (
+        <MatchFeedList feed={feed} className="flex-1 min-h-[9rem] overflow-y-auto px-4 pb-3" />
+      )}
+      {win.open && (
+        <MatchFeedWindow
+          x={win.x}
+          y={win.y}
+          onMove={(p) => updateWin({ ...win, ...p, open: true })}
+          onClose={() => updateWin({ ...win, open: false })}
+        >
+          <MatchFeedList feed={feed} />
+        </MatchFeedWindow>
+      )}
       {extra && <div className="shrink-0 px-4 pt-3 pb-4 border-t border-border">{extra}</div>}
     </aside>
   );
