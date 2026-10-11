@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Instalações com desenho: cada parte do estádio, do CT e da base aparece como um cartão ilustrado com nível e condição; ao escolher uma, o painel mostra a obra, o custo, o prazo e a resposta da diretoria.",
+        en: "Facilities drawn: every part of the stadium, training ground and academy is an illustrated card with its level and condition; pick one to see the works, cost, time and the board's answer.",
+      },
+      {
+        pt: "Uma obra por vez em cada área (estádio, CT e base). Obras maiores levam mais tempo e custam mais; reformas pequenas pagas na hora não entram no limite.",
+        en: "One works at a time in each area (stadium, training ground, academy). Bigger works take longer and cost more; small repairs paid on the spot don't count.",
+      },
+      {
+        pt: "História do clube com ídolos e lendas (em atividade, aposentados ou que saíram) e um quadro de fatos e curiosidades.",
+        en: "Club history now has idols and legends (active, retired or gone) and a facts panel.",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [
