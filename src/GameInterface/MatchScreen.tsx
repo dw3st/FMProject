@@ -1342,6 +1342,7 @@ export function MatchScreen() {
                   coaches={coaches}
                   coachCue={coachCue}
                   coachCard={coachCard}
+                  extras
                 />
                 {notice && (
                   <div
