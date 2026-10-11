@@ -47,3 +47,22 @@ alwaysApply: false
 container where the face sprite (rasterised once by `loadFaceCanvas`, like the managers) goes over the kit disc; `true`
 keeps the plain disc. Read at mount (the match screen puts the appointment in the pitch `key`). See
 `.claude/rules/game/referees.md`.
+
+## Visual 2 (#129, 4.19)
+
+Prop `extras` of `PixiPitch` (read every frame; the live match passes it on, `/test` has the chip **Extras**), drawing
+only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
+
+- **Stretcher:** on `injury`, a stretcher with two medics comes from the nearest touchline to where the player was
+  drawn, waits, and leaves carrying a disc in the team colour (`STRETCHER` 1.4 / 0.9 / 1.6 s, effects clock).
+- **Managers** pace their technical area (`coachWalkOffset`, ±`COACH_WALK_FRAC` of the pitch length); **benches**
+  (`benchRect`, outer side of each area) with one disc per substitute, redrawn only when a bench changes size (with
+  Officials on).
+- **Net:** the goal effect draws a mesh pushed out of the goal, wobbling and settling (`netShake`, `EffectCtx.netShake`);
+  without extras, the single bulging line as before.
+- **Crowd:** the stand is now a plain `Graphics` (`drawStandBase` + `drawStandEdges`) and each side's fans one baked
+  sprite of their own box (`drawFans`, `fansBounds`): the home fans pulse on a home goal, the scoring side's fans jump
+  (`crowdJumpPx`, three hops over `CROWD_JUMP_S`). Texture area about the same as the single crowd texture before.
+- **Celebration:** scorer and assister get the `celebrate` player animation (two hops and a full turn, 1.4 s).
+- Cost: the per-frame logic is ~2 µs (headless micro-bench, 3600 frames); the in-browser FPS was not read (no browser
+  available on the dev machine at the time).

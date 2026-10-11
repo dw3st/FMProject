@@ -6,7 +6,7 @@ import {
   type HeatmapWindow, type PossessionHeatmap as HeatmapAcc,
 } from "@/Domain/match/possessionHeatmap";
 import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
-import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Icon } from "@/GameInterface/Icons";
 
 /** How often the card re-reads the accumulator (real time). Never per tick. */
@@ -92,24 +92,31 @@ export function PossessionHeatmap({
         <Icon name={open ? "chevron-up" : "chevron-down"} size={16} />
       </button>
       {open && <>
-      <OptionChips
-        aria-label={t("match.heatmap.team")}
-        options={[
-          { key: "mine", label: t("match.heatmap.mine") },
-          { key: "opponent", label: t("match.heatmap.opponent") },
-        ]}
-        value={side}
-        onChange={setSide}
-      />
-      <OptionChips
-        aria-label={t("match.heatmap.period")}
-        options={[
-          { key: "recent", label: t("match.heatmap.recent") },
-          { key: "all", label: t("match.heatmap.all") },
-        ]}
-        value={period}
-        onChange={setPeriod}
-      />
+      {/* Two switches, each with its two options side by side (#148): whose possession, which period. */}
+      <div className="flex flex-col gap-1.5">
+        <SegmentedTabs
+          fill
+          compact
+          aria-label={t("match.heatmap.team")}
+          tabs={[
+            { key: "mine", label: t("match.heatmap.mine") },
+            { key: "opponent", label: t("match.heatmap.opponent") },
+          ]}
+          active={side}
+          onChange={setSide}
+        />
+        <SegmentedTabs
+          fill
+          compact
+          aria-label={t("match.heatmap.period")}
+          tabs={[
+            { key: "recent", label: t("match.heatmap.recentShort") },
+            { key: "all", label: t("match.heatmap.allShort") },
+          ]}
+          active={period}
+          onChange={setPeriod}
+        />
+      </div>
       <svg
         viewBox={`0 0 ${PITCH_LENGTH} ${PITCH_WIDTH}`}
         role="img"

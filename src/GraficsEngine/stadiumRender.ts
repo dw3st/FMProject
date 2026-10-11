@@ -4,7 +4,7 @@
  */
 import type { Graphics } from "pixi.js";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
-import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type SideRect } from "@/GraficsEngine/crowd";
+import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 
 /** Radius of a fan dot, as a fraction of the seat cell. */
@@ -12,6 +12,13 @@ const SEAT_DOT = 0.38;
 
 /** Draws the stand band (outer − inner), its walkways, the fans and the edges into `g`. */
 export function drawStand(g: Graphics, stand: StandGeometry, crowd: Omit<CrowdInput, "stand">): void {
+  drawStandBase(g, stand, crowd.works);
+  drawFans(g, stand, crowdSeats({ ...crowd, stand }));
+  drawStandEdges(g, stand);
+}
+
+/** The empty stand: band, walkways and the stands under works (#137). */
+export function drawStandBase(g: Graphics, stand: StandGeometry, worksSides?: CrowdInput["works"]): void {
   const { outer, inner } = stand;
   const innerR = inner.x + inner.w, innerB = inner.y + inner.h;
   g.rect(outer.x, outer.y, outer.w, inner.y - outer.y).fill(STADIUM.STAND_COLOR);
@@ -19,15 +26,36 @@ export function drawStand(g: Graphics, stand: StandGeometry, crowd: Omit<CrowdIn
   g.rect(outer.x, inner.y, inner.x - outer.x, inner.h).fill(STADIUM.STAND_COLOR);
   g.rect(innerR, inner.y, outer.x + outer.w - innerR, inner.h).fill(STADIUM.STAND_COLOR);
   for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill(STADIUM.CONCRETE);
-  const works = new Set(crowd.works ?? []);
+  const works = new Set<string>(worksSides ?? []);
   for (const r of standSideRects(stand)) if (works.has(r.side)) drawWorks(g, r, seatCellPx(stand));
+}
 
+/** One dot per filled seat. */
+export function drawFans(g: Graphics, stand: StandGeometry, seats: readonly CrowdSeat[]): void {
   const r = seatCellPx(stand) * SEAT_DOT;
-  for (const s of crowdSeats({ ...crowd, stand })) g.circle(s.x, s.y, r).fill(s.color);
+  for (const s of seats) g.circle(s.x, s.y, r).fill(s.color);
+}
 
-  // Roof edge around the canvas and the advertising boards along the run-off.
+/** Roof edge around the canvas and the advertising boards along the run-off. */
+export function drawStandEdges(g: Graphics, stand: StandGeometry): void {
+  const { outer, inner } = stand;
   g.rect(outer.x + 1, outer.y + 1, outer.w - 2, outer.h - 2).stroke({ width: 2, color: STADIUM.ROOF_EDGE });
   g.rect(inner.x, inner.y, inner.w, inner.h).stroke({ width: 1.5, color: 0xd9dde3, alpha: 0.35 });
+}
+
+/** Bounding box (px, padded by a dot) of a set of fans; null when there are none. */
+export function fansBounds(stand: StandGeometry, seats: readonly CrowdSeat[]): { x: number; y: number; w: number; h: number } | null {
+  if (seats.length === 0) return null;
+  const pad = seatCellPx(stand);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const s of seats) {
+    if (s.x < x0) x0 = s.x;
+    if (s.y < y0) y0 = s.y;
+    if (s.x > x1) x1 = s.x;
+    if (s.y > y1) y1 = s.y;
+  }
+  const x = Math.floor(x0 - pad), y = Math.floor(y0 - pad);
+  return { x, y, w: Math.ceil(x1 + pad) - x, h: Math.ceil(y1 + pad) - y };
 }
 
 /** Pieces of a stand under works: scaffolding grid and hazard tape along the pitch edge (#137). */

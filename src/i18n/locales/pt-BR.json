@@ -917,7 +917,9 @@
       "attack": "Direção do ataque",
       "empty": "Ainda sem posse",
       "show": "Mostrar o mapa de posse",
-      "hide": "Esconder o mapa de posse"
+      "hide": "Esconder o mapa de posse",
+      "recentShort": "Últimos 10'",
+      "allShort": "Jogo todo"
     },
     "liveTactics": {
       "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
@@ -960,6 +962,31 @@
       "red": "Cartão vermelho! {{player}} ({{team}}) expulso",
       "secondYellow": "Segundo amarelo: {{player}} ({{team}}) expulso",
       "penalty": "Pênalti para {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Jogador",
+      "rating": "Nota",
+      "ratingFull": "Nota na partida",
+      "fitness": "Fôl",
+      "fitnessFull": "Fôlego",
+      "goals": "G",
+      "goalsFull": "Gols",
+      "assists": "A",
+      "assistsFull": "Assistências"
+    },
+    "stadium": {
+      "label": "Estádio",
+      "attendance": "{{crowd}} torcedores",
+      "neutral": "Campo neutro"
+    },
+    "feedWindow": {
+      "title": "Lances",
+      "open": "Abrir os lances numa janela",
+      "dock": "Voltar para o painel",
+      "close": "Fechar a janela",
+      "drag": "Arraste para mover",
+      "inWindow": "Lances abertos numa janela."
     }
   },
   "broadcast": {

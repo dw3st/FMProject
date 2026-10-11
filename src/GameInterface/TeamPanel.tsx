@@ -10,25 +10,13 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { Icon } from "@/GameInterface/Icons";
 import { gamePlayerNaturalRole } from "@/GameInterface/positionHelpers";
 import { kitDotStyle, readableOnDark } from "@/GameInterface/matchTeamColors";
-import type { PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
+import { cardRowClass, countCell, type PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 
-function energyBarColor(energy: number): string {
-  if (energy >= 60) return "bg-chart-2/90";
-  if (energy >= 35) return "bg-chart-4/90";
-  return "bg-destructive/85";
-}
-
-function EnergyReadout({ energy }: { energy: number }) {
-  const v = Math.max(0, Math.min(100, energy));
-  const barClass = energyBarColor(v);
-  return (
-    <div className="flex items-center gap-2 min-w-[5.5rem] shrink-0">
-      <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
-        <div className={`h-full rounded-full transition-[width] ${barClass}`} style={{ width: `${v}%` }} />
-      </div>
-      <span className="font-display font-bold text-base tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
-    </div>
-  );
+/** Fitness number coloured by band (#149): green, amber, red. */
+function energyTextClass(energy: number): string {
+  if (energy >= 60) return "text-chart-2";
+  if (energy >= 35) return "text-chart-4";
+  return "text-destructive";
 }
 
 /** Card shown in the lineup list: a small upright rectangle in the card colour. */
@@ -36,38 +24,19 @@ function CardMark({ red }: { red?: boolean }) {
   return <span className={`inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 ${red ? "bg-destructive" : "bg-card-yellow"}`} aria-hidden />;
 }
 
-/** Goals, assists and cards of one player in this match (#69). */
-function EventMarkers({ events }: { events?: PlayerMatchEvents }) {
-  const { t } = useTranslation();
-  if (!events) return <span />;
-  const count = (n: number) => n > 1 && <span className="font-display font-bold text-base tabular-nums leading-none">×{n}</span>;
-  return (
-    <span className="flex items-center gap-2 min-w-0">
-      {events.goals > 0 && (
-        <span role="img" aria-label={t("match.playerEvents.goals", { count: events.goals })} title={t("match.playerEvents.goals", { count: events.goals })} className="inline-flex items-center gap-0.5 text-foreground">
-          <Icon name="ball" size={16} />
-          {count(events.goals)}
-        </span>
-      )}
-      {events.assists > 0 && (
-        <span role="img" aria-label={t("match.playerEvents.assists", { count: events.assists })} title={t("match.playerEvents.assists", { count: events.assists })} className="inline-flex items-center gap-0.5 text-chart-2">
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] leading-none">A</span>
-          {count(events.assists)}
-        </span>
-      )}
-      {events.yellows > 0 && (
-        <span role="img" aria-label={t("match.playerEvents.yellow")} title={t("match.playerEvents.yellow")} className="inline-flex items-center gap-0.5">
-          {Array.from({ length: events.yellows }, (_, i) => <CardMark key={i} />)}
-        </span>
-      )}
-      {events.red && (
-        <span role="img" aria-label={t("match.playerEvents.red")} title={t("match.playerEvents.red")} className="inline-flex items-center">
-          <CardMark red />
-        </span>
-      )}
-    </span>
-  );
-}
+/** Column widths of the lineup list (#149): position, name, rating, fitness, goals, assists. */
+export const LINEUP_COLS = {
+  pos: "w-9 shrink-0",
+  rating: "w-9 shrink-0 text-right",
+  fitness: "w-9 shrink-0 text-right",
+  stat: "w-6 shrink-0 text-center",
+} as const;
+
+const DEPARTED_ICON: Record<DepartedReason, "xcircle" | "heart-pulse" | "arrow-down-left"> = {
+  sentOff: "xcircle",
+  injured: "heart-pulse",
+  subbedOff: "arrow-down-left",
+};
 
 function PlayerRow({
   player,
@@ -75,7 +44,6 @@ function PlayerRow({
   isHolder,
   isPassFrom,
   isPassTo,
-  decision,
   rating,
   side,
   isSelected,
@@ -106,44 +74,57 @@ function PlayerRow({
   const edge = `2px solid ${readableOnDark(color)}`;
   const highlighted = isHolder || isPassFrom || isPassTo;
   const isLeft = side === "left";
+  const role = gamePlayerNaturalRole(player);
+  const energy = Math.max(0, Math.min(100, player.energy));
+  const tint = cardRowClass(events);
+  const cardLabel = events?.red ? t("match.playerEvents.red") : events && events.yellows > 0 ? t("match.playerEvents.yellow") : undefined;
   return (
     <div
       onClick={() => onSelect?.(player.id)}
-      className={`flex flex-col gap-1 px-3 py-2 border-b border-border/30 transition-colors ${departed ? "opacity-60" : ""} ${
+      title={departed ? t(`match.playerEvents.${departed}`) : cardLabel}
+      className={`flex items-center gap-1.5 min-h-8 px-3 py-1.5 border-b border-border/30 text-sm transition-colors ${departed ? "opacity-60" : ""} ${
         onSelect ? "cursor-pointer" : ""
-      } ${isSelected ? "bg-primary/10 border-l-2 border-primary" : highlighted ? "bg-secondary/40" : "hover:bg-secondary/30"} ${
-        isLeft ? "" : "items-end"
+      } ${isSelected ? "bg-primary/10 border-l-2 border-primary" : highlighted ? "bg-secondary/40" : tint || "hover:bg-secondary/30"} ${
+        isLeft ? "" : "flex-row-reverse"
       }`}
       style={{
         borderLeft: isSelected ? undefined : isHolder && isLeft ? edge : undefined,
         borderRight: isHolder && !isLeft ? edge : undefined,
       }}
     >
-      <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
-        <div className="w-2 h-2 rounded-full shrink-0" style={kitDotStyle(color)} />
-        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{t(`roles.detailedAbbr.${gamePlayerNaturalRole(player)}`, { defaultValue: gamePlayerNaturalRole(player) })}</span>
-        <span className={`flex-1 min-w-0 text-sm font-semibold text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
-          <span className="truncate" title={player.name}>{shirtName(player.name)}</span>
-          {starKind && <StarBadge kind={starKind} />}
-        </span>
+      <span className={`${LINEUP_COLS.pos} flex items-center gap-1.5`}>
+        <span className="w-2 h-2 rounded-full shrink-0" style={kitDotStyle(color)} />
+        <span className="text-[13px] font-bold text-muted-foreground uppercase font-display">{t(`roles.detailedAbbr.${role}`, { defaultValue: role })}</span>
+      </span>
+      <span className={`flex-1 min-w-0 font-semibold text-foreground flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+        <span className="truncate" title={player.name}>{shirtName(player.name)}</span>
+        {starKind && <StarBadge kind={starKind} />}
+        {events && events.yellows > 0 && !events.red && (
+          <span role="img" aria-label={t("match.playerEvents.yellow")} className="inline-flex items-center gap-0.5">
+            {Array.from({ length: events.yellows }, (_, i) => <CardMark key={i} />)}
+          </span>
+        )}
+        {events?.red && (
+          <span role="img" aria-label={t("match.playerEvents.red")} className="inline-flex items-center"><CardMark red /></span>
+        )}
         {isSubbedIn && (
           <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" aria-label={t("common.substitutedIn")} />
         )}
-        {rating !== undefined && (
-          <span className={`font-display font-bold text-base tabular-nums shrink-0 ${ratingTextClass10(rating)}`}>{rating.toFixed(1)}</span>
-        )}
-      </div>
-
-      <div className={`flex items-center w-full gap-2 justify-between ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
-        <EventMarkers events={events} />
-        {departed ? (
-          <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] shrink-0 ${departed === "sentOff" ? "text-destructive" : "text-muted-foreground"}`}>
-            {t(`match.playerEvents.${departed}`)}
-          </span>
-        ) : (
-          <EnergyReadout energy={player.energy} />
-        )}
-      </div>
+      </span>
+      <span className={`${LINEUP_COLS.rating} font-display font-bold text-base tabular-nums ${rating !== undefined ? ratingTextClass10(rating) : ""}`}>
+        {rating !== undefined ? rating.toFixed(1) : ""}
+      </span>
+      <span className={`${LINEUP_COLS.fitness} font-display font-bold text-base tabular-nums ${departed ? "text-muted-foreground" : energyTextClass(energy)}`}>
+        {departed
+          ? <Icon name={DEPARTED_ICON[departed]} size={16} className={`inline-block ${departed === "sentOff" ? "text-destructive" : ""}`} aria-label={t(`match.playerEvents.${departed}`)} />
+          : Math.round(energy)}
+      </span>
+      <span className={`${LINEUP_COLS.stat} font-display font-bold text-base tabular-nums text-foreground`} aria-label={events?.goals ? t("match.playerEvents.goals", { count: events.goals }) : undefined}>
+        {countCell(events?.goals)}
+      </span>
+      <span className={`${LINEUP_COLS.stat} font-display font-bold text-base tabular-nums text-chart-2`} aria-label={events?.assists ? t("match.playerEvents.assists", { count: events.assists }) : undefined}>
+        {countCell(events?.assists)}
+      </span>
     </div>
   );
 }
@@ -211,7 +192,7 @@ export function TeamPanel({
   const isLeft = side === "left";
 
   return (
-    <div className="w-64 card-arcade border-r border-border flex flex-col shrink-0">
+    <div className="w-72 card-arcade border-r border-border flex flex-col shrink-0">
       {/* The score lives in the scoreboard only (#55). The name shrinks (truncates) so the subs
           count and the flip button always stay inside the 256 px card and clickable. */}
       <div className={`flex items-center justify-between gap-2 p-4 border-b border-border ${isLeft ? "" : "flex-row-reverse"}`}>
@@ -243,6 +224,18 @@ export function TeamPanel({
             </span>
           )}
         </div>
+      </div>
+
+      <div
+        aria-hidden
+        className={`flex items-center gap-1.5 px-3 py-1.5 border-b border-border bg-secondary/30 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground ${isLeft ? "" : "flex-row-reverse"}`}
+      >
+        <span className={LINEUP_COLS.pos}>{t("match.lineup.pos")}</span>
+        <span className="flex-1 min-w-0 truncate">{t("match.lineup.name")}</span>
+        <span className={LINEUP_COLS.rating} title={t("match.lineup.ratingFull")}>{t("match.lineup.rating")}</span>
+        <span className={LINEUP_COLS.fitness} title={t("match.lineup.fitnessFull")}>{t("match.lineup.fitness")}</span>
+        <span className={LINEUP_COLS.stat} title={t("match.lineup.goalsFull")}>{t("match.lineup.goals")}</span>
+        <span className={LINEUP_COLS.stat} title={t("match.lineup.assistsFull")}>{t("match.lineup.assists")}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto">

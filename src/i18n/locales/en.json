@@ -917,7 +917,9 @@
       "attack": "Attacking direction",
       "empty": "No possession yet",
       "show": "Show the possession map",
-      "hide": "Hide the possession map"
+      "hide": "Hide the possession map",
+      "recentShort": "Last 10'",
+      "allShort": "Whole match"
     },
     "liveTactics": {
       "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
@@ -960,6 +962,31 @@
       "red": "Red card! {{player}} ({{team}}) is sent off",
       "secondYellow": "Second yellow: {{player}} ({{team}}) is sent off",
       "penalty": "Penalty to {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Player",
+      "rating": "Rat",
+      "ratingFull": "Match rating",
+      "fitness": "Fit",
+      "fitnessFull": "Fitness",
+      "goals": "G",
+      "goalsFull": "Goals",
+      "assists": "A",
+      "assistsFull": "Assists"
+    },
+    "stadium": {
+      "label": "Stadium",
+      "attendance": "{{crowd}} fans",
+      "neutral": "Neutral venue"
+    },
+    "feedWindow": {
+      "title": "Events",
+      "open": "Open the events in a window",
+      "dock": "Back to the panel",
+      "close": "Close the window",
+      "drag": "Drag to move",
+      "inWindow": "Events open in a window."
     }
   },
   "broadcast": {
