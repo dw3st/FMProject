@@ -581,7 +581,7 @@
       {
         "squadId": "85",
         "slug": "paris_saint_germain",
-        "name": "Paris Saint Germain",
+        "name": "Paris Saint-Germain",
         "colors": [
           "#888888",
           "#FFFFFF"
@@ -771,7 +771,7 @@
       {
         "squadId": "530",
         "slug": "atletico_madrid",
-        "name": "Atletico Madrid",
+        "name": "Atlético Madrid",
         "colors": [
           "#272E61",
           "#CE3524"
@@ -870,7 +870,7 @@
       {
         "squadId": "542",
         "slug": "alaves",
-        "name": "Alaves",
+        "name": "Alavés",
         "colors": [
           "#003DA5",
           "#FFFFFF"
@@ -2405,7 +2405,7 @@
       {
         "squadId": "of_ar_estudiantes_de_rio_cuarto",
         "slug": "of_ar_estudiantes_de_rio_cuarto",
-        "name": "Estudiantes",
+        "name": "Estudiantes de Río Cuarto",
         "colors": [
           "#6cace4",
           "#ffffff"
@@ -2595,7 +2595,7 @@
       {
         "squadId": "of_ar_velez_sarsfield",
         "slug": "of_ar_velez_sarsfield",
-        "name": "Vélez",
+        "name": "Vélez Sarsfield",
         "colors": [
           "#ffffff",
           "#003da5"
@@ -3292,7 +3292,7 @@
       {
         "squadId": "es_5807",
         "slug": "es_5807",
-        "name": "Union St.-Gilloise",
+        "name": "Union Saint-Gilloise",
         "colors": [
           "#fcee33",
           "#ffffff"
@@ -3422,7 +3422,7 @@
       {
         "squadId": "of_be_standard_liege",
         "slug": "of_be_standard_liege",
-        "name": "Standard Liege",
+        "name": "Standard Liège",
         "colors": [
           "#e2001a",
           "#ffffff"
@@ -4021,7 +4021,7 @@
       {
         "squadId": "of_ch_fc_zurich",
         "slug": "of_ch_fc_zurich",
-        "name": "FC Zurich",
+        "name": "FC Zürich",
         "colors": [
           "#003da5",
           "#ffffff"
@@ -4092,7 +4092,7 @@
       {
         "squadId": "es_8110",
         "slug": "es_8110",
-        "name": "Deportes Concepcion",
+        "name": "Deportes Concepción",
         "colors": [
           "#800080",
           "#ffffff"
@@ -4182,7 +4182,7 @@
       {
         "squadId": "of_cl_union_la_calera",
         "slug": "of_cl_union_la_calera",
-        "name": "Union La Calera",
+        "name": "Unión La Calera",
         "colors": [
           "#e2001a",
           "#ffffff"
@@ -4192,7 +4192,7 @@
       {
         "squadId": "of_cl_universidad_catolica",
         "slug": "of_cl_universidad_catolica",
-        "name": "Universidad Catolica",
+        "name": "Universidad Católica",
         "colors": [
           "#ffffff",
           "#003da5"
@@ -4212,7 +4212,7 @@
       {
         "squadId": "of_cl_universidad_de_concepcion",
         "slug": "of_cl_universidad_de_concepcion",
-        "name": "Universidad de Concepcion",
+        "name": "Universidad de Concepción",
         "colors": [
           "#ffd700",
           "#003da5"
@@ -4391,7 +4391,7 @@
       {
         "squadId": "es_5480",
         "slug": "es_5480",
-        "name": "Boyacá Chicó FC",
+        "name": "Boyacá Chicó",
         "colors": [
           "#0202db",
           "#000000"
@@ -4431,7 +4431,7 @@
       {
         "squadId": "of_co_aguilas_doradas",
         "slug": "of_co_aguilas_doradas",
-        "name": "Aguilas Doradas",
+        "name": "Águilas Doradas",
         "colors": [
           "#ffd700",
           "#000000"
@@ -4441,7 +4441,7 @@
       {
         "squadId": "of_co_america_de_cali",
         "slug": "of_co_america_de_cali",
-        "name": "America de Cali",
+        "name": "América de Cali",
         "colors": [
           "#e2001a",
           "#ffffff"
@@ -4451,7 +4451,7 @@
       {
         "squadId": "of_co_atletico_bucaramanga",
         "slug": "of_co_atletico_bucaramanga",
-        "name": "Atletico Bucaramanga",
+        "name": "Atlético Bucaramanga",
         "colors": [
           "#ffd700",
           "#195d48"
@@ -4461,7 +4461,7 @@
       {
         "squadId": "of_co_atletico_nacional",
         "slug": "of_co_atletico_nacional",
-        "name": "Atletico Nacional",
+        "name": "Atlético Nacional",
         "colors": [
           "#195d48",
           "#ffffff"
@@ -4521,7 +4521,7 @@
       {
         "squadId": "of_co_independiente_medellin",
         "slug": "of_co_independiente_medellin",
-        "name": "Independiente Medellin",
+        "name": "Independiente Medellín",
         "colors": [
           "#e2001a",
           "#003da5"
@@ -4620,7 +4620,7 @@
       {
         "squadId": "of_co_bogota",
         "slug": "of_co_bogota",
-        "name": "Bogota",
+        "name": "Bogotá",
         "colors": [
           "#7b1c3a",
           "#ffd700"
@@ -4640,7 +4640,7 @@
       {
         "squadId": "of_co_deportes_quindio",
         "slug": "of_co_deportes_quindio",
-        "name": "Deportes Quindio",
+        "name": "Deportes Quindío",
         "colors": [
           "#195d48",
           "#ffffff"
@@ -4710,7 +4710,7 @@
       {
         "squadId": "of_co_union_magdalena",
         "slug": "of_co_union_magdalena",
-        "name": "Union Magdalena",
+        "name": "Unión Magdalena",
         "colors": [
           "#e2001a",
           "#003da5"
@@ -5737,7 +5737,7 @@
       {
         "squadId": "of_es_sporting_gijon",
         "slug": "of_es_sporting_gijon",
-        "name": "Gijón",
+        "name": "Sporting Gijón",
         "colors": [
           "#e2001a",
           "#ffffff"
@@ -8253,7 +8253,7 @@
       {
         "squadId": "of_it_forli",
         "slug": "of_it_forli",
-        "name": "Forli",
+        "name": "Forlì",
         "colors": [
           "#ffffff",
           "#cc0000"
@@ -9287,7 +9287,7 @@
       {
         "squadId": "es_17851",
         "slug": "es_17851",
-        "name": "FC Juarez",
+        "name": "FC Juárez",
         "colors": [
           "#89f442",
           "#ffffff"
@@ -9307,7 +9307,7 @@
       {
         "squadId": "of_mx_club_america",
         "slug": "of_mx_club_america",
-        "name": "Club America",
+        "name": "América",
         "colors": [
           "#ffd700",
           "#003da5"
@@ -9337,7 +9337,7 @@
       {
         "squadId": "of_mx_leon",
         "slug": "of_mx_leon",
-        "name": "Leon",
+        "name": "León",
         "colors": [
           "#195d48",
           "#ffffff"
@@ -9387,7 +9387,7 @@
       {
         "squadId": "of_mx_queretaro",
         "slug": "of_mx_queretaro",
-        "name": "Queretaro",
+        "name": "Querétaro",
         "colors": [
           "#003da5",
           "#ffffff"
@@ -10121,7 +10121,7 @@
       {
         "squadId": "of_pe_alianza_atletico",
         "slug": "of_pe_alianza_atletico",
-        "name": "Alianza Atletico",
+        "name": "Alianza Atlético",
         "colors": [
           "#195d48",
           "#ffffff"
@@ -10614,7 +10614,7 @@
       {
         "squadId": "of_py_cerro_porteno",
         "slug": "of_py_cerro_porteno",
-        "name": "Cerro Porteno",
+        "name": "Cerro Porteño",
         "colors": [
           "#003da5",
           "#e2001a"
@@ -10624,7 +10624,7 @@
       {
         "squadId": "of_py_guarani",
         "slug": "of_py_guarani",
-        "name": "Guarani",
+        "name": "Guaraní",
         "colors": [
           "#ffd700",
           "#000000"
@@ -10664,7 +10664,7 @@
       {
         "squadId": "of_py_sportivo_luqueno",
         "slug": "of_py_sportivo_luqueno",
-        "name": "Sportivo Luqueno",
+        "name": "Sportivo Luqueño",
         "colors": [
           "#003da5",
           "#ffd700"
@@ -12556,7 +12556,7 @@
       {
         "squadId": "es_789",
         "slug": "es_789",
-        "name": "Goztepe",
+        "name": "Göztepe",
         "colors": [
           "#000000",
           "#000000"
@@ -12576,7 +12576,7 @@
       {
         "squadId": "es_996",
         "slug": "es_996",
-        "name": "Genclerbirligi",
+        "name": "Gençlerbirliği",
         "colors": [
           "#000000",
           "#e91b23"
@@ -12586,7 +12586,7 @@
       {
         "squadId": "es_7656",
         "slug": "es_7656",
-        "name": "Caykur Rizespor",
+        "name": "Çaykur Rizespor",
         "colors": [
           "#000000",
           "#000000"
@@ -12616,7 +12616,7 @@
       {
         "squadId": "es_20729",
         "slug": "es_20729",
-        "name": "Eyupspor",
+        "name": "Eyüpspor",
         "colors": [
           "#000000",
           "#c60000"
@@ -12656,7 +12656,7 @@
       {
         "squadId": "of_tr_basaksehir",
         "slug": "of_tr_basaksehir",
-        "name": "Basaksehir",
+        "name": "Başakşehir",
         "colors": [
           "#ff6600",
           "#003da5"
@@ -12666,7 +12666,7 @@
       {
         "squadId": "of_tr_besiktas",
         "slug": "of_tr_besiktas",
-        "name": "Besiktas",
+        "name": "Beşiktaş",
         "colors": [
           "#000000",
           "#ffffff"
@@ -12676,7 +12676,7 @@
       {
         "squadId": "of_tr_fenerbahce",
         "slug": "of_tr_fenerbahce",
-        "name": "Fenerbahce",
+        "name": "Fenerbahçe",
         "colors": [
           "#003da5",
           "#ffd700"
@@ -12706,7 +12706,7 @@
       {
         "squadId": "of_tr_kasimpasa",
         "slug": "of_tr_kasimpasa",
-        "name": "Kasimpasa",
+        "name": "Kasımpaşa",
         "colors": [
           "#003da5",
           "#ffffff"
@@ -13442,7 +13442,7 @@
       {
         "squadId": "of_uy_central_espanol",
         "slug": "of_uy_central_espanol",
-        "name": "Central Espanol",
+        "name": "Central Español",
         "colors": [
           "#e2001a",
           "#003da5"
@@ -13542,7 +13542,7 @@
       {
         "squadId": "of_uy_penarol",
         "slug": "of_uy_penarol",
-        "name": "Penarol",
+        "name": "Peñarol",
         "colors": [
           "#ffd700",
           "#000000"
@@ -13631,7 +13631,7 @@
       {
         "squadId": "of_uy_colon",
         "slug": "of_uy_colon",
-        "name": "Colon",
+        "name": "Colón",
         "colors": [
           "#000000",
           "#e2001a"
@@ -13641,7 +13641,7 @@
       {
         "squadId": "of_uy_fenix",
         "slug": "of_uy_fenix",
-        "name": "Fenix",
+        "name": "Fénix",
         "colors": [
           "#7b1c7a",
           "#ffffff"
@@ -13721,7 +13721,7 @@
       {
         "squadId": "of_uy_tacuarembo",
         "slug": "of_uy_tacuarembo",
-        "name": "Tacuarembo",
+        "name": "Tacuarembó",
         "colors": [
           "#e2001a",
           "#000000"
@@ -13993,7 +13993,7 @@
       {
         "squadId": "of_ve_deportivo_tachira",
         "slug": "of_ve_deportivo_tachira",
-        "name": "Deportivo Tachira",
+        "name": "Deportivo Táchira",
         "colors": [
           "#ffd700",
           "#000000"
@@ -14003,7 +14003,7 @@
       {
         "squadId": "of_ve_estudiantes_merida",
         "slug": "of_ve_estudiantes_merida",
-        "name": "Estudiantes de Merida",
+        "name": "Estudiantes de Mérida",
         "colors": [
           "#e2001a",
           "#ffffff"
