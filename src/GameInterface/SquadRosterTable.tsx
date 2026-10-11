@@ -24,6 +24,11 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 type RosterRow = DisplayPlayer & { morale: number; flagCode?: string };
 
+/** Column key → the row field it sorts by (a text label sorts by the number behind it). */
+const SORT_FIELD: Record<string, string> = {
+  salary: "wage", contract: "contractUntil", value: "valueMillions", apps: "appearances", rating: "avgRating",
+};
+
 export function SquadRosterTable({
   squad,
   leagueSlug,
@@ -48,17 +53,26 @@ export function SquadRosterTable({
   const [onlyUnhappy, setOnlyUnhappy] = useState(false);
 
   // One grid template shared by the header and every row, so each label sits over its values.
-  const columns: { key: string; label: string; width: string; align: "left" | "center" }[] = [
-    { key: "pos", label: t("dashboard.squadRosterTable.pos"), width: "6rem", align: "left" },
-    { key: "name", label: t("dashboard.squadRosterTable.name"), width: "minmax(9rem,1fr)", align: "left" },
-    { key: "age", label: t("dashboard.squadRosterTable.age"), width: "4.5rem", align: "center" },
-    { key: "avg", label: t("dashboard.squadRosterTable.avg"), width: "4.5rem", align: "center" },
-    { key: "salary", label: t("dashboard.squadRosterTable.salary"), width: "7rem", align: "center" },
-    { key: "contractUntil", label: t("dashboard.squadRosterTable.contract"), width: "7rem", align: "center" },
-    { key: "valueMillions", label: t("dashboard.squadRosterTable.value"), width: "6rem", align: "center" },
-    { key: "goals", label: t("dashboard.squadRosterTable.goals"), width: "4rem", align: "center" },
-    { key: "avgRating", label: t("dashboard.squadRosterTable.rating"), width: "6rem", align: "center" },
-    ...(showMorale ? [{ key: "morale", label: t("morale.column"), width: "9rem", align: "left" as const }] : []),
+  // Every header has its full name in `title` (#146): the short labels (OVR, J, G, A) are explained there and in
+  // the legend under the table.
+  const col = (key: string, width: string, align: "left" | "center") => ({
+    key, width, align,
+    label: t(`dashboard.squadRosterTable.${key}`),
+    title: t(`dashboard.squadRosterTable.titles.${key}`),
+  });
+  const columns: { key: string; label: string; title: string; width: string; align: "left" | "center" }[] = [
+    col("pos", "6rem", "left"),
+    col("name", "minmax(9rem,1fr)", "left"),
+    col("age", "4.5rem", "center"),
+    col("avg", "4.5rem", "center"),
+    col("salary", "7rem", "center"),
+    col("contract", "7rem", "center"),
+    col("value", "6rem", "center"),
+    col("apps", "3.5rem", "center"),
+    col("goals", "3.5rem", "center"),
+    col("assists", "3.5rem", "center"),
+    col("rating", "5rem", "center"),
+    ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "9rem", align: "left" as const }] : []),
   ];
   const gridTemplateColumns = [...columns.map((c) => c.width), "4.5rem", "7rem"].join(" ");
 
@@ -92,7 +106,7 @@ export function SquadRosterTable({
     return [...players].sort((a, b) => {
       if (sortKey === "pos") return compareSquadPositions(a, b, sortDir);
       // Text columns that are really numbers sort by the number behind the label.
-      const key = (sortKey === "salary" ? "wage" : sortKey) as keyof RosterRow;
+      const key = (SORT_FIELD[sortKey] ?? sortKey) as keyof RosterRow;
       const aVal = a[key];
       const bVal = b[key];
       if (typeof aVal === "string" && typeof bVal === "string") {
@@ -141,6 +155,7 @@ export function SquadRosterTable({
           <button
             key={col.key}
             type="button"
+            title={col.title}
             onClick={() => handleSort(col.key)}
             className={`px-3 py-3 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 uppercase font-display font-bold tracking-[0.08em] text-[13px] ${
               col.align === "center" ? "justify-center" : "justify-start"
@@ -158,7 +173,7 @@ export function SquadRosterTable({
             </span>
           </button>
         ))}
-        <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.status")}</div>
+        <div className="px-3 py-3 text-center" title={t("dashboard.squadRosterTable.titles.status")}>{t("dashboard.squadRosterTable.status")}</div>
         <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.action")}</div>
       </div>
 
@@ -210,7 +225,9 @@ export function SquadRosterTable({
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.salary}</div>
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
             <div className={`px-3 py-2.5 text-center font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
+            <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.appearances}</div>
             <div className="px-3 py-2.5 text-center text-foreground font-bold">{player.goals}</div>
+            <div className="px-3 py-2.5 text-center text-foreground font-bold">{player.assists}</div>
             <div className="px-3 py-2.5 flex justify-center">
               <RatingBadge value={player.avgRating} />
             </div>
@@ -246,6 +263,7 @@ export function SquadRosterTable({
       </div>
       </div>
       </div>
+      <p className="m-0 px-4 py-2.5 border-t border-border text-sm text-muted-foreground">{t("dashboard.squadRosterTable.legend")}</p>
     </div>
   );
 }
