@@ -577,6 +577,8 @@ export const apiRoutes = withJsonErrors({
       crowd,
       managers,
       referee,
+      // The manager serves a touchline ban in this match (`.claude/rules/game/var.md` §4).
+      managerBanned: !!save.managerBan && save.managerBan.matches > 0,
     });
   },
 

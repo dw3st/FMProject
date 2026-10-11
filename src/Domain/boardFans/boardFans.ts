@@ -1,3 +1,4 @@
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { addDays } from "@/Domain/dates";
 import { GATE } from "@/Domain/finance/gate";
@@ -221,6 +222,11 @@ export function applyTransferSale(
   const t = BOARD_FANS.transfer;
   const big = sale.annualRevenue > 0 && sale.fee >= sale.annualRevenue * t.BIG_SALE_REVENUE_SHARE;
   return moveMeters(state, big ? t.BIG_SALE_BOARD : 0, sale.idol ? t.IDOL_SALE_FANS : 0);
+}
+
+/** The manager got a card for complaining with the referee (`.claude/rules/game/var.md` §4). */
+export function applyManagerCard(state: BoardState, card: "yellow" | "red"): BoardState {
+  return moveMeters(state, card === "red" ? VAR_CONFIG.BOARD_RED : VAR_CONFIG.BOARD_YELLOW, 0);
 }
 
 /** The human club bought a player: spending past the balance costs board confidence. */

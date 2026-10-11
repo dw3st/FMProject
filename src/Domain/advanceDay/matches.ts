@@ -4,7 +4,7 @@ import { personalDpMult, professionalismDecayMult } from "@/Domain/personality/p
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
-import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
+import { matchVarStats, toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -162,6 +162,20 @@ export interface PlayedMatchRecording {
   durationMs: number;
   /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
   decider?: import("@/types/calendarTypes").MatchDecider;
+  /** Referee errors and VAR checks (`.claude/rules/game/var.md`); absent without a referee. */
+  var?: import("@/types/dayLogTypes").MatchVarStats;
+  /** Cards shown to the human club's manager in the live match (`var.md` §4). Never from the engine. */
+  managerCards?: ManagerCardRecord[];
+  /** The user's manager complained at least once without a card (squad morale +1, `var.md` §4). */
+  complaintMorale?: true;
+}
+
+/** A card shown to the human club's manager after a complaint (live match only). */
+export interface ManagerCardRecord {
+  card: "yellow" | "red";
+  minute: number;
+  /** 1-based number of the complaint that got it. */
+  complaint: number;
 }
 
 function finalizeSquadsAfterMatch(
@@ -458,6 +472,7 @@ export function buildMatchEventFromRecording(
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
     ...(recording.decider ? { decider: recording.decider } : {}),
+    ...(recording.var ? { var: recording.var } : {}),
   };
 
   return { event, updatedHome, updatedAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
@@ -734,6 +749,8 @@ export function buildMatchEvent(
           },
         }
       : {}),
+    // Referee errors and VAR checks (`var.md`): only with a referee who can err.
+    ...(typeof sim.referee?.quality === "number" ? { var: matchVarStats(result.teamStats.A, result.teamStats.B) } : {}),
   };
 
   const withPitch = withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee);
@@ -785,6 +802,7 @@ export function buildQuickMatchEvent(
       aggregate: fixture.aggregate,
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.referee ? { refereeStrictness: sim.referee.strictness } : {}),
+      ...(typeof sim.referee?.quality === "number" ? { refereeQuality: sim.referee.quality, refereeVar: sim.referee.var === true } : {}),
     },
     rng,
   );

@@ -39,8 +39,9 @@ export function variantAutoLabel(v: Variant): string {
   const withMor1 = v.temperament === undefined ? withMor0 : `${withMor0} · tmp ${v.temperament}`;
   const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor1 : `${withMor1} · pitch ${v.pitchCondition}%`;
   const withRef = v.refereeStrictness === undefined ? withMor : `${withMor} · ref ${v.refereeStrictness > 0 ? "+" : ""}${v.refereeStrictness}`;
+  const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;
   const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;
-  const withInstr = instr > 0 ? `${withRef} · instr ${instr}` : withRef;
+  const withInstr = instr > 0 ? `${withQ} · instr ${instr}` : withQ;
   return v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
 }
 

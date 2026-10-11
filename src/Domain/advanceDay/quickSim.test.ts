@@ -999,3 +999,23 @@ describe("quickSim temperament (`src/Domain/personality`)", () => {
     expect(hotC / calmC).toBeGreaterThan(2);
   });
 });
+
+describe("referee errors / VAR (statistics only, `var.md`)", () => {
+  test("same fixture and seed: identical score, stats and the rng stream; errors only with a quality", () => {
+    const home = makeSquad("h", 5);
+    const away = makeSquad("a", 5);
+    for (let seed = 1; seed <= 30; seed++) {
+      const rngA = mulberry32(seed);
+      const rngB = mulberry32(seed);
+      const base = { fixtureId: `f${seed}`, home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) };
+      const plain = quickSimMatch(base, rngA).recording;
+      const withRef = quickSimMatch({ ...base, refereeQuality: 30, refereeVar: true }, rngB).recording;
+      expect(withRef.score).toEqual(plain.score);
+      expect(withRef.playerStats).toEqual(plain.playerStats);
+      expect(withRef.cards).toEqual(plain.cards);
+      expect(rngB()).toBe(rngA());
+      expect(plain.var).toBeUndefined();
+      expect(withRef.var!.overturned).toBeLessThanOrEqual(withRef.var!.errors);
+    }
+  });
+});

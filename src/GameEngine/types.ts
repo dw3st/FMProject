@@ -568,6 +568,45 @@ export interface ShotState {
   freeKick?: boolean;
 }
 
+/** What the end of a VAR check does to the match (data only: `gameState.ts` applies it). */
+export type VarApply =
+  | { type: 'none' }
+  /** Penalty ruled out: indirect free kick to the defending side at the spot of the challenge. */
+  | { type: 'cancel_penalty'; defendingTeam: TeamId; x: number; y: number; attackerId: number }
+  /** Goal ruled out for offside: score undone, offside free kick at the offside spot. */
+  | { type: 'disallow_goal'; team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; offenderId: number; x: number; y: number; lineX?: number };
+
+export interface VarReviewState {
+  kind: import('@/GameEngine/Domain/Var').VarReviewKind;
+  outcome: 'confirmed' | 'overturned';
+  /** Side the final decision goes against. */
+  against: TeamId;
+  playerId: number;
+  offenderId?: number;
+  /** Real seconds left. */
+  countdown: number;
+  apply: VarApply;
+}
+
+export interface MissedOffside { team: TeamId; playerId: number; until: number; x: number; y: number; lineX?: number }
+
+export interface RefereeErrorRecord {
+  kind: import('@/GameEngine/Domain/Var').RefereeErrorKind;
+  /** Side the mistake hurt. */
+  team: TeamId;
+  playerId: number;
+  minute: number;
+  corrected: boolean;
+}
+
+export interface VarReviewRecord {
+  kind: import('@/GameEngine/Domain/Var').VarReviewKind;
+  outcome: 'confirmed' | 'overturned';
+  against: TeamId;
+  playerId: number;
+  minute: number;
+}
+
 export interface GameState {
   players: GamePlayer[];
   /** Bench players for Team A — waiting to come on. */
@@ -670,6 +709,23 @@ export interface GameState {
   setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
   /** Referee of the match (`.claude/rules/game/referees.md`): his rigor scales fouls and cards. Absent = neutral. */
   referee?: import('@/types/refereeTypes').EngineReferee;
+  /** VAR check in progress (`.claude/rules/game/var.md`): play frozen, the decision applied when it ends. */
+  varReview?: VarReviewState | null;
+  /** An offside the assistant missed: a goal of `team` before match-time `until` is checked by the VAR. */
+  missedOffside?: MissedOffside | null;
+  /** A card-free complaint of the manager: rigor added on the fouls and cards of `team` until the end. */
+  refereeBias?: { team: TeamId; amount: number } | null;
+  /** `/test`: this referee error fires on its next opportunity (then clears). */
+  forcedRefError?: import('@/GameEngine/Domain/Var').RefereeErrorKind | null;
+  /** Referee errors of the match, in order (summary, recording). */
+  refereeErrors?: RefereeErrorRecord[];
+  /** VAR checks of the match, in order. */
+  varReviews?: VarReviewRecord[];
+  /**
+   * Teams whose substitutions the assistant makes by the AI rule — the human team of the live match when its
+   * manager is banned or sent off (`var.md` §4). Team B is always automatic.
+   */
+  autoSubs?: Partial<Record<TeamId, true>>;
   /**
    * Teams whose manager picks the replacement of an injured player (#140, the human team of the
    * live match). Absent = automatic (`forceInjurySubstitution`): AI, `simulateMatch`, `/test`.

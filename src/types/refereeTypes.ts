@@ -36,7 +36,11 @@ export interface RefereeAssignment {
   assistantIds: [string, string];
 }
 
-export interface RefereeCompStats { matches: number; fouls: number; yellows: number; reds: number; penalties: number }
+export interface RefereeCompStats {
+  matches: number; fouls: number; yellows: number; reds: number; penalties: number;
+  /** Referee errors / VAR checks / overturned calls (`.claude/rules/game/var.md`); absent before any. */
+  errors?: number; reviews?: number; overturned?: number;
+}
 
 export interface RefereeSeasonStats extends RefereeCompStats {
   byCompetition: Record<string, RefereeCompStats>;
@@ -68,4 +72,10 @@ export interface RefereeSeasonArchive {
 export interface MatchReferee { id: string; name: string; country: string }
 
 /** The referee the engine reads (`GameState.referee`). */
-export interface EngineReferee extends MatchReferee { strictness: number }
+export interface EngineReferee extends MatchReferee {
+  strictness: number;
+  /** 0..100: how often he gets a call wrong (`.claude/rules/game/var.md`). Absent = never errs (no draw at all). */
+  quality?: number;
+  /** This fixture has VAR (`hasVar`): reviewable errors are corrected, some correct calls checked. */
+  var?: boolean;
+}

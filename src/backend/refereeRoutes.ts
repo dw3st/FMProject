@@ -5,7 +5,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { ensureAssignments, officialsFor, refereeView, type RefereeView } from "@/backend/refereeWorld";
+import { ensureAssignments, officialsFor, refereeView, varLookup, type RefereeView } from "@/backend/refereeWorld";
 import { addOneDay } from "@/Domain/dates";
 import { ageOn } from "@/Domain/referees/pool";
 import { fixtureKey } from "@/Domain/referees/assign";
@@ -21,6 +21,10 @@ const SEASON = /^\d{4}(-\d{2})?$/;
 export interface MatchSetupReferee extends RefereeView {
   /** Rigor for the live engine (never shown: the screens show `band`). */
   strictness: number;
+  /** Quality for the live engine's errors (`var.md`; never shown). */
+  quality: number;
+  /** The fixture has VAR (`hasVar`): the preview and the live match show it. */
+  var: boolean;
   assistants: { id: string; name: string; country: string; gender: "male" | "female"; age: number }[];
 }
 
@@ -33,6 +37,8 @@ export async function matchSetupReferee(saveId: string, date: string, fixture: F
   return {
     ...refereeView(officials.referee, date, state),
     strictness: officials.referee.strictness,
+    quality: officials.referee.quality,
+    var: await varLookup(saveService, saveId)(fixture),
     assistants: officials.assistants.map((a) => ({ id: a.id, name: a.name, country: a.country, gender: a.gender, age: ageOn(a.birthDate, date) })),
   };
 }

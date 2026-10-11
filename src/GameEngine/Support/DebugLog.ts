@@ -26,7 +26,8 @@ export type DebugCategory =
   | 'card'          // yellow / red cards and sendings-off
   | 'instruction'   // player instructions applied / changed, man-marking pairs
   | 'aerial'        // crosses, long balls, aerial duels, keeper claims, headers
-  | 'setPiece';     // corners, direct free kicks and the wall, set-piece deliveries
+  | 'setPiece'      // corners, direct free kicks and the wall, set-piece deliveries
+  | 'var';          // referee errors, VAR checks, manager complaints
 
 export interface DebugEntry {
   id:        number;

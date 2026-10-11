@@ -1,3 +1,8 @@
+import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
+import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
+import { applyManagerCard } from "@/Domain/boardFans/boardFans";
+import { afterManagerComplaint } from "@/Domain/morale/morale";
+import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
@@ -110,7 +115,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
-import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees } from "@/backend/refereeWorld";
+import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
 import { withRefereeLog } from "@/Domain/advanceDay/matches";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
@@ -451,6 +456,8 @@ export async function advanceOneDay(
     const regCtx = await registrationDayCtx(saveService, saveId, meta, index, currentDate, windows);
     const registrationNotices: RegistrationNotice[] = [];
     let registrationViolations = 0;
+    // Cards of the user's manager in today's live match (`.claude/rules/game/var.md` §4).
+    let humanManagerCards: ManagerCardRecord[] = [];
     if (playerSquadId && playerEntry && !options.marketFrozen) {
       const humanReg = await saveService.getSquadById(saveId, playerSquadId);
       if (humanReg) {
@@ -479,10 +486,12 @@ export async function advanceOneDay(
     const refereesToday = await ensureAssignments(saveService, saveId, currentDate);
     const refereePool = Object.keys(refereesToday).length > 0 ? await saveService.getRefereePool(saveId) : null;
     const refereeById = new Map((refereePool?.referees ?? []).map((r) => [r.id, r]));
-    const refereeOf = (f: Fixture) => {
+    const fixtureHasVar = varLookup(saveService, saveId);
+    // The referee with his quality (errors) and the fixture's VAR (`.claude/rules/game/var.md`).
+    const refereeOf = async (f: Fixture) => {
       const a = refereesToday[fixtureKey(f.competition, f.id)];
       const r = a ? refereeById.get(a.refereeId) : undefined;
-      return r ? engineReferee(r) : undefined;
+      return r ? engineReferee(r, await fixtureHasVar(f)) : undefined;
     };
 
     // Group updates per league for round file writes
@@ -629,10 +638,13 @@ export async function advanceOneDay(
               return { ok: false, status: 400, error: "unregistered player in recording" };
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
-            r.event = withRefereeLog(r.event, refereeOf(fixture));
+            r.event = withRefereeLog(r.event, await refereeOf(fixture));
             dayEvents.push(r.event);
-            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            const complained = playedMatchOverride.complaintMorale === true;
+            const backed = (sq: Squad) => (complained && sq.id === playerSquadId ? afterManagerComplaint(sq) : sq);
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: backed(r.updatedHome) });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: backed(r.updatedAway) });
+            humanManagerCards = sanitizeManagerCards(playedMatchOverride.managerCards);
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
             for (const inj of r.injuriesApplied) {
@@ -674,7 +686,7 @@ export async function advanceOneDay(
                 : resolveSimMode(leagueSlug, meta);
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
             const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
-            const referee = refereeOf(fixture);
+            const referee = await refereeOf(fixture);
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee });
@@ -959,6 +971,16 @@ export async function advanceOneDay(
           roundUpdates.get(competition)?.get(round)?.find((f) => f.id === fixtureId),
         squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       });
+    }
+
+    // ── The manager's ban (`.claude/rules/game/var.md` §4): served by an official match, a red starts one ──
+    let managerBan = meta.managerBan;
+    let managerBanGiven: number | null = null;
+    if (playerSquadId) {
+      const step = nextManagerBan(meta.managerBan, teamsPlayingToday.has(playerSquadId), humanManagerCards, currentDate);
+      managerBan = step.ban;
+      managerBanGiven = step.given;
+      if (board) for (const c of humanManagerCards) board = applyManagerCard(board, c.card);
     }
 
     // ── Prize money: cup + continental (league prize is at rollover, further down) ───────────
@@ -2799,6 +2821,7 @@ export async function advanceOneDay(
       }
     }
     for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
+    if (managerBanGiven) await emitInboxMessage(saveId, buildManagerBanMessage(currentDate, managerBanGiven), saveService);
     // Offers still pending when the inbox was cleared keep their message.
     if (seasonEnded) {
       const fresh = new Set(newOffers.map((o) => o.squadId));
@@ -2825,6 +2848,7 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
     if (board) metaPatch.board = board;
+    if (managerBan !== meta.managerBan) metaPatch.managerBan = managerBan;
     if (jobOffers.length !== offersBefore.length || newOffers.length > 0) metaPatch.jobOffers = jobOffers;
     if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
     if (unemployed !== meta.unemployed) metaPatch.unemployed = unemployed;
