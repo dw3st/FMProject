@@ -2336,13 +2336,41 @@
       "nationality": "Nationality",
       "forSaleOnly": "For Sale Only",
       "freeAgentsOnly": "Free agents only",
-      "awardedOnly": "Award winners only"
+      "awardedOnly": "Award winners only",
+      "affordableOnly": "Fits the budget",
+      "affordableHint": "Estimated fee within your balance and asking wage within your wage cap",
+      "search": "Search",
+      "changed": "Filters changed"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
-      "description": "Click the track to set min–max (0–100)",
+      "description": "Type min and max (1–100)",
       "clearAll": "Clear all stats",
-      "any": "any"
+      "any": "any",
+      "minOf": "{{attr}} minimum",
+      "maxOf": "{{attr}} maximum",
+      "groups": {
+        "physical": "Physical",
+        "attack": "Technique and attack",
+        "defense": "Defence",
+        "goalkeeper": "Goalkeeper"
+      }
+    },
+    "savedFilters": {
+      "title": "Saved filters",
+      "load": "Load and search",
+      "remove": "Delete \"{{name}}\"",
+      "namePlaceholder": "Name these filters",
+      "nameLabel": "Name of the saved filters",
+      "save": "Save filters"
+    },
+    "interest": {
+      "interested": "Interested",
+      "hesitant": "Hesitant",
+      "not_coming": "Would not come",
+      "interestedHint": "Your scout thinks he would like to join your club",
+      "hesitantHint": "Your scout thinks he has doubts: rival club, his level, loyalty or your club's size",
+      "not_comingHint": "Your scout thinks he would turn your club down"
     },
     "table": {
       "forSale": "For sale",
@@ -2360,7 +2388,9 @@
       "action": "Action",
       "offer": "Offer",
       "sign": "Sign",
-      "signFree": "Sign as a free agent"
+      "signFree": "Sign as a free agent",
+      "interest": "Interest",
+      "noClub": "No club"
     }
   },
   "fastForward": {

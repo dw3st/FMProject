@@ -8,6 +8,13 @@ import {
 import { ATTRIBUTE_LIST } from "@/Domain/attributes";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
+import { scoutRowExtras, type BuyerContext } from "@/Domain/scout/scoutInterest";
+import { aiClubFinance, naturalFinancialTier, tierIndex } from "@/Domain/aiFinance/aiClubFinance";
+import { teamAvgRating } from "@/Domain/transfer/transferNeeds";
+import { facilitiesAppeal } from "@/Domain/facilities/facilities";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { wageFactorOf, weeklyWage } from "@/Domain/finance/wages";
+import type { Squad } from "@/types/playerTypes";
 
 interface ScoutIndex {
   key: string;
@@ -47,7 +54,15 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
   const seenAgents = viewer
     ? freeAgents.map((f) => ({ ...f, player: obscurePlayerForViewer(viewer, f.player, "") }))
     : freeAgents;
-  const players = [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)];
+  const rows = [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)];
+  const buyer = viewer?.ownClubId ? buyerContext(squads, viewer.ownClubId) : null;
+  // Interest and "fits the budget" (#123): computed here, on what the user sees of each player.
+  const players = buyer
+    ? rows.map((r) => {
+      const extras = scoutRowExtras(r, buyer, weeklyWage);
+      return extras ? { ...r, ...extras } : r;
+    })
+    : rows;
   const shortlistIds = new Set((await saveService.getScouting(saveId)).shortlist.map((e) => e.playerId));
   const entry: ScoutIndex = {
     key,
@@ -64,6 +79,29 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
     cache.delete(oldest);
   }
   return entry;
+}
+
+/** The user's club as the scout rows need it (`scoutRowExtras`); null when it is not in the save. */
+function buyerContext(squads: Squad[], clubId: string): BuyerContext | null {
+  const own = squads.find((s) => s.id === clubId);
+  if (!own) return null;
+  const tiers = new Map(squads.map((s) => [s.id, tierIndex(naturalFinancialTier(s.finances))]));
+  const fin = aiClubFinance(own);
+  const appealAdult = facilitiesAppeal(own, { age: 99 });
+  const appealYoung = facilitiesAppeal(own, { age: 18 });
+  return {
+    squadId: own.id,
+    leagueSlug: own.leagueSlug ?? "",
+    tier: tiers.get(own.id) ?? 0,
+    buyerAvg: teamAvgRating(own),
+    appealFor: (age) => (age <= FACILITIES.APPEAL.YOUTH_MAX_AGE ? appealYoung : appealAdult),
+    trainingCondition: appealAdult,
+    balance: own.finances?.budget ?? 0,
+    wageBill: fin.wageBill,
+    maxWageBudget: fin.maxWageBudget,
+    wageFactor: wageFactorOf(own),
+    tierOf: (id) => tiers.get(id),
+  };
 }
 
 export async function getScoutIndex(saveId: string): Promise<ScoutIndex | null> {
@@ -144,6 +182,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyFree: f.onlyFree === true,
       onlyShortlist: f.onlyShortlist === true,
       onlyAwarded: f.onlyAwarded === true,
+      onlyAffordable: f.onlyAffordable === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",

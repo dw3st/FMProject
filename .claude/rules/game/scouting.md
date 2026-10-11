@@ -252,6 +252,33 @@ de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.
 - A personalidade não é revelada à parte pelos relatórios (usa o mesmo ruído dos atributos).
 - Sem rede de olheiros por região, empréstimo de olheiros ou regras FIFA de menores (16 anos em qualquer país).
 
+## Busca: botão, grupos, filtros salvos, interesse e orçamento (4.19, #147, #123)
+
+- **Botão Pesquisar:** a aba Busca guarda os filtros da tela (rascunho) e os da última busca (`appliedFilters`, em
+  `localStorage` `scout_filters_v1`); só "Pesquisar" (ou Enter em qualquer campo, `<form onSubmit>`) busca. A primeira
+  carga busca os últimos filtros aplicados. "Filtros alterados" aparece quando a tela difere da última busca.
+- **Atributos por grupo** (`ATTRIBUTE_GROUPS`, `scoutFilterState.ts`): Físico (velocidade, aceleração, força, fôlego),
+  Técnica e ataque (finalização, drible, passe, visão), Defesa (desarme, marcação), Goleiro (reflexo, salto); cada grupo
+  é um bloco recolhível. Mínimo e máximo digitados (1–100, `parseAttrBound`: vazio = sem limite, fora da faixa vai para
+  1/100), a faixa ao lado ("48–61" ou "qualquer"). Cabeceio continua fora da tela (`HIDDEN_ATTRIBUTES`).
+- **Filtros salvos** (`savedFilters.ts`): com nome, sem limite, por jogador no navegador (`localStorage`
+  `scout_saved_filters_v1`); mesmo nome (sem caixa) substitui; clicar carrega e pesquisa.
+- **Linha:** bandeira da nacionalidade (`Flag`, a nacionalidade do próprio jogador) e escudo do clube (`ClubLogo` 32px).
+- **Cabe no orçamento** (`onlyAffordable`, `fitsScoutBudget`): taxa estimada (o valor que a tela mostra, o meio da
+  faixa; livre = 0) ≤ saldo do clube (`finances.budget`, negativo = só livres) **e** folha + salário pedido estimado
+  (`weeklyWage(nota vista) × fator de salário do clube do jogador`) ≤ teto (`aiClubFinance(...).maxWageBudget`).
+  Desempregado: nenhum jogador passa.
+- **Interesse** (`scoutInterest.ts`, coluna "Interesse", selo com `title`): Interessado / Hesitante / Não viria, pelo que
+  o olheiro vê (traços da `personalityView`, nota vista). "Não viria" quando ele recusaria de cara: ambição vista ≥ 17 e
+  o clube do jogador 2+ tiers naturais abaixo (`refusesSmallerClub`) ou o CT abaixo de 25% (`refusesPoorFacilities`).
+  Senão uma nota no molde do `preferenceScore`: prestígio 0,35 × (degraus acima − abaixo)/3, − 0,1 × ambição⁺ por degrau
+  abaixo, titularidade 0,2 × (chance − 0,5) (1 perto da média do elenco, 0,5 até −0,8, 0,25 abaixo), − 0,1 × lealdade⁺,
+  − 0,1 se joga na mesma liga (rival direto), − 0,1 se é craque no auge (25–30 anos, ≥ média + 0,5, sem subir de
+  tier), − a penalidade de instalações, + 0,15 se livre. ≥ −0,05 Interessado, ≥ −0,17 Hesitante. Só dica: a
+  negociação usa os valores reais. Calculado no servidor ao montar o índice (`scoutRowExtras`, `buyerContext` em
+  `scoutSearch.ts`), nunca para o próprio elenco. Mundo inicial: Manchester City 99% interessados; Fulham 94% (estrelas
+  com nota ≥ 6: 18 interessados, 49 hesitantes, 31 não viriam); Sheffield United (LOW) 21 / 35 / 44%.
+
 ## Caixa de entrada (Etapa 30, 4.6)
 
 Tópicos de notícia (`.claude/rules/game/responsibilities.md`): `report`, `mission_done` e `recommendation` são

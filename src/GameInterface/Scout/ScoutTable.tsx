@@ -10,12 +10,17 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { KnowledgeBar, valueText } from "@/GameInterface/Scouting/KnowledgeBar";
 import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { InterestBadge } from "@/GameInterface/Scout/InterestBadge";
 
-const columns = [
+const columns: { key: string; label: string; width: string; sortable?: false }[] = [
   { key: "pos", label: "Pos", width: "4rem" },
-  { key: "name", label: "Name", width: "minmax(9rem,1fr)" },
+  { key: "name", label: "Name", width: "minmax(11rem,1fr)" },
   { key: "age", label: "Age", width: "4.5rem" },
-  { key: "club", label: "Club", width: "8rem" },
+  { key: "club", label: "Club", width: "11rem" },
+  { key: "interest", label: "Interest", width: "8.5rem", sortable: false },
   { key: "avg", label: "OVR", width: "5rem" },
   { key: "knowledge", label: "Knowledge", width: "8.5rem" },
   { key: "phase", label: "Phase", width: "5rem" },
@@ -96,7 +101,9 @@ export function ScoutTable({
       </div>
 
       <div style={{ gridTemplateColumns: GRID_COLUMNS }} className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display overflow-y-hidden [scrollbar-gutter:stable]">
-        {columns.map((col) => (
+        {columns.map((col) => col.sortable === false ? (
+          <div key={col.key} className="px-3 py-3 text-left">{t(`scout.table.${col.key}`)}</div>
+        ) : (
           <button
             key={col.key}
             onClick={() => onSort(col.key)}
@@ -162,6 +169,11 @@ export function ScoutTable({
                 {sellListedIds.has(player.id) && (
                   <span title={t("scout.table.forSale")} className="shrink-0"><Icon name="tag" className="w-3 h-3 text-primary" /></span>
                 )}
+                {nationalityFlagCode(player.ownNationality) && (
+                  <span title={player.ownNationality} className="shrink-0 inline-flex">
+                    <Flag code={nationalityFlagCode(player.ownNationality)!} />
+                  </span>
+                )}
                 {player.leagueSlug && player.clubSlug ? (
                   <a
                     href={`/player/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}/${encodeURIComponent(player.id)}`}
@@ -175,7 +187,11 @@ export function ScoutTable({
                 {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
               </div>
               <div className="px-3 py-2.5 text-muted-foreground font-medium">{player.age}</div>
-              <div className="px-3 py-2.5 truncate font-medium">
+              <div className="px-3 py-2.5 min-w-0 font-medium flex items-center gap-2">
+                {player.squadId && (
+                  <ClubLogo logoUrl={squadLogoUrl(player.squadId)} className="w-8 h-8" imgClassName="w-full h-full object-contain" />
+                )}
+                <span className="truncate min-w-0">
                 {player.leagueSlug && player.clubSlug ? (
                   <a
                     href={`/squad/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}`}
@@ -184,8 +200,12 @@ export function ScoutTable({
                     {player.club}
                   </a>
                 ) : (
-                  <span className="text-muted-foreground">{player.club}</span>
+                  <span className="text-muted-foreground">{player.club || t("scout.table.noClub")}</span>
                 )}
+                </span>
+              </div>
+              <div className="px-3 py-2.5">
+                {player.interest ? <InterestBadge interest={player.interest} /> : <span className="text-sm text-muted-foreground">—</span>}
               </div>
               <div className="px-3 py-2.5">
                 <AvgBadge value={player.avg} range={player.avgRange} />

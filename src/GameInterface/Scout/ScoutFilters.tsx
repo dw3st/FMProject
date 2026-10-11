@@ -9,6 +9,9 @@ import {
 } from "@/Domain/scout/scoutFilterState";
 import { Icon } from "@/GameInterface/Icons";
 import { Chip } from "@/GameInterface/ui/Chip";
+import { Button } from "@/GameInterface/ui/Button";
+import { SavedScoutFilters } from "@/GameInterface/Scout/SavedScoutFilters";
+import type { SavedScoutFilter } from "@/Domain/scout/savedFilters";
 
 export type { ScoutFilterState };
 
@@ -30,11 +33,25 @@ export function ScoutFilters({
   setFilters,
   leagueOptions,
   nationalityOptions,
+  onSearch,
+  dirty,
+  saved,
+  onSave,
+  onLoadSaved,
+  onRemoveSaved,
 }: {
   filters: ScoutFilterState;
   setFilters: (f: ScoutFilterState) => void;
   leagueOptions: ScoutFilterOption[];
   nationalityOptions: ScoutFilterOption[];
+  /** Runs the search with the filters on screen (#147: the search never runs by itself). */
+  onSearch: () => void;
+  /** The filters on screen differ from the last search. */
+  dirty: boolean;
+  saved: SavedScoutFilter[];
+  onSave: (name: string) => void;
+  onLoadSaved: (entry: SavedScoutFilter) => void;
+  onRemoveSaved: (name: string) => void;
 }) {
   const { t } = useTranslation();
   const handleReset = () => {
@@ -44,12 +61,16 @@ export function ScoutFilters({
   const positionOptions = MAIN_POSITION_FILTERS;
 
   return (
-    <div className="card-arcade rounded-md p-5">
+    <form
+      className="card-arcade rounded-md p-5"
+      onSubmit={(e) => { e.preventDefault(); onSearch(); }}
+    >
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0">
           {t("scout.filters.searchFilters")}
         </h2>
         <button
+          type="button"
           onClick={handleReset}
           className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-[0.08em] cursor-pointer bg-transparent border-0 font-display"
         >
@@ -207,9 +228,28 @@ export function ScoutFilters({
           <Icon name="award" className="w-4 h-4" />
           {t("scout.filters.awardedOnly")}
         </Chip>
+        <Chip
+          selected={!!filters.onlyAffordable}
+          onClick={() => setFilters({ ...filters, onlyAffordable: !filters.onlyAffordable })}
+          title={t("scout.filters.affordableHint")}
+        >
+          <Icon name="wallet" className="w-4 h-4" />
+          {t("scout.filters.affordableOnly")}
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />
-    </div>
+
+      <div className="mt-5 pt-4 border-t border-border/40 flex flex-wrap items-end justify-between gap-4">
+        <SavedScoutFilters saved={saved} onSave={onSave} onLoad={onLoadSaved} onRemove={onRemoveSaved} />
+        <div className="flex items-center gap-3 ml-auto">
+          {dirty && <span className="text-sm text-muted-foreground">{t("scout.filters.changed")}</span>}
+          <Button type="submit">
+            <Icon name="search" size={16} />
+            {t("scout.filters.search")}
+          </Button>
+        </div>
+      </div>
+    </form>
   );
 }
