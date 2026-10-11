@@ -13,10 +13,10 @@ export const VAR_CONFIG = {
    * Calibrated with `scripts/var-measure.ts` (≈ 0.25 errors per match, goals ±3%).
    */
   BASE: {
-    phantom_penalty: 0.011,
-    missed_penalty:  0.15,
-    missed_offside:  0.075,
-    wrong_red:       0.02,
+    phantom_penalty: 0.014,
+    missed_penalty:  0.2,
+    missed_offside:  0.11,
+    wrong_red:       0.0045,
     missed_red:      0.3,
   } satisfies Record<RefereeErrorKind, number>,
   /** `qualityMult(q) = QUALITY_HI − QUALITY_SLOPE × q / 100` (≈ 1.5 worst, ≈ 0.7 best, 1 at 62.5). */
