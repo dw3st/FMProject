@@ -6,6 +6,8 @@ import type { StaffEffects } from "@/Domain/staff/staff";
 import { moraleExecutionMult } from "@/Domain/morale/morale";
 import { temperamentFoulMult, temperamentYellowMult } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { defensiveHole, outfieldNearBall } from "@/GameEngine/Domain/BallCluster";
+import { getBallPos } from "@/GameEngine/Domain/gameState";
 
 /**
  * `/test` debug panel — live per-player energy and drain-per-game-minute, computed from the
@@ -95,6 +97,7 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
             </span>
           )}
         </h3>
+        <BallClusterLine gameState={gameState} />
       </div>
       <div className="flex gap-4 p-2">
         <EnergyTeamTable accentColor={teamColorA} players={teamA} drain={drainByPlayer} side="left" staff={staffA} style={styleA} />
@@ -186,6 +189,28 @@ function EnergyTeamTable({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Ball cluster (#145): outfield players of each side within 8 yards of the ball, their decisions,
+ * and the hole the defending side leaves between the ball and its goal (`Domain/BallCluster.ts`).
+ */
+function BallClusterLine({ gameState }: { gameState: GameState }) {
+  const holder = gameState.players.find((p) => p.id === gameState.ballHolderId);
+  if (!holder) return null;
+  const ball = getBallPos(gameState);
+  const def = holder.team === "A" ? "B" : "A";
+  const side = (team: "A" | "B") => {
+    const near = outfieldNearBall(gameState.players, team, ball);
+    const decs = near.map((p) => (p.id === holder.id ? "ball" : (gameState.decisions[p.id]?.type ?? "-")));
+    return `${team} ${near.length}${near.length ? ` (${decs.join(", ")})` : ""}`;
+  };
+  const hole = defensiveHole(gameState.players, def, ball);
+  return (
+    <div className="text-[10px] text-muted-foreground tabular-nums mt-1">
+      Near ball (8 yd): {side("A")} · {side("B")} · {def} hole {hole.maxGap.toFixed(0)} yd, {hole.openCells}/{hole.cells} open cells
     </div>
   );
 }

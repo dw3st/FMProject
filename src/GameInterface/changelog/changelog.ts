@@ -76,6 +76,10 @@ export const changelog: ChangelogEntry[] = [
         pt: "Campo mais vivo: maca nas lesões, técnicos andando na área técnica, bancos de reservas, rede balançando, torcida pulando e comemoração no gol.",
         en: "A livelier pitch: a stretcher for injuries, managers pacing the technical area, benches, the net shaking, fans jumping and a goal celebration.",
       },
+      {
+        pt: "Depois de uma bola dividida, quem perdeu a corrida volta para a posição em vez de continuar correndo para cima de quem ficou com a bola: menos jogadores amontoados perto da bola.",
+        en: "After a contested ball, the players who lost the race head back to their positions instead of running on at whoever won it: fewer players bunched around the ball.",
+      },
     ],
     fixes: [
       {

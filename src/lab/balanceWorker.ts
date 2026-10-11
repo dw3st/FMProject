@@ -104,7 +104,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -140,6 +140,9 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.avgEndEnergySum             += src.avgEndEnergySum;
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
   dst.injuries                    += src.injuries;
+  dst.ballNearTicks               += src.ballNearTicks;
+  dst.ballNearSum                 += src.ballNearSum;
+  dst.ballCrowdTicks              += src.ballCrowdTicks;
   dst.outOfPosition               += src.outOfPosition;
   dst.morale                      += src.morale;
   dst.temperament                 += src.temperament;
@@ -386,6 +389,9 @@ function runOneMatch(
   teamA.avgEndEnergySum      += sA.avgEndEnergy;         teamB.avgEndEnergySum      += sB.avgEndEnergy;
   teamA.fatigueSubstitutions += sA.fatigueSubstitutions; teamB.fatigueSubstitutions += sB.fatigueSubstitutions;
   teamA.injuries += sA.injuries; teamB.injuries += sB.injuries;
+  teamA.ballNearTicks += sA.ballNearTicks; teamB.ballNearTicks += sB.ballNearTicks;
+  teamA.ballNearSum += sA.ballNearSum; teamB.ballNearSum += sB.ballNearSum;
+  teamA.ballCrowdTicks += sA.ballCrowdTicks; teamB.ballCrowdTicks += sB.ballCrowdTicks;
   // Referee errors / VAR (`var.md`): match totals on both sides (a match property, like the rigor).
   for (const t of [teamA, teamB]) {
     t.refereeErrors += sA.refereeErrors + sB.refereeErrors;

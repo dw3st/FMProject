@@ -259,6 +259,12 @@ export interface GameEvents {
    * touches / shots / goals while marked).
    */
   manMarkTick: { targetIds: number[]; seconds: number };
+  /**
+   * Emitted every live tick with the ball in play (no set piece, VAR check or shot in flight): the
+   * outfield players of the defending team (the side without the last touch) within 8 yards of the
+   * ball (#145, `Domain/BallCluster.ts`). Feeds the ball-cluster statistics.
+   */
+  ballCluster: { defendingTeam: TeamId; defendersNear: number; attackersNear: number };
 
   /**
    * Emitted every tick for the ball holder when debug mode is on — top-N
