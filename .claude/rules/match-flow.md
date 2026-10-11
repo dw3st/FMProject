@@ -470,3 +470,16 @@ Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (
 `MatchScreen` puts `{ id, name, country, strictness }` on `GameState.referee` (fouls and cards scale with the rigor),
 shows him in the "Resumo" panel and draws the referee and the assistants with their faces. The day advance logs the
 same referee (`MatchEvent.referee`, never taken from the client's recording).
+
+# Match screen layout (#148, #149, 4.19)
+
+- Under the scoreboard: the stadium of the home side (`venue.name`) and the crowd of `match-setup` (`crowd.attendance`,
+  only when known); a neutral venue shows "Campo neutro".
+- Team list beside the pitch (`TeamPanel`, 288 px): columns position, name, rating, fitness (number in the band colour),
+  goals and assists (empty instead of 0, `countCell`); a booked player's row is tinted yellow / red (`cardRowClass`)
+  with the card marks next to the name; players who left show an icon (sent off, injured, subbed off) in the fitness
+  column.
+- "Resumo" events: a button opens them in a floating window (`MatchFeedWindow`, portal, dragged by its header, Escape or
+  the button closes); open state and position per viewer in `localStorage` (`fm.match.feedWindow`, `feedWindow.ts`,
+  clamped to the viewport). While open the panel keeps one line and the heat map gets the room.
+- Heat map: two `SegmentedTabs` (my team / opponent; last 10' / whole match), each with its two options side by side.

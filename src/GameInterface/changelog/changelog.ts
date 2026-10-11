@@ -25,6 +25,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Na partida, o nome do estádio e o público aparecem abaixo do placar.",
+        en: "In the match, the stadium name and the crowd show under the scoreboard.",
+      },
+      {
+        pt: "A lista de jogadores ao lado do campo mostra posição, nota, fôlego, gols e assistências, e destaca quem levou cartão.",
+        en: "The player list beside the pitch shows position, rating, fitness, goals and assists, and highlights booked players.",
+      },
+      {
+        pt: "Os lances da partida podem abrir numa janela que você move e fecha.",
+        en: "The match events can open in a window you move and close.",
+      },
+      {
+        pt: "No mapa de posse, escolha o time e o período com botões lado a lado.",
+        en: "On the possession map, pick the team and the period with side-by-side buttons.",
+      },
+      {
+        pt: "Campo mais vivo: maca nas lesões, técnicos andando na área técnica, bancos de reservas, rede balançando, torcida pulando e comemoração no gol.",
+        en: "A livelier pitch: a stretcher for injuries, managers pacing the technical area, benches, the net shaking, fans jumping and a goal celebration.",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [
