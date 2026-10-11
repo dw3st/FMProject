@@ -268,7 +268,7 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
   const dribbleReduction   = 1 - effectiveDribbling * 0.4;
   const pressBonus         = suppression * 0.20;
 
-  const chance  = clamp((base + angleMod + pressBonus) * dribbleReduction, 0, 1);
+  const chance  = clamp((base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE /* 0.97, #145 */, 0, 1);
   const success = Math.random() < chance;
   return { success, chance };
 }

@@ -116,13 +116,13 @@ export const COMMIT_TICKS: Record<PlayerDecision['type'], number> = {
  * This normalises action types with different raw ranges so they compete fairly.
  *
  * Per-action calibration (what raw=strongRaw means):
- *   SHOOT (1.8) — ST at xg/threshold=1.8 — a clear good chance
+ *   SHOOT (1.6) — ST at xg/threshold=1.6 — a clear good chance (1.8 until #145, 4.19)
  *   CARRY (0.8) — clear lane with decent player — a solid advancing opportunity
  *   PASS  (0.8) — open lane to a good receiver — a quality passing option
  *   TB    (0.9) — a won race into open space with a clear path
  *
  * Reference points at each STRONG_RAW:
- *   shoot: xg/thr=0.5→0.28  1.0→0.49  1.5→0.63  2.5→0.81  3.8→0.92
+ *   shoot: xg/thr=0.5→0.27  1.0→0.46  1.6→0.63  2.5→0.79  3.8→0.91
  *   carry: lane=0.5→0.43    0.9→0.63  1.1→0.71  1.5→0.81
  *   pass:  score=0.5→0.46   0.8→0.63  1.0→0.71  1.4→0.83
  */
@@ -130,7 +130,12 @@ function compress(raw: number, strongRaw: number = 1.0): number {
   return 1 - Math.exp(-raw / strongRaw);
 }
 
-const SHOOT_STRONG_RAW   = 1.8;
+/**
+ * 1.8 until #145 (4.19). Once the race losers of a loose ball stopped sprinting on to the holder and
+ * went back to the shape, holders found fewer clear chances (−5% shots); 1.6 makes a holder shoot a
+ * little earlier from the same chance and brings the world's shots back (`through-ball.md`).
+ */
+const SHOOT_STRONG_RAW   = 1.6;
 const CARRY_STRONG_RAW   = 0.8;
 /**
  * 0.8, not 1.0: a to-feet pass is structurally capped (lateral/short passes score
@@ -447,7 +452,7 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
   const xg        = computeXG(dist, openAngle, pressure);
 
   // Compress xG relative to role eagerness.
-  // SHOOT_STRONG_RAW=1.5: ST at xG=0.375 (threshold=0.25 → raw=1.5) scores 0.632.
+  // SHOOT_STRONG_RAW=1.6: ST at xG=0.40 (threshold=0.25 → raw=1.6) scores 0.632.
   // ST at xG=0.80 → raw=3.2 → score≈0.88. ST at xG=0.25 → raw=1.0 → score≈0.49.
   const threshold = SHOOT_THRESHOLD[player.role] ?? 0.50;
   const roleScore = compress(xg / threshold, SHOOT_STRONG_RAW);

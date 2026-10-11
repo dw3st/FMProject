@@ -461,6 +461,13 @@ export function gkClaimChance(gk: GamePlayer, attackersNear: number): number {
  *     Crowd, strength=0 → dribbleReduction=1.00, pressBonus=0.20 → chance ≈ (base+0.20)×1.00
  *     Crowd, strength=1 → dribbleReduction=0.60, pressBonus=0   → same as solo (immune)
  */
+/**
+ * Global scale on the tackle success chance (#145, 4.19). With the race losers of a loose ball back
+ * in the shape instead of running on to the holder without challenging, more tackles reach the
+ * holder at once (+5% successful tackles in the world); 0.97 brings the volume back.
+ */
+export const TACKLE_SUCCESS_SCALE = 0.97;
+
 export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0): TackleResult {
   const base     = tackler.runtimeStats.withoutBall.tackleChance;
   const rawAngle = tackleAngleModifier(tackler, holder);
@@ -488,7 +495,7 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
   const MAX_PRESS_TACKLE_BONUS = 0.20;
   const pressBonus = suppression * MAX_PRESS_TACKLE_BONUS;
 
-  const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction));
+  const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE));
   const success = Math.random() < chance;
   return { success, chance };
 }
