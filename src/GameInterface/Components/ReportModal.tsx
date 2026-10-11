@@ -7,6 +7,10 @@ import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { validateAttachmentFile } from "@/GameInterface/Components/reportAttachmentValidation";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import {
+  ScreenAreaSelector, canCaptureScreen, cropToFile, grabFrame, requestScreenStream,
+} from "@/GameInterface/Components/ScreenAreaCapture";
+import type { Rect } from "@/GameInterface/Components/screenCaptureGeometry";
 
 // "tweak" was dropped from the form (#22) — too close to "improvement". The server still accepts
 // it so older reports stay valid.
@@ -46,6 +50,10 @@ export function ReportModal({ open, onClose }: Props) {
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [attachmentUploadFailed, setAttachmentUploadFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Screen-area capture (#125): "hidden" while the frame is taken, then the selector overlay.
+  const [captureSupported] = useState(canCaptureScreen);
+  const [capturePhase, setCapturePhase] = useState<"idle" | "grabbing" | "selecting">("idle");
+  const [captureFrame, setCaptureFrame] = useState<HTMLCanvasElement | null>(null);
 
   // Reset local state each time the modal is (re)opened.
   useEffect(() => {
@@ -58,6 +66,8 @@ export function ReportModal({ open, onClose }: Props) {
     setAttachment(null);
     setAttachmentError(null);
     setAttachmentUploadFailed(false);
+    setCapturePhase("idle");
+    setCaptureFrame(null);
   }, [open]);
 
   // Object URL preview — created when an attachment is picked, revoked on change/unmount so we
@@ -111,6 +121,40 @@ export function ReportModal({ open, onClose }: Props) {
     const file = e.target.files?.[0];
     if (file) applyAttachment(file);
     e.target.value = ""; // allow picking the same file again after removing it
+  }
+
+  /** Asks the browser for the screen (inside the click), hides this window, takes one frame and
+   *  opens the area selector. Cancelling the browser picker just does nothing. */
+  async function startCapture() {
+    let stream: MediaStream;
+    try {
+      stream = await requestScreenStream();
+    } catch {
+      return;
+    }
+    setCapturePhase("grabbing");
+    try {
+      const frame = await grabFrame(stream);
+      setCaptureFrame(frame);
+      setCapturePhase("selecting");
+    } catch {
+      setCapturePhase("idle");
+      setAttachmentError(t("reports.captureFailed"));
+    }
+  }
+
+  function endCapture() {
+    setCapturePhase("idle");
+    setCaptureFrame(null);
+  }
+
+  async function finishCapture(crop: Rect) {
+    const frame = captureFrame;
+    endCapture();
+    if (!frame) return;
+    const file = await cropToFile(frame, crop);
+    if (file) applyAttachment(file);
+    else setAttachmentError(t("reports.captureFailed"));
   }
 
   function handlePaste(e: ClipboardEvent<HTMLDivElement>) {
@@ -190,149 +234,167 @@ export function ReportModal({ open, onClose }: Props) {
   ];
 
   return (
-    <Modal open={open} onClose={onClose} size="sm">
-      <div className="flex flex-col" onPaste={handlePaste}>
-        <div className="px-6 py-4 border-b border-border bg-card/50">
-          <DialogTitle
-            as="h2"
-            className="text-lg font-bold font-display text-foreground uppercase tracking-[0.08em] m-0"
-          >
-            {t("reports.title")}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground m-0 mt-0.5">
-            {t("reports.subtitle")}
-          </p>
-        </div>
+    <>
+      <Modal open={open && capturePhase === "idle"} onClose={onClose} size="sm">
+        <div className="flex flex-col" onPaste={handlePaste}>
+          <div className="px-6 py-4 border-b border-border bg-card/50">
+            <DialogTitle
+              as="h2"
+              className="text-lg font-bold font-display text-foreground uppercase tracking-[0.08em] m-0"
+            >
+              {t("reports.title")}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground m-0 mt-0.5">
+              {t("reports.subtitle")}
+            </p>
+          </div>
 
-        <div className="p-6 space-y-5">
-          {!success ? (
-            <>
-              <div>
-                <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
-                  {t("reports.type")}
-                </span>
-                <OptionChips
-                  aria-label={t("reports.type")}
-                  options={TYPE_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
-                  value={type}
-                  onChange={setType}
-                  disabled={submitting}
-                />
-              </div>
+          <div className="p-6 space-y-5">
+            {!success ? (
+              <>
+                <div>
+                  <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
+                    {t("reports.type")}
+                  </span>
+                  <OptionChips
+                    aria-label={t("reports.type")}
+                    options={TYPE_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
+                    value={type}
+                    onChange={setType}
+                    disabled={submitting}
+                  />
+                </div>
 
-              <div>
-                <label
-                  htmlFor="report-description"
-                  className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2"
-                >
-                  {t("reports.descriptionLabel")}
-                </label>
-                <textarea
-                  id="report-description"
-                  value={description}
-                  disabled={submitting}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t("reports.descriptionPlaceholder")}
-                  rows={5}
-                  maxLength={DESCRIPTION_MAX}
-                  className="w-full resize-none rounded-md border border-border/60 bg-card/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/60"
-                />
-                <p className="text-sm text-muted-foreground mt-1 m-0">
-                  {t("reports.descriptionHint", {
-                    min: DESCRIPTION_MIN,
-                    max: DESCRIPTION_MAX,
-                  })}{" "}
-                  ({trimmedLength}/{DESCRIPTION_MAX})
-                </p>
-              </div>
+                <div>
+                  <label
+                    htmlFor="report-description"
+                    className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2"
+                  >
+                    {t("reports.descriptionLabel")}
+                  </label>
+                  <textarea
+                    id="report-description"
+                    value={description}
+                    disabled={submitting}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t("reports.descriptionPlaceholder")}
+                    rows={5}
+                    maxLength={DESCRIPTION_MAX}
+                    className="w-full resize-none rounded-md border border-border/60 bg-card/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/60"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1 m-0">
+                    {t("reports.descriptionHint", {
+                      min: DESCRIPTION_MIN,
+                      max: DESCRIPTION_MAX,
+                    })}{" "}
+                    ({trimmedLength}/{DESCRIPTION_MAX})
+                  </p>
+                </div>
 
-              <div>
-                <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
-                  {t("reports.attachImage")}
-                </span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg"
-                  className="hidden"
-                  disabled={submitting}
-                  onChange={handleFileInputChange}
-                />
-                {attachmentPreviewUrl ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={attachmentPreviewUrl}
-                      alt=""
-                      className="h-20 w-20 rounded-md border border-border/60 object-cover"
-                    />
-                    <button
-                      type="button"
-                      aria-label={t("reports.attachmentRemove")}
-                      disabled={submitting}
-                      onClick={() => setAttachment(null)}
-                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <Icon name="close" size={12} />
-                    </button>
-                  </div>
-                ) : (
+                <div>
+                  <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
+                    {t("reports.attachImage")}
+                  </span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    disabled={submitting}
+                    onChange={handleFileInputChange}
+                  />
+                  {attachmentPreviewUrl ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={attachmentPreviewUrl}
+                        alt=""
+                        className="h-20 w-20 rounded-md border border-border/60 object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label={t("reports.attachmentRemove")}
+                        disabled={submitting}
+                        onClick={() => setAttachment(null)}
+                        className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <Icon name="close" size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded border border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                      >
+                        <Icon name="image" size={14} />
+                        {t("reports.attachImage")}
+                      </button>
+                      {captureSupported && (
+                        <button
+                          type="button"
+                          disabled={submitting}
+                          onClick={() => void startCapture()}
+                          className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded border border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <Icon name="crop" size={14} />
+                          {t("reports.captureArea")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1 m-0">
+                    {t("reports.attachmentHint")}
+                  </p>
+                  {attachmentError && (
+                    <p className="text-sm text-destructive mt-1 m-0" role="alert">
+                      {attachmentError}
+                    </p>
+                  )}
+                </div>
+
+                {error && (
+                  <p className="text-sm text-destructive m-0" role="alert">
+                    {error}
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    disabled={submitting}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded border border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                    onClick={onClose}
+                    className="flex-1 h-10 rounded border-0 text-sm font-semibold text-muted-foreground cursor-pointer bg-transparent hover:text-foreground"
                   >
-                    <Icon name="image" size={14} />
-                    {t("reports.attachImage")}
+                    {t("common.cancel")}
                   </button>
-                )}
-                <p className="text-sm text-muted-foreground mt-1 m-0">
-                  {t("reports.attachmentHint")}
-                </p>
-                {attachmentError && (
-                  <p className="text-sm text-destructive mt-1 m-0" role="alert">
-                    {attachmentError}
+                  <button
+                    type="button"
+                    onClick={() => void submit()}
+                    disabled={submitting || !descriptionValid}
+                    className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
+                  >
+                    {submitting ? t("reports.sending") : t("reports.send")}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <Icon name="check-circle" size={48} className="text-chart-2 mx-auto mb-3" />
+                <p className="text-base font-black text-chart-2 m-0">{t("reports.success")}</p>
+                {attachmentUploadFailed && (
+                  <p className="text-sm text-chart-4 mt-2 m-0" role="alert">
+                    {t("reports.attachmentUploadFailed")}
                   </p>
                 )}
               </div>
-
-              {error && (
-                <p className="text-sm text-destructive m-0" role="alert">
-                  {error}
-                </p>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 h-10 rounded border-0 text-sm font-semibold text-muted-foreground cursor-pointer bg-transparent hover:text-foreground"
-                >
-                  {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void submit()}
-                  disabled={submitting || !descriptionValid}
-                  className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
-                >
-                  {submitting ? t("reports.sending") : t("reports.send")}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-4">
-              <Icon name="check-circle" size={48} className="text-chart-2 mx-auto mb-3" />
-              <p className="text-base font-black text-chart-2 m-0">{t("reports.success")}</p>
-              {attachmentUploadFailed && (
-                <p className="text-sm text-chart-4 mt-2 m-0" role="alert">
-                  {t("reports.attachmentUploadFailed")}
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+      {open && capturePhase === "selecting" && captureFrame && (
+        <ScreenAreaSelector frame={captureFrame} onDone={(crop) => void finishCapture(crop)} onCancel={endCapture} />
+      )}
+    </>
   );
 }

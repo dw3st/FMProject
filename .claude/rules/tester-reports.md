@@ -113,6 +113,14 @@ path.
   (if any) go to `POST /api/reports/:id/attachment` with the file's own `type` as `Content-Type`.
   The report is already "sent" at that point, so an attachment failure never blocks the success
   state — it shows a small non-blocking warning instead (`reports.attachmentUploadFailed`).
+- **Capture a screen area (#125, 4.19):** next to "Anexar imagem", "Capturar área da tela" (only when
+  `navigator.mediaDevices.getDisplayMedia` exists — `canCaptureScreen`) opens the browser's share picker (current tab
+  first: `preferCurrentTab`, `displaySurface: "browser"`), hides the report window, takes one frame of the stream on a
+  canvas and stops it (`grabFrame`), then a full-screen overlay (`ScreenAreaSelector`,
+  `Components/ScreenAreaCapture.tsx`) shows the frame and the tester drags the rectangle (Esc / Cancelar abandon it).
+  The pure mapping drag → frame pixels (`selectionRect`, `containRect`, `sourceCrop`, a click under 8 px is no crop)
+  lives in `screenCaptureGeometry.ts` (tested). The crop becomes a PNG (JPEG 0.85 when the PNG passes 2 MB,
+  `cropToFile`) and goes through the same `applyAttachment` / upload as a picked file. No new dependency.
 - **Back end:** same route file (`src/backend/reports.ts`), same auth + tester gate as
   `/api/reports`. Order of checks: method (**405** if not POST) → auth (**401**) → tester
   (**403**) → the `id` must look exactly like a value `randomUUID()` produces, else **404** (a
