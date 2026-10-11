@@ -76,7 +76,10 @@ versão **4.18**. Depende de `referees.md` (qualidade, rigor, escala), `game-eng
 
 ## Medições (`scripts/var-measure.ts`)
 
-Ver a spec §11 (números de 2026-10-11).
+Spec §11 (2026-10-11). M1 (Premier + Championship, 800 jogos por braço, árbitro médio): **0,26–0,32 erro/jogo**;
+gols +3,7%, pênaltis +1,5% (sem VAR), cartões ±6%; com VAR 0,15 corrigido e 0,22 revisão por jogo, sobrevivem 0,03
+erros que não sejam impedimento sem gol. M2: qualidade 20 erra 2,0× a 90. M3: reclamando 1×/jogo ≈ 0,75 suspensão por
+temporada. quickSim pareado: placar idêntico em 2000/2000.
 
 ## Testes e smoke
 

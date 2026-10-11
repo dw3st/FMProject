@@ -122,3 +122,38 @@ existe (s = qualidade ausente ⇒ jogo de antes, por construção):
 - O VAR nunca erra.
 - Técnicos da IA não reclamam nem são expulsos.
 - O quickSim não muda placar por erro de árbitro.
+
+## 11. Resultados (2026-10-11)
+
+Bases finais (`VAR_CONFIG.BASE`): `phantom_penalty` 0,014 · `missed_penalty` 0,2 · `missed_offside` 0,11 · `wrong_red`
+0,0045 · `missed_red` 0,3. Duas rodadas de calibração antes: a 1ª dava 0,19 erro/jogo com mais pênaltis inventados que
+não marcados; a 2ª acertava o volume, mas o `wrong_red` (0,02) quase dobrava os vermelhos (+74%), então ele caiu para
+equilibrar com o `missed_red` e o impedimento subiu.
+
+**M1** (`bun scripts/var-measure.ts engine <liga> 400 --arm none|err|var --seed 11`, Premier + Championship, 800 jogos
+por braço, árbitro médio q 62,5, rigor 0; "none" = sem qualidade = o motor de antes):
+
+| Braço | Gols | Chutes | Pênaltis | Amarelos | Vermelhos | Erros/jogo | Corrigidos | Sobreviventes | Revisões | Gols anulados |
+|---|---|---|---|---|---|---|---|---|---|---|
+| none | 1,926 | 5,004 | 0,334 | 2,35 | 0,080 | — | — | — | — | — |
+| err | 1,999 (+3,8%) | 5,197 | 0,339 (+1,5%) | 2,28 (−3%) | 0,085 (+6%) | 0,260 | — | 0,260 | — | — |
+| var | 1,996 (+3,6%) | 5,142 | 0,370 (+11%) | 2,35 | 0,092 | 0,318 | 0,154 | 0,164 | 0,224 | 0,005 |
+
+Ruído de cada braço ~±3% nos gols (800 jogos). Erros por tipo (err): impedimento 0,12, pênalti não marcado 0,07,
+pênalti inventado 0,055, vermelho errado 0,007, vermelho não dado 0,007. Com VAR, os sobreviventes são quase todos
+impedimentos que não viraram gol (0,136/jogo, irrelevantes por desenho: o VAR só revê o gol); sem eles, sobram
+**0,033** erros por jogo (meta ≈ 0,05).
+
+**M2** (`--quality 20` × `90`, Premier, 300 jogos cada): 0,333 × 0,167 erro/jogo = **2,0×**.
+
+**M3** (`bun scripts/var-measure.ts complaint 10000`, temporadas de 38 jogos, rigor sorteado −0,5..0,5): reclamando 1
+vez por jogo, 7,3 amarelos e **0,75 suspensão** por temporada; 2 vezes, 4,1 suspensões; 3 vezes, 8,2 (13,3 jogos); sem
+reclamar, nenhuma.
+
+**quickSim pareado** (`quick 2000`): placar e estatísticas dos jogadores idênticos em 2000 de 2000 jogos; 0,236 erro,
+0,172 revisão, 0,107 alterada por jogo (constantes `QUICK_*` ajustadas depois para o motor: 0,28 erro, 48% corrigidos).
+
+**Desvios do desenho:** impedimento não marcado só no passe normal e na bola solta (não na disputa aérea); o erro
+forçado do `/test` é sempre corrigido com VAR (salvo o impedimento); erros e revisões contados por time no
+`Statistics` (prejudicado / contra quem foi a decisão), o total do jogo em `MatchEvent.var`; reclamações perdidas ao
+recarregar a página no meio da partida; gols do mundo +3,7% (dentro do ruído, mas acima da meta de ±3%).

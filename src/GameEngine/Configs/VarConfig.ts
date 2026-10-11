@@ -34,9 +34,9 @@ export const VAR_CONFIG = {
   GOAL_CHAIN_SECONDS: 15,
   // ── quickSim (statistics only, `quickVarStats`) ───────────────────────────
   /** Errors per match of an average referee (the engine's measured rate, M1). */
-  QUICK_ERRORS_PER_MATCH: 0.25,
+  QUICK_ERRORS_PER_MATCH: 0.28,
   /** Share of the errors the VAR corrects (engine, M1). */
-  QUICK_CORRECTED_SHARE: 0.52,
+  QUICK_CORRECTED_SHARE: 0.48,
   /** Correct calls checked and confirmed per match with VAR (engine, M1). */
   QUICK_CONFIRMED_CHECKS_PER_MATCH: 0.07,
   // ── Manager complaint (live match, the human team) ────────────────────────
