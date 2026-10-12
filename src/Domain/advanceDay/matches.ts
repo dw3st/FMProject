@@ -480,25 +480,36 @@ export function buildMatchEventFromRecording(
   return { event, updatedHome, updatedAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
-export function buildMatchEvent(
-  fixture: Fixture,
-  homeSquad: Squad,
-  awaySquad: Squad,
-  sim: {
-    homeFormation: Formation;
-    homeLineup: string[];
-    awayFormation: Formation;
-    awayLineup: string[];
-    tactics?: { A: TeamTactics; B: TeamTactics };
-    /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
-    pitchCondition?: number;
-    /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
-    referee?: EngineReferee;
-    /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
-    pools?: { home?: Set<string>; away?: Set<string> };
-  },
-  rng: Rng = Math.random,
-): MatchSimResult {
+/** What a full-engine match gives, already mapped to roster ids (A = home). */
+interface EngineMatch {
+  result: ReturnType<typeof simulateMatch>;
+  playerStats: Record<string, MatchPlayerStats>;
+  playerRatings: Record<string, number>;
+  playerEnergy: Record<string, number>;
+  playerNames: Record<string, string>;
+  playerTeams: Record<string, "home" | "away">;
+  scorers: Scorer[];
+  substitutions: MatchSubstitution[];
+  injuries: MatchInjury[];
+  goals: MatchGoal[];
+  cards: MatchCard[];
+}
+
+export interface EngineMatchSim {
+  homeFormation: Formation;
+  homeLineup: string[];
+  awayFormation: Formation;
+  awayLineup: string[];
+  tactics?: { A: TeamTactics; B: TeamTactics };
+  /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
+  pitchCondition?: number;
+  /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
+  referee?: EngineReferee;
+  /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
+  pools?: { home?: Set<string>; away?: Set<string> };
+}
+
+function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: EngineMatchSim): EngineMatch {
   // The engine's own candidate pool for bench/substitutes (`buildTeam` in `gameState.ts`) is built
   // from whatever squad is handed to `simulateMatch` — starters injured on the fixture date are
   // already excluded upstream (`computeMatchSimulationLineups`/`resolveUserLineup`), but the BENCH
@@ -714,6 +725,53 @@ export function buildMatchEvent(
     matchMinute:  c.matchMinute,
   }));
 
+  return { result, playerStats, playerRatings, playerEnergy, playerNames, playerTeams, scorers, substitutions, injuries, goals, cards };
+}
+
+/**
+ * A full-engine match as a recording (no post-match): the human manager's national-team game when he does not watch it
+ * live (`.claude/rules/game/national-teams.md` → 41b); `applyNationalMatch` does the post-match.
+ */
+export function simulateRecording(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: EngineMatchSim): {
+  recording: PlayedMatchRecording; playerNames: Record<string, string>; playerTeams: Record<string, "home" | "away">; scorers: Scorer[];
+} {
+  const e = engineMatch(fixture, homeSquad, awaySquad, sim);
+  const r = e.result;
+  return {
+    recording: {
+      fixtureId: fixture.id,
+      score: { home: r.score.A, away: r.score.B },
+      teamStats: { home: toMatchTeamStats(r.teamStats.A), away: toMatchTeamStats(r.teamStats.B) },
+      playerStats: e.playerStats,
+      playerRatings: e.playerRatings,
+      playerEnergy: e.playerEnergy,
+      substitutions: e.substitutions,
+      injuries: e.injuries,
+      cards: e.cards,
+      goals: e.goals,
+      durationMs: r.durationMs,
+      ...(r.decider
+        ? { decider: {
+            extraTime: { home: r.decider.extraTime.A, away: r.decider.extraTime.B },
+            ...(r.decider.penalties ? { penalties: { home: r.decider.penalties.A, away: r.decider.penalties.B } } : {}),
+          } }
+        : {}),
+    },
+    playerNames: e.playerNames,
+    playerTeams: e.playerTeams,
+    scorers: e.scorers,
+  };
+}
+
+export function buildMatchEvent(
+  fixture: Fixture,
+  homeSquad: Squad,
+  awaySquad: Squad,
+  sim: EngineMatchSim,
+  rng: Rng = Math.random,
+): MatchSimResult {
+  const { result, playerStats, playerRatings, playerEnergy, playerNames, playerTeams, scorers, substitutions, injuries, goals, cards } =
+    engineMatch(fixture, homeSquad, awaySquad, sim);
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
