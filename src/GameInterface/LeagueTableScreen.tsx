@@ -18,6 +18,7 @@ import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMod
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { NationalTab } from "@/GameInterface/National/NationalTab";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
@@ -513,7 +514,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental" | "youth">("table");
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental" | "youth" | "national">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "national" ? "national" : "table");
   // Youth competitions of the selected league's country (`GET /youth-comps?country=`).
   const [youthSlugs, setYouthSlugs] = useState<YouthSlugs | null>(null);
   // Club finances of the selected league — fetched only while the Finances tab is open.
@@ -861,6 +863,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   : []),
                 { key: "continental" as const, label: t("continental.tab"), disabled: !session },
                 ...(hasYouth ? [{ key: "youth" as const, label: t("youthComps.tab"), disabled: !session }] : []),
+                { key: "national" as const, label: t("nav.national"), disabled: !session },
               ]}
               active={tab}
               onChange={setTab}
@@ -934,6 +937,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
                 )}
               </div>
+            ) : tab === "national" ? (
+              <NationalTab />
             ) : tab === "youth" ? (
               session?.saveId && youthSlugs && hasYouth ? (
                 <YouthCompTab key={youthCountry ?? ""} saveId={session.saveId} slugs={youthSlugs} myClubId={session.clubId ?? ""} />

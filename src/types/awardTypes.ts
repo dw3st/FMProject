@@ -42,6 +42,10 @@ export interface LeagueSeasonAwards {
 export interface WorldAwardEntry { id: string; name: string; squadId: string; clubName: string; league: string; score: number }
 export interface WorldAwards { year: number; on: string; player: WorldAwardEntry[]; manager: WorldAwardEntry[] }
 /** `saves/{id}/awards/{year}.json`: league seasons closed in `year` + the world awards for `year` (given in January of year + 1). */
-export interface AwardsYear { year: number; leagues: LeagueSeasonAwards[]; world?: WorldAwards }
+export interface AwardsYear {
+  year: number; leagues: LeagueSeasonAwards[]; world?: WorldAwards;
+  /** National tournaments closed in `year` (`.claude/rules/game/national-teams.md`): count for the world player. */
+  national?: import("@/types/nationalTypes").NationalTournamentAwards[];
+}
 /** `saves/{id}/seasonGoals/{league}-{year}.json`. */
 export interface SeasonGoals { league: string; year: number; goals: GoalOfSeasonCandidate[] }

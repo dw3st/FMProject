@@ -48,6 +48,8 @@ export function nationalityDisplayName(nationality: string, lang: string, t: TFn
   if (!flag) return name;
   const iso2 = flag.startsWith("gb-") ? "GB" : flag.toUpperCase();
   const slug = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  // The home nations of the UK have no ISO code of their own (Intl cannot name them): `nations.<slug>`.
+  if (flag.startsWith("gb-") && slug !== "england") return t(`nations.${slug}`, { defaultValue: name });
   return countryDisplayName({ slug, name, flag, iso2, playable: false, headline: "" }, lang, t);
 }
 
@@ -101,7 +103,31 @@ export function competitionName(slug: string, leagues: LeagueData[], lang = "en"
   const cont = CONTINENTAL_NAMES[slug];
   if (cont) return lang.toLowerCase().startsWith("pt") ? cont.pt : cont.en;
   if (isCupSlug(slug)) return cupName(slug, leagues, lang) ?? titleCase(slug.replace(/^of_/, ""));
+  const nat = nationalCompetitionName(slug, lang);
+  if (nat) return nat;
   return titleCase(slug.replace(/^of_/, ""));
+}
+
+/**
+ * National-team competitions (`.claude/rules/game/national-teams.md`): `wc_2030`, `euro_2028`, `copa_2028`, the
+ * qualifiers (`wcq_2030_uefa`, `euroq_2028`) and the friendlies (`friendly_2027`). `null` for any other slug.
+ */
+export function nationalCompetitionName(slug: string, lang = "en"): string | null {
+  const pt = lang.toLowerCase().startsWith("pt");
+  const names = {
+    wc: pt ? "Copa do Mundo" : "World Cup",
+    euro: pt ? "Eurocopa" : "Euro",
+    copa: "Copa América",
+  } as const;
+  let m = /^(wc|euro|copa)_(\d{4})$/.exec(slug);
+  if (m) return `${names[m[1] as keyof typeof names]} ${m[2]}`;
+  m = /^wcq_(\d{4})_([a-z]+)$/.exec(slug);
+  if (m) return pt ? `Eliminatórias da Copa ${m[1]} (${m[2]!.toUpperCase()})` : `World Cup qualifiers ${m[1]} (${m[2]!.toUpperCase()})`;
+  m = /^euroq_(\d{4})$/.exec(slug);
+  if (m) return pt ? `Eliminatórias da Euro ${m[1]}` : `Euro qualifiers ${m[1]}`;
+  m = /^friendly_(\d{4})$/.exec(slug);
+  if (m) return pt ? `Amistosos ${m[1]}` : `Friendlies ${m[1]}`;
+  return null;
 }
 
 /** i18n key segment for a continent, e.g. "South America" → "south_america". */

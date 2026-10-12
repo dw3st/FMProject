@@ -140,8 +140,9 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 `SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
 e o Continuar com a borda direita.
 
-- Abas (4.11, #120): Painel, Elenco, **Clube** (instalações, `/club`), Formação, Desenvolvimento, Finanças, Equipe
-  técnica, Ligas, Transferências, Olheiro, Estatísticas. Com a aba a mais, a regra de encolher para só ícone continua
+- Abas (4.11, #120): Painel, Elenco, **Clube** (instalações, `/club`), Formação, Desenvolvimento,
+  Finanças, Equipe técnica, Ligas, Transferências, Olheiro, Estatísticas (as Seleções, 4.21, são uma aba da tela Ligas:
+  não cabe uma 12ª aba). Com a aba a mais, a regra de encolher para só ícone continua
   valendo (`useCompactTabs`).
 - `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
   primeira aba; abas no centro (ícone 18px com a cor da seção, só tokens `primary`/`chart-*` — #133 —

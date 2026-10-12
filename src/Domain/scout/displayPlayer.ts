@@ -98,6 +98,8 @@ export interface DisplayPlayer {
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
   /** Matches of a ban still to serve, when `status === "suspended"`. */
   suspendedMatches?: number;
+  /** With his national team (`national-teams.md`): the last day of the duty (only with `currentDate`). */
+  nationalDutyUntil?: string;
   /** Scout search (#123): how keen he looks on joining the user's club (`scoutInterest`). */
   interest?: ScoutInterest;
   /** Scout search (#123): estimated fee and asking wage fit the user's club (`fitsScoutBudget`). */
@@ -191,6 +193,8 @@ export function toDisplayPlayer(
     moral: log ? Player.moraleToStatus(log.morale) : (3 as StatusLevel),
     status: injured ? "injured" : isSuspended(player) ? "suspended" : "fit",
     ...(!injured && isSuspended(player) ? { suspendedMatches: player.suspension!.matches } : {}),
+    ...(player.nationalDuty && options?.currentDate && options.currentDate >= player.nationalDuty.from && options.currentDate <= player.nationalDuty.until
+      ? { nationalDutyUntil: player.nationalDuty.until } : {}),
     club: clubName,
     stats: player.stats,
     preferredFoot: player.preferredFoot,

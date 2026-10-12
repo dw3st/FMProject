@@ -247,3 +247,13 @@ The same system should support:
 * tournaments
 
 Future competitions can reuse the same calendar structure.
+
+---
+
+# Blocked days (Etapa 41a)
+
+With blocked days in the window (FIFA windows, the confederation's summer tournament — `countryBlockedDays`), the
+rounds are spread over the free days instead: round r targets the free day of index (r−1)(L−1)/(R−1), goes to the
+nearest free match day (±4), else a free midweek day (Tue–Thu), always ≥ 3 days after the previous round, and the span
+shrinks until the last round fits. Without blocked days the calendar is the same as before. See
+`.claude/rules/game/national-teams.md`.

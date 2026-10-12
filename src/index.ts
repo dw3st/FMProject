@@ -55,6 +55,8 @@ const server = serve({
     "/staff": staffPage,
     "/achievements": achievementsPage,
     "/stats": statsPage,
+    // National teams live in a tab of the Leagues screen (the top bar has no room for a 12th tab).
+    "/national": () => Response.redirect("/leagues?tab=national", 302),
     "/season-end": seasonEndPage,
     "/fired": firedPage,
 

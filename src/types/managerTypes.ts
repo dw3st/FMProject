@@ -1,7 +1,7 @@
 import type { ManagerAward } from "@/types/awardTypes";
 
 /** Kind of achievement that scores manager-ranking points (`.claude/rules/game/managers.md`). */
-type ManagerTitleKind = "league" | "cup" | "continental" | "promotion";
+type ManagerTitleKind = "league" | "cup" | "continental" | "promotion" | "national";
 
 export interface ManagerTitle {
   /** Season label ("2026-27" or "2027"), as in history rows. */

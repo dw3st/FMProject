@@ -3,6 +3,7 @@ import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
+import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
@@ -189,6 +190,20 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   listRefereeSeasons(saveId: string): Promise<string[]> {
     return this.inner.listRefereeSeasons(saveId);
+  }
+
+  // ── National teams ────────────────────────────────────────────────────────────
+  readNationalState(saveId: string): Promise<NationalState | null> {
+    return this.readThrough(`nationalState:${saveId}`, () => this.inner.readNationalState(saveId));
+  }
+  async writeNationalState(saveId: string, state: NationalState): Promise<void> {
+    this.buffer(`nationalState:${saveId}`, state, () => this.inner.writeNationalState(saveId, state));
+  }
+  readNationalComp(saveId: string, slug: string): Promise<NationalCompetition | null> {
+    return this.readThrough(`nationalComp:${saveId}:${slug}`, () => this.inner.readNationalComp(saveId, slug));
+  }
+  async writeNationalComp(saveId: string, comp: NationalCompetition): Promise<void> {
+    this.buffer(`nationalComp:${saveId}:${comp.slug}`, comp, () => this.inner.writeNationalComp(saveId, comp));
   }
 
   // ── Manager ranking ───────────────────────────────────────────────────────────

@@ -714,3 +714,8 @@ export function moraleAttention(squad: Squad, date: string, days = 7): { talks: 
       || (p.kind === "minutes" && MORALE.WINDOW - (p.matches ?? 0) <= (p.target ?? 1) - (p.played ?? 0) + 1)),
   };
 }
+
+/** Called up by his national team (`.claude/rules/game/national-teams.md`): human club only, once per call-up. */
+export function afterNationalCallUp(player: RosterPlayer): RosterPlayer {
+  return withEventDelta(player, MORALE.NATIONAL_CALL_UP);
+}

@@ -10,6 +10,7 @@ import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
+import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 
 /**
  * Start kits = pre-computed worlds where the early-starting (European) leagues have
@@ -35,6 +36,8 @@ interface KitWorld {
   }>;
   transfers: TransferRecord[];
   market: MarketState | null;
+  /** National teams (`.claude/rules/game/national-teams.md`): state and every competition. */
+  national?: { state: NationalState; comps: NationalCompetition[] } | null;
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -101,11 +104,18 @@ async function buildKitWorld(saveId: string): Promise<KitWorld> {
     });
   }
 
+  const nState = await saveService.getNationalState(saveId);
+  const nComps: NationalCompetition[] = [];
+  for (const slug of nState?.competitions ?? []) {
+    const c = await saveService.getNationalComp(saveId, slug);
+    if (c) nComps.push(c);
+  }
   return {
     squads,
     leagues,
     transfers: await saveService.getTransfers(saveId),
     market: await saveService.getMarket(saveId),
+    national: nState ? { state: nState, comps: nComps } : null,
   };
 }
 
@@ -164,6 +174,15 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
   }
   await saveService.writeTransfers(saveId, world.transfers);
   if (world.market) await saveService.saveMarket(saveId, world.market);
+  if (world.national) {
+    // The kit's coaches are not in this save's managers.json (the kit never carries it): every national team
+    // goes back to the coach this save created for it, and no vacancy is carried over.
+    const managers = await saveService.getManagers(saveId);
+    const coachOf = new Map(managers.filter((m) => m.squadId.startsWith("nat_")).map((m) => [m.squadId, m.id]));
+    const teams = Object.fromEntries(Object.entries(world.national.state.teams).map(([id, t]) => [id, { ...t, managerId: coachOf.get(id) ?? t.managerId }]));
+    for (const c of world.national.comps) await saveService.writeNationalComp(saveId, c);
+    await saveService.writeNationalState(saveId, { ...world.national.state, teams, vacancies: {} });
+  }
 }
 
 /**

@@ -70,7 +70,8 @@ export interface AchievementSnapshot {
 
 export function titleCounts(m: ManagerRecord | null): Record<"league" | "cup" | "continental" | "promotion", number> {
   const out = { league: 0, cup: 0, continental: 0, promotion: 0 };
-  for (const t of m?.titles ?? []) out[t.kind]++;
+  // National-team titles (`national-teams.md`) are not club titles: the 41b gives them their own trails.
+  for (const t of m?.titles ?? []) if (t.kind !== "national") out[t.kind]++;
   return out;
 }
 

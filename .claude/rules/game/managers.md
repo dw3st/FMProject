@@ -169,3 +169,10 @@ preenchidas em ≤ 21 dias, todo interino sobre uma vaga).
 temporada + tipo + competição). `ManagerTitle.on` = data do crédito do título (os pontos de títulos do ano entram no
 melhor técnico do mundo). A rota `/managers` devolve `awards` em todo item; a aba Técnicos tem a coluna "Prêmios" e os
 selos no detalhe. Ver `.claude/rules/game/awards.md`.
+
+## Técnicos de seleção (Etapa 41a)
+
+Um registro por seleção com `squadId = nat_<nação>` (fora do pool de livres, da revisão de segunda e das vagas de
+clube; clubes não os roubam); título de torneio = `kind: "national"` (Copa 200, Euro 120, Copa América 100).
+Demissão ao fim da competição pela regra da virada; contratação pelo `chooseHire`. A rota `/managers` mostra a nação
+no lugar do clube. Ver `.claude/rules/game/national-teams.md`.

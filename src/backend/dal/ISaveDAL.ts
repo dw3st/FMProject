@@ -58,6 +58,13 @@ export interface ISaveDAL {
   /** Keys of the archived seasons on disk (not buffered). */
   listRefereeSeasons(saveId: string): Promise<string[]>;
 
+  // ── National teams (`.claude/rules/game/national-teams.md`) ────────────────
+  /** `null` when the save has no national teams (older saves). */
+  readNationalState(saveId: string): Promise<import("@/types/nationalTypes").NationalState | null>;
+  writeNationalState(saveId: string, state: import("@/types/nationalTypes").NationalState): Promise<void>;
+  readNationalComp(saveId: string, slug: string): Promise<import("@/types/nationalTypes").NationalCompetition | null>;
+  writeNationalComp(saveId: string, comp: import("@/types/nationalTypes").NationalCompetition): Promise<void>;
+
   // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ─────────────
   /** `null` when nothing was ever observed. */
   readScouting(saveId: string): Promise<ScoutingState | null>;

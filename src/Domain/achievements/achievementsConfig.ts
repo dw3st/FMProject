@@ -4,7 +4,7 @@ export const ACHIEVEMENTS = {
   /** Attribute gain of an unlock in the track's attribute. */
   ATTRIBUTE_GAIN: { bronze: 0.25, silver: 0.5, gold: 1, secret: 0.5 },
   /** Attribute gain of a title (Tactics). */
-  TITLE_GAIN: { league: 0.5, continental: 0.5, cup: 0.25, promotion: 0.25 },
+  TITLE_GAIN: { league: 0.5, continental: 0.5, cup: 0.25, promotion: 0.25, national: 0.5 },
   /** Season that meets the board's objective (Motivation, at the rollover). */
   OBJECTIVE_GAIN: 0.25,
   /** Every `LOSS_STREAK_STEP` official defeats in a row: Motivation and Discipline −`LOSS_STREAK_DROP`. */

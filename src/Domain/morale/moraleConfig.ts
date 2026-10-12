@@ -80,6 +80,8 @@ export const MORALE = {
   TALK_QUIET_DAYS: 28,
   /** Season award events remembered in `moraleLog.awards` (a retried day never applies one twice). */
   AWARD_KEYS: 4,
+  /** Called up by his national team (`national-teams.md`). */
+  NATIONAL_CALL_UP: 3,
   /** Minutes talk: morale below this and below the expected minutes. */
   MINUTES_TALK_BELOW: 40,
   /** Contract talk: key/starter in the last CONTRACT_TALK_DAYS of his contract. */

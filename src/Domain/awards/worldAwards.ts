@@ -1,6 +1,7 @@
 import { AWARDS } from "@/Domain/awards/awardsConfig";
 import type { LeagueSeasonAwards, WorldAwardEntry, WorldAwards } from "@/types/awardTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { NationalTournamentAwards } from "@/types/nationalTypes";
 
 /**
  * World player and manager of the year (`.claude/rules/game/awards.md`), pure. Given in January on
@@ -24,8 +25,23 @@ export function computeWorldAwards(input: {
   on: string;
   leagues: LeagueSeasonAwards[];
   managers: ManagerRecord[];
+  /** National tournaments closed in `year` (`national-teams.md` → "Prêmios"). */
+  tournaments?: NationalTournamentAwards[];
 }): WorldAwards {
   const players = new Map<string, Acc>();
+  for (const t of input.tournaments ?? []) {
+    for (const p of t.shortlist) {
+      const part = t.weight * (p.score - AWARDS.WORLD_BASE);
+      const cur = players.get(p.playerId);
+      const entry: WorldAwardEntry = { id: p.playerId, name: p.name, squadId: p.squadId, clubName: "", league: t.competition, score: 0 };
+      if (!cur) players.set(p.playerId, { entry, bestPart: part, total: part, tie: p.score });
+      else {
+        cur.total += part;
+        cur.tie = Math.max(cur.tie, p.score);
+        if (part > cur.bestPart) { cur.bestPart = part; cur.entry = entry; }
+      }
+    }
+  }
   for (const l of input.leagues) {
     for (const p of l.shortlist.players) {
       const part = l.weight * (p.seasonScore - AWARDS.WORLD_BASE);

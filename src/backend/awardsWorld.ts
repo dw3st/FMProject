@@ -144,7 +144,7 @@ export async function runWorldCeremony(service: SaveService, saveId: string, dat
   const year = Number(date.slice(0, 4)) - 1;
   const file = await service.getAwardsYear(saveId, year);
   if (!file || file.leagues.length === 0 || file.world) return null;
-  const world = computeWorldAwards({ year, on: date, leagues: file.leagues, managers: await args.managers() });
+  const world = computeWorldAwards({ year, on: date, leagues: file.leagues, managers: await args.managers(), tournaments: file.national });
   await service.writeAwardsYear(saveId, { ...file, world });
 
   const wp = world.player[0];

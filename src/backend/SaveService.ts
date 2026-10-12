@@ -6,12 +6,14 @@ import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
+import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import { normalizeAchievements } from "@/Domain/achievements/progress";
@@ -276,6 +278,20 @@ export class SaveService {
   }
   listRefereeSeasons(saveId: string): Promise<string[]> {
     return this.dal.listRefereeSeasons(saveId);
+  }
+
+  // ── National teams (`.claude/rules/game/national-teams.md`) ─────────────────
+  getNationalState(saveId: string): Promise<NationalState | null> {
+    return this.dal.readNationalState(saveId);
+  }
+  writeNationalState(saveId: string, state: NationalState): Promise<void> {
+    return this.dal.writeNationalState(saveId, state);
+  }
+  getNationalComp(saveId: string, slug: string): Promise<NationalCompetition | null> {
+    return this.dal.readNationalComp(saveId, slug);
+  }
+  writeNationalComp(saveId: string, comp: NationalCompetition): Promise<void> {
+    return this.dal.writeNationalComp(saveId, comp);
   }
 
   // ── Manager ranking ────────────────────────────────────────────────────────
@@ -813,6 +829,7 @@ export class SaveService {
         slug: string;
         name: string;
         season: string;
+        country?: string;
         standings: Array<{ squadId: string; name?: string; colors?: [string, string]; slug?: string }>;
       }>;
 
@@ -824,7 +841,10 @@ export class SaveService {
         const year = parseInt(seasonParts[0]!, 10);
         const teamIds = leagueEntry.standings.map((s) => s.squadId);
 
-        const { meta, rounds, dateIndex } = generateLeagueCalendar(config, teamIds, year);
+        // The league stops in the FIFA windows and its confederation's summer tournament
+        // (`.claude/rules/game/national-teams.md`).
+        const blocked = countryBlockedDays(leagueEntry.country, `${year}-01-01`, `${year + 1}-12-31`);
+        const { meta, rounds, dateIndex } = generateLeagueCalendar(config, teamIds, year, { blocked });
 
         await this.dal.writeLeagueMeta(id, meta);
         for (const round of rounds) {
@@ -1023,6 +1043,18 @@ export class SaveService {
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
       ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
       : null, playerLeagueStart));
+
+    // National teams (`.claude/rules/game/national-teams.md`): every nation of the world, its Elo and AI coach,
+    // and the draws already due. A failure leaves the career without national teams, never without a save.
+    try {
+      const { createNationalWorld } = await import("@/backend/nationalWorld");
+      // From the world's start (the earliest league kickoff): a Brazilian career gets its start kit, whose
+      // pre-simulation runs from there; without a kit, `ensureNationalWorld` redraws from the career's day.
+      const worldStart = activeLeagues.map((l) => l.start).sort()[0] ?? meta.currentDate ?? now.slice(0, 10);
+      await createNationalWorld({ service: this, saveId: id, date: worldStart, index: await this.getSquadIndex(id) });
+    } catch (e) {
+      logError("national", `save ${id}: failed to create the national teams`, e);
+    }
 
     // The human manager's first contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"):
     // two seasons at the wage of a starting reputation.

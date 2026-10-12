@@ -222,6 +222,11 @@ mundial +10, revelação / artilheiro / goleiro +8, seleção +5, gol da tempora
 segunda, para `youth`, `backup` e `rotation` com déficit, a base reduz a perda por minutos (`p + 0,5 × y`), nunca dá
 bônus; zera na virada como `minutes`.
 
+## Seleções (Etapa 41a)
+
+Convocado pela seleção: +3 de moral (`afterNationalCallUp`, pelo `withEventDelta`), uma vez por convocação. Os jogos
+da seleção não entram na janela de minutos. Ver `.claude/rules/game/national-teams.md`.
+
 ## Conquistas (Etapa 40)
 
 A Motivação do técnico (`.claude/rules/game/achievements.md`) multiplica a variação positiva de moral de um jogo (vitória,

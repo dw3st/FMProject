@@ -561,3 +561,8 @@ também incrementa `log.continental` além dos campos normais — nunca ao mesmo
 (`CONTINENTAL_NAMES`, nunca derivados do `leagueData`, ao contrário da copa nacional genérica):
 "Champions League" e "Europa League" iguais em inglês e português, "Copa Libertadores" igual nos
 dois, "Copa Sudamericana" (inglês) vs. "Copa Sul-Americana" (`pt-BR`).
+
+## Datas FIFA e torneios (Etapa 41a)
+
+Os dias bloqueados do país de cada participante (`countryBlockedDays`) entram nas datas ocupadas dele: o otimizador
+trata como choque no mesmo dia. Ver `.claude/rules/game/national-teams.md`.

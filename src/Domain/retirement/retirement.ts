@@ -79,6 +79,7 @@ function toRetiredRecord(
     preferredFoot: p.preferredFoot, profile: p.profile, retiredOn: date, squadId, age: p.age,
     wasWorldClass, statsAtRetirement: p.stats,
     ...(p.history?.length ? { history: p.history } : {}),
+    ...(p.national ? { national: p.national } : {}),
     appearances: log?.appearances ?? p.seasonLog?.appearances ?? 0,
     goals: log?.goals ?? p.seasonLog?.goals ?? 0,
   };

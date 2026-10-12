@@ -39,7 +39,7 @@ export function registeredPool(squad: Squad, reg: MatchRegistration | undefined)
   return { ...squad, players: limitForeignPool(registered, reg.rule, reg.country) };
 }
 
-function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
+export function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
   return getFormationSlots(formation as unknown as FormationShape, "attacking");
 }
 
