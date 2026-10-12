@@ -1011,7 +1011,12 @@ export function MatchScreen() {
     const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
     const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
     // A stand under works (only a home game of the human club) is drawn empty, as a building site.
-    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id, ...(crowd?.works ? { works: crowd.works } : {}) };
+    return {
+      fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id,
+      ...(crowd?.works ? { works: crowd.works } : {}),
+      // The manager's decorations (achievements): only sent for the human club's home games.
+      ...(crowd?.decor ? { decor: crowd.decor } : {}),
+    };
   }, [matchFixture, crestIds, touchline]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.

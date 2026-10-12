@@ -6,6 +6,10 @@ import type { Graphics } from "pixi.js";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import type { DecorRect } from "@/GraficsEngine/stadiumDecor";
+
+/** Light tone of the decorations (stripes, the flag's band). */
+const DECOR_LIGHT = 0xf2f2f2;
 
 /** Radius of a fan dot, as a fraction of the seat cell. */
 const SEAT_DOT = 0.38;
@@ -109,4 +113,9 @@ export function goalPulseAlpha(t: number): number {
   const p = t / STADIUM.GOAL_PULSE_S;
   if (!(p > 0 && p < 1)) return 1;
   return 1 - 0.15 * Math.sin(Math.PI * p);
+}
+
+/** The manager's decorations (`stadiumDecor.ts`) in the club's colour and a light tone. */
+export function drawDecor(g: Graphics, rects: readonly DecorRect[], clubColor: number): void {
+  for (const r of rects) g.rect(r.x, r.y, r.w, r.h).fill({ color: r.tone === "club" ? clubColor : DECOR_LIGHT, alpha: r.alpha });
 }

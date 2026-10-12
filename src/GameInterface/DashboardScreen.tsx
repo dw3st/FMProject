@@ -1,3 +1,5 @@
+import type { AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
+import { clubCardAchievements, type ClubCardAchievements } from "@/GameInterface/Dashboard/HomeCards";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
@@ -67,6 +69,7 @@ export function DashboardScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);
   const [managerRank, setManagerRank] = useState<number | null>(null);
+  const [achievements, setAchievements] = useState<ClubCardAchievements | null>(null);
   const [opponentHome, setOpponentHome] = useState<{ id: string; venue: ClubVenue | null; country: string | null } | null>(null);
 
   useEffect(() => {
@@ -126,6 +129,17 @@ export function DashboardScreen() {
       .then((r) => (r.ok ? (r.json() as Promise<{ playerRank: number | null }>) : null))
       .catch(() => null)
       .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
+  // Achievements (`.claude/rules/game/achievements.md`): frame, title and badges of the manager, the count.
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/achievements`)
+      .then((r) => (r.ok ? (r.json() as Promise<AchievementsData>) : null))
+      .catch(() => null)
+      .then((d) => { if (!cancelled) setAchievements(d ? clubCardAchievements(d) : null); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
 
@@ -239,6 +253,7 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
+        achievements={achievements}
         managerFace={session.manager ? { face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
         reputation={jobs?.reputation ?? null}
         pendingOffers={jobs?.offers.length ?? 0}

@@ -2,6 +2,8 @@
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
  * (`dashboardData.ts`); each card links to the screen it summarises.
  */
+import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
+import type { ManagerProfile } from "@/types/achievementTypes";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
@@ -157,7 +159,10 @@ export function ClubCard({
   budget,
   squadSize,
   squadHref,
+  achievements = null,
 }: {
+  /** The manager's profile items and the achievements count (`achievements.md`); null while loading. */
+  achievements?: ClubCardAchievements | null;
   club: MatchSide;
   leagueName: string;
   managerName: string | null;
@@ -205,11 +210,25 @@ export function ClubCard({
             manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
             clubColors={club.colors}
             size={64}
+            ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}
           />
         )}
         <div className="flex flex-col gap-1 min-w-0">
           <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
           <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
+          {achievements?.profile.title && (
+            <span className="text-sm font-semibold text-primary truncate">{t(`achievements.titles.${achievements.profile.title}`)}</span>
+          )}
+          {achievements && (
+            <a href="/achievements" className="flex items-center gap-1.5 text-sm text-muted-foreground no-underline hover:text-foreground hover:underline tabular-nums">
+              {achievements.profile.badges.map((b) => (
+                <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="text-primary inline-flex">
+                  <Icon name={BADGE_ICON[b]} size={16} />
+                </span>
+              ))}
+              {t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}
+            </a>
+          )}
           {managerRank !== null && (
             <a
               href="/stats?tab=managers"
@@ -268,6 +287,14 @@ export function ClubCard({
       </div>
     </section>
   );
+}
+
+/** What the club card shows of the achievements. */
+export interface ClubCardAchievements { profile: ManagerProfile; unlocked: number; total: number; points: number }
+
+export function clubCardAchievements(d: AchievementsData): ClubCardAchievements {
+  const unlocked = d.tracks.reduce((n, tr) => n + Object.keys(tr.unlocked).length, 0) + d.secrets.filter((s) => s.unlocked).length;
+  return { profile: d.profile, unlocked, total: d.tracks.length * 3 + d.secrets.length, points: d.points.earned };
 }
 
 // ── Next match ───────────────────────────────────────────────────────────────

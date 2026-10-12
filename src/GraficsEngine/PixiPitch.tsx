@@ -29,7 +29,9 @@ import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
-import { drawFans, drawStandBase, drawStandEdges, fansBounds, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { drawDecor, drawFans, drawStandBase, drawStandEdges, fansBounds, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { decorRects } from "@/GraficsEngine/stadiumDecor";
+import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, seatCellPx, worksSides } from "@/GraficsEngine/crowd";
 import {
   benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, CROWD_JUMP_S, crowdJumpPx, startStretcher, STRETCHER,
@@ -326,6 +328,8 @@ export interface PitchStadium {
   seed: string;
   /** Club stands under works on the day (#137): drawn empty, as a building site. */
   works?: StandId[];
+  /** The manager's decorations in the home end (achievements), human club's home games only. */
+  decor?: StadiumDecor;
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -413,7 +417,7 @@ export function PixiPitch({
   useEffect(() => {
     stadiumRef.current = stadium;
     redrawCrowdRef.current?.();
-  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -499,6 +503,7 @@ export function PixiPitch({
       const crowdFans: Record<"home" | "away", { sprite: Sprite; baseY: number } | null> = { home: null, away: null };
       /** Height (px) of a fans' jump: under half a seat. */
       let crowdJumpAmp = 0;
+      let crowdDecor: Graphics | null = null;
       const bakeCrowd = () => {
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
@@ -543,6 +548,18 @@ export function PixiPitch({
           sprite.y = box.y;
           crowdLayer.addChild(sprite);
           crowdFans[k] = { sprite, baseY: box.y };
+        }
+        // The manager's decorations (achievements): over the home end, unless it is under works.
+        crowdDecor?.destroy();
+        crowdDecor = null;
+        const homeSide = homeLeft ? "left" : "right";
+        if (st.decor && !st.neutral && !works.includes(homeSide)) {
+          const rects = decorRects(m.stand, homeSide, st.decor);
+          if (rects.length > 0) {
+            crowdDecor = new Graphics();
+            drawDecor(crowdDecor, rects, st.homeTeam === "A" ? fillA : fillB);
+            crowdLayer.addChild(crowdDecor);
+          }
         }
       };
       bakeCrowd();
