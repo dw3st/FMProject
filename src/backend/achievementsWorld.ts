@@ -36,8 +36,10 @@ export interface AchievementsDayArgs {
     moves: ClubMove[];
     objectiveMet: boolean;
   };
-  /** Sacked (or the contract ended) today. */
+  /** Sacked today (not a contract that ran out). */
   sacked: boolean;
+  /** The manager left the club today (sacked or out of contract): the club is an AI club now. */
+  leftClub: boolean;
 }
 
 function officialCompetition(slug: string, index: SquadIndex): "league" | "cup" | "continental" | null {
@@ -138,5 +140,9 @@ export async function achievementsDay(service: SaveService, saveId: string, args
     ...(args.sacked ? { sacked: { hiredOn } } : {}),
   });
   await service.writeAchievements(saveId, result.state);
+  // The copy of the attributes on his club (DP, familiarity, fouls read it there).
+  if (club && !args.leftClub && JSON.stringify(club.managerAttributes) !== JSON.stringify(result.state.attributes)) {
+    await service.saveSquadById(saveId, { ...club, managerAttributes: result.state.attributes });
+  }
   return result.unlocked.length > 0 ? buildAchievementMessage(args.date, result.unlocked as AchievementKey[]) : null;
 }

@@ -2849,6 +2849,7 @@ export async function advanceOneDay(
         squadOf: (id) => saveService.getSquadById(saveId, id),
         ...(seasonEnded ? { rollover: { championOf: playerChampionOf, moves: playerCountryMoves, objectiveMet: playerObjectiveMet } } : {}),
         sacked: !!ended && ended.reason !== "contract",
+        leftClub: !!ended,
       });
       if (msg) {
         achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;

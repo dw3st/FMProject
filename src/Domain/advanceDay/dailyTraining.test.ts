@@ -478,6 +478,16 @@ describe("style familiarity on a training day", () => {
     expect(updatedSquad.styleFamiliarity?.high_press).toBeCloseTo(60 - 0.15, 2);
   });
 
+  test("the manager's Tactics scales the gain (×1,05 at 20, neutral at 10)", () => {
+    const gain = (tactics?: number) => {
+      const s = squad({ styleFamiliarity: { possession: 50 }, ...(tactics !== undefined ? { managerAttributes: { motivation: 10, tactics, youth: 10, negotiation: 10, discipline: 10 } } : {}) });
+      return buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05", () => 0.99)
+        .updatedSquad.styleFamiliarity!.possession! - 50;
+    };
+    expect(gain(10)).toBeCloseTo(gain(), 6);
+    expect(gain(20) / gain()).toBeCloseTo(1.05, 2);
+  });
+
   test("intensity scales the gain: light ×0.7, heavy ×1.3", () => {
     const s = squad({ styleFamiliarity: { possession: 50 } });
     const dev = staffEffectsOf(s).familiarityMult;

@@ -169,6 +169,19 @@ describe("moraleDay", () => {
     expect(p("g2").moraleLog!.trend).toEqual([66]);
   });
 
+  test("the manager's Motivation scales a match's positive change (×1,05 at 20), never a loss", () => {
+    const run = (motivation: number | undefined, result: ClubMatchSummary["result"]) => moraleDay({
+      squad: fullSquad(), date: "2027-03-02", monday: false, bids: [], sellList: [], newId, motivation,
+      matches: [match(result, { f0: 90 })],
+    }).squad.players.find((x) => x.id === "g2")!.morale!;
+    expect(run(undefined, "W")).toBe(66);
+    expect(run(10, "W")).toBe(66);
+    // 65 + 1,05 (morale keeps one decimal).
+    expect(run(20, "W")).toBeGreaterThan(66);
+    expect(run(20, "W")).toBeLessThanOrEqual(66.1);
+    expect(run(20, "L")).toBe(run(undefined, "L"));
+  });
+
   test("Monday: benched key player loses, drifts towards 65, asks to talk when below 40", () => {
     const sq = fullSquad();
     sq.players = sq.players.map((p) =>

@@ -1,3 +1,4 @@
+import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { professionalismDpMult } from "@/Domain/personality/personality";
@@ -246,7 +247,8 @@ export function processYouthRollover(args: {
     const assistantRating = effectiveRating(squad, "assistant");
     const devMult = staffEffectsOf(squad).devMult;
     const areas = areaMultsOf(squad);
-    const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult, areas));
+    // The manager's Youth attribute (`.claude/rules/game/achievements.md`): every academy player is ≤ 21.
+    const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult * youthAttributeMult(squad.managerAttributes, p.age), areas));
     // Reborn players may stay until the end of their x1.3 window (REBORN_UNTIL_AGE).
     const leaves = (p: RosterPlayer) => p.age >= (p.reborn ? RETIREMENT.REBORN_UNTIL_AGE : Y.RELEASE_AGE);
     const autoReleased = aged.filter(leaves);

@@ -1,3 +1,4 @@
+import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import type { EngineReferee } from "@/types/refereeTypes";
 import { moraleDpMult } from "@/Domain/morale/morale";
 import { personalDpMult, professionalismDecayMult } from "@/Domain/personality/personality";
@@ -352,7 +353,8 @@ function finalizeSquadsAfterMatch(
       const rating = playerRatings[p.id] ?? 0;
       const { updatedPlayer, levelChanges } = applyDevelopment(
         p, rating, dpWeightsFor(p),
-        devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
+        devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p))
+          * youthAttributeMult(squad.managerAttributes, p.age),
         professionalismDecayMult(p),
         areas,
       );
