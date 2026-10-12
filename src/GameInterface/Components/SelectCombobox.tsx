@@ -45,7 +45,7 @@ export function SelectCombobox<T extends string>({
   const [query, setQuery] = useState("");
   const id = labelId ?? (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
   const finalPlaceholder = placeholder ?? t("common.search");
-  const finalEmptyMessage = emptyMessage ?? "No matches";
+  const finalEmptyMessage = emptyMessage ?? t("common.noOptionMatches");
 
   const filtered =
     query === ""

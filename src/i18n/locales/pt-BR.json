@@ -98,7 +98,8 @@
     "exp": "Exp",
     "radius": "Raio",
     "clear": "Limpar",
-    "milliseconds": "ms"
+    "milliseconds": "ms",
+    "noOptionMatches": "Nenhum resultado"
   },
   "landing": {
     "signIn": "Entrar",
