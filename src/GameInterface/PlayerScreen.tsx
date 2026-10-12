@@ -17,6 +17,7 @@ import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { YouthSeasonLine } from "@/GameInterface/Components/YouthSeasonLine";
+import { NationalCareerLine } from "@/GameInterface/National/NationalCareerLine";
 import { PlayerAwards } from "@/GameInterface/Awards/PlayerAwards";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
@@ -240,6 +241,7 @@ export function PlayerScreen({
             leagues={leagues}
           />
           <YouthSeasonLine log={player.seasonLog} />
+          <NationalCareerLine player={player} today={today || undefined} />
         </section>
     </ScreenContainer>
 

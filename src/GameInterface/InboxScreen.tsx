@@ -3,6 +3,7 @@ import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
+import { NationalInboxBody } from "@/GameInterface/National/NationalInboxBody";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -209,6 +210,13 @@ const CATEGORY_META: Record<
     bg: "bg-destructive/15",
     border: "border-destructive/30",
     Icon: DisciplineIcon,
+  },
+  national: {
+    labelKey: "inbox.categories.national",
+    color: "text-chart-5",
+    bg: "bg-chart-5/15",
+    border: "border-chart-5/30",
+    Icon: ContinentalIcon,
   },
 };
 
@@ -509,6 +517,12 @@ function leaguePrizeTexts(
   if (message.category === "discipline") {
     return { subject: t("complaint.inbox.subject"), preview: t("complaint.inbox.body", { count: message.matches }) };
   }
+  if (message.category === "national") {
+    return {
+      subject: t(`national.inbox.subject.${message.kind}`, { count: message.players.length }),
+      preview: message.players.map((p) => p.name).join(", "),
+    };
+  }
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
@@ -688,6 +702,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
         {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
+        {message.category === "national" && <NationalInboxBody message={message} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

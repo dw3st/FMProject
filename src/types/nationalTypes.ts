@@ -50,9 +50,12 @@ export interface NationalVacancy {
 }
 
 export interface NationalState {
+  /** By team id (`nat_<key>`). */
   teams: Record<string, NationalTeam>;
-  /** Active call-ups by nation. */
+  /** Active call-ups by team id. */
   callUps: Record<string, NationalCallUp>;
+  /** The latest call-up of each team (the screen shows it between windows). */
+  lastCallUps?: Record<string, NationalCallUp>;
   /** Every competition slug of the save, oldest first. */
   competitions: string[];
   /** Draws already made (`euroq_2028`, `wc_2030`, …). */

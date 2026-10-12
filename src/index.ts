@@ -20,6 +20,7 @@ import firedPage from "./pages/fired/index.html";
 import financesPage from "./pages/finances/index.html";
 import clubPage from "./pages/club/index.html";
 import statsPage from "./pages/stats/index.html";
+import nationalPage from "./pages/national/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
@@ -53,6 +54,7 @@ const server = serve({
     "/club": clubPage,
     "/staff": staffPage,
     "/stats": statsPage,
+    "/national": nationalPage,
     "/season-end": seasonEndPage,
     "/fired": firedPage,
 

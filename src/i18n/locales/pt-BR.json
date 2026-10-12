@@ -536,7 +536,8 @@
     "vsOpponent": "vs {{opponent}}",
     "changelog": "Novidades",
     "dashboard": "Painel",
-    "club": "Clube"
+    "club": "Clube",
+    "national": "Seleções"
   },
   "settings": {
     "language": "Idioma",
@@ -1396,7 +1397,8 @@
       "awards": "Prêmios",
       "registration": "Inscrição",
       "schedule": "Calendário",
-      "discipline": "Disciplina"
+      "discipline": "Disciplina",
+      "national": "Seleções"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -2700,6 +2702,10 @@
     "club": {
       "main": "Seu",
       "accent": "Clube"
+    },
+    "national": {
+      "main": "Seleções",
+      "accent": "Nacionais"
     }
   },
   "jobs": {
@@ -3757,5 +3763,93 @@
     },
     "resultLine_one": "VAR: {{count}} revisão, {{overturned}} decisão alterada",
     "resultLine_other": "VAR: {{count}} revisões, {{overturned}} decisões alteradas"
+  },
+  "national": {
+    "tabs": {
+      "ranking": "Ranking",
+      "competitions": "Competições",
+      "team": "Seleção"
+    },
+    "none": "Esta carreira não tem seleções.",
+    "loading": "Carregando…",
+    "loadFailed": "Não foi possível carregar.",
+    "nextTournament": "{{name}} a partir de {{date}}",
+    "nextWindow": "Próxima data FIFA: {{from}} – {{to}}",
+    "confed": "Confederação",
+    "world": "Mundo",
+    "nation": "Seleção",
+    "coach": "Técnico",
+    "games": "Jogos",
+    "points": "Pontos",
+    "noCompetitions": "Nenhuma competição ainda.",
+    "competition": "Competição",
+    "champion": "Campeão",
+    "groups": "Grupos",
+    "group": "Grupo {{name}}",
+    "played": "J",
+    "gd": "SG",
+    "pts": "Pts",
+    "knockout": "Mata-mata",
+    "stage": {
+      "group": "Fase de grupos",
+      "r32": "16-avos de final",
+      "r16": "Oitavas de final",
+      "qf": "Quartas de final",
+      "sf": "Semifinais",
+      "final": "Final"
+    },
+    "notDrawn": "Ainda não sorteada",
+    "scorers": "Artilharia",
+    "player": "Jogador",
+    "goals": "Gols",
+    "results": "Últimos resultados",
+    "vs": "x",
+    "pens": "({{home}}–{{away}} nos pênaltis)",
+    "awards": "Prêmios do torneio",
+    "award": {
+      "bestPlayer": "Melhor jogador",
+      "topScorer": "Artilheiro",
+      "bestGoalkeeper": "Melhor goleiro",
+      "team": "Seleção do torneio"
+    },
+    "goalsCount_one": "{{count}} gol",
+    "goalsCount_other": "{{count}} gols",
+    "rankLine": "Ranking: {{rank}}º · {{points}} pts · {{confed}}",
+    "coachLine": "Técnico: {{name}}",
+    "interim": "interino",
+    "squadNow": "Convocados",
+    "squadLast": "Última convocação",
+    "callUpDates": "{{from}} – {{to}}",
+    "noCallUp": "Nenhuma convocação ainda.",
+    "pos": "Pos",
+    "club": "Clube",
+    "rating": "Nível",
+    "caps": "Jogos",
+    "local": "Local",
+    "localHint": "Joga na liga do país: só pela seleção",
+    "upcoming": "Próximos jogos",
+    "recent": "Jogos recentes",
+    "playerLine": "{{caps}} jogos · {{goals}} gols",
+    "onDuty": "Na seleção até {{date}}",
+    "onDutyShort": "Seleção",
+    "titles": "Títulos",
+    "careerTitle": "Seleção",
+    "inbox": {
+      "subject": {
+        "called_up_one": "{{count}} jogador convocado",
+        "called_up_other": "{{count}} jogadores convocados",
+        "returned_one": "{{count}} jogador voltou da seleção",
+        "returned_other": "{{count}} jogadores voltaram das seleções"
+      },
+      "body": {
+        "called_up_one": "Convocado pela seleção: não treina no clube até voltar.",
+        "called_up_other": "Convocados pelas seleções: não treinam no clube até voltar.",
+        "returned_one": "Voltou da seleção.",
+        "returned_other": "Voltaram das seleções."
+      },
+      "until": "até {{date}}",
+      "tally": "{{apps}} jogos, {{goals}} gols",
+      "injured": "lesionado"
+    }
   }
 }

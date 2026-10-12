@@ -2,6 +2,7 @@ import { summaryOf } from "@/Domain/personality/personality";
 import { useState, useMemo } from "react";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
+import { NationalDutyBadge } from "@/GameInterface/National/NationalDutyBadge";
 import { useTranslation } from "react-i18next";
 import type { Squad } from "@/types/playerTypes";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
@@ -217,6 +218,7 @@ export function SquadRosterTable({
               {stars.get(player.id) && <StarBadge kind={stars.get(player.id)} className="ml-1.5 align-middle" />}
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
+              {player.nationalDutyUntil && <NationalDutyBadge until={player.nationalDutyUntil} className="ml-1.5" />}
             </div>
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 flex justify-center">

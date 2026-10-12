@@ -536,7 +536,8 @@
     "vsOpponent": "vs {{opponent}}",
     "changelog": "What's new",
     "dashboard": "Dashboard",
-    "club": "Club"
+    "club": "Club",
+    "national": "National teams"
   },
   "settings": {
     "language": "Language",
@@ -1396,7 +1397,8 @@
       "awards": "Awards",
       "registration": "Registration",
       "schedule": "Schedule",
-      "discipline": "Discipline"
+      "discipline": "Discipline",
+      "national": "National teams"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -2700,6 +2702,10 @@
     "club": {
       "main": "Your",
       "accent": "Club"
+    },
+    "national": {
+      "main": "National",
+      "accent": "Teams"
     }
   },
   "jobs": {
@@ -3757,5 +3763,93 @@
     },
     "resultLine_one": "VAR: {{count}} check, {{overturned}} call changed",
     "resultLine_other": "VAR: {{count}} checks, {{overturned}} calls changed"
+  },
+  "national": {
+    "tabs": {
+      "ranking": "Ranking",
+      "competitions": "Competitions",
+      "team": "National team"
+    },
+    "none": "No national teams in this career.",
+    "loading": "Loading…",
+    "loadFailed": "Could not load.",
+    "nextTournament": "{{name}} from {{date}}",
+    "nextWindow": "Next international break: {{from}} – {{to}}",
+    "confed": "Confederation",
+    "world": "World",
+    "nation": "Nation",
+    "coach": "Coach",
+    "games": "Games",
+    "points": "Points",
+    "noCompetitions": "No competition yet.",
+    "competition": "Competition",
+    "champion": "Champion",
+    "groups": "Groups",
+    "group": "Group {{name}}",
+    "played": "P",
+    "gd": "GD",
+    "pts": "Pts",
+    "knockout": "Knockout",
+    "stage": {
+      "group": "Group stage",
+      "r32": "Round of 32",
+      "r16": "Round of 16",
+      "qf": "Quarter-finals",
+      "sf": "Semi-finals",
+      "final": "Final"
+    },
+    "notDrawn": "Not drawn yet",
+    "scorers": "Top scorers",
+    "player": "Player",
+    "goals": "Goals",
+    "results": "Latest results",
+    "vs": "vs",
+    "pens": "({{home}}–{{away}} on penalties)",
+    "awards": "Tournament awards",
+    "award": {
+      "bestPlayer": "Best player",
+      "topScorer": "Top scorer",
+      "bestGoalkeeper": "Best goalkeeper",
+      "team": "Team of the tournament"
+    },
+    "goalsCount_one": "{{count}} goal",
+    "goalsCount_other": "{{count}} goals",
+    "rankLine": "Ranking: #{{rank}} · {{points}} pts · {{confed}}",
+    "coachLine": "Coach: {{name}}",
+    "interim": "interim",
+    "squadNow": "Called up",
+    "squadLast": "Last squad",
+    "callUpDates": "{{from}} – {{to}}",
+    "noCallUp": "No call-up yet.",
+    "pos": "Pos",
+    "club": "Club",
+    "rating": "Rating",
+    "caps": "Caps",
+    "local": "Local",
+    "localHint": "Plays in the home league: only for the national team",
+    "upcoming": "Next games",
+    "recent": "Recent games",
+    "playerLine": "{{caps}} caps · {{goals}} goals",
+    "onDuty": "With the national team until {{date}}",
+    "onDutyShort": "National team",
+    "titles": "Titles",
+    "careerTitle": "National team",
+    "inbox": {
+      "subject": {
+        "called_up_one": "{{count}} player called up",
+        "called_up_other": "{{count}} players called up",
+        "returned_one": "{{count}} player back from his national team",
+        "returned_other": "{{count}} players back from their national teams"
+      },
+      "body": {
+        "called_up_one": "Called up by his national team: he will not train with the club until he returns.",
+        "called_up_other": "Called up by their national teams: they will not train with the club until they return.",
+        "returned_one": "Back from his national team.",
+        "returned_other": "Back from their national teams."
+      },
+      "until": "until {{date}}",
+      "tally": "{{apps}} games, {{goals}} goals",
+      "injured": "injured"
+    }
   }
 }

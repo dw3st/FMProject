@@ -12,6 +12,7 @@ import { scoutingRoutes } from "@/backend/scoutingRoutes";
 import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
 import { youthCompRoutes } from "@/backend/youthCompRoutes";
+import { nationalRoutes } from "@/backend/nationalRoutes";
 import { matchSetupReferee, refereeRoutes } from "@/backend/refereeRoutes";
 import { registrationRoutes } from "@/backend/registrationRoutes";
 import { matchRegistration, registrationDayCtx } from "@/backend/registrationWorld";
@@ -102,6 +103,7 @@ export const apiRoutes = withJsonErrors({
   ...moraleRoutes,
   ...youthRoutes,
   ...youthCompRoutes,
+  ...nationalRoutes,
   ...refereeRoutes,
   ...registrationRoutes,
   ...facilityRoutes,

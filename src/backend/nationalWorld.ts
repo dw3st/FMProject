@@ -365,6 +365,8 @@ export async function playNationalDay(args: {
         fillers: fill.spec,
       };
       state = { ...state, callUps: { ...state.callUps, [team.id]: cu } };
+      const { fillers: _f, tally: _t, ...last } = cu;
+      state = { ...state, lastCallUps: { ...(state.lastCallUps ?? {}), [team.id]: last } };
       for (const c of real) {
         await setPlayer(c.squadId, c.player.id, (p) => {
           const duty = { ...p, nationalDuty: { nation: team.nation, from: date, until: plan.until } };
@@ -401,6 +403,7 @@ export async function playNationalDay(args: {
     let comp = comp0;
     const todays = comp.fixtures.filter((f) => f.date === date && !f.played);
     if (todays.length === 0) continue;
+    if (comp.status === "scheduled") comp = { ...comp, status: "running" };
     for (const fx of todays) {
       const home = await squadOfTeam(fx.home);
       const away = await squadOfTeam(fx.away);

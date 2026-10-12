@@ -39,6 +39,7 @@ const navItems: NavItem[] = [
   { icon: "wallet", tone: "text-chart-4", labelKey: "nav.finances", href: "/finances" },
   { icon: "staff-coach", tone: "text-chart-3", labelKey: "nav.staff", href: "/staff" },
   { icon: "trophy", tone: "text-chart-4", labelKey: "nav.leagues", href: "/leagues" },
+  { icon: "globe", tone: "text-chart-5", labelKey: "nav.national", href: "/national" },
   { icon: "arrow-right-left", tone: "text-chart-5", labelKey: "nav.transfers", href: "/transfers" },
   { icon: "binoculars", tone: "text-chart-3", labelKey: "nav.scout", href: "/scout" },
   { icon: "stats", tone: "text-primary", labelKey: "nav.stats", href: "/stats" },
