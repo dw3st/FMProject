@@ -69,8 +69,15 @@ function pl(id: number) {
   return lastState?.players.find(p => p.id === id);
 }
 
+/** Club names of the match on screen (#154): the ticker says "Arsenal restarts", not "Team A restarts". */
+let teamNames: { A?: string; B?: string } = {};
+
+export function setBroadcastTeamNames(names: { A?: string; B?: string }): void {
+  teamNames = names;
+}
+
 function teamLabel(team: 'A' | 'B'): string {
-  return i18n.t('broadcast.teamLabel', { team, defaultValue: `Team ${team}` });
+  return teamNames[team] || i18n.t('broadcast.teamLabel', { team, defaultValue: `Team ${team}` });
 }
 
 /** Clears when any new line is shown; pass-complete schedules a follow-up if nothing else fires. */

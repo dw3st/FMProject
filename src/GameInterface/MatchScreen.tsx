@@ -23,7 +23,7 @@ import {
   type TeamTacticsSnapshot,
 } from "@/GameInterface/matchResume";
 import "@/GameEngine/Support/DebugSubscriber";
-import "@/GameInterface/Broadcast/BroadcastSubscriber";
+import { setBroadcastTeamNames } from "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
 import type { GameState, GamePlayer, TeamId, Formation, PendingSub } from "@/GameEngine/types";
 import type { TacticsSave, TacticalStyle, Mentality, SlotInstruction } from "@/types/tacticsTypes";
@@ -1091,6 +1091,7 @@ export function MatchScreen() {
     }));
 
   teamNamesRef.current = { A: teamAWithCrest?.name ?? "A", B: teamBWithCrest?.name ?? "B" };
+  setBroadcastTeamNames({ A: teamAWithCrest?.name, B: teamBWithCrest?.name });
   const summaryStats = (tm: TeamId): SummaryTeamStats => {
     const st = getTeamStats(tm);
     return {
