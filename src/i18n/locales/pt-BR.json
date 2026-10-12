@@ -3868,7 +3868,7 @@
       },
       "balance": {
         "name": "Cofre cheio",
-        "desc": "Saldo do clube"
+        "desc": "Saldo ganho desde que você assumiu o clube"
       },
       "stadium": {
         "name": "Casa nova",
@@ -3876,7 +3876,7 @@
       },
       "facilities": {
         "name": "Estrutura de ponta",
-        "desc": "Itens das instalações no nível 8 ou mais"
+        "desc": "Níveis de instalações construídos desde que você assumiu"
       },
       "seasons": {
         "name": "Veterano",
@@ -4123,7 +4123,8 @@
       "preview": "+{{points}} pontos",
       "open": "Ver conquistas"
     },
-    "daySummary": "{{count}} conquista(s) desbloqueada(s)",
-    "contractLine": "Sua negociação: {{value}}"
+    "contractLine": "Sua negociação: {{value}}",
+    "daySummary_one": "{{count}} conquista desbloqueada",
+    "daySummary_other": "{{count}} conquistas desbloqueadas"
   }
 }

@@ -226,7 +226,7 @@ export function ClubCard({
                   <Icon name={BADGE_ICON[b]} size={16} />
                 </span>
               ))}
-              {t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}
+              <span className="whitespace-nowrap">{t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}</span>
             </a>
           )}
           {managerRank !== null && (

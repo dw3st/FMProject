@@ -45,7 +45,7 @@ export async function achievementsCall<T>(url: string, method: "GET" | "POST" | 
 export const FRAME_RING: Record<Frame, string> = {
   none: "border-2 border-primary/40",
   bronze: "border-[3px] border-chart-5",
-  silver: "border-[3px] border-muted-foreground",
+  silver: "border-[3px] border-foreground",
   gold: "border-[3px] border-chart-4",
   legend: "border-[3px] border-chart-4 ring-2 ring-primary",
 };
@@ -53,7 +53,7 @@ export const FRAME_RING: Record<Frame, string> = {
 /** Colour (text) of a medal tier. */
 export const TIER_TEXT: Record<"bronze" | "silver" | "gold" | "secret", string> = {
   bronze: "text-chart-5",
-  silver: "text-muted-foreground",
+  silver: "text-foreground",
   gold: "text-chart-4",
   secret: "text-primary",
 };

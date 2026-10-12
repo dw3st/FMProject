@@ -3868,7 +3868,7 @@
       },
       "balance": {
         "name": "Full coffers",
-        "desc": "Club balance"
+        "desc": "Balance gained since you took over the club"
       },
       "stadium": {
         "name": "New home",
@@ -3876,7 +3876,7 @@
       },
       "facilities": {
         "name": "Top facilities",
-        "desc": "Facility items at level 8 or more"
+        "desc": "Facility levels built since you took over"
       },
       "seasons": {
         "name": "Veteran",
@@ -4123,7 +4123,8 @@
       "preview": "+{{points}} points",
       "open": "See achievements"
     },
-    "daySummary": "{{count}} achievement(s) unlocked",
-    "contractLine": "Your negotiation: {{value}}"
+    "contractLine": "Your negotiation: {{value}}",
+    "daySummary_one": "{{count}} achievement unlocked",
+    "daySummary_other": "{{count}} achievements unlocked"
   }
 }
