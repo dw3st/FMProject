@@ -1019,3 +1019,24 @@ describe("referee errors / VAR (statistics only, `var.md`)", () => {
     }
   });
 });
+
+describe("quickSim: the manager's discipline (achievements)", () => {
+  test("10 draws exactly the match without it; 20 lowers the side's fouls over many matches", () => {
+    const home = makeSquad("h", 5);
+    const away = makeSquad("a", 5);
+    const input = { fixtureId: "f1", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) };
+    for (let seed = 1; seed <= 20; seed++) {
+      const plain = quickSimMatch(input, mulberry32(seed));
+      const ten = quickSimMatch({ ...input, homeManagerDiscipline: 10, awayManagerDiscipline: 10 }, mulberry32(seed));
+      expect({ ...ten.recording, durationMs: 0 }).toEqual({ ...plain.recording, durationMs: 0 });
+    }
+    let plainFouls = 0;
+    let calmFouls = 0;
+    for (let seed = 1; seed <= 3000; seed++) {
+      plainFouls += quickSimMatch(input, mulberry32(seed)).recording.teamStats.home.fouls ?? 0;
+      calmFouls += quickSimMatch({ ...input, homeManagerDiscipline: 20 }, mulberry32(seed)).recording.teamStats.home.fouls ?? 0;
+    }
+    expect(calmFouls / plainFouls).toBeGreaterThan(0.9);
+    expect(calmFouls / plainFouls).toBeLessThan(0.99);
+  });
+});

@@ -447,6 +447,8 @@ export function MatchScreen() {
           // manager watches from the stands: his assistant makes every change by the AI rule (`var.md` §4).
           ...(data.managerBanned ? { autoSubs: { A: true as const } } : { manualInjurySubs: { A: true as const } }),
           ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
+          // The manager's Discipline (`.claude/rules/game/achievements.md`): fewer fouls and cards for his side.
+          ...(data.mySquad.managerAttributes ? { managerDiscipline: { A: data.mySquad.managerAttributes.discipline } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
                   ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }

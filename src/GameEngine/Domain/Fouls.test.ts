@@ -111,3 +111,18 @@ describe('referee rigor', () => {
     expect(strict.redChance).toBeCloseTo(plain.redChance * 1.25 / REFEREE.CARD_NORM, 9);
   });
 });
+
+describe("the manager's discipline (achievements)", () => {
+  test('10 / absent is exactly the plain result; 20 scales fouls and cards by 0.95, 1 by 1.045', () => {
+    const front = { ...base, angle: 'front' as const };
+    expect(foulChance({ ...front, discipline: 10 })).toBe(foulChance(front));
+    expect(foulChance({ ...front, discipline: 20 })).toBeCloseTo(foulChance(front) * 0.95, 9);
+    expect(foulChance({ ...front, discipline: 1 })).toBeCloseTo(foulChance(front) * 1.045, 9);
+    const ctx = { angle: 'side' as const, clearChance: false, onYellow: false };
+    const plain = cardRoll(ctx, () => 0.99);
+    expect(cardRoll({ ...ctx, discipline: 10 }, () => 0.99)).toEqual(plain);
+    const calm = cardRoll({ ...ctx, discipline: 20 }, () => 0.99);
+    expect(calm.yellowChance).toBeCloseTo(plain.yellowChance * 0.95, 9);
+    expect(calm.redChance).toBeCloseTo(plain.redChance * 0.95, 9);
+  });
+});

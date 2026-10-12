@@ -529,6 +529,10 @@ export function buildMatchEvent(
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.referee ? { referee: sim.referee } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
+      // The human manager's Discipline (`.claude/rules/game/achievements.md`): only his club stores it.
+      ...(homeSquad.managerAttributes || awaySquad.managerAttributes
+        ? { managerDiscipline: { A: homeSquad.managerAttributes?.discipline, B: awaySquad.managerAttributes?.discipline } }
+        : {}),
     },
   );
 
@@ -805,6 +809,8 @@ export function buildQuickMatchEvent(
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.referee ? { refereeStrictness: sim.referee.strictness } : {}),
       ...(typeof sim.referee?.quality === "number" ? { refereeQuality: sim.referee.quality, refereeVar: sim.referee.var === true } : {}),
+      ...(homeSquad.managerAttributes ? { homeManagerDiscipline: homeSquad.managerAttributes.discipline } : {}),
+      ...(awaySquad.managerAttributes ? { awayManagerDiscipline: awaySquad.managerAttributes.discipline } : {}),
     },
     rng,
   );

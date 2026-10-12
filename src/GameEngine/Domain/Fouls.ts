@@ -11,6 +11,7 @@ import { PITCH_LENGTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch'
 import { clamp } from '@/Domain/math';
 import { temperamentFoulMult, temperamentRedMult, temperamentYellowMult } from '@/Domain/personality/personality';
 import { refereeFoulMult, refereeRedMult, refereeYellowMult } from '@/Domain/referees/strictness';
+import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 
 /** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
 export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
@@ -39,6 +40,11 @@ export interface FoulContext {
   temperament?: number;
   /** Referee rigor s (−1 lenient … +1 strict, `src/Domain/referees`); absent = 0. Foul chance × (1 + 0,08 × s). */
   strictness?: number;
+  /**
+   * The offender's manager's Discipline attribute 1..20 (`.claude/rules/game/achievements.md`; the human club
+   * only); absent / 10 = neutral. Foul chance × (1 − 5% × t).
+   */
+  discipline?: number;
 }
 
 /** Probability that a resolved tackle / loose-ball duel is a foul. */
@@ -56,7 +62,8 @@ export function foulChance(ctx: FoulContext): number {
   const box      = ctx.inOwnBox ? C.IN_BOX_MULT : 1;
   const temper   = temperamentFoulMult(ctx.temperament ?? 0);
   const referee  = refereeFoulMult(ctx.strictness);
-  return clamp(base * angle * aggr * skill * tired * yellow * won * box * temper * referee, 0, C.MAX_CHANCE);
+  const manager  = attributeReduce(ctx.discipline);
+  return clamp(base * angle * aggr * skill * tired * yellow * won * box * temper * referee * manager, 0, C.MAX_CHANCE);
 }
 
 export interface CardContext {
@@ -72,6 +79,8 @@ export interface CardContext {
   temperament?: number;
   /** Referee rigor s (absent = 0): yellow × (1 + 0,15 × s), straight red × (1 + 0,25 × s), ÷ `REFEREE.CARD_NORM`. */
   strictness?: number;
+  /** The offender's manager's Discipline (absent / 10 = neutral): yellow and straight red × (1 − 5% × t). */
+  discipline?: number;
 }
 
 export interface CardRollResult {
@@ -95,7 +104,8 @@ export function cardRoll(ctx: CardContext, rng: () => number = Math.random): Car
       * (ctx.clearChance ? C.CLEAR_CHANCE_YELLOW_MULT : 1)
       * (ctx.onYellow ? C.ON_YELLOW_YELLOW_MULT : 1)
       * cardTemper(temperamentYellowMult, ctx.temperament)
-      * refereeYellowMult(ctx.strictness),
+      * refereeYellowMult(ctx.strictness)
+      * attributeReduce(ctx.discipline),
     0, C.MAX_YELLOW,
   );
   const redChance = clamp(
@@ -104,7 +114,8 @@ export function cardRoll(ctx: CardContext, rng: () => number = Math.random): Car
       * (ctx.clearChance ? C.CLEAR_CHANCE_RED_MULT : 1)
       * (ctx.onYellow ? C.ON_YELLOW_RED_MULT : 1)
       * cardTemper(temperamentRedMult, ctx.temperament)
-      * refereeRedMult(ctx.strictness),
+      * refereeRedMult(ctx.strictness)
+      * attributeReduce(ctx.discipline),
     0, C.MAX_RED,
   );
   if (rng() < redChance) return { card: 'red', yellowChance, redChance };

@@ -1,3 +1,4 @@
+import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
@@ -1079,7 +1080,7 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
     gameBus.emit('card', { playerId: player.id, playerName: player.name, team: player.team, card: c, secondYellow, minute });
     const label = c === 'red' ? (secondYellow ? 'Second yellow -> RED' : 'RED card') : 'Yellow card';
     debugLog('card', `${label}: ${player.name} (team ${player.team}), minute ${minute}`, {
-      playerId: player.id, data: { card: c, secondYellow, minute, tempMult: temperamentFoulMult(player.temperament ?? 0), refMult: c === 'red' ? refereeRedMult(state.referee?.strictness) : refereeYellowMult(state.referee?.strictness) },
+      playerId: player.id, data: { card: c, secondYellow, minute, tempMult: temperamentFoulMult(player.temperament ?? 0), refMult: c === 'red' ? refereeRedMult(state.referee?.strictness) : refereeYellowMult(state.referee?.strictness), discMult: attributeReduce(state.managerDiscipline?.[player.team]) },
     });
   };
 
@@ -1396,8 +1397,9 @@ export function foulCheck(
   const onYellow = yellowsOf(state, offender.id) > 0;
   const temperament = offender.temperament ?? 0;
   const strictness = strictnessFor(state, offender.team);
+  const discipline = state.managerDiscipline?.[offender.team];
   const chance = foulChance({
-    kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness,
+    kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness, discipline,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     tackling:   offender.runtimeStats.withoutBall.tackling,
     energy:     offender.energy,
@@ -1428,7 +1430,7 @@ export function foulCheck(
     x: spot.x, y: spot.y, inBox: inOwnBox, minute,
   });
   debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
-    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness) },
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness), discMult: attributeReduce(discipline) },
   });
 
   let s: GameState = {
@@ -1436,7 +1438,7 @@ export function foulCheck(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness }, rng);
+  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness, discipline }, rng);
   // Wrong card (`var.md` §2): a yellow shown as a straight red, a straight red shown as a yellow.
   if (card === 'yellow' && !onYellow && refereeErrs(s, 'wrong_red', rng)) {
     const corrected = varFixes(s, 'wrong_red', rng);
