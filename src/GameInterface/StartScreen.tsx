@@ -1,3 +1,4 @@
+import { dateLocale } from "@/GameInterface/formatDate";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { loadGameSave, deleteGameSave } from "@/GameInterface/gameSession";
@@ -29,7 +30,7 @@ interface SaveEntry {
 }
 
 export function StartScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [saves, setSaves] = useState<SaveEntry[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -78,7 +79,7 @@ export function StartScreen() {
 
   function formatDate(iso: string) {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString(dateLocale(i18n.language), { month: "short", day: "numeric", year: "numeric" });
   }
 
   const newGameClass =
