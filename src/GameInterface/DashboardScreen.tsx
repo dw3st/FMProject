@@ -185,7 +185,10 @@ export function DashboardScreen() {
 
   const clubColors = session.clubColors;
   const standingRows = standings ?? [];
-  const me: MatchSide = { id: mySquadId, name: session.clubName, colors: [clubColors[0] ?? "#555", clubColors[1] ?? "#888"] };
+  // His national team's game (Etapa 41b): his side is the nation (crest from the colours).
+  const me: MatchSide = next?.nationalTeam
+    ? { id: next.nationalTeam, name: teamDisplayNameFromLeagues(next.nationalTeam, leagues), colors: ["#555555", "#888888"] }
+    : { id: mySquadId, name: session.clubName, colors: [clubColors[0] ?? "#555", clubColors[1] ?? "#888"] };
   const opponentId = next ? (next.home === mySquadId ? next.away : next.home) : null;
   const opponent: MatchSide | null = opponentId
     ? { id: opponentId, name: teamDisplayNameFromLeagues(opponentId, leagues), colors: colorsOf(opponentId, leagues, standingRows) }
@@ -271,7 +274,9 @@ export function DashboardScreen() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <NextMatchCard
-          fixture={next}
+          fixture={next?.nationalTeam
+            ? { ...next, home: next.home === mySquadId ? next.nationalTeam : next.home, away: next.away === mySquadId ? next.nationalTeam : next.away }
+            : next}
           me={me}
           opponent={opponent}
           competitionLabel={competitionLabel}

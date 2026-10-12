@@ -221,13 +221,16 @@ export async function nationalCoachView(service: SaveService, saveId: string, me
           fitness: Math.round(c.player.seasonLog?.fitness ?? 100), injured: !callable.has(c.player.id) || isInjured(c.player, next.first),
           suggested: suggested.has(c.player.id),
         }))
-        .sort((a, b) => b.overall - a.overall || a.id.localeCompare(b.id)),
+        .sort((a, b) => b.overall - a.overall || a.id.localeCompare(b.id))
+        // The best CANDIDATE_ROWS, plus whoever is suggested or chosen (a big nation has hundreds of players).
+        .filter((c, i) => i < CANDIDATE_ROWS || c.suggested || (h.callUp?.players ?? []).includes(c.id)),
     };
   }
   return view;
 }
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
+const CANDIDATE_ROWS = 60;
 
 // ── Calendar, fast-forward and the live match ────────────────────────────────
 
