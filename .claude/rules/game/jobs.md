@@ -183,3 +183,11 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
 
 Testes: `bun test src/Domain/managers src/backend/jobs.test.ts src/backend/windows.routes.test.ts`. Smoke: Convites
 (compensação e interim no clube antigo, renovação aceita antes da virada do clube novo).
+
+## Técnico de seleção (Etapa 41b, 4.22)
+
+Convites de seleções são à parte das propostas de clube (`NationalState.offers`, inbox `national_coach`, rota
+`POST /api/saves/:id/national/coach/offers/:offerId`): chegam quando uma seleção demite o técnico da IA, pela mesma
+`managerReputation` contra o percentil do Elo, e aceitar **não** troca de clube (acumula; vale desempregado). A
+contagem de convites novos do dia entra no `jobOffers` da resposta (o avanço rápido para). Ver
+`.claude/rules/game/national-teams.md` → "Técnico do jogador".

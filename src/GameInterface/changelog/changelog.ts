@@ -25,6 +25,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.22",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "Técnico de seleção: quando uma seleção demite o técnico, ela pode convidar você, sem você deixar o seu clube. A da sua nacionalidade convida mais.",
+        en: "National team coach: when a national team sacks its coach it may offer you the job, and you keep your club. Your own country is more likely to call.",
+      },
+      {
+        pt: "Na aba Minha seleção você escolhe os 23 convocados (a sugestão chega uma semana antes), a formação, o estilo e a escalação.",
+        en: "In My national team you pick the 23 called up (the suggestion arrives a week before), the formation, the style and the starting XI.",
+      },
+      {
+        pt: "Os jogos da sua seleção param o avanço: veja ao vivo ou simule, com prorrogação e pênaltis no mata-mata.",
+        en: "Your national team's games stop the advance: watch them live or simulate them, with extra time and penalties in knockout games.",
+      },
+      {
+        pt: "A federação cobra uma meta em cada competição; falhar feio custa o cargo na seleção. Você também pode deixar a seleção quando quiser.",
+        en: "The federation sets a goal for each competition; failing badly costs you the national job. You can also leave the national team at any time.",
+      },
+      {
+        pt: "Novas conquistas: Herói nacional (vitórias com a seleção) e duas secretas.",
+        en: "New achievements: National hero (wins with your national team) and two secret ones.",
+      },
+    ],
+  },
+  {
     version: "4.21.1",
     date: "2026-10-12",
     items: [
@@ -1396,7 +1422,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Treinar uma seleção junto com o seu clube", en: "Coach a national team alongside your club" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
   { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
   { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },

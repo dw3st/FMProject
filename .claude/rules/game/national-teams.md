@@ -1,7 +1,7 @@
 # Seleções nacionais (IA), calendário FIFA, convocação e torneios
 
 Spec: `docs/superpowers/specs/2026-10-11-national-teams-design.md`. Etapa 41a do `docs/ROADMAP.md`, versão **4.21**.
-A 41b (o técnico do jogador numa seleção) usa os mesmos dados. Visual: `.claude/rules/ui-standard.md`.
+A 41b (o técnico do jogador numa seleção, 4.22) está no fim deste arquivo. Visual: `.claude/rules/ui-standard.md`.
 
 ## Regra
 
@@ -150,4 +150,55 @@ clube em dia bloqueado do país, ninguém com convocação vencida, jogadores co
 
 Jogos de seleção não entram nas trilhas de conquistas (elas leem os jogos oficiais do clube no `StoredDayLog.events`,
 onde os jogos de seleção nunca aparecem); um título `kind: "national"` ainda não conta nas trilhas de títulos
-(`titleCounts` o ignora) — a 41b dá trilhas próprias. Os start kits continuam sem `managerAttributes` (`stripHumanOnly`).
+(`titleCounts` o ignora) — a 41b deu trilhas próprias (abaixo). Os start kits continuam sem `managerAttributes` (`stripHumanOnly`).
+
+## Técnico do jogador (Etapa 41b, 4.22)
+
+Spec: `docs/superpowers/specs/2026-10-12-national-coach-design.md`. Pura em `src/Domain/national/nationalCoach.ts`
+(`NATIONAL_COACH`); E/S em `src/backend/nationalWorld.ts` (o dia) e `src/backend/nationalCoachWorld.ts` (rotas, calendário,
+`match-setup`).
+
+- **Convite:** só quando uma vaga abre (a demissão da IA em `sackAfter`). Prestígio = percentil do Elo (1 = o melhor);
+  convite possível com `prestígio ≤ reputação/100 + 0,10` (+0,15 na seleção da nacionalidade do técnico, `managerNation`
+  de `meta.manager.nationalityIso`); chance 0,35 (a da própria nação 0,9), sorteio `seedFrom(save:time:data:offer)`. Nunca
+  com ele já treinando uma seleção. `NationalState.offers`; validade 14 dias; a contratação da IA da vaga espera até o
+  dia seguinte à validade (`withOffer`). Inbox `national_coach` / `offer` (tópico `actions`), o avanço rápido para.
+- **Aceite** (`POST /api/saves/:id/national/coach/offers/:offerId { accept }`, 409 `offerClosed`): `takeNationalJob` (o
+  interino sai: sem pontos, apagado; senão ao pool), `NationalTeam.managerId = "player"`, a vaga sai,
+  `NationalState.human = { teamId, since, wage, tactics }`, `ManagerRecord.national` ganha a passagem (o `squadId` do
+  jogador continua o clube: "um técnico por clube" segue valendo). Recusar: a vaga volta à data dela (nunca antes de amanhã).
+- **Salário:** `10 000 + 40 000 × prestígio` EUR/semana, toda segunda em `managerEarnings` (nunca no extrato).
+- **Convocação:** a próxima é a próxima janela FIFA ou o torneio em que a seleção está sorteada (`nextCallUpDate`);
+  aviso `callup_soon` 7 dias antes (uma vez por data, `human.notified`). `PUT .../national/coach/callup { players }`
+  grava `human.callUp = { date, players }` (1..23 reais únicos, todos de `callableCandidates`, ≥ 2 goleiros com os gerados
+  que completam os 23; 400 `invalidCallUp { reason }`; `null` = sugestão; 409 `callUpClosed` sem convocação à vista). No
+  dia o rascunho vira a convocação (quem não é mais convocável fica de fora; os gerados completam).
+- **Tática:** `PUT .../national/coach/tactics { formation, tactical_style, lineup }` (formação das 17 prontas, até 11 ids).
+  XI do jogo: `coachLineup` (o salvo com os disponíveis, o resto automático ciente de fôlego na formação dele).
+- **Jogo:** `GET /api/saves/:id` põe os jogos da seleção dele em `season.calendar` com o lado da seleção trocado pelo id do
+  clube e `Fixture.nationalTeam`, mais `season.nationalTeamId` / `teamNames` (`registerTeamNames` dá o nome nas telas). O
+  avanço rápido para no dia (`nextNationalFixtureDate`). `match-setup` sem jogo do clube no dia devolve a seleção
+  (`nationalMatchSetup`: os 23 dos dois lados, gerados inclusive, ids `nat_…`, a tática dele, `national`, sem público,
+  inscrição nem árbitro). No dia, a gravação enviada (mesmo id de jogo) ou o motor completo (`simulateRecording`) com a
+  tática dele contra o 4-3-3 equilibrado; o resto do pós-jogo como os demais (Elo, líderes, `applyNationalMatch`). O jogo
+  vai para `StoredDayLog.nationalMatch` (a tela de resultado o lê). Gravação que nenhum jogo toma: 400.
+- **Meta:** `nationalObjective` (eliminatória: posição no grupo pelo Elo e "classificar" quando está entre os `slots`
+  primeiros do Elo; torneio: colocação-alvo `tournamentTargetPlace`, mostrada como a fase). Avaliada no fim da
+  eliminatória e na eliminação do torneio (`qualifierOutcome` / `tournamentOutcome`, os mesmos da IA): inbox `result`;
+  demitido (`objectiveFailedBadly`: `rolloverSackChance > 0`, sem sorteio) → `sacked`, `leaveNationalTeam` (passagem
+  fechada, interino, vaga da IA). Campeão: `result` cumprida.
+- **Pedir demissão:** `POST .../national/coach/resign` (409 `notCoach`): `left: "moved"`, interino e vaga.
+- **Conquistas:** trilha `national_wins` (5/20/50, Partidas, Motivação) e secretas `world_champion` (título `wc_*`, Tática)
+  e `against_homeland` (vencer a seleção da nacionalidade dele treinando outra, Motivação); 98 no total.
+- **Telas:** aba "Minha seleção" na aba Seleções (`NationalCoachView`; aparece treinando ou com convite; `?national=coach`
+  abre direto), inbox `national_coach` (`NationalCoachInboxBody`, Aceitar/Recusar no convite), prévia/partida/resultado
+  com os nomes das nações e o brasão gerado das cores (`nationColors`).
+- `/test`, `/lab`: nenhuma mecânica de motor nova (`simulateRecording` só separa a simulação do pós-jogo).
+
+Testes: `bun test src/Domain/national/nationalCoach.test.ts src/backend/national.coach.test.ts src/Domain/achievements`.
+Smoke: seção "Técnico de seleção" de `scripts/season-rollover-smoke.ts`.
+
+**Limitações:** convites só quando uma vaga abre; desempregado, os jogos da seleção dele são simulados no motor (sem
+clube não há tela de partida); no dia raro de jogo do clube e da seleção (Euro/Copa América com o clube de outra
+confederação) o do clube é o ao vivo e o da seleção é simulado; sem instruções individuais, bola parada nem marcação na
+seleção; nomes das nações nas telas da partida no idioma do carregamento da página.

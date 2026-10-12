@@ -176,3 +176,10 @@ Um registro por seleção com `squadId = nat_<nação>` (fora do pool de livres,
 clube; clubes não os roubam); título de torneio = `kind: "national"` (Copa 200, Euro 120, Copa América 100).
 Demissão ao fim da competição pela regra da virada; contratação pelo `chooseHire`. A rota `/managers` mostra a nação
 no lugar do clube. Ver `.claude/rules/game/national-teams.md`.
+
+## Técnico do jogador numa seleção (Etapa 41b)
+
+`ManagerRecord.national?: ManagerPassage[]`: as passagens do jogador por seleções (a aberta é a atual), fora de `clubs`
+para a regra "um técnico por clube" continuar sobre `squadId` (o jogador segue com o clube). A seleção dele tem
+`managerId = "player"` e nenhum registro com `squadId = nat_…`; ao sair (demissão pela meta ou pedido), interino e vaga da
+IA. Título de torneio com ele credita `kind: "national"` no registro do jogador. Ver `.claude/rules/game/national-teams.md`.
