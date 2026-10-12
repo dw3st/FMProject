@@ -321,6 +321,12 @@ export interface Squad {
    */
   styleFamiliarity?: FamiliarityLevels;
   /**
+   * The human manager's attributes 1..20 (`.claude/rules/game/achievements.md`), a copy kept on his club so
+   * every effect (DP of the young, familiarity, fouls) reads the club it acts on. The source is the save's
+   * `achievements.json`; the day step writes the copy. Human club only; absent = neutral.
+   */
+  managerAttributes?: import("@/types/achievementTypes").ManagerAttributes;
+  /**
    * Academy players (human club only, `src/Domain/youth`): the yearly intake lands here, not in
    * `players`. They train and age at the rollover but do not play until promoted.
    */

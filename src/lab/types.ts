@@ -107,6 +107,11 @@ export interface Variant {
    */
   temperament?: number;
   /**
+   * The manager's Discipline attribute 1..20 of this side (`.claude/rules/game/achievements.md`): fouls and cards
+   * × (1 − 5% t) in the engine and the quickSim. Absent = no attribute (neutral, like the AI).
+   */
+  managerDiscipline?: number;
+  /**
    * Pitch condition 0..100 of the match (`src/Domain/facilities/pitch.ts`): injury risk of both
    * sides below 40%. Variant A (the home side) sets it for the match. Absent = 90.
    */
@@ -227,6 +232,8 @@ export interface TeamRawStats {
   morale: number;
   /** Mean temperament (1..20) of the side's XI (the override, or each player's own), summed across games. */
   temperament: number;
+  /** The manager's Discipline the side played with (10 when absent), summed across games. */
+  managerDiscipline: number;
   /** Pitch condition the match was played on (90 when absent), summed across games. */
   pitchCondition: number;
   /** Referee rigor of the match (0 when absent), summed across games. */
@@ -383,6 +390,8 @@ export interface PerMatchView {
   avgMorale: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
+  /** The manager's Discipline (1..20, 10 = neutral). */
+  avgManagerDiscipline: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
@@ -492,6 +501,8 @@ export interface VariantSummary {
   avgMorale: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
+  /** The manager's Discipline (1..20, 10 = neutral). */
+  avgManagerDiscipline: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */

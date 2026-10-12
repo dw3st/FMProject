@@ -42,6 +42,18 @@ const FLAG_OF: Record<string, string> = {
   Grenada: "gd", "North Korea": "kp",
 };
 
+/** One name per flag (the first spelling of the table): the nationalities a form can offer. */
+export const NATIONALITY_NAMES: readonly string[] = (() => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const [name, code] of Object.entries(FLAG_OF)) {
+    if (seen.has(code)) continue;
+    seen.add(code);
+    out.push(name);
+  }
+  return out;
+})();
+
 export function nationalityFlagCode(nationality: string | null | undefined): string | undefined {
   const name = nationality?.trim();
   return name ? FLAG_OF[name] : undefined;

@@ -4,6 +4,7 @@ import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
+import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -38,6 +39,7 @@ function refereeSeasonPath(saveId: string, key: string) {
   return `${refereesDir(saveId)}/seasons/${key}.json`;
 }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
+function achievementsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/achievements.json`; }
 function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
   return `${SAVES_DIR}/${saveId}/clubHistory/${squadId}.json`;
@@ -207,6 +209,17 @@ export class FileSystemDAL implements ISaveDAL {
     } catch {
       return [];
     }
+  }
+
+  async readAchievements(saveId: string): Promise<AchievementsState | null> {
+    const file = Bun.file(achievementsPath(saveId));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<AchievementsState>;
+  }
+
+  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(achievementsPath(saveId), JSON.stringify(state));
   }
 
   async readScouting(saveId: string): Promise<ScoutingState | null> {

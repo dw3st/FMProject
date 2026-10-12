@@ -720,6 +720,11 @@ export interface GameState {
   missedOffside?: MissedOffside | null;
   /** A card-free complaint of the manager: rigor added on the fouls and cards of `team` until the end. */
   refereeBias?: { team: TeamId; amount: number } | null;
+  /**
+   * The managers' Discipline attribute 1..20 per team (`.claude/rules/game/achievements.md`; only the human
+   * club has one): fouls and cards of that team × (1 − 5% t). Absent / 10 = neutral.
+   */
+  managerDiscipline?: Partial<Record<TeamId, number>>;
   /** `/test`: this referee error fires on its next opportunity (then clears). */
   forcedRefError?: import('@/GameEngine/Domain/Var').RefereeErrorKind | null;
   /** Referee errors of the match, in order (summary, recording). */

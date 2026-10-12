@@ -1,3 +1,4 @@
+import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import { addDays } from "@/Domain/dates";
 import { dpWeightsFor } from "@/Domain/development/dpWeights";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
@@ -45,7 +46,8 @@ export function youthCompDpMult(age: number): number {
 export function youthDpMult(squad: Squad, p: RosterPlayer): number {
   const { devMult } = staffEffectsOf(squad);
   const { matchDevMult } = trainingGroundEffectsOf(squad);
-  return devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age);
+  return devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age)
+    * youthAttributeMult(squad.managerAttributes, p.age);
 }
 
 /**

@@ -1,3 +1,5 @@
+import { shownDecor } from "@/Domain/achievements/items";
+import type { StadiumDecor } from "@/types/achievementTypes";
 import type { SaveMeta, SaveService } from "@/backend/SaveService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { leagueTierOf } from "@/backend/facilityWorld";
@@ -22,6 +24,14 @@ export interface MatchCrowd {
   known: boolean;
   /** Stands of the human club under works on the match day (#137): drawn empty on the pitch. */
   works?: StandId[];
+  /** The manager's stadium decorations (achievements), home games of the human club only. */
+  decor?: StadiumDecor;
+}
+
+/** The decorations to draw at home (only those chosen and unlocked; absent when none). */
+async function homeDecor(service: SaveService, saveId: string): Promise<{ decor?: StadiumDecor }> {
+  const d = shownDecor(await service.getAchievements(saveId));
+  return d.banner || d.flag || d.mosaic ? { decor: d } : {};
 }
 
 export interface MatchManagers {
@@ -49,7 +59,7 @@ export async function matchCrowd(
   const fans = meta.board?.fans;
   if (!mySquad.facilities) {
     const fill = fans === undefined ? GATE.FILL_RATE : stadiumFillRate(fans);
-    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true };
+    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...(await homeDecor(service, meta.id)) };
   }
   const index = await service.getSquadIndex(meta.id);
   const leagueSlug = index.byId(mySquad.id)?.leagueSlug ?? meta.leagueSlug;
@@ -70,6 +80,7 @@ export async function matchCrowd(
   return {
     attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true,
     ...(works.length > 0 ? { works } : {}),
+    ...(await homeDecor(service, meta.id)),
   };
 }
 

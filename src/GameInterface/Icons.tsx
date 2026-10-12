@@ -1,4 +1,5 @@
 import {
+  Lock,
   Binoculars,
   LayoutDashboard,
   ClipboardList,
@@ -240,6 +241,7 @@ export type IconName =
   | "face-unhappy"
   | "face-furious"
   | "talk"
+  | "lock"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -337,6 +339,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "sliders-horizontal": SlidersHorizontal,
   "rotate-ccw": RotateCcw,
   "medal": Medal,
+  "lock": Lock,
   "crown": Crown,
   "log-out": LogOut,
   "home": Home,

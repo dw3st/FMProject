@@ -5,6 +5,7 @@
  * non-deterministic for production call sites. Produces a PlayedMatchRecording so the normal
  * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
+import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { temperamentFoulMult, temperamentRedMult, temperamentT, temperamentTOf, temperamentYellowMult } from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchCard, MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
@@ -103,6 +104,12 @@ export interface QuickSimInput {
   pitchCondition?: number;
   /** Referee rigor −1..1 (`src/Domain/referees`): fouls, penalties and cards of both sides. Absent / 0 = no change. */
   refereeStrictness?: number;
+  /**
+   * Managers' Discipline attribute 1..20 (`.claude/rules/game/achievements.md`; the human club only): that side's
+   * fouls, penalties conceded and cards × (1 − 5% t). Absent / 10 = no change.
+   */
+  homeManagerDiscipline?: number;
+  awayManagerDiscipline?: number;
   /**
    * Referee quality 0..100 (`.claude/rules/game/var.md`): errors (and with `refereeVar` VAR checks) drawn as
    * statistics only, from their own seeded stream — score, events and every other draw are unchanged. Absent = none.
@@ -524,6 +531,7 @@ function rollDiscipline(
   rng: Rng,
   temperamentOverride?: number,
   refereeStrictness?: number,
+  managerDiscipline?: number,
 ): { committed: number; yellow: number; red: number; oppPenalties: number; oppPenaltyGoals: number; oppOffsides: number } {
   const W = RATING_WEIGHTS;
   const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppPenaltyGoals: 0, oppOffsides: 0 };
@@ -536,7 +544,9 @@ function rollDiscipline(
   const keeper = gk ? { id: gk.p.id, reflex: stat(gk.p, "reflex") / 10, diving: stat(gk.p, "jump") / 10 } : null;
   const c = taker ? penaltyChance(Math.min(0.95, stat(taker.p, "finishing") / 10), keeper) : 0;
   // Referee rigor (`referees.md`): more fouls, so more penalties too (the score never changes). s = 0 → × 1.
-  const refFoul = refereeFoulMult(refereeStrictness);
+  // The manager's Discipline (`achievements.md`): fewer fouls (so penalties) and cards. 10 / absent → × 1.
+  const disc = attributeReduce(managerDiscipline);
+  const refFoul = refereeFoulMult(refereeStrictness) * disc;
   const lam = C.PENALTIES_PER_SIDE * refFoul;
   const converted: GoalRecord[] = [];
   if (taker && oppGoals.length > 0) {
@@ -592,7 +602,7 @@ function rollDiscipline(
     if (penaltyFoulIdx.has(i)) add(W.PENALTY_CONCEDED);
     const card = (kind: "yellow" | "red", secondYellow: boolean) =>
       cards.push({ team, playerId: id, playerName: fouler.p.name, card: kind, secondYellow, matchMinute: minute });
-    if (rng() < C.DIRECT_RED_PER_FOUL * cardMult(temperamentRedMult, id) * refereeRedMult(refereeStrictness)) {
+    if (rng() < C.DIRECT_RED_PER_FOUL * cardMult(temperamentRedMult, id) * refereeRedMult(refereeStrictness) * disc) {
       card("red", false);
       sentOff.add(id);
       out.red++;
@@ -600,7 +610,7 @@ function rollDiscipline(
       return;
     }
     const wasBooked = booked.has(id);
-    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1) * cardMult(temperamentYellowMult, id) * refereeYellowMult(refereeStrictness)) {
+    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1) * cardMult(temperamentYellowMult, id) * refereeYellowMult(refereeStrictness) * disc) {
       card("yellow", false);
       out.yellow++;
       add(W.YELLOW_CARD);
@@ -863,9 +873,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const cards: MatchCard[] = [];
   const ratingDelta: Record<string, number> = {};
   const homeDisc = rollDiscipline(homeXI, "home", awayXI, awayGoals, xgAwayDay,
-    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng, input.homeTemperament, input.refereeStrictness);
+    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng, input.homeTemperament, input.refereeStrictness, input.homeManagerDiscipline);
   const awayDisc = rollDiscipline(awayXI, "away", homeXI, homeGoals, xgHomeDay,
-    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng, input.awayTemperament, input.refereeStrictness);
+    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng, input.awayTemperament, input.refereeStrictness, input.awayManagerDiscipline);
   cards.sort((a, b) => a.matchMinute - b.matchMinute);
 
   // Aerial play last (`aerial.md`), so every earlier rng draw is unchanged by it.

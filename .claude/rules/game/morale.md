@@ -221,3 +221,8 @@ mundial +10, revelação / artilheiro / goleiro +8, seleção +5, gol da tempora
 `moraleLog.youthMinutes` guarda os minutos dos últimos 5 jogos de base (`.claude/rules/game/youth-competitions.md`). Na
 segunda, para `youth`, `backup` e `rotation` com déficit, a base reduz a perda por minutos (`p + 0,5 × y`), nunca dá
 bônus; zera na virada como `minutes`.
+
+## Conquistas (Etapa 40)
+
+A Motivação do técnico (`.claude/rules/game/achievements.md`) multiplica a variação positiva de moral de um jogo (vitória,
+gols, boa nota) por 1 ± 5% (`MoraleDayInput.motivation`, lida do `achievements.json` em `applyMoraleDay`); em 10, nada muda.

@@ -1,3 +1,4 @@
+import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
 import { qualityMult } from "@/GameEngine/Domain/Var";
 import { useMemo, useRef } from "react";
@@ -94,6 +95,12 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
               {gameState.referee.var && " · VAR"}
               {gameState.refereeBias && ` · bias ${gameState.refereeBias.team} +${gameState.refereeBias.amount}`}
               {gameState.forcedRefError && ` · forced ${gameState.forcedRefError}`}
+            </span>
+          )}
+          {gameState.managerDiscipline && (
+            <span className="ml-2 normal-case tabular-nums">
+              · mgr discipline {(["A", "B"] as const).filter((t) => gameState.managerDiscipline?.[t] !== undefined)
+                .map((t) => `${t} ${gameState.managerDiscipline![t]} (x${attributeReduce(gameState.managerDiscipline![t]).toFixed(3)})`).join(" ")}
             </span>
           )}
         </h3>

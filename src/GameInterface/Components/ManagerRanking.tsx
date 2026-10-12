@@ -1,3 +1,6 @@
+import { Icon } from "@/GameInterface/Icons";
+import { BADGE_ICON, FRAME_RING } from "@/GameInterface/Achievements/achievementsApi";
+import type { ManagerProfile } from "@/types/achievementTypes";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -26,6 +29,8 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   clubColors?: [string, string] | null;
   nationality?: string | null;
   face?: ManagerFace | null;
+  /** The human manager's profile items (`achievements.md`): frame, title, badges. */
+  profile?: ManagerProfile;
 };
 type Page = { total: number; playerRank: number | null; items: Row[] };
 type Scope = "world" | "country" | "free";
@@ -128,8 +133,9 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
               <RankCell rank={m.rank} />
               <CrestCell squadId={m.squadId} />
               <NameCell highlight={m.isPlayer}>
-                <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName="border border-border" className="mr-1.5" />
+                <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName={m.profile && m.profile.frame !== "none" ? FRAME_RING[m.profile.frame] : "border border-border"} className="mr-1.5" />
                 <span className="truncate">{m.name}</span>
+                {m.profile?.title && <span className="text-sm font-semibold text-primary truncate ml-1.5">{t(`achievements.titles.${m.profile.title}`)}</span>}
               </NameCell>
               <ClubCell>
                 {m.clubName ?? t("statsScreen.managers.noClub")}
@@ -142,9 +148,17 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={7}>
                 <div className="flex items-center gap-3 mb-3">
-                  <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} />
+                  <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame] } : {})} />
                   <div className="min-w-0">
                     <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{m.name}</p>
+                    {m.isPlayer && m.profile && (
+                      <a href="/achievements" className="flex items-center gap-1.5 text-sm font-semibold text-primary no-underline hover:underline mt-1">
+                        {m.profile.badges.map((b) => (
+                          <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="inline-flex"><Icon name={BADGE_ICON[b]} size={16} /></span>
+                        ))}
+                        {m.profile.title ? t(`achievements.titles.${m.profile.title}`) : t("achievements.link")}
+                      </a>
+                    )}
                     <p className="text-sm text-muted-foreground m-0 mt-1">
                       {m.clubName ?? t("statsScreen.managers.noClub")} · {t("statsScreen.managers.pointsLine", { points: m.points })}
                     </p>

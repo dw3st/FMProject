@@ -170,3 +170,9 @@ s = 0 / ausente devolve exatamente o de antes (nenhum sorteio novo). Logs `foul`
 limpo na área, pênalti não marcado (o jogo segue), amarelo mostrado como vermelho e vermelho como amarelo; com VAR a
 correção vira uma revisão (`GameState.varReview`). O rigor usa `strictnessFor` (+ o viés de uma reclamação do técnico).
 Sem qualidade do árbitro nenhum sorteio novo. Ver `.claude/rules/game/var.md`.
+
+## Disciplina do técnico (Etapa 40)
+
+`FoulContext.discipline` / `CardContext.discipline` (o atributo 1..20 do técnico do time do infrator, `GameState.managerDiscipline`,
+só o clube do jogador): falta, amarelo e vermelho direto × (1 − 5% t); 10 / ausente = exatamente o de antes. Log `discMult`.
+Ver `.claude/rules/game/achievements.md`.

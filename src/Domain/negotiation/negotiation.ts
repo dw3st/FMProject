@@ -1,3 +1,4 @@
+import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { addDays } from "@/Domain/dates";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, NegotiationRound, NegotiationTalk } from "@/types/transferMarketTypes";
@@ -56,12 +57,15 @@ export function respondToOffer(args: {
   sellPriority?: number;
   /** The buying club (personality push on the seller's score, `personality.md`). */
   buyer?: Pick<Squad, "finances">;
+  /** The human buyer's Negotiation attribute: the fee the seller needs × (1 − 5% t) (`achievements.md`). */
+  negotiation?: number;
 }): OfferResponse {
   const { player, seller, fee } = args;
+  const neg = attributeReduce(args.negotiation);
   if (squadDepthBlocked(player, seller, false)) return { kind: "reject", reason: "squadDepth" };
   const ctx = saleContext(player, seller, args.sellPriority, args.buyer ? { buyer: args.buyer } : {});
   const mult = 1 + sellOnValueFraction(args.sellOnPct ?? 0, player.age);
-  const effective = fee * mult;
+  const effective = (fee * mult) / neg;
   if (effective < ctx.value * NEGOTIATION.LOWBALL_RATIO) return { kind: "reject", reason: "insulted" };
 
   const score = saleDecisionScore(ctx, effective);
@@ -72,7 +76,7 @@ export function respondToOffer(args: {
     return { kind: "accept", reason: offerScore >= 1.2 ? "strongOffer" : ctx.priorityBonus > 0 ? "willingToSell" : "financial" };
   }
   if (score >= NEGOTIATION.COUNTER_MIN_SCORE || star) {
-    const needed = Math.max(feeForSaleScore(ctx, NEGOTIATION.ACCEPT_SCORE), starFloor) / mult;
+    const needed = (Math.max(feeForSaleScore(ctx, NEGOTIATION.ACCEPT_SCORE), starFloor) / mult) * neg;
     return { kind: "counter", counterFee: Math.max(roundFeeUp(fee), roundFeeUp(needed)) };
   }
   return { kind: "reject", reason: effective / ctx.value < 0.8 ? "offerTooLow" : "clubRejected" };

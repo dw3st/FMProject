@@ -2,6 +2,7 @@ import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
+import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -61,6 +62,11 @@ export interface ISaveDAL {
   /** `null` when nothing was ever observed. */
   readScouting(saveId: string): Promise<ScoutingState | null>;
   writeScouting(saveId: string, state: ScoutingState): Promise<void>;
+
+  // ── Achievements (human manager, `.claude/rules/game/achievements.md`) ─────
+  /** `null` when the career has none yet. */
+  readAchievements(saveId: string): Promise<AchievementsState | null>;
+  writeAchievements(saveId: string, state: AchievementsState): Promise<void>;
 
   // ── Manager ranking ───────────────────────────────────────────────────────
   readManagers(saveId: string): Promise<ManagerRecord[]>;

@@ -1,3 +1,4 @@
+import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { pitchInjuryMult } from '@/Domain/facilities/facilityItems';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
@@ -129,6 +130,14 @@ function withTestReferee(state: GameState, s: number | null): GameState {
     : { id: base.id, name: base.name, country: base.country, strictness: base.strictness };
   const out = withReferee(state, ref);
   return { ...out, forcedRefError: testVar.err !== 'off' && testVar.err !== 'auto' ? testVar.err : null };
+}
+
+/** Managers' Discipline attribute per side (achievements): fouls and cards × (1 − 5% t); null = none. */
+type MgrDiscipline = { A: number | null; B: number | null };
+const MGR_DISCIPLINE_OPTIONS: (number | null)[] = [null, 1, 5, 10, 15, 20];
+function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
+  if (d.A === null && d.B === null) return state;
+  return { ...state, managerDiscipline: { ...(d.A !== null ? { A: d.A } : {}), ...(d.B !== null ? { B: d.B } : {}) } };
 }
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
@@ -432,6 +441,8 @@ export function TestScreen() {
   const [pitch, setPitch] = useState<number>(90);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
+  // The managers' Discipline (achievements.md): fouls and cards of a side; null = no attribute.
+  const [mgrDisc, setMgrDisc] = useState<MgrDiscipline>({ A: null, B: null });
   // Referee errors and VAR (`var.md`): rebuilt like the rigor.
   const [refErr, setRefErr] = useState<RefErrorOption>('off');
   const [varOn, setVarOn] = useState(false);
@@ -665,7 +676,7 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
+    let state: GameState = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
@@ -677,7 +688,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn, mgrDisc]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -685,7 +696,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
+    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
@@ -706,12 +717,12 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS);
+    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn, mgrDisc]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1133,6 +1144,27 @@ export function TestScreen() {
               ))}
             </div>
           </div>
+          {/* Managers' Discipline (achievements.md): a side's fouls and cards x(1 - 0.05 t), neutral at 10 */}
+          {(['A', 'B'] as const).map(team => (
+            <div key={team} className="space-y-1">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Mgr discipline {team} ({mgrDisc[team] === null ? 'off' : `${mgrDisc[team]} · foul/card x${attributeReduce(mgrDisc[team]!).toFixed(3)}`})</p>
+              <div className="flex gap-1 flex-wrap">
+                {MGR_DISCIPLINE_OPTIONS.map(v => (
+                  <button
+                    key={String(v)}
+                    onClick={() => setMgrDisc(d => ({ ...d, [team]: v }))}
+                    className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                      mgrDisc[team] === v
+                        ? 'bg-primary/20 border-primary/40 text-primary'
+                        : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {v === null ? 'Off' : String(v)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
           {/* Referee errors and VAR (var.md): Off = none, Auto = rolled by quality, a kind = forced on its next chance */}
           <div className="space-y-1">
             <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Ref error ({refErr}{varOn ? ' · VAR' : ''})</p>
@@ -1693,7 +1725,7 @@ export function TestScreen() {
           <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
         </div>
       )}
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} refereeStrictness={refS ?? undefined} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} refereeStrictness={refS ?? undefined} managerDiscipline={{ home: mgrDisc.A ?? undefined, away: mgrDisc.B ?? undefined }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel

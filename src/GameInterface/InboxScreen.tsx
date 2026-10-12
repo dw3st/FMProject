@@ -1,3 +1,4 @@
+import { AchievementInboxBody } from "@/GameInterface/Achievements/AchievementInboxBody";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { useTranslation } from "react-i18next";
@@ -41,6 +42,7 @@ const ScoutIcon = iconOf("binoculars");
 const AwardIcon = iconOf("award");
 const CalendarIcon = iconOf("calendar");
 const DisciplineIcon = iconOf("alert");
+const AchievementIcon = iconOf("medal");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -209,6 +211,13 @@ const CATEGORY_META: Record<
     bg: "bg-destructive/15",
     border: "border-destructive/30",
     Icon: DisciplineIcon,
+  },
+  achievement: {
+    labelKey: "inbox.categories.achievement",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: AchievementIcon,
   },
 };
 
@@ -509,6 +518,12 @@ function leaguePrizeTexts(
   if (message.category === "discipline") {
     return { subject: t("complaint.inbox.subject"), preview: t("complaint.inbox.body", { count: message.matches }) };
   }
+  if (message.category === "achievement") {
+    return {
+      subject: message.keys.length === 1 ? t("achievements.inbox.subject") : t("achievements.inbox.subjectMany", { count: message.keys.length }),
+      preview: t("achievements.inbox.preview", { points: message.points }),
+    };
+  }
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
@@ -688,6 +703,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
         {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
+        {message.category === "achievement" && <AchievementInboxBody keys={message.keys} points={message.points} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

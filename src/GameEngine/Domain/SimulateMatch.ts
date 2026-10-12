@@ -123,6 +123,8 @@ export interface SimulateMatchOptions {
   instructions?: { A?: TeamInstructions; B?: TeamInstructions };
   /** Referee of the match (his rigor scales fouls and cards, `src/Domain/referees`). Absent = neutral. */
   referee?: import('@/types/refereeTypes').EngineReferee;
+  /** Managers' Discipline attribute 1..20 per side (`.claude/rules/game/achievements.md`). Absent = neutral. */
+  managerDiscipline?: { A?: number; B?: number };
 }
 
 /** Player instructions of one side (`player-instructions.md`). */
@@ -236,6 +238,8 @@ export function simulateMatch(
     knockout:              options.knockout === true,
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
     ...(options.referee ? { referee: options.referee } : {}),
+    ...(options.managerDiscipline && (options.managerDiscipline.A !== undefined || options.managerDiscipline.B !== undefined)
+      ? { managerDiscipline: { ...options.managerDiscipline } } : {}),
     ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
       ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
       : {}),
