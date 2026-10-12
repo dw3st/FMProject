@@ -11,6 +11,7 @@ import {
 import { Flag } from "@/GameInterface/Components/Flag";
 import { Icon } from "@/GameInterface/Icons";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
+import { NationalCoachView } from "@/GameInterface/National/NationalCoachView";
 import { playerHref } from "@/GameInterface/Scouting/scoutingApi";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { nationalCompetitionName, nationalityDisplayName } from "@/Domain/world/labels";
@@ -20,7 +21,7 @@ import type { NationalOverview, NationalRankRow } from "@/backend/nationalRoutes
 import type { Fixture } from "@/types/calendarTypes";
 import type { NationalStage, NationalTournamentAwards } from "@/types/nationalTypes";
 
-type Tab = "ranking" | "competitions" | "team";
+type Tab = "ranking" | "competitions" | "team" | "coach";
 const CONFEDS = ["all", "UEFA", "CONMEBOL", "CONCACAF", "CAF", "AFC", "OFC"] as const;
 type ConfedFilter = (typeof CONFEDS)[number];
 
@@ -57,7 +58,11 @@ function useNationName() {
 export function NationalTab() {
   const { t, i18n } = useTranslation();
   const { session, currentDate } = useGameSave();
-  const [tab, setTab] = useState<Tab>("ranking");
+  // `?national=coach` opens "My national team" (inbox links, Etapa 41b).
+  const [tab, setTab] = useState<Tab>(() => {
+    try { return new URLSearchParams(window.location.search).get("national") === "coach" ? "coach" : "ranking"; } catch { return "ranking"; }
+  });
+  const [reloadKey, setReloadKey] = useState(0);
   const [data, setData] = useState<NationalOverview | null>(null);
   const [error, setError] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -72,7 +77,7 @@ export function NationalTab() {
       .then((d) => { if (!cancelled) setData(d); })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
-  }, [session?.saveId, currentDate]);
+  }, [session?.saveId, currentDate, reloadKey]);
 
   const openTeam = (id: string) => { setTeamId(id); setTab("team"); };
   const nextLabel = data?.next
@@ -95,6 +100,7 @@ export function NationalTab() {
           { key: "ranking" as const, label: t("national.tabs.ranking") },
           { key: "competitions" as const, label: t("national.tabs.competitions") },
           { key: "team" as const, label: t("national.tabs.team") },
+          ...(data && (data.coach.teamId || data.coach.offers > 0 || tab === "coach") ? [{ key: "coach" as const, label: t("national.tabs.coach") }] : []),
         ]}
         active={tab}
         onChange={setTab}
@@ -103,6 +109,8 @@ export function NationalTab() {
         <p className="text-sm text-muted-foreground">{t("national.none")}</p>
       ) : !data || !session?.saveId ? (
         <p className="text-sm text-muted-foreground">{t("national.loading")}</p>
+      ) : tab === "coach" ? (
+        <NationalCoachView saveId={session.saveId} refreshKey={currentDate ?? ""} onChanged={() => setReloadKey((k) => k + 1)} />
       ) : tab === "ranking" ? (
         <RankingView rows={data.ranking} homeTeam={data.homeTeam} onOpen={openTeam} />
       ) : tab === "competitions" ? (

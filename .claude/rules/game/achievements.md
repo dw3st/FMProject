@@ -7,7 +7,7 @@ Visual: `.claude/rules/ui-standard.md`.
 
 - Conquistas **da carreira**, só do técnico do jogador: `saves/{id}/achievements.json` (`AchievementsState`,
   `src/types/achievementTypes.ts`). Ausente = nada desbloqueado, atributos em 10. A IA não tem nada. Sem migração.
-- **93 conquistas:** 26 trilhas (bronze/prata/ouro) em 8 categorias + 15 secretas ("???" até desbloquear). Catálogo e
+- **98 conquistas** (93 até a 4.21): 27 trilhas (bronze/prata/ouro) em 8 categorias + 17 secretas ("???" até desbloquear). Catálogo e
   critérios em `src/Domain/achievements/catalog.ts` e na spec §2.
 - Seguem o **técnico**: trocar de clube não apaga nada. Sequências (vitórias, sem perder, sem sofrer gol, derrotas) são
   da carreira; a temporada da liga (casa, invencibilidade) recomeça na virada do país do clube e na troca de clube.
@@ -48,7 +48,7 @@ Visual: `.claude/rules/ui-standard.md`.
 - Bronze 10, prata 25, ouro 50, secreta 40. Saldo = ganhos − gastos na loja (as molduras e os enfeites contam os ganhos).
 - Molduras do rosto: Bronze 100, Prata 400, Ouro 900, Lenda 1500 pontos ganhos. Selos (até 3): um por categoria com
   algum ouro, "Mistério" com alguma secreta. Título exibido (1): um por trilha com o ouro.
-- Mostrados no cartão do clube do Painel (moldura, título, selos, "Conquistas: N/93 · X pts") e no ranking de técnicos
+- Mostrados no cartão do clube do Painel (moldura, título, selos, "Conquistas: N/98 · X pts") e no ranking de técnicos
   (linha e detalhe do técnico do jogador; a rota `/managers` devolve `profile`). Um item escolhido que deixou de estar
   disponível nunca aparece (`shownProfile`).
 - Enfeites do estádio: faixa 100, bandeirão 400, mosaico 900 pontos ganhos; ligados na tela; desenhados na torcida de
@@ -144,3 +144,10 @@ bun test src/Domain/achievements src/backend/achievements.test.ts src/GameEngine
 - O lucro em vendas só conhece o que o técnico pagou desde esta etapa (jogadores que já estavam no clube: lucro = taxa).
 - Conquistas de temporada contam só os jogos que o passo viu (um clube assumido no meio da temporada conta a parte dele).
 - A folha da "Milagre" é a da virada (depois das saídas de contrato do dia).
+
+## Seleção (Etapa 41b, 4.22)
+
+98 conquistas: trilha `national_wins` (vitórias com a seleção que ele treina, 5 / 20 / 50, Partidas, Motivação; contador
+`nationalWins`, lido do `StoredDayLog.nationalMatch` pelo passo do dia) e secretas `world_champion` (título `wc_*` no
+registro, Tática) e `against_homeland` (vencer a seleção da nacionalidade dele treinando outra, Motivação). Os jogos da
+seleção não contam nas outras trilhas. Ver `.claude/rules/game/national-teams.md` → "Técnico do jogador".

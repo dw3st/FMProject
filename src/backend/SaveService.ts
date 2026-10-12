@@ -676,7 +676,7 @@ export class SaveService {
       })
       .filter((e): e is NonNullable<typeof e> => e !== null);
 
-    return { saveId, date, events };
+    return { saveId, date, events, ...(stored.nationalMatch ? { nationalMatch: stored.nationalMatch } : {}) };
   }
 
   // ── League-level season data ────────────────────────────────────────────────

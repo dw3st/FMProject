@@ -307,6 +307,7 @@ export function MatchResultScreen() {
   const [resolvedDate, setResolvedDate] = useState<string>("");
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
+  const nationalTeamId = fixtures.find((f) => f.nationalTeam)?.nationalTeam ?? null;
 
   useEffect(() => {
     void fetch("/api/leagues")
@@ -363,11 +364,12 @@ export function MatchResultScreen() {
         }
 
         const dayLog = (await res.json()) as DayLog;
+        // His national team's game (Etapa 41b) is kept apart in the day log.
         const ev = dayLog.events.find(
           (e): e is MatchEvent =>
             e.kind === "match" &&
             (e.home === mySquadId || e.away === mySquadId),
-        );
+        ) ?? dayLog.nationalMatch ?? null;
 
         if (!ev) {
           if (!cancelled) setError(t("match.noMatchOnDate"));
@@ -451,7 +453,9 @@ export function MatchResultScreen() {
     );
   }
 
-  const isHome = matchEvent.home === mySquadId;
+  // His national team's game: his side is the national team (`season.nationalTeamId`).
+  const mySide = matchEvent.home === mySquadId || matchEvent.away === mySquadId ? mySquadId : (nationalTeamId ?? mySquadId);
+  const isHome = matchEvent.home === mySide;
   const homeName = teamDisplayNameFromLeagues(matchEvent.home, leagues);
   const awayName = teamDisplayNameFromLeagues(matchEvent.away, leagues);
   const homeLogoUrl = squadLogoUrl(matchEvent.home);

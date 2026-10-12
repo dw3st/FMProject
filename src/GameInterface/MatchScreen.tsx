@@ -1,3 +1,4 @@
+import { nationalityDisplayName } from "@/Domain/world/labels";
 import { shirtName } from "@/Domain/shirtName";
 import { readJsonBody } from "@/GameInterface/readJsonBody";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
@@ -355,6 +356,8 @@ export function MatchScreen() {
           registered?: { mine: string[]; opp: string[] } | null;
           /** The user's manager serves a touchline ban in this match (`var.md` §4). */
           managerBanned?: boolean;
+          /** His national team's game (Etapa 41b): the teams are nations. */
+          national?: { teamId: string; competition: string } | null;
         };
       })
       .then((data) => {
@@ -499,14 +502,16 @@ export function MatchScreen() {
           awaySquad,
         };
 
+        // National teams (Etapa 41b): the nation's name in the player's language.
+        const teamName = (n: string) => (data.national ? nationalityDisplayName(n, i18n.language, t) : n);
         setTeamAMeta({
-          name: data.save.clubName,
+          name: teamName(data.save.clubName),
           primaryColor: data.save.clubColors[0],
           secondaryColor: data.save.clubColors[1],
         });
         if (data.opponentSquad) {
           setTeamBMeta({
-            name: data.opponentSquad.name,
+            name: teamName(data.opponentSquad.name),
             primaryColor: data.opponentSquad.colors[0],
             secondaryColor: data.opponentSquad.colors[1],
           });

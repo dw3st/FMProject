@@ -1,6 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
+import { playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { youthCompsOfCountry } from "@/backend/youthCompWorld";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
@@ -115,7 +116,9 @@ export const saveRoutes = {
                 (f) => f.home === myId || f.away === myId,
               )
             : [];
-          const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures].sort((a, b) =>
+          // His national team's games (Etapa 41b), with the club's id on the national side.
+          const national = myId ? await playerNationalCalendar(saveService, id, myId) : { teamId: null, fixtures: [], teamNames: {} };
+          const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures, ...national.fixtures].sort((a, b) =>
             a.date.localeCompare(b.date),
           );
           const country = (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country;
@@ -135,6 +138,7 @@ export const saveRoutes = {
             calendar: fullCalendar,
             ...(youthCalendar.length > 0 ? { youthCalendar } : {}),
             restDays: playerLeagueState.restDays ?? [],
+            ...(national.teamId ? { nationalTeamId: national.teamId, teamNames: national.teamNames } : {}),
           };
         }
       }

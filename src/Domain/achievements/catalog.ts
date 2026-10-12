@@ -26,6 +26,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   ten_men_wins:       { category: "matches", attribute: "motivation", thresholds: [1, 3, 8] },
   shootout_wins:      { category: "matches", attribute: "motivation", thresholds: [1, 3, 6] },
   derby_wins:         { category: "matches", attribute: "motivation", thresholds: [1, 5, 15] },
+  national_wins:      { category: "matches", attribute: "motivation", thresholds: [5, 20, 50] },
   youth_promoted:     { category: "youth", attribute: "youth", thresholds: [3, 10, 25] },
   young_award:        { category: "youth", attribute: "youth", thresholds: [1, 2, 4] },
   sales_profit:       { category: "market", attribute: "negotiation", thresholds: [5_000_000, 30_000_000, 100_000_000] },
@@ -58,6 +59,8 @@ export const SECRETS: Record<SecretId, { attribute: ManagerAttribute }> = {
   perfect_month:     { attribute: "motivation" },
   one_club:          { attribute: "discipline" },
   wall:              { attribute: "tactics" },
+  world_champion:    { attribute: "tactics" },
+  against_homeland:  { attribute: "motivation" },
 };
 
 export const TIERS = ["bronze", "silver", "gold"] as const;

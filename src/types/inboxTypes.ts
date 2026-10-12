@@ -32,6 +32,7 @@ export type InboxCategory =
   | "schedule"
   | "discipline"
   | "national"
+  | "national_coach"
   | "achievement";
 
 interface InboxMessageBase {
@@ -456,6 +457,7 @@ export type InboxMessage =
   | ScheduleInboxMessage
   | DisciplineInboxMessage
   | NationalInboxMessage
+  | NationalCoachInboxMessage
   | AchievementInboxMessage;
 
 /** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */
@@ -463,6 +465,24 @@ export interface NationalInboxMessage extends InboxMessageBase {
   category: "national";
   kind: "called_up" | "returned";
   players: { id: string; name: string; nation: string; from?: string; until?: string; apps?: number; goals?: number; injured?: boolean }[];
+}
+
+/**
+ * The human manager at a national team (Etapa 41b, `.claude/rules/game/national-teams.md`): a job offer (answered
+ * through `POST /api/saves/:id/national/coach/offers/:offerId` while it is still in `NationalState.offers`), the
+ * hiring, the call-up notice, the objective of a finished competition, the sacking and the resignation.
+ */
+export interface NationalCoachInboxMessage extends InboxMessageBase {
+  category: "national_coach";
+  kind: "offer" | "hired" | "callup_soon" | "result" | "sacked" | "resigned";
+  teamId: string;
+  nation: string;
+  offer?: import("@/types/nationalTypes").NationalCoachOffer;
+  /** callup_soon: the call-up date. */
+  callUpDate?: string;
+  /** result / sacked: the competition and whether the objective was met. */
+  competition?: string;
+  met?: boolean;
 }
 
 /** Achievements unlocked today (`.claude/rules/game/achievements.md`): one message per day. */

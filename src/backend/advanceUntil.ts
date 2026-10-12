@@ -7,6 +7,7 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 import { addDays } from "@/Domain/dates";
+import { nextNationalFixtureDate } from "@/backend/nationalCoachWorld";
 
 /**
  * Fast-forward ("Avançar até o próximo jogo"): advance the save day by day until the player's next
@@ -184,7 +185,10 @@ export async function readAdvancePosition(saveId: string, service: SaveService =
   const cup = await playerCupSlug(meta.leagueSlug);
   const continental = await playerContinentalSlug(service, saveId, meta.clubId);
   const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);
-  const matchDate = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
+  const clubMatch = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
+  // His national team's games stop the fast-forward too (Etapa 41b).
+  const nationalMatch = await nextNationalFixtureDate(service, saveId, currentDate);
+  const matchDate = [clubMatch, nationalMatch].filter((d): d is string => !!d).sort()[0] ?? null;
 
   let rolloverDay: string | null = null;
   if (!matchDate) {

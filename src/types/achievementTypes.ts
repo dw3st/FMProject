@@ -15,7 +15,7 @@ export type AchievementTier = "bronze" | "silver" | "gold" | "secret";
 export const TRACK_IDS = [
   "league_titles", "cup_titles", "continental_titles", "promotions",
   "wins", "win_streak", "unbeaten_run", "thrashings",
-  "comebacks", "ten_men_wins", "shootout_wins", "derby_wins",
+  "comebacks", "ten_men_wins", "shootout_wins", "derby_wins", "national_wins",
   "youth_promoted", "young_award",
   "sales_profit", "big_signing", "free_starter",
   "balance", "stadium", "facilities",
@@ -26,7 +26,7 @@ export type TrackId = (typeof TRACK_IDS)[number];
 
 export const SECRET_IDS = [
   "fortress", "cheapest_champion", "keeper_goal", "sacked_early", "double", "treble", "great_escape", "nine_men",
-  "seven_up", "bounce_back", "last_gasp", "humbled", "perfect_month", "one_club", "wall",
+  "seven_up", "bounce_back", "last_gasp", "humbled", "perfect_month", "one_club", "wall", "world_champion", "against_homeland",
 ] as const;
 export type SecretId = (typeof SECRET_IDS)[number];
 
@@ -63,6 +63,8 @@ export interface AchievementCounters {
   tenMenWins: number;
   shootoutWins: number;
   derbyWins: number;
+  /** Wins with the national team he coaches (Etapa 41b); absent = 0. */
+  nationalWins?: number;
   salesProfit: number;
   biggestSigning: number;
   /** League run without defeat in the current season (reset at the rollover / club change). */

@@ -3390,6 +3390,97 @@ try {
     check(tNew <= 2 * tOld, `olheiros: search index build within 2x of the uniform blur (x${(tNew / tOld).toFixed(2)})`);
   }
 
+  // ── Técnico de seleção (`.claude/rules/game/national-teams.md` → "Técnico do jogador", Etapa 41b) ──
+  // A forced offer of a national team accepted through the route (the club stays), the call-up of the next window
+  // chosen through the route (the AI suggestion minus its last 3), the days advanced to the call-up and through the
+  // window games (his game played in the full engine and logged in `nationalMatch`), then the resignation.
+  console.log("\n── Técnico de seleção ──");
+  {
+    const { apiRoutes } = await import("@/backend/routes");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    const { withOffer } = await import("@/backend/nationalWorld");
+    const { currentNationalTeam } = await import("@/Domain/national/nationalCoach");
+    const { session } = devAutoLogin("smoke-reborn@test.local");
+    const call = async (key: string, path: string, method: string, body?: unknown, params: Record<string, string> = {}) => {
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost${path}`, {
+          method, headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        }),
+        { params: { saveId, ...params } },
+      ));
+    };
+    const metaN = (await plain().getMeta(saveId))!;
+    const dateN = metaN.currentDate!;
+    let st = (await plain().getNationalState(saveId))!;
+    // A mid-table team without a vacancy-held offer: its AI coach is replaced by the offer.
+    const ranked = Object.values(st.teams).sort((a, b) => b.elo - a.elo);
+    const team = ranked[Math.floor(ranked.length / 2)]!;
+    st = { ...st, vacancies: { ...st.vacancies, [team.id]: { since: dateN, hireOn: addDays(dateN, 30) } } };
+    st = withOffer(st, { id: "natjob_smoke", teamId: team.id, nation: team.nation, date: dateN, expires: addDays(dateN, 14), prestige: 0.5, rank: 80, wage: 30_000 });
+    await plain().writeNationalState(saveId, st);
+    const acc = await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_smoke`, "POST", { accept: true }, { offerId: "natjob_smoke" });
+    check(acc.status === 200, `técnico de seleção: forced offer of ${team.nation} accepted (status ${acc.status})`);
+    let ms = await plain().getManagers(saveId);
+    const me = ms.find((m) => m.isPlayer)!;
+    check(currentNationalTeam(me) === team.id && me.squadId === metaN.clubId, "técnico de seleção: he coaches the national team and keeps his club");
+    check(ms.filter((m) => m.squadId === team.id).length === 0, "técnico de seleção: the team's AI coach left");
+
+    const view = (await (await call("/api/saves/:saveId/national/coach", `/api/saves/${saveId}/national/coach`, "GET")).json()) as {
+      callUp: { date: string; suggestion: string[] } | null;
+    };
+    check(!!view.callUp, `técnico de seleção: a call-up ahead (${view.callUp?.date ?? "none"})`);
+    if (view.callUp) {
+      const chosen = view.callUp.suggestion.slice(0, Math.max(1, view.callUp.suggestion.length - 3));
+      const bad = await call("/api/saves/:saveId/national/coach/callup", `/api/saves/${saveId}/national/coach/callup`, "PUT", { players: ["nobody"] });
+      check(bad.status === 400, `técnico de seleção: an invalid call-up is refused (status ${bad.status})`);
+      const put = await call("/api/saves/:saveId/national/coach/callup", `/api/saves/${saveId}/national/coach/callup`, "PUT", { players: chosen });
+      check(put.status === 200, `técnico de seleção: the call-up of ${view.callUp.date} saved (${chosen.length} players)`);
+      // Advance to the call-up, then through the window's games.
+      let guard = 0;
+      while ((await plain().getMeta(saveId))!.currentDate! <= view.callUp.date && guard++ < 60) {
+        const out = await runBufferedDay(saveId);
+        if (!out.ok) { check(false, `técnico de seleção: day failed (${out.error})`); break; }
+      }
+      st = (await plain().getNationalState(saveId))!;
+      const cu = st.lastCallUps?.[team.id];
+      if (cu && cu.from === view.callUp.date) {
+        const real = cu.players.filter((p) => !p.generated).map((p) => p.id).sort();
+        check(JSON.stringify(real) === JSON.stringify([...chosen].sort()), "técnico de seleção: the call-up is the one he chose");
+        check(cu.players.length === 23, "técnico de seleção: 23 called up (the generated complete his choice)");
+      } else {
+        console.log(`  (no call-up of ${team.nation} on ${view.callUp.date}: no game in the window)`);
+      }
+      const games: string[] = [];
+      for (const slug of st.competitions) {
+        const c = await plain().getNationalComp(saveId, slug);
+        for (const f of c?.fixtures ?? []) if ((f.home === team.id || f.away === team.id) && f.date >= view.callUp.date && f.date <= addDays(view.callUp.date, 9)) games.push(f.date);
+      }
+      const lastGame = games.sort().at(-1);
+      guard = 0;
+      while (lastGame && (await plain().getMeta(saveId))!.currentDate! <= lastGame && guard++ < 20) {
+        const out = await runBufferedDay(saveId);
+        if (!out.ok) { check(false, `técnico de seleção: day failed (${out.error})`); break; }
+      }
+      for (const d of games) {
+        const log = await plain().getDayLog(saveId, d);
+        check(!!log?.nationalMatch && (log.nationalMatch.home === team.id || log.nationalMatch.away === team.id),
+          `técnico de seleção: his game of ${d} played in the engine and logged`);
+      }
+    }
+    const res = await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, "POST");
+    check(res.status === 200, `técnico de seleção: resignation accepted (status ${res.status})`);
+    st = (await plain().getNationalState(saveId))!;
+    ms = await plain().getManagers(saveId);
+    check(!st.human && !!st.vacancies[team.id] && ms.filter((m) => m.squadId === team.id).length === 1,
+      "técnico de seleção: after leaving, an interim and an AI vacancy");
+    const inbox = (await plain().getInbox(saveId)).filter((m) => m.category === "national_coach");
+    console.log(`  ${inbox.length} national-coach inbox message(s)`);
+    check(inbox.some((m) => (m as { kind?: string }).kind === "hired") && inbox.some((m) => (m as { kind?: string }).kind === "resigned"),
+      "técnico de seleção: hired and resigned news in the inbox");
+  }
+
   // ── Convites (`.claude/rules/game/jobs.md`) ──
   // A forced offer from a club of the calendar-year league that ends first (another country) is
   // accepted through the route; the career goes on in the new league until that country rolls over.

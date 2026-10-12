@@ -256,6 +256,8 @@ export interface StoredDayLog {
   transfers?: DayTransfer[];
   /** Youth-competition games of the day — kept out of `events` so no first-team flow sees them. */
   youthMatches?: YouthMatchLog[];
+  /** The human manager's national-team game of the day (Etapa 41b) — out of `events` like the youth games. */
+  nationalMatch?: MatchEvent;
   /** Players fielded (XI or match stats) without being registered for the competition — always 0 (`registration.md`). */
   registrationViolations?: number;
 }
@@ -268,6 +270,8 @@ export interface DayLog {
   saveId: string;
   date:   string;
   events: DayEvent[];
+  /** The human manager's national-team game of the day (Etapa 41b). */
+  nationalMatch?: MatchEvent;
 }
 
 /** `POST /api/advance-day/:saveId` response. */

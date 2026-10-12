@@ -66,6 +66,47 @@ export interface NationalState {
   localCaps?: Record<string, [number, number]>;
   /** Last window / tournament start whose call-ups were made (idempotent per day). */
   lastCallUpDate?: string;
+  /** Job offers of national teams to the human manager (`.claude/rules/game/national-teams.md` → 41b). */
+  offers?: NationalCoachOffer[];
+  /** The national team the human manager coaches (41b), absent when he coaches none. */
+  human?: NationalHumanCoach;
+}
+
+/** A national team offers its job to the human manager (Etapa 41b). */
+export interface NationalCoachOffer {
+  id: string;
+  teamId: string;
+  nation: string;
+  /** Day the offer arrived. */
+  date: string;
+  /** Last day it can be accepted (inclusive). */
+  expires: string;
+  /** Elo percentile 0..1 (1 = the best). */
+  prestige: number;
+  /** World ranking position on the day. */
+  rank: number;
+  /** Weekly wage on offer (EUR, `managerEarnings` only). */
+  wage: number;
+}
+
+/** The human manager's national-team tactics: formation, style and XI (separate from the club's `tactics.json`). */
+export interface NationalTactics {
+  formation: string;
+  tactical_style: import("@/types/tacticsTypes").TacticalStyle;
+  lineup: string[];
+}
+
+/** The national team the human manager coaches (Etapa 41b). */
+export interface NationalHumanCoach {
+  teamId: string;
+  since: string;
+  /** Weekly wage (EUR), fixed when he accepted. */
+  wage: number;
+  tactics?: NationalTactics;
+  /** His choice for the call-up of `date` (real player ids); absent = the AI rule's suggestion. */
+  callUp?: { date: string; players: string[] };
+  /** Call-up dates whose 7-day notice was sent. */
+  notified?: string[];
 }
 
 export interface NationalStage {
