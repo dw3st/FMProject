@@ -2007,7 +2007,7 @@
     "loading": "Loading club history...",
     "loadFailed": "Could not load the club history.",
     "stadium": "Stadium",
-    "capacity": "{{count}} seats",
+    "capacity": "{{seats}} seats",
     "manager": "Manager",
     "pastManagers": "Former managers",
     "titles": "Titles",

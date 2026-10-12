@@ -2007,7 +2007,7 @@
     "loading": "Carregando a história do clube...",
     "loadFailed": "Não foi possível carregar a história do clube.",
     "stadium": "Estádio",
-    "capacity": "{{count}} lugares",
+    "capacity": "{{seats}} lugares",
     "manager": "Técnico",
     "pastManagers": "Técnicos anteriores",
     "titles": "Títulos",
