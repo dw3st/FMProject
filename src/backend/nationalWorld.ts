@@ -302,11 +302,11 @@ export async function playNationalDay(args: {
     return true;
   };
 
-  // 1. Returns: call-ups whose duty ended yesterday.
+  // 1. Returns: call-ups whose duty ended yesterday (one inbox message for all the nations of the day).
+  const back: NationalNews["players"] = [];
   for (const [teamId, cu] of Object.entries(state.callUps)) {
     if (cu.until >= date) continue;
     const team = state.teams[teamId]!;
-    const back: NationalNews["players"] = [];
     for (const pl of cu.players) {
       if (pl.generated) continue;
       let injured = false;
@@ -331,10 +331,10 @@ export async function playNationalDay(args: {
         back.push({ id: pl.id, name: pl.name, nation: team.nation, apps: cu.tally?.[pl.id]?.apps ?? 0, goals: cu.tally?.[pl.id]?.goals ?? 0, injured });
       }
     }
-    if (back.length > 0) out.news.push({ kind: "returned", date, players: back });
     const { [teamId]: _gone, ...rest } = state.callUps;
     state = { ...state, callUps: rest };
   }
+  if (back.length > 0) out.news.push({ kind: "returned", date, players: back });
 
   // 2. Draws.
   state = await runDraws(service, saveId, state, date);
