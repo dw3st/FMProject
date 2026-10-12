@@ -27,7 +27,6 @@ import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scout
 import { AwardsInboxBody, awardsTexts } from "@/GameInterface/Awards/AwardsInboxBody";
 import { InboxPrefsPanel } from "@/GameInterface/Inbox/InboxPrefsPanel";
 import { formatEuros } from "@/Domain/money";
-import i18next from "@/i18n/i18n";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { attrDisplay } from "@/Domain/attributes";
 
