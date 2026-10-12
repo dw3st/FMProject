@@ -190,7 +190,7 @@ function TacticsRow({
         <Icon name="match" className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="text-base text-muted-foreground">{t("matchPreview.style")}</span>
         <span className="text-base font-bold px-2.5 py-0.5 rounded border border-border" style={pillStyle}>
-          {tacticalStyleLabel(tacticalStyle)}
+          {t(`tactics.styles.${tacticalStyle}.label`, { defaultValue: tacticalStyleLabel(tacticalStyle) })}
         </span>
       </div>
     </div>

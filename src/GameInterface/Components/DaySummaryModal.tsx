@@ -1,3 +1,4 @@
+import { dateLocale, formatGameDate } from "@/GameInterface/formatDate";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useMemo, useState } from "react";
@@ -45,25 +46,10 @@ interface Props {
   leagues:   LeagueData[];
 }
 
-function formatDate(dateStr: string): string {
+/** Weekday in the player's language (the eyebrow is upper-cased by its class). */
+function weekdayOf(dateStr: string, lang: string): string {
   const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function weekdayUpper(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-GB", { weekday: "long" }).toUpperCase();
-}
-
-function seasonLabel(year: number | undefined): string {
-  if (year == null || !Number.isFinite(year)) return "SEASON —";
-  const yy = String(year).slice(-2).padStart(2, "0");
-  return `SEASON ${yy}`;
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(dateLocale(lang), { weekday: "long" });
 }
 
 /** Single badge for the active day type only (no inactive option shown). */
@@ -488,7 +474,8 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
     }
   }
 
-  const seasonEyebrow = seasonLabel(save?.season?.year);
+  const seasonYear = save?.season?.year;
+  const seasonEyebrow = t("daySummary.seasonEyebrow", { season: seasonYear != null && Number.isFinite(seasonYear) ? seasonYear : "—" });
 
   return (
     <Modal
@@ -510,12 +497,12 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
           </button>
           <div className="text-center pr-10">
             <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-chart-2 mb-2 m-0">
-              {weekdayUpper(dayLog.date)} // {seasonEyebrow}
+              {weekdayOf(dayLog.date, i18n.language)} // {seasonEyebrow}
             </p>
             <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("daySummary.title")}
             </h2>
-            <p className="text-sm text-muted-foreground m-0 mt-2">{formatDate(dayLog.date)}</p>
+            <p className="text-sm text-muted-foreground m-0 mt-2">{formatGameDate(dayLog.date, i18n.language, "weekdayLong")}</p>
           </div>
         </div>
 

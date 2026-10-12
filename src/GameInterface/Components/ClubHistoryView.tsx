@@ -64,9 +64,9 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
             <Caption>{t("clubHistory.stadium")}</Caption>
             <p className="m-0 text-sm text-foreground">
               {data.venue.name}
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground tabular-nums">
                 {data.venue.city ? ` · ${data.venue.city}` : ""}
-                {data.venue.capacity > 0 ? ` · ${t("clubHistory.capacity", { count: data.venue.capacity })}` : ""}
+                {data.venue.capacity > 0 ? ` · ${t("clubHistory.capacity", { seats: data.venue.capacity.toLocaleString(i18n.language) })}` : ""}
               </span>
             </p>
           </div>

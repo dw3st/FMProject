@@ -17,6 +17,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
+    // #154: the page language follows the player's (screen readers, hyphenation, the browser's translate offer).
+    if (typeof document !== "undefined") document.documentElement.lang = language;
   }, [language]);
 
   const setLanguage = useCallback((lang: SupportedLanguage) => {

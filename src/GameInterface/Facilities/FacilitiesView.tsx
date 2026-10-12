@@ -14,6 +14,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
 import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 
 /**
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
@@ -71,7 +72,7 @@ export function FacilitiesView({
           sub={data.effectiveCapacity < data.capacity ? t("facilities.kpi.duringWorks", { seats: nf(data.effectiveCapacity) }) : undefined} />
         <Kpi label={t("facilities.kpi.avgAttendance")} value={avgAttendance === null ? "—" : nf(avgAttendance)}
           sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
-        <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record?.date} />
+        <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record ? formatGameDate(f.record.date, i18n.language) : undefined} />
         <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
           sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort) })} />
       </div>
@@ -127,8 +128,8 @@ export function FacilitiesView({
         <section className="card-arcade rounded-md p-4">
           <LevelBlock
             kind="academy" level={data.levels.academy} data={data} busy={running("academy")} pending={pending}
-            current={academyText(data.effects.academy.current, t)}
-            next={academyText(data.effects.academy.next, t)}
+            current={academyText(data.effects.academy.current, t, i18n.language)}
+            next={academyText(data.effects.academy.next, t, i18n.language)}
             onAsk={() => void ask({ kind: "academy" })}
           />
         </section>
@@ -436,28 +437,34 @@ function LevelBlock({
 }
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+/** Tooltip anchor of bar `i` of `n`: left edge in the first third, right edge in the last, centred in between. */
+function tooltipAnchor(i: number, n: number): string {
+  if (i < n / 3) return "left-0";
+  if (i >= (2 * n) / 3) return "right-0";
+  return "left-1/2 -translate-x-1/2";
+}
 const pct = (mult: number) => `${mult >= 1 ? "+" : "−"}${Math.abs(Math.round((mult - 1) * 100))}%`;
 
 function trainingText(e: FacilitiesViewData["effects"]["training"]["current"], t: TFn): string {
   return t("facilities.training.effect", { recovery: pct(e.recoveryMult), injury: pct(e.injuryMult), dev: pct(e.devMult) });
 }
 
-function academyText(e: FacilitiesViewData["effects"]["academy"]["current"], t: TFn): string {
-  const q = e.qualityBonus;
+function academyText(e: FacilitiesViewData["effects"]["academy"]["current"], t: TFn, lang: string): string {
   return t("facilities.academy.effect", {
-    quality: `${q >= 0 ? "+" : "−"}${Math.abs(q).toFixed(2)}`, max: e.intakeMax, promise: Math.round(e.promiseChance * 100),
+    quality: formatSigned(e.qualityBonus, lang), max: e.intakeMax, promise: Math.round(e.promiseChance * 100),
   });
 }
 
 function OutcomeNotice({ outcome, onClose }: { outcome: { kind: FacilityKind; result: RequestOutcome }; onClose: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const r = outcome.result;
   const ok = r.approved;
   const what = r.approved && r.project.item
     ? `${t(`facilities.kind.${outcome.kind}`)}: ${t(`facilities.item.${r.project.item}`)}`
     : t(`facilities.kind.${outcome.kind}`);
   const text = r.approved
-    ? t("facilities.outcome.approved", { what, date: r.project.end })
+    ? t("facilities.outcome.approved", { what, date: formatGameDate(r.project.end, i18n.language) })
       + (r.paidByClub ? ` ${t("facilities.items.paidByClub")}` : "")
       + (r.boardShare > 0 ? ` ${t("facilities.preview.funded", { pct: Math.round(r.boardShare * 100) })}` : "")
     : r.reason === "busy" && r.group
@@ -518,15 +525,16 @@ function AttendanceChart({ games, leagues, nf }: { games: SeasonGame[]; leagues:
               <div key={v} className="absolute inset-x-0 border-t border-border/50" style={{ top: `${y(v)}%` }} aria-hidden />
             ))}
             <div className="absolute inset-0 flex items-end gap-1">
-              {games.map((g) => (
+              {games.map((g, i) => (
                 <div key={`${g.date}:${g.competition}`} className="relative flex-1 h-full flex items-end group min-w-0">
                   <div
                     className={`w-full rounded-t ${g.played ? "bg-primary" : "bg-primary/15 border border-dashed border-b-0 border-primary/70"}`}
                     style={{ height: `${100 - y(g.attendance)}%` }}
                   />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  {/* Out of the layout until hovered and anchored inward at the edges, so the last bar never makes the page scroll sideways (#154). */}
+                  <div className={`absolute bottom-full mb-1 hidden group-hover:block pointer-events-none z-10 ${tooltipAnchor(i, n)}`}>
                     <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm whitespace-nowrap flex flex-col gap-0.5 tabular-nums">
-                      <span className="font-semibold text-foreground">{g.date} · {competitionName(g.competition, leagues, i18n.language)}</span>
+                      <span className="font-semibold text-foreground">{formatGameDate(g.date, i18n.language)} · {competitionName(g.competition, leagues, i18n.language)}</span>
                       <span className="text-muted-foreground">
                         {g.played ? t("facilities.chart.played") : t("facilities.chart.estimated")}: <span className="text-foreground">{nf(g.attendance)}</span>
                       </span>
@@ -555,7 +563,7 @@ function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
 // ── Works in progress ────────────────────────────────────────────────────────
 
 function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) => string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const projects = data.facilities.projects;
   return (
     <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
@@ -580,7 +588,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-sm font-semibold text-foreground">{what}</span>
               <span className="text-sm text-muted-foreground tabular-nums">
-                {t("facilities.projects.delivery", { date: p.end })} · {formatEuros(p.cost)}
+                {t("facilities.projects.delivery", { date: formatGameDate(p.end, i18n.language) })} · {formatEuros(p.cost)}
                 {p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}
                 {paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}
               </span>

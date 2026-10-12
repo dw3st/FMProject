@@ -18,13 +18,7 @@ export type { ScoutFilterState };
 export type ScoutFilterOption = { value: string; label: string };
 
 /** Filter values: main roles only (matches `getMainRole` on each player’s primary position). */
-const MAIN_POSITION_FILTERS: { value: string; label: string }[] = [
-  { value: "all", label: "All positions" },
-  { value: "GK", label: "Goalkeeper" },
-  { value: "Defender", label: "Defender" },
-  { value: "Midfielder", label: "Midfielder" },
-  { value: "Forward", label: "Forward" },
-];
+const MAIN_POSITION_FILTERS = ["all", "GK", "Defender", "Midfielder", "Forward"] as const;
 
 const inputClass = formSelectBoxClass;
 
@@ -58,7 +52,7 @@ export function ScoutFilters({
     setFilters(createDefaultScoutFilters());
   };
 
-  const positionOptions = MAIN_POSITION_FILTERS;
+  const positionOptions = MAIN_POSITION_FILTERS.map((value) => ({ value, label: t(`scout.filters.positions.${value}`) }));
 
   return (
     <form
@@ -159,8 +153,8 @@ export function ScoutFilters({
           </div>
         </div>
 
-        {/* Value (transfer price), millions of euros */}
-        <div>
+        {/* Value (transfer price), millions of euros: two columns so "1000" fits (#154) */}
+        <div className="col-span-2">
           <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             {t("scout.filters.valueRange")}
           </label>

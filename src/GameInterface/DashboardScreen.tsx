@@ -11,7 +11,7 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { inboxSubject } from "@/GameInterface/InboxScreen";
+import { inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
 import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
 import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
@@ -319,7 +319,7 @@ export function DashboardScreen() {
           statsHref="/stats?tab=team"
           stars={stars}
         />
-        <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} />
+        <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} previewOf={(m) => inboxPreview(m, t)} />
       </div>
 
       <WeekFinancesCard week={week} balance={balance} />

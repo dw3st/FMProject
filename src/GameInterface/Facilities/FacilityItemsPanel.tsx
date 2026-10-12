@@ -9,6 +9,7 @@ import type { ItemEffect } from "@/Domain/facilities/facilityItems";
 import type { FacilityGroup, FacilityRequest } from "@/types/facilityTypes";
 import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
 import { FacilityItemArt, type ArtTone } from "@/GameInterface/Facilities/FacilityItemArt";
+import { formatGameDate } from "@/GameInterface/formatDate";
 
 type Mode = "repair" | "rebuild" | "upgrade";
 type RepairStep = "25" | "50" | "100";
@@ -26,9 +27,9 @@ export function conditionTone(condition: number, condemned: boolean): { bar: str
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
 /** One line with what an item below 40% costs the club. */
-export function itemEffectText(effects: ItemEffect[], t: TFn): string {
+export function itemEffectText(effects: ItemEffect[], t: TFn, lang: string): string {
   return effects.map((e) => {
-    if (e.key === "intakeQuality") return t("facilities.effect.intakeQuality", { value: `−${Math.abs(e.value).toFixed(2)}` });
+    if (e.key === "intakeQuality") return t("facilities.effect.intakeQuality", { value: `−${Math.abs(e.value).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     const pct = Math.round((e.value - 1) * 100);
     return t(`facilities.effect.${e.key}`, { pct: `${pct >= 0 ? "+" : "−"}${Math.abs(pct)}%` });
   }).join(" · ");
@@ -102,7 +103,7 @@ export function FacilityItemsPanel({
 }
 
 function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; selected: boolean; onSelect: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tone = conditionTone(item.condition, item.condemned);
   return (
     <button
@@ -124,10 +125,10 @@ function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; select
           <span className="h-1.5 w-12 bg-border rounded overflow-hidden shrink-0" aria-hidden>
             <span className="block h-full bg-chart-4" style={{ width: `${Math.round(item.project.progress * 100)}%` }} />
           </span>
-          <span className="truncate">{t(`facilities.kind.${item.project.kind}`)} · {item.project.end}</span>
+          <span className="truncate">{t(`facilities.kind.${item.project.kind}`)} · {formatGameDate(item.project.end, i18n.language)}</span>
         </span>
       ) : item.effects.length > 0 ? (
-        <span className="text-sm text-muted-foreground tabular-nums">{itemEffectText(item.effects, t)}</span>
+        <span className="text-sm text-muted-foreground tabular-nums">{itemEffectText(item.effects, t, i18n.language)}</span>
       ) : null}
     </button>
   );
@@ -165,7 +166,7 @@ function ItemDetail({
   item: FacilityItemView; groupBusy: boolean; pending: boolean;
   onClose: () => void; onConfirm: (req: FacilityRequest) => Promise<void>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const modes = modesOf(item);
   const [mode, setMode] = useState<Mode | null>(modes.includes("upgrade") ? "upgrade" : modes[0] ?? null);
   const steps = (["25", "50", "100"] as RepairStep[]).filter((s) => item.quotes.repair[s] !== null);
@@ -192,7 +193,7 @@ function ItemDetail({
         </div>
         {item.project ? (
           <p className="text-sm text-muted-foreground m-0 tabular-nums">
-            {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: item.project.end })}
+            {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: formatGameDate(item.project.end, i18n.language) })}
             {" · "}{Math.round(item.project.progress * 100)}%
           </p>
         ) : mode === null ? (

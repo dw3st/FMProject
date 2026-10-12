@@ -98,7 +98,9 @@
     "exp": "Exp",
     "radius": "Raio",
     "clear": "Limpar",
-    "milliseconds": "ms"
+    "milliseconds": "ms",
+    "noOptionMatches": "Nenhum resultado",
+    "ageYears": "{{age}} anos"
   },
   "landing": {
     "signIn": "Entrar",
@@ -524,7 +526,7 @@
     "finances": "Finanças",
     "staff": "Comissão",
     "leagues": "Ligas",
-    "transfers": "Transferências",
+    "transfers": "Mercado",
     "scout": "Olheiro",
     "stats": "Estatísticas",
     "report": "Reportar",
@@ -1612,6 +1614,59 @@
       },
       "counts": "Inscritos {{counted}}/{{max}} · estrangeiros {{foreign}} · formados {{formed}} · livres {{free}}",
       "open": "Abrir a inscrição"
+    },
+    "subjects": {
+      "continental": {
+        "qualified": "Classificado para a {{competition}}",
+        "group": "Sorteio dos grupos da {{competition}}",
+        "draw": "Sorteio da {{competition}}",
+        "eliminated": "Fora da {{competition}}",
+        "champion": "Campeões da {{competition}}!"
+      },
+      "cup": {
+        "draw": "Sorteio da {{cup}}",
+        "eliminated": "Fora da {{cup}}",
+        "champion": "Campeões da {{cup}}!"
+      },
+      "injury": {
+        "injured": "{{player}} lesionado",
+        "returned": "{{player}} está de volta",
+        "suspended": "{{player}} suspenso"
+      },
+      "contract": {
+        "expiring": "Contratos perto do fim",
+        "renewed": "Contrato renovado",
+        "released": "Jogadores saíram livres"
+      },
+      "youth": {
+        "intake": "Safra {{year}} da base: {{count}} jovens",
+        "released": "Jogadores dispensados da base",
+        "standout": "Destaque: {{player}}"
+      },
+      "retirement": {
+        "retired": "{{player}} se aposenta",
+        "reborn": "{{player}} se aposenta, uma lenda",
+        "preview": "{{player}} ({{age}}) pendurou as chuteiras"
+      },
+      "season": {
+        "champion": "Campeão da {{league}}",
+        "promoted": "Acesso para a {{league}}",
+        "relegated": "Rebaixado para a {{league}}",
+        "followersUp": "A torcida cresceu",
+        "followersDown": "A torcida diminuiu",
+        "negative_balance": "Caixa no vermelho",
+        "championPreview": "O clube conquistou o título da {{league}} {{season}}.",
+        "promotedPreview": "Na próxima temporada o clube joga a {{league}}.",
+        "relegatedPreview": "Na próxima temporada o clube cai para a {{league}}.",
+        "followersPreview": "Depois da temporada {{season}} o clube tem {{followers}} seguidores ({{pct}})."
+      },
+      "development": {
+        "up": "{{player}} evoluiu",
+        "down": "{{player}} regrediu",
+        "mixed": "{{player}}: evolução"
+      },
+      "transfer_in": "{{player}} contratado",
+      "transfer_out": "{{player}} vendido"
     }
   },
   "finances": {
@@ -2007,7 +2062,7 @@
     "loading": "Carregando a história do clube...",
     "loadFailed": "Não foi possível carregar a história do clube.",
     "stadium": "Estádio",
-    "capacity": "{{count}} lugares",
+    "capacity": "{{seats}} lugares",
     "manager": "Técnico",
     "pastManagers": "Técnicos anteriores",
     "titles": "Títulos",
@@ -2260,7 +2315,8 @@
     "strongRecovery": "Forte recuperação",
     "sharpnessHeld": "Precisão mantida",
     "minorRust": "Leve enferrujamento",
-    "sharpnessFaded": "Precisão diminuída"
+    "sharpnessFaded": "Precisão diminuída",
+    "seasonEyebrow": "Temporada {{season}}"
   },
   "weekCalendar": {
     "weekSchedule": "Calendário da Semana",
@@ -2404,7 +2460,14 @@
       "affordableOnly": "Cabe no orçamento",
       "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
       "search": "Pesquisar",
-      "changed": "Filtros alterados"
+      "changed": "Filtros alterados",
+      "positions": {
+        "all": "Todas as posições",
+        "GK": "Goleiro",
+        "Defender": "Defensor",
+        "Midfielder": "Meio-campista",
+        "Forward": "Atacante"
+      }
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -2454,8 +2517,26 @@
       "sign": "Contratar",
       "signFree": "Contratar como jogador livre",
       "interest": "Interesse",
-      "noClub": "Sem clube"
-    }
+      "noClub": "Sem clube",
+      "columns": {
+        "pos": "Pos",
+        "name": "Nome",
+        "age": "Idade",
+        "club": "Clube",
+        "avg": "OVR",
+        "phase": "Forma",
+        "salary": "Salário",
+        "valueMillions": "Valor"
+      }
+    },
+    "form": {
+      "1": "Ruim",
+      "2": "Fraca",
+      "3": "Normal",
+      "4": "Boa",
+      "5": "Ótima"
+    },
+    "formHint": "Forma: nota média dos últimos 5 jogos"
   },
   "fastForward": {
     "button": "Avançar até o próximo jogo",

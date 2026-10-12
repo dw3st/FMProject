@@ -153,7 +153,8 @@ e o Continuar com a borda direita.
   `sr-only` e no `title`) — medido em tempo real (`useCompactTabs` → `compactTabsFor`, sobre uma cópia
   invisível com rótulos, refeito em resize, fontes, visibilidade e volta do cache — #138, #139), nunca
   transbordam a moldura. Na moldura cheia (1440px) as abas em português têm rótulo, mesmo com o
-  report e o botão de avançar.
+  report e o botão de avançar (#154: com a aba Clube, "Transferências" virou "Mercado" em pt-BR para caber; o
+  título da tela continua "MERCADO DE TRANSFERÊNCIAS").
   O botão de report (só testers) fica fora das abas, só a bandeirinha, no começo do bloco do dia
   (sem divisor próprio, #139).
 - **Bloco do dia** (à direita, separado por divisor `border-l border-border pl-4`): data numa linha

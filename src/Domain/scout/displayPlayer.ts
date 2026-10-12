@@ -188,7 +188,7 @@ export function toDisplayPlayer(
     goals: log?.goals ?? 0,
     assists: log?.assists ?? 0,
     avgRating: log ? Math.round((log.avgRating ?? 0) * 10) / 10 : 0,
-    phase: Player.formToStatus(log?.recentRatings ?? []),
+    phase: formStatus(log?.recentRatings ?? []),
     training: log ? Player.trainingToStatus(log.trainingSessions) : (3 as StatusLevel),
     moral: log ? Player.moraleToStatus(log.morale) : (3 as StatusLevel),
     status: injured ? "injured" : isSuspended(player) ? "suspended" : "fit",
@@ -205,4 +205,18 @@ export function toDisplayPlayer(
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
     ...scoutFields(player, avg, options?.wageFactor ?? 1),
   };
+}
+
+/**
+ * Form band shown by the scout table (#154): average of the last 5 ratings around the world average (~6.2), so
+ * a regular player reads "OK". No matches yet = "OK". (`Player.formToStatus` is the engine buff, untouched.)
+ */
+export function formStatus(recentRatings: number[]): StatusLevel {
+  if (recentRatings.length === 0) return 3;
+  const avg = recentRatings.reduce((a, b) => a + b, 0) / recentRatings.length;
+  if (avg >= 7.3) return 5;
+  if (avg >= 6.75) return 4;
+  if (avg >= 6.0) return 3;
+  if (avg >= 5.6) return 2;
+  return 1;
 }

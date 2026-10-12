@@ -1,3 +1,5 @@
+import i18next from "@/i18n/i18n";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import { RescheduledNote, shortDateLabel } from "@/GameInterface/Components/RescheduledNote";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -197,9 +199,7 @@ function FixturesPanel({
   for (const f of roundFixtures) dateCounts.set(f.rescheduledFrom ?? f.date, (dateCounts.get(f.rescheduledFrom ?? f.date) ?? 0) + 1);
   const mainDate = [...dateCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
   const roundDate = mainDate
-    ? new Date(mainDate + "T12:00:00").toLocaleDateString("en-GB", {
-        day: "numeric", month: "long", year: "numeric",
-      })
+    ? formatGameDate(mainDate, i18next.language, "long")
     : "";
 
   return (

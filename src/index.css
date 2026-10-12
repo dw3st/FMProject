@@ -104,9 +104,15 @@
   :root {
     color-scheme: dark;
   }
+  select {
+    color-scheme: dark;
+  }
+  /* Literal sRGB, not the oklch tokens: the native list of Chrome on Windows ignores an oklch() background and
+     opens white with the theme's light text. Same colours as --popover (oklch(0.15 0.025 262)) and
+     --popover-foreground (oklch(0.95 0 0)). */
   option, optgroup {
-    background-color: var(--popover);
-    color: var(--popover-foreground);
+    background-color: #060b16;
+    color: #eeeeee;
   }
   body {
     @apply bg-background text-foreground font-sans min-w-[320px] min-h-screen m-0;

@@ -76,7 +76,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
             {mode === "renew" ? t("contracts.renewTitle") : t("contracts.signTitle")}
           </h2>
           <p className="text-sm text-muted-foreground m-0 mt-0.5">
-            {player.name} · {player.age}y
+            {player.name} · {t("common.ageYears", { age: player.age })}
             {player.contractUntil ? ` · ${t("contracts.currentUntil", { year: player.contractUntil })}` : ""}
           </p>
         </div>

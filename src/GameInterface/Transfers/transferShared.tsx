@@ -1,3 +1,5 @@
+import i18next from "@/i18n/i18n";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComponentType, SVGProps } from "react";
@@ -35,8 +37,7 @@ export function translateTransferReason(t: (key: string, opts?: Record<string, u
 }
 
 function formatTransferDate(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return formatGameDate(dateStr, i18next.language, "dayMonth");
 }
 
 function squadHref(league?: string, club?: string): string | null {
@@ -170,7 +171,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
             ) : (
               <span className="font-bold text-foreground min-w-0">{record.playerName}</span>
             )}
-            <span className="text-sm text-muted-foreground">{record.playerAge}y</span>
+            <span className="text-sm text-muted-foreground">{t("common.ageYears", { age: record.playerAge })}</span>
           </div>
           <p className="text-sm text-muted-foreground m-0 leading-snug">
             <ClubLink league={record.fromLeagueSlug} club={record.fromClubSlug} squadId={record.fromSquadId} name={record.fromSquadName} />

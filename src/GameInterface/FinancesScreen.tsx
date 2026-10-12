@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { Icon, type IconName } from "@/GameInterface/Icons";
@@ -436,7 +437,7 @@ export function FinancesScreen() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-foreground m-0 truncate">{ledgerText(entry)}</p>
                       <p className="text-sm text-muted-foreground m-0">
-                        {entry.date} · {t(meta.labelKey)}
+                        {formatGameDate(entry.date, i18n.language)} · {t(meta.labelKey)}
                       </p>
                     </div>
                     <span className={`tabular-nums text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
