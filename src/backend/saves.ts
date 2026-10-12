@@ -22,6 +22,7 @@ import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { saveCompatibility } from "@/Domain/saveVersion";
 import {
   recordSaveOwnership,
   deleteSaveOwnership,
@@ -39,7 +40,8 @@ export const saveRoutes = {
       if (auth instanceof Response) return auth;
       const ids = listUserSaveIds(auth.userId);
       const metas = (await Promise.all(ids.map((id) => saveService.getMeta(id))))
-        .filter((m): m is SaveMeta => !!m);
+        .filter((m): m is SaveMeta => !!m)
+        .map((m) => ({ ...m, compatible: saveCompatibility(m.gameVersion) === "ok" }));
       return Response.json(metas);
     }
 

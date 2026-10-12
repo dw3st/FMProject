@@ -48,6 +48,10 @@ export const changelog: ChangelogEntry[] = [
         pt: "Novas conquistas: Herói nacional (vitórias com a seleção) e duas secretas.",
         en: "New achievements: National hero (wins with your national team) and two secret ones.",
       },
+      {
+        pt: "Os jogos salvos guardam a versão do jogo; um save de versão anterior avisa antes de carregar.",
+        en: "Saved games now record the game version; a save from an earlier version warns you before loading.",
+      },
     ],
   },
   {

@@ -130,7 +130,14 @@
     "deleteConfirmAction": "Delete save",
     "continue": "Continue",
     "whatsNew": "What's new",
-    "unemployed": "No club"
+    "unemployed": "No club",
+    "saveVersion": "v{{version}}",
+    "outdatedVersion": "Version {{version}} · not compatible with this one",
+    "outdatedUnknown": "Earlier version · not compatible with this one",
+    "outdatedTitle": "Save from an earlier version",
+    "outdatedBody": "\"{{clubName}}\" was created in an earlier version of the game ({{version}}) and may not work in this one. We recommend starting a new game.",
+    "outdatedUnknownVersion": "before 4.22",
+    "outdatedLoad": "Load anyway"
   },
   "newGame": {
     "selectTerritory": "Select Territory",

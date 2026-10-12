@@ -86,3 +86,12 @@ Server-side logs use `@/Logger`: `logDebug(namespace, …)` (only for namespaces
 Shared components stay dumb (props in, render out); the `gameBus` subscriptions live in the match
 screens (see `frontend.md`). Replacing React means re-subscribing those screens to `gameBus`;
 `GameEngine` and `GraficsEngine` are untouched.
+
+---
+
+## Save version (#155, 4.22)
+`SaveMeta.gameVersion` is written by `createSave` from `GAME_VERSION` (`@/Domain/saveVersion`, read
+from `package.json`). `MIN_COMPATIBLE_SAVE_VERSION` in the same file is the oldest version whose saves
+still load: **raise it in the same branch whenever the save format changes**. `GET /api/saves` adds
+`compatible` (`saveCompatibility`: absent or older = outdated); the start screen shows `vX.Y` on every
+save, a warning line on an outdated one and asks before loading it. No migration (prototype).

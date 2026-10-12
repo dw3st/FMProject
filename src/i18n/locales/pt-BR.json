@@ -130,7 +130,14 @@
     "deleteConfirmAction": "Excluir save",
     "continue": "Continuar",
     "whatsNew": "Novidades",
-    "unemployed": "Sem clube"
+    "unemployed": "Sem clube",
+    "saveVersion": "v{{version}}",
+    "outdatedVersion": "Versão {{version}} · incompatível com a atual",
+    "outdatedUnknown": "Versão anterior · incompatível com a atual",
+    "outdatedTitle": "Jogo salvo de versão anterior",
+    "outdatedBody": "\"{{clubName}}\" foi criado numa versão anterior do jogo ({{version}}) e pode não funcionar nesta. É recomendado iniciar um jogo novo.",
+    "outdatedUnknownVersion": "anterior à 4.22",
+    "outdatedLoad": "Carregar mesmo assim"
   },
   "newGame": {
     "countries": {
