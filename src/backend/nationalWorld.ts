@@ -289,12 +289,23 @@ export async function playNationalDay(args: {
     for (const pl of cu.players) {
       if (pl.generated) continue;
       let injured = false;
-      await setPlayer(pl.squadId, pl.id, (p) => {
+      const release = (p: RosterPlayer): RosterPlayer => {
         injured = !!p.injury && p.injury.returnDate > date;
         if (!p.nationalDuty) return p;
         const { nationalDuty: _d, ...rest } = p;
         return rest;
-      });
+      };
+      // Moved during the window (rare): found in his new club by a scan of the world.
+      if (!(await setPlayer(pl.squadId, pl.id, release))) {
+        for (const league of index.leagues()) {
+          let done = false;
+          for (const t of index.inLeague(league)) {
+            const sq = await squadNow(t.squadId);
+            if (sq?.players.some((p) => p.id === pl.id)) { await setPlayer(t.squadId, pl.id, release); done = true; break; }
+          }
+          if (done) break;
+        }
+      }
       if (pl.squadId === humanClubId) {
         back.push({ id: pl.id, name: pl.name, nation: team.nation, apps: cu.tally?.[pl.id]?.apps ?? 0, goals: cu.tally?.[pl.id]?.goals ?? 0, injured });
       }

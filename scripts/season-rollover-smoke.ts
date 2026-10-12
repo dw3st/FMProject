@@ -2178,6 +2178,65 @@ try {
     check(varTrack.banServed === true, `var: the forced ban is served by the day's match (${String(varTrack.banServed)})`);
   }
 
+  // ── Seleções ─────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/national-teams.md`: the national world exists with an AI coach per team, every
+  // window game of the run was played, no club game on a blocked day (FIFA windows, tournaments) of its country,
+  // nobody still on duty after his call-up, caps in the world, the human club's call-up news.
+  console.log("\n── Seleções ──");
+  {
+    const { countryBlockedDays, fifaWindows } = await import("@/Domain/national/fifaCalendar");
+    const nState = await plain().getNationalState(saveId);
+    const runEnd = (await plain().getMeta(saveId))!.currentDate!;
+    check(!!nState && Object.keys(nState.teams).length >= 150, `seleções: ${Object.keys(nState?.teams ?? {}).length} national teams`);
+    const mgrs = await plain().getManagers(saveId);
+    const noCoach = Object.values(nState?.teams ?? {}).filter((t) => mgrs.find((m) => m.id === t.managerId)?.squadId !== t.id).map((t) => t.nation);
+    check(noCoach.length === 0, `seleções: every national team has its coach in managers.json (${noCoach.slice(0, 3).join(", ")})`);
+    const runDates: string[] = [];
+    for (let y = Number(startDate.slice(0, 4)); y <= Number(runEnd.slice(0, 4)); y++) {
+      for (const w of fifaWindows(y)) for (const d of w.matchDates) if (d >= startDate && d < runEnd) runDates.push(d);
+    }
+    let natGames = 0;
+    const unplayed: string[] = [];
+    for (const slug of nState?.competitions ?? []) {
+      const c = await plain().getNationalComp(saveId, slug);
+      for (const f of c?.fixtures ?? []) {
+        if (f.date < startDate || f.date >= runEnd) continue;
+        if (f.played) natGames++;
+        else unplayed.push(`${slug} ${f.id}`);
+      }
+    }
+    console.log(`  ${runDates.length} window match date(s) in the run, ${natGames} national game(s) played`);
+    check(runDates.length === 0 || natGames > runDates.length * 50, `seleções: the window games were played (${natGames})`);
+    check(unplayed.length === 0, `seleções: no national game left unplayed in the past (${unplayed.slice(0, 3).join(", ")})`);
+    const catalogN = await (await import("@/backend/advanceDay")).getLeagueData();
+    const blockedClub: string[] = [];
+    for (const slug of await plain().listCompetitionSlugs(saveId)) {
+      const lm = await plain().getLeagueMeta(saveId, slug);
+      if (!lm) continue;
+      const country = lm.youth?.country ?? lm.cup?.country ?? catalogN.find((l) => l.slug === slug)?.country;
+      for (let r = 1; r <= lm.totalRounds; r++) {
+        for (const f of (await plain().getRound(saveId, slug, r))?.fixtures ?? []) {
+          if (f.date < startDate || f.date > runEnd || f.cancelled) continue;
+          const clubCountry = country ?? catalogN.find((l) => l.standings.some((st) => st.squadId === f.home))?.country;
+          if (countryBlockedDays(clubCountry, f.date, f.date).has(f.date)) blockedClub.push(`${slug} ${f.date}`);
+        }
+      }
+    }
+    check(blockedClub.length === 0, `seleções: no club game on a blocked day (${blockedClub.length}, e.g. ${blockedClub.slice(0, 3).join(", ")})`);
+    let stale = 0;
+    let caps = 0;
+    for (const f of await plain().listSquadFiles(saveId)) {
+      for (const pl of f.squad.players) {
+        if (pl.nationalDuty && pl.nationalDuty.until < addDays(runEnd, -1)) stale++;
+        if ((pl.national?.caps ?? 0) > 0) caps++;
+      }
+    }
+    check(stale === 0, `seleções: nobody still on duty after his call-up (${stale})`);
+    check(runDates.length === 0 || caps > 1000, `seleções: ${caps} players with caps in the world`);
+    const natNews = (await plain().getInbox(saveId)).filter((m) => m.category === "national");
+    console.log(`  ${natNews.length} national inbox message(s) of the human club`);
+  }
+
   // ── Árbitros ─────────────────────────────────────────────────────────────
   // See `.claude/rules/game/referees.md`: every first-team match with the appointed referee, none twice a day,
   // continental from another country, stats = the logged cards, the human club's referee = the eve's appointment,
