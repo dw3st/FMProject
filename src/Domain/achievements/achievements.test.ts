@@ -214,3 +214,25 @@ describe("shop", () => {
     expect(() => parseCreatedPlayer({ name: "Joe", position: "ST", nationality: "Atlantis", foot: "left" })).toThrow();
   });
 });
+
+describe("national-team achievements (Etapa 41b)", () => {
+  test("wins count in their own track; beating the homeland unlocks a secret", () => {
+    let s = emptyAchievements();
+    for (let i = 0; i < 5; i++) {
+      s = day(s, { date: `2027-03-0${i + 1}`, national: [{ won: true, homeland: false }, { won: false, homeland: true }] }).state;
+    }
+    expect(s.counters.nationalWins).toBe(5);
+    expect(s.unlocked["national_wins:bronze"]).toBeDefined();
+    expect(s.unlocked["secret:against_homeland"]).toBeUndefined();
+    const r = day(s, { date: "2027-03-10", national: [{ won: true, homeland: true }] });
+    expect(r.unlocked).toContain("secret:against_homeland");
+    expect(trackValues(r.state, { manager: manager(), rank: null, balanceGain: 0, extraSeats: 0, facilityLevels: 0 }).wins).toBe(0);
+  });
+
+  test("a World Cup title unlocks world_champion, a national title is not a club title", () => {
+    const me = manager({ titles: [{ season: "2030", kind: "national", competition: "wc_2030", squadId: "nat_x", points: 200 }] });
+    const r = day(emptyAchievements(), { snapshot: { manager: me, rank: null, balanceGain: 0, extraSeats: 0, facilityLevels: 0 } });
+    expect(r.unlocked).toContain("secret:world_champion");
+    expect(r.state.unlocked["league_titles:bronze"]).toBeUndefined();
+  });
+});

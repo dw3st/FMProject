@@ -278,6 +278,8 @@ export interface NationalDayResult {
   consumedRecording: boolean;
   /** His national game of the day (the result screen reads it from the day log). */
   humanMatch?: MatchEvent;
+  /** His national team (set with `humanMatch`). */
+  humanTeamId?: string;
   /** National-team wage earned today (Mondays, `managerEarnings` only). */
   earned: number;
   /** New national-team job offers today (the fast-forward stops). */
@@ -532,6 +534,7 @@ export async function playNationalDay(args: {
           }).recording;
         }
         out.humanMatch = nationalMatchEvent(fx, recording, home.players, away.players);
+        out.humanTeamId = humanTeam;
       } else {
         recording = quickSimMatch({
           fixtureId: fx.id,

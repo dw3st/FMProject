@@ -99,6 +99,7 @@ export function trackValues(state: AchievementsState, snap: AchievementSnapshot)
     ten_men_wins: c.tenMenWins,
     shootout_wins: c.shootoutWins,
     derby_wins: c.derbyWins,
+    national_wins: c.nationalWins ?? 0,
     youth_promoted: state.promotedIds.length,
     young_award: c.youngAwards,
     sales_profit: c.salesProfit,
@@ -226,7 +227,11 @@ export function applyNewTitles(state: AchievementsState, manager: ManagerRecord 
   const titles = manager?.titles ?? [];
   if (titles.length <= state.titlesSeen) return state;
   let s: AchievementsState = { ...state, titlesSeen: titles.length };
-  for (const t of titles.slice(state.titlesSeen)) s = addAttribute(s, "tactics", A.TITLE_GAIN[t.kind]);
+  for (const t of titles.slice(state.titlesSeen)) {
+    s = addAttribute(s, "tactics", A.TITLE_GAIN[t.kind]);
+    // The World Cup with his national team (Etapa 41b).
+    if (t.kind === "national" && t.competition.startsWith("wc_")) s = unlockSecret(s, "world_champion", date);
+  }
   const bySeason = new Map<string, Set<string>>();
   for (const t of titles) {
     const set = bySeason.get(t.season) ?? new Set<string>();

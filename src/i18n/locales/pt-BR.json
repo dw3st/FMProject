@@ -3994,6 +3994,10 @@
       "league_unbeaten": {
         "name": "Invencível",
         "desc": "Jogos seguidos da liga sem perder"
+      },
+      "national_wins": {
+        "name": "Herói nacional",
+        "desc": "Vitórias com a seleção que você treina"
       }
     },
     "titles": {
@@ -4022,7 +4026,8 @@
       "ranking": "Número um do mundo",
       "manager_awards": "Técnico do mundo",
       "top_scorer": "Fábrica de gols",
-      "league_unbeaten": "O invencível"
+      "league_unbeaten": "O invencível",
+      "national_wins": "Herói nacional"
     },
     "secrets": {
       "fortress": {
@@ -4084,6 +4089,14 @@
       "wall": {
         "name": "Muralha",
         "desc": "10 jogos oficiais seguidos sem sofrer gol"
+      },
+      "world_champion": {
+        "name": "Campeão do mundo",
+        "desc": "Ganhe a Copa do Mundo com a sua seleção"
+      },
+      "against_homeland": {
+        "name": "Contra a pátria",
+        "desc": "Vença a seleção da sua nacionalidade treinando outra"
       }
     },
     "secretsTitle": "Conquistas secretas",

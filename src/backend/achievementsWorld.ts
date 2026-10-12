@@ -35,6 +35,8 @@ export interface AchievementsDayArgs {
     moves: ClubMove[];
     objectiveMet: boolean;
   };
+  /** Today's game of the national team he coaches (Etapa 41b), with the nations of both sides. */
+  nationalMatch?: { event: MatchEvent; teamId: string; homeland: string | null; nationOf: (teamId: string) => string };
   /** Sacked today (not a contract that ran out). */
   sacked: boolean;
   /** The manager left the club today (sacked or out of contract): the club is an AI club now. */
@@ -167,6 +169,7 @@ export async function achievementsDay(service: SaveService, saveId: string, args
     awards,
     ...(rollover ? { rollover } : {}),
     ...(args.sacked ? { sacked: { hiredOn } } : {}),
+    ...(args.nationalMatch ? { national: [nationalGameOf(args.nationalMatch)] } : {}),
   });
   await service.writeAchievements(saveId, result.state);
   // The copy of the attributes on his club (DP, familiarity, fouls read it there).
@@ -174,4 +177,16 @@ export async function achievementsDay(service: SaveService, saveId: string, args
     await service.saveSquadById(saveId, { ...club, managerAttributes: result.state.attributes });
   }
   return result.unlocked.length > 0 ? buildAchievementMessage(args.date, result.unlocked as AchievementKey[]) : null;
+}
+
+/** His national game: won (shootout included), and whether the opponent is the team of his own nationality. */
+function nationalGameOf(n: NonNullable<AchievementsDayArgs["nationalMatch"]>): { won: boolean; homeland: boolean } {
+  const ev = n.event;
+  const mine = ev.home === n.teamId ? "home" : "away";
+  const opp = mine === "home" ? ev.away : ev.home;
+  const pens = ev.decider?.penalties;
+  const gf = ev.score[mine];
+  const ga = ev.score[mine === "home" ? "away" : "home"];
+  const won = gf > ga || (gf === ga && !!pens && pens[mine] > pens[mine === "home" ? "away" : "home"]);
+  return { won, homeland: !!n.homeland && n.nationOf(opp) === n.homeland && n.nationOf(n.teamId) !== n.homeland };
 }

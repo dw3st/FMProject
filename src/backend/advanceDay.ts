@@ -2883,6 +2883,7 @@ export async function advanceOneDay(
         ...(seasonEnded ? { rollover: { championOf: playerChampionOf, moves: playerCountryMoves, objectiveMet: playerObjectiveMet } } : {}),
         sacked: !!ended && ended.reason !== "contract",
         leftClub: !!ended,
+        ...(nationalDay.humanMatch ? { nationalMatch: await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, meta.manager?.nationalityIso) } : {}),
       });
       if (msg) {
         achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
@@ -3162,3 +3163,9 @@ export const advanceDayRoutes = {
     return Response.json({ restDays });
   },
 };
+
+/** His national game of the day for the achievements (`nationalWins`, `against_homeland`). */
+async function achievementNationalMatch(service: SaveService, saveId: string, event: MatchEvent, teamId: string, iso: string | undefined) {
+  const teams = (await service.getNationalState(saveId))?.teams ?? {};
+  return { event, teamId, homeland: managerNation(iso), nationOf: (id: string) => teams[id]?.nation ?? id };
+}

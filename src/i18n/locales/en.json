@@ -3994,6 +3994,10 @@
       "league_unbeaten": {
         "name": "Invincible",
         "desc": "League games in a row without a defeat"
+      },
+      "national_wins": {
+        "name": "National hero",
+        "desc": "Wins with the national team you coach"
       }
     },
     "titles": {
@@ -4022,7 +4026,8 @@
       "ranking": "World number one",
       "manager_awards": "Manager of the world",
       "top_scorer": "Goal factory",
-      "league_unbeaten": "The invincible"
+      "league_unbeaten": "The invincible",
+      "national_wins": "National hero"
     },
     "secrets": {
       "fortress": {
@@ -4084,6 +4089,14 @@
       "wall": {
         "name": "The wall",
         "desc": "10 official games in a row without conceding"
+      },
+      "world_champion": {
+        "name": "World champion",
+        "desc": "Win the World Cup with your national team"
+      },
+      "against_homeland": {
+        "name": "Against the homeland",
+        "desc": "Beat the national team of your own nationality while coaching another"
       }
     },
     "secretsTitle": "Secret achievements",

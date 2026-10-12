@@ -20,6 +20,8 @@ export interface AchievementDayInput {
   /** Season awards of the club's players not counted yet ("<league>:<season>:<kind>"). */
   awards: { key: string; kind: "young_player" | "top_scorer" }[];
   rollover?: RolloverFacts;
+  /** Today's games of the national team he coaches (Etapa 41b): won, and against the team of his own nationality. */
+  national?: { won: boolean; homeland: boolean }[];
   /** Sacked today (or the contract ended with a sacking). */
   sacked?: { hiredOn?: string };
 }
@@ -62,6 +64,12 @@ export function applyAchievementDay(
     const free = { ...s.freeSignings };
     for (const id of m.starters) if (free[id] !== undefined) free[id]++;
     s = { ...s, freeSignings: free };
+  }
+
+  for (const g of input.national ?? []) {
+    if (!g.won) continue;
+    s = { ...s, counters: { ...s.counters, nationalWins: (s.counters.nationalWins ?? 0) + 1 } };
+    if (g.homeland) s = unlockSecret(s, "against_homeland", date);
   }
 
   const seen = new Set(s.awardsSeen);
