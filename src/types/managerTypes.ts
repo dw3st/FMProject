@@ -43,6 +43,11 @@ export interface ManagerRecord {
    * Etapa 25. `squadId` is "" while he has no club.
    */
   clubs?: ManagerPassage[];
+  /**
+   * The human manager's spells at national teams (Etapa 41b), oldest first; the open one (no `to`) is the team he
+   * coaches now. Kept apart from `clubs` so "one manager per club" stays a rule on `squadId`.
+   */
+  national?: ManagerPassage[];
   /** Without a club since this date (the free pool). */
   freeSince?: string;
   /** Interim manager waiting for the club's hire. */
