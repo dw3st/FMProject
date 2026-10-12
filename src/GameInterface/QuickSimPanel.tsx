@@ -38,6 +38,7 @@ function runOnce(
   temperament?: { home?: number; away?: number },
   pitchCondition?: number,
   refereeStrictness?: number,
+  managerDiscipline?: { home?: number; away?: number },
 ): QuickSimResult {
   return quickSimMatch({
     fixtureId: "test",
@@ -59,17 +60,21 @@ function runOnce(
     ...(pitchCondition !== undefined ? { pitchCondition } : {}),
     // Referee rigor (`referees.md`); absent = neutral.
     ...(refereeStrictness !== undefined ? { refereeStrictness } : {}),
+    // Managers' Discipline (achievements.md); absent = neutral.
+    ...(managerDiscipline?.home !== undefined ? { homeManagerDiscipline: managerDiscipline.home } : {}),
+    ...(managerDiscipline?.away !== undefined ? { awayManagerDiscipline: managerDiscipline.away } : {}),
   });
 }
 
 interface Batch { n: number; goals: number; home: number; draw: number; away: number; extraTime: number; penalties: number }
 
-export function QuickSimPanel({ familiarity, morale, temperament, pitchCondition, refereeStrictness }: {
+export function QuickSimPanel({ familiarity, morale, temperament, pitchCondition, refereeStrictness, managerDiscipline }: {
   familiarity?: { home: number; away: number };
   morale?: { home: number; away: number };
   temperament?: { home?: number; away?: number };
   pitchCondition?: number;
   refereeStrictness?: number;
+  managerDiscipline?: { home?: number; away?: number };
 } = {}) {
   const [last, setLast] = useState<QuickSimResult | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
@@ -78,7 +83,7 @@ export function QuickSimPanel({ familiarity, morale, temperament, pitchCondition
   function runBatch(n: number) {
     const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0, extraTime: 0, penalties: 0 };
     for (let i = 0; i < n; i++) {
-      const { score, decider } = runOnce(knockout, familiarity, morale, temperament, pitchCondition, refereeStrictness).recording;
+      const { score, decider } = runOnce(knockout, familiarity, morale, temperament, pitchCondition, refereeStrictness, managerDiscipline).recording;
       b.goals += score.home + score.away;
       if (decider) b.extraTime++;
       const pens = decider?.penalties;
@@ -103,7 +108,7 @@ export function QuickSimPanel({ familiarity, morale, temperament, pitchCondition
   return (
     <div className="bg-white/[0.03] border border-white/10 rounded p-3 space-y-2 max-w-md">
       <div className="flex items-center gap-2">
-        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce(knockout, familiarity, morale, temperament, pitchCondition, refereeStrictness))}>
+        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce(knockout, familiarity, morale, temperament, pitchCondition, refereeStrictness, managerDiscipline))}>
           Simular 1
         </button>
         <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => runBatch(500)}>
