@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 
@@ -157,5 +158,35 @@ describe("generateLeagueCalendar season window", () => {
     expect(b[0]! >= "2024-02-05").toBe(true);
     // Still spread over the season, not piled up at the end.
     expect(dateOf(a.at(-1)!) - dateOf(a[0]!)).toBeGreaterThan(250 * 86_400_000);
+  });
+
+  test("with blocked days (FIFA windows, tournaments) every league fits, off the blocks, ≥ 3 days apart", () => {
+    const bad: string[] = [];
+    for (const config of LEAGUE_SCHEDULE_CONFIGS) {
+      for (const size of [10, 18, 20, 30]) {
+        for (const year of [2026, 2028, 2030]) {
+          const teams = Array.from({ length: size }, (_, i) => `t${i}`);
+          const blocked = countryBlockedDays("Brazil", `${year}-01-01`, `${year + 1}-12-31`);
+          const { meta, rounds } = generateLeagueCalendar(config, teams, year, { blocked });
+          let prev = "";
+          for (const r of rounds) {
+            const d = r.fixtures[0]!.date;
+            if (d < meta.start || d > meta.end || blocked.has(d) || (prev && dateOf(d) - dateOf(prev) < 3 * 86_400_000)) {
+              bad.push(`${config.slug} ${year} n=${size} round ${r.round} ${d}`);
+            }
+            prev = d;
+          }
+        }
+      }
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+  });
+
+  test("no blocked day in the window = the calendar of before", () => {
+    const pl = LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === "premier_league")!;
+    const teams = Array.from({ length: 20 }, (_, i) => `t${i}`);
+    const a = generateLeagueCalendar(pl, teams, 2026);
+    const b = generateLeagueCalendar(pl, teams, 2026, { blocked: new Set(["2030-01-01"]) });
+    expect(b).toEqual(a);
   });
 });
