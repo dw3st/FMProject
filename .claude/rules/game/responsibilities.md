@@ -94,3 +94,8 @@ responsável, só o aviso `staff_expiring` (renovação na ficha do profissional
 ## Prêmios (Etapa 32)
 
 A categoria de inbox `awards` (prêmios da liga do jogador e cerimônia mundial) pertence ao tópico `competitions`.
+
+## Conquistas (Etapa 40)
+
+A categoria de inbox `achievement` tem tópico próprio, `achievements` (ligado por padrão; não pede ação). Ver
+`.claude/rules/game/achievements.md`.

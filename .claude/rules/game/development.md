@@ -377,3 +377,8 @@ Só o crescimento; o declínio por idade não muda. IA e condição ≥ 40%: × 
 Um jogo de base dá DP de crescimento com os fatores de uma partida × `YOUTH_COMP.DP_MULT` (1,0 até 21 anos) ou
 `DP_MULT_OVERAGE` (0,18 acima), sem declínio por idade (ele já vem dos jogos do clube). Medição em
 `.claude/rules/game/youth-competitions.md` → "Medições".
+
+## Base do técnico (Etapa 40)
+
+O atributo Base do técnico (`.claude/rules/game/achievements.md`) multiplica o DP de crescimento de quem tem até 21 anos no
+clube do jogador (partida, treino, temporada da base, torneios de base) por 1 ± 5% (`youthAttributeMult`); em 10 ou na IA, × 1.

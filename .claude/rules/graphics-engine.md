@@ -66,3 +66,9 @@ only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
 - **Celebration:** scorer and assister get the `celebrate` player animation (two hops and a full turn, 1.4 s).
 - Cost: the per-frame logic is ~2 µs (headless micro-bench, 3600 frames); the in-browser FPS was not read (no browser
   available on the dev machine at the time).
+
+## Enfeites do estádio (Etapa 40, 4.20)
+
+`PitchStadium.decor` (faixa, bandeirão, mosaico; `stadiumDecor.ts` → `drawDecor`): desenhados na arquibancada de trás do gol
+da casa, na cor do clube, dentro da torcida assada (nenhum custo por quadro); nunca em campo neutro nem numa arquibancada em
+obra. Vêm do `match-setup` (`crowd.decor`) só nos jogos em casa do clube do jogador. Ver `.claude/rules/game/achievements.md`.

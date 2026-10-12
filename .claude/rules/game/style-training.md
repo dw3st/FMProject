@@ -140,3 +140,8 @@ bun test src/Domain/familiarity src/GameEngine/Configs/FamiliarityConfig.test.ts
 Desde a comissão completa (`.claude/rules/game/staff.md`) o ganho de familiaridade do treino usa o **analista de
 desempenho** (`StaffEffects.familiarityMult`, curva ×0,8 / ×1 / ×1,25 em 1★ / 3★ / 5★; vago = 2★ = ×0,9) no lugar
 do multiplicador de DP do auxiliar. Com os dois em 3★ é a conta de antes. A IA não treina familiaridade (regra).
+
+## Tática do técnico (Etapa 40)
+
+O ganho de familiaridade do treino do clube do jogador é × (1 ± 5%) pela Tática do técnico (`Squad.managerAttributes`,
+`.claude/rules/game/achievements.md`); em 10, nada muda.

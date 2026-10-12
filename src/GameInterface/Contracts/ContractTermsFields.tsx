@@ -19,6 +19,8 @@ export interface ContractDemandInfo {
   facilities?: number;
   /** A very ambitious player refuses a club whose training ground is below 25%. */
   refusesPoorFacilities?: boolean;
+  /** The manager's Negotiation attribute (`achievements.md`), a multiplier; absent = neutral. */
+  negotiation?: number;
 }
 
 /** The personality lines explaining a demand ("Loyal to the club: −7%"). */
@@ -38,6 +40,8 @@ function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | un
   if (sm !== 0) lines.push({ key: "sm", text: t("personality.demand.smallerClub", { pct: sign(sm) }) });
   const fac = pct(info.facilities);
   if (fac !== 0) lines.push({ key: "fac", text: t("personality.demand.facilities", { pct: sign(fac) }) });
+  const neg = pct(info.negotiation);
+  if (neg !== 0) lines.push({ key: "neg", text: t("achievements.contractLine", { value: sign(neg) }) });
   if (lines.length === 0 && !info.refusesSmallerClub && !info.refusesPoorFacilities) return null;
   return (
     <ul className="m-0 p-0 list-none space-y-1">

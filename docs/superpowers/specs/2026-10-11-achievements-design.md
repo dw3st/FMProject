@@ -227,3 +227,16 @@ Resultados em §11.
 - O lucro em vendas só conhece o que o técnico pagou desde esta etapa.
 - Uma conquista de temporada (fortaleza, invencível) usa os jogos que o passo viu: um clube assumido no meio da temporada
   conta só a parte dele.
+
+## 11. Resultados (2026-10-11)
+
+| Medição | Resultado |
+|---|---|
+| M1 motor (`pair premier_league 400 --disc 20`, 3 sementes, 1200 jogos) | lado com Disciplina 20 × lado sem: faltas ×0,987, amarelos ×0,968, pênaltis cedidos ×0,876, vermelhos 0,058 × 0,043 (ruído: ~60 eventos); gols 1,13 × 1,08 e chutes 2,74 × 2,64 dentro do ruído |
+| Caminho (`ACH_OVERRIDES='{"EFFECT":0.5}'`, 80 jogos) | faltas ×0,69, amarelos ×0,34 — a chance ×0,5 por lance vira ~×0,7 de faltas: um duelo sem falta segue e gera outros, então os −5% da chance viram ~−2 a −3% de faltas |
+| M2 motor (`world premier_league 60`) | 60/60 jogos idênticos (placar, faltas, amarelos, chutes) com os dois técnicos em 10 e sem atributo |
+| M2/M1 quickSim (`quick 400`, 26 ligas) | 10 400/10 400 idênticos em 10; mandante em 20: faltas ×0,947, amarelos ×0,897, pênaltis ×0,953; em 1: ×1,046, ×1,086, ×1,033; gols ×1,000 |
+| M3 (`motivation 40`) | moral média do elenco na temporada: Motivação 10 → 68,45; 20 → 68,70; 1 → 68,22 |
+
+**Desvios do desenho:** nenhum de regra. A tela é própria (`/achievements`, sem aba na barra superior) como previsto no
+§7; o resumo do dia ganhou a linha das conquistas.

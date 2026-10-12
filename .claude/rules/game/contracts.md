@@ -136,3 +136,8 @@ renovar na ficha. Ver `.claude/rules/game/responsibilities.md`.
 Numa contratação do clube do jogador (não na renovação) o pedido ganha a parte `facilities` (até +10% com o CT em 0;
 ≤ 21 anos conta também a base) e o muito ambicioso (≥ 17) recusa com o CT abaixo de 25% (`poorFacilities`, 400 na
 compra, no livre e no pré-contrato). `renewalContract` (o que a IA paga) não muda. Ver `.claude/rules/game/facilities.md`.
+
+## Negociação do técnico (Etapa 40)
+
+`demandBreakdown(..., { negotiation })`: o pedido de salário nas contratações, renovações e pré-contratos do jogador × (1 − 5% t)
+pela Negociação do técnico (`.claude/rules/game/achievements.md`; parte `negotiation` na rota `demand`, linha na tela).
