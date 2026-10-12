@@ -203,3 +203,8 @@ abaixo do pedido); meia e atacante não mudaram (os compradores deles já tinham
 O valor de mercado de um premiado sobe (`awardBoost`, ×1,10–1,15 até a próxima virada da liga dele) em todo cálculo
 (`playerValueModel`: preço pedido, ofertas, rivais, aceitação). A proposta de clube maior por um jogador fora da lista
 tem chance × 2 quando o elenco tem um premiado, e o alvo é ele. Ver `.claude/rules/game/awards.md`.
+
+## Negociação do técnico (Etapa 40)
+
+`respondToOffer({ ..., negotiation })`: nas compras do jogador a taxa que o vendedor precisa é × (1 − 5% t) pela
+Negociação do técnico (`.claude/rules/game/achievements.md`); `DemandContext.negotiation` faz o mesmo com o salário pedido.

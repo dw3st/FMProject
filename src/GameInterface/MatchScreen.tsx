@@ -447,6 +447,8 @@ export function MatchScreen() {
           // manager watches from the stands: his assistant makes every change by the AI rule (`var.md` §4).
           ...(data.managerBanned ? { autoSubs: { A: true as const } } : { manualInjurySubs: { A: true as const } }),
           ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
+          // The manager's Discipline (`.claude/rules/game/achievements.md`): fewer fouls and cards for his side.
+          ...(data.mySquad.managerAttributes ? { managerDiscipline: { A: data.mySquad.managerAttributes.discipline } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
                   ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }
@@ -1009,7 +1011,12 @@ export function MatchScreen() {
     const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
     const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
     // A stand under works (only a home game of the human club) is drawn empty, as a building site.
-    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id, ...(crowd?.works ? { works: crowd.works } : {}) };
+    return {
+      fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id,
+      ...(crowd?.works ? { works: crowd.works } : {}),
+      // The manager's decorations (achievements): only sent for the human club's home games.
+      ...(crowd?.decor ? { decor: crowd.decor } : {}),
+    };
   }, [matchFixture, crestIds, touchline]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.

@@ -226,3 +226,8 @@ bônus; zera na virada como `minutes`.
 
 Convocado pela seleção: +3 de moral (`afterNationalCallUp`, pelo `withEventDelta`), uma vez por convocação. Os jogos
 da seleção não entram na janela de minutos. Ver `.claude/rules/game/national-teams.md`.
+
+## Conquistas (Etapa 40)
+
+A Motivação do técnico (`.claude/rules/game/achievements.md`) multiplica a variação positiva de moral de um jogo (vitória,
+gols, boa nota) por 1 ± 5% (`MoraleDayInput.motivation`, lida do `achievements.json` em `applyMoraleDay`); em 10, nada muda.

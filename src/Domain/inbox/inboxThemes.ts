@@ -38,6 +38,7 @@ const THEME_OF: Record<InboxCategory, InboxTheme> = {
   schedule: "competitions",
   national: "competitions",
   discipline: "club",
+  achievement: "club",
   job: "jobs",
   manager_news: "jobs",
 };

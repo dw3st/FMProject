@@ -26,7 +26,7 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     version: "4.21",
-    date: "2026-10-11",
+    date: "2026-10-12",
     items: [
       {
         pt: "Seleções nacionais: todas as seleções do mundo, com técnico, ranking da FIFA e jogos nas datas FIFA de março, junho, setembro, outubro e novembro.",
@@ -51,6 +51,42 @@ export const changelog: ChangelogEntry[] = [
       {
         pt: "Uma boa campanha num torneio valoriza o jogador, e os prêmios do torneio contam para o melhor do mundo.",
         en: "A good tournament raises a player's value, and the tournament awards count for the world player of the year.",
+      },
+    ],
+  },
+  {
+    version: "4.20",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "Conquistas: 93 desafios da sua carreira, de títulos e viradas a jovens da base e estádio ampliado, em bronze, prata e ouro, mais 15 conquistas secretas que só se revelam quando acontecem.",
+        en: "Achievements: 93 challenges for your career, from titles and comebacks to academy graduates and a bigger stadium, in bronze, silver and gold, plus 15 secret ones revealed only when they happen.",
+      },
+      {
+        pt: "Os pontos das conquistas liberam molduras para o rosto do técnico, selos e um título exibido no Painel e no ranking de técnicos.",
+        en: "Achievement points unlock frames for your manager's face, badges and a title shown on the Dashboard and in the manager ranking.",
+      },
+      {
+        pt: "Enfeites para o seu estádio: faixa, bandeirão e mosaico na torcida da casa nos seus jogos em casa.",
+        en: "Decorations for your stadium: a banner, a giant flag and a mosaic in the home end at your home games.",
+      },
+      {
+        pt: "Seu técnico tem cinco atributos (Motivação, Tática, Base, Negociação e Disciplina) que sobem com conquistas e títulos e mudam um pouco o dia a dia do clube.",
+        en: "Your manager has five attributes (Motivation, Tactics, Youth, Negotiation and Discipline) that grow with achievements and titles and slightly shape the club's day to day.",
+      },
+      {
+        pt: "Loja de conquistas: crie um jogador com nome, posição e nacionalidade para a sua base, ou traga de volta uma lenda aposentada do mundo, com 17 anos.",
+        en: "Achievements shop: create a player with your chosen name, position and nationality for your academy, or bring back a retired world legend at 17.",
+      },
+    ],
+  },
+  {
+    version: "4.19.1",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "As listas de opção (como o filtro do extrato em Finanças) abrem com o fundo escuro do jogo e o texto legível.",
+        en: "Drop-down lists (like the ledger filter in Finances) open with the game's dark background and readable text.",
       },
     ],
   },
@@ -1340,7 +1376,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
   { pt: "Treinar uma seleção junto com o seu clube", en: "Coach a national team alongside your club" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
   { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },

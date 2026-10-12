@@ -25,6 +25,7 @@ import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
 import staffPage from "./pages/staff/index.html";
+import achievementsPage from "./pages/achievements/index.html";
 
 const server = serve({
   routes: {
@@ -53,6 +54,7 @@ const server = serve({
     "/finances": financesPage,
     "/club": clubPage,
     "/staff": staffPage,
+    "/achievements": achievementsPage,
     "/stats": statsPage,
     "/national": nationalPage,
     "/season-end": seasonEndPage,

@@ -37,7 +37,8 @@ export function variantAutoLabel(v: Variant): string {
   const withFam = v.familiarity === undefined ? label : `${label} · fam ${v.familiarity}`;
   const withMor0 = v.morale === undefined ? withFam : `${withFam} · mor ${v.morale}`;
   const withMor1 = v.temperament === undefined ? withMor0 : `${withMor0} · tmp ${v.temperament}`;
-  const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor1 : `${withMor1} · pitch ${v.pitchCondition}%`;
+  const withMor2 = v.managerDiscipline === undefined ? withMor1 : `${withMor1} · disc ${v.managerDiscipline}`;
+  const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor2 : `${withMor2} · pitch ${v.pitchCondition}%`;
   const withRef = v.refereeStrictness === undefined ? withMor : `${withMor} · ref ${v.refereeStrictness > 0 ? "+" : ""}${v.refereeStrictness}`;
   const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;
   const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;

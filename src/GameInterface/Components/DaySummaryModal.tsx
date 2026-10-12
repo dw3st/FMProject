@@ -521,6 +521,12 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
 
         {/* Body — scrolls when content exceeds available space */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-8">
+          {(dayLog as { achievements?: number }).achievements ? (
+            <a href="/achievements" className="flex items-center gap-2 text-sm font-semibold text-primary no-underline hover:underline">
+              <Icon name="medal" size={16} />
+              {t("achievements.daySummary", { count: (dayLog as { achievements?: number }).achievements })}
+            </a>
+          ) : null}
           {primaryMatches.length > 0 && (
             <section>
               <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">

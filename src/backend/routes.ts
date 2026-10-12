@@ -8,6 +8,7 @@ import { transferRoutes } from "@/backend/transfers";
 import { contractRoutes } from "@/backend/contractRoutes";
 import { staffRoutes } from "@/backend/staffRoutes";
 import { responsibilityRoutes } from "@/backend/responsibilityRoutes";
+import { achievementRoutes } from "@/backend/achievementRoutes";
 import { scoutingRoutes } from "@/backend/scoutingRoutes";
 import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
@@ -99,6 +100,7 @@ export const apiRoutes = withJsonErrors({
   ...contractRoutes,
   ...staffRoutes,
   ...responsibilityRoutes,
+  ...achievementRoutes,
   ...scoutingRoutes,
   ...moraleRoutes,
   ...youthRoutes,

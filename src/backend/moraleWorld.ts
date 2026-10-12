@@ -98,6 +98,8 @@ export async function applyMoraleDay(
     ...(args.unavailable ? { unavailable: args.unavailable } : {}),
     ...(args.seasonRolled ? { seasonRolled: true } : {}),
     ...(args.directorContractTalk ? { directorContractTalk: args.directorContractTalk } : {}),
+    // The manager's Motivation (`.claude/rules/game/achievements.md`).
+    motivation: (await service.getAchievements(saveId)).attributes.motivation,
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);

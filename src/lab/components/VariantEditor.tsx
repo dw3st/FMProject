@@ -249,6 +249,23 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="The manager's Discipline (achievements): this side's fouls and cards x(1 - 0.05 t), t = (v - 10)/10; 0 = no attribute">Mgr disc.</span>
+        <input
+          type="range"
+          min={0}
+          max={20}
+          step={1}
+          value={variant.managerDiscipline ?? 0}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            patch({ managerDiscipline: v === 0 ? undefined : v });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.managerDiscipline ?? "-"}</span>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="Referee rigor of the match (variant A sets it): fouls x(1 + 0.08 s), yellows x(1 + 0.15 s); 0 = no referee">Referee</span>
         <input
           type="range"

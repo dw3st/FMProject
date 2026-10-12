@@ -138,3 +138,9 @@ clube em dia bloqueado do país, ninguém com convocação vencida, jogadores co
 - Grupo de torneio todo no mesmo dia; o 4-3-3 sempre; cartões de seleção ignorados.
 - Um jogador transferido no meio da janela volta pelo scan do mundo (raro); a convocação usa o clube da véspera.
 - Gols por jogo de seleção (~1,5) abaixo do futebol real: o quickSim é o de clubes, sem calibração própria.
+
+## Conquistas (Etapa 40)
+
+Jogos de seleção não entram nas trilhas de conquistas (elas leem os jogos oficiais do clube no `StoredDayLog.events`,
+onde os jogos de seleção nunca aparecem); um título `kind: "national"` ainda não conta nas trilhas de títulos
+(`titleCounts` o ignora) — a 41b dá trilhas próprias. Os start kits continuam sem `managerAttributes` (`stripHumanOnly`).

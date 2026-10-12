@@ -104,7 +104,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -146,6 +146,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.outOfPosition               += src.outOfPosition;
   dst.morale                      += src.morale;
   dst.temperament                 += src.temperament;
+  dst.managerDiscipline           += src.managerDiscipline;
   dst.pitchCondition              += src.pitchCondition;
   dst.refereeStrictness           += src.refereeStrictness;
   dst.refereeErrors += src.refereeErrors;
@@ -223,6 +224,7 @@ let sideFamiliarity: { A?: number; B?: number } = {};
 let sideMorale: { A?: number; B?: number } = {};
 /** Temperament override (1..20) of each whole side (set per worker message). Absent = each player's own. */
 let sideTemperament: { A?: number; B?: number } = {};
+let sideMgrDiscipline: { A?: number; B?: number } = {};
 /** Pitch condition of the match (variant A, the home side; set per worker message). Absent = 90. */
 let matchPitch: number | undefined;
 /** Referee rigor of the match (variant A sets it, like the pitch). */
@@ -268,6 +270,8 @@ function runOneMatch(
   teamB.morale = sideMorale.B ?? MORALE.NEUTRAL;
   teamA.temperament = xiTemperament(squadA, simEngine === "quick" ? quickLineupA : fit.fullLineupA, sideTemperament.A);
   teamB.temperament = xiTemperament(squadB, simEngine === "quick" ? quickLineupB : fit.fullLineupB, sideTemperament.B);
+  teamA.managerDiscipline = sideMgrDiscipline.A ?? 10;
+  teamB.managerDiscipline = sideMgrDiscipline.B ?? 10;
   teamA.pitchCondition = matchPitch ?? 90;
   teamB.pitchCondition = matchPitch ?? 90;
   teamA.refereeStrictness = matchReferee ?? 0;
@@ -289,6 +293,8 @@ function runOneMatch(
       awayMorale: sideMorale.B,
       homeTemperament: sideTemperament.A,
       awayTemperament: sideTemperament.B,
+      ...(sideMgrDiscipline.A !== undefined ? { homeManagerDiscipline: sideMgrDiscipline.A } : {}),
+      ...(sideMgrDiscipline.B !== undefined ? { awayManagerDiscipline: sideMgrDiscipline.B } : {}),
       ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
       ...(matchReferee !== undefined ? { refereeStrictness: matchReferee } : {}),
       ...(matchRefQuality !== undefined ? { refereeQuality: matchRefQuality, refereeVar: matchVar } : {}),
@@ -348,6 +354,7 @@ function runOneMatch(
     executionFamiliarity: sideFamiliarity,
     morale: sideMorale,
     temperament: sideTemperament,
+    managerDiscipline: sideMgrDiscipline,
     instructions: sideInstructions,
     ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
     ...(matchReferee !== undefined || matchRefQuality !== undefined
@@ -455,6 +462,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
     sideMorale = { A: variantA.morale, B: variantB.morale };
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
+    sideMgrDiscipline = { A: variantA.managerDiscipline, B: variantB.managerDiscipline };
     matchPitch = variantA.pitchCondition;
     matchReferee = variantA.refereeStrictness;
     matchRefQuality = variantA.refereeQuality;

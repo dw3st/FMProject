@@ -5,6 +5,7 @@
  * `Squad.moraleClub`). AI clubs store nothing: every reader here treats an absent value as the
  * neutral start (65), whose match effect is exactly zero.
  */
+import { attributeBoost } from "@/Domain/achievements/managerAttributes";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -271,6 +272,11 @@ export interface MoraleDayInput {
    * renewal promise: +3), `false` = refused (−10). No talk request, no news.
    */
   directorContractTalk?: (p: RosterPlayer) => boolean;
+  /**
+   * The human manager's Motivation attribute (`.claude/rules/game/achievements.md`): a match's positive
+   * morale change (win, goals, good rating) × (1 + 5% t). Absent / 10 = neutral.
+   */
+  motivation?: number;
   newId: () => string;
 }
 
@@ -353,6 +359,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
   };
 
   const unavailable = input.unavailable ?? new Set<string>();
+  const motivationMult = attributeBoost(input.motivation);
   const week = weekStartOf(date);
   let weekCount = state.week?.start === week ? state.week.count : 0;
 
@@ -366,6 +373,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       const personal = (m.goals[p.id] ?? 0) * MORALE.GOAL
         + ((m.ratings[p.id] ?? 0) >= MORALE.GOOD_RATING ? MORALE.GOOD_RATING_BONUS : 0);
       d += Math.min(MORALE.MATCH_PERSONAL_CAP, personal);
+      if (d > 0) d *= motivationMult;
       const log = logOf(p);
       // A match he could not play (injured, suspended) does not count against his minutes.
       const out = unavailable.has(p.id) && (m.minutes[p.id] ?? 0) === 0;

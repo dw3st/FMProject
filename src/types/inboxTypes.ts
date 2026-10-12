@@ -31,7 +31,8 @@ export type InboxCategory =
   | "registration"
   | "schedule"
   | "discipline"
-  | "national";
+  | "national"
+  | "achievement";
 
 interface InboxMessageBase {
   id:        string;
@@ -454,13 +455,23 @@ export type InboxMessage =
   | RegistrationInboxMessage
   | ScheduleInboxMessage
   | DisciplineInboxMessage
-  | NationalInboxMessage;
+  | NationalInboxMessage
+  | AchievementInboxMessage;
 
 /** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */
 export interface NationalInboxMessage extends InboxMessageBase {
   category: "national";
   kind: "called_up" | "returned";
   players: { id: string; name: string; nation: string; from?: string; until?: string; apps?: number; goals?: number; injured?: boolean }[];
+}
+
+/** Achievements unlocked today (`.claude/rules/game/achievements.md`): one message per day. */
+export interface AchievementInboxMessage extends InboxMessageBase {
+  category: "achievement";
+  kind: "unlocked";
+  keys: import("@/types/achievementTypes").AchievementKey[];
+  /** Points earned by these unlocks. */
+  points: number;
 }
 
 /** The human manager was sent off for complaining and is banned from the touchline (`.claude/rules/game/var.md` §4). */

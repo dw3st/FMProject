@@ -9,6 +9,7 @@ import { attendanceOf, initialFacilities, seasonFraction } from "@/Domain/facili
 import { MATCH_IMPORTANCE } from "@/Domain/facilities/matchImportance";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { GATE } from "@/Domain/finance/gate";
+import { emptyAchievements } from "@/Domain/achievements/progress";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -26,6 +27,7 @@ const fakeService = (squads: Squad[]) => ({
   getSquadIndex: async () => ({ byId: () => ({ leagueSlug: "premier_league" }) }),
   getSquadById: async (_s: string, id: string) => squads.find((s) => s.id === id) ?? null,
   getLeagueStandings: async () => null,
+  getAchievements: async () => emptyAchievements(),
 }) as unknown as SaveService;
 
 const meta = {

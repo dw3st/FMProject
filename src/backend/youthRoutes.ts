@@ -1,3 +1,4 @@
+import { recordPromotion } from "@/Domain/achievements/progress";
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -68,6 +69,8 @@ export const youthRoutes = {
         youth: (squad.youth ?? []).filter((p) => p.id !== playerId),
       };
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      // Achievements (`.claude/rules/game/achievements.md`): an academy player in the first team.
+      await saveService.writeAchievements(saveId, recordPromotion(await saveService.getAchievements(saveId), playerId));
       return Response.json(youthView(next));
     });
   },

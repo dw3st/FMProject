@@ -1,3 +1,4 @@
+import { attributeBoost, youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import { moraleDpMult } from "@/Domain/morale/morale";
 import { personalDpMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
@@ -231,7 +232,8 @@ export function buildTrainingEvent(
           styleFamiliarity: trainFamiliarity(
             squad.styleFamiliarity,
             eligibleIds.size > 0 ? policy.styleFocus : undefined,
-            staffFx.familiarityMult * FAMILIARITY.INTENSITY_GAIN[policy.intensity],
+            staffFx.familiarityMult * FAMILIARITY.INTENSITY_GAIN[policy.intensity]
+              * attributeBoost(squad.managerAttributes?.tactics),
           ),
         }
       : {}),
@@ -248,7 +250,8 @@ export function buildTrainingEvent(
       if (trained) {
         const { updatedPlayer, levelChanges, dpGained } = applyTrainingDevelopment(
           p, policy.intensity, dpWeightsFor(p),
-          devMult * ground.devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
+          devMult * ground.devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p))
+            * youthAttributeMult(squad.managerAttributes, p.age),
           areas,
         );
         next = updatedPlayer;

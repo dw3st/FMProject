@@ -1,3 +1,4 @@
+import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { moraleDemandMult } from "@/Domain/morale/morale";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { overallAvg } from "@/Domain/playerRating";
@@ -25,6 +26,8 @@ export interface DemandContext {
    * Absent = decided by membership of `squad.players`.
    */
   renewal?: boolean;
+  /** The human manager's Negotiation attribute (`.claude/rules/game/achievements.md`); absent = neutral. */
+  negotiation?: number;
 }
 
 /** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
@@ -41,6 +44,8 @@ export interface DemandBreakdown {
   smallerClub: number;
   /** Signing only: the human club's training ground (and academy, up to 21) below 50% (`facilitiesAppeal`). */
   facilities: number;
+  /** The human manager's Negotiation attribute (×0,95..×1,05; 1 for the AI). */
+  negotiation: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
   /** Signing only: ambition ≥ 17 and the training ground below 25%. */
@@ -114,10 +119,12 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   // An unhappy (or furious) player asks more (`.claude/rules/game/morale.md`); no stored morale = 1.
   const base = playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player);
   const parts = personalityParts(player, squad, ctx);
+  const negotiation = attributeReduce(ctx.negotiation);
   return {
-    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities),
+    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * negotiation),
     base: Math.round(base),
     ...parts,
+    negotiation,
   };
 }
 

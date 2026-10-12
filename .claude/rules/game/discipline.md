@@ -129,3 +129,8 @@ principal (`.claude/rules/game/youth-competitions.md`).
 No quickSim, `rollDiscipline(..., refereeStrictness)`: faltas do lado e `PENALTIES_PER_SIDE` × (1 + 0,08 s), amarelo e
 vermelho direto como o motor (÷ `CARD_NORM`); o placar não muda. As estatísticas por árbitro (jogos, faltas, cartões,
 pênaltis) são agregadas do day log (`MatchEvent.referee`). Ver `.claude/rules/game/referees.md`.
+
+## Disciplina do técnico (Etapa 40)
+
+No quickSim, `rollDiscipline(..., managerDiscipline)`: faltas do lado, pênaltis cedidos e cartões × (1 − 5% t); 10 / ausente sorteia
+exatamente o de antes. Ver `.claude/rules/game/achievements.md`.

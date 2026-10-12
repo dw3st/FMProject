@@ -1353,6 +1353,10 @@
         "manager_news": {
           "label": "Manager news",
           "description": "Managers sacked and hired in your league"
+        },
+        "achievements": {
+          "label": "Achievements",
+          "description": "Achievements unlocked"
         }
       }
     },
@@ -1398,7 +1402,8 @@
       "registration": "Registration",
       "schedule": "Schedule",
       "discipline": "Discipline",
-      "national": "National teams"
+      "national": "National teams",
+      "achievement": "Achievements"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -2706,6 +2711,10 @@
     "national": {
       "main": "National",
       "accent": "Teams"
+    },
+    "achievements": {
+      "main": "YOUR",
+      "accent": "ACHIEVEMENTS"
     }
   },
   "jobs": {
@@ -3851,5 +3860,365 @@
       "tally": "{{apps}} games, {{goals}} goals",
       "injured": "injured"
     }
+  },
+  "achievements": {
+    "tabs": {
+      "list": "Achievements",
+      "profile": "Profile",
+      "manager": "Manager",
+      "shop": "Shop"
+    },
+    "loading": "Loading achievements…",
+    "loadFailed": "Could not load the achievements.",
+    "kpi": {
+      "unlocked": "Unlocked",
+      "earned": "Points earned",
+      "balance": "Points to spend"
+    },
+    "categories": {
+      "titles": "Titles",
+      "wins": "Wins",
+      "matches": "Matches",
+      "youth": "Academy",
+      "market": "Market",
+      "finances": "Finances",
+      "career": "Career",
+      "squad": "Squad"
+    },
+    "tiers": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "secret": "Secret"
+    },
+    "tracks": {
+      "league_titles": {
+        "name": "League champion",
+        "desc": "League titles"
+      },
+      "cup_titles": {
+        "name": "Cup king",
+        "desc": "National cups won"
+      },
+      "continental_titles": {
+        "name": "Conqueror",
+        "desc": "Continental titles"
+      },
+      "promotions": {
+        "name": "Promotion",
+        "desc": "Promotions won"
+      },
+      "wins": {
+        "name": "Winner",
+        "desc": "Official wins"
+      },
+      "win_streak": {
+        "name": "On a roll",
+        "desc": "Longest run of wins in a row"
+      },
+      "unbeaten_run": {
+        "name": "Unbeaten",
+        "desc": "Longest run without a defeat"
+      },
+      "thrashings": {
+        "name": "Goal machine",
+        "desc": "Wins by 3 goals or more"
+      },
+      "comebacks": {
+        "name": "Comeback king",
+        "desc": "Wins after being behind"
+      },
+      "ten_men_wins": {
+        "name": "A man down",
+        "desc": "Wins with a player sent off"
+      },
+      "shootout_wins": {
+        "name": "Ice-cold",
+        "desc": "Penalty shootouts won"
+      },
+      "derby_wins": {
+        "name": "Owner of the city",
+        "desc": "Derbies won (same city)"
+      },
+      "youth_promoted": {
+        "name": "Developer",
+        "desc": "Academy players promoted to the first team"
+      },
+      "young_award": {
+        "name": "Revelation",
+        "desc": "League young player awards for your players"
+      },
+      "sales_profit": {
+        "name": "Good business",
+        "desc": "Profit on sales (fee above what you paid)"
+      },
+      "big_signing": {
+        "name": "Big signing",
+        "desc": "Biggest fee paid for one player"
+      },
+      "free_starter": {
+        "name": "Bargain hunter",
+        "desc": "Free signings with 15 starts"
+      },
+      "balance": {
+        "name": "Full coffers",
+        "desc": "Balance gained since you took over the club"
+      },
+      "stadium": {
+        "name": "New home",
+        "desc": "Seats added since you took over"
+      },
+      "facilities": {
+        "name": "Top facilities",
+        "desc": "Facility levels built since you took over"
+      },
+      "seasons": {
+        "name": "Veteran",
+        "desc": "Seasons completed"
+      },
+      "clubs": {
+        "name": "Wanderer",
+        "desc": "Clubs managed"
+      },
+      "ranking": {
+        "name": "Prestige",
+        "desc": "Best world manager ranking"
+      },
+      "manager_awards": {
+        "name": "Recognised",
+        "desc": "Manager awards"
+      },
+      "top_scorer": {
+        "name": "Goal factory",
+        "desc": "League top scorers at your club"
+      },
+      "league_unbeaten": {
+        "name": "Invincible",
+        "desc": "League games in a row without a defeat"
+      }
+    },
+    "titles": {
+      "league_titles": "Born champion",
+      "cup_titles": "Cup king",
+      "continental_titles": "Conqueror of the continent",
+      "promotions": "Elevator",
+      "wins": "Serial winner",
+      "win_streak": "Unstoppable",
+      "unbeaten_run": "The unbeaten",
+      "thrashings": "Master of thrashings",
+      "comebacks": "Comeback king",
+      "ten_men_wins": "Ten-man hero",
+      "shootout_wins": "Ice in the veins",
+      "derby_wins": "Owner of the city",
+      "youth_promoted": "Talent maker",
+      "young_award": "Talent spotter",
+      "sales_profit": "Market wizard",
+      "big_signing": "Big spender",
+      "free_starter": "Bargain hunter",
+      "balance": "Treasurer",
+      "stadium": "Builder",
+      "facilities": "Architect",
+      "seasons": "Veteran",
+      "clubs": "Globetrotter",
+      "ranking": "World number one",
+      "manager_awards": "Manager of the world",
+      "top_scorer": "Goal factory",
+      "league_unbeaten": "The invincible"
+    },
+    "secrets": {
+      "fortress": {
+        "name": "Fortress",
+        "desc": "League champion without losing at home"
+      },
+      "cheapest_champion": {
+        "name": "Miracle",
+        "desc": "League champion with the lowest wage bill"
+      },
+      "keeper_goal": {
+        "name": "Scoring keeper",
+        "desc": "A goalkeeper of yours scores"
+      },
+      "sacked_early": {
+        "name": "Hot seat",
+        "desc": "Sacked within 30 days of taking the job"
+      },
+      "double": {
+        "name": "Double",
+        "desc": "League and national cup in the same season"
+      },
+      "treble": {
+        "name": "Treble",
+        "desc": "League, cup and continental in the same season"
+      },
+      "great_escape": {
+        "name": "Resurrection",
+        "desc": "Win a game after being 3 goals down"
+      },
+      "nine_men": {
+        "name": "Nine against eleven",
+        "desc": "Win with two players sent off"
+      },
+      "seven_up": {
+        "name": "Steamroller",
+        "desc": "Win by 7 goals or more"
+      },
+      "bounce_back": {
+        "name": "Bounce back",
+        "desc": "Promoted the season after a relegation"
+      },
+      "last_gasp": {
+        "name": "Last gasp",
+        "desc": "The winning goal after 90 minutes"
+      },
+      "humbled": {
+        "name": "A day to forget",
+        "desc": "Lose by 5 goals or more"
+      },
+      "perfect_month": {
+        "name": "Perfect month",
+        "desc": "Win every official game of a month (4 or more)"
+      },
+      "one_club": {
+        "name": "One-club manager",
+        "desc": "10 seasons at the same club"
+      },
+      "wall": {
+        "name": "The wall",
+        "desc": "10 official games in a row without conceding"
+      }
+    },
+    "secretsTitle": "Secret achievements",
+    "secretLocked": "???",
+    "secretHint": "Unlock it to find out.",
+    "goldRules": {
+      "invincible": "A whole league season unbeaten",
+      "world_manager": "World manager of the year"
+    },
+    "rank": "No. {{n}}",
+    "rankTop": "top {{n}}",
+    "progress": "{{value}} / {{target}}",
+    "complete": "Complete",
+    "unlockedOn": "Unlocked on {{date}}",
+    "points": "{{n}} pts",
+    "attributes": {
+      "motivation": {
+        "name": "Motivation",
+        "desc": "Morale gained from wins, goals and good games"
+      },
+      "tactics": {
+        "name": "Tactics",
+        "desc": "Style familiarity gained in training"
+      },
+      "youth": {
+        "name": "Youth",
+        "desc": "Development of players aged 21 or under"
+      },
+      "negotiation": {
+        "name": "Negotiation",
+        "desc": "Wages asked and fees accepted when you sign"
+      },
+      "discipline": {
+        "name": "Discipline",
+        "desc": "Fouls and cards of your team"
+      }
+    },
+    "attributesNote": "Every manager starts at 10 (no effect). Achievements raise the attribute of their track; titles and good seasons help, losing runs hurt a little. Effect at the extremes: ±5%.",
+    "attributeEffect": "Effect now: {{value}}",
+    "noEffect": "no effect",
+    "profile": {
+      "preview": "Your profile",
+      "frame": "Frame",
+      "badges": "Badges (up to {{n}})",
+      "title": "Title",
+      "noTitle": "None",
+      "noBadges": "Win a gold in any category to earn its badge.",
+      "noTitles": "Each gold gives a title.",
+      "lockedAt": "{{n}} pts",
+      "save": "Save profile",
+      "saved": "Saved.",
+      "stadium": "Stadium",
+      "stadiumNote": "Drawn in your home end in home games.",
+      "saveStadium": "Save stadium"
+    },
+    "frames": {
+      "none": "No frame",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "legend": "Legend"
+    },
+    "badges": {
+      "titles": "Titles",
+      "wins": "Wins",
+      "matches": "Matches",
+      "youth": "Academy",
+      "market": "Market",
+      "finances": "Finances",
+      "career": "Career",
+      "squad": "Squad",
+      "mystery": "Mystery"
+    },
+    "decor": {
+      "banner": {
+        "name": "Banner",
+        "desc": "A banner along the home end"
+      },
+      "flag": {
+        "name": "Giant flag",
+        "desc": "A giant flag in the home end"
+      },
+      "mosaic": {
+        "name": "Mosaic",
+        "desc": "The home end in the club's colours"
+      }
+    },
+    "shop": {
+      "note": "One of each per career. Spending points never takes away a frame.",
+      "cost": "{{n}} points",
+      "bought": "Bought on {{date}}",
+      "created": {
+        "title": "Created player",
+        "desc": "Choose name, position, nationality and foot: he joins your academy at 16, a top prospect.",
+        "name": "Name",
+        "position": "Position",
+        "nationality": "Nationality",
+        "foot": "Foot",
+        "left": "Left",
+        "right": "Right",
+        "buy": "Create player",
+        "done": "{{name}} joined your academy."
+      },
+      "legend": {
+        "title": "Retired legend",
+        "desc": "Three retired stars of the world: the one you pick comes back at 17, like a reborn star.",
+        "draw": "See the legends",
+        "pick": "Bring him back",
+        "worldClass": "World class",
+        "career": "{{apps}} games · {{goals}} goals",
+        "done": "{{name}} is back, in your academy."
+      }
+    },
+    "errors": {
+      "generic": "Something went wrong.",
+      "notEnoughPoints": "Not enough points.",
+      "alreadyBought": "Already bought in this career.",
+      "noClub": "You need a club.",
+      "youthFull": "Your academy is full.",
+      "invalidPlayer": "Check the name (2 to 30 letters) and the other fields.",
+      "locked": "That item is still locked.",
+      "noLegends": "No retired star to bring back yet.",
+      "notOffered": "That legend is not on offer."
+    },
+    "link": "Achievements",
+    "summary": "{{unlocked}}/{{total}} · {{points}} pts",
+    "inbox": {
+      "subject": "Achievement unlocked",
+      "subjectMany": "{{count}} achievements unlocked",
+      "preview": "+{{points}} points",
+      "open": "See achievements"
+    },
+    "contractLine": "Your negotiation: {{value}}",
+    "daySummary_one": "{{count}} achievement unlocked",
+    "daySummary_other": "{{count}} achievements unlocked"
   }
 }

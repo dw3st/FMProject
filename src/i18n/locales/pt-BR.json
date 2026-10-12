@@ -1353,6 +1353,10 @@
         "manager_news": {
           "label": "Técnicos",
           "description": "Técnicos demitidos e contratados na sua liga"
+        },
+        "achievements": {
+          "label": "Conquistas",
+          "description": "Conquistas desbloqueadas"
         }
       }
     },
@@ -1398,7 +1402,8 @@
       "registration": "Inscrição",
       "schedule": "Calendário",
       "discipline": "Disciplina",
-      "national": "Seleções"
+      "national": "Seleções",
+      "achievement": "Conquistas"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -2706,6 +2711,10 @@
     "national": {
       "main": "Seleções",
       "accent": "Nacionais"
+    },
+    "achievements": {
+      "main": "SUAS",
+      "accent": "CONQUISTAS"
     }
   },
   "jobs": {
@@ -3851,5 +3860,365 @@
       "tally": "{{apps}} jogos, {{goals}} gols",
       "injured": "lesionado"
     }
+  },
+  "achievements": {
+    "tabs": {
+      "list": "Conquistas",
+      "profile": "Perfil",
+      "manager": "Técnico",
+      "shop": "Loja"
+    },
+    "loading": "Carregando conquistas…",
+    "loadFailed": "Não foi possível carregar as conquistas.",
+    "kpi": {
+      "unlocked": "Desbloqueadas",
+      "earned": "Pontos ganhos",
+      "balance": "Pontos para gastar"
+    },
+    "categories": {
+      "titles": "Títulos",
+      "wins": "Vitórias",
+      "matches": "Partidas",
+      "youth": "Base",
+      "market": "Mercado",
+      "finances": "Finanças",
+      "career": "Carreira",
+      "squad": "Elenco"
+    },
+    "tiers": {
+      "bronze": "Bronze",
+      "silver": "Prata",
+      "gold": "Ouro",
+      "secret": "Secreta"
+    },
+    "tracks": {
+      "league_titles": {
+        "name": "Campeão da liga",
+        "desc": "Títulos de liga"
+      },
+      "cup_titles": {
+        "name": "Rei de copas",
+        "desc": "Copas nacionais conquistadas"
+      },
+      "continental_titles": {
+        "name": "Conquistador",
+        "desc": "Títulos continentais"
+      },
+      "promotions": {
+        "name": "Acesso",
+        "desc": "Acessos conquistados"
+      },
+      "wins": {
+        "name": "Vencedor",
+        "desc": "Vitórias em jogos oficiais"
+      },
+      "win_streak": {
+        "name": "Embalado",
+        "desc": "Maior sequência de vitórias seguidas"
+      },
+      "unbeaten_run": {
+        "name": "Invicto",
+        "desc": "Maior sequência sem perder"
+      },
+      "thrashings": {
+        "name": "Goleador",
+        "desc": "Vitórias por 3 gols ou mais"
+      },
+      "comebacks": {
+        "name": "Rei das viradas",
+        "desc": "Vitórias depois de estar atrás no placar"
+      },
+      "ten_men_wins": {
+        "name": "Com um a menos",
+        "desc": "Vitórias com um jogador expulso"
+      },
+      "shootout_wins": {
+        "name": "Frieza nos pênaltis",
+        "desc": "Disputas de pênaltis vencidas"
+      },
+      "derby_wins": {
+        "name": "Dono da cidade",
+        "desc": "Clássicos vencidos (mesma cidade)"
+      },
+      "youth_promoted": {
+        "name": "Formador",
+        "desc": "Jovens da base promovidos ao elenco"
+      },
+      "young_award": {
+        "name": "Revelação",
+        "desc": "Prêmios de revelação da liga para seus jogadores"
+      },
+      "sales_profit": {
+        "name": "Bom negócio",
+        "desc": "Lucro em vendas (taxa acima do que você pagou)"
+      },
+      "big_signing": {
+        "name": "Contratação de peso",
+        "desc": "Maior taxa paga por um jogador"
+      },
+      "free_starter": {
+        "name": "Garimpeiro",
+        "desc": "Contratados livres com 15 jogos como titular"
+      },
+      "balance": {
+        "name": "Cofre cheio",
+        "desc": "Saldo ganho desde que você assumiu o clube"
+      },
+      "stadium": {
+        "name": "Casa nova",
+        "desc": "Lugares a mais desde que você assumiu"
+      },
+      "facilities": {
+        "name": "Estrutura de ponta",
+        "desc": "Níveis de instalações construídos desde que você assumiu"
+      },
+      "seasons": {
+        "name": "Veterano",
+        "desc": "Temporadas completas"
+      },
+      "clubs": {
+        "name": "Andarilho",
+        "desc": "Clubes dirigidos"
+      },
+      "ranking": {
+        "name": "Prestígio",
+        "desc": "Melhor posição no ranking mundial de técnicos"
+      },
+      "manager_awards": {
+        "name": "Reconhecido",
+        "desc": "Prêmios de técnico"
+      },
+      "top_scorer": {
+        "name": "Fábrica de gols",
+        "desc": "Artilheiros da liga no seu clube"
+      },
+      "league_unbeaten": {
+        "name": "Invencível",
+        "desc": "Jogos seguidos da liga sem perder"
+      }
+    },
+    "titles": {
+      "league_titles": "Campeão nato",
+      "cup_titles": "Rei de copas",
+      "continental_titles": "Dono do continente",
+      "promotions": "Rei do acesso",
+      "wins": "Vencedor em série",
+      "win_streak": "Imparável",
+      "unbeaten_run": "O invicto",
+      "thrashings": "Mestre das goleadas",
+      "comebacks": "Rei das viradas",
+      "ten_men_wins": "Herói com dez",
+      "shootout_wins": "Sangue frio",
+      "derby_wins": "Dono da cidade",
+      "youth_promoted": "Fábrica de talentos",
+      "young_award": "Revelador de craques",
+      "sales_profit": "Mago do mercado",
+      "big_signing": "Gastador",
+      "free_starter": "Garimpeiro",
+      "balance": "Tesoureiro",
+      "stadium": "Construtor",
+      "facilities": "Arquiteto",
+      "seasons": "Veterano",
+      "clubs": "Andarilho",
+      "ranking": "Número um do mundo",
+      "manager_awards": "Técnico do mundo",
+      "top_scorer": "Fábrica de gols",
+      "league_unbeaten": "O invencível"
+    },
+    "secrets": {
+      "fortress": {
+        "name": "Fortaleza",
+        "desc": "Campeão da liga sem perder em casa"
+      },
+      "cheapest_champion": {
+        "name": "Milagre",
+        "desc": "Campeão da liga com a menor folha salarial"
+      },
+      "keeper_goal": {
+        "name": "Goleiro artilheiro",
+        "desc": "Um goleiro do seu time marca"
+      },
+      "sacked_early": {
+        "name": "Cadeira quente",
+        "desc": "Demitido até 30 dias depois de assumir"
+      },
+      "double": {
+        "name": "Dobradinha",
+        "desc": "Liga e copa nacional na mesma temporada"
+      },
+      "treble": {
+        "name": "Tríplice coroa",
+        "desc": "Liga, copa e continental na mesma temporada"
+      },
+      "great_escape": {
+        "name": "Ressurreição",
+        "desc": "Vencer um jogo depois de estar 3 gols atrás"
+      },
+      "nine_men": {
+        "name": "Nove contra onze",
+        "desc": "Vencer com dois expulsos"
+      },
+      "seven_up": {
+        "name": "Atropelo",
+        "desc": "Vencer por 7 gols de diferença ou mais"
+      },
+      "bounce_back": {
+        "name": "Volta por cima",
+        "desc": "Subir na temporada seguinte a um rebaixamento"
+      },
+      "last_gasp": {
+        "name": "No apagar das luzes",
+        "desc": "O gol da vitória depois dos 90 minutos"
+      },
+      "humbled": {
+        "name": "Dia para esquecer",
+        "desc": "Perder por 5 gols de diferença ou mais"
+      },
+      "perfect_month": {
+        "name": "Mês perfeito",
+        "desc": "Vencer todos os jogos oficiais de um mês (4 ou mais)"
+      },
+      "one_club": {
+        "name": "Bandeira",
+        "desc": "10 temporadas no mesmo clube"
+      },
+      "wall": {
+        "name": "Muralha",
+        "desc": "10 jogos oficiais seguidos sem sofrer gol"
+      }
+    },
+    "secretsTitle": "Conquistas secretas",
+    "secretLocked": "???",
+    "secretHint": "Desbloqueie para descobrir.",
+    "goldRules": {
+      "invincible": "Uma temporada inteira da liga invicta",
+      "world_manager": "Melhor técnico do mundo"
+    },
+    "rank": "Nº {{n}}",
+    "rankTop": "top {{n}}",
+    "progress": "{{value}} / {{target}}",
+    "complete": "Completa",
+    "unlockedOn": "Desbloqueada em {{date}}",
+    "points": "{{n}} pts",
+    "attributes": {
+      "motivation": {
+        "name": "Motivação",
+        "desc": "Moral ganha com vitórias, gols e boas atuações"
+      },
+      "tactics": {
+        "name": "Tática",
+        "desc": "Familiaridade com o estilo ganha no treino"
+      },
+      "youth": {
+        "name": "Base",
+        "desc": "Evolução dos jogadores de até 21 anos"
+      },
+      "negotiation": {
+        "name": "Negociação",
+        "desc": "Salário pedido e taxa aceita nas suas contratações"
+      },
+      "discipline": {
+        "name": "Disciplina",
+        "desc": "Faltas e cartões do seu time"
+      }
+    },
+    "attributesNote": "Todo técnico começa em 10 (sem efeito). As conquistas sobem o atributo da trilha; títulos e boas temporadas ajudam, sequências de derrotas pesam um pouco. Efeito nos extremos: ±5%.",
+    "attributeEffect": "Efeito agora: {{value}}",
+    "noEffect": "sem efeito",
+    "profile": {
+      "preview": "Seu perfil",
+      "frame": "Moldura",
+      "badges": "Selos (até {{n}})",
+      "title": "Título",
+      "noTitle": "Nenhum",
+      "noBadges": "Ganhe um ouro em qualquer categoria para ter o selo dela.",
+      "noTitles": "Cada ouro dá um título.",
+      "lockedAt": "{{n}} pts",
+      "save": "Salvar perfil",
+      "saved": "Salvo.",
+      "stadium": "Estádio",
+      "stadiumNote": "Aparecem na torcida da casa nos seus jogos em casa.",
+      "saveStadium": "Salvar estádio"
+    },
+    "frames": {
+      "none": "Sem moldura",
+      "bronze": "Bronze",
+      "silver": "Prata",
+      "gold": "Ouro",
+      "legend": "Lenda"
+    },
+    "badges": {
+      "titles": "Títulos",
+      "wins": "Vitórias",
+      "matches": "Partidas",
+      "youth": "Base",
+      "market": "Mercado",
+      "finances": "Finanças",
+      "career": "Carreira",
+      "squad": "Elenco",
+      "mystery": "Mistério"
+    },
+    "decor": {
+      "banner": {
+        "name": "Faixa",
+        "desc": "Uma faixa ao longo da torcida da casa"
+      },
+      "flag": {
+        "name": "Bandeirão",
+        "desc": "Um bandeirão na torcida da casa"
+      },
+      "mosaic": {
+        "name": "Mosaico",
+        "desc": "A torcida da casa nas cores do clube"
+      }
+    },
+    "shop": {
+      "note": "Uma de cada por carreira. Gastar pontos não tira nenhuma moldura.",
+      "cost": "{{n}} pontos",
+      "bought": "Comprado em {{date}}",
+      "created": {
+        "title": "Jogador criado",
+        "desc": "Escolha nome, posição, nacionalidade e pé: ele entra na sua base com 16 anos, uma grande promessa.",
+        "name": "Nome",
+        "position": "Posição",
+        "nationality": "Nacionalidade",
+        "foot": "Pé",
+        "left": "Esquerdo",
+        "right": "Direito",
+        "buy": "Criar jogador",
+        "done": "{{name}} entrou na sua base."
+      },
+      "legend": {
+        "title": "Lenda aposentada",
+        "desc": "Três craques aposentados do mundo: o escolhido volta com 17 anos, como um craque renascido.",
+        "draw": "Ver as lendas",
+        "pick": "Trazer de volta",
+        "worldClass": "Classe mundial",
+        "career": "{{apps}} jogos · {{goals}} gols",
+        "done": "{{name}} voltou, na sua base."
+      }
+    },
+    "errors": {
+      "generic": "Algo deu errado.",
+      "notEnoughPoints": "Pontos insuficientes.",
+      "alreadyBought": "Já comprado nesta carreira.",
+      "noClub": "Você precisa de um clube.",
+      "youthFull": "Sua base está cheia.",
+      "invalidPlayer": "Confira o nome (2 a 30 letras) e os outros campos.",
+      "locked": "Esse item ainda está bloqueado.",
+      "noLegends": "Ainda não há craque aposentado para trazer.",
+      "notOffered": "Essa lenda não está na lista."
+    },
+    "link": "Conquistas",
+    "summary": "{{unlocked}}/{{total}} · {{points}} pts",
+    "inbox": {
+      "subject": "Conquista desbloqueada",
+      "subjectMany": "{{count}} conquistas desbloqueadas",
+      "preview": "+{{points}} pontos",
+      "open": "Ver conquistas"
+    },
+    "contractLine": "Sua negociação: {{value}}",
+    "daySummary_one": "{{count}} conquista desbloqueada",
+    "daySummary_other": "{{count}} conquistas desbloqueadas"
   }
 }
