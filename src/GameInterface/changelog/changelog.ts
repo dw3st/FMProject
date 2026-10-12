@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.22.1",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "Os jogos das seleções têm mais gols, perto do futebol real, sem mudar quem costuma vencer.",
+        en: "National team matches have more goals, close to real football, without changing who usually wins.",
+      },
+      {
+        pt: "O avanço dos dias ficou mais rápido.",
+        en: "Advancing days is faster.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Partida pausada não volta mais a correr sozinha ao fechar o painel de substituições.",
+        en: "A paused match no longer resumes by itself when you close the substitutions panel.",
+      },
+      {
+        pt: "Copas nacionais não marcam mais fases em data FIFA nem em dia de jogo da liga.",
+        en: "National cups no longer schedule rounds on FIFA dates or on league match days.",
+      },
+      {
+        pt: "No Painel, o cartão do clube mostra o seu clube mesmo quando o próximo jogo é da seleção.",
+        en: "On the Dashboard, the club card shows your club even when the next match is the national team's.",
+      },
+    ],
+  },
+  {
     version: "4.22",
     date: "2026-10-12",
     items: [
