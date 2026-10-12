@@ -8,6 +8,7 @@ import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { LeagueDataEntry } from "@/backend/advanceDay";
 import { topLeagueOf } from "@/backend/continentalWorld";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { computeStandings } from "@/Domain/season/computeStandings";
@@ -114,6 +115,9 @@ export async function createCountryYouthComps(args: {
     teams[id] = { name: e?.name ?? id, colors: e?.colors ?? ["#666666", "#ffffff"] };
   }
   const busyByClub = await busyByClubOf(service, saveId, country, league, clubs);
+  // Youth games stop in the FIFA windows and the country's summer tournament too (`national-teams.md`).
+  const blocked = countryBlockedDays(country, window.start, window.end);
+  for (const s of busyByClub.values()) for (const d of blocked) s.add(d);
   const out: LeagueSeasonMeta[] = [];
   for (const age of args.ages ?? AGES) {
     const slug = youthCompSlugOf(country, age);

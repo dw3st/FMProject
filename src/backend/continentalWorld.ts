@@ -4,6 +4,7 @@
  * leagues/{ucl|uel|lib|sud}/ like a league (meta, rounds, date-index; no standings) and is NOT
  * part of meta.activeLeagues. Mirrors src/backend/cupWorld.ts.
  */
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { fileURLToPath } from "node:url";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
@@ -364,6 +365,8 @@ export async function createContinentalSeason(args: {
     if (cached) return cached;
     const t = byCountry.get(country)!;
     const dates = await leagueBusyDates(service, saveId, [t.league, cupSlugOf(country)]);
+    // FIFA windows and the country's summer tournament (`.claude/rules/game/national-teams.md`): never a date.
+    for (const d of countryBlockedDays(country, `${year}-01-01`, `${year + 1}-12-31`)) dates.add(d);
     countryDates.set(country, dates);
     return dates;
   };

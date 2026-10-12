@@ -3,6 +3,7 @@
  * A cup lives in leagues/cup_<country>/ like a league (meta, rounds, date-index; no standings)
  * and is NOT part of meta.activeLeagues.
  */
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { LeagueCalendarResult, LeagueSeasonMeta } from "@/types/calendarTypes";
@@ -114,7 +115,11 @@ export async function createCountryCup(args: {
     year: args.year,
     clubs,
     window: args.window,
-    busyDates: await leagueBusyDates(args.service, args.saveId, [...leagues, ...continentalSlugs]),
+    // The cup also stops in the FIFA windows and the country's summer tournament (`national-teams.md`).
+    busyDates: new Set([
+      ...(await leagueBusyDates(args.service, args.saveId, [...leagues, ...continentalSlugs])),
+      ...countryBlockedDays(args.country, args.window.start, args.window.end),
+    ]),
     seedKey: `${args.saveId}:${args.year}:${args.country}`,
   });
   if (!cup) return null;

@@ -3,6 +3,7 @@ import type { LeagueTeam, PlayerSeasonLog, Squad } from "@/types/playerTypes";
 import { emptyDevelopmentProgress, emptySeasonLog } from "@/types/playerTypes";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 
 export interface SeasonTransitionInput {
@@ -130,6 +131,8 @@ export function buildNextSeasonCalendar(args: {
   teamIds: string[];
   year: number;
   leagueConfig?: LeagueScheduleConfig;
+  /** League country (catalog name): the league stops in the FIFA windows and its confederation's tournament. */
+  country?: string | null;
 }): LeagueCalendarResult {
   const { leagueSlug, teamIds, year, leagueConfig } = args;
   const config: LeagueScheduleConfig = leagueConfig ?? {
@@ -140,7 +143,8 @@ export function buildNextSeasonCalendar(args: {
     matchDays: [6, 0],
     baseWeekOffset: 0,
   };
-  return generateLeagueCalendar(config, teamIds, year);
+  const blocked = countryBlockedDays(args.country ?? null, `${year}-01-01`, `${year + 1}-12-31`);
+  return generateLeagueCalendar(config, teamIds, year, { blocked });
 }
 
 /**

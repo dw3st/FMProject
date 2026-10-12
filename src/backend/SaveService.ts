@@ -6,6 +6,7 @@ import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
@@ -800,6 +801,7 @@ export class SaveService {
         slug: string;
         name: string;
         season: string;
+        country?: string;
         standings: Array<{ squadId: string; name?: string; colors?: [string, string]; slug?: string }>;
       }>;
 
@@ -811,7 +813,10 @@ export class SaveService {
         const year = parseInt(seasonParts[0]!, 10);
         const teamIds = leagueEntry.standings.map((s) => s.squadId);
 
-        const { meta, rounds, dateIndex } = generateLeagueCalendar(config, teamIds, year);
+        // The league stops in the FIFA windows and its confederation's summer tournament
+        // (`.claude/rules/game/national-teams.md`).
+        const blocked = countryBlockedDays(leagueEntry.country, `${year}-01-01`, `${year + 1}-12-31`);
+        const { meta, rounds, dateIndex } = generateLeagueCalendar(config, teamIds, year, { blocked });
 
         await this.dal.writeLeagueMeta(id, meta);
         for (const round of rounds) {

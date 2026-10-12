@@ -2110,6 +2110,7 @@ export async function advanceOneDay(
           teamIds: newTeams.map((t) => t.squadId),
           year: closedYear.get(slug)! + 1,
           leagueConfig: LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === slug),
+          country: (await getLeagueData()).find((l) => l.slug === slug)?.country ?? null,
         });
         rolledLeagueFixtures.set(slug, cal.rounds.flatMap((r) => r.fixtures));
         for (const round of cal.rounds) await saveService.writeRound(saveId, slug, round.round, round);

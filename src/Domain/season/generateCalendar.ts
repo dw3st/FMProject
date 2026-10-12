@@ -118,12 +118,12 @@ export function placeRoundsAroundBlocks(
         }
       }
       if (!pick) {
-        let d = prev ? shiftIso(prev, MIN_ROUND_GAP) : start;
+        let d: string = prev ? shiftIso(prev, MIN_ROUND_GAP) : start;
         while (d <= end && !isFree(d)) d = shiftIso(d, 1);
         if (d > end) return null;
         pick = d;
       }
-      out.push(pick);
+      out.push(pick as string);
       prev = pick;
     }
     return out;
