@@ -119,8 +119,9 @@ Elo, só livres). Ranking de técnicos: a nação aparece como "clube".
 Ver a spec §14 e o relatório da etapa. M1 (`bun scripts/national-calendar-measure.ts`): todas as ligas cabem, nenhuma
 rodada em dia bloqueado; liga de 20 clubes que cruza o ano: ~3–5 rodadas fora dos dias de jogo por temporada. M2
 (`bun scripts/national-sim.ts 2030-07-20`): ciclo completo (Euro e Copa América 2028, eliminatórias e Copa 2030),
-1,48 gol por jogo, topo do Elo Inglaterra, Colômbia, Espanha, Itália, França, Argentina; 16 técnicos de seleção
-demitidos em 4 anos.
+1,48–1,51 gol por jogo; topo do Elo Espanha, Inglaterra, Argentina, França, Alemanha (fundo: Ilhas Salomão, Somália);
+16–29 técnicos de seleção demitidos em 4 anos (duas rodadas); ~1,1–1,3 s por dia nacional isolado. M3 (bench, PL):
+dia de convocação +~1 s, dia de jogo de seleção +~0,2–0,4 s sobre um dia comum sem jogo de clube.
 
 ## Testes e smoke
 
