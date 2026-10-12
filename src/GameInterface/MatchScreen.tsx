@@ -37,6 +37,7 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
+import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
@@ -217,6 +218,10 @@ export function MatchScreen() {
   /** Possession heat map, filled on every emitted state (drawing only). */
   const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
+  /** Whether closing the substitution panel resumes play: only when the panel paused a running match. */
+  const panelPauseRef = useRef<PanelPause>(NO_PANEL_PAUSE);
+  const showSubPanelRef = useRef(false);
+  useEffect(() => { showSubPanelRef.current = showSubPanel; }, [showSubPanel]);
   const [goalFlash, setGoalFlash] = useState<{
     team: TeamId;
     score: { A: number; B: number };
@@ -616,6 +621,8 @@ export function MatchScreen() {
       // substitutions, with the injured player and the suggested bench player marked.
       gameBus.on("injuryNeedsSub", (e) => {
         if (e.team !== "A") return;
+        panelPauseRef.current = openPanelPause(panelPauseRef.current, showSubPanelRef.current, pausedRef.current);
+        showSubPanelRef.current = true;
         setPaused(true);
         setShowSubPanel(true);
       }),
@@ -711,6 +718,8 @@ export function MatchScreen() {
     if (out.card === "red") {
       // Sent to the stands: the assistant makes the changes (AI rule), injuries included.
       setManagerOut("sentOff");
+      panelPauseRef.current = NO_PANEL_PAUSE;
+      showSubPanelRef.current = false;
       setShowSubPanel(false);
       patchVarState({ autoSubs: { A: true } });
       gameBus.emit("testCommand", { type: "setManualInjurySubs", team: "A", on: false });
@@ -931,13 +940,19 @@ export function MatchScreen() {
   }
 
   function handleOpenSubPanel() {
+    panelPauseRef.current = openPanelPause(panelPauseRef.current, showSubPanelRef.current, pausedRef.current);
+    showSubPanelRef.current = true;
     setPaused(true);
     setShowSubPanel(true);
   }
 
+  // A match the user paused by hand (e.g. at a goal) stays paused when the panel closes (tester report).
   function handleCloseSubPanel() {
+    const resume = panelPauseRef.current;
+    panelPauseRef.current = NO_PANEL_PAUSE;
+    showSubPanelRef.current = false;
     setShowSubPanel(false);
-    setPaused(false);
+    setPaused((p) => pausedAfterClose(resume, p));
   }
 
   function handleQueueSub(sub: PendingSub) {
@@ -1206,7 +1221,10 @@ export function MatchScreen() {
 
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <button
-              onClick={() => setPaused((p) => !p)}
+              onClick={() => {
+                panelPauseRef.current = manualToggle();
+                setPaused((p) => !p);
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
             >
               {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
