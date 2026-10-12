@@ -151,7 +151,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                   <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame] } : {})} />
                   <div className="min-w-0">
                     <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{m.name}</p>
-                    {m.profile && (m.profile.title || m.profile.badges.length > 0) && (
+                    {m.isPlayer && m.profile && (
                       <a href="/achievements" className="flex items-center gap-1.5 text-sm font-semibold text-primary no-underline hover:underline mt-1">
                         {m.profile.badges.map((b) => (
                           <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="inline-flex"><Icon name={BADGE_ICON[b]} size={16} /></span>

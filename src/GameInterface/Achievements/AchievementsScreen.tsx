@@ -19,6 +19,7 @@ import { formatEuros } from "@/Domain/money";
 import { nationalityFlagCode, NATIONALITY_NAMES } from "@/Domain/world/nationalityFlag";
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import { formatEffect } from "@/GameInterface/Staff/staffApi";
+import { positionLabel } from "@/GameInterface/positionHelpers";
 import {
   BADGE_ICON, FRAME_RING, MONEY_TRACKS, TIER_TEXT, achievementsCall, type AchievementsData,
 } from "@/GameInterface/Achievements/achievementsApi";
@@ -422,7 +423,7 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
                           {l.wasWorldClass && <span className="text-sm text-chart-4">{t("achievements.shop.legend.worldClass")}</span>}
                         </span>
                         <span className="text-sm text-muted-foreground tabular-nums">
-                          {t(`roles.detailedAbbr.${l.positions[0]}`, { defaultValue: l.positions[0] ?? "" })} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}
+                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}
                         </span>
                       </div>
                       <Button
