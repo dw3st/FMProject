@@ -95,13 +95,8 @@ export const ATTRIBUTE_LABELS: Record<AttributeId, AttributeLabel> = {
   },
 };
 
-/** Attribute ids hidden from UI displays (still in the type for data compatibility). */
-const HIDDEN_ATTRIBUTES: ReadonlySet<AttributeId> = new Set(["heading"]);
-
-/** All attribute entries in a stable order for listing in the UI. */
-export const ATTRIBUTE_LIST: AttributeLabel[] = Object.values(ATTRIBUTE_LABELS).filter(
-  (a) => !HIDDEN_ATTRIBUTES.has(a.id),
-);
+/** All attribute entries in a stable order for listing in the UI (heading included since #154: it drives aerial play). */
+export const ATTRIBUTE_LIST: AttributeLabel[] = Object.values(ATTRIBUTE_LABELS);
 
 
 /** Attributes live on 0..10 with one decimal (shown x10 as 0..100). */

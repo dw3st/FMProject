@@ -45,7 +45,7 @@ export type AttributeGroupId = "physical" | "attack" | "defense" | "goalkeeper";
 export const ATTRIBUTE_GROUPS: { id: AttributeGroupId; attributes: AttributeId[] }[] = [
   { id: "physical", attributes: ["speed", "acceleration", "strength", "stamina"] },
   { id: "attack", attributes: ["finishing", "dribbling", "passing", "vision"] },
-  { id: "defense", attributes: ["tackling", "pressing"] },
+  { id: "defense", attributes: ["tackling", "pressing", "heading"] },
   { id: "goalkeeper", attributes: ["reflex", "jump"] },
 ];
 

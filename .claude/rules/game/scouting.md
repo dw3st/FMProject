@@ -258,9 +258,9 @@ de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.
   `localStorage` `scout_filters_v1`); só "Pesquisar" (ou Enter em qualquer campo, `<form onSubmit>`) busca. A primeira
   carga busca os últimos filtros aplicados. "Filtros alterados" aparece quando a tela difere da última busca.
 - **Atributos por grupo** (`ATTRIBUTE_GROUPS`, `scoutFilterState.ts`): Físico (velocidade, aceleração, força, fôlego),
-  Técnica e ataque (finalização, drible, passe, visão), Defesa (desarme, marcação), Goleiro (reflexo, salto); cada grupo
+  Técnica e ataque (finalização, drible, passe, visão), Defesa (desarme, marcação, cabeceio), Goleiro (reflexo, salto); cada grupo
   é um bloco recolhível. Mínimo e máximo digitados (1–100, `parseAttrBound`: vazio = sem limite, fora da faixa vai para
-  1/100), a faixa ao lado ("48–61" ou "qualquer"). Cabeceio continua fora da tela (`HIDDEN_ATTRIBUTES`).
+  1/100), a faixa ao lado ("48–61" ou "qualquer"). Cabeceio fica no grupo Defesa (#154).
 - **Filtros salvos** (`savedFilters.ts`): com nome, sem limite, por jogador no navegador (`localStorage`
   `scout_saved_filters_v1`); mesmo nome (sem caixa) substitui; clicar carrega e pesquisa.
 - **Linha:** bandeira da nacionalidade (`Flag`, a nacionalidade do próprio jogador) e escudo do clube (`ClubLogo` 32px).

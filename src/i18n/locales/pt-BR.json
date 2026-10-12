@@ -2404,7 +2404,14 @@
       "affordableOnly": "Cabe no orçamento",
       "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
       "search": "Pesquisar",
-      "changed": "Filtros alterados"
+      "changed": "Filtros alterados",
+      "positions": {
+        "all": "Todas as posições",
+        "GK": "Goleiro",
+        "Defender": "Defensor",
+        "Midfielder": "Meio-campista",
+        "Forward": "Atacante"
+      }
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -2454,8 +2461,26 @@
       "sign": "Contratar",
       "signFree": "Contratar como jogador livre",
       "interest": "Interesse",
-      "noClub": "Sem clube"
-    }
+      "noClub": "Sem clube",
+      "columns": {
+        "pos": "Pos",
+        "name": "Nome",
+        "age": "Idade",
+        "club": "Clube",
+        "avg": "OVR",
+        "phase": "Forma",
+        "salary": "Salário",
+        "valueMillions": "Valor"
+      }
+    },
+    "form": {
+      "1": "Ruim",
+      "2": "Fraca",
+      "3": "Normal",
+      "4": "Boa",
+      "5": "Ótima"
+    },
+    "formHint": "Forma: nota média dos últimos 5 jogos"
   },
   "fastForward": {
     "button": "Avançar até o próximo jogo",

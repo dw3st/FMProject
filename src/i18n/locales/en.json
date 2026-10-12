@@ -2404,7 +2404,14 @@
       "affordableOnly": "Fits the budget",
       "affordableHint": "Estimated fee within your balance and asking wage within your wage cap",
       "search": "Search",
-      "changed": "Filters changed"
+      "changed": "Filters changed",
+      "positions": {
+        "all": "All positions",
+        "GK": "Goalkeeper",
+        "Defender": "Defender",
+        "Midfielder": "Midfielder",
+        "Forward": "Forward"
+      }
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -2454,8 +2461,26 @@
       "sign": "Sign",
       "signFree": "Sign as a free agent",
       "interest": "Interest",
-      "noClub": "No club"
-    }
+      "noClub": "No club",
+      "columns": {
+        "pos": "Pos",
+        "name": "Name",
+        "age": "Age",
+        "club": "Club",
+        "avg": "OVR",
+        "phase": "Form",
+        "salary": "Salary",
+        "valueMillions": "Value"
+      }
+    },
+    "form": {
+      "1": "Bad",
+      "2": "Poor",
+      "3": "OK",
+      "4": "Good",
+      "5": "Top"
+    },
+    "formHint": "Form: average rating of the last 5 matches"
   },
   "fastForward": {
     "button": "To next match",

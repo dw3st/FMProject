@@ -15,19 +15,21 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { InterestBadge } from "@/GameInterface/Scout/InterestBadge";
 
-const columns: { key: string; label: string; width: string; sortable?: false }[] = [
-  { key: "pos", label: "Pos", width: "4rem" },
-  { key: "name", label: "Name", width: "minmax(11rem,1fr)" },
-  { key: "age", label: "Age", width: "4.5rem" },
-  { key: "club", label: "Club", width: "11rem" },
-  { key: "interest", label: "Interest", width: "8.5rem", sortable: false },
-  { key: "avg", label: "OVR", width: "5rem" },
-  { key: "knowledge", label: "Knowledge", width: "8.5rem" },
-  { key: "phase", label: "Phase", width: "5rem" },
-  { key: "training", label: "Train", width: "5rem" },
-  { key: "moral", label: "Moral", width: "5rem" },
-  { key: "salary", label: "Salary", width: "7rem" },
-  { key: "valueMillions", label: "Value", width: "6rem" },
+/**
+ * Columns (labels: `scout.table.columns.<key>`). #154: the old Train/Moral badges were dropped: the training
+ * counter saturates and AI clubs have no morale, so they showed the same badge for everyone.
+ */
+const columns: { key: string; width: string; sortable?: false }[] = [
+  { key: "pos", width: "4rem" },
+  { key: "name", width: "minmax(11rem,1fr)" },
+  { key: "age", width: "4.5rem" },
+  { key: "club", width: "11rem" },
+  { key: "interest", width: "8.5rem", sortable: false },
+  { key: "avg", width: "5rem" },
+  { key: "knowledge", width: "8.5rem" },
+  { key: "phase", width: "5.5rem" },
+  { key: "salary", width: "7rem" },
+  { key: "valueMillions", width: "6rem" },
 ];
 // One grid template shared by the header and every row keeps labels over their values.
 const GRID_COLUMNS = [...columns.map((c) => c.width), "5rem"].join(" ");
@@ -109,7 +111,7 @@ export function ScoutTable({
             onClick={() => onSort(col.key)}
             className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 uppercase font-display font-bold tracking-[0.08em] text-[13px] ${sortKey === col.key ? "text-primary" : "text-muted-foreground"}`}
           >
-            {col.key === "knowledge" ? t("scouting.knowledge") : col.label}
+            {col.key === "knowledge" ? t("scouting.knowledge") : t(`scout.table.columns.${col.key}`)}
             {sortKey === col.key &&
               (sortDir === "asc" ? (
                 <Icon name="chevron-up" className="w-3 h-3 text-primary" />
@@ -213,14 +215,8 @@ export function ScoutTable({
               <div className="px-3 py-2.5">
                 {player.knowledge !== undefined ? <KnowledgeBar value={player.knowledge} /> : <span className="text-sm text-muted-foreground">—</span>}
               </div>
-              <div className="px-3 py-2.5">
-                <StatusBadge level={player.phase} />
-              </div>
-              <div className="px-3 py-2.5">
-                <StatusBadge level={player.training} />
-              </div>
-              <div className="px-3 py-2.5">
-                <StatusBadge level={player.moral} />
+              <div className="px-3 py-2.5" title={t("scout.formHint")}>
+                <StatusBadge level={player.phase} label={t(`scout.form.${player.phase}`)} />
               </div>
               <div className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground font-medium">
                 {player.salary}
@@ -279,9 +275,6 @@ export function ScoutTable({
   );
 }
 
-// Note: These strings are not translated here because this is a helper outside the React component.
-// For production, consider moving this to a helper function that accepts `t` as parameter.
-const statusLabels: Record<StatusLevel, string> = { 1: "Bad", 2: "Poor", 3: "OK", 4: "Good", 5: "Top" };
 const statusColors: Record<StatusLevel, string> = {
   1: "bg-destructive/20 text-destructive border-destructive/40",
   2: "bg-chart-4/20 text-chart-4 border-chart-4/40",
@@ -290,10 +283,10 @@ const statusColors: Record<StatusLevel, string> = {
   5: "bg-primary/20 text-primary border-primary/40",
 };
 
-function StatusBadge({ level }: { level: StatusLevel }) {
+function StatusBadge({ level, label }: { level: StatusLevel; label: string }) {
   return (
     <span className={`inline-flex items-center justify-center w-full px-2 py-0.5 rounded text-sm border ${statusColors[level]}`}>
-      {statusLabels[level]}
+      {label}
     </span>
   );
 }
