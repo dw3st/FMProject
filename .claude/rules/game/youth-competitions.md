@@ -53,9 +53,16 @@ Visual: `.claude/rules/ui-standard.md`. Base do clube (safra, promoção): `yout
   (fim de semana e dias antes da data comum incluídos). Sem a última busca, uma semana de duas rodadas com liga na
   segunda, Libertadores na terça e copa na quarta deixava os clubes da Libertadores no dia da liga (sub-19 argentino,
   2027-10-04, 12 clubes).
-- **Adiamento no dia** (`playYouthDay`): jogo de um clube que joga pelo time principal hoje vai para o próximo dia livre
-  dos dois (até 14 dias, antes do fim; `postponedFrom`, `date-index` regravado); sem dia, **cancelado** (`played: true`,
-  `result: null`, `cancelled: true`, fora da tabela).
+- **Dias bloqueados (seleções, 4.21):** `scheduleYouthSeason({ blocked })` recebe os dias FIFA e o torneio de verão do
+  país (`countryBlockedDays`). Semana sem dia útil livre não recebe rodada; uma semana com menos dias livres que rodadas
+  manda a sobra para a semana mais próxima com vaga (`spreadCapped`); o dia comum de uma rodada nunca é bloqueado (o dia
+  bloqueado do par fixo vira o dia útil livre mais próximo da semana). Antes, a semana inteira da janela de março
+  (22–28/03/2027) ficava com as rodadas no dia comum, e o smoke da 4.21 achou 30 jogos do sub-19 argentino em 29/03.
+  Sem dias bloqueados o calendário é idêntico ao de antes.
+- **Adiamento no dia** (`playYouthDay`): jogo de um clube que joga pelo time principal hoje, ou jogo num dia bloqueado do
+  país (calendário antigo, ex. de um start kit), vai para o próximo dia livre dos dois, nunca bloqueado (até 14 dias,
+  antes do fim; `postponedFrom`, `date-index` regravado); sem dia, **cancelado** (`played: true`, `result: null`,
+  `cancelled: true`, fora da tabela).
 
 ## Escalação (`pickYouthLineup`, 4-3-3, GK 1 · DEF 4 · MID 3 · FWD 3)
 

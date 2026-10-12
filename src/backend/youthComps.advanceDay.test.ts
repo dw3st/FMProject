@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { playYouthDay, youthCompFixtures } from "@/backend/youthCompWorld";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { youthStandingsBase } from "@/Domain/youthComps/generateYouthComp";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
@@ -111,6 +112,30 @@ describe("youth competitions in advanceOneDay", () => {
     const gone = (await fixturesOf("u21_england")).find((f) => f.id === target.id)!;
     expect(gone).toMatchObject({ played: true, result: null, cancelled: true });
     await saveService.writeLeagueMeta(saveId, meta);
+  }, 120_000);
+
+  test("a youth game left on a FIFA day (an old calendar) is moved off it, never onto another one", async () => {
+    const slug = "u19_england";
+    const meta = (await saveService.getLeagueMeta(saveId, slug))!;
+    const blocked = countryBlockedDays("England", meta.start, meta.end);
+    const day = [...blocked].sort().find((d) => d > meta.start)!;
+    const fx = (await fixturesOf(slug)).filter((f) => !f.played && f.date > day).sort((a, b) => (a.date < b.date ? -1 : 1))[0]!;
+    const round = (await saveService.getRound(saveId, slug, fx.round))!;
+    await saveService.writeRound(saveId, slug, fx.round, {
+      ...round, fixtures: round.fixtures.map((f) => (f.id === fx.id ? { ...f, date: day } : f)),
+    });
+    const idx = (await saveService.getDateIndex(saveId, slug))!;
+    await saveService.writeDateIndex(saveId, slug, { ...idx, [day]: [...(idx[day] ?? []), fx.round] });
+    const index = await saveService.getSquadIndex(saveId);
+    const res = await playYouthDay({
+      service: saveService, saveId, date: day, index, humanClubId: HUMAN, tactics: null,
+      squadOf: (id: string) => saveService.getSquadById(saveId, id), teamsPlayingToday: new Set(),
+    });
+    expect(res.logs.filter((l) => l.fixtureId === fx.id && l.score !== null)).toEqual([]);
+    const moved = (await fixturesOf(slug)).find((f) => f.id === fx.id)!;
+    expect(moved.played).toBe(false);
+    expect(moved.postponedFrom).toBe(day);
+    expect(blocked.has(moved.date)).toBe(false);
   }, 120_000);
 
   test("a call-up plays the club's next youth game and is cleared after", async () => {

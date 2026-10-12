@@ -14,6 +14,41 @@ function circleRotate(arr: string[]): string[] {
   return [arr[0]!, tail[tail.length - 1]!, ...tail.slice(0, -1)];
 }
 
+const BYE = "__bye__";
+
+/**
+ * First-leg pairings `[home, away]` of a double round robin by the circle method (the second leg
+ * mirrors them with the venues swapped). Venues follow the canonical pattern: the fixed club
+ * alternates home/away round by round, the other pairs by board position; then the round order
+ * starts two rounds into the cycle, so no club ever plays more than two games in a row at home or
+ * away — the turn of the legs included — and every club is home in half its first-leg games (±1).
+ * Odd number of clubs: the rest slot is the fixed position (one club rests each round). Before
+ * 4.21.1 the fixed club played every first-leg game at home and every club ran long home/away streaks.
+ */
+export function firstLegPairings(teamIds: string[]): [string, string][][] {
+  const teams = [...teamIds];
+  if (teams.length % 2 !== 0) teams.unshift(BYE);
+  const n = teams.length;
+  const legs: [string, string][][] = [];
+  let current = teams;
+  for (let r = 0; r < n - 1; r++) {
+    const round: [string, string][] = [];
+    for (let i = 0; i < n / 2; i++) {
+      const a = current[i]!;
+      const b = current[n - 1 - i]!;
+      if (a === BYE || b === BYE) continue;
+      const aHome = i === 0 ? r % 2 === 0 : i % 2 === 1;
+      round.push(aHome ? [a, b] : [b, a]);
+    }
+    legs.push(round);
+    current = circleRotate(current);
+  }
+  // Starting two rounds in keeps the leg's only break of each club away from its first and last
+  // round, where the mirrored second leg would extend it to three (not possible with 4 clubs).
+  const shift = n >= 6 ? 2 : 0;
+  return [...legs.slice(shift), ...legs.slice(0, shift)];
+}
+
 /**
  * Snap a date to the nearest allowed day-of-week from matchDays.
  * Searches within ±3 days of the target.
@@ -150,27 +185,12 @@ export function generateLeagueCalendar(
   const seasonStart = leagueSeasonStart(config, year);
   const seasonEnd   = leagueSeasonEnd(config, year);
 
-  const teams = [...teamIds];
-  if (teams.length % 2 !== 0) teams.push("__bye__");
-
-  const n = teams.length;
+  const n = teamIds.length + (teamIds.length % 2);
   const roundsPerLeg  = n - 1;
-  const matchesPerRound = n / 2;
   const totalRounds   = roundsPerLeg * 2;
 
-  // Build first-leg pairings using circle method
-  const firstLegPairings: [string, string][][] = [];
-  let current = [...teams];
-  for (let r = 0; r < roundsPerLeg; r++) {
-    const round: [string, string][] = [];
-    for (let i = 0; i < matchesPerRound; i++) {
-      const a = current[i]!;
-      const b = current[n - 1 - i]!;
-      if (a !== "__bye__" && b !== "__bye__") round.push([a, b]);
-    }
-    firstLegPairings.push(round);
-    current = circleRotate(current);
-  }
+  // First-leg pairings (circle method, alternating venues); the second leg mirrors them.
+  const firstLeg = firstLegPairings(teamIds);
 
   // Compute round dates — snap each to nearest valid match day
   const startMs = new Date(seasonStart + "T12:00:00").getTime();
@@ -223,7 +243,7 @@ export function generateLeagueCalendar(
     const roundNumber = r + 1;
     const date = roundDates[roundNumber - 1]!;
     const fixtures: Fixture[] = [];
-    for (const [home, away] of firstLegPairings[r]!) {
+    for (const [home, away] of firstLeg[r]!) {
       fixtures.push({ id: makeId(), date, competition: config.slug, round: roundNumber, home, away, played: false, result: null });
     }
     roundsMap.set(roundNumber, fixtures);
@@ -234,7 +254,7 @@ export function generateLeagueCalendar(
     const roundNumber = roundsPerLeg + r + 1;
     const date = roundDates[roundNumber - 1]!;
     const fixtures: Fixture[] = [];
-    for (const [away, home] of firstLegPairings[r]!) {
+    for (const [away, home] of firstLeg[r]!) {
       fixtures.push({ id: makeId(), date, competition: config.slug, round: roundNumber, home, away, played: false, result: null });
     }
     roundsMap.set(roundNumber, fixtures);

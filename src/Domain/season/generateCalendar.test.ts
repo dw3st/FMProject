@@ -120,6 +120,37 @@ describe("generateLeagueCalendar round-robin", () => {
   });
 });
 
+describe("generateLeagueCalendar venues", () => {
+  /** Longest run of home (or away) games of each club, over the whole season in round order. */
+  const venueRuns = (teams: string[], fixtures: { round: number; home: string; away: string }[]) => {
+    const byRound = [...fixtures].sort((a, b) => a.round - b.round);
+    return teams.map((t) => {
+      const seq = byRound.filter((f) => f.home === t || f.away === t).map((f) => f.home === t);
+      let run = 1;
+      let max = 1;
+      for (let i = 1; i < seq.length; i++) {
+        run = seq[i] === seq[i - 1] ? run + 1 : 1;
+        max = Math.max(max, run);
+      }
+      const firstLeg = seq.slice(0, Math.ceil(seq.length / 2));
+      return { max, homesFirstLeg: firstLeg.filter(Boolean).length, gamesFirstLeg: firstLeg.length };
+    });
+  };
+  for (const size of [18, 19, 20, 24]) {
+    test(`${size} clubs: no club more than 2 in a row at home or away, half the first leg at home (±1)`, () => {
+      const teams = Array.from({ length: size }, (_, i) => `t${i + 1}`);
+      const { fixtures } = calendarOf("prem", teams);
+      for (const r of venueRuns(teams, fixtures)) {
+        expect(r.max).toBeLessThanOrEqual(2);
+        expect(Math.abs(r.homesFirstLeg * 2 - r.gamesFirstLeg)).toBeLessThanOrEqual(1);
+      }
+      const pairs = new Map<string, number>();
+      for (const f of fixtures) pairs.set(`${f.home}>${f.away}`, (pairs.get(`${f.home}>${f.away}`) ?? 0) + 1);
+      for (const a of teams) for (const b of teams) if (a !== b) expect(pairs.get(`${a}>${b}`)).toBe(1);
+    });
+  }
+});
+
 describe("generateLeagueCalendar season window", () => {
   const dateOf = (d: string) => Date.parse(d + "T12:00:00Z");
 

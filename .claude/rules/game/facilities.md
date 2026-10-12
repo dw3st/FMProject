@@ -345,6 +345,10 @@ Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clu
   jogos em casa (`HomeGameToday.importance` → `facilitiesMatchday`), no `match-setup` (`crowd.importance`, a prévia e a
   partida usam o mesmo público) e no `GET /facilities` (`importanceByFixture` dos jogos em casa da temporada, com o
   líder de hoje para os jogos futuros — aproximação só de previsão).
+- Smoke (seção "Instalações"): no dia de cada jogo de copa em casa do clube do jogador, a demanda da linha ÷ a demanda do
+  mesmo dia sem o multiplicador (mesma torcida, seguidores, tier e fase) = ×1,15 (×1,30 com clássico da cidade). Até a
+  4.21 a checagem comparava com o jogo de liga em casa mais próximo, o que não é comparável: a torcida move a demanda
+  ±15% em poucas semanas e o jogo de liga pode ser um clássico (Man United × Man City, ×1,20, três dias depois da copa).
 - Medição (`bun scripts/match-importance-measure.ts`, temporada de jogos em casa: um por adversário da liga, o
   líder — o clube com mais seguidores — conta como clássico, 1,5 jogo de copa em mata-mata, torcida 60):
 

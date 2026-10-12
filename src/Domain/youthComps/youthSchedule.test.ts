@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { addDays } from "@/Domain/dates";
+import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { roundRobinPairings, scheduleYouthSeason } from "@/Domain/youthComps/youthSchedule";
 
 const clubs = Array.from({ length: 20 }, (_, i) => `c${i + 1}`);
@@ -121,5 +123,41 @@ describe("scheduleYouthSeason", () => {
     const a = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, "s"), window, busyByClub: new Map(), age: "u19" });
     const b = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, "s"), window, busyByClub: new Map(), age: "u19" });
     expect(a).toEqual(b);
+  });
+});
+
+describe("scheduleYouthSeason with FIFA-blocked days", () => {
+  // Argentina 2027: 28 clubs (54 rounds, two a week), league on weekends, FIFA windows in March,
+  // June (odd year), September, October and November. The smoke of 4.21 found a whole u19 round on
+  // 2027-03-29 (the second week of the March window).
+  const big = Array.from({ length: 28 }, (_, i) => `a${i + 1}`);
+  const window = { start: "2027-02-12", end: "2027-11-29" };
+  const blocked = countryBlockedDays("Argentina", window.start, window.end);
+  const busy = () => {
+    const m = new Map<string, Set<string>>();
+    for (const c of big) {
+      const s = new Set<string>();
+      for (let d = window.start; d <= window.end; d = addDays(d, 1)) if (dow(d) === 0 || dow(d) === 6) s.add(d);
+      for (const d of blocked) s.add(d); // as the caller does
+      m.set(c, s);
+    }
+    return m;
+  };
+  for (const age of ["u19", "u21"] as const) {
+    test(`${age}: no game and no round day on a blocked day, every round played, rounds in order`, () => {
+      const out = scheduleYouthSeason({ rounds: roundRobinPairings(big, "ar"), window, busyByClub: busy(), age, blocked })!;
+      expect(blocked.has("2027-03-29")).toBe(true);
+      expect(out.singleLeg).toBe(false);
+      expect(out.fixtures.length).toBe(54 * 14);
+      expect(out.fixtures.filter((f) => blocked.has(f.date))).toEqual([]);
+      expect(out.roundDates.filter((d) => blocked.has(d))).toEqual([]);
+      for (let i = 1; i < out.roundDates.length; i++) expect(out.roundDates[i]! > out.roundDates[i - 1]!).toBe(true);
+    });
+  }
+  test("without blocked days the schedule is the one of before", () => {
+    const m = new Map<string, Set<string>>();
+    const a = scheduleYouthSeason({ rounds: roundRobinPairings(big, "ar"), window, busyByClub: m, age: "u21" });
+    const b = scheduleYouthSeason({ rounds: roundRobinPairings(big, "ar"), window, busyByClub: m, age: "u21", blocked: new Set() });
+    expect(b).toEqual(a);
   });
 });

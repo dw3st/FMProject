@@ -78,6 +78,29 @@ function spread(total: number, slots: number): number[] {
 }
 
 /**
+ * `spread`, with each bucket capped (`caps[i]`): the excess of a capped bucket goes to the nearest bucket
+ * with room (earlier on a tie). Identical to `spread` when no cap binds. The caller checks
+ * `Σ caps ≥ total`.
+ */
+function spreadCapped(total: number, caps: number[]): number[] {
+  const counts = spread(total, caps.length);
+  const over = counts.map((c, i) => Math.max(0, c - caps[i]!));
+  for (let i = 0; i < counts.length; i++) counts[i] = Math.min(counts[i]!, caps[i]!);
+  for (let i = 0; i < over.length; i++) {
+    for (let left = over[i]!; left > 0; left--) {
+      for (let k = 1; k < caps.length; k++) {
+        const j = [i - k, i + k].find((x) => x >= 0 && x < caps.length && counts[x]! < caps[x]!);
+        if (j !== undefined) {
+          counts[j]!++;
+          break;
+        }
+      }
+    }
+  }
+  return counts;
+}
+
+/**
  * Youth season dates (spec §2.4). One round a week when the window has enough whole weeks; two a week
  * (fixed day pairs) when `2W ≥ R`; otherwise the first leg only, up to three a week; `null` when not
  * even that fits. Each round gets a common day (the cheapest preferred weekday given the clubs'
@@ -90,24 +113,34 @@ export function scheduleYouthSeason(args: {
   /** First-team match dates of each club known at generation. */
   busyByClub: Map<string, Set<string>>;
   age: YouthCompAge;
+  /**
+   * Days no youth game may be played on (FIFA windows and the country's summer tournament,
+   * `national-teams.md`). A week with no open weekday holds no round; a round's common day is never one.
+   */
+  blocked?: ReadonlySet<string>;
 }): YouthSchedule | null {
   const { window, busyByClub, age } = args;
-  const weeks = weeksInside(window.start, window.end);
+  const isBlocked = (d: string): boolean => args.blocked?.has(d) ?? false;
+  const openWeekdays = (monday: string): string[] =>
+    [1, 2, 3, 4, 5].map((dw) => dayOfWeek(monday, dw)).filter((d) => !isBlocked(d));
+  const weeks = weeksInside(window.start, window.end).filter((m) => openWeekdays(m).length > 0);
+  const open = weeks.map((m) => openWeekdays(m).length);
   const W = weeks.length;
+  const capTotal = (max: number) => open.reduce((s, n) => s + Math.min(n, max), 0);
   let rounds = args.rounds;
   let singleLeg = false;
   let perWeek: number[];
   if (W === 0) return null;
   if (W >= rounds.length) perWeek = spread(rounds.length, W).map((c) => Math.min(c, 1));
-  else if (2 * W >= rounds.length) perWeek = spread(rounds.length, W);
+  else if (capTotal(2) >= rounds.length) perWeek = spreadCapped(rounds.length, open.map((n) => Math.min(n, 2)));
   else {
     rounds = rounds.slice(0, Math.floor(rounds.length / 2));
     singleLeg = true;
-    if (3 * W < rounds.length) return null;
-    perWeek = spread(rounds.length, W);
+    if (capTotal(3) < rounds.length) return null;
+    perWeek = spreadCapped(rounds.length, open.map((n) => Math.min(n, 3)));
   }
 
-  const busy = (club: string, d: string): boolean => busyByClub.get(club)?.has(d) ?? false;
+  const busy = (club: string, d: string): boolean => isBlocked(d) || (busyByClub.get(club)?.has(d) ?? false);
   const cost = (games: Pairing[], d: string): number => {
     let c = 0;
     for (const [h, a] of games) {
@@ -136,11 +169,19 @@ export function scheduleYouthSeason(args: {
     const count = perWeek[w]!;
     if (count === 0) return;
     if (count === 1) {
-      const days = YOUTH_COMP.PREFERRED_DAYS[age].map((dw) => dayOfWeek(monday, dw));
+      const days = YOUTH_COMP.PREFERRED_DAYS[age].map((dw) => dayOfWeek(monday, dw)).filter((d) => !isBlocked(d));
       roundDates.push(cheapest(rounds[r]!, days));
     } else {
-      const pattern = count === 2 ? YOUTH_COMP.TWICE_DAYS[age] : YOUTH_COMP.THRICE_DAYS;
-      for (const dw of pattern) roundDates.push(dayOfWeek(monday, dw));
+      const pattern = (count === 2 ? YOUTH_COMP.TWICE_DAYS[age] : YOUTH_COMP.THRICE_DAYS).map((dw) => dayOfWeek(monday, dw));
+      // A blocked pattern day is swapped for the nearest open weekday of the week not already used.
+      const days = pattern.filter((d) => !isBlocked(d));
+      for (const d of pattern.filter(isBlocked)) {
+        const spare = openWeekdays(monday)
+          .filter((o) => !days.includes(o))
+          .sort((a, b) => Math.abs(dowOf(a) - dowOf(d)) - Math.abs(dowOf(b) - dowOf(d)) || (a < b ? 1 : -1));
+        days.push(spare[0]!);
+      }
+      roundDates.push(...days.sort());
     }
     r += count;
   });
