@@ -1277,7 +1277,7 @@ export function MatchPreviewScreen() {
       {/* Action buttons: the standard Button for all four (#65 follow-up) — secondary for the
           side actions, primary for Start game, same font and height. */}
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
-        <Button variant="secondary" onClick={() => { window.location.href = "/formation"; }}>
+        <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
           <Icon name="settings" size={16} />
           {t("matchPreview.editTactics")}
         </Button>
