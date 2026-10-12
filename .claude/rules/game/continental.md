@@ -161,8 +161,18 @@ futura do Plano 3.
   competição. `HUGE` domina tudo em 4-5 ordens de grandeza, então o otimizador só aceita um dia com
   choque de mesmo-dia quando **nenhuma** combinação de dias livres de choque satisfaz o piso de 3
   dias — janela real nunca cai nisso; só janelas contrivadas de teste. Sem solução alguma no piso
-  de 3 dias (nunca observado com janelas reais), cai para um empacotamento gracioso
-  (`fallbackPack`).
+  de 3 dias (nunca observado com janelas reais, medido na criação do mundo 2026/27), cai para o
+  **fallback de janela apertada (`relaxedSchedule`)**: a mesma programação dinâmica
+  (`pickDaysMinCost`, `src/Domain/calendar/pickDays.ts`) com o piso relaxado a 1 dia, `W_TIGHT`
+  (10 000) por dia que falta para os 3 dias, e `NEVER` (10⁹) para um dia bloqueado de seleção de
+  qualquer participante (`ParticipantDates.blocked`, as datas FIFA e o torneio de verão do país,
+  passadas à parte por `createContinentalSeason`; elas continuam também em `dates`). Ordem: um dia
+  bloqueado só sem nenhum outro dia; depois choque no mesmo dia (`HUGE`); depois intervalo curto;
+  depois dia adjacente, dia da semana e espaçamento. Só uma janela com menos dias que datas cai no
+  empacotamento antigo (`fallbackPack`, `spreadOnWeekday` com `hardBusy`). O caminho normal não lê
+  `blocked`: sai idêntico (teste). Antes, o empacotamento guloso juntava as últimas datas no fim da
+  janela mesmo com dias livres antes (numa busca de 3000 janelas apertadas aleatórias, a versão nova
+  ficou melhor em 2094 e nunca pior).
 - **Participantes:** cada competição recebe **só os seus próprios 32 classificados** (não os do
   continente inteiro, nem a outra competição do mesmo continente) — um país sem clube na Europa
   League nunca influencia o calendário da Champions. Cada clube carrega o conjunto de datas

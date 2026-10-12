@@ -110,6 +110,7 @@ export async function createCountryCup(args: {
   const clubs = countryClubs(args.country, args.index, args.countryOf, args.pyramids);
   const leagues = [...args.countryOf].filter(([, c]) => c === args.country).map(([s]) => s);
   const continentalSlugs = await continentalSlugsOf(args.service, args.saveId, args.country);
+  const blocked = countryBlockedDays(args.country, args.window.start, args.window.end);
   const cup = generateCup({
     country: args.country,
     year: args.year,
@@ -118,8 +119,9 @@ export async function createCountryCup(args: {
     // The cup also stops in the FIFA windows and the country's summer tournament (`national-teams.md`).
     busyDates: new Set([
       ...(await leagueBusyDates(args.service, args.saveId, [...leagues, ...continentalSlugs])),
-      ...countryBlockedDays(args.country, args.window.start, args.window.end),
+      ...blocked,
     ]),
+    blockedDates: blocked,
     seedKey: `${args.saveId}:${args.year}:${args.country}`,
   });
   if (!cup) return null;

@@ -13,6 +13,8 @@ export interface GenerateCupArgs {
   window: { start: string; end: string };
   /** Dates any club of the country plays a league game. */
   busyDates: Set<string>;
+  /** FIFA dates / national-team tournament of the country (also in `busyDates`): never a stage when avoidable. */
+  blockedDates?: ReadonlySet<string>;
   /** Deterministic seed base, e.g. `${saveId}:${year}:${country}`. */
   seedKey: string;
 }
@@ -45,7 +47,7 @@ export function generateCup(a: GenerateCupArgs): LeagueCalendarResult | null {
   const firstEntrants = plan.preliminaryClubs > 0 ? byLevel.slice(0, plan.preliminaryClubs) : byLevel;
   const byes = plan.preliminaryClubs > 0 ? byLevel.slice(plan.preliminaryClubs).map((c) => c.id) : [];
 
-  const dates = scheduleStageDates(a.window.start, a.window.end, plan.stageNames.length, a.busyDates);
+  const dates = scheduleStageDates(a.window.start, a.window.end, plan.stageNames.length, a.busyDates, a.blockedDates);
   const stages: CupStage[] = plan.stageNames.map((name, i) => ({
     round: i + 1, name, date: dates[i]!, entrants: [], drawn: false,
   }));

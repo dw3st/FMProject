@@ -11,9 +11,21 @@ const MIN_GAP_DAYS = 3;
 /**
  * Dates for `stages` cup stages inside [start, end − 7d]: spread evenly, snapped to a Wednesday
  * with no league game that day or the day before (`busy` = dates any club of the country plays
- * a league game).
+ * a league or continental game, plus `blocked`).
+ *
+ * `blocked` (FIFA dates and the country's national-team tournament, a subset of `busy`) only
+ * matters when the normal search fails (a window too tight, or every day around a stage's target
+ * taken): the fallback then re-chooses the remaining stages over the days left, never on a blocked
+ * day if any other day exists, then avoiding a same-day clash (`busy`), then the day after one,
+ * then a gap under 3 days (`spreadOnWeekday` → `fallbackAvoid`). The normal search is unchanged.
  */
-export function scheduleStageDates(start: string, end: string, stages: number, busy: Set<string>): string[] {
+export function scheduleStageDates(
+  start: string,
+  end: string,
+  stages: number,
+  busy: Set<string>,
+  blocked: ReadonlySet<string> = new Set(),
+): string[] {
   const lo = toMs(start);
   const hi = toMs(end) - FINAL_BEFORE_END_DAYS * DAY;
   // scheduleStageDates blocks a busy date AND the day after it; spreadOnWeekday only checks the
@@ -23,5 +35,7 @@ export function scheduleStageDates(start: string, end: string, stages: number, b
     expandedBusy.add(d);
     expandedBusy.add(toIso(toMs(d) + DAY));
   }
-  return spreadOnWeekday(lo, hi, stages, WEDNESDAY, expandedBusy, MIN_GAP_DAYS);
+  return spreadOnWeekday(lo, hi, stages, WEDNESDAY, expandedBusy, MIN_GAP_DAYS, {
+    fallbackAvoid: { never: blocked, hard: busy },
+  });
 }
