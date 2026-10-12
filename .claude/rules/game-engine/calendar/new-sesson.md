@@ -57,6 +57,15 @@ Example league:
 10 matches per round
 ```
 
+### Home and away (4.21.1)
+
+`firstLegPairings` (`src/Domain/season/generateCalendar.ts`): circle method with the canonical venue pattern (the
+fixed club alternates round by round, the other pairs by board position), the round order starting two rounds into
+the cycle, the second leg mirrored. No club plays more than two games in a row at home or away (turn of the legs
+included; not possible with 4 clubs) and every club is home in half its first-leg games (±1). Odd number of clubs:
+the rest slot is the fixed position. Before 4.21.1 the fixed club (lowest id) played the whole first leg at home and
+the whole second leg away, and every club ran long home/away streaks.
+
 ---
 
 ## Matchdays
