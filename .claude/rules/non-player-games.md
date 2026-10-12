@@ -1185,3 +1185,8 @@ calibração própria: o volume do mundo não é medido contra o motor. Ver `.cl
 `QuickSimInput.refereeStrictness` (o árbitro da escala do dia): faltas, pênaltis e cartões dos dois lados; s = 0 /
 ausente sorteia exatamente o de antes. Medição do volume do mundo (26 ligas, pareado) em
 `.claude/rules/game/referees.md` → spec §7.
+
+## Seleções (4.22.1)
+
+`QuickSimInput.goalScale` multiplica o xG dos dois lados; só o quickSim de seleção passa (`nationalGoalScale`, que cai
+com o nível médio dos dois XIs: × 1,10 nos torneios, × 1,61 num jogo de nível 3,7). `xiLevel` dá o `teamLevel` de um XI. Ausente = × 1, o jogo de clube é idêntico. Ver `.claude/rules/game/national-teams.md` → "Volume de gols".

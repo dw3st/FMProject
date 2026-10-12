@@ -116,6 +116,12 @@ export interface QuickSimInput {
    */
   refereeQuality?: number;
   refereeVar?: boolean;
+  /**
+   * Multiplies both sides' xG (national-team games only, `nationalGoalScale`): the club constants are
+   * calibrated to the full engine, whose goal volume at national-team level is well below real international
+   * football. Absent / 1 = no change (club games never pass it).
+   */
+  goalScale?: number;
 }
 
 /**
@@ -361,6 +367,11 @@ export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0, group?: 
 }
 
 /** Skips empty / unknown / duplicate ids; each kept player takes the role of his own slot index. */
+/** `teamLevel` of a side's XI as `quickSimMatch` builds it (no familiarity / morale). */
+export function xiLevel(squad: Squad, lineup: string[], roles?: string[]): number {
+  return teamLevel(strengthOf(resolveXI(squad, lineup, roles)));
+}
+
 function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[] {
   const byId = new Map(squad.players.map((p) => [p.id, p]));
   const xi: XIPlayer[] = [];
@@ -819,8 +830,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
 
   const home = withMorale(withFamiliarity(strengthOf(homeXI), input.homeFamiliarity), input.homeMorale);
   const away = withMorale(withFamiliarity(strengthOf(awayXI), input.awayFamiliarity), input.awayMorale);
-  const xgHome = expectedGoals(home, away, !input.neutral);
-  const xgAway = expectedGoals(away, home, false);
+  const scale = input.goalScale ?? 1;
+  const xgHome = expectedGoals(home, away, !input.neutral) * scale;
+  const xgAway = expectedGoals(away, home, false) * scale;
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
   // mean-1 lognormal factors). The full engine's results are more lopsided than two
   // independent Poisson draws around xG. `breakdown` keeps the pre-dominance xG.

@@ -11,7 +11,7 @@ import { addDays, daysBetween } from "@/Domain/dates";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { overallAvg } from "@/Domain/playerRating";
 import { NATION_CONFED, normalizeNation } from "@/Domain/registration/nations";
-import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
+import { quickSimMatch, xiLevel } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { afterNationalCallUp } from "@/Domain/morale/morale";
@@ -30,7 +30,7 @@ import {
   nationalFillers, nationalLineup, pickCallUp, squadLevel, type NationCandidate,
 } from "@/Domain/national/nationalSquad";
 import {
-  applyNationalMatch, nationalCampDay, updateNationalLeaders, withNationalAward, withNationalTitle,
+  nationalGoalScale, applyNationalMatch, nationalCampDay, updateNationalLeaders, withNationalAward, withNationalTitle,
 } from "@/Domain/national/nationalMatch";
 import {
   NATIONAL_AWARDS, computeTournamentAwards, tournamentAwardKeys, tournamentValueMult,
@@ -536,12 +536,16 @@ export async function playNationalDay(args: {
         out.humanMatch = nationalMatchEvent(fx, recording, home.players, away.players);
         out.humanTeamId = humanTeam;
       } else {
+        const hSquad = pseudo(fx.home, home.players);
+        const aSquad = pseudo(fx.away, away.players);
+        const hLineup = nationalLineup(home.players, date);
+        const aLineup = nationalLineup(away.players, date);
+        const level = (xiLevel(hSquad, hLineup, roles) + xiLevel(aSquad, aLineup, roles)) / 2;
         recording = quickSimMatch({
-          fixtureId: fx.id,
-          home: pseudo(fx.home, home.players), away: pseudo(fx.away, away.players),
-          homeLineup: nationalLineup(home.players, date), awayLineup: nationalLineup(away.players, date),
+          fixtureId: fx.id, home: hSquad, away: aSquad, homeLineup: hLineup, awayLineup: aLineup,
           homeRoles: roles, awayRoles: roles,
           ...(fx.knockout ? { knockout: true } : {}), ...(fx.neutral ? { neutral: true } : {}),
+          goalScale: nationalGoalScale(level),
         }, rng).recording;
       }
       out.played++;
