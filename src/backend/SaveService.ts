@@ -45,6 +45,7 @@ import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
 import type { DirectorDecision, Responsibilities } from "@/Domain/responsibilities/director";
+import { GAME_VERSION } from "@/Domain/saveVersion";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -75,6 +76,8 @@ export interface SaveMeta {
   clubId:     string;
   clubName:   string;
   clubColors: [string, string];
+  /** Game version that created the save (`GAME_VERSION`); absent = before 4.22. See `@/Domain/saveVersion`. */
+  gameVersion?: string;
   /** Database picked at new-game time — versions/datasets the save was started against. */
   database?: SaveDatabase;
   /** Manager identity picked at new-game time. */
@@ -886,6 +889,7 @@ export class SaveService {
       name:        body.clubName ?? "Unnamed Save",
       createdAt:   now,
       updatedAt:   now,
+      gameVersion: GAME_VERSION,
       leagueSlug:  body.leagueSlug,
       leagueName:  body.leagueName,
       clubId:      body.clubId,

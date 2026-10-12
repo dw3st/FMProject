@@ -27,6 +27,10 @@ interface SaveEntry {
   /** Sacked: the career is over (`.claude/rules/game/board-fans.md`). */
   /** Sacked, without a club (`.claude/rules/game/jobs.md`). */
   unemployed?: { since: string; lastClubName: string };
+  /** Game version that created the save; absent = before 4.22 (`@/Domain/saveVersion`). */
+  gameVersion?: string;
+  /** False when the save predates `MIN_COMPATIBLE_SAVE_VERSION`: loading asks first. */
+  compatible?: boolean;
 }
 
 export function StartScreen() {
@@ -39,6 +43,8 @@ export function StartScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const pendingDeleteSave = saves.find((s) => s.id === pendingDeleteId) ?? null;
+  const [pendingOutdatedId, setPendingOutdatedId] = useState<string | null>(null);
+  const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
 
   function openChangelog() {
     setIsChangelogOpen(true);
@@ -63,6 +69,12 @@ export function StartScreen() {
     } catch {
       setLoadingId(null);
     }
+  }
+
+  /** An outdated save asks for confirmation before loading. */
+  function requestLoad(save: SaveEntry) {
+    if (save.compatible === false) setPendingOutdatedId(save.id);
+    else void handleLoad(save.id);
   }
 
   async function handleConfirmDelete() {
@@ -128,9 +140,24 @@ export function StartScreen() {
                     <span className="truncate">{save.leagueName}</span>
                     {save.unemployed && <span className="shrink-0 whitespace-nowrap text-destructive">&nbsp;· {t("startScreen.unemployed")}</span>}
                     <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
+                    {save.gameVersion && save.compatible !== false && (
+                      <span className="shrink-0 whitespace-nowrap tabular-nums">
+                        &nbsp;· {t("startScreen.saveVersion", { version: save.gameVersion })}
+                      </span>
+                    )}
                   </div>
+                  {save.compatible === false && (
+                    <div className="flex items-center gap-1 text-sm text-destructive">
+                      <Icon name="alert" size={16} />
+                      <span className="truncate tabular-nums">
+                        {save.gameVersion
+                          ? t("startScreen.outdatedVersion", { version: save.gameVersion })
+                          : t("startScreen.outdatedUnknown")}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <Button className="px-4 shrink-0" onClick={() => handleLoad(save.id)} disabled={loadingId !== null}>
+                <Button className="px-4 shrink-0" onClick={() => requestLoad(save)} disabled={loadingId !== null}>
                   {t("startScreen.continue")}
                 </Button>
                 <button
@@ -193,6 +220,26 @@ export function StartScreen() {
         onConfirm={handleConfirmDelete}
         onClose={() => setPendingDeleteId(null)}
         busy={deleting}
+      />
+      <ConfirmDialog
+        open={pendingOutdatedSave !== null}
+        title={t("startScreen.outdatedTitle")}
+        body={
+          pendingOutdatedSave
+            ? t("startScreen.outdatedBody", {
+                clubName: pendingOutdatedSave.clubName,
+                version: pendingOutdatedSave.gameVersion ?? t("startScreen.outdatedUnknownVersion"),
+              })
+            : ""
+        }
+        confirmLabel={t("startScreen.outdatedLoad")}
+        onConfirm={() => {
+          const id = pendingOutdatedId;
+          setPendingOutdatedId(null);
+          if (id) void handleLoad(id);
+        }}
+        onClose={() => setPendingOutdatedId(null)}
+        busy={loadingId !== null}
       />
     </div>
   );
