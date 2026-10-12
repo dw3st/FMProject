@@ -92,11 +92,25 @@ mata-mata em si (prorrogação, pênaltis) é do Plano 1, já mesclado na branch
    Sul-Americana do mesmo clube; ver `.claude/rules/game/continental.md`). Se a quarta-feira mais próxima do alvo não serve,
    tenta outras quartas (`OFFSETS`, ±1 a ±3 semanas) e depois qualquer dia perto do alvo, sempre
    com pelo menos 3 dias da fase anterior.
-   - **Clamp de janela degenerada:** se a janela ficar curta demais para até a regra de "1 dia de
-     folga" (ex.: país com poucos clubes numa janela apertada, ou muitas fases), o algoritmo relaxa
-     tudo e empacota as fases que faltam 1 dia por vez, terminando exatamente em `hi`
-     (`end − 7 dias`), recuando fases já colocadas se precisar de mais espaço. Sempre estritamente
-     crescente e nunca depois de `hi` — o preço é que fases mais cedo também são empurradas.
+   - **Fallback (busca normal falhou):** quando nenhuma quarta (±3 semanas) nem dia (±3 dias) perto
+     do alvo de uma fase serve — janela apertada, ou tudo em volta ocupado (ex.: a final de uma liga
+     de ano civil com `hi` dentro da data FIFA de novembro) —, as fases que faltam (e, se não houver
+     dias suficientes depois da anterior, as anteriores necessárias) são escolhidas juntas por
+     programação dinâmica (`fallbackAvoid` → `packAvoiding`, `src/Domain/calendar/spreadDates.ts`,
+     sobre `pickDaysMinCost`) entre os dias que sobram até `hi`, com custo: dia bloqueado de seleção
+     (`blocked`: datas FIFA e torneio do país, `countryBlockedDays`, passado à parte por
+     `createCountryCup` → `generateCup.blockedDates`) 10⁹ · jogo no mesmo dia (`busyDates`) 10⁶ ·
+     dia seguinte a um jogo 10⁴ · intervalo menor que 3 dias 10³ por dia · fora da quarta 10 ·
+     distância do alvo 1 por dia. Ou seja: dia bloqueado só se não houver nenhum outro; jogo no
+     mesmo dia só se todo dia livre de bloqueio tiver jogo. Sempre estritamente crescente, nunca
+     depois de `hi`; uma janela com menos dias que fases ainda começa antes de `start`, como antes.
+     A busca normal não muda (o `blocked` só é lido no fallback; teste e comparação de 419 janelas
+     normais aleatórias: saída idêntica). Antes o fallback só prendia a fase em `hi` ou no alvo,
+     sem olhar nada: na criação do mundo 2026/27 a final da copa da Argentina (7 fases) e a dos EUA
+     (5 fases) caíam em 2027-11-23, dentro da data FIFA de novembro; num modelo das viradas
+     2027–2032 (ligas reais com dias bloqueados, sem continentais) 11 de 360 copas caíam no
+     fallback, com 15 fases em dia bloqueado (Brasil todo ano, Argentina, EUA) — hoje 0, e 0 em
+     dia de liga.
 4. **Sorteio da fase 1 (`drawTies`):** Fisher–Yates com `mulberry32(seedFrom(seedKey))`,
    `seedKey = "{saveId}:{ano}:{país}:1"` — determinístico por save/ano/país/fase. Manda quem tem o
    nível mais baixo (tier maior); nível igual decide por sorteio. A final (`neutral: true` em toda

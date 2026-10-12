@@ -55,3 +55,58 @@ describe("scheduleStageDates", () => {
     assertValidWindow(dates, "2027-02-05", "2027-02-20", 3);
   });
 });
+
+describe("scheduleStageDates — fallback avoids blocked and busy days", () => {
+  const range = (a: string, b: string) => {
+    const out: string[] = [];
+    for (let ms = toMs(a); ms <= toMs(b); ms += 86_400_000) out.push(toIso(ms));
+    return out;
+  };
+
+  test("last stage with every day around its target taken: lands on a free day, never a blocked one", () => {
+    // Before: the clamp put the final on 2027-11-23, inside the November FIFA window (Argentina/USA 2027).
+    const blocked = new Set(range("2027-11-15", "2027-11-24"));
+    const busy = new Set([...range("2027-10-20", "2027-11-30"), ...blocked]);
+    const dates = scheduleStageDates("2027-02-05", "2027-11-30", 3, busy, blocked);
+    expect(dates).toHaveLength(3);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates) {
+      expect(d >= "2027-02-05" && d <= "2027-11-23").toBe(true);
+      expect(busy.has(d)).toBe(false);
+    }
+  });
+
+  test("degenerate window: stages skip blocked days and league days while free days remain", () => {
+    // [2027-11-01, 2027-11-23]: 4 stages, most days taken; free days: 11-02, 11-05, 11-09, 11-11.
+    const blocked = new Set(range("2027-11-15", "2027-11-23"));
+    const league = new Set(range("2027-11-01", "2027-11-14").filter((d) => !["2027-11-02", "2027-11-05", "2027-11-09", "2027-11-11"].includes(d)));
+    const busy = new Set([...league, ...blocked]);
+    const dates = scheduleStageDates("2027-11-01", "2027-11-30", 4, busy, blocked);
+    expect(dates).toEqual(["2027-11-02", "2027-11-05", "2027-11-09", "2027-11-11"]);
+  });
+
+  test("a blocked day is used only when nothing else exists", () => {
+    const blocked = new Set(range("2027-11-10", "2027-11-23"));
+    const busy = new Set([...range("2027-11-01", "2027-11-09"), ...blocked]);
+    const dates = scheduleStageDates("2027-11-01", "2027-11-30", 3, busy, blocked);
+    expect(dates).toHaveLength(3);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    // Every day is busy; the league days (11-01..11-09) win over the blocked ones.
+    for (const d of dates) expect(blocked.has(d)).toBe(false);
+  });
+
+  test("everything blocked: still `stages` valid, strictly increasing dates in the window", () => {
+    const blocked = new Set(range("2027-02-01", "2027-03-01"));
+    const dates = scheduleStageDates("2027-02-05", "2027-03-01", 8, new Set(blocked), blocked);
+    expect(dates).toHaveLength(8);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates) expect(d >= "2027-02-05" && d <= "2027-02-22").toBe(true);
+  });
+
+  test("normal windows: `blocked` changes nothing", () => {
+    const busy = new Set(range("2026-10-05", "2026-10-14"));
+    const plain = scheduleStageDates("2026-08-15", "2027-05-20", 6, busy);
+    expect(scheduleStageDates("2026-08-15", "2027-05-20", 6, busy, new Set(busy))).toEqual(plain);
+    expect(plain).toEqual(scheduleStageDates("2026-08-15", "2027-05-20", 6, busy, new Set(["2026-10-07"])));
+  });
+});

@@ -245,3 +245,67 @@ describe("continentalDates — optimality proofs", () => {
     expect(a).toEqual(b);
   });
 });
+
+describe("continentalDates — tight-window fallback avoids blocked and busy days", () => {
+  const Y = 2026;
+  const weekday = 2;
+  const range = (a: string, b: string) => {
+    const out: string[] = [];
+    for (let ms = toMs(a); ms <= toMs(b); ms += DAY) out.push(toIso(ms));
+    return out;
+  };
+
+  test("no room for 7 knockout dates at 3-day gaps: never a blocked day, never a league day, when free days exist", () => {
+    // Knockout window [2027-02-10, 2027-02-21]: 12 days for 7 dates (the 3-day floor needs 19).
+    const blocked = new Set(["2027-02-12", "2027-02-13"]);
+    const league = ["2027-02-14", "2027-02-15"];
+    const p: ParticipantDates = { id: "a", dates: new Set([...blocked, ...league]), blocked };
+    const dates = continentalDates("Europe", Y, "2027-02-28", weekday, [p, { ...p, id: "b" }]);
+    const knockout = dates.slice(6);
+    expect(knockout).toHaveLength(7);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of knockout) {
+      expect(d >= "2027-02-10" && d <= "2027-02-21").toBe(true);
+      expect(blocked.has(d)).toBe(false);
+      expect(league.includes(d)).toBe(false);
+    }
+  });
+
+  test("tight window with blocked days near its end: picks spread over the free days instead of packing onto them", () => {
+    // Knockout window [2027-02-10, 2027-02-23]. Before: the greedy packing ended on 02-21 (blocked) and 02-22 (league).
+    const blocked = new Set(["2027-02-11", "2027-02-20", "2027-02-21"]);
+    const league = "2027-02-22";
+    const p: ParticipantDates = { id: "a", dates: new Set([...blocked, league]), blocked };
+    const knockout = continentalDates("Europe", Y, "2027-03-02", weekday, [p]).slice(6);
+    expect(knockout).toHaveLength(7);
+    for (let i = 1; i < knockout.length; i++) expect(knockout[i]! > knockout[i - 1]!).toBe(true);
+    for (const d of knockout) {
+      expect(d >= "2027-02-10" && d <= "2027-02-23").toBe(true);
+      expect(blocked.has(d) || d === league).toBe(false);
+    }
+  });
+
+  test("a blocked day is used only when every other day is taken", () => {
+    // 8 days for 7 dates; 2 blocked: one blocked day is unavoidable, the other is not.
+    const blocked = new Set(["2027-02-12", "2027-02-15"]);
+    const p: ParticipantDates = { id: "a", dates: new Set(blocked), blocked };
+    const knockout = continentalDates("Europe", Y, "2027-02-24", weekday, [p]).slice(6);
+    expect(knockout).toHaveLength(7);
+    for (const d of knockout) expect(d >= "2027-02-10" && d <= "2027-02-17").toBe(true);
+    expect(knockout.filter((d) => blocked.has(d))).toHaveLength(1);
+  });
+
+  test("normal windows ignore `blocked` (same dates with or without it)", () => {
+    const dates = range("2026-09-01", "2027-06-30").filter((d) => dow(d) === 3 || dow(d) === 6);
+    const blocked = new Set(range("2026-10-05", "2026-10-14"));
+    const withBlocked = Array.from({ length: 8 }, (_, i) => ({
+      id: `p${i}`,
+      dates: new Set([...dates, ...blocked]),
+      blocked,
+    }));
+    const without = withBlocked.map(({ id, dates: d }) => ({ id, dates: d }));
+    expect(continentalDates("Europe", Y, "2027-05-24", weekday, withBlocked)).toEqual(
+      continentalDates("Europe", Y, "2027-05-24", weekday, without),
+    );
+  });
+});

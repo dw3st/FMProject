@@ -360,18 +360,26 @@ export async function createContinentalSeason(args: {
   // `leagueBusyDates` lookup (memoised in `countryDates`) rather than paying for it once per club.
   const byCountry = new Map(infos.map((t) => [t.country, t]));
   const countryDates = new Map<string, Set<string>>();
+  const countryBlocked = new Map<string, Set<string>>();
   const datesOfCountry = async (country: string): Promise<Set<string>> => {
     const cached = countryDates.get(country);
     if (cached) return cached;
     const t = byCountry.get(country)!;
     const dates = await leagueBusyDates(service, saveId, [t.league, cupSlugOf(country)]);
     // FIFA windows and the country's summer tournament (`.claude/rules/game/national-teams.md`): never a date.
-    for (const d of countryBlockedDays(country, `${year}-01-01`, `${year + 1}-12-31`)) dates.add(d);
+    const blocked = countryBlockedDays(country, `${year}-01-01`, `${year + 1}-12-31`);
+    for (const d of blocked) dates.add(d);
     countryDates.set(country, dates);
+    countryBlocked.set(country, blocked);
     return dates;
   };
   const participantsFor = async (ids: string[]): Promise<ParticipantDates[]> =>
-    Promise.all(ids.map(async (id) => ({ id, dates: await datesOfCountry(countryOfClub.get(id)!) })));
+    Promise.all(
+      ids.map(async (id) => {
+        const country = countryOfClub.get(id)!;
+        return { id, dates: await datesOfCountry(country), blocked: countryBlocked.get(country)! };
+      }),
+    );
 
   const primaryParticipants = await participantsFor(primary);
   const secondaryParticipants = await participantsFor(secondary);

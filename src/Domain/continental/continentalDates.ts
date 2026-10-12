@@ -1,3 +1,4 @@
+import { pickDaysMinCost } from "@/Domain/calendar/pickDays";
 import { spreadOnWeekday } from "@/Domain/calendar/spreadDates";
 import { logError } from "@/Logger";
 
@@ -39,6 +40,12 @@ export interface ParticipantDates {
   /** Opaque id — only used to tell participants apart, never read back. */
   id: string;
   dates: ReadonlySet<string>;
+  /**
+   * FIFA dates / national-team tournament of the participant's country (a subset of `dates`). The
+   * optimiser already treats them as same-day clashes through `dates`; only the fallback for a
+   * window too tight for the gap floor reads them, as days to use only when no other day exists.
+   */
+  blocked?: ReadonlySet<string>;
 }
 
 /** Per-day clash costs derived from every participant's dates, over `[lo, hi]` inclusive. */
@@ -142,12 +149,55 @@ function scheduleOptimal(
   return picks.map((j) => toIso(lo + j * DAY));
 }
 
+/** Costs of the tight-window fallback (`relaxedSchedule`), above the optimiser's own. */
+const NEVER = 1_000_000_000;
+/** Per day a consecutive gap falls short of `MIN_GAP_DAYS`: worse than any adjacent-day clash, better than a same-day one. */
+const W_TIGHT = 10_000;
+
 /**
- * Degenerate-window fallback: the window has no room for `k` dates even at the `MIN_GAP_DAYS`
- * floor, so `scheduleOptimal` can't run at all. Falls back to `spreadOnWeekday`'s graceful packing
- * (same one `scheduleStageDates`, national cups, uses by default) — still hard/soft aware via its
- * own `hardBusy` option — and logs it, since a window this tight for a continental competition
- * should not happen with real-world windows (only contrived/tiny ones in tests).
+ * Tight-window fallback: the window has no room for `k` dates at the `MIN_GAP_DAYS` floor, so
+ * `scheduleOptimal` can't run. Chooses the `k` dates by the same cost model with the gap floor
+ * relaxed to a single day (a gap under `MIN_GAP_DAYS` costs `W_TIGHT` per missing day), plus
+ * `NEVER` for a day blocked for any participant's country (FIFA date, national-team tournament):
+ * a blocked day only when there is no other day, then a same-day clash (`HUGE`), then a tight gap,
+ * then the adjacent-day / weekday / spacing terms. `null` when the window has fewer than `k` days.
+ */
+function relaxedSchedule(
+  lo: number,
+  hi: number,
+  k: number,
+  weekday: number,
+  participants: readonly ParticipantDates[],
+): string[] | null {
+  const D = Math.round((hi - lo) / DAY) + 1;
+  if (D < k) return null;
+  const { hard, soft } = buildDayCosts(lo, hi, participants);
+  const idealIndex = (i: number) => Math.round(((D - 1) * (i + 0.5)) / k);
+  const blockedDay = (iso: string) => participants.some((p) => p.blocked?.has(iso));
+  const base = new Array<number>(D);
+  for (let j = 0; j < D; j++) {
+    const ms = lo + j * DAY;
+    base[j] =
+      (blockedDay(toIso(ms)) ? NEVER : 0) +
+      HUGE * hard[j]! +
+      W_ADJ * soft[j]! +
+      (new Date(ms).getUTCDay() === weekday ? 0 : W_WEEKDAY);
+  }
+  const picks = pickDaysMinCost({
+    days: D,
+    k,
+    dayCost: (j, i) => base[j]! + W_SPACING * Math.abs(j - idealIndex(i)),
+    gapCost: (g) =>
+      (g < MIN_GAP_DAYS ? W_TIGHT * (MIN_GAP_DAYS - g) : 0) + (g < PREFERRED_GAP_DAYS ? W_GAP * (PREFERRED_GAP_DAYS - g) : 0),
+  });
+  return picks ? picks.map((j) => toIso(lo + j * DAY)) : null;
+}
+
+/**
+ * Degenerate-window fallback: the window has fewer days than dates (`relaxedSchedule` can't run
+ * either). Falls back to `spreadOnWeekday`'s graceful packing (same one `scheduleStageDates`,
+ * national cups, uses by default) — still hard/soft aware via its own `hardBusy` option. Never
+ * happens with real windows (only contrived/tiny ones in tests).
  */
 function fallbackPack(
   lo: number,
@@ -155,13 +205,7 @@ function fallbackPack(
   k: number,
   weekday: number,
   participants: readonly ParticipantDates[],
-  label: string,
 ): string[] {
-  logError(
-    "continental",
-    `continentalDates: window [${toIso(lo)}, ${toIso(hi)}] has no room for ${k} dates at >= ${MIN_GAP_DAYS}-day ` +
-      `gaps (${label}) — falling back to graceful packing`,
-  );
   const hardBusy = new Set<string>();
   const softBusy = new Set<string>();
   for (let ms = lo; ms <= hi; ms += DAY) {
@@ -193,7 +237,14 @@ function scheduleWindow(
   participants: readonly ParticipantDates[],
   label: string,
 ): string[] {
-  return scheduleOptimal(lo, hi, k, weekday, participants) ?? fallbackPack(lo, hi, k, weekday, participants, label);
+  const optimal = scheduleOptimal(lo, hi, k, weekday, participants);
+  if (optimal) return optimal;
+  logError(
+    "continental",
+    `continentalDates: window [${toIso(lo)}, ${toIso(hi)}] has no room for ${k} dates at >= ${MIN_GAP_DAYS}-day ` +
+      `gaps (${label}) — falling back to tighter gaps`,
+  );
+  return relaxedSchedule(lo, hi, k, weekday, participants) ?? fallbackPack(lo, hi, k, weekday, participants);
 }
 
 /**
@@ -220,7 +271,8 @@ function scheduleWindow(
  * weekday drift, and deviation from an evenly-spaced target, subject to a hard ≥ `MIN_GAP_DAYS`-day
  * gap between the competition's own dates — see that function's doc for the full cost model. A
  * window with no room at all for its dates even at the gap floor (never observed with real windows,
- * only in contrived/tiny test ones) falls back to graceful packing via `fallbackPack`.
+ * only in contrived/tiny test ones) falls back to `relaxedSchedule` (same costs, gaps down to one day,
+ * blocked FIFA/tournament days only as a last resort), or `fallbackPack` when it has fewer days than dates.
  */
 export function continentalDates(
   continent: "Europe" | "South America",

@@ -1,3 +1,5 @@
+import { pickDaysMinCost } from "@/Domain/calendar/pickDays";
+
 const DAY = 86_400_000;
 const toIso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
@@ -53,6 +55,70 @@ export interface SpreadOnWeekdayOptions {
    * before (cups, and any continental call that doesn't pass this). Used only by `continentalDates`.
    */
   hardBusy?: Set<string>;
+  /**
+   * Clash-aware fallback, used only by `scheduleStageDates` (cups). Once the normal search fails
+   * for a pick, the rest of the picks (from that one on, plus however many earlier picks are needed
+   * to make room, like the degenerate packing) are chosen together by `pickDaysMinCost` over the
+   * remaining days, ranked: a `never` day (FIFA date / national-team tournament) is used only when
+   * nothing else exists, then a `hard` day (an exact league/continental clash), then a `busy` day
+   * (the day after a fixture), then a gap tighter than `minGapDays`; inside that, the configured
+   * weekday and closeness to each pick's target. Omitted = the plain clamp/packing fallback below.
+   * The normal search (weekday ±3 weeks, daily ±3 days) is untouched either way.
+   */
+  fallbackAvoid?: { never?: ReadonlySet<string>; hard?: ReadonlySet<string> };
+}
+
+/** Costs of the `fallbackAvoid` fallback — each level dwarfs everything below it. */
+const AVOID_COST = { NEVER: 1e9, HARD: 1e6, BUSY: 1e4, TIGHT_PER_DAY: 1e3, WEEKDAY: 10, TARGET_PER_DAY: 1 };
+
+/**
+ * `fallbackAvoid` fallback: re-chooses picks `[windowStart, count)` (see `SpreadOnWeekdayOptions`).
+ * `picks` holds the picks already placed (`picks.length === i`); returns the full list.
+ */
+function packAvoiding(
+  picks: number[],
+  i: number,
+  lo: number,
+  hi: number,
+  count: number,
+  weekday: number,
+  busy: Set<string>,
+  minGapDays: number,
+  targetOf: (index: number) => number,
+  avoid: NonNullable<SpreadOnWeekdayOptions["fallbackAvoid"]>,
+): string[] {
+  const lowerOf = (ws: number) => (ws > 0 ? picks[ws - 1]! : lo - DAY);
+  let windowStart = i;
+  // Re-include earlier picks only when the days left after them can't hold the remaining picks.
+  while (windowStart > 0 && (hi - lowerOf(windowStart)) / DAY < count - windowStart) windowStart--;
+  const remaining = count - windowStart;
+  // A window shorter than `count` days starts before `lo`, exactly like the plain packing.
+  const lower = Math.min(lowerOf(windowStart), hi - remaining * DAY);
+  const days = Math.round((hi - lower) / DAY);
+  const never = avoid.never ?? new Set<string>();
+  const hard = avoid.hard ?? new Set<string>();
+  const dayMs = (j: number) => lower + (j + 1) * DAY;
+  const tight = (g: number) => (g < minGapDays ? AVOID_COST.TIGHT_PER_DAY * (minGapDays - g) : 0);
+  const chosen = pickDaysMinCost({
+    days,
+    k: remaining,
+    dayCost: (j, q) => {
+      const ms = dayMs(j);
+      const iso = toIso(ms);
+      return (
+        (never.has(iso) ? AVOID_COST.NEVER : 0) +
+        (hard.has(iso) ? AVOID_COST.HARD : 0) +
+        (busy.has(iso) ? AVOID_COST.BUSY : 0) +
+        (new Date(ms).getUTCDay() === weekday ? 0 : AVOID_COST.WEEKDAY) +
+        (AVOID_COST.TARGET_PER_DAY * Math.abs(ms - targetOf(windowStart + q))) / DAY
+      );
+    },
+    gapCost: tight,
+    firstCost: (j) => (windowStart > 0 ? tight(Math.round((dayMs(j) - picks[windowStart - 1]!) / DAY)) : 0),
+  })!;
+  const out = picks.slice(0, windowStart);
+  for (const j of chosen) out.push(dayMs(j));
+  return out.map(toIso);
 }
 
 /**
@@ -124,9 +190,9 @@ function selectDaysPreferHardFree(
  * window too narrow to fit `count` picks by packing the remaining picks one day apart ending
  * exactly at `hi` — never past `hi`, never before the previous pick.
  *
- * `options` (all off by default) opt into stricter behaviour for `continentalDates` without
- * changing anything for `scheduleStageDates` (cups), which calls this with no options and must
- * keep producing byte-identical output.
+ * `options` (all off by default) opt into stricter behaviour. `continentalDates` uses the
+ * `avoidBusyHarder` family; `scheduleStageDates` (cups) passes only `fallbackAvoid`, which never
+ * touches the normal weekday/daily search (only what happens once it fails).
  *
  * Extracted from `src/Domain/cups/cupDates.ts` (`scheduleStageDates`) so cup and continental
  * calendars share one spreading algorithm.
@@ -147,6 +213,7 @@ export function spreadOnWeekday(
     lastResortGapDays = 2,
     throwOnDegenerate = false,
     hardBusy,
+    fallbackAvoid,
   } = options;
 
   if (throwOnDegenerate) {
@@ -170,9 +237,13 @@ export function spreadOnWeekday(
     (!wantWeekday || new Date(ms).getUTCDay() === weekday) &&
     !busy.has(toIso(ms));
 
+  const targetOf = (index: number) => {
+    const frac = centerTargets ? (index + 0.5) / count : (index + 1) / count;
+    return lo + Math.round((span * frac) / DAY) * DAY;
+  };
+
   for (let i = 0; i < count; i++) {
-    const frac = centerTargets ? (i + 0.5) / count : (i + 1) / count;
-    const target = lo + Math.round((span * frac) / DAY) * DAY;
+    const target = targetOf(i);
     // Nearest target weekday to the target, then search around it.
     const toWeekday = (weekday - new Date(target).getUTCDay() + 7) % 7;
     const snapped = target + (toWeekday <= 3 ? toWeekday : toWeekday - 7) * DAY;
@@ -218,6 +289,10 @@ export function spreadOnWeekday(
         // final dates against its own `hardBusy` set (this function stays pure, no logging here).
         pick = scanForFreeDay(lo, hi, prev, target, minGapDays, lastResortGapDays, busy, true);
       }
+    }
+
+    if (pick === null && fallbackAvoid) {
+      return packAvoiding(picks, i, lo, hi, count, weekday, busy, minGapDays, targetOf, fallbackAvoid);
     }
 
     if (pick === null) {
