@@ -93,7 +93,6 @@ function classify(
 }
 
 interface Profile {
-  sig: number;
   line: MainRole;
   foot: string | undefined;
   fixed: DetailedRole | undefined;
@@ -106,20 +105,52 @@ interface Profile {
 function statsSignature(stats: PlayerStatsRecord): number {
   let sig = 0;
   let i = 1;
-  for (const v of Object.values(stats as unknown as Record<string, number>)) sig += v * i++;
+  const rec = stats as unknown as Record<string, number>;
+  for (const k in rec) sig += rec[k]! * i++;
   return sig;
 }
 
-// Pure memo: everything below is a function of (stats, line, foot, fixed natural); keyed by the stats object.
-const PROFILES = new WeakMap<object, Profile>();
+/**
+ * Pure memo: a profile is a function of (stats, line, foot, fixed natural).
+ * - By stats object (fast path): the entry keeps the raw player fields it was resolved from, so a hit
+ *   skips re-deriving line and fixed natural; the signature catches an in-place edit of the stats.
+ * - By player id, verified on content (attribute names and values in record order — the order the
+ *   weighted scores sum in — plus line, foot and fixed natural): squads are re-read from the save every
+ *   day, so the stats object is new each day; this lets an unchanged player reuse yesterday's profile
+ *   (the kit pre-simulation profiles every player of the world every day).
+ */
+interface ObjectHit { sig: number; pos0: string | undefined; natPos: string | undefined; foot: string | undefined; profile: Profile }
+const PROFILES = new WeakMap<object, ObjectHit>();
+interface ContentHit { keys: string[]; vals: number[]; profile: Profile }
+const PROFILES_BY_ID = new Map<string, ContentHit>();
+/** The id memo is dropped when it grows past this (well above the world's players and generated youngsters). */
+const ID_MEMO_MAX = 200_000;
+
+function sameContent(hit: ContentHit, rec: Record<string, number>): boolean {
+  let i = 0;
+  for (const k in rec) {
+    if (i >= hit.keys.length || hit.keys[i] !== k || hit.vals[i] !== rec[k]) return false;
+    i++;
+  }
+  return i === hit.keys.length;
+}
 
 function profileOf(player: RosterPlayer): Profile {
-  const line = lineOf(player);
   const foot = player.preferredFoot;
-  const fixed = fixedNaturalRole(player);
+  const pos0 = player.positions[0];
+  const natPos = player.naturalPosition;
   const sig = statsSignature(player.stats);
   const hit = PROFILES.get(player.stats);
-  if (hit && hit.sig === sig && hit.line === line && hit.foot === foot && hit.fixed === fixed) return hit;
+  // Line and fixed natural are functions of `positions[0]` and `naturalPosition`: equal raw fields = same profile.
+  if (hit && hit.sig === sig && hit.pos0 === pos0 && hit.natPos === natPos && hit.foot === foot) return hit.profile;
+  const line = lineOf(player);
+  const fixed = fixedNaturalRole(player);
+  const rec = player.stats as unknown as Record<string, number>;
+  const byId = PROFILES_BY_ID.get(player.id);
+  if (byId && byId.profile.line === line && byId.profile.foot === foot && byId.profile.fixed === fixed && sameContent(byId, rec)) {
+    PROFILES.set(player.stats, { sig, pos0, natPos, foot, profile: byId.profile });
+    return byId.profile;
+  }
   const nat = naturalOf(player.stats, line, foot, fixed);
   const scores = {} as Record<DetailedRole, number>;
   const aptitudes = {} as Record<DetailedRole, Aptitude>;
@@ -127,8 +158,13 @@ function profileOf(player: RosterPlayer): Profile {
     scores[r] = weightedScore(player.stats, r);
     aptitudes[r] = classify(player.stats, line, foot, nat, r);
   }
-  const profile: Profile = { sig, line, foot, fixed, natural: nat.role, scores, aptitudes };
-  PROFILES.set(player.stats, profile);
+  const profile: Profile = { line, foot, fixed, natural: nat.role, scores, aptitudes };
+  PROFILES.set(player.stats, { sig, pos0, natPos, foot, profile });
+  const keys: string[] = [];
+  const vals: number[] = [];
+  for (const k in rec) { keys.push(k); vals.push(rec[k]!); }
+  if (PROFILES_BY_ID.size >= ID_MEMO_MAX) PROFILES_BY_ID.clear();
+  PROFILES_BY_ID.set(player.id, { keys, vals, profile });
   return profile;
 }
 

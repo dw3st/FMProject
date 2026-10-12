@@ -55,39 +55,51 @@ export function autoFillLineup(
   // scarcest-fit first: the slot with the fewest natural/apt candidates left picks next, so a
   // versatile player is not burned in a slot that others could fill while a scarcer slot goes
   // to someone unsuitable.
-  const eligibleFor = (role: string) => {
-    const roleMain = getMainRole(role);
-    return players.filter(
-      (p) =>
-        !used.has(p.id) &&
-        (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
-    );
+  // Per role, the eligible players (in squad order) with their aptitude flags and slot values are
+  // computed once: the loop below asks for them for every pending slot on every pick.
+  const lineMain = players.map((p) => getMainRole(p.positions[0] ?? "CM"));
+  interface RoleInfo { list: RosterPlayer[]; good: boolean[]; unsuitable: number[]; value: number[] }
+  const roleInfos = new Map<string, RoleInfo>();
+  const infoFor = (role: string): RoleInfo => {
+    let info = roleInfos.get(role);
+    if (!info) {
+      const roleMain = getMainRole(role);
+      const list = players.filter((p, i) => p.positions.includes(role) || lineMain[i] === roleMain);
+      const apts = list.map((p) => aptitudeFor(p, role));
+      info = {
+        list,
+        good: apts.map((a) => a === "natural" || a === "apt"),
+        unsuitable: apts.map((a) => Number(a === "unsuitable")),
+        value: list.map((p) => slotValue(p, role)),
+      };
+      roleInfos.set(role, info);
+    }
+    return info;
   };
   const pending = new Set(slots.map((_, i) => i));
   while (pending.size > 0) {
     let pick = -1;
     let pickGood = Infinity;
     for (const i of pending) {
-      const role = slots[i]!.role;
-      const good = eligibleFor(role).filter((p) => {
-        const a = aptitudeFor(p, role);
-        return a === "natural" || a === "apt";
-      }).length;
+      const info = infoFor(slots[i]!.role);
+      let good = 0;
+      for (let k = 0; k < info.list.length; k++) if (info.good[k] && !used.has(info.list[k]!.id)) good++;
       if (good < pickGood) {
         pickGood = good;
         pick = i;
       }
     }
     pending.delete(pick);
-    const role = slots[pick]!.role;
-    const candidates = eligibleFor(role).sort(
-      (a, b) =>
-        Number(aptitudeFor(a, role) === "unsuitable") - Number(aptitudeFor(b, role) === "unsuitable") ||
-        slotValue(b, role) - slotValue(a, role),
+    const info = infoFor(slots[pick]!.role);
+    const candidates: number[] = [];
+    for (let k = 0; k < info.list.length; k++) if (!used.has(info.list[k]!.id)) candidates.push(k);
+    candidates.sort(
+      (a, b) => info.unsuitable[a]! - info.unsuitable[b]! || info.value[b]! - info.value[a]!,
     );
-    if (candidates[0]) {
-      result[pick] = candidates[0].id;
-      used.add(candidates[0].id);
+    if (candidates.length > 0) {
+      const chosen = info.list[candidates[0]!]!;
+      result[pick] = chosen.id;
+      used.add(chosen.id);
     }
   }
 
