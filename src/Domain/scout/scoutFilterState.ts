@@ -32,6 +32,46 @@ export interface ScoutFilterState {
   minKnowledge?: number;
   /** Only players with a season award in their history (`.claude/rules/game/awards.md`). */
   onlyAwarded?: boolean;
+  /**
+   * Only players the user's club can afford (#123): estimated fee within the balance and the
+   * estimated asking wage within the wage cap (`fitsScoutBudget`, computed on the server).
+   */
+  onlyAffordable?: boolean;
+}
+
+/** Attribute groups of the search filters (#147); every listed attribute (`ATTRIBUTE_LIST`) is in exactly one. */
+export type AttributeGroupId = "physical" | "attack" | "defense" | "goalkeeper";
+
+export const ATTRIBUTE_GROUPS: { id: AttributeGroupId; attributes: AttributeId[] }[] = [
+  { id: "physical", attributes: ["speed", "acceleration", "strength", "stamina"] },
+  { id: "attack", attributes: ["finishing", "dribbling", "passing", "vision"] },
+  { id: "defense", attributes: ["tackling", "pressing"] },
+  { id: "goalkeeper", attributes: ["reflex", "jump"] },
+];
+
+/** Lowest and highest value typed in an attribute field (the screen's 1–100 scale). */
+export const ATTR_INPUT_MIN = 1;
+export const ATTR_INPUT_MAX = 100;
+
+/**
+ * A typed attribute bound: empty or invalid = no limit on that side (0 for the minimum, 100 for
+ * the maximum); a number is rounded and clamped to 1–100.
+ */
+export function parseAttrBound(text: string, side: "min" | "max"): number {
+  const trimmed = text.trim();
+  const n = trimmed === "" ? NaN : Number(trimmed);
+  if (!Number.isFinite(n)) return side === "min" ? 0 : 100;
+  return Math.min(ATTR_INPUT_MAX, Math.max(ATTR_INPUT_MIN, Math.round(n)));
+}
+
+/** A min/max pair in order (the fields can be typed the wrong way round). */
+export function orderedRange(min: number, max: number): { min: number; max: number } {
+  return min <= max ? { min, max } : { min: max, max: min };
+}
+
+/** True when the range limits nothing (0–100). */
+export function isAnyRange(r: { min: number; max: number }): boolean {
+  return r.min <= 0 && r.max >= 100;
 }
 
 export function defaultAttributeRanges(): Record<AttributeId, { min: number; max: number }> {
@@ -60,5 +100,6 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     onlyShortlist: false,
     minKnowledge: 0,
     onlyAwarded: false,
+    onlyAffordable: false,
   };
 }

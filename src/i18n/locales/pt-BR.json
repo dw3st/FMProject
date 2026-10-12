@@ -555,6 +555,10 @@
     "descriptionHint": "De {{min}} a {{max}} caracteres.",
     "attachImage": "Anexar imagem",
     "attachmentHint": "PNG ou JPEG, até 2 MB. Você também pode colar (Ctrl+V) uma captura de tela em qualquer lugar desta janela.",
+    "captureArea": "Capturar área da tela",
+    "captureTitle": "Capturar área da tela",
+    "captureHint": "Arraste para escolher a área. Esc cancela.",
+    "captureFailed": "Não foi possível capturar a tela.",
     "attachmentRemove": "Remover imagem",
     "attachmentErrorType": "Só imagens PNG ou JPEG são aceitas.",
     "attachmentErrorSize": "A imagem é muito grande (máx. 2 MB).",
@@ -913,7 +917,9 @@
       "attack": "Direção do ataque",
       "empty": "Ainda sem posse",
       "show": "Mostrar o mapa de posse",
-      "hide": "Esconder o mapa de posse"
+      "hide": "Esconder o mapa de posse",
+      "recentShort": "Últimos 10'",
+      "allShort": "Jogo todo"
     },
     "liveTactics": {
       "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
@@ -956,6 +962,31 @@
       "red": "Cartão vermelho! {{player}} ({{team}}) expulso",
       "secondYellow": "Segundo amarelo: {{player}} ({{team}}) expulso",
       "penalty": "Pênalti para {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Jogador",
+      "rating": "Nota",
+      "ratingFull": "Nota na partida",
+      "fitness": "Fôl",
+      "fitnessFull": "Fôlego",
+      "goals": "G",
+      "goalsFull": "Gols",
+      "assists": "A",
+      "assistsFull": "Assistências"
+    },
+    "stadium": {
+      "label": "Estádio",
+      "attendance": "{{crowd}} torcedores",
+      "neutral": "Campo neutro"
+    },
+    "feedWindow": {
+      "title": "Lances",
+      "open": "Abrir os lances numa janela",
+      "dock": "Voltar para o painel",
+      "close": "Fechar a janela",
+      "drag": "Arraste para mover",
+      "inWindow": "Lances abertos numa janela."
     }
   },
   "broadcast": {
@@ -2021,7 +2052,37 @@
     },
     "inboxCategory": "Recorde do clube",
     "inboxSubject": "Novo recorde do clube: {{record}}",
-    "inboxBody": "{{record}}: {{value}} ({{detail}})."
+    "inboxBody": "{{record}}: {{value}} ({{detail}}).",
+    "legends": "Ídolos e lendas",
+    "legendsAbout": "Ídolo: {{idolApps}} jogos, ou {{idolWith}} com {{idolGoals}} gols, {{idolTitles}} títulos ou um prêmio. Lenda: {{legendApps}} jogos, ou {{legendWith}} com {{legendGoals}} gols, {{legendTitles}} títulos ou {{legendAwards}} prêmios.",
+    "noLegends": "Nenhum ídolo ainda.",
+    "tier": {
+      "legend": "Lenda",
+      "idol": "Ídolo"
+    },
+    "status": {
+      "current": "No elenco",
+      "retired": "Aposentado",
+      "left": "Saiu do clube"
+    },
+    "legendLine": "{{apps}} jogos · {{goals}} gols · {{titles}} títulos",
+    "facts": "Fatos e curiosidades",
+    "fact": {
+      "seasons": "Temporadas",
+      "titles": "Títulos conquistados",
+      "moves": "Acessos / rebaixamentos",
+      "leagueGoals": "Gols na liga",
+      "bestSeason": "Melhor campanha",
+      "mostTeamGoals": "Mais gols numa temporada",
+      "topScorer": "Maior artilheiro",
+      "mostApps": "Mais jogos"
+    },
+    "factDetail": {
+      "points": "{{points}} pts · {{season}}",
+      "goals": "{{league}} · {{season}}",
+      "player": "{{name}}",
+      "position": "{{position}}º"
+    }
   },
   "youth": {
     "loading": "Carregando a base...",
@@ -2332,13 +2393,41 @@
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",
       "freeAgentsOnly": "Só jogadores livres",
-      "awardedOnly": "Só premiados"
+      "awardedOnly": "Só premiados",
+      "affordableOnly": "Cabe no orçamento",
+      "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
+      "search": "Pesquisar",
+      "changed": "Filtros alterados"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
-      "description": "Clique na faixa para definir mín–máx (0–100)",
+      "description": "Digite mínimo e máximo (1–100)",
       "clearAll": "Limpar todos os atributos",
-      "any": "qualquer"
+      "any": "qualquer",
+      "minOf": "{{attr}} mínimo",
+      "maxOf": "{{attr}} máximo",
+      "groups": {
+        "physical": "Físico",
+        "attack": "Técnica e ataque",
+        "defense": "Defesa",
+        "goalkeeper": "Goleiro"
+      }
+    },
+    "savedFilters": {
+      "title": "Filtros salvos",
+      "load": "Carregar e pesquisar",
+      "remove": "Apagar \"{{name}}\"",
+      "namePlaceholder": "Dê um nome a estes filtros",
+      "nameLabel": "Nome dos filtros salvos",
+      "save": "Salvar filtros"
+    },
+    "interest": {
+      "interested": "Interessado",
+      "hesitant": "Hesitante",
+      "not_coming": "Não viria",
+      "interestedHint": "Seu olheiro acha que ele gostaria de vir para o seu clube",
+      "hesitantHint": "Seu olheiro acha que ele tem dúvidas: clube rival, o nível dele, lealdade ou o tamanho do seu clube",
+      "not_comingHint": "Seu olheiro acha que ele recusaria o seu clube"
     },
     "table": {
       "forSale": "À venda",
@@ -2356,7 +2445,9 @@
       "action": "Ação",
       "offer": "Oferta",
       "sign": "Contratar",
-      "signFree": "Contratar como jogador livre"
+      "signFree": "Contratar como jogador livre",
+      "interest": "Interesse",
+      "noClub": "Sem clube"
     }
   },
   "fastForward": {
@@ -2383,6 +2474,11 @@
   "statsScreen": {
     "allLeagues": "Geral (todas as ligas)",
     "competition": "Competição",
+    "favorites": {
+      "label": "Favoritas",
+      "add": "Marcar como favorita",
+      "remove": "Tirar das favoritas"
+    },
     "title": "Estatísticas",
     "rankings": "Rankings",
     "myTeam": "Meu time",
@@ -3074,7 +3170,10 @@
       "injuryDays": "Dias fora por lesão {{pct}}",
       "intakeQuality": "Nível da safra {{value}}",
       "promise": "Chance de promessa {{pct}}"
-    }
+    },
+    "groupBusy": "{{group}}: já há uma obra em andamento. Uma obra por vez em cada área.",
+    "groupWorks": "Obra em andamento",
+    "slots": "Obras em andamento: {{count}} de {{max}}"
   },
   "transferWindows": {
     "tab": "Janelas",

@@ -467,6 +467,8 @@ export function TestScreen() {
   // Stadium / officials (spec 2026-10-08-match-visual §9): off by default so the tuning scenarios keep their scale.
   const [stadiumOn, setStadiumOn] = useState(false);
   const [officialsOn, setOfficialsOn] = useState(false);
+  /** Visual 2 (#129): stretcher, pacing managers, benches, shaking net, jumping fans, celebration. */
+  const [extrasOn, setExtrasOn] = useState(false);
   const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
   const [neutralVenue, setNeutralVenue] = useState(false);
   const [standWorks, setStandWorks] = useState(false);
@@ -1508,6 +1510,7 @@ export function TestScreen() {
         </span>
         <Chip selected={stadiumOn} onClick={() => setStadiumOn(v => !v)} title="Stadium band with the crowd">Stadium</Chip>
         <Chip selected={officialsOn} onClick={() => setOfficialsOn(v => !v)} title="Referee, assistants and managers">Officials</Chip>
+        <Chip selected={extrasOn} onClick={() => setExtrasOn(v => !v)} title="Stretcher, pacing managers and benches (with Officials), shaking net, jumping fans, goal celebration">Extras</Chip>
         {stadiumOn && (
           <>
             <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
@@ -1757,6 +1760,7 @@ export function TestScreen() {
               captureRef={pitchCaptureRef}
               perfRef={pitchPerfRef}
               stadium={pitchStadium}
+              extras={extrasOn}
               officials={officialsOn && refS !== null ? { refereeFace: refereeFaceUrl(TEST_REFEREE.id, TEST_REFEREE.country, 40) } : officialsOn}
               coaches={TEST_COACHES}
             />

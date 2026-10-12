@@ -29,8 +29,12 @@ import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
-import { drawStand, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
-import { worksSides } from "@/GraficsEngine/crowd";
+import { drawFans, drawStandBase, drawStandEdges, fansBounds, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { crowdSeats, seatCellPx, worksSides } from "@/GraficsEngine/crowd";
+import {
+  benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, CROWD_JUMP_S, crowdJumpPx, startStretcher, STRETCHER,
+  stretcherPose, type StretcherRun,
+} from "@/GraficsEngine/matchExtras";
 import type { StandId } from "@/types/facilityTypes";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
@@ -300,6 +304,11 @@ interface Props {
    * touchline once the card is gone (sent to the stands).
    */
   coachCard?: { team: TeamId; card: "yellow" | "red"; seq: number } | null;
+  /**
+   * Visual 2 (#129): stretcher after an injury, managers pacing their technical areas, the benches,
+   * the net shaking, the scoring side's fans jumping and the scorer's celebration. Read every frame.
+   */
+  extras?: boolean;
 }
 
 export interface PitchOfficials {
@@ -352,6 +361,7 @@ export function PixiPitch({
   coaches,
   coachCue = null,
   coachCard = null,
+  extras = false,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -371,6 +381,7 @@ export function PixiPitch({
   const perfRefRef               = useRef(perfRef);
   const stadiumRef               = useRef(stadium);
   const coachesRef               = useRef(coaches);
+  const extrasRef                = useRef(extras);
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
   const redrawCrowdRef           = useRef<(() => void) | null>(null);
   /** Set by the Pixi setup: plays a gesture on a team's manager. */
@@ -397,6 +408,7 @@ export function PixiPitch({
   useEffect(() => { perfRefRef.current = perfRef; }, [perfRef]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
   useEffect(() => { coachesRef.current = coaches; }, [coaches]);
+  useEffect(() => { extrasRef.current = extras; }, [extras]);
   // Crowd texture: re-baked only when what it shows changes (never per frame).
   useEffect(() => {
     stadiumRef.current = stadium;
@@ -478,43 +490,67 @@ export function PixiPitch({
 
       // ── Stadium: stand + crowd baked into ONE texture (spec 2026-10-08-match-visual §2) ──
       // Re-baked only when the fill, the home team, the venue or the mirror change; zero cost per frame.
-      let crowdSprite: Sprite | null = null;
-      let crowdTexture: Texture | null = null;
+      // The empty stand is a plain Graphics; each side's fans one sprite of their own box, so the
+      // scoring side's fans can jump (#129) and the home fans pulse.
+      const crowdLayer = new Container();
+      crowdLayer.eventMode = 'none';
+      app.stage.addChildAt(crowdLayer, 0);
+      let crowdBase: Graphics | null = null;
+      const crowdFans: Record<"home" | "away", { sprite: Sprite; baseY: number } | null> = { home: null, away: null };
+      /** Height (px) of a fans' jump: under half a seat. */
+      let crowdJumpAmp = 0;
       const bakeCrowd = () => {
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
-        const g = new Graphics();
+        for (const k of ["home", "away"] as const) {
+          const f = crowdFans[k];
+          if (f) { f.sprite.destroy({ texture: true, textureSource: true }); crowdFans[k] = null; }
+        }
+        crowdBase?.destroy();
         // The home club is drawn on the left when it is team A and the pitch is not mirrored (or B, mirrored).
         const homeLeft = (st.homeTeam === "A") !== mirrorRef.current;
-        drawStand(g, m.stand, {
+        const works = worksSides(st.works, mirrorRef.current);
+        crowdBase = new Graphics();
+        drawStandBase(crowdBase, m.stand, works);
+        drawStandEdges(crowdBase, m.stand);
+        crowdLayer.addChild(crowdBase);
+        const seats = crowdSeats({
+          stand: m.stand,
           fill: st.fill,
           homeColor: st.homeTeam === "A" ? fillA : fillB,
           awayColor: st.homeTeam === "A" ? fillB : fillA,
           homeSide: homeLeft ? "left" : "right",
           neutral: st.neutral,
           seed: st.seed,
-          works: worksSides(st.works, mirrorRef.current),
+          works,
         });
-        const texture = app.renderer.generateTexture({
-          target: g,
-          resolution: app.renderer.resolution,
-          frame: new Rectangle(0, 0, canvasWidth, canvasHeight),
-        });
-        g.destroy();
-        if (!crowdSprite) {
-          crowdSprite = new Sprite(texture);
-          crowdSprite.eventMode = 'none';
-          app.stage.addChildAt(crowdSprite, 0);
-        } else {
-          crowdSprite.texture = texture;
+        crowdJumpAmp = Math.max(1.5, seatCellPx(m.stand) * 0.45);
+        for (const k of ["home", "away"] as const) {
+          const mine = seats.filter((seat) => seat.team === k);
+          const box = fansBounds(m.stand, mine);
+          if (!box) continue;
+          const g = new Graphics();
+          drawFans(g, m.stand, mine);
+          const texture = app.renderer.generateTexture({
+            target: g,
+            resolution: app.renderer.resolution,
+            frame: new Rectangle(box.x, box.y, box.w, box.h),
+          });
+          g.destroy();
+          const sprite = new Sprite(texture);
+          sprite.eventMode = 'none';
+          sprite.x = box.x;
+          sprite.y = box.y;
+          crowdLayer.addChild(sprite);
+          crowdFans[k] = { sprite, baseY: box.y };
         }
-        crowdTexture?.destroy(true);
-        crowdTexture = texture;
       };
       bakeCrowd();
       redrawCrowdRef.current = bakeCrowd;
       /** Start of the last home-goal pulse on the effects clock (null: none running). */
       let crowdPulseAt: number | null = null;
+      /** The scoring side's fans jumping (#129): which fans, since when (effects clock). */
+      let crowdJump: { side: "home" | "away"; at: number } | null = null;
 
       // Mowing stripes (static, drawn once — the pitch remounts on resize)
       const stripesGraphics = new Graphics();
@@ -950,8 +986,10 @@ export function PixiPitch({
 
       // ── Home-goal pulse of the crowd ──
       const unsubCrowdGoal = gameBus.on("goalScored", (e) => {
-        if (!crowdSprite || !framesShown()) return;
-        if (stadiumRef.current && e.team === stadiumRef.current.homeTeam) crowdPulseAt = effectNow;
+        const st = stadiumRef.current;
+        if (!st || !framesShown()) return;
+        if (e.team === st.homeTeam) crowdPulseAt = effectNow;
+        if (extrasRef.current) crowdJump = { side: e.team === st.homeTeam ? "home" : "away", at: effectNow };
       });
 
       // ── Player animations: long shot, header, save (spec 2026-10-08-match-visual §5) ──
@@ -988,6 +1026,46 @@ export function PixiPitch({
         if (e.scored || e.keeperId === null || !framesShown()) return;
         keeperSave(e.keeperId, seedFrom(`${Math.floor(stateRef.current.matchTime)}:${e.takerId}`) % 2 === 0 ? 1 : -1);
       });
+      // Goal celebration (#129): the scorer (and the assister) hop and turn.
+      const unsubAnimCelebrate = gameBus.on("goalScored", (e) => {
+        if (!extrasRef.current || !framesShown()) return;
+        for (const id of [e.scorerId, e.assistId]) {
+          if (id === undefined || !playerPos(id)) continue;
+          anims = addAnim(anims, { playerId: id, kind: "celebrate", dir: { x: 1, y: 0 }, side: id % 2 === 0 ? 1 : -1 }, effectNow);
+        }
+      });
+
+      // ── Stretcher (#129): two medics in from the nearest touchline, out with the injured player ──
+      const stretcherGfx = new Graphics();
+      stretcherGfx.zIndex = 6;
+      stretcherGfx.eventMode = 'none';
+      world.addChild(stretcherGfx);
+      let stretchers: { run: StretcherRun; color: number }[] = [];
+      const unsubStretcher = gameBus.on("injury", (e) => {
+        if (!extrasRef.current || !framesShown()) return;
+        const at = lastDrawnPos?.get(e.playerId) ?? playerPos(e.playerId);
+        if (!at) return;
+        const { px, py } = toPixel(at.x, at.y);
+        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow), color: e.team === "A" ? fillA : fillB }];
+      });
+      const drawStretchers = () => {
+        stretcherGfx.clear();
+        if (stretchers.length === 0) return;
+        const w = markerR * 1.1, h = markerR * 2.6, medic = markerR * 0.55;
+        stretchers = stretchers.filter((st) => !stretcherPose(st.run, effectNow).done);
+        for (const st of stretchers) {
+          const pose = stretcherPose(st.run, effectNow);
+          const showPatient = pose.carrying || effectNow - st.run.startedAt >= STRETCHER.IN_S;
+          stretcherGfx.roundRect(pose.x - w / 2, pose.y - h / 2, w, h, 2).fill(0xf2f2f2).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
+          if (showPatient) stretcherGfx.circle(pose.x, pose.y, markerR * 0.7).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+          for (const end of [-1, 1]) {
+            const my = pose.y + end * (h / 2 + medic * 0.8);
+            stretcherGfx.circle(pose.x, my, medic).fill(0xffffff).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
+            stretcherGfx.rect(pose.x - medic * 0.55, my - medic * 0.16, medic * 1.1, medic * 0.32).fill(0xd62020);
+            stretcherGfx.rect(pose.x - medic * 0.16, my - medic * 0.55, medic * 0.32, medic * 1.1).fill(0xd62020);
+          }
+        }
+      };
 
       // ── Referee, assistants, managers (spec 2026-10-08-match-visual §3–§4) ──
       const officialsOn = !!officials;
@@ -1090,6 +1168,34 @@ export function PixiPitch({
       };
       const unsubCoachGoal = gameBus.on("goalScored", (e) => startGesture(e.team, "celebrate"));
 
+      // Benches beside the technical areas (#129): redrawn only when a bench changes size.
+      const benchGfx = new Graphics();
+      benchGfx.zIndex = -0.7;
+      benchGfx.eventMode = 'none';
+      world.addChild(benchGfx);
+      let benchSig = "";
+      const drawBenches = () => {
+        const st = stateRef.current;
+        const on = officialsOn && extrasRef.current;
+        const sig = on ? `${st.benchA.length}:${st.benchB.length}:${mirrorRef.current}` : "";
+        if (sig === benchSig) return;
+        benchSig = sig;
+        benchGfx.clear();
+        if (!on) return;
+        for (const side of ["left", "right"] as const) {
+          const team = teamOfDrawnSide(side);
+          const b = benchRect(coachSpot[side], side, m, markerR);
+          benchGfx.roundRect(b.x, b.y, b.w, b.h, 3).fill(0x2b3542).stroke({ width: 1, color: 0x000000, alpha: 0.5 });
+          const color = team === "A" ? fillA : fillB;
+          const bench = team === "A" ? st.benchA : st.benchB;
+          const r = Math.min(markerR * 0.5, b.w / (2 * Math.max(1, bench.length)));
+          for (const seat of benchSeats(b, bench.length)) {
+            benchGfx.circle(seat.x, seat.y, r).fill(color).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
+          }
+        }
+      };
+      const coachWalkHalf = m.width * COACH_WALK_FRAC;
+
       /** Moves and draws the officials and the managers (once per frame, engine yards in). */
       const drawOfficials = (ball: YdPos, players: YdPos[]) => {
         if (!officialsOn) return;
@@ -1132,6 +1238,7 @@ export function PixiPitch({
           const dir = st.players.find((p) => p.team === entry.team)?.attackDir ?? 1;
           drawCoachArms(entry.sprite, markerR, pose, (dir * xSign()) as 1 | -1);
           entry.sprite.root.y = coachSpot[side].y - pose.jumpPx;
+          entry.sprite.root.x = coachSpot[side].x + (extrasRef.current ? coachWalkOffset(effectNow, side === "left" ? 0 : 2.4, coachWalkHalf) : 0);
           const shown = coachCards[entry.team];
           if (shown && effectNow >= shown.until) delete coachCards[entry.team];
           showCard(entry.sprite.root, coachCards[entry.team]?.card ?? null);
@@ -1738,9 +1845,15 @@ export function PixiPitch({
         // ── Pitch effects + trail (real-time clock, frozen while paused) ──
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
         drawOfficials(drawnB, [...drawnPos.values()]);
-        if (crowdSprite) {
-          if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
-          crowdSprite.alpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
+        drawBenches();
+        drawStretchers();
+        effectCtx.netShake = extrasRef.current;
+        if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
+        if (crowdFans.home) crowdFans.home.sprite.alpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
+        if (crowdJump && effectNow - crowdJump.at >= CROWD_JUMP_S) crowdJump = null;
+        for (const k of ["home", "away"] as const) {
+          const f = crowdFans[k];
+          if (f) f.sprite.y = f.baseY + (crowdJump?.side === k ? crowdJumpPx(effectNow - crowdJump.at, crowdJumpAmp) : 0);
         }
         const st = stateRef.current;
         pendingGoalShot = null; // a goal shot only pairs with a goalScored of the same tick
@@ -2009,11 +2122,12 @@ export function PixiPitch({
         unsubRefCard();
         unsubArFlag();
         unsubCoachGoal();
+        unsubAnimCelebrate();
+        unsubStretcher();
         redrawCrowdRef.current = null;
         coachCueFnRef.current = null;
         coachCardFnRef.current = null;
-        crowdTexture?.destroy(true);
-        crowdTexture = null;
+        for (const k of ["home", "away"] as const) crowdFans[k]?.sprite.destroy({ texture: true, textureSource: true });
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };

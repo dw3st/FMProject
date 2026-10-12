@@ -2,12 +2,15 @@
 import type { Graphics } from "pixi.js";
 import { CARD_BADGE, EFFECT_COLOR, EFFECT_SHAPE as X, TRAIL } from "@/GraficsEngine/pitchStyle";
 import { effectAlpha, effectProgress, type PitchEffect, type TrailPoint } from "@/GraficsEngine/pitchEffects";
+import { netShake } from "@/GraficsEngine/matchExtras";
 import { GOAL_Y_MIN, GOAL_Y_MAX, PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
 export interface EffectCtx {
   toPixel: (x: number, y: number) => { px: number; py: number };
   markerR: number;     // marker radius px
   netDepth: number;    // goal net depth px
+  /** Visual 2 (#129): the whole net shakes after a goal instead of one bulging line. */
+  netShake?: boolean;
 }
 
 function dashed(g: Graphics, x1: number, y1: number, x2: number, y2: number, color: number, alpha: number, width: number = X.LINE_W) {
@@ -49,9 +52,12 @@ export function drawEffect(g: Graphics, e: PitchEffect, now: number, ctx: Effect
       const top = ctx.toPixel(e.goalX, GOAL_Y_MIN), bot = ctx.toPixel(e.goalX, GOAL_Y_MAX);
       // Drawn side, not yards: a mirrored pitch (#98) draws the x = 0 goal on the right.
       const outward = top.px > ctx.toPixel(PITCH_LENGTH / 2, 0).px ? 1 : -1; // right goal bulges right
-      const bulge = ctx.netDepth * (1 + X.NET_BULGE * Math.sin(Math.PI * p)) * outward;
-      g.moveTo(top.px, top.py).quadraticCurveTo(top.px + bulge * X.NET_CTRL, (top.py + bot.py) / 2, bot.px, bot.py)
-        .stroke({ width: X.LINE_W, color: EFFECT_COLOR.WHITE, alpha: a });
+      if (ctx.netShake) drawShakingNet(g, top, bot, outward, ctx.netDepth, p, a);
+      else {
+        const bulge = ctx.netDepth * (1 + X.NET_BULGE * Math.sin(Math.PI * p)) * outward;
+        g.moveTo(top.px, top.py).quadraticCurveTo(top.px + bulge * X.NET_CTRL, (top.py + bot.py) / 2, bot.px, bot.py)
+          .stroke({ width: X.LINE_W, color: EFFECT_COLOR.WHITE, alpha: a });
+      }
       const mouth = ctx.toPixel(e.goalX, e.goalY);
       for (let i = 0; i < X.CONFETTI; i++) {
         const ang = Math.PI / 2 + (i / (X.CONFETTI - 1) - 0.5) * Math.PI * X.CONFETTI_SPREAD;      // fan towards the pitch
@@ -101,5 +107,33 @@ export function effectTextAnchor(e: PitchEffect, now: number, ctx: EffectCtx): {
     case "card": { const { px, py } = ctx.toPixel(e.x, e.y); return { x: px, y: py - R * X.TEXT_CARD - effectProgress(e, now) * R }; }
     case "offside": { const { px, py } = ctx.toPixel(e.x, e.y); return { x: px, y: py - R * X.TEXT_OFFSIDE }; }
     default: return null;
+  }
+}
+
+/** Net lines across the depth and along the mouth of a shaking net. */
+const NET_MESH = { DEPTH_LINES: 3, ROWS: 5, SAMPLES: 8, AMP: 1.1, WIDTH: 1.2, ALPHA: 0.85 } as const;
+
+/**
+ * The goal net after a goal (#129): a mesh pushed out of the goal, the deepest line the most, wobbling
+ * and settling (`netShake`). Drawn over the static net of the pitch.
+ */
+function drawShakingNet(
+  g: Graphics, top: { px: number; py: number }, bot: { px: number; py: number },
+  outward: number, depth: number, p: number, alpha: number,
+): void {
+  const shake = netShake(p);
+  const h = bot.py - top.py;
+  // x of the net at depth fraction d (0 = goal line, 1 = back) and height fraction f (0..1).
+  const xAt = (d: number, f: number) => top.px + outward * (depth * d + depth * NET_MESH.AMP * shake * d * Math.sin(Math.PI * f));
+  const stroke = { width: NET_MESH.WIDTH, color: EFFECT_COLOR.WHITE, alpha: alpha * NET_MESH.ALPHA };
+  for (let i = 1; i <= NET_MESH.DEPTH_LINES; i++) {
+    const d = i / NET_MESH.DEPTH_LINES;
+    g.moveTo(xAt(d, 0), top.py);
+    for (let k = 1; k <= NET_MESH.SAMPLES; k++) g.lineTo(xAt(d, k / NET_MESH.SAMPLES), top.py + (h * k) / NET_MESH.SAMPLES);
+    g.stroke(stroke);
+  }
+  for (let r = 0; r <= NET_MESH.ROWS; r++) {
+    const f = r / NET_MESH.ROWS;
+    g.moveTo(top.px, top.py + h * f).lineTo(xAt(1, f), top.py + h * f).stroke(stroke);
   }
 }

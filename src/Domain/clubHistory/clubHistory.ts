@@ -1,7 +1,7 @@
 import type { Fixture } from "@/types/calendarTypes";
 import type { PlayerHistoryRow, StandingRow } from "@/types/playerTypes";
 import type {
-  ClubHistory, ClubMatchRecord, ClubRecordBroken, ClubRecords, ClubScorer, ClubSeasonRow, ClubTransferRecord,
+  ClubFacts, ClubHistory, ClubMatchRecord, ClubRecordBroken, ClubRecords, ClubScorer, ClubSeasonRow, ClubTransferRecord,
 } from "@/types/clubHistoryTypes";
 
 /** Pure club-history aggregation (`.claude/rules/game/club-history.md`). No I/O. */
@@ -50,7 +50,7 @@ export function clubMatchesOf(
 export interface ClubPlayerRow {
   playerId: string;
   name: string;
-  row: Pick<PlayerHistoryRow, "goals" | "apps" | "assists">;
+  row: Pick<PlayerHistoryRow, "goals" | "apps" | "assists"> & Partial<Pick<PlayerHistoryRow, "titles" | "awards">>;
 }
 
 export interface ClubSeasonInput {
@@ -72,11 +72,15 @@ export interface ClubSeasonInput {
 
 function addScorer(scorers: Record<string, ClubScorer>, id: string, name: string, r: ClubPlayerRow["row"]) {
   const cur = scorers[id];
+  const titles = (cur?.titles ?? 0) + (r.titles?.length ?? 0);
+  const awards = (cur?.awards ?? 0) + (r.awards?.length ?? 0);
   scorers[id] = {
     name,
     goals: (cur?.goals ?? 0) + r.goals,
     apps: (cur?.apps ?? 0) + r.apps,
     assists: (cur?.assists ?? 0) + r.assists,
+    ...(titles > 0 ? { titles } : {}),
+    ...(awards > 0 ? { awards } : {}),
   };
 }
 
@@ -268,4 +272,72 @@ export function topPlayers(
     .filter((s) => s[by] > 0)
     .sort((a, b) => b[by] - a[by] || b[other] - a[other] || a.name.localeCompare(b.name))
     .slice(0, n);
+}
+
+/**
+ * Idols and legends (#151): a player becomes an idol, then a legend, of a club by what he did
+ * there (totals of his season rows at the club: games, goals, titles, awards).
+ * Legend: LEGEND_APPS games, or LEGEND_APPS_WITH games with LEGEND_GOALS goals / LEGEND_TITLES
+ * titles / LEGEND_AWARDS awards. Idol: the same with the IDOL_ values.
+ */
+export const CLUB_LEGENDS = {
+  LEGEND_APPS: 200,
+  LEGEND_APPS_WITH: 120,
+  LEGEND_GOALS: 60,
+  LEGEND_TITLES: 3,
+  LEGEND_AWARDS: 2,
+  IDOL_APPS: 100,
+  IDOL_APPS_WITH: 50,
+  IDOL_GOALS: 25,
+  IDOL_TITLES: 2,
+  IDOL_AWARDS: 1,
+} as const;
+
+/** "legend", "idol" or null for a player's totals at a club. */
+export function legendTier(s: ClubScorer): "legend" | "idol" | null {
+  const L = CLUB_LEGENDS;
+  const titles = s.titles ?? 0;
+  const awards = s.awards ?? 0;
+  if (s.apps >= L.LEGEND_APPS) return "legend";
+  if (s.apps >= L.LEGEND_APPS_WITH && (s.goals >= L.LEGEND_GOALS || titles >= L.LEGEND_TITLES || awards >= L.LEGEND_AWARDS)) {
+    return "legend";
+  }
+  if (s.apps >= L.IDOL_APPS) return "idol";
+  if (s.apps >= L.IDOL_APPS_WITH && (s.goals >= L.IDOL_GOALS || titles >= L.IDOL_TITLES || awards >= L.IDOL_AWARDS)) return "idol";
+  return null;
+}
+
+/** The club's idols and legends: legends first, then by games, goals and name. */
+export function clubLegends(
+  scorers: Record<string, ClubScorer>,
+): ({ playerId: string; tier: "legend" | "idol" } & ClubScorer)[] {
+  const out: ({ playerId: string; tier: "legend" | "idol" } & ClubScorer)[] = [];
+  for (const [playerId, s] of Object.entries(scorers)) {
+    const tier = legendTier(s);
+    if (tier) out.push({ playerId, tier, ...s });
+  }
+  return out.sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "legend" ? -1 : 1)
+    || b.apps - a.apps || b.goals - a.goals || a.name.localeCompare(b.name));
+}
+
+/** Facts and curiosities of the club (#151), from its seasons and players' totals. */
+export function clubFacts(history: ClubHistory): ClubFacts {
+  const facts: ClubFacts = { seasons: history.seasons.length, titles: 0, promotions: 0, relegations: 0, leagueGoals: 0 };
+  for (const s of history.seasons) {
+    facts.titles += s.titles.filter((t) => !t.startsWith("promotion:")).length;
+    if (s.move === "promoted") facts.promotions++;
+    if (s.move === "relegated") facts.relegations++;
+    facts.leagueGoals += s.gf;
+    if (s.played > 0 && (!facts.bestSeason || s.points > facts.bestSeason.points)) {
+      facts.bestSeason = { season: s.season, league: s.league, points: s.points, position: s.position };
+    }
+    if (s.played > 0 && (!facts.mostTeamGoals || s.gf > facts.mostTeamGoals.goals)) {
+      facts.mostTeamGoals = { season: s.season, league: s.league, goals: s.gf };
+    }
+  }
+  const scorer = topPlayers(history.scorers, "goals", 1)[0];
+  if (scorer) facts.topScorer = { playerId: scorer.playerId, name: scorer.name, goals: scorer.goals };
+  const apps = topPlayers(history.scorers, "apps", 1)[0];
+  if (apps) facts.mostApps = { playerId: apps.playerId, name: apps.name, apps: apps.apps };
+  return facts;
 }

@@ -1,6 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
-import { emptyClubHistory, titleGallery, topPlayers } from "@/Domain/clubHistory/clubHistory";
+import { clubFacts, clubLegends, emptyClubHistory, titleGallery, topPlayers } from "@/Domain/clubHistory/clubHistory";
 import { seasonLabel } from "@/Domain/history/history";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
 
@@ -36,7 +36,8 @@ export const clubHistoryRoutes = {
     const current = new Set(squad.players.map((p) => p.id));
     const scorers = topPlayers(history.scorers, "goals");
     const apps = topPlayers(history.scorers, "apps");
-    const listed = new Set([...scorers, ...apps].map((s) => s.playerId).filter((id) => !current.has(id)));
+    const legends = clubLegends(history.scorers);
+    const listed = new Set([...scorers, ...apps, ...legends].map((s) => s.playerId).filter((id) => !current.has(id)));
     const retired = new Set(
       listed.size > 0 ? (await saveService.getRetired(saveId)).filter((r) => listed.has(r.id)).map((r) => r.id) : [],
     );
@@ -62,6 +63,8 @@ export const clubHistoryRoutes = {
       titles: titleGallery(history.seasons),
       topScorers: scorers.map(flag),
       topApps: apps.map(flag),
+      legends: legends.map(flag),
+      facts: clubFacts(history),
       records: history.records,
     };
     return Response.json(body);

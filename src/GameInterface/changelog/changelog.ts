@@ -25,6 +25,70 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Estatísticas: marque competições como favoritas na estrela ao lado da lista e troque entre elas com um clique.",
+        en: "Stats: star your favourite competitions next to the list and switch between them with one click.",
+      },
+      {
+        pt: "Relatório de problema: capture uma área da tela arrastando um retângulo, sem precisar salvar um print.",
+        en: "Problem report: capture an area of the screen by dragging a rectangle, no saved screenshot needed.",
+      },
+      {
+        pt: "Central de Olheiros: a busca só roda ao clicar em Pesquisar (ou Enter), os atributos ficam em grupos com valores digitados (1–100), dá para salvar quantos filtros quiser com nome, e cada linha mostra a bandeira e o escudo do clube.",
+        en: "Scouting centre: the search runs only when you click Search (or press Enter), attributes are grouped with typed values (1–100), you can save as many named filters as you like, and each row shows the flag and the club crest.",
+      },
+      {
+        pt: "Na busca do olheiro: filtro \"Cabe no orçamento\" (taxa e salário que o clube pode pagar) e o interesse de cada jogador em vir para o seu clube (Interessado, Hesitante, Não viria), pelo que o olheiro percebe.",
+        en: "In the scout search: a \"Fits the budget\" filter (fee and wage your club can pay) and each player's interest in joining your club (Interested, Hesitant, Would not come), as your scout reads it.",
+      },
+      {
+        pt: "Instalações com desenho: cada parte do estádio, do CT e da base aparece como um cartão ilustrado com nível e condição; ao escolher uma, o painel mostra a obra, o custo, o prazo e a resposta da diretoria.",
+        en: "Facilities drawn: every part of the stadium, training ground and academy is an illustrated card with its level and condition; pick one to see the works, cost, time and the board's answer.",
+      },
+      {
+        pt: "Uma obra por vez em cada área (estádio, CT e base). Obras maiores levam mais tempo e custam mais; reformas pequenas pagas na hora não entram no limite.",
+        en: "One works at a time in each area (stadium, training ground, academy). Bigger works take longer and cost more; small repairs paid on the spot don't count.",
+      },
+      {
+        pt: "História do clube com ídolos e lendas (em atividade, aposentados ou que saíram) e um quadro de fatos e curiosidades.",
+        en: "Club history now has idols and legends (active, retired or gone) and a facts panel.",
+      },
+      {
+        pt: "Na partida, o nome do estádio e o público aparecem abaixo do placar.",
+        en: "In the match, the stadium name and the crowd show under the scoreboard.",
+      },
+      {
+        pt: "A lista de jogadores ao lado do campo mostra posição, nota, fôlego, gols e assistências, e destaca quem levou cartão.",
+        en: "The player list beside the pitch shows position, rating, fitness, goals and assists, and highlights booked players.",
+      },
+      {
+        pt: "Os lances da partida podem abrir numa janela que você move e fecha.",
+        en: "The match events can open in a window you move and close.",
+      },
+      {
+        pt: "No mapa de posse, escolha o time e o período com botões lado a lado.",
+        en: "On the possession map, pick the team and the period with side-by-side buttons.",
+      },
+      {
+        pt: "Campo mais vivo: maca nas lesões, técnicos andando na área técnica, bancos de reservas, rede balançando, torcida pulando e comemoração no gol.",
+        en: "A livelier pitch: a stretcher for injuries, managers pacing the technical area, benches, the net shaking, fans jumping and a goal celebration.",
+      },
+      {
+        pt: "Depois de uma bola dividida, quem perdeu a corrida volta para a posição em vez de continuar correndo para cima de quem ficou com a bola: menos jogadores amontoados perto da bola.",
+        en: "After a contested ball, the players who lost the race head back to their positions instead of running on at whoever won it: fewer players bunched around the ball.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Nomes de clubes com acento e sem sufixos de dado em mais ligas (Beşiktaş, Peñarol, Atlético Madrid, León...).",
+        en: "Club names with their accents and without data suffixes in more leagues (Beşiktaş, Peñarol, Atlético Madrid, León...).",
+      },
+    ],
+  },
+  {
     version: "4.18",
     date: "2026-10-11",
     items: [

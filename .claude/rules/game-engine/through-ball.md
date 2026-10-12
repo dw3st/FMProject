@@ -275,6 +275,68 @@ press / off-ball. Move at `sprintSpeed` toward `(toX, toY)`. **No formation pull
 only pitch bounds** — a CB chasing a loose ball mid-pitch may temporarily leave
 their CB box.
 
+### Chase ends with the ball (#145, 4.19)
+
+A chase lives only while its ball is contested (through / high ball in flight, loose ball). The tick
+the ball is collected (`chaseTarget` null in the decision loop), every player still carrying a
+committed `chase_loose_ball` re-decides at once (`staleChase` forces a fresh decision), and the
+chasers of the side that lost the race are **beaten**: `recoveryTime = RACE_LOSS_RECOVERY` (0.7 s =
+4 ticks; 0.8 would be 5, the float drain leaves a remainder) at `RACE_LOSS_SPEED_FACTOR` (0.05) of
+their speed (`GamePlayer.recoverySpeed`, cleared with the recovery; a duel loser keeps
+`DUEL_RECOVERY_SPEED_FACTOR`). In recovery they don't decide or challenge, then rejoin the shape.
+
+**Root cause.** Nothing cleared the chase on collection: the commit-reuse path kept every chaser of
+both teams sprinting to the old landing point (next to the new holder) for up to
+`COMMIT_TICKS.chase_loose_ball` (6) more ticks whenever the passer's side won the ball (both teams'
+paths unchanged). 15% of the ticks with the ball held had at least one such stale chaser, and they
+were the largest group among 3+ defenders bunched within 8 yards of the ball (`chase_loose_ball`
+41%, `track_mark` 31%). Simultaneous `press` was not the cause (2+ pressers in 4.5% of ticks).
+
+**Why the race losers are beaten instead of simply re-deciding.** Fresh decisions alone (the losers
+back in the shape at once) doubled the tackles (4.1 → 8.0 per match), +37% fouls and −23% shots; a
+tackle lockout at full speed: 3.7 shots. The world volume had been built with the losers out of the
+shape for those ticks, so the recovery keeps them there, nearly standing (where they lost the race,
+not on the holder). Tuned with `scripts/ball-cluster.ts` (duration × speed, 800 matches each).
+
+Measured (`bun scripts/ball-cluster.ts --modes main,ai --engine 800 --offset 1000|3000`, Premier
+League, fitness 88, balanced; 1600 matches per arm; "def." = outfield players of the side without
+the ball within 8 yards of it, per live tick):
+
+| | 4-3-3 before | after | AI formations before | after |
+|---|---|---|---|---|
+| def. near the ball (mean) | 1.053 | 1.008 | 1.002 | 0.961 |
+| ticks with 3+ def. near | 8.1% | 6.7% | 7.0% | 5.7% |
+| ticks with 4+ def. near | 2.8% | 2.5% | 2.6% | 2.3% |
+| ball held, 3+ def. near | 5.8% | 4.3% | 4.7% | 3.3% |
+| ball held, a stale chaser on the pitch | 14.8% | 3.8% | 13.9% | 3.5% |
+| attackers (incl. holder) 3+ near | 7.1% | 6.6% | 6.4% | 6.0% |
+| hole: largest gap goal-side of the ball (yd) / open cells | 37.4 / 21.6 | 37.9 / 22.3 | 37.2 / 21.4 | 37.8 / 22.2 |
+| goals | 2.27 | 2.32 (+2.2%) | 2.30 | 2.29 (−0.4%) |
+| shots | 5.47 | 5.51 (+0.7%) | 5.40 | 5.43 (+0.6%) |
+| passes | 41.6 | 42.5 (+2.1%) | 41.6 | 42.0 (+0.9%) |
+| tackles | 4.15 | 4.21 (+1.4%) | 4.05 | 4.06 (+0.2%) |
+| fouls | 10.25 | 10.43 (+1.8%) | 10.52 | 10.58 (+0.6%) |
+
+**Volume compensation (two global levers).** The fix alone left shots −5.4% and successful tackles
++5.0% (goals 0%, passes +1.7%, fouls +0.2%): with the losers back in the shape the holders find fewer
+clear chances and more tackles reach them at once. No duration × speed of the recovery puts both inside
+±3% (4 ticks at speed 0 kept the shots but cost −10% tackles and +5% goals; 5 ticks at 0.05: −5% tackles
+and fouls). Two global levers, no per-formation term:
+- `SHOOT_STRONG_RAW` 1.8 → **1.6** (`DecisionTree.ts`): a holder shoots a little earlier from the same
+  chance;
+- `TACKLE_SUCCESS_SCALE` **0.97** (`ActionOutcomes.ts`, on the tackle success chance).
+
+Tried: tackle scale 0.93 alone → tackles −4%, fouls +4%, shots still −5%; 1.6 + 0.96 → tackles −3.2%
+(AI). Final: 1.6 + 0.97, the table above. The engine is unseeded: one 800-match run moves goals ±2.3%,
+shots ±1.6%, tackles ±1.7%. Goals did not move, so the quickSim calibration stands.
+
+**Limitations.** The hole metric (gap goal-side of the ball) does not improve: the ball sits more often
+with the holder, and the losers recover where they lost the race. The in-flight chasers are unchanged
+(high balls commit up to 3 per side, set pieces 4): 5+ chasers in ~19% of the flight ticks. Formation
+matrix (`formation-matrix.ts --matches 80`): amplitude of the edge 19.4 p.p. before (320 matches per
+formation) → 17.0 p.p. after (two runs summed, 640 per formation; one run alone gave 24.7: noise
+±5 p.p. per formation at 320).
+
 ## Loose-Ball Duel
 
 Triggered when both top arrivals are on opposing teams, within
@@ -303,6 +365,7 @@ Both participants enter `DUEL_TACKLE_WIN_RECOVERY` regardless of outcome.
 | `throughBallsLostInRace` | Defender wins by being closer at landing (no duel) |
 | `throughBallsLostInDuel` | Defender wins the contested 50/50 |
 | `looseBallsWon` | Any player wins the loose ball — counts both intended and unexpected pickups |
+| `ballNearTicks` / `ballNearSum` / `ballCrowdTicks` (team) | `ballCluster`, every live tick: ticks defending, outfield defenders within 8 yd of the ball, ticks with 3+ (#145, `Domain/BallCluster.ts`) |
 
 All of these flow through `getTeamStats()` and `simulateMatch().teamStats`, so
 both the live `StatsPanel` AND the `/lab` `PairDetail` / `ResultsViewer` see
@@ -311,6 +374,8 @@ them automatically.
 ## Test Endpoint Surfaces
 
 `/test` exposes:
+
+- **TestCase** `ball-cluster-race` and the **"Near ball (8 yd)"** line of the Energy panel: players of each side within 8 yards of the ball with their decisions, and the hole the defending side leaves goal-side of the ball (#145).
 
 - **TestCase** `through-ball-channel` — CM holder, ST runner between two CBs and a CDM, plus a wide LW alt option. Useful baseline for tuning.
 - **Overlay toggle** `TB Cells` (purple) — shows the candidate cell heatmap when the ball is held; switches to sprint paths + landing marker during flight.
@@ -321,7 +386,7 @@ them automatically.
 
 ## Lab Surfaces
 
-`/lab` `PairDetail` adds three rows: "Through balls", "TB completion%", "Loose balls won". Each propagates through `TeamRawStats` → `balanceWorker` aggregation → `scenarioRunner.perMatchView` → `PerMatchView` → the side-by-side bar chart.
+`/lab` `PairDetail` adds three rows: "Through balls", "TB completion%", "Loose balls won". #145 adds "Near ball (def)" (`avgNearBall`) and "Crowded ball%" (`crowdedPct`) from `TeamRawStats.ballNear*`. Each propagates through `TeamRawStats` → `balanceWorker` aggregation → `scenarioRunner.perMatchView` → `PerMatchView` → the side-by-side bar chart.
 
 ## Configuration
 

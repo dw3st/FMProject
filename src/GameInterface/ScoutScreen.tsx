@@ -1,9 +1,12 @@
-import { memo, useCallback, useState, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScoutFilters } from "@/GameInterface/Scout/ScoutFilters";
 import { createDefaultScoutFilters, type ScoutFilterState } from "@/Domain/scout/scoutFilterState";
+import {
+  addSavedFilter, parseSavedFilters, removeSavedFilter, type SavedScoutFilter,
+} from "@/Domain/scout/savedFilters";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
@@ -43,43 +46,46 @@ const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, C
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
 
 const FILTERS_STORAGE_KEY = "scout_filters_v1";
+/** Named filters (#147), per viewer, no limit on how many. */
+const SAVED_FILTERS_STORAGE_KEY = "scout_saved_filters_v1";
 const PAGE_SIZE = 100;
 
 function loadFilters(): ScoutFilterState {
   try {
     const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
     if (!raw) return createDefaultScoutFilters();
-    return { ...createDefaultScoutFilters(), ...JSON.parse(raw) };
+    return parseSavedFilters([{ name: "last", filters: JSON.parse(raw) }])[0]?.filters ?? createDefaultScoutFilters();
   } catch {
     return createDefaultScoutFilters();
   }
 }
 
-let _saveTimer: ReturnType<typeof setTimeout> | null = null;
 function saveFilters(f: ScoutFilterState) {
-  if (_saveTimer) clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    try { localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(f)); } catch { /* unavailable */ }
-  }, 400);
+  try { localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(f)); } catch { /* unavailable */ }
 }
 
-function useDebounced<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setDebounced(value), delay);
-    return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [value, delay]);
-  return debounced;
+function loadSavedFilters(): SavedScoutFilter[] {
+  try {
+    const raw = localStorage.getItem(SAVED_FILTERS_STORAGE_KEY);
+    return raw ? parseSavedFilters(JSON.parse(raw)) : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeSavedFilters(list: SavedScoutFilter[]) {
+  try { localStorage.setItem(SAVED_FILTERS_STORAGE_KEY, JSON.stringify(list)); } catch { /* unavailable */ }
 }
 
 export function ScoutScreen() {
   const { t, i18n } = useTranslation();
   const windowsData = useTransferWindows();
   const [session] = useState(() => loadSession());
+  // `filters` is what the screen shows; `appliedFilters` the last search (#147: the search only
+  // runs on "Pesquisar" / Enter; the first load searches the last applied filters).
   const [filters, setFilters] = useState<ScoutFilterState>(() => loadFilters());
-  const debouncedFilters = useDebounced(filters, 1_000);
+  const [appliedFilters, setAppliedFilters] = useState<ScoutFilterState>(filters);
+  const [savedFilters, setSavedFilters] = useState<SavedScoutFilter[]>(() => loadSavedFilters());
 
   const [sortKey, setSortKey] = useState<string>("avg");
   const [sortDir, setSortDir] = useState<ScoutSortDir>("desc");
@@ -99,25 +105,44 @@ export function ScoutScreen() {
   const [starOverrides, setStarOverrides] = useState<Record<string, boolean>>({});
   const [signTarget, setSignTarget] = useState<DisplayPlayer | null>(null);
 
-  const isFiltering = filters !== debouncedFilters || fetching;
+  const isFiltering = fetching;
+  const dirty = useMemo(() => JSON.stringify(filters) !== JSON.stringify(appliedFilters), [filters, appliedFilters]);
 
-  // Reset the page to 0 exactly once per settled query change (debounced filters or sort) —
-  // not on every keystroke. Comparing + resetting during render (rather than in a `useEffect`)
-  // means the fetch effect below only ever sees the final, already-reset page, so a filter or
-  // sort change fires a single request instead of one with the stale page plus a follow-up.
-  const [committedQuery, setCommittedQuery] = useState({ filters: debouncedFilters, sortKey, sortDir });
+  // Reset the page to 0 exactly once per query change (applied filters or sort). Comparing +
+  // resetting during render (rather than in a `useEffect`) means the fetch effect below only ever
+  // sees the final, already-reset page, so a change fires a single request.
+  const [committedQuery, setCommittedQuery] = useState({ filters: appliedFilters, sortKey, sortDir });
   if (
-    committedQuery.filters !== debouncedFilters
+    committedQuery.filters !== appliedFilters
     || committedQuery.sortKey !== sortKey
     || committedQuery.sortDir !== sortDir
   ) {
-    setCommittedQuery({ filters: debouncedFilters, sortKey, sortDir });
+    setCommittedQuery({ filters: appliedFilters, sortKey, sortDir });
     setPage(0);
   }
 
-  const handleSetFilters = useCallback((f: ScoutFilterState) => {
+  const runSearch = useCallback((f: ScoutFilterState) => {
     setFilters(f);
+    setAppliedFilters(f);
     saveFilters(f);
+    // The same filters again: search again anyway (the data may have changed).
+    setRefreshTick((n) => n + 1);
+  }, []);
+  const handleSearch = useCallback(() => runSearch(filters), [runSearch, filters]);
+  const handleSaveFilter = useCallback((name: string) => {
+    setSavedFilters((prev) => {
+      const next = addSavedFilter(prev, name, filters);
+      storeSavedFilters(next);
+      return next;
+    });
+  }, [filters]);
+  const handleLoadSaved = useCallback((entry: SavedScoutFilter) => runSearch(entry.filters), [runSearch]);
+  const handleRemoveSaved = useCallback((name: string) => {
+    setSavedFilters((prev) => {
+      const next = removeSavedFilter(prev, name);
+      storeSavedFilters(next);
+      return next;
+    });
   }, []);
 
   const handleSort = useCallback((key: string) => {
@@ -158,7 +183,7 @@ export function ScoutScreen() {
   // The search only follows the query while its tab is open (`scouting.md`): on another tab the
   // key stays frozen, so nothing is requested there, and coming back with the same query neither
   // re-renders the table from scratch nor fetches again (the tab stays mounted, just hidden).
-  const liveSearchKey = JSON.stringify([debouncedFilters, sortKey, sortDir, page, refreshTick]);
+  const liveSearchKey = JSON.stringify([appliedFilters, sortKey, sortDir, page, refreshTick]);
   const [searchKey, setSearchKey] = useState(liveSearchKey);
   if (tab === "search" && searchKey !== liveSearchKey) setSearchKey(liveSearchKey);
 
@@ -166,7 +191,7 @@ export function ScoutScreen() {
   useEffect(() => {
     if (!session) return;
     const controller = new AbortController();
-    const query: ScoutQuery = { filters: debouncedFilters, sortKey, sortDir, page, pageSize: PAGE_SIZE };
+    const query: ScoutQuery = { filters: appliedFilters, sortKey, sortDir, page, pageSize: PAGE_SIZE };
     setFetching(true);
     fetch(`/api/saves/${session.saveId}/scout-search`, {
       method: "POST",
@@ -283,9 +308,15 @@ export function ScoutScreen() {
         <div hidden={tab !== "search"} className={`${tab === "search" ? "flex" : "hidden"} flex-col gap-6`}>
         <MemoScoutFilters
           filters={filters}
-          setFilters={handleSetFilters}
+          setFilters={setFilters}
           leagueOptions={leagueFilterOptions}
           nationalityOptions={nationalityFilterOptions}
+          onSearch={handleSearch}
+          dirty={dirty}
+          saved={savedFilters}
+          onSave={handleSaveFilter}
+          onLoadSaved={handleLoadSaved}
+          onRemoveSaved={handleRemoveSaved}
         />
         <MemoScoutTable
           rows={result?.rows ?? []}

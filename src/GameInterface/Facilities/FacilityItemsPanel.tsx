@@ -1,25 +1,26 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { formatEuros } from "@/Domain/money";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
 import type { FacilityGroup, FacilityRequest } from "@/types/facilityTypes";
 import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
+import { FacilityItemArt, type ArtTone } from "@/GameInterface/Facilities/FacilityItemArt";
 
 type Mode = "repair" | "rebuild" | "upgrade";
 type RepairStep = "25" | "50" | "100";
 
 const GROUPS: FacilityGroup[] = ["stadium", "training", "academy"];
+const MODES: Mode[] = ["repair", "rebuild", "upgrade"];
 
 /** Condition bar colour: fine from 40%, amber 15–39%, red below (or condemned). */
-export function conditionTone(condition: number, condemned: boolean): { bar: string; text: string } {
-  if (condemned || condition < FACILITIES.WEAR.CONDEMN_BELOW) return { bar: "bg-destructive", text: "text-destructive" };
-  if (condition < FACILITIES.WEAR.WARN_BELOW) return { bar: "bg-chart-4", text: "text-chart-4" };
-  return { bar: "bg-primary", text: "text-foreground" };
+export function conditionTone(condition: number, condemned: boolean): { bar: string; text: string; art: ArtTone } {
+  if (condemned || condition < FACILITIES.WEAR.CONDEMN_BELOW) return { bar: "bg-destructive", text: "text-destructive", art: "bad" };
+  if (condition < FACILITIES.WEAR.WARN_BELOW) return { bar: "bg-chart-4", text: "text-chart-4", art: "warn" };
+  return { bar: "bg-primary", text: "text-foreground", art: "ok" };
 }
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -33,10 +34,16 @@ export function itemEffectText(effects: ItemEffect[], t: TFn): string {
   }).join(" · ");
 }
 
+/** Modes with a quote for the item (repair needs a repair target below 100%). */
+function modesOf(item: FacilityItemView): Mode[] {
+  return MODES.filter((m) => (m === "repair" ? !item.condemned && item.quotes.repair["100"] !== null : item.quotes[m] !== null));
+}
+
 /**
- * Club → "Facilities in detail" (`.claude/rules/game/facilities.md`): the ten items by group with
- * level ("N of 10"), condition, what they cost below 40%, works under way, and the repair, rebuild
- * and upgrade requests (a small repair is paid by the club; the rest goes to the board).
+ * Club → "Facilities in detail" (#132, `.claude/rules/game/facilities.md`): the ten items drawn as
+ * cards by group (stadium, training ground, academy) with level ("N of 10") and condition; picking
+ * one opens its panel with the drawing, the repair / rebuild / upgrade quotes and what the board
+ * would say. One works at a time per group (#152); a small repair paid now does not count.
  */
 export function FacilityItemsPanel({
   data, pending, onAsk,
@@ -46,104 +53,98 @@ export function FacilityItemsPanel({
   onAsk: (req: FacilityRequest) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<{ id: string; mode: Mode } | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const busy = new Set(data.busyGroups ?? []);
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.items.title")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 mb-0">{t("facilities.items.about")}</p>
-      </div>
-      {GROUPS.map((g) => (
-        <div key={g} className="flex flex-col gap-2">
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
-            {t(`facilities.items.group.${g}`)}
-          </span>
-          <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
-            <table className="w-full border-collapse min-w-[720px]">
-              <thead className={TABLE_STYLE.head}>
-                <tr>
-                  <th className={`${TABLE_CELL.head} text-left`}>{t("facilities.items.item")}</th>
-                  <th className={`${TABLE_CELL.head} text-left w-40`}>{t("facilities.items.level")}</th>
-                  <th className={`${TABLE_CELL.head} text-left w-44`}>{t("facilities.items.condition")}</th>
-                  <th className={`${TABLE_CELL.head} text-right`}>{t("facilities.items.actions")}</th>
-                </tr>
-              </thead>
-              <tbody className={TABLE_STYLE.body}>
-                {data.items.filter((it) => it.group === g).map((it) => (
-                  <Fragment key={it.id}>
-                    <ItemRow item={it} open={open?.id === it.id ? open.mode : null}
-                      onOpen={(mode) => setOpen(open?.id === it.id && open.mode === mode ? null : { id: it.id, mode })} />
-                    {open?.id === it.id && (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-3 bg-secondary/20">
-                          <RepairPanel item={it} mode={open.mode} pending={pending}
-                            onCancel={() => setOpen(null)}
-                            onConfirm={async (req) => { await onAsk(req); setOpen(null); }} />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.items.title")}</h2>
+          <p className="text-sm text-muted-foreground mt-1 mb-0">{t("facilities.items.about")}</p>
         </div>
-      ))}
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {t("facilities.slots", { count: busy.size, max: GROUPS.length })}
+        </span>
+      </div>
+      {GROUPS.map((g) => {
+        const items = data.items.filter((it) => it.group === g);
+        const open = items.find((it) => it.id === selected) ?? null;
+        return (
+          <div key={g} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+                {t(`facilities.items.group.${g}`)}
+              </span>
+              {busy.has(g) && (
+                <span className="flex items-center gap-1.5 text-sm text-chart-4">
+                  <Icon name="construction" size={16} />
+                  {t("facilities.groupWorks")}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {items.map((it) => (
+                <ItemCard key={it.id} item={it} selected={selected === it.id}
+                  onSelect={() => setSelected(selected === it.id ? null : it.id)} />
+              ))}
+            </div>
+            {open && (
+              <ItemDetail key={open.id} item={open} groupBusy={busy.has(g)} pending={pending}
+                onClose={() => setSelected(null)}
+                onConfirm={async (req) => { await onAsk(req); setSelected(null); }} />
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 }
 
-function ItemRow({ item, open, onOpen }: { item: FacilityItemView; open: Mode | null; onOpen: (m: Mode) => void }) {
+function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; selected: boolean; onSelect: () => void }) {
+  const { t } = useTranslation();
+  const tone = conditionTone(item.condition, item.condemned);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`flex flex-col gap-2 rounded-md border bg-card p-3 text-left cursor-pointer transition-colors min-w-0 ${
+        selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-muted-foreground"}`}
+    >
+      <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} />
+      <span className="font-semibold text-foreground truncate">{t(`facilities.item.${item.id}`)}</span>
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
+        <ItemLevelMarks level={item.level} />
+      </span>
+      <ConditionLine item={item} />
+      {item.project ? (
+        <span className="flex items-center gap-2 text-sm text-muted-foreground tabular-nums">
+          <span className="h-1.5 w-12 bg-border rounded overflow-hidden shrink-0" aria-hidden>
+            <span className="block h-full bg-chart-4" style={{ width: `${Math.round(item.project.progress * 100)}%` }} />
+          </span>
+          <span className="truncate">{t(`facilities.kind.${item.project.kind}`)} · {item.project.end}</span>
+        </span>
+      ) : item.effects.length > 0 ? (
+        <span className="text-sm text-muted-foreground tabular-nums">{itemEffectText(item.effects, t)}</span>
+      ) : null}
+    </button>
+  );
+}
+
+function ConditionLine({ item }: { item: FacilityItemView }) {
   const { t, i18n } = useTranslation();
   const tone = conditionTone(item.condition, item.condemned);
-  const busy = item.project !== null;
-  const repairable = !item.condemned && item.quotes.repair["100"] !== null;
-  const action = (mode: Mode, enabled: boolean, why: string | undefined) => (
-    <Button variant="secondary" className="h-8 px-2" disabled={busy || !enabled} title={busy ? t("facilities.busy") : why}
-      aria-pressed={open === mode} onClick={() => onOpen(mode)}>
-      {t(`facilities.items.${mode}`)}
-    </Button>
-  );
   return (
-    <tr className={TABLE_STYLE.row}>
-      <td className={TABLE_CELL.body}>
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <span className={TABLE_STYLE.name}>{t(`facilities.item.${item.id}`)}</span>
-          {item.project ? (
-            <span className="flex items-center gap-2 text-sm text-muted-foreground tabular-nums">
-              <span className="h-1.5 w-16 bg-border rounded overflow-hidden shrink-0">
-                <span className="block h-full bg-primary" style={{ width: `${Math.round(item.project.progress * 100)}%` }} />
-              </span>
-              {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: item.project.end })}
-            </span>
-          ) : item.effects.length > 0 ? (
-            <span className="text-sm text-muted-foreground tabular-nums">{itemEffectText(item.effects, t)}</span>
-          ) : null}
-        </div>
-      </td>
-      <td className={TABLE_CELL.body}>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm tabular-nums text-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
-          <ItemLevelMarks level={item.level} />
-        </div>
-      </td>
-      <td className={TABLE_CELL.body}>
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-20 bg-border rounded overflow-hidden shrink-0" aria-hidden>
-            <span className={`block h-full ${tone.bar}`} style={{ width: `${Math.round(item.condition)}%` }} />
-          </span>
-          <span className={`text-sm font-semibold tabular-nums ${tone.text}`}>
-            {item.condemned ? t("facilities.items.condemned") : `${Math.round(item.condition).toLocaleString(i18n.language)}%`}
-          </span>
-        </div>
-      </td>
-      <td className={`${TABLE_CELL.body} text-right whitespace-nowrap`}>
-        {action("repair", repairable, item.condemned ? t("facilities.items.onlyRebuild") : t("facilities.items.full"))}
-        {action("rebuild", item.quotes.rebuild !== null, t("facilities.items.rebuildBelow"))}
-        {action("upgrade", item.quotes.upgrade !== null, t("facilities.reason.maxLevel"))}
-      </td>
-    </tr>
+    <span className="flex items-center gap-2">
+      <span className="h-1.5 flex-1 min-w-16 bg-border rounded overflow-hidden" aria-hidden>
+        <span className={`block h-full ${tone.bar}`} style={{ width: `${Math.round(item.condition)}%` }} />
+      </span>
+      <span className={`text-sm font-semibold tabular-nums ${tone.text}`}>
+        {item.condemned ? t("facilities.items.condemned") : `${Math.round(item.condition).toLocaleString(i18n.language)}%`}
+      </span>
+    </span>
   );
 }
 
@@ -151,67 +152,123 @@ function ItemLevelMarks({ level }: { level: number }) {
   return (
     <span className="flex gap-0.5" aria-hidden>
       {Array.from({ length: FACILITIES.ITEM_MAX_LEVEL }, (_, i) => (
-        <span key={i} className={`h-1.5 w-2.5 rounded-sm ${i < level ? "bg-primary" : "bg-border"}`} />
+        <span key={i} className={`h-1.5 w-2 rounded-sm ${i < level ? "bg-primary" : "bg-border"}`} />
       ))}
     </span>
   );
 }
 
-function RepairPanel({
-  item, mode, pending, onCancel, onConfirm,
+/** The item's panel: the drawing, the works it can get, cost, duration and the forecast. */
+function ItemDetail({
+  item, groupBusy, pending, onClose, onConfirm,
 }: {
-  item: FacilityItemView; mode: Mode; pending: boolean;
-  onCancel: () => void; onConfirm: (req: FacilityRequest) => Promise<void>;
+  item: FacilityItemView; groupBusy: boolean; pending: boolean;
+  onClose: () => void; onConfirm: (req: FacilityRequest) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const modes = modesOf(item);
+  const [mode, setMode] = useState<Mode | null>(modes.includes("upgrade") ? "upgrade" : modes[0] ?? null);
   const steps = (["25", "50", "100"] as RepairStep[]).filter((s) => item.quotes.repair[s] !== null);
   const [step, setStep] = useState<RepairStep>(steps.includes("100") ? "100" : steps[0] ?? "100");
-  const quote: ItemQuote | null = mode === "repair" ? item.quotes.repair[step] : item.quotes[mode];
-  if (!quote) return null;
-  const f = quote.forecast;
-  const hint = f.approved
-    ? f.paidByClub
-      ? t("facilities.items.paidByClub")
-      : f.boardShare && f.boardShare > 0
-        ? t("facilities.preview.funded", { pct: Math.round(f.boardShare * 100) })
-        : t("facilities.preview.approve")
-    : t(`facilities.reason.${f.reason ?? "no_money"}`);
-  const request: FacilityRequest = mode === "repair"
-    ? { kind: "repair", item: item.id, to: quote.to ?? 100 }
-    : { kind: mode, item: item.id };
+  const tone = conditionTone(item.condition, item.condemned);
+  const quote: ItemQuote | null = mode === null ? null : mode === "repair" ? item.quotes.repair[step] : item.quotes[mode];
+
   return (
-    <div className="flex flex-col gap-3">
-      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
-        {t(`facilities.kind.${mode}`)} · {t(`facilities.item.${item.id}`)}
-      </span>
-      {mode === "repair" && steps.length > 1 && (
-        <OptionChips
-          options={steps.map((s) => ({ key: s, label: t("facilities.items.to", { pct: item.quotes.repair[s]!.to }) }))}
-          value={step}
-          onChange={setStep}
-          aria-label={t("facilities.items.repair")}
-        />
-      )}
-      <p className="text-sm text-muted-foreground m-0">{t(`facilities.items.about${mode[0]!.toUpperCase()}${mode.slice(1)}`, { level: quote.level ?? item.level })}</p>
-      <div className="flex flex-wrap gap-6">
+    <div className="card-arcade rounded-md p-4 grid grid-cols-1 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)] gap-5">
+      <div className="flex flex-col gap-3">
+        <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} />
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
+          <ItemLevelMarks level={item.level} />
+        </span>
+        <ConditionLine item={item} />
+      </div>
+      <div className="flex flex-col gap-4 min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t(`facilities.item.${item.id}`)}</h3>
+          <Button variant="secondary" flush onClick={onClose} aria-label={t("common.close")}>
+            <Icon name="close" size={16} />
+          </Button>
+        </div>
+        {item.project ? (
+          <p className="text-sm text-muted-foreground m-0 tabular-nums">
+            {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: item.project.end })}
+            {" · "}{Math.round(item.project.progress * 100)}%
+          </p>
+        ) : mode === null ? (
+          <p className="text-sm text-muted-foreground m-0">{t("facilities.items.full")}</p>
+        ) : (
+          <>
+            {modes.length > 1 && (
+              <OptionChips
+                options={modes.map((m) => ({ key: m, label: t(`facilities.items.${m}`) }))}
+                value={mode}
+                onChange={setMode}
+                aria-label={t("facilities.items.actions")}
+              />
+            )}
+            {mode === "repair" && steps.length > 1 && (
+              <OptionChips
+                options={steps.map((s) => ({ key: s, label: t("facilities.items.to", { pct: item.quotes.repair[s]!.to }) }))}
+                value={step}
+                onChange={setStep}
+                aria-label={t("facilities.items.repair")}
+              />
+            )}
+            {quote && (
+              <QuoteBlock item={item} mode={mode} quote={quote} groupBusy={groupBusy} pending={pending}
+                onConfirm={() => void onConfirm(mode === "repair"
+                  ? { kind: "repair", item: item.id, to: quote.to ?? 100 }
+                  : { kind: mode, item: item.id })} />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QuoteBlock({
+  item, mode, quote, groupBusy, pending, onConfirm,
+}: {
+  item: FacilityItemView; mode: Mode; quote: ItemQuote; groupBusy: boolean; pending: boolean; onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  const f = quote.forecast;
+  // A small repair is paid now and never waits for the group's works slot.
+  const blocked = groupBusy && !f.paidByClub;
+  const ok = f.approved && !blocked;
+  const hint = blocked
+    ? t("facilities.groupBusy", { group: t(`facilities.items.group.${item.group}`) })
+    : f.approved
+      ? f.paidByClub
+        ? t("facilities.items.paidByClub")
+        : f.boardShare && f.boardShare > 0
+          ? t("facilities.preview.funded", { pct: Math.round(f.boardShare * 100) })
+          : t("facilities.preview.approve")
+      : t(`facilities.reason.${f.reason ?? "no_money"}`);
+  return (
+    <>
+      <p className="text-sm text-muted-foreground m-0">
+        {t(`facilities.items.about${mode[0]!.toUpperCase()}${mode.slice(1)}`, { level: quote.level ?? item.level })}
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Figure label={t("facilities.cost")} value={formatEuros(quote.cost)} />
         <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
         <Figure label={t("facilities.items.condition")} value={`${Math.round(item.condition)}% → ${quote.to ?? 100}%`} />
+        <Figure label={t("facilities.items.level")} value={quote.level !== undefined ? `${item.level} → ${quote.level}` : String(item.level)} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className={`text-sm flex items-center gap-1.5 ${f.approved ? "text-chart-2" : "text-muted-foreground"}`}>
-          <Icon name={f.approved ? "check-circle" : "alert"} size={16} />
+        <span className={`text-sm flex items-center gap-1.5 ${ok ? "text-chart-2" : "text-muted-foreground"}`}>
+          <Icon name={ok ? "check-circle" : "alert"} size={16} />
           {hint}
         </span>
-        <span className="flex items-center gap-2">
-          <Button variant="secondary" onClick={onCancel}>{t("common.cancel")}</Button>
-          <Button onClick={() => void onConfirm(request)} disabled={pending || !f.approved}>
-            <Icon name="building" size={16} />
-            {f.paidByClub ? t("facilities.items.confirmPay") : t("facilities.ask")}
-          </Button>
-        </span>
+        <Button onClick={onConfirm} disabled={pending || !ok}>
+          <Icon name="building" size={16} />
+          {f.paidByClub ? t("facilities.items.confirmPay") : t("facilities.ask")}
+        </Button>
       </div>
-    </div>
+    </>
   );
 }
 

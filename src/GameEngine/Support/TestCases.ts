@@ -313,6 +313,26 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'ball-cluster-race',
+    name:        'Ball Cluster — Race for a Through Ball',
+    description: 'CM plays into the channel, two runners and three defenders race for it (#145). Once someone collects it the chasers stand down: the race losers are beaten (short recovery) and turn back to the shape instead of sprinting on to the old landing point next to the new holder. The "Near ball (8 yd)" line of the Energy panel shows how many of each side are bunched on the ball, their decisions and the hole left behind.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CM',  48, 37, MIDFIELDER), // passer
+        makePlayer('Santos',   'A', 'ST',  68, 34, STRIKER),    // runner
+        makePlayer('Reyes',    'A', 'CAM', 62, 44, MIDFIELDER), // second runner
+        makePlayer('Chen',     'A', 'LW',  66, 12, WINGER),
+        makePlayer('Silva',    'B', 'CB',  80, 31, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB',  80, 43, DEFENDER),
+        makePlayer('Diallo',   'B', 'CDM', 62, 37, MIDFIELDER),
+        makePlayer('Moreau',   'B', 'RB',  76, 14, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 110, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',

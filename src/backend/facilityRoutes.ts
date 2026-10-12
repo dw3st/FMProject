@@ -8,7 +8,7 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
-  academyEffectsAt, academyEffectsOf, boardDecision, impliedLevel, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
+  academyEffectsAt, academyEffectsOf, boardDecision, busyGroups, groupBusy, impliedLevel, requestGroup, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
   payRepairNow, projectProgress, projectRunning, quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf,
   validSeats, weeklyUpkeep, withFacilities, type ProjectQuote,
 } from "@/Domain/facilities/facilities";
@@ -208,6 +208,8 @@ async function facilitiesView(h: Human) {
     balance: h.squad.finances?.budget ?? 0,
     board: h.meta.board?.board ?? BOARD_FANS.START,
     weeklyUpkeep: weeklyUpkeep(h.squad, revenue),
+    /** Groups with a works running (one at a time per group; small repairs paid now do not count). */
+    busyGroups: busyGroups(f),
     /** The club's share still to pay on running works (the board counts it against the balance). */
     committed: committedSpend(f),
     /** What the client needs to estimate the demand of the coming home games (`attendanceOf`). */
@@ -294,6 +296,9 @@ export const facilityRoutes = {
           return Response.json({ approved: true, paidByClub: true, boardShare: 0, project, view: await facilitiesView({ ...h, squad }) });
         });
       }
+      // One works at a time per group (stadium, training ground, academy) — #152.
+      const group = requestGroup(request);
+      if (groupBusy(f, group)) return Response.json({ error: "busy", group }, { status: 409 });
       const decision = boardDecision({
         board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, cost: quote.cost, revenue,
         committed: committedSpend(f),

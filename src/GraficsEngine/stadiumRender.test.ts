@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { goalPulseAlpha, worksPieces } from "@/GraficsEngine/stadiumRender";
+import { fansBounds, goalPulseAlpha, worksPieces } from "@/GraficsEngine/stadiumRender";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
-import { standSideRects } from "@/GraficsEngine/crowd";
+import { crowdSeats, standSideRects } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 
 describe("crowd goal pulse", () => {
@@ -30,5 +30,20 @@ describe("stand under works (#137)", () => {
       if (r.side === "left") expect(t.x + t.w).toBeCloseTo(r.x + r.w, 9);
       if (r.side === "right") expect(t.x).toBeCloseTo(r.x, 9);
     }
+  });
+});
+
+describe("fans layers (#129)", () => {
+  test("each side's fans fit in their own box; none = no box", () => {
+    const stand = buildMetrics(1100, 700, { stadium: true }).stand!;
+    const seats = crowdSeats({ stand, fill: 0.7, homeColor: 0x2255cc, awayColor: 0xcc2222, homeSide: "left", neutral: false, seed: "t" });
+    const away = seats.filter((s) => s.team === "away");
+    const box = fansBounds(stand, away)!;
+    expect(away.length).toBeGreaterThan(0);
+    for (const s of away) {
+      expect(s.x).toBeGreaterThan(box.x); expect(s.x).toBeLessThan(box.x + box.w);
+      expect(s.y).toBeGreaterThan(box.y); expect(s.y).toBeLessThan(box.y + box.h);
+    }
+    expect(fansBounds(stand, [])).toBeNull();
   });
 });

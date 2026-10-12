@@ -1,120 +1,104 @@
-import { useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import {
+  ATTR_INPUT_MAX,
+  ATTR_INPUT_MIN,
+  ATTRIBUTE_GROUPS,
   defaultAttributeRanges,
+  isAnyRange,
+  orderedRange,
+  parseAttrBound,
   type ScoutFilterState,
 } from "@/Domain/scout/scoutFilterState";
-import { ATTRIBUTE_LIST, ATTRIBUTE_LABELS, type AttributeId } from "@/Domain/attributes";
+import type { AttributeId } from "@/Domain/attributes";
 import { attributeText } from "@/GameInterface/attributeText";
 import { Icon } from "@/GameInterface/Icons";
 
-// ── Range slider (adapted from TacticSlider in FormationScreen) ───────────────
+type Range = { min: number; max: number };
 
-interface AttrRangeSliderProps {
+/** Text shown in a bound field: empty when that side has no limit. */
+const boundText = (v: number, side: "min" | "max") =>
+  (side === "min" ? v <= 0 : v >= 100) ? "" : String(v);
+
+/**
+ * One typed bound (#147). Keeps what the user is typing and reports the parsed value; follows the
+ * value when it changes from outside (reset, a saved filter).
+ */
+function BoundInput({ value, side, label, onChange }: {
+  value: number;
+  side: "min" | "max";
   label: string;
-  description?: string;
-  minValue: number;
-  maxValue: number;
-  onChange: (min: number, max: number) => void;
-  t?: (key: string) => string;
+  onChange: (v: number) => void;
+}) {
+  const [text, setText] = useState(() => boundText(value, side));
+  useEffect(() => {
+    if (parseAttrBound(text, side) !== value) setText(boundText(value, side));
+    // Only an outside change of `value` resyncs the field.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, side]);
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={ATTR_INPUT_MIN}
+      max={ATTR_INPUT_MAX}
+      value={text}
+      placeholder={String(side === "min" ? ATTR_INPUT_MIN : ATTR_INPUT_MAX)}
+      aria-label={label}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(parseAttrBound(e.target.value, side));
+      }}
+      className="w-16 h-8 bg-input border border-border rounded-lg px-2 text-sm text-center tabular-nums text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+    />
+  );
 }
 
-function AttrRangeSlider({
-  label,
-  description,
-  minValue,
-  maxValue,
-  onChange,
-  t: i18n,
-}: AttrRangeSliderProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const MAX = 100;
-  const minPct = (minValue / MAX) * 100;
-  const maxPct = (maxValue / MAX) * 100;
-  const isActive = minValue > 0 || maxValue < MAX;
-
-  const resolveFromX = useCallback(
-    (clientX: number) => {
-      const el = trackRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      const nearest = Math.round(ratio * MAX);
-      // Move whichever thumb is closer to the click
-      const distToMin = Math.abs(nearest - minValue);
-      const distToMax = Math.abs(nearest - maxValue);
-      if (distToMin <= distToMax) {
-        onChange(Math.min(nearest, maxValue), maxValue);
-      } else {
-        onChange(minValue, Math.max(nearest, minValue));
-      }
-    },
-    [minValue, maxValue, onChange],
-  );
-
+function AttrRow({ id, range, onChange }: { id: AttributeId; range: Range; onChange: (r: Range) => void }) {
+  const { t } = useTranslation();
+  const text = attributeText(t, id);
+  const active = !isAnyRange(range);
+  const shown = orderedRange(range.min, range.max);
   return (
-    <div
-      className={`rounded-lg border px-3 py-2 min-w-0 transition-colors ${
-        isActive ? "bg-primary/5 border-primary/30" : "bg-background/50 border-border/50"
-      }`}
-    >
-      {/* Label + value */}
-      <div className="flex items-center justify-between gap-1 mb-1">
-        <span className="text-sm font-semibold text-foreground truncate" title={description}>
-          {label}
-        </span>
-        <span
-          className={`text-sm font-bold tabular-nums shrink-0 ${
-            isActive ? "text-primary" : "text-muted-foreground/50"
-          }`}
-        >
-          {minValue === 0 && maxValue === MAX ? (i18n ? i18n("scout.attributeFilters.any") : "any") : `${minValue} – ${maxValue}`}
-        </span>
-      </div>
-
-      {/* Clickable track */}
-      <div
-        ref={trackRef}
-        className="relative h-6 flex items-center cursor-pointer"
-        onClick={(e) => resolveFromX(e.clientX)}
-      >
-        <div className="h-1.5 w-full bg-muted rounded-full relative">
-          {/* Active fill between the two thumbs */}
-          <div
-            className="absolute top-0 h-full bg-primary rounded-full transition-all duration-150"
-            style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }}
-          />
-        </div>
-
-        {/* Min thumb */}
-        <div
-          className="absolute top-1/2 w-4 h-4 bg-white rounded-full border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 pointer-events-none"
-          style={{ left: `${minPct}%` }}
-        />
-        {/* Max thumb */}
-        <div
-          className="absolute top-1/2 w-4 h-4 bg-white rounded-full border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 pointer-events-none"
-          style={{ left: `${maxPct}%` }}
-        />
-      </div>
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="flex-1 min-w-0 truncate text-sm font-semibold text-foreground" title={text.description}>
+        {text.name}
+      </span>
+      <BoundInput
+        value={range.min}
+        side="min"
+        label={t("scout.attributeFilters.minOf", { attr: text.name })}
+        onChange={(min) => onChange({ min, max: range.max })}
+      />
+      <span className="text-sm text-muted-foreground" aria-hidden>–</span>
+      <BoundInput
+        value={range.max}
+        side="max"
+        label={t("scout.attributeFilters.maxOf", { attr: text.name })}
+        onChange={(max) => onChange({ min: range.min, max })}
+      />
+      <span className={`w-16 shrink-0 text-right text-sm font-bold tabular-nums ${active ? "text-primary" : "text-muted-foreground/60"}`}>
+        {active ? `${Math.max(ATTR_INPUT_MIN, shown.min)}–${shown.max}` : t("scout.attributeFilters.any")}
+      </span>
     </div>
   );
 }
 
-// ── Active filter count ───────────────────────────────────────────────────────
-
-function activeAttributeFilterCount(ranges: ScoutFilterState["attributeRanges"]): number {
-  let n = 0;
-  for (const a of Object.keys(ATTRIBUTE_LABELS) as AttributeId[]) {
-    const row = ranges[a];
-    if (row && (row.min > 0 || row.max < 100)) n += 1;
-  }
-  return n;
+function activeCount(ranges: ScoutFilterState["attributeRanges"], ids: AttributeId[]): number {
+  return ids.filter((id) => ranges[id] && !isAnyRange(ranges[id])).length;
 }
 
-// ── Disclosure wrapper ────────────────────────────────────────────────────────
+function CountBadge({ n }: { n: number }) {
+  if (n <= 0) return null;
+  return (
+    <span className="min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary text-sm font-black text-primary-foreground leading-none flex items-center justify-center shrink-0 tabular-nums">
+      {n}
+    </span>
+  );
+}
 
+/** Attribute filters (#147): one collapsible block per group, min/max typed on the 1–100 scale. */
 export function ScoutAttributeFiltersDisclosure({
   filters,
   setFilters,
@@ -123,13 +107,11 @@ export function ScoutAttributeFiltersDisclosure({
   setFilters: (f: ScoutFilterState) => void;
 }) {
   const { t } = useTranslation();
-  const active = activeAttributeFilterCount(filters.attributeRanges);
+  const ranges = filters.attributeRanges;
+  const total = activeCount(ranges, ATTRIBUTE_GROUPS.flatMap((g) => g.attributes));
 
-  function patchAttr(id: AttributeId, min: number, max: number) {
-    setFilters({
-      ...filters,
-      attributeRanges: { ...filters.attributeRanges, [id]: { min, max } },
-    });
+  function patchAttr(id: AttributeId, r: Range) {
+    setFilters({ ...filters, attributeRanges: { ...ranges, [id]: r } });
   }
 
   return (
@@ -152,56 +134,58 @@ export function ScoutAttributeFiltersDisclosure({
                   {t("scout.attributeFilters.description")}
                 </span>
               </span>
-              {active > 0 && (
-                <span className="min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary text-sm font-black text-primary-foreground leading-none flex items-center justify-center shrink-0">
-                  {active}
-                </span>
-              )}
+              <CountBadge n={total} />
             </span>
             <Icon name="chevron-down"
               className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
             />
           </DisclosureButton>
 
-          <div className="overflow-hidden">
-            <DisclosurePanel
-              transition
-              className="origin-top transition duration-200 ease-out data-[closed]:opacity-0 data-[closed]:-translate-y-1"
-            >
-              <div className="pt-4 flex flex-col gap-3">
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary hover:underline cursor-pointer bg-transparent border-0 p-0 font-display"
-                    onClick={() =>
-                      setFilters({ ...filters, attributeRanges: defaultAttributeRanges() })
-                    }
-                  >
-                    {t("scout.attributeFilters.clearAll")}
-                  </button>
-                </div>
-
-                <div className="card-arcade rounded-md border border-border/50 p-4 w-full">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 w-full">
-                    {ATTRIBUTE_LIST.map((attr) => {
-                      const row = filters.attributeRanges[attr.id] ?? { min: 0, max: 100 };
-                      return (
-                        <AttrRangeSlider
-                          key={attr.id}
-                          label={attributeText(t, attr.id).name}
-                          description={attributeText(t, attr.id).description}
-                          minValue={row.min}
-                          maxValue={row.max}
-                          onChange={(min, max) => patchAttr(attr.id, min, max)}
-                          t={t}
+          <DisclosurePanel className="pt-4 flex flex-col gap-3">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 p-0 font-display"
+                onClick={() => setFilters({ ...filters, attributeRanges: defaultAttributeRanges() })}
+              >
+                {t("scout.attributeFilters.clearAll")}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
+              {ATTRIBUTE_GROUPS.map((group) => (
+                <Disclosure key={group.id} as="div" defaultOpen className="rounded-md border border-border/60 bg-background/40">
+                  {({ open: groupOpen }) => (
+                    <>
+                      <DisclosureButton
+                        type="button"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left bg-transparent border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-md"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+                            {t(`scout.attributeFilters.groups.${group.id}`)}
+                          </span>
+                          <CountBadge n={activeCount(ranges, group.attributes)} />
+                        </span>
+                        <Icon name="chevron-down"
+                          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${groupOpen ? "rotate-180" : ""}`}
                         />
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </DisclosurePanel>
-          </div>
+                      </DisclosureButton>
+                      <DisclosurePanel className="px-3 pb-3 flex flex-col gap-2">
+                        {group.attributes.map((id) => (
+                          <AttrRow
+                            key={id}
+                            id={id}
+                            range={ranges[id] ?? { min: 0, max: 100 }}
+                            onChange={(r) => patchAttr(id, r)}
+                          />
+                        ))}
+                      </DisclosurePanel>
+                    </>
+                  )}
+                </Disclosure>
+              ))}
+            </div>
+          </DisclosurePanel>
         </>
       )}
     </Disclosure>

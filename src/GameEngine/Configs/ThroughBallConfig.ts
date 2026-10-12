@@ -118,6 +118,18 @@ export const THROUGH_BALL_CONFIG = {
   ETA_HORIZON: 0.6,
   /** Minimum role chase weight to be eligible to commit at all. */
   ROLE_CHASE_THRESHOLD: 0.1,
+  /**
+   * Race losers of a contested ball (#145): the tick a through / high / loose ball is collected,
+   * the chasers of the other side are beaten — a recovery of this many real seconds (no decision,
+   * no challenge, `RACE_LOSS_SPEED_FACTOR` of their speed) before they rejoin the shape. Before,
+   * every chaser kept his committed chase to the old landing point for COMMIT_TICKS.chase_loose_ball
+   * more ticks, bunching on the new holder. 0.7 s = 4 ticks of 0.2 s (0.8 would be 5: the float
+   * drain leaves a remainder). Duration and speed were tuned on the world volume (goals, passes,
+   * tackles, fouls; `scripts/ball-cluster.ts`, `.claude/rules/game-engine/through-ball.md`).
+   */
+  RACE_LOSS_RECOVERY: 0.7,
+  /** Movement multiplier of a race loser during that recovery (a duel loser moves at 0.35). */
+  RACE_LOSS_SPEED_FACTOR: 0.05,
 
   // ── Phase 5 loose-ball resolution ────────────────────────────────────────
   /** Yards — a player within this distance of the loose ball can pick it up. */

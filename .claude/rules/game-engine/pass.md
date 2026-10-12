@@ -295,7 +295,7 @@ so `STRONG_RAW` sets how much raw quality an action needs to look "strong" (0.63
 
 | Action | `STRONG_RAW` |
 |---|---|
-| shoot | 1.8 |
+| shoot | 1.6 (1.8 until #145, 4.19) |
 | carry | 0.8 |
 | **pass** | **0.8** |
 | dribble | 0.8 |

@@ -271,3 +271,7 @@ Press commit: `press: 8` ticks — prevents the presser abandoning pursuit each 
 - `TACKLE_AGGRESSION` is not used by positioning or the tackle decision — only by the foul chance (`fouls.md`)
 - `cover_pass_lane` intent is scored but has no distinct target — falls back to shape anchor
 - Full press migration from rank/range gate to pure score-based (Phase 8b of `docs/superpowers/archive/defensive-decision-migration-plan.md`) is pending
+
+## Race losers of a contested ball (#145)
+
+The tick a through / high / loose ball is collected, the chasers of the side that lost the race stop chasing and are beaten for 0.7 s (no decision, no tackle, 5% speed) before they rejoin the shape; before, they kept sprinting to the old landing point next to the new holder, bunching 3–4 players on the ball. Numbers and the ball-cluster metric: `through-ball.md` → "Chase ends with the ball".

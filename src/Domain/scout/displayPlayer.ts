@@ -1,5 +1,6 @@
 import { personalityViewOf } from "@/Domain/personality/personality";
 import type { PersonalityView } from "@/types/personalityTypes";
+import type { ScoutInterest } from "@/Domain/scout/scoutInterest";
 import { positionAptitudes, preferredRole, type Aptitude, type DetailedRole } from "@/Domain/positions/positionAptitude";
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
@@ -97,6 +98,10 @@ export interface DisplayPlayer {
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
   /** Matches of a ban still to serve, when `status === "suspended"`. */
   suspendedMatches?: number;
+  /** Scout search (#123): how keen he looks on joining the user's club (`scoutInterest`). */
+  interest?: ScoutInterest;
+  /** Scout search (#123): estimated fee and asking wage fit the user's club (`fitsScoutBudget`). */
+  affordable?: boolean;
 }
 
 /**

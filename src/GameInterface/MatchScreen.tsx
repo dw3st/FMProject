@@ -160,7 +160,7 @@ function accumulatePossession(
 }
 
 export function MatchScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamAMeta, setTeamAMeta] = useState<TeamMeta | undefined>();
@@ -190,6 +190,8 @@ export function MatchScreen() {
   /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
   const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
   /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
+  /** Stadium of the home side (#149): name under the scoreboard, with the crowd. */
+  const [venueName, setVenueName] = useState<string | null>(null);
   const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null } | null>(null);
   /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
   const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
@@ -509,6 +511,7 @@ export function MatchScreen() {
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
+        setVenueName(homeSquad.venue?.name ?? null);
         setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null });
         if (data.managerBanned) setManagerOut("banned");
         setFaceRoster({
@@ -1112,6 +1115,17 @@ export function MatchScreen() {
   // tracks exactly what actually gates the pause (including e.g. staying put while `paused`).
   // Full-time: no engine countdown left once matchPhase is 'matchEnd' — use the rAF-driven
   // fraction timed against the same speed-scaled delay that schedules the navigation.
+  // Stadium and crowd under the scoreboard (#149): the home side's ground; a neutral venue has no name.
+  const crowdInfo = touchline?.crowd;
+  const stadiumLine = matchFixture?.neutral
+    ? t("match.stadium.neutral")
+    : [
+        venueName,
+        crowdInfo?.known && crowdInfo.attendance > 0
+          ? t("match.stadium.attendance", { crowd: crowdInfo.attendance.toLocaleString(i18n.language) })
+          : null,
+      ].filter(Boolean).join(" · ") || null;
+
   const overlayProgress =
     matchOverlay === "halfTime" || matchOverlay === "extraTime"
       ? breakProgress
@@ -1158,6 +1172,12 @@ export function MatchScreen() {
 
           {matchHeadingText && (
             <p className="m-0 -mt-1 text-center text-sm text-muted-foreground truncate">{matchHeadingText}</p>
+          )}
+          {stadiumLine && (
+            <p className="m-0 -mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground truncate">
+              <Icon name="stadium" size={16} aria-label={t("match.stadium.label")} />
+              <span className="truncate tabular-nums">{stadiumLine}</span>
+            </p>
           )}
 
           {gameState.shootout && (
@@ -1322,6 +1342,7 @@ export function MatchScreen() {
                   coaches={coaches}
                   coachCue={coachCue}
                   coachCard={coachCard}
+                  extras
                 />
                 {notice && (
                   <div

@@ -12,6 +12,7 @@ import {
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
 import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
+import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
@@ -2309,6 +2310,11 @@ function clearChasers(state: GameState, ids: Set<number>): GameState {
   };
 }
 
+/** Movement multiplier of a player in recovery (duel default, or the race-loser one, #145); 1 otherwise. */
+function recoverySpeedMult(p: GamePlayer): number {
+  return p.recoveryTime > 0 ? (p.recoverySpeed ?? DUEL_RECOVERY_SPEED_FACTOR) : 1;
+}
+
 /** Clears every chase_loose_ball memory (restarts: kickoff, half-time). */
 function clearAllChasers(state: GameState): GameState {
   const ids = new Set(state.players.filter(p => p.decisionMemory?.decision?.type === 'chase_loose_ball').map(p => p.id));
@@ -3539,7 +3545,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // Drain per-player recovery debuffs
     players: state.players.map(p => {
       const updates: Partial<typeof p> = {};
-      if (p.recoveryTime > 0) updates.recoveryTime = Math.max(0, p.recoveryTime - dt);
+      if (p.recoveryTime > 0) {
+        updates.recoveryTime = Math.max(0, p.recoveryTime - dt);
+        if (updates.recoveryTime === 0 && p.recoverySpeed !== undefined) updates.recoverySpeed = undefined;
+      }
       if (p.justReceivedTicks > 0) updates.justReceivedTicks = p.justReceivedTicks - 1;
       return Object.keys(updates).length > 0 ? { ...p, ...updates } : p;
     }),
@@ -3673,6 +3682,23 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     : looseBallSit
       ? { x: s.looseBall!.x, y: s.looseBall!.y }
       : null;
+  // The contested ball was just collected: every chaser re-decides below (#145). The ones of the
+  // team that lost the race are beaten — a short recovery (no challenge, slowed) as they turn back
+  // to the shape, the time advantage the engine gives any lost duel (`dribbling.md`).
+  if (!chaseTarget && THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY > 0) {
+    const losers = s.players.filter(p =>
+      p.team !== holder.team && p.decisionMemory?.decision?.type === 'chase_loose_ball');
+    if (losers.length > 0) {
+      const ids = new Set(losers.map(p => p.id));
+      s = { ...s, players: s.players.map(p => (ids.has(p.id)
+        ? {
+          ...p,
+          recoveryTime: Math.max(p.recoveryTime, THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY),
+          recoverySpeed: THROUGH_BALL_CONFIG.RACE_LOSS_SPEED_FACTOR,
+        }
+        : p)) };
+    }
+  }
 
   for (const p of s.players) {
     const isBallHolder = p.id === s.ballHolderId;
@@ -3702,7 +3728,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       continue;
     }
 
-    const pathChanged = mem.path !== currentPath;
+    // A chase only lives while its ball is contested (through / high ball in flight, loose ball).
+    // Once somebody collects it the chase is stale: without this the committed chasers of both
+    // teams kept sprinting to the old landing point (next to the new holder) for up to
+    // COMMIT_TICKS.chase_loose_ball more ticks, bunching 3–4 players on the ball (#145).
+    const staleChase = !chaseTarget && mem.decision?.type === 'chase_loose_ball';
+    const pathChanged = mem.path !== currentPath || staleChase;
 
     // Reuse committed decision if path is stable and ticks remain.
     // Ball holder is always re-evaluated (carries, shoots, passes change quickly).
@@ -3760,6 +3791,17 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     gameBus.emit('manMarkTick', { targetIds, seconds: dt * TIME_SCALE });
   }
 
+  // Ball cluster statistics (#145): players of each side bunched within 8 yards of the ball.
+  if (isLivePhase(s.matchPhase) && !s.setPiece && !s.varReview && !s.shot) {
+    const ball = getBallPos(s);
+    const clusterDef: TeamId = holder.team === 'A' ? 'B' : 'A';
+    gameBus.emit('ballCluster', {
+      defendingTeam: clusterDef,
+      defendersNear: outfieldNearBall(s.players, clusterDef, ball).length,
+      attackersNear: outfieldNearBall(s.players, holder.team, ball).length,
+    });
+  }
+
   // ── 1. Formation movement — runs every tick, including during passes/shots ──
   {
     const markAssignments = assignMarkTargets(s.players, defendingTeam);
@@ -3776,7 +3818,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           const dy = gkTarget.y - player.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 0.01) return { ...player, targetPosition: gkTarget };
-          const recoveryMult = player.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
+          const recoveryMult = recoverySpeedMult(player);
           const step = Math.min(player.runtimeStats.withoutBall.pressSpeed * recoveryMult * dt, dist);
           return {
             ...player,
@@ -3810,7 +3852,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const cdy = targetPt.y - player.y;
         const cdist = Math.hypot(cdx, cdy);
         if (cdist < 0.01) return { ...player, targetPosition: targetPt };
-        const recoveryMult = player.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
+        const recoveryMult = recoverySpeedMult(player);
         const step = Math.min(sprintSpeed * recoveryMult * dt, cdist);
         return {
           ...player,
@@ -3926,7 +3968,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         : holderJustReceived
           ? player.runtimeStats.withoutBall.acceleration * CARRY_ACCEL_SPEED_BOOST
           : 0;
-      const recoveryMult = player.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
+      const recoveryMult = recoverySpeedMult(player);
       const step = Math.min((baseSpeed + accelBurst) * recoveryMult * dt, dist);
       return {
         ...player,

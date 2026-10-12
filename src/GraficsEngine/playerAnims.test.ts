@@ -43,4 +43,12 @@ describe("player animations", () => {
     expect(isLongShot({ x: 100, y: 37 }, 115)).toBe(false); // 15 yd
     expect(isLongShot({ x: 20, y: 37 }, 0)).toBe(true);
   });
+
+  test("goal celebration: two hops and one full turn, at rest at both ends (#129)", () => {
+    const [a] = addAnim([], { playerId: 9, kind: "celebrate", dir: { x: 1, y: 0 }, side: 1 }, 0);
+    expect(animOffset(a!, 0).rotation).toBe(0);
+    expect(animOffset(a!, a!.duration).liftYds).toBe(0);
+    expect(animOffset(a!, a!.duration / 4).liftYds).toBeGreaterThan(1);
+    expect(animOffset(a!, a!.duration * 0.999).rotation).toBeCloseTo(2 * Math.PI, 2);
+  });
 });

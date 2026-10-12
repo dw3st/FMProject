@@ -231,7 +231,9 @@ jardineiro ×1,6; campos da base com metade do desvio. Limite LOW 1 · MEDIUM 1 
 | Obras de grupo | `comfort` / `training` / `academy` | próximo nível do grupo; cada item do grupo vai a `max(nível, 2 × novo)` e 100% |
 
 `valor = receita × VALUE_SHARE[item] × nível / 6`; reforma = valor × Δcondição/100 × 0,6; reconstrução = valor;
-melhoria = valor(nível + 1) × 0,6. **Reforma pequena** (≤ 2% da receita anual, `SMALL_REPAIR_SHARE` — decisão do
+melhoria = valor(nível + 1) × 0,6 × tamanho(nível + 1). Prazos: reforma = ⌈REPAIR_WEEKS × Δcondição/100 × tamanho(nível)⌉
+(mínimo 1), reconstrução = ⌈REBUILD_WEEKS × tamanho(nível)⌉, melhoria = ⌈REBUILD_WEEKS × 0,6 × tamanho(nível + 1)⌉, com
+`tamanho(n) = worksSizeFactor(n) = 0,4 + 0,1 × n` (`FACILITIES.WORKS`; 1 no nível 6, 1,4 no 10, 0,6 no 2; #152). **Reforma pequena** (≤ 2% da receita anual, `SMALL_REPAIR_SHARE` — decisão do
 usuário: quase toda reforma é pequena) é paga na hora (`payRepairNow` + `recordMoney`, uma linha `facilities` com
 `ref.facility = "repair"`, num `BufferingSaveDAL` da requisição), sem diretoria; `no_money` se o saldo menos o
 comprometido não cobre. Reforma grande, reconstrução e melhoria passam pelo `boardDecision` com parcelas mensais.
@@ -249,13 +251,26 @@ Numa contratação (não na renovação) o pedido ganha `facilities = 1 + 0,10 �
 livre, pré-contrato → 400); `preferenceScore` desconta até 0,10 (`preferredClub` pode responder `facilities`).
 A rota `demand` devolve `facilities` (e `refusesPoorFacilities` quando o olheiro vê a ambição).
 
+### Uma obra por área (#152, 4.19)
+
+Decisão do usuário: **no máximo uma obra ao mesmo tempo por grupo** — estádio (setores, conforto, gramado, assentos,
+estrutura), CT e base: 3 no total. `projectGroup`/`requestGroup`/`groupBusy`/`busyGroups` (`facilities.ts`). A reforma
+pequena paga na hora (`FacilityProject.paidNow`) **não** ocupa a vaga e pode ser pedida com a área ocupada (desde que o
+item esteja livre). Na rota, a ordem é: item ocupado → 409 `busy`; sem cotação → 400; reforma pequena → paga; área
+ocupada → 409 `{ error: "busy", group }`; depois a diretoria. `GET .../facilities` devolve `busyGroups`; a tela mostra
+"Obras em andamento: N de 3", o selo "Obra em andamento" na área e desliga o pedido com "<área>: já há uma obra em
+andamento". Os setores e as obras de grupo já cresciam com o tamanho (8..30 semanas pelos lugares; níveis 1..5).
+
 ### Telas (#120)
 
 Aba **Clube** na barra superior (`/club`, `ClubScreen` → `FacilitiesView`), depois de Elenco: as instalações saíram de
-Finanças (que fica só com o dinheiro; `/finances?tab=facilities` redireciona para `/club`). Seção nova **Instalações
-em detalhe** (`FacilityItemsPanel`): três tabelas (Estádio, CT, Base), por item "N de 10", barra de condição (primária
-≥ 40, âmbar 15–39, vermelha < 15/"Interditado"), efeito atual abaixo de 40%, obra em andamento, botões Reformar
-(até +25/+50/100%), Reconstruir e Melhorar com painel de custo, prazo e "Pago pelo clube" ou a previsão da diretoria.
+Finanças (que fica só com o dinheiro; `/finances?tab=facilities` redireciona para `/club`). Seção **Instalações em
+detalhe** (`FacilityItemsPanel`, visual desde a 4.19, #132): por área (Estádio, CT, Base) uma grade de cartões, cada item
+com o desenho (`FacilityItemArt`: SVG inline 160×100 só com tokens do tema, a cor de destaque segue a condição —
+primária ≥ 40, âmbar 15–39, vermelha < 15 —, hachurado se interditado, guindaste com obra), "N de 10", barra de
+condição e o efeito abaixo de 40% ou a obra em andamento. Escolher um cartão abre o painel do item (desenho maior,
+Reformar até +25/+50/100% / Reconstruir / Melhorar em chips, custo, prazo, condição e nível antes → depois, "Pago pelo
+clube" ou a previsão da diretoria, e o aviso de área ocupada), com as cotações que a rota já devolve.
 Painel: Obras mostra as reformas (link para `/club`), Atenção lista itens desgastados/interditados da última semana.
 Prévia: "Gramado: N%" (vermelho abaixo de 40). Desempregado: `/club` vira a tela "Sem clube".
 

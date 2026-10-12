@@ -20,6 +20,9 @@ import countriesRaw from "@/Data/countries.json";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { AwardsView } from "@/GameInterface/Awards/AwardsView";
 import { RefereesTab } from "@/GameInterface/Referees/RefereesTab";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { Icon } from "@/GameInterface/Icons";
+import { useFavoriteCompetitions } from "@/GameInterface/useFavoriteCompetitions";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
@@ -307,6 +310,13 @@ export function StatsScreen() {
     [leagues, i18n.language, t],
   );
 
+  const { favorites, toggle: toggleFavorite } = useFavoriteCompetitions();
+  const favoriteOptions = useMemo(
+    () => favorites.map((slug) => options.find((o) => o.value === slug)).filter((o) => o !== undefined),
+    [favorites, options],
+  );
+  const isFavorite = favorites.includes(active);
+
   useEffect(() => {
     if (!session?.saveId || !active || tab !== "rankings") return;
     let cancelled = false;
@@ -339,15 +349,36 @@ export function StatsScreen() {
         />
 
         {tab === "rankings" && options.length > 0 && (
-          <SelectCombobox
-            label={t("statsScreen.competition")}
-            labelId="stats-competition"
-            value={active}
-            onChange={setCompetition}
-            options={options}
-            placeholder={t("leagues.searchLeaguesPlaceholder")}
-            className="w-full max-w-sm"
-          />
+          <div className="flex flex-wrap items-end gap-3">
+            <SelectCombobox
+              label={t("statsScreen.competition")}
+              labelId="stats-competition"
+              value={active}
+              onChange={setCompetition}
+              options={options}
+              placeholder={t("leagues.searchLeaguesPlaceholder")}
+              className="w-full max-w-sm"
+            />
+            <button
+              type="button"
+              onClick={() => toggleFavorite(active)}
+              aria-pressed={isFavorite}
+              aria-label={t(isFavorite ? "statsScreen.favorites.remove" : "statsScreen.favorites.add")}
+              title={t(isFavorite ? "statsScreen.favorites.remove" : "statsScreen.favorites.add")}
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-card transition-colors ${isFavorite ? "text-chart-4" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Icon name={isFavorite ? "star-filled" : "star"} size={18} />
+            </button>
+            {favoriteOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("statsScreen.favorites.label")}>
+                {favoriteOptions.map((o) => (
+                  <Chip key={o.value} selected={o.value === active} onClick={() => setCompetition(o.value)}>
+                    {o.label}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === "team" ? (

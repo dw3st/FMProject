@@ -555,6 +555,10 @@
     "descriptionHint": "{{min}} to {{max}} characters.",
     "attachImage": "Attach image",
     "attachmentHint": "PNG or JPEG, up to 2 MB. You can also paste (Ctrl+V) a screenshot anywhere in this window.",
+    "captureArea": "Capture screen area",
+    "captureTitle": "Capture screen area",
+    "captureHint": "Drag to pick the area. Esc cancels.",
+    "captureFailed": "Couldn't capture the screen.",
     "attachmentRemove": "Remove image",
     "attachmentErrorType": "Only PNG or JPEG images are supported.",
     "attachmentErrorSize": "The image is too large (max 2 MB).",
@@ -913,7 +917,9 @@
       "attack": "Attacking direction",
       "empty": "No possession yet",
       "show": "Show the possession map",
-      "hide": "Hide the possession map"
+      "hide": "Hide the possession map",
+      "recentShort": "Last 10'",
+      "allShort": "Whole match"
     },
     "liveTactics": {
       "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
@@ -956,6 +962,31 @@
       "red": "Red card! {{player}} ({{team}}) is sent off",
       "secondYellow": "Second yellow: {{player}} ({{team}}) is sent off",
       "penalty": "Penalty to {{team}}!"
+    },
+    "lineup": {
+      "pos": "Pos",
+      "name": "Player",
+      "rating": "Rat",
+      "ratingFull": "Match rating",
+      "fitness": "Fit",
+      "fitnessFull": "Fitness",
+      "goals": "G",
+      "goalsFull": "Goals",
+      "assists": "A",
+      "assistsFull": "Assists"
+    },
+    "stadium": {
+      "label": "Stadium",
+      "attendance": "{{crowd}} fans",
+      "neutral": "Neutral venue"
+    },
+    "feedWindow": {
+      "title": "Events",
+      "open": "Open the events in a window",
+      "dock": "Back to the panel",
+      "close": "Close the window",
+      "drag": "Drag to move",
+      "inWindow": "Events open in a window."
     }
   },
   "broadcast": {
@@ -2021,7 +2052,37 @@
     },
     "inboxCategory": "Club record",
     "inboxSubject": "New club record: {{record}}",
-    "inboxBody": "{{record}}: {{value}} ({{detail}})."
+    "inboxBody": "{{record}}: {{value}} ({{detail}}).",
+    "legends": "Idols and legends",
+    "legendsAbout": "Idol: {{idolApps}} games, or {{idolWith}} with {{idolGoals}} goals, {{idolTitles}} titles or an award. Legend: {{legendApps}} games, or {{legendWith}} with {{legendGoals}} goals, {{legendTitles}} titles or {{legendAwards}} awards.",
+    "noLegends": "No idol yet.",
+    "tier": {
+      "legend": "Legend",
+      "idol": "Idol"
+    },
+    "status": {
+      "current": "In the squad",
+      "retired": "Retired",
+      "left": "Left the club"
+    },
+    "legendLine": "{{apps}} games · {{goals}} goals · {{titles}} titles",
+    "facts": "Facts",
+    "fact": {
+      "seasons": "Seasons",
+      "titles": "Titles won",
+      "moves": "Promotions / relegations",
+      "leagueGoals": "League goals",
+      "bestSeason": "Best season",
+      "mostTeamGoals": "Most goals in a season",
+      "topScorer": "All-time top scorer",
+      "mostApps": "Most games"
+    },
+    "factDetail": {
+      "points": "{{points}} pts · {{season}}",
+      "goals": "{{league}} · {{season}}",
+      "player": "{{name}}",
+      "position": "#{{position}}"
+    }
   },
   "youth": {
     "loading": "Loading academy...",
@@ -2332,13 +2393,41 @@
       "nationality": "Nationality",
       "forSaleOnly": "For Sale Only",
       "freeAgentsOnly": "Free agents only",
-      "awardedOnly": "Award winners only"
+      "awardedOnly": "Award winners only",
+      "affordableOnly": "Fits the budget",
+      "affordableHint": "Estimated fee within your balance and asking wage within your wage cap",
+      "search": "Search",
+      "changed": "Filters changed"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
-      "description": "Click the track to set min–max (0–100)",
+      "description": "Type min and max (1–100)",
       "clearAll": "Clear all stats",
-      "any": "any"
+      "any": "any",
+      "minOf": "{{attr}} minimum",
+      "maxOf": "{{attr}} maximum",
+      "groups": {
+        "physical": "Physical",
+        "attack": "Technique and attack",
+        "defense": "Defence",
+        "goalkeeper": "Goalkeeper"
+      }
+    },
+    "savedFilters": {
+      "title": "Saved filters",
+      "load": "Load and search",
+      "remove": "Delete \"{{name}}\"",
+      "namePlaceholder": "Name these filters",
+      "nameLabel": "Name of the saved filters",
+      "save": "Save filters"
+    },
+    "interest": {
+      "interested": "Interested",
+      "hesitant": "Hesitant",
+      "not_coming": "Would not come",
+      "interestedHint": "Your scout thinks he would like to join your club",
+      "hesitantHint": "Your scout thinks he has doubts: rival club, his level, loyalty or your club's size",
+      "not_comingHint": "Your scout thinks he would turn your club down"
     },
     "table": {
       "forSale": "For sale",
@@ -2356,7 +2445,9 @@
       "action": "Action",
       "offer": "Offer",
       "sign": "Sign",
-      "signFree": "Sign as a free agent"
+      "signFree": "Sign as a free agent",
+      "interest": "Interest",
+      "noClub": "No club"
     }
   },
   "fastForward": {
@@ -2383,6 +2474,11 @@
   "statsScreen": {
     "allLeagues": "All leagues",
     "competition": "Competition",
+    "favorites": {
+      "label": "Favourites",
+      "add": "Add to favourites",
+      "remove": "Remove from favourites"
+    },
     "title": "Stats",
     "rankings": "Rankings",
     "myTeam": "My team",
@@ -3074,7 +3170,10 @@
       "injuryDays": "Days out when injured {{pct}}",
       "intakeQuality": "Intake level {{value}}",
       "promise": "Wonderkid chance {{pct}}"
-    }
+    },
+    "groupBusy": "{{group}}: works already under way. One works at a time in each area.",
+    "groupWorks": "Works under way",
+    "slots": "Works under way: {{count}} of {{max}}"
   },
   "transferWindows": {
     "tab": "Windows",

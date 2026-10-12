@@ -1,8 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData } from "@/types/playerTypes";
-import type { ClubHistoryResponse, ClubRecordBroken, ClubRecordKind, ClubTopPlayer } from "@/types/clubHistoryTypes";
+import type {
+  ClubFacts, ClubHistoryResponse, ClubLegend, ClubRecordBroken, ClubRecordKind, ClubTopPlayer,
+} from "@/types/clubHistoryTypes";
 import { competitionName } from "@/Domain/world/labels";
+import { CLUB_LEGENDS } from "@/Domain/clubHistory/clubHistory";
 import { Panel } from "@/GameInterface/ui/Panel";
 import { Icon } from "@/GameInterface/Icons";
 import { NameCell, NumberCell, RankCell, StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
@@ -103,6 +106,10 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
           </div>
         )}
       </Panel>
+
+      <LegendsPanel legends={data.legends} squadId={data.squadId} leagueSlug={leagueSlug} />
+
+      {data.facts.seasons > 0 && <FactsPanel facts={data.facts} leagueName={name} />}
 
       <Panel title={t("clubHistory.seasons")}>
         {seasonsNewestFirst.length === 0 ? (
@@ -226,6 +233,97 @@ function TopTable({ title, rows, by, squadId, leagueSlug }: {
           ))}
         </StatsTable>
       )}
+    </Panel>
+  );
+}
+
+/** Idols and legends of the club (#151): rule from the games, goals, titles and awards at it. */
+function LegendsPanel({ legends, squadId, leagueSlug }: { legends: ClubLegend[]; squadId: string; leagueSlug: string }) {
+  const { t } = useTranslation();
+  const L = CLUB_LEGENDS;
+  return (
+    <Panel title={t("clubHistory.legends")}>
+      <p className="m-0 mb-3 text-sm text-muted-foreground">
+        {t("clubHistory.legendsAbout", {
+          idolApps: L.IDOL_APPS, idolWith: L.IDOL_APPS_WITH, idolGoals: L.IDOL_GOALS, idolTitles: L.IDOL_TITLES,
+          legendApps: L.LEGEND_APPS, legendWith: L.LEGEND_APPS_WITH, legendGoals: L.LEGEND_GOALS,
+          legendTitles: L.LEGEND_TITLES, legendAwards: L.LEGEND_AWARDS,
+        })}
+      </p>
+      {legends.length === 0 ? (
+        <p className="text-sm text-muted-foreground m-0">{t("clubHistory.noLegends")}</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {legends.map((p) => {
+            const status = p.current ? "current" : p.retired ? "retired" : "left";
+            const legend = p.tier === "legend";
+            const href = p.current
+              ? `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(p.playerId)}`
+              : undefined;
+            return (
+              <div key={p.playerId}
+                className={`flex items-start gap-3 rounded-md border p-3 ${legend ? "border-chart-4/60" : "border-border"}`}>
+                <Icon name={legend ? "crown" : "star-filled"} size={20} className={`shrink-0 mt-0.5 ${legend ? "text-chart-4" : "text-primary"}`} />
+                <div className="min-w-0 flex flex-col gap-0.5">
+                  {href ? (
+                    <a href={href} className="font-semibold text-foreground truncate hover:text-primary">{p.name}</a>
+                  ) : (
+                    <span className="font-semibold text-foreground truncate">{p.name}</span>
+                  )}
+                  <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${legend ? "text-chart-4" : "text-primary"}`}>
+                    {t(`clubHistory.tier.${p.tier}`)} · {t(`clubHistory.status.${status}`)}
+                  </span>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {t("clubHistory.legendLine", { apps: p.apps, goals: p.goals, titles: p.titles ?? 0 })}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/** Facts and curiosities (#151), derived from the seasons and the players' totals at the club. */
+function FactsPanel({ facts, leagueName }: { facts: ClubFacts; leagueName: (slug: string) => string }) {
+  const { t } = useTranslation();
+  const cards: { key: string; value: string; detail?: string }[] = [
+    { key: "seasons", value: String(facts.seasons) },
+    { key: "titles", value: String(facts.titles) },
+    { key: "moves", value: `${facts.promotions} / ${facts.relegations}` },
+    { key: "leagueGoals", value: String(facts.leagueGoals) },
+  ];
+  if (facts.bestSeason) {
+    cards.push({
+      key: "bestSeason", value: facts.bestSeason.position !== null ? t("clubHistory.factDetail.position", { position: facts.bestSeason.position }) : "-",
+      detail: `${leagueName(facts.bestSeason.league)} · ${t("clubHistory.factDetail.points", { points: facts.bestSeason.points, season: facts.bestSeason.season })}`,
+    });
+  }
+  if (facts.mostTeamGoals) {
+    cards.push({
+      key: "mostTeamGoals", value: String(facts.mostTeamGoals.goals),
+      detail: t("clubHistory.factDetail.goals", { league: leagueName(facts.mostTeamGoals.league), season: facts.mostTeamGoals.season }),
+    });
+  }
+  if (facts.topScorer) {
+    cards.push({ key: "topScorer", value: String(facts.topScorer.goals), detail: t("clubHistory.factDetail.player", { name: facts.topScorer.name }) });
+  }
+  if (facts.mostApps) {
+    cards.push({ key: "mostApps", value: String(facts.mostApps.apps), detail: t("clubHistory.factDetail.player", { name: facts.mostApps.name }) });
+  }
+  return (
+    <Panel title={t("clubHistory.facts")}>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {cards.map((c) => (
+          <div key={c.key} className="rounded-md border border-border p-4 min-w-0">
+            <Caption>{t(`clubHistory.fact.${c.key}`)}</Caption>
+            <p className="m-0 font-display font-bold tabular-nums text-3xl leading-none text-foreground">{c.value}</p>
+            {c.detail && <p className="m-0 mt-2 text-sm text-muted-foreground truncate">{c.detail}</p>}
+          </div>
+        ))}
+      </div>
     </Panel>
   );
 }

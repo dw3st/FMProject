@@ -301,3 +301,11 @@ test("salary sorts by the weekly wage, not by the text label", () => {
   expect(sortScoutPlayers(ps, "salary", "desc").map((p) => p.id)).toEqual(["b", "a", "c"]);
   expect(sortScoutPlayers(ps, "salary", "asc").map((p) => p.id)).toEqual(["c", "a", "b"]);
 });
+
+describe("filterScoutPlayers — fits the budget (#123)", () => {
+  test("only rows flagged affordable pass; own players (no flag) do not", () => {
+    const list = [P({ id: "a", affordable: true }), P({ id: "b", affordable: false }), P({ id: "c" })];
+    expect(ids(filterScoutPlayers(list, F({ onlyAffordable: true }), new Set()))).toEqual(["a"]);
+    expect(ids(filterScoutPlayers(list, F(), new Set()))).toEqual(["a", "b", "c"]);
+  });
+});

@@ -58,7 +58,10 @@ export function FacilitiesView({
     setPending(false);
   };
 
-  const running = (kind: FacilityKind) => f.projects.some((p) => p.kind === kind);
+  // One works at a time per group (#152): the stadium (stands, comfort), the training ground, the academy.
+  const busyGroups = data.busyGroups ?? [];
+  const running = (kind: "stand" | "comfort" | "training" | "academy") =>
+    busyGroups.includes(kind === "stand" || kind === "comfort" ? "stadium" : kind);
 
   return (
     <div className="flex flex-col gap-6">
@@ -329,7 +332,7 @@ function StandPanel({
         <Figure label={t("facilities.stand.newCapacity")} value={nf(data.capacity + seats)} />
       </div>
       <p className="text-sm text-muted-foreground m-0">{t("facilities.stand.halfDuringWorks")}</p>
-      <AskRow data={data} cost={cost} busy={busy} pending={pending} onAsk={onAsk} />
+      <AskRow data={data} cost={cost} busy={busy} pending={pending} onAsk={onAsk} group="stadium" />
     </div>
   );
 }
@@ -344,13 +347,14 @@ function Figure({ label, value }: { label: string; value: string }) {
 }
 
 /** Board preview + the request button. */
-function AskRow({ data, cost, busy, pending, onAsk, disabled }: {
+function AskRow({ data, cost, busy, pending, onAsk, disabled, group }: {
   data: FacilitiesViewData; cost: number; busy: boolean; pending: boolean; onAsk: () => void; disabled?: boolean;
+  group: "stadium" | "training" | "academy";
 }) {
   const { t } = useTranslation();
   const preview = boardDecision({ board: data.board, balance: data.balance, cost, revenue: data.revenue, committed: data.committed });
   const hint = busy
-    ? t("facilities.busy")
+    ? t("facilities.groupBusy", { group: t(`facilities.items.group.${group}`) })
     : preview.approved
       ? preview.boardShare > 0
         ? t("facilities.preview.funded", { pct: Math.round(preview.boardShare * 100) })
@@ -423,7 +427,8 @@ function LevelBlock({
             <Figure label={t("facilities.cost")} value={formatEuros(quote.cost)} />
             <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
           </div>
-          <AskRow data={data} cost={quote.cost} busy={busy} pending={pending} onAsk={onAsk} />
+          <AskRow data={data} cost={quote.cost} busy={busy} pending={pending} onAsk={onAsk}
+            group={kind === "comfort" ? "stadium" : kind} />
         </>
       )}
     </div>
@@ -455,7 +460,9 @@ function OutcomeNotice({ outcome, onClose }: { outcome: { kind: FacilityKind; re
     ? t("facilities.outcome.approved", { what, date: r.project.end })
       + (r.paidByClub ? ` ${t("facilities.items.paidByClub")}` : "")
       + (r.boardShare > 0 ? ` ${t("facilities.preview.funded", { pct: Math.round(r.boardShare * 100) })}` : "")
-    : t(`facilities.reason.${r.reason}`);
+    : r.reason === "busy" && r.group
+      ? t("facilities.groupBusy", { group: t(`facilities.items.group.${r.group}`) })
+      : t(`facilities.reason.${r.reason}`);
   return (
     <div className={`card-arcade rounded-md p-4 border flex items-start gap-3 ${ok ? "border-chart-2/50 bg-chart-2/10" : "border-destructive/50 bg-destructive/10"}`}>
       <Icon name={ok ? "check-circle" : "alert"} size={20} className={ok ? "text-chart-2 shrink-0" : "text-destructive shrink-0"} />
@@ -562,7 +569,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
         <p className="text-sm text-muted-foreground m-0">{t("facilities.projects.none")}</p>
       ) : projects.map((p) => {
         const progress = projectProgress(p, data.date);
-        const paidNow = p.boardShare === 0 && p.instalments === 1 && p.paid === 1 && p.item !== undefined;
+        const paidNow = p.paidNow === true;
         const what = p.kind === "stand"
           ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: nf(p.seats ?? 0) })
           : p.item

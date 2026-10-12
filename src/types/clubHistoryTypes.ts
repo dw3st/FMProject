@@ -35,6 +35,10 @@ export interface ClubScorer {
   goals: number;
   apps: number;
   assists: number;
+  /** Titles won at the club (league, cup, continental) — from his season rows. */
+  titles?: number;
+  /** Season awards won while at the club. */
+  awards?: number;
 }
 
 export interface ClubMatchRecord {
@@ -98,6 +102,26 @@ export interface ClubTopPlayer extends ClubScorer {
   retired: boolean;
 }
 
+/** Idol or legend of the club (`clubLegends`, rule in `.claude/rules/game/club-history.md`). */
+export interface ClubLegend extends ClubTopPlayer {
+  tier: "legend" | "idol";
+}
+
+/** Facts derived from the history (`clubFacts`). */
+export interface ClubFacts {
+  seasons: number;
+  /** League, cup and continental titles (promotions apart). */
+  titles: number;
+  promotions: number;
+  relegations: number;
+  /** Goals scored in every finished league season. */
+  leagueGoals: number;
+  bestSeason?: { season: string; league: string; points: number; position: number | null };
+  mostTeamGoals?: { season: string; league: string; goals: number };
+  topScorer?: { playerId: string; name: string; goals: number };
+  mostApps?: { playerId: string; name: string; apps: number };
+}
+
 /** `GET /api/saves/:id/clubs/:squadId/history`. */
 export interface ClubHistoryResponse {
   squadId: string;
@@ -114,5 +138,8 @@ export interface ClubHistoryResponse {
   titles: { title: string; seasons: string[] }[];
   topScorers: ClubTopPlayer[];
   topApps: ClubTopPlayer[];
+  /** Idols and legends (active, retired or gone), legends first. */
+  legends: ClubLegend[];
+  facts: ClubFacts;
   records: ClubRecords;
 }

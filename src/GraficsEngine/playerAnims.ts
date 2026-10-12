@@ -5,15 +5,17 @@
  */
 import { PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
-export type PlayerAnimKind = "longShot" | "header" | "save";
+export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate";
 
-export const ANIM_DURATION: Record<PlayerAnimKind, number> = { longShot: 0.45, header: 0.5, save: 0.6 };
+export const ANIM_DURATION: Record<PlayerAnimKind, number> = { longShot: 0.45, header: 0.5, save: 0.6, celebrate: 1.4 };
 /** A shot from at least this far from the goal centre is a "long shot". */
 export const LONG_SHOT_YDS = 20;
 
 const LONG_SHOT = { BACK: 0.4, FORWARD: 0.6, SCALE: 0.15 } as const;
 const HEADER_LIFT_YDS = 1.5;
 const SAVE = { DIVE_YDS: 1.5, ROTATION: (70 * Math.PI) / 180 } as const;
+/** Goal celebration (#129): two hops and one full turn. */
+const CELEBRATE = { HOP_YDS: 1.2, SCALE: 0.15 } as const;
 
 export interface PlayerAnim {
   playerId: number;
@@ -70,6 +72,13 @@ export function animOffset(a: PlayerAnim, now: number): AnimOffset {
     }
     case "header":
       return { dx: 0, dy: 0, liftYds: HEADER_LIFT_YDS * bump, scale: 1, rotation: 0 };
+    case "celebrate": {
+      const turn = p * p * (3 - 2 * p);
+      return {
+        dx: 0, dy: 0, liftYds: CELEBRATE.HOP_YDS * Math.abs(Math.sin(2 * Math.PI * p)),
+        scale: 1 + CELEBRATE.SCALE * bump, rotation: a.side * 2 * Math.PI * turn,
+      };
+    }
     case "save":
       return {
         dx: a.dir.x * SAVE.DIVE_YDS * bump, dy: a.dir.y * SAVE.DIVE_YDS * bump,

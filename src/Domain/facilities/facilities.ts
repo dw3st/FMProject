@@ -7,7 +7,7 @@ import { addDays, daysBetween } from "@/Domain/dates";
 import { clamp } from "@/Domain/math";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import {
-  comfortLevel, conditionOf, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty,
+  ITEM_GROUP, comfortLevel, conditionOf, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty,
   physioDurationMult, wearFor,
 } from "@/Domain/facilities/facilityItems";
 import { personalityOf } from "@/Domain/personality/personality";
@@ -328,6 +328,14 @@ export function itemValue(revenue: number, id: FacilityItemId, level: number): n
   return Math.max(0, revenue) * F.ITEMS[id].valueShare * level / 6;
 }
 
+/**
+ * Size of an item's works by its level (#152): × weeks of every item project and × the upgrade cost.
+ * Level 6 (the starting level of a MEDIUM club) is 1; level 2 is 0,6, level 10 is 1,4.
+ */
+export function worksSizeFactor(level: number): number {
+  return Math.round((F.WORKS.SIZE_BASE + F.WORKS.SIZE_STEP * clamp(level, 1, F.ITEM_MAX_LEVEL)) * 100) / 100;
+}
+
 function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: number): ProjectQuote | null {
   if (req.kind !== "repair" && req.kind !== "rebuild" && req.kind !== "upgrade") return null;
   const it = f.items[req.item];
@@ -340,20 +348,23 @@ function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: numb
     const gain = (to - cond) / 100;
     const cost = Math.round(itemValue(revenue, req.item, it.level) * gain * F.REPAIR.COST_SHARE);
     return {
-      kind: "repair", item: req.item, to, cost, weeks: Math.max(1, Math.ceil(c.repairWeeks * gain)),
+      kind: "repair", item: req.item, to, cost, weeks: Math.max(1, Math.ceil(c.repairWeeks * gain * worksSizeFactor(it.level))),
       small: cost <= F.REPAIR.SMALL_REPAIR_SHARE * Math.max(0, revenue),
     };
   }
   if (req.kind === "rebuild") {
     if (!it.condemned && cond >= F.WEAR.CONDEMN_BELOW) return null;
-    return { kind: "rebuild", item: req.item, to: 100, cost: Math.round(itemValue(revenue, req.item, it.level)), weeks: c.rebuildWeeks };
+    return {
+      kind: "rebuild", item: req.item, to: 100, cost: Math.round(itemValue(revenue, req.item, it.level)),
+      weeks: Math.ceil(c.rebuildWeeks * worksSizeFactor(it.level)),
+    };
   }
   if (it.level >= F.ITEM_MAX_LEVEL) return null;
   const level = it.level + 1;
   return {
     kind: "upgrade", item: req.item, to: 100, level,
-    cost: Math.round(itemValue(revenue, req.item, level) * F.REPAIR.COST_SHARE),
-    weeks: Math.ceil(c.rebuildWeeks * F.REPAIR.UPGRADE_WEEKS_SHARE),
+    cost: Math.round(itemValue(revenue, req.item, level) * F.REPAIR.COST_SHARE * worksSizeFactor(level)),
+    weeks: Math.ceil(c.rebuildWeeks * F.REPAIR.UPGRADE_WEEKS_SHARE * worksSizeFactor(level)),
   };
 }
 
@@ -437,6 +448,31 @@ export function projectRunning(f: ClubFacilities, kind: FacilityKind): boolean {
   return items.some((id) => itemBusy(f, id));
 }
 
+/** Group a project belongs to: stand and comfort → stadium; group works → their group; items → the item's. */
+export function projectGroup(p: Pick<FacilityProject, "kind" | "item">): FacilityGroup {
+  if (p.item) return ITEM_GROUP[p.item];
+  if (p.kind === "training" || p.kind === "academy") return p.kind;
+  return "stadium";
+}
+
+/** Group of a request (same rule as `projectGroup`). */
+export function requestGroup(req: FacilityRequest): FacilityGroup {
+  return projectGroup({ kind: req.kind, item: "item" in req ? req.item : undefined });
+}
+
+/**
+ * One works at a time per group (stadium, training ground, academy) — at most 3 in all (#152). A
+ * small repair paid now (`paidNow`) never takes the slot.
+ */
+export function groupBusy(f: ClubFacilities, group: FacilityGroup): boolean {
+  return f.projects.some((p) => !p.paidNow && projectGroup(p) === group);
+}
+
+/** The groups that have a works running (`groupBusy`), in a fixed order. */
+export function busyGroups(f: ClubFacilities): FacilityGroup[] {
+  return (["stadium", "training", "academy"] as const).filter((g) => groupBusy(f, g));
+}
+
 /** An item already has a project (its own, or a group work that covers it). */
 export function itemBusy(f: ClubFacilities, item: FacilityItemId): boolean {
   return f.projects.some((p) => projectItems(p).includes(item));
@@ -476,7 +512,7 @@ export function payRepairNow(
   f: ClubFacilities, quote: ProjectQuote, args: { id: string; date: string },
 ): { facilities: ClubFacilities; entry: LedgerEntry } {
   const started = startProject(f, quote, { ...args, boardShare: 0 });
-  const projects = started.projects.map((p) => (p.id === args.id ? { ...p, instalments: 1, paid: 1 } : p));
+  const projects = started.projects.map((p) => (p.id === args.id ? { ...p, instalments: 1, paid: 1, paidNow: true as const } : p));
   return {
     facilities: { ...started, projects },
     entry: {

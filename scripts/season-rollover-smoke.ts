@@ -162,6 +162,9 @@ try {
   const playerCountry = countryOf(PLAYER_LEAGUE);
   const meta0 = (await plain().getMeta(saveId))!;
   const index0 = await plain().getSquadIndex(saveId);
+  // The human club moved between tiers at a rollover (relegation/promotion): the staff limit and the
+  // revenue follow the new tier, while nobody is dismissed and the manager keeps the contract wage.
+  let humanTierChanged = false;
   const playerSquadId = index0.byId(meta0.clubId)?.squadId
     ?? index0.inLeague(PLAYER_LEAGUE).find((t) => t.slug === meta0.clubId)?.squadId
     ?? meta0.clubId;
@@ -1473,6 +1476,7 @@ try {
       check(JSON.stringify(payloadMoves.map(key).sort()) === JSON.stringify(observed.map(key).sort()),
         `payload.moves (${payloadMoves.length}) == observed membership changes (${observed.length})`);
       const obsPlayer = observed.find((m) => m.squadId === playerSquadId) ?? null;
+      if (obsPlayer) humanTierChanged = true;
       check(JSON.stringify(payload.playerMove ?? null) === JSON.stringify(obsPlayer),
         `payload.playerMove ${JSON.stringify(payload.playerMove ?? null)} matches observed`);
       const archive = await fsDal.readLeagueSeasonArchive(saveId, PLAYER_LEAGUE, rc?.closed.get(PLAYER_LEAGUE) ?? -1);
@@ -2228,8 +2232,11 @@ try {
   check(staffRoles.length === STAFF_ROLES.length - 1,
     `staff: the human club has every role at the end (${staffRoles.join(", ")}; ${fieldScoutCount} field scout(s))`);
   const coachCount = finalStaff.filter((m) => m.role === "coach").length;
-  check(!!humanFinal && coachCount <= roleLimit(humanFinal, "coach"),
-    `staff: ${coachCount} area coach(es), within the tier's limit (${humanFinal ? roleLimit(humanFinal, "coach") : "?"})`);
+  // A tier drop never dismisses anyone (`staff.md`): after one, the old ELITE limit is the ceiling.
+  const { STAFF } = await import("@/Domain/staff/staffConfig");
+  const coachCap = humanFinal ? (humanTierChanged ? STAFF.LIMITS.coach.ELITE : roleLimit(humanFinal, "coach")) : 0;
+  check(!!humanFinal && coachCount <= coachCap,
+    `staff: ${coachCount} area coach(es), within the tier's limit (${coachCap}${humanTierChanged ? ", club changed tier" : ""})`);
   const staffEnd = (await plain().getMeta(saveId))!.currentDate!;
   const overdue = finalStaff.filter((m) => !m.contract || m.contract.until < staffEnd);
   check(overdue.length === 0, `staff: no contract past its end on ${staffEnd} (${overdue.map((m) => `${m.name} ${m.contract?.until ?? "none"}`).join(", ") || "none"})`);
@@ -3067,7 +3074,10 @@ try {
       `mercado vivo: the manager line is the contract wage (${mm.managerContract?.wage})`);
     const share = mm.managerContract ? (mm.managerContract.wage * 52) / Math.max(1, (await plain().getSquadById(saveId, playerSquadId))!.wageRevenueBasis ?? 1) : 0;
     console.log(`  manager wage ${mm.managerContract?.wage}/week = ${(100 * share).toFixed(2)}% of the club's revenue; earnings ${mm.managerEarnings}`);
-    check(share >= 0.015 && share <= 0.04, `mercado vivo: manager wage 1,5..4% of the revenue (${(100 * share).toFixed(2)}%)`);
+    // The wage is frozen at signing: after a relegation the revenue drops by the tier ratio (×0.35 a step),
+    // so only the floor is checked then.
+    check(share >= 0.015 && (humanTierChanged || share <= 0.04),
+      `mercado vivo: manager wage 1,5..4% of the revenue (${(100 * share).toFixed(2)}%${humanTierChanged ? ", club changed tier: ceiling skipped" : ""})`);
 
     // A rival wins the deadline: forced on an AI target of the player's league.
     const { Player: PlayerM } = await import("@/Domain/Player");
