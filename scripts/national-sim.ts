@@ -11,7 +11,8 @@ import { addDays } from "@/Domain/dates";
 import { rankTeams } from "@/Domain/national/elo";
 import { NATIONAL_MATCH } from "@/Domain/national/nationalMatch";
 
-if (process.env.NATIONAL_GOAL_SCALE) NATIONAL_MATCH.GOAL_SCALE = Number(process.env.NATIONAL_GOAL_SCALE);
+// NATIONAL_MATCH_OVERRIDES='{"AT_REF":1.4,"SLOPE":0}' tries other constants (a flat factor: SLOPE 0).
+if (process.env.NATIONAL_MATCH_OVERRIDES) Object.assign(NATIONAL_MATCH, JSON.parse(process.env.NATIONAL_MATCH_OVERRIDES));
 
 const until = process.argv[2] ?? "2030-07-20";
 const meta = await saveService.createSave({

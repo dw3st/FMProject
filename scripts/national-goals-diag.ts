@@ -2,20 +2,22 @@
  * Goal volume of the AI national-team games (quickSim), day by day on a fresh career (clubs frozen, like
  * `national-sim.ts`): goals and xG per game, the xG inputs (level, pace edge, forward finishing, strength ratio),
  * fitness, share of generated players, and the Elo favourite's win / upset / draw rates — by year, competition kind
- * and confederation (`X` = cross-confederation). `NATIONAL_GOAL_SCALE=<k>` overrides `NATIONAL_MATCH.GOAL_SCALE`.
+ * and confederation (`X` = cross-confederation). `NATIONAL_MATCH_OVERRIDES='{...}'` overrides
+ * `NATIONAL_MATCH` (e.g. `{"AT_REF":1.4,"SLOPE":0}` = a flat × 1,4).
  *   bun scripts/national-goals-diag.ts [until=2027-06-30]
  */
 import { saveService } from "@/backend/SaveService";
 import { playNationalDay, callUpSquad, nationalPseudoSquad } from "@/backend/nationalWorld";
 import { addDays } from "@/Domain/dates";
-import { quickSimMatch, teamLevel, type TeamStrength } from "@/Domain/advanceDay/quickSim";
+import { quickSimMatch, teamLevel, xiLevel, type TeamStrength } from "@/Domain/advanceDay/quickSim";
 import { nationalLineup, NATIONAL_SQUAD } from "@/Domain/national/nationalSquad";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { mulberry32 } from "@/Domain/rng";
-import { NATIONAL_MATCH } from "@/Domain/national/nationalMatch";
+import { NATIONAL_MATCH, nationalGoalScale } from "@/Domain/national/nationalMatch";
 
-if (process.env.NATIONAL_GOAL_SCALE) NATIONAL_MATCH.GOAL_SCALE = Number(process.env.NATIONAL_GOAL_SCALE);
+// NATIONAL_MATCH_OVERRIDES='{"AT_REF":1.4,"SLOPE":0}' tries other constants (a flat factor: SLOPE 0).
+if (process.env.NATIONAL_MATCH_OVERRIDES) Object.assign(NATIONAL_MATCH, JSON.parse(process.env.NATIONAL_MATCH_OVERRIDES));
 
 const until = process.argv[2] ?? "2027-06-30";
 const meta = await saveService.createSave({
@@ -36,10 +38,12 @@ try {
         const hs = await callUpSquad(saveId, state0, fx.home, (id) => saveService.getSquadById(saveId, id));
         const as = await callUpSquad(saveId, state0, fx.away, (id) => saveService.getSquadById(saveId, id));
         if (!hs || !as) continue;
+        const hq = nationalPseudoSquad(state0, fx.home, hs.players), aq = nationalPseudoSquad(state0, fx.away, as.players);
+        const hl = nationalLineup(hs.players, date), al = nationalLineup(as.players, date);
         const r = quickSimMatch({
-          fixtureId: fx.id, home: nationalPseudoSquad(state0, fx.home, hs.players), away: nationalPseudoSquad(state0, fx.away, as.players),
-          homeLineup: nationalLineup(hs.players, date), awayLineup: nationalLineup(as.players, date), homeRoles: roles, awayRoles: roles,
-          ...(fx.neutral ? { neutral: true } : {}), goalScale: NATIONAL_MATCH.GOAL_SCALE,
+          fixtureId: fx.id, home: hq, away: aq, homeLineup: hl, awayLineup: al, homeRoles: roles, awayRoles: roles,
+          ...(fx.neutral ? { neutral: true } : {}),
+          goalScale: nationalGoalScale((xiLevel(hq, hl, roles) + xiLevel(aq, al, roles)) / 2),
         }, mulberry32(1));
         const th = state0.teams[fx.home]!, ta = state0.teams[fx.away]!;
         const xiIds = [...nationalLineup(hs.players, date), ...nationalLineup(as.players, date)];

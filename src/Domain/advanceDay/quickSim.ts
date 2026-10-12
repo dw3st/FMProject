@@ -117,7 +117,7 @@ export interface QuickSimInput {
   refereeQuality?: number;
   refereeVar?: boolean;
   /**
-   * Multiplies both sides' xG (national-team games only, `NATIONAL_MATCH.GOAL_SCALE`): the club constants are
+   * Multiplies both sides' xG (national-team games only, `nationalGoalScale`): the club constants are
    * calibrated to the full engine, whose goal volume at national-team level is well below real international
    * football. Absent / 1 = no change (club games never pass it).
    */
@@ -367,6 +367,11 @@ export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0, group?: 
 }
 
 /** Skips empty / unknown / duplicate ids; each kept player takes the role of his own slot index. */
+/** `teamLevel` of a side's XI as `quickSimMatch` builds it (no familiarity / morale). */
+export function xiLevel(squad: Squad, lineup: string[], roles?: string[]): number {
+  return teamLevel(strengthOf(resolveXI(squad, lineup, roles)));
+}
+
 function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[] {
   const byId = new Map(squad.players.map((p) => [p.id, p]));
   const xi: XIPlayer[] = [];

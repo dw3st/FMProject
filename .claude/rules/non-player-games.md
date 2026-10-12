@@ -1188,5 +1188,5 @@ ausente sorteia exatamente o de antes. Medição do volume do mundo (26 ligas, p
 
 ## Seleções (4.22.1)
 
-`QuickSimInput.goalScale` multiplica o xG dos dois lados; só o quickSim de seleção passa (`NATIONAL_MATCH.GOAL_SCALE`
-1,4). Ausente = × 1, o jogo de clube é idêntico. Ver `.claude/rules/game/national-teams.md` → "Volume de gols".
+`QuickSimInput.goalScale` multiplica o xG dos dois lados; só o quickSim de seleção passa (`nationalGoalScale`, que cai
+com o nível médio dos dois XIs: × 1,10 nos torneios, × 1,61 num jogo de nível 3,7). `xiLevel` dá o `teamLevel` de um XI. Ausente = × 1, o jogo de clube é idêntico. Ver `.claude/rules/game/national-teams.md` → "Volume de gols".
