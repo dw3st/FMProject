@@ -38,6 +38,11 @@ export interface Fixture {
    * or the day before/after (`.claude/rules/game/rescheduling.md`). The first original date when moved twice.
    */
   rescheduledFrom?: string;
+  /**
+   * Player calendar only (`GET /api/saves/:id`, Etapa 41b): a game of the national team the human manager coaches —
+   * the team's id here, its side replaced by the club's id so every "my match day" flow reads it.
+   */
+  nationalTeam?: string;
 }
 
 export interface SeasonData {
@@ -56,6 +61,10 @@ export interface SeasonData {
    * Players can toggle future non-game days between "training" and "rest".
    */
   restDays?: string[];
+  /** The national team the human manager coaches (Etapa 41b): its games are in `calendar` (`Fixture.nationalTeam`). */
+  nationalTeamId?: string;
+  /** Names of the national teams in `calendar` (by `nat_…` id). */
+  teamNames?: Record<string, string>;
 }
 
 export interface SeasonTitle {

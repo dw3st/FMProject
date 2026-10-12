@@ -4,7 +4,7 @@ import { MAIN_ROLE_TO_SPECIFICS, overallAvg } from "@/Domain/playerRating";
 import { preferredRole, slotValue } from "@/Domain/positions/positionAptitude";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { academyGauss, academyUnit, makeAcademyPlayer } from "@/Domain/youth/youth";
-import { autoFillLineupWithFitness, autoFillLineup } from "@/Domain/lineupHelpers";
+import { autoFillLineupWithFitness, autoFillLineup, replaceUnavailableStarters } from "@/Domain/lineupHelpers";
 import { slotsFor } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -172,4 +172,31 @@ export function squadLevel(players: RosterPlayer[]): number {
   const byId = new Map(players.map((p) => [p.id, p]));
   const lv = xi.map((id) => byId.get(id)).filter((p): p is RosterPlayer => !!p).map(overallAvg);
   return lv.length > 0 ? lv.reduce((s, v) => s + v, 0) / lv.length : 0;
+}
+
+/**
+ * The human manager's XI for a national game (Etapa 41b): his saved XI in his formation with the players available in
+ * the squad (an unavailable starter swapped like a club's saved XI); empty or invalid places from the automatic,
+ * fitness-aware fill of the same formation.
+ */
+export function coachLineup(players: RosterPlayer[], formationId: string | undefined, saved: string[] | undefined, date: string): string[] {
+  const slots = slotsFor(formationForSimId(formationId));
+  const pool = players.map(asNationalPlayer);
+  const ids = new Set(pool.map((p) => p.id));
+  const seen = new Set<string>();
+  const kept = slots.map((_, i) => {
+    const id = saved?.[i];
+    if (!id || !ids.has(id) || seen.has(id)) return "";
+    seen.add(id);
+    return id;
+  });
+  const lineup = replaceUnavailableStarters(slots, kept, pool, date).lineup;
+  const used = new Set(lineup.filter(Boolean));
+  const auto = autoFillLineupWithFitness(slots, pool, date);
+  return lineup.map((id, i) => {
+    if (id) return id;
+    const pick = [auto[i], ...auto].find((x): x is string => !!x && !used.has(x));
+    if (pick) used.add(pick);
+    return pick ?? "";
+  });
 }

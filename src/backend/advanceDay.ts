@@ -98,6 +98,8 @@ import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCa
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
+import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
+import { managerNation } from "@/Domain/national/nationalCoach";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
@@ -737,13 +739,10 @@ export async function advanceOneDay(
       }
     }
 
-    if (playedMatchOverride) {
-      return {
-        ok: false,
-        status: 400,
-        error: "playedMatch fixture does not match today's calendar or was already consumed",
-      };
-    }
+    // A recording no club fixture took may be the human manager's national game (Etapa 41b): the national day
+    // below takes it, or the day fails.
+    const nationalRecording = playedMatchOverride;
+    playedMatchOverride = null;
 
     // ── Goal of the season candidates (`.claude/rules/game/awards.md`) ───────────
     // Full-engine league matches only (quickSim events carry no `goals`); idempotent by key.
@@ -770,7 +769,21 @@ export async function advanceOneDay(
     const nationalDay = await playNationalDay({
       service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+      ...(options.marketFrozen ? {} : {
+        human: {
+          reputation: managerReputation(await saveService.getManagers(saveId), meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10)),
+          nationality: managerNation(meta.manager?.nationalityIso),
+        },
+      }),
+      playedMatch: nationalRecording,
     });
+    if (nationalRecording && !nationalDay.consumedRecording) {
+      return {
+        ok: false,
+        status: 400,
+        error: "playedMatch fixture does not match today's calendar or was already consumed",
+      };
+    }
     for (const [id, squad] of nationalDay.squads) {
       const e = index.byId(id);
       if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
@@ -1377,6 +1390,7 @@ export async function advanceOneDay(
       events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
       ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
       ...(youthDay.logs.length > 0 ? { youthMatches: youthDay.logs } : {}),
+      ...(nationalDay.humanMatch ? { nationalMatch: nationalDay.humanMatch } : {}),
       registrationViolations,
     });
 
@@ -2795,6 +2809,7 @@ export async function advanceOneDay(
     }
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService);
+    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService);
     if (registrationNotices.length > 0 && meta.clubId && !options.marketFrozen) {
       const humanNow = await saveService.getSquadById(saveId, meta.clubId);
       const nameOf = (id: string) => humanNow?.players.find((p) => p.id === id)?.name ?? id;
@@ -2897,6 +2912,7 @@ export async function advanceOneDay(
     if (managerRenewal !== meta.managerRenewal) metaPatch.managerRenewal = managerRenewal;
     if (contract && contract !== meta.managerContract) metaPatch.managerContract = contract;
     if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
+    managerEarned += nationalDay.earned;
     if (managerEarned > 0) metaPatch.managerEarnings = (meta.managerEarnings ?? 0) + managerEarned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
     if (directorDecided) metaPatch.directorDecisions = directorDecided;
@@ -2954,7 +2970,7 @@ export async function advanceOneDay(
           ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
           : {}),
         ...(ended ? { sacked: true as const } : {}),
-        ...(newOffers.length > 0 ? { jobOffers: newOffers.length } : {}),
+        ...(newOffers.length + nationalDay.offers > 0 ? { jobOffers: newOffers.length + nationalDay.offers } : {}),
         ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
       },
     };

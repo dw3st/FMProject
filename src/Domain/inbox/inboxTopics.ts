@@ -37,6 +37,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   registration: "competitions",
   schedule: "competitions",
   national: "competitions",
+  // The human manager at a national team: news; the offer and the call-up notice ask for an answer.
+  national_coach: "competitions",
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   achievement: "achievements",
@@ -53,6 +55,8 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "transfer:rival_bid": "actions",
   "season:negative_balance": "actions",
   "retirement:reborn": "actions",
+  "national_coach:offer": "actions",
+  "national_coach:callup_soon": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",

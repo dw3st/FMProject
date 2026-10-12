@@ -1,3 +1,4 @@
+import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { withJsonErrors } from "@/backend/routeErrors";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
@@ -409,6 +410,35 @@ export const apiRoutes = withJsonErrors({
           !f.played,
       );
       if (!todayFixture) {
+        // His national team's game of the day (Etapa 41b): the national squads, his national tactics, no crowd,
+        // no registration, no referee.
+        const nat = await nationalMatchSetup(saveService, save.id, currentDate);
+        if (nat) {
+          const myTactics: TacticsSave = { formation: nat.tactics.formation, tactical_style: nat.tactics.tactical_style, lineup: nat.myLineup };
+          return Response.json({
+            save: { ...save, clubName: nat.mySquad.name, clubColors: nat.mySquad.colors },
+            mySquad: nat.mySquad,
+            mySquadId: nat.teamId,
+            fixture: nat.fixture,
+            opponentSquad: nat.opponentSquad,
+            myFormation: nat.myFormation,
+            oppFormation: nat.oppFormation,
+            myLineup: nat.myLineup,
+            myTactics,
+            injuredReplaced: [],
+            rotationSuggestion: [],
+            rotationApplied: [],
+            oppLineup: nat.oppLineup,
+            registered: null,
+            matchMarking: null,
+            pitchCondition: null,
+            crowd: null,
+            managers: null,
+            referee: null,
+            managerBanned: false,
+            national: { teamId: nat.teamId, competition: nat.fixture.competition },
+          });
+        }
         return Response.json(
           { error: "no unplayed match for your club on the current date" },
           { status: 400 },

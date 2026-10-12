@@ -1,4 +1,6 @@
 import { addDays } from "@/Domain/dates";
+import { managerFaceCountry } from "@/Domain/faces/managerFace";
+import { normalizeNation } from "@/Domain/registration/nations";
 import { clamp } from "@/Domain/math";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { rolloverSackChance } from "@/Domain/managers/aiManagers";
@@ -221,4 +223,11 @@ export function leaveNationalJob(
 export function currentNationalTeam(m: ManagerRecord | null | undefined): string | null {
   const open = [...(m?.national ?? [])].reverse().find((p) => !p.to);
   return open?.squadId ?? null;
+}
+
+/** The nation of the human manager's new-game nationality (ISO code), as the national teams name it. */
+export function managerNation(nationalityIso: string | null | undefined): string | null {
+  const raw = managerFaceCountry(nationalityIso);
+  if (!raw) return null;
+  return raw === "USA" ? "United States" : normalizeNation(raw);
 }

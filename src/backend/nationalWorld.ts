@@ -21,8 +21,8 @@ import {
   tournamentsOfYear,
 } from "@/Domain/national/fifaCalendar";
 import {
-  advanceTournament, buildQualifier, buildTournament, groupRoundCount, groupRows, groupStageComplete, pairFriendlies,
-  qualifierQualified, stageRound, tournamentPlacement, type DrawTeam,
+  advanceTournament, buildQualifier, buildTournament, groupRoundCount, groupStageComplete, pairFriendlies,
+  qualifierQualified, stageRound, type DrawTeam,
 } from "@/Domain/national/competitions";
 import { eloAfterMatch, initialPoints, rankTeams, type EloMatchKind } from "@/Domain/national/elo";
 import {
@@ -39,10 +39,17 @@ import {
   aiManagerReputation, chooseHire, hireManager, rolloverSackChance, sackManager, vacancyHireOn,
 } from "@/Domain/managers/aiManagers";
 import { cleanRecord } from "@/Domain/managers/managerRecords";
+import { coachLineup } from "@/Domain/national/nationalSquad";
+import {
+  leaveNationalJob, nextCallUpDate, objectiveFailedBadly, objectiveMet, qualifierOutcome, rollNationalOffer, tournamentOutcome,
+} from "@/Domain/national/nationalCoach";
+import { simulateRecording, type PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import type { NationalCoachNews } from "@/Domain/inbox/nationalCoachMessage";
+import type { MatchEvent, Scorer } from "@/types/dayLogTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type {
-  NationalCallUp, NationalCompetition, NationalStageName, NationalState, NationalTeam, NationalTournament,
+  NationalCallUp, NationalCoachOffer, NationalCompetition, NationalStageName, NationalState, NationalTeam, NationalTournament,
   NationalTournamentAwards,
 } from "@/types/nationalTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -59,7 +66,7 @@ const MAIN_LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 // ── The world's players by nation ─────────────────────────────────────────────
 
 /** Squad players of every club by normalized nation (academy and free agents never). */
-async function nationPool(index: SquadIndex, squadOf: (id: string) => Promise<Squad | null>): Promise<Map<string, NationCandidate[]>> {
+export async function nationPool(index: SquadIndex, squadOf: (id: string) => Promise<Squad | null>): Promise<Map<string, NationCandidate[]>> {
   const out = new Map<string, NationCandidate[]>();
   for (const league of index.leagues()) {
     for (const t of index.inLeague(league)) {
@@ -265,6 +272,16 @@ export interface NationalNews {
 
 export interface NationalDayResult {
   squads: Map<string, Squad>;
+  /** News of the human manager at a national team (Etapa 41b). */
+  coachNews: NationalCoachNews[];
+  /** The live recording of his national game was used today. */
+  consumedRecording: boolean;
+  /** His national game of the day (the result screen reads it from the day log). */
+  humanMatch?: MatchEvent;
+  /** National-team wage earned today (Mondays, `managerEarnings` only). */
+  earned: number;
+  /** New national-team job offers today (the fast-forward stops). */
+  offers: number;
   /** Real players with their national team today (they neither train nor rest at the club). */
   participants: Set<string>;
   injuries: { squadId: string; playerId: string; playerName: string; severity: "light" | "medium" | "severe"; returnDate: string }[];
@@ -308,13 +325,23 @@ export async function playNationalDay(args: {
   humanClubId: string;
   squadOf: (id: string) => Promise<Squad | null>;
   rng?: () => number;
+  /** The human manager (offers when a vacancy opens, Etapa 41b); absent = no offers. */
+  human?: { reputation: number; nationality: string | null };
+  /** The live recording of today's game of his national team (`playedMatch` of the day advance). */
+  playedMatch?: PlayedMatchRecording | null;
 }): Promise<NationalDayResult> {
   const { service, saveId, date, index, humanClubId } = args;
   const rng = args.rng ?? Math.random;
-  const out: NationalDayResult = { squads: new Map(), participants: new Set(), injuries: [], news: [], played: 0 };
+  const out: NationalDayResult = {
+    squads: new Map(), participants: new Set(), injuries: [], news: [], played: 0, coachNews: [], consumedRecording: false, earned: 0, offers: 0,
+  };
   const loaded = await service.getNationalState(saveId);
-  if (!loaded || !isNationalDate(loaded, date)) return out;
+  if (!loaded || (!loaded.human && !(loaded.offers?.length) && !isNationalDate(loaded, date))) return out;
   let state: NationalState = loaded;
+  // Offers that expired yesterday drop; the national-team wage on Mondays.
+  if (state.offers?.some((o) => o.expires < date)) state = { ...state, offers: state.offers.filter((o) => o.expires >= date) };
+  if (state.human && new Date(`${date}T12:00:00Z`).getUTCDay() === 1) out.earned = state.human.wage;
+  const hc: HumanCtx = { saveId, date, human: args.human, news: out.coachNews, offers: 0 };
 
   const squadNow = async (id: string): Promise<Squad | null> => out.squads.get(id) ?? (await args.squadOf(id));
   const setPlayer = async (squadId: string, playerId: string, f: (p: RosterPlayer, squad: Squad) => RosterPlayer): Promise<boolean> => {
@@ -371,6 +398,18 @@ export async function playNationalDay(args: {
   const changed = new Set<string>();
   const elo = (id: string) => state.teams[id]?.elo ?? 0;
 
+  // The human manager's call-up notice (a week before; once per call-up date).
+  if (state.human) {
+    const h = state.human;
+    const drawn = [...comps.values()].filter((c) => c.kind === "tournament" && c.tournament)
+      .map((c) => ({ callUp: tournamentDates(c.tournament!, c.year).callUp, teams: c.teams }));
+    const next = nextCallUpDate(date, h.teamId, drawn);
+    if (next && addDays(next, -NATIONAL_NOTICE_DAYS) <= date && !(h.notified ?? []).includes(next)) {
+      out.coachNews.push({ kind: "callup_soon", date, teamId: h.teamId, nation: state.teams[h.teamId]?.nation ?? h.teamId, callUpDate: next });
+      state = { ...state, human: { ...h, notified: [...(h.notified ?? []), next].slice(-6) } };
+    }
+  }
+
   // 3. Call-ups: a window or a tournament starting today.
   const year = Number(date.slice(0, 4));
   const window = fifaWindows(year).find((w) => w.start === date);
@@ -407,7 +446,12 @@ export async function playNationalDay(args: {
       const team = state.teams[plan.teamId];
       if (!team || state.callUps[plan.teamId]) continue;
       const all = pool.get(team.nation) ?? [];
-      const real = pickCallUp(callableCandidates(all, firstMatch(plan.teamId)));
+      const callable = callableCandidates(all, firstMatch(plan.teamId));
+      // The human manager's own call-up (Etapa 41b): his choice of the day, the players still callable.
+      const draft = state.human?.teamId === team.id && state.human.callUp?.date === date ? state.human.callUp.players : null;
+      const chosen = draft ? draft.map((id) => callable.find((c) => c.player.id === id)).filter((c): c is NationCandidate => !!c) : [];
+      const real = chosen.length > 0 ? chosen.slice(0, NATIONAL_SQUAD.SIZE) : pickCallUp(callable);
+      if (draft && state.human) { const { callUp: _c, ...h } = state.human; state = { ...state, human: h }; }
       const fill = fillersFor({ saveId, id: team.id, nation: team.nation, year, real: real.map((c) => c.player), all, confed: team.confed, pool });
       const cu: NationalCallUp & { fillers?: FillerSpec } = {
         nation: team.nation, from: date, until: plan.until, ...(plan.competition ? { competition: plan.competition } : {}),
@@ -467,15 +511,36 @@ export async function playNationalDay(args: {
         logError("national", `save ${saveId}: ${fx.id} without a call-up`, { home: fx.home, away: fx.away });
         continue;
       }
-      const pseudo = (teamId: string, players: RosterPlayer[]): Squad =>
-        ({ id: teamId, name: state.teams[teamId]?.nation ?? teamId, colors: ["#888888", "#ffffff"], money: 0, players, financialTier: "MEDIUM" }) as Squad;
-      const { recording } = quickSimMatch({
-        fixtureId: fx.id,
-        home: pseudo(fx.home, home.players), away: pseudo(fx.away, away.players),
-        homeLineup: nationalLineup(home.players, date), awayLineup: nationalLineup(away.players, date),
-        homeRoles: roles, awayRoles: roles,
-        ...(fx.knockout ? { knockout: true } : {}), ...(fx.neutral ? { neutral: true } : {}),
-      }, rng);
+      const pseudo = (teamId: string, players: RosterPlayer[]): Squad => nationalPseudoSquad(state, teamId, players);
+      const humanTeam = state.human && (fx.home === state.human.teamId || fx.away === state.human.teamId) ? state.human.teamId : null;
+      let recording: PlayedMatchRecording;
+      if (humanTeam) {
+        // The human manager's game (Etapa 41b): his live recording, or the full engine with his tactics.
+        if (args.playedMatch && args.playedMatch.fixtureId === fx.id) {
+          recording = args.playedMatch;
+          out.consumedRecording = true;
+        } else {
+          const t = state.human!.tactics;
+          const sideOf = (teamId: string, players: RosterPlayer[]) => teamId === humanTeam
+            ? { formation: formationForSimId(t?.formation), lineup: coachLineup(players, t?.formation, t?.lineup, date), style: t?.tactical_style ?? ("balanced" as const) }
+            : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), style: "balanced" as const };
+          const h = sideOf(fx.home, home.players);
+          const a = sideOf(fx.away, away.players);
+          recording = simulateRecording(fx, pseudo(fx.home, home.players), pseudo(fx.away, away.players), {
+            homeFormation: h.formation, homeLineup: h.lineup, awayFormation: a.formation, awayLineup: a.lineup,
+            tactics: { A: { style: h.style }, B: { style: a.style } },
+          }).recording;
+        }
+        out.humanMatch = nationalMatchEvent(fx, recording, home.players, away.players);
+      } else {
+        recording = quickSimMatch({
+          fixtureId: fx.id,
+          home: pseudo(fx.home, home.players), away: pseudo(fx.away, away.players),
+          homeLineup: nationalLineup(home.players, date), awayLineup: nationalLineup(away.players, date),
+          homeRoles: roles, awayRoles: roles,
+          ...(fx.knockout ? { knockout: true } : {}), ...(fx.neutral ? { neutral: true } : {}),
+        }, rng).recording;
+      }
       out.played++;
       // Generated players have no club: their caps and goals live in the state (the screen shows them).
       const local = { ...(state.localCaps ?? {}) };
@@ -542,14 +607,8 @@ export async function playNationalDay(args: {
     if (comp.kind === "qualifier" && comp.status !== "finished" && groupStageComplete(comp)) {
       const qualified = qualifierQualified({ ...comp, qualified: undefined }, elo);
       comp = { ...comp, qualified, status: "finished" };
-      state = await sackAfter(service, saveId, state, date, comp, (id) => {
-        const g = comp.groups.find((x) => x.teams.includes(id));
-        const rows = g ? groupRows(comp, g) : [];
-        const pos = rows.findIndex((r) => r.squadId === id) + 1;
-        const rank = rankTeams(drawTeamsWithNation(state, g?.teams ?? [])).findIndex((t) => t.id === id) + 1;
-        const expected = rankTeams(drawTeamsWithNation(state, comp.teams)).findIndex((t) => t.id === id) < (comp.slots ?? 0);
-        return { position: pos, target: rank, size: rows.length, relegated: expected && !qualified.includes(id) };
-      });
+      const all = Object.values(state.teams);
+      state = await sackAfter(service, saveId, state, date, comp, (id) => qualifierOutcome(comp, id, all, qualified), hc);
     } else if (comp.kind === "tournament") {
       const { comp: next, change } = advanceTournament(comp, elo);
       comp = next;
@@ -561,13 +620,13 @@ export async function playNationalDay(args: {
         }
       }
       if (change.eliminated.length > 0) {
-        const placeTarget = (id: string) => {
-          const r = rankTeams(drawTeamsWithNation(state, comp.teams)).findIndex((t) => t.id === id) + 1;
-          return r <= 1 ? 1 : r <= 2 ? 2 : r <= 4 ? 3 : r <= 8 ? 5 : r <= 16 ? 9 : r <= 32 ? 17 : TOURNAMENTS[comp.tournament!].knockout + 1;
-        };
-        state = await sackAfter(service, saveId, state, date, { ...comp, teams: change.eliminated.filter((id) => id !== comp.championId) }, (id) => ({
-          position: tournamentPlacement(comp, id), target: placeTarget(id), size: comp.teams.length,
-        }));
+        const all = Object.values(state.teams);
+        state = await sackAfter(service, saveId, state, date, { ...comp, teams: change.eliminated.filter((id) => id !== comp.championId) },
+          (id) => tournamentOutcome(comp, id, all), hc);
+      }
+      // The human manager won it: the objective is met.
+      if (change.finished && state.human && comp.championId === state.human.teamId) {
+        out.coachNews.push({ kind: "result", date, teamId: state.human.teamId, nation: state.teams[state.human.teamId]!.nation, competition: comp.slug, met: true });
       }
       if (change.finished) comp = { ...comp, awards: await closeTournament(service, saveId, state, comp, date, index, setPlayer) };
     }
@@ -586,12 +645,11 @@ export async function playNationalDay(args: {
 
   // 7. Coach hires due today.
   state = await hireDue(service, saveId, state, date, rng);
+  out.offers = hc.offers;
 
   await service.writeNationalState(saveId, state);
   return out;
 }
-
-const drawTeamsWithNation = (state: NationalState, ids: string[]) => ids.map((id) => state.teams[id]!).filter(Boolean);
 
 /** Friendlies of a window for the teams without an official game on each date (appended to `friendly_<year>`). */
 async function friendliesFor(
@@ -624,6 +682,7 @@ async function friendliesFor(
 async function sackAfter(
   service: SaveService, saveId: string, state0: NationalState, date: string, comp: NationalCompetition,
   outcome: (teamId: string) => { position: number; target: number; size: number; relegated?: boolean },
+  hc: HumanCtx,
 ): Promise<NationalState> {
   let state = state0;
   let managers = await service.getManagers(saveId);
@@ -631,6 +690,18 @@ async function sackAfter(
   for (const id of comp.teams) {
     const team = state.teams[id];
     if (!team || state.vacancies[id] || comp.championId === id) continue;
+    // The human manager (Etapa 41b): his objective is judged without a draw; failed badly = sacked from the team only.
+    if (state.human?.teamId === id) {
+      const o = outcome(id);
+      hc.news.push({ kind: "result", date, teamId: id, nation: team.nation, competition: comp.slug, met: objectiveMet(o) });
+      if (objectiveFailedBadly(o)) {
+        const r = await leaveNationalTeam(service, saveId, state, date, "sacked", managers);
+        state = r.state;
+        managers = r.managers;
+        hc.news.push({ kind: "sacked", date, teamId: id, nation: team.nation, competition: comp.slug, met: false });
+      }
+      continue;
+    }
     const m = managers.find((x) => x.id === team.managerId);
     if (!m || m.isPlayer || m.interim) continue;
     const o = outcome(id);
@@ -644,6 +715,7 @@ async function sackAfter(
       vacancies: { ...state.vacancies, [id]: { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${id}:${date}:hire`))) } },
     };
     changed = true;
+    state = offerToHuman(state, id, hc);
   }
   if (changed) await service.writeManagers(saveId, managers);
   return state;
@@ -725,3 +797,117 @@ export function stageOfRound(comp: NationalCompetition, round: number): National
 }
 
 export { stageRound };
+
+// ── The human manager at a national team (Etapa 41b) ──────────────────────────
+
+export const NATIONAL_NOTICE_DAYS = 7;
+
+interface HumanCtx {
+  saveId: string;
+  date: string;
+  human?: { reputation: number; nationality: string | null };
+  news: NationalCoachNews[];
+  offers: number;
+}
+
+/** A vacancy that just opened may offer its job to the human manager; the AI hire waits for his answer. */
+function offerToHuman(state: NationalState, teamId: string, hc: HumanCtx): NationalState {
+  if (!hc.human || state.human || state.offers?.some((o) => o.teamId === teamId)) return state;
+  const team = state.teams[teamId]!;
+  const offer = rollNationalOffer({
+    saveId: hc.saveId, teamId, nation: team.nation, date: hc.date, reputation: hc.human.reputation,
+    ownNation: normalizeNation(hc.human.nationality ?? "") === team.nation, teams: Object.values(state.teams),
+  });
+  if (!offer) return state;
+  hc.news.push({ kind: "offer", date: hc.date, teamId, nation: team.nation, offer });
+  hc.offers++;
+  return withOffer(state, offer);
+}
+
+/** Adds an offer; the vacancy's AI hire waits until the day after it expires. */
+export function withOffer(state: NationalState, offer: NationalCoachOffer): NationalState {
+  const v = state.vacancies[offer.teamId];
+  const hold = addDays(offer.expires, 1);
+  return {
+    ...state,
+    offers: [...(state.offers ?? []).filter((o) => o.teamId !== offer.teamId), offer],
+    vacancies: v ? { ...state.vacancies, [offer.teamId]: { ...v, hireOn: v.hireOn > hold ? v.hireOn : hold } } : state.vacancies,
+  };
+}
+
+/**
+ * The human manager leaves his national team (sacked or resigned): his spell closes, an interim takes over and the
+ * team hires by the AI rule. Writes `managers.json`; the caller writes the state.
+ */
+export async function leaveNationalTeam(
+  service: SaveService, saveId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
+): Promise<{ state: NationalState; managers: ManagerRecord[] }> {
+  const h = state.human;
+  if (!h) return { state, managers: managers0 ?? (await service.getManagers(saveId)) };
+  const team = state.teams[h.teamId]!;
+  const r = leaveNationalJob(managers0 ?? (await service.getManagers(saveId)), { teamId: team.id, nation: team.nation, date, left });
+  await service.writeManagers(saveId, r.managers);
+  const { human: _h, ...rest } = state;
+  return {
+    state: {
+      ...rest,
+      teams: { ...state.teams, [team.id]: { ...team, managerId: r.interimId } },
+      vacancies: { ...state.vacancies, [team.id]: { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${team.id}:${date}:hire`))) } },
+    },
+    managers: r.managers,
+  };
+}
+
+/** A national team as a squad (the engine, the quickSim and the live match read it). */
+export function nationalPseudoSquad(state: NationalState, teamId: string, players: RosterPlayer[]): Squad {
+  return ({
+    id: teamId, name: state.teams[teamId]?.nation ?? teamId, colors: nationColors(teamId), money: 0, players, financialTier: "MEDIUM",
+  }) as unknown as Squad;
+}
+
+/** Kit colours of a national team: a fixed pair picked from the team id (no national kits in the data). */
+export function nationColors(teamId: string): [string, string] {
+  const KITS: [string, string][] = [
+    ["#c8102e", "#ffffff"], ["#0055a4", "#ffffff"], ["#ffd100", "#009739"], ["#ffffff", "#1d2a5b"], ["#00843d", "#ffffff"],
+    ["#6cace4", "#ffffff"], ["#000000", "#ffd100"], ["#ff6600", "#ffffff"], ["#7a1f2b", "#ffffff"], ["#1d2a5b", "#c8102e"],
+  ];
+  return KITS[seedFrom(`kit:${teamId}`) % KITS.length]!;
+}
+
+/** The squad of a national team's active call-up: its real players (as the nation sees them) and the generated ones. */
+export async function callUpSquad(
+  saveId: string, state: NationalState, teamId: string, squadOf: (id: string) => Promise<Squad | null>,
+): Promise<{ players: RosterPlayer[]; clubOf: Map<string, string> } | null> {
+  const cu = state.callUps[teamId] as (NationalCallUp & { fillers?: FillerSpec }) | undefined;
+  if (!cu) return null;
+  const players: RosterPlayer[] = [];
+  const clubOf = new Map<string, string>();
+  for (const pl of cu.players) {
+    if (pl.generated) continue;
+    const sq = await squadOf(pl.squadId);
+    const p = sq?.players.find((x) => x.id === pl.id);
+    if (p) { players.push(asNationalPlayer(p)); clubOf.set(p.id, pl.squadId); }
+  }
+  if (cu.fillers) players.push(...regenerateFillers(saveId, teamId, cu.nation, cu.fillers));
+  return { players, clubOf };
+}
+
+/** The day-log event of the human manager's national game (no development: the post-match is `applyNationalMatch`). */
+function nationalMatchEvent(fx: Fixture, rec: PlayedMatchRecording, home: RosterPlayer[], away: RosterPlayer[]): MatchEvent {
+  const playerNames: Record<string, string> = {};
+  const playerTeams: Record<string, "home" | "away"> = {};
+  for (const p of home) { playerNames[p.id] = p.name; playerTeams[p.id] = "home"; }
+  for (const p of away) { playerNames[p.id] = p.name; playerTeams[p.id] = "away"; }
+  const scorers: Scorer[] = Object.entries(rec.playerStats)
+    .filter(([, ps]) => ps.goals > 0)
+    .map(([id, ps]) => ({ playerId: id, playerName: playerNames[id] ?? id, team: playerTeams[id] ?? ("home" as const), goals: ps.goals }))
+    .sort((a, b) => b.goals - a.goals);
+  return {
+    kind: "match", fixtureId: fx.id, competition: fx.competition, round: fx.round, home: fx.home, away: fx.away,
+    score: rec.score, teamStats: rec.teamStats, playerStats: rec.playerStats, playerRatings: rec.playerRatings,
+    playerNames, playerTeams, scorers, substitutions: rec.substitutions ?? [], injuries: rec.injuries ?? [],
+    ...(rec.cards && rec.cards.length > 0 ? { cards: rec.cards } : {}),
+    developmentChanges: [], durationMs: rec.durationMs,
+    ...(rec.decider ? { decider: rec.decider } : {}),
+  };
+}
