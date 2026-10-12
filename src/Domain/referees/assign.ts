@@ -63,8 +63,17 @@ export function assignDay(input: AssignInput): Record<string, RefereeAssignment>
     const last = state.lastWorked[id];
     return !last || daysBetween(last, date) >= REFEREE.REST_DAYS;
   };
-  const noise = (key: string, id: string) =>
-    (mulberry32(seedFrom(`ref-pick:${saveId}:${date}:${key}:${id}`))() - 0.5) * 2 * REFEREE.PICK_NOISE;
+  // Memoized: the sort comparators below ask for the same (match, referee) noise many times.
+  const noiseMemo = new Map<string, number>();
+  const noise = (key: string, id: string) => {
+    const k = `${key}:${id}`;
+    let v = noiseMemo.get(k);
+    if (v === undefined) {
+      v = (mulberry32(seedFrom(`ref-pick:${saveId}:${date}:${k}`))() - 0.5) * 2 * REFEREE.PICK_NOISE;
+      noiseMemo.set(k, v);
+    }
+    return v;
+  };
   const order = (a: Referee, b: Referee, key: string) =>
     b.quality + noise(key, b.id) - (a.quality + noise(key, a.id)) || a.id.localeCompare(b.id);
 

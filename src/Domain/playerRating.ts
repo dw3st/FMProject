@@ -33,7 +33,11 @@ function scoreForRole(stats: PlayerStatsRecord, role: string): number {
   const weights = R[role]?.attrWeights ?? R["CM"]?.attrWeights ?? {};
   let wSum = 0;
   let wTotal = 0;
-  for (const [attr, val] of Object.entries(stats)) {
+  // `for…in` walks a plain record in the same order as `Object.entries` without allocating the
+  // pairs — this is the hottest loop of a day advance (every player, every role).
+  const rec = stats as unknown as Record<string, number>;
+  for (const attr in rec) {
+    const val = rec[attr]!;
     const w = weights[attr] ?? 0;
     wSum += val * val * w;
     wTotal += w;

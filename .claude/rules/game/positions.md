@@ -47,7 +47,7 @@ posição da linha como natural; as demais viram apt/training.
   vaga desconhecido (ex. `positions[0]` = "Defender") conta como natural.
 - **Seleção:** valor na vaga = `weightedScore(vaga) x fator`. Na primeira passada do `autoFillLineup` um
   `unsuitable` só entra se não sobrou ninguém da linha, e as vagas são preenchidas da mais escassa (menos
-  candidatos natural/apt) para a menos. Aptidões e pontuações são memoizadas por objeto `stats` (WeakMap).
+  candidatos natural/apt) para a menos. Aptidões e pontuações são memoizadas por objeto `stats` (WeakMap) e, entre dias (o elenco é relido do save a cada dia), pelo id do jogador conferindo o conteúdo exato dos atributos, linha, pé e posição fixada; o `autoFillLineup` calcula aptidão e valor de cada jogador uma vez por papel. Sem isso a pré-simulação dos start kits passava metade do tempo recalculando perfis (`kits:generate`: ~155 s → ~58 s de pré-simulação por kit).
   Trocas da IA em jogo (`AiSubstitution`) e as telas Formação/Prévia usam o mesmo valor ajustado.
 
 ## Medição de gols (2026-10-01, `quicksim-calibrate.ts`, 150 pares x 2, `QS_QUICK_REPEATS=50`)
