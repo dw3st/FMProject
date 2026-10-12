@@ -30,7 +30,8 @@ export type InboxCategory =
   | "awards"
   | "registration"
   | "schedule"
-  | "discipline";
+  | "discipline"
+  | "achievement";
 
 interface InboxMessageBase {
   id:        string;
@@ -452,7 +453,17 @@ export type InboxMessage =
   | AwardsInboxMessage
   | RegistrationInboxMessage
   | ScheduleInboxMessage
-  | DisciplineInboxMessage;
+  | DisciplineInboxMessage
+  | AchievementInboxMessage;
+
+/** Achievements unlocked today (`.claude/rules/game/achievements.md`): one message per day. */
+export interface AchievementInboxMessage extends InboxMessageBase {
+  category: "achievement";
+  kind: "unlocked";
+  keys: import("@/types/achievementTypes").AchievementKey[];
+  /** Points earned by these unlocks. */
+  points: number;
+}
 
 /** The human manager was sent off for complaining and is banned from the touchline (`.claude/rules/game/var.md` §4). */
 export interface DisciplineInboxMessage extends InboxMessageBase {

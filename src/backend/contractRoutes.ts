@@ -62,13 +62,14 @@ export const contractRoutes = {
       if (!out && player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+      const negotiation = (await saveService.getAchievements(saveId)).attributes.negotiation;
       // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
       if (!out && refusesRenewal(squad, player)) {
-        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true }) }, { status: 400 });
+        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true, negotiation }) }, { status: 400 });
       }
       // A renewal at his own club, also when he is out on loan (`personality.md`): loyalty, no
       // smaller-club premium — the same context as the demand route.
-      const check = evaluateContractOffer({ wage, years }, player, squad, date, { renewal: true });
+      const check = evaluateContractOffer({ wage, years }, player, squad, date, { renewal: true, negotiation });
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       }
@@ -137,7 +138,8 @@ export const contractRoutes = {
     // Personality parts of the demand (`personality.md`): where he comes from = his club, or the
     // last club of a free agent.
     const fromSquad = renewal ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
-    const b = demandBreakdown(player, mine, date, { fromSquad, renewal });
+    const negotiation = (await saveService.getAchievements(saveId)).attributes.negotiation;
+    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation });
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
     // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
     let parts: Record<string, number | boolean> = {};
@@ -161,6 +163,7 @@ export const contractRoutes = {
     return Response.json({
       demand: b.demand,
       ...parts,
+      ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
         : {}),
@@ -200,7 +203,8 @@ export const contractRoutes = {
       if ((await humanRosterSize(saveService, saveId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: await lastClubOf(saveId, agent.player) });
+      const negotiation = (await saveService.getAchievements(saveId)).attributes.negotiation;
+      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: await lastClubOf(saveId, agent.player), negotiation });
       if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
@@ -211,6 +215,8 @@ export const contractRoutes = {
         players: [...squad.players, { ...agent.player, squadId: squad.id, contract }],
       });
       await saveService.writeFreeAgents(saveId, pool.filter((f) => f.player.id !== playerId));
+      // In the day log like every other move (achievements: free signings, `.claude/rules/game/achievements.md`).
+      await saveService.appendDayTransfers(saveId, date, [{ playerId, from: "", to: squad.id, fee: 0, kind: "free", date }]);
       return Response.json({ contract });
     });
   },

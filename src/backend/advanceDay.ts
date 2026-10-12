@@ -6,6 +6,7 @@ import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
+import { achievementsDay } from "@/backend/achievementsWorld";
 import { applyDirectorDay } from "@/backend/directorWorld";
 import type { PlayerNews } from "@/Domain/morale/morale";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -1785,6 +1786,8 @@ export async function advanceOneDay(
     let playerCountryMoves: ClubMove[] = [];
     let playerMove: ClubMove | null = null;
     let playerChampionOf: string | null = null;
+    // The board's objective met at the human club's rollover (achievements, Motivation).
+    let playerObjectiveMet = false;
     const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
     let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
     // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
@@ -2018,6 +2021,7 @@ export async function advanceOneDay(
             if (board) {
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
+              playerObjectiveMet = position !== null && !!board.objective && position <= board.objective.target;
               board = evaluateSeason(board, { position });
               if (position === 1) board = applyCompetitionEvent(board, { kind: "title", title: `league:${slug}` });
               if (plan.playerMove?.kind === "promoted") board = applyCompetitionEvent(board, { kind: "promoted" });
@@ -2833,6 +2837,25 @@ export async function advanceOneDay(
     for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
     for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
 
+    // ── Achievements of the human manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
+    let achievementsUnlocked = 0;
+    if (!options.marketFrozen) {
+      const msg = await achievementsDay(saveService, saveId, {
+        date: currentDate,
+        clubId: meta.clubId,
+        events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+        managers: await managerTracker.list(),
+        index,
+        squadOf: (id) => saveService.getSquadById(saveId, id),
+        ...(seasonEnded ? { rollover: { championOf: playerChampionOf, moves: playerCountryMoves, objectiveMet: playerObjectiveMet } } : {}),
+        sacked: !!ended && ended.reason !== "contract",
+      });
+      if (msg) {
+        achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
+        await emitInboxMessage(saveId, msg, saveService);
+      }
+    }
+
     // Manager news of the player's league (sackings / hirings), grouped in one message.
     const managerNews = aiDesk?.news() ?? [];
     if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService);
@@ -2913,6 +2936,7 @@ export async function advanceOneDay(
           : {}),
         ...(ended ? { sacked: true as const } : {}),
         ...(newOffers.length > 0 ? { jobOffers: newOffers.length } : {}),
+        ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
       },
     };
 }

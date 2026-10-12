@@ -246,7 +246,7 @@ export function isIdol(player: RosterPlayer, squad: Squad): boolean {
   return squad.players.length > 1 && overallAvg(player) >= best;
 }
 
-const normCity = (c: string) => c.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+export const normCity = (c: string) => c.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 
 /** A derby / big match: same city, or (no city rival) against the league leader. */
 export function isDerby(args: { myCity: string; opponentCity: string; opponentIsLeader: boolean }): boolean {

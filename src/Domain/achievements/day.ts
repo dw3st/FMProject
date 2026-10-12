@@ -17,8 +17,6 @@ export interface AchievementDayInput {
   /** Today's moves of the world (`StoredDayLog.transfers`). */
   transfers: DayTransfer[];
   snapshot: AchievementSnapshot;
-  /** First-team players formed at the club (academy, reborn, created player, legend). */
-  formedFirstTeamIds: string[];
   /** Season awards of the club's players not counted yet ("<league>:<season>:<kind>"). */
   awards: { key: string; kind: "young_player" | "top_scorer" }[];
   rollover?: RolloverFacts;
@@ -65,10 +63,6 @@ export function applyAchievementDay(
     for (const id of m.starters) if (free[id] !== undefined) free[id]++;
     s = { ...s, freeSignings: free };
   }
-
-  const known = new Set(s.promotedIds);
-  const added = input.formedFirstTeamIds.filter((id) => !known.has(id));
-  if (added.length > 0) s = { ...s, promotedIds: [...s.promotedIds, ...added] };
 
   const seen = new Set(s.awardsSeen);
   const fresh = input.awards.filter((a) => !seen.has(a.key));

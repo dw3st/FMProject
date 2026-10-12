@@ -96,6 +96,7 @@ export const marketRoutes = {
         offer: { wage, years }, player, human, current, date,
         humanPrestige: prestige.get(human.id) ?? 0.5, currentPrestige: prestige.get(current.id) ?? 0.5,
         nextSeasonEnd: addYearsIso(seasonEndOf(meta.activeLeagues, current.leagueSlug, date), 1),
+        negotiation: (await saveService.getAchievements(saveId)).attributes.negotiation,
       });
       if (!answer.accepted) {
         const status = answer.reason === "prefersCurrent" ? 200 : 400;

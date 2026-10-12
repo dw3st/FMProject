@@ -283,6 +283,12 @@ export function ensureClub(state: AchievementsState, squadId: string, capacity: 
   return s;
 }
 
+/** An academy player promoted to the first team (youth route): counted once per id. */
+export function recordPromotion(state: AchievementsState, playerId: string): AchievementsState {
+  if (state.promotedIds.includes(playerId)) return state;
+  return { ...state, promotedIds: [...state.promotedIds, playerId] };
+}
+
 /** Sacked within `SACKED_EARLY_DAYS` of taking the job. */
 export function sackedEarly(hiredOn: string | undefined, date: string): boolean {
   return !!hiredOn && daysBetween(hiredOn, date) <= A.SACKED_EARLY_DAYS;

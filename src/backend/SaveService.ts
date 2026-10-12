@@ -13,6 +13,8 @@ import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, L
 import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { AchievementsState } from "@/types/achievementTypes";
+import { normalizeAchievements } from "@/Domain/achievements/progress";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
@@ -295,6 +297,17 @@ export class SaveService {
 
   writeScouting(saveId: string, state: ScoutingState): Promise<void> {
     return this.dal.writeScouting(saveId, state);
+  }
+
+  // ── Achievements (`.claude/rules/game/achievements.md`) ─────────────────────
+
+  /** The career's achievements; an empty state when the file does not exist. */
+  async getAchievements(saveId: string): Promise<AchievementsState> {
+    return normalizeAchievements(await this.dal.readAchievements(saveId));
+  }
+
+  writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
+    return this.dal.writeAchievements(saveId, state);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────

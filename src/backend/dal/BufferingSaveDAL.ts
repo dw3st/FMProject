@@ -5,6 +5,7 @@ import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
+import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type {
@@ -204,6 +205,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
     this.buffer(`scouting:${saveId}`, state, () => this.inner.writeScouting(saveId, state));
+  }
+
+  // ── Achievements ──────────────────────────────────────────────────────────────
+  readAchievements(saveId: string): Promise<AchievementsState | null> {
+    return this.readThrough(`achievements:${saveId}`, () => this.inner.readAchievements(saveId));
+  }
+  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
+    this.buffer(`achievements:${saveId}`, state, () => this.inner.writeAchievements(saveId, state));
   }
 
   // ── Retired players ───────────────────────────────────────────────────────────

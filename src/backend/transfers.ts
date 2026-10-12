@@ -175,7 +175,8 @@ export const transferRoutes = {
         // Every signing creates a contract. `wage` defaults to the player's demand and `years`
         // to 3 (shortened to fit the age limit) when the client sends neither.
         // Personality (`personality.md`): the seller's club is where he comes from (smaller-club premium / refusal).
-        const demandCtx = { fromSquad: sellerSquad };
+        const negotiation = (await saveService.getAchievements(saveId)).attributes.negotiation;
+        const demandCtx = { fromSquad: sellerSquad, negotiation };
         const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "", demandCtx);
         const contractYears = typeof offeredYears === "number"
           ? offeredYears
@@ -214,7 +215,7 @@ export const transferRoutes = {
         const floor = rivalFloor(rivals);
         let answer: OfferResponse = meetsCounter && fee >= floor
           ? { kind: "accept", reason: "financial" }
-          : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee, sellOnPct, ...(sellPriority !== undefined ? { sellPriority } : {}) });
+          : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee, sellOnPct, negotiation, ...(sellPriority !== undefined ? { sellPriority } : {}) });
         if (floor > 0 && answer.kind === "accept" && fee < floor) answer = { kind: "counter", counterFee: floor };
         if (floor > 0 && answer.kind === "counter" && answer.counterFee < floor) answer = { kind: "counter", counterFee: floor };
         // The seller accepts: with a live rival it also accepts, the player chooses (preferenceScore).

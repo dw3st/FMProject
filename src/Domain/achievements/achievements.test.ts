@@ -27,7 +27,7 @@ function day(state: AchievementsState, over: Partial<AchievementDayInput> = {}) 
   return applyAchievementDay(state, {
     date: "2027-03-01", squadId: "club", capacity: 30000, matches: [], transfers: [],
     snapshot: { manager: manager(), rank: null, balance: 0, extraSeats: 0, facilityItems: 0 },
-    formedFirstTeamIds: [], awards: [], ...over,
+    awards: [], ...over,
   });
 }
 
