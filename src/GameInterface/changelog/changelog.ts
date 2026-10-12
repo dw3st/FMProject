@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.21.1",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "Calendário das ligas com mando alternado: nenhum time joga mais de duas rodadas seguidas em casa ou fora, e cada um faz metade dos jogos de cada turno em casa.",
+        en: "League fixtures now alternate home and away: no team plays more than two rounds in a row at home or away, and every team plays half of each half-season at home.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O time de um dos clubes de cada liga jogava todo o primeiro turno em casa e todo o segundo fora; agora o mando alterna.",
+        en: "One club in every league played the whole first half of the season at home and the whole second half away; home and away now alternate.",
+      },
+      {
+        pt: "Os jogos dos torneios sub-21 e sub-19 não caem mais nas datas FIFA nem durante os torneios de seleções.",
+        en: "Under-21 and under-19 games no longer fall on international break dates or during national team tournaments.",
+      },
+    ],
+  },
+  {
     version: "4.21",
     date: "2026-10-12",
     items: [
