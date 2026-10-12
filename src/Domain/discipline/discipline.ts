@@ -9,8 +9,14 @@ export function isSuspended(player: Pick<RosterPlayer, "suspension">): boolean {
 }
 
 /** Not selectable on `date`: injured or suspended. */
-export function isUnavailable(player: Pick<RosterPlayer, "injury" | "suspension">, date: string): boolean {
-  return isInjured(player, date) || isSuspended(player);
+export function isUnavailable(player: Pick<RosterPlayer, "injury" | "suspension" | "nationalDuty">, date: string): boolean {
+  return isInjured(player, date) || isSuspended(player) || onNationalDuty(player, date);
+}
+
+/** With his national team on `date` (`.claude/rules/game/national-teams.md`). */
+export function onNationalDuty(player: Pick<RosterPlayer, "nationalDuty">, date: string): boolean {
+  const d = player.nationalDuty;
+  return !!d && date >= d.from && date <= d.until;
 }
 
 /**

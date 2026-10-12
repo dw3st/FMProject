@@ -60,6 +60,8 @@ export interface PlayerSeasonLog {
    * cup/continental, which are inside them): rankings, stars, history and form never see them.
    */
   youthCup?: { appearances: number; goals: number; assists: number; ratingSum: number };
+  /** National-team games this season — OUTSIDE the season totals, like `youthCup` (`national-teams.md`). */
+  national?: import("@/types/nationalTypes").NationalSeasonLog;
   /**
    * Cards this season, all competitions together (league + cup + continental share one count —
    * `.claude/rules/game/discipline.md`). A second yellow adds one yellow and one red. Absent = 0.
@@ -187,6 +189,13 @@ export interface RosterPlayer {
    * scout (`obscurePlayer`). Never read by the engine or the day advance.
    */
   personalityView?: PersonalityView;
+  /**
+   * On duty with his national team (`.claude/rules/game/national-teams.md`): unavailable for the club, does not
+   * train at the club, from `from` to `until` (both inclusive). Removed when he returns.
+   */
+  nationalDuty?: import("@/types/nationalTypes").NationalDuty;
+  /** Permanent national-team career (caps, goals, titles). */
+  national?: import("@/types/nationalTypes").NationalCareer;
   /**
    * Screen-only: how well the human manager knows this player (`.claude/rules/game/scouting.md`),
    * set on API responses together with the blurred stats. Never stored, never read by the engine.
