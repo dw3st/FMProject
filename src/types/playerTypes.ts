@@ -447,6 +447,8 @@ export interface RetiredPlayer {
   rebornOffer?: "pending" | "accepted" | "declined" | "expired";
   /** Career history at retirement. */
   history?: PlayerHistoryRow[];
+  /** National-team career at retirement (`national-teams.md`). */
+  national?: import("@/types/nationalTypes").NationalCareer;
 }
 
 /** One closed season (or partial stint) of a player at one club. */

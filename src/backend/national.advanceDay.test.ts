@@ -7,18 +7,29 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { isUnavailable } from "@/Domain/discipline/discipline";
+import { apiRoutes } from "@/backend/routes";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import type { Squad } from "@/types/playerTypes";
 
 const HUMAN = "33";
 
 describe("national teams in advanceOneDay", () => {
   let saveId = "";
+  let token = "";
+  const call = (key: string, path: string, params: Record<string, string> = {}, tok = token) => {
+    const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    return handler(Object.assign(new Request(`http://localhost${path}`, { headers: { cookie: `fs_session=${tok}` } }), { params: { saveId, ...params } }));
+  };
   beforeAll(async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: HUMAN, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    const { user, session } = devAutoLogin("national-route@test.local");
+    token = session.token;
+    recordSaveOwnership(saveId, user.id);
   }, 240_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 
@@ -74,4 +85,25 @@ describe("national teams in advanceOneDay", () => {
     const back = ((await saveService.getSquadById(saveId, real.squadId)) as Squad).players.find((p) => p.id === real.id)!;
     expect(back.nationalDuty).toBeUndefined();
   }, 240_000);
+
+  test("routes: overview, one competition, one national team, owner only", async () => {
+    const res = await call("/api/saves/:saveId/national", `/api/saves/${saveId}/national`);
+    expect(res.status).toBe(200);
+    const ov = (await res.json()) as any;
+    expect(ov.ranking.length).toBeGreaterThan(150);
+    expect(ov.ranking[0].rank).toBe(1);
+    expect(ov.homeTeam).toBe("nat_england");
+    expect(ov.competitions.some((c: any) => c.slug === "euroq_2028")).toBe(true);
+    const comp = (await (await call("/api/saves/:saveId/national/competitions/:slug", `/api/saves/${saveId}/national/competitions/euroq_2028`, { slug: "euroq_2028" })).json()) as any;
+    expect(comp.groups.length).toBeGreaterThan(8);
+    expect(comp.groups[0].rows.length).toBeGreaterThanOrEqual(4);
+    const missing = await call("/api/saves/:saveId/national/competitions/:slug", `/api/saves/${saveId}/national/competitions/wc_1990`, { slug: "wc_1990" });
+    expect(missing.status).toBe(404);
+    const team = (await (await call("/api/saves/:saveId/national/teams/:teamId", `/api/saves/${saveId}/national/teams/nat_france`, { teamId: "nat_france" })).json()) as any;
+    expect(team.nation).toBe("France");
+    expect(team.callUp.players).toHaveLength(23);
+    expect(team.manager.name).toBeTruthy();
+    const other = devAutoLogin("national-other@test.local").session.token;
+    expect((await call("/api/saves/:saveId/national", `/api/saves/${saveId}/national`, {}, other)).status).toBe(404);
+  });
 });
