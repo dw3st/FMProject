@@ -20,7 +20,6 @@ import firedPage from "./pages/fired/index.html";
 import financesPage from "./pages/finances/index.html";
 import clubPage from "./pages/club/index.html";
 import statsPage from "./pages/stats/index.html";
-import nationalPage from "./pages/national/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
@@ -56,7 +55,8 @@ const server = serve({
     "/staff": staffPage,
     "/achievements": achievementsPage,
     "/stats": statsPage,
-    "/national": nationalPage,
+    // National teams live in a tab of the Leagues screen (the top bar has no room for a 12th tab).
+    "/national": () => Response.redirect("/leagues?tab=national", 302),
     "/season-end": seasonEndPage,
     "/fired": firedPage,
 

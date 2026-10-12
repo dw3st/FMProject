@@ -3,6 +3,7 @@
  * src/Domain/national/. The state is `national/state.json` (teams, Elo, managers, call-ups, draws) and one
  * file per competition (`national/comps/<slug>.json`). Every national game is a quickSim.
  */
+import { faceRegionOf } from "@/Domain/faces/faceProfile";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { countryKey } from "@/Domain/cups/cupIds";
@@ -74,8 +75,23 @@ async function nationPool(index: SquadIndex, squadOf: (id: string) => Promise<Sq
   return out;
 }
 
-/** Full names of the nation's players (names of generated players and of the AI coach). */
-const donorsOf = (cands: NationCandidate[]) => [...new Set(cands.map((c) => c.player.name))].sort().slice(0, 40);
+/**
+ * Up to 40 full names of the nation's players (names of generated players and of the AI coach): a deterministic
+ * sample spread over the whole list by a hash of each name, never the first ones in alphabetical order. A nation
+ * with few players in the world (Qatar has one) is completed with the players of the nations of the same region
+ * (`faceRegionOf`: Gulf names for Qatar), so its generated players never share a name.
+ */
+const MIN_DONORS = 15;
+const MAX_DONORS = 40;
+const byHash = (names: Iterable<string>) =>
+  [...new Set(names)].map((n) => ({ n, h: seedFrom(`donor:${n}`) })).sort((a, b) => a.h - b.h || a.n.localeCompare(b.n)).map((x) => x.n);
+function donorsOf(nation: string, cands: NationCandidate[], pool?: Map<string, NationCandidate[]>): string[] {
+  const own = byHash(cands.map((c) => c.player.name)).slice(0, MAX_DONORS);
+  if (own.length >= MIN_DONORS || !pool) return own;
+  const region = faceRegionOf(nation);
+  const near = byHash([...pool].filter(([n]) => n !== nation && faceRegionOf(n) === region).flatMap(([, cs]) => cs.map((c) => c.player.name)));
+  return [...own, ...near.filter((n) => !own.includes(n))].slice(0, MAX_DONORS);
+}
 
 function coachName(nation: string, donors: string[], key: string): string {
   const rng = mulberry32(seedFrom(`coach:${key}`));
@@ -103,7 +119,7 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
     const id = nationalTeamId(nation);
     const confed = NATION_CONFED[nation]!;
     const real = pickCallUp(cands).map((c) => c.player);
-    const fill = fillersFor({ saveId, id, nation, year: Number(date.slice(0, 4)), real, all: cands, confed });
+    const fill = fillersFor({ saveId, id, nation, year: Number(date.slice(0, 4)), real, all: cands, confed, pool });
     const level = squadLevel([...real, ...fill.players]);
     // A rebuilt world (`ensureNationalWorld`) keeps the coach the team already has.
     let managerId = managers.find((m) => m.squadId === id)?.id ?? `coach_${id}`;
@@ -111,7 +127,7 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
       for (let n = 2; taken.has(managerId); n++) managerId = `coach_${id}_${n}`;
       taken.add(managerId);
       newManagers.push(cleanRecord({
-        id: managerId, name: coachName(nation, donorsOf(cands), id), squadId: id, isPlayer: false,
+        id: managerId, name: coachName(nation, donorsOf(nation, cands, pool), id), squadId: id, isPlayer: false,
         points: 0, seasons: 0, titles: [], clubs: [{ squadId: id, from: date }],
       }));
     }
@@ -142,23 +158,29 @@ export async function ensureNationalWorld(args: { service: SaveService; saveId: 
   return true;
 }
 
-interface FillerSpec { level: number; donors: string[]; counts: Partial<Record<MainRole, number>>; year: number }
+export interface FillerSpec {
+  level: number; donors: string[]; counts: Partial<Record<MainRole, number>>; year: number;
+  /** Names of the real players called up: a generated player never repeats one. */
+  reserved?: string[];
+}
 
-function fillersFor(a: { saveId: string; id: string; nation: string; year: number; real: RosterPlayer[]; all: NationCandidate[]; confed: Confed }): { spec: FillerSpec; players: RosterPlayer[] } {
+function fillersFor(a: { saveId: string; id: string; nation: string; year: number; real: RosterPlayer[]; all: NationCandidate[]; confed: Confed; pool?: Map<string, NationCandidate[]> }): { spec: FillerSpec; players: RosterPlayer[] } {
   const miss = missingByLine(a.real);
   const levels = [...a.all].map((c) => overallAvg(c.player)).sort((x, y) => y - x).slice(0, NATIONAL_SQUAD.SIZE);
   const spec: FillerSpec = {
-    level: Math.round(fillerLevel(levels, a.confed) * 100) / 100, donors: donorsOf(a.all), counts: {}, year: a.year,
+    level: Math.round(fillerLevel(levels, a.confed) * 100) / 100, donors: donorsOf(a.nation, a.all, a.pool), counts: {}, year: a.year,
+    reserved: a.real.map((p) => p.name),
   };
   for (const l of MAIN_LINES) if (miss[l] > 0) spec.counts[l] = miss[l];
   return { spec, players: regenerateFillers(a.saveId, a.id, a.nation, spec) };
 }
 
-function regenerateFillers(saveId: string, teamId: string, nation: string, spec: FillerSpec): RosterPlayer[] {
+export function regenerateFillers(saveId: string, teamId: string, nation: string, spec: FillerSpec): RosterPlayer[] {
   const out: RosterPlayer[] = [];
+  const taken = new Set(spec.reserved ?? []);
   for (const l of MAIN_LINES) {
     const n = spec.counts[l] ?? 0;
-    if (n > 0) out.push(...nationalFillers({ saveId, teamId, nation, year: spec.year, line: l, n, level: spec.level, donors: spec.donors }));
+    if (n > 0) out.push(...nationalFillers({ saveId, teamId, nation, year: spec.year, line: l, n, level: spec.level, donors: spec.donors, taken }));
   }
   return out;
 }
@@ -386,7 +408,7 @@ export async function playNationalDay(args: {
       if (!team || state.callUps[plan.teamId]) continue;
       const all = pool.get(team.nation) ?? [];
       const real = pickCallUp(callableCandidates(all, firstMatch(plan.teamId)));
-      const fill = fillersFor({ saveId, id: team.id, nation: team.nation, year, real: real.map((c) => c.player), all, confed: team.confed });
+      const fill = fillersFor({ saveId, id: team.id, nation: team.nation, year, real: real.map((c) => c.player), all, confed: team.confed, pool });
       const cu: NationalCallUp & { fillers?: FillerSpec } = {
         nation: team.nation, from: date, until: plan.until, ...(plan.competition ? { competition: plan.competition } : {}),
         players: [
@@ -397,7 +419,7 @@ export async function playNationalDay(args: {
         fillers: fill.spec,
       };
       state = { ...state, callUps: { ...state.callUps, [team.id]: cu } };
-      const { fillers: _f, tally: _t, ...last } = cu;
+      const { tally: _t, ...last } = cu;
       state = { ...state, lastCallUps: { ...(state.lastCallUps ?? {}), [team.id]: last } };
       for (const c of real) {
         await setPlayer(c.squadId, c.player.id, (p) => {
@@ -455,6 +477,14 @@ export async function playNationalDay(args: {
         ...(fx.knockout ? { knockout: true } : {}), ...(fx.neutral ? { neutral: true } : {}),
       }, rng);
       out.played++;
+      // Generated players have no club: their caps and goals live in the state (the screen shows them).
+      const local = { ...(state.localCaps ?? {}) };
+      for (const [pid, ps] of Object.entries(recording.playerStats)) {
+        if (!isGeneratedNationalId(pid)) continue;
+        const [caps, goals] = local[pid] ?? [0, 0];
+        local[pid] = [caps + 1, goals + ps.goals];
+      }
+      state = { ...state, localCaps: local };
       const pens = recording.decider?.penalties;
       const shootoutWinner: "home" | "away" | undefined = pens ? (pens.home > pens.away ? "home" : "away") : undefined;
       const next = eloAfterMatch({ home: elo(fx.home), away: elo(fx.away), score: recording.score, shootoutWinner, match: matchKind(comp, fx) });

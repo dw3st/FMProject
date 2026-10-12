@@ -48,6 +48,8 @@ export function nationalityDisplayName(nationality: string, lang: string, t: TFn
   if (!flag) return name;
   const iso2 = flag.startsWith("gb-") ? "GB" : flag.toUpperCase();
   const slug = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  // The home nations of the UK have no ISO code of their own (Intl cannot name them): `nations.<slug>`.
+  if (flag.startsWith("gb-") && slug !== "england") return t(`nations.${slug}`, { defaultValue: name });
   return countryDisplayName({ slug, name, flag, iso2, playable: false, headline: "" }, lang, t);
 }
 

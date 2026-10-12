@@ -2708,10 +2708,6 @@
       "main": "Seu",
       "accent": "Clube"
     },
-    "national": {
-      "main": "Seleções",
-      "accent": "Nacionais"
-    },
     "achievements": {
       "main": "SUAS",
       "accent": "CONQUISTAS"
@@ -3859,7 +3855,10 @@
       "until": "até {{date}}",
       "tally": "{{apps}} jogos, {{goals}} gols",
       "injured": "lesionado"
-    }
+    },
+    "currentWindow": "Data FIFA em andamento: {{from}} – {{to}}",
+    "currentTournament": "{{name}} em andamento até {{to}}",
+    "noMatch": "Nenhuma seleção encontrada"
   },
   "achievements": {
     "tabs": {
@@ -4220,5 +4219,10 @@
     "contractLine": "Sua negociação: {{value}}",
     "daySummary_one": "{{count}} conquista desbloqueada",
     "daySummary_other": "{{count}} conquistas desbloqueadas"
+  },
+  "nations": {
+    "wales": "País de Gales",
+    "scotland": "Escócia",
+    "northern_ireland": "Irlanda do Norte"
   }
 }

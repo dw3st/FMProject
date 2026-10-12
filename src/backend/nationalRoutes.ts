@@ -11,7 +11,7 @@ import { fifaWindows, tournamentDates, tournamentSlug, tournamentsOfYear } from 
 import { normalizeNation } from "@/Domain/registration/nations";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { overallAvg } from "@/Domain/playerRating";
-import { stageOfRound } from "@/backend/nationalWorld";
+import { regenerateFillers, stageOfRound, type FillerSpec } from "@/backend/nationalWorld";
 import type { Fixture } from "@/types/calendarTypes";
 import type { NationalCallUp, NationalCompetition, NationalState } from "@/types/nationalTypes";
 
@@ -45,7 +45,7 @@ export interface NationalOverview {
   /** Team of the human club's country (the default of the "national team" tab), null when it has none. */
   homeTeam: string | null;
   /** Current or next international break: a window or a tournament. */
-  next: { kind: "window" | "tournament"; start: string; end: string; slug?: string } | null;
+  next: { kind: "window" | "tournament"; start: string; end: string; slug?: string; current?: boolean } | null;
 }
 
 function nextBreak(date: string): NationalOverview["next"] {
@@ -57,7 +57,8 @@ function nextBreak(date: string): NationalOverview["next"] {
       out.push({ kind: "tournament", start: td.callUp, end: td.final, slug: tournamentSlug(t, y) });
     }
   }
-  return out.filter((b) => b.end >= date).sort((a, b) => a.start.localeCompare(b.start))[0] ?? null;
+  const next = out.filter((b) => b.end >= date).sort((a, b) => a.start.localeCompare(b.start))[0] ?? null;
+  return next ? { ...next, ...(next.start <= date ? { current: true } : {}) } : null;
 }
 
 async function loadState(saveId: string): Promise<NationalState | null> {
@@ -132,9 +133,16 @@ export const nationalRoutes = {
     const cu: NationalCallUp | null = active ?? state.lastCallUps?.[team.id] ?? null;
     const index = await saveService.getSquadIndex(saveId!);
     const players = [];
+    const spec = (cu as (NationalCallUp & { fillers?: FillerSpec }) | null)?.fillers;
+    const generated = new Map((spec ? regenerateFillers(saveId!, team.id, team.nation, spec) : []).map((p) => [p.id, p]));
     for (const pl of cu?.players ?? []) {
       if (pl.generated) {
-        players.push({ id: pl.id, name: pl.name, generated: true, squadId: "", clubName: null, league: null, role: null, overall: null, caps: null, goals: null });
+        const g = generated.get(pl.id);
+        const [caps, goals] = state.localCaps?.[pl.id] ?? [0, 0];
+        players.push({
+          id: pl.id, name: g?.name ?? pl.name, generated: true, squadId: "", clubName: null, league: null,
+          role: g ? preferredRole(g) : null, overall: g ? Math.round(overallAvg(g) * 100) / 100 : null, caps, goals,
+        });
         continue;
       }
       const e = index.byId(pl.squadId);

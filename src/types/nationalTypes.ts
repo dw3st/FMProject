@@ -62,6 +62,8 @@ export interface NationalState {
   draws: string[];
   /** National teams waiting to hire a manager. */
   vacancies: Record<string, NationalVacancy>;
+  /** Caps and goals of the generated players (`ngen_…`), who have no club to keep them. */
+  localCaps?: Record<string, [number, number]>;
   /** Last window / tournament start whose call-ups were made (idempotent per day). */
   lastCallUpDate?: string;
 }

@@ -2708,10 +2708,6 @@
       "main": "Your",
       "accent": "Club"
     },
-    "national": {
-      "main": "National",
-      "accent": "Teams"
-    },
     "achievements": {
       "main": "YOUR",
       "accent": "ACHIEVEMENTS"
@@ -3859,7 +3855,10 @@
       "until": "until {{date}}",
       "tally": "{{apps}} games, {{goals}} goals",
       "injured": "injured"
-    }
+    },
+    "currentWindow": "International break under way: {{from}} – {{to}}",
+    "currentTournament": "{{name}} under way until {{to}}",
+    "noMatch": "No national team found"
   },
   "achievements": {
     "tabs": {
@@ -4220,5 +4219,10 @@
     "contractLine": "Your negotiation: {{value}}",
     "daySummary_one": "{{count}} achievement unlocked",
     "daySummary_other": "{{count}} achievements unlocked"
+  },
+  "nations": {
+    "wales": "Wales",
+    "scotland": "Scotland",
+    "northern_ireland": "Northern Ireland"
   }
 }

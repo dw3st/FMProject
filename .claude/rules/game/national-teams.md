@@ -33,7 +33,7 @@ A 41b (o técnico do jogador numa seleção) usa os mesmos dados. Visual: `.clau
 | `src/backend/dal/*`, `SaveService.ts` | `national/state.json`, `national/comps/<slug>.json` (bufferizados) |
 | `src/backend/advanceDay.ts` | O dia nacional depois dos jogos de clube e da base, antes do treino; convocados fora do treino (`skipPlayerIds`); inbox depois do `clearInbox`; `ensureNationalWorld` na rota `/presimulate` |
 | `src/backend/startKits.ts` | Kits levam a pasta inteira; os técnicos voltam aos registros do save |
-| `src/GameInterface/National/*`, `src/pages/national` | Tela Seleções, linha da ficha, selo do elenco, corpo da inbox |
+| `src/GameInterface/National/*`, `LeagueTableScreen.tsx` | Aba Seleções da tela Ligas (`NationalTab`), linha da ficha, selo do elenco, corpo da inbox |
 | `scripts/national-calendar-measure.ts`, `scripts/national-sim.ts` | Medições M1, M2 |
 
 ## Calendário
@@ -74,11 +74,16 @@ começo de cada janela/torneio.
 
 ## Convocação e efeitos
 
-- 23 dos jogadores de elenco (não base, não livres) da nação: fora quem estará lesionado no primeiro jogo e quem tem
-  fôlego < 50; cotas GK 3, DEF 8, MID 7, FWD 5 pela nota na posição natural, depois os melhores. Faltando gente,
+- 23 dos jogadores de elenco (não base, não livres) da nação: fora só quem estará lesionado no primeiro jogo da
+  janela. O cansaço nunca corta (a convocação é a segunda depois da rodada do fim de semana; o fôlego só conta no XI de
+  cada jogo, `nationalLineup`); cotas GK 3, DEF 8, MID 7, FWD 5 pela nota na posição natural, depois os melhores. Faltando gente,
   **gerados** (`ngen_<nação>_<ano>_<linha>_<i>`): só da seleção, refeitos sob demanda pela especificação guardada na
   convocação (nível, nomes de doadores, quantidade por linha); nível = média dos convocáveis − 0,8 (com ≥ 3), senão a
   base da confederação (UEFA 3,4 · CONMEBOL 3,5 · CAF 3,0 · AFC 2,6 · CONCACAF 2,6 · OFC 2,1).
+- Nomes dos gerados: até 40 doadores (nomes dos jogadores da nação, amostrados por hash, nunca os primeiros em ordem
+  alfabética); nação com menos de 15 nomes no mundo completa com os jogadores das nações da mesma região
+  (`faceRegionOf`); inicial + sobrenome sem repetir nenhum nome da convocação (reais e gerados).
+- Jogos e gols dos gerados: `NationalState.localCaps` (por id); a tela da seleção os mostra com posição e nível.
 - `RosterPlayer.nationalDuty { nation, from, until }`: indisponível para o clube (`isUnavailable`), fora do treino e
   do descanso do clube; dia sem jogo = `nationalCampDay` (curva de descanso); volta: o campo sai e a inbox avisa.
 - Pós-jogo (`applyNationalMatch`): `seasonLog.national` (fora dos totais), fôlego e carga de 90/120 min, lesão com a
@@ -108,7 +113,9 @@ Elo, só livres). Ranking de técnicos: a nação aparece como "clube".
 
 ## Telas
 
-- Aba **Seleções** (`/national`) depois de Ligas: Ranking (chips de confederação), Competições (seletor, campeão,
+- Aba **Seleções** da tela Ligas (`/leagues?tab=national`; `/national` redireciona), depois de Base: não cabe uma 12ª
+  aba na barra superior (a 1440px em português as abas já viram só ícone no pior caso, report + avançar), e a aba
+  Continental já é um precedente de aba do mundo dentro de Ligas. Ranking (chips de confederação), Competições (seletor, campeão,
   grupos, mata-mata, artilharia, prêmios, resultados), Seleção (seletor de nação; convocados com selo "Local" nos
   gerados, próximos jogos e recentes, títulos).
 - Ficha: linha "Seleção" (bandeira, jogos, gols, títulos, "Na seleção até"); Elenco: selo "Seleção"; inbox

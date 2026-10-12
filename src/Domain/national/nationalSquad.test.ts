@@ -22,13 +22,23 @@ describe("national squads", () => {
     expect(a.every((p) => p.squadId === "" && p.nationality === "Testland" && lineOf(p) === "Defender")).toBe(true);
   });
 
-  test("call-up: quotas per line, 23, injured and tired left out", () => {
+  test("generated players never share a name, even with a single donor", () => {
+    const taken = new Set<string>(["H. Ahmed"]);
+    const a = nationalFillers({ saveId: "s", teamId: "nat_q", nation: "Q", year: 2027, line: "Defender", n: 8, level: 3, donors: ["H. Ahmed"], taken });
+    const b = nationalFillers({ saveId: "s", teamId: "nat_q", nation: "Q", year: 2027, line: "Forward", n: 5, level: 3, donors: ["H. Ahmed"], taken });
+    const names = [...a, ...b].map((p) => p.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).not.toContain("H. Ahmed");
+  });
+
+  test("call-up: quotas per line, 23, injured left out, tired still called", () => {
     const pool = [...fillers("GK", 5, 4), ...fillers("Defender", 10), ...fillers("Midfielder", 10), ...fillers("Forward", 8)]
       .map((p) => ({ player: p, squadId: "c1" }));
     pool[0]!.player = { ...pool[0]!.player, injury: { severity: "light", returnDate: "2027-03-30" } };
     pool[1]!.player = { ...pool[1]!.player, seasonLog: { ...emptySeasonLog(), fitness: 40 } };
     const ok = callableCandidates(pool, "2027-03-25");
-    expect(ok).toHaveLength(pool.length - 2);
+    expect(ok).toHaveLength(pool.length - 1);
+    expect(ok.some((c) => c.player.id === pool[1]!.player.id)).toBe(true);
     const picked = pickCallUp(ok);
     expect(picked).toHaveLength(23);
     expect(picked.filter((c) => lineOf(c.player) === "GK")).toHaveLength(3);

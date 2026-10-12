@@ -79,7 +79,8 @@ nome); `prevRank` guarda a posição no começo da janela anterior (seta na tela
 ## 4. Convocação
 
 - **Quem:** jogadores dos elencos (não base, não livres) com a nacionalidade (normalizada) da seleção.
-- **Fora:** lesionados com volta depois do primeiro jogo da seleção na janela, fôlego < 50.
+- **Fora:** só lesionados com volta depois do primeiro jogo da seleção na janela. (Conferência no navegador: o corte
+  por fôlego < 50 deixava craques de fora, porque a convocação cai na segunda depois da rodada; o fôlego só conta no XI.)
 - **23:** cotas por linha GK 3, DEF 8, MID 7, FWD 5 pela nota na posição natural (`slotValue`); faltando na linha, os
   melhores restantes; faltando gente, **jogadores gerados**.
 - **Gerados** (`fillers.ts`): só da seleção, nunca no mundo nem no mercado; determinísticos por
@@ -188,10 +189,11 @@ Dono do save; 404 sem seleções.
 
 ## 12. Telas
 
-- **Aba nova "Seleções"** (`/national`) na barra superior, depois de Ligas. Justificativa: as seleções não pertencem
-  a uma liga (a tela Ligas é guiada pelo seletor de liga e as abas dela são da liga escolhida), têm três vistas
-  próprias e serão o segundo emprego do técnico na 41b. A barra encolhe as abas sozinha (`useCompactTabs`).
-  - Título "SELEÇÕES **NACIONAIS**" / "NATIONAL **TEAMS**". `SegmentedTabs`: Ranking · Competições · Seleção.
+- **Aba "Seleções" da tela Ligas** (`/leagues?tab=national`; `/national` redireciona). O desenho original era uma
+  aba própria na barra superior; na conferência a 1440px (pior caso: botão de report + avançar) as 12 abas não cabiam
+  com rótulo nem em português nem em inglês, e todas viravam só ícone. A aba Continental já é uma aba do mundo dentro
+  de Ligas, então as Seleções seguem o mesmo caminho; se a 41b precisar de mais espaço, volta a discussão.
+  - `SegmentedTabs` compacto: Ranking · Competições · Seleção; a próxima data FIFA/torneio numa linha acima.
   - Ranking: tabela padrão (#, seta, bandeira + nação, confederação, técnico, pontos destacados), chips de
     confederação (Mundo, UEFA, CONMEBOL, CONCACAF, CAF, AFC, OFC).
   - Competições: seletor (atuais primeiro), faixa do campeão, grupos (tabela por grupo, classificados marcados),
@@ -222,7 +224,7 @@ Sem efeito de partida: os jogos de seleção são quickSim e nenhuma mecânica d
 Todas as nações com jogadores; gerados só da seleção; técnico de IA por seleção com a regra de clube; Elo SUM nos
 potes; datas FIFA de março, junho, setembro, outubro e novembro; Euro e Copa América em 2028, 2032…; Copa do Mundo em
 2030, 2034… com 48; eliminatórias nas datas dos dois anos antes; amistosos no resto; ligas, copas, continentais e base
-param nas janelas; convocação da IA com 23 por nível respeitando lesão e fôlego; efeitos em fôlego, carga, lesão,
+param nas janelas; convocação da IA com 23 por nível respeitando lesão; efeitos em fôlego, carga, lesão,
 moral, histórico e valor; prêmios do torneio no melhor do mundo; tudo no quickSim; técnico humano de seleção é a 41b.
 
 Decisões tomadas aqui (dentro do espaço aprovado): sem Copa Africana/Asiática/Gold Cup nesta etapa; junho só em anos

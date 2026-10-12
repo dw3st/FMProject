@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
-import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -23,7 +21,6 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { NationalStage, NationalTournamentAwards } from "@/types/nationalTypes";
 
 type Tab = "ranking" | "competitions" | "team";
-const TABS: Tab[] = ["ranking", "competitions", "team"];
 const CONFEDS = ["all", "UEFA", "CONMEBOL", "CONCACAF", "CAF", "AFC", "OFC"] as const;
 type ConfedFilter = (typeof CONFEDS)[number];
 
@@ -56,21 +53,15 @@ function useNationName() {
 }
 
 /** "Seleções" screen (`.claude/rules/game/national-teams.md` → "Telas"). */
-export function NationalScreen() {
+/** The "Seleções" tab of the Leagues screen (`/leagues?tab=national`; `/national` redirects there). */
+export function NationalTab() {
   const { t, i18n } = useTranslation();
-  const { session, currentDate, loading } = useGameSave();
-  const [tab, setTab] = useState<Tab>(() => {
-    const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
-    return TABS.includes(q as Tab) ? (q as Tab) : "ranking";
-  });
+  const { session, currentDate } = useGameSave();
+  const [tab, setTab] = useState<Tab>("ranking");
   const [data, setData] = useState<NationalOverview | null>(null);
   const [error, setError] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [compSlug, setCompSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && !session) window.location.href = "/new-game";
-  }, [loading, session]);
 
   useEffect(() => {
     if (!session?.saveId) return;
@@ -86,14 +77,20 @@ export function NationalScreen() {
   const openTeam = (id: string) => { setTeamId(id); setTab("team"); };
   const nextLabel = data?.next
     ? data.next.kind === "tournament" && data.next.slug
-      ? t("national.nextTournament", { name: nationalCompetitionName(data.next.slug, i18n.language), date: formatDay(data.next.start, i18n.language) })
-      : t("national.nextWindow", { from: formatDay(data.next.start, i18n.language), to: formatDay(data.next.end, i18n.language) })
+      ? t(data.next.current ? "national.currentTournament" : "national.nextTournament", {
+        name: nationalCompetitionName(data.next.slug, i18n.language), date: formatDay(data.next.start, i18n.language),
+        to: formatDay(data.next.end, i18n.language),
+      })
+      : t(data.next.current ? "national.currentWindow" : "national.nextWindow", {
+        from: formatDay(data.next.start, i18n.language), to: formatDay(data.next.end, i18n.language),
+      })
     : undefined;
 
   return (
-    <ScreenContainer>
-      <ScreenTitle accent={t("screenTitles.national.accent")} subtitle={nextLabel}>{t("screenTitles.national.main")}</ScreenTitle>
+    <div className="flex flex-col gap-4">
+      {nextLabel && <p className="text-sm text-muted-foreground">{nextLabel}</p>}
       <SegmentedTabs
+        compact
         tabs={[
           { key: "ranking" as const, label: t("national.tabs.ranking") },
           { key: "competitions" as const, label: t("national.tabs.competitions") },
@@ -113,7 +110,7 @@ export function NationalScreen() {
       ) : (
         <TeamView saveId={session.saveId} overview={data} teamId={teamId ?? data.homeTeam ?? data.ranking[0]?.id ?? ""} onTeam={setTeamId} refreshKey={currentDate ?? ""} />
       )}
-    </ScreenContainer>
+    </div>
   );
 }
 
@@ -208,6 +205,7 @@ function CompetitionsView({ saveId, overview, slug, onSlug, onOpen, refreshKey }
         value={active}
         onChange={onSlug}
         options={comps.map((c) => ({ value: c.slug, label: nationalCompetitionName(c.slug, i18n.language) ?? c.slug }))}
+        emptyMessage={t("national.noMatch")}
         className="w-full max-w-sm"
       />
       {failed ? <p className="text-sm text-muted-foreground">{t("national.loadFailed")}</p>
@@ -389,7 +387,7 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
 
   return (
     <div className="flex flex-col gap-6">
-      <SelectCombobox label={t("national.nation")} labelId="national-team" value={teamId} onChange={onTeam} options={options} className="w-full max-w-sm" />
+      <SelectCombobox label={t("national.nation")} labelId="national-team" value={teamId} onChange={onTeam} options={options} emptyMessage={t("national.noMatch")} className="w-full max-w-sm" />
       {failed ? <p className="text-sm text-muted-foreground">{t("national.loadFailed")}</p>
         : !d ? <p className="text-sm text-muted-foreground">{t("national.loading")}</p> : (
         <>

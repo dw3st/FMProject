@@ -7,7 +7,7 @@ import { academyGauss, academyUnit, makeAcademyPlayer } from "@/Domain/youth/you
 import { autoFillLineupWithFitness, autoFillLineup } from "@/Domain/lineupHelpers";
 import { slotsFor } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { emptySeasonLog, type RosterPlayer, type Squad } from "@/types/playerTypes";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Confed } from "@/types/registrationTypes";
 
 /** National-team squads (`.claude/rules/game/national-teams.md` → "Convocação"), pure. */
@@ -15,7 +15,6 @@ import type { Confed } from "@/types/registrationTypes";
 export const NATIONAL_SQUAD = {
   SIZE: 23,
   QUOTAS: { GK: 3, Defender: 8, Midfielder: 7, Forward: 5 } as Record<MainRole, number>,
-  MIN_FITNESS: 50,
   FORMATION: "4-3-3",
   /** Generated players: the nation's real mean − OFFSET (with ≥ MIN_REAL real players), else the confed base. */
   FILLER_OFFSET: 0.8,
@@ -32,7 +31,6 @@ const LINE_KEY: Record<MainRole, string> = { GK: "GK", Defender: "DEF", Midfield
 
 export const lineOf = (p: RosterPlayer): MainRole => getMainRole(preferredRole(p));
 const levelOf = (p: RosterPlayer) => slotValue(p, preferredRole(p));
-const fitnessOf = (p: RosterPlayer) => p.seasonLog?.fitness ?? emptySeasonLog().fitness;
 
 export interface NationCandidate {
   player: RosterPlayer;
@@ -46,9 +44,13 @@ export function asNationalPlayer(p: RosterPlayer): RosterPlayer {
   return rest;
 }
 
-/** Candidates the AI calls up: not injured on the first match day, fitness ≥ MIN_FITNESS. */
+/**
+ * Candidates the AI calls up: only an injury lasting past the team's first game of the window keeps a player out.
+ * Tiredness never does (the call-up is the Monday after the weekend round): fitness only counts in each game's XI,
+ * after the camp days' recovery.
+ */
 export function callableCandidates(cands: NationCandidate[], firstMatch: string): NationCandidate[] {
-  return cands.filter((c) => !isInjured(c.player, firstMatch) && fitnessOf(c.player) >= NATIONAL_SQUAD.MIN_FITNESS);
+  return cands.filter((c) => !isInjured(c.player, firstMatch));
 }
 
 /**
@@ -111,6 +113,8 @@ export function nationalFillers(args: {
   n: number;
   level: number;
   donors: string[];
+  /** Names already in the squad (real players and the other lines' generated players): never repeated. */
+  taken?: Set<string>;
 }): RosterPlayer[] {
   const { saveId, teamId, nation, year, line, n, level } = args;
   const lk = LINE_KEY[line];
@@ -120,6 +124,26 @@ export function nationalFillers(args: {
   const pseudo = { id: teamId, players: donors } as unknown as Squad;
   const specifics = MAIN_ROLE_TO_SPECIFICS[line];
   const out: RosterPlayer[] = [];
+  const firsts = [...new Set(args.donors.map((d) => d.trim().split(/\s+/)[0]!.replace(/\.$/, "")).filter((f) => f.length > 0))];
+  const lasts = [...new Set(args.donors.map((d) => d.trim().split(/\s+/).at(-1)!).filter((l) => l.length > 1))];
+  const taken = args.taken ?? new Set<string>();
+  const uniqueName = (i: number): string | null => {
+    if (firsts.length === 0 || lasts.length === 0) return null;
+    for (let k = 0; k < 200; k++) {
+      const f = firsts[Math.floor(academyUnit(`${seed}:first:${i}:${k}`) * firsts.length)]!;
+      const l = lasts[Math.floor(academyUnit(`${seed}:last:${i}:${k}`) * lasts.length)]!;
+      const name = `${f[0]}. ${l}`;
+      if (!taken.has(name)) { taken.add(name); return name; }
+    }
+    // Few names: any free initial + surname, in a fixed order.
+    for (const l of lasts) {
+      for (const f of [...firsts.map((x) => x[0]!), ..."ABCDEFGHIJKLMNOPRSTVY"]) {
+        const name = `${f}. ${l}`;
+        if (!taken.has(name)) { taken.add(name); return name; }
+      }
+    }
+    return null;
+  };
   for (let i = 0; i < n; i++) {
     const lvl = clamp(level + NATIONAL_SQUAD.FILLER_SIGMA * academyGauss(`${seed}:lvl:${i}`), NATIONAL_SQUAD.FILLER_MIN, NATIONAL_SQUAD.FILLER_MAX);
     const specific = specifics[Math.floor(academyUnit(`${seed}:pos:${i}`) * specifics.length)]!;
@@ -127,7 +151,9 @@ export function nationalFillers(args: {
       id: `ngen_${key}_${year}_${lk}_${i}`, seed, i, squad: pseudo, specific, level: lvl,
       ageRange: NATIONAL_SQUAD.FILLER_AGE, nationality: nation,
     });
-    out.push({ ...p, squadId: "", profile: { summary: "National-team player from the home league.", archetype: "Local" } });
+    const name = uniqueName(i) ?? p.name;
+    taken.add(name);
+    out.push({ ...p, name, squadId: "", profile: { summary: "National-team player from the home league.", archetype: "Local" } });
   }
   return out;
 }
