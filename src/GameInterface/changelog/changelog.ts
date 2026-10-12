@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.19.1",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "As listas de opção (como o filtro do extrato em Finanças) abrem com o fundo escuro do jogo e o texto legível.",
+        en: "Drop-down lists (like the ledger filter in Finances) open with the game's dark background and readable text.",
+      },
+    ],
+  },
+  {
     version: "4.19",
     date: "2026-10-11",
     items: [
