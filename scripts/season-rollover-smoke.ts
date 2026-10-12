@@ -224,6 +224,9 @@ try {
 
   // Instalações (`.claude/rules/game/facilities.md`): a happy board (forced to 90 for the request,
   // then put back) approves a +1000-seat stand, funding part of it; it finishes within the run.
+  // Big matches (Etapa 38): on the day of a home cup knockout tie, demand of the logged row ÷ the
+  // demand of the same day without the big-match multiplier (same fans, followers, tier, phase).
+  const cupImportance: { date: string; ratio: number; expected: number }[] = [];
   const facTrack: { approved: boolean; projectId: string | null; cost: number; boardShare: number; seatsBefore: number } = {
     approved: false, projectId: null, cost: 0, boardShare: 0, seatsBefore: 0,
   };
@@ -1231,6 +1234,27 @@ try {
         boardTrack.fansMin = Math.min(boardTrack.fansMin, b.fans);
         boardTrack.fansMax = Math.max(boardTrack.fansMax, b.fans);
         if (b.objective) boardTrack.objectiveSeasons.add(`${b.objective.leagueSlug}:${b.objective.season}:${b.objective.kind}`);
+      }
+    }
+    {
+      const sq = await plain().getSquadById(saveId, playerSquadId);
+      const mt = await plain().getMeta(saveId);
+      const row = sq?.facilities?.attendance.find((r) => r.date === date && isCupSlug(r.competition));
+      const ls = mt?.activeLeagues?.find((l) => l.leagueSlug === mt.leagueSlug);
+      if (sq?.facilities && row && mt?.clubId === playerSquadId && ls && mt.board) {
+        const { demandOf, seasonFraction } = await import("@/Domain/facilities/facilities");
+        const { matchImportanceMult } = await import("@/Domain/facilities/matchImportance");
+        const { isDerby } = await import("@/Domain/boardFans/boardFans");
+        const { leagueTierOf } = await import("@/backend/facilityWorld");
+        const base = demandOf(sq.facilities, {
+          date, followers: sq.finances?.followers ?? 0, tier: await leagueTierOf(mt.leagueSlug), fans: mt.board.fans,
+          fraction: seasonFraction(date, ls.start, ls.end),
+        });
+        const opp = await plain().getSquadById(saveId, row.opponentId);
+        const derby = isDerby({ myCity: sq.venue?.city ?? "", opponentCity: opp?.venue?.city ?? "", opponentIsLeader: false });
+        cupImportance.push({
+          date, ratio: base > 0 ? row.demand / base : 0, expected: matchImportanceMult({ derby, competition: "cup", knockout: true }),
+        });
       }
     }
     const payload = outcome.payload as Record<string, unknown>;
@@ -2399,16 +2423,14 @@ try {
     check(aiRoll.ok,
       `instalações vivas: ${aiRoll.pairs} AI club(s) of a rolled league (${wearTrack.aiPitchNext} new-season first home games) start the new season on a better pitch than they ended the old one (${aiRoll.bad.slice(0, 3).join("; ")})`);
     check(wearTrack.demandFacilities > 1, `instalações vivas: the demand route with the training ground at 20% has facilities ×${wearTrack.demandFacilities} > 1`);
-    // Big matches (Etapa 38): a home cup knockout tie draws more demand than the nearest ordinary
-    // league home game (x1.15 on the demand; fans and season phase move it a little).
-    const rows = f?.attendance ?? [];
-    const leagueRows = rows.filter((r) => !isCupSlug(r.competition) && !isContinentalSlug(r.competition));
-    const knockoutRows = rows.filter((r) => isCupSlug(r.competition));
-    const nearest = (date: string) => leagueRows.reduce<(typeof rows)[number] | null>((best, r) =>
-      !best || Math.abs(Date.parse(r.date) - Date.parse(date)) < Math.abs(Date.parse(best.date) - Date.parse(date)) ? r : best, null);
-    const higher = knockoutRows.filter((r) => { const n = nearest(r.date); return !!n && r.demand >= n.demand; });
-    if (knockoutRows.length === 0) console.log("  (instalações: no home cup tie in the run — big-match demand not checked)");
-    else check(higher.length > 0, `instalações: ${higher.length}/${knockoutRows.length} home cup tie(s) with demand ≥ the nearest league home game`);
+    // Big matches (Etapa 38): a home cup knockout tie draws ×1.15 the demand it would have had as an
+    // ordinary game the same day (×1.2 more for a same-city derby, capped at ×1.3). Measured against the
+    // same day's inputs: a nearby league game is not comparable (the fans move it ±15% in a few weeks,
+    // and it can be a derby itself).
+    const cupBad = cupImportance.filter((c) => Math.abs(c.ratio - c.expected) > 0.01);
+    if (cupImportance.length === 0) console.log("  (instalações: no home cup tie in the run — big-match demand not checked)");
+    else check(cupBad.length === 0,
+      `instalações: ${cupImportance.length - cupBad.length}/${cupImportance.length} home cup tie(s) with the big-match demand (${cupImportance.map((c) => `${c.date} ×${c.ratio.toFixed(3)}/${c.expected}`).join(", ")})`);
   }
 
   console.log("\n── Fôlego ──");
