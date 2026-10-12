@@ -95,7 +95,7 @@ import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, sett
 import { liveBids } from "@/Domain/negotiation/bids";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
-import { playNationalDay } from "@/backend/nationalWorld";
+import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
@@ -2974,6 +2974,19 @@ export const advanceDayRoutes = {
           });
         } catch (e) {
           logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+        }
+      }
+    }
+
+    // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
+    // world drawn from the world's start, with past games; it is drawn again from the career's day.
+    {
+      const m = await saveService.getMeta(saveId);
+      if (m?.currentDate) {
+        try {
+          await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
+        } catch (e) {
+          logError("national", `save ${saveId}: failed to ensure the national teams`, e);
         }
       }
     }

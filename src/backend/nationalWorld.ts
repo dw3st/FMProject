@@ -105,13 +105,16 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
     const real = pickCallUp(cands).map((c) => c.player);
     const fill = fillersFor({ saveId, id, nation, year: Number(date.slice(0, 4)), real, all: cands, confed });
     const level = squadLevel([...real, ...fill.players]);
-    let managerId = `coach_${id}`;
-    for (let n = 2; taken.has(managerId); n++) managerId = `coach_${id}_${n}`;
-    taken.add(managerId);
-    newManagers.push(cleanRecord({
-      id: managerId, name: coachName(nation, donorsOf(cands), id), squadId: id, isPlayer: false,
-      points: 0, seasons: 0, titles: [], clubs: [{ squadId: id, from: date }],
-    }));
+    // A rebuilt world (`ensureNationalWorld`) keeps the coach the team already has.
+    let managerId = managers.find((m) => m.squadId === id)?.id ?? `coach_${id}`;
+    if (!managers.some((m) => m.id === managerId)) {
+      for (let n = 2; taken.has(managerId); n++) managerId = `coach_${id}_${n}`;
+      taken.add(managerId);
+      newManagers.push(cleanRecord({
+        id: managerId, name: coachName(nation, donorsOf(cands), id), squadId: id, isPlayer: false,
+        points: 0, seasons: 0, titles: [], clubs: [{ squadId: id, from: date }],
+      }));
+    }
     teams[id] = { id, nation, confed, elo: initialPoints(level), managerId, games: 0 };
   }
   await service.writeManagers(saveId, [...managers, ...newManagers]);
@@ -119,6 +122,24 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
   state = await runDraws(service, saveId, state, date);
   await service.writeNationalState(saveId, state);
   return state;
+}
+
+/**
+ * Safety net after the career's start (no start kit for a Brazilian career): national games dated before `today`
+ * still unplayed mean the world was drawn from the world's start; it is drawn again from `today`.
+ */
+export async function ensureNationalWorld(args: { service: SaveService; saveId: string; today: string; index: SquadIndex }): Promise<boolean> {
+  const state = await args.service.getNationalState(args.saveId);
+  if (state) {
+    let stale = false;
+    for (const slug of state.competitions) {
+      const c = await args.service.getNationalComp(args.saveId, slug);
+      if (c?.fixtures.some((f) => !f.played && f.date < args.today)) { stale = true; break; }
+    }
+    if (!stale) return false;
+  }
+  await createNationalWorld({ service: args.service, saveId: args.saveId, date: args.today, index: args.index });
+  return true;
 }
 
 interface FillerSpec { level: number; donors: string[]; counts: Partial<Record<MainRole, number>>; year: number }

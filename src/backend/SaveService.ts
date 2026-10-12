@@ -1035,7 +1035,10 @@ export class SaveService {
     // and the draws already due. A failure leaves the career without national teams, never without a save.
     try {
       const { createNationalWorld } = await import("@/backend/nationalWorld");
-      await createNationalWorld({ service: this, saveId: id, date: meta.currentDate ?? playerLeagueStart ?? now.slice(0, 10), index: await this.getSquadIndex(id) });
+      // From the world's start (the earliest league kickoff): a Brazilian career gets its start kit, whose
+      // pre-simulation runs from there; without a kit, `ensureNationalWorld` redraws from the career's day.
+      const worldStart = activeLeagues.map((l) => l.start).sort()[0] ?? meta.currentDate ?? now.slice(0, 10);
+      await createNationalWorld({ service: this, saveId: id, date: worldStart, index: await this.getSquadIndex(id) });
     } catch (e) {
       logError("national", `save ${id}: failed to create the national teams`, e);
     }
