@@ -24,6 +24,8 @@ export interface GenerateYouthCompInput {
   /** Already with the margin (`youthWindow`). */
   window: { start: string; end: string };
   busyByClub: Map<string, Set<string>>;
+  /** Days with no club football in the country (FIFA windows, its summer tournament). */
+  blocked?: ReadonlySet<string>;
   /** Shuffle seed of the pairings (`${saveId}:${year}:${slug}`). */
   seedKey: string;
 }
@@ -38,10 +40,10 @@ export function youthWindow(leagueStart: string, leagueEnd: string, today?: stri
 
 /** A new youth competition season (meta + round files + date index), or `null` when it cannot exist. */
 export function generateYouthComp(input: GenerateYouthCompInput): LeagueCalendarResult | null {
-  const { country, age, year, clubs, teams, window, busyByClub, seedKey } = input;
+  const { country, age, year, clubs, teams, window, busyByClub, blocked, seedKey } = input;
   if (clubs.length < 2) return null;
   const slug = youthCompSlugOf(country, age);
-  const schedule = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, seedKey), window, busyByClub, age });
+  const schedule = scheduleYouthSeason({ rounds: roundRobinPairings(clubs, seedKey), window, busyByClub, age, blocked });
   if (!schedule || schedule.fixtures.length === 0) return null;
 
   const byRound = new Map<number, Fixture[]>();

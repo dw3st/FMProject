@@ -122,7 +122,7 @@ export async function createCountryYouthComps(args: {
   for (const age of args.ages ?? AGES) {
     const slug = youthCompSlugOf(country, age);
     const comp = generateYouthComp({
-      country, age, year, clubs, teams, window, busyByClub, seedKey: `${saveId}:${year}:${slug}`,
+      country, age, year, clubs, teams, window, busyByClub, blocked, seedKey: `${saveId}:${year}:${slug}`,
     });
     if (!comp) {
       logError("youthComps", `save ${saveId}: ${slug} ${year} does not fit its window`, window);
@@ -413,6 +413,8 @@ export async function playYouthDay(args: {
     const meta = await service.getLeagueMeta(saveId, slug);
     if (!meta?.youth) continue;
     const country = meta.youth.country;
+    // A postponed game never lands on a FIFA / tournament day of the country (`national-teams.md`).
+    const blocked = countryBlockedDays(country, date, meta.end);
     const all = await youthCompFixtures(service, saveId, meta);
     const changedRounds = new Set<number>();
     const dateIndex = (await service.getDateIndex(saveId, slug)) ?? {};
@@ -440,10 +442,13 @@ export async function playYouthDay(args: {
 
     for (const fx of bySlug.get(slug)!) {
       const humanSide = fx.home === humanClubId || fx.away === humanClubId;
-      if (args.teamsPlayingToday.has(fx.home) || args.teamsPlayingToday.has(fx.away)) {
+      // Also a game left on a FIFA / tournament day (a calendar generated before the national teams,
+      // e.g. an old start kit) is moved off it.
+      if (blocked.has(date) || args.teamsPlayingToday.has(fx.home) || args.teamsPlayingToday.has(fx.away)) {
         const homeSets = await busySetsOf(fx.home, country);
         const awaySets = await busySetsOf(fx.away, country);
-        const busy = (club: string, d: string) => (club === fx.home ? homeSets : awaySets).some((s) => s.has(d));
+        const busy = (club: string, d: string) =>
+          blocked.has(d) || (club === fx.home ? homeSets : awaySets).some((s) => s.has(d));
         const next = postponeDate({ date, end: meta.end, busy, home: fx.home, away: fx.away, sameCompDates });
         if (next) {
           replace({ ...fx, date: next, postponedFrom: fx.postponedFrom ?? fx.date });
