@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.21.2",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "Olheiros: cabeceio entra nos filtros de atributos e a coluna Forma mostra a fase real de cada jogador.",
+        en: "Scouting: heading joins the attribute filters and the Form column shows each player's real form.",
+      },
+      {
+        pt: "Harry Kane volta a ser tratado como craque mundial e é convocado pela Inglaterra.",
+        en: "Harry Kane is rated as a world-class striker again and gets called up by England.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Textos em inglês traduzidos com o jogo em português: olheiros, caixa de entrada, painel, resumo do dia, prévia da partida, renovação, extrato e transmissão (que agora diz o nome do clube).",
+        en: "English texts translated when playing in Portuguese: scouting, inbox, dashboard, day summary, match preview, renewals, ledger and the commentary (which now names the club).",
+      },
+      {
+        pt: "Datas e números no formato do seu idioma, inclusive nas instalações do clube e nas finanças.",
+        en: "Dates and numbers in your language's format, including the club facilities and finances.",
+      },
+      {
+        pt: "A lista do filtro do extrato abre escura no Windows, o gráfico de público não cria mais rolagem lateral e as abas da barra superior cabem com rótulo.",
+        en: "The ledger filter list opens dark on Windows, the attendance chart no longer adds a sideways scroll and the top bar tabs keep their labels.",
+      },
+    ],
+  },
+  {
     version: "4.21.1",
     date: "2026-10-12",
     items: [
