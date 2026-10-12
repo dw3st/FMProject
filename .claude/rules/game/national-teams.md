@@ -34,7 +34,7 @@ A 41b (o técnico do jogador numa seleção, 4.22) está no fim deste arquivo. V
 | `src/backend/advanceDay.ts` | O dia nacional depois dos jogos de clube e da base, antes do treino; convocados fora do treino (`skipPlayerIds`); inbox depois do `clearInbox`; `ensureNationalWorld` na rota `/presimulate` |
 | `src/backend/startKits.ts` | Kits levam a pasta inteira; os técnicos voltam aos registros do save |
 | `src/GameInterface/National/*`, `LeagueTableScreen.tsx` | Aba Seleções da tela Ligas (`NationalTab`), linha da ficha, selo do elenco, corpo da inbox |
-| `scripts/national-calendar-measure.ts`, `scripts/national-sim.ts` | Medições M1, M2 |
+| `scripts/national-calendar-measure.ts`, `scripts/national-sim.ts`, `scripts/national-goals-diag.ts` | Medições M1, M2, volume de gols |
 
 ## Calendário
 
@@ -126,14 +126,46 @@ Elo, só livres). Ranking de técnicos: a nação aparece como "clube".
 Ver a spec §14 e o relatório da etapa. M1 (`bun scripts/national-calendar-measure.ts`): todas as ligas cabem, nenhuma
 rodada em dia bloqueado; liga de 20 clubes que cruza o ano: ~3–5 rodadas fora dos dias de jogo por temporada. M2
 (`bun scripts/national-sim.ts 2030-07-20`): ciclo completo (Euro e Copa América 2028, eliminatórias e Copa 2030),
-1,48–1,51 gol por jogo; topo do Elo Espanha, Inglaterra, Argentina, França, Alemanha (fundo: Ilhas Salomão, Somália);
-16–29 técnicos de seleção demitidos em 4 anos (duas rodadas); ~1,1–1,3 s por dia nacional isolado. M3 (bench, PL):
-dia de convocação +~1 s, dia de jogo de seleção +~0,2–0,4 s sobre um dia comum sem jogo de clube.
+2,54 gols por jogo desde a 4.22.1 (ver "Volume de gols" abaixo; antes 1,84 na main de 2026-10-12, 1,48–1,51 na 4.21);
+topo do Elo Inglaterra, Espanha, Holanda, Brasil, França (fundo: Ilhas Salomão, Somália); 10–29 técnicos de seleção
+demitidos em 4 anos (três rodadas); ~1,1–1,3 s por dia nacional isolado. M3 (bench, PL): dia de convocação +~1 s, dia
+de jogo de seleção +~0,2–0,4 s sobre um dia comum sem jogo de clube.
+
+## Volume de gols (4.22.1, `NATIONAL_MATCH.GOAL_SCALE`)
+
+O quickSim de seleção multiplica o xG dos dois lados por `NATIONAL_MATCH.GOAL_SCALE` = **1,4**
+(`src/Domain/national/nationalMatch.ts` → `QuickSimInput.goalScale`; o de clubes nunca passa o campo, × 1 é exato).
+Nenhuma constante do quickSim de clubes mudou.
+
+**Causa (não é bug de entrada).** O quickSim reproduz o motor completo, e o motor marca pouco abaixo da elite (liga do
+Quênia ~1,0 gol, Championship ~1,7). Os XIs de seleção têm nível médio 4,35 (UEFA 4,97, CONMEBOL 5,1, CAF 4,1,
+CONCACAF 3,9, AFC 3,7, OFC 3,3), a linha de ataque quase não é mais rápida que a defesa adversária (`paceEdge` +0,08
+contra +0,55–0,67 nas ligas fortes: a convocação leva os melhores zagueiros do país, rápidos, e os atacantes em média não
+são mais rápidos que eles), finalização média do ataque 4,5 (PL 6,3) e 25% das vagas do XI com gerados (AFC 50%,
+CONCACAF/OFC ~40%). Com essas entradas a fórmula dá 1,8 gol, o mesmo que dá para clubes desse nível. Testado e
+descartado como causa: fôlego (os convocados jogam a ~79–83; o fator de força pesa igual nos dois lados e quase não muda
+o volume), campo neutro (só os torneios, −3%) e o termo de nível (`LEVEL_EXPONENT` 0,07). Futebol real: ~2,6 na Copa,
+2,5–2,8 em eliminatórias e amistosos. 1,4 ≈ 2,6 / 1,84 (a média do ciclo antes).
+
+**Medição** (`bun scripts/national-sim.ts 2030-07-20`, ciclo completo, 3281 jogos):
+
+| Competição | antes (× 1) | depois (× 1,4) |
+|---|---|---|
+| Amistosos 2026–2030 | 1,70–1,81 | 2,31–2,48 |
+| Eliminatórias da Euro 2028 / 2032 (parcial) | 2,09 / 2,04 | 2,78 / 3,37 |
+| Eliminatórias da Copa 2030: UEFA, CAF, AFC, CONMEBOL, CONCACAF, OFC | 1,97 / 2,13 / 2,03 / 2,17 / 1,69 / 1,00 | 2,83 / 2,63 / 2,36 / 3,02 / 2,48 / 1,75 |
+| Euro 2028 / Copa América 2028 / Copa 2030 | 1,98 / 1,84 / 2,35 | 3,06 / 3,48 / 3,01 |
+| **Ciclo** | **1,84** | **2,54** |
+
+Quem vence (`bun scripts/national-goals-diag.ts 2028-07-20`, 1630 jogos até a Euro 2028, favorito = maior Elo antes do
+jogo): favorito vence 47% → 51%, zebra 23% → 25%, empate 31% → 24%; com |ΔElo| > 200 o favorito vence 66% → 71%. Mais
+gols tiram empates e os dois lados ganham parte deles. Topo/fundo do Elo seguem as seleções fortes/fracas (a ordem
+exata muda de rodada para rodada).
 
 ## Testes e smoke
 
 ```
-bun test src/Domain/national src/Domain/season/generateCalendar.test.ts src/backend/national.advanceDay.test.ts
+bun test src/Domain/national src/Domain/season/generateCalendar.test.ts src/backend/national.advanceDay.test.ts \n  src/Domain/advanceDay/quickSim.test.ts
 ```
 
 `scripts/season-rollover-smoke.ts`, seção "Seleções": seleções e técnicos, jogos das janelas jogados, nenhum jogo de
@@ -144,7 +176,8 @@ clube em dia bloqueado do país, ninguém com convocação vencida, jogadores co
 - Sem Copa Africana, Copa da Ásia, Gold Cup nem Liga das Nações; sem repescagem intercontinental nem país-sede.
 - Grupo de torneio todo no mesmo dia; o 4-3-3 sempre; cartões de seleção ignorados.
 - Um jogador transferido no meio da janela volta pelo scan do mundo (raro); a convocação usa o clube da véspera.
-- Gols por jogo de seleção (~1,5) abaixo do futebol real: o quickSim é o de clubes, sem calibração própria.
+- Volume de gols por um fator único (`GOAL_SCALE`), não por confederação: OFC fica em ~1,8 e os torneios (só seleções
+  fortes) em ~3,0–3,5, acima da Copa real (~2,6).
 
 ## Conquistas (Etapa 40)
 

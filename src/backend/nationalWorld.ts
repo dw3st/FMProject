@@ -30,7 +30,7 @@ import {
   nationalFillers, nationalLineup, pickCallUp, squadLevel, type NationCandidate,
 } from "@/Domain/national/nationalSquad";
 import {
-  applyNationalMatch, nationalCampDay, updateNationalLeaders, withNationalAward, withNationalTitle,
+  NATIONAL_MATCH, applyNationalMatch, nationalCampDay, updateNationalLeaders, withNationalAward, withNationalTitle,
 } from "@/Domain/national/nationalMatch";
 import {
   NATIONAL_AWARDS, computeTournamentAwards, tournamentAwardKeys, tournamentValueMult,
@@ -542,6 +542,7 @@ export async function playNationalDay(args: {
           homeLineup: nationalLineup(home.players, date), awayLineup: nationalLineup(away.players, date),
           homeRoles: roles, awayRoles: roles,
           ...(fx.knockout ? { knockout: true } : {}), ...(fx.neutral ? { neutral: true } : {}),
+          goalScale: NATIONAL_MATCH.GOAL_SCALE,
         }, rng).recording;
       }
       out.played++;

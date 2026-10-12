@@ -1185,3 +1185,8 @@ calibração própria: o volume do mundo não é medido contra o motor. Ver `.cl
 `QuickSimInput.refereeStrictness` (o árbitro da escala do dia): faltas, pênaltis e cartões dos dois lados; s = 0 /
 ausente sorteia exatamente o de antes. Medição do volume do mundo (26 ligas, pareado) em
 `.claude/rules/game/referees.md` → spec §7.
+
+## Seleções (4.22.1)
+
+`QuickSimInput.goalScale` multiplica o xG dos dois lados; só o quickSim de seleção passa (`NATIONAL_MATCH.GOAL_SCALE`
+1,4). Ausente = × 1, o jogo de clube é idêntico. Ver `.claude/rules/game/national-teams.md` → "Volume de gols".

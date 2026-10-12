@@ -15,6 +15,16 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const DEFAULT_STAMINA = 7;
 
+/**
+ * National-team games of the AI (quickSim). `GOAL_SCALE` multiplies both sides' xG: the quickSim's club constants
+ * reproduce the full engine, and at national-team level (XIs at ~4.3 of level, forward line barely faster than the
+ * opponent's back line, a quarter of the places taken by generated players outside Europe/South America) that is
+ * ~1.8 goals per game, against ~2.6 in real international football. Mutable only for measurement scripts.
+ */
+export const NATIONAL_MATCH = {
+  GOAL_SCALE: 1.4,
+};
+
 export interface NationalMatchApplied {
   player: RosterPlayer;
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string };

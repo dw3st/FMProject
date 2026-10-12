@@ -935,6 +935,40 @@ describe("quickSim: style familiarity", () => {
   });
 });
 
+describe("quickSim goalScale (national-team games)", () => {
+  const input = (goalScale?: number) => ({
+    fixtureId: "f",
+    home: makeSquad("h", 5),
+    away: makeSquad("a", 5),
+    homeLineup: ROLES.map((_, i) => `h-p${i}`),
+    awayLineup: ROLES.map((_, i) => `a-p${i}`),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
+    ...(goalScale !== undefined ? { goalScale } : {}),
+  });
+
+  test("absent or 1 is the same match; a scale multiplies both sides' xG", () => {
+    const base = quickSimMatch(input(), mulberry32(3));
+    const same = quickSimMatch(input(1), mulberry32(3));
+    expect({ ...same.recording, durationMs: 0 }).toEqual({ ...base.recording, durationMs: 0 });
+    expect(same.breakdown).toEqual(base.breakdown);
+    const scaled = quickSimMatch(input(1.4), mulberry32(3)).breakdown;
+    expect(scaled.xgHome).toBeCloseTo(base.breakdown.xgHome * 1.4);
+    expect(scaled.xgAway).toBeCloseTo(base.breakdown.xgAway * 1.4);
+  });
+
+  test("a scale raises the goal volume over many matches", () => {
+    let g1 = 0, g2 = 0;
+    for (let i = 0; i < 2000; i++) {
+      const a = quickSimMatch(input(), mulberry32(i)).recording.score;
+      const b = quickSimMatch(input(1.4), mulberry32(i)).recording.score;
+      g1 += a.home + a.away; g2 += b.home + b.away;
+    }
+    expect(g2 / g1).toBeGreaterThan(1.3);
+    expect(g2 / g1).toBeLessThan(1.5);
+  });
+});
+
 describe("quickSim side morale (`src/Domain/morale`)", () => {
   const input = (hm?: number, am?: number) => ({
     fixtureId: "m",

@@ -9,6 +9,9 @@ import { saveService } from "@/backend/SaveService";
 import { playNationalDay } from "@/backend/nationalWorld";
 import { addDays } from "@/Domain/dates";
 import { rankTeams } from "@/Domain/national/elo";
+import { NATIONAL_MATCH } from "@/Domain/national/nationalMatch";
+
+if (process.env.NATIONAL_GOAL_SCALE) NATIONAL_MATCH.GOAL_SCALE = Number(process.env.NATIONAL_GOAL_SCALE);
 
 const until = process.argv[2] ?? "2030-07-20";
 const meta = await saveService.createSave({
