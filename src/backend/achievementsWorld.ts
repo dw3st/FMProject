@@ -10,7 +10,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { rankManagers } from "@/Domain/managers/managers";
 import { buildAchievementMessage } from "@/Domain/inbox/achievementMessage";
-import type { AchievementKey } from "@/types/achievementTypes";
+import type { AchievementKey, AchievementsState } from "@/types/achievementTypes";
 import type { ClubMove } from "@/types/pyramidTypes";
 import type { DayTransfer, MatchEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
@@ -65,6 +65,22 @@ async function cheapestOfLeague(args: AchievementsDayArgs, clubId: string, leagu
   return !!mine && bills.every((b) => b.id === clubId || b.bill > mine.bill);
 }
 
+/** What the game keeps that the tracks read (titles, ranking, money, stadium, facilities). */
+export function achievementSnapshot(state: AchievementsState, club: Squad | null, managers: ManagerRecord[]): AchievementSnapshot {
+  const player = managers.find((m) => m.isPlayer) ?? null;
+  const ranked = rankManagers(managers.filter((m) => !m.retired));
+  const pos = ranked.findIndex((m) => m.isPlayer);
+  return {
+    manager: player,
+    rank: pos >= 0 && (player?.points ?? 0) > 0 ? pos + 1 : null,
+    balance: club?.finances?.budget ?? null,
+    extraSeats: club ? (club.venue?.capacity ?? 0) - (state.clubs[club.id]?.baseCapacity ?? club.venue?.capacity ?? 0) : 0,
+    facilityItems: club?.facilities
+      ? Object.values(club.facilities.items ?? {}).filter((it) => it.level >= ACHIEVEMENTS.FACILITY_LEVEL).length
+      : 0,
+  };
+}
+
 export async function achievementsDay(service: SaveService, saveId: string, args: AchievementsDayArgs): Promise<InboxMessage | null> {
   const state = await service.getAchievements(saveId);
   if (state.lastDay && state.lastDay >= args.date) return null;
@@ -90,17 +106,7 @@ export async function achievementsDay(service: SaveService, saveId: string, args
 
   const transfers: DayTransfer[] = (await service.getDayLog(saveId, args.date))?.transfers ?? [];
 
-  const ranked = rankManagers(args.managers.filter((m) => !m.retired));
-  const pos = ranked.findIndex((m) => m.isPlayer);
-  const snapshot: AchievementSnapshot = {
-    manager: player,
-    rank: pos >= 0 && (player?.points ?? 0) > 0 ? pos + 1 : null,
-    balance: club?.finances?.budget ?? null,
-    extraSeats: club ? (club.venue?.capacity ?? 0) - (state.clubs[club.id]?.baseCapacity ?? club.venue?.capacity ?? 0) : 0,
-    facilityItems: club?.facilities
-      ? Object.values(club.facilities.items ?? {}).filter((it) => it.level >= ACHIEVEMENTS.FACILITY_LEVEL).length
-      : 0,
-  };
+  const snapshot = achievementSnapshot(state, club, args.managers);
 
   // Season awards of the club's players (recorded at the club's rollover).
   const awards: { key: string; kind: "young_player" | "top_scorer" }[] = [];

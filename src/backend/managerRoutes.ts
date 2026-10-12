@@ -1,3 +1,4 @@
+import { shownProfile } from "@/Domain/achievements/items";
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
@@ -48,6 +49,8 @@ export const managerRoutes = {
         : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
       offset, limit,
     );
+    // The human manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
+    const profile = page.items.some((m) => m.isPlayer) ? shownProfile(await saveService.getAchievements(saveId)) : null;
     return Response.json({
       ...page,
       items: page.items.map((m) => ({
@@ -59,7 +62,7 @@ export const managerRoutes = {
         awards: m.awards ?? [],
         // Every manager's passages (Etapa 25), with the clubs' names.
         clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })),
-        ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0 } : {}),
+        ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0, ...(profile ? { profile } : {}) } : {}),
         // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
         // nationality, an AI manager's appearance from the country of his first club (stable).
         clubColors: m.squadId ? index.byId(m.squadId)?.colors ?? null : null,
