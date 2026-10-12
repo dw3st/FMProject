@@ -31,7 +31,7 @@ import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { Player } from "@/Domain/Player";
-import { competitionName } from "@/Domain/world/labels";
+import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import {
@@ -600,6 +600,8 @@ interface MatchSetupData {
   referee?: MatchSetupReferee | null;
   /** The user's manager serves a touchline ban in this match (`var.md` §4). */
   managerBanned?: boolean;
+  /** His national team's game (Etapa 41b): no crowd, marking or club tactics. */
+  national?: { teamId: string; competition: string } | null;
 }
 
 export function MatchPreviewScreen() {
@@ -782,10 +784,12 @@ export function MatchPreviewScreen() {
     if (!session) return;
     setLocalLineup(newLineup);
     try {
-      await fetch(`/api/saves/${session.saveId}/tactics`, {
+      // His national team's game (Etapa 41b): the XI goes to the national tactics, never the club's.
+      const tac = matchSetup?.myTactics;
+      await fetch(matchSetup?.national ? `/api/saves/${session.saveId}/national/coach/tactics` : `/api/saves/${session.saveId}/tactics`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lineup: newLineup }),
+        body: JSON.stringify(matchSetup?.national ? { formation: tac?.formation, tactical_style: tac?.tactical_style, lineup: newLineup } : { lineup: newLineup }),
       });
     } catch {
       // local state already updated; backend failure is non-fatal
@@ -882,6 +886,7 @@ export function MatchPreviewScreen() {
     : undefined;
   const opponentName =
     (opponentId ? catalogNames.get(opponentId) : undefined) ??
+    (matchSetup?.national && opponentSquad ? nationalityDisplayName(opponentSquad.name, i18n.language, t) : undefined) ??
     opponentSquad?.name ??
     (opponentId ? squadIdToName(opponentId, session.leagueSlug) : "Opponent");
 
@@ -960,9 +965,11 @@ export function MatchPreviewScreen() {
   // so the kickoff and the weather (`matchConditions`) match it.
   const homeGround = !fixture || fixture.neutral ? null : isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const conditions = fixture ? matchConditions(fixture, homeGround?.country ?? null) : null;
+  const national = !!matchSetup?.national;
+  const myName = national && matchSetup ? nationalityDisplayName(matchSetup.mySquad.name, i18n.language, t) : session.clubName;
   const venue = fixture?.neutral
     ? t("cups.neutral")
-    : homeGround?.venue?.name ?? (isHome ? `${session.clubName} Stadium` : "Away Ground");
+    : homeGround?.venue?.name ?? (isHome ? `${myName} Stadium` : "Away Ground");
   const pitch = typeof matchSetup?.pitchCondition === "number" ? matchSetup.pitchCondition : null;
   // Expected attendance (`.claude/rules/game/facilities.md`): home games only, from match-setup.
   const expectedCrowd = fixture && isHome && !fixture.neutral && matchSetup?.crowd?.known ? matchSetup.crowd : null;
@@ -985,12 +992,12 @@ export function MatchPreviewScreen() {
     ? matchHeading({ fixture, competition, cupStage: cupStageName, continentalStage: continentalStageName, continentalGroup }, t)
     : competition;
 
-  const myLogoUrl  = squadLogoUrl(mySquadId || session.clubId);
+  const myLogoUrl  = national ? undefined : squadLogoUrl(mySquadId || session.clubId);
   const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
 
   // Assign home/away
-  const homeSquadName    = isHome ? session.clubName       : opponentName;
-  const awaySquadName    = isHome ? opponentName           : session.clubName;
+  const homeSquadName    = isHome ? myName                 : opponentName;
+  const awaySquadName    = isHome ? opponentName           : myName;
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
   // The server's probable XI already respects the opponent's registration (`registration.md`).
@@ -1258,7 +1265,7 @@ export function MatchPreviewScreen() {
       )}
 
       {/* Man-marking for this match (player instructions) */}
-      {matchSetup && markerOptions.length > 0 && targetOptions.length > 0 && (
+      {matchSetup && !national && markerOptions.length > 0 && targetOptions.length > 0 && (
         <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="card-arcade rounded-md p-4">
             <ManMarkingPanel markers={markerOptions} targets={targetOptions} value={currentMarks} onChange={saveMarks} />

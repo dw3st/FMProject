@@ -1403,7 +1403,8 @@
       "schedule": "Schedule",
       "discipline": "Discipline",
       "national": "National teams",
-      "achievement": "Achievements"
+      "achievement": "Achievements",
+      "national_coach": "National team job"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -3773,7 +3774,8 @@
     "tabs": {
       "ranking": "Ranking",
       "competitions": "Competitions",
-      "team": "National team"
+      "team": "National team",
+      "coach": "My national team"
     },
     "none": "No national teams in this career.",
     "loading": "Loading…",
@@ -4237,5 +4239,87 @@
     "wales": "Wales",
     "scotland": "Scotland",
     "northern_ireland": "Northern Ireland"
+  },
+  "nationalCoach": {
+    "none": "You do not coach a national team. Offers come when a federation sacks its coach and your reputation is enough.",
+    "offers": "Offers",
+    "offerLine": "#{{rank}} in the ranking · {{wage}}/week",
+    "validUntil": "Valid until {{date}}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "You are the new coach.",
+    "declined": "Offer declined.",
+    "closed": "This offer is no longer available.",
+    "failed": "Could not answer the offer.",
+    "keepsClub": "You keep your club.",
+    "teamLine": "#{{rank}} in the ranking · {{points}} pts · since {{date}} · {{wage}}/week",
+    "objectives": "Federation objectives",
+    "noObjectives": "No official competition under way.",
+    "objective": {
+      "qualifier": "Group {{group}}: finish {{target}} or better",
+      "qualifierMust": "Group {{group}}: qualify (finish {{target}} or better)",
+      "champion": "Win the title",
+      "final": "Reach the final",
+      "sf": "Reach the semi-finals",
+      "qf": "Reach the quarter-finals",
+      "r16": "Reach the round of 16",
+      "r32": "Reach the round of 32",
+      "group": "Take part with dignity"
+    },
+    "upcoming": "Next games",
+    "noUpcoming": "No game scheduled.",
+    "callUp": "Call-up of {{date}}",
+    "callUpNone": "No call-up ahead.",
+    "callUpFirstGame": "First game on {{date}}. Choose until the call-up day; without changes, the suggestion goes.",
+    "callUpCount": "{{count}}/23 called up · {{gk}} goalkeepers (generated players complete the 23)",
+    "useSuggestion": "Back to the suggestion",
+    "saveCallUp": "Save call-up",
+    "saved": "Saved.",
+    "suggested": "Suggested",
+    "pick": "Call up",
+    "drop": "Remove",
+    "injured": "Injured",
+    "fitness": "Fitness",
+    "age": "Age",
+    "error": {
+      "notList": "Invalid list.",
+      "size": "Call up between 1 and 23 players.",
+      "duplicate": "A player appears twice.",
+      "notCandidate": "A player can no longer be called up.",
+      "goalkeepers": "The call-up needs at least 2 goalkeepers.",
+      "callUpClosed": "No call-up to choose now.",
+      "generic": "Could not save."
+    },
+    "tactics": "Tactics",
+    "formation": "Formation",
+    "style": "Style",
+    "xi": "Starting XI",
+    "xiAuto": "Automatic",
+    "xiAfterCallUp": "The XI is chosen from the called-up players; until then it is automatic.",
+    "saveTactics": "Save tactics",
+    "resign": "Leave the national team",
+    "resignTitle": "Leave the national team?",
+    "resignBody": "You leave {{nation}}; your club is not affected.",
+    "resignConfirm": "Leave",
+    "inbox": {
+      "subject": {
+        "offer": "{{nation}} offer you their national team",
+        "hired": "You are the new {{nation}} coach",
+        "callup_soon": "{{nation}}: call-up on {{date}}",
+        "result": "{{nation}}: the federation reviews the campaign",
+        "sacked": "{{nation}} sack you",
+        "resigned": "You left {{nation}}"
+      },
+      "body": {
+        "offer": "The {{nation}} federation wants you as coach, without leaving your club.",
+        "hired": "You took over {{nation}}. Choose the call-up and the tactics in My national team.",
+        "callup_soon": "The call-up is on {{date}}: check the suggested 23 and change who you want.",
+        "resultMet": "{{competition}}: objective met.",
+        "resultFailed": "{{competition}}: objective not met.",
+        "sacked": "After {{competition}}, the federation dismissed you. Your club is not affected.",
+        "resigned": "You left the {{nation}} job. Your club is not affected."
+      },
+      "open": "Open My national team"
+    }
   }
 }

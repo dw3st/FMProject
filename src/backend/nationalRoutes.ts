@@ -50,6 +50,8 @@ export interface NationalOverview {
   homeTeam: string | null;
   /** Current or next international break: a window or a tournament. */
   next: { kind: "window" | "tournament"; start: string; end: string; slug?: string; current?: boolean } | null;
+  /** The national team the human manager coaches and his pending offers (Etapa 41b). */
+  coach: { teamId: string | null; offers: number };
 }
 
 function nextBreak(date: string): NationalOverview["next"] {
@@ -95,7 +97,11 @@ export const nationalRoutes = {
     const country = (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country;
     const home = normalizeNation(country);
     const homeTeam = Object.values(state.teams).find((t) => t.nation === home)?.id ?? null;
-    const body: NationalOverview = { ranking, competitions, homeTeam, next: meta.currentDate ? nextBreak(meta.currentDate) : null };
+    const coach = {
+      teamId: state.human?.teamId ?? null,
+      offers: (state.offers ?? []).filter((o) => !meta.currentDate || o.expires >= meta.currentDate).length,
+    };
+    const body: NationalOverview = { ranking, competitions, homeTeam, next: meta.currentDate ? nextBreak(meta.currentDate) : null, coach };
     return Response.json(body);
   },
 

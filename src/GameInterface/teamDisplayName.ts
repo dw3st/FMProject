@@ -1,7 +1,16 @@
 import type { LeagueData } from "@/types/playerTypes";
 
+/** Names of teams outside the leagues (national teams of the player's calendar, Etapa 41b), by id. */
+const extraNames = new Map<string, string>();
+
+export function registerTeamNames(names: Record<string, string> | undefined): void {
+  for (const [id, name] of Object.entries(names ?? {})) extraNames.set(id, name);
+}
+
 /** When standings are missing, title-case the last `_` segment (legacy `leagueSlug_clubSlug` ids). */
 export function fallbackTeamNameFromSquadId(squadId: string): string {
+  const extra = extraNames.get(squadId);
+  if (extra) return extra;
   const last = squadId.split("_").pop() ?? squadId;
   return last.replace(/\b\w/g, (c) => c.toUpperCase());
 }

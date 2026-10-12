@@ -17,6 +17,8 @@ import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
 import { ManagerRenewalCard } from "@/GameInterface/Components/ManagerRenewalCard";
 import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
+import { NationalCoachInboxBody, nationalCoachSubject } from "@/GameInterface/National/NationalCoachInboxBody";
+import i18next from "@/i18n/i18n";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
@@ -215,6 +217,13 @@ const CATEGORY_META: Record<
   },
   national: {
     labelKey: "inbox.categories.national",
+    color: "text-chart-5",
+    bg: "bg-chart-5/15",
+    border: "border-chart-5/30",
+    Icon: ContinentalIcon,
+  },
+  national_coach: {
+    labelKey: "inbox.categories.national_coach",
     color: "text-chart-5",
     bg: "bg-chart-5/15",
     border: "border-chart-5/30",
@@ -532,6 +541,9 @@ function leaguePrizeTexts(
       preview: message.players.map((p) => p.name).join(", "),
     };
   }
+  if (message.category === "national_coach") {
+    return { subject: nationalCoachSubject(message, t, i18nLang()), preview: message.nation };
+  }
   if (message.category === "achievement") {
     return {
       subject: message.keys.length === 1 ? t("achievements.inbox.subject") : t("achievements.inbox.subjectMany", { count: message.keys.length }),
@@ -718,6 +730,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
         {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
         {message.category === "national" && <NationalInboxBody message={message} />}
+        {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
         {message.category === "achievement" && <AchievementInboxBody keys={message.keys} points={message.points} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
@@ -1294,4 +1307,9 @@ function DetailRow({
       </span>
     </div>
   );
+}
+
+/** Current UI language for helpers that only receive `t`. */
+function i18nLang(): string {
+  return i18next.language ?? "en";
 }

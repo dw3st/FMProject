@@ -1,3 +1,6 @@
+import { registerTeamNames } from "@/GameInterface/teamDisplayName";
+import { nationalityDisplayName } from "@/Domain/world/labels";
+import i18n from "@/i18n/i18n";
 import {
   createContext,
   useCallback,
@@ -197,7 +200,12 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  const fixtures = useMemo(() => save?.season?.calendar ?? [], [save]);
+  const fixtures = useMemo(() => {
+    // National teams of the player's calendar (Etapa 41b): their names for every screen that names an opponent.
+    const names = save?.season?.teamNames;
+    if (names) registerTeamNames(Object.fromEntries(Object.entries(names).map(([id, n]) => [id, nationalityDisplayName(n, i18n.language, i18n.t.bind(i18n) as never)])));
+    return save?.season?.calendar ?? [];
+  }, [save]);
   const restDays = useMemo(
     () => restDaysOverride ?? save?.season?.restDays ?? [],
     [restDaysOverride, save?.season?.restDays],

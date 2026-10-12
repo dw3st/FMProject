@@ -1403,7 +1403,8 @@
       "schedule": "Calendário",
       "discipline": "Disciplina",
       "national": "Seleções",
-      "achievement": "Conquistas"
+      "achievement": "Conquistas",
+      "national_coach": "Seleção (técnico)"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -3773,7 +3774,8 @@
     "tabs": {
       "ranking": "Ranking",
       "competitions": "Competições",
-      "team": "Seleção"
+      "team": "Seleção",
+      "coach": "Minha seleção"
     },
     "none": "Esta carreira não tem seleções.",
     "loading": "Carregando…",
@@ -4237,5 +4239,87 @@
     "wales": "País de Gales",
     "scotland": "Escócia",
     "northern_ireland": "Irlanda do Norte"
+  },
+  "nationalCoach": {
+    "none": "Você não treina uma seleção. Convites chegam quando uma federação demite o técnico e a sua reputação alcança.",
+    "offers": "Convites",
+    "offerLine": "{{rank}}º no ranking · {{wage}}/semana",
+    "validUntil": "Válido até {{date}}",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "accepted": "Você é o novo técnico.",
+    "declined": "Convite recusado.",
+    "closed": "Este convite não está mais disponível.",
+    "failed": "Não foi possível responder o convite.",
+    "keepsClub": "Você continua no seu clube.",
+    "teamLine": "{{rank}}º no ranking · {{points}} pts · desde {{date}} · {{wage}}/semana",
+    "objectives": "Metas da federação",
+    "noObjectives": "Nenhuma competição oficial em andamento.",
+    "objective": {
+      "qualifier": "Grupo {{group}}: terminar em {{target}}º ou melhor",
+      "qualifierMust": "Grupo {{group}}: classificar (terminar em {{target}}º ou melhor)",
+      "champion": "Ganhar o título",
+      "final": "Chegar à final",
+      "sf": "Chegar à semifinal",
+      "qf": "Chegar às quartas",
+      "r16": "Chegar às oitavas",
+      "r32": "Chegar aos 16-avos",
+      "group": "Fazer uma campanha digna"
+    },
+    "upcoming": "Próximos jogos",
+    "noUpcoming": "Nenhum jogo marcado.",
+    "callUp": "Convocação de {{date}}",
+    "callUpNone": "Nenhuma convocação à vista.",
+    "callUpFirstGame": "Primeiro jogo em {{date}}. Escolha até o dia da convocação; sem mexer, vai a sugestão.",
+    "callUpCount": "{{count}}/23 convocados · {{gk}} goleiros (os gerados completam os 23)",
+    "useSuggestion": "Voltar à sugestão",
+    "saveCallUp": "Salvar convocação",
+    "saved": "Salvo.",
+    "suggested": "Sugerido",
+    "pick": "Convocar",
+    "drop": "Tirar",
+    "injured": "Lesionado",
+    "fitness": "Fôlego",
+    "age": "Idade",
+    "error": {
+      "notList": "Lista inválida.",
+      "size": "Convoque de 1 a 23 jogadores.",
+      "duplicate": "Um jogador aparece duas vezes.",
+      "notCandidate": "Um jogador não pode mais ser convocado.",
+      "goalkeepers": "A convocação precisa de pelo menos 2 goleiros.",
+      "callUpClosed": "Não há convocação para escolher agora.",
+      "generic": "Não foi possível salvar."
+    },
+    "tactics": "Tática",
+    "formation": "Formação",
+    "style": "Estilo",
+    "xi": "Escalação",
+    "xiAuto": "Automático",
+    "xiAfterCallUp": "A escalação sai dos convocados; até a convocação ela é automática.",
+    "saveTactics": "Salvar tática",
+    "resign": "Deixar a seleção",
+    "resignTitle": "Deixar a seleção?",
+    "resignBody": "Você deixa a seleção ({{nation}}); o seu clube não muda.",
+    "resignConfirm": "Deixar",
+    "inbox": {
+      "subject": {
+        "offer": "{{nation}} convida você para a seleção",
+        "hired": "Você é o novo técnico da seleção ({{nation}})",
+        "callup_soon": "{{nation}}: convocação em {{date}}",
+        "result": "{{nation}}: a federação avalia a campanha",
+        "sacked": "{{nation}} demite você",
+        "resigned": "Você deixou a seleção ({{nation}})"
+      },
+      "body": {
+        "offer": "A federação ({{nation}}) quer você como técnico, sem deixar o seu clube.",
+        "hired": "Você assumiu a seleção ({{nation}}). Escolha a convocação e a tática em Minha seleção.",
+        "callup_soon": "A convocação é em {{date}}: confira os 23 sugeridos e troque quem quiser.",
+        "resultMet": "{{competition}}: meta cumprida.",
+        "resultFailed": "{{competition}}: meta não cumprida.",
+        "sacked": "Depois de {{competition}}, a federação demitiu você. O seu clube não muda.",
+        "resigned": "Você deixou o cargo na seleção ({{nation}}). O seu clube não muda."
+      },
+      "open": "Abrir Minha seleção"
+    }
   }
 }
