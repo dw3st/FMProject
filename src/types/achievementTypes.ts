@@ -81,6 +81,14 @@ export interface SeasonTrack {
   homeLost: number;
 }
 
+export interface ClubBaseline {
+  baseCapacity: number;
+  baseBalance: number;
+  /** Facility item id → level on arrival. */
+  baseFacilityLevels: Record<string, number>;
+  seasons: number;
+}
+
 export interface AchievementsState {
   /** Last day counted (idempotency: a retried day adds nothing). */
   lastDay?: string;
@@ -100,8 +108,11 @@ export interface AchievementsState {
   promotedIds: string[];
   /** Awards already counted ("<league>:<season>:<kind>"). */
   awardsSeen: string[];
-  /** Per club: capacity on the first day seen, seasons completed. */
-  clubs: Record<string, { baseCapacity: number; seasons: number }>;
+  /**
+   * Per club, taken on the first day the manager is seen there (his arrival): stadium capacity, balance and the
+   * level of each facility item — the finance tracks count only what he built on top. Seasons completed.
+   */
+  clubs: Record<string, ClubBaseline>;
   spent: number;
   bought: { created?: string; legend?: string };
   legendOptions?: { date: string; ids: string[] };

@@ -60,11 +60,12 @@ export interface AchievementSnapshot {
   manager: ManagerRecord | null;
   /** World ranking position of the manager now (null without points). */
   rank: number | null;
-  balance: number | null;
+  /** Club balance gained since the manager arrived (today's balance − the one on his first day). */
+  balanceGain: number;
   /** Seats above the capacity on the first day the club was seen. */
   extraSeats: number;
-  /** Facility items at `FACILITY_LEVEL` or more. */
-  facilityItems: number;
+  /** Facility levels built since the manager arrived (sum over the items of the levels above the arrival ones). */
+  facilityLevels: number;
 }
 
 export function titleCounts(m: ManagerRecord | null): Record<"league" | "cup" | "continental" | "promotion", number> {
@@ -102,9 +103,9 @@ export function trackValues(state: AchievementsState, snap: AchievementSnapshot)
     sales_profit: c.salesProfit,
     big_signing: c.biggestSigning,
     free_starter: free,
-    balance: Math.max(0, snap.balance ?? 0),
+    balance: Math.max(0, snap.balanceGain),
     stadium: Math.max(0, snap.extraSeats),
-    facilities: snap.facilityItems,
+    facilities: Math.max(0, snap.facilityLevels),
     seasons: snap.manager?.seasons ?? 0,
     clubs: clubsManaged(snap.manager),
     ranking: c.bestRank ?? 0,
@@ -273,10 +274,17 @@ export function applyRollover(state: AchievementsState, r: RolloverFacts, date: 
   };
 }
 
+/** What the club has on the manager's first day there (the baseline of the finance tracks). */
+export interface ClubArrival { capacity: number; balance: number; facilityLevels: Record<string, number> }
+
 /** The human club changed (or the save is seen for the first time): season tracking restarts. */
-export function ensureClub(state: AchievementsState, squadId: string, capacity: number): AchievementsState {
+export function ensureClub(state: AchievementsState, squadId: string, base: ClubArrival): AchievementsState {
   let s = state;
-  if (!s.clubs[squadId]) s = { ...s, clubs: { ...s.clubs, [squadId]: { baseCapacity: capacity, seasons: 0 } } };
+  if (!s.clubs[squadId]) {
+    s = { ...s, clubs: { ...s.clubs, [squadId]: {
+      baseCapacity: base.capacity, baseBalance: base.balance, baseFacilityLevels: { ...base.facilityLevels }, seasons: 0,
+    } } };
+  }
   if (!s.season || s.season.squadId !== squadId) {
     s = { ...s, season: { squadId, played: 0, lost: 0, homeLost: 0 }, counters: { ...s.counters, leagueUnbeaten: 0 } };
   }

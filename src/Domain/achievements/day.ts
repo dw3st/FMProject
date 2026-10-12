@@ -1,7 +1,7 @@
 import type { MatchFacts } from "@/Domain/achievements/matchFacts";
 import {
   applyNewTitles, applyRollover, ensureClub, newlyUnlocked, recordMatch, rollMonth, sackedEarly, trackValues,
-  unlockReachedTiers, unlockSecret, type AchievementSnapshot, type RolloverFacts,
+  unlockReachedTiers, unlockSecret, type AchievementSnapshot, type ClubArrival, type RolloverFacts,
 } from "@/Domain/achievements/progress";
 import type { AchievementKey, AchievementsState } from "@/types/achievementTypes";
 import type { DayTransfer } from "@/types/dayLogTypes";
@@ -10,8 +10,8 @@ export interface AchievementDayInput {
   date: string;
   /** The human club at the start of the day (null: unemployed). */
   squadId: string | null;
-  /** Its stadium capacity today (reference of the `stadium` track the first day it is seen). */
-  capacity: number;
+  /** What the club has today: kept as the baseline of the finance tracks on the first day it is seen. */
+  arrival: ClubArrival;
   /** Today's official matches of the club, in order. */
   matches: MatchFacts[];
   /** Today's moves of the world (`StoredDayLog.transfers`). */
@@ -34,7 +34,7 @@ export function applyAchievementDay(
   if (state.lastDay && state.lastDay >= input.date) return { state, unlocked: [] };
   const { date, squadId } = input;
   let s = rollMonth(state, date);
-  if (squadId) s = ensureClub(s, squadId, input.capacity);
+  if (squadId) s = ensureClub(s, squadId, input.arrival);
 
   // Moves first: a player signed today can start today.
   if (squadId) {

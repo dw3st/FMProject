@@ -25,8 +25,8 @@ function manager(over: Partial<ManagerRecord> = {}): ManagerRecord {
 
 function day(state: AchievementsState, over: Partial<AchievementDayInput> = {}) {
   return applyAchievementDay(state, {
-    date: "2027-03-01", squadId: "club", capacity: 30000, matches: [], transfers: [],
-    snapshot: { manager: manager(), rank: null, balance: 0, extraSeats: 0, facilityItems: 0 },
+    date: "2027-03-01", squadId: "club", arrival: { capacity: 30000, balance: 0, facilityLevels: {} }, matches: [], transfers: [],
+    snapshot: { manager: manager(), rank: null, balanceGain: 0, extraSeats: 0, facilityLevels: 0 },
     awards: [], ...over,
   });
 }
@@ -129,7 +129,7 @@ describe("applyAchievementDay", () => {
       { season: "2027", kind: "cup", competition: "c", squadId: "club", points: 50 },
       { season: "2027", kind: "continental", competition: "lib", squadId: "club", points: 150 },
     ] });
-    const r = day(emptyAchievements(), { snapshot: { manager: m, rank: 1, balance: 0, extraSeats: 0, facilityItems: 0 } });
+    const r = day(emptyAchievements(), { snapshot: { manager: m, rank: 1, balanceGain: 0, extraSeats: 0, facilityLevels: 0 } });
     expect(r.unlocked).toEqual(expect.arrayContaining(["secret:double", "secret:treble", "league_titles:bronze", "ranking:gold"]));
     // 0.5 + 0.25 + 0.5 titles, + 0.25 bronze league, + secrets 2 × 0.5, + cup bronze 0.25, continental bronze 0.25
     expect(r.state.attributes.tactics).toBe(10 + 1.25 + 0.25 + 1 + 0.25 + 0.25);
@@ -168,8 +168,8 @@ describe("applyAchievementDay", () => {
 
 describe("rollover", () => {
   test("fortress, invincible season, one club", () => {
-    let s = ensureClub(emptyAchievements(), "club", 1000);
-    s = { ...s, clubs: { club: { baseCapacity: 1000, seasons: 9 } } };
+    let s = ensureClub(emptyAchievements(), "club", { capacity: 1000, balance: 0, facilityLevels: {} });
+    s = { ...s, clubs: { club: { baseCapacity: 1000, baseBalance: 0, baseFacilityLevels: {}, seasons: 9 } } };
     for (let i = 0; i < 12; i++) s = recordMatch(s, facts({ result: i % 2 ? "D" : "W", home: i % 2 === 0 }), "2027-03-01");
     s = applyRollover(s, { squadId: "club", champion: true, cheapest: true, bounceBack: true, objectiveMet: true }, "2027-12-10");
     for (const k of ["secret:fortress", "secret:cheapest_champion", "secret:bounce_back", "league_unbeaten:gold", "secret:one_club"] as const) {
@@ -201,7 +201,7 @@ describe("items", () => {
   test("normalize fills missing fields", () => {
     const s = normalizeAchievements({ unlocked: { "wins:bronze": "d" } } as never);
     expect(s.attributes.youth).toBe(10);
-    expect(trackValues(s, { manager: null, rank: null, balance: null, extraSeats: 0, facilityItems: 0 }).wins).toBe(0);
+    expect(trackValues(s, { manager: null, rank: null, balanceGain: 0, extraSeats: 0, facilityLevels: 0 }).wins).toBe(0);
   });
 });
 

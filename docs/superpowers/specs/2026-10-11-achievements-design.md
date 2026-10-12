@@ -86,11 +86,17 @@ quem já estava no clube), somado só quando positivo. A rota de contratação d
 
 | Id | Nome | Bronze | Prata | Ouro |
 |---|---|---|---|---|
-| `balance` | Cofre cheio | saldo de €10M | €50M | €150M |
+| `balance` | Cofre cheio | €10M de saldo ganho desde que assumiu o clube | €50M | €150M |
 | `stadium` | Casa nova | 2.000 lugares a mais que no dia em que assumiu o clube | 8.000 | 20.000 |
-| `facilities` | Estrutura de ponta | 1 item das instalações no nível 8 ou mais | 4 | 10 (todos) |
+| `facilities` | Estrutura de ponta | 2 níveis de instalações construídos desde que assumiu | 8 | 20 |
 
-A capacidade de referência é gravada na primeira vez que o passo vê o clube (`state.clubs[id].baseCapacity`).
+**Só o que o técnico construiu (conferência 2026-10-11):** saldo, capacidade e nível de cada item das instalações são
+gravados no primeiro dia em que o passo vê o técnico no clube (`state.clubs[id]`: `baseBalance`, `baseCapacity`,
+`baseFacilityLevels` — a chegada: o dia do `club_change` "arrive" ou o início da carreira, já com a TV inicial); as
+trilhas medem só o que passa disso (saldo de hoje − o da chegada = a soma do extrato desde então; níveis acima dos da
+chegada, somados entre os itens). Um clube rico não desbloqueia nada no dia 1. As demais trilhas já partem do que o
+técnico fez (contadores do passo, títulos, temporadas, ranking com pontos, prêmios na virada, promovidos pela rota,
+compras e vendas do dia); "clubes dirigidos" começa em 1 e o bronze pede 2.
 
 ### Carreira (atributo Disciplina)
 

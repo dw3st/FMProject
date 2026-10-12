@@ -33,7 +33,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   free_starter:       { category: "market", attribute: "negotiation", thresholds: [1, 3, 6] },
   balance:            { category: "finances", attribute: "negotiation", thresholds: [10_000_000, 50_000_000, 150_000_000] },
   stadium:            { category: "finances", attribute: "negotiation", thresholds: [2_000, 8_000, 20_000] },
-  facilities:         { category: "finances", attribute: "negotiation", thresholds: [1, 4, 10] },
+  facilities:         { category: "finances", attribute: "negotiation", thresholds: [2, 8, 20] },
   seasons:            { category: "career", attribute: "discipline", thresholds: [3, 10, 20] },
   clubs:              { category: "career", attribute: "discipline", thresholds: [2, 4, 6] },
   ranking:            { category: "career", attribute: "discipline", thresholds: [100, 20, 1], kind: "rank" },

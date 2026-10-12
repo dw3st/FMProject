@@ -19,6 +19,10 @@ Visual: `.claude/rules/ui-standard.md`.
   promovido. A rota de contratar livre passou a gravar a movimentação (`DayTransfer` `kind: "free"`).
 - **Idempotente:** `state.lastDay`; um dia refeito não soma de novo. Uma conquista desbloqueada nunca volta.
 - Pré-simulação do kit (`marketFrozen`) e desempregado: nenhum jogo conta.
+- **Nada desbloqueia pelo estado inicial do clube:** saldo, capacidade e nível de cada item das instalações são gravados
+  no primeiro dia do técnico no clube (`state.clubs[id]`: `baseBalance`, `baseCapacity`, `baseFacilityLevels`); Cofre
+  cheio mede o saldo ganho desde então (= soma do extrato desde a chegada), Casa nova os lugares a mais, Estrutura de
+  ponta os níveis construídos (2 / 8 / 20). As demais trilhas contam só o que o técnico fez.
 
 ## Arquivos
 

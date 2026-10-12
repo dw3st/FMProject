@@ -1,9 +1,8 @@
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
-import { ACHIEVEMENTS } from "@/Domain/achievements/achievementsConfig";
 import { applyAchievementDay } from "@/Domain/achievements/day";
 import { matchFacts, type MatchFacts } from "@/Domain/achievements/matchFacts";
-import type { AchievementSnapshot, RolloverFacts } from "@/Domain/achievements/progress";
+import type { AchievementSnapshot, ClubArrival, RolloverFacts } from "@/Domain/achievements/progress";
 import { normCity } from "@/Domain/boardFans/boardFans";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { isCupSlug } from "@/Domain/cups/cupIds";
@@ -73,11 +72,35 @@ export function achievementSnapshot(state: AchievementsState, club: Squad | null
   return {
     manager: player,
     rank: pos >= 0 && (player?.points ?? 0) > 0 ? pos + 1 : null,
-    balance: club?.finances?.budget ?? null,
-    extraSeats: club ? (club.venue?.capacity ?? 0) - (state.clubs[club.id]?.baseCapacity ?? club.venue?.capacity ?? 0) : 0,
-    facilityItems: club?.facilities
-      ? Object.values(club.facilities.items ?? {}).filter((it) => it.level >= ACHIEVEMENTS.FACILITY_LEVEL).length
-      : 0,
+    ...builtSince(state, club),
+  };
+}
+
+/** What the club has today (the baseline when the manager is first seen there). */
+export function clubArrival(club: Squad | null): ClubArrival {
+  return {
+    capacity: club?.venue?.capacity ?? 0,
+    balance: club?.finances?.budget ?? 0,
+    facilityLevels: Object.fromEntries(Object.entries(club?.facilities?.items ?? {}).map(([id, it]) => [id, (it as { level: number }).level])),
+  };
+}
+
+/**
+ * What the manager built at his club: balance, seats and facility levels above the club's on his first day
+ * (nothing on that day; a club never seen counts from today). The finance tracks never unlock on a rich club's
+ * starting state.
+ */
+function builtSince(state: AchievementsState, club: Squad | null): Pick<AchievementSnapshot, "balanceGain" | "extraSeats" | "facilityLevels"> {
+  if (!club) return { balanceGain: 0, extraSeats: 0, facilityLevels: 0 };
+  const now = clubArrival(club);
+  const base = state.clubs[club.id];
+  if (!base) return { balanceGain: 0, extraSeats: 0, facilityLevels: 0 };
+  let levels = 0;
+  for (const [id, level] of Object.entries(now.facilityLevels) as [string, number][]) levels += Math.max(0, level - (base.baseFacilityLevels?.[id] ?? level));
+  return {
+    balanceGain: now.balance - (base.baseBalance ?? now.balance),
+    extraSeats: now.capacity - base.baseCapacity,
+    facilityLevels: levels,
   };
 }
 
@@ -137,7 +160,7 @@ export async function achievementsDay(service: SaveService, saveId: string, args
   const result = applyAchievementDay(state, {
     date: args.date,
     squadId: club?.id ?? null,
-    capacity: club?.venue?.capacity ?? 0,
+    arrival: clubArrival(club),
     matches,
     transfers,
     snapshot,

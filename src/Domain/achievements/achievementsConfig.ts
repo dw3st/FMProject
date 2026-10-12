@@ -27,8 +27,6 @@ export const ACHIEVEMENTS = {
   HUMBLED_MARGIN: 5,
   /** `free_starter`: starts for the club. */
   FREE_STARTER_STARTS: 15,
-  /** `facilities`: an item at this level or more. */
-  FACILITY_LEVEL: 8,
   /** `perfect_month`: official games in the month. */
   PERFECT_MONTH_MIN: 4,
   /** `sacked_early`: days in charge. */
