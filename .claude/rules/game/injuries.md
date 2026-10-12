@@ -350,3 +350,8 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
 `replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
 `unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
 `foreignLimit`. Ver `.claude/rules/game/registration.md`.
+
+## Seleções (Etapa 41a)
+
+O quickSim de seleção rola lesões como o de clube; a duração usa o médico e a fisioterapia do clube do jogador, e a
+inbox do clube do jogador avisa. Ver `.claude/rules/game/national-teams.md`.

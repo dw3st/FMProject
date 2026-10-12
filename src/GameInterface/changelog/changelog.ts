@@ -25,6 +25,36 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.21",
+    date: "2026-10-11",
+    items: [
+      {
+        pt: "Seleções nacionais: todas as seleções do mundo, com técnico, ranking da FIFA e jogos nas datas FIFA de março, junho, setembro, outubro e novembro.",
+        en: "National teams: every national team of the world, with a coach, a FIFA ranking and games in the March, June, September, October and November international breaks.",
+      },
+      {
+        pt: "Eliminatórias, Eurocopa e Copa América em 2028 e Copa do Mundo com 48 seleções em 2030, com grupos, mata-mata, artilharia e prêmios do torneio.",
+        en: "Qualifiers, the Euro and the Copa América in 2028 and a 48-team World Cup in 2030, with groups, knockout rounds, top scorers and tournament awards.",
+      },
+      {
+        pt: "As ligas, copas e continentais param nas datas FIFA e durante os torneios: algumas rodadas passam para o meio de semana.",
+        en: "Leagues, cups and continental competitions stop for the international breaks and the tournaments: some rounds move to midweek.",
+      },
+      {
+        pt: "Seus jogadores convocados ficam fora do clube durante a data FIFA: jogam pela seleção, cansam, podem se lesionar e voltam com a moral em alta; a caixa de entrada avisa a convocação e a volta.",
+        en: "Your called-up players leave the club for the break: they play for their country, get tired, can get injured and come back happier; the inbox tells you when they go and come back.",
+      },
+      {
+        pt: "Nova aba Seleções: ranking, competições com tabelas e chaveamento, e os convocados de cada seleção. A ficha do jogador mostra os jogos, gols e títulos pela seleção.",
+        en: "New National teams tab: ranking, competitions with tables and brackets, and each country's squad. The player screen shows his caps, goals and titles for his country.",
+      },
+      {
+        pt: "Uma boa campanha num torneio valoriza o jogador, e os prêmios do torneio contam para o melhor do mundo.",
+        en: "A good tournament raises a player's value, and the tournament awards count for the world player of the year.",
+      },
+    ],
+  },
+  {
     version: "4.19",
     date: "2026-10-11",
     items: [
@@ -1311,7 +1341,7 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
-  { pt: "Seleções nacionais: convocações, datas FIFA e Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
+  { pt: "Treinar uma seleção junto com o seu clube", en: "Coach a national team alongside your club" },
   { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
   { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
   { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },

@@ -119,7 +119,8 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 39f | Estatísticas, report e nomes de clubes (4.19) | #150, #125, #121 | Competições favoritas como atalhos no ranking; capturar uma área da tela ao anexar imagem no report; nomes de clubes corrigidos além do português |
 | 39g | Posicionamento (4.19) | #145 | Menos jogadores indo juntos na bola e buracos menores no campo, sem mudar o volume de gols |
 | 40 | Conquistas | #95 | Desafios com recompensas (itens de perfil, atributos do técnico, jogador criado ou lenda aposentada) |
-| 41 | Seleções nacionais | — | Convocações, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking |
+| 41a ✅ | Seleções nacionais da IA (4.21) | — | Todas as 173 nações do mundo com seleção (gerados só da seleção quando faltam jogadores), técnico da IA em `managers.json` (`squadId` `nat_…`, demissão e contratação pela regra dos clubes), ranking por Elo (modelo SUM da FIFA); datas FIFA de março, junho (anos ímpares), setembro, outubro e novembro; eliminatórias por confederação nos dois anos antes, Eurocopa (24) e Copa América (16) em 2028/2032, Copa do Mundo (48, 16-avos) em 2030/2034, amistosos no resto; ligas, copas, continentais e base param nas janelas (calendário distribuído pelos dias livres, rodadas de meio de semana) e os start kits foram regenerados; convocação da IA (23 por nível, lesão e fôlego), convocado fora do clube na janela, fôlego, carga, lesão, moral (+3), jogos/gols/títulos pela seleção na ficha e carreira, valor (×1,05–1,15 numa boa campanha), prêmios do torneio no melhor do mundo; tudo no quickSim; aba Seleções (ranking, competições, convocados), linha na ficha, selo no elenco, inbox `national`. Spec `docs/superpowers/specs/2026-10-11-national-teams-design.md`, regra `.claude/rules/game/national-teams.md` |
+| 41b | Técnico do jogador numa seleção | — | Convite pela reputação de qualquer país, acumulando com o clube; convocar, escalar e jogar ao vivo; demissão pela meta da federação |
 | 42 | Imprensa e notícias | — | Coletivas com efeito na moral e na diretoria, página de notícias do mundo |
 | 43 | Multiplayer | #106 | Vários técnicos humanos no mesmo mundo; precisa de desenho próprio |
 | 44 | Chat e amigos | #153 | Chat global e por país/idioma, lista de amigos com status e bloqueio; depende do multiplayer |
@@ -195,7 +196,7 @@ Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etap
 
 **39c–39g · Melhorias dos testers (4.19):** feitas em paralelo, uma branch por grupo; decidido (2026-10-11): obras no máximo uma por grupo (estádio, CT, base).
 
-**41–44 · Seleções nacionais, imprensa, multiplayer e chat:** cada uma com desenho próprio quando chegar a vez.
+**41b–44 · Técnico de seleção, imprensa, multiplayer e chat:** cada uma com desenho próprio quando chegar a vez (a 41a deixou a vaga de técnico da seleção apontando para um registro de `managers.json`, que o jogador pode ocupar).
 
 **Depois (sem ordem ainda):** pênalti com câmera em primeira pessoa (#130), deixado para depois pelo usuário (2026-10-11).
 

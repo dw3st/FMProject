@@ -272,3 +272,9 @@ Números com o mundo inteiro:
 | Motor completo (a liga do usuário numa rodada) | +~6,4 s |
 
 As outras ligas usam o quickSim. Só a partida da liga do próprio usuário usa o motor completo.
+
+## Datas FIFA (Etapa 41a)
+
+O calendário de cada liga é distribuído pelos dias livres da janela: as datas FIFA e o torneio de seleções da
+confederação ficam bloqueados (`generateLeagueCalendar(..., { blocked })`, `placeRoundsAroundBlocks`). Os start kits
+foram regenerados com isso. Ver `.claude/rules/game/national-teams.md`.

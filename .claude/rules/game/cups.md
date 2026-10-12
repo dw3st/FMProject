@@ -313,3 +313,8 @@ mesmo dia do sorteio — ver `.claude/rules/game/rescheduling.md`.
 As pastas `u21_<país>`/`u19_<país>` (torneios de base, `.claude/rules/game/youth-competitions.md`) também moram em
 `leagues/` fora de `activeLeagues`, regeneradas no mesmo gatilho das copas (depois das continentais), mas ficam fora das
 leituras de "jogos de hoje" (`getFixturesForDate`).
+
+## Datas FIFA e torneios (Etapa 41a)
+
+A geração das datas da copa também evita os dias bloqueados do país (`countryBlockedDays`: datas FIFA e o torneio de
+seleções da confederação). Ver `.claude/rules/game/national-teams.md`.

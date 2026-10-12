@@ -95,3 +95,8 @@ liga e no `date-index`.
 ## Limitações
 
 - O par copa × continental em dias seguidos fica (nenhum dos dois se move).
+
+## Datas FIFA (Etapa 41a)
+
+`ResolveInput.blocked` (por liga, `countryBlockedDays`): um jogo nunca é remarcado para uma data FIFA nem para o
+torneio de seleções do país. Ver `.claude/rules/game/national-teams.md`.

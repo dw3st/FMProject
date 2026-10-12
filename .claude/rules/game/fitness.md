@@ -396,3 +396,8 @@ seção "Fôlego" roda dentro da mesma corrida, sem flag própria).
 Um jogo de base conta como partida de 90 minutos no fôlego e na carga (`applyMatchFitness`); quem jogou a base no dia
 não treina nem descansa (`skipPlayerIds`). A base do clube do jogador recupera todo dia (`restAcademy`). Ver
 `.claude/rules/game/youth-competitions.md`.
+
+## Seleções (Etapa 41a)
+
+O jogo de seleção conta no fôlego e na carga (90/120 min, `applyNationalMatch`); o convocado não treina no clube e
+recupera pela curva de descanso nos dias da concentração (`nationalCampDay`). Ver `.claude/rules/game/national-teams.md`.

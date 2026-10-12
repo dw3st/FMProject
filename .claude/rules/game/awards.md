@@ -164,3 +164,9 @@ Dentro do aceite (±5%, ≥ 90% `open`, elenco igual). O MEDIUM já fica abaixo 
 - **Mundial e ano civil:** uma liga de ano civil que virasse depois de 31/12 entraria no ano seguinte (não acontece hoje).
 - **Repetição de um dia que falhou (fase 1 do `flush` não atômica):** o arquivo de prêmios, as linhas, os registros dos
   técnicos e a moral (`moraleLog.awards`) são idempotentes.
+
+## Torneios de seleções (Etapa 41a)
+
+`AwardsYear.national`: os prêmios de Copa do Mundo, Eurocopa e Copa América do ano, com uma lista curta que a
+cerimônia de janeiro soma (`computeWorldAwards({ tournaments })`, `peso × (score − 5)`). Ver
+`.claude/rules/game/national-teams.md`.

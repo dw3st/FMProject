@@ -221,3 +221,8 @@ mundial +10, revelação / artilheiro / goleiro +8, seleção +5, gol da tempora
 `moraleLog.youthMinutes` guarda os minutos dos últimos 5 jogos de base (`.claude/rules/game/youth-competitions.md`). Na
 segunda, para `youth`, `backup` e `rotation` com déficit, a base reduz a perda por minutos (`p + 0,5 × y`), nunca dá
 bônus; zera na virada como `minutes`.
+
+## Seleções (Etapa 41a)
+
+Convocado pela seleção: +3 de moral (`afterNationalCallUp`, pelo `withEventDelta`), uma vez por convocação. Os jogos
+da seleção não entram na janela de minutos. Ver `.claude/rules/game/national-teams.md`.

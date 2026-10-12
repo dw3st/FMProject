@@ -161,3 +161,8 @@ num dia do time principal surgido depois da geração (a base regerada não conh
 
 Os torneios de base não têm lista de inscritos nem filtro: são automáticos, com jovens e reservas
 (`.claude/rules/game/registration.md`).
+
+## Datas FIFA (Etapa 41a)
+
+Os dias bloqueados do país (datas FIFA, torneio de seleções) entram no `busyByClub` de todo clube: a base também para
+nas janelas. Ver `.claude/rules/game/national-teams.md`.
