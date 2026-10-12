@@ -70,19 +70,18 @@ export function pickCallUp(cands: NationCandidate[]): NationCandidate[] {
   return picked.slice(0, NATIONAL_SQUAD.SIZE);
 }
 
-/** Missing places per line to complete the 23 (the quota per line first). */
+/** Missing places per line to complete the 23: the per-line quota deficits first (GK, DEF, MID, FWD), the rest MID. */
 export function missingByLine(players: RosterPlayer[]): Record<MainRole, number> {
   const have: Record<MainRole, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
   for (const p of players) have[lineOf(p)]++;
   const out: Record<MainRole, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
-  let total = players.length;
+  let need = Math.max(0, NATIONAL_SQUAD.SIZE - players.length);
   for (const line of LINES) {
-    const n = Math.max(0, NATIONAL_SQUAD.QUOTAS[line] - have[line]);
+    const n = Math.min(need, Math.max(0, NATIONAL_SQUAD.QUOTAS[line] - have[line]));
     out[line] = n;
-    total += n;
+    need -= n;
   }
-  // Already over a quota in another line but short of 23: midfielders fill the rest.
-  if (total < NATIONAL_SQUAD.SIZE) out.Midfielder += NATIONAL_SQUAD.SIZE - total;
+  out.Midfielder += need;
   return out;
 }
 

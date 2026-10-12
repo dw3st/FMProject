@@ -2,6 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
+import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -36,6 +37,12 @@ const REFEREE_SEASON_KEY = /^[A-Za-z0-9 _.-]{1,80}$/;
 function refereeSeasonPath(saveId: string, key: string) {
   if (!REFEREE_SEASON_KEY.test(key) || key.includes("..")) throw new Error(`invalid referee season key: ${key}`);
   return `${refereesDir(saveId)}/seasons/${key}.json`;
+}
+function nationalDir(saveId: string) { return `${SAVES_DIR}/${saveId}/national`; }
+const NATIONAL_SLUG = /^[a-z0-9_]{1,40}$/;
+function nationalCompPath(saveId: string, slug: string) {
+  if (!NATIONAL_SLUG.test(slug)) throw new Error(`invalid national competition slug: ${slug}`);
+  return `${nationalDir(saveId)}/comps/${slug}.json`;
 }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
 function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
@@ -207,6 +214,28 @@ export class FileSystemDAL implements ISaveDAL {
     } catch {
       return [];
     }
+  }
+
+  async readNationalState(saveId: string): Promise<NationalState | null> {
+    const file = Bun.file(`${nationalDir(saveId)}/state.json`);
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<NationalState>;
+  }
+
+  async writeNationalState(saveId: string, state: NationalState): Promise<void> {
+    await mkdir(nationalDir(saveId), { recursive: true });
+    await Bun.write(`${nationalDir(saveId)}/state.json`, JSON.stringify(state));
+  }
+
+  async readNationalComp(saveId: string, slug: string): Promise<NationalCompetition | null> {
+    const file = Bun.file(nationalCompPath(saveId, slug));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<NationalCompetition>;
+  }
+
+  async writeNationalComp(saveId: string, comp: NationalCompetition): Promise<void> {
+    await mkdir(`${nationalDir(saveId)}/comps`, { recursive: true });
+    await Bun.write(nationalCompPath(saveId, comp.slug), JSON.stringify(comp));
   }
 
   async readScouting(saveId: string): Promise<ScoutingState | null> {

@@ -30,7 +30,8 @@ export type InboxCategory =
   | "awards"
   | "registration"
   | "schedule"
-  | "discipline";
+  | "discipline"
+  | "national";
 
 interface InboxMessageBase {
   id:        string;
@@ -452,7 +453,15 @@ export type InboxMessage =
   | AwardsInboxMessage
   | RegistrationInboxMessage
   | ScheduleInboxMessage
-  | DisciplineInboxMessage;
+  | DisciplineInboxMessage
+  | NationalInboxMessage;
+
+/** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */
+export interface NationalInboxMessage extends InboxMessageBase {
+  category: "national";
+  kind: "called_up" | "returned";
+  players: { id: string; name: string; nation: string; from?: string; until?: string; apps?: number; goals?: number; injured?: boolean }[];
+}
 
 /** The human manager was sent off for complaining and is banned from the touchline (`.claude/rules/game/var.md` §4). */
 export interface DisciplineInboxMessage extends InboxMessageBase {

@@ -36,6 +36,7 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   awards: "competitions",
   registration: "competitions",
   schedule: "competitions",
+  national: "competitions",
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   // Board (objective, warnings, manager contract offer...), job offers and player talks ask for an answer.

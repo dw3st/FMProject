@@ -95,6 +95,8 @@ import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, sett
 import { liveBids } from "@/Domain/negotiation/bids";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
+import { playNationalDay } from "@/backend/nationalWorld";
+import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
@@ -761,6 +763,20 @@ export async function advanceOneDay(
     for (const inj of youthDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
     for (const h of youthDay.healed) injuryInboxEvents.push({ kind: "returned", ...h });
 
+    // ── National teams (`.claude/rules/game/national-teams.md`): returns, draws, call-ups, today's games ──
+    // After the club games (no club plays in a FIFA window) and before training: who is with his national
+    // team today neither trains nor rests at the club.
+    const nationalDay = await playNationalDay({
+      service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
+      squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+    });
+    for (const [id, squad] of nationalDay.squads) {
+      const e = index.byId(id);
+      if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
+    }
+    for (const inj of nationalDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
+    const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants]);
+
     // ── Aggregate development messages for user's club ────────────────────────
     // One message per player per day, merging stat changes across multiple matches.
     if (playerSquadId) {
@@ -830,7 +846,7 @@ export async function advanceOneDay(
         if (!squad) continue;
 
         if (isRestDay) {
-          const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate, { skipPlayerIds: youthDay.participants });
+          const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate, { skipPlayerIds: clubDayOff });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
           for (const playerId of healedPlayerIds) {
@@ -843,7 +859,7 @@ export async function advanceOneDay(
             { ...meta, style_focus: meta.style_focus ?? tactics?.tactical_style }, club, row.squadId,
           );
           const { event, updatedSquad, healedPlayerIds, newInjuries } =
-            buildTrainingEvent(row.squadId, squad, policy, currentDate, Math.random, { skipPlayerIds: youthDay.participants });
+            buildTrainingEvent(row.squadId, squad, policy, currentDate, Math.random, { skipPlayerIds: clubDayOff });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
           for (const playerId of healedPlayerIds) {
@@ -2774,6 +2790,7 @@ export async function advanceOneDay(
       await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: directorOutcomes }), saveService);
     }
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
+    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService);
     if (registrationNotices.length > 0 && meta.clubId && !options.marketFrozen) {
       const humanNow = await saveService.getSquadById(saveId, meta.clubId);
       const nameOf = (id: string) => humanNow?.players.find((p) => p.id === id)?.name ?? id;

@@ -332,7 +332,8 @@ export function createAiManagerDesk(args: {
         const pick = chooseHire({
           prestige: prestige.get(squadId) ?? 0.5, ...homeOf(squadId),
           free: ms.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map(cand),
-          employed: ms.filter((m) => !m.isPlayer && !!m.squadId && !m.interim && m.squadId !== squadId && m.squadId !== args.humanClubId).map(cand),
+          // National-team coaches (`nat_…`, `national-teams.md`) are never poached by clubs.
+          employed: ms.filter((m) => !m.isPlayer && !!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && m.squadId !== args.humanClubId).map(cand),
           interim: interim ? { ...cand(interim), interimPpg } : null,
           allowPoach: !poached,
           rng: rngFor(squadId, "hire"),

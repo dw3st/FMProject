@@ -37,7 +37,12 @@ export const managerRoutes = {
     const meta = await saveService.getMeta(saveId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const index = await saveService.getSquadIndex(saveId);
-    const countryOfClub = await clubCountryResolver(saveService, saveId);
+    const clubCountry = await clubCountryResolver(saveService, saveId);
+    // National-team coaches (`nat_…`, `.claude/rules/game/national-teams.md`): the nation is the "club" and the country.
+    const national = await saveService.getNationalState(saveId);
+    const nationOf = (id: string | undefined) => (id && id.startsWith("nat_") ? national?.teams[id]?.nation ?? null : null);
+    const countryOfClub = (id: string) => nationOf(id) ?? clubCountry(id);
+    const clubNameOf = (id: string) => nationOf(id) ?? index.byId(id)?.name ?? null;
     const myCountry = countryOfClub(meta.clubId)
       ?? (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country ?? null;
     // Retired managers (free for too long) leave the ranking tab (`.claude/rules/game/managers.md`).
@@ -52,13 +57,14 @@ export const managerRoutes = {
       ...page,
       items: page.items.map((m) => ({
         ...m,
-        clubName: m.squadId ? index.byId(m.squadId)?.name ?? null : null,
+        clubName: m.squadId ? clubNameOf(m.squadId) : null,
+        ...(m.squadId.startsWith("nat_") ? { national: true } : {}),
         free: !m.squadId,
         interim: !!m.interim,
         // Season awards (Etapa 32): best manager of a league, world manager of the year.
         awards: m.awards ?? [],
         // Every manager's passages (Etapa 25), with the clubs' names.
-        clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })),
+        clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: clubNameOf(c.squadId) })),
         ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0 } : {}),
         // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
         // nationality, an AI manager's appearance from the country of his first club (stable).
