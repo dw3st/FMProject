@@ -22,7 +22,8 @@ describe("manager ranking at the rollover", () => {
     saveId = meta.id;
     const today = meta.currentDate!;
 
-    const initial = await saveService.getManagers(saveId);
+    // National team managers (`nat_<nação>`, `.claude/rules/game/national-teams.md`) share the file: one per club here.
+    const initial = (await saveService.getManagers(saveId)).filter((m) => !m.squadId.startsWith("nat_"));
     const squads = await saveService.getAllSquads(saveId);
     expect(initial).toHaveLength(squads.length);
     expect(new Set(initial.map((m) => m.id)).size).toBe(initial.length);
