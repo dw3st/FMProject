@@ -25,6 +25,9 @@ import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scout
 import { AwardsInboxBody, awardsTexts } from "@/GameInterface/Awards/AwardsInboxBody";
 import { InboxPrefsPanel } from "@/GameInterface/Inbox/InboxPrefsPanel";
 import { formatEuros } from "@/Domain/money";
+import i18next from "@/i18n/i18n";
+import { formatGameDate } from "@/GameInterface/formatDate";
+import { attrDisplay } from "@/Domain/attributes";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -230,17 +233,11 @@ const CATEGORY_META: Record<
 };
 
 function formatInboxDate(dateStr: string): string {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return dateStr ? formatGameDate(dateStr, i18next.language, "dayMonth") : "—";
 }
 
 function formatFullDate(dateStr: string): string {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return dateStr ? formatGameDate(dateStr, i18next.language, "long") : "—";
 }
 
 export function InboxScreen({ onClose }: { onClose?: () => void }) {
@@ -484,7 +481,7 @@ function facilityTexts(
     ? message.facility && message.kind === "approved" ? `${t(`facilities.kind.${message.facility}`)}: ${item}` : item
     : message.facility
     ? message.facility === "stand" && message.stand
-      ? t("facilities.inbox.standWhat", { stand: t(`facilities.stand.${message.stand}`), seats: (message.seats ?? 0).toLocaleString() })
+      ? t("facilities.inbox.standWhat", { stand: t(`facilities.stand.${message.stand}`), seats: (message.seats ?? 0).toLocaleString(i18next.language) })
       : t("facilities.inbox.levelWhat", { what: t(`facilities.kind.${message.facility}`), level: message.level ?? "" })
     : "";
   const vars = {
@@ -508,6 +505,134 @@ export function inboxSubject(
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
   return leaguePrizeTexts(message, t)?.subject ?? message.subject;
+}
+
+/** Preview shown for a message (translated where the stored text is English), shared with the dashboard card. */
+export function inboxPreview(
+  message: InboxMessage,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  return leaguePrizeTexts(message, t)?.preview ?? message.preview;
+}
+
+/**
+ * Subject and preview of the news categories whose stored text is English (#154): continental, cup,
+ * injury, contract, academy, retirement, season, development and transfers, rebuilt from the message fields.
+ */
+function newsTexts(
+  message: InboxMessage,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): { subject: string; preview: string } | null {
+  const lang = i18next.language;
+  switch (message.category) {
+    case "continental": {
+      const competition = competitionName(message.competition, [], lang);
+      const stage = t(`continental.stage.${message.stage}`, { defaultValue: message.stage });
+      const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
+      const preview =
+        message.kind === "qualified" ? t("inbox.continental.qualified", { competition })
+        : message.kind === "group" ? t("inbox.continental.group", { competition, group: message.group ?? "?", opponents: (message.opponentNames ?? []).join(", ") })
+        : message.kind === "champion" ? t("inbox.continental.champion", { competition })
+        : message.kind === "eliminated"
+          ? message.opponentName
+            ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
+            : t("inbox.continental.eliminatedGroup", { competition })
+        : t("inbox.continental.draw", {
+            competition, stage, opponent: message.opponentName ?? "?", venue,
+            date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
+          });
+      return { subject: t(`inbox.subjects.continental.${message.kind}`, { competition }), preview };
+    }
+    case "cup": {
+      const cup = message.cupName;
+      const stage = t(`cups.stage.${message.stage}`, { defaultValue: message.stage });
+      const preview =
+        message.kind === "champion" ? t("inbox.cup.champion", { cup })
+        : message.kind === "eliminated" ? t("inbox.cup.eliminated", { cup, stage, opponent: message.opponentName ?? "?" })
+        : t("inbox.cup.draw", {
+            cup, stage, opponent: message.opponentName ?? "?",
+            venue: message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?",
+            date: message.tieDate ? formatFullDate(message.tieDate) : "?",
+          });
+      return { subject: t(`inbox.subjects.cup.${message.kind}`, { cup }), preview };
+    }
+    case "injury": {
+      const player = message.playerName;
+      const preview =
+        message.kind === "suspended" ? t("inbox.injury.suspended", { player, count: message.matches ?? 1 })
+        : message.kind === "returned" ? t("inbox.injury.returned", { player })
+        : t("inbox.injury.injured", {
+            player, severity: t(`inbox.injury.severity.${message.severity ?? "light"}`),
+            date: formatInboxDate(message.returnDate ?? ""),
+          });
+      return { subject: t(`inbox.subjects.injury.${message.kind}`, { player }), preview };
+    }
+    case "contract":
+      if (message.kind !== "expiring" && message.kind !== "renewed" && message.kind !== "released") return null;
+      return { subject: t(`inbox.subjects.contract.${message.kind}`), preview: message.players.map((p) => p.name).join(", ") };
+    case "youth":
+      return message.kind === "intake"
+        ? {
+            subject: t("inbox.subjects.youth.intake", { year: message.year ?? "", count: message.count ?? 0 }),
+            preview: message.best ? t("inbox.subjects.youth.standout", { player: message.best.name }) : "",
+          }
+        : { subject: t("inbox.subjects.youth.released"), preview: (message.players ?? []).map((p) => p.name).join(", ") };
+    case "retirement":
+      return {
+        subject: t(`inbox.subjects.retirement.${message.kind}`, { player: message.playerName }),
+        preview: t("inbox.subjects.retirement.preview", { player: message.playerName, age: message.age }),
+      };
+    case "season": {
+      const league = message.leagueName;
+      const season = message.seasonYear;
+      switch (message.kind) {
+        case "champion":
+        case "promoted":
+        case "relegated":
+          return {
+            subject: t(`inbox.subjects.season.${message.kind}`, { league }),
+            preview: t(`inbox.subjects.season.${message.kind}Preview`, { league, season }),
+          };
+        case "followers": {
+          const before = message.followersBefore ?? 0;
+          const after = message.followersAfter ?? 0;
+          const pct = before > 0 ? Math.round(((after - before) / before) * 100) : 0;
+          return {
+            subject: t(after >= before ? "inbox.subjects.season.followersUp" : "inbox.subjects.season.followersDown"),
+            preview: t("inbox.subjects.season.followersPreview", {
+              season, followers: after.toLocaleString(lang), pct: `${pct >= 0 ? "+" : "−"}${Math.abs(pct)}%`,
+            }),
+          };
+        }
+        case "negative_balance":
+          return {
+            subject: t("inbox.subjects.season.negative_balance"),
+            preview: t("inbox.season.negativeBalance", { balance: formatFee(message.balance ?? 0) }),
+          };
+        default:
+          return null;
+      }
+    }
+    case "development": {
+      const up = message.changes.filter((c) => c.to > c.from).length;
+      const down = message.changes.filter((c) => c.to < c.from).length;
+      const key = up > 0 && down === 0 ? "up" : down > 0 && up === 0 ? "down" : "mixed";
+      return {
+        subject: t(`inbox.subjects.development.${key}`, { player: message.playerName }),
+        preview: message.changes
+          .map((c) => `${t(`attributeNames.${c.attribute}`, { defaultValue: c.attribute })} ${attrDisplay(c.from)}→${attrDisplay(c.to)}`)
+          .join(", "),
+      };
+    }
+    case "transfer_in":
+    case "transfer_out":
+      return {
+        subject: t(`inbox.subjects.${message.category}`, { player: message.playerName }),
+        preview: message.category === "transfer_in" ? message.fromClub : message.toClub,
+      };
+    default:
+      return null;
+  }
 }
 
 /** Translated subject/preview for league prize and board messages; every other message keeps its stored text. */
@@ -584,6 +709,8 @@ function leaguePrizeTexts(
       preview: message.items.map((i) => i.clubName).join(", "),
     };
   }
+  const news = newsTexts(message, t);
+  if (news) return news;
   if (message.category !== "season" || message.kind !== "league_prize") return null;
   return {
     subject: t("inbox.season.leaguePrizeSubject", { league: message.leagueName }),

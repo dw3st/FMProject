@@ -99,7 +99,8 @@
     "radius": "Radius",
     "clear": "Clear",
     "milliseconds": "ms",
-    "noOptionMatches": "No matches"
+    "noOptionMatches": "No matches",
+    "ageYears": "{{age}} y/o"
   },
   "landing": {
     "signIn": "Sign in",
@@ -1613,6 +1614,59 @@
       },
       "counts": "Registered {{counted}}/{{max}} · foreign {{foreign}} · home-grown {{formed}} · free {{free}}",
       "open": "Open the registration"
+    },
+    "subjects": {
+      "continental": {
+        "qualified": "Qualified for the {{competition}}",
+        "group": "{{competition}} group draw",
+        "draw": "{{competition}} draw",
+        "eliminated": "Out of the {{competition}}",
+        "champion": "{{competition}} champions!"
+      },
+      "cup": {
+        "draw": "{{cup}} draw",
+        "eliminated": "Out of the {{cup}}",
+        "champion": "{{cup}} winners!"
+      },
+      "injury": {
+        "injured": "{{player}} injured",
+        "returned": "{{player}} is back",
+        "suspended": "{{player}} suspended"
+      },
+      "contract": {
+        "expiring": "Contracts ending soon",
+        "renewed": "Contract renewed",
+        "released": "Players left on a free transfer"
+      },
+      "youth": {
+        "intake": "Academy intake {{year}}: {{count}} youngsters",
+        "released": "Academy players released",
+        "standout": "Standout: {{player}}"
+      },
+      "retirement": {
+        "retired": "{{player}} retires",
+        "reborn": "{{player}} retires, a legend",
+        "preview": "{{player}} ({{age}}) hung up his boots"
+      },
+      "season": {
+        "champion": "Champion of {{league}}",
+        "promoted": "Promoted to {{league}}",
+        "relegated": "Relegated to {{league}}",
+        "followersUp": "Fan base grew",
+        "followersDown": "Fan base shrank",
+        "negative_balance": "Club is in the red",
+        "championPreview": "The club won the {{league}} {{season}} title.",
+        "promotedPreview": "Next season the club plays in {{league}}.",
+        "relegatedPreview": "Next season the club drops to {{league}}.",
+        "followersPreview": "After the {{season}} season the club has {{followers}} followers ({{pct}})."
+      },
+      "development": {
+        "up": "{{player}} improved",
+        "down": "{{player}} regressed",
+        "mixed": "{{player}}: development update"
+      },
+      "transfer_in": "Signed {{player}}",
+      "transfer_out": "Sold {{player}}"
     }
   },
   "finances": {
@@ -2261,7 +2315,8 @@
     "strongRecovery": "Strong recovery",
     "sharpnessHeld": "Sharpness held",
     "minorRust": "Minor rust",
-    "sharpnessFaded": "Sharpness faded"
+    "sharpnessFaded": "Sharpness faded",
+    "seasonEyebrow": "Season {{season}}"
   },
   "weekCalendar": {
     "weekSchedule": "Week Schedule",

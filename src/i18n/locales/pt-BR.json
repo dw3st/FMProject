@@ -99,7 +99,8 @@
     "radius": "Raio",
     "clear": "Limpar",
     "milliseconds": "ms",
-    "noOptionMatches": "Nenhum resultado"
+    "noOptionMatches": "Nenhum resultado",
+    "ageYears": "{{age}} anos"
   },
   "landing": {
     "signIn": "Entrar",
@@ -1613,6 +1614,59 @@
       },
       "counts": "Inscritos {{counted}}/{{max}} · estrangeiros {{foreign}} · formados {{formed}} · livres {{free}}",
       "open": "Abrir a inscrição"
+    },
+    "subjects": {
+      "continental": {
+        "qualified": "Classificado para a {{competition}}",
+        "group": "Sorteio dos grupos da {{competition}}",
+        "draw": "Sorteio da {{competition}}",
+        "eliminated": "Fora da {{competition}}",
+        "champion": "Campeões da {{competition}}!"
+      },
+      "cup": {
+        "draw": "Sorteio da {{cup}}",
+        "eliminated": "Fora da {{cup}}",
+        "champion": "Campeões da {{cup}}!"
+      },
+      "injury": {
+        "injured": "{{player}} lesionado",
+        "returned": "{{player}} está de volta",
+        "suspended": "{{player}} suspenso"
+      },
+      "contract": {
+        "expiring": "Contratos perto do fim",
+        "renewed": "Contrato renovado",
+        "released": "Jogadores saíram livres"
+      },
+      "youth": {
+        "intake": "Safra {{year}} da base: {{count}} jovens",
+        "released": "Jogadores dispensados da base",
+        "standout": "Destaque: {{player}}"
+      },
+      "retirement": {
+        "retired": "{{player}} se aposenta",
+        "reborn": "{{player}} se aposenta, uma lenda",
+        "preview": "{{player}} ({{age}}) pendurou as chuteiras"
+      },
+      "season": {
+        "champion": "Campeão da {{league}}",
+        "promoted": "Acesso para a {{league}}",
+        "relegated": "Rebaixado para a {{league}}",
+        "followersUp": "A torcida cresceu",
+        "followersDown": "A torcida diminuiu",
+        "negative_balance": "Caixa no vermelho",
+        "championPreview": "O clube conquistou o título da {{league}} {{season}}.",
+        "promotedPreview": "Na próxima temporada o clube joga a {{league}}.",
+        "relegatedPreview": "Na próxima temporada o clube cai para a {{league}}.",
+        "followersPreview": "Depois da temporada {{season}} o clube tem {{followers}} seguidores ({{pct}})."
+      },
+      "development": {
+        "up": "{{player}} evoluiu",
+        "down": "{{player}} regrediu",
+        "mixed": "{{player}}: evolução"
+      },
+      "transfer_in": "{{player}} contratado",
+      "transfer_out": "{{player}} vendido"
     }
   },
   "finances": {
@@ -2261,7 +2315,8 @@
     "strongRecovery": "Forte recuperação",
     "sharpnessHeld": "Precisão mantida",
     "minorRust": "Leve enferrujamento",
-    "sharpnessFaded": "Precisão diminuída"
+    "sharpnessFaded": "Precisão diminuída",
+    "seasonEyebrow": "Temporada {{season}}"
   },
   "weekCalendar": {
     "weekSchedule": "Calendário da Semana",

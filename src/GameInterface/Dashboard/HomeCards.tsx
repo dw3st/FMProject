@@ -753,10 +753,12 @@ export function InboxCard({
   messages,
   unread,
   subjectOf,
+  previewOf,
 }: {
   messages: InboxMessage[];
   unread: number;
   subjectOf: (m: InboxMessage) => string;
+  previewOf: (m: InboxMessage) => string;
 }) {
   const { t, i18n } = useTranslation();
   return (
@@ -788,7 +790,7 @@ export function InboxCard({
               >
                 <div className="min-w-0 flex-1">
                   <div className={`text-sm truncate ${m.read ? "font-medium" : "font-bold"}`}>{subjectOf(m)}</div>
-                  <div className="text-sm text-muted-foreground truncate">{m.preview}</div>
+                  <div className="text-sm text-muted-foreground truncate">{previewOf(m)}</div>
                 </div>
                 <span className="text-sm text-muted-foreground shrink-0">{formatDay(m.date, i18n.language)}</span>
               </a>

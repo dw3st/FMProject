@@ -297,7 +297,7 @@ export function PlayerCard({
               {positionLabel(t, player.natural, player.pos)}
             </span>
             <span className="text-sm text-muted-foreground">
-              {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} · {player.age}y
+              {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} · {t("common.ageYears", { age: player.age })}
             </span>
           </div>
           {player.injury && (

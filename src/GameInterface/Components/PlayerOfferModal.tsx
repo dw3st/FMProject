@@ -304,7 +304,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
           <div>
             <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("negotiation.title")}</h2>
             <p className="text-sm text-muted-foreground m-0 mt-0.5">
-              {player.name} · {player.pos} · {player.age}y · {player.club}
+              {player.name} · {player.pos} · {t("common.ageYears", { age: player.age })} · {player.club}
             </p>
           </div>
           {!done && (
