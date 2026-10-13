@@ -2207,7 +2207,7 @@ function checkReceiverOffside(
   return fwd === 1 ? receiver.x > line : receiver.x < line;
 }
 
-function startPass(state: GameState): GameState {
+function startPass(state: GameState, forcedTargetId?: number): GameState {
   const holder    = state.players.find(p => p.id === state.ballHolderId)!;
   let teammates   = getTeammates(state, holder.id);
   if (teammates.length === 0) return state;
@@ -2237,7 +2237,10 @@ function startPass(state: GameState): GameState {
   const weights = top3.map(l => Math.pow(Math.max(0, l.score), k));
   const total   = weights.reduce((s, w) => s + w, 0);
   let chosen    = top3[0]!; // fallback: best lane (teammates non-empty ⇒ lanes non-empty)
-  if (total > 0) {
+  // A receiver fixed by the decision (one-on-one gate, `pass.md`) skips the weighted pick.
+  const forced  = forcedTargetId !== undefined ? lanes.find(l => l.toId === forcedTargetId) : undefined;
+  if (forced) chosen = forced;
+  else if (total > 0) {
     let roll = Math.random() * total;
     for (let i = 0; i < top3.length; i++) {
       roll -= weights[i]!;
@@ -4341,7 +4344,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       }
     }
 
-    return { state: startPass(s), passCompleted: false, tackled: false, goalScored: null };
+    return { state: startPass(s, holderDecision?.type === 'pass' ? holderDecision.targetId : undefined), passCompleted: false, tackled: false, goalScored: null };
   }
 
   // ── Pass in flight ─────────────────────────────────────────────────────────

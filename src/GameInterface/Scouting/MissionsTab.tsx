@@ -7,6 +7,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
+import { Label } from "@/GameInterface/ui/Label";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee, formatWageFull } from "@/Domain/money";
@@ -69,6 +70,12 @@ export function MissionsTab({
     <div className="flex flex-col gap-6">
       {!data.employed && <Notice kind="warning">{t("scouting.noClub")}</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
+      {data.chiefPlans && (
+        <div className="flex flex-col gap-1">
+          <Label>{t("scouting.chiefPlans.title")}</Label>
+          <p className="text-sm text-muted-foreground m-0">{t("scouting.chiefPlans.line")}</p>
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {data.scouts.map((scout) => {
           const mission = data.missions.find((m) => m.scoutId === scout.id);
@@ -102,6 +109,9 @@ export function MissionsTab({
                     <p className="text-sm text-foreground m-0 font-semibold">
                       {t(`scouting.kind.${mission.target.kind}`)} · {targetLabel(mission.target, t, leagues, i18n.language)}
                     </p>
+                    {mission.byChief && (
+                      <p className="text-sm text-primary m-0 mt-1">{t("scouting.chiefPlans.byChief")}</p>
+                    )}
                     <div className="flex items-center gap-2 mt-2">
                       <span className="flex-1 h-1.5 rounded bg-border overflow-hidden">
                         <span className="block h-full bg-primary" style={{ width: `${Math.min(100, (mission.weeksDone / mission.weeks) * 100)}%` }} />

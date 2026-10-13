@@ -239,6 +239,9 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
     // `totalMatchMinutes` in matches.ts — a flat 90/120, never stretched by stoppage-time subs.
     const totalMinutes = event.decider ? 120 : 90;
     const subbedOutIds = new Set(event.substitutions.map((s) => s.playerOutId));
+    // A player sent off or injured off without a replacement leaves at that minute without a substitution record.
+    for (const c of event.cards ?? []) if (c.card === "red") subbedOutIds.add(c.playerId);
+    for (const i of event.injuries ?? []) subbedOutIds.add(i.playerId);
     let checkedNonSubbed = 0;
 
     for (const p of [...updatedHome.players, ...updatedAway.players]) {

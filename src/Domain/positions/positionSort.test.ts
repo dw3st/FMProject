@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { compareSquadPositions, type PositionSortable } from "@/Domain/positions/positionSort";
+import { compareSquadPositions, groupByPosition, type PositionSortable } from "@/Domain/positions/positionSort";
 
 const rows: PositionSortable[] = [
   { pos: "Forward", natural: "ST", name: "Kane" },
@@ -41,5 +41,17 @@ describe("compareSquadPositions (#71)", () => {
   test("unknown positions go last", () => {
     const sorted = [{ pos: "—", name: "A" }, { pos: "GK", name: "B" }].sort((a, b) => compareSquadPositions(a, b));
     expect(names(sorted)).toEqual(["B", "A"]);
+  });
+});
+
+describe("groupByPosition", () => {
+  test("groups in squad order and keeps the order inside a group", () => {
+    const items = [
+      { id: "a", role: "ST" }, { id: "b", role: "CB" }, { id: "c", role: "GK" },
+      { id: "d", role: "CB" }, { id: "e", role: "LB" }, { id: "f", role: "XX" },
+    ];
+    const groups = groupByPosition(items, (i) => i.role);
+    expect(groups.map((g) => g.role)).toEqual(["GK", "CB", "LB", "ST", "XX"]);
+    expect(groups[1]!.items.map((i) => i.id)).toEqual(["b", "d"]);
   });
 });

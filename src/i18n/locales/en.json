@@ -1253,9 +1253,15 @@
       "director": "Director: renews (or lets go) the contracts about to end and answers the players' contract talks. You can still renew anyone on the player page.",
       "manager": "Manager: you get the 90-day warning and the contract talks, and renew on the player page."
     },
+    "scouting": {
+      "label": "Scouting missions",
+      "manager": "Manager: you create and cancel the scouts' missions in the scouting centre.",
+      "chief": "Chief scout: every Monday he sends each free scout on a mission (one on youths, the others where they know the country best, looking for the line the squad needs most). You can still create and cancel."
+    },
     "owner": {
       "director": "Director",
-      "manager": "Manager"
+      "manager": "Manager",
+      "chief": "Chief scout"
     }
   },
   "awards": {
@@ -1577,6 +1583,10 @@
     },
     "scouting": {
       "open": "Open the scouting centre",
+      "chiefMissionsLead": "The chief scout sent these scouts on a mission:",
+      "chiefMissionsWeeks_one": "{{count}} week",
+      "chiefMissionsWeeks_other": "{{count}} weeks",
+      "chiefMissionsFocus": "focus: {{line}}",
       "recommendationLead": "This month the chief scout recommends:",
       "subject": {
         "report": "Scouting report: {{target}}",
@@ -1585,6 +1595,7 @@
         "recommendation": "Chief scout picks",
         "shortlist": "Shortlist: {{player}}",
         "prospect": "Prospect available: {{player}}",
+        "chief_missions": "New missions by the chief scout",
         "prospect_signed": "Prospect signed: {{player}}"
       },
       "body": {
@@ -1594,6 +1605,7 @@
         "recommendation": "This month the chief scout recommends: {{players}}.",
         "shortlist": "{{player}}: {{reason}}.",
         "prospect": "{{player}} ({{club}}), with no club, can join the academy for {{fee}} until {{expires}}.",
+        "chief_missions": "The chief scout sent {{count}} scout(s) on a mission.",
         "prospect_signed": "{{player}} joined the academy. Training compensation: {{fee}}."
       },
       "reason": {
@@ -3498,6 +3510,11 @@
     }
   },
   "scouting": {
+    "chiefPlans": {
+      "title": "Missions created by the chief scout",
+      "line": "Every Monday the chief scout sends each free scout on a mission. You can still create and cancel; a scout whose mission you cancel stays free for a week.",
+      "byChief": "Created by the chief scout"
+    },
     "tabs": {
       "search": "Search",
       "missions": "Missions",
@@ -3695,7 +3712,7 @@
     },
     "callUps": {
       "title": "Youth games",
-      "hint": "Call up to {{n}} players for the next game. Called-up players play even if they are first-team starters.",
+      "hint": "Call up to {{n}} players for the youth games. Called-up players play even if they are first-team starters; each call-up lasts for the duration you pick.",
       "next": "Next: {{opponent}} ({{venue}}) on {{date}}",
       "venue": {
         "home": "home",
@@ -3707,7 +3724,17 @@
       "saved": "Saved",
       "skipped": "Called up but did not play on {{date}}: {{names}}",
       "fitness": "fitness {{n}}",
-      "failed": "Could not save the call-ups."
+      "failed": "Could not save the call-ups.",
+      "durationLabel": "Duration of new call-ups",
+      "duration": {
+        "next": "Next game",
+        "games3": "3 games",
+        "games5": "5 games",
+        "indefinite": "Until I remove",
+        "rhythm": "Until match fit"
+      },
+      "applyAll": "Apply to all selected",
+      "rhythmLeft": "rhythm {{n}}/{{of}}"
     }
   },
   "referees": {

@@ -26,6 +26,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 }
 import { engineOf } from '@/GameEngine/Domain/roleEngineData';
 import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
+import { ONE_ON_ONE_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
 import { evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
@@ -43,7 +44,7 @@ import { evaluatePassLanes, scorePassToReceiverBreakdown } from '@/GameEngine/Do
 import type { PassBreakdown } from '@/GameEngine/Domain/PassLanes';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
-import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
@@ -52,7 +53,7 @@ import { evaluateBoxSetPiece } from '@/GameEngine/Domain/SetPieces';
 export type PlayerDecision =
   | { type: 'carry'; dx: number; dy: number }          // withBall  → advancing with the ball
   | { type: 'shoot' }                                   // withBall  → will shoot
-  | { type: 'pass' }                                    // withBall  → will pass to a teammate
+  | { type: 'pass'; targetId?: number }                // withBall  → will pass to a teammate (targetId: forced receiver, one-on-one gate)
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
   | { type: 'cross'; toX: number; toY: number; intendedRunnerId: number | null } // withBall → high ball into the box
   | { type: 'long_ball'; toX: number; toY: number; targetId: number } // withBall → high ball over the line
@@ -472,8 +473,11 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
   };
 }
 
-function evalPass(player: GamePlayer, opponents: GamePlayer[], allPlayers: GamePlayer[], intent: TeamIntent): ActionScore {
-  const teammates = allPlayers.filter(p => p.team === player.team && p.id !== player.id);
+function evalPass(
+  player: GamePlayer, opponents: GamePlayer[], allPlayers: GamePlayer[], intent: TeamIntent,
+  allow: ((receiver: GamePlayer) => boolean) | null = null,
+): ActionScore {
+  const teammates = allPlayers.filter(p => p.team === player.team && p.id !== player.id && (allow === null || allow(p)));
   if (teammates.length === 0) {
     return {
       type: 'pass', score: 0,
@@ -567,6 +571,7 @@ function evalThroughBall(
   allPlayers:  GamePlayer[],
   crowdGrid:   CrowdGrid | null,
   cachedCells: ReturnType<typeof enumerateCandidateCells> | null = null,
+  allow: ((x: number, y: number, runnerId: number | null) => boolean) | null = null,
 ): { action: ActionScore; cells: ReturnType<typeof enumerateCandidateCells> } {
   let cells: ReturnType<typeof enumerateCandidateCells>;
   if (cachedCells !== null) {
@@ -575,10 +580,10 @@ function evalThroughBall(
     const offsideLine = computeOffsideLine(player.attackDir, allPlayers, player.team, player.x);
     cells = enumerateCandidateCells(player, allPlayers, crowdGrid, offsideLine);
   }
-  if (cells.length === 0) {
+  const best = allow === null ? cells[0] : cells.find(c => allow(c.x, c.y, c.components.bestAttackerId));
+  if (!best) {
     return { action: { type: 'through_ball', score: 0 }, cells };
   }
-  const best = cells[0]!;
   const score = compress(best.score + (best.score > 0 ? getTeamPassConfig(player.team).THROUGH_BALL_BONUS : 0), THROUGH_BALL_STRONG_RAW);
   return {
     action: {
@@ -599,9 +604,10 @@ function evalThroughBall(
 function evalCross(
   player: GamePlayer,
   allPlayers: GamePlayer[],
+  allow: ((x: number, y: number, runnerId: number | null) => boolean) | null = null,
 ): { action: ActionScore; targets: ReturnType<typeof evaluateCrossTargets> } {
   const targets = evaluateCrossTargets(player, allPlayers);
-  const best = targets[0];
+  const best = allow === null ? targets[0] : targets.find(t => allow(t.x, t.y, t.bestAttackerId ?? null));
   if (!best || best.raw <= 0) return { action: { type: 'cross', score: 0 }, targets };
   return {
     action: {
@@ -671,6 +677,43 @@ function evalDribble(player: GamePlayer, opponents: GamePlayer[]): ActionScore {
   };
 }
 
+/** Distance (yards) from (x, y) to the nearest point of the goal mouth the player attacks. */
+function distToGoalMouth(x: number, y: number, attackDir: 1 | -1): number {
+  const goalX = attackDir === 1 ? PITCH_LENGTH : 0;
+  return Math.hypot(goalX - x, Math.max(GOAL_Y_MIN, Math.min(GOAL_Y_MAX, y)) - y);
+}
+
+/**
+ * One-on-one with the keeper (#156, `pass.md` → "One-on-one"). When the holder is within
+ * `ONE_ON_ONE_CONFIG.RANGE` of the goal mouth and no outfield opponent stands ahead of him inside
+ * the ±CORRIDOR lane (only the goalkeeper left), returns a filter for ball-to-teammate targets:
+ * a target (pass receiver, through-ball cell, cross point) is allowed only when it is closer to
+ * goal than the holder AND its xG (the target's own spatial xG, with the receiver's pressure there,
+ * × `xgMult` for a header) beats the holder's shot by `XG_MARGIN`. Returns null otherwise (no gate).
+ */
+function oneOnOneGate(
+  player: GamePlayer,
+  opponents: GamePlayer[],
+  outfieldOpponents: GamePlayer[],
+  allPlayers: GamePlayer[],
+  holderXg: number,
+): ((x: number, y: number, receiverId: number | null, xgMult?: number) => boolean) | null {
+  if (player.role === 'GK') return null;
+  const holderDist = distToGoalMouth(player.x, player.y, player.attackDir);
+  if (holderDist > ONE_ON_ONE_CONFIG.RANGE) return null;
+  const blocked = outfieldOpponents.some(o =>
+    (o.x - player.x) * player.attackDir > 0 && Math.abs(o.y - player.y) <= ONE_ON_ONE_CONFIG.CORRIDOR);
+  if (blocked) return null;
+  const goalX = player.attackDir === 1 ? PITCH_LENGTH : 0;
+  return (x, y, receiverId, xgMult = 1) => {
+    if (distToGoalMouth(x, y, player.attackDir) >= holderDist) return false;
+    const receiver = (receiverId !== null ? allPlayers.find(p => p.id === receiverId) : undefined) ?? player;
+    const xg = computeXG(Math.abs(goalX - x), computeOpenAngle(x, y, goalX),
+      computeWeightedPressure({ ...receiver, x, y }, opponents)) * xgMult;
+    return xg >= holderXg + ONE_ON_ONE_CONFIG.XG_MARGIN;
+  };
+}
+
 function decideBallHolder(
   player: GamePlayer,
   allPlayers: GamePlayer[],
@@ -687,12 +730,14 @@ function decideBallHolder(
     : (player.team === 'A' ? crowdGrid.teamBOutfield : crowdGrid.teamAOutfield);
 
   const sh = evalShoot(player, opponents, intent);          // GK included — affects pressure calc
-  const ps = evalPass(player, opponents, allPlayers, intent);
+  // One-on-one with the keeper (#156): only give the ball to a clearly better-placed teammate.
+  const gate = oneOnOneGate(player, opponents, outfieldOpponents, allPlayers, sh.shootBreakdown?.xg ?? 0);
+  const ps = evalPass(player, opponents, allPlayers, intent, gate && (r => gate(r.x, r.y, r.id)));
   const ca = evalCarry(player, outfieldOpponents, allPlayers, defendingOutfield, intent);  // GK excluded — handled by shoot decision
   const dr = evalDribble(player, outfieldOpponents); // GK excluded — don't dribble the GK
-  const tbResult = evalThroughBall(player, allPlayers, crowdGrid, tbCachedCells);
+  const tbResult = evalThroughBall(player, allPlayers, crowdGrid, tbCachedCells, gate);
   const tb = tbResult.action;
-  const crResult = evalCross(player, allPlayers);
+  const crResult = evalCross(player, allPlayers, gate && ((x, y, id) => gate(x, y, id, AERIAL_CONFIG.HEADER_XG_MULT)));
   const cr = crResult.action;
   const lb = evalLongBall(player, allPlayers);
   const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
@@ -700,6 +745,10 @@ function decideBallHolder(
   const best = actions.reduce((a, b) => b.score > a.score ? b : a);
 
   if (isDebugEnabled()) {
+    if (gate) {
+      debugLog('decision', `${player.name} one-on-one (xG ${(sh.shootBreakdown?.xg ?? 0).toFixed(2)}): only clearly better targets → ${best.type}`,
+        { pass: ps.score, throughBall: tb.score, cross: cr.score, shoot: sh.score, carry: ca.score });
+    }
     // Defaults guarantee every breakdown is present in the event payload, even when
     // an action returns 0 because of a hard cull (e.g. dribble bias too low, no teammates).
     const shootBd   = sh.shootBreakdown   ?? {
@@ -775,6 +824,8 @@ function decideBallHolder(
   }
 
   if (best.score < MIN_ACTION_SCORE) {
+    // One-on-one: never fall back to an ungated pass — shoot instead.
+    if (gate) return { type: 'shoot' };
     const lane = getBestCarryLane(player, outfieldOpponents, allPlayers, defendingOutfield, intent);
     if (lane) return { type: 'carry', dx: lane.dx, dy: lane.dy };
     return { type: 'pass' };
@@ -782,7 +833,8 @@ function decideBallHolder(
 
   switch (best.type) {
     case 'shoot':         return { type: 'shoot' };
-    case 'pass':          return { type: 'pass' };
+    // Under the one-on-one gate the receiver is fixed (startPass must not pick an ungated one).
+    case 'pass':          return gate && best.targetId !== undefined ? { type: 'pass', targetId: best.targetId } : { type: 'pass' };
     case 'carry':         return { type: 'carry', dx: best.dx!, dy: best.dy! };
     case 'dribble':       return { type: 'dribble', targetId: best.targetId! };
     case 'through_ball':  return {

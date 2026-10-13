@@ -34,6 +34,7 @@ import type { YouthCompAge, YouthCompMetaData, YouthMatchLog } from "@/types/you
 import type { Squad } from "@/types/playerTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { logError } from "@/Logger";
+import { callUpIds, type YouthCallUps } from "@/Domain/youthComps/callUps";
 
 const AGES: readonly YouthCompAge[] = YOUTH_COMP.AGES;
 
@@ -316,6 +317,8 @@ export interface YouthDayResult {
   consumedCallUps: YouthCompAge[];
   /** Human call-ups of a game played today who did not play, per age. */
   skippedCallUps: Partial<Record<YouthCompAge, string[]>>;
+  /** Players of the human club who played a youth game today and their rating, per age. */
+  humanRatings: Partial<Record<YouthCompAge, Record<string, number>>>;
   postponed: number;
   cancelled: number;
 }
@@ -334,7 +337,7 @@ export async function playYouthDay(args: {
   index: SquadIndex;
   /** Human club (`meta.clubId`, "" when unemployed). */
   humanClubId: string;
-  callUps?: { u21?: string[]; u19?: string[] };
+  callUps?: YouthCallUps;
   tactics: TacticsSave | null;
   teamsPlayingToday: ReadonlySet<string>;
   squadOf: (id: string) => Promise<Squad | null>;
@@ -344,7 +347,7 @@ export async function playYouthDay(args: {
   const rng = args.rng ?? Math.random;
   const out: YouthDayResult = {
     squads: new Map(), participants: new Set(), logs: [], injuries: [], healed: [], consumedCallUps: [],
-    skippedCallUps: {}, postponed: 0, cancelled: 0,
+    skippedCallUps: {}, humanRatings: {}, postponed: 0, cancelled: 0,
   };
   const todays = await service.getYouthFixturesForDate(saveId, date);
   if (todays.length === 0) return out;
@@ -487,7 +490,7 @@ export async function playYouthDay(args: {
           return xi;
         };
         return pickYouthLineup({
-          age, squad, firstTeamXI, callUps: human ? (args.callUps?.[age] ?? []) : [],
+          age, squad, firstTeamXI, callUps: human ? callUpIds(args.callUps?.[age]) : [],
           playedToday: out.participants, date, filler, nationality: country,
         });
       };
@@ -515,6 +518,11 @@ export async function playYouthDay(args: {
 
       for (const squad of [home, away]) {
         const res = applyYouthMatch(squad, recording, { date, rng, trackMorale: squad.id === humanClubId });
+        if (squad.id === humanClubId) {
+          const ratings = { ...out.humanRatings[age] };
+          for (const id of res.participants) ratings[id] = recording.playerRatings[id] ?? 6;
+          out.humanRatings[age] = ratings;
+        }
         out.squads.set(squad.id, res.squad);
         for (const id of res.participants) out.participants.add(id);
         for (const inj of res.injuriesApplied) {

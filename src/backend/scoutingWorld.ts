@@ -4,11 +4,15 @@ import {
   gainKnowledge, implicitKnowledge, knowledgeOf, pruneKnowledge, scoutMultipliersOf, uncertaintyOf,
 } from "@/Domain/scouting/knowledge";
 import {
-  addProspects, advanceScoutingWeek, buildReport, countryVisits, generateProspects, missionCost, missionPool, missionsWithLeaders, monthlyRecommendations,
+  addProspects, advanceScoutingWeek, allowedWeeks, buildReport, countryVisits, generateProspects, missionCost, missionPool, missionsWithLeaders, monthlyRecommendations,
   prospectFee, pruneProspects, recordRecommendations, shortlistAlerts, starterLineAverages,
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
+import { onHold, planChiefMissions, type ChiefScout, type PlannedMission } from "@/Domain/scouting/chiefPlanner";
+import { chiefHandlesScouting } from "@/Domain/responsibilities/director";
+import { getMainRole, type MainRole } from "@/Domain/roles";
+import { seedFrom } from "@/Domain/rng";
 import {
   countryKnowledgeOf, growCountryKnowledge, pruneCountryKnowledge,
 } from "@/Domain/scouting/countryKnowledge";
@@ -248,6 +252,64 @@ async function locatePlayer(
   return null;
 }
 
+// ── The chief scout's missions (issue #157) ─────────────────────────────────
+
+/**
+ * Plans and adds the chief scout's missions for the free scouts (pure rule: `planChiefMissions`).
+ * Nothing without a chief (vacant post). Every planned mission passes the same checks as the
+ * route's: a known scout without a mission, weeks allowed for the kind, a target with leagues.
+ */
+async function planForChief(
+  service: SaveService, saveId: string,
+  args: { date: string; own: Squad; state: ScoutingState; ownLeague: string },
+): Promise<{ state: ScoutingState; missions: PlannedMission[] }> {
+  const { date, own } = args;
+  const holds = Object.fromEntries(Object.entries(args.state.chiefHold ?? {}).filter(([, d]) => onHold(d, date)));
+  let state: ScoutingState = args.state;
+  if (Object.keys(holds).length !== Object.keys(state.chiefHold ?? {}).length) {
+    const { chiefHold: _expired, ...rest } = state;
+    state = Object.keys(holds).length > 0 ? { ...rest, chiefHold: holds } : rest;
+  }
+  const chiefMember = headOf(own, "scout");
+  if (!chiefMember) return { state, missions: [] };
+  const busy = new Set(state.missions.map((m) => m.scoutId));
+  const scouts: ChiefScout[] = [
+    { scoutId: "chief", name: chiefMember.name, member: chiefMember },
+    ...membersOf(own, "fieldScout").map((m) => ({ scoutId: m.id, name: m.name, member: m })),
+  ].filter((s) => !busy.has(s.scoutId) && !holds[s.scoutId]);
+  if (scouts.length === 0) return { state, missions: [] };
+
+  const { leagues } = await catalog();
+  const index = await service.getSquadIndex(saveId);
+  const active = new Set(index.leagues());
+  const countryOf = new Map(leagues.filter((l) => l.country && active.has(l.slug)).map((l) => [l.slug, l.country!]));
+  const countries = [...new Set(countryOf.values())].sort();
+  const lineCounts = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 } as Record<MainRole, number>;
+  for (const p of own.players) lineCounts[getMainRole(p.positions[0] ?? "CM")]++;
+
+  const plan = planChiefMissions({
+    saveId, date, scouts, countries, continentOf,
+    activeTargets: state.missions.map((m) => m.target),
+    countryOfLeague: (l) => countryOf.get(l),
+    lineAverages: starterLineAverages(own),
+    lineCounts,
+  });
+  const added: PlannedMission[] = [];
+  const missions = [...state.missions];
+  for (const p of plan) {
+    if (missions.some((m) => m.scoutId === p.scoutId)) continue;
+    if (!allowedWeeks(p.target.kind).includes(p.weeks)) continue;
+    if ((await missionLeagues(service, saveId, p)).length === 0) continue;
+    missions.push({
+      id: `mis_${seedFrom(`${saveId}:${date}:chief:${p.scoutId}`).toString(36)}`,
+      scoutId: p.scoutId, target: p.target, ...(p.focus ? { focus: p.focus } : {}),
+      start: date, weeks: p.weeks, weeksDone: 0, observed: 0, byChief: true,
+    });
+    added.push(p);
+  }
+  return { state: added.length > 0 ? { ...state, missions } : state, missions: added };
+}
+
 // ── Daily step ───────────────────────────────────────────────────────────────
 
 export interface ScoutingDayResult {
@@ -429,6 +491,22 @@ export async function scoutingDay(
         }
       }
       result.messages.push(...news.map((n) => newsToMessageArgs(date, n)));
+    }
+
+    // The chief scout plans (issue #157): after the week worked (finished missions free their
+    // scouts), every free scout gets a mission. They start working next Monday, like a mission the
+    // manager creates today; a scout whose mission the manager cancelled stays free for a week.
+    if (own && chiefHandlesScouting(meta.responsibilities)) {
+      const planned = await planForChief(service, saveId, { date, own, state, ownLeague });
+      state = planned.state;
+      if (planned.missions.length > 0) {
+        result.messages.push({
+          date, kind: "chief_missions",
+          missions: planned.missions.map((m) => ({
+            scoutName: m.scoutName, target: m.target, weeks: m.weeks, ...(m.focus?.line ? { line: m.focus.line } : {}),
+          })),
+        });
+      }
     }
 
     // Shortlist: +3 knowledge, alerts on what changed since last Monday.

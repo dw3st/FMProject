@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.22.3",
+    date: "2026-10-13",
+    items: [
+      {
+        pt: "Nova responsabilidade na Equipe técnica: o olheiro-chefe pode montar sozinho as missões dos olheiros toda segunda, focando a posição mais carente do elenco e os países que cada olheiro conhece.",
+        en: "New responsibility in the Staff screen: the chief scout can set up the scouts' missions on his own every Monday, focusing on the squad's weakest position and the countries each scout knows.",
+      },
+      {
+        pt: "Convocação para os jogos da base com duração: próximo jogo, 3 ou 5 jogos, até você tirar ou até o jogador ganhar ritmo.",
+        en: "Youth-game call-ups now have a duration: next game, 3 or 5 games, until you remove them or until the player gains match rhythm.",
+      },
+      {
+        pt: "A lista de convocação da base fica organizada em colunas por posição.",
+        en: "The youth call-up list is now organised in columns by position.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O atacante sozinho na frente do goleiro agora finaliza em vez de tocar para um companheiro em posição pior.",
+        en: "A striker alone in front of the goalkeeper now shoots instead of passing to a teammate in a worse position.",
+      },
+      {
+        pt: "A aba Inscritos do elenco mostra a estrela dos jogadores.",
+        en: "The squad's Registration tab now shows the players' stars.",
+      },
+    ],
+  },
+  {
     version: "4.22.2",
     date: "2026-10-12",
     items: [

@@ -412,6 +412,51 @@ weaker league and in 4-2-3-1.
 
 ---
 
+# One-on-one with the keeper (#156, 2026-10-13)
+
+## Rule
+
+A holder within `ONE_ON_ONE_CONFIG.RANGE` (20) yards of the goal mouth with no outfield opponent
+ahead of him inside a ±`CORRIDOR` (8) yard lane — only the goalkeeper left — gives the ball away
+(pass, through ball, cross) only to a **clearly better target**: closer to the goal mouth than him
+**and** with an xG at the target (spatial xG with the receiver's pressure there; × `HEADER_XG_MULT`
+for a cross) at least `XG_MARGIN` (0.10) above his own shot. Otherwise those actions score 0 and he
+shoots or carries on (`oneOnOneGate`, `DecisionTree.ts`; `ONE_ON_ONE_CONFIG`, `PassConfig.ts`). The
+low-score fallback never becomes an ungated pass (it shoots), and a gated pass carries `targetId`
+so `startPass` uses that receiver instead of its weighted top-3 pick (which could hand the ball to
+an ungated teammate). No per-role or per-id term. Debug: a `decision` log line while the gate is on.
+`/test`: scenario `one-on-one-pass`. Test: `Domain/OneOnOne.test.ts`.
+
+## Cause
+
+The pass (STRONG_RAW 0.8) and the through ball (0.9) are compared with the shot (1.6) on compressed
+scores that know nothing about the situation: an attacking midfielder 15 yd out with xG 0.58 and
+two CBs chasing scored shoot 0.715 vs pass 0.717 (the ST 14 yd wider, a pass with a clear lane and
+goal-proximity bonus) — the square ball won. Through balls into cells further from goal did the
+same. And even when the tree picked a good receiver, `startPass` re-rolled among the top 3 lanes.
+
+## Measured (probe over `simulateMatch` `onTick`, not committed; Premier League, AI formations, balanced, 900 matches per arm)
+
+Episode = holder ≤ 20 yd from the goal mouth, no outfield opponent ahead within ±8 yd; outcome = his
+next action.
+
+| | before | after |
+|---|---|---|
+| episodes / match | 5.35 | 5.08 |
+| ball to a target further from goal | 16.3% | 0.3% |
+| … with lower xG than his own shot | 8.6% | 0.0% |
+| shot | 58.5% | 73.5% |
+| through ball / cross | 15.0% / 6.7% | 6.3% / 4.4% |
+| lost the ball | 6.9% | 9.6% |
+| goals / match | 2.186 | 2.212 (+1.2%) |
+| shots / match | 5.264 | 5.689 (+8.1%) |
+
+Shots rise past ±5% while goals stay flat (the extra shots replace passes that already led to
+chances). Tried: only the xG condition (no "closer"): goals +6.2%, shots +6.2%, 7.9% of balls still
+go further from goal; range 16 yd: shots +7.5%; SHOOT_STRONG_RAW 1.75 on top: shots +6.2%, goals
++3.5% (global, not adopted). quickSim: goals unchanged → `BASE_GOALS` stays; shots per goal up ~7%
+→ `SHOTS_PER_XG` 1.778 → ~1.90 if the next recalibration confirms it.
+
 # Spatial Preference Calculation
 
 Spatial preference is determined using the horizontal pitch position.
@@ -478,3 +523,8 @@ Measured (premier_league, 400 matches each, same style both teams):
 
 Balanced/direct before the change (300 matches): 2.70 / 6.07 / 44.2 and 2.97 / 6.68 / 30.0 — noise only.
 quickSim has no build_up/style effect on goals (it uses team strength only), so its calibration is unaffected.
+
+**Volume do mundo (#156), `bun scripts/ai-formation-goals.ts --engine 800 --modes ai --quick 0`** (formações da IA, fôlego 88,
+800 jogos por liga; antes = main 4.22.2): Premier 2,250 → 2,243 gols (−0,3%), 5,40 → 5,46 chutes (+1,1%); Championship
+1,779 → 1,774 gols (−0,3%), 4,90 → 5,15 chutes (+5,1%). Gols iguais: o quickSim (`BASE_GOALS`, `SHOTS_PER_XG`) não mudou.
+A sonda de lances (Premier, estilo equilibrado, 900 jogos) dava +8% de chutes; com as formações da IA o efeito é menor.

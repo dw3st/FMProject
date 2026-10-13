@@ -19,6 +19,7 @@ import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { daysBetween } from "@/Domain/dates";
+import { chiefHandlesScouting } from "@/Domain/responsibilities/director";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { StaffMember } from "@/types/staffTypes";
@@ -195,6 +196,8 @@ async function scoutingView(saveId: string, state: ScoutingState) {
     ownCountry,
     ownContinent: continentOf(ownCountry) ?? null,
     maxFieldScouts: STAFF.LIMITS.fieldScout,
+    /** The chief scout plans the free scouts' missions every Monday (issue #157). */
+    chiefPlans: chiefHandlesScouting(meta?.responsibilities),
     maxShortlist: S.MAX_SHORTLIST,
     weeks: { region: S.REGION_WEEKS, continent: S.CONTINENT_WEEKS, youth: S.YOUTH_WEEKS, player: S.PLAYER_MAX_WEEKS },
     scouts: scouts.map((s) => ({ ...s, busy: state.missions.some((m) => m.scoutId === s.id) })),
@@ -277,8 +280,16 @@ export const scoutingRoutes = {
     if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
       const state = await saveService.getScouting(saveId);
-      if (!state.missions.some((m) => m.id === req.params.missionId)) return Response.json({ error: "mission not found" }, { status: 404 });
-      const next = { ...state, missions: state.missions.filter((m) => m.id !== req.params.missionId) };
+      const cancelled = state.missions.find((m) => m.id === req.params.missionId);
+      if (!cancelled) return Response.json({ error: "mission not found" }, { status: 404 });
+      // The chief scout (when he plans the missions) leaves this scout free for a week: the
+      // manager's cancellation is not undone on the next Monday (`chiefPlanner.ts`, `onHold`).
+      const date = (await saveService.getMeta(saveId))?.currentDate ?? "";
+      const next: ScoutingState = {
+        ...state,
+        missions: state.missions.filter((m) => m.id !== cancelled.id),
+        ...(date ? { chiefHold: { ...(state.chiefHold ?? {}), [cancelled.scoutId]: date } } : {}),
+      };
       await saveService.writeScouting(saveId, next);
       return Response.json(await scoutingView(saveId, next));
     });

@@ -364,7 +364,7 @@ export interface FacilityInboxMessage extends InboxMessageBase {
  */
 export interface ScoutingInboxMessage extends InboxMessageBase {
   category: "scouting";
-  kind: "report" | "mission_done" | "gem" | "recommendation" | "shortlist" | "prospect" | "prospect_signed";
+  kind: "report" | "mission_done" | "gem" | "recommendation" | "shortlist" | "prospect" | "prospect_signed" | "chief_missions";
   /** report / mission_done: the mission's target. */
   target?: ScoutTarget;
   /** report: players observed this week; mission_done: in total. */
@@ -382,6 +382,8 @@ export interface ScoutingInboxMessage extends InboxMessageBase {
   /** prospect / prospect_signed: training compensation; prospect: offer deadline. */
   fee?: number;
   expires?: string;
+  /** chief_missions: the missions the chief scout created today. */
+  missions?: { scoutName: string; target: ScoutTarget; weeks: number; line?: string }[];
 }
 
 /** Season awards (`.claude/rules/game/awards.md`): the player's league, or the world ceremony. */

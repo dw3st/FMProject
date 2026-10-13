@@ -28,6 +28,17 @@ versão **4.6**. Visual: `.claude/rules/ui-standard.md`.
 - **Aviso de 90 dias** (`expiring`, no avanço do dia e na troca de clube): só com o técnico responsável.
 - **Técnico responsável:** tudo como antes; as decisões gravadas não valem. O técnico sempre pode renovar na ficha.
 
+## 1b. Missões dos olheiros (#157)
+
+- `SaveMeta.responsibilities.scouting?: "manager" | "chief"`; ausente = **técnico** (nada muda por padrão).
+- Com o **olheiro-chefe** responsável, toda segunda ele manda cada olheiro livre em missão (regra em
+  `.claude/rules/game/scouting.md` → "Missões pelo olheiro-chefe"). O técnico continua criando e cancelando à mão.
+- Rota: `GET` devolve `{ contracts, scouting }` (com os padrões); `PUT` aceita um ou os dois campos
+  (`{ scouting: "chief" }` mantém `contracts`); corpo vazio, chave desconhecida ou valor inválido → 400
+  (`parseResponsibilitiesPatch`, `src/Domain/responsibilities/director.ts`).
+- Tela: segundo bloco "Missões dos olheiros" na aba Responsabilidades (`OptionChips` Técnico / Olheiro-chefe e uma
+  linha para cada).
+
 ## 2. Preferências da caixa de entrada
 
 - `SaveMeta.inboxPrefs?: Partial<Record<InboxTopic, boolean>>`; ausente = padrões.
@@ -42,7 +53,7 @@ versão **4.6**. Visual: `.claude/rules/ui-standard.md`.
 | `injuries` / `development` / `youth` / `retirement` | categorias do mesmo nome | ligado |
 | `competitions` | `season`, `cup`, `continental` | ligado |
 | `club_records` / `facilities` | categorias do mesmo nome | ligado |
-| `scouting_alerts` | `scouting` (joias, lista de observação, prospectos) | ligado |
+| `scouting_alerts` | `scouting` (joias, lista de observação, prospectos, novas missões do olheiro-chefe `chief_missions`) | ligado |
 | `scouting_reports` | `scouting` report, mission_done, recommendation | **desligado** |
 | `manager_news` | técnicos demitidos/contratados | **desligado** |
 
@@ -55,7 +66,7 @@ versão **4.6**. Visual: `.claude/rules/ui-standard.md`.
 
 | Rota | Faz |
 |---|---|
-| `GET/PUT /api/saves/:id/responsibilities` | `{ contracts: "director" \| "manager" }`; outro corpo → 400 |
+| `GET/PUT /api/saves/:id/responsibilities` | `{ contracts: "director" \| "manager", scouting: "manager" \| "chief" }`; o `PUT` aceita um ou os dois; outro corpo → 400 |
 | `GET/PUT /api/saves/:id/inbox-prefs` | `{ prefs, topics: [{ topic, enabled, locked }] }`; PUT `{ [tópico]: boolean }` substitui; tópico desconhecido, valor não booleano ou `actions: false` → 400 |
 
 ## Telas
