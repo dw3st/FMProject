@@ -264,19 +264,22 @@ export function recordAttendance(
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 /**
- * A human club's facilities: stands from its capacity, the ten items at 2 × the tier's level (seats
- * 2 = comfort 1) with a little starting wear (never below ~80%: the starting effects are today's).
+ * A human club's facilities: stands from its capacity and the ten items with a little starting wear
+ * (never below ~80%). With the club's revenue percentile in the world (`revenuePct`, 4.22.2) the items
+ * follow the club's size with a draw per item; without it, 2 × the tier's level (seats 2 = comfort 1).
  */
-export function initialFacilities(squad: Squad, tier: number): ClubFacilities {
+export function initialFacilities(squad: Squad, tier: number, revenuePct?: number): ClubFacilities {
   const capacity = squad.venue?.capacity ?? 0;
-  return {
+  const base: ClubFacilities = {
     stands: splitStands(capacity),
-    items: initialItems(squad.id, impliedLevel(squad)),
+    items: initialItems(squad.id, impliedLevel(squad), revenuePct),
     projects: [],
     completed: [],
     anchor: { capacity, followers: squad.finances?.followers ?? 0, tier: Math.max(1, tier) },
     attendance: [],
   };
+  return revenuePct === undefined ? base
+    : { ...base, startLevels: { training: groupLevel(base, "training"), academy: groupLevel(base, "academy") } };
 }
 
 // ── Costs and durations ──────────────────────────────────────────────────────
@@ -391,14 +394,16 @@ export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: Quote
   return { kind: req.kind, level, cost: Math.round(Math.max(0, ctx.revenue) * share), weeks };
 }
 
-/** Weekly upkeep (EUR): training ground and academy levels above the tier's implied level. */
+/** Weekly upkeep (EUR): training ground and academy levels above max(tier's implied level, the starting level). */
 export function weeklyUpkeep(squad: Squad, revenue: number): number {
   const f = livingFacilities(squad);
   if (!f) return 0;
-  const base = impliedLevel(squad);
+  const implied = impliedLevel(squad);
+  const tBase = Math.max(implied, f.startLevels?.training ?? implied);
+  const aBase = Math.max(implied, f.startLevels?.academy ?? implied);
   const yearly = Math.max(0, revenue)
-    * (Math.max(0, groupLevel(f, "training") - base) * F.TRAINING_UPKEEP_SHARE
-      + Math.max(0, groupLevel(f, "academy") - base) * F.ACADEMY_UPKEEP_SHARE);
+    * (Math.max(0, groupLevel(f, "training") - tBase) * F.TRAINING_UPKEEP_SHARE
+      + Math.max(0, groupLevel(f, "academy") - aBase) * F.ACADEMY_UPKEEP_SHARE);
   return Math.round(yearly / 52);
 }
 

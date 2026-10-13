@@ -83,6 +83,11 @@ export const FACILITIES = {
   /** Items: `docs/superpowers/specs/2026-10-08-living-facilities-design.md`. */
   ITEM_MAX_LEVEL: 10,
   /**
+   * Starting item levels of a human club (4.22.2): base = MIN + SPAN × the club's revenue percentile in
+   * the world (≈ 2 at the bottom, ≈ 8 at the top), each item ± JITTER (drawn per club and item).
+   */
+  START_LEVEL: { MIN: 2, SPAN: 6, JITTER: 1.5 },
+  /**
    * life = seasons at level 5; time/matches/training = shares of a typical season's wear; pitch =
    * share of the groundskeeper's effect; valueShare = value at level 6 as a share of annual revenue.
    */

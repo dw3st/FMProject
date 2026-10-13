@@ -36,7 +36,6 @@ import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
-import { initialFacilities } from "@/Domain/facilities/facilities";
 import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { buildInitialManagers } from "@/Domain/managers/managers";
 import type { ManagerContract, ManagerRenewalOffer } from "@/Domain/managers/managerContract";
@@ -978,10 +977,10 @@ export class SaveService {
         // starts ahead of the rest.
         if (isPlayerClub) squad.styleFamiliarity = initialFamiliarity(meta.tactical_style ?? DEFAULT_TACTICAL_STYLE);
         // Facilities (`.claude/rules/game/facilities.md`): human club only — stands from the capacity,
-        // comfort 1, training ground and academy at the tier's implied level.
+        // items by the club's revenue percentile in the world.
         if (isPlayerClub) {
-          const { leagueTierOf } = await import("@/backend/facilityWorld");
-          squad.facilities = initialFacilities(squad, await leagueTierOf(league));
+          const { startingFacilities } = await import("@/backend/facilityWorld");
+          squad.facilities = await startingFacilities(squad, league);
         }
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.

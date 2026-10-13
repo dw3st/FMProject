@@ -13,7 +13,7 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
   × 0,985 / 1,025 / 0,975; ELITE × 1,04 / 0,925 / 1,05). A base da IA é sempre neutra (o tier já está no
   `YOUTH.TIER_BONUS`): as safras da IA não mudam.
 - As instalações são **do clube**: criadas no `createSave` e no `takeOverClub` (`initialFacilities`: setores pela
-  capacidade, conforto 1, CT e base no nível implícito do tier, ou seja, neutros para um clube MEDIUM), apagadas no `releaseHumanClub` (o estádio construído
+  capacidade; desde a 4.22.2 os itens pelo percentil de receita do clube, ver "Instalações vivas" → Criação), apagadas no `releaseHumanClub` (o estádio construído
   fica em `venue.capacity`, obras em andamento são abandonadas). O start kit não as carrega (`stripHumanOnly`) e
   `applyRandomStartKit` as restaura.
 - Aba **Clube** na barra superior (`/club`, #120, desde a 4.11; antes ficava em Finanças → Instalações); cartão
@@ -185,9 +185,8 @@ condição = 100 × (1 − min(1, wear)²)          (interditado: 0)      40% �
             × jardineiro (só gramados)          sessão = leve 0,7 · normal 1 · pesado 1,3 (0 em jogo, folga, sem clube)
 ```
 
-Criação: CT e base no nível 2 × implícito do tier (MEDIUM 6 de 10), gramado e estrutura idem, assentos em 2; desgaste
-inicial determinístico (`fac:<clube>:<item>`): gramados 0,05–0,25, demais 0,05–0,45 — nada abaixo de 40%, então a
-largada é a de antes.
+Criação (4.22.2): cada item no nível `START_LEVEL.MIN + SPAN × percentil da receita do clube no mundo` (2 + 6 × p: ≈ 2 nos menores, ≈ 8 no topo, receita = TV + comercial contra o mundo base, `revenuePercentileOf`, `facilityWorld.ts`) ± `JITTER` 1,5 sorteado por clube e item (`facl:<clube>:<item>`), assentos incluídos. Medido no mundo de 2026-10-12: Premier 7–9, Brasileirão A 6–8, Championship 3–7, Quênia 3–5. A largada deixa de ser neutra: um clube com CT/base abaixo do implícito do tier começa com efeitos abaixo do neutro, e acima, acima. `ClubFacilities.startLevels` guarda os níveis de CT e base da largada: a manutenção só cobra acima de max(implícito, largada). Sem percentil (testes) vale a regra antiga (2 × implícito, assentos 2). Desgaste
+inicial determinístico (`fac:<clube>:<item>`): gramados 0,05–0,25, demais 0,05–0,45 — nada abaixo de 40%.
 
 ### Efeitos abaixo de 40% (`itemEffects`, `FACILITIES.WEAR`)
 

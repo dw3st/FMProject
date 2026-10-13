@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import {
-  FACILITY_ITEMS, ITEM_GROUP, comfortLevel, conditionOf, crossings, effectAt, groupLevel, initialItems,
+  FACILITY_ITEMS, ITEM_GROUP, comfortLevel, conditionOf, crossings, effectAt, groupLevel, initialItems, startBaseLevel,
   itemEffects, itemWearToday, itemsOfGroup, lerpLevel, lifeScale, penalty, physioDurationMult, wearDay, wearFor,
   type FacilityItems, type WearDayInput,
 } from "@/Domain/facilities/facilityItems";
@@ -144,6 +144,49 @@ describe("levels", () => {
       const it = initialItems(`c${i}`, 2);
       for (const id of FACILITY_ITEMS) expect(conditionOf(it[id])).toBeGreaterThanOrEqual(79.7);
     }
+  });
+});
+
+describe("starting levels by revenue (4.22.2)", () => {
+  test("base follows the revenue percentile", () => {
+    expect(startBaseLevel(0)).toBe(2);
+    expect(startBaseLevel(0.5)).toBe(5);
+    expect(startBaseLevel(1)).toBe(8);
+    expect(startBaseLevel(2)).toBe(8);
+  });
+
+  test("each item within ± jitter of the base, seats included; wear draws unchanged", () => {
+    let spread = 0;
+    for (let i = 0; i < 200; i++) {
+      const pct = (i % 11) / 10;
+      const it = initialItems(`c${i}`, 3, pct);
+      const old = initialItems(`c${i}`, 3);
+      const base = startBaseLevel(pct);
+      const levels = new Set<number>();
+      for (const id of FACILITY_ITEMS) {
+        expect(Math.abs(it[id].level - base)).toBeLessThanOrEqual(F.START_LEVEL.JITTER + 0.5);
+        expect(it[id].level).toBeGreaterThanOrEqual(1);
+        expect(it[id].level).toBeLessThanOrEqual(F.ITEM_MAX_LEVEL);
+        expect(it[id].wear).toBe(old[id].wear);
+        levels.add(it[id].level);
+      }
+      if (levels.size > 1) spread++;
+    }
+    expect(spread).toBeGreaterThan(150);
+    expect(initialItems("x", 3, 0.7)).toEqual(initialItems("x", 3, 0.7));
+  });
+
+  test("richer clubs start better on average", () => {
+    const mean = (pct: number) => {
+      let s = 0;
+      for (let i = 0; i < 100; i++) {
+        const it = initialItems(`m${i}`, 3, pct);
+        for (const id of FACILITY_ITEMS) s += it[id].level;
+      }
+      return s / 1000;
+    };
+    expect(mean(0.95)).toBeGreaterThan(mean(0.5) + 2);
+    expect(mean(0.5)).toBeGreaterThan(mean(0.05) + 2);
   });
 });
 

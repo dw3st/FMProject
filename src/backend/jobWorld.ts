@@ -20,8 +20,7 @@ import {
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
-import { initialFacilities } from "@/Domain/facilities/facilities";
-import { leagueTierOf } from "@/backend/facilityWorld";
+import { startingFacilities } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
 import { scoutingOnClubLeft } from "@/backend/scoutingWorld";
 import { toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
@@ -358,8 +357,8 @@ async function takeOverClub(
     // The manager brings his attributes (`.claude/rules/game/achievements.md`).
     managerAttributes: (await service.getAchievements(saveId)).attributes,
   };
-  // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium and tier.
-  human.facilities = initialFacilities(human, await leagueTierOf(entry.leagueSlug));
+  // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium, tier and revenue.
+  human.facilities = await startingFacilities(human, entry.leagueSlug);
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, human);
   await recordMoney(
     service, saveId, await ledgerSeasonOf(service, saveId, entry.leagueSlug, args.date), ref,

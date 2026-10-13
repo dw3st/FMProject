@@ -152,16 +152,29 @@ export function lerpLevel(arr: readonly number[], level: number): number {
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
+/** Base starting item level (1..10 scale, fractional) from the club's revenue percentile 0..1. */
+export function startBaseLevel(revenuePct: number): number {
+  return F.START_LEVEL.MIN + F.START_LEVEL.SPAN * clamp(revenuePct, 0, 1);
+}
+
 /**
- * Starting items of a human club: level 2 × implied tier level (seats 2 = comfort 1), wear drawn
- * per club and item (pitches 0.05..0.25, the rest 0.05..0.45 → condition 100%..80%).
+ * Starting items of a human club, wear drawn per club and item (pitches 0.05..0.25, the rest
+ * 0.05..0.45 → condition 100%..80%). With the club's revenue percentile (4.22.2) every item, seats
+ * included, starts at `startBaseLevel(pct)` ± `START_LEVEL.JITTER` (its own draw per club and item,
+ * so the wear draws don't move); without it, 2 × implied tier level (seats 2 = comfort 1).
  */
-export function initialItems(squadId: string, impliedLevel: number): FacilityItems {
+export function initialItems(squadId: string, impliedLevel: number, revenuePct?: number): FacilityItems {
   const out = {} as FacilityItems;
   for (const id of FACILITY_ITEMS) {
     const rng = mulberry32(seedFrom(`fac:${squadId}:${id}`));
     const [lo, hi] = F.ITEMS[id].pitch > 0 ? W.START_PITCH : W.START_OTHER;
-    const level = id === "seats" ? 2 * F.MIN_LEVEL : clamp(2 * impliedLevel, 1, F.ITEM_MAX_LEVEL);
+    let level: number;
+    if (revenuePct === undefined) {
+      level = id === "seats" ? 2 * F.MIN_LEVEL : clamp(2 * impliedLevel, 1, F.ITEM_MAX_LEVEL);
+    } else {
+      const jitter = (2 * mulberry32(seedFrom(`facl:${squadId}:${id}`))() - 1) * F.START_LEVEL.JITTER;
+      level = clamp(Math.round(startBaseLevel(revenuePct) + jitter), 1, F.ITEM_MAX_LEVEL);
+    }
     out[id] = { level, wear: lo + (hi - lo) * rng() };
   }
   return out;

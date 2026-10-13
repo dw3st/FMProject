@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.22.2",
+    date: "2026-10-12",
+    items: [
+      {
+        pt: "As instalações de cada clube começam de acordo com o tamanho dele: clubes ricos chegam com estrutura melhor, e cada item tem o seu próprio nível.",
+        en: "Each club's facilities now start according to its size: rich clubs begin with better grounds, and every item has its own level.",
+      },
+      {
+        pt: "Na barra superior, a aba Formação vem antes de Clube.",
+        en: "In the top bar, the Formation tab now comes before Club.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Reformar um item quase novo não mostra mais três opções iguais de \"até 100%\".",
+        en: "Repairing an almost new item no longer shows three identical \"to 100%\" options.",
+      },
+    ],
+  },
+  {
     version: "4.22.1",
     date: "2026-10-12",
     items: [

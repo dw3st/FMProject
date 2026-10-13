@@ -49,12 +49,15 @@ describe("facilities routes", () => {
     // Not the owner: indistinguishable from a missing save.
     expect((await call("", "GET", other.session.token)).status).toBe(404);
 
-    // Initial state: stands sum to the venue capacity, comfort 1.
+    // Initial state: stands sum to the venue capacity; items by the club's revenue (Man United: top
+    // of the world, so every item starts high), comfort = seats level / 2.
     const start = await (await call("", "GET", session.token)).json() as any;
     const squad0 = (await saveService.getSquadById(saveId, "33"))!;
     expect(start.capacity).toBe(squad0.venue!.capacity);
     expect(start.facilities.stands).toHaveLength(4);
-    expect(start.levels.comfort).toBe(1);
+    expect(start.levels.comfort).toBe(start.facilities.items.seats.level / 2);
+    for (const it of Object.values(start.facilities.items) as { level: number }[]) expect(it.level).toBeGreaterThanOrEqual(6);
+    expect(start.facilities.startLevels.training).toBeGreaterThan(3);
     expect(Object.keys(start.facilities.items)).toHaveLength(10);
     expect(start.seatCost).toBeGreaterThanOrEqual(1500);
     expect(start.seatCost).toBeLessThanOrEqual(6000);

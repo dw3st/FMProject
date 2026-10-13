@@ -74,11 +74,17 @@ function parseFacilityRequest(body: unknown): FacilityRequest | null {
   return null;
 }
 
-/** Repair targets offered on screen: +25, +50 (rounded up to the step) and up to 100%. */
-export function repairTargets(condition: number): { "25": number; "50": number; "100": number } {
+/**
+ * Repair targets offered on screen: +25, +50 (rounded up to the step) and up to 100%. A step whose
+ * target is the same as the next one's (+25 and +50 both reach 100% from 75%) is `null`: the screen
+ * never shows three "to 100%" chips.
+ */
+export function repairTargets(condition: number): { "25": number | null; "50": number | null; "100": number } {
   const step = FACILITIES.REPAIR.STEP;
   const up = (gain: number) => Math.min(100, Math.ceil((condition + gain) / step) * step);
-  return { "25": up(25), "50": up(50), "100": 100 };
+  const t50 = up(50);
+  const t25 = up(25);
+  return { "25": t25 < t50 ? t25 : null, "50": t50 < 100 ? t50 : null, "100": 100 };
 }
 
 interface MoneyContext { board: number; balance: number; revenue: number; committed: number }
@@ -119,8 +125,8 @@ function itemsView(f: ClubFacilities, date: string, money: MoneyContext) {
       project: project ? { ...project, progress: projectProgress(project, date) } : null,
       quotes: {
         repair: {
-          "25": withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["25"] }, ctx)),
-          "50": withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["50"] }, ctx)),
+          "25": targets["25"] === null ? null : withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["25"] }, ctx)),
+          "50": targets["50"] === null ? null : withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["50"] }, ctx)),
           "100": withForecast(quoteProject(f, { kind: "repair", item: id, to: 100 }, ctx)),
         },
         rebuild: withForecast(quoteProject(f, { kind: "rebuild", item: id }, ctx)),
