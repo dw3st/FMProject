@@ -64,17 +64,37 @@ describe("youth competition routes", () => {
 
     const squad = (await saveService.getSquadById(saveId, "33"))!;
     const old = squad.players.find((p) => p.age > 21)!;
-    const ok = await call(key, "/x", "PUT", { u21: [old.id] });
+    const other2 = squad.players.find((p) => p.id !== old.id)!;
+    const ok = await call(key, "/x", "PUT", { u21: [{ id: old.id, duration: "games3" }, { id: other2.id, duration: "rhythm" }] });
     expect(ok.status).toBe(200);
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [old.id] });
+    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+      { id: old.id, duration: "games3", left: 3 }, { id: other2.id, duration: "rhythm", streak: 0 },
+    ] });
+    // Progress is kept for an unchanged duration and restarts when it changes.
+    await saveService.updateMeta(saveId, { youthCallUps: { u21: [
+      { id: old.id, duration: "games3", left: 1 }, { id: other2.id, duration: "rhythm", streak: 2 },
+    ] } });
+    await call(key, "/x", "PUT", { u21: [{ id: old.id, duration: "games3" }, { id: other2.id, duration: "indefinite" }] });
+    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+      { id: old.id, duration: "games3", left: 1 }, { id: other2.id, duration: "indefinite" },
+    ] });
+    const back = await (await call(key, `/api/saves/${saveId}/youth-callups`)).json() as any;
+    expect(back.callUps.u21.map((c: any) => c.id)).toEqual([old.id, other2.id]);
 
     const foreign = (await saveService.getSquadById(saveId, "40"))!.players[0]!.id;
+    const entry = (id: string) => ({ id, duration: "next" });
     for (const bad of [
-      { u21: [foreign] }, { u21: [old.id, old.id] }, { u21: squad.players.slice(0, 12).map((p) => p.id) }, { u19: [old.id] },
+      { u21: [entry(foreign)] }, { u21: [entry(old.id), entry(old.id)] },
+      { u21: squad.players.slice(0, 12).map((p) => entry(p.id)) }, { u19: [entry(old.id)] }, { u21: [old.id] },
     ]) {
       const res = await call(key, "/x", "PUT", bad);
       expect(res.status).toBe(400);
       expect(((await res.json()) as any).error).toBe("invalidPlayers");
+    }
+    for (const duration of ["games4", undefined, 3]) {
+      const res = await call(key, "/x", "PUT", { u21: [{ id: old.id, duration }] });
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as any).error).toBe("invalidDuration");
     }
     expect((await call(key, "/x", "PUT", { u21: [] })).status).toBe(200);
     expect((await saveService.getMeta(saveId))!.youthCallUps).toBeUndefined();

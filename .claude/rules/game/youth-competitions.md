@@ -98,7 +98,8 @@ e `rotation` com déficit de minutos, a base reduz a perda (`p + 0,5 × y`), nun
 - **Painel → Semana:** os jogos de base do clube abaixo do dia (selo Sub-21/Sub-19, adversário, resultado); não mudam o
   tipo do dia nem o "Jogo" da barra.
 - **Ficha:** linha "Jogos da base" (J, G, A, nota) abaixo da carreira. **Elenco → Base:** colunas J base e G base e o
-  bloco "Jogos da base" (próximo jogo de cada idade, convocação por chips até 11, aviso de convocado que não jogou).
+  bloco "Jogos da base" (próximo jogo de cada idade, convocação por chips até 11 com a duração restante em cada chip,
+  seletor de duração e "Aplicar a todos os selecionados", aviso de convocado que não jogou).
 - i18n `youthComps.*` (en, pt-BR).
 
 ## Rotas (`requireSaveOwner`)
@@ -108,10 +109,26 @@ e `rotation` com déficit de minutos, a base reduz a perda (`p + 0,5 × y`), nun
 | `GET /api/saves/:id/youth-comps?country=` | `{ u21, u19 }` (slug ou `null`) |
 | `GET /api/saves/:id/youth-comps/:slug` | `{ meta, fixtures, standings, names, leaders, leagueOf }`; 400 / 404 |
 | `GET /api/saves/:id/youth-callups` | `{ next, callUps, skipped, eligible }`; 409 `noClub` |
-| `PUT /api/saves/:id/youth-callups { u21?, u19? }` | Grava `meta.youthCallUps` (`withSaveLock`); 400 `invalidPlayers`; 409 `noClub` |
+| `PUT /api/saves/:id/youth-callups { u21?, u19? }` | Cada idade: `[{ id, duration }]` (ou `null`/`[]` limpa); grava `meta.youthCallUps` (`withSaveLock`); 400 `invalidPlayers` / `invalidDuration`; 409 `noClub` |
 
-As convocações de uma idade são consumidas quando o clube joga (ou tem cancelado) um jogo dela no dia; os convocados que
-não jogaram ficam em `meta.youthCallUpsSkipped`. Troca de clube e demissão limpam os dois.
+### Convocação com duração (#158)
+
+`meta.youthCallUps` guarda, por idade, `{ id, duration, left?, streak? }` (`src/Domain/youthComps/callUps.ts`, puro, com
+teste). Durações: `next` (próximo jogo), `games3`, `games5`, `indefinite` (até o técnico tirar) e `rhythm` ("até ganhar
+ritmo": 3 jogos de base seguidos dele com nota ≥ 6,5 — o jogo não tem estatística de ritmo; `CALL_UP_RULES`).
+
+- **PUT:** quem fica com a mesma duração mantém o progresso (`left`/`streak`); jogador novo ou duração trocada recomeça
+  (`mergeCallUps`).
+- **Contagem** (`advanceCallUps`, no avanço do dia, para cada idade em que o clube jogou ou teve cancelado um jogo):
+  - `next` acaba com o jogo, tenha jogado ou não (a regra de antes);
+  - `games3`/`games5` descontam **só os jogos que ele jogou**: lesionado, suspenso, preso no XI do time principal ou jogo
+    cancelado não descontam (ele aparece em `youthCallUpsSkipped`, como antes);
+  - `rhythm`: jogo jogado com nota ≥ 6,5 soma à sequência, abaixo zera; jogo que ele não jogou não mexe; sai ao chegar a 3;
+  - `indefinite` fica.
+  - Quem deixou de ser elegível (saiu do clube, passou dos 19 no sub-19) sai da lista (`callUpEligibleIds`); a rota `GET`
+    também o esconde.
+- As notas vêm do `playYouthDay` (`YouthDayResult.humanRatings`, por idade, só o clube do jogador).
+- Formato antigo (lista de ids) não é migrado. Troca de clube e demissão limpam `youthCallUps` e `youthCallUpsSkipped`.
 
 ## `/test`, `/lab`
 
@@ -150,7 +167,7 @@ criação; nenhum jogo de base nos `events` do dia; nenhum jogo de base não jog
 jogadores do clube do jogador nos jogos; ninguém com mais `youthCup` que os jogos de base dele nos logs do dia (em
 qualquer clube); nenhum jogador da base com mais jogos que o clube na temporada; o `youthCup` do elenco e da base zera
 na virada do clube do jogador; nenhum jogo de base num dia do time principal logo depois da criação; tabelas do país do jogador
-coerentes e iguais à recalculada; convocação pela rota joga e some; na virada, ano novo, arquivo com 1 título e nenhum
+coerentes e iguais à recalculada; convocação pela rota (duração "próximo jogo") joga e some; na virada, ano novo, arquivo com 1 título e nenhum
 jogo novo antes da data. A checagem de dupla marcação conta a base já jogada (jogo de base jogado no dia de um jogo do time
 principal é choque; sub-19 e sub-21 no mesmo dia não são; cancelados não contam). Um jogo de base ainda por jogar que cai
 num dia do time principal surgido depois da geração (a base regerada não conhece as continentais da temporada nova) só

@@ -3695,7 +3695,7 @@
     },
     "callUps": {
       "title": "Jogos da base",
-      "hint": "Convoque até {{n}} jogadores para o próximo jogo. Convocados jogam mesmo sendo titulares do time principal.",
+      "hint": "Convoque até {{n}} jogadores para os jogos da base. Convocados jogam mesmo sendo titulares do time principal; cada convocação dura o tempo escolhido.",
       "next": "Próximo: {{opponent}} ({{venue}}) em {{date}}",
       "venue": {
         "home": "em casa",
@@ -3707,7 +3707,17 @@
       "saved": "Salvo",
       "skipped": "Convocados que não jogaram em {{date}}: {{names}}",
       "fitness": "fôlego {{n}}",
-      "failed": "Não foi possível salvar a convocação."
+      "failed": "Não foi possível salvar a convocação.",
+      "durationLabel": "Duração das novas convocações",
+      "duration": {
+        "next": "Próximo jogo",
+        "games3": "3 jogos",
+        "games5": "5 jogos",
+        "indefinite": "Até eu tirar",
+        "rhythm": "Até ganhar ritmo"
+      },
+      "applyAll": "Aplicar a todos os selecionados",
+      "rhythmLeft": "ritmo {{n}}/{{of}}"
     }
   },
   "referees": {
