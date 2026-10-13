@@ -85,3 +85,19 @@ export const PASS_CONFIG = {
    */
   PASS_SELECTION_EXPONENT: 3,
 } as const;
+
+/**
+ * One-on-one with the keeper (#156, `pass.md` → "One-on-one"). A holder within `RANGE` yards of
+ * the goal mouth with no outfield opponent ahead of him inside a ±`CORRIDOR` yard lane (only the
+ * goalkeeper left) only gives the ball away — pass, through ball or cross — to a target that is
+ * clearly better: closer to goal AND with an xG at the target at least `XG_MARGIN` above his own.
+ * Otherwise he shoots or carries on.
+ */
+export const ONE_ON_ONE_CONFIG = {
+  /** Yards from the goal mouth (nearest point between the posts). */
+  RANGE: 20,
+  /** Half-width (yards) of the lane ahead that must be free of outfield opponents. */
+  CORRIDOR: 8,
+  /** Minimum xG gain of the target over the holder's own shot. */
+  XG_MARGIN: 0.1,
+} as const;
