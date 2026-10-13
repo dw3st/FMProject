@@ -6,6 +6,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
+import { groupByPosition } from "@/Domain/positions/positionSort";
 import type { YouthEligible, YouthNextGame } from "@/backend/youthCompRoutes";
 import type { YouthCompAge } from "@/types/youthCompTypes";
 
@@ -107,19 +108,27 @@ export function YouthCallUpsPanel() {
             )}
             {next && (
               <>
-                <div className="flex flex-wrap gap-2">
-                  {data.eligible[age].map((p) => (
-                    <Chip
-                      key={p.id}
-                      selected={list.includes(p.id)}
-                      disabled={!list.includes(p.id) && list.length >= YOUTH_COMP.MAX_CALL_UPS}
-                      onClick={() => setDraft((d) => ({ ...d, [age]: toggleCallUp(d[age] ?? [], p.id) }))}
-                      title={`${p.name} · ${p.age} · ${t("youthComps.callUps.fitness", { n: Math.round(p.fitness) })}`}
-                    >
-                      <span className={positionLabelColor(p.role, p.role)}>{positionLabel(t, p.role, p.role)}</span>
-                      <span>{p.name}</span>
-                      <span className="tabular-nums">{p.age}</span>
-                    </Chip>
+                {/* One column per detailed position (#159), in squad order. */}
+                <div className="grid gap-x-3 gap-y-4 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
+                  {groupByPosition(data.eligible[age], (p) => p.role).map((group) => (
+                    <div key={group.role} className="flex flex-col gap-2">
+                      <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${positionLabelColor(group.role, group.role)}`}>
+                        {t(`roles.detailed.${group.role}`, { defaultValue: positionLabel(t, group.role, group.role) })}
+                      </span>
+                      {group.items.map((p) => (
+                        <Chip
+                          key={p.id}
+                          className="w-full !justify-between"
+                          selected={list.includes(p.id)}
+                          disabled={!list.includes(p.id) && list.length >= YOUTH_COMP.MAX_CALL_UPS}
+                          onClick={() => setDraft((d) => ({ ...d, [age]: toggleCallUp(d[age] ?? [], p.id) }))}
+                          title={`${p.name} · ${p.age} · ${t("youthComps.callUps.fitness", { n: Math.round(p.fitness) })}`}
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <span className="tabular-nums">{p.age}</span>
+                        </Chip>
+                      ))}
+                    </div>
                   ))}
                 </div>
                 <div className="flex items-center gap-3">

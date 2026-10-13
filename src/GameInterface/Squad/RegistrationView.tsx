@@ -7,6 +7,8 @@ import { Notice } from "@/GameInterface/ui/Notice";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { Flag } from "@/GameInterface/Components/Flag";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
@@ -42,8 +44,10 @@ function Counter({ label, value, warn }: { label: string; value: string; warn?: 
  */
 export function RegistrationView() {
   const { t, i18n } = useTranslation();
-  const { session } = useGameSave();
+  const { session, currentDate } = useGameSave();
   const saveId = session?.saveId;
+  // Same star index as the squad list and the player profile (#160).
+  const stars = useStarPlayers(saveId, currentDate);
   const [comps, setComps] = useState<RegistrationCompView[] | null>(null);
   const [active, setActive] = useState<string | null>(null);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
@@ -189,7 +193,10 @@ export function RegistrationView() {
                     <td className={`${TABLE_CELL.body} font-display font-bold text-sm ${getDetailedPositionColor(r.role)}`}>
                       {t(`roles.detailedAbbr.${r.role}`)}
                     </td>
-                    <td className={`${TABLE_CELL.body} ${TABLE_STYLE.name}`}>{r.name}</td>
+                    <td className={`${TABLE_CELL.body} ${TABLE_STYLE.name}`}>
+                      {r.name}
+                      {stars.get(r.id) && <StarBadge kind={stars.get(r.id)} className="ml-1.5 align-middle" />}
+                    </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{r.age}</td>
                     <td className={TABLE_CELL.body}>
                       <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">

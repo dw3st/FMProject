@@ -43,3 +43,21 @@ export function compareSquadPositions(a: PositionSortable, b: PositionSortable, 
   if (detail !== 0) return detail * sign;
   return a.name.localeCompare(b.name);
 }
+
+/**
+ * Groups items by detailed position, groups in squad order (GK, CB, LB, RB, …, ST); items keep their order inside a
+ * group. Positions outside the known list go last, in first-seen order.
+ */
+export function groupByPosition<T>(items: T[], roleOf: (item: T) => string): { role: string; items: T[] }[] {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const role = roleOf(item);
+    const list = groups.get(role);
+    if (list) list.push(item);
+    else groups.set(role, [item]);
+  }
+  return [...groups.entries()]
+    .map(([role, list], seen) => ({ role, items: list, order: DETAILED_INDEX.get(role) ?? DETAILED_ORDER.length + seen }))
+    .sort((a, b) => a.order - b.order)
+    .map(({ role, items: list }) => ({ role, items: list }));
+}
