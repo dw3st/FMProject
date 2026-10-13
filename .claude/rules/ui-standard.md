@@ -140,7 +140,7 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 `SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
 e o Continuar com a borda direita.
 
-- Abas (4.11, #120): Painel, Elenco, **Clube** (instalações, `/club`), Formação, Desenvolvimento,
+- Abas (4.11, #120; ordem desde a 4.22.2): Painel, Elenco, Formação, **Clube** (instalações, `/club`), Desenvolvimento,
   Finanças, Equipe técnica, Ligas, Transferências, Olheiro, Estatísticas (as Seleções, 4.21, são uma aba da tela Ligas:
   não cabe uma 12ª aba). Com a aba a mais, a regra de encolher para só ícone continua
   valendo (`useCompactTabs`).

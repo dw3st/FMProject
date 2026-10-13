@@ -33,8 +33,8 @@ const navItems: NavItem[] = [
   { icon: "dashboard", tone: "text-primary", labelKey: "nav.dashboard", href: "/dashboard" },
   // `/squad` is a prefix: the real link is the player's own club.
   { icon: "squad", tone: "text-chart-2", labelKey: "nav.squad", href: "/squad" },
-  { icon: "stadium", tone: "text-chart-3", labelKey: "nav.club", href: "/club" },
   { icon: "tactics", tone: "text-chart-2", labelKey: "nav.formation", href: "/formation" },
+  { icon: "stadium", tone: "text-chart-3", labelKey: "nav.club", href: "/club" },
   { icon: "trend-up", tone: "text-primary", labelKey: "nav.development", href: "/development" },
   { icon: "wallet", tone: "text-chart-4", labelKey: "nav.finances", href: "/finances" },
   { icon: "staff-coach", tone: "text-chart-3", labelKey: "nav.staff", href: "/staff" },

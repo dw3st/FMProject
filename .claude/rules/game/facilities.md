@@ -263,7 +263,7 @@ andamento". Os setores e as obras de grupo já cresciam com o tamanho (8..30 sem
 
 ### Telas (#120)
 
-Aba **Clube** na barra superior (`/club`, `ClubScreen` → `FacilitiesView`), depois de Elenco: as instalações saíram de
+Aba **Clube** na barra superior (`/club`, `ClubScreen` → `FacilitiesView`), depois de Formação: as instalações saíram de
 Finanças (que fica só com o dinheiro; `/finances?tab=facilities` redireciona para `/club`). Seção **Instalações em
 detalhe** (`FacilityItemsPanel`, visual desde a 4.19, #132): por área (Estádio, CT, Base) uma grade de cartões, cada item
 com o desenho (`FacilityItemArt`: SVG inline 160×100 só com tokens do tema, a cor de destaque segue a condição —
