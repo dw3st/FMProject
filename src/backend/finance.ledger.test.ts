@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { facilitiesGate, seasonFraction, seasonPhaseMult } from "@/Domain/facilities/facilities";
+import { comfortPriceMult, facilitiesGate, seasonFraction, seasonPhaseMult } from "@/Domain/facilities/facilities";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, runBufferedDay } from "@/backend/advanceDay";
 import { applyBroadcasting, executeTransferFee } from "@/backend/FinancialService";
@@ -151,12 +151,14 @@ describe("finance ledger — continental home gate", () => {
     const fans = (await saveService.getMeta(saveId))!.board!.fans;
     const fill = stadiumFillRate(fans);
     // Facilities (`.claude/rules/game/facilities.md`): the gate comes from the attendance — with the
-    // default facilities it is the old capacity × fill gate times the season phase (0.98..1.06).
+    // default facilities it is the old capacity × fill gate times the season phase (0.98..1.06) and the comfort.
     const state = (await saveService.getMeta(saveId))!.activeLeagues!.find((l) => l.leagueSlug === meta.leagueSlug)!;
     const phase = seasonPhaseMult(seasonFraction(matchDate, state.start, state.end));
     const input = { followers: squad!.finances!.followers, tier: 1, fans, fraction: seasonFraction(matchDate, state.start, state.end) };
     expect(gateEntry!.amount).toBe(facilitiesGate(squad!.facilities!, input, "continental"));
-    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "continental", false, fill) * phase)).toBeLessThanOrEqual(1);
+    // Comfort now starts with the club's revenue (4.22.2): the price × the seats' comfort.
+    const comfort = comfortPriceMult(squad!.facilities!);
+    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "continental", false, fill) * phase * comfort)).toBeLessThanOrEqual(2);
     // Rounding happens once, on the doubled price — not "round league gate, then double" (that
     // can differ by a euro from rounding twice). Same shape, off by at most a rounding unit.
     expect(Math.abs(gateEntry!.amount - facilitiesGate(squad!.facilities!, input, "league") * 2)).toBeLessThanOrEqual(1);
