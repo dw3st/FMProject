@@ -1253,9 +1253,15 @@
       "director": "Diretor: renova (ou deixa sair) os contratos que vencem e responde as conversas de contrato dos jogadores. Você ainda pode renovar qualquer um na ficha.",
       "manager": "Técnico: você recebe o aviso de 90 dias e as conversas de contrato, e renova na ficha do jogador."
     },
+    "scouting": {
+      "label": "Missões dos olheiros",
+      "manager": "Técnico: você cria e cancela as missões dos olheiros na central de olheiros.",
+      "chief": "Olheiro-chefe: toda segunda ele manda cada olheiro livre em missão (um atrás de jovens, os outros onde conhecem melhor o país, buscando a linha mais carente do elenco). Você ainda pode criar e cancelar."
+    },
     "owner": {
       "director": "Diretor",
-      "manager": "Técnico"
+      "manager": "Técnico",
+      "chief": "Olheiro-chefe"
     }
   },
   "awards": {
@@ -1577,6 +1583,10 @@
     },
     "scouting": {
       "open": "Abrir a central de olheiros",
+      "chiefMissionsLead": "O olheiro-chefe mandou estes olheiros em missão:",
+      "chiefMissionsWeeks_one": "{{count}} semana",
+      "chiefMissionsWeeks_other": "{{count}} semanas",
+      "chiefMissionsFocus": "foco: {{line}}",
       "recommendationLead": "Neste mês o olheiro-chefe indica:",
       "subject": {
         "report": "Relatório de observação: {{target}}",
@@ -1585,6 +1595,7 @@
         "recommendation": "Indicações do olheiro-chefe",
         "shortlist": "Observado: {{player}}",
         "prospect": "Jovem disponível: {{player}}",
+        "chief_missions": "Novas missões do olheiro-chefe",
         "prospect_signed": "Jovem contratado: {{player}}"
       },
       "body": {
@@ -1594,6 +1605,7 @@
         "recommendation": "Neste mês o olheiro-chefe indica: {{players}}.",
         "shortlist": "{{player}}: {{reason}}.",
         "prospect": "{{player}} ({{club}}), sem clube, pode entrar na base por {{fee}} até {{expires}}.",
+        "chief_missions": "O olheiro-chefe mandou {{count}} olheiro(s) em missão.",
         "prospect_signed": "{{player}} entrou na base. Compensação de formação: {{fee}}."
       },
       "reason": {
@@ -3498,6 +3510,11 @@
     }
   },
   "scouting": {
+    "chiefPlans": {
+      "title": "Missões criadas pelo olheiro-chefe",
+      "line": "Toda segunda o olheiro-chefe manda cada olheiro livre em missão. Você ainda pode criar e cancelar; um olheiro cuja missão você cancelar fica livre por uma semana.",
+      "byChief": "Criada pelo olheiro-chefe"
+    },
     "tabs": {
       "search": "Busca",
       "missions": "Missões",

@@ -45,6 +45,8 @@ export interface ScoutAssignment {
   weeksDone: number;
   /** Players observed so far. */
   observed: number;
+  /** Created by the chief scout on his own (`SaveMeta.responsibilities.scouting === "chief"`). */
+  byChief?: true;
 }
 
 /** What the manager knows of a player, 0..100, and the day of the last observation. */
@@ -126,6 +128,11 @@ export interface ScoutingState {
   prospects: ScoutProspect[];
   /** Last monthly recommendation (`YYYY-MM`) and its players, so the next one does not repeat them. */
   lastRecommendation?: { month: string; playerIds: string[] };
+  /**
+   * Scouts whose mission the manager cancelled, and the day: the chief leaves them free for
+   * `CHIEF_PLAN.HOLD_DAYS` (`src/Domain/scouting/chiefPlanner.ts`).
+   */
+  chiefHold?: Record<string, string>;
 }
 
 /** `missionId` of the reports the chief writes for his monthly picks (no mission behind them). */

@@ -20,12 +20,14 @@ export function buildScoutingMessage(args: ScoutingMessageArgs): ScoutingInboxMe
     : args.kind === "recommendation" ? "Chief scout's recommendations"
     : args.kind === "shortlist" ? `Shortlist: ${who}`
     : args.kind === "prospect" ? `Prospect available: ${who}`
+    : args.kind === "chief_missions" ? "New missions by the chief scout"
     : `Prospect signed: ${who}`;
   const preview =
     args.kind === "report" || args.kind === "recommendation"
       ? (args.players ?? []).map((p) => `${p.name} (${p.grade})`).join(", ")
       : args.kind === "mission_done" ? `${args.count ?? 0} players observed`
       : args.kind === "shortlist" ? (args.reason ?? "")
+      : args.kind === "chief_missions" ? (args.missions ?? []).map((m) => `${m.scoutName}: ${targetText(m.target)}`).join(", ")
       : who;
   return {
     id: `scouting-${args.date}-${args.kind}-${randomUUID()}`,

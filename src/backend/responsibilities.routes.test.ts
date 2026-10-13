@@ -186,12 +186,21 @@ describe("responsibilities: the director's contracts", () => {
     const other = devAutoLogin("resp-director-other@test.local");
     recordSaveOwnership(meta.id, user.id);
     expect((await callResp(meta.id, "GET", other.session.token)).status).toBe(404);
-    expect(await (await callResp(meta.id, "GET", session.token)).json()).toEqual({ contracts: "director" });
+    expect(await (await callResp(meta.id, "GET", session.token)).json()).toEqual({ contracts: "director", scouting: "manager" });
     expect((await callResp(meta.id, "PUT", session.token, { contracts: "board" })).status).toBe(400);
     expect((await callResp(meta.id, "PUT", session.token, { contracts: "manager", x: 1 })).status).toBe(400);
     const put = await callResp(meta.id, "PUT", session.token, { contracts: "manager" });
     expect(put.status).toBe(200);
-    expect(await put.json()).toEqual({ contracts: "manager" });
+    expect(await put.json()).toEqual({ contracts: "manager", scouting: "manager" });
+    // Scouting missions: one key at a time, the other keeps its value.
+    expect((await callResp(meta.id, "PUT", session.token, { scouting: "director" })).status).toBe(400);
+    expect((await callResp(meta.id, "PUT", session.token, {})).status).toBe(400);
+    expect((await callResp(meta.id, "PUT", session.token, { scouting: "chief", other: true })).status).toBe(400);
+    const chief = await callResp(meta.id, "PUT", session.token, { scouting: "chief" });
+    expect(chief.status).toBe(200);
+    expect(await chief.json()).toEqual({ contracts: "manager", scouting: "chief" });
+    expect((await saveService.getMeta(meta.id))!.responsibilities).toEqual({ contracts: "manager", scouting: "chief" });
+    expect((await (await callResp(meta.id, "PUT", session.token, { scouting: "manager" })).json())).toEqual({ contracts: "manager", scouting: "manager" });
 
     await runThroughMonday(meta.id, originalEnd);
     const squad = (await saveService.getSquadById(meta.id, meta.clubId))!;

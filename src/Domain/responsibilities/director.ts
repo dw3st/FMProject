@@ -100,18 +100,51 @@ export function directorDecisions(args: {
   return { squad, outcomes, decided: out, news };
 }
 
-/** Who handles the human club's contracts (`SaveMeta.responsibilities`); absent = the director. */
+/**
+ * The human club's responsibilities (`SaveMeta.responsibilities`): who handles the contracts
+ * (absent = the director) and who plans the scouting missions (absent = the manager).
+ */
 export interface Responsibilities {
   contracts: "director" | "manager";
+  scouting?: "manager" | "chief";
 }
 
 export function directorHandlesContracts(r: Responsibilities | undefined): boolean {
   return r?.contracts !== "manager";
 }
 
+/** The chief scout plans the missions of the free scouts every Monday (issue #157). */
+export function chiefHandlesScouting(r: Responsibilities | undefined): boolean {
+  return r?.scouting === "chief";
+}
+
+/** A full view of the responsibilities with the defaults filled in. */
+export function responsibilitiesOf(r: Responsibilities | undefined): Required<Responsibilities> {
+  return { contracts: r?.contracts ?? "director", scouting: r?.scouting ?? "manager" };
+}
+
+/**
+ * A `PUT` body: one or both of `contracts` / `scouting` with a valid value and nothing else.
+ * Returns the fields to change, or null when invalid.
+ */
+export function parseResponsibilitiesPatch(v: unknown): Partial<Responsibilities> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const o = v as Record<string, unknown>;
+  const keys = Object.keys(o);
+  if (keys.length === 0 || keys.some((k) => k !== "contracts" && k !== "scouting")) return null;
+  const out: Partial<Responsibilities> = {};
+  if ("contracts" in o) {
+    if (o.contracts !== "director" && o.contracts !== "manager") return null;
+    out.contracts = o.contracts;
+  }
+  if ("scouting" in o) {
+    if (o.scouting !== "manager" && o.scouting !== "chief") return null;
+    out.scouting = o.scouting;
+  }
+  return out;
+}
+
 export function isResponsibilities(v: unknown): v is Responsibilities {
-  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
-  const keys = Object.keys(v);
-  const c = (v as { contracts?: unknown }).contracts;
-  return keys.length === 1 && keys[0] === "contracts" && (c === "director" || c === "manager");
+  const p = parseResponsibilitiesPatch(v);
+  return !!p && p.contracts !== undefined;
 }

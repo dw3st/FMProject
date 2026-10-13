@@ -31,6 +31,7 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   transfer: "transfer_news",
   transfer_in: "transfer_news",
   transfer_out: "transfer_news",
+  // Gems, shortlist alerts, prospects and the chief scout's new missions (`chief_missions`, #157).
   scouting: "scouting_alerts",
   manager_news: "manager_news",
   awards: "competitions",

@@ -187,6 +187,96 @@ describe("the chief's monthly recommendation (#100)", () => {
   }, 120_000);
 });
 
+/**
+ * Issue #157: with the chief scout in charge of the missions, every Monday each free scout gets a
+ * mission (one on youths), marked `byChief`, and one inbox summary; with the manager (default)
+ * nothing. A scout whose mission the manager cancelled stays free for a week.
+ */
+describe("the chief scout plans the missions (#157)", () => {
+  const created: string[] = [];
+  afterAll(async () => {
+    for (const id of created) await saveService.deleteSave(id);
+  }, 60_000);
+
+  const setup = async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    created.push(meta.id);
+    const field = signContract(makeProfessional("chief-plan-field", "fieldScout", 3), {
+      date: meta.currentDate!, seasonEnd: "2027-05-30", years: 1, clubFactor: 1,
+    });
+    const own = (await saveService.getSquadById(meta.id, "33"))!;
+    await saveService.saveSquadById(meta.id, { ...own, staff: { ...own.staff!, members: [...own.staff!.members, field] } });
+    return { meta, field };
+  };
+
+  test("manager in charge (default): no mission created", async () => {
+    const { meta } = await setup();
+    const day = await scoutingDay(saveService, meta.id, { date: nextMonday(meta.currentDate!), meta, matchEvents: [] });
+    expect(day.messages.some((m) => m.kind === "chief_missions")).toBe(false);
+    expect((await saveService.getScouting(meta.id)).missions).toHaveLength(0);
+  }, 120_000);
+
+  test("chief in charge: the day advance through a Monday sends every free scout, one on youths", async () => {
+    const { meta, field } = await setup();
+    await saveService.updateMeta(meta.id, { responsibilities: { contracts: "director", scouting: "chief" } });
+    const { advanceOneDay } = await import("@/backend/advanceDay");
+    let mondayDate = "";
+    for (let i = 0; i < 8 && !mondayDate; i++) {
+      const today = (await saveService.getMeta(meta.id))!.currentDate!;
+      expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+      if (new Date(`${today}T12:00:00Z`).getUTCDay() === 1) mondayDate = today;
+    }
+    expect(mondayDate).not.toBe("");
+    const state = await saveService.getScouting(meta.id);
+    expect(state.missions.map((m) => m.scoutId).sort()).toEqual(["chief", field.id].sort());
+    for (const m of state.missions) {
+      expect(m.byChief).toBe(true);
+      expect(m.start).toBe(mondayDate);
+      expect(m.target.kind).not.toBe("player");
+    }
+    expect(state.missions.filter((m) => m.target.kind === "youth")).toHaveLength(1);
+    const region = state.missions.find((m) => m.target.kind !== "youth")!;
+    expect(region.focus?.improves).toBe(true);
+    const inbox = await saveService.getInbox(meta.id);
+    const summary = inbox.filter((m) => m.category === "scouting" && m.kind === "chief_missions");
+    expect(summary).toHaveLength(1);
+  }, 300_000);
+
+  test("a mission the manager cancels is not recreated the next Monday", async () => {
+    const { meta, field } = await setup();
+    const monday = nextMonday(meta.currentDate!);
+    const chiefMeta = { ...meta, responsibilities: { contracts: "director" as const, scouting: "chief" as const } };
+    await scoutingDay(saveService, meta.id, { date: monday, meta: chiefMeta, matchEvents: [] });
+    const first = await saveService.getScouting(meta.id);
+    expect(first.missions).toHaveLength(2);
+    // The manager cancels the field scout's mission (route) on Sunday: the scout goes on hold.
+    const sunday = addDays(monday, 6);
+    await saveService.updateMeta(meta.id, { currentDate: sunday });
+    const cancelled = first.missions.find((m) => m.scoutId === field.id)!;
+    const { user, session } = devAutoLogin("chief-plan@test.local");
+    recordSaveOwnership(meta.id, user.id);
+    const handler = apiRoutes["/api/saves/:saveId/scouting/missions/:missionId"] as (r: Request) => Promise<Response>;
+    const del = await handler(Object.assign(
+      new Request(`http://localhost/api/saves/${meta.id}/scouting/missions/${cancelled.id}`, {
+        method: "DELETE", headers: { cookie: `fs_session=${session.token}` },
+      }),
+      { params: { saveId: meta.id, missionId: cancelled.id } },
+    ));
+    expect(del.status).toBe(200);
+    expect((await saveService.getScouting(meta.id)).chiefHold).toEqual({ [field.id]: sunday });
+    await scoutingDay(saveService, meta.id, { date: addDays(monday, 7), meta: chiefMeta, matchEvents: [] });
+    expect((await saveService.getScouting(meta.id)).missions.some((m) => m.scoutId === field.id)).toBe(false);
+    // A week after the cancellation he is planned again.
+    await scoutingDay(saveService, meta.id, { date: addDays(monday, 14), meta: chiefMeta, matchEvents: [] });
+    const later = await saveService.getScouting(meta.id);
+    expect(later.missions.some((m) => m.scoutId === field.id && m.byChief)).toBe(true);
+    expect(later.chiefHold).toBeUndefined();
+  }, 120_000);
+});
+
 describe("ownSideOpponents", () => {
   test("only the opponents who took the pitch, never the own side nor the unused bench", () => {
     const event = {
