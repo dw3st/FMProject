@@ -1,7 +1,7 @@
 /**
  * Youth competitions in the day pipeline (`.claude/rules/game/youth-competitions.md`): today's youth
  * games are played (quickSim), kept out of the day's first-team events, postponed or cancelled when a
- * club plays for the first team, and the human club's call-ups are used and cleared.
+ * club plays for the first team, and the human club's call-ups count down by their duration.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
@@ -138,22 +138,36 @@ describe("youth competitions in advanceOneDay", () => {
     expect(blocked.has(moved.date)).toBe(false);
   }, 120_000);
 
-  test("a call-up plays the club's next youth game and is cleared after", async () => {
+  test("call-ups play the club's youth game and count down by their duration", async () => {
     const meta = (await saveService.getMeta(saveId))!;
     const next = (await fixturesOf("u21_england"))
       .filter((f) => !f.played && f.date >= meta.currentDate! && (f.home === HUMAN || f.away === HUMAN))
       .sort((a, b) => (a.date < b.date ? -1 : 1))[0]!;
     const squad = (await saveService.getSquadById(saveId, HUMAN))!;
-    const star = [...squad.players].sort((a, b) => (b.seasonLog?.appearances ?? 0) - (a.seasonLog?.appearances ?? 0) || a.id.localeCompare(b.id))
-      .find((p) => !p.injury)!;
-    await saveService.updateMeta(saveId, { currentDate: next.date, youthCallUps: { u21: [star.id] } });
+    const [star, second, third] = [...squad.players]
+      .sort((a, b) => (b.seasonLog?.appearances ?? 0) - (a.seasonLog?.appearances ?? 0) || a.id.localeCompare(b.id))
+      .filter((p) => !p.injury && !p.suspension);
+    await saveService.updateMeta(saveId, {
+      currentDate: next.date,
+      youthCallUps: { u21: [
+        { id: star!.id, duration: "next", left: 1 },
+        { id: second!.id, duration: "games3", left: 3 },
+        { id: third!.id, duration: "indefinite" },
+        { id: "not_in_club", duration: "indefinite" },
+      ] },
+    });
     const outcome = await advanceOneDay(saveService, saveId);
     expect(outcome.ok).toBe(true);
     const log = (await saveService.getDayLog(saveId, next.date))!;
     const game = (log.youthMatches ?? []).find((m) => m.fixtureId === next.id);
     expect(game?.score).toBeTruthy();
     const mine = game!.home === HUMAN ? game!.players.home : game!.players.away;
-    expect(mine).toContain(star.id);
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toBeUndefined();
+    expect(mine).toContain(star!.id);
+    const secondLeft = mine.includes(second!.id) ? 2 : 3;
+    // `next` is used up, `games3` counts the game he played, `indefinite` stays, a stranger leaves.
+    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+      { id: second!.id, duration: "games3", left: secondLeft },
+      { id: third!.id, duration: "indefinite" },
+    ] });
   }, 180_000);
 });

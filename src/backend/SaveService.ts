@@ -105,8 +105,8 @@ export interface SaveMeta {
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
   /** Man-marking chosen for the match on `date` (player instructions, max 2 pairs); cleared by the next advance. */
   matchMarking?: MatchMarking;
-  /** Human club call-ups for the next game of each youth competition. */
-  youthCallUps?: { u21?: string[]; u19?: string[] };
+  /** Human club call-ups for the youth competitions, each with a duration (`youthComps/callUps.ts`). */
+  youthCallUps?: import("@/Domain/youthComps/callUps").YouthCallUps;
   /** Call-ups of the last youth game of each competition who did not play (shown on the call-up panel). */
   youthCallUpsSkipped?: { u21?: { date: string; players: string[] }; u19?: { date: string; players: string[] } };
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */

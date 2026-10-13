@@ -10,6 +10,10 @@ import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { overallAvg } from "@/Domain/playerRating";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
+import {
+  callUpAgeOk, callUpEligibleIds, isCallUpDuration, mergeCallUps, pruneCallUps,
+  type CallUpDuration, type YouthCallUps,
+} from "@/Domain/youthComps/callUps";
 import { emptySeasonLog, type RosterPlayer, type Squad } from "@/types/playerTypes";
 import type { YouthCompAge } from "@/types/youthCompTypes";
 
@@ -42,24 +46,39 @@ export function eligibleForCallUp(squad: Squad, age: YouthCompAge): YouthEligibl
     fitness: p.seasonLog?.fitness ?? emptySeasonLog().fitness, academy,
   });
   return [...squad.players.map((p) => view(p, false)), ...(squad.youth ?? []).map((p) => view(p, true))]
-    .filter((p) => age === "u21" || p.age <= YOUTH_COMP.MAX_AGE.u19)
+    .filter((p) => callUpAgeOk(age, p.age))
     .sort((a, b) => a.age - b.age || b.overall - a.overall || a.id.localeCompare(b.id));
 }
 
-/** Validates a call-up body: arrays of distinct ids of the club (squad or academy), ≤ 11, ≤ 19 for the u19. */
-export function parseCallUps(body: unknown, squad: Squad): { u21?: string[]; u19?: string[] } | null {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  const out: { u21?: string[]; u19?: string[] } = {};
+/**
+ * Validates a call-up body: per age `null` (clear) or a list of `{ id, duration }` with distinct ids of
+ * the club (squad or academy, ≤ 19 for the u19), ≤ 11, and a known duration.
+ */
+export function parseCallUps(
+  body: unknown, squad: Squad,
+): { ok: true; value: Partial<Record<YouthCompAge, { id: string; duration: CallUpDuration }[] | null>> } | { ok: false; error: string } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, error: "invalidPlayers" };
+  const out: Partial<Record<YouthCompAge, { id: string; duration: CallUpDuration }[] | null>> = {};
   for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
-    if (key !== "u21" && key !== "u19") return null;
-    if (value === null) continue;
-    if (!Array.isArray(value) || value.length > YOUTH_COMP.MAX_CALL_UPS) return null;
-    if (!value.every((v) => typeof v === "string") || new Set(value).size !== value.length) return null;
-    const ok = new Set(eligibleForCallUp(squad, key).map((p) => p.id));
-    if (!(value as string[]).every((id) => ok.has(id))) return null;
-    if (value.length > 0) out[key] = value as string[];
+    if (key !== "u21" && key !== "u19") return { ok: false, error: "invalidPlayers" };
+    if (value === null) {
+      out[key] = null;
+      continue;
+    }
+    if (!Array.isArray(value) || value.length > YOUTH_COMP.MAX_CALL_UPS) return { ok: false, error: "invalidPlayers" };
+    const list: { id: string; duration: CallUpDuration }[] = [];
+    for (const v of value) {
+      if (!v || typeof v !== "object" || typeof (v as { id?: unknown }).id !== "string") return { ok: false, error: "invalidPlayers" };
+      const { id, duration } = v as { id: string; duration?: unknown };
+      if (!isCallUpDuration(duration)) return { ok: false, error: "invalidDuration" };
+      list.push({ id, duration });
+    }
+    if (new Set(list.map((c) => c.id)).size !== list.length) return { ok: false, error: "invalidPlayers" };
+    const ok = callUpEligibleIds(squad, key);
+    if (!list.every((c) => ok.has(c.id))) return { ok: false, error: "invalidPlayers" };
+    out[key] = list;
   }
-  return out;
+  return { ok: true, value: out };
 }
 
 async function humanSquad(saveId: string) {
@@ -125,7 +144,10 @@ export const youthCompRoutes = {
     return Response.json({ meta, fixtures, standings, names, leaders: meta.youth.leaders, leagueOf });
   },
 
-  /** `GET` the human club's next youth games, call-ups and eligible players; `PUT { u21?, u19? }`. */
+  /**
+   * `GET` the human club's next youth games, call-ups (with what is left of each duration) and eligible
+   * players; `PUT { u21?, u19? }` with `[{ id, duration }]` (or `null` to clear an age).
+   */
   "/api/saves/:saveId/youth-callups": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
@@ -144,7 +166,10 @@ export const youthCompRoutes = {
       }));
       return Response.json({
         next: await nextGames(saveId, meta.clubId, meta.currentDate ?? "", leagueCountry),
-        callUps: meta.youthCallUps ?? {},
+        callUps: Object.fromEntries(AGES.flatMap((age) => {
+          const list = pruneCallUps(meta.youthCallUps?.[age] ?? [], callUpEligibleIds(squad, age));
+          return list.length > 0 ? [[age, list]] : [];
+        })),
         skipped,
         eligible: { u21: eligibleForCallUp(squad, "u21"), u19: eligibleForCallUp(squad, "u19") },
       });
@@ -161,10 +186,14 @@ export const youthCompRoutes = {
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       if (!squad) return Response.json({ error: "noClub" }, { status: 409 });
       const parsed = parseCallUps(body, squad);
-      if (!parsed) return Response.json({ error: "invalidPlayers" }, { status: 400 });
-      const callUps = { ...meta.youthCallUps, ...parsed };
+      if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+      const callUps: YouthCallUps = { ...meta.youthCallUps };
       for (const age of AGES) {
-        if ((body as Record<string, unknown>)[age] !== undefined && !parsed[age]) delete callUps[age];
+        if (!(age in parsed.value)) continue;
+        const wanted = parsed.value[age];
+        const merged = wanted ? mergeCallUps(callUps[age], wanted) : [];
+        if (merged.length > 0) callUps[age] = merged;
+        else delete callUps[age];
       }
       const updated = await saveService.updateMeta(saveId, {
         youthCallUps: callUps.u21?.length || callUps.u19?.length ? callUps : undefined,

@@ -903,7 +903,7 @@ try {
         const res = await handler(Object.assign(
           new Request(`http://localhost/api/saves/${saveId}/youth-callups`, {
             method: "PUT", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
-            body: JSON.stringify({ u21: [pick.id] }),
+            body: JSON.stringify({ u21: [{ id: pick.id, duration: "next" }] }),
           }),
           { params: { saveId } },
         ));

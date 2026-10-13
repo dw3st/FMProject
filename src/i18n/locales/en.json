@@ -3695,7 +3695,7 @@
     },
     "callUps": {
       "title": "Youth games",
-      "hint": "Call up to {{n}} players for the next game. Called-up players play even if they are first-team starters.",
+      "hint": "Call up to {{n}} players for the youth games. Called-up players play even if they are first-team starters; each call-up lasts for the duration you pick.",
       "next": "Next: {{opponent}} ({{venue}}) on {{date}}",
       "venue": {
         "home": "home",
@@ -3707,7 +3707,17 @@
       "saved": "Saved",
       "skipped": "Called up but did not play on {{date}}: {{names}}",
       "fitness": "fitness {{n}}",
-      "failed": "Could not save the call-ups."
+      "failed": "Could not save the call-ups.",
+      "durationLabel": "Duration of new call-ups",
+      "duration": {
+        "next": "Next game",
+        "games3": "3 games",
+        "games5": "5 games",
+        "indefinite": "Until I remove",
+        "rhythm": "Until match fit"
+      },
+      "applyAll": "Apply to all selected",
+      "rhythmLeft": "rhythm {{n}}/{{of}}"
     }
   },
   "referees": {

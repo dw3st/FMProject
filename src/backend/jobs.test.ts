@@ -84,7 +84,7 @@ describe("jobs: sacking, offers, changing club", () => {
     const accepted = { ...(await offerFor(meta, target, addDays(date, 3))), budget: 7_777_777, compensation: offerCompensation };
     await saveService.updateMeta(meta.id, {
       jobOffers: [declined, expired, accepted],
-      youthCallUps: { u21: ["x"] }, youthCallUpsSkipped: { u21: { date, players: ["x"] } },
+      youthCallUps: { u21: [{ id: "x", duration: "indefinite" }] }, youthCallUpsSkipped: { u21: { date, players: ["x"] } },
     });
     // A reborn offer pending at the old club, and the new club's best player out of contract this season.
     const legend = (id: string): RetiredPlayer => ({

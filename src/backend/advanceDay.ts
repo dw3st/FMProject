@@ -124,6 +124,7 @@ import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rol
 import { fixtureKey } from "@/Domain/referees/assign";
 import { withRefereeLog } from "@/Domain/advanceDay/matches";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
+import { advanceCallUps, callUpEligibleIds } from "@/Domain/youthComps/callUps";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -2922,8 +2923,17 @@ export async function advanceOneDay(
     if (youthDay.consumedCallUps.length > 0) {
       const callUps = { ...meta.youthCallUps };
       const skipped = { ...meta.youthCallUpsSkipped };
+      const humanNow = meta.clubId
+        ? (squadWrites.get(meta.clubId)?.squad ?? (await saveService.getSquadById(saveId, meta.clubId)))
+        : null;
       for (const age of youthDay.consumedCallUps) {
-        delete callUps[age];
+        // Each call-up counts the game down by its duration (`youthComps/callUps.ts`).
+        const ratings = youthDay.humanRatings[age];
+        const left = humanNow
+          ? advanceCallUps(callUps[age] ?? [], ratings ? new Map(Object.entries(ratings)) : null, callUpEligibleIds(humanNow, age))
+          : [];
+        if (left.length > 0) callUps[age] = left;
+        else delete callUps[age];
         const ids = youthDay.skippedCallUps[age] ?? [];
         if (ids.length > 0) skipped[age] = { date: currentDate, players: ids };
         else delete skipped[age];
