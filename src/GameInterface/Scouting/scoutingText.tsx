@@ -24,7 +24,7 @@ export function scoutingTexts(message: ScoutingInboxMessage, t: T, leagues: Leag
   const target = targetLabel(message.target, t, leagues, lang);
   const players = (message.players ?? []).map((p) => `${p.name} (${p.grade}${p.gem ? ", " + t("scouting.gem") : ""})`).join(", ");
   const vars = {
-    target, players, count: message.count ?? 0, player: message.playerName ?? "", club: message.clubName ?? "",
+    target, players, count: message.count ?? message.missions?.length ?? 0, player: message.playerName ?? "", club: message.clubName ?? "",
     grade: message.grade ?? "", fee: formatFee(message.fee ?? 0), expires: message.expires ?? "",
     reason: message.reason ? t(`inbox.scouting.reason.${message.reason}`) : "",
   };
@@ -36,13 +36,33 @@ export function scoutingTexts(message: ScoutingInboxMessage, t: T, leagues: Leag
 
 export function ScoutingInboxBody({ message, leagues }: { message: ScoutingInboxMessage; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
-  const tab = message.kind === "prospect" || message.kind === "gem" ? "gems" : message.kind === "shortlist" ? "shortlist" : "reports";
+  const tab = message.kind === "prospect" || message.kind === "gem" ? "gems"
+    : message.kind === "shortlist" ? "shortlist"
+    : message.kind === "chief_missions" ? "missions"
+    : "reports";
+  const planned = message.kind === "chief_missions" ? (message.missions ?? []) : [];
   // The chief's picks: each one opens the player's page (knowledge block with his report), like the
   // names in the reports table; the button below opens the reports, where every pick has one.
   const picks = message.kind === "recommendation" ? (message.players ?? []).filter((p) => p.playerId && p.squadId) : [];
   return (
     <div className="space-y-3">
-      {picks.length > 0 ? (
+      {planned.length > 0 ? (
+        <>
+          <p className="text-sm text-foreground m-0">{t("inbox.scouting.chiefMissionsLead")}</p>
+          <ul className="m-0 p-0 list-none space-y-2">
+            {planned.map((m, i) => (
+              <li key={i} className="text-sm">
+                <span className="font-semibold text-foreground">{m.scoutName}</span>
+                <span className="text-muted-foreground">
+                  {" · "}{t(`scouting.kind.${m.target.kind}`)} · {targetLabel(m.target, t as T, leagues, i18n.language)}
+                  {" · "}{t("inbox.scouting.chiefMissionsWeeks", { count: m.weeks })}
+                  {m.line ? ` · ${t("inbox.scouting.chiefMissionsFocus", { line: t(`scouting.lines.${m.line}`, { defaultValue: m.line }) })}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : picks.length > 0 ? (
         <>
           <p className="text-sm text-foreground m-0">{t("inbox.scouting.recommendationLead")}</p>
           <ul className="m-0 p-0 list-none space-y-2">

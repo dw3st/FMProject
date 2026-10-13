@@ -54,6 +54,8 @@ export interface ScoutingData {
   ownCountry: string;
   ownContinent: string | null;
   maxFieldScouts: number;
+  /** The chief scout plans the free scouts' missions every Monday (issue #157). */
+  chiefPlans: boolean;
   maxShortlist: number;
   weeks: { region: number[]; continent: number[]; youth: number[]; player: number };
   scouts: ScoutingScout[];

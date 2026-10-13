@@ -289,3 +289,37 @@ Tópicos de notícia (`.claude/rules/game/responsibilities.md`): `report`, `miss
 
 Filtro `onlyAwarded` ("Só premiados") na busca: jogador com algum prêmio no histórico (`DisplayPlayer.awarded`). O
 prêmio é público: vale com qualquer conhecimento. Ver `.claude/rules/game/awards.md`.
+
+## Missões pelo olheiro-chefe (#157)
+
+Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da Equipe técnica; padrão: o técnico,
+`.claude/rules/game/responsibilities.md`), o olheiro-chefe planeja as missões sozinho.
+
+- **Quando:** toda segunda, no `scoutingDay`, **logo depois** de as missões trabalharem (`advanceScoutingWeek`): as
+  missões que acabaram nessa semana liberam os olheiros na hora. As novas têm `start` = a segunda e, como as criadas à
+  mão no mesmo dia, só trabalham (e cobram viagem) a partir da segunda seguinte.
+- **Quem:** cada olheiro livre (o chefe e os olheiros de campo sem missão). Chefe vago: nada (não há quem planeje).
+  Desempregado / sem clube: nada.
+- **Regra** (`planChiefMissions`, `src/Domain/scouting/chiefPlanner.ts`, pura, desempate por
+  `seedFrom(save:data:país)`):
+  - com 2+ livres, o par (olheiro, país) de maior conhecimento por país vai numa missão de **jovens** de 4 semanas;
+  - os outros vão numa missão de **país** de 8 semanas no país onde cada um tem mais conhecimento
+    (`countryKnowledgeOf`) e que nenhuma missão ativa já cobre (uma missão de liga bloqueia o país dela); sem país
+    conhecido ao menos "moderado" (25), uma missão de **continente** de 8 semanas no continente da nacionalidade dele;
+  - as missões de região têm foco `{ line, improves: true }` na linha mais carente (`neediestLine`): a maior falta contra
+    os mínimos do elenco (GK 3, DEF 7, MID 7, FWD 4), senão a linha de campo com os titulares mais fracos
+    (`starterLineAverages`; o goleiro só por falta de profundidade, porque a nota dele tem outra escala);
+  - nunca missão de jogador.
+- Cada missão passa pelas mesmas checagens da rota de criar (olheiro sem missão, semanas permitidas para o tipo, alvo com
+  ligas no mundo) e é gravada com `byChief: true`.
+- **Cancelamento à mão:** o técnico continua criando e cancelando. Cancelar uma missão (rota `DELETE`) grava
+  `ScoutingState.chiefHold[olheiro] = data`; o chefe deixa esse olheiro livre por 7 dias (`CHIEF_PLAN.HOLD_DAYS`,
+  `onHold`): cancelada no domingo, a segunda seguinte não a recria; uma semana depois ele volta ao plano. As entradas
+  vencidas saem na segunda.
+- **Inbox:** `scouting` / `chief_missions` (`missions`: olheiro, alvo, semanas, linha), uma por segunda com missões novas,
+  tópico `scouting_alerts` (ligado). Viagem: a regra de sempre (`missionCost`).
+- **Tela:** a aba Missões mostra "Missões criadas pelo olheiro-chefe" com uma linha de explicação quando ligado, e
+  "Criada pelo olheiro-chefe" no cartão de cada missão `byChief`; `GET /scouting` devolve `chiefPlans`.
+- Testes: `src/Domain/scouting/chiefPlanner.test.ts`; `src/backend/scouting.routes.test.ts` ("the chief scout plans the
+  missions (#157)": técnico não cria, o avanço do dia por uma segunda cria com o chefe, o cancelamento segura uma
+  semana); `src/backend/responsibilities.routes.test.ts` (validação do `PUT`).
