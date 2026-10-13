@@ -33,7 +33,8 @@ import { matchesPerRoundByCountry } from "@/backend/refereeWorld";
 import { ageOn, poolSizeFor } from "@/Domain/referees/pool";
 import { seasonLabel } from "@/Domain/history/history";
 import { rankManagers } from "@/Domain/managers/managers";
-import { comfortPriceMult } from "@/Domain/facilities/facilities";
+import { comfortLevelPriceMult, comfortPriceMult } from "@/Domain/facilities/facilities";
+import { comfortLevel } from "@/Domain/facilities/facilityItems";
 import { firstHomePitch, pitchRolloverPairs, type PitchByYear } from "@/../scripts/smoke/aiPitchRollover";
 import { FACILITY_ITEMS, conditionOf, itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
 
@@ -2371,7 +2372,9 @@ try {
       (e) => e.kind === "gate" && !!e.ref?.competition && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition),
     );
     const lo = gateRevenue(capacity, "league", false, stadiumFillRate(0)) * 0.98 * 0.85;
-    const hi = gateRevenue(capacity, "league", false, stadiumFillRate(100)) * 1.06 * 1.3;
+    // Comfort raises the price (4.22.2: a rich club starts with comfortable seats); worn seats lower it.
+    const comfortHi = humanFinal?.facilities ? comfortLevelPriceMult(comfortLevel(humanFinal.facilities)) : 1;
+    const hi = gateRevenue(capacity, "league", false, stadiumFillRate(100)) * 1.06 * 1.3 * comfortHi;
     check(leagueGates.length > 0 && leagueGates.every((e) => e.amount >= lo - 1 && e.amount <= hi + 1),
       `board: ${leagueGates.length} league gate(s) within the fans' fill range ${Math.round(lo)}..${Math.round(hi)}`);
     check(new Set(leagueGates.map((e) => e.amount)).size > 1,

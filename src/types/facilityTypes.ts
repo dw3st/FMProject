@@ -98,6 +98,11 @@ export interface ClubFacilities {
    * season phase, so a club with default facilities sells exactly what it sold before.
    */
   anchor: { capacity: number; followers: number; tier: number };
+  /**
+   * Training-ground and academy levels (1..5) the club started with: upkeep is charged only above
+   * max(tier's implied level, this), so the facilities a club already had cost nothing extra.
+   */
+  startLevels?: { training: number; academy: number };
   /** Home games, oldest first (bounded). */
   attendance: AttendanceRow[];
   /** Best home attendance since the facilities were set up. */

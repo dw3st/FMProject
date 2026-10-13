@@ -10,7 +10,7 @@ import { gateRevenue } from "@/Domain/finance/gate";
 import { academyEffectsOf, committedSpend, itemBusy, itemValue, payRepairNow, projectRunning, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { comfortLevelPriceMult, facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { busyGroups, groupBusy, projectGroup, requestGroup, worksSizeFactor } from "@/Domain/facilities/facilities";
-import { FACILITY_ITEMS, conditionOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
+import { FACILITY_ITEMS, conditionOf, groupLevel as groupLevelOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { FacilityItemId } from "@/types/facilityTypes";
 import { clubAnnualRevenue } from "@/Domain/finance/wages";
@@ -171,6 +171,20 @@ describe("costs", () => {
     expect(weeklyUpkeep(withFacilities(sq, f), 9e7)).toBe(0);
     expect(weeklyUpkeep(withFacilities(sq, withGroupLevel(f, "training", 5)), 9e7)).toBe(Math.round((9e7 * 2 * F.TRAINING_UPKEEP_SHARE) / 52));
     expect(weeklyUpkeep(sq, 9e7)).toBe(0);
+  });
+
+  test("starting facilities by revenue: no upkeep for what the club already had", () => {
+    const sq = squad();
+    const rich = initialFacilities(sq, 1, 0.98);
+    expect(rich.startLevels!.training).toBeGreaterThan(3);
+    expect(weeklyUpkeep(withFacilities(sq, rich), 9e7)).toBe(0);
+    // Building above the starting level costs upkeep for the levels added.
+    const built = withGroupLevel(rich, "training", 5);
+    const extra = groupLevelOf(built, "training") - Math.max(3, rich.startLevels!.training);
+    expect(weeklyUpkeep(withFacilities(sq, built), 9e7)).toBe(Math.round((9e7 * extra * F.TRAINING_UPKEEP_SHARE) / 52));
+    // A poor club below its tier's implied level pays nothing until it passes the implied level.
+    const poor = initialFacilities(sq, 1, 0);
+    expect(weeklyUpkeep(withFacilities(sq, poor), 9e7)).toBe(0);
   });
 });
 

@@ -5,6 +5,8 @@ import { tierOfLeague } from "@/Domain/season/countryRollover";
 import { initialFacilities, seatCost, withFacilities } from "@/Domain/facilities/facilities";
 import { MANAGERS } from "@/Domain/managers/managerConfig";
 import type { Squad } from "@/types/playerTypes";
+import { readdir } from "fs/promises";
+import { fileURLToPath } from "url";
 
 /**
  * Facilities I/O helpers (`.claude/rules/game/facilities.md`): the league tier of a club's league
@@ -19,9 +21,55 @@ export async function leagueTierOf(leagueSlug: string): Promise<number> {
   return (pyramid ? tierOfLeague(pyramid, leagueSlug) : null) ?? 1;
 }
 
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
+
+/** Annual income of a club (broadcasting + commercial, the natural-tier basis). */
+const incomeOf = (squad: Squad): number => (squad.finances?.broadcasting ?? 0) + (squad.finances?.commercial ?? 0);
+
+let worldIncomes: Promise<number[]> | null = null;
+
+/** Sorted incomes of every club of the base world (`src/Data/squads`), read once per process. */
+function loadWorldIncomes(): Promise<number[]> {
+  worldIncomes ??= (async () => {
+    const root = `${DATA_DIR}/squads`;
+    const glob = new Bun.Glob("*.json");
+    const out: number[] = [];
+    for (const d of await readdir(root, { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      for await (const f of glob.scan(`${root}/${d.name}`)) {
+        out.push(incomeOf((await Bun.file(`${root}/${d.name}/${f}`).json()) as Squad));
+      }
+    }
+    return out.sort((a, b) => a - b);
+  })().catch((e) => {
+    worldIncomes = null;
+    throw e;
+  });
+  return worldIncomes;
+}
+
+/** Revenue percentile 0..1 of a club against the base world (ties count half). */
+export async function revenuePercentileOf(squad: Squad): Promise<number> {
+  const all = await loadWorldIncomes();
+  if (all.length === 0) return 0.5;
+  const x = incomeOf(squad);
+  let below = 0;
+  let equal = 0;
+  for (const v of all) {
+    if (v < x) below++;
+    else if (v === x) equal++;
+  }
+  return (below + equal / 2) / all.length;
+}
+
+/** A human club's starting facilities: league tier for the demand anchor, items by its revenue. */
+export async function startingFacilities(squad: Squad, leagueSlug: string) {
+  return initialFacilities(squad, await leagueTierOf(leagueSlug), await revenuePercentileOf(squad));
+}
+
 /** The squad with freshly set-up facilities (human club: career start or taking over a club). */
 export async function withInitialFacilities(squad: Squad, leagueSlug: string): Promise<Squad> {
-  return withFacilities(squad, initialFacilities(squad, await leagueTierOf(leagueSlug)));
+  return withFacilities(squad, await startingFacilities(squad, leagueSlug));
 }
 
 // Country weights are expensive the first time (tier-1 levels of the country and the big 5): kept
