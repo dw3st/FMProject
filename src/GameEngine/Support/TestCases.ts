@@ -237,6 +237,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'one-on-one-pass',
+    name:        'One-on-one — pass or shoot?',
+    description: 'Attacking midfielder through on goal 15 yd out, only the GK ahead, two CBs chasing from behind; the ST level with him but 14 yd wider (further from goal). Issue #156: he shoots (or carries on), never squares it to the ST.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'CAM', 101, 42, STRIKER),
+        makePlayer('Chen',     'A', 'ST',  101, 28, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   99, 43.5, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   97, 39, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113.2, 37.6, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          '2v1',
     name:        '2v1 — Attackers vs Defender',
     description: 'ST with ball + a wide winger vs one CB. Tests pass lane selection and combination play.',
