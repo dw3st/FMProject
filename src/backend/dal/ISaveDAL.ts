@@ -10,7 +10,8 @@ import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } 
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { MarketState, SeatMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -169,4 +170,23 @@ export interface ISaveDAL {
   writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void>;
   deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void>;
   listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]>;
+
+  // ── Seats (`.claude/rules/game/multiplayer.md`): `saves/{saveId}/seats/{seatId}/` ──────────────
+  readSeat(saveId: string, seatId: string): Promise<SeatState | null>;
+  writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void>;
+  readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null>;
+  writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void>;
+  readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null>;
+  writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void>;
+  readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null>;
+  writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void>;
+  readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]>;
+  writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void>;
+  appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void>;
+  listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]>;
+  readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]>;
+  appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null>;
+  writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void>;
 }

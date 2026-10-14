@@ -19,7 +19,8 @@ import type {
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { MarketState, SeatMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -521,5 +522,70 @@ export class BufferingSaveDAL implements ISaveDAL {
       else if (this.pending.has(key)) out.delete(rest);
     }
     return [...out.values()];
+  }
+
+  // ── Seats: plain buffered resources (phase 1 of the flush, before the meta) ─────────────────
+  // Seat ids are validated by the inner DAL when the thunk runs; a bad id never reaches the cache
+  // because every caller gets it from `SaveMeta.seats` / `save_members`.
+
+  readSeat(saveId: string, seatId: string): Promise<SeatState | null> {
+    return this.readThrough(`seat:${saveId}:${seatId}`, () => this.inner.readSeat(saveId, seatId));
+  }
+  async writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void> {
+    this.buffer(`seat:${saveId}:${seatId}`, seat, () => this.inner.writeSeat(saveId, seatId, seat));
+  }
+  readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null> {
+    return this.readThrough(`seatTactics:${saveId}:${seatId}`, () => this.inner.readSeatTactics(saveId, seatId));
+  }
+  async writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void> {
+    this.buffer(`seatTactics:${saveId}:${seatId}`, tactics, () => this.inner.writeSeatTactics(saveId, seatId, tactics));
+  }
+  readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null> {
+    return this.readThrough(`seatAchievements:${saveId}:${seatId}`, () => this.inner.readSeatAchievements(saveId, seatId));
+  }
+  async writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void> {
+    this.buffer(`seatAchievements:${saveId}:${seatId}`, state, () => this.inner.writeSeatAchievements(saveId, seatId, state));
+  }
+  readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {
+    return this.readThrough(`seatScouting:${saveId}:${seatId}`, () => this.inner.readSeatScouting(saveId, seatId));
+  }
+  async writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void> {
+    this.buffer(`seatScouting:${saveId}:${seatId}`, state, () => this.inner.writeSeatScouting(saveId, seatId, state));
+  }
+  readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    return this.readThrough(`seatInbox:${saveId}:${seatId}`, () => this.inner.readSeatInbox(saveId, seatId));
+  }
+  async writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void> {
+    this.buffer(`seatInbox:${saveId}:${seatId}`, messages, () => this.inner.writeSeatInbox(saveId, seatId, messages));
+  }
+  async appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void> {
+    const key = `seatInbox:${saveId}:${seatId}`;
+    await this.readSeatInbox(saveId, seatId);
+    // The cache AFTER the await (a concurrent append may have landed while this call waited).
+    const current = (this.cache.get(key) as InboxMessage[] | undefined) ?? [];
+    await this.writeSeatInbox(saveId, seatId, [...current, message]);
+  }
+  /** Not buffered (same reason as `listLedgerSeasons`). */
+  listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    return this.inner.listSeatLedgerSeasons(saveId, seatId);
+  }
+  readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]> {
+    return this.readThrough(`seatLedger:${saveId}:${seatId}:${season}`, () => this.inner.readSeatLedger(saveId, seatId, season));
+  }
+  async writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    this.buffer(`seatLedger:${saveId}:${seatId}:${season}`, entries, () => this.inner.writeSeatLedger(saveId, seatId, season, entries));
+  }
+  async appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const key = `seatLedger:${saveId}:${seatId}:${season}`;
+    await this.readSeatLedger(saveId, seatId, season);
+    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
+    await this.writeSeatLedger(saveId, seatId, season, [...current, ...entries]);
+  }
+  readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null> {
+    return this.readThrough(`seatMarket:${saveId}:${seatId}`, () => this.inner.readSeatMarket(saveId, seatId));
+  }
+  async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
+    this.buffer(`seatMarket:${saveId}:${seatId}`, market, () => this.inner.writeSeatMarket(saveId, seatId, market));
   }
 }

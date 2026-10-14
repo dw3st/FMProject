@@ -13,7 +13,9 @@ import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } 
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { MarketState, SeatMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
+import { SEAT_ID_PATTERN } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -81,6 +83,23 @@ function seasonGoalsPath(saveId: string, league: string, year: number) {
 function dayLogPath(saveId: string, date: string) {
   const [yyyy, mm] = date.split("-");
   return `${SAVES_DIR}/${saveId}/days/${yyyy}/${mm}/${date}.json`;
+}
+
+/** A seat's folder; the id is validated before it reaches a path. */
+function seatDir(saveId: string, seatId: string): string {
+  if (!SEAT_ID_PATTERN.test(seatId)) throw new Error(`invalid seat id: ${seatId}`);
+  return `${SAVES_DIR}/${saveId}/seats/${seatId}`;
+}
+
+async function readJsonFile<T>(path: string): Promise<T | null> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) return null;
+  return file.json() as Promise<T>;
+}
+
+async function writeJsonFile(dir: string, path: string, value: unknown, pretty = false): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await Bun.write(path, pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value));
 }
 
 function leagueDir(saveId: string, leagueSlug: string) {
@@ -661,5 +680,100 @@ export class FileSystemDAL implements ISaveDAL {
       .map((n) => /^([a-z0-9_]+)-(\d{4})\.json$/.exec(n))
       .filter((m): m is RegExpExecArray => m !== null)
       .map((m) => ({ league: m[1]!, year: Number(m[2]) }));
+  }
+
+  // ── Seats ─────────────────────────────────────────────────────────────────
+
+  async readSeat(saveId: string, seatId: string): Promise<SeatState | null> {
+    return readJsonFile<SeatState>(`${seatDir(saveId, seatId)}/seat.json`);
+  }
+
+  async writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/seat.json`, seat, true);
+  }
+
+  async readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null> {
+    return readJsonFile<TacticsSave>(`${seatDir(saveId, seatId)}/tactics.json`);
+  }
+
+  async writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/tactics.json`, tactics, true);
+  }
+
+  async readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null> {
+    return readJsonFile<AchievementsState>(`${seatDir(saveId, seatId)}/achievements.json`);
+  }
+
+  async writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/achievements.json`, state);
+  }
+
+  async readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {
+    return readJsonFile<ScoutingState>(`${seatDir(saveId, seatId)}/scouting.json`);
+  }
+
+  async writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/scouting.json`, state);
+    // The scout search blurs every player by this file's knowledge: rebuild its index.
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    return (await readJsonFile<InboxMessage[]>(`${seatDir(saveId, seatId)}/inbox.json`)) ?? [];
+  }
+
+  async writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/inbox.json`, messages, true);
+  }
+
+  async appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void> {
+    const existing = await this.readSeatInbox(saveId, seatId);
+    existing.push(message);
+    await this.writeSeatInbox(saveId, seatId, existing);
+  }
+
+  async listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    let names: string[];
+    try {
+      names = await readdir(`${seatDir(saveId, seatId)}/ledger`);
+    } catch {
+      return [];
+    }
+    return names
+      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .sort((a, b) => a - b);
+  }
+
+  async readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]> {
+    return (await readJsonFile<LedgerEntry[]>(`${seatDir(saveId, seatId)}/ledger/${season}.json`)) ?? [];
+  }
+
+  async appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const existing = await this.readSeatLedger(saveId, seatId, season);
+    await this.writeSeatLedger(saveId, seatId, season, [...existing, ...entries]);
+  }
+
+  async writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (!Number.isInteger(season)) throw new Error(`invalid ledger season: ${season}`);
+    const dir = `${seatDir(saveId, seatId)}/ledger`;
+    await writeJsonFile(dir, `${dir}/${season}.json`, entries, true);
+  }
+
+  async readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null> {
+    return readJsonFile<SeatMarketState>(`${seatDir(saveId, seatId)}/market.json`);
+  }
+
+  async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/market.json`, market, true);
+    bumpSaveDataVersion(saveId);
   }
 }
