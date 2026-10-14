@@ -148,3 +148,133 @@ export function searchUsers(me: string, query: string): { nickname: string; rela
     .all(pattern, me, me, me, SOCIAL.SEARCH_LIMIT) as NamedUser[];
   return rows.map((r) => ({ nickname: r.nickname, relation: relationOf(me, r.id) }));
 }
+
+// ── Requests and friendships ────────────────────────────────────────────────
+
+export function friendCount(userId: string): number {
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM friendships WHERE user_a = ? OR user_b = ?")
+    .get(userId, userId) as { n: number };
+  return row.n;
+}
+
+export function pendingOutCount(userId: string): number {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM friend_requests WHERE from_user = ?").get(userId) as { n: number };
+  return row.n;
+}
+
+/** Makes two users friends (removing the requests between them). False when either is at the friend limit. */
+export function befriend(a: string, b: string, now: number): boolean {
+  if (friendCount(a) >= SOCIAL.MAX_FRIENDS || friendCount(b) >= SOCIAL.MAX_FRIENDS) return false;
+  const [x, y] = ordered(a, b);
+  db.transaction(() => {
+    db.prepare(
+      "DELETE FROM friend_requests WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)",
+    ).run(a, b, b, a);
+    db.prepare("INSERT OR IGNORE INTO friendships (user_a, user_b, since) VALUES (?, ?, ?)").run(x, y, now);
+  })();
+  return true;
+}
+
+export type RequestResult = "requested" | "befriended" | "alreadyFriends" | "limit" | "notFound";
+
+/**
+ * A request from `from` to `to`. A block either way answers notFound (the blocked never learns it). When `to`
+ * already asked `from`, it becomes a friendship at once. Sending the same request again is a no-op.
+ */
+export function sendFriendRequest(from: string, to: string, now: number): RequestResult {
+  if (from === to || blockedEitherWay(from, to)) return "notFound";
+  if (areFriends(from, to)) return "alreadyFriends";
+  if (hasRequest(to, from)) return befriend(from, to, now) ? "befriended" : "limit";
+  if (hasRequest(from, to)) return "requested";
+  if (friendCount(from) >= SOCIAL.MAX_FRIENDS || pendingOutCount(from) >= SOCIAL.MAX_PENDING_OUT) return "limit";
+  db.prepare("INSERT INTO friend_requests (from_user, to_user, created_at) VALUES (?, ?, ?)").run(from, to, now);
+  return "requested";
+}
+
+export type AcceptResult = "accepted" | "notFound" | "limit";
+
+export function acceptRequest(me: string, from: string, now: number): AcceptResult {
+  if (!hasRequest(from, me)) return "notFound";
+  return befriend(me, from, now) ? "accepted" : "limit";
+}
+
+export function declineRequest(me: string, from: string): boolean {
+  return db.prepare("DELETE FROM friend_requests WHERE from_user = ? AND to_user = ?").run(from, me).changes > 0;
+}
+
+export function cancelRequest(me: string, to: string): boolean {
+  return db.prepare("DELETE FROM friend_requests WHERE from_user = ? AND to_user = ?").run(me, to).changes > 0;
+}
+
+export function removeFriend(a: string, b: string): boolean {
+  const [x, y] = ordered(a, b);
+  return db.prepare("DELETE FROM friendships WHERE user_a = ? AND user_b = ?").run(x, y).changes > 0;
+}
+
+export function listFriends(me: string): (NamedUser & { since: number })[] {
+  return db
+    .prepare(
+      `SELECT u.id, u.nickname, f.since FROM friendships f
+       JOIN users u ON u.id = CASE WHEN f.user_a = ? THEN f.user_b ELSE f.user_a END
+       WHERE (f.user_a = ? OR f.user_b = ?) AND u.nickname IS NOT NULL
+       ORDER BY lower(u.nickname)`,
+    )
+    .all(me, me, me) as (NamedUser & { since: number })[];
+}
+
+export function friendIds(me: string): string[] {
+  const rows = db
+    .prepare(
+      "SELECT CASE WHEN user_a = ? THEN user_b ELSE user_a END AS id FROM friendships WHERE user_a = ? OR user_b = ?",
+    )
+    .all(me, me, me) as { id: string }[];
+  return rows.map((r) => r.id);
+}
+
+export function listIncoming(me: string): DatedUser[] {
+  return db
+    .prepare(
+      `SELECT u.id, u.nickname, r.created_at AS at FROM friend_requests r JOIN users u ON u.id = r.from_user
+       WHERE r.to_user = ? AND u.nickname IS NOT NULL ORDER BY r.created_at DESC, lower(u.nickname)`,
+    )
+    .all(me) as DatedUser[];
+}
+
+export function listOutgoing(me: string): DatedUser[] {
+  return db
+    .prepare(
+      `SELECT u.id, u.nickname, r.created_at AS at FROM friend_requests r JOIN users u ON u.id = r.to_user
+       WHERE r.from_user = ? AND u.nickname IS NOT NULL ORDER BY r.created_at DESC, lower(u.nickname)`,
+    )
+    .all(me) as DatedUser[];
+}
+
+// ── Blocks ──────────────────────────────────────────────────────────────────
+
+/** Blocks `other`: undoes the friendship and cancels the requests between the two. */
+export function blockUser(me: string, other: string, now: number): void {
+  if (me === other) return;
+  const [x, y] = ordered(me, other);
+  db.transaction(() => {
+    db.prepare("INSERT OR IGNORE INTO blocks (user_id, blocked_id, created_at) VALUES (?, ?, ?)").run(me, other, now);
+    db.prepare("DELETE FROM friendships WHERE user_a = ? AND user_b = ?").run(x, y);
+    db.prepare(
+      "DELETE FROM friend_requests WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)",
+    ).run(me, other, other, me);
+  })();
+}
+
+/** Unblocking never restores the friendship. */
+export function unblockUser(me: string, other: string): boolean {
+  return db.prepare("DELETE FROM blocks WHERE user_id = ? AND blocked_id = ?").run(me, other).changes > 0;
+}
+
+export function listBlocked(me: string): NamedUser[] {
+  return db
+    .prepare(
+      `SELECT u.id, u.nickname FROM blocks b JOIN users u ON u.id = b.blocked_id
+       WHERE b.user_id = ? AND u.nickname IS NOT NULL ORDER BY lower(u.nickname)`,
+    )
+    .all(me) as NamedUser[];
+}
