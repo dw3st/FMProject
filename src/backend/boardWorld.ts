@@ -65,6 +65,9 @@ export function expectedPositionFromSquads(squads: Squad[], squadId: string): nu
   return expectedRank(squadId, objectiveClubs(squads, squadId));
 }
 
+/** Expectation and derby of one of today's matches (also read by the press, `pressWorld`). */
+export interface MatchContext { expectation: number; derby: boolean }
+
 /**
  * Every official match the human club played today (league, cup, continental) moves the meters:
  * the result, home/derby weights, the form, and — league only — the table position vs. the objective.
@@ -79,10 +82,11 @@ export async function boardAfterMatches(args: {
   events: MatchEvent[];
   fixtureOf: (competition: string, round: number, fixtureId: string) => Fixture | undefined;
   squadOf: (squadId: string) => Promise<Squad | null>;
-}): Promise<BoardState> {
+}): Promise<{ board: BoardState; context: Map<string, MatchContext> }> {
   let board = args.board;
+  const context = new Map<string, MatchContext>();
   const mine = args.events.filter((e) => e.home === args.playerSquadId || e.away === args.playerSquadId);
-  if (mine.length === 0) return board;
+  if (mine.length === 0) return { board, context };
 
   let standings: StandingRow[] | null = null;
   const me = await args.squadOf(args.playerSquadId);
@@ -126,6 +130,7 @@ export async function boardAfterMatches(args: {
     const oppLevel = safeLevel(opponent);
     const expectation = myLevel !== null && oppLevel !== null ? matchExpectation(myLevel, oppLevel, home) : 0;
     board = applyMatchResult(board, { goalsFor, goalsAgainst, home, derby, expectation, ...(league ? { league } : {}) });
+    context.set(e.fixtureId, { expectation, derby });
   }
-  return board;
+  return { board, context };
 }

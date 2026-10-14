@@ -66,3 +66,22 @@ export function pickTrigger(
   if (state.lastDate && daysBetween(state.lastDate, state.today) < PRESS.MIN_GAP_DAYS) return null;
   return best;
 }
+
+const BOUNDARY_ZONES = new Set(["prom", "ucl", "uel", "uecl", "lib", "sud"]);
+
+/**
+ * Fronteiras da reta final a partir das zonas da liga (`leagueData`): 1 (título), a última posição de acesso e de
+ * vaga continental (`to` de cada zona), e a última posição a salvo antes do rebaixamento (`rel`: `from − 1`, ou
+ * `tamanho − fromEnd`). Sem repetição, em ordem.
+ */
+export function zoneBoundaries(zones: { id: string; from?: number; to?: number; fromEnd?: number }[], size: number): number[] {
+  const out = new Set<number>([1]);
+  for (const z of zones) {
+    if (BOUNDARY_ZONES.has(z.id) && typeof z.to === "number") out.add(z.to);
+    if (z.id === "rel") {
+      if (typeof z.from === "number") out.add(z.from - 1);
+      else if (typeof z.fromEnd === "number") out.add(size - z.fromEnd);
+    }
+  }
+  return [...out].filter((b) => b >= 1 && b < size).sort((a, b) => a - b);
+}

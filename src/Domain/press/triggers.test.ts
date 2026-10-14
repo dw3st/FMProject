@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { pickTrigger, preMatchTriggers, postMatchTriggers, isRunIn, nextWinless } from "@/Domain/press/triggers";
+import { pickTrigger, preMatchTriggers, postMatchTriggers, isRunIn, nextWinless, zoneBoundaries } from "@/Domain/press/triggers";
 
 describe("pré-jogo", () => {
   test("clássico, mata-mata, ultimato", () => {
@@ -66,4 +66,17 @@ describe("pickTrigger", () => {
     expect(pickTrigger(["title"], { today: "2027-03-20", pending: true })).toBe("title");
   });
   test("vazio", () => expect(pickTrigger([], { today: "2027-03-20" })).toBeNull());
+});
+
+describe("zoneBoundaries", () => {
+  test("título, vagas continentais e a última posição a salvo", () => {
+    const zones = [
+      { id: "ucl", from: 1, to: 4 }, { id: "uel", from: 5, to: 5 }, { id: "uecl", from: 6, to: 6 }, { id: "rel", fromEnd: 3 },
+    ];
+    expect(zoneBoundaries(zones, 20)).toEqual([1, 4, 5, 6, 17]);
+  });
+  test("acesso e rebaixamento com from; liga sem zonas só tem o título", () => {
+    expect(zoneBoundaries([{ id: "prom", from: 1, to: 3 }, { id: "rel", from: 22 }], 24)).toEqual([1, 3, 21]);
+    expect(zoneBoundaries([], 10)).toEqual([1]);
+  });
 });

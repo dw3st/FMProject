@@ -61,7 +61,12 @@ import {
   snapshotBoard,
   stadiumFillRate,
 } from "@/Domain/boardFans/boardFans";
-import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
+import { boardAfterMatches, objectiveFromSquads, type MatchContext } from "@/backend/boardWorld";
+import { pressDay } from "@/backend/pressWorld";
+import { buildDayNews, emptyDayNewsInput } from "@/Domain/news/buildDayNews";
+import type { DayNewsInput } from "@/types/newsTypes";
+import type { PressInboxMessage } from "@/types/inboxTypes";
+import type { PressState } from "@/types/pressTypes";
 import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
 import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
@@ -442,6 +447,11 @@ export async function advanceOneDay(
     let board: BoardState | undefined = meta.board;
     const boardMessages: Parameters<typeof buildBoardMessage>[0][] = [];
     let sackedReason: SackReason | null = null;
+    // Press conferences (Etapa 42, `.claude/rules/game/press.md`): the human club's titles and knockout exits of the
+    // day, and the expectation/derby of each of its matches (from the board), read by `pressDay` at the end of the day.
+    const pressTitles: string[] = [];
+    const pressEliminated: string[] = [];
+    let pressMatchContext = new Map<string, MatchContext>();
 
     // Membership comes from the save's squad folders. Built once for the day's matches and
     // training; only the season rollover changes it, and it re-reads the index right after.
@@ -993,7 +1003,7 @@ export async function advanceOneDay(
 
     // ── Board and fans: today's official matches of the human club (standings already written) ──
     if (board && playerSquadId) {
-      board = await boardAfterMatches({
+      const boardOut = await boardAfterMatches({
         board, service: saveService, saveId, playerSquadId,
         playerLeagueSlug: meta.leagueSlug,
         playerLeagueState: activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug),
@@ -1002,6 +1012,8 @@ export async function advanceOneDay(
           roundUpdates.get(competition)?.get(round)?.find((f) => f.id === fixtureId),
         squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       });
+      board = boardOut.board;
+      pressMatchContext = boardOut.context;
     }
 
     // ── The manager's ban (`.claude/rules/game/var.md` §4): served by an official match, a red starts one ──
@@ -1109,6 +1121,8 @@ export async function advanceOneDay(
         const label = competitionName(cSlug, catalogForCupPrizes as unknown as LeagueData[], "en");
         const base = await cupBaseFor(cupMeta.cup.country);
 
+        if (playerSquadId && winnerId === playerSquadId && stage === "final") pressTitles.push(`cup:${cSlug}`);
+        if (playerSquadId && loserId === playerSquadId) pressEliminated.push(cSlug);
         if (board && playerSquadId && (winnerId === playerSquadId || loserId === playerSquadId)) {
           if (winnerId === playerSquadId) {
             board = applyCompetitionEvent(board, stage === "final" ? { kind: "title", title: `cup:${cSlug}` } : { kind: "stage" });
@@ -1199,6 +1213,10 @@ export async function advanceOneDay(
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
         for (const ev of events) {
+          if (playerSquadId && "clubId" in ev && ev.clubId === playerSquadId) {
+            if (ev.kind === "champion") pressTitles.push(`continental:${cSlug}`);
+            else if (ev.kind === "eliminated") pressEliminated.push(cSlug);
+          }
           if (board && "clubId" in ev && ev.clubId === playerSquadId) {
             if (ev.kind === "champion") board = applyCompetitionEvent(board, { kind: "title", title: `continental:${cSlug}` });
             else if (ev.kind === "advanced") board = applyCompetitionEvent(board, { kind: "stage" });
@@ -2780,6 +2798,33 @@ export async function advanceOneDay(
         })]
       : [];
 
+    // ── Press conferences (Etapa 42): after the board and morale; the invite goes out after any `clearInbox` ──
+    let pressState: PressState | undefined;
+    let pressInvite: PressInboxMessage | undefined;
+    let pressNews: DayNewsInput["press"] = [];
+    if (humanActive && board) {
+      const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+      const pressOut = await pressDay({
+        saveId, service: saveService, meta, date: currentDate, clubId: meta.clubId,
+        leagueSlug: homeSlug,
+        leagueState: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug),
+        leagueZones: (await getLeagueData()).find((l) => l.slug === homeSlug)?.zones ?? [],
+        index, board,
+        myMatches: dayEvents.filter((e): e is MatchEvent =>
+          e.kind === "match" && (e.home === meta.clubId || e.away === meta.clubId)),
+        titlesToday: pressTitles,
+        eliminatedToday: pressEliminated,
+        ...(seasonEnded
+          ? { rollover: { objectiveMet: playerObjectiveMet, move: playerMove ? { kind: playerMove.kind, to: playerMove.to } : null, championOf: playerChampionOf } }
+          : {}),
+        matchContext: pressMatchContext,
+      });
+      board = pressOut.board;
+      pressState = pressOut.press;
+      pressInvite = pressOut.invite;
+      pressNews = pressOut.news;
+    }
+
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
     if (seasonEnded) {
       await saveService.writeTransfers(saveId, []);
@@ -2870,6 +2915,14 @@ export async function advanceOneDay(
     for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
     for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
     for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
+    if (pressInvite) await emitInboxMessage(saveId, pressInvite, saveService);
+    // Press news of the day (absence, promises). TODO Task 10: goes into the day's `collectDayNews` input.
+    if (pressNews.length > 0) {
+      await saveService.appendNews(saveId, buildDayNews({
+        ...emptyDayNewsInput(currentDate), humanClubId: meta.clubId, humanLeague: meta.leagueSlug,
+        followed: meta.followedLeagues ?? [], press: pressNews,
+      }));
+    }
 
     // ── Achievements of the human manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
     let achievementsUnlocked = 0;
@@ -2907,6 +2960,7 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
     if (board) metaPatch.board = board;
+    if (pressState) metaPatch.press = pressState;
     if (managerBan !== meta.managerBan) metaPatch.managerBan = managerBan;
     if (jobOffers.length !== offersBefore.length || newOffers.length > 0) metaPatch.jobOffers = jobOffers;
     if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
@@ -2948,6 +3002,7 @@ export async function advanceOneDay(
       // Without a club: the career follows nobody until an offer is accepted.
       metaPatch.clubId = "";
       metaPatch.board = undefined;
+      metaPatch.press = undefined;
       metaPatch.rotationOverride = undefined;
       metaPatch.youthCallUps = undefined;
       metaPatch.youthCallUpsSkipped = undefined;
