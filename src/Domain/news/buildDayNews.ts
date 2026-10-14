@@ -5,6 +5,8 @@ export const NEWS = {
   UPSET_LEVEL_GAP: 0.6,
   BIG_FEE: 20_000_000,
   HUGE_FEE: 60_000_000,
+  /** Recorde de contratação só é notícia a partir deste valor (ou no clube do jogador). */
+  RECORD_MIN_FEE: 5_000_000,
   PER_LEAGUE: 3,
   PER_DAY: 30,
   MOVES_MAX_TIER: 2,
@@ -58,7 +60,8 @@ export function buildDayNews(input: DayNewsInput): NewsItem[] {
   }
   for (const l of input.newLeaders) add("new_leader", `${l.league}:${l.club.id}`, l, 2, [l.club.id], [], { club: l.club.name, league: l.league ?? "" });
   for (const t of input.transfers) {
-    if (t.fee < NEWS.BIG_FEE && !t.star && !t.clubRecord) continue;
+    const record = t.clubRecord && (t.fee >= NEWS.RECORD_MIN_FEE || t.to.id === input.humanClubId);
+    if (t.fee < NEWS.BIG_FEE && !t.star && !record) continue;
     add("big_transfer", t.playerId, t, t.fee >= NEWS.HUGE_FEE ? 3 : 1, [t.to.id, ...(t.from ? [t.from.id] : [])], [t.playerId],
       { player: t.player, from: t.from?.name ?? "", to: t.to.name, fee: t.fee });
   }
