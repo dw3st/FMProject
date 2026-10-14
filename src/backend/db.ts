@@ -34,4 +34,15 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_saves_user ON saves(user_id);
+
+  CREATE TABLE IF NOT EXISTS save_members (
+    save_id    TEXT NOT NULL,
+    user_id    TEXT NOT NULL REFERENCES users(id),
+    seat_id    TEXT NOT NULL,
+    role       TEXT NOT NULL CHECK (role IN ('owner', 'member')),
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (save_id, user_id)
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_save_members_seat ON save_members(save_id, seat_id);
+  CREATE INDEX IF NOT EXISTS idx_save_members_user ON save_members(user_id);
 `);
