@@ -43,4 +43,11 @@ describe("buildDayNews", () => {
     expect(imp["thrashing:1"]).toBe(2);
     expect(imp["thrashing:2"]).toBe(1);
   });
+  test("recorde de contratação barato só é notícia no clube do jogador", () => {
+    const tr = (playerId: string, to: string, fee: number) =>
+      ({ league: "cm", playerId, player: playerId, from: club("x"), to: club(to), fee, star: false, clubRecord: true });
+    const out = buildDayNews({ ...emptyDayNewsInput("d"), humanClubId: "me",
+      transfers: [tr("cheap", "small", 451_000), tr("mid", "small2", 6_000_000), tr("mine", "me", 300_000)] });
+    expect(out.map((n) => n.playerIds[0]).sort()).toEqual(["mid", "mine"]);
+  });
 });
