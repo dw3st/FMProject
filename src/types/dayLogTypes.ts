@@ -289,4 +289,6 @@ export interface AdvanceDayResponse extends DayLog {
   playerChampionOf?: string | null;
   /** Achievements unlocked today (`.claude/rules/game/achievements.md`). */
   achievements?: number;
+  /** Present (true) when a press conference invite went out today (`.claude/rules/game/press.md`). */
+  pressInvite?: true;
 }

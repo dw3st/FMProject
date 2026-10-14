@@ -121,6 +121,7 @@ function fakeDeps(opts: {
   target: (currentDate: string) => string;
   failOn?: string;
   seasonEndOn?: string;
+  pressInviteOn?: string;
 }) {
   let currentDate = opts.start;
   let locked = 0;
@@ -134,12 +135,14 @@ function fakeDeps(opts: {
       if (currentDate === opts.failOn) return { ok: false, status: 500, error: "failed to persist day" };
       days.push(currentDate);
       const ended = currentDate === opts.seasonEndOn;
+      const invite = currentDate === opts.pressInviteOn;
       currentDate = addDays(currentDate, 1);
       return {
         ok: true,
         payload: {
           date: days[days.length - 1],
           newDate: currentDate,
+          ...(invite ? { pressInvite: true } : {}),
           ...(ended
             ? {
                 seasonEnded: true,
@@ -212,6 +215,13 @@ describe("runAdvanceBatch", () => {
     const r = await runAdvanceBatch(7, f.deps);
     expect(r.error?.status).toBe(400);
     expect(r.daysAdvanced).toBe(0);
+  });
+
+  test("stops on the day a press conference invite arrives", async () => {
+    const f = fakeDeps({ start: "2025-08-01", target: () => "2025-08-10", pressInviteOn: "2025-08-03" });
+    const r = await runAdvanceBatch(14, f.deps);
+    expect(r).toMatchObject({ daysAdvanced: 3, done: true, newDate: "2025-08-04", pressInvite: true });
+    expect(f.days).toEqual(["2025-08-01", "2025-08-02", "2025-08-03"]);
   });
 
   test("aggregates season events and follows a target that moves after the rollover", async () => {

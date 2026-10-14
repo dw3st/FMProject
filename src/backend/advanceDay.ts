@@ -3081,6 +3081,7 @@ export async function advanceOneDay(
         ...(ended ? { sacked: true as const } : {}),
         ...(newOffers.length + nationalDay.offers > 0 ? { jobOffers: newOffers.length + nationalDay.offers } : {}),
         ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
+        ...(pressInvite ? { pressInvite: true as const } : {}),
       },
     };
 }
