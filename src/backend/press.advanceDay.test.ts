@@ -39,6 +39,31 @@ describe("press in advanceOneDay", () => {
     expect(month.some((n) => n.kind === "press_absent")).toBe(true);
   }, 180_000);
 
+  test("a pending conference keeps its invite through the player's rollover (clearInbox)", async () => {
+    const meta = await create();
+    const today = meta.currentDate!;
+    const pending = buildConference({
+      id: "press-keep", trigger: "heavy_defeat", kind: "post", date: today, expires: addDays(today, 5),
+      params: { opponent: "Rival", score: "0–4" }, seed: "s",
+    });
+    await saveService.updateMeta(meta.id, { press: { pending, winless: 0, promises: [], history: [] } });
+    const active = (meta.activeLeagues ?? []).map((l) =>
+      l.leagueSlug === "premier_league" || l.leagueSlug === "of_championship" ? { ...l, end: today } : l);
+    await saveService.updateMeta(meta.id, { activeLeagues: active });
+
+    const out = await advanceOneDay(saveService, meta.id);
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.payload.seasonEnded).toBe(true);
+    const after = (await saveService.getMeta(meta.id))!;
+    const pendingId = after.press?.pending?.id;
+    expect(pendingId).toBeDefined();
+    // A title closes the pending one and opens a new conference; either way the pending one has its invite.
+    const inbox = await saveService.getInbox(meta.id);
+    const invites = inbox.filter((x) => x.category === "press");
+    expect(invites.some((x) => x.category === "press" && x.pressId === pendingId)).toBe(true);
+    if (pendingId === "press-keep") expect(invites.find((x) => x.category === "press" && x.pressId === "press-keep")!.id).toBe("press-keep");
+  }, 180_000);
+
   test("a pre-match invite for a derby, two days before", async () => {
     const meta = await create();
     const start = meta.currentDate!;

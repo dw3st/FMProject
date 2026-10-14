@@ -150,7 +150,7 @@ import { buildRegistrationMessage } from "@/Domain/inbox/registrationMessage";
 import type { RegistrationNotice } from "@/types/registrationTypes";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
-import { buildManagerNewsMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
+import { buildManagerNewsMessage, buildPressInviteMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
 import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts, syncPlayerRestDays } from "@/backend/reschedulingWorld";
 import { firstMatchAfterMoves, rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
 import { ageStaff, staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
@@ -2858,6 +2858,14 @@ export async function advanceOneDay(
       await saveService.writeTransfers(saveId, []);
       await saveService.clearInbox(saveId);
       for (const msg of seasonMessages) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService);
+      // A press conference still pending keeps its invite (stable id); a fresh one is emitted below.
+      const keptPress = pressState?.pending;
+      if (keptPress && keptPress.id !== pressInvite?.pressId) {
+        await emitInboxMessage(saveId, buildPressInviteMessage(keptPress.date, {
+          pressId: keptPress.id, trigger: keptPress.trigger, kind: keptPress.kind, expires: keptPress.expires,
+          ...(keptPress.params.opponent ? { opponent: keptPress.params.opponent } : {}),
+        }), saveService);
+      }
     }
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
     // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
