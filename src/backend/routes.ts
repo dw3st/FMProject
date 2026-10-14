@@ -29,6 +29,8 @@ import { marketRoutes } from "@/backend/marketRoutes";
 import { clubHistoryRoutes } from "@/backend/clubHistoryRoutes";
 import { loadViewer, obscureSquadForViewer } from "@/backend/scoutingWorld";
 import { inboxRoutes } from "@/backend/inbox";
+import { pressRoutes } from "@/backend/pressRoutes";
+import { newsRoutes } from "@/backend/newsRoutes";
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import { readdir } from "fs/promises";
@@ -118,6 +120,8 @@ export const apiRoutes = withJsonErrors({
   ...marketRoutes,
   ...clubHistoryRoutes,
   ...inboxRoutes,
+  ...pressRoutes,
+  ...newsRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when
   // POSTHOG_KEY is set — the project key is a public client token.
