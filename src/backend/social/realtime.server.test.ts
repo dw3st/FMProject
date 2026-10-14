@@ -95,7 +95,7 @@ test("hello with an own save shows the friend as playing with the club", async (
   const ca = await connect(a.token);
   ca.ws.send(JSON.stringify({ type: "hello", saveId }));
   const got = await waitFor(cb.events, (e) => e.type === "presence" && e.status === "playing");
-  expect(got).toEqual({ type: "presence", nickname: a.nickname, status: "playing", club: "Fluminense" });
+  expect(got).toEqual({ type: "presence", nickname: a.nickname!, status: "playing", club: "Fluminense" });
   await waitFor(ca.events, (e) => e.type === "pong");
   ca.ws.close();
   cb.ws.close();
