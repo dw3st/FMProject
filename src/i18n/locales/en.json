@@ -4516,7 +4516,7 @@
           "1": "Was the elimination fair?"
         },
         "winless": {
-          "0": "Five games without a win. What's missing?",
+          "0": "Another run without a win. What's missing?",
           "1": "Is the bad run a worry?"
         },
         "upset_win": {
