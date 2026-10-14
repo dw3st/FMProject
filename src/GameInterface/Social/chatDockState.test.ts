@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { closeInDock, isRoomVisible, openInDock, parseDock, toggleInDock } from "@/GameInterface/Social/chatDock";
+import { closeInDock, isRoomVisible, openInDock, parseDock, toggleInDock } from "@/GameInterface/Social/chatDockState";
 
 test("opening a fourth chat minimizes the oldest open one", () => {
   let dock = openInDock([], "dm:a");

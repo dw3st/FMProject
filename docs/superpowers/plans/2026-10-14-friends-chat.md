@@ -66,7 +66,7 @@ bun install --frozen-lockfile && mkdir -p src/Data && cp -R src/example_data/. s
 | `src/backend/auth/routes.ts` (+ `devLogin.test.ts`) | modificar | `?as=<alias>` no dev-login (segundo usuário só em desenvolvimento) |
 | `src/GameInterface/Social/socialApi.ts` | criar | Chamadas HTTP tipadas |
 | `src/GameInterface/Social/socialState.ts` (+ teste) | criar | Puro: grupos de amigos, contagens, mescla de mensagens, parse de eventos |
-| `src/GameInterface/Social/chatDock.ts` (+ teste) | criar | Puro: janelas abertas/minimizadas e `sessionStorage` |
+| `src/GameInterface/Social/chatDockState.ts` (+ teste) | criar | Puro: janelas abertas/minimizadas e `sessionStorage` |
 | `src/GameInterface/Social/useSocial.tsx` | criar | `SocialProvider`, `useSocial`, socket com reconexão |
 | `src/GameInterface/Social/FriendsButton.tsx` | criar | Botão "Amigos · N" com selo de não lidas |
 | `src/GameInterface/Social/FriendsPanel.tsx` | criar | Painel (apelido, código, abas Amigos/Pedidos/Adicionar, bloqueados) |
@@ -3351,8 +3351,8 @@ git commit -m "feat(auth): segundo usuário no dev-login para testar o chat" -m 
 ## Tarefa 13: Cliente — API, estado puro e janelas
 
 **Arquivos:**
-- Criar: `src/GameInterface/Social/socialApi.ts`, `socialState.ts`, `chatDock.ts`
-- Teste: `src/GameInterface/Social/socialState.test.ts`, `src/GameInterface/Social/chatDock.test.ts`
+- Criar: `src/GameInterface/Social/socialApi.ts`, `socialState.ts`, `chatDockState.ts`
+- Teste: `src/GameInterface/Social/socialState.test.ts`, `src/GameInterface/Social/chatDockState.test.ts`
 
 - [ ] **Passo 1: escrever os testes que falham**
 
@@ -3416,11 +3416,11 @@ describe("parseServerEvent", () => {
 });
 ```
 
-`src/GameInterface/Social/chatDock.test.ts`:
+`src/GameInterface/Social/chatDockState.test.ts`:
 
 ```ts
 import { expect, test } from "bun:test";
-import { closeInDock, isRoomVisible, openInDock, parseDock, toggleInDock } from "@/GameInterface/Social/chatDock";
+import { closeInDock, isRoomVisible, openInDock, parseDock, toggleInDock } from "@/GameInterface/Social/chatDockState";
 
 test("opening a fourth chat minimizes the oldest open one", () => {
   let dock = openInDock([], "dm:a");
@@ -3630,7 +3630,7 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
 }
 ```
 
-`src/GameInterface/Social/chatDock.ts`:
+`src/GameInterface/Social/chatDockState.ts`:
 
 ```ts
 import { SOCIAL } from "@/Domain/social/socialConfig";
@@ -3705,7 +3705,7 @@ Expected: PASS.
 - [ ] **Passo 5: commit**
 
 ```bash
-git add src/GameInterface/Social/socialApi.ts src/GameInterface/Social/socialState.ts src/GameInterface/Social/chatDock.ts src/GameInterface/Social/socialState.test.ts src/GameInterface/Social/chatDock.test.ts
+git add src/GameInterface/Social/socialApi.ts src/GameInterface/Social/socialState.ts src/GameInterface/Social/chatDockState.ts src/GameInterface/Social/socialState.test.ts src/GameInterface/Social/chatDockState.test.ts
 git commit -m "feat(social): API do cliente, estado e janelas" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
@@ -3991,7 +3991,7 @@ git commit -m "feat(social): textos e ícones de amigos e chat" -m "Co-Authored-
 **Arquivos:**
 - Criar: `src/GameInterface/Social/useSocial.tsx`
 
-Sem teste unitário próprio (a lógica testável ficou em `socialState.ts` e `chatDock.ts`); conferido no navegador
+Sem teste unitário próprio (a lógica testável ficou em `socialState.ts` e `chatDockState.ts`); conferido no navegador
 (Tarefa 21).
 
 - [ ] **Passo 1: implementar**
@@ -4010,7 +4010,7 @@ import {
   parseDock,
   toggleInDock,
   type DockChat,
-} from "@/GameInterface/Social/chatDock";
+} from "@/GameInterface/Social/chatDockState";
 import {
   applyPresence,
   mergeMessages,
@@ -5251,7 +5251,7 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 | `src/backend/social/realtime.ts` | Sockets por usuário, presença, entrega, upgrade de `/api/ws` |
 | `src/backend/social/socialRoutes.ts` | Rotas |
 | `src/backend/social/maintenance.ts` | Limpeza de 90 dias e varredura de presença (30 s) |
-| `src/GameInterface/Social/*` | `SocialProvider`/`useSocial`, `FriendsButton`, `FriendsPanel`, `ChatDock`, `ChatWindow`, `socialApi`, `socialState`, `chatDock` |
+| `src/GameInterface/Social/*` | `SocialProvider`/`useSocial`, `FriendsButton`, `FriendsPanel`, `ChatDock`, `ChatWindow`, `socialApi`, `socialState`, `chatDockState` |
 
 ## Rotas (todas exigem login)
 

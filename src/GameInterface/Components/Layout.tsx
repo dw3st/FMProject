@@ -15,6 +15,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
+import { ChatDock } from "@/GameInterface/Social/ChatDock";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
@@ -74,6 +75,7 @@ export function Layout({ children }: { children: ReactNode }) {
         />
 
         <FriendsPanel />
+        <ChatDock />
 
         <Modal
           open={isInboxOpen}

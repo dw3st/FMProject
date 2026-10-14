@@ -9,7 +9,7 @@ import {
   parseDock,
   toggleInDock,
   type DockChat,
-} from "@/GameInterface/Social/chatDock";
+} from "@/GameInterface/Social/chatDockState";
 import {
   applyPresence,
   mergeMessages,
