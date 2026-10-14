@@ -110,6 +110,8 @@ import {
   Frown,
   Angry,
   MessagesSquare,
+  Ban,
+  Ellipsis,
 } from "lucide-react";
 import { useId, type SVGProps } from "react";
 
@@ -244,6 +246,9 @@ export type IconName =
   | "face-furious"
   | "talk"
   | "lock"
+  | "users"
+  | "ban"
+  | "more"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -376,6 +381,9 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "face-unhappy": Frown,
   "face-furious": Angry,
   "talk": MessagesSquare,
+  "users": Users,
+  "ban": Ban,
+  "more": Ellipsis,
 };
 
 export interface IconProps {
