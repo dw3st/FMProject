@@ -197,6 +197,13 @@ nenhum dia com mais de 30 itens e nenhuma liga com mais de 3 num dia (fora `pres
 - A promessa de jogo de uma coletiva pós-jogo vale o próximo jogo oficial, qualquer competição.
 - As notícias só enxergam o que o dia produziu.
 - O seletor de competição da página não lista competições de seleção.
+- A poda das notícias (`pruneNews`, dia 1 do mês) apaga direto no disco, fora do `BufferingSaveDAL` do dia; só toca meses com mais
+  de 12 meses, que o dia nunca escreve.
+- O teto de 30 notícias por dia vale para o que o avanço grava; uma coletiva respondida pela rota grava `press_quote` no mesmo dia
+  e pode passar dele.
+- Um jogo remarcado depois do convite pré-jogo deixa o prazo (`expires`) na data antiga (véspera do jogo original).
+- Os efeitos da imprensa no dia (coletiva ignorada, promessas) entram depois da revisão diária da diretoria: uma queda abaixo de 15
+  causada pela imprensa só é avaliada (aviso, ultimato, demissão) na revisão do dia seguinte.
 - **A chave de texto de cada resposta revela o tom** (`press.a.<tom>.<variante>`): aceito, o jogo é single-player. A ordem das três
   respostas é embaralhada pela semente da coletiva (`buildConference`, fluxo próprio `:order`; ids posicionais `-a0..-a2`), então a
   posição não diz o tom; a rota nunca manda o campo `tone`.
