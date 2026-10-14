@@ -123,8 +123,8 @@ Roda depois da diretoria e da moral do dia, com o `board` local já movido pelos
 
 As ausências e promessas resolvidas viram notícias (`press_absent`, `press_promise_kept`, `press_promise_broken`).
 
-Custo do dia (`bun scripts/bench-advance-day.ts --days 7 --buffered`): sem piora mensurável (antes 4251 / 3162 ms, depois 2533 / 2242 ms
-no dia comum; o ruído da máquina é de ±30%).
+Custo do dia (`bun scripts/bench-advance-day.ts --days 7 --buffered`, coletiva + notícias, 2026-10-14): dia comum 2154 ms na
+main × 2218 / 2252 ms (+3 a 4,5%); dia de rodada do clube sem o motor completo 3321 × 3455 / 3502 ms (+4 a 5%).
 
 ## Notícias
 
