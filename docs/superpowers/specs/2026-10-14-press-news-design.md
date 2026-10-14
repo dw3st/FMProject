@@ -118,7 +118,7 @@ SaveMeta.press?: {
 
 | Rota | Faz |
 |---|---|
-| `GET /api/saves/:id/press` | `{ pending: { id, trigger, kind, date, expires, questions (sem tom) } \| null, history }` |
+| `GET /api/saves/:id/press` | `{ pending: { id, trigger, kind, date, expires, questions (sem tom, ordem das respostas embaralhada) } \| null, history: { id, date, trigger, answered }[] }` |
 | `POST /api/saves/:id/press/:pressId { answers: { questionId, answerId }[] }` | Aplica os efeitos, grava a repercussão, fecha a coletiva. 409 `pressClosed` (inexistente/vencida/respondida), 400 `invalidAnswers` (falta pergunta, id desconhecido, repetido), 409 `noClub` |
 
 - A mensagem `press`/`invite` some como pendente (o botão vira "Respondida"/"Encerrada") quando a coletiva fecha.

@@ -11,19 +11,19 @@ const squad = { id: "me", players: [
 const board = initialBoardState("2027-03-01", null);
 const conf = buildConference({ id: "c1", trigger: "derby", kind: "pre", date: "2027-03-10", expires: "2027-03-12",
   fixtureId: "f1", params: { opponent: "Rival" }, player: { id: "p9", name: "Zé", angle: "culprit" }, seed: "s" });
-const ans = (tones: number[]) => Object.fromEntries(conf.questions.map((q, i) => [q.id, q.answers[tones[i]!]!.id]));
+const ans = (tones: string[]) => Object.fromEntries(conf.questions.map((q, i) => [q.id, q.answers.find((a) => a.tone === tones[i])!.id]));
 
 describe("validateAnswers", () => {
   test("exige todas as perguntas com ids válidos", () => {
-    expect(validateAnswers(conf, ans([0, 0, 0]))).toBe(true);
+    expect(validateAnswers(conf, ans(["confident", "praise", "defend_squad"]))).toBe(true);
     expect(validateAnswers(conf, { [conf.questions[0]!.id]: conf.questions[0]!.answers[0]!.id })).toBe(false);
-    expect(validateAnswers(conf, { ...ans([0, 0, 0]), [conf.questions[0]!.id]: "x" })).toBe(false);
+    expect(validateAnswers(conf, { ...ans(["confident", "praise", "defend_squad"]), [conf.questions[0]!.id]: "x" })).toBe(false);
   });
 });
 
 describe("answerConference", () => {
   test("provocador: torcida +2, diretoria −1, elenco +1, promessa win_bold do jogo", () => {
-    const r = answerConference({ conference: conf, answers: ans([2, 2, 2]), squad, board, state: emptyPressState() });
+    const r = answerConference({ conference: conf, answers: ans(["provocative", "protect", "neutral"]), squad, board, state: emptyPressState() });
     expect(r.board.fans).toBeGreaterThan(board.fans);
     expect(r.board.board).toBeLessThan(board.board);
     expect(r.state.promises).toEqual([{ id: "c1-win_bold", kind: "win_bold", from: "2027-03-10", fixtureId: "f1" }]);
@@ -33,11 +33,11 @@ describe("answerConference", () => {
     expect(r.quotes.map((q) => q.tone)).toContain("provocative");
   });
   test("cobrar um profissional dá +1, não −4", () => {
-    const r = answerConference({ conference: conf, answers: ans([1, 1, 2]), squad, board, state: emptyPressState() });
+    const r = answerConference({ conference: conf, answers: ans(["cautious", "criticize", "neutral"]), squad, board, state: emptyPressState() });
     expect(r.squad.players.find((p) => p.id === "p9")!.morale).toBeGreaterThan(60);
   });
   test("cauteloso e neutro: nada muda", () => {
-    const r = answerConference({ conference: conf, answers: ans([1, 2, 2]), squad, board, state: emptyPressState() });
+    const r = answerConference({ conference: conf, answers: ans(["cautious", "protect", "neutral"]), squad, board, state: emptyPressState() });
     expect(r.board).toEqual(board);
   });
 });

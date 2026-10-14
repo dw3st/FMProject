@@ -1,6 +1,6 @@
-import type { PressConferenceView, PressRecord } from "@/types/pressTypes";
+import type { PressConferenceView, PressRecordView } from "@/types/pressTypes";
 
-export interface PressResponse { pending: PressConferenceView | null; history: PressRecord[] }
+export interface PressResponse { pending: PressConferenceView | null; history: PressRecordView[] }
 
 export async function fetchPress(saveId: string): Promise<PressResponse> {
   const res = await fetch(`/api/saves/${saveId}/press`);

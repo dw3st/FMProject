@@ -1,5 +1,5 @@
 import { PRESS } from "@/Domain/press/pressConfig";
-import { mulberry32, seedFrom } from "@/Domain/rng";
+import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 import type {
   PressConference, PressConferenceView, PressKind, PressParams, PressQuestion, PressTone, PressTopic, PressTrigger,
 } from "@/types/pressTypes";
@@ -40,6 +40,8 @@ function questionKey(topic: PressTopic, trigger: PressTrigger, angle: PlayerAngl
 
 export function buildConference(input: ConferenceInput): PressConference {
   const rng = mulberry32(seedFrom(input.seed));
+  // Answer order: its own stream, so the variant picks stay what they were. Ids follow the shown order.
+  const orderRng = mulberry32(seedFrom(`${input.seed}:order`));
   const pick = () => Math.floor(rng() * PRESS.VARIANTS);
   const topics: PressTopic[] = ["match"];
   if (input.player) topics.push("player");
@@ -54,7 +56,8 @@ export function buildConference(input: ConferenceInput): PressConference {
       key: questionKey(topic, input.trigger, input.player?.angle, pick()),
       params,
       ...(topic === "player" && input.player ? { playerId: input.player.id } : {}),
-      answers: tonesOf(topic, input.trigger).map((tone, ai) => ({ id: `${qid}-a${ai}`, key: `press.a.${tone}.${pick()}`, tone })),
+      answers: shuffle(tonesOf(topic, input.trigger).map((tone) => ({ key: `press.a.${tone}.${pick()}`, tone })), orderRng)
+        .map((a, ai) => ({ id: `${qid}-a${ai}`, ...a })),
     };
   });
 

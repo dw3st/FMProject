@@ -68,5 +68,6 @@ export interface PressState {
 }
 
 /** O que o cliente recebe: sem `tone`. */
+export interface PressRecordView { id: string; date: string; trigger: PressTrigger; answered: boolean }
 export interface PressQuestionView extends Omit<PressQuestion, "answers"> { answers: { id: string; key: string }[] }
 export interface PressConferenceView extends Omit<PressConference, "questions"> { questions: PressQuestionView[] }

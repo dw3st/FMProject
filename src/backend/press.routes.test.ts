@@ -69,11 +69,23 @@ describe("press routes", () => {
     expect(await ok.json()).toEqual({ pending: null, history: [] });
   });
 
-  test("GET with a pending conference never carries the tone", async () => {
-    await setPending("press-g");
+  test("GET JSON has no `tone` field: neither in the pending answers nor in the history", async () => {
+    const pending = await setPending("press-g");
+    const meta = (await saveService.getMeta(saveId))!;
+    await saveService.updateMeta(saveId, {
+      press: { ...meta.press!, history: [
+        { id: "press-old", date: today, trigger: "derby", answers: [{ questionId: "q", tone: "provocative" }] },
+        { id: "press-ign", date: today, trigger: "winless", answers: "ignored" },
+      ] },
+    });
     const text = await (await getPress(token)).text();
-    expect(text).not.toContain("tone");
-    expect(JSON.parse(text).pending.id).toBe("press-g");
+    expect(text).not.toContain('"tone"');
+    const body = JSON.parse(text);
+    expect(body.pending.id).toBe(pending.id);
+    expect(body.history).toEqual([
+      { id: "press-old", date: today, trigger: "derby", answered: true },
+      { id: "press-ign", date: today, trigger: "winless", answered: false },
+    ]);
   });
 
   test("POST with valid answers applies them, clears pending and stores a quote", async () => {

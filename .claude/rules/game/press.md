@@ -160,7 +160,7 @@ aposentadorias de craques, seleções, recordes de clube, imprensa) e `buildDayN
 
 | Rota | Faz |
 |---|---|
-| `GET /api/saves/:id/press` | `{ pending, history }`; `pending` sem os tons (`conferenceView`) |
+| `GET /api/saves/:id/press` | `{ pending, history }`; `pending` sem os tons (`conferenceView`); `history` só `{ id, date, trigger, answered }` (`PressRecordView`) |
 | `POST /api/saves/:id/press/:pressId { answers: [{ questionId, answerId }] }` | Responde (`withSaveLock`, uma unidade bufferizada: elenco, meta e notícias juntos). 400 `invalidAnswers`, 409 `noClub` / `pressClosed` (sem pendente, outro id ou depois do prazo) |
 | `GET /api/saves/:id/news?scope=all\|club\|league\|followed&competition=&before=YYYY-MM-DD&limit=1..100` | Mais novas primeiro; `{ items, nextBefore }`; nunca parte um dia entre duas páginas; 400 para escopo, limite, data ou competição inválidos |
 
@@ -197,3 +197,6 @@ nenhum dia com mais de 30 itens e nenhuma liga com mais de 3 num dia (fora `pres
 - A promessa de jogo de uma coletiva pós-jogo vale o próximo jogo oficial, qualquer competição.
 - As notícias só enxergam o que o dia produziu.
 - O seletor de competição da página não lista competições de seleção.
+- **A chave de texto de cada resposta revela o tom** (`press.a.<tom>.<variante>`): aceito, o jogo é single-player. A ordem das três
+  respostas é embaralhada pela semente da coletiva (`buildConference`, fluxo próprio `:order`; ids posicionais `-a0..-a2`), então a
+  posição não diz o tom; a rota nunca manda o campo `tone`.

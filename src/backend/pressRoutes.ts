@@ -49,7 +49,9 @@ export const pressRoutes = {
     const meta = await saveService.getMeta(saveId);
     if (!meta) return bad("save not found", 404);
     const press = meta.press;
-    return Response.json({ pending: press?.pending ? conferenceView(press.pending) : null, history: press?.history ?? [] });
+    // The history goes out without the tones (only whether it was answered).
+    const history = (press?.history ?? []).map((r) => ({ id: r.id, date: r.date, trigger: r.trigger, answered: r.answers !== "ignored" }));
+    return Response.json({ pending: press?.pending ? conferenceView(press.pending) : null, history });
   },
 
   "/api/saves/:saveId/press/:pressId": async (req: Req) => {
