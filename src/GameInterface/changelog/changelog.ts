@@ -1530,9 +1530,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Instalações do clube de forma visual, como o estádio", en: "Club facilities shown visually, like the stadium" },
-  { pt: "Mais vida na partida e pênaltis vistos de perto", en: "A livelier match view and penalties up close" },
-  { pt: "Filtro de jogadores que cabem no seu orçamento e interesse do jogador no seu clube", en: "Filter for players you can afford and the player's interest in your club" },
   { pt: "Imprensa: coletivas e notícias do mundo do futebol", en: "Press conferences and football news" },
   { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
+  { pt: "Chat e amigos: converse com outros técnicos", en: "Chat and friends: talk to other managers" },
+  { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];
