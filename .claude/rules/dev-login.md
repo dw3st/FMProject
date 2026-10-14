@@ -39,6 +39,11 @@ $env:DEV_AUTO_LOGIN = "1"; Start-Process bun -ArgumentList "run","dev" -WorkingD
 `http://localhost:3000/api/auth/dev-login` in the browser — it logs you in and redirects to
 `/start`. If you start the server another way, set `NODE_ENV=development` explicitly.
 
+**Second user (friends and chat):** `http://127.0.0.1:3000/api/auth/dev-login?as=2` logs in as
+`dev-2@localhost` (alias `[a-z0-9]{1,16}`, 400 otherwise). Same four gates as above, checked first: in
+production and from a non-loopback socket it is still 404. Use `localhost` in one tab and `127.0.0.1` in another:
+the session cookie is per host, so the two tabs stay two users.
+
 ## Notes
 
 - Inert in production (`NODE_ENV=production` — or anything but `development`) and inert in Docker
