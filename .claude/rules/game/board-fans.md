@@ -146,3 +146,7 @@ do dia; a de seguidores aceita a faixa 0,8..1,2.
 - O peso de clássico por cidade depende de `venue.city` dos dados; clubes sem cidade só têm o "jogo grande" contra o líder.
 - Venda de ídolo só pela lista de venda (mercado da IA); não há outra saída de jogador com taxa do clube do jogador.
 - A tendência compara com a foto mais recente de 7+ dias atrás; uma carreira nova não mostra seta na primeira semana.
+
+## Imprensa (Etapa 42)
+
+As respostas das coletivas, as promessas cumpridas ou quebradas e ignorar um convite movem os dois medidores (`applyPressEffect`, os mesmos `moveMeters` dos demais eventos); os números ficam em `src/Domain/press/pressConfig.ts` (`TONE`, `PROMISE`, `IGNORED_BOARD`). A promessa `objective` se resolve na virada do país, junto da avaliação da meta da diretoria. Ver `.claude/rules/game/press.md`.

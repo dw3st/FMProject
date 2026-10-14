@@ -508,6 +508,9 @@ try {
   };
   const { answerTalk } = await import("@/Domain/morale/morale");
 
+  // ── Imprensa (see "Imprensa" section below, `.claude/rules/game/press.md`) ──
+  const pressTrack = { seen: new Set<string>(), answered: 0, left: 0, errors: [] as string[] };
+
   // ── Responsabilidades (see "Responsabilidades" section below) ──
   // The director (default) handles contracts; manager news is a default-off inbox topic.
   const respTrack = {
@@ -1410,6 +1413,19 @@ try {
             await plain().saveSquadById(saveId, r.squad);
             moraleTrack.answered.push(`${open.playerName} (${open.reason} → ${answer})`);
           }
+        }
+      }
+      // Imprensa: a pending conference is answered through the route, tones rotating by `n % 3`; one in four is left to expire.
+      const pendingPress = metaAfter.press?.pending;
+      if (pendingPress && !pressTrack.seen.has(pendingPress.id)) {
+        pressTrack.seen.add(pendingPress.id);
+        const n = pressTrack.seen.size;
+        if (n % 4 === 0) pressTrack.left++;
+        else {
+          const answers = pendingPress.questions.map((q) => ({ questionId: q.id, answerId: q.answers[n % 3]!.id }));
+          const res = await regCall("/api/saves/:saveId/press/:pressId", "POST", `/api/saves/${saveId}/press/${pendingPress.id}`, { pressId: pendingPress.id }, { answers });
+          if (res.ok) pressTrack.answered++;
+          else pressTrack.errors.push(`${pendingPress.id}: ${res.status}`);
         }
       }
       for (const m of await plain().getInbox(saveId)) {
@@ -3205,6 +3221,49 @@ try {
   }
   check(moraleTrack.talksSeen.size > 0, `moral: at least one talk request during the run (${moraleTrack.talksSeen.size})`);
   check(moraleTrack.resolved.size > 0, `moral: at least one promise resolved during the run (${moraleTrack.resolved.size})`);
+
+  // ── Imprensa (`.claude/rules/game/press.md`) ──
+  // Conferences happened; no id answered twice; open promises only with a club; news in every month of the run with
+  // the daily caps respected; `GET /news` answers for the four scopes.
+  console.log("\n── Imprensa ──");
+  {
+    const metaEnd = (await plain().getMeta(saveId))!;
+    const history = metaEnd.press?.history ?? [];
+    console.log(`  ${pressTrack.seen.size} conference(s) seen; ${pressTrack.answered} answered, ${pressTrack.left} left to expire; ` +
+      `${history.length} in the history; ${metaEnd.press?.promises.length ?? 0} open promise(s)`);
+    check(pressTrack.seen.size > 0, `imprensa: at least one conference during the run (${pressTrack.seen.size})`);
+    check(pressTrack.errors.length === 0, `imprensa: every answer accepted (${pressTrack.errors.join(", ")})`);
+    check(new Set(history.map((h) => h.id)).size === history.length, "imprensa: no conference answered twice (unique history ids)");
+    check(!!metaEnd.clubId || (metaEnd.press?.promises.length ?? 0) === 0, "imprensa: open promises only with a club");
+
+    const months = (await plain().listNewsMonths(saveId)).sort();
+    const missing: string[] = [];
+    let [y, m] = [Number(startDate.slice(0, 4)), Number(startDate.slice(5, 7))];
+    const lastMonth = endDate.slice(0, 7);
+    for (;;) {
+      const key = `${y}-${String(m).padStart(2, "0")}`;
+      if (key > lastMonth) break;
+      if (!months.includes(key)) missing.push(key);
+      if (m === 12) { y++; m = 1; } else m++;
+    }
+    check(missing.length === 0, `imprensa: news in every month of the run (missing: ${missing.join(", ") || "none"})`);
+    const perDay = new Map<string, number>();
+    const perDayLeague = new Map<string, number>();
+    for (const mo of months) {
+      for (const n of await plain().getNewsMonth(saveId, mo)) {
+        if (n.kind.startsWith("press_")) continue;
+        perDay.set(n.date, (perDay.get(n.date) ?? 0) + 1);
+        const scope = n.league ?? n.competition;
+        if (scope) perDayLeague.set(`${n.date}|${scope}`, (perDayLeague.get(`${n.date}|${scope}`) ?? 0) + 1);
+      }
+    }
+    check([...perDay.values()].every((v) => v <= 30), `imprensa: no day with more than 30 news items (max ${Math.max(0, ...perDay.values())})`);
+    check([...perDayLeague.values()].every((v) => v <= 3), `imprensa: no league with more than 3 news items in a day (max ${Math.max(0, ...perDayLeague.values())})`);
+    for (const scope of ["all", "club", "league", "followed"]) {
+      const res = await regCall("/api/saves/:saveId/news", "GET", `/api/saves/${saveId}/news?scope=${scope}`, {});
+      check(res.ok, `imprensa: GET /news?scope=${scope} answers (${res.status})`);
+    }
+  }
 
   // ── Responsabilidades (`.claude/rules/game/responsibilities.md`) ──
   // The director (default) renews and sends a summary; no 90-day warning, no contract talk; the
