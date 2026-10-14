@@ -2,6 +2,7 @@
 // routes and the socket translate them to nicknames.
 import { randomInt } from "crypto";
 import { db } from "@/backend/db";
+import { messageCutoff } from "@/Domain/social/message";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import {
   generateFriendCode,
@@ -277,4 +278,123 @@ export function listBlocked(me: string): NamedUser[] {
        WHERE b.user_id = ? AND u.nickname IS NOT NULL ORDER BY lower(u.nickname)`,
     )
     .all(me) as NamedUser[];
+}
+
+// ── Worlds (multiplayer, part 2: `save_members`) ────────────────────────────
+
+const WORLD_USERS_SQL = "SELECT save_id, user_id FROM saves UNION SELECT save_id, user_id FROM save_members";
+
+/** Used by tests today; the multiplayer (part 2) writes `save_members` when a world gets a second manager. */
+export function addWorldMember(saveId: string, userId: string, role: "owner" | "member"): void {
+  db.prepare("INSERT OR IGNORE INTO save_members (save_id, user_id, seat_id, role) VALUES (?, ?, NULL, ?)").run(
+    saveId,
+    userId,
+    role,
+  );
+}
+
+/** The save's owner (`saves`) or a member (`save_members`). */
+export function isWorldMember(userId: string, saveId: string): boolean {
+  return !!db
+    .prepare(
+      "SELECT 1 AS hit FROM saves WHERE save_id = ? AND user_id = ? UNION SELECT 1 AS hit FROM save_members WHERE save_id = ? AND user_id = ? LIMIT 1",
+    )
+    .get(saveId, userId, saveId, userId);
+}
+
+export function worldMemberIds(saveId: string): string[] {
+  const rows = db
+    .prepare(`SELECT DISTINCT user_id AS userId FROM (${WORLD_USERS_SQL}) WHERE save_id = ?`)
+    .all(saveId) as { userId: string }[];
+  return rows.map((r) => r.userId);
+}
+
+/** Worlds of the user with at least two members (the only ones with a chat room). */
+export function worldsOf(userId: string): string[] {
+  const rows = db
+    .prepare(
+      `SELECT save_id AS saveId FROM (${WORLD_USERS_SQL})
+       GROUP BY save_id
+       HAVING COUNT(DISTINCT user_id) >= ? AND SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END) > 0
+       ORDER BY save_id`,
+    )
+    .all(SOCIAL.WORLD_MIN_MEMBERS, userId) as { saveId: string }[];
+  return rows.map((r) => r.saveId);
+}
+
+// ── Messages ────────────────────────────────────────────────────────────────
+
+export interface ChatMessageRow {
+  id: number;
+  room: string;
+  fromUser: string;
+  fromNickname: string | null;
+  body: string;
+  createdAt: number;
+}
+
+const BLOCKED_SENDER_SQL = "NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id = ? AND b.blocked_id = m.from_user)";
+
+export function insertMessage(room: string, fromUser: string, body: string, now: number): ChatMessageRow {
+  const info = db
+    .prepare("INSERT INTO chat_messages (room, from_user, body, created_at) VALUES (?, ?, ?, ?)")
+    .run(room, fromUser, body, now);
+  return {
+    id: Number(info.lastInsertRowid),
+    room,
+    fromUser,
+    fromNickname: getSocialUser(fromUser)?.nickname ?? null,
+    body,
+    createdAt: now,
+  };
+}
+
+/** A page of history (newest `limit` before `before`), oldest first, without senders the viewer blocked. */
+export function listMessages(
+  room: string,
+  viewerId: string,
+  opts: { before?: number; limit: number },
+): ChatMessageRow[] {
+  const before = opts.before ?? null;
+  const rows = db
+    .prepare(
+      `SELECT m.id, m.room, m.from_user AS fromUser, u.nickname AS fromNickname, m.body, m.created_at AS createdAt
+       FROM chat_messages m LEFT JOIN users u ON u.id = m.from_user
+       WHERE m.room = ? AND (? IS NULL OR m.id < ?) AND ${BLOCKED_SENDER_SQL}
+       ORDER BY m.id DESC LIMIT ?`,
+    )
+    .all(room, before, before, viewerId, opts.limit) as ChatMessageRow[];
+  return rows.reverse();
+}
+
+/** Marks read up to `lastReadId` (clamped to the room's newest id; never moves back). Returns the stored id. */
+export function markRead(userId: string, room: string, lastReadId: number): number {
+  const max = (db.prepare("SELECT COALESCE(MAX(id), 0) AS m FROM chat_messages WHERE room = ?").get(room) as { m: number }).m;
+  const value = Math.max(0, Math.min(Math.floor(lastReadId), max));
+  db.prepare(
+    `INSERT INTO chat_reads (user_id, room, last_read_id) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, room) DO UPDATE SET last_read_id = MAX(last_read_id, excluded.last_read_id)`,
+  ).run(userId, room, value);
+  return (db.prepare("SELECT last_read_id AS v FROM chat_reads WHERE user_id = ? AND room = ?").get(userId, room) as {
+    v: number;
+  }).v;
+}
+
+export function unreadCount(userId: string, room: string): number {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM chat_messages m
+       WHERE m.room = ? AND m.from_user != ?
+         AND m.id > COALESCE((SELECT last_read_id FROM chat_reads WHERE user_id = ? AND room = ?), 0)
+         AND ${BLOCKED_SENDER_SQL}`,
+    )
+    .get(room, userId, userId, room, userId) as { n: number };
+  return row.n;
+}
+
+/** Daily cleanup: deletes messages older than 90 days and read marks of rooms left empty. */
+export function purgeOldMessages(now: number): number {
+  const removed = db.prepare("DELETE FROM chat_messages WHERE created_at < ?").run(messageCutoff(now)).changes;
+  db.prepare("DELETE FROM chat_reads WHERE NOT EXISTS (SELECT 1 FROM chat_messages m WHERE m.room = chat_reads.room)").run();
+  return removed;
 }
