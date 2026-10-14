@@ -78,7 +78,7 @@ function famousIdsOf(squads: Squad[]): Set<string> {
 /** In-flight scans keyed by `saveId#date`, so concurrent screens share one `getAllSquads`. */
 const famousInFlight = new Map<string, Promise<Set<string>>>();
 
-async function famousIds(service: SaveService, saveId: string, date: string, squads?: Squad[]): Promise<Set<string>> {
+export async function famousIds(service: SaveService, saveId: string, date: string, squads?: Squad[]): Promise<Set<string>> {
   const hit = famousCache.get(saveId);
   if (hit && hit.key === date) return hit.ids;
   const flightKey = `${saveId}#${date}`;

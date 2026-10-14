@@ -41,6 +41,8 @@ export interface LeagueSeasonHistoryArgs {
   nameOf: (squadId: string) => string;
   /** Club whose broken records the caller wants back (the player's club). */
   watchSquadId?: string | null;
+  /** Every club's beaten records (the news page, `press.md`). */
+  onBroken?: (squadId: string, broken: ClubRecordBroken[]) => void;
 }
 
 /**
@@ -76,6 +78,7 @@ export async function recordLeagueSeasonHistory(
     });
     if (history !== current) await service.writeClubHistory(saveId, history);
     if (squad.id === a.watchSquadId) watched = broken;
+    if (broken.length > 0) a.onBroken?.(squad.id, broken);
   }
   return watched;
 }

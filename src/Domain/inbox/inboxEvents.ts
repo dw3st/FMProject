@@ -532,7 +532,7 @@ export function buildPressInviteMessage(date: string, p: {
   pressId: string; trigger: PressTrigger; kind: PressKind; opponent?: string; expires: string;
 }): PressInboxMessage {
   return {
-    id:        `press-${p.pressId}`,
+    id:        p.pressId.startsWith("press-") ? p.pressId : `press-${p.pressId}`,
     date,
     createdAt: date,
     read:      false,

@@ -446,7 +446,7 @@ export class SaveService {
     for (const [month, add] of byMonth) {
       const cur = await this.getNewsMonth(saveId, month);
       const ids = new Set(cur.map((n) => n.id));
-      const fresh = add.filter((n) => !ids.has(n.id));
+      const fresh = add.filter((n) => !ids.has(n.id) && !!ids.add(n.id));
       if (fresh.length > 0) await this.dal.writeNewsMonth(saveId, month, [...cur, ...fresh]);
     }
   }
