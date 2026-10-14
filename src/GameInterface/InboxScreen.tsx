@@ -59,6 +59,10 @@ function ContinentalIcon({ className }: { className?: string }) {
   return <Icon name="globe" className={className} />;
 }
 
+function PressIcon({ className }: { className?: string }) {
+  return <Icon name="mic" className={className} />;
+}
+
 const CATEGORY_META: Record<
   InboxCategory,
   { labelKey: string; color: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }
@@ -202,6 +206,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
     Icon: RegistrationIcon,
+  },
+  press: {
+    labelKey: "inbox.categories.press",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: PressIcon,
   },
   schedule: {
     labelKey: "inbox.categories.schedule",

@@ -33,7 +33,8 @@ export type InboxCategory =
   | "discipline"
   | "national"
   | "national_coach"
-  | "achievement";
+  | "achievement"
+  | "press";
 
 interface InboxMessageBase {
   id:        string;
@@ -435,7 +436,19 @@ export interface ScheduleInboxMessage extends InboxMessageBase {
   games:    RescheduledGame[];
 }
 
+/** Press conference invite (Etapa 42, `.claude/rules/game/press.md`): the answer is given in a modal. */
+export interface PressInboxMessage extends InboxMessageBase {
+  category:   "press";
+  kind:       "invite";
+  pressId:    string;
+  trigger:    import("@/types/pressTypes").PressTrigger;
+  pressKind:  import("@/types/pressTypes").PressKind;
+  opponent?:  string;
+  expires:    string;
+}
+
 export type InboxMessage =
+  | PressInboxMessage
   | DevelopmentInboxMessage
   | TransferInInboxMessage
   | TransferOutInboxMessage

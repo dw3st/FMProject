@@ -1,6 +1,7 @@
 import {
   Lock,
   Binoculars,
+  Mic,
   LayoutDashboard,
   ClipboardList,
   UserCog,
@@ -129,6 +130,7 @@ function StarHalfFilled(props: SVGProps<SVGSVGElement>) {
 
 export type IconName =
   | "binoculars"
+  | "mic"
   | "dashboard"
   | "tactics"
   | "staff-coach"
@@ -260,6 +262,7 @@ function SoccerBall(props: SVGProps<SVGSVGElement>) {
 
 const ICON_MAP: Record<IconName, IconComponent> = {
   "binoculars":   Binoculars,
+  "mic":          Mic,
   "dashboard": LayoutDashboard,
   "tactics": ClipboardList,
   "staff-coach": UserCog,
