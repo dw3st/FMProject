@@ -41,12 +41,15 @@ describe("me and nickname", () => {
     const set = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: nick } });
     expect(set.status).toBe(200);
     expect(set.json.nickname).toBe(nick);
-    expect(set.json.nicknameChangeableOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(set.json.nicknameChangeableOn).toBeNull();
 
     const b = makeUser();
     expect((await callSocial("PUT", "/api/social/nickname", b.token, { body: { nickname: nick.toLowerCase() } })).json)
       .toEqual({ error: "nicknameTaken" });
     expect((await callSocial("PUT", "/api/social/nickname", b.token, { body: { nickname: "no way" } })).status).toBe(400);
+    const renamed = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: uniqueNick("Zy") } });
+    expect(renamed.status).toBe(200);
+    expect(renamed.json.nicknameChangeableOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const again = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: uniqueNick() } });
     expect(again.status).toBe(409);
     expect(again.json.error).toBe("tooSoon");

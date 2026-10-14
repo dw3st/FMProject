@@ -84,7 +84,10 @@ export type SetNicknameResult =
   | { ok: true; nickname: string }
   | { ok: false; error: "invalidNickname" | "nicknameTaken" | "tooSoon" };
 
-/** Sets or changes the nickname. Every real change restarts the 30-day cooldown; the same name is a no-op. */
+/**
+ * Sets or changes the nickname. The first choice is free (no cooldown recorded); every later real change restarts
+ * the 30-day cooldown. The same name is a no-op.
+ */
 export function setNickname(userId: string, raw: string, now: number): SetNicknameResult {
   if (validateNickname(raw)) return { ok: false, error: "invalidNickname" };
   const nickname = normalizeNickname(raw);
@@ -96,7 +99,8 @@ export function setNickname(userId: string, raw: string, now: number): SetNickna
   const owner = findUserByNickname(nickname);
   if (owner && owner.id !== userId) return { ok: false, error: "nicknameTaken" };
   try {
-    db.prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ?").run(nickname, now, userId);
+    const changedAt = user.nickname === null ? null : now;
+    db.prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ?").run(nickname, changedAt, userId);
   } catch {
     return { ok: false, error: "nicknameTaken" }; // lost a race on the unique index
   }

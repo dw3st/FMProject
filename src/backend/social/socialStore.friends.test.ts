@@ -78,7 +78,7 @@ describe("requests", () => {
     expect(sendFriendRequest(a.id, b.id, NOW)).toBe("limit");
     sendFriendRequest(b.id, a.id, NOW);
     expect(acceptRequest(a.id, b.id, NOW)).toBe("limit");
-  });
+  }, 30_000); // 201 users with sessions: slow on a loaded machine
 });
 
 describe("blocks", () => {

@@ -24,16 +24,19 @@ describe("nickname", () => {
     expect(setNickname(u.id, "theAdmin", Date.now())).toEqual({ ok: false, error: "invalidNickname" });
   });
 
-  test("can change once every 30 days; the same name is a no-op", () => {
+  test("the first choice is free; later changes once every 30 days; the same name is a no-op", () => {
     const u = makeUser();
     const t0 = 1_800_000_000_000;
     const first = uniqueNick();
     expect(setNickname(u.id, first, t0)).toEqual({ ok: true, nickname: first });
-    expect(setNickname(u.id, first, t0 + DAY_MS)).toEqual({ ok: true, nickname: first });
-    expect(setNickname(u.id, uniqueNick(), t0 + 29 * DAY_MS)).toEqual({ ok: false, error: "tooSoon" });
+    expect(getSocialUser(u.id)?.nicknameChangedAt).toBeNull();
     const second = uniqueNick();
-    expect(setNickname(u.id, second, t0 + 30 * DAY_MS)).toEqual({ ok: true, nickname: second });
-    expect(getSocialUser(u.id)?.nicknameChangedAt).toBe(t0 + 30 * DAY_MS);
+    expect(setNickname(u.id, second, t0 + DAY_MS)).toEqual({ ok: true, nickname: second });
+    expect(setNickname(u.id, second, t0 + 2 * DAY_MS)).toEqual({ ok: true, nickname: second });
+    expect(setNickname(u.id, uniqueNick(), t0 + 30 * DAY_MS)).toEqual({ ok: false, error: "tooSoon" });
+    const third = uniqueNick();
+    expect(setNickname(u.id, third, t0 + 31 * DAY_MS)).toEqual({ ok: true, nickname: third });
+    expect(getSocialUser(u.id)?.nicknameChangedAt).toBe(t0 + 31 * DAY_MS);
   });
 
   test("findUserByNickname ignores case and spaces", () => {
