@@ -2036,7 +2036,10 @@
         "hot": "Calor"
       },
       "works": "Obras",
-      "worksDone": "concluída em {{date}}"
+      "worksDone": "concluída em {{date}}",
+      "news": "Notícias",
+      "newsAll": "Todas",
+      "newsEmpty": "Nenhuma notícia ainda."
     }
   },
   "squadScreen": {
@@ -2813,6 +2816,10 @@
     "achievements": {
       "main": "SUAS",
       "accent": "CONQUISTAS"
+    },
+    "news": {
+      "main": "NOTÍCIAS DO",
+      "accent": "MUNDO"
     }
   },
   "jobs": {
@@ -4602,6 +4609,303 @@
       "deflect": {
         "0": "Meu foco é o próximo jogo.",
         "1": "Isso não depende de mim."
+      }
+    }
+  },
+  "news": {
+    "filters": {
+      "label": "Mostrar",
+      "all": "Tudo",
+      "club": "Meu clube",
+      "league": "Minha liga",
+      "followed": "Seguidas",
+      "competition": "Competição",
+      "allCompetitions": "Todas as competições"
+    },
+    "empty": "Nenhuma notícia por aqui ainda.",
+    "error": "Não foi possível carregar as notícias.",
+    "more": "Carregar mais",
+    "freeAgent": "sem clube",
+    "awardKind": {
+      "league_best": "o melhor jogador da temporada ({{league}})",
+      "world_player": "o melhor jogador do mundo",
+      "world_manager": "o melhor técnico do mundo"
+    },
+    "nationalKind": {
+      "champion": "campeã da {{competition}}",
+      "favourite_out": "eliminada da {{competition}}"
+    },
+    "recordKind": {
+      "biggestWin": "a maior vitória da sua história",
+      "biggestLoss": "a pior derrota da sua história",
+      "mostGoalsSeason": "um novo recorde de gols de um jogador numa temporada",
+      "recordSigning": "a contratação mais cara da sua história",
+      "recordSale": "a venda mais cara da sua história",
+      "highestFinish": "a melhor campanha da sua história",
+      "unbeaten": "a maior invencibilidade da sua história"
+    },
+    "pressQuote": {
+      "provocative": "{{manager}} provoca o rival antes do jogo",
+      "demand_squad": "{{manager}} cobra o elenco do {{club}}",
+      "criticize": "{{manager}} critica {{player}} publicamente",
+      "praise": "{{manager}} enche {{player}} de elogios",
+      "ask_signings": "{{manager}} pede reforços à diretoria do {{club}}",
+      "other": "{{manager}} fala à imprensa"
+    },
+    "big_transfer_free": {
+      "title": "{{to}} acerta com {{player}}",
+      "text": "O jogador chega sem custo de transferência."
+    },
+    "thrashing": {
+      "0": {
+        "title": "{{winner}} atropela {{loser}}",
+        "text": "Goleada de {{score}}."
+      },
+      "1": {
+        "title": "Show do {{winner}}: {{score}} em {{loser}}",
+        "text": "Uma noite para esquecer para {{loser}}."
+      },
+      "2": {
+        "title": "{{winner}} {{score}} {{loser}}",
+        "text": "Placar elástico na rodada."
+      }
+    },
+    "upset": {
+      "0": {
+        "title": "Zebra: {{winner}} derruba {{loser}}",
+        "text": "Vitória por {{score}} contra o favorito."
+      },
+      "1": {
+        "title": "{{loser}} tropeça diante do {{winner}}",
+        "text": "O azarão venceu por {{score}}."
+      },
+      "2": {
+        "title": "Surpresa na rodada: {{winner}} vence {{loser}}",
+        "text": "Placar de {{score}} que ninguém esperava."
+      }
+    },
+    "champion": {
+      "0": {
+        "title": "{{club}} é campeão: {{competition}}",
+        "text": "Taça confirmada e festa da torcida."
+      },
+      "1": {
+        "title": "Título para o {{club}}",
+        "text": "O clube conquista a {{competition}}."
+      },
+      "2": {
+        "title": "{{competition}} tem dono: {{club}}",
+        "text": "Campanha coroada com o título."
+      }
+    },
+    "promoted": {
+      "0": {
+        "title": "{{club}} garante o acesso",
+        "text": "O clube sobe e deixa a {{league}}."
+      },
+      "1": {
+        "title": "Acesso confirmado para o {{club}}",
+        "text": "Temporada de festa: o clube sobe de divisão."
+      },
+      "2": {
+        "title": "{{club}} vai subir",
+        "text": "A campanha na {{league}} termina com acesso."
+      }
+    },
+    "relegated": {
+      "0": {
+        "title": "{{club}} é rebaixado",
+        "text": "O clube cai e deixa a {{league}}."
+      },
+      "1": {
+        "title": "Queda confirmada para o {{club}}",
+        "text": "Temporada amarga termina em rebaixamento."
+      },
+      "2": {
+        "title": "{{club}} vai disputar a divisão de baixo",
+        "text": "Fim da linha na {{league}}."
+      }
+    },
+    "new_leader": {
+      "0": {
+        "title": "{{club}} assume a liderança",
+        "text": "Novo líder na {{league}}."
+      },
+      "1": {
+        "title": "Troca no topo: {{club}} lidera",
+        "text": "A {{league}} tem novo primeiro colocado."
+      },
+      "2": {
+        "title": "{{club}} chega à ponta",
+        "text": "O clube passa a liderar a {{league}}."
+      }
+    },
+    "big_transfer": {
+      "0": {
+        "title": "{{to}} contrata {{player}}",
+        "text": "Negócio de {{fee}} com {{from}}."
+      },
+      "1": {
+        "title": "{{player}} troca {{from}} por {{to}}",
+        "text": "Transferência de {{fee}}."
+      },
+      "2": {
+        "title": "Bomba no mercado: {{player}} no {{to}}",
+        "text": "{{from}} recebe {{fee}} pela venda."
+      }
+    },
+    "manager_sacked": {
+      "0": {
+        "title": "{{club}} demite {{manager}}",
+        "text": "O técnico não resiste aos maus resultados."
+      },
+      "1": {
+        "title": "Fim da linha para {{manager}} no {{club}}",
+        "text": "A diretoria decidiu pela troca no comando."
+      },
+      "2": {
+        "title": "{{manager}} deixa o {{club}}",
+        "text": "Demissão confirmada pelo clube."
+      }
+    },
+    "manager_hired": {
+      "0": {
+        "title": "{{club}} anuncia {{manager}}",
+        "text": "Novo técnico assume o comando."
+      },
+      "1": {
+        "title": "{{manager}} é o novo técnico do {{club}}",
+        "text": "Contratação confirmada pela diretoria."
+      },
+      "2": {
+        "title": "Novo comando no {{club}}",
+        "text": "{{manager}} chega para assumir a equipe."
+      }
+    },
+    "award": {
+      "0": {
+        "title": "{{name}} é eleito {{award}}",
+        "text": "Prêmio de fim de temporada."
+      },
+      "1": {
+        "title": "Prêmio para {{name}}",
+        "text": "Eleito {{award}}."
+      },
+      "2": {
+        "title": "{{name}} leva o prêmio",
+        "text": "Reconhecido como {{award}}."
+      }
+    },
+    "star_injury": {
+      "0": {
+        "title": "{{player}} se lesiona",
+        "text": "Desfalque importante para o {{club}}."
+      },
+      "1": {
+        "title": "Lesão preocupa o {{club}}",
+        "text": "{{player}} vai ficar fora por um tempo."
+      },
+      "2": {
+        "title": "{{club}} perde {{player}}",
+        "text": "O craque se machucou."
+      }
+    },
+    "star_retired": {
+      "0": {
+        "title": "{{player}} se aposenta",
+        "text": "Fim de uma carreira de destaque."
+      },
+      "1": {
+        "title": "Adeus aos gramados: {{player}}",
+        "text": "O craque pendura as chuteiras."
+      },
+      "2": {
+        "title": "{{player}} encerra a carreira",
+        "text": "Uma despedida que o futebol vai sentir."
+      }
+    },
+    "national": {
+      "0": {
+        "title": "{{team}}: {{event}}",
+        "text": "O futebol de seleções em destaque."
+      },
+      "1": {
+        "title": "{{team}} é {{event}}",
+        "text": "Notícia que corre o mundo."
+      },
+      "2": {
+        "title": "{{team}} {{event}}",
+        "text": "Momento marcante para a seleção."
+      }
+    },
+    "club_record": {
+      "0": {
+        "title": "Recorde no {{club}}",
+        "text": "O clube registra {{record}}."
+      },
+      "1": {
+        "title": "{{club}} entra para a história",
+        "text": "Marca nova: {{record}}."
+      },
+      "2": {
+        "title": "Marca histórica para o {{club}}",
+        "text": "Agora é oficial: {{record}}."
+      }
+    },
+    "press_quote": {
+      "0": {
+        "title": "{{quote}}",
+        "text": "A coletiva do {{club}} repercute."
+      },
+      "1": {
+        "title": "{{quote}}",
+        "text": "As palavras do técnico rendem manchete."
+      },
+      "2": {
+        "title": "{{quote}}",
+        "text": "Declaração forte na sala de imprensa."
+      }
+    },
+    "press_absent": {
+      "0": {
+        "title": "{{manager}} falta à coletiva",
+        "text": "O técnico do {{club}} não falou com a imprensa."
+      },
+      "1": {
+        "title": "Silêncio no {{club}}",
+        "text": "{{manager}} não apareceu na sala de imprensa."
+      },
+      "2": {
+        "title": "{{manager}} evita os jornalistas",
+        "text": "A coletiva do {{club}} ficou vazia."
+      }
+    },
+    "press_promise_kept": {
+      "0": {
+        "title": "{{manager}} cumpre a promessa",
+        "text": "O {{club}} entregou o que o técnico prometeu."
+      },
+      "1": {
+        "title": "Palavra cumprida no {{club}}",
+        "text": "{{manager}} prometeu e entregou."
+      },
+      "2": {
+        "title": "{{manager}} tinha razão",
+        "text": "A promessa feita na coletiva se confirmou."
+      }
+    },
+    "press_promise_broken": {
+      "0": {
+        "title": "{{manager}} não cumpre a promessa",
+        "text": "O {{club}} ficou longe do que o técnico prometeu."
+      },
+      "1": {
+        "title": "Promessa quebrada no {{club}}",
+        "text": "{{manager}} vai ter que se explicar."
+      },
+      "2": {
+        "title": "{{manager}} é cobrado pela promessa",
+        "text": "A imprensa lembra o que foi dito na coletiva."
       }
     }
   }

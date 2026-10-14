@@ -25,6 +25,7 @@ import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
 import staffPage from "./pages/staff/index.html";
 import achievementsPage from "./pages/achievements/index.html";
+import newsPage from "./pages/news/index.html";
 
 const server = serve({
   routes: {
@@ -54,6 +55,7 @@ const server = serve({
     "/club": clubPage,
     "/staff": staffPage,
     "/achievements": achievementsPage,
+    "/news": newsPage,
     "/stats": statsPage,
     // National teams live in a tab of the Leagues screen (the top bar has no room for a 12th tab).
     "/national": () => Response.redirect("/leagues?tab=national", 302),
