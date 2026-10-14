@@ -111,6 +111,8 @@ export interface SaveMeta {
   youthCallUpsSkipped?: { u21?: { date: string; players: string[] }; u19?: { date: string; players: string[] } };
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
   board?: BoardState;
+  /** Etapa 42: coletivas do técnico do jogador (`.claude/rules/game/press.md`). Ausente = nenhuma ainda. */
+  press?: import("@/types/pressTypes").PressState;
   /** The human manager's touchline ban after a red card for complaining (`.claude/rules/game/var.md` §4). */
   managerBan?: import("@/Domain/referees/managerBan").ManagerBan;
   /** New-game option: the board may sack the manager (default on). */
