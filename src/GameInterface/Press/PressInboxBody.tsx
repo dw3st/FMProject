@@ -5,7 +5,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { PressModal } from "@/GameInterface/Press/PressModal";
-import { fetchPress, lastValidDay, type PressResponse } from "@/GameInterface/Press/pressApi";
+import { fetchPress, type PressResponse } from "@/GameInterface/Press/pressApi";
 import type { PressInboxMessage } from "@/types/inboxTypes";
 import type { PressConferenceView } from "@/types/pressTypes";
 
@@ -41,7 +41,7 @@ export function PressInboxBody({ message }: { message: PressInboxMessage }) {
       {conference && saveId ? (
         <>
           <p className="text-sm text-muted-foreground m-0">
-            {t("press.inbox.until", { date: formatGameDate(lastValidDay(message.expires), i18n.language, "dayMonth") })}
+            {t("press.inbox.until", { date: formatGameDate(message.expires, i18n.language, "dayMonth") })}
           </p>
           <Button onClick={() => setOpen(conference)}>
             <Icon name="mic" size={16} />

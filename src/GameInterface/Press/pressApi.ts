@@ -18,13 +18,6 @@ export function allAnswered(c: Pick<PressConferenceView, "questions">, answers: 
   return c.questions.every((q) => q.answers.some((a) => a.id === answers[q.id]));
 }
 
-/** Last day the invite can be answered: the conference expires at the START of `expires`. */
-export function lastValidDay(expires: string): string {
-  const d = new Date(`${expires}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
 export async function answerPress(
   saveId: string,
   pressId: string,
