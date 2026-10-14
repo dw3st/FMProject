@@ -138,7 +138,7 @@ aposentadorias de craques, seleções, recordes de clube, imprensa) e `buildDayN
 | `champion` | campeão de liga (virada), copa ou continental | 3 |
 | `promoted` / `relegated` | movimentos de nível, só vindos de nível ≤ 2 (`MOVES_MAX_TIER`) | 1 |
 | `new_leader` | novo líder (≥ 5 jogos) da liga do jogador ou de uma seguida | 2 |
-| `big_transfer` | transferência com taxa ≥ €20M (`BIG_FEE`), ou de craque do top 100 do mundo (`famousIds`, cache por mês), ou recorde de contratação (só de comprador de nível 1 ou o clube do jogador); ≥ €60M (`HUGE_FEE`) vale 3 | 1 |
+| `big_transfer` | transferência com taxa ≥ €20M (`BIG_FEE`), ou de craque do top 100 do mundo (`famousIds`, cache por mês), ou recorde de contratação (comprador de nível 1 com taxa ≥ €5M, `RECORD_MIN_FEE`, ou o clube do jogador); ≥ €60M (`HUGE_FEE`) vale 3 | 1 |
 | `manager_sacked` / `manager_hired` | técnicos da IA de clubes de 1ª divisão; interinos não viram notícia | 1 |
 | `award` | melhor jogador da liga (1ª divisão, 1) e mundiais (3) | 1 ou 3 |
 | `star_injury` | lesão grave de craque | 1 |
