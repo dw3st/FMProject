@@ -5,7 +5,8 @@ import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { buildConference } from "@/Domain/press/questions";
 import { addDays } from "@/Domain/dates";
-import type { PressConference } from "@/types/pressTypes";
+import { applyPressEffect } from "@/Domain/boardFans/boardFans";
+import type { PressConference, PressTone } from "@/types/pressTypes";
 
 /** Press routes (Etapa 42, `.claude/rules/game/press.md`). */
 describe("press routes", () => {
@@ -89,11 +90,28 @@ describe("press routes", () => {
   });
 
   test("POST with valid answers applies them, clears pending and stores a quote", async () => {
-    const c = await setPending("press-p");
-    const res = await postPress("press-p", token, { answers: provocative(c) });
+    await setPending("press-p");
+    // The answers are chosen by tone from the conference stored in the meta (the order is shuffled).
+    const before = (await saveService.getMeta(saveId))!;
+    const stored = before.press!.pending!;
+    const tones: PressTone[] = ["provocative", "defend_squad"];
+    expect(stored.questions.map((q) => q.topic)).toEqual(["match", "squad"]);
+    const answers = stored.questions.map((q, i) => ({ questionId: q.id, answerId: q.answers.find((a) => a.tone === tones[i])!.id }));
+    const squadBefore = (await saveService.getSquadById(saveId, "33"))!;
+    const res = await postPress("press-p", token, { answers });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     const meta = await saveService.getMeta(saveId);
+    // provocative: board −1, fans +2; defend_squad (not a bad trigger): nothing on the meters.
+    const expected = applyPressEffect(applyPressEffect(before.board!, -1, 2), 0, 0);
+    expect(meta!.board!.board).toBe(expected.board);
+    expect(meta!.board!.fans).toBe(expected.fans);
+    expect(meta!.board!.board).toBeLessThan(before.board!.board);
+    expect(meta!.board!.fans).toBeGreaterThan(before.board!.fans);
+    // Both answers lift the whole squad's morale (+1 and +2).
+    const squadAfter = (await saveService.getSquadById(saveId, "33"))!;
+    const moraleOf = (s: typeof squadAfter) => s.players.reduce((n, p) => n + (p.morale ?? 65), 0);
+    expect(moraleOf(squadAfter)).toBeGreaterThan(moraleOf(squadBefore));
     expect(meta!.press!.pending).toBeUndefined();
     expect(Array.isArray(meta!.press!.history[0]!.answers)).toBe(true);
     const month = await saveService.getNewsMonth(saveId, today.slice(0, 7));

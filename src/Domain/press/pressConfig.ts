@@ -4,7 +4,7 @@ import type { PressPromiseKind, PressTone, PressTrigger } from "@/types/pressTyp
 export const PRESS = {
   /** Uma coletiva a cada N dias (título fura). */
   MIN_GAP_DAYS: 7,
-  /** Convite pré-jogo N dias antes (ou amanhã se perdeu a janela). */
+  /** Convite pré-jogo N dias antes do jogo (datado na véspera, vence na véspera). */
   PRE_DAYS_BEFORE: 2,
   /** Pós-jogo vale N dias. */
   POST_VALID_DAYS: 3,

@@ -34,6 +34,7 @@ describe("press in advanceOneDay", () => {
     const after = await saveService.getMeta(meta.id);
     expect(after!.press!.pending?.id).not.toBe("press-x");
     expect(after!.press!.history[0]).toMatchObject({ id: "press-x", answers: "ignored" });
+    // The day's match also moves the board; the exact −1 is checked on `pressDay` alone (pressWorld.test.ts).
     expect(after!.board!.board).toBeLessThan(before + 1);
     const month = await saveService.getNewsMonth(meta.id, today.slice(0, 7));
     expect(month.some((n) => n.kind === "press_absent")).toBe(true);
