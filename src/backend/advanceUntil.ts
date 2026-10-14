@@ -86,6 +86,8 @@ export interface AdvanceBatchResult {
   sacked?: boolean;
   /** Job offers arrived on the last simulated day (`.claude/rules/game/jobs.md`): the batch stops there. */
   jobOffers?: boolean;
+  /** A press conference invite arrived on the last simulated day (`.claude/rules/game/press.md`): the batch stops there. */
+  pressInvite?: boolean;
   error?: { status: number; message: string };
 }
 
@@ -140,6 +142,7 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
     if (typeof step.payload.jobOffers === "number" && step.payload.jobOffers > 0) {
       result.jobOffers = true; result.done = true; return result;
     }
+    if (step.payload.pressInvite === true) { result.pressInvite = true; result.done = true; return result; }
   }
 }
 

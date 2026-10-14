@@ -1,3 +1,4 @@
+import type { NewsItem } from "@/types/newsTypes";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
@@ -156,6 +157,13 @@ export interface ISaveDAL {
   writeAwardsYear(saveId: string, data: AwardsYear): Promise<void>;
   /** Years with an awards file, ascending. */
   listAwardYears(saveId: string): Promise<number[]>;
+  // ── News (Etapa 42) ─────────────────────────────────────────────────────────
+  /** `news/{YYYY-MM}.json`: world news of the month. `null` when the month has no file. */
+  readNewsMonth(saveId: string, month: string): Promise<NewsItem[] | null>;
+  writeNewsMonth(saveId: string, month: string, items: NewsItem[]): Promise<void>;
+  /** Months with a news file, ascending. */
+  listNewsMonths(saveId: string): Promise<string[]>;
+  deleteNewsMonth(saveId: string, month: string): Promise<void>;
   /** `seasonGoals/{league}-{year}.json`: goal-of-the-season candidates. */
   readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null>;
   writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void>;

@@ -21,6 +21,7 @@ import { NationalCoachInboxBody, nationalCoachSubject } from "@/GameInterface/Na
 import i18next from "@/i18n/i18n";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
+import { PressInboxBody } from "@/GameInterface/Press/PressInboxBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scoutingText";
@@ -57,6 +58,10 @@ type ThemeFilter = "all" | InboxTheme;
  *  category's direct lucide import does. */
 function ContinentalIcon({ className }: { className?: string }) {
   return <Icon name="globe" className={className} />;
+}
+
+function PressIcon({ className }: { className?: string }) {
+  return <Icon name="mic" className={className} />;
 }
 
 const CATEGORY_META: Record<
@@ -202,6 +207,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
     Icon: RegistrationIcon,
+  },
+  press: {
+    labelKey: "inbox.categories.press",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: PressIcon,
   },
   schedule: {
     labelKey: "inbox.categories.schedule",
@@ -686,6 +698,9 @@ function leaguePrizeTexts(
   if (message.category === "job") {
     return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
   }
+  if (message.category === "press") {
+    return { subject: t("press.inbox.subject", { trigger: t(`press.trigger.${message.trigger}`) }), preview: message.opponent ?? "" };
+  }
   if (message.category === "player") {
     const key = message.kind === "talk" ? "talk" : message.kind;
     return { subject: t(`morale.inbox.subject.${key}`, { player: message.playerName }), preview: message.playerName };
@@ -849,6 +864,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "job" && <JobBody message={message} leagues={leagues} />}
         {message.category === "transfer" && <TransferNegotiationBody message={message} />}
         {message.category === "player" && <PlayerTalkBody message={message} />}
+        {message.category === "press" && <PressInboxBody message={message} />}
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
         {message.category === "awards" && <AwardsInboxBody message={message} />}

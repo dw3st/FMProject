@@ -172,6 +172,12 @@ export function createAiManagerDesk(args: {
   let vacancies = { ...(args.vacancies ?? {}) };
   let changed = false;
   const news: ManagerNewsItem[] = [];
+  /** Every club sacking/hiring of the day, any league (news page, `press.md`); filtered by tier there. */
+  const worldNews: ManagerNewsItem[] = [];
+  const pushNews = (item: ManagerNewsItem) => {
+    worldNews.push(item);
+    if (inPlayerLeague(item.squadId)) news.push(item);
+  };
   const nameOf = (squadId: string) => args.getIndex().byId(squadId)?.name ?? squadId;
   const inPlayerLeague = (squadId: string) => !!args.playerLeague && args.getIndex().byId(squadId)?.leagueSlug === args.playerLeague;
   const rngFor = (squadId: string, tag: string) => mulberry32(seedFrom(`${saveId}:${squadId}:${date}:${tag}`));
@@ -209,7 +215,7 @@ export function createAiManagerDesk(args: {
     const before = (await tracker.list()).find((m) => !m.isPlayer && m.squadId === squadId);
     await tracker.apply((ms) => sackManager(ms, { squadId, clubName: nameOf(squadId), date, left }));
     openVacancy(squadId);
-    if (before && inPlayerLeague(squadId)) news.push({ kind: "sacked", squadId, clubName: nameOf(squadId), managerName: before.name });
+    if (before) pushNews({ kind: "sacked", squadId, clubName: nameOf(squadId), managerName: before.name });
   };
 
   return {
@@ -218,6 +224,7 @@ export function createAiManagerDesk(args: {
     /** Board objective target of every club of a league (cached on the managers; season awards). */
     targets: targetsOf,
     news: () => news,
+    worldNews: () => worldNews,
     openVacancy,
     /** A vacancy that no longer applies (the human took the club). */
     closeVacancy(squadId: string) {
@@ -346,13 +353,13 @@ export function createAiManagerDesk(args: {
           vacated = h.vacated;
           return h.managers;
         });
-        if (inPlayerLeague(squadId)) news.push({ kind: "hired", squadId, clubName: nameOf(squadId), managerName: hiredName, ...(pick.kind === "interim" ? { interim: true } : {}) });
+        pushNews({ kind: "hired", squadId, clubName: nameOf(squadId), managerName: hiredName, ...(pick.kind === "interim" ? { interim: true } : {}) });
         if (vacated) {
           poached = true;
           const v: string = vacated;
           await tracker.apply((list) => sackManager(list, { squadId: v, clubName: nameOf(v), date, left: "moved" }));
           openVacancy(v);
-          if (inPlayerLeague(v)) news.push({ kind: "sacked", squadId: v, clubName: nameOf(v), managerName: hiredName });
+          pushNews({ kind: "sacked", squadId: v, clubName: nameOf(v), managerName: hiredName });
         }
       }
     },

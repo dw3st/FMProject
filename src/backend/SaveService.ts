@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
+import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
@@ -111,6 +112,8 @@ export interface SaveMeta {
   youthCallUpsSkipped?: { u21?: { date: string; players: string[] }; u19?: { date: string; players: string[] } };
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
   board?: BoardState;
+  /** Etapa 42: coletivas do técnico do jogador (`.claude/rules/game/press.md`). Ausente = nenhuma ainda. */
+  press?: import("@/types/pressTypes").PressState;
   /** The human manager's touchline ban after a red card for complaining (`.claude/rules/game/var.md` §4). */
   managerBan?: import("@/Domain/referees/managerBan").ManagerBan;
   /** New-game option: the board may sack the manager (default on). */
@@ -424,6 +427,33 @@ export class SaveService {
   }
 
   // ── Season awards (`.claude/rules/game/awards.md`) ──────────────────────────
+
+  // ── News (Etapa 42) ──────────────────────────────────────────────────────────
+
+  async getNewsMonth(saveId: string, month: string): Promise<NewsItem[]> {
+    return (await this.dal.readNewsMonth(saveId, month)) ?? [];
+  }
+  listNewsMonths(saveId: string): Promise<string[]> {
+    return this.dal.listNewsMonths(saveId);
+  }
+  /** Appends by month, never repeating an id (a replayed day does not duplicate). */
+  async appendNews(saveId: string, items: NewsItem[]): Promise<void> {
+    const byMonth = new Map<string, NewsItem[]>();
+    for (const n of items) {
+      const m = n.date.slice(0, 7);
+      byMonth.set(m, [...(byMonth.get(m) ?? []), n]);
+    }
+    for (const [month, add] of byMonth) {
+      const cur = await this.getNewsMonth(saveId, month);
+      const ids = new Set(cur.map((n) => n.id));
+      const fresh = add.filter((n) => !ids.has(n.id) && !!ids.add(n.id));
+      if (fresh.length > 0) await this.dal.writeNewsMonth(saveId, month, [...cur, ...fresh]);
+    }
+  }
+  /** Deletes the months before `keepFrom` (`YYYY-MM`). */
+  async pruneNews(saveId: string, keepFrom: string): Promise<void> {
+    for (const m of await this.listNewsMonths(saveId)) if (m < keepFrom) await this.dal.deleteNewsMonth(saveId, m);
+  }
 
   getAwardsYear(saveId: string, year: number): Promise<AwardsYear | null> {
     return this.dal.readAwardsYear(saveId, year);

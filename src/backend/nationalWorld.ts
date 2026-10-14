@@ -289,6 +289,8 @@ export interface NationalDayResult {
   injuries: { squadId: string; playerId: string; playerName: string; severity: "light" | "medium" | "severe"; returnDate: string }[];
   news: NationalNews[];
   played: number;
+  /** Tournament headlines of the day for the news page (`press.md`): a champion, a top-8 (Elo) side knocked out. */
+  headlines: { kind: "champion" | "favourite_out"; competition: string; team: string; teamId: string }[];
 }
 
 /** Anything national can happen today (else the day is skipped without reading the competitions). */
@@ -335,7 +337,7 @@ export async function playNationalDay(args: {
   const { service, saveId, date, index, humanClubId } = args;
   const rng = args.rng ?? Math.random;
   const out: NationalDayResult = {
-    squads: new Map(), participants: new Set(), injuries: [], news: [], played: 0, coachNews: [], consumedRecording: false, earned: 0, offers: 0,
+    squads: new Map(), participants: new Set(), injuries: [], news: [], played: 0, coachNews: [], consumedRecording: false, earned: 0, offers: 0, headlines: [],
   };
   const loaded = await service.getNationalState(saveId);
   if (!loaded || (!loaded.human && !(loaded.offers?.length) && !isNationalDate(loaded, date))) return out;
@@ -619,6 +621,15 @@ export async function playNationalDay(args: {
     } else if (comp.kind === "tournament") {
       const { comp: next, change } = advanceTournament(comp, elo);
       comp = next;
+      if (change.eliminated.length > 0) {
+        const top8 = new Set(rankTeams(Object.values(state.teams)).slice(0, 8).map((t) => t.id));
+        for (const id of change.eliminated) {
+          if (top8.has(id) && id !== comp.championId) out.headlines.push({ kind: "favourite_out", competition: comp.slug, team: state.teams[id]?.nation ?? id, teamId: id });
+        }
+      }
+      if (change.finished && comp.championId) {
+        out.headlines.push({ kind: "champion", competition: comp.slug, team: state.teams[comp.championId]?.nation ?? comp.championId, teamId: comp.championId });
+      }
       for (const id of change.eliminated) {
         const cu = state.callUps[id];
         if (cu && cu.until > date) {

@@ -7,7 +7,9 @@ import type { ManagerProfile } from "@/types/achievementTypes";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
-import type { StandingRow } from "@/types/playerTypes";
+import type { LeagueData, StandingRow } from "@/types/playerTypes";
+import type { NewsItem } from "@/types/newsTypes";
+import { NewsRow } from "@/GameInterface/News/NewsList";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
 import { objectiveText } from "@/GameInterface/boardText";
@@ -880,4 +882,22 @@ export function WorksCard({ facilities, today }: { facilities: ClubFacilities; t
 /** Projects finished in the last 7 days. */
 export function recentlyCompleted(f: ClubFacilities, today: string) {
   return f.completed.filter((c) => c.date <= today && c.date >= addDays(today, -7));
+}
+
+// ── News ─────────────────────────────────────────────────────────────────────
+
+/** Top world news of the last days (`/news`): crest + headline, the big ones first. */
+export function NewsCard({ items, leagues }: { items: NewsItem[] | null; leagues: LeagueData[] }) {
+  const { t } = useTranslation();
+  return (
+    <HomeCard title={t("dashboard.home.news")} href="/news" linkLabel={t("dashboard.home.newsAll")}>
+      {items === null ? null : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground m-0">{t("dashboard.home.newsEmpty")}</p>
+      ) : (
+        <ul className="list-none m-0 p-0 flex flex-col divide-y divide-border/50">
+          {items.map((n) => <NewsRow key={n.id} item={n} leagues={leagues} withLine={false} />)}
+        </ul>
+      )}
+    </HomeCard>
+  );
 }

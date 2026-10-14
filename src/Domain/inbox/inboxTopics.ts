@@ -43,6 +43,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   achievement: "achievements",
+  // A press conference invite asks for an answer: never dropped.
+  press: "actions",
   // Board (objective, warnings, manager contract offer...), job offers and player talks ask for an answer.
   board: "actions",
   job: "actions",

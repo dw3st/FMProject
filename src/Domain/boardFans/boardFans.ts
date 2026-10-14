@@ -229,6 +229,12 @@ export function applyManagerCard(state: BoardState, card: "yellow" | "red"): Boa
   return moveMeters(state, card === "red" ? VAR_CONFIG.BOARD_RED : VAR_CONFIG.BOARD_YELLOW, 0);
 }
 
+/** Etapa 42: efeito de uma resposta de coletiva, de uma ausência ou de uma promessa resolvida. */
+export function applyPressEffect(state: BoardState, board: number, fans: number): BoardState {
+  if (board === 0 && fans === 0) return state;
+  return moveMeters(state, board, fans);
+}
+
 /** The human club bought a player: spending past the balance costs board confidence. */
 export function applyPurchase(state: BoardState, p: { balanceAfter: number }): BoardState {
   return p.balanceAfter < 0 ? moveMeters(state, BOARD_FANS.transfer.OVER_BUDGET_BOARD, 0) : state;

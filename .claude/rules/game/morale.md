@@ -231,3 +231,7 @@ da seleção não entram na janela de minutos. Ver `.claude/rules/game/national-
 
 A Motivação do técnico (`.claude/rules/game/achievements.md`) multiplica a variação positiva de moral de um jogo (vitória,
 gols, boa nota) por 1 ± 5% (`MoraleDayInput.motivation`, lida do `achievements.json` em `applyMoraleDay`); em 10, nada muda.
+
+## Imprensa (Etapa 42)
+
+Uma resposta de coletiva mexe na moral do elenco inteiro (`defend_squad` +2, `demand_squad` −2, `confident` e `provocative` +1) ou de um jogador (`praise` +4, `criticize` −4, `protect` +2) por `afterPressAnswer`, com o `withEventDelta` (temperamento escala; um profissional leva só +1 do `criticize`). Ver `.claude/rules/game/press.md`.

@@ -689,6 +689,14 @@ export function afterManagerComplaint(squad: Squad): Squad {
   return { ...squad, players: squad.players.map((p) => withEventDelta(p, VAR_CONFIG.COMPLAINT_MORALE)) };
 }
 
+/** Etapa 42: resposta de coletiva sobre o elenco (`"all"`) ou um jogador. Temperamento escala como todo evento. */
+export function afterPressAnswer(squad: Squad, target: "all" | string, delta: number): Squad {
+  if (delta === 0) return squad;
+  if (target === "all") return { ...squad, players: squad.players.map((p) => withEventDelta(p, delta)) };
+  if (!squad.players.some((p) => p.id === target)) return squad;
+  return { ...squad, players: squad.players.map((p) => (p.id === target ? withEventDelta(p, delta) : p)) };
+}
+
 /** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */
 export function afterListedForSale(squad: Squad, playerId: string): Squad {
   const player = squad.players.find((p) => p.id === playerId);

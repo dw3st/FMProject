@@ -1,3 +1,4 @@
+import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
@@ -72,6 +73,7 @@ function awardLeague(league: string): string {
   if (!/^[a-z0-9_]+$/.test(league)) throw new Error(`invalid league slug: ${league}`);
   return league;
 }
+function newsPath(saveId: string, month: string) { return `${SAVES_DIR}/${saveId}/news/${month}.json`; }
 function awardsPath(saveId: string, year: number) { return `${SAVES_DIR}/${saveId}/awards/${awardYear(year)}.json`; }
 function seasonGoalsPath(saveId: string, league: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasonGoals/${awardLeague(league)}-${awardYear(year)}.json`;
@@ -606,6 +608,32 @@ export class FileSystemDAL implements ISaveDAL {
       .filter((n): n is string => n !== undefined)
       .map(Number)
       .sort((a, b) => a - b);
+  }
+
+  // ── News ──────────────────────────────────────────────────────────────────────
+
+  async readNewsMonth(saveId: string, month: string): Promise<NewsItem[] | null> {
+    const file = Bun.file(newsPath(saveId, month));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<NewsItem[]>;
+  }
+
+  async writeNewsMonth(saveId: string, month: string, items: NewsItem[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}/news`, { recursive: true });
+    await Bun.write(newsPath(saveId, month), JSON.stringify(items));
+  }
+
+  async listNewsMonths(saveId: string): Promise<string[]> {
+    let names: string[];
+    try { names = await readdir(`${SAVES_DIR}/${saveId}/news`); } catch { return []; }
+    return names
+      .map((n) => /^(\d{4}-\d{2})\.json$/.exec(n)?.[1])
+      .filter((m): m is string => m !== undefined)
+      .sort();
+  }
+
+  async deleteNewsMonth(saveId: string, month: string): Promise<void> {
+    await rm(newsPath(saveId, month), { force: true });
   }
 
   async readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {

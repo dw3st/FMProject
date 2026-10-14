@@ -1,3 +1,4 @@
+import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -481,6 +482,23 @@ export class BufferingSaveDAL implements ISaveDAL {
     const prefix = `awards:${saveId}:`;
     for (const [key, v] of this.cache) if (key.startsWith(prefix) && v) years.add(Number(key.slice(prefix.length)));
     return [...years].sort((a, b) => a - b);
+  }
+  // ── News (plain buffered resources; the prune delete goes straight through) ──
+
+  readNewsMonth(saveId: string, month: string): Promise<NewsItem[] | null> {
+    return this.readThrough(`news:${saveId}:${month}`, () => this.inner.readNewsMonth(saveId, month));
+  }
+  async writeNewsMonth(saveId: string, month: string, items: NewsItem[]): Promise<void> {
+    this.buffer(`news:${saveId}:${month}`, items, () => this.inner.writeNewsMonth(saveId, month, items));
+  }
+  async listNewsMonths(saveId: string): Promise<string[]> {
+    const months = new Set(await this.inner.listNewsMonths(saveId));
+    const prefix = `news:${saveId}:`;
+    for (const [key, v] of this.cache) if (key.startsWith(prefix) && v) months.add(key.slice(prefix.length));
+    return [...months].sort();
+  }
+  deleteNewsMonth(saveId: string, month: string): Promise<void> {
+    return this.inner.deleteNewsMonth(saveId, month);
   }
   readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {
     return this.readThrough(`seasonGoals:${saveId}:${league}:${year}`, () => this.inner.readSeasonGoals(saveId, league, year));

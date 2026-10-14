@@ -2,6 +2,7 @@ import type { PlayerNews } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
 import type { StaffContractNews } from "@/Domain/staff/staffContracts";
 import { attrDisplay } from "@/Domain/attributes";
+import type { PressKind, PressTrigger } from "@/types/pressTypes";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
@@ -23,7 +24,7 @@ import type {
   PlayerInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
-import type { ManagerNewsInboxMessage, RescheduledGame, ScheduleInboxMessage } from "@/types/inboxTypes";
+import type { ManagerNewsInboxMessage, PressInboxMessage, RescheduledGame, ScheduleInboxMessage } from "@/types/inboxTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
@@ -523,6 +524,27 @@ export function buildScheduleMessage(date: string, games: RescheduledGame[]): Sc
     subject:   sorted.length === 1 ? "Match rescheduled" : `${sorted.length} matches rescheduled`,
     preview:   first ? `${first.opponentName}: ${first.from} → ${first.to}` : "",
     games:     sorted,
+  };
+}
+
+/** Press conference invite (`.claude/rules/game/press.md`). The screen translates it. */
+export function buildPressInviteMessage(date: string, p: {
+  pressId: string; trigger: PressTrigger; kind: PressKind; opponent?: string; expires: string;
+}): PressInboxMessage {
+  return {
+    id:        p.pressId.startsWith("press-") ? p.pressId : `press-${p.pressId}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "press",
+    kind:      "invite",
+    pressId:   p.pressId,
+    trigger:   p.trigger,
+    pressKind: p.kind,
+    ...(p.opponent ? { opponent: p.opponent } : {}),
+    expires:   p.expires,
+    subject:   "Press conference",
+    preview:   p.opponent ?? "",
   };
 }
 

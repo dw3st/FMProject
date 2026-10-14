@@ -7,6 +7,8 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { fetchNews, topNews } from "@/GameInterface/News/newsApi";
+import type { NewsItem } from "@/types/newsTypes";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
@@ -32,6 +34,7 @@ import {
   HighlightsCard,
   InboxCard,
   LeagueMiniTable,
+  NewsCard,
   NextMatchCard,
   WeekFinancesCard,
   WorksCard,
@@ -129,6 +132,17 @@ export function DashboardScreen() {
       .then((r) => (r.ok ? (r.json() as Promise<{ playerRank: number | null }>) : null))
       .catch(() => null)
       .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
+  // World news (`.claude/rules/game/press.md` → "Notícias"): the big ones of the last days first.
+  const [news, setNews] = useState<NewsItem[] | null>(null);
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetchNews(saveId, { scope: "all", limit: 20 })
+      .then((page) => { if (!cancelled) setNews(topNews(page.items, 5)); })
+      .catch(() => { if (!cancelled) setNews([]); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
 
@@ -327,6 +341,8 @@ export function DashboardScreen() {
         />
         <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} previewOf={(m) => inboxPreview(m, t)} />
       </div>
+
+      <NewsCard items={news} leagues={leagues} />
 
       <WeekFinancesCard week={week} balance={balance} />
     </ScreenContainer>

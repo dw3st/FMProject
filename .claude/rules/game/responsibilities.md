@@ -47,7 +47,7 @@ versão **4.6**. Visual: `.claude/rules/ui-standard.md`.
 
 | Tópico | Mensagens | Padrão |
 |---|---|---|
-| `actions` (travado) | `transfer` bid/loan_bid/rival_bid, `player`, `board`, `job`, `retirement:reborn`, `season:negative_balance` | ligado |
+| `actions` (travado) | `transfer` bid/loan_bid/rival_bid, `player`, `board`, `job`, `press`, `retirement:reborn`, `season:negative_balance` | ligado |
 | `contracts` | `contract` (resumo do diretor, avisos, renovado, saídas livres; comissão técnica `staff_*`) | ligado |
 | `transfer_news` | o resto de `transfer` (empréstimo voltou, cláusula, janelas, pré-contrato, rival venceu), `transfer_in/out` | ligado |
 | `injuries` / `development` / `youth` / `retirement` | categorias do mesmo nome | ligado |

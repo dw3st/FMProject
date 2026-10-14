@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.23",
+    date: "2026-10-14",
+    items: [
+      {
+        pt: "Coletivas de imprensa nos momentos marcantes (clássicos, mata-matas, reta final, títulos, goleadas): suas respostas mexem na moral, na diretoria e na torcida, e o que você promete é cobrado depois",
+        en: "Press conferences at key moments (derbies, knockouts, run-in, titles, heavy defeats): your answers move morale, the board and the fans, and your promises are held against you later",
+      },
+      {
+        pt: "Página de notícias do mundo: goleadas, zebras, campeões, grandes transferências, técnicos demitidos, prêmios e a repercussão das suas coletivas",
+        en: "World news page: thrashings, upsets, champions, big transfers, sacked managers, awards and how your press conferences landed",
+      },
+    ],
+  },
+  {
     version: "4.22.3",
     date: "2026-10-13",
     items: [
@@ -1530,7 +1544,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Imprensa: coletivas e notícias do mundo do futebol", en: "Press conferences and football news" },
   { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
   { pt: "Chat e amigos: converse com outros técnicos", en: "Chat and friends: talk to other managers" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
