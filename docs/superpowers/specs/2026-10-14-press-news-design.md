@@ -19,7 +19,7 @@ partida); a coletiva chega pela caixa de entrada. Visual: `.claude/rules/ui-stan
 
 Avaliados no avanço do dia, para jogos **oficiais** (liga, copa, continental) do clube do jogador.
 
-**Antes do jogo** — quando o jogo é daqui a 2 dias (ou amanhã, se não havia convite possível 2 dias antes):
+**Antes do jogo** — quando o jogo é daqui a 2 dias (convite na véspera, que vence no fim da véspera; jogo de amanhã sem convite fica sem coletiva):
 
 | Gatilho | Condição |
 |---|---|
@@ -108,11 +108,11 @@ SaveMeta.press?: {
 }
 ```
 
-- `expires`: pré-jogo = o dia do jogo (vence antes de o jogo rodar); pós-jogo = 3 dias depois.
+- `expires` (última data em que vale a resposta, até o fim do dia): pré-jogo = a véspera do jogo (nunca respondida no dia do jogo, com o placar à vista); pós-jogo = 3 dias depois.
 - **Avanço do dia** (`src/backend/pressWorld.ts`, chamado em `advanceOneDay` depois da moral e da diretoria):
   1. coletiva pendente vencida → ignorada (diretoria −1, notícia `press_absent`);
   2. promessas `win`/`win_bold` resolvidas pelo jogo do clube de hoje; `objective` na virada do país;
-  3. gatilhos pós-jogo (jogos de hoje, títulos, virada) e pré-jogo (jogos daqui a 2 dias ou amanhã);
+  3. gatilhos pós-jogo (jogos de hoje, títulos, virada) e pré-jogo (jogos daqui a 2 dias);
   4. coletiva nova → mensagem `press` / `invite` depois do `clearInbox`.
 - Rotas (`src/backend/pressRoutes.ts`, dono do save; POST com `withSaveLock` e `BufferingSaveDAL`):
 
@@ -178,7 +178,7 @@ bun test src/Domain/press src/Domain/news src/backend/press.routes.test.ts src/b
   nunca na visão do cliente; cada tom move o que a tabela diz (e nada mais); promessas cumpridas/empate/quebradas;
   `buildDayNews` com tetos, importância e ids estáveis.
 - Rotas: dono, 409 fechada/respondida/vencida, 400 respostas inválidas, efeito aplicado uma vez.
-- Avanço do dia: convite pré-jogo 2 dias antes do clássico; ignorada vence no dia do jogo (−1); promessa resolvida
+- Avanço do dia: convite pré-jogo 2 dias antes do clássico; ignorada vence na véspera e cai no avanço da véspera (−1); promessa resolvida
   pelo jogo; notícias gravadas sem duplicar num dia refeito.
 - Smoke (`season-rollover-smoke.ts`, seção "Imprensa"; só quando o usuário pedir): houve coletivas, todas respondidas
   pela rota ou ignoradas; nenhuma coletiva da IA; promessas resolvidas; notícias em todos os meses da corrida, nenhum

@@ -39,8 +39,9 @@ Etapa 42 do `docs/ROADMAP.md`, versão **4.23**. Visual: `.claude/rules/ui-stand
 
 ## Gatilhos
 
-Pré-jogo: olhados nos jogos do clube **daqui a 2 dias** (ou amanhã, se a janela de 2 dias foi perdida); o convite nasce com a data
-do dia seguinte e vence no dia do jogo. Pós-jogo: nos jogos de hoje e na virada; o convite nasce com a **data do dia seguinte** e
+Pré-jogo: olhados só nos jogos do clube **daqui a 2 dias**; o convite nasce com a data do dia seguinte (a véspera do jogo) e
+vence na **véspera** (`expires = jogo − 1`): pode ser respondido até o fim da véspera, nunca no dia do jogo (o placar já seria
+visível). Um jogo de amanhã sem convite não ganha coletiva pré-jogo. Pós-jogo: nos jogos de hoje e na virada; o convite nasce com a **data do dia seguinte** e
 vale `POST_VALID_DAYS` (3) dias.
 
 | Gatilho | Quando | Tipo |
@@ -114,10 +115,10 @@ Manchetes `press_quote` saem dos tons `provocative`, `demand_squad`, `criticize`
 Roda depois da diretoria e da moral do dia, com o `board` local já movido pelos jogos. Ordem:
 
 1. Convite vencido (`date >= expires`) = ignorado. A resposta vale até o **próprio dia do prazo** (`currentDate <= expires`) pela rota;
-   o avanço ignora a partir dele.
+   o avanço que sai do dia do prazo (`date >= expires`) a ignora se ela ainda estiver pendente.
 2. Jogos do clube hoje: resolve promessas de jogo, atualiza `winless`.
 3. Virada: resolve a promessa `objective` (meta cumprida ou não) e descarta as de jogo da temporada velha.
-4. Candidatos pós-jogo (hoje e virada) e pré-jogo (jogos daqui a 2 dias ou amanhã); `pickTrigger` escolhe um.
+4. Candidatos pós-jogo (hoje e virada) e pré-jogo (jogos daqui a 2 dias); `pickTrigger` escolhe um.
 5. O convite é emitido **depois do `clearInbox`** da virada (como as demais mensagens adiadas) com a data do dia seguinte.
 
 As ausências e promessas resolvidas viram notícias (`press_absent`, `press_promise_kept`, `press_promise_broken`).

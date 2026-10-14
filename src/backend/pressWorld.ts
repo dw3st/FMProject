@@ -22,7 +22,8 @@ import type { PressParams, PressState, PressTrigger } from "@/types/pressTypes";
 /**
  * The human club's press conferences in the day pipeline (Etapa 42, `.claude/rules/game/press.md`): an expired invite
  * is ignored, today's matches resolve the promises and the winless run, the rollover resolves the objective promise,
- * and today's matches / the games two days ahead may open a new conference (an inbox invite dated tomorrow).
+ * and today's matches / the games two days ahead may open a new conference (an inbox invite dated tomorrow; a
+ * pre-match one expires on the eve of the game).
  */
 
 export interface PressDayInput {
@@ -75,7 +76,7 @@ interface Candidate {
   trigger: PressTrigger;
   kind: "pre" | "post";
   fixtureId?: string;
-  /** Pre-match: the game's date (expiry). */
+  /** Pre-match: the game's date (the conference expires the day before). */
   matchDate?: string;
   params: PressParams;
   player?: ConferenceInput["player"];
@@ -161,8 +162,9 @@ export async function pressDay(input: PressDayInput): Promise<PressDayResult> {
     }
   }
 
-  // 5. Before the game: the club's games in two days (or tomorrow, if the window two days out was missed).
-  const pre = await upcomingFixtures(input, [addDays(date, 2), addDays(date, 1)]);
+  // 5. Before the game: the club's games in two days. The invite (dated tomorrow) expires on the eve of the game, so it
+  // is never answerable on the match day itself; a game tomorrow gets no pre-match conference.
+  const pre = await upcomingFixtures(input, [addDays(date, 2)]);
   let standings: StandingRow[] | null = null;
   for (const f of pre) {
     const isLeague = f.competition === input.leagueSlug;
@@ -202,7 +204,7 @@ export async function pressDay(input: PressDayInput): Promise<PressDayResult> {
     if (winner === "title" && state.pending) ignorePending();
     const c = candidates.find((x) => x.trigger === winner)!;
     const id = `press-${inviteDate}`;
-    const expires = c.kind === "pre" ? c.matchDate! : addDays(inviteDate, PRESS.POST_VALID_DAYS);
+    const expires = c.kind === "pre" ? addDays(c.matchDate!, -1) : addDays(inviteDate, PRESS.POST_VALID_DAYS);
     const conference = buildConference({
       id, trigger: c.trigger, kind: c.kind, date: inviteDate, expires,
       ...(c.fixtureId ? { fixtureId: c.fixtureId } : {}),
@@ -251,8 +253,7 @@ async function upcomingFixtures(input: PressDayInput, dates: string[]): Promise<
       }
     }
   }
-  // The game two days out first: the earlier window is the one that matters.
-  return out.sort((a, b) => b.date.localeCompare(a.date));
+  return out;
 }
 
 /** After the game: the culprit of a defeat (lowest rating), else the star (best rating ≥ 7.5). */

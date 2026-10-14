@@ -37,7 +37,7 @@ export interface PressConference {
   trigger: PressTrigger;
   kind: PressKind;
   date: string;           // dia do convite
-  expires: string;        // vence ao INÍCIO deste dia sem resposta
+  expires: string;        // última data em que pode ser respondida (vale até o FIM deste dia); pré-jogo = véspera do jogo
   fixtureId?: string;     // jogo de referência (pré: o jogo que vem; pós: o jogo que passou)
   params: PressParams;
   questions: PressQuestion[];

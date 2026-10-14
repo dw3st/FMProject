@@ -99,7 +99,9 @@ describe("press in advanceOneDay", () => {
     const m = await saveService.getMeta(meta.id);
     expect(m!.press?.pending?.trigger).toBe("derby");
     expect(m!.press?.pending?.fixtureId).toBe(next!.id);
-    expect(m!.press?.pending?.expires).toBe(next!.date);
+    expect(m!.press?.pending?.expires).toBe(addDays(next!.date, -1));
+    expect(m!.press?.pending?.date).toBe(addDays(next!.date, -1));
+    if (out.ok) expect(out.payload.pressInvite).toBe(true);
     const inbox = await saveService.getInbox(meta.id);
     expect(inbox.some((x) => x.category === "press")).toBe(true);
   }, 600_000);
