@@ -4437,5 +4437,172 @@
       },
       "open": "Open My national team"
     }
+  },
+  "press": {
+    "closed": "This press conference is already over.",
+    "error": "Could not send the answers.",
+    "sent": "Answers sent",
+    "send": "Send answers",
+    "question": "Question {{n}}",
+    "modal": {
+      "title": "Press conference · {{trigger}}"
+    },
+    "inbox": {
+      "subject": "Press conference · {{trigger}}",
+      "pre": "The press wants to hear from you before the game against {{opponent}}.",
+      "post": "The press wants to hear from you after the game against {{opponent}}.",
+      "postNoOpponent": "The press wants to hear from you.",
+      "until": "Open until {{date}}",
+      "answer": "Answer",
+      "closed": "Press conference closed"
+    },
+    "trigger": {
+      "derby": "Derby",
+      "knockout": "Knockout",
+      "run_in": "Run-in",
+      "ultimatum": "Ultimatum",
+      "title": "Title",
+      "promoted": "Promotion",
+      "relegated": "Relegation",
+      "heavy_defeat": "Heavy defeat",
+      "eliminated": "Elimination",
+      "winless": "Winless run",
+      "upset_win": "Upset win",
+      "upset_loss": "Upset defeat"
+    },
+    "q": {
+      "match": {
+        "derby": {
+          "0": "The derby against {{opponent}} means a lot to the fans. How are you going into it?",
+          "1": "What kind of game do you expect against {{opponent}}?"
+        },
+        "knockout": {
+          "0": "It's a knockout tie against {{opponent}}. Is the team ready?",
+          "1": "A place is at stake against {{opponent}}. What's the plan?"
+        },
+        "run_in": {
+          "0": "Only a few rounds left. Can you get there?",
+          "1": "Every point counts now. How does the team approach {{opponent}}?"
+        },
+        "ultimatum": {
+          "0": "The board is applying pressure. Is the game against {{opponent}} decisive?",
+          "1": "Is your job at risk?"
+        },
+        "title": {
+          "0": "Champions! What does this title mean?",
+          "1": "What a season! What was the secret?"
+        },
+        "promoted": {
+          "0": "Promotion is here. Is the team ready for the division above?",
+          "1": "How did it feel to win promotion?"
+        },
+        "relegated": {
+          "0": "Relegation is confirmed. What went wrong?",
+          "1": "How does the club bounce back from the drop?"
+        },
+        "heavy_defeat": {
+          "0": "A heavy defeat to {{opponent}} ({{score}}). What happened?",
+          "1": "How do you explain the {{score}}?"
+        },
+        "eliminated": {
+          "0": "Knocked out by {{opponent}}. How does it feel?",
+          "1": "Was the elimination fair?"
+        },
+        "winless": {
+          "0": "Five games without a win. What's missing?",
+          "1": "Is the bad run a worry?"
+        },
+        "upset_win": {
+          "0": "A win over {{opponent}} ({{score}}). Did you expect it?",
+          "1": "Nobody backed this result. How did it happen?"
+        },
+        "upset_loss": {
+          "0": "A defeat to {{opponent}}. Was this a game to win?",
+          "1": "How do you lose to {{opponent}}?"
+        }
+      },
+      "squad": {
+        "good": {
+          "0": "What do you make of the squad?",
+          "1": "Is the group united?"
+        },
+        "bad": {
+          "0": "Are the players up to it?",
+          "1": "Is the squad to blame?"
+        }
+      },
+      "player": {
+        "star": {
+          "0": "{{player}} was man of the match. Does he deserve the praise?",
+          "1": "What did you think of {{player}}'s performance?"
+        },
+        "scorer": {
+          "0": "{{player}} is the team's top scorer. Is he the difference?",
+          "1": "How much does the team depend on {{player}}?"
+        },
+        "culprit": {
+          "0": "{{player}} had a tough night. What happened?",
+          "1": "Did {{player}} let you down?"
+        }
+      },
+      "job": {
+        "0": "Does the board still trust you?",
+        "1": "Do you feel safe in the job?"
+      }
+    },
+    "a": {
+      "confident": {
+        "0": "We will win.",
+        "1": "We're ready and we'll come away with the win."
+      },
+      "cautious": {
+        "0": "One game at a time.",
+        "1": "We respect the opponent; we'll keep working."
+      },
+      "provocative": {
+        "0": "They should be worried about us.",
+        "1": "On the pitch it will be clear who's better."
+      },
+      "blame_self": {
+        "0": "The responsibility is mine.",
+        "1": "I got the preparation wrong; I take it."
+      },
+      "defend_squad": {
+        "0": "I fully trust this group.",
+        "1": "The players gave everything."
+      },
+      "demand_squad": {
+        "0": "I expect much more from them.",
+        "1": "That performance isn't good enough."
+      },
+      "neutral": {
+        "0": "We'll look at it calmly.",
+        "1": "This isn't the time to talk about it."
+      },
+      "praise": {
+        "0": "{{player}} is flying.",
+        "1": "{{player}} deserves all the praise."
+      },
+      "criticize": {
+        "0": "{{player}} needs to do more.",
+        "1": "{{player}} knows he owes us more."
+      },
+      "protect": {
+        "0": "{{player}} has my full support.",
+        "1": "Nobody is going to crucify {{player}}."
+      },
+      "job_confident": {
+        "0": "We will meet the season's target.",
+        "1": "I'm sure we'll reach the objective."
+      },
+      "ask_signings": {
+        "0": "We need reinforcements.",
+        "1": "With this squad it's hard; the board knows it."
+      },
+      "deflect": {
+        "0": "My focus is on the next game.",
+        "1": "That's not up to me."
+      }
+    }
   }
 }

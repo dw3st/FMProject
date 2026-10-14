@@ -4437,5 +4437,172 @@
       },
       "open": "Abrir Minha seleção"
     }
+  },
+  "press": {
+    "closed": "Esta coletiva já foi encerrada.",
+    "error": "Não foi possível enviar as respostas.",
+    "sent": "Respostas enviadas",
+    "send": "Enviar respostas",
+    "question": "Pergunta {{n}}",
+    "modal": {
+      "title": "Coletiva · {{trigger}}"
+    },
+    "inbox": {
+      "subject": "Coletiva de imprensa · {{trigger}}",
+      "pre": "A imprensa quer ouvir você antes do jogo contra o {{opponent}}.",
+      "post": "A imprensa quer ouvir você depois do jogo contra o {{opponent}}.",
+      "postNoOpponent": "A imprensa quer ouvir você.",
+      "until": "Vale até {{date}}",
+      "answer": "Responder",
+      "closed": "Coletiva encerrada"
+    },
+    "trigger": {
+      "derby": "Clássico",
+      "knockout": "Mata-mata",
+      "run_in": "Reta final",
+      "ultimatum": "Ultimato",
+      "title": "Título",
+      "promoted": "Acesso",
+      "relegated": "Rebaixamento",
+      "heavy_defeat": "Goleada sofrida",
+      "eliminated": "Eliminação",
+      "winless": "Sequência sem vitória",
+      "upset_win": "Zebra",
+      "upset_loss": "Tropeço"
+    },
+    "q": {
+      "match": {
+        "derby": {
+          "0": "O clássico contra o {{opponent}} vale muito para a torcida. Como você chega?",
+          "1": "Que jogo você espera contra o {{opponent}}?"
+        },
+        "knockout": {
+          "0": "É mata-mata contra o {{opponent}}. O time está pronto?",
+          "1": "Uma vaga em jogo contra o {{opponent}}. Qual é o plano?"
+        },
+        "run_in": {
+          "0": "Faltam poucas rodadas. Dá para chegar lá?",
+          "1": "Cada ponto conta agora. Como o time encara o {{opponent}}?"
+        },
+        "ultimatum": {
+          "0": "A diretoria pressiona. O jogo contra o {{opponent}} é decisivo?",
+          "1": "Seu cargo está em risco?"
+        },
+        "title": {
+          "0": "Campeão! O que esse título significa?",
+          "1": "Que temporada! Qual foi o segredo?"
+        },
+        "promoted": {
+          "0": "O acesso veio. O time está pronto para a divisão de cima?",
+          "1": "Como foi chegar ao acesso?"
+        },
+        "relegated": {
+          "0": "O rebaixamento foi confirmado. O que deu errado?",
+          "1": "Como o clube se reergue depois da queda?"
+        },
+        "heavy_defeat": {
+          "0": "Derrota pesada para o {{opponent}} ({{score}}). O que aconteceu?",
+          "1": "Como explicar o {{score}}?"
+        },
+        "eliminated": {
+          "0": "Eliminados pelo {{opponent}}. Qual é a sensação?",
+          "1": "A eliminação foi justa?"
+        },
+        "winless": {
+          "0": "Cinco jogos sem vencer. O que falta?",
+          "1": "A sequência ruim preocupa?"
+        },
+        "upset_win": {
+          "0": "Vitória sobre o {{opponent}} ({{score}}). Você esperava?",
+          "1": "Ninguém apostava nesse resultado. Como foi?"
+        },
+        "upset_loss": {
+          "0": "Derrota para o {{opponent}}. Era um jogo para vencer?",
+          "1": "Como perder para o {{opponent}}?"
+        }
+      },
+      "squad": {
+        "good": {
+          "0": "O que você diz do elenco?",
+          "1": "O grupo está unido?"
+        },
+        "bad": {
+          "0": "Os jogadores estão à altura?",
+          "1": "O elenco tem culpa?"
+        }
+      },
+      "player": {
+        "star": {
+          "0": "{{player}} foi o melhor em campo. Merece elogios?",
+          "1": "O que achou da atuação de {{player}}?"
+        },
+        "scorer": {
+          "0": "{{player}} é o artilheiro do time. Ele decide?",
+          "1": "Quanto o time depende de {{player}}?"
+        },
+        "culprit": {
+          "0": "{{player}} teve uma noite difícil. O que houve?",
+          "1": "{{player}} falhou?"
+        }
+      },
+      "job": {
+        "0": "A diretoria ainda confia em você?",
+        "1": "Você se sente seguro no cargo?"
+      }
+    },
+    "a": {
+      "confident": {
+        "0": "Vamos vencer.",
+        "1": "Estamos prontos e vamos sair com a vitória."
+      },
+      "cautious": {
+        "0": "Um jogo de cada vez.",
+        "1": "Respeitamos o adversário; vamos trabalhar."
+      },
+      "provocative": {
+        "0": "Eles que se preocupem com a gente.",
+        "1": "Em campo vai ficar claro quem é melhor."
+      },
+      "blame_self": {
+        "0": "A responsabilidade é minha.",
+        "1": "Errei na preparação; assumo."
+      },
+      "defend_squad": {
+        "0": "Confio totalmente nesse grupo.",
+        "1": "Os jogadores deram tudo."
+      },
+      "demand_squad": {
+        "0": "Espero muito mais deles.",
+        "1": "Esse desempenho não serve."
+      },
+      "neutral": {
+        "0": "Vamos analisar com calma.",
+        "1": "Não é hora de falar disso."
+      },
+      "praise": {
+        "0": "{{player}} está voando.",
+        "1": "{{player}} merece todos os elogios."
+      },
+      "criticize": {
+        "0": "{{player}} precisa render mais.",
+        "1": "{{player}} sabe que deve mais."
+      },
+      "protect": {
+        "0": "{{player}} tem todo o meu apoio.",
+        "1": "Ninguém vai crucificar {{player}}."
+      },
+      "job_confident": {
+        "0": "Vamos cumprir a meta da temporada.",
+        "1": "Tenho certeza de que vamos alcançar o objetivo."
+      },
+      "ask_signings": {
+        "0": "Precisamos de reforços.",
+        "1": "Com esse elenco é difícil; a diretoria sabe."
+      },
+      "deflect": {
+        "0": "Meu foco é o próximo jogo.",
+        "1": "Isso não depende de mim."
+      }
+    }
   }
 }
