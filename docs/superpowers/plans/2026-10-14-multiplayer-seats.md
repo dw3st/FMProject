@@ -132,8 +132,8 @@ dos refactors (`bun run typecheck`).
    dezenas de funções puras.
 5. **Ids:** `seatId = randomUUID()`; técnico humano `seat:<seatId>`; validação de caminho `SEAT_ID_PATTERN`
    (`^[a-z0-9][a-z0-9-]{0,63}$`).
-6. **`save_members`:** chave `(save_id, user_id)` e índice único `(save_id, seat_id)`; a tabela `saves` é apagada
-   (`DROP TABLE IF EXISTS saves`), sem migração — os saves são apagados a cada versão. Só o dono apaga o save
+6. **`save_members`:** chave `(save_id, user_id)` e índice único `(save_id, seat_id)`; a tabela antiga `saves` **fica no banco e deixa de
+   ser usada** (nunca `DROP` no banco de produção; sem migração — os saves são apagados a cada versão). Só o dono apaga o save
    (`DELETE` de um `member` = 403).
 7. **Lista de saves:** `GET /api/saves` devolve, para cada mundo de que o usuário é membro, a meta mesclada com o
    assento dele, mais `role`.
@@ -1584,8 +1584,8 @@ git commit -m "feat(seats): tática, caixa, extrato, olheiros, conquistas e merc
 **Files:**
 - Modify: `src/backend/auth/saveOwnership.ts` (apagar `recordSaveOwnership`, `deleteSaveOwnership`, `isSaveOwner`,
   o `listUserSaveIds` antigo; renomear `listMemberSaveIds` → `listUserSaveIds`)
-- Modify: `src/backend/db.ts` (trocar o `CREATE TABLE … saves` e o índice `idx_saves_user` por
-  `DROP TABLE IF EXISTS saves;`)
+- Modify: `src/backend/db.ts` (acrescentar `save_members` com `CREATE TABLE IF NOT EXISTS`, no mesmo esquema que a
+  branch `feat/friends-chat` já cria; o bloco da tabela `saves` fica como está, sem uso)
 - Modify: `src/backend/auth/middleware.ts` (`requireSeat` + alias de transição `requireSaveOwner`)
 - Modify: `src/backend/saves.ts` (`POST/GET/DELETE /api/saves`)
 - Modify: `src/backend/reports.ts` (usa `isSaveOwner` → `isSaveMember`)
@@ -1713,9 +1713,10 @@ export async function ownSolo(saveId: string, userId: string): Promise<string> {
 ```
 
 3.4 — `src/backend/auth/saveOwnership.ts`: apague `recordSaveOwnership`, `deleteSaveOwnership`, `isSaveOwner` e o
-`listUserSaveIds` antigo; renomeie `listMemberSaveIds` → `listUserSaveIds`. `src/backend/db.ts`: troque o bloco
-`CREATE TABLE IF NOT EXISTS saves (…)` + `CREATE INDEX IF NOT EXISTS idx_saves_user …` por
-`DROP TABLE IF EXISTS saves;` (sem migração). `src/backend/reports.ts`: `isSaveOwner(saveId, userId)` →
+`listUserSaveIds` antigo; renomeie `listMemberSaveIds` → `listUserSaveIds`. `src/backend/db.ts`: mantenha o bloco
+`CREATE TABLE IF NOT EXISTS saves (…)` (tabela antiga, sem uso; nunca `DROP` no banco de produção) e acrescente
+`save_members` com `CREATE TABLE IF NOT EXISTS` (o mesmo esquema da branch `feat/friends-chat`, para o merge não
+conflitar). `src/backend/reports.ts`: `isSaveOwner(saveId, userId)` →
 `isSaveMember(saveId, userId)`.
 
 3.5 — Testes: regra mecânica para os 38 arquivos. Toda chamada `recordSaveOwnership(<saveId>, <userId>)` vira
