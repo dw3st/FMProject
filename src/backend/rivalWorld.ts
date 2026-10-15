@@ -92,8 +92,11 @@ export async function resolveRivalDeadlines(
   const due = (market.rivalBids ?? []).filter((r) => r.deadline <= date);
   if (due.length === 0) return { market, meta, news, moves };
   const done = new Set<string>();
+  // A club that got a human manager since the rival was drawn neither buys nor sells by the AI rule.
+  const humans = await service.humanClubIds(saveId);
   for (const r of [...due].sort((a, b) => b.fee - a.fee)) {
     if (done.has(r.playerId) || !r.sellerAccepts) continue;
+    if (humans.has(r.clubId) || humans.has(r.fromClubId)) continue;
     const seller = await service.getSquadById(saveId, r.fromClubId);
     const buyer = await service.getSquadById(saveId, r.clubId);
     const player = seller?.players.find((p) => p.id === r.playerId && !p.loan);

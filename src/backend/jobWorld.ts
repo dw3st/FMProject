@@ -393,6 +393,13 @@ export async function takeOverClub(
     || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
     await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] }, seatId);
   }
+  // A human club has no AI needs or sell list: its last AI profile would let it bid or sell in the AI's name
+  // (`.claude/rules/game/multiplayer.md`).
+  const world = await service.getWorldMarket(saveId);
+  if (world?.profiles[args.squadId]) {
+    const { [args.squadId]: _gone, ...profiles } = world.profiles;
+    await service.saveWorldMarket(saveId, { ...world, profiles });
+  }
 
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
   const catalog = await getLeagueData();

@@ -306,6 +306,8 @@ export interface HumanBidsArgs {
   seasonEndOf?: (squad: Squad) => string | undefined;
   windows?: DailyMarketTickOptions["windows"];
   newBidId?: () => string;
+  /** Every human club of the world: never a bidder (`.claude/rules/game/multiplayer.md`). */
+  humanClubIds?: ReadonlySet<string>;
 }
 
 /**
@@ -333,6 +335,7 @@ export function humanBidsTick(args: HumanBidsArgs): { market: MarketState; newBi
       ? { buyerOpen: args.windows.isOpen, ...(args.windows.closesOn ? { buyerClosesOn: args.windows.closesOn } : {}) }
       : {}),
     newId: args.newBidId ?? (() => `bid-${args.currentDate}-${++seq}`),
+    ...(args.humanClubIds ? { humanClubIds: args.humanClubIds } : {}),
   });
   if (newBids.length > 0) logDebug("transfers", `${newBids.length} bid(s) for the human club's players`);
   return { market: { ...args.market, pendingBids: [...pending, ...newBids] }, newBids };

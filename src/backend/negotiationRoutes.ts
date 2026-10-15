@@ -107,6 +107,11 @@ export const negotiationRoutes = {
         await saveService.saveMarket(saveId, withoutBid, auth.seatId);
         return json({ ok: true, status: "rejected" });
       }
+      // The bidder got a human manager since: the AI no longer speaks for it (`.claude/rules/game/multiplayer.md`).
+      if ((await saveService.humanClubIds(saveId)).has(bid.clubId)) {
+        await saveService.saveMarket(saveId, withoutBid, auth.seatId);
+        return json({ error: "offerClosed" }, 409);
+      }
       // The buyer's window (an AI club here) must be open to sign (`.claude/rules/game/transfer-windows.md`).
       const buyerWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)])).ofSquad(bid.clubId);
       if (!buyerWindow.open) return windowClosedResponse(buyerWindow);

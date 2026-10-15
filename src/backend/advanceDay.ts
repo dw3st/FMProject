@@ -1652,6 +1652,7 @@ export async function advanceOneDay(
               closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
             },
             newBidId: () => randomUUID(),
+            humanClubIds: humanClubs,
           });
           market = bids.market;
           for (const bid of bids.newBids) {

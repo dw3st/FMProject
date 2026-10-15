@@ -82,6 +82,38 @@ describe("seats: review fixes", () => {
     expect((await saveService.getSquadById(id, clubD))!.players.some((q) => q.id === player.id)).toBe(true);
   });
 
+  test("2. the seat's club leaves the AI market; a bid or a rival in its name closes", async () => {
+    const id = meta.id;
+    expect((await saveService.getWorldMarket(id))?.profiles[clubD]).toBeUndefined();
+    const date = (await saveService.getMeta(id))!.currentDate!;
+    const mine = (await saveService.getSquadById(id, meta.clubId))!;
+    const player = mine.players[mine.players.length - 1]!;
+    const market = (await saveService.getMarket(id, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(id, {
+      ...market,
+      pendingBids: [{ id: "bid-from-d", kind: "transfer", playerId: player.id, playerName: player.name, clubId: clubD, clubName: "D", date, expires: date, fee: 1_000_000, maxFee: 1_000_000 }],
+    }, meta.seatId);
+    const res = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${id}/bids/bid-from-d`, "POST", a.session.token,
+      { saveId: id, bidId: "bid-from-d" }, { action: "accept" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("offerClosed");
+    expect((await saveService.getSquadById(id, meta.clubId))!.players.some((q) => q.id === player.id)).toBe(true);
+
+    // A rival in D's name for an AI player A is after: discarded on its deadline, nobody moves.
+    const target = (await saveService.getSquadById(id, aiClub))!.players[0]!;
+    // Room in D's squad, so only the human rule can stop the move.
+    const squadD = (await saveService.getSquadById(id, clubD))!;
+    const lastFwd = [...squadD.players].reverse().filter((q) => q.positions[0] !== "GK").slice(0, 3).map((q) => q.id);
+    await saveService.saveSquadById(id, { ...squadD, players: squadD.players.filter((q) => !lastFwd.includes(q.id)) });
+    const seatMeta = (await saveService.getSeatMeta(id, meta.seatId))!;
+    const windows = await loadWindowContext(seatMeta, await saveService.getSquadIndex(id), undefined, [seatWindowRef(seatMeta)]);
+    const out = await resolveRivalDeadlines(saveService, id, meta.seatId, seatMeta, {
+      market: { ...emptyMarket(), rivalBids: [{ playerId: target.id, playerName: target.name, fromClubId: aiClub, clubId: clubD, clubName: "D", fee: 1, wage: 1, date, deadline: date, sellerAccepts: true }] },
+      date, windows,
+    });
+    expect(out.moves).toEqual([]);
+    expect((await saveService.getSquadById(id, aiClub))!.players.some((q) => q.id === target.id)).toBe(true);
+  });
 
 
 
