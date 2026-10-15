@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { inboxTopicStates, sanitizeInboxPrefs, type InboxPrefs } from "@/Domain/inbox/inboxTopics";
 import { parseResponsibilitiesPatch, responsibilitiesOf, type Responsibilities } from "@/Domain/responsibilities/director";
@@ -25,7 +25,7 @@ export const responsibilityRoutes = {
    */
   "/api/saves/:saveId/responsibilities": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
@@ -54,7 +54,7 @@ export const responsibilityRoutes = {
   /** `GET` → `{ prefs, topics: [{ topic, enabled, locked }] }`; `PUT` `{ [topic]: boolean }` replaces the prefs. */
   "/api/saves/:saveId/inbox-prefs": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {

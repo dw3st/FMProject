@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { getLeagueData, type LeagueDataEntry } from "@/backend/advanceDay";
@@ -28,7 +28,7 @@ export const marketRoutes = {
    */
   "/api/saves/:saveId/transfer-windows": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
     const meta = await saveService.getMeta(saveId);
@@ -62,7 +62,7 @@ export const marketRoutes = {
    */
   "/api/saves/:saveId/pre-contracts": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
       return json((await saveService.getMarket(saveId))?.preContracts ?? []);
@@ -124,7 +124,7 @@ export const marketRoutes = {
    */
   "/api/saves/:saveId/manager-contract": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
       const meta = await saveService.getMeta(saveId);

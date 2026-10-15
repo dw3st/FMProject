@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { isRealIsoDate } from "@/Domain/dates";
 import type { NewsItem } from "@/types/newsTypes";
 
@@ -13,7 +13,7 @@ export const newsRoutes = {
   /** `?scope=all|club|league|followed&competition=&before=YYYY-MM-DD&limit=1..100`. */
   "/api/saves/:saveId/news": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
     const meta = await saveService.getMeta(saveId);

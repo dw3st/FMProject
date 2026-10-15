@@ -3,7 +3,7 @@
  * competitions, one competition (table, results, leaders) and the human club's call-ups.
  */
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { youthCompFixtures, youthCompsOfCountry } from "@/backend/youthCompWorld";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
@@ -114,7 +114,7 @@ export const youthCompRoutes = {
   /** `{ u21, u19 }` slugs of a country (`?country=<leagueData country>`), `null` when absent. */
   "/api/saves/:saveId/youth-comps": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const country = new URL(req.url).searchParams.get("country") ?? "";
@@ -125,7 +125,7 @@ export const youthCompRoutes = {
   /** One youth competition: meta, fixtures, table, club names and leaders. */
   "/api/saves/:saveId/youth-comps/:slug": async (req: Req) => {
     const { saveId, slug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     if (!isYouthCompSlug(slug!) || !/^u(21|19)_[a-z0-9_]+$/.test(slug!)) {
@@ -150,7 +150,7 @@ export const youthCompRoutes = {
    */
   "/api/saves/:saveId/youth-callups": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
       const { meta, squad } = await humanSquad(saveId);

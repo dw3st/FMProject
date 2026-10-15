@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { marketAfterRequests } from "@/backend/moraleWorld";
@@ -61,7 +61,7 @@ export const moraleRoutes = {
   /** `GET /api/saves/:saveId/morale` — players' morale, status and trend; open talks and promises. */
   "/api/saves/:saveId/morale": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const found = await loadHuman(saveId);
@@ -77,7 +77,7 @@ export const moraleRoutes = {
   "/api/saves/:saveId/talks/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
@@ -121,7 +121,7 @@ export const moraleRoutes = {
   "/api/saves/:saveId/players/:playerId/squad-status": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;

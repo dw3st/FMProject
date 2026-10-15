@@ -22,7 +22,7 @@ import { humanRosterSize, marketAfterSellOnPaid, sellOnFor, settleSellOn } from 
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
@@ -80,7 +80,7 @@ export const transferRoutes = {
     req: Request & { params: Record<string, string> },
   ) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
@@ -392,7 +392,7 @@ export const transferRoutes = {
     req: Request & { params: Record<string, string> },
   ) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
@@ -492,7 +492,7 @@ export const transferRoutes = {
     }
 
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     // Same source as the scout search `onlyForSale` filter: every AI sell list + the human one.
     const ids = collectSellListedIds(await saveService.getMarket(saveId));

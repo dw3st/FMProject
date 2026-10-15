@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
@@ -230,7 +230,7 @@ function prospectView(p: ScoutProspect) {
 export const scoutingRoutes = {
   "/api/saves/:saveId/scouting": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     return Response.json(await scoutingView(saveId, await saveService.getScouting(saveId)));
@@ -239,7 +239,7 @@ export const scoutingRoutes = {
   /** `POST { scoutId, target, focus?, weeks }` - a new mission (400 `invalidTarget`/`invalidWeeks`, 409 `scoutBusy`). */
   "/api/saves/:saveId/scouting/missions": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -275,7 +275,7 @@ export const scoutingRoutes = {
   /** `DELETE` - cancels a mission (the weeks already paid do not come back). */
   "/api/saves/:saveId/scouting/missions/:missionId": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
@@ -298,7 +298,7 @@ export const scoutingRoutes = {
   /** `POST { playerId, squadId?, note? }` - adds (or re-notes) a player on the shortlist (409 `shortlistFull`). */
   "/api/saves/:saveId/scouting/shortlist": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -329,7 +329,7 @@ export const scoutingRoutes = {
 
   "/api/saves/:saveId/scouting/shortlist/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
@@ -343,7 +343,7 @@ export const scoutingRoutes = {
   /** `POST` - signs a prospect into the academy (400 `youthFull`, 409 `offerClosed`); training compensation in the ledger. */
   "/api/saves/:saveId/scouting/prospects/:prospectId/sign": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
@@ -383,7 +383,7 @@ export const scoutingRoutes = {
   /** `GET` - one player as the user sees him (knowledge, last observation, latest report). */
   "/api/saves/:saveId/scouting/player/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const squadId = new URL(req.url).searchParams.get("squad") ?? undefined;

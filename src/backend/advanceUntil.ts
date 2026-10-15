@@ -1,6 +1,6 @@
 import { saveService as defaultSaveService, type SaveService } from "@/backend/SaveService";
 import { withSaveLock } from "@/backend/saveLock";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { getPyramids, runBufferedDay, type AdvanceDayOutcome } from "@/backend/advanceDay";
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
 import { playerCupSlug } from "@/backend/cupWorld";
@@ -211,7 +211,7 @@ export const advanceUntilRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
 
     let maxDays = ADVANCE_UNTIL_DEFAULT_DAYS;

@@ -4,7 +4,7 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { recordMoney } from "@/backend/FinancialService";
 import { logError } from "@/Logger";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
@@ -253,7 +253,7 @@ async function facilitiesView(h: Human) {
 export const facilityRoutes = {
   "/api/saves/:saveId/facilities": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const h = await loadHuman(saveId);
@@ -264,7 +264,7 @@ export const facilityRoutes = {
   /** `POST` a `FacilityRequest`: the board approves (project started) or refuses (reason). */
   "/api/saves/:saveId/facilities/request": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;

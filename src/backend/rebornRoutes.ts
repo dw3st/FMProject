@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -19,7 +19,7 @@ export const rebornRoutes = {
    */
   "/api/saves/:saveId/retired": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = new URL(req.url).searchParams;
@@ -48,7 +48,7 @@ export const rebornRoutes = {
   /** `GET` - the offers still pending. */
   "/api/saves/:saveId/reborn": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const retired = await saveService.getRetired(saveId);
@@ -63,7 +63,7 @@ export const rebornRoutes = {
   "/api/saves/:saveId/reborn/:retiredId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const retiredId = req.params.retiredId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;

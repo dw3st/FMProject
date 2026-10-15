@@ -117,7 +117,7 @@ import {
 } from "@/Domain/finance/prizes";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
@@ -3091,7 +3091,7 @@ export const advanceDayRoutes = {
     if (req.method !== "POST") {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
-    const auth = requireSaveOwner(req, req.params.saveId!);
+    const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
     const saveId = req.params.saveId!;
     // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
@@ -3169,7 +3169,7 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
 
-    const auth = requireSaveOwner(req, req.params.saveId!);
+    const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
 
     // ── Parse body ──────────────────────────────────────────────────────────
@@ -3232,7 +3232,7 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const { saveId, date } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const resolved = await saveService.resolveDayLog(saveId!, date!);
     if (!resolved) return Response.json({ error: "day log not found" }, { status: 404 });
@@ -3246,7 +3246,7 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const { saveId, date } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const body = (await req.json()) as { type?: string };
     if (body.type !== "training" && body.type !== "rest") {

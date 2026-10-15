@@ -4,7 +4,7 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { cancelScoutMissions } from "@/backend/scoutingWorld";
 import { logError } from "@/Logger";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import {
@@ -181,7 +181,7 @@ function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
 export const staffRoutes = {
   "/api/saves/:saveId/staff": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const h = await human(saveId);
@@ -192,7 +192,7 @@ export const staffRoutes = {
   /** `GET ?role=&minStars=&maxWage=&sort=name|role|age|stars|wage&dir=asc|desc&offset=&limit=` - the free pool, asking wage at the club's factor. */
   "/api/saves/:saveId/staff/pool": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = parsePoolQuery(new URL(req.url).searchParams);
@@ -212,7 +212,7 @@ export const staffRoutes = {
   /** `POST { memberId, years }` - signs a professional of the pool (409 `roleFull` past the tier's limit). */
   "/api/saves/:saveId/staff/hire": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -242,7 +242,7 @@ export const staffRoutes = {
   /** `POST { memberId }` (or `{ role }`) - dismisses a professional: severance in the ledger, back to the pool. */
   "/api/saves/:saveId/staff/fire": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -281,7 +281,7 @@ export const staffRoutes = {
   /** `POST { memberId, years }` - renews a contract from its current end (400 `tooManyYears`). */
   "/api/saves/:saveId/staff/renew": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -313,7 +313,7 @@ export const staffRoutes = {
    */
   "/api/saves/:saveId/staff/:memberId/countries": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const meta = await saveService.getMeta(saveId);
@@ -342,7 +342,7 @@ export const staffRoutes = {
 
   "/api/saves/:saveId/staff/areas": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);

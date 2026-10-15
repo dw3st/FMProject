@@ -36,6 +36,3 @@ export function requireSeat(req: Request, saveId: string): SeatAuth | Response {
   if (!member) return Response.json({ error: "save not found" }, { status: 404 });
   return { ...auth, seatId: member.seatId, role: member.role };
 }
-
-/** TRANSITIONAL (renamed away in Task 8). */
-export const requireSaveOwner = requireSeat;

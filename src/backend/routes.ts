@@ -55,7 +55,7 @@ import { reportRoutes } from "@/backend/reports";
 import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
-import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
+import { requireAuth, requireSeat } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayers } from "@/backend/starsIndex";
@@ -250,7 +250,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId, league, club } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     // The club param is resolved inside :league first, then as a squadId anywhere in
     // the save (a club that moved leagues keeps answering on its id).
@@ -282,7 +282,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId, league } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const squads = await saveService.getSquadsInLeague(saveId!, league!);
     if (squads.length === 0)
@@ -294,7 +294,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const squads = await saveService.getAllSquads(saveId!);
     if (squads.length === 0)
@@ -309,7 +309,7 @@ export const apiRoutes = withJsonErrors({
     if (req.method !== "POST")
       return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     let body: unknown;
     try {
@@ -329,7 +329,7 @@ export const apiRoutes = withJsonErrors({
       return Response.json({ error: "method not allowed" }, { status: 405 });
 
     const saveId        = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     const squadsRootSrc = `${DATA_DIR}/squads`;
     const leagues = (await readdir(squadsRootSrc, { withFileTypes: true }))
@@ -382,7 +382,7 @@ export const apiRoutes = withJsonErrors({
     const saveIdParam = url.searchParams.get("saveId");
     let save: SaveMeta | null = null;
     if (saveIdParam) {
-      const owned = requireSaveOwner(req, saveIdParam);
+      const owned = requireSeat(req, saveIdParam);
       if (owned instanceof Response) return owned;
       save = await saveService.getMeta(saveIdParam);
       if (!save) return Response.json({ error: "save not found" }, { status: 404 });
@@ -629,7 +629,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues/:leagueSlug/standings": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const standings = await saveService.getLeagueStandings(saveId!, leagueSlug!);
     if (!standings) return Response.json({ error: "standings not found" }, { status: 404 });
@@ -640,7 +640,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues/:leagueSlug/ai-finances": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const meta = await saveService.getMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
@@ -651,7 +651,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues/:leagueSlug/fixtures": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, leagueSlug!);
     return Response.json(fixtures);
@@ -661,7 +661,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/cups/:cupSlug": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, cupSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (!/^cup_[a-z0-9_]+$/.test(cupSlug!)) return Response.json({ error: "not a cup" }, { status: 400 });
     const meta = await saveService.getLeagueMeta(saveId!, cupSlug!);
@@ -682,7 +682,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/continental/:slug": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, slug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (!isContinentalSlug(slug!)) {
       return Response.json({ error: "not a continental competition" }, { status: 400 });
@@ -705,7 +705,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/stats": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const competition = new URL(req.url).searchParams.get("competition") ?? "";
     if (!/^[a-z0-9_]{1,80}$/.test(competition)) return Response.json({ error: "invalid competition" }, { status: 400 });
@@ -719,7 +719,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/stars": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const stars = await getStarPlayers(saveId!);
     if (!stars) return Response.json({ error: "save not found" }, { status: 404 });
@@ -735,7 +735,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/ledger": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const meta = await saveService.getMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
@@ -776,7 +776,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const meta = await saveService.getMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });

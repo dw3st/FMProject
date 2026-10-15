@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { logError } from "@/Logger";
 import {
@@ -29,7 +29,7 @@ export const negotiationRoutes = {
   /** `GET` - pending AI bids, active loans, the loan list and the sell-on clauses held. */
   "/api/saves/:saveId/negotiation": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
     const meta = await saveService.getMeta(saveId);
@@ -54,7 +54,7 @@ export const negotiationRoutes = {
   /** `GET ?kind=transfer|loan` - today's talks about a player (rounds left, last counter, ban). */
   "/api/saves/:saveId/negotiation/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
     const kind = new URL(req.url).searchParams.get("kind") === "loan" ? "loan" : "transfer";
@@ -83,7 +83,7 @@ export const negotiationRoutes = {
   "/api/saves/:saveId/bids/:bidId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const bidId = req.params.bidId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as { action?: unknown; fee?: unknown; sellOnPct?: unknown } | null;
@@ -175,7 +175,7 @@ export const negotiationRoutes = {
    */
   "/api/saves/:saveId/loans": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -247,7 +247,7 @@ export const negotiationRoutes = {
   /** `GET` the human's loan list, `POST { playerId }` toggles a player on it. */
   "/api/saves/:saveId/loan-list": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
       return json((await saveService.getMarket(saveId))?.playerLoanList ?? []);

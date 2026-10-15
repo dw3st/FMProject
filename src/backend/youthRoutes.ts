@@ -1,6 +1,6 @@
 import { recordPromotion } from "@/Domain/achievements/progress";
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
@@ -36,7 +36,7 @@ function youthView(squad: Squad) {
 export const youthRoutes = {
   "/api/saves/:saveId/youth": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const found = await loadHumanSquad(saveId);
@@ -48,7 +48,7 @@ export const youthRoutes = {
   "/api/saves/:saveId/youth/:playerId/promote": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
@@ -79,7 +79,7 @@ export const youthRoutes = {
   "/api/saves/:saveId/youth/:playerId/release": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {

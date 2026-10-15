@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 
 export const inboxRoutes = {
   "/api/saves/:saveId/inbox": async (
@@ -9,7 +9,7 @@ export const inboxRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     const messages = await saveService.getInbox(saveId);
     const sorted = [...messages].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -23,7 +23,7 @@ export const inboxRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     const messages = await saveService.getInbox(saveId);
     const count = messages.reduce((acc, m) => (m.read ? acc : acc + 1), 0);
@@ -37,7 +37,7 @@ export const inboxRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     let body: unknown;
     try {
@@ -63,7 +63,7 @@ export const inboxRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     const updated = await saveService.markAllInboxRead(saveId);
     return Response.json(updated);

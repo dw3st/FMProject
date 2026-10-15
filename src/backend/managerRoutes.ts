@@ -1,6 +1,6 @@
 import { shownProfile } from "@/Domain/achievements/items";
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { rankManagers, rankingPage } from "@/Domain/managers/managers";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
@@ -21,7 +21,7 @@ export const managerRoutes = {
    */
   "/api/saves/:saveId/managers": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = new URL(req.url).searchParams;

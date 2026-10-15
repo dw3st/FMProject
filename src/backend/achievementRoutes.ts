@@ -1,6 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import { achievementSnapshot } from "@/backend/achievementsWorld";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { ACHIEVEMENTS } from "@/Domain/achievements/achievementsConfig";
 import {
@@ -85,7 +85,7 @@ const bad = (error: string, status = 400) => Response.json({ error }, { status }
 export const achievementRoutes = {
   "/api/saves/:saveId/achievements": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
     if (!(await saveService.getMeta(saveId))) return bad("save not found", 404);
@@ -95,7 +95,7 @@ export const achievementRoutes = {
   /** `PUT { frame, badges, title }`: only unlocked items. */
   "/api/saves/:saveId/achievements/profile": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return bad("method not allowed", 405);
     const body = await req.json().catch(() => null);
@@ -112,7 +112,7 @@ export const achievementRoutes = {
   /** `PUT { banner, flag, mosaic }`: the stadium decorations drawn at home. */
   "/api/saves/:saveId/achievements/stadium": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return bad("method not allowed", 405);
     const body = await req.json().catch(() => null);
@@ -129,7 +129,7 @@ export const achievementRoutes = {
   /** `POST { name, position, nationality, foot }`: the created player joins the academy (once per career). */
   "/api/saves/:saveId/achievements/shop/created": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
     const body = await req.json().catch(() => null);
@@ -154,7 +154,7 @@ export const achievementRoutes = {
   /** `POST`: draws the three legends to choose from (once; kept). */
   "/api/saves/:saveId/achievements/shop/legend/draw": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
     return withSaveLock(saveId, async () => {
@@ -174,7 +174,7 @@ export const achievementRoutes = {
   /** `POST { retiredId }`: one of the drawn legends comes back as a 17-year-old academy player. */
   "/api/saves/:saveId/achievements/shop/legend": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
     const body = (await req.json().catch(() => null)) as { retiredId?: unknown } | null;

@@ -18,7 +18,7 @@ import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { withSaveLock } from "@/backend/saveLock";
 import { parseManagerFace } from "@/Domain/faces/managerFace";
-import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
+import { requireAuth, requireSeat } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
@@ -100,7 +100,7 @@ export const saveRoutes = {
 
   "/api/saves/:id": async (req: Request & { params: Record<string, string> }) => {
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
@@ -221,7 +221,7 @@ export const saveRoutes = {
 
   "/api/saves/:id/tactics": async (req: Request & { params: Record<string, string> }) => {
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
@@ -330,7 +330,7 @@ export const saveRoutes = {
   "/api/saves/:id/match-marking": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
     let body: { date?: unknown; marks?: unknown };
     try { body = await req.json(); } catch {
@@ -367,7 +367,7 @@ export const saveRoutes = {
   "/api/saves/:id/rotation-override": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
     const meta = await saveService.getMeta(id);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });

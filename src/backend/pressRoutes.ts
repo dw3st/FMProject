@@ -1,7 +1,7 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { buildDayNews, emptyDayNewsInput } from "@/Domain/news/buildDayNews";
 import { answerConference, emptyPressState, validateAnswers } from "@/Domain/press/effects";
@@ -43,7 +43,7 @@ function parseAnswers(body: unknown): Record<string, string> | null {
 export const pressRoutes = {
   "/api/saves/:saveId/press": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
     const meta = await saveService.getMeta(saveId);
@@ -57,7 +57,7 @@ export const pressRoutes = {
   "/api/saves/:saveId/press/:pressId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const pressId = req.params.pressId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
     const answers = parseAnswers(await req.json().catch(() => null));

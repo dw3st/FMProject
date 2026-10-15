@@ -1,7 +1,7 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { acceptJobOffer, reputationOf } from "@/backend/jobWorld";
 import { logError } from "@/Logger";
@@ -13,7 +13,7 @@ export const jobRoutes = {
   /** `GET` - reputation (0..100), pending offers and the unemployment state. */
   "/api/saves/:saveId/jobs": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const meta = await saveService.getMeta(saveId);
@@ -33,7 +33,7 @@ export const jobRoutes = {
   "/api/saves/:saveId/jobs/:offerId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const offerId = req.params.offerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;

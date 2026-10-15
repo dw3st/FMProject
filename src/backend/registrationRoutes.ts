@@ -3,7 +3,7 @@
  * hand-edited list and back to automatic. Writes only with the deadline open.
  */
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { registrationDayCtx, type RegistrationDayCtx } from "@/backend/registrationWorld";
 import { automaticList, ensureList, manualList, withList, type CompInfo } from "@/Domain/registration/lists";
@@ -85,7 +85,7 @@ export const registrationRoutes = {
   /** Every competition of the human club with its rule, deadline, counters and players. */
   "/api/saves/:saveId/registration": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const h = await humanCtx(saveId);
@@ -97,7 +97,7 @@ export const registrationRoutes = {
   /** `PUT { ids }`: a hand-edited list (manual mode). */
   "/api/saves/:saveId/registration/:competition": async (req: Req) => {
     const { saveId, competition } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -126,7 +126,7 @@ export const registrationRoutes = {
   /** `POST`: back to the automatic list. */
   "/api/saves/:saveId/registration/:competition/auto": async (req: Req) => {
     const { saveId, competition } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId!, async () => {

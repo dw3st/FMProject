@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -33,7 +33,7 @@ export const contractRoutes = {
   ) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
 
@@ -110,7 +110,7 @@ export const contractRoutes = {
   ) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const meta = await saveService.getMeta(saveId);
@@ -179,7 +179,7 @@ export const contractRoutes = {
   ) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
 
