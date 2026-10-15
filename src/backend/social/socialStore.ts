@@ -6,7 +6,6 @@ import { messageCutoff } from "@/Domain/social/message";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import {
   generateFriendCode,
-  nicknameChangeableAt,
   normalizeFriendCode,
   normalizeNickname,
   validateNickname,
@@ -82,11 +81,11 @@ export function ensureFriendCode(userId: string): string {
 
 export type SetNicknameResult =
   | { ok: true; nickname: string }
-  | { ok: false; error: "invalidNickname" | "nicknameTaken" | "tooSoon" };
+  | { ok: false; error: "invalidNickname" | "nicknameTaken" | "nicknameLocked" };
 
 /**
- * Sets or changes the nickname. The first choice is free (no cooldown recorded); every later real change restarts
- * the 30-day cooldown. The same name is a no-op.
+ * Sets the nickname once: after the first choice it is tied to the account for good (`nicknameLocked`). The same
+ * name again is a no-op.
  */
 export function setNickname(userId: string, raw: string, now: number): SetNicknameResult {
   if (validateNickname(raw)) return { ok: false, error: "invalidNickname" };
@@ -94,13 +93,14 @@ export function setNickname(userId: string, raw: string, now: number): SetNickna
   const user = getSocialUser(userId);
   if (!user) throw new Error(`unknown user ${userId}`);
   if (user.nickname === nickname) return { ok: true, nickname };
-  const at = nicknameChangeableAt(user.nicknameChangedAt);
-  if (user.nickname !== null && at !== null && now < at) return { ok: false, error: "tooSoon" };
+  if (user.nickname !== null) return { ok: false, error: "nicknameLocked" };
   const owner = findUserByNickname(nickname);
   if (owner && owner.id !== userId) return { ok: false, error: "nicknameTaken" };
   try {
-    const changedAt = user.nickname === null ? null : now;
-    db.prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ?").run(nickname, changedAt, userId);
+    const r = db
+      .prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ? AND nickname IS NULL")
+      .run(nickname, now, userId);
+    if (r.changes === 0) return { ok: false, error: "nicknameLocked" }; // set by a concurrent request
   } catch {
     return { ok: false, error: "nicknameTaken" }; // lost a race on the unique index
   }

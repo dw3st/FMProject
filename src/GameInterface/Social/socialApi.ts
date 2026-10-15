@@ -15,7 +15,7 @@ export interface RequestAnswer {
 }
 
 const KNOWN_ERRORS: ReadonlySet<string> = new Set<SocialErrorCode>([
-  "invalidNickname", "nicknameTaken", "tooSoon", "noNickname", "invalidQuery", "notFound", "alreadyFriends",
+  "invalidNickname", "nicknameTaken", "nicknameLocked", "noNickname", "invalidQuery", "notFound", "alreadyFriends",
   "limit", "invalidBody", "noAccess", "rateLimited", "tooLarge", "unauthorized", "network",
 ]);
 

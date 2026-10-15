@@ -2,12 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   FRIEND_CODE_ALPHABET,
   generateFriendCode,
-  nicknameChangeableAt,
   nicknameKey,
   normalizeFriendCode,
   validateNickname,
 } from "@/Domain/social/nickname";
-import { DAY_MS } from "@/Domain/social/socialConfig";
 
 describe("validateNickname", () => {
   test("accepts 3–20 letters, digits, _ . - (trimmed)", () => {
@@ -28,11 +26,6 @@ describe("validateNickname", () => {
 
 test("nicknameKey ignores case and spaces around", () => {
   expect(nicknameKey("  ZeCarlos ")).toBe("zecarlos");
-});
-
-test("nicknameChangeableAt is 30 days after the last change", () => {
-  expect(nicknameChangeableAt(null)).toBeNull();
-  expect(nicknameChangeableAt(1_000)).toBe(1_000 + 30 * DAY_MS);
 });
 
 describe("friend code", () => {

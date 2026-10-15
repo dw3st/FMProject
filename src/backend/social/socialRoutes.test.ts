@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { DAY_MS, SOCIAL } from "@/Domain/social/socialConfig";
+import { SOCIAL } from "@/Domain/social/socialConfig";
 import { resetPresence, recordPresence } from "@/backend/presence";
 import { resetRealtime } from "@/backend/social/realtime";
 import { callSocial, type CallResult } from "@/backend/social/socialRouteTestUtils";
@@ -31,31 +31,28 @@ describe("auth", () => {
 });
 
 describe("me and nickname", () => {
-  test("me generates the code; nickname set, taken, invalid and too soon", async () => {
+  test("me generates the code; nickname set, taken, invalid and locked", async () => {
     const a = makeUser();
     const me = await callSocial("GET", "/api/social/me", a.token);
     expect(me.status).toBe(200);
-    expect(me.json).toEqual({ nickname: null, friendCode: expect.stringMatching(/^FM-/), nicknameChangeableOn: null });
+    expect(me.json).toEqual({ nickname: null, friendCode: expect.stringMatching(/^FM-/) });
 
     const nick = uniqueNick("Zz");
     const set = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: nick } });
     expect(set.status).toBe(200);
-    expect(set.json.nickname).toBe(nick);
-    expect(set.json.nicknameChangeableOn).toBeNull();
+    expect(set.json).toEqual({ nickname: nick, friendCode: me.json.friendCode });
 
     const b = makeUser();
     expect((await callSocial("PUT", "/api/social/nickname", b.token, { body: { nickname: nick.toLowerCase() } })).json)
       .toEqual({ error: "nicknameTaken" });
     expect((await callSocial("PUT", "/api/social/nickname", b.token, { body: { nickname: "no way" } })).status).toBe(400);
-    const renamed = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: uniqueNick("Zy") } });
-    expect(renamed.status).toBe(200);
-    expect(renamed.json.nicknameChangeableOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    const again = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: uniqueNick() } });
+    const again = await callSocial("PUT", "/api/social/nickname", a.token, { body: { nickname: uniqueNick("Zy") } });
     expect(again.status).toBe(409);
-    expect(again.json.error).toBe("tooSoon");
-    const changedAt = getSocialUser(a.id)!.nicknameChangedAt!;
-    expect(again.json.nicknameChangeableOn).toBe(new Date(changedAt + 30 * DAY_MS).toISOString().slice(0, 10));
-    expectNoLeak([me, set, again], [a, b]);
+    expect(again.json).toEqual({ error: "nicknameLocked" });
+    expect(getSocialUser(a.id)!.nickname).toBe(nick);
+    const meAfter = await callSocial("GET", "/api/social/me", a.token);
+    expect(meAfter.json).toEqual({ nickname: nick, friendCode: me.json.friendCode });
+    expectNoLeak([me, set, again, meAfter], [a, b]);
   });
 });
 

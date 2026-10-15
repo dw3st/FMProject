@@ -611,8 +611,7 @@
     "yourCode": "Your code",
     "copy": "Copy",
     "copied": "Copied",
-    "changeNickname": "Change nickname",
-    "changeableOn": "Change on {{date}}",
+    "nicknameFinal": "Your nickname can't be changed later.",
     "tabs": { "friends": "Friends", "requests": "Requests", "add": "Add" },
     "groups": { "playing": "Playing", "online": "Online", "offline": "Offline", "worlds": "Worlds" },
     "status": { "playing": "Playing · {{club}}", "online": "Online", "offline": "Offline" },
@@ -650,8 +649,7 @@
       "title": "Choose your nickname",
       "hint": "3 to 20 characters: letters, digits, _ . -. Other managers find you by it.",
       "label": "Nickname",
-      "save": "Save",
-      "cancel": "Cancel"
+      "save": "Save"
     },
     "chat": {
       "minimize": "Minimize",
@@ -671,7 +669,7 @@
     "errors": {
       "invalidNickname": "Invalid nickname.",
       "nicknameTaken": "That nickname is taken.",
-      "tooSoon": "You can change your nickname once every 30 days.",
+      "nicknameLocked": "Your nickname is already set and cannot be changed.",
       "noNickname": "Choose a nickname first.",
       "invalidQuery": "Invalid search.",
       "notFound": "Manager not found.",

@@ -1,4 +1,4 @@
-import { DAY_MS, SOCIAL } from "@/Domain/social/socialConfig";
+import { SOCIAL } from "@/Domain/social/socialConfig";
 
 const NICKNAME_RE = /^[A-Za-z0-9_.-]+$/;
 /** Whole names that are not allowed. */
@@ -24,11 +24,6 @@ export function validateNickname(raw: string): NicknameError | null {
   const k = n.toLowerCase();
   if (RESERVED_EXACT.includes(k) || RESERVED_PARTS.some((p) => k.includes(p))) return "reserved";
   return null;
-}
-
-/** When the nickname can be changed again (ms), or null when it was never changed. */
-export function nicknameChangeableAt(changedAt: number | null): number | null {
-  return changedAt === null ? null : changedAt + SOCIAL.NICKNAME_CHANGE_DAYS * DAY_MS;
 }
 
 /** Base32 with no 0, 1, I or O (easy to read aloud and type). */
