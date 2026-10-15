@@ -56,4 +56,28 @@ describe("SaveService: world meta + seats", () => {
     expect((await dal.readMeta(meta.id))?.freeAgentsRetiredYear).toBe(2030);
     expect("training_intensity" in (await dal.readMeta(meta.id))!).toBe(false);
   }, 300_000);
+
+  test("the manager's files live in the seat folder", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    created.push(meta.id);
+    const s = meta.seatId;
+    await saveService.saveTactics(meta.id, { formation: "4-4-2", tactical_style: "balanced", lineup: [] }, s);
+    await saveService.appendInbox(meta.id, { id: "m1", category: "season", read: false, createdAt: "2027-01-01T00:00:00Z" } as never, s);
+    await saveService.appendLedger(meta.id, 2027, [{ date: "2027-01-01", kind: "prize", amount: 7, label: "x" }], s);
+    await saveService.saveMarket(meta.id, { shuffledTeamIds: ["a"], rotationIndex: 0, profiles: {}, playerSellList: [{ playerId: "p", priority: 1 }] }, s);
+
+    const dal = new FileSystemDAL();
+    expect((await dal.readSeatTactics(meta.id, s))?.formation).toBe("4-4-2");
+    expect((await dal.readSeatInbox(meta.id, s)).map((m) => m.id)).toEqual(["m1"]);
+    expect((await dal.readSeatLedger(meta.id, s, 2027)).map((e) => e.amount)).toEqual([7]);
+    expect((await dal.readSeatMarket(meta.id, s))?.playerSellList).toHaveLength(1);
+    expect(await dal.readMarket(meta.id)).toEqual({ shuffledTeamIds: ["a"], rotationIndex: 0, profiles: {} });
+    // the joined view
+    expect((await saveService.getMarket(meta.id, s))?.playerSellList).toHaveLength(1);
+    // transitional: without a seat id, the first seat
+    expect((await saveService.getTactics(meta.id))?.formation).toBe("4-4-2");
+  }, 300_000);
 });

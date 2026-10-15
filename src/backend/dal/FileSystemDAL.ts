@@ -13,7 +13,7 @@ import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } 
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState, SeatMarketState } from "@/types/transferMarketTypes";
+import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
 import type { SeatState } from "@/types/seatTypes";
 import { SEAT_ID_PATTERN } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
@@ -49,8 +49,6 @@ function nationalCompPath(saveId: string, slug: string) {
   return `${nationalDir(saveId)}/comps/${slug}.json`;
 }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
-function achievementsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/achievements.json`; }
-function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
   return `${SAVES_DIR}/${saveId}/clubHistory/${squadId}.json`;
 }
@@ -62,10 +60,7 @@ function transfersArchivePath(saveId: string, year: number) {
 function squadPath(saveId: string, league: string, club: string) {
   return `${SAVES_DIR}/${saveId}/squads/${league}/${club}.json`;
 }
-function tacticsPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/tactics.json`; }
 function marketPath(saveId: string)      { return `${SAVES_DIR}/${saveId}/market.json`; }
-function inboxPath(saveId: string)       { return `${SAVES_DIR}/${saveId}/inbox.json`; }
-function ledgerPath(saveId: string, season: number) { return `${SAVES_DIR}/${saveId}/ledger/${season}.json`; }
 /** Awards files: validate before building a path (league slug and year come from the world / meta). */
 function awardYear(year: number): number {
   if (!Number.isInteger(year) || year < 1900 || year > 2999) throw new Error(`invalid awards year: ${year}`);
@@ -261,30 +256,6 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(nationalCompPath(saveId, comp.slug), JSON.stringify(comp));
   }
 
-  async readAchievements(saveId: string): Promise<AchievementsState | null> {
-    const file = Bun.file(achievementsPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<AchievementsState>;
-  }
-
-  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(achievementsPath(saveId), JSON.stringify(state));
-  }
-
-  async readScouting(saveId: string): Promise<ScoutingState | null> {
-    const file = Bun.file(scoutingPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<ScoutingState>;
-  }
-
-  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(scoutingPath(saveId), JSON.stringify(state));
-    // The scout search blurs every player by this file's knowledge: rebuild its index.
-    bumpSaveDataVersion(saveId);
-  }
-
   async readManagers(saveId: string): Promise<ManagerRecord[]> {
     const file = Bun.file(managersPath(saveId));
     if (!(await file.exists())) return [];
@@ -435,46 +406,16 @@ export class FileSystemDAL implements ISaveDAL {
 
   // ── Tactics ───────────────────────────────────────────────────────────────
 
-  async readTactics(saveId: string): Promise<TacticsSave | null> {
-    const file = Bun.file(tacticsPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<TacticsSave>;
-  }
-
-  async writeTactics(saveId: string, tactics: TacticsSave): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(tacticsPath(saveId), JSON.stringify(tactics, null, 2));
-  }
-
-  async readMarket(saveId: string): Promise<MarketState | null> {
+  async readMarket(saveId: string): Promise<WorldMarketState | null> {
     const file = Bun.file(marketPath(saveId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<MarketState>;
+    return file.json() as Promise<WorldMarketState>;
   }
 
-  async writeMarket(saveId: string, market: MarketState): Promise<void> {
+  async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(marketPath(saveId), JSON.stringify(market, null, 2));
     bumpSaveDataVersion(saveId);
-  }
-
-  // ── Inbox ─────────────────────────────────────────────────────────────────
-
-  async readInbox(saveId: string): Promise<InboxMessage[]> {
-    const file = Bun.file(inboxPath(saveId));
-    if (!(await file.exists())) return [];
-    return file.json() as Promise<InboxMessage[]>;
-  }
-
-  async writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(inboxPath(saveId), JSON.stringify(messages, null, 2));
-  }
-
-  async appendInboxMessage(saveId: string, message: InboxMessage): Promise<void> {
-    const existing = await this.readInbox(saveId);
-    existing.push(message);
-    await this.writeInbox(saveId, existing);
   }
 
   // ── Day logs ──────────────────────────────────────────────────────────────
@@ -569,40 +510,6 @@ export class FileSystemDAL implements ISaveDAL {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(leagueTransfersArchivePath2(saveId, leagueSlug, year), JSON.stringify(transfers, null, 2));
-  }
-
-  // ── Ledger (player club cash extract) ────────────────────────────────────────
-
-  async listLedgerSeasons(saveId: string): Promise<number[]> {
-    const dir = `${SAVES_DIR}/${saveId}/ledger`;
-    let names: string[];
-    try {
-      names = await readdir(dir);
-    } catch {
-      return [];
-    }
-    return names
-      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
-      .filter((n): n is string => n !== undefined)
-      .map(Number)
-      .sort((a, b) => a - b);
-  }
-
-  async readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
-    const file = Bun.file(ledgerPath(saveId, season));
-    if (!(await file.exists())) return [];
-    return file.json() as Promise<LedgerEntry[]>;
-  }
-
-  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    if (entries.length === 0) return;
-    const existing = await this.readLedger(saveId, season);
-    await this.writeLedger(saveId, season, [...existing, ...entries]);
-  }
-
-  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}/ledger`, { recursive: true });
-    await Bun.write(ledgerPath(saveId, season), JSON.stringify(entries, null, 2));
   }
 
   // ── Season awards ─────────────────────────────────────────────────────────────

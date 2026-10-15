@@ -7,6 +7,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 const SAVE = "save-1";
+const SEAT = "seat-1";
 
 function squad(id: string, name = id): Squad {
   return { id, name, slug: `slug_${id}`, players: [] } as unknown as Squad;
@@ -62,20 +63,20 @@ function fakeInner(opts: {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       order.push(`meta:${meta.id}`);
     },
-    async readInbox() {
+    async readSeatInbox() {
       calls.push("readInbox");
       return [];
     },
-    async writeInbox(_s, messages) {
+    async writeSeatInbox(_s, _seat, messages) {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       inboxWrites.push(messages);
       order.push("inbox");
     },
-    async readLedger(_s, season) {
+    async readSeatLedger(_s, _seat, season) {
       calls.push("readLedger");
       return ledgerDisk.get(`${_s}:${season}`) ?? [];
     },
-    async writeLedger(_s, season, entries) {
+    async writeSeatLedger(_s, _seat, season, entries) {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       await opts.gateLedgerWrite?.();
       const key = `${_s}:${season}`;
@@ -86,7 +87,7 @@ function fakeInner(opts: {
     // Not called by BufferingSaveDAL (it composes appendLedger from readLedger + writeLedger),
     // but implemented for interface completeness / FileSystemDAL-parity in case a test calls it
     // on the fake inner directly.
-    async appendLedger(_s, season, entries) {
+    async appendSeatLedger(_s, _seat, season, entries) {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       const key = `${_s}:${season}`;
       const full = [...(ledgerDisk.get(key) ?? []), ...entries];
@@ -159,7 +160,7 @@ describe("BufferingSaveDAL.flush — meta last", () => {
     const buf = new BufferingSaveDAL(inner.dal);
     await buf.writeMeta(meta(SAVE)); // buffered FIRST, still written last
     for (let i = 0; i < 40; i++) await buf.writeSquad(SAVE, "lg", `c${i}`, squad(`c${i}`));
-    await buf.appendInboxMessage(SAVE, message("m1"));
+    await buf.appendSeatInboxMessage(SAVE, SEAT, message("m1"));
 
     await buf.flush();
 
@@ -191,11 +192,11 @@ describe("BufferingSaveDAL inbox", () => {
     const inner = fakeInner();
     const buf = new BufferingSaveDAL(inner.dal);
 
-    await buf.appendInboxMessage(SAVE, message("m1"));
-    await buf.appendInboxMessage(SAVE, message("m2"));
-    await buf.appendInboxMessage(SAVE, message("m3"));
+    await buf.appendSeatInboxMessage(SAVE, SEAT, message("m1"));
+    await buf.appendSeatInboxMessage(SAVE, SEAT, message("m2"));
+    await buf.appendSeatInboxMessage(SAVE, SEAT, message("m3"));
 
-    expect((await buf.readInbox(SAVE)).map((m) => m.id)).toEqual(["m1", "m2", "m3"]);
+    expect((await buf.readSeatInbox(SAVE, SEAT)).map((m) => m.id)).toEqual(["m1", "m2", "m3"]);
     expect(inner.calls.filter((c) => c === "readInbox")).toHaveLength(1);
     expect(inner.inboxWrites).toHaveLength(0);
 
@@ -213,11 +214,11 @@ describe("BufferingSaveDAL ledger", () => {
     const inner = fakeInner();
     const buf = new BufferingSaveDAL(inner.dal);
 
-    await buf.appendLedger(SAVE, 2027, [entry(1000, "a")]);
-    await buf.appendLedger(SAVE, 2027, [entry(-200, "b")]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(1000, "a")]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(-200, "b")]);
 
     // Reads within the unit of work see both buffered appends.
-    expect((await buf.readLedger(SAVE, 2027)).map((e) => e.label)).toEqual(["a", "b"]);
+    expect((await buf.readSeatLedger(SAVE, SEAT, 2027)).map((e) => e.label)).toEqual(["a", "b"]);
     expect(inner.calls.filter((c) => c === "readLedger")).toHaveLength(1);
     // Nothing hits the underlying DAL before flush.
     expect(inner.ledgerWrites).toHaveLength(0);
@@ -235,9 +236,9 @@ describe("BufferingSaveDAL ledger", () => {
     const inner = fakeInner();
     const buf = new BufferingSaveDAL(inner.dal);
 
-    await buf.appendLedger(SAVE, 2027, [entry(500, "first")]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(500, "first")]);
     await buf.flush();
-    await buf.appendLedger(SAVE, 2027, [entry(700, "second")]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(700, "second")]);
     await buf.flush();
 
     const written = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
@@ -248,7 +249,7 @@ describe("BufferingSaveDAL ledger", () => {
     const inner = fakeInner();
     const buf = new BufferingSaveDAL(inner.dal);
 
-    await buf.appendLedger(SAVE, 2027, []);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, []);
     await buf.flush();
 
     expect(inner.ledgerWrites).toHaveLength(0);
@@ -259,7 +260,7 @@ describe("BufferingSaveDAL ledger", () => {
     const buf = new BufferingSaveDAL(inner.dal);
 
     await buf.writeMeta(meta(SAVE));
-    await buf.appendLedger(SAVE, 2027, [entry(100)]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(100)]);
     await buf.flush();
 
     expect(inner.order.indexOf("ledger")).toBeLessThan(inner.order.indexOf(`meta:${SAVE}`));
@@ -280,11 +281,11 @@ describe("BufferingSaveDAL ledger", () => {
       },
     });
     const buf = new BufferingSaveDAL(inner.dal);
-    await buf.appendLedger(SAVE, 2027, [entry(100, "a")]);
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(100, "a")]);
 
     const flushing = buf.flush();
     await started; // "a" is now in flight, writing only ["a"] (what was buffered at that time)
-    await buf.appendLedger(SAVE, 2027, [entry(200, "b")]); // injected mid-flush
+    await buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(200, "b")]); // injected mid-flush
     release();
     await flushing;
 
@@ -305,11 +306,11 @@ describe("BufferingSaveDAL ledger", () => {
     const buf = new BufferingSaveDAL(inner.dal);
 
     await Promise.all([
-      buf.appendLedger(SAVE, 2027, [entry(100, "a")]),
-      buf.appendLedger(SAVE, 2027, [entry(200, "b")]),
+      buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(100, "a")]),
+      buf.appendSeatLedger(SAVE, SEAT, 2027, [entry(200, "b")]),
     ]);
 
-    const cached = (await buf.readLedger(SAVE, 2027)).map((e) => e.label).sort();
+    const cached = (await buf.readSeatLedger(SAVE, SEAT, 2027)).map((e) => e.label).sort();
     expect(cached).toEqual(["a", "b"]);
 
     await buf.flush();

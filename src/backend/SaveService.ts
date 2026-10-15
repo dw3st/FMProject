@@ -23,7 +23,8 @@ import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { MarketState, SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import { joinMarket, splitMarket } from "@/Domain/market/seatMarket";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { DayTransfer, StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
@@ -257,22 +258,44 @@ export class SaveService {
     return this.dal.writeSeasonArchive(saveId, archive);
   }
 
-  // ── Tactics ────────────────────────────────────────────────────────────────
+  // ── Tactics (seat) ───────────────────────────────────────────────────────────
+  // TRANSITIONAL: the trailing `seatId` of the seat-file methods is optional until Task 29 (absent = the
+  // first seat of the world).
 
-  async getTactics(saveId: string): Promise<TacticsSave | null> {
-    return this.dal.readTactics(saveId);
+  async getTactics(saveId: string, seatId?: string): Promise<TacticsSave | null> {
+    return this.dal.readSeatTactics(saveId, await this.seatOr(saveId, seatId));
   }
 
-  saveTactics(saveId: string, tactics: TacticsSave): Promise<void> {
-    return this.dal.writeTactics(saveId, tactics);
+  async saveTactics(saveId: string, tactics: TacticsSave, seatId?: string): Promise<void> {
+    return this.dal.writeSeatTactics(saveId, await this.seatOr(saveId, seatId), tactics);
   }
 
-  getMarket(saveId: string): Promise<MarketState | null> {
+  // ── Market: the world's rotation + the seat's lists (`src/Domain/market/seatMarket.ts`) ──────────
+
+  getWorldMarket(saveId: string): Promise<WorldMarketState | null> {
     return this.dal.readMarket(saveId);
   }
 
-  saveMarket(saveId: string, market: MarketState): Promise<void> {
+  saveWorldMarket(saveId: string, market: WorldMarketState): Promise<void> {
     return this.dal.writeMarket(saveId, market);
+  }
+
+  /** The market as the domain reads it: the world's rotation joined with the seat's fields. */
+  async getMarket(saveId: string, seatId?: string): Promise<MarketState | null> {
+    const seat = await this.seatOr(saveId, seatId);
+    return joinMarket(await this.dal.readMarket(saveId), await this.dal.readSeatMarket(saveId, seat));
+  }
+
+  /** Writes both parts of a joined market. */
+  async saveMarket(saveId: string, market: MarketState, seatId?: string): Promise<void> {
+    const seat = await this.seatOr(saveId, seatId);
+    const parts = splitMarket(market);
+    await this.dal.writeMarket(saveId, parts.world);
+    await this.dal.writeSeatMarket(saveId, seat, parts.seat);
+  }
+
+  saveSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
+    return this.dal.writeSeatMarket(saveId, seatId, market);
   }
 
   // ── Free agents ────────────────────────────────────────────────────────────
@@ -351,24 +374,24 @@ export class SaveService {
 
   // ── Scouting (`.claude/rules/game/scouting.md`) ─────────────────────────────
 
-  /** The human manager's scouting state; an empty one when nothing was ever observed. */
-  async getScouting(saveId: string): Promise<ScoutingState> {
-    return (await this.dal.readScouting(saveId)) ?? emptyScoutingState();
+  /** The seat's scouting state; an empty one when nothing was ever observed. */
+  async getScouting(saveId: string, seatId?: string): Promise<ScoutingState> {
+    return (await this.dal.readSeatScouting(saveId, await this.seatOr(saveId, seatId))) ?? emptyScoutingState();
   }
 
-  writeScouting(saveId: string, state: ScoutingState): Promise<void> {
-    return this.dal.writeScouting(saveId, state);
+  async writeScouting(saveId: string, state: ScoutingState, seatId?: string): Promise<void> {
+    return this.dal.writeSeatScouting(saveId, await this.seatOr(saveId, seatId), state);
   }
 
   // ── Achievements (`.claude/rules/game/achievements.md`) ─────────────────────
 
-  /** The career's achievements; an empty state when the file does not exist. */
-  async getAchievements(saveId: string): Promise<AchievementsState> {
-    return normalizeAchievements(await this.dal.readAchievements(saveId));
+  /** The seat's achievements; an empty state when the file does not exist. */
+  async getAchievements(saveId: string, seatId?: string): Promise<AchievementsState> {
+    return normalizeAchievements(await this.dal.readSeatAchievements(saveId, await this.seatOr(saveId, seatId)));
   }
 
-  writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
-    return this.dal.writeAchievements(saveId, state);
+  async writeAchievements(saveId: string, state: AchievementsState, seatId?: string): Promise<void> {
+    return this.dal.writeSeatAchievements(saveId, await this.seatOr(saveId, seatId), state);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────
@@ -415,55 +438,62 @@ export class SaveService {
     return this.dal.writeTransfersArchive(saveId, year, transfers);
   }
 
-  // ── Inbox ──────────────────────────────────────────────────────────────────
+  // ── Inbox (seat) ─────────────────────────────────────────────────────────────
 
-  getInbox(saveId: string): Promise<InboxMessage[]> {
-    return this.dal.readInbox(saveId);
+  async getInbox(saveId: string, seatId?: string): Promise<InboxMessage[]> {
+    return this.dal.readSeatInbox(saveId, await this.seatOr(saveId, seatId));
   }
 
   /**
-   * The single write point of the inbox: a message whose topic the player switched off
-   * (`meta.inboxPrefs`, `src/Domain/inbox/inboxTopics.ts`) is dropped; topics that ask for an
-   * action are always written. The meta is read through the DAL on every call (the day's
-   * `BufferingSaveDAL` caches it), so a preference saved mid-session holds for the next append.
+   * The single write point of a seat's inbox: a message whose topic the seat switched off (`seat.inboxPrefs`,
+   * `src/Domain/inbox/inboxTopics.ts`) is dropped; topics that ask for an action are always written. The seat is
+   * read through the DAL on every call (the day's `BufferingSaveDAL` caches it), so a preference saved
+   * mid-session holds for the next append.
    */
-  async appendInbox(saveId: string, message: InboxMessage): Promise<void> {
-    const meta = await this.getMeta(saveId);
-    if (!inboxAllowed(message, meta?.inboxPrefs)) return;
-    return this.dal.appendInboxMessage(saveId, message);
+  async appendInbox(saveId: string, message: InboxMessage, seatId?: string): Promise<void> {
+    const seat = await this.seatOr(saveId, seatId);
+    const state = await this.dal.readSeat(saveId, seat);
+    if (!inboxAllowed(message, state?.inboxPrefs)) return;
+    return this.dal.appendSeatInboxMessage(saveId, seat, message);
   }
 
-  async markInboxRead(saveId: string, ids: string[]): Promise<InboxMessage[]> {
+  async markInboxRead(saveId: string, ids: string[], seatId?: string): Promise<InboxMessage[]> {
+    const seat = await this.seatOr(saveId, seatId);
     const set = new Set(ids);
-    const current = await this.dal.readInbox(saveId);
+    const current = await this.dal.readSeatInbox(saveId, seat);
     const updated = current.map((m) => (set.has(m.id) ? { ...m, read: true } : m));
-    await this.dal.writeInbox(saveId, updated);
+    await this.dal.writeSeatInbox(saveId, seat, updated);
     return updated;
   }
 
-  async markAllInboxRead(saveId: string): Promise<InboxMessage[]> {
-    const current = await this.dal.readInbox(saveId);
+  async markAllInboxRead(saveId: string, seatId?: string): Promise<InboxMessage[]> {
+    const seat = await this.seatOr(saveId, seatId);
+    const current = await this.dal.readSeatInbox(saveId, seat);
     const updated = current.map((m) => (m.read ? m : { ...m, read: true }));
-    await this.dal.writeInbox(saveId, updated);
+    await this.dal.writeSeatInbox(saveId, seat, updated);
     return updated;
   }
 
-  writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
-    return this.dal.writeInbox(saveId, messages);
+  async writeInbox(saveId: string, messages: InboxMessage[], seatId?: string): Promise<void> {
+    return this.dal.writeSeatInbox(saveId, await this.seatOr(saveId, seatId), messages);
   }
 
-  clearInbox(saveId: string): Promise<void> {
-    return this.dal.writeInbox(saveId, []);
+  async clearInbox(saveId: string, seatId?: string): Promise<void> {
+    return this.dal.writeSeatInbox(saveId, await this.seatOr(saveId, seatId), []);
   }
 
-  // ── Ledger (player club cash extract) ───────────────────────────────────────
+  // ── Ledger (the seat's club cash extract) ────────────────────────────────────
 
-  getLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
-    return this.dal.readLedger(saveId, season);
+  async getLedger(saveId: string, season: number, seatId?: string): Promise<LedgerEntry[]> {
+    return this.dal.readSeatLedger(saveId, await this.seatOr(saveId, seatId), season);
   }
 
-  listLedgerSeasons(saveId: string): Promise<number[]> {
-    return this.dal.listLedgerSeasons(saveId);
+  async listLedgerSeasons(saveId: string, seatId?: string): Promise<number[]> {
+    return this.dal.listSeatLedgerSeasons(saveId, await this.seatOr(saveId, seatId));
+  }
+
+  async appendLedger(saveId: string, season: number, entries: LedgerEntry[], seatId?: string): Promise<void> {
+    return this.dal.appendSeatLedger(saveId, await this.seatOr(saveId, seatId), season, entries);
   }
 
   // ── Season awards (`.claude/rules/game/awards.md`) ──────────────────────────
@@ -515,10 +545,6 @@ export class SaveService {
   }
   listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]> {
     return this.dal.listSeasonGoalFiles(saveId);
-  }
-
-  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    return this.dal.appendLedger(saveId, season, entries);
   }
 
   // ── Squads ─────────────────────────────────────────────────────────────────

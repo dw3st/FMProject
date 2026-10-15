@@ -19,7 +19,7 @@ import type {
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState, SeatMarketState } from "@/types/transferMarketTypes";
+import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -216,22 +216,6 @@ export class BufferingSaveDAL implements ISaveDAL {
     this.buffer(`managers:${saveId}`, managers, () => this.inner.writeManagers(saveId, managers));
   }
 
-  // ── Scouting ──────────────────────────────────────────────────────────────────
-  readScouting(saveId: string): Promise<ScoutingState | null> {
-    return this.readThrough(`scouting:${saveId}`, () => this.inner.readScouting(saveId));
-  }
-  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
-    this.buffer(`scouting:${saveId}`, state, () => this.inner.writeScouting(saveId, state));
-  }
-
-  // ── Achievements ──────────────────────────────────────────────────────────────
-  readAchievements(saveId: string): Promise<AchievementsState | null> {
-    return this.readThrough(`achievements:${saveId}`, () => this.inner.readAchievements(saveId));
-  }
-  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
-    this.buffer(`achievements:${saveId}`, state, () => this.inner.writeAchievements(saveId, state));
-  }
-
   // ── Retired players ───────────────────────────────────────────────────────────
   readRetired(saveId: string): Promise<RetiredPlayer[]> {
     return this.readThrough(`retired:${saveId}`, () => this.inner.readRetired(saveId));
@@ -356,32 +340,12 @@ export class BufferingSaveDAL implements ISaveDAL {
     return (await this.squadFilesView(saveId)).map((f) => f.squad);
   }
 
-  // ── Tactics ─────────────────────────────────────────────────────────────────
-  readTactics(saveId: string): Promise<TacticsSave | null> {
-    return this.readThrough(`tactics:${saveId}`, () => this.inner.readTactics(saveId));
-  }
-  async writeTactics(saveId: string, tactics: TacticsSave): Promise<void> {
-    this.buffer(`tactics:${saveId}`, tactics, () => this.inner.writeTactics(saveId, tactics));
-  }
-
   // ── Transfer market ───────────────────────────────────────────────────────────
-  readMarket(saveId: string): Promise<MarketState | null> {
+  readMarket(saveId: string): Promise<WorldMarketState | null> {
     return this.readThrough(`market:${saveId}`, () => this.inner.readMarket(saveId));
   }
-  async writeMarket(saveId: string, market: MarketState): Promise<void> {
+  async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
     this.buffer(`market:${saveId}`, market, () => this.inner.writeMarket(saveId, market));
-  }
-
-  // ── Inbox ─────────────────────────────────────────────────────────────────────
-  readInbox(saveId: string): Promise<InboxMessage[]> {
-    return this.readThrough(`inbox:${saveId}`, () => this.inner.readInbox(saveId));
-  }
-  async writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
-    this.buffer(`inbox:${saveId}`, messages, () => this.inner.writeInbox(saveId, messages));
-  }
-  async appendInboxMessage(saveId: string, message: InboxMessage): Promise<void> {
-    const existing = await this.readInbox(saveId);
-    await this.writeInbox(saveId, [...existing, message]);
   }
 
   // ── Day logs ──────────────────────────────────────────────────────────────────
@@ -431,40 +395,6 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
     this.buffer(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, transfers, () => this.inner.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers));
-  }
-
-  // ── Ledger (player club cash extract) ────────────────────────────────────────
-  //
-  // Same shape as inbox: `writeLedger` (full replace) is the buffered resource;
-  // `appendLedger` is a read-then-write on top of it, so re-flushing an already
-  // partially-flushed write (a write re-buffered while its flush was in flight —
-  // see the squad "re-buffered while in flight" test) is idempotent — the pending
-  // thunk always writes the COMPLETE list, never just what changed since the last
-  // flush, so it can never duplicate entries already on disk from an earlier
-  // partial flush.
-
-  /** Not buffered — a season's ledger file only starts existing via `writeLedger`, and a listing
-   * mid-flush (rollover creating the next season's file) is not a case this read-only helper needs
-   * to cover; callers that need the season just created should already know its year. */
-  listLedgerSeasons(saveId: string): Promise<number[]> {
-    return this.inner.listLedgerSeasons(saveId);
-  }
-  readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
-    return this.readThrough(`ledger:${saveId}:${season}`, () => this.inner.readLedger(saveId, season));
-  }
-  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    this.buffer(`ledger:${saveId}:${season}`, entries, () => this.inner.writeLedger(saveId, season, entries));
-  }
-  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    if (entries.length === 0) return;
-    const key = `ledger:${saveId}:${season}`;
-    await this.readLedger(saveId, season);
-    // Read the cache AFTER the await, not the value `readLedger` resolved with: a concurrent
-    // append may have already landed its own buffered write (updating `cache`) while this call
-    // was awaiting — building from the fresh cache instead of a stale local variable keeps that
-    // append's entries instead of overwriting them.
-    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
-    await this.writeLedger(saveId, season, [...current, ...entries]);
   }
 
   // ── Season awards ─────────────────────────────────────────────────────────────

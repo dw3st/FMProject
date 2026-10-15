@@ -57,10 +57,13 @@ function memoryDAL(files: SquadFile[]): { dal: ISaveDAL; disk: Map<string, Squad
     async listLeagues() {
       return [...new Set(Array.from(disk.values()).map((f) => f.leagueSlug))];
     },
-    async readLedger(_s, season) {
+    async readMeta() {
+      return { seats: ["seat-1"] } as never;
+    },
+    async readSeatLedger(_s, _seat, season) {
       return ledger.get(`${_s}:${season}`) ?? [];
     },
-    async appendLedger(_s, season, entries) {
+    async appendSeatLedger(_s, _seat, season, entries) {
       const key = `${_s}:${season}`;
       ledger.set(key, [...(ledger.get(key) ?? []), ...entries]);
     },

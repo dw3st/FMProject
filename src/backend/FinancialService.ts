@@ -50,6 +50,7 @@ export async function applyBroadcasting(
   meta: SaveMeta,
   leagueSlug: string,
   clubSlug: string,
+  seatId?: string,
 ): Promise<SaveMeta> {
   const squad = await saveService.getSquad(saveId, leagueSlug, clubSlug);
   const broadcasting = squad?.finances?.broadcasting ?? 0;
@@ -61,7 +62,7 @@ export async function applyBroadcasting(
     kind: "broadcasting",
     amount: broadcasting,
     label: "Broadcasting revenue",
-  });
+  }, seatId);
 
   return meta;
 }
@@ -220,6 +221,8 @@ export async function recordMoney(
   season: number,
   squadRef: SquadRef,
   entry: LedgerEntry,
+  /** TRANSITIONAL: required in Task 29 (absent = the first seat of the world). */
+  seatId?: string,
 ): Promise<Squad> {
   const squad = await service.getSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug);
   if (!squad) {
@@ -227,6 +230,6 @@ export async function recordMoney(
   }
   const updated = applyMoney(squad, entry);
   await service.saveSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug, updated);
-  await service.appendLedger(saveId, season, [entry]);
+  await service.appendLedger(saveId, season, [entry], seatId);
   return updated;
 }
