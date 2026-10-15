@@ -13,6 +13,7 @@ import {
   type DockChat,
 } from "@/GameInterface/Social/chatDockState";
 import {
+  createEventHub,
   applyPresence,
   mergeMessages,
   parseServerEvent,
@@ -237,11 +238,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
-  const listenersRef = useRef(new Set<(event: ServerEvent) => void>());
-  const subscribe = useCallback((fn: (event: ServerEvent) => void) => {
-    listenersRef.current.add(fn);
-    return () => { listenersRef.current.delete(fn); };
-  }, []);
+  const hubRef = useRef(createEventHub<ServerEvent>());
+  const subscribe = hubRef.current.subscribe;
 
   const loadMessages = useCallback(async (room: string, older: boolean) => {
     const current = messagesRef.current[room];
@@ -300,7 +298,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         const event = parseServerEvent(e.data);
         if (event) {
           handleRef.current(event);
-          for (const fn of listenersRef.current) fn(event);
+          hubRef.current.emit(event);
         }
       };
       ws.onclose = (e) => {

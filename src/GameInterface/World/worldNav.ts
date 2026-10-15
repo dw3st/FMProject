@@ -26,3 +26,8 @@ export function joinCodeFromPath(pathname: string): string {
 export function joinLink(origin: string, code: string): string {
   return `${origin}/join/${code}`;
 }
+
+/** The dashboard is the only screen that shows the days that ran while the seat was away. */
+export function isDashboardPath(pathname: string): boolean {
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+}

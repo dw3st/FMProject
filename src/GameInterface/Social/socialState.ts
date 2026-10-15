@@ -130,3 +130,19 @@ export function reconnectAction(s: { meStatus: number; failedInARow: number; eve
   if (!s.everOpened && s.failedInARow >= MAX_FAILED_CONNECTS) return "stop";
   return "retry";
 }
+
+/** Fan-out of socket events to extra listeners; a listener that throws never stops the next one. */
+export function createEventHub<T>() {
+  const listeners = new Set<(event: T) => void>();
+  return {
+    subscribe(fn: (event: T) => void): () => void {
+      listeners.add(fn);
+      return () => { listeners.delete(fn); };
+    },
+    emit(event: T): void {
+      for (const fn of [...listeners]) {
+        try { fn(event); } catch (err) { console.error("socket listener failed", err); }
+      }
+    },
+  };
+}
