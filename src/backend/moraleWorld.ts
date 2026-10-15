@@ -63,6 +63,7 @@ export function marketAfterRequests(market: MarketState, add: string[], remove: 
 export async function applyMoraleDay(
   service: SaveService,
   saveId: string,
+  seatId: string,
   args: {
     clubId: string;
     date: string;
@@ -87,7 +88,7 @@ export async function applyMoraleDay(
     const buyer = await service.getSquadById(saveId, b.clubId);
     bids.push({ playerId: b.playerId, clubName: b.clubName, stronger: buyer ? teamAvgRating(buyer) > avg : false });
   }
-  const market = await service.getMarket(saveId);
+  const market = await service.getMarket(saveId, seatId);
   const out = moraleDay({
     squad,
     date: args.date,
@@ -99,7 +100,7 @@ export async function applyMoraleDay(
     ...(args.seasonRolled ? { seasonRolled: true } : {}),
     ...(args.directorContractTalk ? { directorContractTalk: args.directorContractTalk } : {}),
     // The manager's Motivation (`.claude/rules/game/achievements.md`).
-    motivation: (await service.getAchievements(saveId)).attributes.motivation,
+    motivation: (await service.getAchievements(saveId, seatId)).attributes.motivation,
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);

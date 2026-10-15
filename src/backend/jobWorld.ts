@@ -306,7 +306,7 @@ export async function releaseHumanClub(
   }
   // Scouting (`.claude/rules/game/scouting.md`): missions and prospects stay with the club, the
   // knowledge and shortlist follow the manager, who keeps knowing his old players.
-  await scoutingOnClubLeft(service, saveId, squad.players.map((p) => p.id), args.date);
+  await scoutingOnClubLeft(service, saveId, seatId, squad.players.map((p) => p.id), args.date);
   // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
   if (retired.some((r) => r.squadId === args.squadId && r.rebornOffer === "pending")) {

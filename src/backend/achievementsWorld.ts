@@ -106,8 +106,8 @@ function builtSince(state: AchievementsState, club: Squad | null): Pick<Achievem
   };
 }
 
-export async function achievementsDay(service: SaveService, saveId: string, args: AchievementsDayArgs): Promise<InboxMessage | null> {
-  const state = await service.getAchievements(saveId);
+export async function achievementsDay(service: SaveService, saveId: string, seatId: string, args: AchievementsDayArgs): Promise<InboxMessage | null> {
+  const state = await service.getAchievements(saveId, seatId);
   if (state.lastDay && state.lastDay >= args.date) return null;
   const clubId = args.clubId || null;
   const club = clubId ? await args.squadOf(clubId) : null;
@@ -171,7 +171,7 @@ export async function achievementsDay(service: SaveService, saveId: string, args
     ...(args.sacked ? { sacked: { hiredOn } } : {}),
     ...(args.nationalMatch ? { national: [nationalGameOf(args.nationalMatch)] } : {}),
   });
-  await service.writeAchievements(saveId, result.state);
+  await service.writeAchievements(saveId, result.state, seatId);
   // The copy of the attributes on his club (DP, familiarity, fouls read it there).
   if (club && !args.leftClub && JSON.stringify(club.managerAttributes) !== JSON.stringify(result.state.attributes)) {
     await service.saveSquadById(saveId, { ...club, managerAttributes: result.state.attributes });

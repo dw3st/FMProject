@@ -1,4 +1,4 @@
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
 import {
   gainKnowledge, implicitKnowledge, knowledgeOf, pruneKnowledge, scoutMultipliersOf, uncertaintyOf,
@@ -98,14 +98,14 @@ export async function famousIds(service: SaveService, saveId: string, date: stri
 }
 
 /** The human manager's view: own club, league and country, stored knowledge and the chief's multiplier. */
-export async function loadViewer(service: SaveService, saveId: string, opts: { squads?: Squad[] } = {}): Promise<Viewer | null> {
-  const meta = await service.getMeta(saveId);
+export async function loadViewer(service: SaveService, saveId: string, seatId: string, opts: { squads?: Squad[] } = {}): Promise<Viewer | null> {
+  const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) return null;
   const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
   const leagueCountry = await leagueCountries();
   const own = meta.clubId ? (opts.squads?.find((s) => s.id === meta.clubId) ?? (await service.getSquadById(saveId, meta.clubId))) : null;
   const chief = own ? effectiveRating(own, "scout") : STAFF.VACANT_RATING;
-  const state = await service.getScouting(saveId);
+  const state = await service.getScouting(saveId, seatId);
   return {
     saveId, date,
     ownClubId: meta.clubId ?? "",
@@ -149,12 +149,12 @@ export function obscurePlayerForViewer(viewer: Viewer, player: RosterPlayer, lea
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
 /** Players who leave the human club (sale, loan, release) stay fully known (decaying as usual). */
-export async function rememberPlayers(service: SaveService, saveId: string, playerIds: string[], date: string): Promise<void> {
+export async function rememberPlayers(service: SaveService, saveId: string, seatId: string, playerIds: string[], date: string): Promise<void> {
   if (playerIds.length === 0) return;
-  const state = await service.getScouting(saveId);
+  const state = await service.getScouting(saveId, seatId);
   const knowledge = { ...state.knowledge };
   for (const id of playerIds) knowledge[id] = { k: 100, seen: date };
-  await service.writeScouting(saveId, { ...state, knowledge });
+  await service.writeScouting(saveId, { ...state, knowledge }, seatId);
 }
 
 /**
@@ -162,20 +162,20 @@ export async function rememberPlayers(service: SaveService, saveId: string, play
  * the club (the field scouts go with its staff); knowledge and shortlist follow the manager, and he
  * keeps knowing his old players.
  */
-export async function scoutingOnClubLeft(service: SaveService, saveId: string, playerIds: string[], date: string): Promise<void> {
-  const state = await service.getScouting(saveId);
+export async function scoutingOnClubLeft(service: SaveService, saveId: string, seatId: string, playerIds: string[], date: string): Promise<void> {
+  const state = await service.getScouting(saveId, seatId);
   const knowledge = { ...state.knowledge };
   for (const id of playerIds) knowledge[id] = { k: 100, seen: date };
-  await service.writeScouting(saveId, { ...state, knowledge, missions: [], prospects: [] });
+  await service.writeScouting(saveId, { ...state, knowledge, missions: [], prospects: [] }, seatId);
 }
 
 /** Field scouts who left the club (fired, contract ended) take their missions with them. */
-export async function cancelScoutMissions(service: SaveService, saveId: string, scoutIds: string[]): Promise<void> {
+export async function cancelScoutMissions(service: SaveService, saveId: string, seatId: string, scoutIds: string[]): Promise<void> {
   if (scoutIds.length === 0) return;
-  const state = await service.getScouting(saveId);
+  const state = await service.getScouting(saveId, seatId);
   const gone = new Set(scoutIds);
   if (state.missions.some((m) => gone.has(m.scoutId))) {
-    await service.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => !gone.has(m.scoutId)) });
+    await service.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => !gone.has(m.scoutId)) }, seatId);
   }
 }
 
@@ -346,8 +346,8 @@ function countryTier(squads: Squad[]): FinancialTier {
  * caller past `clearInbox`).
  */
 export async function scoutingDay(
-  service: SaveService, saveId: string,
-  args: { date: string; meta: SaveMeta; matchEvents: MatchEvent[]; nextSeasonEnd?: string },
+  service: SaveService, saveId: string, seatId: string,
+  args: { date: string; meta: SeatMeta; matchEvents: MatchEvent[]; nextSeasonEnd?: string },
 ): Promise<ScoutingDayResult> {
   const { date, meta } = args;
   const ownClubId = meta.clubId ?? "";
@@ -357,7 +357,7 @@ export async function scoutingDay(
   const result: ScoutingDayResult = { entries: [], messages: [] };
   if (!monday && !firstOfMonth && opponents.length === 0) return result;
 
-  let state: ScoutingState = await service.getScouting(saveId);
+  let state: ScoutingState = await service.getScouting(saveId, seatId);
   const original = state;
   const lc = await leagueCountries();
   const index = await service.getSquadIndex(saveId);
@@ -381,7 +381,7 @@ export async function scoutingDay(
   const own = ownClubId ? await service.getSquadById(saveId, ownClubId) : null;
   const chiefRating = own ? effectiveRating(own, "scout") : STAFF.VACANT_RATING;
   const chief = scoutMultipliersOf(chiefRating);
-  const market = monday || firstOfMonth ? await service.getMarket(saveId) : null;
+  const market = monday || firstOfMonth ? await service.getMarket(saveId, seatId) : null;
   const forSale = sellListed(market);
   let allSquads: Squad[] | null = null;
   const all = async () => (allSquads ??= await service.getAllSquads(saveId));
@@ -577,6 +577,6 @@ export async function scoutingDay(
     }
   }
 
-  if (state !== original) await service.writeScouting(saveId, state);
+  if (state !== original) await service.writeScouting(saveId, state, seatId);
   return result;
 }

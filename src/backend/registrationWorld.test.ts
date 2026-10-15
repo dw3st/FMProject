@@ -4,6 +4,7 @@
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
+import { seatWindowRef } from "@/backend/marketWindowWorld";
 import {
   humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
 } from "@/backend/registrationWorld";
@@ -25,7 +26,7 @@ describe("registrationWorld", () => {
 
   const ctxOn = async (date?: string) => {
     const meta = (await saveService.getMeta(saveId))!;
-    return registrationDayCtx(saveService, saveId, meta, await saveService.getSquadIndex(saveId), date);
+    return registrationDayCtx(saveService, saveId, meta, await saveService.getSquadIndex(saveId), [seatWindowRef(meta)], date);
   };
 
   test("competitions of a club: league, cup, maybe continental, never youth", async () => {

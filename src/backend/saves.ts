@@ -390,7 +390,7 @@ export const saveRoutes = {
       if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
       const tactics = await saveService.getTactics(id, auth.seatId);
       // Same registered pool as the preview (`match-setup`), so its suggestions validate here.
-      const reg = await humanMatchRegistrationToday(saveService, id, meta, squad);
+      const reg = await humanMatchRegistrationToday(saveService, id, auth.seatId, squad);
       const valid = resolveUserLineup(
         squad,
         formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" }),

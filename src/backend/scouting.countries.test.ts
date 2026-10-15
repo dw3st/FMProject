@@ -66,7 +66,7 @@ describe("missions teach the country to their leader", () => {
     });
 
     const monday = nextMonday(start);
-    await scoutingDay(saveService, saveId, { date: monday, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
+    await scoutingDay(saveService, saveId, meta.seatId, { date: monday, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
     const after = (await saveService.getSquadById(saveId, "33"))!;
     const chief = after.staff!.members.find((m) => m.id === chiefId)!;
     expect(chief.countryKnowledge?.Spain).toEqual({ k: 43.6, last: monday });
@@ -88,7 +88,7 @@ describe("missions teach the country to their leader", () => {
     });
     const next = addDays(monday, 7);
     const before = await saveService.getScouting(saveId);
-    await scoutingDay(saveService, saveId, { date: next, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
+    await scoutingDay(saveService, saveId, meta.seatId, { date: next, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
     const worked = (await saveService.getScouting(saveId)).missions.find((m) => m.id === "mc");
     expect(worked?.weeksDone ?? 4).toBeGreaterThan(before.missions.find((m) => m.id === "mc")!.weeksDone);
     const finalClub = (await saveService.getSquadById(saveId, "33"))!;

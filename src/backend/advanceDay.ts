@@ -477,7 +477,7 @@ export async function advanceOneDay(
     // Competition registration (`.claude/rules/game/registration.md`): the human club's lists move in the
     // morning (before the matches, so a signing made today by a route can play today with the deadline open);
     // every club's list is ensured at match time; the AI refreshes after the market. News deferred past `clearInbox`.
-    const regCtx = await registrationDayCtx(saveService, saveId, meta, index, currentDate, windows);
+    const regCtx = await registrationDayCtx(saveService, saveId, meta, index, [seatWindowRef(meta)], currentDate, windows);
     const registrationNotices: RegistrationNotice[] = [];
     let registrationViolations = 0;
     // Cards of the user's manager in today's live match (`.claude/rules/game/var.md` §4).
@@ -1710,7 +1710,7 @@ export async function advanceOneDay(
     // Opponents of today's matches are noticed; Mondays the missions work, the shortlist is checked
     // and the travel is charged (ledger lines added to the money block below); the 1st of the month
     // the chief recommends. Messages are deferred past any `clearInbox` like the rest.
-    const scouting = await scoutingDay(saveService, saveId, {
+    const scouting = await scoutingDay(saveService, saveId, meta.seatId, {
       date: currentDate, meta,
       matchEvents: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
     });
@@ -2312,7 +2312,7 @@ export async function advanceOneDay(
               date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
             });
             // The manager keeps knowing who leaves (`.claude/rules/game/scouting.md`).
-            await rememberPlayers(saveService, saveId, res.released.map((p) => p.id), currentDate);
+            await rememberPlayers(saveService, saveId, meta.seatId, res.released.map((p) => p.id), currentDate);
           }
         }
       }
@@ -2802,7 +2802,7 @@ export async function advanceOneDay(
           let pool = await saveService.getStaffPool(saveId, currentDate);
           for (const m of r.left) pool = returnToPool(pool, m, currentDate);
           await saveService.writeStaffPool(saveId, pool);
-          await cancelScoutMissions(saveService, saveId, r.left.filter((m) => m.role === "fieldScout").map((m) => m.id));
+          await cancelScoutMissions(saveService, saveId, meta.seatId, r.left.filter((m) => m.role === "fieldScout").map((m) => m.id));
         }
       }
     }
@@ -2817,7 +2817,7 @@ export async function advanceOneDay(
     }
     const decidedNow = directorDecided ?? meta.directorDecisions ?? {};
     const moraleNews = humanActive
-      ? [...directorNews, ...await applyMoraleDay(saveService, saveId, {
+      ? [...directorNews, ...await applyMoraleDay(saveService, saveId, meta.seatId, {
           clubId: meta.clubId, date: currentDate,
           events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
           bids: moraleBids,
@@ -2971,7 +2971,7 @@ export async function advanceOneDay(
     // ── Achievements of the human manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
     let achievementsUnlocked = 0;
     if (!options.marketFrozen) {
-      const msg = await achievementsDay(saveService, saveId, {
+      const msg = await achievementsDay(saveService, saveId, meta.seatId, {
         date: currentDate,
         clubId: meta.clubId,
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),

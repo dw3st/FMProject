@@ -73,7 +73,7 @@ async function dropFromLineup(service: SaveService, saveId: string, seatId: stri
     await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) }, seatId);
   }
   const date = (await service.getWorldMeta(saveId))?.currentDate;
-  if (date) await rememberPlayers(service, saveId, [playerId], date);
+  if (date) await rememberPlayers(service, saveId, seatId, [playerId], date);
 }
 
 /**

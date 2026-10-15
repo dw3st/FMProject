@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { getScoutIndex, parseScoutQuery } from "@/backend/scoutSearch";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, type WorldMeta } from "@/backend/SaveService";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import type { Squad } from "@/types/playerTypes";
 
@@ -140,17 +140,17 @@ describe("getScoutIndex — shared in-flight build", () => {
     const meta = {
       id: "save1", name: "Save", createdAt: "", updatedAt: "", leagueSlug: "l", leagueName: "L",
       clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate: "2024-01-01",
-    } as unknown as SaveMeta;
+    } as unknown as WorldMeta;
 
-    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta);
+    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta);
     let resolveSquads!: (v: Squad[]) => void;
     const squadsPromise = new Promise<Squad[]>((res) => { resolveSquads = res; });
     const squadsSpy = spyOn(saveService, "getAllSquads").mockReturnValue(squadsPromise);
     const marketSpy = spyOn(saveService, "getMarket").mockResolvedValue(null);
 
     try {
-      const p1 = getScoutIndex("concurrent-save");
-      const p2 = getScoutIndex("concurrent-save");
+      const p1 = getScoutIndex("concurrent-save", "s1");
+      const p2 = getScoutIndex("concurrent-save", "s1");
 
       // Let both calls reach the in-flight check before the build resolves.
       await Promise.resolve();
@@ -172,17 +172,17 @@ describe("getScoutIndex — shared in-flight build", () => {
     const meta = {
       id: "save2", name: "Save", createdAt: "", updatedAt: "", leagueSlug: "l", leagueName: "L",
       clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate: "2024-02-02",
-    } as unknown as SaveMeta;
+    } as unknown as WorldMeta;
 
-    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta);
+    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta);
     const marketSpy = spyOn(saveService, "getMarket").mockResolvedValue(null);
     const squadsSpy = spyOn(saveService, "getAllSquads").mockRejectedValueOnce(new Error("boom"));
 
     try {
-      await expect(getScoutIndex("failing-save")).rejects.toThrow("boom");
+      await expect(getScoutIndex("failing-save", "s1")).rejects.toThrow("boom");
 
       squadsSpy.mockResolvedValueOnce([squad]);
-      const result = await getScoutIndex("failing-save");
+      const result = await getScoutIndex("failing-save", "s1");
       expect(result?.players).toEqual([]);
       expect(squadsSpy).toHaveBeenCalledTimes(2);
     } finally {

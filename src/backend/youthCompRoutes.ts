@@ -81,8 +81,8 @@ export function parseCallUps(
   return { ok: true, value: out };
 }
 
-async function humanSquad(saveId: string) {
-  const meta = await saveService.getMeta(saveId);
+async function humanSquad(saveId: string, seatId: string) {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return { meta: null, squad: null };
   if (!meta.clubId) return { meta, squad: null };
   return { meta, squad: await saveService.getSquadById(saveId, meta.clubId) };
@@ -153,7 +153,7 @@ export const youthCompRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
-      const { meta, squad } = await humanSquad(saveId);
+      const { meta, squad } = await humanSquad(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       if (!squad) return Response.json({ error: "noClub" }, { status: 409 });
       const leagueCountry = (await (await import("@/backend/advanceDay")).getLeagueData())
@@ -182,7 +182,7 @@ export const youthCompRoutes = {
       return Response.json({ error: "invalid body" }, { status: 400 });
     }
     return withSaveLock(saveId, async () => {
-      const { meta, squad } = await humanSquad(saveId);
+      const { meta, squad } = await humanSquad(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       if (!squad) return Response.json({ error: "noClub" }, { status: 409 });
       const parsed = parseCallUps(body, squad);
@@ -195,7 +195,7 @@ export const youthCompRoutes = {
         if (merged.length > 0) callUps[age] = merged;
         else delete callUps[age];
       }
-      const updated = await saveService.updateMeta(saveId, {
+      const updated = await saveService.updateSeat(saveId, auth.seatId, {
         youthCallUps: callUps.u21?.length || callUps.u19?.length ? callUps : undefined,
       });
       return Response.json({ callUps: updated?.youthCallUps ?? {} });

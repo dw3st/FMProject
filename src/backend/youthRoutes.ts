@@ -11,8 +11,8 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
-async function loadHumanSquad(saveId: string) {
-  const meta = await saveService.getMeta(saveId);
+async function loadHumanSquad(saveId: string, seatId: string) {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return null;
   const ref = await saveService.resolveSquadId(saveId, meta.clubId);
   if (!ref) return null;
@@ -39,7 +39,7 @@ export const youthRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const found = await loadHumanSquad(saveId);
+    const found = await loadHumanSquad(saveId, auth.seatId);
     if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
     return Response.json(youthView(found.squad));
   },
@@ -52,7 +52,7 @@ export const youthRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const found = await loadHumanSquad(saveId);
+      const found = await loadHumanSquad(saveId, auth.seatId);
       if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
       const { squad } = found;
       const player = squad.youth?.find((p) => p.id === playerId);
@@ -70,7 +70,7 @@ export const youthRoutes = {
       };
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
       // Achievements (`.claude/rules/game/achievements.md`): an academy player in the first team.
-      await saveService.writeAchievements(saveId, recordPromotion(await saveService.getAchievements(saveId), playerId));
+      await saveService.writeAchievements(saveId, recordPromotion(await saveService.getAchievements(saveId, auth.seatId), playerId), auth.seatId);
       return Response.json(youthView(next));
     });
   },
@@ -83,7 +83,7 @@ export const youthRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const found = await loadHumanSquad(saveId);
+      const found = await loadHumanSquad(saveId, auth.seatId);
       if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
       const { squad, meta } = found;
       const player = squad.youth?.find((p) => p.id === playerId);

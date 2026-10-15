@@ -29,11 +29,11 @@ describe("free agents: demand + sign routes and scout view", () => {
     const free = { ...donor, id: "free_test_1", name: "Free Tester", squadId: "", contract: undefined };
     await saveService.writeFreeAgents(saveId, [{ player: free, since: meta.currentDate! }]);
 
-    const free1 = await searchScout(saveId, {
+    const free1 = await searchScout(saveId, meta.seatId, {
       filters: { ...createDefaultScoutFilters(), onlyFree: true }, sortKey: "avg", sortDir: "desc", page: 0, pageSize: 50,
     });
     expect(free1!.rows.map((r) => r.id)).toEqual(["free_test_1"]);
-    const normal = await searchScout(saveId, {
+    const normal = await searchScout(saveId, meta.seatId, {
       filters: createDefaultScoutFilters(), sortKey: "avg", sortDir: "desc", page: 0, pageSize: 50,
     });
     expect(normal!.rows.some((r) => r.free)).toBe(false);

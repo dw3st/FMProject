@@ -150,7 +150,7 @@ export const contractRoutes = {
       // Poor facilities of our club (a signing only): the club's own condition, always known.
       parts = { facilities: b.facilities };
       // The uncertainty of this very player (`.claude/rules/game/scouting.md`).
-      const viewer = await loadViewer(saveService, saveId);
+      const viewer = await loadViewer(saveService, saveId, auth.seatId);
       const noise = viewer ? viewFor(viewer, player, fromSquad?.leagueSlug ?? (from ? (await saveService.getSquadIndex(saveId)).byId(from)?.leagueSlug ?? "" : "")).noise : 0;
       const view = obscurePersonality(personalityOf(player), noise, saveId, player.id);
       if (!view.uncertain && Object.values(view.traits).every((v) => v !== null)) {

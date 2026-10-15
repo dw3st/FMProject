@@ -18,6 +18,7 @@ import { nationalRoutes } from "@/backend/nationalRoutes";
 import { matchSetupReferee, refereeRoutes } from "@/backend/refereeRoutes";
 import { registrationRoutes } from "@/backend/registrationRoutes";
 import { matchRegistration, registrationDayCtx } from "@/backend/registrationWorld";
+import { seatWindowRef } from "@/backend/marketWindowWorld";
 import { registeredPool, type MatchRegistration } from "@/Domain/advanceDay/matchSimulationLineups";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
@@ -263,7 +264,7 @@ export const apiRoutes = withJsonErrors({
     // (`.claude/rules/game/scouting.md`); the engine paths (match setup, advance day) never pass it
     // and always get exact values.
     if (new URL(req.url).searchParams.get("scouted") === "1") {
-      const viewer = await loadViewer(saveService, saveId!);
+      const viewer = await loadViewer(saveService, saveId!, auth.seatId);
       if (viewer && viewer.ownClubId !== squad.id) squad = obscureSquadForViewer(viewer, squad);
     }
     if (req.method === "PUT") {
@@ -317,7 +318,7 @@ export const apiRoutes = withJsonErrors({
     } catch {
       return Response.json({ error: "invalid json" }, { status: 400 });
     }
-    const result = await searchScout(saveId!, parseScoutQuery(body));
+    const result = await searchScout(saveId!, auth.seatId, parseScoutQuery(body));
     if (!result) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(result);
   },
@@ -554,7 +555,7 @@ export const apiRoutes = withJsonErrors({
     let oppReg: MatchRegistration | undefined;
     if (saveIdParam && matchFixture && opponentSquad && matchDate) {
       const regIndex = await saveService.getSquadIndex(save.id);
-      const dctx = await registrationDayCtx(saveService, save.id, save, regIndex, matchDate);
+      const dctx = await registrationDayCtx(saveService, save.id, save, regIndex, [seatWindowRef(save)], matchDate);
       myReg = (await matchRegistration(dctx, mySquad, regIndex.byId(myInternalId)?.leagueSlug ?? save.leagueSlug, matchFixture.competition))?.reg;
       oppReg = (await matchRegistration(dctx, opponentSquad, regIndex.byId(opponentSquad.id)?.leagueSlug ?? "", matchFixture.competition))?.reg;
     }

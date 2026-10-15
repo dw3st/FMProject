@@ -924,7 +924,7 @@ try {
     {
       const fixturesReg = (await svc.getFixturesForDate(saveId, date)).filter((f) => regOfficial(f.competition));
       const idxR = await svc.getSquadIndex(saveId);
-      const dctx = await regDayCtx(svc, saveId, meta, idxR, date);
+      const dctx = await regDayCtx(svc, saveId, meta, idxR, [seatWindowRef(meta)], date);
       for (const f of fixturesReg) {
         for (const club of [f.home, f.away]) {
           const sq = await svc.getSquadById(saveId, club);
@@ -3111,7 +3111,7 @@ try {
     check(regTrack.logViolations === 0, `inscrição: registrationViolations summed over the day logs = ${regTrack.logViolations}`);
     const metaR = (await plain().getMeta(saveId))!;
     const idxR = await plain().getSquadIndex(saveId);
-    const dctx = await regDayCtx(plain(), saveId, metaR, idxR, metaR.currentDate!);
+    const dctx = await regDayCtx(plain(), saveId, metaR, idxR, [seatWindowRef(metaR)], metaR.currentDate!);
     let lists = 0, exceptions = 0, reduced = 0;
     const invalid: string[] = [];
     for (const sq of await plain().getAllSquads(saveId)) {
@@ -3410,7 +3410,7 @@ try {
     // The search blurs every row by its knowledge: hidden below 20, a range from ±0.5, exact at 100.
     const { searchScout, parseScoutQuery } = await import("@/backend/scoutSearch");
     const foreignLeague = (leagueData.find((l) => l.slug === PLAYER_LEAGUE) as { country?: string } | undefined)?.country === "Spain" ? "premier_league" : "la_liga";
-    const res = (await searchScout(saveId, parseScoutQuery({ filters: { league: foreignLeague }, pageSize: 200 })))!;
+    const res = (await searchScout(saveId, meta0.seatId, parseScoutQuery({ filters: { league: foreignLeague }, pageSize: 200 })))!;
     const incoherent = res.rows.filter((r) => r.knowledge === undefined
       || (r.knowledge < 20) !== !!r.hiddenAttrs
       || ((r.statNoise ?? 0) >= 0.5) !== !!r.avgRange
@@ -3445,7 +3445,7 @@ try {
     mapSquadsToScoutPlayers(squads.map((sq) => (sq.id === playerSquadId ? sq : obscureSquad(sq, 0.6, saveId!))));
     const tOld = performance.now() - t0;
     const t1 = performance.now();
-    const viewer = (await loadViewer(plain(), saveId, { squads }))!;
+    const viewer = (await loadViewer(plain(), saveId, meta0.seatId, { squads }))!;
     mapSquadsToScoutPlayers(squads.map((sq) => obscureSquadForViewer(viewer, sq)));
     const tNew = performance.now() - t1;
     console.log(`  search index blur: ${tNew.toFixed(0)} ms vs ${tOld.toFixed(0)} ms uniform (x${(tNew / tOld).toFixed(2)})`);

@@ -34,8 +34,8 @@ const TARGET_KINDS: ScoutTargetKind[] = ["country", "league", "continent", "play
 const LINES = ["GK", "Defender", "Midfielder", "Forward"] as const;
 const CONTINENTS = new Set(Object.values(countriesRaw as Record<string, { continent?: string }>).map((c) => c.continent).filter(Boolean));
 
-async function human(saveId: string): Promise<{ meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string } } | Response> {
-  const meta = await saveService.getMeta(saveId);
+async function human(saveId: string, seatId: string): Promise<{ meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string } } | Response> {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
   const ref = await saveService.resolveSquadId(saveId, meta.clubId);
@@ -132,10 +132,10 @@ function validFocus(raw: unknown): ScoutFocus | undefined | null {
 }
 
 /** The screen's view of the scouting department. */
-async function scoutingView(saveId: string, state: ScoutingState) {
-  const meta = await saveService.getMeta(saveId);
+async function scoutingView(saveId: string, seatId: string, state: ScoutingState) {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   const own = meta?.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
-  const viewer = await loadViewer(saveService, saveId);
+  const viewer = await loadViewer(saveService, saveId, seatId);
   const ownCountry = viewer?.ownCountry ?? "";
   const revenue = own ? wageRevenueBasisOf(own) : 0;
   const today = meta?.currentDate ?? "";
@@ -160,7 +160,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
     scout: scouts.find((s) => s.id === m.scoutId) ?? null,
   })));
   const index = await saveService.getSquadIndex(saveId);
-  const market = await saveService.getMarket(saveId);
+  const market = await saveService.getMarket(saveId, seatId);
   const forSale = new Set<string>([
     ...Object.values(market?.profiles ?? {}).flatMap((p) => (p.sellList ?? []).map((c) => c.playerId)),
     ...(market?.playerSellList ?? []).map((c) => c.playerId),
@@ -233,7 +233,7 @@ export const scoutingRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    return Response.json(await scoutingView(saveId, await saveService.getScouting(saveId)));
+    return Response.json(await scoutingView(saveId, auth.seatId, await saveService.getScouting(saveId, auth.seatId)));
   },
 
   /** `POST { scoutId, target, focus?, weeks }` - a new mission (400 `invalidTarget`/`invalidWeeks`, 409 `scoutBusy`). */
@@ -245,7 +245,7 @@ export const scoutingRoutes = {
     const body = await readJson(req);
     if (!body) return Response.json({ error: "invalid body" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+      const h = await human(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const target = await validTarget(saveId, body.target, h.squad.id);
       if (!target) return Response.json({ error: "invalidTarget" }, { status: 400 });
@@ -260,15 +260,15 @@ export const scoutingRoutes = {
       if (target.kind !== "player" && (await missionLeagues(saveService, saveId, { target })).length === 0) {
         return Response.json({ error: "invalidTarget" }, { status: 400 });
       }
-      const state = await saveService.getScouting(saveId);
+      const state = await saveService.getScouting(saveId, auth.seatId);
       if (state.missions.some((m) => m.scoutId === scoutId)) return Response.json({ error: "scoutBusy" }, { status: 409 });
       const mission: ScoutAssignment = {
         id: `mis_${randomUUID().slice(0, 8)}`, scoutId, target, ...(focus && target.kind !== "player" ? { focus } : {}),
         start: h.meta.currentDate ?? "", weeks, weeksDone: 0, observed: 0,
       };
       const next = { ...state, missions: [...state.missions, mission] };
-      await saveService.writeScouting(saveId, next);
-      return Response.json(await scoutingView(saveId, next));
+      await saveService.writeScouting(saveId, next, auth.seatId);
+      return Response.json(await scoutingView(saveId, auth.seatId, next));
     });
   },
 
@@ -279,19 +279,19 @@ export const scoutingRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const state = await saveService.getScouting(saveId);
+      const state = await saveService.getScouting(saveId, auth.seatId);
       const cancelled = state.missions.find((m) => m.id === req.params.missionId);
       if (!cancelled) return Response.json({ error: "mission not found" }, { status: 404 });
       // The chief scout (when he plans the missions) leaves this scout free for a week: the
       // manager's cancellation is not undone on the next Monday (`chiefPlanner.ts`, `onHold`).
-      const date = (await saveService.getMeta(saveId))?.currentDate ?? "";
+      const date = (await saveService.getSeatMeta(saveId, auth.seatId))?.currentDate ?? "";
       const next: ScoutingState = {
         ...state,
         missions: state.missions.filter((m) => m.id !== cancelled.id),
         ...(date ? { chiefHold: { ...(state.chiefHold ?? {}), [cancelled.scoutId]: date } } : {}),
       };
-      await saveService.writeScouting(saveId, next);
-      return Response.json(await scoutingView(saveId, next));
+      await saveService.writeScouting(saveId, next, auth.seatId);
+      return Response.json(await scoutingView(saveId, auth.seatId, next));
     });
   },
 
@@ -305,11 +305,11 @@ export const scoutingRoutes = {
     if (!body || typeof body.playerId !== "string") return Response.json({ error: "invalid body" }, { status: 400 });
     const note = typeof body.note === "string" ? body.note.trim().slice(0, 200) : undefined;
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       const found = await findPlayer(saveId, body.playerId as string, typeof body.squadId === "string" ? body.squadId : undefined);
       if (!found) return Response.json({ error: "player not found" }, { status: 404 });
-      const state = await saveService.getScouting(saveId);
+      const state = await saveService.getScouting(saveId, auth.seatId);
       const existing = state.shortlist.find((e) => e.playerId === found.player.id);
       let shortlist: ShortlistEntry[];
       if (existing) {
@@ -322,7 +322,7 @@ export const scoutingRoutes = {
         }];
       }
       const next = { ...state, shortlist };
-      await saveService.writeScouting(saveId, next);
+      await saveService.writeScouting(saveId, next, auth.seatId);
       return Response.json({ shortlist: next.shortlist });
     });
   },
@@ -333,9 +333,9 @@ export const scoutingRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const state = await saveService.getScouting(saveId);
+      const state = await saveService.getScouting(saveId, auth.seatId);
       const next = { ...state, shortlist: state.shortlist.filter((e) => e.playerId !== req.params.playerId) };
-      await saveService.writeScouting(saveId, next);
+      await saveService.writeScouting(saveId, next, auth.seatId);
       return Response.json({ shortlist: next.shortlist });
     });
   },
@@ -347,10 +347,10 @@ export const scoutingRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+      const h = await human(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const date = h.meta.currentDate ?? "";
-      const state = await saveService.getScouting(saveId);
+      const state = await saveService.getScouting(saveId, auth.seatId);
       const prospect = state.prospects.find((p) => p.player.id === req.params.prospectId);
       if (!prospect || prospect.expires < date) return Response.json({ error: "offerClosed" }, { status: 409 });
       if ((h.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return Response.json({ error: "youthFull" }, { status: 400 });
@@ -367,16 +367,16 @@ export const scoutingRoutes = {
         await recordMoney(saveService, saveId, season, h.ref, {
           date, kind: "scouting", amount: -prospect.fee, label: `Training compensation: ${player.name}`,
           ref: { stage: "prospect", playerName: player.name, playerId: player.id, competition: prospect.country },
-        });
+        }, auth.seatId);
       }
       const knowledge = { ...state.knowledge };
       delete knowledge[player.id];
       const next: ScoutingState = { ...state, knowledge, prospects: state.prospects.filter((p) => p.player.id !== player.id) };
-      await saveService.writeScouting(saveId, next);
+      await saveService.writeScouting(saveId, next, auth.seatId);
       await emitInboxMessage(saveId, buildScoutingMessage({
         date, kind: "prospect_signed", playerId: player.id, playerName: player.name, fee: prospect.fee, clubName: prospect.country,
-      }), saveService);
-      return Response.json(await scoutingView(saveId, next));
+      }), saveService, auth.seatId);
+      return Response.json(await scoutingView(saveId, auth.seatId, next));
     });
   },
 
@@ -389,10 +389,10 @@ export const scoutingRoutes = {
     const squadId = new URL(req.url).searchParams.get("squad") ?? undefined;
     const found = await findPlayer(saveId, req.params.playerId!, squadId);
     if (!found) return Response.json({ error: "player not found" }, { status: 404 });
-    const viewer = await loadViewer(saveService, saveId);
+    const viewer = await loadViewer(saveService, saveId, auth.seatId);
     if (!viewer) return Response.json({ error: "save not found" }, { status: 404 });
     const league = found.squad ? ((await saveService.getSquadIndex(saveId)).byId(found.squad.id)?.leagueSlug ?? "") : "";
-    const state = await saveService.getScouting(saveId);
+    const state = await saveService.getScouting(saveId, auth.seatId);
     return Response.json({
       view: viewFor(viewer, found.player, league),
       // Country of his club's league (free agent: ""): the scouts' knowledge of it on the screen.
