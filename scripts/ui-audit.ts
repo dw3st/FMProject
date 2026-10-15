@@ -69,6 +69,7 @@ export const ENTRY_TITLE_FILES = [
   "src/GameInterface/ScreenSizeGate.tsx",
   "src/GameInterface/SettingsScreen.tsx",
   "src/GameInterface/FiredScreen.tsx",
+  "src/GameInterface/World/JoinScreen.tsx",
 ];
 
 /** Justified exceptions: file + rule + a substring of the offending source line. */

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { TopNavigation } from "@/GameInterface/Components/TopNavigation";
 import { StatusBar } from "@/GameInterface/Components/StatusBar";
 import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
@@ -16,11 +17,15 @@ import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
+import { ReadyControl } from "@/GameInterface/World/ReadyControl";
+import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
+import { worldRedirect } from "@/GameInterface/World/worldNav";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
-const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
+const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world"];
 
 export function Layout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { session, squad, save } = useGameSave();
   const noClub = !!save?.unemployed
     && !(typeof window !== "undefined" && NO_CLUB_PATHS.some((p) => window.location.pathname.startsWith(p)));
@@ -48,19 +53,30 @@ export function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
+  const lobby = save?.world?.phase === "lobby";
+
+  // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
+  const redirectTo = typeof window === "undefined" ? null : worldRedirect(window.location.pathname, save);
+  useEffect(() => {
+    if (redirectTo) window.location.replace(redirectTo);
+  }, [redirectTo]);
 
   return (
     <SocialProvider saveId={session?.saveId ?? null}>
+      <GroupAdvanceProvider leagues={leagues} mySquadId={mySquadId}>
       <div className="h-screen overflow-hidden bg-background">
         <TopNavigation
-          onAdvanceDay={handleAdvanceDay}
-          onFastForward={canFastForward ? handleFastForward : undefined}
+          onAdvanceDay={lobby || session?.groupAdvance ? undefined : handleAdvanceDay}
+          onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
+          dayAction={!lobby && session?.groupAdvance ? <ReadyControl /> : undefined}
         />
 
         <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
-          {noClub ? <NoClubScreen /> : children}
+          {redirectTo ? (
+            <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : noClub ? <NoClubScreen /> : children}
         </main>
 
         <StatusBar
@@ -117,6 +133,7 @@ export function Layout({ children }: { children: ReactNode }) {
           />
         )}
       </div>
+      </GroupAdvanceProvider>
     </SocialProvider>
   );
 }

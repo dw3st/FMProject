@@ -2,11 +2,14 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "crypto";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { SaveService, type SaveMeta } from "@/backend/SaveService";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
+import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 
 const dal = new FileSystemDAL();
 const created: string[] = [];
@@ -69,5 +72,128 @@ describe("seat files in the FileSystemDAL", () => {
     expect(await dal.readSeat(saveId, seatId)).toEqual(seat);
     expect((await dal.readSeatInbox(saveId, seatId)).map((m) => m.id)).toEqual(["m1"]);
     expect((await dal.readSeatLedger(saveId, seatId, 2027)).map((e) => e.amount)).toEqual([3]);
+  });
+});
+
+describe("deleteSeat", () => {
+  test("FileSystemDAL removes the seat folder only", async () => {
+    const saveId = `test-seatdel-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const b = randomUUID();
+    await dal.writeSeat(saveId, a, seat);
+    await dal.writeSeat(saveId, b, seat);
+    await dal.writeSeatInbox(saveId, b, [msg("m1")]);
+    await dal.deleteSeat(saveId, b);
+    expect(await dal.readSeat(saveId, a)).toEqual(seat);
+    expect(await dal.readSeat(saveId, b)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${b}/inbox.json`).exists()).toBe(false);
+  });
+
+  test("BufferingSaveDAL drops the seat's buffered writes and deletes on flush", async () => {
+    const saveId = `test-seatdel-buf-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.writeSeatInbox(saveId, s, [msg("late")]);
+    await buffer.deleteSeat(saveId, s);
+    expect(await buffer.readSeat(saveId, s)).toBeNull();
+    expect(await dal.readSeat(saveId, s)).toEqual(seat);
+    await buffer.flush();
+    expect(await dal.readSeat(saveId, s)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${s}/inbox.json`).exists()).toBe(false);
+  });
+
+  test("after a buffered delete every seat read is empty, not the disk", async () => {
+    const saveId = `test-seatdel-read-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    await dal.writeSeatInbox(saveId, s, [msg("old")]);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.deleteSeat(saveId, s);
+    expect(await buffer.readSeat(saveId, s)).toBeNull();
+    expect(await buffer.readSeatInbox(saveId, s)).toEqual([]);
+    expect(await buffer.readSeatTactics(saveId, s)).toBeNull();
+    expect(await buffer.readSeatLedger(saveId, s, 2027)).toEqual([]);
+    expect(await buffer.listSeatLedgerSeasons(saveId, s)).toEqual([]);
+  });
+
+  test("a write after the delete cancels the pending folder delete", async () => {
+    const saveId = `test-seatdel-undo-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.deleteSeat(saveId, s);
+    await buffer.writeSeatInbox(saveId, s, [msg("new")]);
+    await buffer.flush();
+    expect(await dal.readSeat(saveId, s)).toEqual(seat);
+    expect((await dal.readSeatInbox(saveId, s)).map((m) => m.id)).toEqual(["new"]);
+  });
+
+  test("SaveService.deleteSeat ignores a seat that is not in the world", async () => {
+    const saveId = `test-seatdel-noop-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const now = new Date().toISOString();
+    await dal.writeMeta({ id: saveId, name: "W", createdAt: now, updatedAt: now, mode: "multi", seats: [a] });
+    await dal.writeSeat(saveId, a, seat);
+    await new SaveService(dal).deleteSeat(saveId, randomUUID());
+    expect((await dal.readMeta(saveId))!.seats).toEqual([a]);
+    expect(await dal.readSeat(saveId, a)).toEqual(seat);
+  });
+
+  test("SaveService.deleteSeat removes the seat from the world", async () => {
+    const saveId = `test-seatdel-svc-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const b = randomUUID();
+    const now = new Date().toISOString();
+    const world: SaveMeta = { id: saveId, name: "W", createdAt: now, updatedAt: now, mode: "multi", seats: [a, b] };
+    await dal.writeMeta(world);
+    await dal.writeSeat(saveId, a, seat);
+    await dal.writeSeat(saveId, b, seat);
+    await new SaveService(dal).deleteSeat(saveId, b);
+    expect((await dal.readMeta(saveId))!.seats).toEqual([a]);
+    expect(await dal.readSeat(saveId, b)).toBeNull();
+  });
+});
+
+describe("group advance seat files", () => {
+  test("liveRecording.json round-trips and null deletes it; pendingSummary.json defaults to []", async () => {
+    const saveId = `test-seat-${randomUUID()}`;
+    created.push(saveId);
+    const seatId = randomUUID();
+    await dal.writeSeat(saveId, seatId, seat);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toBeNull();
+    const file: LiveRecordingFile = {
+      date: "2027-03-10", fixtureId: "f1",
+      recording: { fixtureId: "f1", score: { home: 1, away: 0 } } as unknown as PlayedMatchRecording,
+    };
+    await dal.writeSeatLiveRecording(saveId, seatId, file);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toEqual(file);
+    await dal.writeSeatLiveRecording(saveId, seatId, null);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${seatId}/liveRecording.json`).exists()).toBe(false);
+
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual([]);
+    const days: PendingDay[] = [{ date: "2027-03-10", newDate: "2027-03-11", seat: { sacked: true } }];
+    await dal.writeSeatPendingSummary(saveId, seatId, days);
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual(days);
+  });
+
+  test("the BufferingSaveDAL holds them until flush", async () => {
+    const saveId = `test-seat-${randomUUID()}`;
+    created.push(saveId);
+    const seatId = randomUUID();
+    await dal.writeSeat(saveId, seatId, seat);
+    const buffered = new BufferingSaveDAL(dal);
+    await buffered.writeSeatPendingSummary(saveId, seatId, [{ date: "2027-03-10", newDate: "2027-03-11", seat: {} }]);
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual([]);
+    expect((await buffered.readSeatPendingSummary(saveId, seatId)).length).toBe(1);
+    await buffered.flush();
+    expect((await dal.readSeatPendingSummary(saveId, seatId)).length).toBe(1);
   });
 });

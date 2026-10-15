@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { safeNextPath } from "@/GameInterface/authRedirect";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
@@ -60,7 +61,7 @@ export function LoginScreen() {
         setError(data.error ?? "Invalid code");
         return;
       }
-      window.location.href = "/start";
+      window.location.href = safeNextPath(window.location.search);
     } finally {
       setSubmitting(false);
     }

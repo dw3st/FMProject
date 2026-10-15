@@ -1,5 +1,6 @@
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { withJsonErrors } from "@/backend/routeErrors";
+import { withLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
@@ -33,6 +34,8 @@ import { inboxRoutes } from "@/backend/inbox";
 import { pressRoutes } from "@/backend/pressRoutes";
 import { newsRoutes } from "@/backend/newsRoutes";
 import { socialRoutes } from "@/backend/social/socialRoutes";
+import { worldRoutes } from "@/backend/worlds/worldRoutes";
+import { groupAdvanceRoutes } from "@/backend/groupAdvanceRoutes";
 import { saveService } from "@/backend/SaveService";
 import type { SeatMeta } from "@/backend/SaveService";
 import { readdir } from "fs/promises";
@@ -92,7 +95,7 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
   return _clubProfileLeagueDataCache;
 }
 
-export const apiRoutes = withJsonErrors({
+export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...authRoutes,
   ...reportRoutes,
   ...presenceRoutes,
@@ -125,6 +128,8 @@ export const apiRoutes = withJsonErrors({
   ...pressRoutes,
   ...newsRoutes,
   ...socialRoutes,
+  ...worldRoutes,
+  ...groupAdvanceRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when
   // POSTHOG_KEY is set — the project key is a public client token.
@@ -450,6 +455,7 @@ export const apiRoutes = withJsonErrors({
             referee: null,
             managerBanned: false,
             national: { teamId: nat.teamId, competition: nat.fixture.competition },
+            matchDay: { date: nat.fixture.date, fixtureId: nat.fixture.id },
           });
         }
         return Response.json(
@@ -461,7 +467,11 @@ export const apiRoutes = withJsonErrors({
       // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
       // the day's advance plays it in the full engine with both seats' tactics.
       if ((await saveService.humanClubIds(save.id)).has(oppId)) {
-        return Response.json({ error: "seatOpponent" }, { status: 409 });
+        // matchDay: a group world still records the "Simular" decision for this game.
+        return Response.json(
+          { error: "seatOpponent", matchDay: { date: todayFixture.date, fixtureId: todayFixture.id } },
+          { status: 409 },
+        );
       }
       opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {
@@ -614,6 +624,7 @@ export const apiRoutes = withJsonErrors({
       mySquad,
       mySquadId: myInternalId,
       fixture: matchFixture,
+      matchDay: matchFixture ? { date: matchFixture.date, fixtureId: matchFixture.id } : null,
       opponentSquad,
       myFormation:  resolvedMyFormation,
       oppFormation: oppFormation ?? defaultFormation,
@@ -795,4 +806,4 @@ export const apiRoutes = withJsonErrors({
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },
-} as const);
+} as const));

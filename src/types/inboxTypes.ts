@@ -34,7 +34,8 @@ export type InboxCategory =
   | "national"
   | "national_coach"
   | "achievement"
-  | "press";
+  | "press"
+  | "world";
 
 interface InboxMessageBase {
   id:        string;
@@ -473,7 +474,40 @@ export type InboxMessage =
   | DisciplineInboxMessage
   | NationalInboxMessage
   | NationalCoachInboxMessage
-  | AchievementInboxMessage;
+  | AchievementInboxMessage
+  | WorldInboxMessage
+  | WorldAdvanceInboxMessage
+  | WorldLiveRefusedInboxMessage;
+
+/** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
+export interface WorldAdvanceInboxMessage extends InboxMessageBase {
+  category:  "world";
+  kind:      "auto_advanced";
+  /** His new stop date. */
+  until:     string;
+  /** The game the assistant simulated for him, or null. */
+  simulated: string | null;
+}
+
+/** Why the day refused a seat's live recording (`liveRefusedReason`). */
+export type LiveRefusedReason = "unregistered" | "knockout" | "two_seats" | "other";
+
+/** Group advance (part 3): the day refused his live recording, so his game was simulated. */
+export interface WorldLiveRefusedInboxMessage extends InboxMessageBase {
+  category: "world";
+  kind:     "live_refused";
+  /** The game's date. */
+  match:    string;
+  reason:   LiveRefusedReason;
+}
+
+/** A manager joined or left the world of friends (multiplayer part 2). */
+export interface WorldInboxMessage extends InboxMessageBase {
+  category:    "world";
+  kind:        "member_joined" | "member_left" | "member_removed";
+  managerName: string;
+  clubName:    string;
+}
 
 /** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */
 export interface NationalInboxMessage extends InboxMessageBase {

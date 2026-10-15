@@ -4,12 +4,15 @@ import {
   computeAdvanceTarget,
   nextPlayerFixtureDate,
   readAdvancePosition,
+  seatMatchDates,
+  seatNextMatchDate,
   runAdvanceBatch,
   type AdvanceBatchDeps,
   type AdvancePosition,
 } from "@/backend/advanceUntil";
 import type { SeatDayOutcome } from "@/backend/advanceDay";
-import { SaveService } from "@/backend/SaveService";
+import { SaveService, saveService } from "@/backend/SaveService";
+import { soloSeatId } from "@/backend/testing/seatFixtures";
 import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
 import type { Fixture, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
 
@@ -271,4 +274,72 @@ describe("readAdvancePosition", () => {
     expect(posB.target).toBe("2025-08-06");
     expect(posA.target).not.toEqual(posB.target);
   });
+});
+
+describe("seatMatchDates / seatNextMatchDate", () => {
+  const fixture = (id: string, date: string, round: number, home: string, away: string, played = false): Fixture => ({
+    id, date, competition: "lg", round, home, away, played, result: null,
+  }) as Fixture;
+  const rounds: Record<number, RoundFixtures> = {
+    1: { leagueSlug: "lg", round: 1, fixtures: [fixture("f1", "2025-08-03", 1, "A", "X"), fixture("f0", "2025-08-01", 1, "A", "Z", true)] },
+    2: { leagueSlug: "lg", round: 2, fixtures: [fixture("f2", "2025-08-06", 2, "Y", "A")] },
+    3: { leagueSlug: "lg", round: 3, fixtures: [fixture("f3", "2025-08-09", 3, "B", "Y")] },
+  };
+  const make = (over: Record<string, unknown> = {}) => ({
+    getSeatMeta: async (_s: string, seatId: string) => ({ seatId, currentDate: "2025-08-01", leagueSlug: "lg", clubId: "A", activeLeagues: [] }),
+    getDateIndex: async () => ({ "2025-08-01": [1], "2025-08-03": [1], "2025-08-06": [2], "2025-08-09": [3] }) as LeagueDateIndex,
+    getRound: async (_s: string, _l: string, r: number) => rounds[r] ?? null,
+    getLeagueMeta: async () => null,
+    getNationalState: async () => null,
+    ...over,
+  }) as unknown as SaveService;
+
+  test("every unplayed game of the club from a date, ascending, bounded by until", async () => {
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-01")).toEqual(["2025-08-03", "2025-08-06"]);
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-04")).toEqual(["2025-08-06"]);
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-01", "2025-08-03")).toEqual(["2025-08-03"]);
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-01")).toBe("2025-08-03");
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-04")).toBe("2025-08-06");
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-07")).toBeNull();
+  });
+
+  test("a missing league folder (null date index) means no games", async () => {
+    const bare = make({ getDateIndex: async () => null });
+    expect(await seatMatchDates(bare, "S", "a", "2025-08-01")).toEqual([]);
+    expect(await seatNextMatchDate(bare, "S", "a", "2025-08-01")).toBeNull();
+  });
+
+  test("a read failure propagates instead of reading as no game", async () => {
+    const broken = make({ getDateIndex: async () => { throw new Error("EIO"); } });
+    await expect(seatMatchDates(broken, "S", "a", "2025-08-01")).rejects.toThrow("EIO");
+    await expect(seatNextMatchDate(broken, "S", "a", "2025-08-01")).rejects.toThrow("EIO");
+    const noLeague = make({ getLeagueMeta: async () => { throw new Error("EIO"); } });
+    await expect(seatMatchDates(noLeague, "S", "a", "2025-08-01")).rejects.toThrow("EIO");
+  });
+
+  test("two games on one date count once", async () => {
+    const twice = make({
+      getRound: async (_s: string, _l: string, r: number) => r === 1
+        ? { leagueSlug: "lg", round: 1, fixtures: [fixture("a1", "2025-08-03", 1, "A", "X"), fixture("a2", "2025-08-03", 1, "A", "W")] }
+        : rounds[r] ?? null,
+    });
+    expect(await seatMatchDates(twice, "S", "a", "2025-08-01")).toEqual(["2025-08-03", "2025-08-06"]);
+  });
+
+  test("a real save: dates match the club's unplayed fixtures", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    try {
+      const seatId = await soloSeatId(meta.id);
+      const all = await saveService.getAllFixturesForLeague(meta.id, "premier_league");
+      const mine = [...new Set(all.filter((f) => !f.played && (f.home === "33" || f.away === "33")).map((f) => f.date))].sort();
+      const league = (await seatMatchDates(saveService, meta.id, seatId, meta.currentDate!)).filter((d) => mine.includes(d));
+      expect(league.slice(0, 5)).toEqual(mine.slice(0, 5));
+      expect(await seatNextMatchDate(saveService, meta.id, seatId, meta.currentDate!)).toBe(mine[0]!);
+    } finally {
+      await saveService.deleteSave(meta.id);
+    }
+  }, 120_000);
 });

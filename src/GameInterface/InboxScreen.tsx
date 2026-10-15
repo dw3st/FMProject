@@ -49,6 +49,7 @@ const AwardIcon = iconOf("award");
 const CalendarIcon = iconOf("calendar");
 const DisciplineIcon = iconOf("alert");
 const AchievementIcon = iconOf("medal");
+const UsersIcon = iconOf("users");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -242,6 +243,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-5/15",
     border: "border-chart-5/30",
     Icon: ContinentalIcon,
+  },
+  world: {
+    labelKey: "inbox.categories.world",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: UsersIcon,
   },
   achievement: {
     labelKey: "inbox.categories.achievement",
@@ -714,6 +722,25 @@ function leaguePrizeTexts(
     return { subject: x.subject, preview: x.body };
   }
   if (message.category === "awards") return awardsTexts(message, t);
+  if (message.category === "world" && message.kind === "auto_advanced") {
+    const until = formatInboxDate(message.until);
+    return {
+      subject: t("world.advance.inbox.subject"),
+      preview: message.simulated
+        ? t("world.advance.inbox.previewSimulated", { until, match: formatInboxDate(message.simulated) })
+        : t("world.advance.inbox.preview", { until }),
+    };
+  }
+  if (message.category === "world" && message.kind === "live_refused") {
+    return {
+      subject: t("world.advance.refused.subject"),
+      preview: t(`world.advance.refused.reason.${message.reason}`),
+    };
+  }
+  if (message.category === "world") {
+    const vars = { manager: message.managerName, club: message.clubName };
+    return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
+  }
   if (message.category === "schedule") {
     const first = message.games[0];
     return {
@@ -870,6 +897,23 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "awards" && <AwardsInboxBody message={message} />}
         {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
+        {message.category === "world" && message.kind === "auto_advanced" && (
+          <p className="text-sm text-foreground m-0">
+            {message.simulated
+              ? t("world.advance.inbox.bodySimulated", { until: formatInboxDate(message.until), match: formatInboxDate(message.simulated) })
+              : t("world.advance.inbox.body", { until: formatInboxDate(message.until) })}
+          </p>
+        )}
+        {message.category === "world" && message.kind === "live_refused" && (
+          <p className="text-sm text-foreground m-0">
+            {t("world.advance.refused.body", { match: formatInboxDate(message.match), reason: t(`world.advance.refused.reason.${message.reason}`) })}
+          </p>
+        )}
+        {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && (
+          <p className="text-sm text-foreground m-0">
+            {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
+          </p>
+        )}
         {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
         {message.category === "national" && <NationalInboxBody message={message} />}
         {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}

@@ -323,7 +323,7 @@ export function moveHumanManager(
  */
 export function sackHumanManager(
   managers: ManagerRecord[],
-  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" },
+  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" | "left_world" },
 ): ManagerRecord[] {
   const me = managers.find((m) => m.seatId === args.seatId);
   if (!me || !me.squadId) return managers;

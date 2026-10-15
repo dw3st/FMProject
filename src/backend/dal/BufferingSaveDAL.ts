@@ -20,6 +20,7 @@ import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -121,14 +122,33 @@ export class BufferingSaveDAL implements ISaveDAL {
     }
   }
 
+  /** Seats deleted in this buffer (`saveId:seatId`): their files read as empty until a write brings them back. */
+  private readonly deletedSeats = new Set<string>();
+
+  private deletedSeatOf(key: string): string | null {
+    if (!key.startsWith("seat") || this.deletedSeats.size === 0) return null;
+    for (const s of this.deletedSeats) {
+      if (key.endsWith(`:${s}`) || key.includes(`:${s}:`)) return s;
+    }
+    return null;
+  }
+
   private async readThrough<T>(key: string, loader: () => Promise<T>): Promise<T> {
     if (this.cache.has(key)) return this.cache.get(key) as T;
+    if (this.deletedSeatOf(key)) return (key.startsWith("seatInbox:") || key.startsWith("seatLedger:") || key.startsWith("seatPending:") ? [] : null) as T;
     const value = await loader();
     this.cache.set(key, value);
     return value;
   }
 
   private buffer(key: string, value: unknown, write: () => Promise<void>): void {
+    const revived = this.deletedSeatOf(key);
+    if (revived) {
+      // A write on a deleted seat cancels the pending folder delete (like a squad write over its tombstone).
+      this.deletedSeats.delete(revived);
+      this.pending.delete(`seatDelete:${revived}`);
+      for (const k of [...this.cache.keys()]) if (k === `seat:${revived}` && this.cache.get(k) === null) this.cache.delete(k);
+    }
     this.cache.set(key, value);
     this.pending.set(key, write);
   }
@@ -497,6 +517,7 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   /** Not buffered (same reason as `listLedgerSeasons`). */
   listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    if (this.deletedSeats.has(`${saveId}:${seatId}`)) return Promise.resolve([]);
     return this.inner.listSeatLedgerSeasons(saveId, seatId);
   }
   readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]> {
@@ -517,5 +538,32 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
     this.buffer(`seatMarket:${saveId}:${seatId}`, market, () => this.inner.writeSeatMarket(saveId, seatId, market));
+  }
+  readSeatLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null> {
+    return this.readThrough(`seatLive:${saveId}:${seatId}`, () => this.inner.readSeatLiveRecording(saveId, seatId));
+  }
+  async writeSeatLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void> {
+    this.buffer(`seatLive:${saveId}:${seatId}`, file, () => this.inner.writeSeatLiveRecording(saveId, seatId, file));
+  }
+  readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
+    return this.readThrough(`seatPending:${saveId}:${seatId}`, () => this.inner.readSeatPendingSummary(saveId, seatId));
+  }
+  async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
+    this.buffer(`seatPending:${saveId}:${seatId}`, days, () => this.inner.writeSeatPendingSummary(saveId, seatId, days));
+  }
+  /**
+   * Forgets every buffered write of the seat (seat, tactics, achievements, scouting, inbox, ledger, market) and
+   * removes its folder in the delete phase of `flush` (after the writes, before the meta, like a squad tombstone).
+   */
+  async deleteSeat(saveId: string, seatId: string): Promise<void> {
+    const tag = `:${saveId}:${seatId}`;
+    const ofSeat = (key: string) => key.startsWith("seat") && (key.endsWith(tag) || key.includes(`${tag}:`));
+    for (const key of [...this.cache.keys()]) if (ofSeat(key)) this.cache.delete(key);
+    for (const key of [...this.pending.keys()]) if (ofSeat(key)) this.pending.delete(key);
+    this.cache.set(`seat${tag}`, null);
+    this.deletedSeats.add(`${saveId}:${seatId}`);
+    const run = () => this.inner.deleteSeat(saveId, seatId);
+    this.deleteThunks.add(run);
+    this.pending.set(`seatDelete${tag}`, run);
   }
 }

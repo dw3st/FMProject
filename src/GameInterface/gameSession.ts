@@ -29,6 +29,8 @@ export interface GameSession {
   training_intensity?: TrainingIntensity;
   /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
   followedLeagues?: string[];
+  /** Multiplayer part 3: the world advances by the group (no Continuar, no fast-forward). */
+  groupAdvance?: boolean;
 }
 
 export function sessionFromSave(save: Record<string, unknown>): GameSession {
@@ -53,6 +55,7 @@ export function sessionFromSave(save: Record<string, unknown>): GameSession {
     training_intensity:
       (save.training_intensity as TrainingIntensity | undefined) ?? DEFAULT_TRAINING_INTENSITY,
     followedLeagues: save.followedLeagues as string[] | undefined,
+    groupAdvance: save.mode === "multi" && !!save.world,
   };
 }
 
@@ -88,6 +91,11 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+/** The world left or was deleted (multiplayer part 2): forget the session if it was that one. */
+export function forgetSession(saveId: string): void {
+  if (loadSession()?.saveId === saveId) clearSession();
+}
+
 export async function createGameSave(data: {
   leagueSlug: string;
   leagueName: string;
@@ -97,6 +105,7 @@ export async function createGameSave(data: {
   database?: SaveDatabase;
   manager?:  SaveManager;
   sackingEnabled?: boolean;
+  mode?: "solo" | "multi";
 }): Promise<GameSession> {
   const res = await fetch("/api/saves", {
     method: "POST",

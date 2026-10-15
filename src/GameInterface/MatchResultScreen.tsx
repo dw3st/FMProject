@@ -26,6 +26,18 @@ import { Icon, iconOf } from "@/GameInterface/Icons";
 import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Flag } from "@/GameInterface/Components/Flag";
+import { Notice } from "@/GameInterface/ui/Notice";
+import { clearMatchSnapshot } from "@/GameInterface/matchResume";
+import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import {
+  clearPendingRecording,
+  groupAdvanceErrorKey,
+  isTerminalGroupError,
+  liveSendFailureUrl,
+  loadPendingRecording,
+  sendWithRetry,
+} from "@/GameInterface/World/groupAdvanceErrors";
+import { Button } from "@/GameInterface/ui/Button";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 const Clock = iconOf("clock");
@@ -305,6 +317,11 @@ export function MatchResultScreen() {
   const [redirectingToDashboard, setRedirectingToDashboard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedDate, setResolvedDate] = useState<string>("");
+  /** Group world: the recorded live match, shown before the day runs. */
+  const [pendingResult, setPendingResult] = useState(false);
+  /** Group world: the live recording can be resent (non-terminal error, recording kept). */
+  const [retryable, setRetryable] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const nationalTeamId = fixtures.find((f) => f.nationalTeam)?.nationalTeam ?? null;
@@ -326,6 +343,15 @@ export function MatchResultScreen() {
 
     void (async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const errorCode = params.get("error");
+        if (errorCode && session.groupAdvance) {
+          if (!cancelled) {
+            setError(t(groupAdvanceErrorKey(errorCode)));
+            setRetryable(!isTerminalGroupError(errorCode) && loadPendingRecording(session.saveId) !== null);
+          }
+          return;
+        }
         const qDate = parseDateQuery();
         const date =
           qDate ??
@@ -342,11 +368,31 @@ export function MatchResultScreen() {
           return;
         }
 
+        if (params.get("pending") === "1" && session.groupAdvance) {
+          const live = await groupAdvanceApi.pendingLive(session.saveId);
+          if (live.ok && live.data.event && live.data.date === date) {
+            const ev = live.data.event;
+            const [hs, as] = await Promise.all([
+              fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.home)}`).then((r) => (r.ok ? (r.json() as Promise<Squad>) : null)),
+              fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.away)}`).then((r) => (r.ok ? (r.json() as Promise<Squad>) : null)),
+            ]);
+            if (cancelled) return;
+            setMatchEvent(ev);
+            setResolvedDate(date);
+            setHomeSquad(hs);
+            setAwaySquad(as);
+            setPendingResult(true);
+            return;
+          }
+          // The executor already ran that day: the official result is in the day log.
+        }
+
         const lastDayForResult = addOneDay(date);
+        // A group world may have run several days past it (the result stays in the day log).
         if (
           !simCurrentDate ||
           simCurrentDate < date ||
-          simCurrentDate > lastDayForResult
+          (simCurrentDate > lastDayForResult && !session.groupAdvance)
         ) {
           if (!cancelled) {
             setRedirectingToDashboard(true);
@@ -441,6 +487,39 @@ export function MatchResultScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-lg text-center space-y-4">
           <p className="text-destructive font-bold text-lg m-0">{error ?? "No data"}</p>
+          {retryable && session && (
+            <Button
+              disabled={retrying}
+              onClick={async () => {
+                const stored = loadPendingRecording(session.saveId);
+                if (!stored) return;
+                setRetrying(true);
+                const r = await sendWithRetry(() =>
+                  groupAdvanceApi.liveRecording(session.saveId, stored.date, stored.fixtureId, stored.recording),
+                );
+                if (r.ok) {
+                  clearPendingRecording(session.saveId);
+                  clearMatchSnapshot();
+                  window.location.href = `/match-result?date=${encodeURIComponent(stored.date)}&pending=1`;
+                  return;
+                }
+                if (isTerminalGroupError(r.error)) {
+                  clearPendingRecording(session.saveId);
+                  setRetryable(false);
+                }
+                if (r.error === "dayClosed") {
+                  // The day ran meanwhile (the assistant simulated it): show the official result.
+                  clearMatchSnapshot();
+                  window.location.href = liveSendFailureUrl(r.error, stored.date);
+                  return;
+                }
+                setError(t(groupAdvanceErrorKey(r.error)));
+                setRetrying(false);
+              }}
+            >
+              {t("world.advance.retry")}
+            </Button>
+          )}
           <a
             href="/dashboard"
             className="inline-flex items-center gap-2 text-primary font-bold text-sm no-underline hover:underline"
@@ -489,6 +568,7 @@ export function MatchResultScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+      {pendingResult && <Notice className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">{t("world.advance.result.pending")}</Notice>}
       {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
       <div aria-hidden />

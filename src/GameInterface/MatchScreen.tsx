@@ -88,6 +88,14 @@ import { GoalOverlay } from "@/GameInterface/GoalOverlay";
 import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
+import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import {
+  clearPendingRecording,
+  isTerminalGroupError,
+  liveSendFailureUrl,
+  sendWithRetry,
+  storePendingRecording,
+} from "@/GameInterface/World/groupAdvanceErrors";
 import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { resolveComplaint } from "@/GameEngine/Domain/Var";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
@@ -309,6 +317,8 @@ export function MatchScreen() {
     mySquadId: string;
     homeSquad: Squad;
     awaySquad: Squad;
+    /** Group world: the day and fixture the recording belongs to (`match-setup` → `matchDay`). */
+    matchDay: { date: string; fixtureId: string } | null;
   } | null>(null);
   /**
    * Resume after a reload (#64): `matchResume.ts`. `matchKeyRef` is set once the match is built;
@@ -367,6 +377,7 @@ export function MatchScreen() {
           managerBanned?: boolean;
           /** His national team's game (Etapa 41b): the teams are nations. */
           national?: { teamId: string; competition: string } | null;
+          matchDay?: { date: string; fixtureId: string } | null;
         };
       })
       .then((data) => {
@@ -509,6 +520,7 @@ export function MatchScreen() {
           mySquadId: data.mySquadId,
           homeSquad,
           awaySquad,
+          matchDay: data.matchDay ?? null,
         };
 
         // National teams (Etapa 41b): the nation's name in the player's language.
@@ -807,22 +819,47 @@ export function MatchScreen() {
             try {
               const ctx = matchContextRef.current;
               const gs = gameStateRef.current;
-              const payload =
+              const recording =
                 ctx && gs
-                  ? JSON.stringify({
-                      playedMatch: {
-                        ...buildPlayedMatchRecording(
-                          gs,
-                          ctx.fixture,
-                          ctx.mySquadId,
-                          ctx.homeSquad,
-                          ctx.awaySquad,
-                          managerCardsRef.current,
-                        ),
-                        ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
-                      },
-                    })
+                  ? {
+                      ...buildPlayedMatchRecording(
+                        gs,
+                        ctx.fixture,
+                        ctx.mySquadId,
+                        ctx.homeSquad,
+                        ctx.awaySquad,
+                        managerCardsRef.current,
+                      ),
+                      ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
+                    }
                   : null;
+              if (session?.groupAdvance) {
+                // Group world (part 3): the recording waits for the executor; the day runs with the group.
+                // Never falls back to /api/advance-day: that would run the day for everyone.
+                if (!ctx?.matchDay || !recording) {
+                  window.location.href = `/match-result?error=generic`;
+                  return;
+                }
+                const { date, fixtureId } = ctx.matchDay;
+                storePendingRecording(saveId, { date, fixtureId, recording });
+                const r = await sendWithRetry(() => groupAdvanceApi.liveRecording(saveId, date, fixtureId, recording));
+                if (!r.ok) {
+                  if (isTerminalGroupError(r.error)) clearPendingRecording(saveId);
+                  if (r.error === "dayClosed") {
+                    // The deadline ran the day while he played: the assistant's game is the official one.
+                    recordedRef.current = true;
+                    clearMatchSnapshot();
+                  }
+                  window.location.href = liveSendFailureUrl(r.error, date);
+                  return;
+                }
+                clearPendingRecording(saveId);
+                recordedRef.current = true;
+                clearMatchSnapshot();
+                window.location.href = `/match-result?date=${encodeURIComponent(ctx.matchDay.date)}&pending=1`;
+                return;
+              }
+              const payload = recording ? JSON.stringify({ playedMatch: recording }) : null;
               const res = await fetch(`/api/advance-day/${encodeURIComponent(saveId)}`, {
                 method: "POST",
                 ...(payload

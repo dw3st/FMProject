@@ -7,7 +7,8 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 import { addDays } from "@/Domain/dates";
-import { nextNationalFixtureDate } from "@/backend/nationalCoachWorld";
+import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
+import { nationalFixtureDates, nextNationalFixtureDate } from "@/backend/nationalCoachWorld";
 
 /**
  * Fast-forward ("Avançar até o próximo jogo"): advance the save day by day until the player's next
@@ -173,6 +174,79 @@ export async function nextPlayerFixtureDate(
   return best;
 }
 
+/** The competitions where the seat's club plays (league, national cup, continental). */
+async function seatCompetitions(service: SaveService, saveId: string, leagueSlug: string, clubId: string): Promise<string[]> {
+  const cup = await playerCupSlug(leagueSlug);
+  const continental = await playerContinentalSlug(service, saveId, clubId);
+  return [leagueSlug, cup, continental].filter((s): s is string => s !== null);
+}
+
+/** Every unplayed game date of the club in `competitions` on or after `from` (and on or before `until`), ascending, repeats kept. */
+async function playerFixtureDates(
+  service: SaveService, saveId: string, competitions: string[], clubId: string, from: string, until: string | null,
+): Promise<string[]> {
+  const out: string[] = [];
+  for (const slug of competitions) {
+    const index = (await service.getDateIndex(saveId, slug)) ?? {};
+    const rounds = new Map<number, Awaited<ReturnType<SaveService["getRound"]>>>();
+    for (const date of Object.keys(index).filter((d) => d >= from && (!until || d <= until)).sort()) {
+      for (const r of index[date] ?? []) {
+        if (!rounds.has(r)) rounds.set(r, await service.getRound(saveId, slug, r));
+        const hits = rounds.get(r)?.fixtures.filter(
+          (f) => f.date === date && !f.played && (f.home === clubId || f.away === clubId),
+        ) ?? [];
+        for (let i = 0; i < hits.length; i++) out.push(date);
+      }
+    }
+  }
+  return out.sort();
+}
+
+/**
+ * The seat's unplayed official games (club and national team) on or after `from` (and up to `until`), ascending dates:
+ * the group advance's `matchDates`. Unemployed: only his national team's (the executor never asks for an unemployed
+ * seat: he does not stop the world for games, `loadGroupSeats`). A read failure throws (never "no game").
+ */
+export async function seatMatchDates(
+  service: SaveService, saveId: string, seatId: string, from: string, until: string | null = null,
+): Promise<string[]> {
+  const meta = await service.getSeatMeta(saveId, seatId);
+  if (!meta) return [];
+  const dates: string[] = [];
+  // A read failure propagates: it must never read as "no game" (the group advance would run over his game).
+  dates.push(...(await nationalFixtureDates(service, saveId, seatId, from)).filter((d) => !until || d <= until));
+  if (!meta.unemployed && meta.clubId) {
+    const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
+    dates.push(...(await playerFixtureDates(service, saveId, competitions, meta.clubId, from, until)));
+  }
+  return [...new Set(dates)].sort();
+}
+
+/**
+ * The seat's next unplayed official game (club league/cup/continental, or his national team's) on or after `from`;
+ * null when there is none. Unemployed: only his national team's.
+ */
+export async function seatNextMatchDate(
+  service: SaveService, saveId: string, seatId: string, from: string,
+): Promise<string | null> {
+  const meta = await service.getSeatMeta(saveId, seatId);
+  if (!meta) return null;
+  const national = await nextNationalFixtureDate(service, saveId, seatId, from);
+  if (meta.unemployed || !meta.clubId) return national;
+  const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
+  const club = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, from);
+  return [club, national].filter((d): d is string => !!d).sort()[0] ?? null;
+}
+
+async function seatMatchDateOrThrow(
+  service: SaveService, saveId: string, seatId: string, leagueSlug: string, clubId: string, from: string,
+): Promise<string | null> {
+  const competitions = await seatCompetitions(service, saveId, leagueSlug, clubId);
+  const clubMatch = await nextPlayerFixtureDate(service, saveId, competitions, clubId, from);
+  const nationalMatch = await nextNationalFixtureDate(service, saveId, seatId, from);
+  return [clubMatch, nationalMatch].filter((d): d is string => !!d).sort()[0] ?? null;
+}
+
 /** Real position reader: the seat's league/club and the world's date (the seat's meta), re-read every call. */
 export async function readAdvancePosition(
   saveId: string, seatId: string, service: SaveService = defaultSaveService,
@@ -187,13 +261,8 @@ export async function readAdvancePosition(
     const target = addDays(meta.unemployed.nextOfferDate, 1);
     return { currentDate, target: target > currentDate ? target : addDays(currentDate, 1), matchDate: null };
   }
-  const cup = await playerCupSlug(meta.leagueSlug);
-  const continental = await playerContinentalSlug(service, saveId, meta.clubId);
-  const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);
-  const clubMatch = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
   // His national team's games stop the fast-forward too (Etapa 41b).
-  const nationalMatch = await nextNationalFixtureDate(service, saveId, seatId, currentDate);
-  const matchDate = [clubMatch, nationalMatch].filter((d): d is string => !!d).sort()[0] ?? null;
+  const matchDate = await seatMatchDateOrThrow(service, saveId, seatId, meta.leagueSlug, meta.clubId, currentDate);
 
   let rolloverDay: string | null = null;
   if (!matchDate) {
@@ -215,9 +284,14 @@ export const advanceUntilRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    const worldMeta = await defaultSaveService.getMeta(saveId);
+    if (worldMeta?.world?.phase === "lobby") {
+      return Response.json({ error: "lobby" }, { status: 409 });
+    }
+    if (worldMeta && isGroupWorld(worldMeta)) return Response.json({ error: "groupAdvance" }, { status: 409 });
     // Fast-forward moves every seat's days: with more than one seat it waits for the group advance (part 3,
     // `.claude/rules/game/multiplayer.md`). A single day still advances.
-    if (((await defaultSaveService.getMeta(saveId))?.seats.length ?? 0) > 1) {
+    if ((worldMeta?.seats.length ?? 0) > 1) {
       return Response.json({ error: "multiSeat" }, { status: 409 });
     }
 

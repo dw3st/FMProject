@@ -1,3 +1,4 @@
+import type { MatchDecision } from "@/types/groupAdvanceTypes";
 import type { BoardState } from "@/types/boardTypes";
 import type { PressState } from "@/types/pressTypes";
 import type { JobOffer, Unemployment } from "@/types/jobTypes";
@@ -75,6 +76,10 @@ export interface SeatState {
   inboxPrefs?: InboxPrefs;
   responsibilities?: Responsibilities;
   directorDecisions?: Record<string, DirectorDecision>;
+  /** Group advance (part 3): the date the seat lets the world reach without him; null = not ready. */
+  readyUntil?: string | null;
+  /** Group advance (part 3): his game of `date` already settled (live recording kept, or simulate). */
+  matchDecision?: MatchDecision;
 }
 
 /** Every key of `SeatState` (the split of a merged patch, `splitSeatPatch`). */
@@ -84,6 +89,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
+  "readyUntil", "matchDecision",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;

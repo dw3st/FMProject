@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { identifyUser, resetAnalytics } from "@/analytics";
+import { loginUrlFor } from "@/GameInterface/authRedirect";
 
 type GateState = "loading" | "authed" | "redirecting";
 
@@ -36,13 +37,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
           }
         } else {
           setState("redirecting");
-          window.location.replace("/login");
+          window.location.replace(loginUrlFor(window.location.pathname, window.location.search));
         }
       })
       .catch(() => {
         if (cancelled) return;
         setState("redirecting");
-        window.location.replace("/login");
+        window.location.replace(loginUrlFor(window.location.pathname, window.location.search));
       });
     return () => { cancelled = true; };
   }, []);

@@ -1,6 +1,7 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
@@ -50,6 +51,8 @@ interface Props {
   onFastForward?: () => void;
   advancing?: boolean;
   leagues?: LeagueData[];
+  /** Replaces fast-forward + Continue (group world, part 3). */
+  dayAction?: ReactNode;
 }
 
 /** "Dom, 07/02/2027" / "Sun, 02/07/2027": short weekday + numeric date, in the UI language. */
@@ -116,9 +119,12 @@ function useCompactTabs(tabCount: number) {
 export function TopNavigation({
   onAdvanceDay,
   onFastForward,
-  advancing,
+  advancing: advancingProp,
   leagues = [],
+  dayAction,
 }: Props = {}) {
+  const group = useGroupAdvance();
+  const advancing = advancingProp || (group.enabled && !!group.view?.running);
   const { t, i18n } = useTranslation();
   const { currentDate, session, squad, save, fixtures, restDays, toggleDayType } = useGameSave();
   // Without a club (`.claude/rules/game/jobs.md`): no day type, Continue waits for offers.
@@ -239,6 +245,16 @@ export function TopNavigation({
               <Icon name="report" size={NAV_ICON} />
             </button>
           )}
+          {save?.mode === "multi" && (
+            <a
+              href="/world"
+              title={t("nav.world")}
+              aria-label={t("nav.world")}
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-chart-2 hover:bg-muted/50"
+            >
+              <Icon name="users" size={NAV_ICON} />
+            </a>
+          )}
           {currentDate && (
             <>
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
@@ -259,7 +275,9 @@ export function TopNavigation({
             </>
           )}
 
-          {onFastForward && (
+          {dayAction}
+
+          {!dayAction && onFastForward && (
             <button
               type="button"
               onClick={onFastForward}
@@ -272,7 +290,7 @@ export function TopNavigation({
             </button>
           )}
 
-          {onAdvanceDay && (
+          {!dayAction && onAdvanceDay && (
             <button
               type="button"
               onClick={onAdvanceDay}

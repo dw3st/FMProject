@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createEventHub,
   applyPresence,
   groupFriends,
   mergeMessages,
@@ -50,6 +51,23 @@ describe("parseServerEvent", () => {
     expect(parseServerEvent(JSON.stringify({ type: "pong", online: 3 }))).toEqual({ type: "pong", online: 3 });
     expect(parseServerEvent(JSON.stringify({ type: "friend_update" }))).toEqual({ type: "friend_update" });
   });
+  test("world events", () => {
+    expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s", name: "Liga", from: "ana", code: "23456789AB" })))
+      .toEqual({ type: "world_invite", saveId: "s", name: "Liga", from: "ana", code: "23456789AB" });
+    for (const type of ["world_started", "world_removed", "world_deleted", "world_members"] as const) {
+      expect(parseServerEvent(JSON.stringify({ type, saveId: "s" }))).toEqual({ type, saveId: "s" });
+      expect(parseServerEvent(JSON.stringify({ type }))).toBeNull();
+    }
+    expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s" }))).toBeNull();
+  });
+  test("world_progress", () => {
+    const ev = { type: "world_progress", saveId: "s1", date: "2027-03-11", target: "2027-03-14", running: true, waitingFor: ["ana"] };
+    expect(parseServerEvent(JSON.stringify(ev))).toEqual(ev as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, error: "boom" }))).toEqual({ ...ev, error: "boom" } as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, target: null }))).toEqual({ ...ev, target: null } as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, waitingFor: [1] }))).toBeNull();
+    expect(parseServerEvent(JSON.stringify({ ...ev, target: 3 }))).toBeNull();
+  });
   test("rejects garbage", () => {
     expect(parseServerEvent("nope")).toBeNull();
     expect(parseServerEvent(JSON.stringify({ type: "message", room: 1 }))).toBeNull();
@@ -82,5 +100,22 @@ describe("reconnectAction", () => {
     expect(reconnectDelay(0)).toBe(1_000);
     expect(reconnectDelay(3)).toBe(10_000);
     expect(reconnectDelay(50)).toBe(30_000);
+  });
+});
+
+describe("createEventHub", () => {
+  test("subscribe, receive, unsubscribe; a throwing listener does not stop the next", () => {
+    const hub = createEventHub<number>();
+    const got: number[] = [];
+    const off = hub.subscribe(() => { throw new Error("boom"); });
+    const off2 = hub.subscribe((n) => got.push(n));
+    const orig = console.error;
+    console.error = () => {};
+    hub.emit(1);
+    off();
+    off2();
+    hub.emit(2);
+    console.error = orig;
+    expect(got).toEqual([1]);
   });
 });

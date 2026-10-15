@@ -50,7 +50,7 @@ export function FriendsPanel() {
 
   if (!panelOpen) return null;
   const me = s.me;
-  const requestCount = s.lists.incoming.length;
+  const requestCount = s.lists.incoming.length + s.worldInvites.length;
 
   return (
     <section
@@ -305,7 +305,7 @@ function RequestsTab() {
     await s.refreshFriends();
   }
 
-  if (incoming.length === 0 && outgoing.length === 0) {
+  if (incoming.length === 0 && outgoing.length === 0 && s.worldInvites.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("social.requests.none")}</p>;
   }
   return (
@@ -314,6 +314,24 @@ function RequestsTab() {
         <p role="alert" className="text-sm text-destructive">
           {t(`social.errors.${error}`)}
         </p>
+      )}
+      {s.worldInvites.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className={GROUP_LABEL}>
+            {t("world.invites.title")} · {s.worldInvites.length}
+          </p>
+          {s.worldInvites.map((inv) => (
+            <div key={inv.saveId} className="flex items-center justify-between gap-2">
+              <span className="text-sm text-foreground truncate">{t("world.invites.from", { from: inv.from, name: inv.name })}</span>
+              <div className="flex items-center gap-3">
+                <Button onClick={() => { window.location.href = `/join/${inv.code}`; }}>{t("world.invites.accept")}</Button>
+                <Button variant="secondary" flush onClick={() => void s.declineWorldInvite(inv.saveId)}>
+                  {t("world.invites.decline")}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       {incoming.length > 0 && (
         <div className="flex flex-col gap-2">

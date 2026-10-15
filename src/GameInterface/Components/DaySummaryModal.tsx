@@ -9,6 +9,7 @@ import type {
   MatchEvent,
   TrainingEvent,
   RestEvent,
+  TransferEvent,
   PlayerDevelopmentChange,
   TrainingEffect,
   RestEffect,
@@ -26,6 +27,8 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
 import { DEV_CHANGES_VISIBLE, groupDevelopmentChanges, trainingDevelopmentChanges } from "@/GameInterface/Components/attributeChanges";
 import { Button } from "@/GameInterface/ui/Button";
+import { formatFee } from "@/Domain/money";
+import type { SummaryNotices } from "@/types/groupAdvanceTypes";
 
 const Minus = iconOf("minus");
 const TrendingDown = iconOf("trend-down");
@@ -44,6 +47,75 @@ interface Props {
   onDismiss: () => void;
   mySquadId: string;
   leagues:   LeagueData[];
+  /** Several days merged into one summary (group advance, `.claude/rules/game/multiplayer.md` part 3). */
+  range?: { from: string; to: string; days: number };
+  /** What happened to the manager over those days (offers, sacking, season end, press invite). */
+  notices?: SummaryNotices;
+  /** Date of the "full match report" link (default: the day's date). */
+  matchReportDate?: string | null;
+}
+
+/** Offers, sacking, season end and press invite of the days that ran without the manager (group advance). */
+function SummaryNoticesBlock({ notices, t }: { notices: SummaryNotices; t: TFunc }) {
+  const lines: { key: string; text: string; href?: string }[] = [];
+  if (notices.jobOffers > 0) lines.push({ key: "offers", text: t("world.advance.summary.jobOffers", { count: notices.jobOffers }), href: "/inbox" });
+  if (notices.sacked) lines.push({ key: "sacked", text: t("world.advance.summary.sacked"), href: "/fired" });
+  if (notices.seasonEnded) lines.push({ key: "season", text: t("world.advance.summary.seasonEnded") });
+  if (notices.pressInvite) lines.push({ key: "press", text: t("world.advance.summary.pressInvite"), href: "/inbox" });
+  if (lines.length === 0) return null;
+  return (
+    <section className="space-y-2" aria-label={t("world.advance.summary.noticesTitle")}>
+      {notices.readyCleared && <p className="text-sm text-muted-foreground m-0">{t("world.advance.summary.readyCleared")}</p>}
+      <ul className="m-0 p-0 list-none space-y-1.5">
+        {lines.map((l) => (
+          <li key={l.key} className="text-sm font-semibold">
+            {l.href
+              ? <a href={l.href} className="text-primary no-underline hover:underline">{l.text}</a>
+              : <span className="text-foreground">{l.text}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** The club's injuries of the summary's games (group advance: the days merged into one). */
+function InjuriesBlock({ injuries, t }: { injuries: { playerId: string; playerName: string; severity: string }[]; t: TFunc }) {
+  if (injuries.length === 0) return null;
+  return (
+    <section>
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">{t("world.advance.summary.injuries")}</h3>
+      <ul className="m-0 p-0 list-none space-y-1.5">
+        {injuries.map((inj, i) => (
+          <li key={`${inj.playerId}-${i}`} className="text-sm">
+            {t("world.advance.summary.injuryLine", { player: inj.playerName, severity: t(`match.injurySeverity.${inj.severity}`) })}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** The club's transfers of the summary (group advance: the days merged into one). */
+function TransfersBlock({ transfers, leagues, t }: { transfers: TransferEvent[]; leagues: LeagueData[]; t: TFunc }) {
+  if (transfers.length === 0) return null;
+  return (
+    <section>
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">{t("world.advance.summary.transfers")}</h3>
+      <ul className="m-0 p-0 list-none space-y-1.5">
+        {transfers.map((tr) => (
+          <li key={tr.transferId} className="text-sm tabular-nums">
+            {t("world.advance.summary.transferLine", {
+              player: tr.playerName,
+              from: teamDisplayNameFromLeagues(tr.fromSquadId, leagues),
+              to: teamDisplayNameFromLeagues(tr.toSquadId, leagues),
+              fee: formatFee(tr.fee),
+            })}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 /** Weekday in the player's language (the eyebrow is upper-cased by its class). */
@@ -433,7 +505,7 @@ function EventCard({
   }
 }
 
-export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props) {
+export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues, range, notices, matchReportDate }: Props) {
   const { t, i18n } = useTranslation();
   const { squad, save, session } = useGameSave();
   const playerById = useMemo(() => {
@@ -460,6 +532,16 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
   const restEvents = dayLog.events.filter(
     (e): e is RestEvent => e.kind === "rest" && e.squadId === mySquadId,
   );
+  // Only a merged summary lists transfers (a single day keeps its old content).
+  const myTransfers = range
+    ? dayLog.events.filter((e): e is TransferEvent =>
+      e.kind === "transfer" && e.status === "accepted" && (e.fromSquadId === mySquadId || e.toSquadId === mySquadId))
+    : [];
+  const myInjuries = range
+    ? matchEvents.flatMap((e) =>
+      (e.injuries ?? []).filter((inj) => (inj.team === "home" ? e.home : e.away) === mySquadId))
+    : [];
+  const reportDate = matchReportDate ?? dayLog.date;
 
   // Collect development changes for my squad's players only
   const myDevChanges: PlayerDevelopmentChange[] = [];
@@ -497,17 +579,25 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
           </button>
           <div className="text-center pr-10">
             <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-chart-2 mb-2 m-0">
-              {weekdayOf(dayLog.date, i18n.language)} // {seasonEyebrow}
+              {range ? t("world.advance.summary.days", { count: range.days }) : weekdayOf(dayLog.date, i18n.language)} // {seasonEyebrow}
             </p>
             <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("daySummary.title")}
             </h2>
-            <p className="text-sm text-muted-foreground m-0 mt-2">{formatGameDate(dayLog.date, i18n.language, "weekdayLong")}</p>
+            <p className="text-sm text-muted-foreground m-0 mt-2">
+              {range
+                ? t("world.advance.summary.range", {
+                  from: formatGameDate(range.from, i18n.language, "dayMonth"),
+                  to: formatGameDate(range.to, i18n.language, "dayMonth"),
+                })
+                : formatGameDate(dayLog.date, i18n.language, "weekdayLong")}
+            </p>
           </div>
         </div>
 
         {/* Body — scrolls when content exceeds available space */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-8">
+          {notices && <SummaryNoticesBlock notices={notices} t={t} />}
           {(dayLog as { achievements?: number }).achievements ? (
             <a href="/achievements" className="flex items-center gap-2 text-sm font-semibold text-primary no-underline hover:underline">
               <Icon name="medal" size={16} />
@@ -521,7 +611,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
               </h3>
               <div className="space-y-3">
                 {primaryMatches.map((e) => (
-                  <EventCard key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
+                  <EventCard key={`${e.competition}:${e.fixtureId}`} event={e} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
                 ))}
               </div>
             </section>
@@ -530,6 +620,9 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
           {otherMatches.length > 0 && (
             <OtherLeaguesSection matches={otherMatches} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
           )}
+
+          <InjuriesBlock injuries={myInjuries} t={t} />
+          <TransfersBlock transfers={myTransfers} leagues={leagues} t={t} />
 
           {myDevChanges.length > 0 && (
             <section>
@@ -577,7 +670,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
         <div className="shrink-0 px-6 py-5 border-t border-border/80 bg-card/50 flex items-center justify-end gap-3 flex-wrap">
           {myMatch && (
             <a
-              href={`/match-result?date=${encodeURIComponent(dayLog.date)}`}
+              href={`/match-result?date=${encodeURIComponent(reportDate)}`}
               className="mr-auto text-sm font-bold text-primary hover:text-primary/90 no-underline hover:underline transition-colors"
             >
               {t("daySummary.fullMatchReport")} →

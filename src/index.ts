@@ -2,6 +2,7 @@ import { serve } from "bun";
 import { apiRoutes } from "@/backend/routes";
 import { handleSocialUpgrade, socialWebSocket } from "@/backend/social/realtime";
 import { startSocialMaintenance } from "@/backend/social/maintenance";
+import { startWorldClock } from "@/backend/groupAdvance";
 
 import landingPage from "./pages/landing/index.html";
 import loginPage from "./pages/login/index.html";
@@ -16,6 +17,7 @@ import transfersPage from "./pages/transfers/index.html";
 import comingSoonPage from "./pages/coming-soon/index.html";
 import formationPage from "./pages/formation/index.html";
 import newGamePage from "./pages/new-game/index.html";
+import joinPage from "./pages/join/index.html";
 import developmentPage from "./pages/development/index.html";
 import seasonEndPage from "./pages/season-end/index.html";
 import firedPage from "./pages/fired/index.html";
@@ -28,6 +30,7 @@ import inboxPage from "./pages/inbox/index.html";
 import staffPage from "./pages/staff/index.html";
 import achievementsPage from "./pages/achievements/index.html";
 import newsPage from "./pages/news/index.html";
+import worldPage from "./pages/world/index.html";
 
 const server = serve({
   routes: {
@@ -35,6 +38,7 @@ const server = serve({
     "/login": loginPage,
     "/start": startPage,
     "/new-game": newGamePage,
+    "/join/:code": joinPage,
     "/dashboard": dashboardPage,
     "/match": matchPage,
     "/scout": scoutPage,
@@ -58,6 +62,7 @@ const server = serve({
     "/staff": staffPage,
     "/achievements": achievementsPage,
     "/news": newsPage,
+    "/world": worldPage,
     "/stats": statsPage,
     // National teams live in a tab of the Leagues screen (the top bar has no room for a 12th tab).
     "/national": () => Response.redirect("/leagues?tab=national", 302),
@@ -87,3 +92,4 @@ const server = serve({
 console.log(`🚀 Server running at ${server.url}`);
 
 startSocialMaintenance();
+startWorldClock();

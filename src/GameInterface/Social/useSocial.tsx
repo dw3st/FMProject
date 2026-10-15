@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SOCIAL } from "@/Domain/social/socialConfig";
+import { forgetSession } from "@/GameInterface/gameSession";
 import { socialApi } from "@/GameInterface/Social/socialApi";
 import {
   DOCK_STORAGE_KEY,
@@ -12,6 +13,7 @@ import {
   type DockChat,
 } from "@/GameInterface/Social/chatDockState";
 import {
+  createEventHub,
   applyPresence,
   mergeMessages,
   parseServerEvent,
@@ -21,6 +23,8 @@ import {
   unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
+import { worldApi } from "@/GameInterface/World/worldApi";
+import type { WorldInviteView } from "@/types/multiplayerTypes";
 import type {
   ChatMessageView,
   ClientEvent,
@@ -63,6 +67,14 @@ export interface SocialContextValue {
   send: (room: string, body: string) => Promise<SocialErrorCode | null>;
   markRoomRead: (room: string) => void;
   sendTyping: (room: string) => void;
+  /** Invites to worlds of friends (multiplayer part 2). */
+  worldInvites: WorldInviteView[];
+  refreshWorldInvites: () => Promise<void>;
+  declineWorldInvite: (saveId: string) => Promise<void>;
+  /** Bumped on `world_members` of the open world: the world screen reloads. */
+  worldVersion: number;
+  /** Every parsed server event, for screens with their own socket needs (group advance). Returns the unsubscribe. */
+  subscribe: (fn: (event: ServerEvent) => void) => () => void;
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
@@ -128,6 +140,19 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     setDock((d) => pruneDmChats(d, r.data.friends.map((f) => f.nickname)));
   }, []);
 
+  const [worldInvites, setWorldInvites] = useState<WorldInviteView[]>([]);
+  const [worldVersion, setWorldVersion] = useState(0);
+
+  const refreshWorldInvites = useCallback(async () => {
+    const r = await worldApi.invites();
+    if (r.ok) setWorldInvites(r.data.invites);
+  }, []);
+
+  const declineWorldInvite = useCallback(async (inviteSaveId: string) => {
+    const r = await worldApi.declineInvite(inviteSaveId);
+    if (r.ok) setWorldInvites((prev) => prev.filter((i) => i.saveId !== inviteSaveId));
+  }, []);
+
   useEffect(() => {
     void socialApi.me().then((r) => {
       if (!r.ok) return;
@@ -135,7 +160,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       setAvailable(true);
     });
     void refreshFriends();
-  }, [refreshFriends]);
+    void refreshWorldInvites();
+  }, [refreshFriends, refreshWorldInvites]);
 
   const sendWs = useCallback((event: ClientEvent) => {
     const ws = wsRef.current;
@@ -192,12 +218,28 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         case "pong":
           setOnline(event.online);
           break;
+        case "world_invite":
+          void refreshWorldInvites();
+          break;
+        case "world_members":
+          if (event.saveId === saveId) setWorldVersion((v) => v + 1);
+          break;
+        case "world_started":
+          if (event.saveId === saveId && window.location.pathname === "/world") window.location.replace("/dashboard");
+          break;
+        case "world_removed":
+        case "world_deleted":
+          forgetSession(event.saveId);
+          if (event.saveId === saveId) window.location.replace("/start");
+          break;
       }
     },
-    [refreshFriends],
+    [refreshFriends, refreshWorldInvites, saveId],
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
+  const hubRef = useRef(createEventHub<ServerEvent>());
+  const subscribe = hubRef.current.subscribe;
 
   const loadMessages = useCallback(async (room: string, older: boolean) => {
     const current = messagesRef.current[room];
@@ -248,12 +290,16 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         if (reconnected) {
           // Whatever arrived while disconnected: the lists (unread, presence) and every room already loaded.
           void refreshFriends();
+          void refreshWorldInvites();
           for (const room of Object.keys(messagesRef.current)) void loadMessages(room, false);
         }
       };
       ws.onmessage = (e) => {
         const event = parseServerEvent(e.data);
-        if (event) handleRef.current(event);
+        if (event) {
+          handleRef.current(event);
+          hubRef.current.emit(event);
+        }
       };
       ws.onclose = (e) => {
         if (wsRef.current === ws) wsRef.current = null;
@@ -299,7 +345,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [available, saveId, sendWs, markRoomRead, refreshFriends, loadMessages]);
+  }, [available, saveId, sendWs, markRoomRead, refreshFriends, refreshWorldInvites, loadMessages]);
 
   const send = useCallback(async (room: string, body: string): Promise<SocialErrorCode | null> => {
     const r = await socialApi.send(room, body);
@@ -326,10 +372,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     () => ({
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
-      loadMessages, send, markRoomRead, sendTyping,
+      loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion, subscribe,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
-      hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping],
+      hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
+      declineWorldInvite, worldVersion, subscribe],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

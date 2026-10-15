@@ -3,7 +3,7 @@ import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { memberOf } from "@/backend/auth/saveOwnership";
 import { ownSolo } from "@/backend/testing/seatFixtures";
-import { addSeat } from "@/backend/seats";
+import { addSeat, SeatError } from "@/backend/seats";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { generateRestDays } from "@/Domain/season/generateRestDays";
 
@@ -77,5 +77,28 @@ describe("addSeat", () => {
     expect(seat.seat.restDays).toEqual(generateRestDays(own));
     const matchDays = new Set(own.map((f) => f.date));
     expect(seat.seat.restDays!.some((d) => matchDays.has(d))).toBe(false);
+  }, 300_000);
+
+  test("typed errors: already a member, club taken, unknown club, full; sacking choice kept", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    created.push(meta.id);
+    const owner = devAutoLogin("addseat-err-owner@test.local");
+    await ownSolo(meta.id, owner.user.id);
+    const premier = (await saveService.getSquadIndex(meta.id)).inLeague("premier_league").filter((e) => e.squadId !== "33");
+    const mgr = { name: "Err", nationalityIso: "br", backgroundId: "former-player" };
+    const code = async (p: Promise<unknown>) => { try { await p; return "ok"; } catch (e) { return e instanceof SeatError ? e.code : String(e); } };
+
+    expect(await code(addSeat(meta.id, { userId: owner.user.id, clubId: premier[0]!.squadId, manager: mgr }))).toBe("alreadyMember");
+    expect(await code(addSeat(meta.id, { userId: devAutoLogin("addseat-err-1@test.local").user.id, clubId: "33", manager: mgr }))).toBe("clubTaken");
+    expect(await code(addSeat(meta.id, { userId: devAutoLogin("addseat-err-2@test.local").user.id, clubId: "no-such-club", manager: mgr }))).toBe("clubNotFound");
+    expect(await code(addSeat(meta.id, { userId: devAutoLogin("addseat-err-3@test.local").user.id, clubId: premier[0]!.squadId, manager: mgr, maxSeats: 1 }))).toBe("full");
+
+    const b = await addSeat(meta.id, {
+      userId: devAutoLogin("addseat-err-4@test.local").user.id, clubId: premier[1]!.squadId, manager: mgr, sackingEnabled: false, maxSeats: 8,
+    });
+    expect(b.seat.sackingEnabled).toBe(false);
   }, 300_000);
 });

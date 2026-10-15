@@ -42,6 +42,7 @@ export function newsParams(item: NewsItem, t: NewsT, leagues: LeagueData[], lang
 
 function newsKey(item: NewsItem): string {
   if (item.kind === "big_transfer" && !item.params.from) return "news.big_transfer_free";
+  if (item.kind === "world_member" && item.params.event !== "joined") return "news.world_member_left";
   return `news.${item.kind}.${newsVariant(item.id)}`;
 }
 

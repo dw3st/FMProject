@@ -2,6 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { sessionFromSave } from "@/GameInterface/gameSession";
 import { sessionFromSaveJson, type GameSaveApiResponse } from "@/GameInterface/GameSaveProvider";
 
+describe("group advance flag", () => {
+  test("groupAdvance comes from a multi world with a world state", () => {
+    const base = { id: "s", seatId: "a", leagueSlug: "l", leagueName: "L", clubId: "c", clubName: "C", clubColors: ["#000", "#fff"] };
+    expect(sessionFromSave({ ...base, mode: "multi", world: { phase: "running" } }).groupAdvance).toBe(true);
+    expect(sessionFromSave({ ...base, mode: "multi" }).groupAdvance).toBe(false);
+    expect(sessionFromSave({ ...base, mode: "solo" }).groupAdvance).toBe(false);
+  });
+});
+
 describe("game session carries the seat", () => {
   test("the seat id comes from the save response", () => {
     const s = sessionFromSave({

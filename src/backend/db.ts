@@ -124,4 +124,28 @@ export function migrateSocialSchema(database: Database): void {
   migrateSaveMembersSchema(database);
 }
 
+/**
+ * Multiplayer part 2 (`.claude/rules/game/multiplayer.md`): the invite code of each world (one per world, found
+ * without opening metas) and the invites sent through the friends list. Only adds.
+ */
+export function migrateWorldSchema(database: Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS world_codes (
+      code    TEXT PRIMARY KEY,
+      save_id TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_world_codes_save ON world_codes(save_id);
+
+    CREATE TABLE IF NOT EXISTS world_invites (
+      save_id    TEXT NOT NULL,
+      user_id    TEXT NOT NULL,
+      from_user  TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (save_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_world_invites_user ON world_invites(user_id);
+  `);
+}
+
 migrateSocialSchema(db);
+migrateWorldSchema(db);

@@ -13,6 +13,7 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 
@@ -157,4 +158,11 @@ export interface ISaveDAL {
   writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
   readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null>;
   writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void>;
+  readSeatLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null>;
+  /** `null` deletes the file. */
+  writeSeatLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void>;
+  readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]>;
+  writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void>;
+  /** Removes the seat's folder (`seats/{seatId}/`): every file of that manager. */
+  deleteSeat(saveId: string, seatId: string): Promise<void>;
 }

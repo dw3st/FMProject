@@ -131,6 +131,15 @@
     "continue": "Continue",
     "whatsNew": "What's new",
     "unemployed": "No club",
+    "withFriends": "With friends · {{count}}/{{max}}",
+    "owner": "Owner",
+    "member": "Member",
+    "lobby": "In the waiting room",
+    "leave": "Leave the league",
+    "leaveConfirmTitle": "Leave the league?",
+    "leaveConfirmBody": "\"{{clubName}}\" goes back to the AI and your seat is freed.",
+    "deleteWorldBody_one": "Deleting \"{{clubName}}\" ({{leagueName}}) deletes the league for you and {{count}} other manager. This cannot be undone.",
+    "deleteWorldBody_other": "Deleting \"{{clubName}}\" ({{leagueName}}) deletes the league for you and {{count}} other managers. This cannot be undone.",
     "saveVersion": "v{{version}}",
     "outdatedVersion": "Version {{version}} · not compatible with this one",
     "outdatedUnknown": "Earlier version · not compatible with this one",
@@ -260,6 +269,15 @@
     "managerEmpty": "Manager not set",
     "startWith": "Start with {{club}}",
     "stepOf": "Step {{n}} of 2",
+    "mode": {
+      "title": "How do you want to play?",
+      "subtitle": "Alone, or in a league with your friends.",
+      "solo": "On my own",
+      "soloDetail": "Your career, at your pace.",
+      "multi": "With friends",
+      "multiDetail": "Up to {{max}} managers in the same world.",
+      "next": "Continue"
+    },
     "managerSubtitle": "Who will take charge of the club.",
     "chooseClub": "Choose club →",
     "chooseClubTitle": "Choose the club",
@@ -527,6 +545,7 @@
     "makeOffer": "Make offer"
   },
   "nav": {
+    "world": "League",
     "squad": "Squad",
     "formation": "Formation",
     "development": "Development",
@@ -1500,6 +1519,7 @@
       "registration": "Registration",
       "schedule": "Schedule",
       "press": "Press",
+      "world": "League",
       "discipline": "Discipline",
       "national": "National teams",
       "achievement": "Achievements",
@@ -2747,7 +2767,8 @@
         "sacked": "sacked",
         "moved": "left for another club",
         "contract": "contract ended",
-        "interim": "interim spell"
+        "interim": "interim spell",
+        "left_world": "left the league"
       }
     },
     "referees": {
@@ -2908,6 +2929,10 @@
     "news": {
       "main": "WORLD",
       "accent": "NEWS"
+    },
+    "world": {
+      "main": "YOUR",
+      "accent": "LEAGUE"
     }
   },
   "jobs": {
@@ -4995,6 +5020,205 @@
         "title": "{{manager}} reminded of his promise",
         "text": "The press recall what was said in the press room."
       }
+    },
+    "world_member": {
+      "0": { "title": "{{manager}} takes over {{club}}", "text": "A new manager joins the league." },
+      "1": { "title": "{{club}} have a new manager: {{manager}}", "text": "One more friend in the league." },
+      "2": { "title": "{{manager}} arrives at {{club}}", "text": "The league grows by one manager." }
+    },
+    "world_member_left": {
+      "title": "{{manager}} leaves {{club}}",
+      "text": "The club goes back to its board's choice of manager."
+    }
+  },
+  "world": {
+    "status": { "lobby": "Waiting room", "running": "In progress" },
+    "members": {
+      "title": "Managers",
+      "count": "{{count}} of {{max}} managers",
+      "manager": "Manager",
+      "club": "Club",
+      "role": "Role",
+      "actions": "Actions",
+      "owner": "Owner",
+      "member": "Member",
+      "unemployed": "No club",
+      "transfer": "Make owner",
+      "remove": "Remove",
+      "removeConfirmTitle": "Remove this manager?",
+      "removeConfirmBody": "{{manager}} leaves the league and {{club}} goes back to the AI.",
+      "removeConfirmBodyNoClub": "{{manager}} leaves the league.",
+      "transferConfirmTitle": "Make this manager the league owner?",
+      "transferConfirmBody": "{{manager}} becomes the owner; you stay as a member."
+    },
+    "invite": {
+      "title": "Invite",
+      "link": "Invite link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the link and copy it by hand.",
+      "newCode": "New code",
+      "newCodeConfirmTitle": "Create a new code?",
+      "newCodeConfirmBody": "The old link stops working. Managers already in the league stay.",
+      "friends": "Invite friends",
+      "friendsTitle": "Invite friends",
+      "send": "Invite",
+      "sent": "Invited",
+      "noFriends": "No friends to invite yet."
+    },
+    "deadline": {
+      "title": "Deadline",
+      "hint": "Real time each manager has to be ready before the league moves on without them.",
+      "hours_one": "{{count}} h",
+      "hours_other": "{{count}} h",
+      "none": "No deadline"
+    },
+    "start": { "button": "Start the league", "waiting": "Waiting for the owner to start" },
+    "chat": "League chat",
+    "leave": {
+      "button": "Leave the league",
+      "transferFirst": "Hand the league to another manager before leaving.",
+      "confirmTitle": "Leave the league?",
+      "confirmBody": "Your club goes back to the AI and your seat is freed.",
+      "deleteBody": "You are the only manager: leaving deletes the league."
+    },
+    "join": {
+      "title": "Join a league",
+      "owner": "Owner: {{name}}",
+      "league": "League: {{league}}",
+      "choose": "Choose your club",
+      "open": "Open the league",
+      "toStart": "Back to the start",
+      "humanClub": "Human manager",
+      "joinWith": "Join with {{club}}",
+      "clubSubtitle": "{{world}} · {{league}}",
+      "clubSubtitleNoLeague": "{{world}}"
+    },
+    "invites": {
+      "title": "League invites",
+      "from": "{{from}} invites you to {{name}}",
+      "accept": "Accept",
+      "decline": "Decline"
+    },
+    "inbox": {
+      "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
+      "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
+      "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." }
+    },
+    "advance": {
+      "running": "Advancing… {{date}} of {{target}}",
+      "simulate": "Simulate",
+      "play": "Play",
+      "readyButton": "Ready until…",
+      "readyTomorrow": "Tomorrow",
+      "readyNextMatch": "My next match",
+      "readyDate": "A date",
+      "readyConfirm": "Set",
+      "readyUntil": "Ready until {{date}}",
+      "waiting_one": "waiting for {{count}}",
+      "waiting_other": "waiting for {{count}}",
+      "unmark": "Not ready",
+      "dateInvalid": "Pick {{min}} or a later date.",
+      "retry": "Try again",
+        "band": {
+        "title": "Group advance",
+        "date": "World date",
+        "target": "Target",
+        "waitingFor": "Waiting for {{names}}",
+        "allReady": "Everyone is ready",
+        "noDeadline": "No deadline: the league waits for everyone",
+        "deadlineHours_one": "Goes on without them in {{count}} hour",
+        "deadlineHours_other": "Goes on without them in {{count}} hours",
+        "deadlineMinutes_one": "Goes on without them in {{count}} minute",
+        "deadlineMinutes_other": "Goes on without them in {{count}} minutes",
+        "deadlineNow": "Goes on without them now",
+        "error": "{{error}}",
+        "retryAt": "Tries again at {{time}}",
+        "gaveUp": "The league stopped trying."
+      },
+      "status": {
+        "column": "Advance",
+        "ready": "Ready",
+        "match": "Match day",
+        "late": "Late",
+        "no_club": "No club"
+      },
+      "summary": {
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "range": "{{from}} to {{to}}",
+        "noticesTitle": "While you were away",
+        "readyCleared": "Your “ready until” was cleared:",
+        "jobOffers_one": "You have a new job offer",
+        "jobOffers_other": "You have {{count}} new job offers",
+        "sacked": "You were sacked",
+        "seasonEnded": "The season ended",
+        "pressInvite": "A press conference invite is in your inbox",
+        "transfers": "Transfers",
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
+        "injuries": "Injuries",
+        "injuryLine": "{{player}} · {{severity}}"
+      },
+      "result": {
+        "pending": "Provisional result: it counts when the league reaches this day."
+      },
+      "errors": {
+        "generic": "Could not save. Try again.",
+        "invalidDate": "Pick a date between tomorrow and about a year from now.",
+        "dayClosed": "That day has already been played.",
+        "notYourMatch": "That is not your match today.",
+        "seatOpponent": "Against another manager the match is simulated.",
+        "noWinner": "A knockout match needs a winner.",
+        "notMulti": "This save is not a friends league.",
+        "lobby": "The league has not started yet.",
+        "groupAdvance": "Group advance is not available.",
+        "tooLarge": "The request is too big.",
+        "invalidBody": "Something is missing in the request.",
+        "invalidDecision": "Something is missing in the request.",
+        "invalidRecording": "The match could not be saved. It will be simulated.",
+        "network": "No connection.",
+        "dayFailed": "The league could not advance this day.",
+        "noError": "There is nothing to try again.",
+        "notGaveUp": "The league is still trying on its own."
+      },
+      "inbox": {
+        "subject": "The assistant advanced for you",
+        "preview": "Ready until {{until}}",
+        "previewSimulated": "Ready until {{until}} · game of {{match}} simulated",
+        "body": "The league was waiting for you, so your assistant set you ready until {{until}}.",
+        "bodySimulated": "The league was waiting for you, so your assistant simulated your game of {{match}} and set you ready until {{until}}."
+      },
+      "refused": {
+        "subject": "Your live match was simulated",
+        "body": "Your live match on {{match}} could not be recorded ({{reason}}), so it was simulated.",
+        "reason": {
+          "unregistered": "a player was not registered",
+          "knockout": "the knockout game had no winner",
+          "two_seats": "a game between two managers cannot be played live",
+          "other": "the match could not be recorded"
+        }
+      }
+    },
+    "errors": {
+      "notFound": "This invite is not valid any more.",
+      "full": "The league is full.",
+      "alreadyMember": "You are already in this league.",
+      "clubTaken": "Another manager took this club. Pick another one.",
+      "invalidManager": "Check the manager's name, nationality and background.",
+      "invalidClub": "This club is not in the league's world.",
+      "invalidBody": "Something is missing in the request.",
+      "ownerOnly": "Only the owner can do this.",
+      "transferFirst": "Hand the league to another manager before leaving.",
+      "alreadyStarted": "The league has already started.",
+      "notMulti": "This save is not a league of friends.",
+      "inviteLimit": "Too many pending invites. Wait for some answers.",
+      "noNickname": "Choose a nickname in Friends first.",
+      "useLeave": "To leave, use \"Leave the league\".",
+      "notMember": "This manager is not in the league.",
+      "tooLarge": "The request is too large.",
+      "ownerLimit": "That manager already owns 5 leagues.",
+      "lobby": "The league has not started yet.",
+      "generic": "Something went wrong. Try again."
     }
   }
 }

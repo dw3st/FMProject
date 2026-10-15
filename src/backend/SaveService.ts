@@ -54,7 +54,10 @@ export interface SaveDatabase {
 
 export type { SaveManager } from "@/types/seatTypes";
 import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
+import type { WorldState } from "@/types/multiplayerTypes";
 import { metaForSeat } from "@/Domain/seats/seats";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
+import { trimPendingSummary } from "@/Domain/groupAdvance/groupAdvance";
 
 /**
  * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
@@ -87,6 +90,8 @@ export interface SaveMeta {
   managerWeights?: Record<string, CountryWeight>;
   /** AI clubs without a manager (interim in charge) and the day they hire. */
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
+  /** The world of friends (`mode: "multi"`, multiplayer part 2): phase, invite code, deadline. Absent in a solo save. */
+  world?: WorldState;
 }
 
 /** The world meta merged with one seat (`metaForSeat`): the shape the meta had before seats, plus `seatId`. */
@@ -206,6 +211,16 @@ export class SaveService {
     if (world.seats.includes(seatId)) throw new Error(`Seat already exists: ${seatId}`);
     await this.dal.writeSeat(saveId, seatId, seat);
     await this.dal.writeMeta({ ...world, mode: "multi", seats: [...world.seats, seatId], updatedAt: new Date().toISOString() });
+  }
+
+  /** Removes a seat's files and takes it out of the world (`removeSeat` does the rest). */
+  async deleteSeat(saveId: string, seatId: string): Promise<void> {
+    const world = await this.dal.readMeta(saveId);
+    if (!world) throw new Error(`Save not found: ${saveId}`);
+    if (!world.seats.includes(seatId)) return;
+    // Meta first: a crash in between leaves an orphan folder, never a seat without files.
+    await this.dal.writeMeta({ ...world, seats: world.seats.filter((s) => s !== seatId), updatedAt: new Date().toISOString() });
+    await this.dal.deleteSeat(saveId, seatId);
   }
 
   // ── Season ─────────────────────────────────────────────────────────────────
@@ -342,6 +357,29 @@ export class SaveService {
   }
 
   // ── Achievements (`.claude/rules/game/achievements.md`) ─────────────────────
+
+  // ── Group advance (`.claude/rules/game/multiplayer.md`, part 3) ─────────────
+  getLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null> {
+    return this.dal.readSeatLiveRecording(saveId, seatId);
+  }
+
+  writeLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void> {
+    return this.dal.writeSeatLiveRecording(saveId, seatId, file);
+  }
+
+  getPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
+    return this.dal.readSeatPendingSummary(saveId, seatId);
+  }
+
+  /** Appends one day to the seat's pending summary, keeping `max` days (a day with a stop is never dropped). */
+  async appendPendingDay(saveId: string, seatId: string, day: PendingDay, max: number): Promise<void> {
+    const days = await this.dal.readSeatPendingSummary(saveId, seatId);
+    await this.dal.writeSeatPendingSummary(saveId, seatId, trimPendingSummary([...days, day], max));
+  }
+
+  clearPendingSummary(saveId: string, seatId: string): Promise<void> {
+    return this.dal.writeSeatPendingSummary(saveId, seatId, []);
+  }
 
   /** The seat's achievements; an empty state when the file does not exist. */
   async getAchievements(saveId: string, seatId: string): Promise<AchievementsState> {

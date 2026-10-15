@@ -210,7 +210,9 @@ describe("seats: review fixes", () => {
     try {
       const res = await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", a.session.token, {});
       expect(res.status).toBe(409);
-      expect((await res.json()).error).toBe("seatOpponent");
+      const body = await res.json();
+      expect(body.error).toBe("seatOpponent");
+      expect(body.matchDay).toEqual({ date: game.date, fixtureId: game.id });
     } finally {
       await saveService.updateMeta(id, { currentDate: world.currentDate });
     }

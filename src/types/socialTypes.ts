@@ -72,7 +72,26 @@ export type ServerEvent =
   | { type: "friend_update" }
   | { type: "read"; room: string; lastReadId: number }
   | { type: "typing"; room: string; from: string }
-  | { type: "pong"; online: number };
+  | { type: "pong"; online: number }
+  // Multiplayer part 2 (`.claude/rules/game/multiplayer.md`): only members of the world (or the invited user).
+  | { type: "world_invite"; saveId: string; name: string; from: string; code: string }
+  | { type: "world_started"; saveId: string }
+  | { type: "world_removed"; saveId: string }
+  | { type: "world_deleted"; saveId: string }
+  | { type: "world_members"; saveId: string }
+  // Multiplayer part 3 (group advance): the world's progress, for its members.
+  | {
+    type: "world_progress";
+    saveId: string;
+    /** The world's date now. */
+    date: string;
+    target: string | null;
+    running: boolean;
+    /** Nicknames (or manager names) holding the world. */
+    waitingFor: string[];
+    /** The executor's failure: a fixed code (`dayFailed`), never the error text. */
+    error?: string;
+  };
 
 export type SocialErrorCode =
   | "invalidNickname"

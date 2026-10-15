@@ -13,7 +13,7 @@ export function FriendsButton() {
   const { t } = useTranslation();
   const s = useSocial();
   const count = onlineFriendCount(s.lists.friends);
-  const badge = s.totalUnread + s.lists.incoming.length;
+  const badge = s.totalUnread + s.lists.incoming.length + s.worldInvites.length;
   const label = badge > 0 ? t("social.buttonUnread", { count, unread: badge }) : t("social.button", { count });
   return (
     <button

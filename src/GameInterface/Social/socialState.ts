@@ -81,6 +81,25 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
       return str(e.room) && str(e.from) ? { type: "typing", room: e.room, from: e.from } : null;
     case "pong":
       return typeof e.online === "number" ? { type: "pong", online: e.online } : null;
+    case "world_invite":
+      return str(e.saveId) && str(e.name) && str(e.from) && str(e.code)
+        ? { type: "world_invite", saveId: e.saveId, name: e.name, from: e.from, code: e.code }
+        : null;
+    case "world_started":
+    case "world_removed":
+    case "world_deleted":
+    case "world_members":
+      return str(e.saveId) ? { type: e.type, saveId: e.saveId } : null;
+    case "world_progress": {
+      const okTarget = e.target === null || str(e.target);
+      const okWaiting = Array.isArray(e.waitingFor) && (e.waitingFor as unknown[]).every(str);
+      if (!str(e.saveId) || !str(e.date) || !okTarget || typeof e.running !== "boolean" || !okWaiting) return null;
+      if (e.error !== undefined && !str(e.error)) return null;
+      return {
+        type: "world_progress", saveId: e.saveId, date: e.date, target: e.target as string | null,
+        running: e.running, waitingFor: e.waitingFor as string[], ...(str(e.error) ? { error: e.error } : {}),
+      };
+    }
     default:
       return null;
   }
@@ -110,4 +129,20 @@ export function reconnectAction(s: { meStatus: number; failedInARow: number; eve
   if (s.meStatus === 401 || s.meStatus === 404) return "stop";
   if (!s.everOpened && s.failedInARow >= MAX_FAILED_CONNECTS) return "stop";
   return "retry";
+}
+
+/** Fan-out of socket events to extra listeners; a listener that throws never stops the next one. */
+export function createEventHub<T>() {
+  const listeners = new Set<(event: T) => void>();
+  return {
+    subscribe(fn: (event: T) => void): () => void {
+      listeners.add(fn);
+      return () => { listeners.delete(fn); };
+    },
+    emit(event: T): void {
+      for (const fn of [...listeners]) {
+        try { fn(event); } catch (err) { console.error("socket listener failed", err); }
+      }
+    },
+  };
 }

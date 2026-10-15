@@ -28,7 +28,8 @@ FMProject/
 │   │                       #   continental, injuries, youth, stats, plus shared helpers
 │   │                       #   (dates, math, money, rng, roles, attributes, color)
 │   ├── backend/            # Server: routes, SaveService + DAL (dal/), advanceDay, auth/, *World I/O
-│   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat)
+│   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat, removeSeat)
+│   │                       #   worlds/ (friends' league: lobby/running, invite codes, join/leave routes)
 │   ├── types/              # Shared data types (players, calendar, inbox, tactics, …)
 │   ├── lab/                # /lab, /test, /simulate, /matrix, /promo (separate server: lab/server.ts)
 │   ├── mcp/                # fmproject-engine MCP server (queries over debug snapshots)
@@ -110,3 +111,6 @@ A save is a world with N human seats: the world meta (`saves/{id}.json`) plus on
 route acts on the caller's seat (`requireSeat`); world routes answer any member (`save_members` in SQLite). The
 format changed without a new version: saves from before have no members and leave the list. See
 `.claude/rules/game/multiplayer.md`.
+
+## Group advance (multiplayer part 3)
+In a `running` multi world only `src/backend/groupAdvance.ts` advances the day (in the background, one run per world, a deadline clock started by `startWorldClock()` in `src/index.ts`); `/advance-day` and `/advance-until` answer 409 `groupAdvance`. Pure rules in `src/Domain/groupAdvance/`, routes in `src/backend/groupAdvanceRoutes.ts`, push as the `world_progress` `ServerEvent`. See `.claude/rules/game/multiplayer.md`.

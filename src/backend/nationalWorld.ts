@@ -905,7 +905,7 @@ export function withOffer(state: NationalState, seatId: string, offer: NationalC
  * team hires by the AI rule. Writes `managers.json`; the caller writes the state.
  */
 export async function leaveNationalTeam(
-  service: SaveService, saveId: string, seatId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
+  service: SaveService, saveId: string, seatId: string, state: NationalState, date: string, left: "sacked" | "moved" | "left_world", managers0?: ManagerRecord[],
 ): Promise<{ state: NationalState; managers: ManagerRecord[] }> {
   const h = state.human?.[seatId];
   if (!h) return { state, managers: managers0 ?? (await service.getManagers(saveId)) };

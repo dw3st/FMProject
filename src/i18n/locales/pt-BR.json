@@ -131,6 +131,15 @@
     "continue": "Continuar",
     "whatsNew": "Novidades",
     "unemployed": "Sem clube",
+    "withFriends": "Com amigos · {{count}}/{{max}}",
+    "owner": "Dono",
+    "member": "Membro",
+    "lobby": "Na sala de espera",
+    "leave": "Sair da liga",
+    "leaveConfirmTitle": "Sair da liga?",
+    "leaveConfirmBody": "Clube: {{clubName}}. Ele volta para a IA e a sua vaga fica livre.",
+    "deleteWorldBody_one": "Excluir \"{{clubName}}\" ({{leagueName}}) apaga a liga para você e para mais {{count}} técnico. Isso não pode ser desfeito.",
+    "deleteWorldBody_other": "Excluir \"{{clubName}}\" ({{leagueName}}) apaga a liga para você e para mais {{count}} técnicos. Isso não pode ser desfeito.",
     "saveVersion": "v{{version}}",
     "outdatedVersion": "Versão {{version}} · incompatível com a atual",
     "outdatedUnknown": "Versão anterior · incompatível com a atual",
@@ -260,6 +269,15 @@
     "managerEmpty": "Técnico não definido",
     "startWith": "Começar com {{club}}",
     "stepOf": "Passo {{n}} de 2",
+    "mode": {
+      "title": "Como você quer jogar?",
+      "subtitle": "Sozinho ou numa liga com seus amigos.",
+      "solo": "Sozinho",
+      "soloDetail": "Sua carreira, no seu ritmo.",
+      "multi": "Com amigos",
+      "multiDetail": "Até {{max}} técnicos no mesmo mundo.",
+      "next": "Continuar"
+    },
     "managerSubtitle": "Quem vai assumir o clube.",
     "chooseClub": "Escolher clube →",
     "chooseClubTitle": "Escolha o clube",
@@ -527,6 +545,7 @@
     "makeOffer": "Fazer Oferta"
   },
   "nav": {
+    "world": "Liga",
     "squad": "Elenco",
     "formation": "Formação",
     "development": "Evolução",
@@ -1500,6 +1519,7 @@
       "registration": "Inscrição",
       "schedule": "Calendário",
       "press": "Imprensa",
+      "world": "Liga",
       "discipline": "Disciplina",
       "national": "Seleções",
       "achievement": "Conquistas",
@@ -2747,7 +2767,8 @@
         "sacked": "demitido",
         "moved": "saiu para outro clube",
         "contract": "fim de contrato",
-        "interim": "interino"
+        "interim": "interino",
+        "left_world": "saiu da liga"
       }
     },
     "referees": {
@@ -2908,6 +2929,10 @@
     "news": {
       "main": "NOTÍCIAS DO",
       "accent": "MUNDO"
+    },
+    "world": {
+      "main": "SUA",
+      "accent": "LIGA"
     }
   },
   "jobs": {
@@ -3918,7 +3943,7 @@
     },
     "freeHint": "Sempre inscrito: não ocupa vaga",
     "add": "Incluir",
-    "remove": "Tirar",
+    "remove": "Remover",
     "auto": "Automático",
     "autoConfirmTitle": "Voltar à lista automática?",
     "autoConfirmBody": "A lista é refeita com os melhores dentro das regras e as suas mudanças se perdem.",
@@ -4852,7 +4877,7 @@
         "text": "A diretoria decidiu pela troca no comando."
       },
       "2": {
-        "title": "{{manager}} deixa o {{club}}",
+        "title": "{{manager}} deixa: {{club}}",
         "text": "Demissão confirmada pelo clube."
       }
     },
@@ -4995,6 +5020,205 @@
         "title": "{{manager}} é cobrado pela promessa",
         "text": "A imprensa lembra o que foi dito na coletiva."
       }
+    },
+    "world_member": {
+      "0": { "title": "{{manager}} assume: {{club}}", "text": "Um novo técnico entra na liga." },
+      "1": { "title": "{{club}} tem novo técnico: {{manager}}", "text": "Mais um amigo na liga." },
+      "2": { "title": "{{manager}} chega: {{club}}", "text": "A liga ganha mais um técnico." }
+    },
+    "world_member_left": {
+      "title": "{{manager}} deixa o {{club}}",
+      "text": "O clube volta a escolher o técnico pela diretoria."
+    }
+  },
+  "world": {
+    "status": { "lobby": "Sala de espera", "running": "Em andamento" },
+    "members": {
+      "title": "Técnicos",
+      "count": "{{count}} de {{max}} técnicos",
+      "manager": "Técnico",
+      "club": "Clube",
+      "role": "Papel",
+      "actions": "Ações",
+      "owner": "Dono",
+      "member": "Membro",
+      "unemployed": "Sem clube",
+      "transfer": "Tornar dono",
+      "remove": "Remover",
+      "removeConfirmTitle": "Remover este técnico?",
+      "removeConfirmBody": "{{manager}} sai da liga. Clube: {{club}}, que volta para a IA.",
+      "removeConfirmBodyNoClub": "{{manager}} sai da liga.",
+      "transferConfirmTitle": "Tornar este técnico dono da liga?",
+      "transferConfirmBody": "{{manager}} vira o dono; você continua como membro."
+    },
+    "invite": {
+      "title": "Convite",
+      "link": "Link de convite",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "copyFailed": "Não deu para copiar. Selecione o link e copie à mão.",
+      "newCode": "Trocar código",
+      "newCodeConfirmTitle": "Trocar o código?",
+      "newCodeConfirmBody": "O link antigo deixa de funcionar. Quem já está na liga continua.",
+      "friends": "Convidar amigos",
+      "friendsTitle": "Convidar amigos",
+      "send": "Convidar",
+      "sent": "Convidado",
+      "noFriends": "Ainda não há amigos para convidar."
+    },
+    "deadline": {
+      "title": "Prazo",
+      "hint": "Tempo real que cada técnico tem para ficar pronto antes de a liga seguir sem ele.",
+      "hours_one": "{{count}} h",
+      "hours_other": "{{count}} h",
+      "none": "Sem prazo"
+    },
+    "start": { "button": "Começar a liga", "waiting": "Esperando o dono começar" },
+    "chat": "Chat da liga",
+    "leave": {
+      "button": "Sair da liga",
+      "transferFirst": "Passe a liga a outro técnico antes de sair.",
+      "confirmTitle": "Sair da liga?",
+      "confirmBody": "Seu clube volta para a IA e a sua vaga fica livre.",
+      "deleteBody": "Você é o único técnico: sair apaga a liga."
+    },
+    "join": {
+      "title": "Entrar na liga",
+      "owner": "Dono: {{name}}",
+      "league": "Liga: {{league}}",
+      "choose": "Escolher o clube",
+      "open": "Abrir a liga",
+      "toStart": "Voltar ao início",
+      "humanClub": "Técnico humano",
+      "joinWith": "Entrar com {{club}}",
+      "clubSubtitle": "{{world}} · {{league}}",
+      "clubSubtitleNoLeague": "{{world}}"
+    },
+    "invites": {
+      "title": "Convites para ligas",
+      "from": "{{from}} convida você para {{name}}",
+      "accept": "Aceitar",
+      "decline": "Recusar"
+    },
+    "inbox": {
+      "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
+      "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." }
+    },
+    "advance": {
+      "running": "Avançando… {{date}} de {{target}}",
+      "simulate": "Simular",
+      "play": "Jogar",
+      "readyButton": "Pronto até…",
+      "readyTomorrow": "Amanhã",
+      "readyNextMatch": "Meu próximo jogo",
+      "readyDate": "Uma data",
+      "readyConfirm": "Marcar",
+      "readyUntil": "Pronto até {{date}}",
+      "waiting_one": "esperando {{count}}",
+      "waiting_other": "esperando {{count}}",
+      "unmark": "Não estou pronto",
+      "dateInvalid": "Escolha uma data a partir de {{min}}.",
+      "retry": "Tentar de novo",
+        "band": {
+        "title": "Avanço do grupo",
+        "date": "Data do mundo",
+        "target": "Alvo",
+        "waitingFor": "Esperando {{names}}",
+        "allReady": "Todos prontos",
+        "noDeadline": "Sem prazo: a liga espera todos",
+        "deadlineHours_one": "Avança sem eles em {{count}} hora",
+        "deadlineHours_other": "Avança sem eles em {{count}} horas",
+        "deadlineMinutes_one": "Avança sem eles em {{count}} minuto",
+        "deadlineMinutes_other": "Avança sem eles em {{count}} minutos",
+        "deadlineNow": "Avança sem eles agora",
+        "error": "{{error}}",
+        "retryAt": "Tenta de novo às {{time}}",
+        "gaveUp": "A liga parou de tentar."
+      },
+      "status": {
+        "column": "Avanço",
+        "ready": "Pronto",
+        "match": "Jogo do dia",
+        "late": "Atrasado",
+        "no_club": "Sem clube"
+      },
+      "summary": {
+        "days_one": "{{count}} dia",
+        "days_other": "{{count}} dias",
+        "range": "{{from}} a {{to}}",
+        "noticesTitle": "Enquanto você estava fora",
+        "readyCleared": "Seu “Pronto até” foi desmarcado:",
+        "jobOffers_one": "Você tem uma proposta nova",
+        "jobOffers_other": "Você tem {{count}} propostas novas",
+        "sacked": "Você foi demitido",
+        "seasonEnded": "A temporada terminou",
+        "pressInvite": "Há um convite para coletiva na sua caixa de entrada",
+        "transfers": "Transferências",
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
+        "injuries": "Lesões",
+        "injuryLine": "{{player}} · {{severity}}"
+      },
+      "result": {
+        "pending": "Resultado provisório: vale quando a liga chegar a este dia."
+      },
+      "errors": {
+        "generic": "Não foi possível salvar. Tente de novo.",
+        "invalidDate": "Escolha uma data entre amanhã e cerca de um ano.",
+        "dayClosed": "Esse dia já foi jogado.",
+        "notYourMatch": "Esse não é o seu jogo de hoje.",
+        "seatOpponent": "Contra outro técnico o jogo é simulado.",
+        "noWinner": "Jogo de mata-mata precisa de vencedor.",
+        "notMulti": "Este jogo não é uma liga de amigos.",
+        "lobby": "A liga ainda não começou.",
+        "groupAdvance": "O avanço do grupo não está disponível.",
+        "tooLarge": "O pedido é grande demais.",
+        "invalidBody": "Falta alguma coisa no pedido.",
+        "invalidDecision": "Falta alguma coisa no pedido.",
+        "invalidRecording": "Não foi possível salvar o jogo. Ele será simulado.",
+        "network": "Sem conexão.",
+        "dayFailed": "A liga não conseguiu avançar este dia.",
+        "noError": "Não há nada para tentar de novo.",
+        "notGaveUp": "A liga ainda está tentando sozinha."
+      },
+      "inbox": {
+        "subject": "O assistente avançou por você",
+        "preview": "Pronto até {{until}}",
+        "previewSimulated": "Pronto até {{until}} · jogo de {{match}} simulado",
+        "body": "A liga estava esperando por você, então seu assistente marcou você como pronto até {{until}}.",
+        "bodySimulated": "A liga estava esperando por você, então seu assistente simulou seu jogo de {{match}} e marcou você como pronto até {{until}}."
+      },
+      "refused": {
+        "subject": "Sua partida ao vivo foi simulada",
+        "body": "Sua partida ao vivo de {{match}} não pôde ser registrada ({{reason}}) e foi simulada.",
+        "reason": {
+          "unregistered": "um jogador não estava inscrito",
+          "knockout": "o mata-mata ficou sem vencedor",
+          "two_seats": "um jogo entre dois técnicos não pode ser ao vivo",
+          "other": "não foi possível registrar a partida"
+        }
+      }
+    },
+    "errors": {
+      "notFound": "Este convite não vale mais.",
+      "full": "A liga está cheia.",
+      "alreadyMember": "Você já está nesta liga.",
+      "clubTaken": "Outro técnico pegou este clube. Escolha outro.",
+      "invalidManager": "Confira o nome, a nacionalidade e a origem do técnico.",
+      "invalidClub": "Este clube não está no mundo da liga.",
+      "invalidBody": "Falta alguma coisa no pedido.",
+      "ownerOnly": "Só o dono pode fazer isso.",
+      "transferFirst": "Passe a liga a outro técnico antes de sair.",
+      "alreadyStarted": "A liga já começou.",
+      "notMulti": "Este save não é uma liga de amigos.",
+      "inviteLimit": "Convites pendentes demais. Espere algumas respostas.",
+      "noNickname": "Escolha um apelido em Amigos primeiro.",
+      "useLeave": "Para sair, use \"Sair da liga\".",
+      "notMember": "Este técnico não está na liga.",
+      "tooLarge": "O pedido é grande demais.",
+      "ownerLimit": "Esse técnico já é dono de 5 ligas.",
+      "lobby": "A liga ainda não começou.",
+      "generic": "Algo deu errado. Tente de novo."
     }
   }
 }

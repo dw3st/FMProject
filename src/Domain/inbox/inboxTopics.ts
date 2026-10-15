@@ -40,6 +40,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   national: "competitions",
   // The human manager at a national team: news; the offer and the call-up notice ask for an answer.
   national_coach: "competitions",
+  // The world of friends: a manager joined or left (multiplayer part 2).
+  world: "competitions",
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   achievement: "achievements",
@@ -60,6 +62,10 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "retirement:reborn": "actions",
   "national_coach:offer": "actions",
   "national_coach:callup_soon": "actions",
+  // The assistant moved the seat on after the deadline: he must know.
+  "world:auto_advanced": "actions",
+  // His live match was refused and simulated instead.
+  "world:live_refused": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",

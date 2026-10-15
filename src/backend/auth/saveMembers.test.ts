@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import {
   addSaveMember, countOwnedSaves, deleteSaveMembers, isSaveMember, listUserSaveIds, listSaveMembers, memberOf,
+  memberBySeat, removeSaveMember, transferOwnership,
 } from "@/backend/auth/saveOwnership";
 
 describe("save_members", () => {
@@ -39,5 +40,34 @@ describe("save_members", () => {
     expect(memberOf(saveId, a.id)).toBeNull();
     expect(isSaveMember(saveId, a.id)).toBe(false);
     expect(listUserSaveIds(a.id)).not.toContain(saveId);
+  });
+
+  test("member by seat, removal and ownership transfer", () => {
+    const saveId = `w-${randomUUID()}`;
+    const a = devAutoLogin(`a-${randomUUID()}@test.local`).user;
+    const b = devAutoLogin(`b-${randomUUID()}@test.local`).user;
+    addSaveMember(saveId, a.id, "seat-a", "owner");
+    addSaveMember(saveId, b.id, "seat-b", "member");
+    expect(memberBySeat(saveId, "seat-b")).toMatchObject({ userId: b.id, role: "member" });
+    expect(memberBySeat(saveId, "seat-z")).toBeNull();
+
+    transferOwnership(saveId, a.id, b.id);
+    expect(memberOf(saveId, a.id)?.role).toBe("member");
+    expect(memberOf(saveId, b.id)?.role).toBe("owner");
+    expect(countOwnedSaves(a.id)).toBe(0);
+
+    removeSaveMember(saveId, "seat-a");
+    expect(memberOf(saveId, a.id)).toBeNull();
+    expect(listSaveMembers(saveId).map((m) => m.seatId)).toEqual(["seat-b"]);
+  });
+
+  test("transferOwnership rejects the same user and a non-member, leaving the owner", () => {
+    const saveId = `w-${randomUUID()}`;
+    const a = devAutoLogin(`a-${randomUUID()}@test.local`).user;
+    const outsider = devAutoLogin(`o-${randomUUID()}@test.local`).user;
+    addSaveMember(saveId, a.id, "seat-a", "owner");
+    expect(() => transferOwnership(saveId, a.id, a.id)).toThrow();
+    expect(() => transferOwnership(saveId, a.id, outsider.id)).toThrow();
+    expect(memberOf(saveId, a.id)?.role).toBe("owner");
   });
 });

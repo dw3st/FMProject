@@ -4,7 +4,8 @@ export type NewsKind =
   | "thrashing" | "upset" | "champion" | "promoted" | "relegated" | "new_leader"
   | "big_transfer" | "manager_sacked" | "manager_hired" | "award"
   | "star_injury" | "star_retired" | "national" | "club_record"
-  | "press_quote" | "press_absent" | "press_promise_kept" | "press_promise_broken";
+  | "press_quote" | "press_absent" | "press_promise_kept" | "press_promise_broken"
+  | "world_member";
 
 export interface NewsItem {
   id: string;               // `${date}:${kind}:${chave}` — estável num dia refeito
