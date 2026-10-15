@@ -467,7 +467,11 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
       // the day's advance plays it in the full engine with both seats' tactics.
       if ((await saveService.humanClubIds(save.id)).has(oppId)) {
-        return Response.json({ error: "seatOpponent" }, { status: 409 });
+        // matchDay: a group world still records the "Simular" decision for this game.
+        return Response.json(
+          { error: "seatOpponent", matchDay: { date: todayFixture.date, fixtureId: todayFixture.id } },
+          { status: 409 },
+        );
       }
       opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {

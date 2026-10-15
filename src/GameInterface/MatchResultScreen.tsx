@@ -28,7 +28,14 @@ import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
-import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
+import {
+  clearPendingRecording,
+  groupAdvanceErrorKey,
+  isTerminalGroupError,
+  loadPendingRecording,
+  sendWithRetry,
+} from "@/GameInterface/World/groupAdvanceErrors";
+import { Button } from "@/GameInterface/ui/Button";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 const Clock = iconOf("clock");
@@ -310,6 +317,9 @@ export function MatchResultScreen() {
   const [resolvedDate, setResolvedDate] = useState<string>("");
   /** Group world: the recorded live match, shown before the day runs. */
   const [pendingResult, setPendingResult] = useState(false);
+  /** Group world: the live recording can be resent (non-terminal error, recording kept). */
+  const [retryable, setRetryable] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const nationalTeamId = fixtures.find((f) => f.nationalTeam)?.nationalTeam ?? null;
@@ -334,7 +344,10 @@ export function MatchResultScreen() {
         const params = new URLSearchParams(window.location.search);
         const errorCode = params.get("error");
         if (errorCode && session.groupAdvance) {
-          if (!cancelled) setError(t(groupAdvanceErrorKey(errorCode)));
+          if (!cancelled) {
+            setError(t(groupAdvanceErrorKey(errorCode)));
+            setRetryable(!isTerminalGroupError(errorCode) && loadPendingRecording(session.saveId) !== null);
+          }
           return;
         }
         const qDate = parseDateQuery();
@@ -471,6 +484,32 @@ export function MatchResultScreen() {
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-lg text-center space-y-4">
           <p className="text-destructive font-bold text-lg m-0">{error ?? "No data"}</p>
+          {retryable && session && (
+            <Button
+              disabled={retrying}
+              onClick={async () => {
+                const stored = loadPendingRecording(session.saveId);
+                if (!stored) return;
+                setRetrying(true);
+                const r = await sendWithRetry(() =>
+                  groupAdvanceApi.liveRecording(session.saveId, stored.date, stored.fixtureId, stored.recording as never),
+                );
+                if (r.ok) {
+                  clearPendingRecording(session.saveId);
+                  window.location.href = `/match-result?date=${encodeURIComponent(stored.date)}&pending=1`;
+                  return;
+                }
+                if (isTerminalGroupError(r.error)) {
+                  clearPendingRecording(session.saveId);
+                  setRetryable(false);
+                }
+                setError(t(groupAdvanceErrorKey(r.error)));
+                setRetrying(false);
+              }}
+            >
+              {t("world.advance.retry")}
+            </Button>
+          )}
           <a
             href="/dashboard"
             className="inline-flex items-center gap-2 text-primary font-bold text-sm no-underline hover:underline"

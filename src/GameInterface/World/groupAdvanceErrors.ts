@@ -4,3 +4,66 @@ const KNOWN = ["dayClosed", "notYourMatch", "seatOpponent", "noWinner"] as const
 export function groupAdvanceErrorKey(code: string): string {
   return `world.advance.error.${(KNOWN as readonly string[]).includes(code) ? code : "generic"}`;
 }
+
+const TERMINAL = new Set<string>(KNOWN);
+
+/** Terminal errors never get better by trying again. */
+export function isTerminalGroupError(code: string): boolean {
+  return TERMINAL.has(code);
+}
+
+type Failure = { ok: false; status: number; error: string };
+type SendResult = { ok: true } | Failure;
+
+/** Transient = network failure (status 0) or a 5xx: worth retrying. */
+export function isTransientFailure(r: Failure): boolean {
+  return r.status === 0 || r.status >= 500;
+}
+
+/** Sends with up to `attempts` tries (short wait between) while the failure is transient. */
+export async function sendWithRetry(
+  send: () => Promise<SendResult>,
+  attempts = 3,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<SendResult> {
+  let last: SendResult = await send();
+  for (let i = 1; i < attempts && !last.ok && isTransientFailure(last); i++) {
+    await wait(500 * i);
+    last = await send();
+  }
+  return last;
+}
+
+export interface StoredRecording {
+  date: string;
+  fixtureId: string;
+  recording: unknown;
+}
+
+const key = (saveId: string) => `fm.pendingRecording.${saveId}`;
+
+/** The recording that failed to send, kept so "Try again" on the result screen can resend it. */
+export function storePendingRecording(saveId: string, value: StoredRecording): void {
+  try {
+    sessionStorage.setItem(key(saveId), JSON.stringify(value));
+  } catch {
+    // storage unavailable: the retry button simply won't have a recording
+  }
+}
+
+export function loadPendingRecording(saveId: string): StoredRecording | null {
+  try {
+    const raw = sessionStorage.getItem(key(saveId));
+    return raw ? (JSON.parse(raw) as StoredRecording) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingRecording(saveId: string): void {
+  try {
+    sessionStorage.removeItem(key(saveId));
+  } catch {
+    // ignore
+  }
+}

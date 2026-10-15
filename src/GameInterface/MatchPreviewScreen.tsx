@@ -630,6 +630,8 @@ export function MatchPreviewScreen() {
   const [matchSetupError, setMatchSetupError] = useState<string | null>(null);
   /** Today's opponent is another seat's club (`match-setup` → 409 `seatOpponent`). */
   const [seatOpponent, setSeatOpponent] = useState(false);
+  /** Group world: the day/fixture of a seat-vs-seat game (from the 409 body). */
+  const [seatMatchDay, setSeatMatchDay] = useState<{ date: string; fixtureId: string } | null>(null);
   /** Group world: error code of the last "Simular" decision. */
   const [groupError, setGroupError] = useState<string | null>(null);
   const [commencing, setCommencing] = useState(false);
@@ -699,7 +701,13 @@ export function MatchPreviewScreen() {
         const setupJson = await readJsonBody(setupRes);
         // Against another seat there is no live match yet (multiplayer part 1): simulate it or go back.
         if (setupRes.status === 409 && setupJson.error === "seatOpponent") {
-          if (!cancelled) setSeatOpponent(true);
+          if (!cancelled) {
+            const day = setupJson.matchDay as { date?: unknown; fixtureId?: unknown } | undefined;
+            if (day && typeof day.date === "string" && typeof day.fixtureId === "string") {
+              setSeatMatchDay({ date: day.date, fixtureId: day.fixtureId });
+            }
+            setSeatOpponent(true);
+          }
           return;
         }
         if (!setupRes.ok) {
@@ -815,19 +823,22 @@ export function MatchPreviewScreen() {
     void capture("match_played", { mode: "sim" });
     const matchDate = session.currentDate ?? "";
     // Simulating instead of watching abandons any half-played live match of today (#64).
-    clearMatchSnapshot();
     if (session.groupAdvance) {
       // Group world (part 3): the decision is stored; the day runs with the group.
-      const day = matchSetup?.matchDay;
-      const r = day ? await groupAdvanceApi.simulate(session.saveId, day.date, day.fixtureId) : null;
-      if (r && !r.ok) {
+      const day = matchSetup?.matchDay ?? seatMatchDay;
+      const r = day
+        ? await groupAdvanceApi.simulate(session.saveId, day.date, day.fixtureId)
+        : ({ ok: false, status: 0, error: "generic" } as const);
+      if (!r.ok) {
         setCommencing(false);
         setGroupError(r.error);
         return;
       }
+      clearMatchSnapshot();
       window.location.href = "/dashboard";
       return;
     }
+    clearMatchSnapshot();
     try {
       await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
     } catch {
@@ -866,6 +877,7 @@ export function MatchPreviewScreen() {
         <div className="max-w-md text-center space-y-4">
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("matchPreview.seatOpponentTitle")}</h2>
           <p className="text-muted-foreground text-sm m-0">{t("matchPreview.seatOpponentText")}</p>
+          {groupError && <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(groupError))}</p>}
           <div className="flex items-center justify-center gap-3">
             <Button variant="secondary" onClick={() => { window.location.href = "/dashboard"; }}>{t("matchPreview.backToDashboard")}</Button>
             <Button onClick={() => void handleSendAssistant()} disabled={commencing}>{t("matchPreview.simulateMatch")}</Button>

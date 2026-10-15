@@ -89,6 +89,12 @@ import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import {
+  clearPendingRecording,
+  isTerminalGroupError,
+  sendWithRetry,
+  storePendingRecording,
+} from "@/GameInterface/World/groupAdvanceErrors";
 import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { resolveComplaint } from "@/GameEngine/Domain/Var";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
@@ -826,13 +832,22 @@ export function MatchScreen() {
                       ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
                     }
                   : null;
-              if (session?.groupAdvance && ctx?.matchDay && recording) {
+              if (session?.groupAdvance) {
                 // Group world (part 3): the recording waits for the executor; the day runs with the group.
-                const r = await groupAdvanceApi.liveRecording(saveId, ctx.matchDay.date, ctx.matchDay.fixtureId, recording);
+                // Never falls back to /api/advance-day: that would run the day for everyone.
+                if (!ctx?.matchDay || !recording) {
+                  window.location.href = `/match-result?error=generic`;
+                  return;
+                }
+                const { date, fixtureId } = ctx.matchDay;
+                storePendingRecording(saveId, { date, fixtureId, recording });
+                const r = await sendWithRetry(() => groupAdvanceApi.liveRecording(saveId, date, fixtureId, recording));
                 if (!r.ok) {
+                  if (isTerminalGroupError(r.error)) clearPendingRecording(saveId);
                   window.location.href = `/match-result?error=${encodeURIComponent(r.error)}`;
                   return;
                 }
+                clearPendingRecording(saveId);
                 recordedRef.current = true;
                 clearMatchSnapshot();
                 window.location.href = `/match-result?date=${encodeURIComponent(ctx.matchDay.date)}&pending=1`;
