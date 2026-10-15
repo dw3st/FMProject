@@ -46,7 +46,7 @@ describe("the human manager at a national team", () => {
     let state = (await saveService.getNationalState(saveId))!;
     const oldCoach = state.teams[TEAM]!.managerId;
     state = { ...state, vacancies: { ...state.vacancies, [TEAM]: { since: "2026-08-24", hireOn: "2026-08-30" } } };
-    state = withOffer(state, { id: "natjob_test", teamId: TEAM, nation: "Wales", date: "2026-08-24", expires: "2026-09-07", prestige: 0.5, rank: 40, wage: 30_000 });
+    state = withOffer(state, seatId, { id: "natjob_test", teamId: TEAM, nation: "Wales", date: "2026-08-24", expires: "2026-09-07", prestige: 0.5, rank: 40, wage: 30_000 });
     expect(state.vacancies[TEAM]!.hireOn).toBe("2026-09-08");
     await saveService.writeNationalState(saveId, state);
 
@@ -56,7 +56,7 @@ describe("the human manager at a national team", () => {
     expect(res.status).toBe(200);
     state = (await saveService.getNationalState(saveId))!;
     expect(state.teams[TEAM]!.managerId).toBe(`seat:${seatId}`);
-    expect(state.human).toMatchObject({ teamId: TEAM, wage: 30_000 });
+    expect(state.human?.[seatId]).toMatchObject({ teamId: TEAM, wage: 30_000 });
     expect(state.vacancies[TEAM]).toBeUndefined();
     const managers = await saveService.getManagers(saveId);
     const me = managers.find((m) => m.seatId === seatId)!;
@@ -92,18 +92,18 @@ describe("the human manager at a national team", () => {
     expect(cu.players).toHaveLength(23);
     const real = cu.players.filter((p) => !p.generated).map((p) => p.id);
     expect(real.sort()).toEqual([...chosen].sort());
-    expect(state.human?.callUp).toBeUndefined();
+    expect(state.human?.[seatId]?.callUp).toBeUndefined();
   }, 240_000);
 
   test("his game: the calendar, match-setup, a live recording, then the engine", async () => {
     await saveService.updateMeta(saveId, { currentDate: "2026-09-03" });
-    const cal = await playerNationalCalendar(saveService, saveId, HUMAN);
+    const cal = await playerNationalCalendar(saveService, saveId, seatId, HUMAN);
     const today = cal.fixtures.find((f) => f.date === "2026-09-03");
     expect(today).toBeDefined();
     expect(today!.home === HUMAN || today!.away === HUMAN).toBe(true);
     expect(today!.nationalTeam).toBe(TEAM);
 
-    const setup = (await nationalMatchSetup(saveService, saveId, "2026-09-03"))!;
+    const setup = (await nationalMatchSetup(saveService, saveId, seatId, "2026-09-03"))!;
     expect(setup.teamId).toBe(TEAM);
     expect(setup.mySquad.players).toHaveLength(23);
     expect(setup.myFormation.id).toBe("4-4-2");
@@ -117,8 +117,8 @@ describe("the human manager at a national team", () => {
     const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
     const log = (await saveService.getDayLog(saveId, "2026-09-03"))!;
-    expect(log.nationalMatch?.fixtureId).toBe(setup.fixture.id);
-    expect(log.nationalMatch?.score).toEqual(recording.score);
+    expect(log.nationalMatches?.[seatId]?.fixtureId).toBe(setup.fixture.id);
+    expect(log.nationalMatches?.[seatId]?.score).toEqual(recording.score);
     const comp = (await saveService.getNationalComp(saveId, setup.fixture.competition))!;
     expect(comp.fixtures.find((f) => f.id === setup.fixture.id)?.result).toEqual(recording.score);
 
@@ -129,14 +129,14 @@ describe("the human manager at a national team", () => {
     // Without a recording the engine plays it.
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
     const log2 = (await saveService.getDayLog(saveId, "2026-09-07"))!;
-    if (cal.fixtures.some((f) => f.date === "2026-09-07")) expect(log2.nationalMatch).toBeDefined();
+    if (cal.fixtures.some((f) => f.date === "2026-09-07")) expect(log2.nationalMatches?.[seatId]).toBeDefined();
   }, 240_000);
 
   test("resigning: an interim and an AI vacancy, the club untouched", async () => {
     const res = await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, { method: "POST" });
     expect(res.status).toBe(200);
     const state = (await saveService.getNationalState(saveId))!;
-    expect(state.human).toBeUndefined();
+    expect(state.human?.[seatId]).toBeUndefined();
     expect(state.teams[TEAM]!.managerId).not.toBe(`seat:${seatId}`);
     expect(state.vacancies[TEAM]).toBeDefined();
     const managers = await saveService.getManagers(saveId);

@@ -3480,7 +3480,7 @@ try {
     const ranked = Object.values(st.teams).sort((a, b) => b.elo - a.elo);
     const team = ranked[Math.floor(ranked.length / 2)]!;
     st = { ...st, vacancies: { ...st.vacancies, [team.id]: { since: dateN, hireOn: addDays(dateN, 30) } } };
-    st = withOffer(st, { id: "natjob_smoke", teamId: team.id, nation: team.nation, date: dateN, expires: addDays(dateN, 14), prestige: 0.5, rank: 80, wage: 30_000 });
+    st = withOffer(st, metaN.seatId, { id: "natjob_smoke", teamId: team.id, nation: team.nation, date: dateN, expires: addDays(dateN, 14), prestige: 0.5, rank: 80, wage: 30_000 });
     await plain().writeNationalState(saveId, st);
     const acc = await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_smoke`, "POST", { accept: true }, { offerId: "natjob_smoke" });
     check(acc.status === 200, `técnico de seleção: forced offer of ${team.nation} accepted (status ${acc.status})`);
@@ -3527,7 +3527,8 @@ try {
       }
       for (const d of games) {
         const log = await plain().getDayLog(saveId, d);
-        check(!!log?.nationalMatch && (log.nationalMatch.home === team.id || log.nationalMatch.away === team.id),
+        const natMatch = log?.nationalMatches?.[metaN.seatId];
+        check(!!natMatch && (natMatch.home === team.id || natMatch.away === team.id),
           `técnico de seleção: his game of ${d} played in the engine and logged`);
       }
     }
@@ -3535,7 +3536,7 @@ try {
     check(res.status === 200, `técnico de seleção: resignation accepted (status ${res.status})`);
     st = (await plain().getNationalState(saveId))!;
     ms = await plain().getManagers(saveId);
-    check(!st.human && !!st.vacancies[team.id] && ms.filter((m) => m.squadId === team.id).length === 1,
+    check(!st.human?.[metaN.seatId] && !!st.vacancies[team.id] && ms.filter((m) => m.squadId === team.id).length === 1,
       "técnico de seleção: after leaving, an interim and an AI vacancy");
     const inbox = (await plain().getInbox(saveId)).filter((m) => m.category === "national_coach");
     console.log(`  ${inbox.length} national-coach inbox message(s)`);

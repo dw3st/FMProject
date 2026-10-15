@@ -192,7 +192,7 @@ export async function readAdvancePosition(
   const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);
   const clubMatch = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
   // His national team's games stop the fast-forward too (Etapa 41b).
-  const nationalMatch = await nextNationalFixtureDate(service, saveId, currentDate);
+  const nationalMatch = await nextNationalFixtureDate(service, saveId, seatId, currentDate);
   const matchDate = [clubMatch, nationalMatch].filter((d): d is string => !!d).sort()[0] ?? null;
 
   let rolloverDay: string | null = null;

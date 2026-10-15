@@ -98,8 +98,8 @@ export const nationalRoutes = {
     const home = normalizeNation(country);
     const homeTeam = Object.values(state.teams).find((t) => t.nation === home)?.id ?? null;
     const coach = {
-      teamId: state.human?.teamId ?? null,
-      offers: (state.offers ?? []).filter((o) => !meta.currentDate || o.expires >= meta.currentDate).length,
+      teamId: state.human?.[auth.seatId]?.teamId ?? null,
+      offers: (state.offers?.[auth.seatId] ?? []).filter((o) => !meta.currentDate || o.expires >= meta.currentDate).length,
     };
     const body: NationalOverview = { ranking, competitions, homeTeam, next: meta.currentDate ? nextBreak(meta.currentDate) : null, coach };
     return Response.json(body);
@@ -195,7 +195,7 @@ export const nationalRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-    const view = await nationalCoachView(saveService, saveId, meta);
+    const view = await nationalCoachView(saveService, saveId, auth.seatId, meta);
     if (!view) return Response.json({ error: "no national teams" }, { status: 404 });
     return Response.json(view);
   },
@@ -243,7 +243,7 @@ export const nationalRoutes = {
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await saveNationalCallUp(saveService, saveId, meta.currentDate, body.players);
+      const r = await saveNationalCallUp(saveService, saveId, auth.seatId, meta.currentDate, body.players);
       if (!r.ok) return Response.json({ error: r.error, ...(r.reason ? { reason: r.reason } : {}) }, { status: r.status });
       return Response.json({ ok: true });
     });
@@ -257,7 +257,7 @@ export const nationalRoutes = {
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await req.json().catch(() => null);
     return withSaveLock(saveId, async () => {
-      const r = await saveNationalTactics(saveService, saveId, body);
+      const r = await saveNationalTactics(saveService, saveId, auth.seatId, body);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true });
     });

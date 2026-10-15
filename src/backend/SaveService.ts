@@ -745,8 +745,11 @@ export class SaveService {
     await this.dal.writeDayLog(saveId, date, { ...log, transfers: [...(log.transfers ?? []), ...moves] });
   }
 
-  /** Read a stored day log and resolve TransferRefs → full TransferEvents. */
-  async resolveDayLog(saveId: string, date: string): Promise<DayLog | null> {
+  /**
+   * Read a stored day log and resolve TransferRefs → full TransferEvents. `seatId`: the asking seat, whose
+   * national-team game of the day comes as `nationalMatch`.
+   */
+  async resolveDayLog(saveId: string, date: string, seatId?: string): Promise<DayLog | null> {
     const stored = await this.dal.readDayLog(saveId, date);
     if (!stored) return null;
 
@@ -774,7 +777,8 @@ export class SaveService {
       })
       .filter((e): e is NonNullable<typeof e> => e !== null);
 
-    return { saveId, date, events, ...(stored.nationalMatch ? { nationalMatch: stored.nationalMatch } : {}) };
+    const nationalMatch = seatId ? stored.nationalMatches?.[seatId] : undefined;
+    return { saveId, date, events, ...(nationalMatch ? { nationalMatch } : {}) };
   }
 
   // ── League-level season data ────────────────────────────────────────────────

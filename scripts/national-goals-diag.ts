@@ -55,7 +55,7 @@ try {
       }
     }
     const index = await saveService.getSquadIndex(saveId);
-    const day = await playNationalDay({ service: saveService, saveId, date, index, humanClubId: "33", squadOf: (id) => saveService.getSquadById(saveId, id) });
+    const day = await playNationalDay({ service: saveService, saveId, date, index, humanClubs: new Map([[meta.clubId, meta.seatId]]), squadOf: (id) => saveService.getSquadById(saveId, id) });
     for (const s of day.squads.values()) await saveService.saveSquadById(saveId, s);
     if (pending.size) {
       const st = (await saveService.getNationalState(saveId))!;

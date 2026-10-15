@@ -339,7 +339,7 @@ export function createAiManagerDesk(args: {
           prestige: prestige.get(squadId) ?? 0.5, ...homeOf(squadId),
           free: ms.filter((m) => !m.seatId && !m.squadId && !m.retired).map(cand),
           // National-team coaches (`nat_…`, `national-teams.md`) are never poached by clubs.
-          employed: ms.filter((m) => !m.seatId &&!!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && !args.humanClubIds.has(m.squadId)).map(cand),
+          employed: ms.filter((m) => !m.seatId && !!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && !args.humanClubIds.has(m.squadId)).map(cand),
           interim: interim ? { ...cand(interim), interimPpg } : null,
           allowPoach: !poached,
           rng: rngFor(squadId, "hire"),

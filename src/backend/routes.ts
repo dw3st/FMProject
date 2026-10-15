@@ -423,7 +423,7 @@ export const apiRoutes = withJsonErrors({
       if (!todayFixture) {
         // His national team's game of the day (Etapa 41b): the national squads, his national tactics, no crowd,
         // no registration, no referee.
-        const nat = await nationalMatchSetup(saveService, save.id, currentDate);
+        const nat = await nationalMatchSetup(saveService, save.id, save.seatId, currentDate);
         if (nat) {
           const myTactics: TacticsSave = { formation: nat.tactics.formation, tactical_style: nat.tactics.tactical_style, lineup: nat.myLineup };
           return Response.json({

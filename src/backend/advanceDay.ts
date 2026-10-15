@@ -452,8 +452,6 @@ export async function advanceOneDay(
     // The seats of the world (`.claude/rules/game/multiplayer.md`): every step of the day loops over them.
     const daySeats = await loadDaySeats(saveService, saveId, world, index);
     if (daySeats.length === 0) return { ok: false, status: 400, error: "save has no seat" };
-    // Task 24 makes national coaching per seat: until then the first seat is the human national coach.
-    const coachSeat = daySeats[0]!;
     // The world as no seat sees it (AI-only flows that need a meta: the date of an AI fee, a clause paid to AI).
     const noSeat: SeatMeta = metaForSeat(world, "", {
       clubId: "", clubName: "", clubColors: ["#000000", "#ffffff"], leagueSlug: "", leagueName: "",
@@ -810,24 +808,27 @@ export async function advanceOneDay(
     // ── National teams (`.claude/rules/game/national-teams.md`): returns, draws, call-ups, today's games ──
     // After the club games (no club plays in a FIFA window) and before training: who is with his national
     // team today neither trains nor rests at the club.
+    const managersToday = options.marketFrozen ? [] : await saveService.getManagers(saveId);
     const nationalDay = await playNationalDay({
-      service: saveService, saveId, date: currentDate, index, humanClubId: coachSeat.meta.clubId,
+      service: saveService, saveId, date: currentDate, index,
+      humanClubs: new Map(daySeats.filter((ds) => ds.clubId).map((ds) => [ds.clubId!, ds.seatId] as const)),
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
-        human: {
-          reputation: managerReputation(await saveService.getManagers(saveId), coachSeat.meta.unemployed ? coachSeat.meta.unemployed.board : (coachSeat.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), coachSeat.seatId),
-          nationality: managerNation(coachSeat.meta.manager?.nationalityIso),
-        },
+        humans: Object.fromEntries(daySeats.map((ds) => [ds.seatId, {
+          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId),
+          nationality: managerNation(ds.meta.manager?.nationalityIso),
+        }])),
       }),
-      // Task 24 makes national coaching per seat: one human national coach, the first seat.
-      playedMatch: nationalRecordings[coachSeat.seatId] ?? null,
+      playedMatches: nationalRecordings,
     });
-    if (Object.keys(nationalRecordings).length > 0 && !nationalDay.consumedRecording) {
-      return {
-        ok: false,
-        status: 400,
-        error: "playedMatch fixture does not match today's calendar or was already consumed",
-      };
+    for (const sid of Object.keys(nationalRecordings)) {
+      if (!nationalDay.bySeat[sid]?.consumedRecording) {
+        return {
+          ok: false,
+          status: 400,
+          error: "playedMatch fixture does not match today's calendar or was already consumed",
+        };
+      }
     }
     for (const [id, squad] of nationalDay.squads) {
       const e = index.byId(id);
@@ -1440,6 +1441,9 @@ export async function advanceOneDay(
     });
     await recordRefereeDay(saveService, saveId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"));
     const dayLog = { saveId, date: currentDate, events: dayEvents };
+    // Each seat's national game of the day (the result screen reads its own).
+    const nationalMatchList = Object.entries(nationalDay.bySeat).flatMap(([sid, d]) => (d.humanMatch ? [[sid, d.humanMatch] as const] : []));
+    const nationalMatches = nationalMatchList.length > 0 ? Object.fromEntries(nationalMatchList) : null;
     // Keep what the routes already logged today (transfers bought / sold / loaned before advancing):
     // their `transfer_ref` events and `transfers` moves.
     const routeLog = await saveService.getDayLog(saveId, currentDate);
@@ -1448,7 +1452,7 @@ export async function advanceOneDay(
       events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
       ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
       ...(youthDay.logs.length > 0 ? { youthMatches: youthDay.logs } : {}),
-      ...(nationalDay.humanMatch ? { nationalMatch: nationalDay.humanMatch } : {}),
+      ...(nationalMatches ? { nationalMatches } : {}),
       registrationViolations,
     });
 
@@ -2982,9 +2986,13 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.youth) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService, ds.seatId);
     }
-    // Task 24 makes national coaching per seat: the national news and the national coach's news are the first seat's.
-    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, coachSeat.seatId);
-    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, coachSeat.seatId);
+    // Each seat's national news: its club's call-ups and returns, its manager's national team.
+    for (const ds of daySeats) {
+      const nat = nationalDay.bySeat[ds.seatId];
+      if (!nat) continue;
+      for (const news of nat.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, ds.seatId);
+      for (const news of nat.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, ds.seatId);
+    }
     for (const ds of daySeats) {
       if (ds.registrationNotices.length === 0 || !ds.clubId || options.marketFrozen) continue;
       const humanNow = await saveService.getSquadById(saveId, ds.clubId);
@@ -3088,9 +3096,10 @@ export async function advanceOneDay(
 
     // ── Achievements of each seat's manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
     for (const ds of options.marketFrozen ? [] : daySeats) {
-      // Task 24 makes national coaching per seat: the national game is the first seat's.
-      const national = ds === coachSeat && nationalDay.humanMatch
-        ? await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, ds.meta.manager?.nationalityIso)
+      // The seat's national game of the day.
+      const natDay = nationalDay.bySeat[ds.seatId];
+      const national = natDay?.humanMatch
+        ? await achievementNationalMatch(saveService, saveId, natDay.humanMatch, natDay.humanTeamId ?? natDay.humanMatch.home, ds.meta.manager?.nationalityIso)
         : null;
       const msg = await achievementsDay(saveService, saveId, ds.seatId, {
         date: currentDate,
@@ -3127,8 +3136,8 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
 
-    // Task 24 makes national coaching per seat: the national coach's wage is the first seat's.
-    coachSeat.managerEarned += nationalDay.earned;
+    // Each seat's national-team wage (Mondays).
+    for (const ds of daySeats) ds.managerEarned += nationalDay.bySeat[ds.seatId]?.earned ?? 0;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
 
     // Board, press, ban, earnings and the director's decisions, per seat.
@@ -3214,8 +3223,8 @@ export async function advanceOneDay(
     const transferEvents = (resolved?.events ?? []).filter((e) => e.kind === "transfer");
     const seats: Record<string, Record<string, unknown>> = {};
     for (const ds of daySeats) {
-      // Task 24 makes national coaching per seat: the national coach's offers are the first seat's.
-      const offers = ds.job.newOffers.length + (ds === coachSeat ? nationalDay.offers : 0);
+      // Club offers and national-team offers of the seat (the fast-forward stops).
+      const offers = ds.job.newOffers.length + (nationalDay.bySeat[ds.seatId]?.offers ?? 0);
       seats[ds.seatId] = {
         ...(ds.rollover.seasonEnded
           ? { seasonEnded: true as const, archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }
@@ -3383,7 +3392,7 @@ export const advanceDayRoutes = {
     const { saveId, date } = req.params;
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const resolved = await saveService.resolveDayLog(saveId!, date!);
+    const resolved = await saveService.resolveDayLog(saveId!, date!, auth.seatId);
     if (!resolved) return Response.json({ error: "day log not found" }, { status: 404 });
     return Response.json(resolved);
   },

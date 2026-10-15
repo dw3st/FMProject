@@ -128,7 +128,7 @@ export const saveRoutes = {
               )
             : [];
           // His national team's games (Etapa 41b), with the club's id on the national side.
-          const national = myId ? await playerNationalCalendar(saveService, id, myId) : { teamId: null, fixtures: [], teamNames: {} };
+          const national = myId ? await playerNationalCalendar(saveService, id, auth.seatId, myId) : { teamId: null, fixtures: [], teamNames: {} };
           const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures, ...national.fixtures].sort((a, b) =>
             a.date.localeCompare(b.date),
           );
