@@ -1,5 +1,6 @@
 // Multiplayer part 2: the world of friends (`.claude/rules/game/multiplayer.md`). Nothing here carries an e-mail or
 // a user id: the client only sees nicknames and manager names.
+import type { WorldAdvance } from "@/types/groupAdvanceTypes";
 import type { MemberRole } from "@/types/seatTypes";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 
@@ -15,6 +16,8 @@ export interface WorldState {
   deadlineHours: WorldDeadline;
   /** userId of the creator (audit only; ownership lives in `save_members`). */
   createdBy: string;
+  /** Group advance (part 3). Absent until the first stop. */
+  advance?: WorldAdvance;
 }
 
 export interface WorldMemberView {

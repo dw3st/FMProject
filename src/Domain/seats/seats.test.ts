@@ -45,3 +45,17 @@ describe("seats: meta merge and patch split", () => {
     expect(isValidSeatId("A")).toBe(false);
   });
 });
+
+describe("group advance fields are seat fields (part 3)", () => {
+  test("readyUntil and matchDecision go to the seat", () => {
+    const { world, seat: s } = splitSeatPatch({
+      readyUntil: "2027-03-12",
+      matchDecision: { date: "2027-03-12", fixtureId: "f1", mode: "simulate" },
+    });
+    expect(world).toEqual({});
+    expect(s).toEqual({
+      readyUntil: "2027-03-12",
+      matchDecision: { date: "2027-03-12", fixtureId: "f1", mode: "simulate" },
+    });
+  });
+});
