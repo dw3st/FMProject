@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
-import { createGameSave } from "@/GameInterface/gameSession";
+import { createGameSave, loadGameSave } from "@/GameInterface/gameSession";
+import { worldApi } from "@/GameInterface/World/worldApi";
+import { WORLD } from "@/Domain/multiplayer/worldConfig";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -98,12 +100,22 @@ const NO_AUTOFILL = {
 const isManagerValid = (m: ManagerData) =>
   m.name.trim().length >= 2 && !!m.background && !!m.nationality;
 
-export function NewGameWizard() {
+/** Joining a world of friends (`/join/:code`): the same wizard, without the mode step, human clubs disabled. */
+export interface JoinContext {
+  code: string;
+  worldName: string;
+  takenClubs: string[];
+}
+
+export function NewGameWizard({ join }: { join?: JoinContext }) {
   const { t, i18n } = useTranslation();
   const [manager, setManager] = useState<ManagerData>(() => ({
     name: "", background: null, nationality: null, sackingEnabled: true, face: { seed: randomFaceSeed() },
   }));
-  const [step, setStep] = useState<"manager" | "club">("manager");
+  const [step, setStep] = useState<"mode" | "manager" | "club">(join ? "manager" : "mode");
+  /** Solo career or a world of friends (multiplayer part 2). */
+  const [playMode, setPlayMode] = useState<"solo" | "multi">("solo");
+  const taken = new Set(join?.takenClubs ?? []);
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryEntry | null>(null);
@@ -196,6 +208,27 @@ export function NewGameWizard() {
     }
     setStarting(true);
     setStartError(null);
+    if (join) {
+      const r = await worldApi.join({
+        code: join.code,
+        clubId: selectedTeam.squadId,
+        manager: {
+          name: manager.name.trim(),
+          nationalityIso: manager.nationality.id,
+          backgroundId: manager.background.id,
+          face: manager.face,
+        },
+        sackingEnabled: manager.sackingEnabled,
+      });
+      if (!r.ok) {
+        setStarting(false);
+        setStartError(t(`world.errors.${r.error}`));
+        return;
+      }
+      await loadGameSave(r.data.saveId);
+      window.location.href = r.data.phase === "lobby" ? "/world" : "/dashboard";
+      return;
+    }
     try {
       const session = await createGameSave({
         leagueSlug: activeLeague.slug,
@@ -216,6 +249,7 @@ export function NewGameWizard() {
           face:           manager.face,
         },
         sackingEnabled: manager.sackingEnabled,
+        mode: playMode,
       });
 
       capture("career_started", {
@@ -223,6 +257,12 @@ export function NewGameWizard() {
         club: selectedTeam.name,
         database: database.id,
       });
+
+      // A world of friends waits in the lobby: the owner starts it from the league screen.
+      if (playMode === "multi") {
+        window.location.href = "/world";
+        return;
+      }
 
       // Catch up leagues that kicked off before the player's season begins.
       // Best-effort: a failure here shouldn't block the user from playing.
@@ -244,6 +284,40 @@ export function NewGameWizard() {
 
   if (preparing) return <PreSeasonLoadingScreen />;
 
+  if (step === "mode") {
+    return (
+      <WizardFrame backdrop>
+        <div className="flex-1 min-h-0 md:overflow-y-auto">
+          <div className="flex min-h-full flex-col">
+            <div className="m-auto w-full max-w-[720px] p-6 md:p-8">
+              <ScreenTitle subtitle={t("newGame.mode.subtitle")}>{t("newGame.mode.title")}</ScreenTitle>
+              <div className="grid gap-3 mt-8 sm:grid-cols-2">
+                <ChoiceCard
+                  title={t("newGame.mode.solo")}
+                  description={t("newGame.mode.soloDetail")}
+                  selected={playMode === "solo"}
+                  onSelect={() => setPlayMode("solo")}
+                />
+                <ChoiceCard
+                  title={t("newGame.mode.multi")}
+                  description={t("newGame.mode.multiDetail", { max: WORLD.MAX_MEMBERS })}
+                  selected={playMode === "multi"}
+                  onSelect={() => setPlayMode("multi")}
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-8">
+                <Button variant="secondary" className="px-3" onClick={() => { window.location.href = "/start"; }}>
+                  {t("newGame.back")}
+                </Button>
+                <Button className="flex-1" onClick={() => setStep("manager")}>{t("newGame.mode.next")}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </WizardFrame>
+    );
+  }
+
   if (step === "manager") {
     return (
       <WizardFrame backdrop>
@@ -254,7 +328,8 @@ export function NewGameWizard() {
               <ManagerForm
                 initial={manager}
                 onCancel={() => {
-                  window.location.href = "/start";
+                  if (join) window.location.href = `/join/${join.code}`;
+                  else setStep("mode");
                 }}
                 onSubmit={(m) => {
                   setManager(m);
@@ -395,13 +470,16 @@ export function NewGameWizard() {
                   {teams.map((club) => {
                     const selected = selectedTeam?.squadId === club.squadId;
                     const profile = profiles[club.squadId];
+                    const humanClub = taken.has(club.squadId);
                     return (
                       <li key={club.squadId}>
                         <button
                           type="button"
                           onClick={() => setSelectedTeam(club)}
                           aria-pressed={selected}
-                          className={`w-full flex items-center gap-3 min-h-12 px-2 py-2 text-left border-0 border-t border-border cursor-pointer ${
+                          disabled={humanClub}
+                          title={humanClub ? t("world.join.humanClub") : undefined}
+                          className={`w-full flex items-center gap-3 min-h-12 px-2 py-2 text-left border-0 border-t border-border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                             selected ? "bg-primary/10" : "bg-transparent hover:bg-foreground/5"
                           }`}
                         >
@@ -412,6 +490,7 @@ export function NewGameWizard() {
                             className="w-8 h-8 rounded-full shrink-0"
                           />
                           <span className={`flex-1 truncate text-base ${selected ? "text-primary" : ""}`}>{club.name}</span>
+                          {humanClub && <span className="text-sm text-muted-foreground shrink-0">{t("world.join.humanClub")}</span>}
                           {profile && <ReputationStars value={profile.reputation} />}
                         </button>
                       </li>
@@ -464,7 +543,7 @@ export function NewGameWizard() {
                 {starting
                   ? t("newGame.creatingSeave")
                   : selectedTeam
-                    ? t("newGame.startWith", { club: selectedTeam.name })
+                    ? t(join ? "world.join.joinWith" : "newGame.startWith", { club: selectedTeam.name })
                     : t("newGame.startCareer")}
               </Button>
             </div>
