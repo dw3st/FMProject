@@ -53,7 +53,7 @@ describe("lineup presets route", () => {
     expect((await putTactics({ lineupPresets: { A: presetA } }, stranger.session.token)).status).toBe(404);
     const ok = await putTactics({ lineupPresets: { A: presetA, B: presetB } });
     expect(ok.status).toBe(200);
-    const saved = (await saveService.getTactics(saveId))!;
+    const saved = (await saveService.getTactics(saveId, meta.seatId))!;
     expect(saved.lineupPresets?.A?.lineup).toEqual(ids);
     expect(saved.lineupPresets?.A?.slotInstructions?.[lb]).toEqual({ variant: "fb_inverted" });
     expect(saved.lineupPresets?.B?.customFormation?.slots).toHaveLength(11);
@@ -76,14 +76,14 @@ describe("lineup presets route", () => {
       { lineupPresets: { A: { ...presetA, slotInstructions: [{ press: "more" }] } } }, // slot 0 = GK
     ];
     for (const body of bad) expect((await putTactics(body)).status).toBe(400);
-    expect(Object.keys((await saveService.getTactics(saveId))!.lineupPresets ?? {})).toEqual(["A", "B"]);
+    expect(Object.keys((await saveService.getTactics(saveId, meta.seatId))!.lineupPresets ?? {})).toEqual(["A", "B"]);
 
     // Other edits keep the presets; a null slot deletes one, null deletes all.
     expect((await putTactics({ formation: "4-3-3" })).status).toBe(200);
-    expect(Object.keys((await saveService.getTactics(saveId))!.lineupPresets ?? {})).toEqual(["A", "B"]);
+    expect(Object.keys((await saveService.getTactics(saveId, meta.seatId))!.lineupPresets ?? {})).toEqual(["A", "B"]);
     expect((await putTactics({ lineupPresets: { A: null, B: presetB } })).status).toBe(200);
-    expect(Object.keys((await saveService.getTactics(saveId))!.lineupPresets ?? {})).toEqual(["B"]);
+    expect(Object.keys((await saveService.getTactics(saveId, meta.seatId))!.lineupPresets ?? {})).toEqual(["B"]);
     expect((await putTactics({ lineupPresets: null })).status).toBe(200);
-    expect((await saveService.getTactics(saveId))!.lineupPresets).toBeUndefined();
+    expect((await saveService.getTactics(saveId, meta.seatId))!.lineupPresets).toBeUndefined();
   }, 60_000);
 });

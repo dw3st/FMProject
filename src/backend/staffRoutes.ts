@@ -1,5 +1,5 @@
 import { saveService, SaveService } from "@/backend/SaveService";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { cancelScoutMissions } from "@/backend/scoutingWorld";
@@ -28,7 +28,7 @@ import type { Squad } from "@/types/playerTypes";
 type Req = Request & { params: Record<string, string> };
 type CountryInfo = { slug: string; name: string; flag: string; iso2: string; continent?: string };
 
-interface Human { meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
+interface Human { meta: SeatMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
 
 /** The human club (409 `noClub` when unemployed). */
 async function human(saveId: string, seatId: string, service: SaveService = saveService): Promise<Human | Response> {
@@ -199,7 +199,7 @@ export const staffRoutes = {
     if (!q) return Response.json({ error: "invalid query" }, { status: 400 });
     // Under the lock: a missing pool is generated and written on the first read.
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getWorldMeta(saveId);
+      const meta = await saveService.getMeta(saveId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
       // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.

@@ -37,7 +37,7 @@ describe("/api/saves/:id acts on the requester's seat", () => {
     const put = await call(meta.id, "PUT", token, { training_intensity: "heavy", currentDate: "2099-01-01" });
     expect(put.status).toBe(200);
     expect((await saveService.getSeat(meta.id, meta.seatId))?.training_intensity).toBe("heavy");
-    expect((await saveService.getWorldMeta(meta.id))?.currentDate).toBe(meta.currentDate);
+    expect((await saveService.getMeta(meta.id))?.currentDate).toBe(meta.currentDate);
   }, 300_000);
 
   test("the inbox route reads the requester's seat", async () => {

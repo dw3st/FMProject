@@ -29,19 +29,18 @@ import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
 export interface InboxSink {
-  appendInbox(saveId: string, message: InboxMessage, seatId?: string): Promise<void>;
+  appendInbox(saveId: string, message: InboxMessage, seatId: string): Promise<void>;
 }
 
 /**
  * Append a message to a seat's inbox. Pass the unit of work's service (e.g. the buffered day service in
  * advanceOneDay) so the message is persisted — or not — together with the rest of that unit of work.
- * TRANSITIONAL: `seatId` becomes required in Task 29 (absent = the first seat of the world).
  */
 export async function emitInboxMessage(
   saveId: string,
   message: InboxMessage,
   service: InboxSink,
-  seatId?: string,
+  seatId: string,
 ): Promise<void> {
   await service.appendInbox(saveId, message, seatId);
 }

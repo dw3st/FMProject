@@ -19,6 +19,7 @@ const HUMAN = "33";
 
 describe("achievements", () => {
   let saveId = "";
+  let seatId = "";
   let fixture: Fixture;
   let token = "";
   let otherToken = "";
@@ -28,6 +29,7 @@ describe("achievements", () => {
       clubId: HUMAN, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    seatId = meta.seatId;
     const all = await saveService.getAllFixturesForLeague(saveId, "premier_league");
     fixture = all
       .filter((f) => !f.played && (f.home === HUMAN || f.away === HUMAN) && f.date > addDays(meta.currentDate!, 3))
@@ -54,7 +56,7 @@ describe("achievements", () => {
   test("a recorded comeback win counts, wins:bronze unlocks with an inbox message", async () => {
     // 49 wins already: today's win is the 50th.
     const s0 = emptyAchievements();
-    await saveService.writeAchievements(saveId, { ...s0, counters: { ...s0.counters, wins: 49 } });
+    await saveService.writeAchievements(saveId, { ...s0, counters: { ...s0.counters, wins: 49 } }, seatId);
     await saveService.updateMeta(saveId, { currentDate: fixture.date });
     const home = fixture.home === HUMAN;
     const squad = (await saveService.getSquadById(saveId, HUMAN))!;
@@ -76,7 +78,7 @@ describe("achievements", () => {
     };
     const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
-    const state = await saveService.getAchievements(saveId);
+    const state = await saveService.getAchievements(saveId, seatId);
     expect(state.lastDay).toBe(fixture.date);
     expect(state.counters.wins).toBe(50);
     expect(state.counters.matches).toBe(1);
@@ -87,7 +89,7 @@ describe("achievements", () => {
     expect(state.attributes.motivation).toBeGreaterThan(10);
     // The attributes travel with the club.
     expect((await saveService.getSquadById(saveId, HUMAN))!.managerAttributes).toEqual(state.attributes);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, seatId);
     expect(inbox.some((m) => m.category === "achievement" && m.keys.includes("wins:bronze"))).toBe(true);
   }, 300_000);
 
@@ -103,12 +105,12 @@ describe("achievements", () => {
     expect((await call("/shop/created", "POST", token, { name: "Joe Test", position: "ST", nationality: "England", foot: "left" })).status).toBe(409);
 
     // Enough points: a lot of golds.
-    const st = await saveService.getAchievements(saveId);
+    const st = await saveService.getAchievements(saveId, seatId);
     const unlocked = { ...st.unlocked };
     for (const t of ["wins", "comebacks", "league_titles", "cup_titles", "youth_promoted", "balance", "seasons", "top_scorer", "thrashings", "derby_wins", "promotions", "clubs", "stadium", "big_signing", "sales_profit", "free_starter", "facilities", "ranking", "win_streak", "unbeaten_run"] as const) {
       for (const tier of ["bronze", "silver", "gold"] as const) unlocked[`${t}:${tier}`] = "2027-01-01";
     }
-    await saveService.writeAchievements(saveId, { ...st, unlocked });
+    await saveService.writeAchievements(saveId, { ...st, unlocked }, seatId);
 
     const p = await call("/profile", "PUT", token, { frame: "legend", badges: ["wins", "titles"], title: "comebacks" });
     expect(p.status).toBe(200);

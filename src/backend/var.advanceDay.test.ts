@@ -3,7 +3,7 @@
  * ban (board down, inbox), the club's next official match serves it.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { soloRecording } from "@/backend/testing/seatFixtures";
+import { soloMeta, soloRecording } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -32,7 +32,7 @@ describe("manager complaint cards in advanceOneDay", () => {
   test("a red card bans the manager for one match, served by the next official match", async () => {
     const [first, second] = fixtures as [Fixture, Fixture];
     await saveService.updateMeta(saveId, { currentDate: first.date });
-    const boardBefore = (await saveService.getMeta(saveId))!.board!.board;
+    const boardBefore = (await soloMeta(saveId))!.board!.board;
     const recording: PlayedMatchRecording = {
       fixtureId: first.id, score: { home: 0, away: 0 },
       teamStats: { home: {} as never, away: {} as never },
@@ -43,16 +43,16 @@ describe("manager complaint cards in advanceOneDay", () => {
     };
     const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
-    const meta = (await saveService.getMeta(saveId))!;
+    const meta = (await soloMeta(saveId))!;
     expect(meta.managerBan).toMatchObject({ matches: 1, since: first.date });
     // A draw moves the board a little; the two cards cost 4.
     expect(meta.board!.board).toBeLessThan(boardBefore - 2.5);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "discipline" && m.kind === "manager_banned" && m.matches === 1)).toBe(true);
 
     await saveService.updateMeta(saveId, { currentDate: second.date });
     const next = await advanceOneDay(saveService, saveId);
     expect(next.ok).toBe(true);
-    expect((await saveService.getMeta(saveId))!.managerBan).toBeUndefined();
+    expect((await soloMeta(saveId))!.managerBan).toBeUndefined();
   }, 300_000);
 });

@@ -2,7 +2,7 @@
  * The human manager at a national team — save I/O (`.claude/rules/game/national-teams.md` → "Técnico do jogador",
  * Etapa 41b). Pure rules in `src/Domain/national/nationalCoach.ts`; the day itself in `nationalWorld.ts`.
  */
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SeatMeta, SaveService } from "@/backend/SaveService";
 import { addDays } from "@/Domain/dates";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { mulberry32, seedFrom } from "@/Domain/rng";
@@ -178,7 +178,7 @@ export interface NationalCoachView {
   names: Record<string, string>;
 }
 
-export async function nationalCoachView(service: SaveService, saveId: string, seatId: string, meta: SaveMeta): Promise<NationalCoachView | null> {
+export async function nationalCoachView(service: SaveService, saveId: string, seatId: string, meta: SeatMeta): Promise<NationalCoachView | null> {
   const state = await service.getNationalState(saveId);
   if (!state) return null;
   const date = meta.currentDate ?? "";

@@ -301,7 +301,7 @@ describe("createSave generates continental competitions", () => {
         formation: "4-3-3",
         lineup: autoLineupDefaultFormation(mySquad),
       };
-      await saveService.saveTactics(saveId2, tactics);
+      await saveService.saveTactics(saveId2, tactics, meta2.seatId);
       await saveService.updateMeta(saveId2, { currentDate: round1Date });
 
       const { user, session } = devAutoLogin(`match-setup-${saveId2}@test.local`);

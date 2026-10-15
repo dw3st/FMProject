@@ -123,7 +123,7 @@ describe("season awards at the rollover", () => {
     const bm = managers.find((m) => m.id === entry.bestManager!.managerId)!;
     expect(bm.awards?.some((a) => a.kind === "best_manager" && a.competition === "premier_league" && a.season === entry.season)).toBe(true);
 
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "awards" && "kind" in m && m.kind === "league")).toBe(true);
 
     // Rerun on the same state (a retried day): no duplicate entry, no duplicate award on the row.

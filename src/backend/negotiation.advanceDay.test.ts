@@ -31,7 +31,7 @@ describe("negotiation in advanceOneDay", () => {
       player: loanee, parent, borrower: human, wageShare: 0.5, until: date, fee: 0,
     });
     const listed = human.players.filter((p) => p.positions[0] !== "GK").slice(-2).map((p) => p.id);
-    await saveService.saveMarket(saveId, { ...market, playerSellList: listed.map((playerId) => ({ playerId, priority: 1 })) });
+    await saveService.saveMarket(saveId, { ...market, playerSellList: listed.map((playerId) => ({ playerId, priority: 1 })) }, meta.seatId);
 
     const withLoan = (await saveService.getSquadById(saveId, meta.clubId))!;
     const borrowed = withLoan.players.find((p) => p.id === loanee.id)!;
@@ -46,12 +46,12 @@ describe("negotiation in advanceOneDay", () => {
     expect(after.players.some((p) => p.id === loanee.id)).toBe(false);
     const home = (await saveService.getSquadById(saveId, parent.id))!.players.find((p) => p.id === loanee.id)!;
     expect(home.loan).toBeUndefined();
-    expect((await saveService.getMarket(saveId))!.loans ?? []).toEqual([]);
-    const inbox = await saveService.getInbox(saveId);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.loans ?? []).toEqual([]);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "transfer" && m.kind === "loan_back")).toBe(true);
     // Listed players stay until the human answers a bid.
     for (const id of listed) expect(after.players.some((p) => p.id === id)).toBe(true);
-    const bids = (await saveService.getMarket(saveId))!.pendingBids ?? [];
+    const bids = (await saveService.getMarket(saveId, meta.seatId))!.pendingBids ?? [];
     for (const b of bids) {
       expect(listed).toContain(b.playerId);
       expect(inbox.some((m) => m.category === "transfer" && m.kind === "bid" && m.bidId === b.id)).toBe(true);

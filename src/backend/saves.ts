@@ -209,7 +209,7 @@ export const saveRoutes = {
 
     if (req.method === "DELETE") {
       if (auth.role !== "owner") return Response.json({ error: "only the owner deletes a world" }, { status: 403 });
-      const existing = await saveService.getWorldMeta(id);
+      const existing = await saveService.getMeta(id);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
       await saveService.deleteSave(id);
       deleteSaveMembers(id);

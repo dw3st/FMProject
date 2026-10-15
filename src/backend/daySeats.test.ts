@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buildSquadIndex } from "@/backend/squadIndex";
 import { humanClubSet, loadDaySeats, seatByClub } from "@/backend/daySeats";
-import type { SaveService, WorldMeta } from "@/backend/SaveService";
+import type { SaveService, SaveMeta } from "@/backend/SaveService";
 import type { SeatState } from "@/types/seatTypes";
 import type { Squad } from "@/types/playerTypes";
 
@@ -14,7 +14,7 @@ const index = buildSquadIndex([
 const seat = (clubId: string, extra: Partial<SeatState> = {}): SeatState => ({
   clubId, clubName: `Club ${clubId}`, clubColors: ["#000", "#fff"], leagueSlug: "pl", leagueName: "PL", ...extra,
 });
-const world: WorldMeta = {
+const world: SaveMeta = {
   id: "w", name: "w", createdAt: "", updatedAt: "", mode: "multi", seats: ["a", "b", "c", "gone"], currentDate: "2027-03-01",
 };
 const seats: Record<string, SeatState> = {

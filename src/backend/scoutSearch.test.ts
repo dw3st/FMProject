@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { getScoutIndex, parseScoutQuery } from "@/backend/scoutSearch";
-import { saveService, type WorldMeta } from "@/backend/SaveService";
+import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import type { Squad } from "@/types/playerTypes";
 
@@ -140,9 +140,9 @@ describe("getScoutIndex — shared in-flight build", () => {
     const meta = {
       id: "save1", name: "Save", createdAt: "", updatedAt: "", leagueSlug: "l", leagueName: "L",
       clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate: "2024-01-01",
-    } as unknown as WorldMeta;
+    } as unknown as SaveMeta;
 
-    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta);
+    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta);
     let resolveSquads!: (v: Squad[]) => void;
     const squadsPromise = new Promise<Squad[]>((res) => { resolveSquads = res; });
     const squadsSpy = spyOn(saveService, "getAllSquads").mockReturnValue(squadsPromise);
@@ -172,9 +172,9 @@ describe("getScoutIndex — shared in-flight build", () => {
     const meta = {
       id: "save2", name: "Save", createdAt: "", updatedAt: "", leagueSlug: "l", leagueName: "L",
       clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate: "2024-02-02",
-    } as unknown as WorldMeta;
+    } as unknown as SaveMeta;
 
-    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta);
+    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta);
     const marketSpy = spyOn(saveService, "getMarket").mockResolvedValue(null);
     const squadsSpy = spyOn(saveService, "getAllSquads").mockRejectedValueOnce(new Error("boom"));
 

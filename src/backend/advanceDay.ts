@@ -11,7 +11,7 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
-import { saveService, SaveService, type SeatMeta, type WorldMeta } from "@/backend/SaveService";
+import { saveService, SaveService, type SeatMeta, type SaveMeta } from "@/backend/SaveService";
 import { metaForSeat } from "@/Domain/seats/seats";
 import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
@@ -420,7 +420,7 @@ export async function advanceOneDay(
   options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
     // ── Load core state ──────────────────────────────────────────────────────
-    const world = await saveService.getWorldMeta(saveId);
+    const world = await saveService.getMeta(saveId);
     if (!world) return { ok: false, status: 404, error: "save not found" };
     if (!world.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
 
@@ -3138,7 +3138,7 @@ export async function advanceOneDay(
     await saveService.appendDayTransfers(saveId, currentDate, dayMoves);
 
     // World keys of the day; each seat's keys go into its `DaySeat.patch`.
-    const metaPatch: Partial<WorldMeta> = {};
+    const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
@@ -3265,7 +3265,7 @@ export const advanceDayRoutes = {
     // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
     // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
     if (result.applied) {
-      const m = await saveService.getWorldMeta(saveId);
+      const m = await saveService.getMeta(saveId);
       if (m?.currentDate) {
         try {
           const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
@@ -3279,7 +3279,7 @@ export const advanceDayRoutes = {
     // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
     // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
     {
-      const m = await saveService.getWorldMeta(saveId);
+      const m = await saveService.getMeta(saveId);
       if (m?.currentDate) {
         try {
           await ensureYouthCompetitions({
@@ -3295,7 +3295,7 @@ export const advanceDayRoutes = {
     // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
     // world drawn from the world's start, with past games; it is drawn again from the career's day.
     {
-      const m = await saveService.getWorldMeta(saveId);
+      const m = await saveService.getMeta(saveId);
       if (m?.currentDate) {
         try {
           await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });

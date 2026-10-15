@@ -81,15 +81,15 @@ describe("facilities routes", () => {
     // A happy board and money in the bank: approved with the board's funding.
     const ledgerSeason = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
     await recordMoney(saveService, saveId, ledgerSeason, { leagueSlug: "premier_league", clubSlug: "33" },
-      { date: meta.currentDate!, kind: "prize", amount: 500_000_000, label: "test money", ref: { stage: "board_bonus" } });
-    await saveService.updateMeta(saveId, { board: { ...meta.board!, board: 100 } });
+      { date: meta.currentDate!, kind: "prize", amount: 500_000_000, label: "test money", ref: { stage: "board_bonus" } }, meta.seatId);
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...meta.board!, board: 100 } });
     const ok = await (await call("/request", "POST", session.token, { kind: "stand", stand: "east", seats: 2000 })).json() as any;
     expect(ok.approved).toBe(true);
     expect(ok.boardShare).toBe(0.5);
     expect(ok.view.effectiveCapacity).toBeLessThan(ok.view.capacity);
     // One project per facility.
     expect((await call("/request", "POST", session.token, { kind: "stand", stand: "west", seats: 1000 })).status).toBe(409);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     // A refusal is answered on screen only.
     expect(inbox.some((m) => m.category === "facilities" && m.kind === "refused")).toBe(false);
     expect(inbox.some((m) => m.category === "facilities" && m.kind === "approved")).toBe(true);
@@ -97,13 +97,13 @@ describe("facilities routes", () => {
     // The day pays the first instalment and the board's half of it.
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);
-    const ledger = await saveService.getLedger(saveId, ledgerSeason);
+    const ledger = await saveService.getLedger(saveId, ledgerSeason, meta.seatId);
     const inst = ledger.filter((e) => e.kind === "facilities");
     const fund = ledger.filter((e) => e.kind === "board_funding");
     expect(inst).toHaveLength(1);
     expect(fund).toHaveLength(1);
     expect(Math.abs(fund[0]!.amount + inst[0]!.amount / 2)).toBeLessThan(2);
-    const balanceSum = (await Promise.all((await saveService.listLedgerSeasons(saveId)).map((s) => saveService.getLedger(saveId, s))))
+    const balanceSum = (await Promise.all((await saveService.listLedgerSeasons(saveId, meta.seatId)).map((s) => saveService.getLedger(saveId, s, meta.seatId))))
       .flat().reduce((s, e) => s + e.amount, 0);
     expect(Math.abs(balanceSum - (await saveService.getSquadById(saveId, "33"))!.finances!.budget)).toBeLessThan(1);
 
@@ -120,14 +120,14 @@ describe("facilities routes", () => {
     const after = (await saveService.getSquadById(saveId, "33"))!;
     expect(after.facilities!.projects).toHaveLength(0);
     expect(after.venue!.capacity).toBe(squad0.venue!.capacity + 2000);
-    const paid = (await saveService.getLedger(saveId, ledgerSeason)).filter((e) => e.kind === "facilities")
+    const paid = (await saveService.getLedger(saveId, ledgerSeason, meta.seatId)).filter((e) => e.kind === "facilities")
       .reduce((s, e) => s - e.amount, 0);
     expect(paid).toBe(p.cost);
-    expect((await saveService.getInbox(saveId)).some((m) => m.category === "facilities" && m.kind === "completed")).toBe(true);
+    expect((await saveService.getInbox(saveId, meta.seatId)).some((m) => m.category === "facilities" && m.kind === "completed")).toBe(true);
 
     // Sacked: the club becomes AI without facilities, the routes answer 409 noClub.
-    const m2 = (await saveService.getMeta(saveId))!;
-    await saveService.updateMeta(saveId, { board: { ...m2.board!, board: 5 } });
+    const m2 = (await saveService.getSeatMeta(saveId, meta.seatId))!;
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...m2.board!, board: 5 } });
     const sacked = await advanceOneDay(saveService, saveId);
     expect(sacked.ok).toBe(true);
     expect((await saveService.getSquadById(saveId, "33"))!.facilities).toBeUndefined();
@@ -171,8 +171,8 @@ describe("facility item requests", () => {
     };
     const season = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
     const money = (amount: number) => recordMoney(saveService, saveId, season, { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
-      { date: meta.currentDate!, kind: "prize", amount, label: "test money", ref: { stage: "board_bonus" } });
-    const ledgerSum = async () => (await Promise.all((await saveService.listLedgerSeasons(saveId)).map((x) => saveService.getLedger(saveId, x))))
+      { date: meta.currentDate!, kind: "prize", amount, label: "test money", ref: { stage: "board_bonus" } }, meta.seatId);
+    const ledgerSum = async () => (await Promise.all((await saveService.listLedgerSeasons(saveId, meta.seatId)).map((x) => saveService.getLedger(saveId, x, meta.seatId))))
       .flat().reduce((t, e) => t + e.amount, 0);
 
     // View: ten items with quotes and what would happen.
@@ -206,13 +206,13 @@ describe("facility item requests", () => {
 
     // With money and a board at 10: paid now in one line, no board funding.
     await money(100_000_000);
-    await saveService.updateMeta(saveId, { board: { ...meta.board!, board: 10 } });
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...meta.board!, board: 10 } });
     const before = (await human()).finances!.budget;
     const quote = (await (await call("", "GET")).json() as any).items.find((i: any) => i.id === "stadiumPitch").quotes.repair["100"];
     const paid = await (await call("/request", "POST", { kind: "repair", item: "stadiumPitch", to: 100 })).json() as any;
     expect(paid).toMatchObject({ approved: true, paidByClub: true });
     expect((await human()).finances!.budget).toBe(before - quote.cost);
-    const ledger = await saveService.getLedger(saveId, season);
+    const ledger = await saveService.getLedger(saveId, season, meta.seatId);
     const lines = ledger.filter((e) => e.kind === "facilities");
     expect(lines).toHaveLength(1);
     expect(lines[0]!.ref?.facility).toBe("repair");
@@ -229,10 +229,10 @@ describe("facility item requests", () => {
     const bigView = (await (await call("", "GET")).json() as any).items.find((i: any) => i.id === "seats");
     expect(bigView.quotes.repair["100"].small).toBe(false);
     expect(bigView.quotes.repair["100"].cost).toBeGreaterThan(0.02 * revenue);
-    await saveService.updateMeta(saveId, { board: { ...meta.board!, board: 40 } });
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...meta.board!, board: 40 } });
     const low = await (await call("/request", "POST", { kind: "repair", item: "seats", to: 100 })).json() as any;
     expect(low).toMatchObject({ approved: false, reason: "board_low" });
-    await saveService.updateMeta(saveId, { board: { ...meta.board!, board: 90 } });
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...meta.board!, board: 90 } });
     await money(500_000_000);
     const big = await (await call("/request", "POST", { kind: "repair", item: "seats", to: 100 })).json() as any;
     expect(big.approved).toBe(true);
@@ -251,7 +251,7 @@ describe("facility item requests", () => {
     const rebuilt = await (await call("/request", "POST", { kind: "rebuild", item: "trainingPitches" })).json() as any;
     expect(rebuilt.approved).toBe(true);
     expect(rebuilt.project.kind).toBe("rebuild");
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "facilities" && m.kind === "approved" && (m as any).item === "seats")).toBe(true);
 
     // One works per group (#152): the stadium (seats) and the training ground (pitches) are busy.
@@ -281,7 +281,7 @@ describe("facility item requests", () => {
       if (f) fixture = f;
     }
     expect(fixture).not.toBeNull();
-    await saveService.saveTactics(saveId, { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation(await human()) });
+    await saveService.saveTactics(saveId, { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation(await human()) }, meta.seatId);
     await saveService.updateMeta(saveId, { currentDate: fixture!.date });
     const ms = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, {
       headers: { cookie: `fs_session=${session.token}` },

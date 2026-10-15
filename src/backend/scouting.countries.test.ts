@@ -56,17 +56,17 @@ describe("missions teach the country to their leader", () => {
     const mission = (over: Partial<ScoutAssignment>): ScoutAssignment => ({
       id: "m", scoutId: "chief", target: { kind: "country", country: "Spain" }, start, weeks: 4, weeksDone: 0, observed: 0, ...over,
     });
-    const state = await saveService.getScouting(saveId);
+    const state = await saveService.getScouting(saveId, meta.seatId);
     await saveService.writeScouting(saveId, {
       ...state,
       missions: [
         mission({ id: "mc", target: { kind: "country", country: "Spain" } }),
         mission({ id: "mf", scoutId: field.id, target: { kind: "continent", continent: "South America" }, weeks: 8 }),
       ],
-    });
+    }, meta.seatId);
 
     const monday = nextMonday(start);
-    await scoutingDay(saveService, saveId, meta.seatId, { date: monday, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
+    await scoutingDay(saveService, saveId, meta.seatId, { date: monday, meta: (await saveService.getSeatMeta(saveId, meta.seatId))!, matchEvents: [] });
     const after = (await saveService.getSquadById(saveId, "33"))!;
     const chief = after.staff!.members.find((m) => m.id === chiefId)!;
     expect(chief.countryKnowledge?.Spain).toEqual({ k: 43.6, last: monday });
@@ -87,9 +87,9 @@ describe("missions teach the country to their leader", () => {
       ...noChief, staff: { ...noChief.staff!, members: noChief.staff!.members.filter((m) => m.role !== "scout") },
     });
     const next = addDays(monday, 7);
-    const before = await saveService.getScouting(saveId);
-    await scoutingDay(saveService, saveId, meta.seatId, { date: next, meta: (await saveService.getMeta(saveId))!, matchEvents: [] });
-    const worked = (await saveService.getScouting(saveId)).missions.find((m) => m.id === "mc");
+    const before = await saveService.getScouting(saveId, meta.seatId);
+    await scoutingDay(saveService, saveId, meta.seatId, { date: next, meta: (await saveService.getSeatMeta(saveId, meta.seatId))!, matchEvents: [] });
+    const worked = (await saveService.getScouting(saveId, meta.seatId)).missions.find((m) => m.id === "mc");
     expect(worked?.weeksDone ?? 4).toBeGreaterThan(before.missions.find((m) => m.id === "mc")!.weeksDone);
     const finalClub = (await saveService.getSquadById(saveId, "33"))!;
     expect(finalClub.staff!.members.some((m) => m.role === "scout")).toBe(false);

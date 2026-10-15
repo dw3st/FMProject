@@ -23,7 +23,7 @@ describe("addSeat", () => {
 
     const b = await addSeat(meta.id, { userId: friend.user.id, clubId: clubB, manager: { name: "Friend", nationalityIso: "es", backgroundId: "former-player" } });
 
-    const world = (await saveService.getWorldMeta(meta.id))!;
+    const world = (await saveService.getMeta(meta.id))!;
     expect(world.mode).toBe("multi");
     expect(world.seats).toEqual([meta.seatId, b.seatId]);
     expect(memberOf(meta.id, friend.user.id)).toMatchObject({ seatId: b.seatId, role: "member" });

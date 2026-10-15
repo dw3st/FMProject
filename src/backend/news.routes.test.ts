@@ -18,7 +18,7 @@ describe("news route", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    await saveService.updateMeta(saveId, { followedLeagues: ["la_liga"] });
+    await saveService.updateSeat(saveId, meta.seatId, { followedLeagues: ["la_liga"] });
     const { user, session } = devAutoLogin("news-route@test.local");
     token = session.token;
     await ownSolo(saveId, user.id);

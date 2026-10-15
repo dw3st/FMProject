@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { seatWindowRef } from "@/backend/marketWindowWorld";
+import { soloMeta } from "@/backend/testing/seatFixtures";
 import {
   humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
 } from "@/backend/registrationWorld";
@@ -25,7 +26,7 @@ describe("registrationWorld", () => {
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 
   const ctxOn = async (date?: string) => {
-    const meta = (await saveService.getMeta(saveId))!;
+    const meta = (await soloMeta(saveId))!;
     return registrationDayCtx(saveService, saveId, meta, await saveService.getSquadIndex(saveId), [seatWindowRef(meta)], date);
   };
 

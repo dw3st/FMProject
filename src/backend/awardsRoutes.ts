@@ -31,7 +31,7 @@ export const awardsRoutes = {
       year = Number(raw);
       if (year < 1900 || year > 2999) return Response.json({ error: "invalid year" }, { status: 400 });
     }
-    const meta = await saveService.getWorldMeta(saveId);
+    const meta = await saveService.getMeta(saveId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const years = [...(await saveService.listAwardYears(saveId))].sort((a, b) => a - b);
     const pick = year ?? years[years.length - 1];

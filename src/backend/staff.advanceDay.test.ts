@@ -64,10 +64,10 @@ describe("staff contracts in the day", () => {
     await saveService.saveSquadById(saveId, club);
     // Missions: the departing scout's, the chief's, and one led by someone who is not at the club
     // (the Monday safety net drops it).
-    const scoutingNow = await saveService.getScouting(saveId);
+    const scoutingNow = await saveService.getScouting(saveId, meta.seatId);
     await saveService.writeScouting(saveId, { ...scoutingNow, missions: [
       mission("m-scout", scout.id, addDays(monday, -7)), mission("m-chief", "chief", addDays(monday, -7)), mission("m-ghost", "ghost", addDays(monday, -7)),
-    ] });
+    ] }, meta.seatId);
     // Whoever's contract ended before today (the analyst, the scout) is not paid this Monday.
     const mondayBill = squadStaffWages(club.staff, monday);
     expect(mondayBill).toBe(squadStaffWages(club.staff) - endedScout.contract!.wage - members.find((m) => m.id === analyst.id)!.contract!.wage);
@@ -80,19 +80,19 @@ describe("staff contracts in the day", () => {
     const pool = await saveService.getStaffPool(saveId, monday);
     expect(pool.members.find((m) => m.id === analyst.id)?.contract).toBeUndefined();
     expect(pool.members.find((m) => m.id === analyst.id)?.since).toBe(monday);
-    const inbox = (await saveService.getInbox(saveId)).filter((m): m is ContractInboxMessage => m.category === "contract");
+    const inbox = (await saveService.getInbox(saveId, meta.seatId)).filter((m): m is ContractInboxMessage => m.category === "contract");
     expect(inbox.some((m) => m.kind === "staff_renewed" && m.staff!.some((s) => s.id === medic.id))).toBe(true);
     expect(inbox.some((m) => m.kind === "staff_left" && m.staff!.some((s) => s.id === analyst.id))).toBe(true);
     // The departing field scout's mission ended with him; the chief's goes on.
     expect(club.staff!.members.some((m) => m.id === scout.id)).toBe(false);
-    expect((await saveService.getScouting(saveId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
+    expect((await saveService.getScouting(saveId, meta.seatId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
     // The Monday line is the contracts' sum of the squad the day started with.
     const season = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
-    const line = (await saveService.getLedger(saveId, season)).find((e) => e.kind === "staff" && e.date === monday && !e.ref);
+    const line = (await saveService.getLedger(saveId, season, meta.seatId)).find((e) => e.kind === "staff" && e.date === monday && !e.ref);
     expect(line!.amount).toBe(-mondayBill);
 
     // The manager in charge: one warning, no renewal.
-    await saveService.updateMeta(saveId, { responsibilities: { contracts: "manager" } });
+    await saveService.updateSeat(saveId, meta.seatId, { responsibilities: { contracts: "manager" } });
     const next = await advanceTo(isMonday);
     club = (await saveService.getSquadById(saveId, "33"))!;
     const gk = club.staff!.members.find((m) => m.role === "goalkeeping")!;
@@ -106,7 +106,7 @@ describe("staff contracts in the day", () => {
     const warned = club.staff!.members.find((m) => m.id === gk.id)!;
     expect(warned.contract!.until).toBe(gkUntil);
     expect(warned.contract!.decision).toBe("warned");
-    const warnings = (await saveService.getInbox(saveId))
+    const warnings = (await saveService.getInbox(saveId, meta.seatId))
       .filter((m): m is ContractInboxMessage => m.category === "contract" && m.kind === "staff_expiring");
     expect(warnings.filter((m) => m.staff!.some((s) => s.id === gk.id))).toHaveLength(1);
 
@@ -130,7 +130,7 @@ describe("staff contracts in the day", () => {
     expect(club.staff!.members.some((m) => m.id === veteran.id)).toBe(false);
     for (const m of club.staff!.members) expect(m.age).toBe(agesBefore.get(m.id)! + 1);
     expect(after.members.some((m) => m.id === veteran.id)).toBe(false);
-    const retiredNews = (await saveService.getInbox(saveId))
+    const retiredNews = (await saveService.getInbox(saveId, meta.seatId))
       .filter((m): m is ContractInboxMessage => m.category === "contract" && m.kind === "staff_retired");
     expect(retiredNews.some((m) => m.staff!.some((s) => s.id === veteran.id))).toBe(true);
     expect(after.refreshedOn).toBe(today);

@@ -73,7 +73,7 @@ export function stripHumanOnly(squad: Squad): Squad {
 
 /** Read a save's full world into a serialisable snapshot. */
 async function buildKitWorld(saveId: string): Promise<KitWorld> {
-  const meta = await saveService.getWorldMeta(saveId);
+  const meta = await saveService.getMeta(saveId);
   // Leagues from activeLeagues + every cup, continental and youth folder (none is a league state).
   const knockoutSlugs = (await saveService.listCompetitionSlugs(saveId)).filter(
     (s) => isCupSlug(s) || isContinentalSlug(s) || isYouthCompSlug(s),
@@ -151,7 +151,7 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
 
   // Kit squads predate contracts: give every player without one a contract ending on his
   // league's current season end (the fresh save's `activeLeagues`).
-  const kitMeta = await saveService.getWorldMeta(saveId);
+  const kitMeta = await saveService.getMeta(saveId);
   const leagueEnds = new Map((kitMeta?.activeLeagues ?? []).map((l) => [l.leagueSlug, l.end] as const));
   const fallbackEnd = defaultSeasonEnd(kitMeta?.currentDate ?? "2026-08-01");
 
@@ -207,7 +207,7 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
 export async function applyRandomStartKit(
   saveId: string,
 ): Promise<{ applied: boolean; kit?: string; reason?: string }> {
-  const meta = await saveService.getWorldMeta(saveId);
+  const meta = await saveService.getMeta(saveId);
   if (!meta?.currentDate) return { applied: false, reason: "no meta" };
 
   const activeLeagues = meta.activeLeagues ?? [];

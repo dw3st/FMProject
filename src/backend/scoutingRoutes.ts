@@ -20,7 +20,7 @@ import { renewalContract } from "@/Domain/contracts/contracts";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { daysBetween } from "@/Domain/dates";
 import { chiefHandlesScouting } from "@/Domain/responsibilities/director";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { StaffMember } from "@/types/staffTypes";
 import type {
@@ -34,7 +34,7 @@ const TARGET_KINDS: ScoutTargetKind[] = ["country", "league", "continent", "play
 const LINES = ["GK", "Defender", "Midfielder", "Forward"] as const;
 const CONTINENTS = new Set(Object.values(countriesRaw as Record<string, { continent?: string }>).map((c) => c.continent).filter(Boolean));
 
-async function human(saveId: string, seatId: string): Promise<{ meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string } } | Response> {
+async function human(saveId: string, seatId: string): Promise<{ meta: SeatMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string } } | Response> {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });

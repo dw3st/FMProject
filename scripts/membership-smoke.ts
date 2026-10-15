@@ -75,7 +75,7 @@ async function createSmokeSave(): Promise<string> {
     manager: { name: "Smoke Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
   smokeSeatId = meta.seatId;
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
   console.log(`Save ${meta.id} — ${club.name} (${pl.name}), start ${meta.currentDate}, kit: ${kit.applied ? kit.kit : kit.reason}\n`);
   return meta.id;
@@ -103,7 +103,7 @@ async function squadRoute(saveId: string, league: string, club: string): Promise
 let saveId: string | null = null;
 try {
   saveId = await createSmokeSave();
-  const meta = (await saveService.getMeta(saveId))!;
+  const meta = (await saveService.getSeatMeta(saveId, smokeSeatId))!;
   await checkFiles(saveId, "fresh save");
 
   // ── Pick the clubs ────────────────────────────────────────────────────────

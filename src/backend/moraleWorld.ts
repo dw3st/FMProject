@@ -105,10 +105,10 @@ export async function applyMoraleDay(
   });
   await service.saveSquadById(saveId, out.squad);
   if (market && (out.listRequested.length > 0 || out.unlistRequested.length > 0)) {
-    await service.saveMarket(saveId, marketAfterRequests(market, out.listRequested, out.unlistRequested));
+    await service.saveMarket(saveId, marketAfterRequests(market, out.listRequested, out.unlistRequested), seatId);
   } else if (!market && out.listRequested.length > 0) {
     // No market file yet (first days): the next tick builds one from this list.
-    await service.saveMarket(saveId, marketAfterRequests(emptyMarket(), out.listRequested, []));
+    await service.saveMarket(saveId, marketAfterRequests(emptyMarket(), out.listRequested, []), seatId);
   }
   return out.news;
 }

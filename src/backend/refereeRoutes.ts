@@ -63,7 +63,7 @@ export const refereeRoutes = {
     const season = url.searchParams.get("season");
     if (!COMPETITION.test(competition)) return Response.json({ error: "invalid competition" }, { status: 400 });
     if (season !== null && !SEASON.test(season)) return Response.json({ error: "invalid season" }, { status: 400 });
-    const [meta, pool, state, seat] = await Promise.all([saveService.getWorldMeta(saveId), saveService.getRefereePool(saveId), saveService.getRefereeState(saveId), saveService.getSeat(saveId, auth.seatId)]);
+    const [meta, pool, state, seat] = await Promise.all([saveService.getMeta(saveId), saveService.getRefereePool(saveId), saveService.getRefereeState(saveId), saveService.getSeat(saveId, auth.seatId)]);
     if (!meta || !pool) return Response.json({ error: "no referees" }, { status: 404 });
     const today = meta.currentDate ?? "";
     const keys = await saveService.listRefereeSeasons(saveId);

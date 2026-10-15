@@ -1,4 +1,4 @@
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SeatMeta, SaveService } from "@/backend/SaveService";
 import { getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { createManagerTracker } from "@/backend/managerWorld";
 import { tierOfLeague } from "@/Domain/season/countryRollover";
@@ -77,7 +77,7 @@ export async function withInitialFacilities(squad: Squad, leagueSlug: string): P
 const weightCache = new Map<string, number>();
 
 async function countryWeightOf(
-  service: SaveService, saveId: string, meta: SaveMeta, country: string | null, season: string,
+  service: SaveService, saveId: string, meta: SeatMeta, country: string | null, season: string,
 ): Promise<number> {
   if (!country) return MANAGERS.WEIGHT_MIN;
   const cached = meta.managerWeights?.[country];
@@ -95,7 +95,7 @@ async function countryWeightOf(
 }
 
 /** EUR per seat of a stand expansion for the club's league (country weight × league tier). */
-export async function seatCostFor(service: SaveService, saveId: string, meta: SaveMeta, leagueSlug: string): Promise<number> {
+export async function seatCostFor(service: SaveService, saveId: string, meta: SeatMeta, leagueSlug: string): Promise<number> {
   const catalog = await getLeagueData();
   const country = catalog.find((l) => l.slug === leagueSlug)?.country ?? null;
   const year = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === leagueSlug)?.year;

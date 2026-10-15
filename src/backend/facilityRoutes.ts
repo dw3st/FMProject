@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { SaveService, saveService, type SaveMeta } from "@/backend/SaveService";
+import { SaveService, saveService, type SeatMeta } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { recordMoney } from "@/backend/FinancialService";
@@ -31,7 +31,7 @@ type Req = Request & { params: Record<string, string> };
 const STANDS: readonly StandId[] = ["north", "south", "east", "west"];
 
 interface Human {
-  meta: SaveMeta;
+  meta: SeatMeta;
   squad: Squad;
   ref: { leagueSlug: string; clubSlug: string };
   date: string;

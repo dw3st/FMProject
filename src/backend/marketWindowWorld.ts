@@ -1,4 +1,4 @@
-import type { SeatMeta, WorldMeta } from "@/backend/SaveService";
+import type { SeatMeta, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { getLeagueData, getPyramids, type LeagueDataEntry } from "@/backend/advanceDay";
 import { topLeagueOf } from "@/backend/continentalWorld";
@@ -127,7 +127,7 @@ function buildWindowContext(args: {
 
 /** The window context of a world on `date`, with the windows of the given seats. */
 export async function loadWindowContext(
-  world: Pick<WorldMeta, "activeLeagues" | "currentDate">,
+  world: Pick<SaveMeta, "activeLeagues" | "currentDate">,
   index: SquadIndex | null,
   date = world.currentDate ?? "",
   seats: SeatWindowRef[] = [],

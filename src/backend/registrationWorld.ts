@@ -1,4 +1,4 @@
-import type { SaveService, WorldMeta } from "@/backend/SaveService";
+import type { SaveService, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { Squad } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
@@ -48,7 +48,7 @@ function gateOf(meta: LeagueSeasonMeta | null): ContinentalGate | undefined {
 export async function registrationDayCtx(
   service: SaveService,
   saveId: string,
-  world: Pick<WorldMeta, "activeLeagues" | "currentDate">,
+  world: Pick<SaveMeta, "activeLeagues" | "currentDate">,
   index: SquadIndex | null,
   /** The seats (their clubs are human: their lists follow the seat's window and send it the notices). */
   seats: SeatWindowRef[],

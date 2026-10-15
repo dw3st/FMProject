@@ -54,13 +54,13 @@ export interface SaveDatabase {
 
 export type { SaveManager } from "@/types/seatTypes";
 import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
-import { metaForSeat, splitSeatPatch } from "@/Domain/seats/seats";
+import { metaForSeat } from "@/Domain/seats/seats";
 
 /**
  * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
  * everything shared by the seats. What belonged to the player lives in `seats/{seatId}/seat.json`.
  */
-export interface WorldMeta {
+export interface SaveMeta {
   id:         string;
   name:       string;
   createdAt:  string;
@@ -88,13 +88,7 @@ export interface WorldMeta {
 }
 
 /** The world meta merged with one seat (`metaForSeat`): the shape the meta had before seats, plus `seatId`. */
-export type SeatMeta = WorldMeta & SeatState & { seatId: string };
-
-/**
- * TRANSITIONAL (Tasks 4–29 of the seats plan): the merged meta of the FIRST seat. Task 29 turns `SaveMeta`
- * into the world meta (renaming `WorldMeta`) and deletes this alias.
- */
-export type SaveMeta = SeatMeta;
+export type SeatMeta = SaveMeta & SeatState & { seatId: string };
 
 // ── SaveService ──────────────────────────────────────────────────────────────
 
@@ -127,46 +121,28 @@ export class SaveService {
 
   // ── Meta ───────────────────────────────────────────────────────────────────
 
-  listSaves(): Promise<WorldMeta[]> {
+  listSaves(): Promise<SaveMeta[]> {
     return this.dal.listSaves();
   }
 
-  /** TRANSITIONAL (Task 29 makes it return the world meta only): the world merged with the FIRST seat. */
-  async getMeta(saveId: string): Promise<SaveMeta | null> {
-    const world = await this.dal.readMeta(saveId);
-    if (!world) return null;
-    const seatId = world.seats?.[0];
-    const seat = seatId ? await this.dal.readSeat(saveId, seatId) : null;
-    // A world without a seat only exists in tests that write a bare meta: it has no seat fields.
-    return seat && seatId ? metaForSeat(world, seatId, seat) : (world as SaveMeta);
+  /** The world meta as stored (no seat merged; a seat's view is `getSeatMeta`). */
+  getMeta(saveId: string): Promise<SaveMeta | null> {
+    return this.dal.readMeta(saveId);
   }
 
-  /**
-   * TRANSITIONAL (Task 29 makes it world-only): seat keys of the patch go to the FIRST seat, the rest to the
-   * world meta (`splitSeatPatch`).
-   */
-  async updateMeta(
-    saveId: string,
-    patch: Partial<Omit<SaveMeta, "id" | "createdAt" | "seatId">>,
-  ): Promise<SaveMeta> {
+  /** Patches the world meta (a seat's keys go through `updateSeat`). */
+  async updateMeta(saveId: string, patch: Partial<Omit<SaveMeta, "id" | "createdAt">>): Promise<SaveMeta> {
     const meta = await this.dal.readMeta(saveId);
     if (!meta) throw new Error(`Save not found: ${saveId}`);
-    const seatId = meta.seats?.[0];
-    // A world without a seat (a bare meta written by a test) keeps every key in the meta, as before seats.
-    const split = seatId ? splitSeatPatch(patch) : { world: patch as Record<string, unknown>, seat: {} };
-    const world: WorldMeta = {
+    const updated: SaveMeta = {
       ...meta,
-      ...(split.world as Partial<WorldMeta>),
+      ...patch,
       id:        meta.id,
       createdAt: meta.createdAt,
       updatedAt: new Date().toISOString(),
     };
-    await this.dal.writeMeta(world);
-    if (!seatId) return world as SaveMeta;
-    const seat = Object.keys(split.seat).length > 0
-      ? await this.updateSeat(saveId, seatId, split.seat)
-      : await this.dal.readSeat(saveId, seatId);
-    return seat ? metaForSeat(world, seatId, seat) : (world as SaveMeta);
+    await this.dal.writeMeta(updated);
+    return updated;
   }
 
   deleteSave(saveId: string): Promise<void> {
@@ -174,11 +150,6 @@ export class SaveService {
   }
 
   // ── Seats (`.claude/rules/game/multiplayer.md`) ──────────────────────────────
-
-  /** The world meta as stored (no seat merged). */
-  getWorldMeta(saveId: string): Promise<WorldMeta | null> {
-    return this.dal.readMeta(saveId);
-  }
 
   getSeat(saveId: string, seatId: string): Promise<SeatState | null> {
     return this.dal.readSeat(saveId, seatId);
@@ -235,19 +206,6 @@ export class SaveService {
     await this.dal.writeMeta({ ...world, mode: "multi", seats: [...world.seats, seatId], updatedAt: new Date().toISOString() });
   }
 
-  /** TRANSITIONAL (removed in Task 29): the first seat of the world. */
-  private async primarySeatId(saveId: string): Promise<string> {
-    const world = await this.dal.readMeta(saveId);
-    const seatId = world?.seats?.[0];
-    if (!seatId) throw new Error(`save ${saveId} has no seat`);
-    return seatId;
-  }
-
-  /** TRANSITIONAL (removed in Task 29): `seatId`, or the first seat when absent. */
-  protected async seatOr(saveId: string, seatId: string | undefined): Promise<string> {
-    return seatId ?? this.primarySeatId(saveId);
-  }
-
   // ── Season ─────────────────────────────────────────────────────────────────
 
   readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {
@@ -259,15 +217,13 @@ export class SaveService {
   }
 
   // ── Tactics (seat) ───────────────────────────────────────────────────────────
-  // TRANSITIONAL: the trailing `seatId` of the seat-file methods is optional until Task 29 (absent = the
-  // first seat of the world).
 
-  async getTactics(saveId: string, seatId?: string): Promise<TacticsSave | null> {
-    return this.dal.readSeatTactics(saveId, await this.seatOr(saveId, seatId));
+  async getTactics(saveId: string, seatId: string): Promise<TacticsSave | null> {
+    return this.dal.readSeatTactics(saveId, seatId);
   }
 
-  async saveTactics(saveId: string, tactics: TacticsSave, seatId?: string): Promise<void> {
-    return this.dal.writeSeatTactics(saveId, await this.seatOr(saveId, seatId), tactics);
+  async saveTactics(saveId: string, tactics: TacticsSave, seatId: string): Promise<void> {
+    return this.dal.writeSeatTactics(saveId, seatId, tactics);
   }
 
   // ── Market: the world's rotation + the seat's lists (`src/Domain/market/seatMarket.ts`) ──────────
@@ -281,14 +237,14 @@ export class SaveService {
   }
 
   /** The market as the domain reads it: the world's rotation joined with the seat's fields. */
-  async getMarket(saveId: string, seatId?: string): Promise<MarketState | null> {
-    const seat = await this.seatOr(saveId, seatId);
+  async getMarket(saveId: string, seatId: string): Promise<MarketState | null> {
+    const seat = seatId;
     return joinMarket(await this.dal.readMarket(saveId), await this.dal.readSeatMarket(saveId, seat));
   }
 
   /** Writes both parts of a joined market. */
-  async saveMarket(saveId: string, market: MarketState, seatId?: string): Promise<void> {
-    const seat = await this.seatOr(saveId, seatId);
+  async saveMarket(saveId: string, market: MarketState, seatId: string): Promise<void> {
+    const seat = seatId;
     const parts = splitMarket(market);
     await this.dal.writeMarket(saveId, parts.world);
     await this.dal.writeSeatMarket(saveId, seat, parts.seat);
@@ -375,23 +331,23 @@ export class SaveService {
   // ── Scouting (`.claude/rules/game/scouting.md`) ─────────────────────────────
 
   /** The seat's scouting state; an empty one when nothing was ever observed. */
-  async getScouting(saveId: string, seatId?: string): Promise<ScoutingState> {
-    return (await this.dal.readSeatScouting(saveId, await this.seatOr(saveId, seatId))) ?? emptyScoutingState();
+  async getScouting(saveId: string, seatId: string): Promise<ScoutingState> {
+    return (await this.dal.readSeatScouting(saveId, seatId)) ?? emptyScoutingState();
   }
 
-  async writeScouting(saveId: string, state: ScoutingState, seatId?: string): Promise<void> {
-    return this.dal.writeSeatScouting(saveId, await this.seatOr(saveId, seatId), state);
+  async writeScouting(saveId: string, state: ScoutingState, seatId: string): Promise<void> {
+    return this.dal.writeSeatScouting(saveId, seatId, state);
   }
 
   // ── Achievements (`.claude/rules/game/achievements.md`) ─────────────────────
 
   /** The seat's achievements; an empty state when the file does not exist. */
-  async getAchievements(saveId: string, seatId?: string): Promise<AchievementsState> {
-    return normalizeAchievements(await this.dal.readSeatAchievements(saveId, await this.seatOr(saveId, seatId)));
+  async getAchievements(saveId: string, seatId: string): Promise<AchievementsState> {
+    return normalizeAchievements(await this.dal.readSeatAchievements(saveId, seatId));
   }
 
-  async writeAchievements(saveId: string, state: AchievementsState, seatId?: string): Promise<void> {
-    return this.dal.writeSeatAchievements(saveId, await this.seatOr(saveId, seatId), state);
+  async writeAchievements(saveId: string, state: AchievementsState, seatId: string): Promise<void> {
+    return this.dal.writeSeatAchievements(saveId, seatId, state);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────
@@ -440,8 +396,8 @@ export class SaveService {
 
   // ── Inbox (seat) ─────────────────────────────────────────────────────────────
 
-  async getInbox(saveId: string, seatId?: string): Promise<InboxMessage[]> {
-    return this.dal.readSeatInbox(saveId, await this.seatOr(saveId, seatId));
+  async getInbox(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    return this.dal.readSeatInbox(saveId, seatId);
   }
 
   /**
@@ -450,15 +406,15 @@ export class SaveService {
    * read through the DAL on every call (the day's `BufferingSaveDAL` caches it), so a preference saved
    * mid-session holds for the next append.
    */
-  async appendInbox(saveId: string, message: InboxMessage, seatId?: string): Promise<void> {
-    const seat = await this.seatOr(saveId, seatId);
+  async appendInbox(saveId: string, message: InboxMessage, seatId: string): Promise<void> {
+    const seat = seatId;
     const state = await this.dal.readSeat(saveId, seat);
     if (!inboxAllowed(message, state?.inboxPrefs)) return;
     return this.dal.appendSeatInboxMessage(saveId, seat, message);
   }
 
-  async markInboxRead(saveId: string, ids: string[], seatId?: string): Promise<InboxMessage[]> {
-    const seat = await this.seatOr(saveId, seatId);
+  async markInboxRead(saveId: string, ids: string[], seatId: string): Promise<InboxMessage[]> {
+    const seat = seatId;
     const set = new Set(ids);
     const current = await this.dal.readSeatInbox(saveId, seat);
     const updated = current.map((m) => (set.has(m.id) ? { ...m, read: true } : m));
@@ -466,34 +422,34 @@ export class SaveService {
     return updated;
   }
 
-  async markAllInboxRead(saveId: string, seatId?: string): Promise<InboxMessage[]> {
-    const seat = await this.seatOr(saveId, seatId);
+  async markAllInboxRead(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    const seat = seatId;
     const current = await this.dal.readSeatInbox(saveId, seat);
     const updated = current.map((m) => (m.read ? m : { ...m, read: true }));
     await this.dal.writeSeatInbox(saveId, seat, updated);
     return updated;
   }
 
-  async writeInbox(saveId: string, messages: InboxMessage[], seatId?: string): Promise<void> {
-    return this.dal.writeSeatInbox(saveId, await this.seatOr(saveId, seatId), messages);
+  async writeInbox(saveId: string, messages: InboxMessage[], seatId: string): Promise<void> {
+    return this.dal.writeSeatInbox(saveId, seatId, messages);
   }
 
-  async clearInbox(saveId: string, seatId?: string): Promise<void> {
-    return this.dal.writeSeatInbox(saveId, await this.seatOr(saveId, seatId), []);
+  async clearInbox(saveId: string, seatId: string): Promise<void> {
+    return this.dal.writeSeatInbox(saveId, seatId, []);
   }
 
   // ── Ledger (the seat's club cash extract) ────────────────────────────────────
 
-  async getLedger(saveId: string, season: number, seatId?: string): Promise<LedgerEntry[]> {
-    return this.dal.readSeatLedger(saveId, await this.seatOr(saveId, seatId), season);
+  async getLedger(saveId: string, season: number, seatId: string): Promise<LedgerEntry[]> {
+    return this.dal.readSeatLedger(saveId, seatId, season);
   }
 
-  async listLedgerSeasons(saveId: string, seatId?: string): Promise<number[]> {
-    return this.dal.listSeatLedgerSeasons(saveId, await this.seatOr(saveId, seatId));
+  async listLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    return this.dal.listSeatLedgerSeasons(saveId, seatId);
   }
 
-  async appendLedger(saveId: string, season: number, entries: LedgerEntry[], seatId?: string): Promise<void> {
-    return this.dal.appendSeatLedger(saveId, await this.seatOr(saveId, seatId), season, entries);
+  async appendLedger(saveId: string, season: number, entries: LedgerEntry[], seatId: string): Promise<void> {
+    return this.dal.appendSeatLedger(saveId, seatId, season, entries);
   }
 
   // ── Season awards (`.claude/rules/game/awards.md`) ──────────────────────────
@@ -1001,7 +957,7 @@ export class SaveService {
     }
 
     const seatId = randomUUID();
-    const world: WorldMeta = {
+    const world: SaveMeta = {
       id,
       name:        body.clubName ?? "Unnamed Save",
       createdAt:   now,

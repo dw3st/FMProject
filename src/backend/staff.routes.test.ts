@@ -101,11 +101,11 @@ describe("staff routes", () => {
     expect(fireBody.severance).toBeGreaterThan(0);
     expect(fireBody.limits.coach.used).toBe(coachMax - 1);
     const season = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
-    const line = (await saveService.getLedger(saveId, season)).find((e) => e.kind === "staff" && e.ref?.stage === "severance");
+    const line = (await saveService.getLedger(saveId, season, meta.seatId)).find((e) => e.kind === "staff" && e.ref?.stage === "severance");
     expect(line!.amount).toBe(-fireBody.severance);
     let total = 0;
-    for (const s of await saveService.listLedgerSeasons(saveId)) {
-      total += (await saveService.getLedger(saveId, s)).reduce((a, e) => a + e.amount, 0);
+    for (const s of await saveService.listLedgerSeasons(saveId, meta.seatId)) {
+      total += (await saveService.getLedger(saveId, s, meta.seatId)).reduce((a, e) => a + e.amount, 0);
     }
     expect(total).toBe((await saveService.getSquadById(saveId, "33"))!.finances!.budget);
     const pooled = (await saveService.getStaffPool(saveId, meta.currentDate!)).members.find((m) => m.id === fired.id);
@@ -155,17 +155,17 @@ describe("staff routes", () => {
       { params: { saveId } },
     ))).json() as any;
     expect(centre.scouts.find((x: any) => x.id === scoutId).severance).toBeGreaterThan(0);
-    const scouting = await saveService.getScouting(saveId);
+    const scouting = await saveService.getScouting(saveId, meta.seatId);
     const mission = (id: string, leader: string) => ({
       id, scoutId: leader, target: { kind: "country" as const, country: "Spain" }, start: meta.currentDate!, weeks: 4, weeksDone: 0, observed: 0,
     });
-    await saveService.writeScouting(saveId, { ...scouting, missions: [mission("m-field", scoutId), mission("m-chief", "chief")] });
+    await saveService.writeScouting(saveId, { ...scouting, missions: [mission("m-field", scoutId), mission("m-chief", "chief")] }, meta.seatId);
     expect((await call("/fire", "POST", session.token, { memberId: scoutId })).status).toBe(200);
-    expect((await saveService.getScouting(saveId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
+    expect((await saveService.getScouting(saveId, meta.seatId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
     expect((await saveService.getStaffPool(saveId, meta.currentDate!)).members.some((m) => m.id === scoutId)).toBe(true);
 
     // Unemployed: no hiring, the pool still lists.
-    await saveService.updateMeta(saveId, { clubId: "" });
+    await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await call("/hire", "POST", session.token, { memberId: coaches.items[1].id, years: 1 })).status).toBe(409);
     expect((await call("/pool", "GET", session.token)).status).toBe(200);
   }, 240_000);

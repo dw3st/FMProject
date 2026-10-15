@@ -4,7 +4,7 @@
  * with an open window registers a signing after the market, the human club gets its automatic list and news.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { soloRecording } from "@/backend/testing/seatFixtures";
+import { soloRecording, soloSeatId } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -37,7 +37,7 @@ describe("registration in advanceOneDay", () => {
     expect(out.ok).toBe(true);
     const human = (await saveService.getSquadById(saveId, HUMAN))!;
     expect(human.registrations?.premier_league?.ids.length).toBeGreaterThanOrEqual(18);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, await soloSeatId(saveId));
     expect(inbox.some((m) => m.category === "registration" && m.kind === "auto_list")).toBe(true);
   }, 120_000);
 

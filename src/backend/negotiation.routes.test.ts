@@ -11,14 +11,14 @@ import { addDays } from "@/Domain/dates";
 import { roundFeeUp } from "@/Domain/negotiation/negotiation";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
 
 type Params = Record<string, string>;
 
 describe("negotiation routes", () => {
-  let meta: SaveMeta;
+  let meta: SeatMeta;
   let saveId = "";
   let token = "";
 
@@ -124,8 +124,8 @@ describe("negotiation routes", () => {
       id: "bid-test-1", kind: "transfer", playerId: seller.id, playerName: seller.name, clubId: buyer.id, clubName: buyer.name,
       date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee, maxFee: 30_000_000, sellOnPct: 0,
     };
-    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
-    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] }, meta.seatId);
     await saveService.saveSquadById(saveId, { ...buyer, aiTransferBudget: 100_000_000 });
 
     const answer = (body: unknown) => route("/api/saves/:saveId/bids/:bidId")(
@@ -142,7 +142,7 @@ describe("negotiation routes", () => {
     const sold = (await saveService.getSquadById(saveId, buyer.id))!.players.find((p) => p.id === seller.id)!;
     expect(sold.sellOn).toMatchObject({ clubId: meta.clubId, pct: 20 });
     expect(aiTransferBudgetOf((await saveService.getSquadById(saveId, oldClub.id))!)).toBeGreaterThan(oldBudget);
-    expect((await saveService.getMarket(saveId))!.sellOnHeld?.some((h) => h.playerId === seller.id)).toBe(true);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.sellOnHeld?.some((h) => h.playerId === seller.id)).toBe(true);
     const gone = await answer({ action: "accept" });
     expect(gone.status).toBe(409);
     expect(await gone.json()).toMatchObject({ error: "offerClosed" });
@@ -154,11 +154,11 @@ describe("negotiation routes", () => {
       req(`/api/saves/${saveId}/loans`, "POST", { saveId }, { playerId: player.id, fromSquadId: club.id, wageShare, fee }),
     );
     // Make him available: listed by his club.
-    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
     await saveService.saveMarket(saveId, {
       ...market,
       profiles: { ...market.profiles, [club.id]: { squadId: club.id, needs: [], sellList: [{ playerId: player.id, priority: 1 }], lastUpdateDay: meta.currentDate! } },
-    });
+    }, meta.seatId);
     const first = await ask(0);
     const a = (await first.json()) as { response: { kind: string; wageShare?: number; fee?: number; reason?: string } };
     expect(a.response.kind).toBe("counter");
@@ -168,10 +168,10 @@ describe("negotiation routes", () => {
     const loaned = (await human()).players.find((p) => p.id === player.id)!;
     expect(loaned.loan?.fromClubId).toBe(club.id);
 
-    const mk = (await saveService.getMarket(saveId))!;
+    const mk = (await saveService.getMarket(saveId, meta.seatId))!;
     expect(mk.loans?.some((l) => l.playerId === player.id)).toBe(true);
-    const back = await returnDueLoans(saveService, saveId, meta.seatId, (await saveService.getMeta(saveId))!, mk, loaned.loan!.until);
-    await saveService.saveMarket(saveId, back.market);
+    const back = await returnDueLoans(saveService, saveId, meta.seatId, (await saveService.getSeatMeta(saveId, meta.seatId))!, mk, loaned.loan!.until);
+    await saveService.saveMarket(saveId, back.market, meta.seatId);
     expect(back.news.map((n) => n.kind)).toContain("loan_back");
     expect((await human()).players.some((p) => p.id === player.id)).toBe(false);
     const home = (await saveService.getSquadById(saveId, club.id))!.players.find((p) => p.id === player.id)!;
@@ -188,15 +188,15 @@ describe("negotiation routes", () => {
       id: "bid-loan-1", kind: "loan", playerId: p.id, playerName: p.name, clubId: borrower.id, clubName: borrower.name,
       date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee: 0, wageShare: 0.6, until: addDays(meta.currentDate!, 90),
     };
-    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
-    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid], playerLoanList: [p.id] });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid], playerLoanList: [p.id] }, meta.seatId);
     const res = await route("/api/saves/:saveId/bids/:bidId")(
       req(`/api/saves/${saveId}/bids/bid-loan-1`, "POST", { saveId, bidId: "bid-loan-1" }, { action: "accept" }),
     );
     expect(res.status).toBe(200);
     const there = (await saveService.getSquadById(saveId, borrower.id))!.players.find((q) => q.id === p.id)!;
     expect(there.loan).toMatchObject({ fromClubId: meta.clubId, wageShare: 0.6 });
-    const after = (await saveService.getMarket(saveId))!;
+    const after = (await saveService.getMarket(saveId, meta.seatId))!;
     expect(after.playerLoanList).toEqual([]);
     const nego = await route("/api/saves/:saveId/negotiation")(req(`/api/saves/${saveId}/negotiation`, "GET", { saveId }));
     const body = (await nego.json()) as { loans: { playerId: string }[] };
@@ -218,8 +218,8 @@ describe("negotiation routes", () => {
       id: "bid-old", kind: "transfer", playerId: p.id, playerName: p.name, clubId: "x", clubName: "X",
       date: "2000-01-01", expires: "2000-01-05", fee: 1_000_000, maxFee: 1_000_000,
     };
-    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
-    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] }, meta.seatId);
     const res = await route("/api/saves/:saveId/bids/:bidId")(
       req(`/api/saves/${saveId}/bids/bid-old`, "POST", { saveId, bidId: "bid-old" }, { action: "accept" }),
     );
@@ -268,8 +268,8 @@ describe("negotiation routes", () => {
     // Plain toggle still unlists.
     expect(await entry(await sell({ playerId: p.id }))).toBeUndefined();
     // Pricing a player listed only by his transfer request makes it a manual listing.
-    const m0 = (await saveService.getMarket(saveId)) ?? emptyMarket();
-    await saveService.saveMarket(saveId, { ...m0, playerSellList: [...(m0.playerSellList ?? []), { playerId: p.id, priority: 1, requested: true }] });
+    const m0 = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...m0, playerSellList: [...(m0.playerSellList ?? []), { playerId: p.id, priority: 1, requested: true }] }, meta.seatId);
     const manual = await entry(await sell({ playerId: p.id, askingPrice: value * 0.9 }));
     expect(manual?.requested).toBeUndefined();
     expect(await entry(await sell({ playerId: p.id }))).toBeUndefined();
@@ -293,8 +293,8 @@ describe("negotiation routes", () => {
       id: "bid-thin", kind: "transfer", playerId: p.id, playerName: p.name, clubId: buyer.id, clubName: buyer.name,
       date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee: 1_000_000, maxFee: 1_000_000,
     };
-    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
-    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] }, meta.seatId);
     const res = await route("/api/saves/:saveId/bids/:bidId")(
       req(`/api/saves/${saveId}/bids/bid-thin`, "POST", { saveId, bidId: "bid-thin" }, { action: "accept" }),
     );

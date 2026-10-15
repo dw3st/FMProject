@@ -68,7 +68,7 @@ describe("the human manager at a national team", () => {
 
   test("the notice, the coach view and his call-up", async () => {
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, seatId);
     expect(inbox.some((m) => m.category === "national_coach" && (m as NationalCoachInboxMessage).kind === "callup_soon")).toBe(true);
     await saveService.updateMeta(saveId, { currentDate: "2026-08-31" });
     const view = (await (await call("/api/saves/:saveId/national/coach", `/api/saves/${saveId}/national/coach`)).json()) as any;

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, type SeatMeta } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorld";
 import { getCountries } from "@/backend/continentalWorld";
@@ -11,7 +11,7 @@ import { managerInvariantBreaks } from "@/Domain/managers/aiManagers";
  * advance writes the vacancies and the human manager's weekly wage.
  */
 describe("AI managers: vacancies and hirings on a save", () => {
-  let meta: SaveMeta;
+  let meta: SeatMeta;
   let saveId = "";
 
   beforeAll(async () => {
@@ -77,12 +77,12 @@ describe("AI managers: vacancies and hirings on a save", () => {
     await saveService.appendDayTransfers(saveId, date, [{ playerId: "p_route", from: "a", to: "b", fee: 1, kind: "transfer", date }]);
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);
-    const m = (await saveService.getMeta(saveId))!;
+    const m = (await saveService.getSeatMeta(saveId, meta.seatId))!;
     expect(m.managerVacancies?.x_missing_club).toBeUndefined();
     expect((await saveService.getDayLog(saveId, date))?.transfers?.some((t) => t.playerId === "p_route")).toBe(true);
     expect(m.managerEarnings).toBe(m.managerContract!.wage);
     const year = (await saveService.getLeagueMeta(saveId, m.leagueSlug))!.year;
-    const ledger = await saveService.getLedger(saveId, year);
+    const ledger = await saveService.getLedger(saveId, year, meta.seatId);
     expect(ledger.filter((e) => e.kind === "manager" && e.date === date).map((e) => e.amount)).toEqual([-m.managerContract!.wage]);
   }, 240_000);
 });

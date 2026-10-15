@@ -10,7 +10,10 @@
  */
 
 import { saveService, SaveService } from "@/backend/SaveService";
-import type { SaveMeta, SeatMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
+
+/** Any meta that knows the world's date (the world meta or a seat's merged meta). */
+type DatedMeta = { currentDate?: string };
 import type { Squad } from "@/types/playerTypes";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
@@ -45,13 +48,13 @@ async function ledgerSeasonFor(
  * Credit the full season broadcasting fee to the player's club budget via the ledger
  * (`recordMoney` — see `.claude/rules/game/finances.md`). Called once when a new save is created.
  */
-export async function applyBroadcasting(
+export async function applyBroadcasting<M extends DatedMeta>(
   saveId: string,
-  meta: SaveMeta,
+  meta: M,
   leagueSlug: string,
   clubSlug: string,
-  seatId?: string,
-): Promise<SaveMeta> {
+  seatId: string,
+): Promise<M> {
   const squad = await saveService.getSquad(saveId, leagueSlug, clubSlug);
   const broadcasting = squad?.finances?.broadcasting ?? 0;
   if (broadcasting <= 0 || !squad?.finances) return meta;
@@ -86,11 +89,11 @@ type ClubRef = {
  * of the fee back into it (`applyAITransferSpend` / `applyAITransferSale`, src/Domain/aiFinance) —
  * no ledger entry, the ledger is the player club's cash extract only.
  *
- * Returns the updated SaveMeta.
+ * Returns the meta it was given.
  */
-export async function executeTransferFee(
+export async function executeTransferFee<M extends DatedMeta>(
   saveId: string,
-  meta: SaveMeta,
+  meta: M,
   buyer: ClubRef,
   seller: ClubRef,
   fee: number,
@@ -101,7 +104,7 @@ export async function executeTransferFee(
    * fee (ledger text). `playerName` labels the ledger lines.
    */
   opts: { sellOn?: { amount: number; clubName: string }; loan?: boolean; playerName?: string; playerId?: string } = {},
-): Promise<SaveMeta> {
+): Promise<M> {
   const sellOnAmount = Math.min(fee, Math.max(0, opts.sellOn?.amount ?? 0));
   const { buyer: paid, seller: credited } = transferFeeSquads(buyer, seller, fee, sellOnAmount);
   await Promise.all([
@@ -219,8 +222,8 @@ export async function recordMoney(
   season: number,
   squadRef: SquadRef,
   entry: LedgerEntry,
-  /** TRANSITIONAL: required in Task 29 (absent = the first seat of the world). */
-  seatId?: string,
+  /** The seat whose ledger gets the entry. */
+  seatId: string,
 ): Promise<Squad> {
   const squad = await service.getSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug);
   if (!squad) {

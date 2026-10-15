@@ -51,7 +51,7 @@ describe("emitContinentalSeasonStartNews", () => {
 
       await emitContinentalSeasonStartNews(saveId, meta.seatId, qualifiedClub, meta.currentDate!);
 
-      const inbox = await saveService.getInbox(saveId);
+      const inbox = await saveService.getInbox(saveId, meta.seatId);
       const continentalMsgs = inbox.filter(
         (m): m is ContinentalInboxMessage => m.category === "continental" && m.competition === contSlug,
       );
@@ -109,7 +109,7 @@ describe("emitContinentalSeasonStartNews", () => {
 
       await emitContinentalSeasonStartNews(saveId, meta.seatId, qualifiedClub, meta.currentDate!);
 
-      const inbox = await saveService.getInbox(saveId);
+      const inbox = await saveService.getInbox(saveId, meta.seatId);
       const continentalMsgs = inbox.filter(
         (m): m is ContinentalInboxMessage => m.category === "continental" && m.competition === contSlug,
       );

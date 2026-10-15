@@ -39,18 +39,21 @@ describe("SaveService: world meta + seats", () => {
     // updateSeat writes only the seat; the world meta keeps its date.
     await saveService.updateSeat(meta.id, meta.seatId, { formation: "4-4-2" });
     expect((await dal.readSeat(meta.id, meta.seatId))?.formation).toBe("4-4-2");
-    expect((await saveService.getWorldMeta(meta.id))?.currentDate).toBe(meta.currentDate);
+    expect((await saveService.getMeta(meta.id))?.currentDate).toBe(meta.currentDate);
   }, 300_000);
 
-  test("transition: getMeta merges the first seat and updateMeta splits the patch", async () => {
+  test("getMeta is only the world; getSeatMeta merges; updateMeta writes the world, updateSeat the seat", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     created.push(meta.id);
-    const merged = (await saveService.getMeta(meta.id))!;
+    const world = (await saveService.getMeta(meta.id))!;
+    expect("clubId" in world).toBe(false);
+    const merged = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     expect(merged.clubId).toBe("33");
-    await saveService.updateMeta(meta.id, { training_intensity: "heavy", freeAgentsRetiredYear: 2030 });
+    await saveService.updateMeta(meta.id, { freeAgentsRetiredYear: 2030 });
+    await saveService.updateSeat(meta.id, meta.seatId, { training_intensity: "heavy" });
     const dal = new FileSystemDAL();
     expect((await dal.readSeat(meta.id, meta.seatId))?.training_intensity).toBe("heavy");
     expect((await dal.readMeta(meta.id))?.freeAgentsRetiredYear).toBe(2030);
@@ -77,7 +80,6 @@ describe("SaveService: world meta + seats", () => {
     expect(await dal.readMarket(meta.id)).toEqual({ shuffledTeamIds: ["a"], rotationIndex: 0, profiles: {} });
     // the joined view
     expect((await saveService.getMarket(meta.id, s))?.playerSellList).toHaveLength(1);
-    // transitional: without a seat id, the first seat
-    expect((await saveService.getTactics(meta.id))?.formation).toBe("4-4-2");
+    expect((await saveService.getTactics(meta.id, s))?.formation).toBe("4-4-2");
   }, 300_000);
 });

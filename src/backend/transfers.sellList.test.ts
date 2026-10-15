@@ -68,9 +68,9 @@ describe("POST /api/saves/:saveId/sell-list is serialised per save (M3)", () => 
     const index = await saveService.getSquadIndex(saveId);
     const other = await saveService.getSquadById(saveId, index.inLeague("la_liga")[0]!.squadId);
     expect((await post(other!.players[0]!.id)).status).toBe(400);
-    const m = (await saveService.getMeta(saveId))!;
-    await saveService.updateMeta(saveId, { clubId: "" });
+    const m = (await saveService.getSeatMeta(saveId, meta.seatId))!;
+    await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await post(playerA!.id)).status).toBe(409);
-    await saveService.updateMeta(saveId, { clubId: m.clubId });
+    await saveService.updateSeat(saveId, meta.seatId, { clubId: m.clubId });
   }, 60_000);
 });

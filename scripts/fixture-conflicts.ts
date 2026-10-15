@@ -55,7 +55,7 @@ async function createSave(): Promise<string> {
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Conflicts", nationalityIso: "gb", backgroundId: "former-player" },
   });
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
   if (kit.applied) {
     await rescheduleFixtureConflicts({ service: saveService, saveId: meta.id, minDate: meta.currentDate!, catalog: await getLeagueData() });

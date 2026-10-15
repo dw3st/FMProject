@@ -56,6 +56,7 @@ const { FileSystemDAL } = await import("@/backend/dal/FileSystemDAL");
 const { runBufferedDay, getPyramids, payloadForSeat } = await import("@/backend/advanceDay");
 const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
+const { soloMeta, updateSolo } = await import("@/backend/testing/seatFixtures");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
 const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
@@ -116,7 +117,7 @@ async function createSmokeSave(): Promise<string> {
     // Sacking off: a full season must run to the end; the section "Diretoria" checks it never sacks.
     sackingEnabled: false,
   });
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
   console.log(`Save ${meta.id} — ${club.name} (${lg.name}), start ${meta.currentDate}, kit: ${kit.applied ? kit.kit : kit.reason}\n`);
   return meta.id;
@@ -161,7 +162,8 @@ try {
   const byLeague = pyramidByLeague(pyramids);
   const countryOf = (slug: string) => byLeague.get(slug)?.country ?? null;
   const playerCountry = countryOf(PLAYER_LEAGUE);
-  const meta0 = (await plain().getMeta(saveId))!;
+  const meta0 = (await soloMeta(saveId, plain()))!;
+  const seat0 = meta0.seatId;
   const index0 = await plain().getSquadIndex(saveId);
   // The human club moved between tiers at a rollover (relegation/promotion): the staff limit and the
   // revenue follow the new tier, while nobody is dismissed and the manager keeps the contract wage.
@@ -190,7 +192,7 @@ try {
       tactical_style: "balanced",
       lineup: autoLineupDefaultFormation(sq),
       assistantRotation: true,
-    });
+    }, seat0);
   }
   // Negociação (`.claude/rules/game/negotiation.md`): two bench players on the sell list and one on
   // the loan list, so AI clubs send bids to the inbox during the run (never sold on their own).
@@ -202,12 +204,12 @@ try {
     const bench = sq.players.filter((p) => !xi.has(p.id) && p.positions[0] !== "GK");
     negoListed.sale = bench.slice(0, 2).map((p) => p.id);
     negoListed.loan = bench.slice(2, 3).map((p) => p.id);
-    const mk = (await plain().getMarket(saveId))!;
+    const mk = (await plain().getMarket(saveId, seat0))!;
     await plain().saveMarket(saveId, {
       ...mk,
       playerSellList: negoListed.sale.map((playerId) => ({ playerId, priority: 1 })),
       playerLoanList: negoListed.loan,
-    });
+    }, seat0);
   }
 
   // Instalações vivas (`docs/superpowers/specs/2026-10-08-living-facilities-design.md` §10).
@@ -239,7 +241,7 @@ try {
     // The save has a single owner row: this user is reused by the reborn/negotiation/jobs sections below.
     const { user, session } = devAutoLogin("smoke-reborn@test.local");
     await ownSolo(saveId, user.id);
-    const m = (await plain().getMeta(saveId))!;
+    const m = (await soloMeta(saveId, plain()))!;
     const sq = (await plain().getSquadById(saveId, playerSquadId))!;
     facTrack.seatsBefore = sq.venue?.capacity ?? 0;
     // Enough cash for any seat price (<= EUR 6k x 1000), recorded through the ledger like any money.
@@ -247,10 +249,10 @@ try {
       const e = index0.byId(playerSquadId)!;
       await recordMoney(plain(), saveId, (await plain().getLeagueMeta(saveId, PLAYER_LEAGUE))!.year,
         { leagueSlug: e.leagueSlug, clubSlug: e.stem },
-        { date: m.currentDate!, kind: "board_funding", amount: 6_000_000, label: "Smoke: facilities funding", ref: { facility: "stand" } });
+        { date: m.currentDate!, kind: "board_funding", amount: 6_000_000, label: "Smoke: facilities funding", ref: { facility: "stand" } }, seat0);
     }
     const boardBefore = m.board!;
-    await plain().updateMeta(saveId, { board: { ...boardBefore, board: 90 } });
+    await updateSolo(saveId, { board: { ...boardBefore, board: 90 } }, plain());
     const handler = apiRoutes["/api/saves/:saveId/facilities/request" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
     const res = await handler(Object.assign(
       new Request(`http://localhost/api/saves/${saveId}/facilities/request`, {
@@ -260,7 +262,7 @@ try {
       { params: { saveId } },
     ));
     const body = await res.json() as { approved?: boolean; boardShare?: number; project?: { id: string; cost: number } };
-    await plain().updateMeta(saveId, { board: boardBefore });
+    await updateSolo(saveId, { board: boardBefore }, plain());
     facTrack.approved = res.status === 200 && body.approved === true;
     facTrack.projectId = body.project?.id ?? null;
     facTrack.cost = body.project?.cost ?? 0;
@@ -320,7 +322,7 @@ try {
     // A formation without full-backs keeps only what still fits (the pressing, the ST variant).
     await instrCall("/api/saves/:id/tactics", tacticsPath, { formation: "3-5-2" });
     const f352 = formationForSimId("3-5-2");
-    const kept = (await plain().getTactics(saveId))?.slotInstructions ?? [];
+    const kept = (await plain().getTactics(saveId, seat0))?.slotInstructions ?? [];
     instrTrack.sanitized = kept.every((ins, i) => !ins?.variant || ROLE_VARIANT_FITS(ins.variant, f352.attacking[i]!.role));
     instrTrack.restored = (await instrCall("/api/saves/:id/tactics", tacticsPath, { formation: DEFAULT_SIM_FORMATION_ID, slotInstructions: instrList })).status === 200;
   }
@@ -407,7 +409,7 @@ try {
   };
   {
     const sq0 = (await plain().getSquadById(saveId, playerSquadId))!;
-    const meta0s = (await plain().getMeta(saveId))!;
+    const meta0s = (await soloMeta(saveId, plain()))!;
     const today = meta0s.currentDate!;
     const seasonEnd = meta0s.activeLeagues?.find((l) => l.leagueSlug === meta0s.leagueSlug)?.end ?? addDays(today, 120);
     const analyst = sq0.staff?.members.find((m) => m.role === "analyst");
@@ -665,7 +667,7 @@ try {
         awardsTrack.managerMissing.push(`${tag} ${bm.managerId}`);
       }
       if (slug === playerLeague) {
-        awardsTrack.playerMessage = (await svcA.getInbox(saveIdA)).some((m) => m.id === `awards-league-${slug}-${season}`);
+        awardsTrack.playerMessage = (await svcA.getInbox(saveIdA, seat0)).some((m) => m.id === `awards-league-${slug}-${season}`);
       }
     }
   }
@@ -733,7 +735,7 @@ try {
 
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
-    const meta = (await svc.getMeta(saveId))!;
+    const meta = (await soloMeta(saveId, svc))!;
     const date = meta.currentDate!;
     const leaguesBefore = (meta.activeLeagues ?? []) as LeagueSeasonState[];
     const ending = leaguesBefore.filter((l) => date >= l.end);
@@ -834,7 +836,7 @@ try {
       .some((f) => f.home === playerSquadId || f.away === playerSquadId);
     if (playerAnyFixtureToday && !rotationDiffered) {
       const sq = await svc.getSquadById(saveId, playerSquadId);
-      const tac = await svc.getTactics(saveId);
+      const tac = await svc.getTactics(saveId, seat0);
       if (sq && tac) {
         const r = resolveUserLineup(sq, rotFormation, tac.lineup, date, { assistantRotation: true });
         if (r.rotationApplied.length > 0) rotationDiffered = true;
@@ -859,7 +861,7 @@ try {
 
     // Olheiros: missions that work this Monday (each one is charged travel on the day).
     const scoutMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1 && meta.clubId === playerSquadId;
-    const scoutActive = scoutMonday ? (await plain().getScouting(saveId)).missions.filter((m) => m.start < date).length : 0;
+    const scoutActive = scoutMonday ? (await plain().getScouting(saveId, seat0)).missions.filter((m) => m.start < date).length : 0;
 
     // Equipe técnica: dismiss a coach after the first week and hire another from the pool; Monday bill.
     const staffMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1 && meta.clubId === playerSquadId;
@@ -968,12 +970,12 @@ try {
         // is swapped (`unregistered`); the list goes back to automatic right after.
         if (info.status.open && list && playerFixtureToday && !regTrack.setupTried && regTrack.openPut === 200) {
           regTrack.setupTried = true;
-          const tacticsBefore = await svc.getTactics(saveId);
+          const tacticsBefore = await svc.getTactics(saveId, seat0);
           const { autoLineupForFormation: regAuto } = await import("@/Domain/advanceDay/matchSimulationLineups");
           const { formationForTactics: regFormation } = await import("@/Domain/matchFormations");
           const fresh = (await svc.getSquadById(saveId, meta.clubId))!;
           const lineup = tacticsBefore?.lineup?.length === 11 ? tacticsBefore.lineup : regAuto(fresh, regFormation(tacticsBefore ?? { formation: meta.formation ?? "4-3-3" }), date);
-          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, { ...tacticsBefore, lineup });
+          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, { ...tacticsBefore, lineup }, seat0);
           const listNow = fresh.registrations![humanLeague]!.ids;
           const starter = lineup.find((id) => listNow.includes(id) && fresh.players.find((p) => p.id === id)!.age > 21);
           if (starter) {
@@ -984,7 +986,7 @@ try {
             regTrack.setupSwap = res.status === 200 && (body.injuredReplaced ?? []).some((r) => r.out === starter && r.reason === "unregistered");
             await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: listNow });
           }
-          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, tacticsBefore);
+          if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, tacticsBefore, seat0);
         }
       }
     }
@@ -993,7 +995,7 @@ try {
     // say so, and the day's match serves it (gone after the day).
     if (playerFixtureToday && !varTrack.banDate && regTrack.setupTried) {
       varTrack.banDate = date;
-      await svc.updateMeta(saveId, { managerBan: { matches: 1, since: date } });
+      await updateSolo(saveId, { managerBan: { matches: 1, since: date } }, svc);
       if (!regTrack.session) regTrack.session = (await import("@/backend/auth/AuthService")).devAutoLogin("smoke-reborn@test.local").session.token;
       const { apiRoutes } = await import("@/backend/routes");
       const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, { headers: { cookie: `fs_session=${regTrack.session}` } }));
@@ -1007,7 +1009,7 @@ try {
       check(false, `runBufferedDay ${date}: ${outcome.status} ${outcome.error}`);
       break;
     }
-    if (varTrack.banDate === date) varTrack.banServed = (await plain().getMeta(saveId))!.managerBan === undefined;
+    if (varTrack.banDate === date) varTrack.banServed = (await soloMeta(saveId, plain()))!.managerBan === undefined;
     days++;
     dayMsTotal += ms;
     // Inscrição: no player of an official match outside his club's registered set (before or after the day:
@@ -1080,14 +1082,14 @@ try {
       if (cu && cu.date === date && cu.played === undefined) {
         const game = (log?.youthMatches ?? []).find((m) => m.fixtureId === cu.fixtureId);
         cu.played = !!game?.score && [...game.players.home, ...game.players.away].includes(cu.playerId);
-        cu.cleared = !(await plain().getMeta(saveId))!.youthCallUps?.u21?.length;
+        cu.cleared = !(await soloMeta(saveId, plain()))!.youthCallUps?.u21?.length;
       }
     }
     // Instalações vivas: the human club's items wear (0..100, never up except on a delivery day);
     // after a week the stadium pitch is forced to 45%, the `worn` message comes, a small repair to
     // 100% is paid through the route, and its delivery sends `repaired`.
     {
-      const sqW = (await plain().getMeta(saveId))?.clubId === playerSquadId ? await plain().getSquadById(saveId, playerSquadId) : null;
+      const sqW = (await soloMeta(saveId, plain()))?.clubId === playerSquadId ? await plain().getSquadById(saveId, playerSquadId) : null;
       const fW = sqW?.facilities;
       if (sqW && fW?.items) {
         const deliveredToday = fW.completed.some((c) => c.date === date);
@@ -1099,7 +1101,7 @@ try {
           wearTrack.prev.set(id, c);
         }
         wearTrack.samples++;
-        const inboxW = (await plain().getInbox(saveId)).filter((m) => m.category === "facilities");
+        const inboxW = (await plain().getInbox(saveId, seat0)).filter((m) => m.category === "facilities");
         if (!wearTrack.forcedOn && days >= 10) {
           const eW = (await plain().getSquadIndex(saveId)).byId(playerSquadId)!;
           const pitch = fW.items.stadiumPitch;
@@ -1112,7 +1114,7 @@ try {
         if (wearTrack.forcedOn && inboxW.some((m) => m.kind === "worn" && m.item === "stadiumPitch" && m.date >= wearTrack.forcedOn!)) wearTrack.wornSeen = true;
         // The repair is asked on a day that is not a rollover of the player's leagues (the rollover
         // budget check reads the balance before the day).
-        const next = (await plain().getMeta(saveId))!;
+        const next = (await soloMeta(saveId, plain()))!;
         const rollingSoon = (next.activeLeagues ?? []).some((l) => playerCountrySlugs.has(l.leagueSlug) && next.currentDate! >= l.end);
         if (wearTrack.wornSeen && !wearTrack.repairAsked && !rollingSoon) {
           wearTrack.repairAsked = true;
@@ -1130,7 +1132,7 @@ try {
           wearTrack.repairPaid = body.approved === true && body.paidByClub === true;
           wearTrack.repairCost = body.project?.cost ?? 0;
           const year = (await plain().getLeagueMeta(saveId, next.leagueSlug))?.year ?? 0;
-          const lines = (await plain().getLedger(saveId, year)).filter((e) => e.date === next.currentDate && e.ref?.item === "stadiumPitch");
+          const lines = (await plain().getLedger(saveId, year, seat0)).filter((e) => e.date === next.currentDate && e.ref?.item === "stadiumPitch");
           wearTrack.repairLine = lines.filter((e) => e.kind === "facilities" && e.ref?.facility === "repair").reduce((t, e) => t - e.amount, 0);
           wearTrack.repairFunding = lines.filter((e) => e.kind === "board_funding").length;
           console.log(`  Instalações vivas: repair of the stadium pitch → ${res.status} ${JSON.stringify(body.approved)} paid by the club ${String(body.paidByClub)} (${wearTrack.repairCost})`);
@@ -1155,10 +1157,10 @@ try {
       }
     }
     if (instrTrack.pendingMarkDate) {
-      if ((await plain().getMeta(saveId))?.matchMarking) instrTrack.markLeftOver++;
+      if ((await soloMeta(saveId, plain()))?.matchMarking) instrTrack.markLeftOver++;
       instrTrack.pendingMarkDate = null;
     }
-    for (const m of await plain().getInbox(saveId)) {
+    for (const m of await plain().getInbox(saveId, seat0)) {
       if (m.category === "transfer") negoMessages.set(m.id, m.kind);
       if (m.category === "contract" && m.kind.startsWith("staff_") && (m.staff ?? []).some((x) => x.id === staffTrack.forcedId)) {
         staffTrack.forcedKinds.add(m.kind);
@@ -1168,8 +1170,8 @@ try {
       const { squadStaffWages } = await import("@/Domain/staff/staff");
       staffTrack.mondays++;
       const billAfter = squadStaffWages((await plain().getSquadById(saveId, playerSquadId))?.staff);
-      const seasonsS = await plain().listLedgerSeasons(saveId);
-      const line = (await Promise.all(seasonsS.map((y) => plain().getLedger(saveId!, y)))).flat()
+      const seasonsS = await plain().listLedgerSeasons(saveId, seat0);
+      const line = (await Promise.all(seasonsS.map((y) => plain().getLedger(saveId!, y, seat0)))).flat()
         .filter((e) => e.date === date && e.kind === "staff" && e.ref?.stage !== "severance")
         .reduce((sum, e) => sum - e.amount, 0);
       // The contract step runs before the money: a renewal or an exit that same Monday shows in the bill after.
@@ -1179,12 +1181,12 @@ try {
     }
     // Olheiros: knowledge of the player target, travel lines, prospects signed into the academy.
     {
-      for (const m of await plain().getInbox(saveId)) {
+      for (const m of await plain().getInbox(saveId, seat0)) {
         if (m.category !== "scouting") continue;
         if (!scoutTrack.reportsOn && m.kind === "report") scoutTrack.reportsLeaked++;
         scoutTrack.kinds.add(m.kind);
       }
-      const st = await plain().getScouting(saveId);
+      const st = await plain().getScouting(saveId, seat0);
       // Reports exist but none reached the inbox: the default holds; switch the topic on.
       if (!scoutTrack.reportsOn && st.reports.length > 0) {
         scoutTrack.reportsHiddenOk = scoutTrack.reportsLeaked === 0;
@@ -1192,26 +1194,26 @@ try {
       }
       scoutTrack.playerMaxK = Math.max(scoutTrack.playerMaxK, st.knowledge[scoutTrack.playerTarget]?.k ?? 0);
       // A weak field scout may need a second player mission to reach 100 (up to 3 weeks each).
-      if (scoutTrack.playerMaxK < 100 && !st.missions.some((m) => m.scoutId === scoutTrack.playerScout) && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+      if (scoutTrack.playerMaxK < 100 && !st.missions.some((m) => m.scoutId === scoutTrack.playerScout) && (await soloMeta(saveId, plain()))?.clubId === playerSquadId) {
         await scoutCall("/api/saves/:saveId/scouting/missions", "POST", {
           scoutId: scoutTrack.playerScout, target: { kind: "player", playerId: scoutTrack.playerTarget, squadId: scoutTrack.playerTargetSquad }, weeks: 3,
         });
       }
       scoutTrack.reports = Math.max(scoutTrack.reports, st.reports.length);
-      if (scoutTrack.chiefId && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+      if (scoutTrack.chiefId && (await soloMeta(saveId, plain()))?.clubId === playerSquadId) {
         const chiefM = (await plain().getSquadById(saveId, playerSquadId))?.staff?.members.find((m) => m.id === scoutTrack.chiefId);
         const last = chiefM?.countryKnowledge?.[scoutTrack.foreign]?.last;
         if (last && last > scoutTrack.chiefLast) scoutTrack.chiefLast = last;
       }
       if (scoutMonday) {
         scoutTrack.mondays++;
-        const seasons = await plain().listLedgerSeasons(saveId);
-        const lines = (await Promise.all(seasons.map((y) => plain().getLedger(saveId!, y)))).flat()
+        const seasons = await plain().listLedgerSeasons(saveId, seat0);
+        const lines = (await Promise.all(seasons.map((y) => plain().getLedger(saveId!, y, seat0)))).flat()
           .filter((e) => e.date === date && e.kind === "scouting" && e.ref?.stage !== "prospect").length;
         if (lines !== scoutActive) scoutTrack.travelMissing.push(`${date}: ${lines}/${scoutActive}`);
       }
       const pr = st.prospects.find((p) => p.expires >= addOneDay(date));
-      if (!scoutTrack.prospectSigned && pr && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+      if (!scoutTrack.prospectSigned && pr && (await soloMeta(saveId, plain()))?.clubId === playerSquadId) {
         const before = (await plain().getSquadById(saveId, playerSquadId))!;
         const res = await scoutCall("/api/saves/:saveId/scouting/prospects/:prospectId/sign", "POST", undefined, { prospectId: pr.player.id });
         if (res.status === 200) {
@@ -1227,7 +1229,7 @@ try {
       }
     }
     {
-      const mb = await plain().getMeta(saveId);
+      const mb = await soloMeta(saveId, plain());
       if (mb?.unemployed) boardTrack.ended = true;
       const b = mb?.board;
       if (b) {
@@ -1242,7 +1244,7 @@ try {
     }
     {
       const sq = await plain().getSquadById(saveId, playerSquadId);
-      const mt = await plain().getMeta(saveId);
+      const mt = await soloMeta(saveId, plain());
       const row = sq?.facilities?.attendance.find((r) => r.date === date && isCupSlug(r.competition));
       const ls = mt?.activeLeagues?.find((l) => l.leagueSlug === mt.leagueSlug);
       if (sq?.facilities && row && mt?.clubId === playerSquadId && ls && mt.board) {
@@ -1380,7 +1382,7 @@ try {
       }
     }
 
-    const metaAfter = (await plain().getMeta(saveId))!;
+    const metaAfter = (await soloMeta(saveId, plain()))!;
     if (metaAfter.currentDate !== addOneDay(date)) {
       check(false, `day ${date}: currentDate went to ${metaAfter.currentDate} (expected ${addOneDay(date)})`);
     }
@@ -1428,7 +1430,7 @@ try {
           else pressTrack.errors.push(`${pendingPress.id}: ${res.status}`);
         }
       }
-      for (const m of await plain().getInbox(saveId)) {
+      for (const m of await plain().getInbox(saveId, seat0)) {
         if (m.category === "player" && (m.kind === "promise_kept" || m.kind === "promise_broken")) moraleTrack.resolved.add(m.id);
         if (m.category === "contract" && m.kind === "director_summary") respTrack.summaries.add(m.id);
         if (m.category === "contract" && m.kind === "expiring") respTrack.expiring.add(m.id);
@@ -1552,8 +1554,8 @@ try {
           ...(meta.managerContract?.squadId === prePlayerSquad.id ? { managerWage: meta.managerContract.wage } : {}),
         });
         const dayLedger: LedgerEntry[] = [];
-        for (const season of await plain().listLedgerSeasons(saveId)) {
-          dayLedger.push(...(await plain().getLedger(saveId, season)).filter((e) => e.date === date));
+        for (const season of await plain().listLedgerSeasons(saveId, seat0)) {
+          dayLedger.push(...(await plain().getLedger(saveId, season, seat0)).filter((e) => e.date === date));
         }
         const gateToday = dayLedger.filter((e) => e.kind === "gate").reduce((s, e) => s + e.amount, 0);
         const boardBonusToday = dayLedger.filter((e) => e.ref?.stage === "board_bonus").reduce((s, e) => s + e.amount, 0);
@@ -1577,7 +1579,7 @@ try {
         check(false, "player squad readable before and after the rollover");
       }
       // Inbox: season news for champion / move.
-      const inbox = await plain().getInbox(saveId);
+      const inbox = await plain().getInbox(saveId, seat0);
       const season = inbox.filter((m) => m.category === "season");
       // Human followers react to the season (followers only; the rest of its finances is its own).
       const humanAfter = await plain().getSquadById(saveId, playerSquadId);
@@ -1627,9 +1629,9 @@ try {
     // player's squad. Skipped on a rollover day (contracts change mid-day there).
     if (rolledToday.length === 0 && new Date(`${date}T12:00:00`).getDay() === 1) {
       const sq = await plain().getSquadById(saveId, playerSquadId);
-      const seasons = await plain().listLedgerSeasons(saveId);
+      const seasons = await plain().listLedgerSeasons(saveId, seat0);
       const entries: LedgerEntry[] = [];
-      for (const season of seasons) entries.push(...(await plain().getLedger(saveId, season)));
+      for (const season of seasons) entries.push(...(await plain().getLedger(saveId, season, seat0)));
       const line = entries.find((e) => e.kind === "wages" && e.date === date);
       if (sq && line) {
         const sum = sq.players.reduce((n, p) => n + (p.contract?.wage ?? 0), 0);
@@ -2054,9 +2056,9 @@ try {
   // 1. Sum of the player's ledger over every season == final budget. The budget starts at 0
   //    (SaveService.createSave) and every credit/debit since goes through recordMoney/applyMoney
   //    — see .claude/rules/game/finances.md.
-  const ledgerSeasons = await plain().listLedgerSeasons(saveId);
+  const ledgerSeasons = await plain().listLedgerSeasons(saveId, seat0);
   const allLedgerEntries: LedgerEntry[] = [];
-  for (const season of ledgerSeasons) allLedgerEntries.push(...(await plain().getLedger(saveId, season)));
+  for (const season of ledgerSeasons) allLedgerEntries.push(...(await plain().getLedger(saveId, season, seat0)));
   const ledgerTotal = allLedgerEntries.reduce((s, e) => s + e.amount, 0);
   const finalPlayerSquad = await plain().getSquadById(saveId, playerSquadId);
   const finalBudget = finalPlayerSquad?.finances?.budget ?? 0;
@@ -2274,7 +2276,7 @@ try {
     }
     check(stale === 0, `seleções: nobody still on duty after his call-up (${stale})`);
     check(runDates.length === 0 || caps > 1000, `seleções: ${caps} players with caps in the world`);
-    const natNews = (await plain().getInbox(saveId)).filter((m) => m.category === "national");
+    const natNews = (await plain().getInbox(saveId, seat0)).filter((m) => m.category === "national");
     console.log(`  ${natNews.length} national inbox message(s) of the human club`);
   }
 
@@ -2375,9 +2377,9 @@ try {
   check(boardTrack.objectiveSeasons.size >= 2, `board: a new objective was set at the rollover (${boardTrack.objectiveSeasons.size} seen)`);
   check(!boardTrack.ended, "board: sacking disabled never sacks (meta.unemployed never set)");
   {
-    const finalMeta = (await plain().getMeta(saveId))!;
+    const finalMeta = (await soloMeta(saveId, plain()))!;
     check(finalMeta.sackingEnabled === false, "board: the smoke save has sacking disabled");
-    const inboxNow = await plain().getInbox(saveId);
+    const inboxNow = await plain().getInbox(saveId, seat0);
     check(inboxNow.some((m) => m.category === "board" && m.kind === "objective"),
       "board: the inbox has the objective message of the new season");
     // Gate: the league home gates come from the attendance (facilities: min(capacity, demand), demand
@@ -2578,7 +2580,7 @@ try {
       `base: no AI squad above 30 players (${aboveCap.map(({ squad }) => `${squad.id} ${squad.name} ${squad.players.length}`).join(", ") || "ok"})`);
     const allIds = allFiles.flatMap(({ squad }) => [...squad.players, ...(squad.youth ?? [])].map((p) => p.id));
     check(new Set(allIds).size === allIds.length, `base: player ids unique across the world (${allIds.length - new Set(allIds).size} dupes)`);
-    const inbox = await plain().getInbox(saveId);
+    const inbox = await plain().getInbox(saveId, seat0);
     check(inbox.some((m) => m.category === "youth" && m.kind === "intake"), "base: inbox has the intake message");
   }
 
@@ -2627,7 +2629,7 @@ try {
     // The academy's season counters restart at its club's rollover (the academy is not in the squad,
     // and its players never change club): an academy player never has more youth games than his club
     // played this season. Only the human club has an academy.
-    const humanNow = (await plain().getMeta(saveId))!.clubId;
+    const humanNow = (await soloMeta(saveId, plain()))!.clubId;
     const academyCarry: string[] = [];
     for (const { squad } of allFiles) {
       if (squad.id !== humanNow) continue;
@@ -2863,7 +2865,7 @@ try {
     const pool = await plain().getFreeAgents(saveId);
     check(pool.every((f) => f.player.age < 40), "aposentadoria: nobody aged 40+ in the free pool");
     const humanRetired = retired.filter((r) => r.squadId === playerSquadId);
-    const inboxR = await plain().getInbox(saveId);
+    const inboxR = await plain().getInbox(saveId, seat0);
     check(inboxR.filter((m) => m.category === "retirement").length >= humanRetired.length,
       `aposentadoria: inbox has a message for each of the ${humanRetired.length} human retiree(s)`);
 
@@ -2909,7 +2911,7 @@ try {
     const { loadWindowContext: lwc, seatWindowRef: swr } = await import("@/backend/marketWindowWorld");
     let waited = 0;
     for (; waited < 60; waited++) {
-      const m = (await plain().getMeta(saveId))!;
+      const m = (await soloMeta(saveId, plain()))!;
       if ((await lwc(m, await plain().getSquadIndex(saveId), undefined, [swr(m)])).seat(m.seatId).today.open) break;
       const out = await runBufferedDay(saveId);
       if (!out.ok) { check(false, `negociação: day failed ${out.status} ${out.error}`); break; }
@@ -2943,14 +2945,14 @@ try {
     const { Player: PlayerN } = await import("@/Domain/Player");
     const { playerOverallRating: ratingN, teamAvgRating: avgN } = await import("@/Domain/transfer/transferNeeds");
     const { addDays: addDaysN } = await import("@/Domain/dates");
-    const metaN = (await plain().getMeta(saveId))!;
+    const metaN = (await soloMeta(saveId, plain()))!;
     const dateN = metaN.currentDate!;
     // Plenty of money for the forced deals (the ledger is checked elsewhere; this only moves budget).
     await plain().saveSquadById(saveId, { ...sqN, finances: { ...sqN.finances!, budget: (sqN.finances?.budget ?? 0) + 500_000_000 } });
     // Keep the ledger summing to the balance (section "Convites" checks it again).
     await plain().appendLedger(saveId, (await plain().getLeagueMeta(saveId, metaN.leagueSlug))!.year, [
       { date: dateN, kind: "prize", amount: 500_000_000, label: "Smoke: negotiation money", ref: { stage: "board_bonus" } },
-    ]);
+    ], seat0);
 
     // 1. Purchase with a counter-offer.
     const aiClubs = (await plain().getSquadsInLeague(saveId, metaN.leagueSlug)).filter((s) => s.id !== playerSquadId && s.players.length >= 22);
@@ -2989,12 +2991,12 @@ try {
       const buyer = fresh.find((c) => c.id !== bought!.from && c.players.length < 30
         && gateB(finB(c), wageB(boughtPlayer, factorB(c)), 0)) ?? fresh.find((c) => c.id !== bought!.from)!;
       await plain().saveSquadById(saveId, { ...(await plain().getSquadById(saveId, buyer.id))!, aiTransferBudget: 200_000_000 });
-      const mkB = (await plain().getMarket(saveId))!;
+      const mkB = (await plain().getMarket(saveId, seat0))!;
       const bid = {
         id: "smoke-bid", kind: "transfer" as const, playerId: boughtPlayer.id, playerName: boughtPlayer.name,
         clubId: buyer.id, clubName: buyer.name, date: dateN, expires: addDaysN(dateN, 5), fee: 10_000_000, maxFee: 40_000_000, sellOnPct: 0,
       };
-      await plain().saveMarket(saveId, { ...mkB, pendingBids: [...(mkB.pendingBids ?? []), bid] });
+      await plain().saveMarket(saveId, { ...mkB, pendingBids: [...(mkB.pendingBids ?? []), bid] }, seat0);
       const oldClubBudget = aiTransferBudgetOf((await plain().getSquadById(saveId, bought.from))!);
       const counter = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" },
         { action: "counter", fee: 30_000_000, sellOnPct: 20 });
@@ -3027,7 +3029,7 @@ try {
         const news = await settleSellOn(svcN, saveId, metaN.seatId, metaN, owed, sold, sellerN.name, dateN);
         check(owed?.amount === 5_000_000 && news?.kind === "sell_on", "negociação: a resale paid the human's 20% clause (5M)");
         const entries: LedgerEntry[] = [];
-        for (const season of await plain().listLedgerSeasons(saveId)) entries.push(...(await plain().getLedger(saveId, season)));
+        for (const season of await plain().listLedgerSeasons(saveId, seat0)) entries.push(...(await plain().getLedger(saveId, season, seat0)));
         check(entries.some((e) => e.kind === "transfer_in" && e.ref?.stage === "sell_on" && e.amount === 5_000_000),
           "negociação: the sell-on money is a transfer_in ledger line");
       }
@@ -3061,17 +3063,17 @@ try {
         id: "smoke-loan", kind: "loan", playerId: out.id, playerName: out.name, clubId: aiClubs[0]!.id, clubName: aiClubs[0]!.name,
         date: dateN, expires: addDaysN(dateN, 5), fee: 0, wageShare: 0.7, until: addDaysN(dateN, 30),
       };
-      const mkL = (await plain().getMarket(saveId))!;
-      await plain().saveMarket(saveId, { ...mkL, pendingBids: [...(mkL.pendingBids ?? []), loanBid] });
+      const mkL = (await plain().getMarket(saveId, seat0))!;
+      await plain().saveMarket(saveId, { ...mkL, pendingBids: [...(mkL.pendingBids ?? []), loanBid] }, seat0);
     }
     const lo = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/${loanBid.id}`, { saveId, bidId: loanBid.id }, { action: "accept" });
     check(lo.status === 200 && lo.body.status === "loaned", `negociação: ${loanBid.playerName} loaned out to ${loanBid.clubName} (${count("loan_bid") > 0 ? "natural" : "forced"} bid)`);
 
     // Both loans end in 2 days: the day advance sends them back.
-    const mkE = (await plain().getMarket(saveId))!;
+    const mkE = (await plain().getMarket(saveId, seat0))!;
     const soon = addDaysN(dateN, 2);
     const ids = new Set([loanedIn, loanBid.playerId].filter((x): x is string => !!x));
-    await plain().saveMarket(saveId, { ...mkE, loans: (mkE.loans ?? []).map((l) => (ids.has(l.playerId) ? { ...l, until: soon } : l)) });
+    await plain().saveMarket(saveId, { ...mkE, loans: (mkE.loans ?? []).map((l) => (ids.has(l.playerId) ? { ...l, until: soon } : l)) }, seat0);
     for (const l of (mkE.loans ?? []).filter((x) => ids.has(x.playerId))) {
       const holder = (await plain().getSquadById(saveId, l.toClubId))!;
       await plain().saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === l.playerId && p.loan ? { ...p, loan: { ...p.loan, until: soon } } : p)) });
@@ -3090,7 +3092,7 @@ try {
     const mine3 = (await plain().getSquadById(saveId, playerSquadId))!;
     check(!!loanedIn && !mine3.players.some((p) => p.id === loanedIn), "negociação: the borrowed player went back to his club on the date");
     check(mine3.players.some((p) => p.id === loanBid!.playerId && !p.loan), "negociação: the loaned-out player came back on the date");
-    const inboxN = await plain().getInbox(saveId);
+    const inboxN = await plain().getInbox(saveId, seat0);
     check(inboxN.some((m) => m.category === "transfer" && m.kind === "loan_back") && inboxN.some((m) => m.category === "transfer" && m.kind === "loan_home"),
       "negociação: inbox news for both loans ending");
     const back = mine3.players.find((p) => p.id === loanBid!.playerId);
@@ -3109,7 +3111,7 @@ try {
     check(regTrack.matches > 0 && regTrack.violations.length === 0,
       `inscrição: ${regTrack.checked} player appearances in ${regTrack.matches} official matches, none unregistered (${regTrack.violations.slice(0, 5).join("; ") || "ok"})`);
     check(regTrack.logViolations === 0, `inscrição: registrationViolations summed over the day logs = ${regTrack.logViolations}`);
-    const metaR = (await plain().getMeta(saveId))!;
+    const metaR = (await soloMeta(saveId, plain()))!;
     const idxR = await plain().getSquadIndex(saveId);
     const dctx = await regDayCtx(plain(), saveId, metaR, idxR, [seatWindowRef(metaR)], metaR.currentDate!);
     let lists = 0, exceptions = 0, reduced = 0;
@@ -3162,9 +3164,9 @@ try {
     check(livelyTrack.orphanInterims.length === 0, `mercado vivo: every interim waits on a vacancy (${livelyTrack.orphanInterims.slice(0, 3).join("; ")})`);
 
     // The manager's wage: a `manager` line every Monday with the contract's wage.
-    const mm = (await plain().getMeta(saveId))!;
+    const mm = (await soloMeta(saveId, plain()))!;
     const ledgerAll: LedgerEntry[] = [];
-    for (const season of await plain().listLedgerSeasons(saveId)) ledgerAll.push(...(await plain().getLedger(saveId, season)));
+    for (const season of await plain().listLedgerSeasons(saveId, seat0)) ledgerAll.push(...(await plain().getLedger(saveId, season, seat0)));
     const wageMondays = new Set(ledgerAll.filter((e) => e.kind === "wages").map((e) => e.date));
     const managerLines = ledgerAll.filter((e) => e.kind === "manager" && e.ref?.stage !== "severance");
     const managerMondays = new Set(managerLines.map((e) => e.date));
@@ -3189,7 +3191,7 @@ try {
     const target = seller.players.find((p) => !p.loan && p.positions[0] !== "GK" && p.age <= 29)!;
     const fee = Math.round(new PlayerM(ratingM(target), target.age).price * 1.3);
     await plain().saveSquadById(saveId, { ...rival, aiTransferBudget: fee * 2 });
-    const mkM = (await plain().getMarket(saveId))!;
+    const mkM = (await plain().getMarket(saveId, seat0))!;
     const dateM = mm.currentDate!;
     await plain().saveMarket(saveId, {
       ...mkM,
@@ -3197,11 +3199,11 @@ try {
         playerId: target.id, playerName: target.name, fromClubId: seller.id, clubId: rival.id, clubName: rival.name,
         fee, wage: demandM(target, rival, dateM), date: dateM, deadline: dateM, sellerAccepts: true,
       }],
-    });
+    }, seat0);
     const outM = await runBufferedDay(saveId);
     check(outM.ok, "mercado vivo: the deadline day ran");
     const atRival = (await plain().getSquadById(saveId, rival.id))!.players.some((p) => p.id === target.id);
-    const lostNews = (await plain().getInbox(saveId)).some((m) => m.category === "transfer" && m.kind === "lost_to_rival" && m.playerId === target.id);
+    const lostNews = (await plain().getInbox(saveId, seat0)).some((m) => m.category === "transfer" && m.kind === "lost_to_rival" && m.playerId === target.id);
     check(atRival && lostNews, `mercado vivo: ${target.name} went to the rival ${rival.name} on the deadline, inbox lost_to_rival (${atRival}, ${lostNews})`);
   }
 
@@ -3227,7 +3229,7 @@ try {
   // the daily caps respected; `GET /news` answers for the four scopes.
   console.log("\n── Imprensa ──");
   {
-    const metaEnd = (await plain().getMeta(saveId))!;
+    const metaEnd = (await soloMeta(saveId, plain()))!;
     const history = metaEnd.press?.history ?? [];
     console.log(`  ${pressTrack.seen.size} conference(s) seen; ${pressTrack.answered} answered, ${pressTrack.left} left to expire; ` +
       `${history.length} in the history; ${metaEnd.press?.promises.length ?? 0} open promise(s)`);
@@ -3313,7 +3315,7 @@ try {
     // The personality lines of another club's player only show when the user knows him well (scout
     // noise < 0.5, `scouting.md`): most of the world is barely known, so the well-known players
     // (knowledge ≥ 80: the player mission, shortlist, sold players) go first, then a plain sample.
-    const knownK = (await plain().getScouting(saveId)).knowledge;
+    const knownK = (await plain().getScouting(saveId, seat0)).knowledge;
     const aiPlayers = finalFiles.filter(({ squad }) => squad.id !== playerSquadId)
       .flatMap(({ squad }) => squad.players.filter((p) => !p.loan).map((p) => ({ p, from: squad.id })));
     const wellKnown = aiPlayers.filter(({ p }) => (knownK[p.id]?.k ?? 0) >= 80).slice(0, 60);
@@ -3356,7 +3358,7 @@ try {
     const aiPair = allFiles.filter(({ squad }) => squad.id !== playerSquadId).slice(0, 2).map(({ squad }) => squad);
     const sim = computeMatchSimulationLineups(
       { id: "smoke-ai", date: (await plain().getMeta(saveId))!.currentDate!, competition: PLAYER_LEAGUE, round: 1, home: aiPair[0]!.id, away: aiPair[1]!.id, played: false } as import("@/types/calendarTypes").Fixture,
-      aiPair[0]!, aiPair[1]!, playerSquadId, await plain().getTactics(saveId), null, (await plain().getMeta(saveId))!.matchMarking,
+      aiPair[0]!, aiPair[1]!, playerSquadId, await plain().getTactics(saveId, seat0), null, (await soloMeta(saveId, plain()))!.matchMarking,
     );
     const aiInstr = [sim.tactics.A, sim.tactics.B].some((t) => t.slotInstructions || t.manMarks);
     const storing = allFiles.filter(({ squad }) => JSON.stringify(squad).includes("slotInstructions") || JSON.stringify(squad).includes("manMark"));
@@ -3366,7 +3368,7 @@ try {
   // ── Olheiros (`.claude/rules/game/scouting.md`) ──
   console.log("\n── Olheiros ──");
   {
-    const st = await plain().getScouting(saveId);
+    const st = await plain().getScouting(saveId, seat0);
     console.log(`  ${scoutTrack.mondays} Monday(s), ${scoutTrack.reports} report(s), knowledge entries ${Object.keys(st.knowledge).length}, inbox kinds ${[...scoutTrack.kinds].join(",")}`);
     check(scoutTrack.setupOk, "olheiros: field scouts hired, three missions and a shortlist created through the routes");
     check(scoutTrack.playerMaxK >= 100, `olheiros: the player mission brought knowledge to 100 (${scoutTrack.playerMaxK})`);
@@ -3473,9 +3475,9 @@ try {
         { params: { saveId, ...params } },
       ));
     };
-    const metaN = (await plain().getMeta(saveId))!;
+    const metaN = (await soloMeta(saveId, plain()))!;
     const dateN = metaN.currentDate!;
-    let st = (await plain().getNationalState(saveId))!;
+    let st =(await plain().getNationalState(saveId))!;
     // A mid-table team without a vacancy-held offer: its AI coach is replaced by the offer.
     const ranked = Object.values(st.teams).sort((a, b) => b.elo - a.elo);
     const team = ranked[Math.floor(ranked.length / 2)]!;
@@ -3538,7 +3540,7 @@ try {
     ms = await plain().getManagers(saveId);
     check(!st.human?.[metaN.seatId] && !!st.vacancies[team.id] && ms.filter((m) => m.squadId === team.id).length === 1,
       "técnico de seleção: after leaving, an interim and an AI vacancy");
-    const inbox = (await plain().getInbox(saveId)).filter((m) => m.category === "national_coach");
+    const inbox = (await plain().getInbox(saveId, seat0)).filter((m) => m.category === "national_coach");
     console.log(`  ${inbox.length} national-coach inbox message(s)`);
     check(inbox.some((m) => (m as { kind?: string }).kind === "hired") && inbox.some((m) => (m as { kind?: string }).kind === "resigned"),
       "técnico de seleção: hired and resigned news in the inbox");
@@ -3549,7 +3551,7 @@ try {
   // accepted through the route; the career goes on in the new league until that country rolls over.
   console.log("\n── Convites ──");
   {
-    const metaC = (await plain().getMeta(saveId))!;
+    const metaC = (await soloMeta(saveId, plain()))!;
     const dateC = metaC.currentDate!;
     console.log(`  offers pending after the player's rollover window: ${(metaC.jobOffers ?? []).length}`);
     check((metaC.jobOffers ?? []).every((o) => o.expires >= dateC && o.squadId !== playerSquadId),
@@ -3566,7 +3568,7 @@ try {
         leagueName: target.leagueName, window: "season_end", date: dateC, expires: dateC, objective: null,
         budget: 5_000_000, compensation: 1_000_000, expectedPosition: 1, leagueSize: indexC.inLeague(target.leagueSlug).length, prestige: 0.5,
       };
-      await plain().updateMeta(saveId, { jobOffers: [...(metaC.jobOffers ?? []), offer] });
+      await updateSolo(saveId, { jobOffers: [...(metaC.jobOffers ?? []), offer] }, plain());
       const { apiRoutes } = await import("@/backend/routes");
       const { devAutoLogin } = await import("@/backend/auth/AuthService");
       // The reborn section above already recorded the save's owner (smoke-reborn).
@@ -3583,8 +3585,8 @@ try {
 
       const ledgerSum = async () => {
         let sum = 0;
-        for (const season of await plain().listLedgerSeasons(saveId!)) {
-          for (const e of await plain().getLedger(saveId!, season)) sum += e.amount;
+        for (const season of await plain().listLedgerSeasons(saveId!, seat0)) {
+          for (const e of await plain().getLedger(saveId!, season, seat0)) sum += e.amount;
         }
         return sum;
       };
@@ -3597,11 +3599,11 @@ try {
         return me[0];
       };
 
-      const metaA = (await plain().getMeta(saveId))!;
+      const metaA = (await soloMeta(saveId, plain()))!;
       // Etapa 25 (D3/D4): the new club compensated the old one (arrival below the offer's budget),
       // the old club has an interim and a vacancy, the manager a contract at the new club.
       {
-        const arrive = (await plain().getLedger(saveId, (await plain().getLeagueMeta(saveId, target.leagueSlug))!.year))
+        const arrive = (await plain().getLedger(saveId, (await plain().getLeagueMeta(saveId, target.leagueSlug))!.year, seat0))
           .filter((e) => e.kind === "club_change" && e.ref?.stage === "arrive").at(-1);
         console.log(`  arrival balance ${arrive?.amount} (offer budget 5M, compensation 1M)`);
         check(arrive?.amount === 4_000_000, "convites: the compensation to the old club came out of the arrival balance");
@@ -3623,7 +3625,7 @@ try {
         "convites: the new club has the player's staff and no AI tier");
       check(Math.abs((await ledgerSum()) - (mine0.finances?.budget ?? 0)) < 1,
         `convites: ledger sums to the new club's balance (${Math.round(mine0.finances?.budget ?? 0)})`);
-      const tacC = (await plain().getTactics(saveId))!;
+      const tacC = (await plain().getTactics(saveId, seat0))!;
       check(tacC.lineup.filter((id) => mine0.players.some((p) => p.id === id)).length === 11,
         `convites: the tactic has an XI of the new club (${tacC.formation})`);
       const meBefore = await managerChecks("after the switch");
@@ -3645,8 +3647,8 @@ try {
         return { status: r.status, body: (await r.json().catch(() => ({}))) as Record<string, unknown> };
       };
       for (let g = 0; g < 260 && !rolled; g++) {
-        const before = (await plain().getMeta(saveId))!;
-        if (before.board && before.board.board < 65) await plain().updateMeta(saveId, { board: { ...before.board, board: 65 } });
+        const before = (await soloMeta(saveId, plain()))!;
+        if (before.board && before.board.board < 65) await updateSolo(saveId, { board: { ...before.board, board: 65 } }, plain());
         if (before.managerRenewal && !renewalAccepted) {
           const r = await callC("/api/saves/:saveId/manager-contract", `/api/saves/${saveId}/manager-contract`, { saveId }, { accept: true });
           renewalAccepted = r.status === 200;
@@ -3663,8 +3665,8 @@ try {
               const gone = new Set(out.map((p) => p.id));
               await plain().saveSquadById(saveId, { ...mineP, players: mineP.players.filter((p) => !gone.has(p.id)) });
               await plain().writeFreeAgents(saveId, [...(await plain().getFreeAgents(saveId)), ...out.map((p) => toFreeAgent(p, before.currentDate!))]);
-              const tacP = await plain().getTactics(saveId);
-              if (tacP) await plain().saveTactics(saveId, { ...tacP, lineup: tacP.lineup.map((id) => (gone.has(id) ? "" : id)) });
+              const tacP = await plain().getTactics(saveId, seat0);
+              if (tacP) await plain().saveTactics(saveId, { ...tacP, lineup: tacP.lineup.map((id) => (gone.has(id) ? "" : id)) }, seat0);
             }
           }
           // Several candidates: one that prefers to renew with his club is skipped.
@@ -3697,7 +3699,7 @@ try {
       }
       console.log(`  ${daysC} day(s) at ${newClub.name} until ${target.leagueSlug} rolled`);
       check(rolled, `convites: ${target.leagueSlug} rolled over with the player's new club (${daysC} days)`);
-      const metaR = (await plain().getMeta(saveId))!;
+      const metaR = (await soloMeta(saveId, plain()))!;
       check(metaR.clubId === newClub.squadId && !metaR.unemployed, "convites: still at the new club after the rollover");
       check(metaR.board?.objective?.season !== metaA.board?.objective?.season,
         `convites: a new objective at the new club's rollover (${metaR.board?.objective?.season})`);

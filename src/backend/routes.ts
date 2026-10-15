@@ -783,7 +783,7 @@ export const apiRoutes = withJsonErrors({
     const { saveId } = req.params;
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getWorldMeta(saveId!);
+    const meta = await saveService.getMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },

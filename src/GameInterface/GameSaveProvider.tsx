@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import { loadSession, saveSession, type GameSession } from "@/GameInterface/gameSession";
@@ -18,7 +18,7 @@ import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 
-export type GameSaveApiResponse = SaveMeta & { season?: SeasonData };
+export type GameSaveApiResponse = SeatMeta & { season?: SeasonData };
 
 export interface GameSaveContextValue {
   session: GameSession | null;

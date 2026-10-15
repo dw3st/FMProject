@@ -79,7 +79,7 @@ describe("rollover with expiring contracts", () => {
     }
     for (const p of ai.players) expect(p.contract!.until > today).toBe(true);
 
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "contract" && m.kind === "released")).toBe(true);
   }, 300_000);
 });

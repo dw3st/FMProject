@@ -27,11 +27,11 @@ describe("press in advanceOneDay", () => {
       id: "press-x", trigger: "derby", kind: "pre", date: today, expires: today,
       params: { opponent: "Rival" }, seed: "s",
     });
-    await saveService.updateMeta(meta.id, { press: { pending, winless: 0, promises: [], history: [] } });
+    await saveService.updateSeat(meta.id, meta.seatId, { press: { pending, winless: 0, promises: [], history: [] } });
     const before = meta.board!.board;
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    const after = await saveService.getMeta(meta.id);
+    const after = await saveService.getSeatMeta(meta.id, meta.seatId);
     expect(after!.press!.pending?.id).not.toBe("press-x");
     expect(after!.press!.history[0]).toMatchObject({ id: "press-x", answers: "ignored" });
     // The day's match also moves the board; the exact −1 is checked on `pressDay` alone (pressWorld.test.ts).
@@ -47,7 +47,7 @@ describe("press in advanceOneDay", () => {
       id: "press-keep", trigger: "heavy_defeat", kind: "post", date: today, expires: addDays(today, 5),
       params: { opponent: "Rival", score: "0–4" }, seed: "s",
     });
-    await saveService.updateMeta(meta.id, { press: { pending, winless: 0, promises: [], history: [] } });
+    await saveService.updateSeat(meta.id, meta.seatId, { press: { pending, winless: 0, promises: [], history: [] } });
     const active = (meta.activeLeagues ?? []).map((l) =>
       l.leagueSlug === "premier_league" || l.leagueSlug === "of_championship" ? { ...l, end: today } : l);
     await saveService.updateMeta(meta.id, { activeLeagues: active });
@@ -55,11 +55,11 @@ describe("press in advanceOneDay", () => {
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
     if (out.ok) expect(payloadForSeat(out, meta.seatId).seasonEnded).toBe(true);
-    const after = (await saveService.getMeta(meta.id))!;
+    const after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     const pendingId = after.press?.pending?.id;
     expect(pendingId).toBeDefined();
     // A title closes the pending one and opens a new conference; either way the pending one has its invite.
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     const invites = inbox.filter((x) => x.category === "press");
     expect(invites.some((x) => x.category === "press" && x.pressId === pendingId)).toBe(true);
     if (pendingId === "press-keep") expect(invites.find((x) => x.category === "press" && x.pressId === "press-keep")!.id).toBe("press-keep");
@@ -94,16 +94,16 @@ describe("press in advanceOneDay", () => {
       date = (await saveService.getMeta(meta.id))!.currentDate!;
     }
     // Earlier conferences (pending or within the 7-day gap) would hold this one back.
-    await saveService.updateMeta(meta.id, { press: undefined });
+    await saveService.updateSeat(meta.id, meta.seatId, { press: undefined });
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    const m = await saveService.getMeta(meta.id);
+    const m = await saveService.getSeatMeta(meta.id, meta.seatId);
     expect(m!.press?.pending?.trigger).toBe("derby");
     expect(m!.press?.pending?.fixtureId).toBe(next!.id);
     expect(m!.press?.pending?.expires).toBe(addDays(next!.date, -1));
     expect(m!.press?.pending?.date).toBe(addDays(next!.date, -1));
     if (out.ok) expect(payloadForSeat(out, meta.seatId).pressInvite).toBe(true);
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     expect(inbox.some((x) => x.category === "press")).toBe(true);
   }, 600_000);
 });

@@ -1,4 +1,4 @@
-import type { SaveService, SeatMeta, WorldMeta } from "@/backend/SaveService";
+import type { SaveService, SeatMeta, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { MatchContext } from "@/backend/boardWorld";
 import type { scoutingDay } from "@/backend/scoutingWorld";
@@ -107,7 +107,7 @@ export interface DaySeat {
 }
 
 export function newDaySeat(args: {
-  seatId: string; world: WorldMeta; seat: SeatState; index: SquadIndex; tactics: TacticsSave | null;
+  seatId: string; world: SaveMeta; seat: SeatState; index: SquadIndex; tactics: TacticsSave | null;
 }): DaySeat {
   const { seatId, world, seat, index } = args;
   const entry = !seat.unemployed && seat.clubId ? index.byId(seat.clubId) : undefined;
@@ -160,7 +160,7 @@ export function newDaySeat(args: {
 
 /** Every seat of the world for today's advance, in seat order (a seat without its file is logged and skipped). */
 export async function loadDaySeats(
-  service: SaveService, saveId: string, world: WorldMeta, index: SquadIndex,
+  service: SaveService, saveId: string, world: SaveMeta, index: SquadIndex,
 ): Promise<DaySeat[]> {
   const out: DaySeat[] = [];
   for (const seatId of world.seats ?? []) {

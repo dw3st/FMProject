@@ -16,7 +16,7 @@ export const newsRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
-    const world = await saveService.getWorldMeta(saveId);
+    const world = await saveService.getMeta(saveId);
     if (!world) return bad("save not found", 404);
     // The requester's seat picks "my club", "my league" and the followed leagues (none for a seat not set up yet).
     const seat = await saveService.getSeat(saveId, auth.seatId);

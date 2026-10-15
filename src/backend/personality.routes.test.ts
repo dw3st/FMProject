@@ -8,7 +8,7 @@ import { devAutoLogin } from "@/backend/auth/AuthService";
 import { tierStepsDown } from "@/Domain/personality/personality";
 import { makeProfessional } from "@/Domain/staff/staff";
 import { emptyMarket } from "@/backend/negotiationWorld";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import { emptySeasonLog, type Squad } from "@/types/playerTypes";
 
 type Params = Record<string, string>;
@@ -20,7 +20,7 @@ const income = (s: Squad) => (s.finances?.broadcasting ?? 0) + (s.finances?.comm
  * route explains the parts.
  */
 describe("personality: smaller-club refusal on the routes", () => {
-  let meta: SaveMeta;
+  let meta: SeatMeta;
   let saveId = "";
   let token = "";
   let elite: Squad;
@@ -71,11 +71,11 @@ describe("personality: smaller-club refusal on the routes", () => {
     const chief = makeProfessional(`t:${rating}`, "scout", rating >= 10 ? 5 : 1);
     const others = (h.staff?.members ?? []).filter((m) => m.role !== "scout");
     await saveService.saveSquadById(saveId, { ...h, staff: { ...(h.staff ?? { members: [] }), members: [...others, chief] } });
-    const s = await saveService.getScouting(saveId);
+    const s = await saveService.getScouting(saveId, meta.seatId);
     const knowledge = { ...s.knowledge };
     if (rating >= 10) knowledge.free_ambitious = { k: 100, seen: meta.currentDate! };
     else delete knowledge.free_ambitious;
-    await saveService.writeScouting(saveId, { ...s, knowledge });
+    await saveService.writeScouting(saveId, { ...s, knowledge }, meta.seatId);
   }
 
   test("free agent and purchase: an ambitious star of a much bigger club refuses (400 smallerClub)", async () => {
@@ -138,11 +138,11 @@ describe("personality: smaller-club refusal on the routes", () => {
     await saveService.saveSquadById(saveId, { ...human, players: human.players.filter((p) => p.id !== lent.id) });
     const holder = (await saveService.getSquadById(saveId, elite.id))!;
     await saveService.saveSquadById(saveId, { ...holder, players: [...holder.players, moved] });
-    const market = (await saveService.getMarket(saveId)) ?? emptyMarket();
+    const market = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
     await saveService.saveMarket(saveId, { ...market, loans: [...(market.loans ?? []), {
       playerId: lent.id, playerName: lent.name, fromClubId: human.id, fromClubName: human.name, toClubId: elite.id, toClubName: elite.name,
       until: "2099-01-01", wageShare: 1, wage: lent.contract!.wage, fee: 0, start: meta.currentDate!,
-    }] });
+    }] }, meta.seatId);
 
     const d = (await (await route("/api/saves/:saveId/players/:playerId/demand")(
       req(`/api/saves/${saveId}/players/${lent.id}/demand?from=${elite.id}`, "GET", { saveId, playerId: lent.id }),

@@ -58,7 +58,7 @@ describe("finance prizes — continental (UCL group round 1)", () => {
       clubId: qualifiedClub, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const groupmateBefore = (await saveService.getSquadById(saveId, groupmateClub))!;
     const groupmateBudgetBefore = aiTransferBudgetOf(groupmateBefore);
@@ -73,7 +73,7 @@ describe("finance prizes — continental (UCL group round 1)", () => {
     expect(outcome.ok).toBe(true);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     const prizeEntries = ledger.filter((e) => e.date === round1Date && e.kind === "prize" && e.ref?.competition === "ucl");
 
     const participationPrize = continentalPrize("ucl", "participation");
@@ -140,7 +140,7 @@ describe("finance prizes — league merit at rollover", () => {
       clubId: "of_is_breidablik", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const stateBefore = meta.activeLeagues!.find((l) => l.leagueSlug === meta.leagueSlug)!;
     const oldYear = stateBefore.year;
@@ -171,7 +171,7 @@ describe("finance prizes — league merit at rollover", () => {
     const n = archive!.standings.length;
     const expectedPrize = leaguePrize(broadcastingFee, position, n);
 
-    const newLedger = await saveService.getLedger(saveId, oldYear + 1);
+    const newLedger = await saveService.getLedger(saveId, oldYear + 1, meta.seatId);
     const prizeEntries = newLedger.filter((e) => e.kind === "prize" && e.ref?.competition === meta.leagueSlug);
 
     if (expectedPrize > 0) {
@@ -184,7 +184,7 @@ describe("finance prizes — league merit at rollover", () => {
 
     // The budget reflects both the broadcasting credit and (if any) the league prize.
     const squadAfter = await saveService.getSquad(saveId, stateAfter.leagueSlug, meta.clubId);
-    const oldLedger = await saveService.getLedger(saveId, oldYear);
+    const oldLedger = await saveService.getLedger(saveId, oldYear, meta.seatId);
     const sum = [...oldLedger, ...newLedger].reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(squadAfter!.finances!.budget);
 
@@ -220,7 +220,7 @@ describe("finance prizes — national cup (FA Cup stage 1)", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     // The player's club may have a bye through the preliminary stage (`.claude/rules/game/cups.md`
     // → "byes") — walk stages forward until it actually has a fixture.
@@ -254,7 +254,7 @@ describe("finance prizes — national cup (FA Cup stage 1)", () => {
     expect(expectedPrize).toBeGreaterThan(0);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     const cupPrizeEntry = ledger.find((e) => e.date === stage0.date && e.kind === "prize" && e.ref?.competition === "cup_england");
 
     if (winnerId === meta.clubId) {
@@ -279,7 +279,7 @@ describe("finance prizes — national cup runner-up (FA Cup final)", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const stages = (await saveService.getLeagueMeta(saveId, "cup_england"))!.cup!.stages;
     const finalStage = stages.find((s) => s.name === "final")!;
@@ -339,7 +339,7 @@ describe("finance prizes — national cup runner-up (FA Cup final)", () => {
     expect(championPrize).toBeGreaterThan(runnerUpPrize);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     const cupEntries = ledger.filter((e) => e.date === finalStage.date && e.kind === "prize" && e.ref?.competition === "cup_england");
 
     const checkSide = async (

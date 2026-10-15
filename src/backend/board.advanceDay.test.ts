@@ -30,15 +30,15 @@ describe("board and fans in advanceOneDay", () => {
     expect(meta.board?.objective?.leagueSlug).toBe("premier_league");
     expect(meta.board?.objective?.leagueSize).toBe(20);
 
-    await saveService.updateMeta(meta.id, { board: { ...meta.board!, board: 5 } });
+    await saveService.updateSeat(meta.id, meta.seatId, { board: { ...meta.board!, board: 5 } });
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
     if (out.ok) expect(payloadForSeat(out, meta.seatId).sacked).toBe(true);
 
-    const after = (await saveService.getMeta(meta.id))!;
+    const after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     expect(after.unemployed?.sacking).toMatchObject({ reason: "board", clubName: "Test", date: meta.currentDate });
     expect(after.clubId).toBe("");
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     expect(inbox.some((m) => m.category === "board" && m.kind === "sacked")).toBe(true);
 
     // The career goes on without a club (`.claude/rules/game/jobs.md`).
@@ -49,7 +49,7 @@ describe("board and fans in advanceOneDay", () => {
   test("sacking disabled: never sacked, no ultimatum; the rollover sets a new objective", async () => {
     const meta = await create(false);
     expect(meta.sackingEnabled).toBe(false);
-    await saveService.updateMeta(meta.id, { board: { ...meta.board!, board: 0, fans: 0 } });
+    await saveService.updateSeat(meta.id, meta.seatId, { board: { ...meta.board!, board: 0, fans: 0 } });
     const today = meta.currentDate!;
     const active = (meta.activeLeagues ?? []).map((l) =>
       l.leagueSlug === "premier_league" || l.leagueSlug === "of_championship" ? { ...l, end: today } : l);
@@ -59,7 +59,7 @@ describe("board and fans in advanceOneDay", () => {
     expect(out.ok).toBe(true);
     if (out.ok) expect(payloadForSeat(out, meta.seatId).sacked).toBeUndefined();
 
-    const after = (await saveService.getMeta(meta.id))!;
+    const after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     expect(after.unemployed).toBeUndefined();
     const b = after.board!;
     expect(b.ultimatum).toBeUndefined();
@@ -67,7 +67,7 @@ describe("board and fans in advanceOneDay", () => {
     expect(b.board).toBeLessThanOrEqual(100);
     expect(b.objective?.season).not.toBe(meta.board?.objective?.season);
     expect(b.history.at(-1)?.date).toBe(today);
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     expect(inbox.some((m) => m.category === "board" && m.kind === "objective")).toBe(true);
     // The round-1 result decides the title/position bonus of this forced one-game season.
     if (b.board < 35) expect(inbox.some((m) => m.category === "board" && m.kind === "warning")).toBe(true);

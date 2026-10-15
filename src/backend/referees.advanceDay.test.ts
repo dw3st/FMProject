@@ -1,4 +1,4 @@
-import { ownSolo } from "@/backend/testing/seatFixtures";
+import { ownSolo, soloSeatId } from "@/backend/testing/seatFixtures";
 /**
  * Referees in the save and the day pipeline (`.claude/rules/game/referees.md`): the world pool on a new career,
  * the day's appointments (stable, no referee twice), the referee in the day log, the season stats, the renewal.
@@ -98,7 +98,7 @@ describe("referees in the save", () => {
       if ((await saveService.getFixturesForDate(saveId, d)).some((f) => f.home === HUMAN || f.away === HUMAN)) { next = d; break; }
     }
     await saveService.updateMeta(saveId, { currentDate: next });
-    await saveService.saveTactics(saveId, { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation((await saveService.getSquadById(saveId, HUMAN))!) });
+    await saveService.saveTactics(saveId, { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation((await saveService.getSquadById(saveId, HUMAN))!) }, await soloSeatId(saveId));
     const res = await call("/api/match-setup", `/api/match-setup?saveId=${saveId}`);
     expect(res.status).toBe(200);
     const body = await res.json() as any;

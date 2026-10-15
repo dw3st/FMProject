@@ -1,5 +1,5 @@
 import type { NewsItem } from "@/types/newsTypes";
-import type { WorldMeta } from "@/backend/SaveService";
+import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
@@ -24,9 +24,9 @@ export interface SquadFile {
 
 export interface ISaveDAL {
   // ── Save meta ─────────────────────────────────────────────────────────────
-  listSaves(): Promise<WorldMeta[]>;
-  readMeta(saveId: string): Promise<WorldMeta | null>;
-  writeMeta(meta: WorldMeta): Promise<void>;
+  listSaves(): Promise<SaveMeta[]>;
+  readMeta(saveId: string): Promise<SaveMeta | null>;
+  writeMeta(meta: SaveMeta): Promise<void>;
   deleteSave(saveId: string): Promise<void>;
 
   // ── Season ────────────────────────────────────────────────────────────────

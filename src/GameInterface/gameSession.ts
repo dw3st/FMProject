@@ -3,7 +3,7 @@ import type { TacticalStyle, TacticsSave, CustomFormation, SlotInstruction } fro
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import type { FamiliarityKey } from "@/types/familiarityTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
-import type { SaveMeta, SaveDatabase, SaveManager } from "@/backend/SaveService";
+import type { SeatMeta, SaveDatabase, SaveManager } from "@/backend/SaveService";
 
 const STORAGE_KEY = "fmproject:session";
 
@@ -191,14 +191,14 @@ export async function saveFormationAndTactics(
 export async function updateSaveDevelopmentTraining(
   saveId: string,
   patch: { min_energy_to_train?: number; training_intensity?: TrainingIntensity; style_focus?: FamiliarityKey | null },
-): Promise<Pick<SaveMeta, "min_energy_to_train" | "training_intensity" | "style_focus">> {
+): Promise<Pick<SeatMeta, "min_energy_to_train" | "training_intensity" | "style_focus">> {
   const res = await fetch(`/api/saves/${saveId}`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(patch),
   });
   if (!res.ok) throw new Error("Failed to save training settings");
-  const meta = (await res.json()) as SaveMeta;
+  const meta = (await res.json()) as SeatMeta;
   return {
     min_energy_to_train: meta.min_energy_to_train ?? DEFAULT_MIN_ENERGY_TO_TRAIN,
     training_intensity: meta.training_intensity ?? DEFAULT_TRAINING_INTENSITY,
@@ -214,7 +214,7 @@ export async function updateFollowedLeagues(saveId: string, leagues: string[]): 
     body: JSON.stringify({ followedLeagues: leagues }),
   });
   if (!res.ok) throw new Error("Failed to save followed leagues");
-  const meta = (await res.json()) as SaveMeta;
+  const meta = (await res.json()) as SeatMeta;
   const followedLeagues = meta.followedLeagues ?? [];
   const session = loadSession();
   if (session) saveSession({ ...session, followedLeagues });

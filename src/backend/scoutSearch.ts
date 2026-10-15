@@ -107,7 +107,7 @@ function buyerContext(squads: Squad[], clubId: string): BuyerContext | null {
 }
 
 export async function getScoutIndex(saveId: string, seatId: string): Promise<ScoutIndex | null> {
-  const meta = await saveService.getWorldMeta(saveId);
+  const meta = await saveService.getMeta(saveId);
   if (!meta) return null;
   // Read the version before loading so a write racing the build yields a newer key next time.
   const key = `${seatId}:${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;

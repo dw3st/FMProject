@@ -20,7 +20,7 @@ describe("GET /api/saves/:saveId/ledger", () => {
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
-    meta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
     const { user, session } = devAutoLogin(`ledger-route-${emailSuffix}@test.local`);
     await ownSolo(meta.id, user.id);
     return { meta, session };

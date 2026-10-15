@@ -76,7 +76,7 @@ describe("morale routes", () => {
     });
     const sale = await (await talk(mover.id, { answer: "promise_sale", days: 45 })).json() as any;
     expect(sale.promise.kind).toBe("sale");
-    expect((await saveService.getMarket(saveId))!.playerSellList.find((c) => c.playerId === mover.id)?.requested).toBe(true);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.playerSellList.find((c) => c.playerId === mover.id)?.requested).toBe(true);
 
     // Listing an unasked player costs −8.
     const listed = start.players[10]!;
@@ -114,7 +114,7 @@ describe("morale routes", () => {
     expect(day.players.every((p) => p.morale! >= 0 && p.morale! <= 100 && (p.moraleLog?.trend.length ?? 0) >= 1)).toBe(true);
 
     // Without a club: 409.
-    await saveService.updateMeta(saveId, { clubId: "" });
+    await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await getMorale()).status).toBe(409);
   }, 120_000);
 });

@@ -16,7 +16,7 @@ export async function getCompetitionRankings(
   saveId: string,
   competition: string,
 ): Promise<CompetitionRankings | null | "not_found"> {
-  const meta = await saveService.getWorldMeta(saveId);
+  const meta = await saveService.getMeta(saveId);
   if (!meta) return null;
   const key = `${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;
   const cacheKey = `${saveId}#${competition}`;

@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
+import { soloSeatId } from "@/backend/testing/seatFixtures";
 import { FACILITY_ITEMS, conditionOf, wearFor } from "@/Domain/facilities/facilityItems";
 import { matchPitchCondition } from "@/Domain/facilities/pitch";
 import type { MatchEvent } from "@/types/dayLogTypes";
@@ -24,7 +25,7 @@ describe("facilities in advanceOneDay", () => {
     const entry = (await saveService.getSquadIndex(saveId)).byId("33")!;
     await saveService.saveSquad(saveId, entry.leagueSlug, entry.stem, squad);
   };
-  const facilityNews = async () => (await saveService.getInbox(saveId))
+  const facilityNews = async () => (await saveService.getInbox(saveId, await soloSeatId(saveId)))
     .filter((m): m is FacilityInboxMessage => m.category === "facilities");
 
   test("wear, warnings, the pitch of every match, nothing when unemployed", async () => {
@@ -34,7 +35,7 @@ describe("facilities in advanceOneDay", () => {
     });
     saveId = meta.id;
     // Sacking disabled for the 30 days (a bad start must not end the test early).
-    await saveService.updateMeta(saveId, { sackingEnabled: false });
+    await saveService.updateSeat(saveId, meta.seatId, { sackingEnabled: false });
 
     const start = (await human()).facilities!;
     let humanHomeChecked = false;
@@ -96,10 +97,10 @@ describe("facilities in advanceOneDay", () => {
     expect((await human()).facilities!.items.stadiumPitch.condemned).toBe(true);
 
     // Sacked: the club becomes AI without facilities; the next days wear nothing and send nothing.
-    const m2 = (await saveService.getMeta(saveId))!;
-    await saveService.updateMeta(saveId, { sackingEnabled: true, board: { ...m2.board!, board: 5 } });
+    const m2 = (await saveService.getSeatMeta(saveId, meta.seatId))!;
+    await saveService.updateSeat(saveId, meta.seatId, { sackingEnabled: true, board: { ...m2.board!, board: 5 } });
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
-    expect((await saveService.getMeta(saveId))!.unemployed).toBeDefined();
+    expect((await saveService.getSeatMeta(saveId, meta.seatId))!.unemployed).toBeDefined();
     expect((await human()).facilities).toBeUndefined();
     const newsBefore = (await facilityNews()).length;
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);

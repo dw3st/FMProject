@@ -1,7 +1,7 @@
 import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { matchCrowd, matchManagers } from "@/backend/matchCrowd";
-import { saveService, type SaveMeta, type SaveService } from "@/backend/SaveService";
+import { saveService, type SaveService, type SeatMeta } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -33,7 +33,7 @@ const fakeService = (squads: Squad[]) => ({
 const meta = {
   id: "s1", seatId: "seat1", leagueSlug: "premier_league", clubId: "me", board: { fans: 60 },
   activeLeagues: [{ leagueSlug: "premier_league", start: "2026-08-15", end: "2027-05-20" }],
-} as unknown as SaveMeta;
+} as unknown as SeatMeta;
 
 const fixture = (over: Partial<Fixture> = {}): Fixture => ({
   id: "fix_9", date: "2026-11-01", competition: "premier_league", round: 9, home: "me", away: "opp",
@@ -94,7 +94,7 @@ describe("match crowd", () => {
       { id: "seat:seat1", squadId: "me", seatId: "seat1" },
       { id: "coach_7", squadId: "opp", clubs: [{ squadId: "old", from: "2026-08-01" }] },
     ] as unknown as ManagerRecord[];
-    const m = matchManagers({ ...meta, manager: { name: "X", nationalityIso: "br" } } as unknown as SaveMeta, records, "opp", (id) => (id === "old" ? "Brazil" : null));
+    const m = matchManagers({ ...meta, manager: { name: "X", nationalityIso: "br" } } as unknown as SeatMeta, records, "opp", (id) => (id === "old" ? "Brazil" : null));
     expect(m.mine.id).toBe("seat:seat1");
     expect(m.mine.nationality).toBe("Brazil");
     expect(m.opponent).toEqual({ id: "coach_7", nationality: "Brazil" });
@@ -117,7 +117,7 @@ describe("/api/match-setup crowd and managers", () => {
       .sort((a, b) => a.date.localeCompare(b.date))[0]!;
     const mySquad = (await saveService.getSquadById(saveId, "33"))!;
     const tactics: TacticsSave = { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation(mySquad) };
-    await saveService.saveTactics(saveId, tactics);
+    await saveService.saveTactics(saveId, tactics, created.seatId);
     await saveService.updateMeta(saveId, { currentDate: fx.date });
 
     const { user, session } = devAutoLogin(`match-setup-crowd-${saveId}@test.local`);

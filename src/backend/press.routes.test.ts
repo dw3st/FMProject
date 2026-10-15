@@ -11,6 +11,7 @@ import type { PressConference, PressTone } from "@/types/pressTypes";
 /** Press routes (Etapa 42, `.claude/rules/game/press.md`). */
 describe("press routes", () => {
   let saveId = "";
+  let seatId = "";
   let today = "";
   let token = "";
   let otherToken = "";
@@ -20,6 +21,7 @@ describe("press routes", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    seatId = meta.seatId;
     today = meta.currentDate!;
     const { user, session } = devAutoLogin("press-route@test.local");
     token = session.token;
@@ -52,7 +54,7 @@ describe("press routes", () => {
       id, trigger: "derby", kind: "pre", date: today, expires,
       params: { opponent: "Rival" }, seed: id,
     });
-    await saveService.updateMeta(saveId, { press: { pending, winless: 0, promises: [], history: [] } });
+    await saveService.updateSeat(saveId, seatId, { press: { pending, winless: 0, promises: [], history: [] } });
     return pending;
   };
   const provocative = (c: PressConference) =>
@@ -62,7 +64,7 @@ describe("press routes", () => {
     }));
 
   test("GET: someone else is refused; the owner without a pending gets null", async () => {
-    await saveService.updateMeta(saveId, { press: undefined });
+    await saveService.updateSeat(saveId, seatId, { press: undefined });
     const denied = await getPress(otherToken);
     expect([401, 403, 404]).toContain(denied.status);
     const ok = await getPress(token);
@@ -72,8 +74,8 @@ describe("press routes", () => {
 
   test("GET JSON has no `tone` field: neither in the pending answers nor in the history", async () => {
     const pending = await setPending("press-g");
-    const meta = (await saveService.getMeta(saveId))!;
-    await saveService.updateMeta(saveId, {
+    const meta = (await saveService.getSeatMeta(saveId, seatId))!;
+    await saveService.updateSeat(saveId, seatId, {
       press: { ...meta.press!, history: [
         { id: "press-old", date: today, trigger: "derby", answers: [{ questionId: "q", tone: "provocative" }] },
         { id: "press-ign", date: today, trigger: "winless", answers: "ignored" },
@@ -92,7 +94,7 @@ describe("press routes", () => {
   test("POST with valid answers applies them, clears pending and stores a quote", async () => {
     await setPending("press-p");
     // The answers are chosen by tone from the conference stored in the meta (the order is shuffled).
-    const before = (await saveService.getMeta(saveId))!;
+    const before = (await saveService.getSeatMeta(saveId, seatId))!;
     const stored = before.press!.pending!;
     const tones: PressTone[] = ["provocative", "defend_squad"];
     expect(stored.questions.map((q) => q.topic)).toEqual(["match", "squad"]);
@@ -101,7 +103,7 @@ describe("press routes", () => {
     const res = await postPress("press-p", token, { answers });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, seatId);
     // provocative: board −1, fans +2; defend_squad (not a bad trigger): nothing on the meters.
     const expected = applyPressEffect(applyPressEffect(before.board!, -1, 2), 0, 0);
     expect(meta!.board!.board).toBe(expected.board);
@@ -137,7 +139,7 @@ describe("press routes", () => {
     const dup = [provocative(c)[0]!, provocative(c)[0]!];
     expect((await postPress("press-v", token, { answers: dup })).status).toBe(400);
     expect((await postPress("press-v", token, { nope: 1 })).status).toBe(400);
-    expect((await saveService.getMeta(saveId))!.press!.pending?.id).toBe("press-v");
+    expect((await saveService.getSeatMeta(saveId, seatId))!.press!.pending?.id).toBe("press-v");
   });
 
   test("POST after the deadline is 409; on the deadline day it is still answerable", async () => {

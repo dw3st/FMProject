@@ -1,4 +1,4 @@
-import { ownSolo } from "@/backend/testing/seatFixtures";
+import { ownSolo, soloMeta } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
@@ -86,13 +86,13 @@ describe("registration routes", () => {
   }, 60_000);
 
   test("match-setup swaps an unregistered starter; closed deadline refuses changes", async () => {
-    const meta = (await saveService.getMeta(saveId))!;
+    const meta = (await soloMeta(saveId))!;
     const fixtures = await saveService.getAllFixturesForLeague(saveId, "premier_league");
     const first = fixtures.filter((f) => !f.played && (f.home === HUMAN || f.away === HUMAN)).sort((a, b) => a.date.localeCompare(b.date))[0]!;
     await saveService.updateMeta(saveId, { currentDate: first.date });
     const squad = (await saveService.getSquadById(saveId, HUMAN))!;
     const lineup = autoLineupDefaultFormation(squad, first.date);
-    await saveService.saveTactics(saveId, { formation: "4-3-3", tactical_style: meta.tactical_style ?? "balanced", lineup });
+    await saveService.saveTactics(saveId, { formation: "4-3-3", tactical_style: meta.tactical_style ?? "balanced", lineup }, meta.seatId);
     const pl = (await get()).competitions.find((c) => c.slug === "premier_league")!;
     const starter = lineup.find((id) => pl.rows.find((r) => r.id === id && r.registered && !r.free))!;
     const ids = pl.rows.filter((r) => r.registered && !r.free && r.id !== starter).map((r) => r.id);

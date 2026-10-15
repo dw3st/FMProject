@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { soloRecording } from "@/backend/testing/seatFixtures";
+import { soloRecording, updateSolo } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { continentalSlugsOf, countryByLeague, createCountryCup } from "@/backend/cupWorld";
@@ -83,11 +83,11 @@ describe("advanceOneDay emits cup inbox news", () => {
     // Pick a club that actually plays stage 1 (a top-tier club may have a bye straight to stage 2).
     const fixture = round1!.fixtures[0]!;
 
-    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+    await updateSolo(saveId, { clubId: fixture.home, currentDate: stage0.date });
     const outcome = await advanceOneDay(saveService, saveId);
     expect(outcome.ok).toBe(true);
 
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     const cupMessages = inbox.filter((m) => m.category === "cup") as CupInboxMessage[];
     expect(cupMessages.length).toBe(1);
 
@@ -124,7 +124,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
 
     // Make the fixture's home club the "player" club so advanceOneDay treats the override as
     // theirs, then force the current date to the cup's stage-1 date.
-    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+    await updateSolo(saveId, { clubId: fixture.home, currentDate: stage0.date });
 
     const recording: PlayedMatchRecording = {
       fixtureId: fixture.id,
@@ -177,7 +177,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
     };
     await saveService.writeRound(saveId, "cup_england", stage0.round, roundWithAggregate);
 
-    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+    await updateSolo(saveId, { clubId: fixture.home, currentDate: stage0.date });
 
     const recording: PlayedMatchRecording = {
       fixtureId: fixture.id,
@@ -229,7 +229,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
     };
     await saveService.writeRound(saveId, "cup_england", stage0.round, roundWithAggregate);
 
-    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+    await updateSolo(saveId, { clubId: fixture.home, currentDate: stage0.date });
 
     const recording: PlayedMatchRecording = {
       fixtureId: fixture.id,

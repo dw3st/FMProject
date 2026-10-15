@@ -1,4 +1,4 @@
-import { ownSolo } from "@/backend/testing/seatFixtures";
+import { ownSolo, soloMeta, updateSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
@@ -67,15 +67,15 @@ describe("youth competition routes", () => {
     const other2 = squad.players.find((p) => p.id !== old.id)!;
     const ok = await call(key, "/x", "PUT", { u21: [{ id: old.id, duration: "games3" }, { id: other2.id, duration: "rhythm" }] });
     expect(ok.status).toBe(200);
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+    expect((await soloMeta(saveId))!.youthCallUps).toEqual({ u21: [
       { id: old.id, duration: "games3", left: 3 }, { id: other2.id, duration: "rhythm", streak: 0 },
     ] });
     // Progress is kept for an unchanged duration and restarts when it changes.
-    await saveService.updateMeta(saveId, { youthCallUps: { u21: [
+    await updateSolo(saveId, { youthCallUps: { u21: [
       { id: old.id, duration: "games3", left: 1 }, { id: other2.id, duration: "rhythm", streak: 2 },
     ] } });
     await call(key, "/x", "PUT", { u21: [{ id: old.id, duration: "games3" }, { id: other2.id, duration: "indefinite" }] });
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+    expect((await soloMeta(saveId))!.youthCallUps).toEqual({ u21: [
       { id: old.id, duration: "games3", left: 1 }, { id: other2.id, duration: "indefinite" },
     ] });
     const back = await (await call(key, `/api/saves/${saveId}/youth-callups`)).json() as any;
@@ -97,7 +97,7 @@ describe("youth competition routes", () => {
       expect(((await res.json()) as any).error).toBe("invalidDuration");
     }
     expect((await call(key, "/x", "PUT", { u21: [] })).status).toBe(200);
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toBeUndefined();
+    expect((await soloMeta(saveId))!.youthCallUps).toBeUndefined();
   }, 60_000);
 
   test("season calendar: youth games apart from the match calendar", async () => {
@@ -109,9 +109,9 @@ describe("youth competition routes", () => {
   }, 60_000);
 
   test("without a club: 409 noClub", async () => {
-    await saveService.updateMeta(saveId, { clubId: "" });
+    await updateSolo(saveId, { clubId: "" });
     expect((await call("/api/saves/:saveId/youth-callups", "/x")).status).toBe(409);
     expect((await call("/api/saves/:saveId/youth-callups", "/x", "PUT", { u21: [] })).status).toBe(409);
-    await saveService.updateMeta(saveId, { clubId: "33" });
+    await updateSolo(saveId, { clubId: "33" });
   }, 60_000);
 });

@@ -31,7 +31,7 @@ export async function addSeat(
   service: SaveService = defaultService,
 ): Promise<SeatContext> {
   return withSaveLock(saveId, async () => {
-    const world = await service.getWorldMeta(saveId);
+    const world = await service.getMeta(saveId);
     if (!world?.currentDate) throw new Error(`addSeat: save ${saveId} not found or without a date`);
     if (memberOf(saveId, args.userId)) throw new Error(`addSeat: user ${args.userId} already has a seat in ${saveId}`);
     if ((await service.humanClubIds(saveId)).has(args.clubId)) throw new Error(`addSeat: club ${args.clubId} already has a seat`);

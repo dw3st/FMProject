@@ -167,7 +167,7 @@ async function createBenchSave(): Promise<string> {
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Bench Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
   console.log(
     `Save ${meta.id} — ${club.name} (${pl.name}), start ${meta.currentDate}, ` +

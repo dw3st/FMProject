@@ -86,10 +86,10 @@ describe("scouting routes and the weekly step", () => {
     expect(before.noise).toBeGreaterThan(0.5);
 
     // One Monday: knowledge grows, reports are written, travel is charged.
-    const fresh = (await saveService.getMeta(saveId))!;
+    const fresh = (await saveService.getSeatMeta(saveId, meta.seatId))!;
     const monday = nextMonday(fresh.currentDate!);
     const day = await scoutingDay(saveService, saveId, meta.seatId, { date: monday, meta: fresh, matchEvents: [] });
-    const state = await saveService.getScouting(saveId);
+    const state = await saveService.getScouting(saveId, meta.seatId);
     expect(Object.keys(state.knowledge).length).toBeGreaterThan(10);
     expect(state.reports.length).toBeGreaterThan(0);
     expect(day.entries.filter((e) => e.kind === "scouting")).toHaveLength(2);
@@ -107,19 +107,19 @@ describe("scouting routes and the weekly step", () => {
     expect(low.rows.every((r) => (r.knowledge ?? 100) >= 60)).toBe(true);
 
     // Shortlist full.
-    const s = await saveService.getScouting(saveId);
+    const s = await saveService.getScouting(saveId, meta.seatId);
     await saveService.writeScouting(saveId, {
       ...s,
       shortlist: Array.from({ length: SCOUTING.MAX_SHORTLIST }, (_, i) => ({ playerId: `x${i}`, name: "x", squadId: "", addedOn: monday })),
-    });
+    }, meta.seatId);
     expect((await call("/api/saves/:saveId/scouting/shortlist", "POST", session.token, { playerId: target.id, squadId: spanishSquad.id })).status).toBe(409);
 
     // Prospects: an expired one is closed; a valid one joins the academy with a fee in the ledger.
-    const base = (await saveService.getScouting(saveId));
+    const base = (await saveService.getScouting(saveId, meta.seatId));
     const mk = (id: string, expires: string): ScoutProspect => ({
       player: { ...target, id, age: 16, squadId: "", contract: undefined }, country: "Spain", expires, reportId: "", fee: 120_000,
     });
-    await saveService.writeScouting(saveId, { ...base, shortlist: [], prospects: [mk("pr_old", "2000-01-01"), mk("pr_ok", "2099-01-01")] });
+    await saveService.writeScouting(saveId, { ...base, shortlist: [], prospects: [mk("pr_old", "2000-01-01"), mk("pr_ok", "2099-01-01")] }, meta.seatId);
     const SIGN = "/api/saves/:saveId/scouting/prospects/:prospectId/sign";
     expect((await call(SIGN, "POST", session.token, undefined, { prospectId: "pr_old" })).status).toBe(409);
     const budgetBefore = (await saveService.getSquadById(saveId, "33"))!.finances!.budget;
@@ -131,8 +131,8 @@ describe("scouting routes and the weekly step", () => {
 
     // Academy full.
     await saveService.saveSquadById(saveId, { ...after, youth: Array.from({ length: YOUTH.MAX_SIZE }, (_, i) => ({ ...target, id: `y${i}` })) });
-    const st = await saveService.getScouting(saveId);
-    await saveService.writeScouting(saveId, { ...st, prospects: [mk("pr_two", "2099-01-01")] });
+    const st = await saveService.getScouting(saveId, meta.seatId);
+    await saveService.writeScouting(saveId, { ...st, prospects: [mk("pr_two", "2099-01-01")] }, meta.seatId);
     // The screen never gets a prospect's exact attributes (only the report's seen ranges).
     const seenView = await (await call("/api/saves/:saveId/scouting", "GET", session.token)).json() as any;
     expect(seenView.prospects[0].player.id).toBe("pr_two");
@@ -141,10 +141,10 @@ describe("scouting routes and the weekly step", () => {
 
     // Firing the field scout cancels his mission.
     expect((await call("/api/saves/:saveId/staff/fire", "POST", session.token, { memberId: field.id })).status).toBe(200);
-    expect((await saveService.getScouting(saveId)).missions.some((m) => m.scoutId === field.id)).toBe(false);
+    expect((await saveService.getScouting(saveId, meta.seatId)).missions.some((m) => m.scoutId === field.id)).toBe(false);
 
     // Unemployed: no new missions.
-    await saveService.updateMeta(saveId, { clubId: "" });
+    await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 4 })).status).toBe(409);
     viewer = (await loadViewer(saveService, saveId, meta.seatId))!;
     expect(viewer.ownClubId).toBe("");
@@ -168,7 +168,7 @@ describe("the chief's monthly recommendation (#100)", () => {
     const day = await scoutingDay(saveService, saveId, meta.seatId, { date, meta, matchEvents: [] });
     const rec = day.messages.find((m) => m.kind === "recommendation");
     expect(rec).toBeDefined();
-    const state = await saveService.getScouting(saveId);
+    const state = await saveService.getScouting(saveId, meta.seatId);
     expect(rec!.players!.length).toBeGreaterThan(0);
     for (const p of rec!.players!) {
       const report = state.reports.find((r) => r.playerId === p.playerId);
@@ -183,7 +183,7 @@ describe("the chief's monthly recommendation (#100)", () => {
     // The same day again (a replayed day): same month, nothing new.
     const again = await scoutingDay(saveService, saveId, meta.seatId, { date, meta, matchEvents: [] });
     expect(again.messages.some((m) => m.kind === "recommendation")).toBe(false);
-    expect((await saveService.getScouting(saveId)).reports).toHaveLength(state.reports.length);
+    expect((await saveService.getScouting(saveId, meta.seatId)).reports).toHaveLength(state.reports.length);
   }, 120_000);
 });
 
@@ -216,12 +216,12 @@ describe("the chief scout plans the missions (#157)", () => {
     const { meta } = await setup();
     const day = await scoutingDay(saveService, meta.id, meta.seatId, { date: nextMonday(meta.currentDate!), meta, matchEvents: [] });
     expect(day.messages.some((m) => m.kind === "chief_missions")).toBe(false);
-    expect((await saveService.getScouting(meta.id)).missions).toHaveLength(0);
+    expect((await saveService.getScouting(meta.id, meta.seatId)).missions).toHaveLength(0);
   }, 120_000);
 
   test("chief in charge: the day advance through a Monday sends every free scout, one on youths", async () => {
     const { meta, field } = await setup();
-    await saveService.updateMeta(meta.id, { responsibilities: { contracts: "director", scouting: "chief" } });
+    await saveService.updateSeat(meta.id, meta.seatId, { responsibilities: { contracts: "director", scouting: "chief" } });
     const { advanceOneDay } = await import("@/backend/advanceDay");
     let mondayDate = "";
     for (let i = 0; i < 8 && !mondayDate; i++) {
@@ -230,7 +230,7 @@ describe("the chief scout plans the missions (#157)", () => {
       if (new Date(`${today}T12:00:00Z`).getUTCDay() === 1) mondayDate = today;
     }
     expect(mondayDate).not.toBe("");
-    const state = await saveService.getScouting(meta.id);
+    const state = await saveService.getScouting(meta.id, meta.seatId);
     expect(state.missions.map((m) => m.scoutId).sort()).toEqual(["chief", field.id].sort());
     for (const m of state.missions) {
       expect(m.byChief).toBe(true);
@@ -240,7 +240,7 @@ describe("the chief scout plans the missions (#157)", () => {
     expect(state.missions.filter((m) => m.target.kind === "youth")).toHaveLength(1);
     const region = state.missions.find((m) => m.target.kind !== "youth")!;
     expect(region.focus?.improves).toBe(true);
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     const summary = inbox.filter((m) => m.category === "scouting" && m.kind === "chief_missions");
     expect(summary).toHaveLength(1);
   }, 300_000);
@@ -250,7 +250,7 @@ describe("the chief scout plans the missions (#157)", () => {
     const monday = nextMonday(meta.currentDate!);
     const chiefMeta = { ...meta, responsibilities: { contracts: "director" as const, scouting: "chief" as const } };
     await scoutingDay(saveService, meta.id, meta.seatId, { date: monday, meta: chiefMeta, matchEvents: [] });
-    const first = await saveService.getScouting(meta.id);
+    const first = await saveService.getScouting(meta.id, meta.seatId);
     expect(first.missions).toHaveLength(2);
     // The manager cancels the field scout's mission (route) on Sunday: the scout goes on hold.
     const sunday = addDays(monday, 6);
@@ -266,12 +266,12 @@ describe("the chief scout plans the missions (#157)", () => {
       { params: { saveId: meta.id, missionId: cancelled.id } },
     ));
     expect(del.status).toBe(200);
-    expect((await saveService.getScouting(meta.id)).chiefHold).toEqual({ [field.id]: sunday });
+    expect((await saveService.getScouting(meta.id, meta.seatId)).chiefHold).toEqual({ [field.id]: sunday });
     await scoutingDay(saveService, meta.id, meta.seatId, { date: addDays(monday, 7), meta: chiefMeta, matchEvents: [] });
-    expect((await saveService.getScouting(meta.id)).missions.some((m) => m.scoutId === field.id)).toBe(false);
+    expect((await saveService.getScouting(meta.id, meta.seatId)).missions.some((m) => m.scoutId === field.id)).toBe(false);
     // A week after the cancellation he is planned again.
     await scoutingDay(saveService, meta.id, meta.seatId, { date: addDays(monday, 14), meta: chiefMeta, matchEvents: [] });
-    const later = await saveService.getScouting(meta.id);
+    const later = await saveService.getScouting(meta.id, meta.seatId);
     expect(later.missions.some((m) => m.scoutId === field.id && m.byChief)).toBe(true);
     expect(later.chiefHold).toBeUndefined();
   }, 120_000);

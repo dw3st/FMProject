@@ -35,7 +35,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
 
     const mySquad = (await saveService.getSquadById(saveId, CLUB))!;
     const tactics: TacticsSave = { tactical_style: "balanced", formation: FORMATION, lineup: autoLineupForFormation(mySquad, formationForSimId(FORMATION)) };
-    await saveService.saveTactics(saveId, tactics);
+    await saveService.saveTactics(saveId, tactics, created.seatId);
 
     // Advance day by day (as the player does); on every main-team match day open the preview.
     const DAYS = Number(process.env.MS_DAYS);

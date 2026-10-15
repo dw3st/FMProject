@@ -38,7 +38,7 @@ async function buildStarsIndex(saveId: string, key: string, seq: number): Promis
  * and invalidated when the save's data (any squad/market write) or current date changes.
  */
 export async function getStarPlayers(saveId: string): Promise<Record<string, StarKind> | null> {
-  const meta = await saveService.getWorldMeta(saveId);
+  const meta = await saveService.getMeta(saveId);
   if (!meta) return null;
   const key = `${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;
   const hit = cache.get(saveId);
