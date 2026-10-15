@@ -204,7 +204,8 @@ async function playerFixtureDates(
 
 /**
  * The seat's unplayed official games (club and national team) on or after `from` (and up to `until`), ascending dates:
- * the group advance's `matchDates`. Unemployed: only his national team's. A read failure throws (never "no game").
+ * the group advance's `matchDates`. Unemployed: only his national team's (the executor never asks for an unemployed
+ * seat: he does not stop the world for games, `loadGroupSeats`). A read failure throws (never "no game").
  */
 export async function seatMatchDates(
   service: SaveService, saveId: string, seatId: string, from: string, until: string | null = null,

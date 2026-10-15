@@ -252,9 +252,11 @@ em `world.phase === "running"`. O solo não muda.
   decisões e gravações usadas, guarda a parte do assento em `pendingSummary.json` e manda
   `world_progress { saveId, date, target, running, waitingFor (apelidos), error? }` aos membros. O resumo pendente
   (`trimPendingSummary`, até `PENDING_SUMMARY_MAX` 120 dias) nunca descarta um dia com parada.
-- **Erro num dia:** `logError("world", …)`, `advance.running = false`, `error/errorAt/errorTries` no `advance`. O relógio
-  tenta de novo depois de 5, 15, 60 e 60 min (`ERROR_RETRY_MINUTES`, `errorRetryDue`), no máximo `MAX_ERROR_RETRIES` 5
-  seguidas; depois só um kick (ação de um técnico) tenta. Sucesso limpa o erro.
+- **Erro num dia:** o texto vai só para o `logError("world", …)`; `advance.running = false` e `advance.error` (e o
+  `world_progress.error`) guardam o código fixo `dayFailed` (`DAY_FAILED`), com `errorAt/errorTries`. O relógio tenta de
+  novo depois de 5, 15, 60 e 60 min (`ERROR_RETRY_MINUTES`, `errorRetryAt`/`errorRetryDue`), no máximo
+  `MAX_ERROR_RETRIES` 5 seguidas (`errorGaveUp`); depois só um kick (ação de um técnico, ou `POST …/advance/retry`, que
+  zera `errorTries` sob `withSaveLock` e dá kick) tenta. Sucesso limpa o erro.
 - **Relógio e retomada:** `startWorldClock()` (subida, `src/index.ts`) libera um `advance.running` preso (`resumeWorlds`),
   dá kick nos mundos `running` e, a cada `CLOCK_MS` 60 s (`worldClockTick`), nos de prazo vencido ou erro com nova tentativa.
 - **Calendário dos assentos:** `seatMatchDates` (`src/backend/advanceUntil.ts`) lista os jogos não jogados do assento (clube e
@@ -270,14 +272,15 @@ em `world.phase === "running"`. O solo não muda.
 |---|---|
 | `src/types/groupAdvanceTypes.ts` | `MatchDecision`, `PendingDay`, `MemberAdvanceStatus`, resposta de `GET …/advance` |
 | `src/Domain/groupAdvance/groupAdvanceConfig.ts` | Constantes (`GROUP_ADVANCE`) |
-| `src/Domain/groupAdvance/groupAdvance.ts` (+ teste) | Puro: `resolveReadyUntil`, `computeGroupTarget`, `memberStatus`, `deadlineAt`/`deadlinePassed`, `assistantPatches`, `seatStops`, `trimPendingSummary`, `errorRetryDue` |
+| `src/Domain/groupAdvance/groupAdvance.ts` (+ teste) | Puro: `resolveReadyUntil`, `computeGroupTarget`, `memberStatus`, `deadlineAt`/`deadlinePassed`, `assistantPatches`, `seatStops`, `trimPendingSummary`, `errorRetryAt`/`errorRetryDue`/`errorGaveUp` |
+| `src/Domain/groupAdvance/pendingSummary.ts` (+ teste) | `aggregatePendingDays`: os dias pendentes num resumo só |
 | `src/Domain/inbox/worldAdvanceMessage.ts` | Mensagens `world` / `auto_advanced` e `live_refused` |
 | `src/backend/groupAdvance.ts` | Executor, relógio, retomada, `groupAdvanceView` |
 | `src/backend/groupAdvanceRoutes.ts` | Rotas |
 | `src/backend/playedMatchValidation.ts` | Validação da gravação ao vivo |
 | `src/backend/dal/*` | `liveRecording.json` (apagado quando o dia roda), `pendingSummary.json` do assento |
 | `src/GameInterface/World/*` | `GroupAdvanceProvider`, `ReadyControl` (`readyBranch`), `GroupAdvanceBand`, `groupAdvanceApi`, `groupAdvanceText`, `groupAdvanceErrors` |
-| `scripts/group-advance-measure.ts` | Medição |
+| `scripts/group-advance-measure.ts` | Medição e o fluxo de 3 assentos (Premier, La Liga, Brasileirão A) de ponta a ponta |
 
 ### Rotas (`requireSeat`; solo → 409 `notMulti`, lobby → 409 `lobby`)
 
@@ -287,8 +290,9 @@ em `world.phase === "running"`. O solo não muda.
 | `POST …/match-decision { date, fixtureId, mode: "simulate" }` | Decide o jogo do dia |
 | `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
 | `GET …/live-recording` | Resultado provisório (404 sem gravação do dia) |
-| `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, erro, status por membro) |
-| `GET/DELETE …/summary` | Resumo pendente do assento |
+| `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
+| `POST …/advance/retry` | "Tentar de novo": zera `errorTries` e dá kick (409 `noError` sem erro) |
+| `GET/DELETE …/summary` | Resumo pendente do assento: `{ days, aggregate }` (`aggregate` = os dias num resumo só, `PendingSummaryAggregate`; os logs lidos em lotes de 6) |
 
 Evento de socket: `world_progress`.
 
@@ -297,12 +301,15 @@ Evento de socket: `world_progress`.
 - Barra superior: **Pronto até…** (amanhã, meu próximo jogo, uma data) no lugar do Continuar; marcado, "Pronto até 12/03 ·
   esperando 2" com desmarcar; no dia de jogo **Jogar** (prévia → partida) e **Simular**; durante o avanço "Avançando…
   14/03 de 20/03". `GroupAdvanceBand` no Painel e em `/world` (data, alvo, quem falta, prazo restante, status por membro:
-  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço, o Painel mostra o resumo, o fim de temporada e a
-  demissão.
-- Erro do executor: texto com a próxima tentativa; esgotadas as 5, botão **Tentar de novo** (novo kick). Gravação do jogo
-  ao vivo que falha fica em `sessionStorage`, e o "Tentar de novo" dela só funciona na mesma aba.
-- A partida ao vivo grava para o grupo; prévia e resultado mostram o resultado provisório (`/match-result?pending=1`).
-  i18n `world.advance.*`.
+  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço, o Painel mostra **um** resumo para todos os dias que
+  rodaram (`DaySummaryModal` com `range`: os jogos do clube com resultados e lesões, as transferências do clube, as
+  conquistas somadas, o convite de coletiva e, quando o "Pronto até" voltou por causa delas, as paradas: propostas novas,
+  demissão, fim da temporada), depois o fim de temporada; a demissão leva a `/fired`.
+- Erro do executor (`GroupAdvanceBand`): o texto do código (`world.advance.errors.dayFailed`) com a hora da próxima
+  tentativa; esgotadas as 5, "A liga parou de tentar" e o botão **Tentar de novo** (`POST …/advance/retry`). Gravação do
+  jogo ao vivo que falha fica em `sessionStorage`, e o "Tentar de novo" dela só funciona na mesma aba.
+- A partida ao vivo grava para o grupo; o resultado (`/match-result?pending=1`) mostra o resultado provisório (a prévia
+  não). i18n `world.advance.*`.
 
 ### Medição (`bun scripts/group-advance-measure.ts 21`, 2026-10-15)
 
@@ -329,4 +336,11 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
 - Técnico desempregado: o jogo da seleção dele é simulado e não para o mundo; o jogo da seleção ao vivo não tem resultado
   provisório (só o do clube).
 - Sem pausa da liga pelo dono (o "sem prazo" já espera todos).
+- **Prazo × partida ao vivo:** se o prazo vence enquanto ele joga, o assistente simula o jogo e o dia roda; a gravação
+  enviada depois recebe 409 `dayClosed`, e a partida e o reenvio vão para o resultado oficial (`/match-result?date=D`, o
+  jogo simulado), sem erro. A partida jogada se perde.
+- Com o executor rodando, as escritas dos membros (pronto, decisão, gravação, retry) esperam o dia em curso no
+  `withSaveLock` (até ~14 s num dia com rodada no motor completo).
+- O resumo agregado lista os jogos e as transferências do clube atual do assento (uma troca de clube no meio esconde os do
+  clube antigo) e o treino/descanso só do último dia; o jogo da seleção não entra.
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
