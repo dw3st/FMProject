@@ -131,6 +131,15 @@
     "continue": "Continue",
     "whatsNew": "What's new",
     "unemployed": "No club",
+    "withFriends": "With friends · {{count}}/{{max}}",
+    "owner": "Owner",
+    "member": "Member",
+    "lobby": "In the waiting room",
+    "leave": "Leave the league",
+    "leaveConfirmTitle": "Leave the league?",
+    "leaveConfirmBody": "\"{{clubName}}\" goes back to the AI and your seat is freed.",
+    "deleteWorldBody_one": "Deleting \"{{clubName}}\" ({{leagueName}}) deletes the league for you and {{count}} other manager. This cannot be undone.",
+    "deleteWorldBody_other": "Deleting \"{{clubName}}\" ({{leagueName}}) deletes the league for you and {{count}} other managers. This cannot be undone.",
     "saveVersion": "v{{version}}",
     "outdatedVersion": "Version {{version}} · not compatible with this one",
     "outdatedUnknown": "Earlier version · not compatible with this one",
@@ -260,6 +269,15 @@
     "managerEmpty": "Manager not set",
     "startWith": "Start with {{club}}",
     "stepOf": "Step {{n}} of 2",
+    "mode": {
+      "title": "How do you want to play?",
+      "subtitle": "Alone, or in a league with your friends.",
+      "solo": "On my own",
+      "soloDetail": "Your career, at your pace.",
+      "multi": "With friends",
+      "multiDetail": "Up to {{max}} managers in the same world.",
+      "next": "Continue"
+    },
     "managerSubtitle": "Who will take charge of the club.",
     "chooseClub": "Choose club →",
     "chooseClubTitle": "Choose the club",
@@ -527,6 +545,7 @@
     "makeOffer": "Make offer"
   },
   "nav": {
+    "world": "League",
     "squad": "Squad",
     "formation": "Formation",
     "development": "Development",
@@ -2910,6 +2929,10 @@
     "news": {
       "main": "WORLD",
       "accent": "NEWS"
+    },
+    "world": {
+      "main": "YOUR",
+      "accent": "LEAGUE"
     }
   },
   "jobs": {
@@ -5006,6 +5029,100 @@
     "world_member_left": {
       "title": "{{manager}} leaves {{club}}",
       "text": "The club goes back to its board's choice of manager."
+    }
+  },
+  "world": {
+    "status": { "lobby": "Waiting room", "running": "In progress" },
+    "members": {
+      "title": "Managers",
+      "count": "{{count}} of {{max}} managers",
+      "manager": "Manager",
+      "club": "Club",
+      "role": "Role",
+      "actions": "Actions",
+      "owner": "Owner",
+      "member": "Member",
+      "unemployed": "No club",
+      "transfer": "Make owner",
+      "remove": "Remove",
+      "removeConfirmTitle": "Remove this manager?",
+      "removeConfirmBody": "{{manager}} leaves the league and {{club}} goes back to the AI.",
+      "removeConfirmBodyNoClub": "{{manager}} leaves the league.",
+      "transferConfirmTitle": "Pass the ownership?",
+      "transferConfirmBody": "{{manager}} becomes the owner; you stay as a member."
+    },
+    "invite": {
+      "title": "Invite",
+      "link": "Invite link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the link and copy it by hand.",
+      "newCode": "New code",
+      "newCodeConfirmTitle": "Create a new code?",
+      "newCodeConfirmBody": "The old link stops working. Managers already in the league stay.",
+      "friends": "Invite friends",
+      "friendsTitle": "Invite friends",
+      "send": "Invite",
+      "sent": "Invited",
+      "noFriends": "No friends to invite yet."
+    },
+    "deadline": {
+      "title": "Deadline",
+      "hint": "Real time each manager has to be ready before the league moves on without him.",
+      "hours_one": "{{count}} h",
+      "hours_other": "{{count}} h",
+      "none": "No deadline"
+    },
+    "start": { "button": "Start the league", "waiting": "Waiting for the owner to start" },
+    "chat": "League chat",
+    "leave": {
+      "button": "Leave the league",
+      "transferFirst": "Pass the ownership before leaving.",
+      "confirmTitle": "Leave the league?",
+      "confirmBody": "Your club goes back to the AI and your seat is freed.",
+      "deleteBody": "You are the only manager: leaving deletes the league."
+    },
+    "join": {
+      "title": "Join a league",
+      "owner": "Owner: {{name}}",
+      "league": "League: {{league}}",
+      "choose": "Choose your club",
+      "open": "Open the league",
+      "toStart": "Back to the start",
+      "humanClub": "Human manager",
+      "joinWith": "Join with {{club}}",
+      "clubSubtitle": "{{world}} · {{league}}",
+      "clubSubtitleNoLeague": "{{world}}"
+    },
+    "invites": {
+      "title": "League invites",
+      "from": "{{from}} invites you to {{name}}",
+      "accept": "Accept",
+      "decline": "Decline"
+    },
+    "inbox": {
+      "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
+      "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
+      "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." }
+    },
+    "errors": {
+      "notFound": "This invite is not valid any more.",
+      "full": "The league is full.",
+      "alreadyMember": "You are already in this league.",
+      "clubTaken": "Another manager took this club. Pick another one.",
+      "invalidManager": "Check the manager's name, nationality and background.",
+      "invalidClub": "This club is not in the league's world.",
+      "invalidBody": "Something is missing in the request.",
+      "ownerOnly": "Only the owner can do this.",
+      "transferFirst": "Pass the ownership to another manager before leaving.",
+      "alreadyStarted": "The league has already started.",
+      "notMulti": "This save is not a league of friends.",
+      "inviteLimit": "Too many pending invites. Wait for some answers.",
+      "noNickname": "Choose a nickname in Friends first.",
+      "useLeave": "To leave, use \"Leave the league\".",
+      "notMember": "This manager is not in the league.",
+      "tooLarge": "The request is too large.",
+      "generic": "Something went wrong. Try again."
     }
   }
 }

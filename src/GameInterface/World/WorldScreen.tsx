@@ -77,7 +77,7 @@ export function WorldScreen() {
   async function confirmPending() {
     if (!pending) return;
     if (pending.kind === "remove") await run(worldApi.remove(saveId, pending.member.seatId));
-    else if (pending.kind === "code") await run(worldApi.newCode(saveId), () => setCopied(false));
+    else if (pending.kind === "code") await run(worldApi.newCode(saveId), () => { setCopied(false); setCopyFailed(false); });
     else if (pending.kind === "owner") await run(worldApi.transferOwner(saveId, pending.member.seatId));
     else {
       setBusy(true);
@@ -207,9 +207,9 @@ export function WorldScreen() {
                 </>
               )}
             </div>
+            {copyFailed && <Notice kind="warning">{t("world.invite.copyFailed")}</Notice>}
           </section>
 
-          {copyFailed && <Notice kind="warning">{t("world.invite.copyFailed")}</Notice>}
           <section className="flex flex-col gap-3">
             <SectionTitle>{t("world.deadline.title")}</SectionTitle>
             <p className="text-sm text-muted-foreground m-0">{t("world.deadline.hint")}</p>
@@ -254,6 +254,9 @@ export function WorldScreen() {
               <Icon name="log-out" size={16} />
               {t("world.leave.button")}
             </Button>
+            {owner && view.members.length > 1 && (
+              <p className="text-sm text-muted-foreground m-0">{t("world.leave.transferFirst")}</p>
+            )}
           </section>
 
           <InviteFriendsModal
