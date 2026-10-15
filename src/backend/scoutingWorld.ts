@@ -464,6 +464,8 @@ export async function scoutingDay(
           saveId, country, week: date, topLeagueSquads: topSquads,
           nextSeasonEnd: args.nextSeasonEnd ?? addDays(date, 365),
           fee: prospectFee(countryTier(topSquads), wageFactorOf(own)),
+          // A world of seats: each seat's draw is its own (ids unique in the world).
+          ...(meta.mode === "multi" ? { seatId } : {}),
         });
         const countryK = countryKOf(mission.scoutId)?.(country);
         const added = addProspects(state, prospects, ctxFor(state)!, {
