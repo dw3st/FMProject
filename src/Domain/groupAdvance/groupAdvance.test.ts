@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
+  assistantPatches, nextUndecided, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 
 describe("isGroupWorld", () => {
@@ -45,7 +45,7 @@ describe("laterDate", () => {
 });
 
 const seat = (seatId: string, over: Partial<GroupSeatInput> = {}): GroupSeatInput => ({
-  seatId, readyUntil: null, nextMatch: null, decisionDate: null, unemployed: false, ...over,
+  seatId, readyUntil: null, matchDates: [], decisionDate: null, unemployed: false, ...over,
 });
 
 describe("computeGroupTarget", () => {
@@ -64,21 +64,21 @@ describe("computeGroupTarget", () => {
   });
   test("an undecided game stops ON its day", () => {
     const plan = computeGroupTarget(today, [
-      seat("a", { readyUntil: "2027-03-20", nextMatch: "2027-03-13" }),
+      seat("a", { readyUntil: "2027-03-20", matchDates: ["2027-03-13"] }),
       seat("b", { readyUntil: "2027-03-20" }),
     ]);
     expect(plan.target).toBe("2027-03-13");
   });
   test("an undecided game today holds the world and is a match wait", () => {
-    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", nextMatch: today })]);
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", matchDates: [today] })]);
     expect(plan).toEqual({ target: today, waitingFor: ["a"], matchWaiting: ["a"] });
   });
   test("a decided game does not stop", () => {
-    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", nextMatch: today, decisionDate: today })]);
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", matchDates: [today], decisionDate: today })]);
     expect(plan.target).toBe("2027-03-20");
   });
   test("an unemployed seat has no game stop but still needs a date", () => {
-    expect(computeGroupTarget(today, [seat("a", { unemployed: true, nextMatch: today, readyUntil: "2027-03-15" })]).target)
+    expect(computeGroupTarget(today, [seat("a", { unemployed: true, matchDates: [today], readyUntil: "2027-03-15" })]).target)
       .toBe("2027-03-15");
     expect(computeGroupTarget(today, [seat("a", { unemployed: true })]).waitingFor).toEqual(["a"]);
   });
@@ -91,9 +91,9 @@ describe("memberStatus", () => {
   const today = "2027-03-10";
   test("ready, match, late, no club", () => {
     expect(memberStatus(seat("a", { readyUntil: "2027-03-12" }), today)).toBe("ready");
-    expect(memberStatus(seat("a", { readyUntil: "2027-03-12", nextMatch: today }), today)).toBe("match");
+    expect(memberStatus(seat("a", { readyUntil: "2027-03-12", matchDates: [today] }), today)).toBe("match");
     expect(memberStatus(seat("a"), today)).toBe("late");
-    expect(memberStatus(seat("a", { unemployed: true }), today)).toBe("no_club");
+    expect(memberStatus(seat("a", { unemployed: true, readyUntil: "2027-03-12" }), today)).toBe("no_club");
   });
 });
 
@@ -118,13 +118,13 @@ describe("assistantPatches", () => {
     const seats = [
       seat("a", { readyUntil: "2027-03-15" }),
       seat("b", { readyUntil: "2027-03-13" }),
-      seat("late", { nextMatch: "2027-03-12" }),
+      seat("late", { matchDates: ["2027-03-12"] }),
     ];
     const plan = computeGroupTarget(today, seats);
     expect(assistantPatches(today, seats, plan)).toEqual([{ seatId: "late", readyUntil: "2027-03-13", decisionDate: "2027-03-12" }]);
   });
   test("nobody ready: tomorrow; a game today is simulated", () => {
-    const seats = [seat("a", { nextMatch: today }), seat("b")];
+    const seats = [seat("a", { matchDates: [today] }), seat("b")];
     const plan = computeGroupTarget(today, seats);
     expect(assistantPatches(today, seats, plan)).toEqual([
       { seatId: "a", readyUntil: "2027-03-11", decisionDate: today },
@@ -132,7 +132,7 @@ describe("assistantPatches", () => {
     ]);
   });
   test("a game on the stop date is not decided (it is the next stop)", () => {
-    const seats = [seat("a", { readyUntil: "2027-03-13" }), seat("late", { nextMatch: "2027-03-13" })];
+    const seats = [seat("a", { readyUntil: "2027-03-13" }), seat("late", { matchDates: ["2027-03-13"] })];
     const plan = computeGroupTarget(today, seats);
     expect(assistantPatches(today, seats, plan)).toEqual([{ seatId: "late", readyUntil: "2027-03-13", decisionDate: null }]);
   });
@@ -145,5 +145,64 @@ describe("seatStops", () => {
     expect(seatStops({ seasonEnded: true })).toBe(true);
     expect(seatStops({ jobOffers: 0, pressInvite: true })).toBe(false);
     expect(seatStops({})).toBe(false);
+  });
+});
+
+describe("review fixes", () => {
+  const today = "2027-03-10";
+  test("a decided game today is skipped; the next game stops the world", () => {
+    const seats = [seat("a", { readyUntil: "2027-03-20", matchDates: [today, "2027-03-13"], decisionDate: today })];
+    expect(computeGroupTarget(today, seats).target).toBe("2027-03-13");
+    expect(nextUndecided(seats[0]!, today)).toBe("2027-03-13");
+  });
+  test("the assistant skips the decided game too", () => {
+    const seats = [
+      seat("a", { readyUntil: "2027-03-20" }),
+      seat("late", { matchDates: [today, "2027-03-13"], decisionDate: today }),
+    ];
+    const plan = computeGroupTarget(today, seats);
+    expect(assistantPatches(today, seats, plan)).toEqual([{ seatId: "late", readyUntil: "2027-03-20", decisionDate: "2027-03-13" }]);
+  });
+  test("late has priority over no_club; a ready unemployed is no_club", () => {
+    expect(memberStatus(seat("a", { unemployed: true }), today)).toBe("late");
+    expect(memberStatus(seat("a", { unemployed: true, readyUntil: "2027-03-15" }), today)).toBe("no_club");
+  });
+  test("an invalid waitingSince has no deadline", () => {
+    expect(deadlineAt("garbage", 12)).toBeNull();
+    expect(deadlinePassed("garbage", 12, Date.now())).toBe(false);
+  });
+  test("next_match is capped like a date", () => {
+    expect(resolveReadyUntil("next_match", today, "2029-01-01")).toEqual({ ok: true, readyUntil: "2027-03-11" });
+  });
+  test("exact day limit, month and year rollover", () => {
+    expect(resolveReadyUntil("2028-04-13", today, null)).toEqual({ ok: true, readyUntil: "2028-04-13" });
+    expect(resolveReadyUntil("2028-04-14", today, null)).toEqual({ ok: false, error: "invalidDate" });
+    expect(resolveReadyUntil("tomorrow", "2027-03-31", null)).toEqual({ ok: true, readyUntil: "2027-04-01" });
+    expect(resolveReadyUntil("tomorrow", "2027-12-31", null)).toEqual({ ok: true, readyUntil: "2028-01-01" });
+  });
+  test("equal readyUntil dates", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-12" }), seat("b", { readyUntil: "2027-03-12" })]);
+    expect(plan).toEqual({ target: "2027-03-12", waitingFor: [], matchWaiting: [] });
+  });
+  test("assistant: unemployed late seat gets no decision", () => {
+    const seats = [seat("a", { readyUntil: "2027-03-15" }), seat("late", { unemployed: true, matchDates: ["2027-03-12"] })];
+    expect(assistantPatches(today, seats, computeGroupTarget(today, seats)))
+      .toEqual([{ seatId: "late", readyUntil: "2027-03-15", decisionDate: null }]);
+  });
+  test("assistant: several late seats with others ready", () => {
+    const seats = [
+      seat("a", { readyUntil: "2027-03-14" }), seat("l1", { matchDates: ["2027-03-11"] }),
+      seat("l2", { matchDates: ["2027-03-14"] }),
+    ];
+    expect(assistantPatches(today, seats, computeGroupTarget(today, seats))).toEqual([
+      { seatId: "l1", readyUntil: "2027-03-14", decisionDate: "2027-03-11" },
+      { seatId: "l2", readyUntil: "2027-03-14", decisionDate: null },
+    ]);
+  });
+  test("all unemployed without a date: all wait, tomorrow for the assistant", () => {
+    const seats = [seat("a", { unemployed: true }), seat("b", { unemployed: true })];
+    const plan = computeGroupTarget(today, seats);
+    expect(plan.waitingFor).toEqual(["a", "b"]);
+    expect(assistantPatches(today, seats, plan).map((p) => p.readyUntil)).toEqual(["2027-03-11", "2027-03-11"]);
   });
 });

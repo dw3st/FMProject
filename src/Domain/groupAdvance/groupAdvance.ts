@@ -1,5 +1,6 @@
 import { addDays, isRealIsoDate } from "@/Domain/dates";
 import type { MemberAdvanceStatus } from "@/types/groupAdvanceTypes";
+import type { WorldDeadline } from "@/types/multiplayerTypes";
 import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
 
 /** A world advanced by the group (part 3): multi with a world state (lobby or running). */
@@ -22,7 +23,11 @@ export function resolveReadyUntil(req: unknown, currentDate: string, nextMatchAf
   if (req === null) return { ok: true, readyUntil: null };
   const tomorrow = addDays(currentDate, 1);
   if (req === "tomorrow") return { ok: true, readyUntil: tomorrow };
-  if (req === "next_match") return { ok: true, readyUntil: laterDate(nextMatchAfterToday, tomorrow) };
+  // next_match is capped too: a game further than MAX_READY_DAYS is not a stop worth waiting for.
+  if (req === "next_match") {
+    const until = laterDate(nextMatchAfterToday, tomorrow);
+    return { ok: true, readyUntil: until > addDays(currentDate, GROUP_ADVANCE.MAX_READY_DAYS) ? tomorrow : until };
+  }
   if (typeof req !== "string" || !isRealIsoDate(req)) return { ok: false, error: "invalidDate" };
   if (req < tomorrow || req > addDays(currentDate, GROUP_ADVANCE.MAX_READY_DAYS)) return { ok: false, error: "invalidDate" };
   return { ok: true, readyUntil: req };
@@ -33,9 +38,9 @@ export interface GroupSeatInput {
   seatId: string;
   /** Stop date the seat accepts; null/absent or <= today = not ready. */
   readyUntil: string | null | undefined;
-  /** The seat's next unplayed official game (club or national) on or after today; null when none or unemployed. */
-  nextMatch: string | null;
-  /** Date of his settled game (`matchDecision.date`), or null. */
+  /** Dates (ascending, may repeat) of his unplayed official games (club or national) on or after today; [] when none. */
+  matchDates: readonly string[];
+  /** Date of his settled game (`matchDecision.date`), or null. Skipped when looking for the next game to decide. */
   decisionDate: string | null;
   unemployed: boolean;
 }
@@ -49,12 +54,19 @@ export interface GroupPlan {
   matchWaiting: string[];
 }
 
+/** First game on or after `currentDate` without a decision (a decided game never stops the world). */
+export function nextUndecided(
+  s: Pick<GroupSeatInput, "matchDates" | "decisionDate" | "unemployed">,
+  currentDate: string,
+): string | null {
+  if (s.unemployed) return null;
+  return s.matchDates.find((d) => d >= currentDate && d !== s.decisionDate) ?? null;
+}
+
 /** The seat's own stop date and whether today's undecided game is what stops him. */
 export function seatLimit(s: GroupSeatInput, currentDate: string): { limit: string; matchToday: boolean } {
   const ready = s.readyUntil && s.readyUntil > currentDate ? s.readyUntil : currentDate;
-  const matchStop = !s.unemployed && s.nextMatch && s.nextMatch >= currentDate && s.decisionDate !== s.nextMatch
-    ? s.nextMatch
-    : null;
+  const matchStop = nextUndecided(s, currentDate);
   const limit = matchStop && matchStop < ready ? matchStop : ready;
   return { limit, matchToday: matchStop === currentDate };
 }
@@ -74,21 +86,23 @@ export function computeGroupTarget(currentDate: string, seats: readonly GroupSea
 
 /** Status of a member on the league screen. */
 export function memberStatus(s: GroupSeatInput, currentDate: string): MemberAdvanceStatus {
-  if (s.unemployed) return "no_club";
   const { limit, matchToday } = seatLimit(s, currentDate);
   if (matchToday) return "match";
-  return limit > currentDate ? "ready" : "late";
+  if (limit <= currentDate) return "late";
+  return s.unemployed ? "no_club" : "ready";
 }
 
 const HOUR_MS = 3_600_000;
 
 /** When the world goes on without the late ones, or null (no deadline, or not waiting). */
-export function deadlineAt(waitingSince: string | null, hours: number | null): string | null {
+export function deadlineAt(waitingSince: string | null, hours: WorldDeadline): string | null {
   if (!waitingSince || hours == null) return null;
-  return new Date(Date.parse(waitingSince) + hours * HOUR_MS).toISOString();
+  const since = Date.parse(waitingSince);
+  if (Number.isNaN(since)) return null;
+  return new Date(since + hours * HOUR_MS).toISOString();
 }
 
-export function deadlinePassed(waitingSince: string | null, hours: number | null, nowMs: number): boolean {
+export function deadlinePassed(waitingSince: string | null, hours: WorldDeadline, nowMs: number): boolean {
   const at = deadlineAt(waitingSince, hours);
   return at !== null && nowMs >= Date.parse(at);
 }
@@ -109,12 +123,10 @@ export function assistantPatches(currentDate: string, seats: readonly GroupSeatI
   const others = seats.filter((s) => !late.has(s.seatId)).map((s) => seatLimit(s, currentDate).limit);
   const tomorrow = addDays(currentDate, 1);
   const until = laterDate(others.length > 0 ? others.reduce((m, d) => (d < m ? d : m)) : null, tomorrow);
-  return seats.filter((s) => late.has(s.seatId)).map((s) => ({
-    seatId: s.seatId,
-    readyUntil: until,
-    decisionDate: !s.unemployed && s.nextMatch && s.nextMatch >= currentDate && s.nextMatch < until
-      && s.decisionDate !== s.nextMatch ? s.nextMatch : null,
-  }));
+  return seats.filter((s) => late.has(s.seatId)).map((s) => {
+    const next = nextUndecided(s, currentDate);
+    return { seatId: s.seatId, readyUntil: until, decisionDate: next !== null && next < until ? next : null };
+  });
 }
 
 /** The seat's part of a day asks him to look before the world goes on: sacked, a job/national offer, his season end. */

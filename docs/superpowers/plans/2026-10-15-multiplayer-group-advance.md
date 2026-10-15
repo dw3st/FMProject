@@ -12,6 +12,8 @@
 
 > Tarefa 1 conferida (2026-10-15): `WorldState` em `@/types/multiplayerTypes` (já tem `deadlineHours: WorldDeadline`), `removeSeat` em `src/backend/seats.ts`, rotas em `src/backend/worlds/worldRoutes.ts`, tela `src/GameInterface/World/WorldScreen.tsx`, `listWorldCodeIds()` em `src/backend/worlds/worldStore.ts` (usar na Tarefa 11 em vez de consultar `world_codes`), eventos `world_*` em `socialTypes.ts` (`world_invite`, `world_started`, `world_removed`, `world_deleted`, `world_members`), `notifyWorld`/`notifyUser` em `src/backend/worlds/worldNotify.ts`, `useSocial` expõe `worldVersion` (não há `subscribe`: para `world_progress` na Tarefa 18, estender o mesmo mecanismo). Helper de teste existente: `src/backend/worlds/worldTestUtils.ts` (`callApi`, `TEST_MANAGER`); `fakeWorld` da Tarefa 2 continua necessário.
 
+> Revisão das Tarefas 1–5: `GroupSeatInput.nextMatch` virou `matchDates: readonly string[]` (datas ascendentes dos jogos não jogados do assento, clube e seleção, a partir de hoje, **incluindo o decidido**; o puro pula `decisionDate` via `nextUndecided`). Tarefas 8/11: o executor monta `matchDates` (não o "próximo jogo sem decisão"). `resolveReadyUntil` continua recebendo o próximo jogo após hoje; `next_match` agora também respeita `MAX_READY_DAYS` (acima disso vale amanhã). `deadlineAt`/`deadlinePassed` usam `WorldDeadline`.
+
 ---
 
 ## Pressupostos da parte 2 (conferidos na Tarefa 1)
