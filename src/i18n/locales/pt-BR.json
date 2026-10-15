@@ -5106,6 +5106,61 @@
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." }
     },
     "advance": {
+      "running": "Avançando… {{date}} de {{target}}",
+      "simulate": "Simular",
+      "play": "Jogar",
+      "readyButton": "Pronto até…",
+      "readyTomorrow": "Amanhã",
+      "readyNextMatch": "Meu próximo jogo",
+      "readyDate": "Uma data",
+      "readyConfirm": "Marcar",
+      "readyUntil": "Pronto até {{date}}",
+      "waiting_one": "esperando {{count}}",
+      "waiting_other": "esperando {{count}}",
+      "unmark": "Desmarcar",
+      "dateInvalid": "Escolha uma data a partir de {{min}}.",
+      "retry": "Tentar de novo",
+      "networkError": "Sem conexão.",
+      "band": {
+        "title": "Avanço do grupo",
+        "date": "Data do mundo",
+        "target": "Alvo",
+        "waitingFor": "Falta: {{names}}",
+        "allReady": "Todos prontos",
+        "noDeadline": "Sem prazo: a liga espera todos",
+        "deadlineHours_one": "Avança sem eles em {{count}} hora",
+        "deadlineHours_other": "Avança sem eles em {{count}} horas",
+        "deadlineMinutes_one": "Avança sem eles em {{count}} minuto",
+        "deadlineMinutes_other": "Avança sem eles em {{count}} minutos",
+        "deadlineNow": "Avança sem eles agora",
+        "error": "{{error}}"
+      },
+      "status": {
+        "column": "Avanço",
+        "ready": "Pronto",
+        "match": "Jogo a decidir",
+        "late": "Atrasado",
+        "no_club": "Sem clube"
+      },
+      "result": {
+        "pending": "Resultado provisório: vale quando a liga chegar a este dia."
+      },
+      "errors": {
+        "generic": "Não foi possível salvar. Tente de novo.",
+        "invalidDate": "Escolha uma data a partir de amanhã.",
+        "dayClosed": "Esse dia já foi jogado.",
+        "notYourMatch": "Esse não é o seu jogo de hoje.",
+        "seatOpponent": "Contra outro técnico o jogo é simulado.",
+        "noWinner": "Jogo de mata-mata precisa de vencedor.",
+        "notMulti": "Este jogo não é uma liga de amigos.",
+        "lobby": "A liga ainda não começou.",
+        "groupAdvance": "O avanço do grupo não está disponível.",
+        "tooLarge": "O pedido é grande demais.",
+        "invalidBody": "Falta alguma coisa no pedido.",
+        "invalidDecision": "Falta alguma coisa no pedido.",
+        "invalidRecording": "Não foi possível salvar o jogo. Ele será simulado.",
+        "network": "Sem conexão."
+      },
       "inbox": {
         "subject": "O assistente avançou por você",
         "preview": "Pronto até {{until}}",

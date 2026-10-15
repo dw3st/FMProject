@@ -3,12 +3,13 @@ import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 
 describe("groupAdvanceErrorKey", () => {
   test("known codes map to their key", () => {
-    expect(groupAdvanceErrorKey("dayClosed")).toBe("world.advance.error.dayClosed");
-    expect(groupAdvanceErrorKey("noWinner")).toBe("world.advance.error.noWinner");
+    expect(groupAdvanceErrorKey("dayClosed")).toBe("world.advance.errors.dayClosed");
+    expect(groupAdvanceErrorKey("noWinner")).toBe("world.advance.errors.noWinner");
   });
   test("unknown codes are generic", () => {
-    expect(groupAdvanceErrorKey("HTTP 500")).toBe("world.advance.error.generic");
-    expect(groupAdvanceErrorKey("network")).toBe("world.advance.error.generic");
+    expect(groupAdvanceErrorKey("HTTP 500")).toBe("world.advance.errors.generic");
+    expect(groupAdvanceErrorKey("whatever")).toBe("world.advance.errors.generic");
+    expect(groupAdvanceErrorKey("network")).toBe("world.advance.errors.network");
   });
 });
 

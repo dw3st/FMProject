@@ -59,7 +59,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     if (!enabled) return;
     const r = await groupAdvanceApi.view(saveId);
     if (r.ok) setView(r.data);
-    else if (r.status === 0) setError(t("groupAdvance.networkError"));
+    else if (r.status === 0) setError("network");
   }, [enabled, saveId, t]);
 
   // The days that ran while the seat was away: a sacking sends him to /fired from any screen; the day modals
@@ -70,7 +70,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     try {
       const r = await groupAdvanceApi.summary(saveId);
       if (!r.ok) {
-        if (r.status === 0) setError(t("groupAdvance.networkError"));
+        if (r.status === 0) setError("network");
         return;
       }
       const out = summaryOutcome(r.data.days);

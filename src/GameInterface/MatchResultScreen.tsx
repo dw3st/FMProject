@@ -27,6 +27,7 @@ import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { Notice } from "@/GameInterface/ui/Notice";
+import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import {
   clearPendingRecording,
@@ -492,10 +493,11 @@ export function MatchResultScreen() {
                 if (!stored) return;
                 setRetrying(true);
                 const r = await sendWithRetry(() =>
-                  groupAdvanceApi.liveRecording(session.saveId, stored.date, stored.fixtureId, stored.recording as never),
+                  groupAdvanceApi.liveRecording(session.saveId, stored.date, stored.fixtureId, stored.recording),
                 );
                 if (r.ok) {
                   clearPendingRecording(session.saveId);
+                  clearMatchSnapshot();
                   window.location.href = `/match-result?date=${encodeURIComponent(stored.date)}&pending=1`;
                   return;
                 }

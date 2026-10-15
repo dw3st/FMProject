@@ -1,11 +1,21 @@
-const KNOWN = ["dayClosed", "notYourMatch", "seatOpponent", "noWinner"] as const;
+import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+
+/** Error codes the group-advance routes (and the client) can produce; each has `world.advance.errors.<code>`. */
+export const GROUP_ADVANCE_ERROR_CODES = [
+  "dayClosed", "notYourMatch", "seatOpponent", "noWinner", "notMulti", "lobby", "groupAdvance", "tooLarge",
+  "invalidBody", "invalidDecision", "invalidRecording", "invalidDate", "network", "generic",
+] as const;
+export type GroupAdvanceErrorCode = (typeof GROUP_ADVANCE_ERROR_CODES)[number];
+
+const KNOWN = GROUP_ADVANCE_ERROR_CODES;
+const TERMINAL_CODES = ["dayClosed", "notYourMatch", "seatOpponent", "noWinner"] as const;
 
 /** i18n key for an error code of the group-advance routes (unknown codes fall back to `generic`). */
 export function groupAdvanceErrorKey(code: string): string {
-  return `world.advance.error.${(KNOWN as readonly string[]).includes(code) ? code : "generic"}`;
+  return `world.advance.errors.${(KNOWN as readonly string[]).includes(code) ? code : "generic"}`;
 }
 
-const TERMINAL = new Set<string>(KNOWN);
+const TERMINAL = new Set<string>(TERMINAL_CODES);
 
 /** Terminal errors never get better by trying again. */
 export function isTerminalGroupError(code: string): boolean {
@@ -37,7 +47,7 @@ export async function sendWithRetry(
 export interface StoredRecording {
   date: string;
   fixtureId: string;
-  recording: unknown;
+  recording: PlayedMatchRecording;
 }
 
 const key = (saveId: string) => `fm.pendingRecording.${saveId}`;

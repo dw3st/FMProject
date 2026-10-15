@@ -5106,6 +5106,61 @@
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." }
     },
     "advance": {
+      "running": "Advancing… {{date}} of {{target}}",
+      "simulate": "Simulate",
+      "play": "Play",
+      "readyButton": "Ready until…",
+      "readyTomorrow": "Tomorrow",
+      "readyNextMatch": "My next match",
+      "readyDate": "A date",
+      "readyConfirm": "Set",
+      "readyUntil": "Ready until {{date}}",
+      "waiting_one": "waiting for {{count}}",
+      "waiting_other": "waiting for {{count}}",
+      "unmark": "Not ready",
+      "dateInvalid": "Pick a date from {{min}} on.",
+      "retry": "Try again",
+      "networkError": "No connection.",
+      "band": {
+        "title": "Group advance",
+        "date": "World date",
+        "target": "Target",
+        "waitingFor": "Waiting for {{names}}",
+        "allReady": "Everyone is ready",
+        "noDeadline": "No deadline: the league waits for everyone",
+        "deadlineHours_one": "Goes on without them in {{count}} hour",
+        "deadlineHours_other": "Goes on without them in {{count}} hours",
+        "deadlineMinutes_one": "Goes on without them in {{count}} minute",
+        "deadlineMinutes_other": "Goes on without them in {{count}} minutes",
+        "deadlineNow": "Goes on without them now",
+        "error": "{{error}}"
+      },
+      "status": {
+        "column": "Advance",
+        "ready": "Ready",
+        "match": "Match to play",
+        "late": "Late",
+        "no_club": "No club"
+      },
+      "result": {
+        "pending": "Provisional result: it counts when the league reaches this day."
+      },
+      "errors": {
+        "generic": "Could not save. Try again.",
+        "invalidDate": "Pick a date from tomorrow on.",
+        "dayClosed": "That day has already been played.",
+        "notYourMatch": "That is not your match today.",
+        "seatOpponent": "Against another manager the match is simulated.",
+        "noWinner": "A knockout match needs a winner.",
+        "notMulti": "This save is not a friends league.",
+        "lobby": "The league has not started yet.",
+        "groupAdvance": "Group advance is not available.",
+        "tooLarge": "The request is too big.",
+        "invalidBody": "Something is missing in the request.",
+        "invalidDecision": "Something is missing in the request.",
+        "invalidRecording": "The match could not be saved. It will be simulated.",
+        "network": "No connection."
+      },
       "inbox": {
         "subject": "The assistant advanced for you",
         "preview": "Ready until {{until}}",
