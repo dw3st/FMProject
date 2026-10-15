@@ -16,7 +16,11 @@ export function worldRedirect(
 }
 
 export function joinCodeFromPath(pathname: string): string {
-  return decodeURIComponent(pathname.split("/")[2] ?? "");
+  try {
+    return decodeURIComponent(pathname.split("/")[2] ?? "");
+  } catch {
+    return "";
+  }
 }
 
 export function joinLink(origin: string, code: string): string {

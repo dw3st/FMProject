@@ -7,16 +7,16 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { loadGameSave } from "@/GameInterface/gameSession";
-import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
+import { ScreenSizeGate } from "@/GameInterface/ScreenSizeGate";
+import { worldApi, type WorldApiError, type WorldByCodeView } from "@/GameInterface/World/worldApi";
 import { joinCodeFromPath } from "@/GameInterface/World/worldNav";
-import type { WorldByCode } from "@/types/multiplayerTypes";
 
 type Stage =
   | { kind: "loading" }
   | { kind: "error"; error: WorldApiError }
   | { kind: "member"; saveId: string }
-  | { kind: "info"; world: WorldByCode }
-  | { kind: "wizard"; world: WorldByCode };
+  | { kind: "info"; world: WorldByCodeView }
+  | { kind: "wizard"; world: WorldByCodeView };
 
 /** `/join/:code`: the world behind an invite link, then the new-game wizard in join mode. */
 export function JoinScreen() {
@@ -25,16 +25,31 @@ export function JoinScreen() {
   const [stage, setStage] = useState<Stage>({ kind: "loading" });
   const [opening, setOpening] = useState(false);
 
-  useEffect(() => {
+  function load(toWizard: boolean) {
     void worldApi.byCode(code).then((r) => {
-      if (r.ok) setStage({ kind: "info", world: r.data });
+      if (r.ok) setStage({ kind: toWizard ? "wizard" : "info", world: r.data });
       else if (r.error === "alreadyMember" && r.saveId) setStage({ kind: "member", saveId: r.saveId });
       else setStage({ kind: "error", error: r.error });
     });
-  }, [code]);
+  }
+
+  useEffect(() => load(false), [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (stage.kind === "wizard") {
-    return <NewGameWizard join={{ code, worldName: stage.world.name, takenClubs: stage.world.takenClubs }} />;
+    return (
+      <ScreenSizeGate>
+        <NewGameWizard
+          join={{
+            code,
+            worldName: stage.world.name,
+            takenClubs: stage.world.takenClubs,
+            leagueSlug: stage.world.leagueSlug,
+            leagueName: stage.world.leagueName,
+            onClubTaken: () => load(true),
+          }}
+        />
+      </ScreenSizeGate>
+    );
   }
 
   async function openWorld(saveId: string) {
@@ -72,6 +87,9 @@ export function JoinScreen() {
               <div className="rounded-md border border-border bg-card p-4">
                 <p className="font-display font-black uppercase text-xl leading-none m-0">{stage.world.name}</p>
                 <p className="text-sm text-muted-foreground mt-2 mb-0">{t("world.join.owner", { name: stage.world.owner })}</p>
+                {stage.world.leagueName && (
+                  <p className="text-sm text-muted-foreground m-0">{t("world.join.league", { league: stage.world.leagueName })}</p>
+                )}
                 <p className="text-sm text-muted-foreground m-0 tabular-nums">
                   {t("world.members.count", { count: stage.world.members, max: stage.world.max })}
                   {" · "}

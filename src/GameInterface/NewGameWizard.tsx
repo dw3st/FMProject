@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -105,6 +105,10 @@ export interface JoinContext {
   code: string;
   worldName: string;
   takenClubs: string[];
+  leagueSlug?: string;
+  leagueName?: string;
+  /** Called after a 409 clubTaken: the page rereads the world and passes the new `takenClubs`. */
+  onClubTaken?: () => void;
 }
 
 export function NewGameWizard({ join }: { join?: JoinContext }) {
@@ -115,7 +119,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
   const [step, setStep] = useState<"mode" | "manager" | "club">(join ? "manager" : "mode");
   /** Solo career or a world of friends (multiplayer part 2). */
   const [playMode, setPlayMode] = useState<"solo" | "multi">("solo");
-  const taken = new Set(join?.takenClubs ?? []);
+  const taken = useMemo(() => new Set(join?.takenClubs ?? []), [join?.takenClubs]);
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryEntry | null>(null);
@@ -144,6 +148,20 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
       setSelectedLeagueSlug(leaguesOfCountry(leagues, selectedCountry.name)[0]?.slug ?? "");
     }
   }, [selectedCountry, leagues]);
+
+  // Joining: the world's league is fixed, so open its country and league.
+  const joinLeagueSlug = join?.leagueSlug;
+  useEffect(() => {
+    if (!joinLeagueSlug) return;
+    const league = leagues.find((l) => l.slug === joinLeagueSlug);
+    if (!league) return;
+    if (!selectedCountry) {
+      const country = countries.find((c) => c.name === league.country);
+      if (country) setSelectedCountry(country);
+      return;
+    }
+    setSelectedLeagueSlug(joinLeagueSlug);
+  }, [joinLeagueSlug, leagues, selectedCountry]);
 
   const displayName = (c: CountryEntry) => countryDisplayName(c, i18n.language, t);
   const filteredCountries = countries.filter((c) => {
@@ -223,9 +241,19 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
       if (!r.ok) {
         setStarting(false);
         setStartError(t(`world.errors.${r.error}`));
+        if (r.error === "clubTaken") {
+          setSelectedTeam(null);
+          join.onClubTaken?.();
+        }
         return;
       }
-      await loadGameSave(r.data.saveId);
+      try {
+        await loadGameSave(r.data.saveId);
+      } catch {
+        // The world screen reloads the session itself.
+        window.location.href = "/world";
+        return;
+      }
       window.location.href = r.data.phase === "lobby" ? "/world" : "/dashboard";
       return;
     }
@@ -427,7 +455,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
       <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
         <section className="flex-1 min-w-0 min-h-0 flex flex-col px-6 pt-5 md:pb-0 pb-5">
           <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 2 })}</p>
-          <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
+          <ScreenTitle subtitle={join ? t("world.join.clubSubtitle", { world: join.worldName, league: join.leagueName ?? "" }) : undefined}>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
             <div className="flex-1 min-h-0 overflow-y-auto pb-5">
               <p className="text-sm text-muted-foreground mt-6 xl:hidden">{t("newGame.selectTerritoryDetail")}</p>

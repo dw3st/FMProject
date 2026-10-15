@@ -24,6 +24,8 @@ describe("world navigation", () => {
   test("join links", () => {
     expect(joinCodeFromPath("/join/23456789AB")).toBe("23456789AB");
     expect(joinCodeFromPath("/join/")).toBe("");
+    expect(joinCodeFromPath("/join/%E0")).toBe("");
+    expect(joinCodeFromPath("/join/%")).toBe("");
     expect(joinLink("https://fm.example", "23456789AB")).toBe("https://fm.example/join/23456789AB");
   });
 });

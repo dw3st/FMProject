@@ -3,6 +3,9 @@ import type {
   WorldByCode, WorldDeadline, WorldErrorCode, WorldInviteView, WorldPhase, WorldView,
 } from "@/types/multiplayerTypes";
 
+/** `byCode` also tells the league of the world (backend adds it; optional for older servers). */
+export type WorldByCodeView = WorldByCode & { leagueSlug?: string; leagueName?: string };
+
 export type WorldApiError = WorldErrorCode | "generic";
 export type WorldResult<T> = { ok: true; data: T } | { ok: false; status: number; error: WorldApiError; saveId?: string };
 
@@ -30,7 +33,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<Wo
 
 export const worldApi = {
   view: (saveId: string) => call<WorldView>("GET", `/api/worlds/${seg(saveId)}`),
-  byCode: (code: string) => call<WorldByCode>("GET", `/api/worlds/by-code/${seg(code)}`),
+  byCode: (code: string) => call<WorldByCodeView>("GET", `/api/worlds/by-code/${seg(code)}`),
   join: (body: { code: string; clubId: string; manager: SaveManager; sackingEnabled: boolean }) =>
     call<{ saveId: string; seatId: string; phase: WorldPhase }>("POST", "/api/worlds/join", body),
   newCode: (saveId: string) => call<{ inviteCode: string }>("POST", `/api/worlds/${seg(saveId)}/invite-code`),
