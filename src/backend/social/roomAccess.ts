@@ -37,6 +37,14 @@ export function resolveRoom(me: string, rawParam: string): ResolvedRoom | null {
   return { kind: "world", roomId: worldRoomId(p.saveId), param: worldRoomParam(p.saveId), saveId: p.saveId };
 }
 
+/**
+ * A DM's history and read mark are closed while there is a block either way (the blocked one cannot read it nor
+ * probe it); without a friendship and without a block the old history stays readable. World rooms: members.
+ */
+export function canRead(me: string, room: ResolvedRoom): boolean {
+  return room.kind === "world" || !blockedEitherWay(me, room.partner.id);
+}
+
 /** A world room is open to its members; a DM only between friends with no block either way. */
 export function canWrite(me: string, room: ResolvedRoom): boolean {
   if (room.kind === "world") return true;

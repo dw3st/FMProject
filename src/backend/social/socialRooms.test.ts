@@ -65,12 +65,21 @@ describe("direct messages", () => {
     expect((await post(b.token, `dm:${a.nickname}`, "oi")).status).toBe(403);
   });
 
-  test("the blocker no longer sees the blocked's old messages", async () => {
+  test("a block either way closes the DM history and its read mark (403); unfriended without a block still reads", async () => {
     const { a, b } = friends();
     await post(b.token, `dm:${a.nickname}`, "antes");
-    await post(a.token, `dm:${b.nickname}`, "minha");
+    const mine = await post(a.token, `dm:${b.nickname}`, "minha");
+    await callSocial("DELETE", "/api/social/friends/:nickname", a.token, { params: { nickname: b.nickname! } });
+    expect((await history(b.token, `dm:${a.nickname}`)).json.messages.map((m: { body: string }) => m.body))
+      .toEqual(["antes", "minha"]);
     await callSocial("POST", "/api/social/blocks", a.token, { body: { nickname: b.nickname } });
-    expect((await history(a.token, `dm:${b.nickname}`)).json.messages.map((m: { body: string }) => m.body)).toEqual(["minha"]);
+    const read = (token: string, room: string) => callSocial("POST", "/api/social/rooms/:room/read", token, {
+      params: { room }, body: { lastReadId: mine.json.message.id },
+    });
+    for (const [token, room] of [[a.token, `dm:${b.nickname}`], [b.token, `dm:${a.nickname}`]] as const) {
+      expect((await history(token, room)).json).toEqual({ error: "noAccess" });
+      expect((await read(token, room)).status).toBe(403);
+    }
   });
 
   test("invalid bodies and the 10-in-10 s limit", async () => {

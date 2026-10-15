@@ -2,7 +2,7 @@
 // nicknames only: never an e-mail or a user id.
 import { requireAuth } from "@/backend/auth/middleware";
 import { saveService } from "@/backend/SaveService";
-import { canWrite, resolveRoom } from "@/backend/social/roomAccess";
+import { canRead, canWrite, resolveRoom } from "@/backend/social/roomAccess";
 import { deliverMessage, notifyFriendUpdate, notifyUser, statusOf } from "@/backend/social/realtime";
 import {
   acceptRequest,
@@ -275,7 +275,7 @@ export const socialRoutes = {
   "/api/social/rooms/:room/messages": {
     GET: authed((req, userId) => {
       const room = resolveRoom(userId, param(req, "room"));
-      if (!room) return fail("noAccess", 403);
+      if (!room || !canRead(userId, room)) return fail("noAccess", 403);
       const url = new URL(req.url);
       const beforeRaw = url.searchParams.get("before");
       const limitRaw = url.searchParams.get("limit");
@@ -315,7 +315,7 @@ export const socialRoutes = {
   "/api/social/rooms/:room/read": {
     POST: authed(async (req, userId) => {
       const room = resolveRoom(userId, param(req, "room"));
-      if (!room) return fail("noAccess", 403);
+      if (!room || !canRead(userId, room)) return fail("noAccess", 403);
       const json = await readJson(req);
       const id = json?.lastReadId;
       if (typeof id !== "number" || !Number.isInteger(id) || id < 0) return fail("invalidBody", 400);
