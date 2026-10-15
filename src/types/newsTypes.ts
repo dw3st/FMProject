@@ -25,8 +25,10 @@ export interface NewsScope { country?: string; league?: string; competition?: st
 
 export interface DayNewsInput {
   date: string;
-  humanClubId?: string;
-  humanLeague?: string;
+  /** Every seat's club (`.claude/rules/game/multiplayer.md`). */
+  humanClubIds?: string[];
+  /** Every seat's league: news there count as near. */
+  humanLeagues?: string[];
   followed: string[];
   results: (NewsScope & {
     fixtureId: string; home: NewsClub; away: NewsClub; score: { home: number; away: number };

@@ -22,7 +22,7 @@ export function emptyDayNewsInput(date: string): DayNewsInput {
 const PRESS_KINDS: NewsKind[] = ["press_quote", "press_absent", "press_promise_kept", "press_promise_broken"];
 
 export function buildDayNews(input: DayNewsInput): NewsItem[] {
-  const near = (s: NewsScope) => !!s.league && (s.league === input.humanLeague || input.followed.includes(s.league));
+  const near = (s: NewsScope) => !!s.league && ((input.humanLeagues ?? []).includes(s.league) || input.followed.includes(s.league));
   const out: NewsItem[] = [];
   const add = (kind: NewsKind, key: string, scope: NewsScope, base: 1 | 2 | 3,
     clubIds: string[], playerIds: string[], params: Record<string, string | number>) => {
@@ -60,7 +60,7 @@ export function buildDayNews(input: DayNewsInput): NewsItem[] {
   }
   for (const l of input.newLeaders) add("new_leader", `${l.league}:${l.club.id}`, l, 2, [l.club.id], [], { club: l.club.name, league: l.league ?? "" });
   for (const t of input.transfers) {
-    const record = t.clubRecord && (t.fee >= NEWS.RECORD_MIN_FEE || t.to.id === input.humanClubId);
+    const record = t.clubRecord && (t.fee >= NEWS.RECORD_MIN_FEE || (input.humanClubIds ?? []).includes(t.to.id));
     if (t.fee < NEWS.BIG_FEE && !t.star && !record) continue;
     add("big_transfer", t.playerId, t, t.fee >= NEWS.HUGE_FEE ? 3 : 1, [t.to.id, ...(t.from ? [t.from.id] : [])], [t.playerId],
       { player: t.player, from: t.from?.name ?? "", to: t.to.name, fee: t.fee });

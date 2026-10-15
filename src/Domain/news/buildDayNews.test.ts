@@ -33,7 +33,7 @@ describe("buildDayNews", () => {
     expect(out.map((n) => n.kind).sort()).toEqual(["champion", "relegated"]);
   });
   test("importância: título 3, transferência ≥ €60M 3, liga do jogador 2, resto 1", () => {
-    const out = buildDayNews({ ...emptyDayNewsInput("d"), humanLeague: "pl",
+    const out = buildDayNews({ ...emptyDayNewsInput("d"), humanLeagues: ["pl"],
       champions: [{ league: "it", tier: 1, club: club("c") }],
       transfers: [{ league: "es", playerId: "p", player: "P", from: club("x"), to: club("y"), fee: 70_000_000, star: true, clubRecord: false }],
       results: [res("1", "pl", 4, 0), res("2", "fr", 4, 0)] });
@@ -46,8 +46,15 @@ describe("buildDayNews", () => {
   test("recorde de contratação barato só é notícia no clube do jogador", () => {
     const tr = (playerId: string, to: string, fee: number) =>
       ({ league: "cm", playerId, player: playerId, from: club("x"), to: club(to), fee, star: false, clubRecord: true });
-    const out = buildDayNews({ ...emptyDayNewsInput("d"), humanClubId: "me",
+    const out = buildDayNews({ ...emptyDayNewsInput("d"), humanClubIds: ["me"],
       transfers: [tr("cheap", "small", 451_000), tr("mid", "small2", 6_000_000), tr("mine", "me", 300_000)] });
     expect(out.map((n) => n.playerIds[0]).sort()).toEqual(["mid", "mine"]);
+  });
+  test("two seats: news near either seat's league count as near", () => {
+    const base = { ...emptyDayNewsInput("d"), humanLeagues: ["pl", "ll"] };
+    const imp = (league: string) => buildDayNews({ ...base, results: [res("1", league, 5, 0)] })[0]?.importance;
+    expect(imp("ll")).toBe(2);
+    expect(imp("pl")).toBe(2);
+    expect(imp("fr")).toBe(1);
   });
 });

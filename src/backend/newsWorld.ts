@@ -5,7 +5,7 @@
  * world: everything comes from the day's state, except the top 100 of the world (cached per month) and `clubLevel`
  * for the wins that may be upsets (memoized per club for the day).
  */
-import type { SaveService, SaveMeta } from "@/backend/SaveService";
+import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { LeagueDataEntry } from "@/backend/advanceDay";
 import { famousIds } from "@/backend/scoutingWorld";
@@ -72,7 +72,8 @@ export interface CollectDayNewsArgs {
   service: SaveService;
   saveId: string;
   date: string;
-  meta: SaveMeta;
+  /** Every seat's club and leagues (`.claude/rules/game/multiplayer.md`). */
+  seats: { clubId?: string; leagueSlug?: string; followedLeagues?: string[] }[];
   index: SquadIndex;
   catalog: LeagueDataEntry[];
   pyramids: Pyramids;
@@ -105,8 +106,10 @@ export async function collectDayNews(a: CollectDayNewsArgs): Promise<DayNewsInpu
   const clubScope = (id: string): NewsScope => { const l = leagueOfClub(id); return l ? scopeOf(l) : {}; };
   const club = (id: string, fallback?: string): NewsClub => ({ id, name: index.byId(id)?.name ?? fallback ?? id });
   const topFlightClub = (id: string) => { const l = leagueOfClub(id); return !!l && tierOf(l) === 1; };
-  const human = a.meta.clubId || undefined;
-  const followed = a.meta.followedLeagues ?? [];
+  const humanClubIds = [...new Set(a.seats.flatMap((s) => (s.clubId ? [s.clubId] : [])))];
+  const humanLeagues = [...new Set(a.seats.flatMap((s) => (s.leagueSlug ? [s.leagueSlug] : [])))];
+  const isHuman = (id: string) => humanClubIds.includes(id);
+  const followed = [...new Set(a.seats.flatMap((s) => s.followedLeagues ?? []))];
 
   // Wins that may be upsets need both clubs' level (memoized per club for the day).
   const levels = new Map<string, number | null>();
@@ -156,7 +159,7 @@ export async function collectDayNews(a: CollectDayNewsArgs): Promise<DayNewsInpu
     if (seen.has(t.playerId)) continue;
     seen.add(t.playerId);
     const star = famous.has(t.playerId);
-    const clubRecord = c.recordSignings.has(t.playerId) && (t.to === human || topFlightClub(t.to));
+    const clubRecord = c.recordSignings.has(t.playerId) && (isHuman(t.to) || topFlightClub(t.to));
     if (t.fee < NEWS.BIG_FEE && !star && !clubRecord) continue;
     let name = c.transferNames.get(t.playerId);
     if (!name) name = (await a.service.getSquadById(a.saveId, t.to))?.players.find((p) => p.id === t.playerId)?.name ?? t.playerId;
@@ -187,10 +190,10 @@ export async function collectDayNews(a: CollectDayNewsArgs): Promise<DayNewsInpu
   }
   for (const r of c.retired) stars.push({ ...clubScope(r.squadId), kind: "retired", playerId: r.playerId, player: r.player, ...(r.squadId ? { club: club(r.squadId) } : {}) });
 
-  // Beaten club records of the human club and of top-flight clubs (a record signing is a transfer story).
+  // Beaten club records of the seats' clubs and of top-flight clubs (a record signing is a transfer story).
   const clubRecords: DayNewsInput["clubRecords"] = [];
   for (const cr of c.clubRecords) {
-    if (cr.squadId !== human && !topFlightClub(cr.squadId)) continue;
+    if (!isHuman(cr.squadId) && !topFlightClub(cr.squadId)) continue;
     for (const b of cr.broken) {
       if (b.kind === "recordSigning") continue;
       clubRecords.push({ ...clubScope(cr.squadId), club: club(cr.squadId), record: b.kind });
@@ -198,7 +201,7 @@ export async function collectDayNews(a: CollectDayNewsArgs): Promise<DayNewsInpu
   }
 
   return {
-    date: a.date, ...(human ? { humanClubId: human } : {}), ...(a.meta.leagueSlug ? { humanLeague: a.meta.leagueSlug } : {}),
+    date: a.date, ...(humanClubIds.length ? { humanClubIds } : {}), ...(humanLeagues.length ? { humanLeagues } : {}),
     followed, results, champions, moves, newLeaders, transfers, managers, awards, stars, national: a.national, clubRecords,
     press: a.press,
   };

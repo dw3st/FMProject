@@ -3087,8 +3087,9 @@ export async function advanceOneDay(
     // ── World news of the day (`press.md` → "Notícias"): one build + append, press news included ──
     if (newsCollector) {
       await writeDayNews(saveService, saveId, await collectDayNews({
-        // TRANSITIONAL (Task 27): the news of the first seat's club and leagues.
-        service: saveService, saveId, date: currentDate, meta: daySeats[0]!.meta, index,
+        // Every seat's club and leagues count as near.
+        service: saveService, saveId, date: currentDate, index,
+        seats: daySeats.map((ds) => ({ clubId: ds.clubId, leagueSlug: ds.meta.leagueSlug, followedLeagues: ds.meta.followedLeagues })),
         catalog: await getLeagueData(), pyramids: await getPyramids(),
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         transfers: [...dayMoves, ...(routeLog?.transfers ?? [])],
