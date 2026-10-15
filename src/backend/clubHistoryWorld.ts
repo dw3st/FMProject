@@ -39,21 +39,21 @@ export interface LeagueSeasonHistoryArgs {
   titlesByClub: Record<string, string[]>;
   tierChanges: Record<string, { from: number; to: number }>;
   nameOf: (squadId: string) => string;
-  /** Club whose broken records the caller wants back (the player's club). */
-  watchSquadId?: string | null;
+  /** Clubs whose broken records the caller wants back (each seat's club). */
+  watchSquadIds?: ReadonlySet<string>;
   /** Every club's beaten records (the news page, `press.md`). */
   onBroken?: (squadId: string, broken: ClubRecordBroken[]) => void;
 }
 
 /**
  * Adds the closed season to the history of every club of a rolled league. Returns the records
- * of `watchSquadId` that were beaten.
+ * of each club of `watchSquadIds` that were beaten, by club.
  */
 export async function recordLeagueSeasonHistory(
   service: SaveService, saveId: string, a: LeagueSeasonHistoryArgs,
-): Promise<ClubRecordBroken[]> {
+): Promise<Record<string, ClubRecordBroken[]>> {
   const managers = await service.getManagers(saveId);
-  let watched: ClubRecordBroken[] = [];
+  const watched: Record<string, ClubRecordBroken[]> = {};
   for (const squad of a.squads) {
     const tablePos = a.table.findIndex((r) => r.squadId === squad.id);
     const standing = tablePos >= 0 ? a.table[tablePos]! : null;
@@ -77,7 +77,7 @@ export async function recordLeagueSeasonHistory(
       matches: clubMatchesOf(a.fixtures, squad.id, a.nameOf, { from: a.start, to: a.end }),
     });
     if (history !== current) await service.writeClubHistory(saveId, history);
-    if (squad.id === a.watchSquadId) watched = broken;
+    if (a.watchSquadIds?.has(squad.id) && broken.length > 0) watched[squad.id] = broken;
     if (broken.length > 0) a.onBroken?.(squad.id, broken);
   }
   return watched;

@@ -60,7 +60,7 @@ describe("processRetirements", () => {
   test("a player on loan does not retire at the borrower (he retires with his club)", () => {
     const onLoan = { ...mk("loaned", "CB", 3, 41), loan: { fromClubId: "x", fromClubName: "X", until: "2027-05-31", wageShare: 1 } };
     const r = processRetirements({
-      saveId: "s", year: 2027, date: "2027-06-01", squads: [squad([...players, onLoan])], freeAgents: [], levels, humanSquadId: "s1",
+      saveId: "s", year: 2027, date: "2027-06-01", squads: [squad([...players, onLoan])], freeAgents: [], levels, humanSeats: new Map([["s1", "seat-1"]]),
     });
     expect(r.squads[0]!.players.some((p) => p.id === "loaned")).toBe(true);
     expect(r.retired.some((x) => x.id === "loaned")).toBe(false);
@@ -72,7 +72,7 @@ describe("processRetirements", () => {
       { player: mk("fa-young", "CM", 4, 25), since: "2027-01-01" },
     ];
     const r = processRetirements({
-      saveId: "s", year: 2027, date: "2027-06-01", squads: [sq], freeAgents: free, levels, humanSquadId: "s1",
+      saveId: "s", year: 2027, date: "2027-06-01", squads: [sq], freeAgents: free, levels, humanSeats: new Map([["s1", "seat-1"]]),
     });
     expect(r.squads[0]!.players.some((p) => p.id === "old")).toBe(false);
     expect(r.squads[0]!.players.some((p) => p.id === "ok")).toBe(true);
@@ -87,14 +87,15 @@ describe("processRetirements", () => {
   test("world-class selection: top-50 retiree of the human club gets a pending offer", () => {
     const sq2 = squad([...players.slice(0, 10), mk("star", "ST", 9, 41)]);
     const r = processRetirements({
-      saveId: "s", year: 2027, date: "d", squads: [sq2], freeAgents: [], levels: buildWorldLevels([sq2]), humanSquadId: "s1",
+      saveId: "s", year: 2027, date: "d", squads: [sq2], freeAgents: [], levels: buildWorldLevels([sq2]), humanSeats: new Map([["s1", "seat-1"]]),
     });
     const rec = r.humanRetired.find((x) => x.id === "star")!;
     expect(rec.wasWorldClass).toBe(true);
     expect(rec.rebornOffer).toBe("pending");
+    expect(rec.rebornSeatId).toBe("seat-1");
     // AI club retirees never get an offer.
     const ai = processRetirements({
-      saveId: "s", year: 2027, date: "d", squads: [sq2], freeAgents: [], levels: buildWorldLevels([sq2]), humanSquadId: null,
+      saveId: "s", year: 2027, date: "d", squads: [sq2], freeAgents: [], levels: buildWorldLevels([sq2]), humanSeats: new Map(),
     });
     expect(ai.retired.find((x) => x.id === "star")!.rebornOffer).toBeUndefined();
   });
@@ -112,7 +113,7 @@ describe("free agent pool is drawn once per year", () => {
   test("processFreeAgents:false leaves the pool untouched", () => {
     const free: FreeAgent[] = [{ player: mk("fa-old", "CM", 4, 41), since: "2027-01-01" }];
     const s = squad([mk("a", "CM", 5, 27)]);
-    const base = { saveId: "s", year: 2027, date: "d", squads: [s], freeAgents: free, levels: buildWorldLevels([s]), humanSquadId: null };
+    const base = { saveId: "s", year: 2027, date: "d", squads: [s], freeAgents: free, levels: buildWorldLevels([s]), humanSeats: new Map() };
     expect(processRetirements({ ...base, processFreeAgents: false }).freeAgents).toBe(free);
     expect(processRetirements({ ...base, processFreeAgents: false }).retired).toEqual([]);
     expect(processRetirements(base).freeAgents).toEqual([]);

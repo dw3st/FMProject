@@ -52,7 +52,7 @@ describe("world ceremony", () => {
     const args = {
       managers: () => saveService.getManagers(saveId),
       applyManagers: async (fn: (m: ManagerRecord[]) => ManagerRecord[]) => saveService.writeManagers(saveId, fn(await saveService.getManagers(saveId))),
-      playerClubId: null,
+      humanClubIds: new Set<string>(),
     };
 
     expect(await runWorldCeremony(saveService, saveId, "2027-12-31", args)).toBeNull();

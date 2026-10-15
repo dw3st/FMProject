@@ -72,9 +72,10 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
   managers: ManagerRecord[];
   targets: Map<string, number>;
   tierChanges: Record<string, { from: number; to: number }>;
-  playerClubId: string | null;
+  /** The clubs with a human manager (each seat's club): morale on theirs, one message per one of the league. */
+  humanClubIds: ReadonlySet<string>;
   leagueName: string;
-}): Promise<{ squads: Squad[]; awards: LeagueSeasonAwards; managers: ManagersFn; message?: AwardsInboxMessage }> {
+}): Promise<{ squads: Squad[]; awards: LeagueSeasonAwards; managers: ManagersFn; messages: Record<string, AwardsInboxMessage> }> {
   const { league, season, state } = args;
   const cleared = args.squads.map((s) => (s.players.some((p) => p.awardBoost) ? { ...s, players: s.players.map(clearAwardBoost) } : s));
   const goals = (await service.getSeasonGoals(saveId, league, state.year))?.goals ?? [];
@@ -100,7 +101,7 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
         return applyAwardBoost(withAwardsOnRows(p, league, season, k.map((kind) => ({ kind, league }))), k, league, season);
       }),
     };
-    if (s.id === args.playerClubId) {
+    if (args.humanClubIds.has(s.id)) {
       for (const p of s.players) if (kinds.has(p.id)) next = afterAward(next, p.id, kinds.get(p.id)!, `league:${league}:${season}`);
     }
     return next;
@@ -121,11 +122,12 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
   const managers: ManagersFn = bm
     ? (ms) => addManagerAward(ms, bm.managerId, { season, kind: "best_manager", competition: league, squadId: bm.squadId })
     : (ms) => ms;
-  const mine = args.playerClubId && args.squads.some((s) => s.id === args.playerClubId) ? args.playerClubId : null;
-  return {
-    squads, awards, managers,
-    ...(mine ? { message: buildAwardsMessage({ kind: "league", date: args.closedOn, awards, leagueName: args.leagueName, myClubId: mine }) } : {}),
-  };
+  const messages: Record<string, AwardsInboxMessage> = {};
+  for (const s of args.squads) {
+    if (!args.humanClubIds.has(s.id)) continue;
+    messages[s.id] = buildAwardsMessage({ kind: "league", date: args.closedOn, awards, leagueName: args.leagueName, myClubId: s.id });
+  }
+  return { squads, awards, managers, messages };
 }
 
 /**
@@ -138,7 +140,8 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
 export async function runWorldCeremony(service: SaveService, saveId: string, date: string, args: {
   managers: () => Promise<ManagerRecord[]>;
   applyManagers: (fn: ManagersFn) => Promise<void>;
-  playerClubId: string | null;
+  /** The clubs with a human manager: the winner's morale moves on one of them. */
+  humanClubIds: ReadonlySet<string>;
 }): Promise<AwardsInboxMessage | null> {
   if (date.slice(5, 7) !== "01") return null;
   const year = Number(date.slice(0, 4)) - 1;
@@ -163,7 +166,7 @@ export async function runWorldCeremony(service: SaveService, saveId: string, dat
     if (squad) {
       const sq = squad;
       let next: Squad = { ...sq, players: sq.players.map((p) => (p.id === wp.id ? update(p, sq.leagueSlug ?? wp.league) : p)) };
-      if (sq.id === args.playerClubId) next = afterAward(next, wp.id, ["world_player"], `world:${year}`);
+      if (args.humanClubIds.has(sq.id)) next = afterAward(next, wp.id, ["world_player"], `world:${year}`);
       await service.saveSquadById(saveId, next);
     } else {
       const free = await service.getFreeAgents(saveId);

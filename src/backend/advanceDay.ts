@@ -25,7 +25,7 @@ import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
-import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
+import type { Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
@@ -102,8 +102,8 @@ import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
 import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
 import { managerNation } from "@/Domain/national/nationalCoach";
-import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
-import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
+import { applyHumanBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { clubRolloverOutcome, findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
@@ -138,7 +138,6 @@ import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/D
 import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorld";
 import { recordLeagueAwards, recordSeasonGoals, runWorldCeremony } from "@/backend/awardsWorld";
 import { tierFactor } from "@/Domain/awards/awardsConfig";
-import type { AwardsInboxMessage } from "@/types/inboxTypes";
 import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import {
   humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
@@ -922,23 +921,12 @@ export async function advanceOneDay(
       }
     }
 
-    // ── Injury news for the human club (match + training + return-to-play) ───
+    // ── Injury news for each seat's club (match + training + return-to-play) ───
     // Not emitted yet — `clearInbox` (season rollover, further below) would wipe it if it landed
-    // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
-    // `continentalMessages` / `negativeBalanceMessage`.
-    const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
-    // Contract news (90-day warning, released at the rollover): same deferral, same reason.
-    const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
-    // Academy news (new intake, released at 19): same deferral.
-    const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
-    // Facilities news (finished works, attendance record): `DaySeat.deferred.facility`, same deferral.
-    // Retirement news for the human club: same deferral.
-    const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
-    // Club history: beaten records of each seat's club (`.claude/rules/game/club-history.md`), same deferral:
-    // `DaySeat.deferred.clubRecords`.
-    // Season awards (`.claude/rules/game/awards.md`): the player's league at its rollover, the world
-    // ceremony in January. Same deferral.
-    const deferredAwardsMessages: AwardsInboxMessage[] = [];
+    // now. Queued into `DaySeat.deferred.injury` and flushed after `clearInbox`, like the other deferred news:
+    // contracts (90-day warning, released at the rollover), academy (intake, released at 19), facilities,
+    // retirement, club records (`.claude/rules/game/club-history.md`), season awards (the seat's league at its
+    // rollover, the world ceremony in January, `.claude/rules/game/awards.md`).
     // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money, per seat
     // (`DaySeat.deferred.negotiation`), emitted after any `clearInbox` this day.
     // New AI transfer bids for a seat's players today (`DaySeat.moraleBids`): a player who wants the move asks
@@ -947,22 +935,24 @@ export async function advanceOneDay(
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     // With the director in charge of contracts there is no 90-day warning (he decides them himself).
-    if (playerSquadId && !directorHandlesContracts(meta.responsibilities)) {
-      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
+    for (const ds of daySeats) {
+      if (!ds.clubId || directorHandlesContracts(ds.meta.responsibilities)) continue;
+      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDays(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
-        const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
+        const humanSquad = await saveService.getSquadById(saveId, ds.clubId);
         const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
         if (ending.length > 0) {
-          deferredContractMessages.push({
+          ds.deferred.contract.push({
             date: currentDate, kind: "expiring", players: ending.map((p) => ({ id: p.id, name: p.name })),
           });
         }
       }
     }
-    if (playerSquadId) {
+    for (const ds of daySeats) {
+      if (!ds.clubId) continue;
       for (const inj of injuryInboxEvents) {
-        if (inj.squadId !== playerSquadId) continue;
-        deferredInjuryMessages.push(
+        if (inj.squadId !== ds.clubId) continue;
+        ds.deferred.injury.push(
           inj.kind === "injured"
             ? {
                 date: currentDate, kind: "injured", playerId: inj.playerId, playerName: inj.playerName,
@@ -1356,8 +1346,6 @@ export async function advanceOneDay(
     // group stage runs to 12-15, with no coordination between the two — so a group-stage draw/
     // elimination for a club in one of those leagues CAN fall on that same country's rollover day,
     // right before `clearInbox` runs later in this same function call.
-    // TRANSITIONAL (Task 18): the regeneration below still queues into the first seat's list.
-    const continentalMessages = solo.deferred.continental;
     for (const ds of continentalChanges.some(({ events }) => events.length > 0) ? daySeats : []) {
       if (!ds.clubId) continue;
       const myClub = ds.clubId;
@@ -1892,24 +1880,11 @@ export async function advanceOneDay(
     // date never jumps: leagues that ended early just have no games until their country rolls.
     // Idempotency: a rolled league carries next season's year/end in activeLeagues, so it is no
     // longer "ended"; the league meta's year on disk catches a roll whose save meta was lost.
-    let seasonEnded = false;
-    let archiveYear: number | undefined;
-    let playerCountryMoves: ClubMove[] = [];
-    let playerMove: ClubMove | null = null;
-    let playerChampionOf: string | null = null;
-    // The board's objective met at the human club's rollover (achievements, Motivation).
-    let playerObjectiveMet = false;
-    const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
-    let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
-    // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
-    // champion/promoted/relegated season message below. 0 when no rollover happens this day.
-    let playerLeaguePrizeThisRollover = 0;
-    // Board end-of-season bonus credited at this rollover (ledger `prize`, ref.stage "board_bonus").
-    let playerBoardBonusEntry: LedgerEntry | null = null;
+    // Each seat's rollover (its season end, move, title, objective, followers, league prize, board bonus, board at
+    // the season end) goes into `DaySeat.rollover`; its season messages into `DaySeat.deferred.season`.
     let freeAgentsRetiredYear: number | undefined;
-    // Board confidence at the end of the player's season, before the carry-over (job offers'
-    // reputation, `.claude/rules/game/jobs.md`).
-    let boardAtSeasonEnd: number | undefined;
+    // club id → seat id (the reborn offer of a world-class retiree is his seat's).
+    const seatIdByClub = new Map(daySeats.flatMap((d) => (d.clubId ? [[d.clubId, d.seatId] as const] : [])));
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1938,7 +1913,6 @@ export async function advanceOneDay(
       };
     }
 
-    const playerClubSquadId = playerSquadId ?? meta.clubId;
     const transfersAtSeasonEnd = due.units.length > 0 ? await saveService.getTransfers(saveId) : [];
     // Every league's brand-new next-season fixtures (step 6 below), for the calendar-year vs.
     // continental clash check right after this loop.
@@ -1972,8 +1946,14 @@ export async function advanceOneDay(
         standings[slug] = teams.length > 0 ? computeStandings(teams, fixtures, slug) : [];
       }
 
-      // 2. Plan the moves.
-      const plan = planCountryRollover(unit, standings, playerSquadId);
+      // 2. Plan the moves. Each seat whose club plays in the unit (old membership) gets its move and title.
+      const plan = planCountryRollover(unit, standings, undefined);
+      for (const ds of daySeats) {
+        if (!ds.clubId || !unit.leagues.includes(index.byId(ds.clubId)?.leagueSlug ?? "")) continue;
+        const outcome = clubRolloverOutcome(unit, standings, plan.moves, ds.clubId);
+        ds.rollover.move = outcome.move;
+        ds.rollover.championOf = outcome.championOf;
+      }
       if (newsCollector) {
         for (const m of plan.moves) {
           newsCollector.moves.push({ ...m, fromTier: unit.pyramid ? tierOfLeague(unit.pyramid, m.from) : 1 });
@@ -2006,7 +1986,7 @@ export async function advanceOneDay(
           leagueSlug: slug,
           leagueTeams,
           squadsInLeague: await saveService.getSquadsInLeague(saveId, slug),
-          playerClubSquadId,
+          humanClubIds: humanClubs,
         });
         await saveService.writeLeagueSeasonArchive(saveId, transition.archive);
         // History rows of the closed season (the squads are already reset: logs come from the archive).
@@ -2019,8 +1999,8 @@ export async function advanceOneDay(
           // board targets, taken before the rollover sackings below.
           const awardManagers = await managerTracker.list();
           const awardTargets = new Map(aiDesk ? await aiDesk.targets(slug, season) : []);
-          if (playerClubSquadId && solo.board?.objective && solo.board.objective.leagueSlug === slug) {
-            awardTargets.set(playerClubSquadId, solo.board.objective.target);
+          for (const ds of daySeats) {
+            if (ds.clubId && ds.board?.objective?.leagueSlug === slug) awardTargets.set(ds.clubId, ds.board.objective.target);
           }
           // Manager ranking: league title (tier × country weight), promotions out of this league, one more season.
           {
@@ -2071,30 +2051,31 @@ export async function advanceOneDay(
               league: slug, season, closedOn: currentDate, country: unitCountry, tier: leagueTier,
               weight: unitWeight * tierFactor(leagueTier), state, squads: transition.squadsToSave.map((r) => r.squad),
               table, managers: awardManagers, targets: awardTargets, tierChanges: plan.tierChanges,
-              playerClubId: playerClubSquadId, leagueName: state.leagueName,
+              humanClubIds: humanClubs, leagueName: state.leagueName,
             });
             transition.squadsToSave.forEach((ref, i) => { ref.squad = res.squads[i]!; });
             newsCollector?.leagueAwards.push(res.awards);
             await managerTracker.apply(res.managers);
-            if (res.message) deferredAwardsMessages.push(res.message);
+            for (const [clubId, msg] of Object.entries(res.messages)) seatOf.get(clubId)?.deferred.awards.push(msg);
           }
           // Club history: the season row, scorers and records of every club of the league.
-          solo.deferred.clubRecords.push(...await recordLeagueSeasonHistory(saveService, saveId, {
+          const records = await recordLeagueSeasonHistory(saveService, saveId, {
             league: slug, tier: unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1, season,
             start: state.start, end: state.end, table,
             fixtures: [...fixturesByLeague.get(slug)!, ...(unitCupFixtures ??= await cupAndContinentalFixtures(saveService, saveId, unitCountry))],
             squads: transition.squadsToSave.map((r) => r.squad), titlesByClub, tierChanges: plan.tierChanges,
-            nameOf: (id) => index.byId(id)?.name ?? id, watchSquadId: playerClubSquadId,
+            nameOf: (id) => index.byId(id)?.name ?? id, watchSquadIds: humanClubs,
             ...(newsCollector ? { onBroken: (squadId: string, broken: ClubRecordBroken[]) => newsCollector.clubRecords.push({ squadId, broken }) } : {}),
-          }));
+          });
+          for (const [clubId, broken] of Object.entries(records)) seatOf.get(clubId)?.deferred.clubRecords.push(...broken);
         }
         for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
           closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
         }
         await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year, transfersAtSeasonEnd);
 
-        // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
-        const refs = applyPlayerBroadcastingCredit(transition.squadsToSave, playerClubSquadId, transition.playerBroadcastingCredit);
+        // Each human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
+        const refs = applyHumanBroadcastingCredit(transition.squadsToSave, transition.humanBroadcastingCredit);
         const table = standings[slug] ?? [];
         // Then every club reacts to its season: AI clubs get followers + financial tier + next
         // season's transfer budget; the human club only its followers. Every club with a final
@@ -2109,7 +2090,8 @@ export async function advanceOneDay(
           const tc = plan.tierChanges[squad.id];
           let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
           const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves, continentalSeasonStatus);
-          if (squad.id !== playerClubSquadId) {
+          const ds = seatOf.get(squad.id);
+          if (!ds) {
             next = applyAISeasonReaction(next, outcome);
             if (leaguePrizeAmount > 0) {
               // Prize is granted on top of the NEW season's budget applyAISeasonReaction just set —
@@ -2126,37 +2108,37 @@ export async function advanceOneDay(
             const human = applyHumanSeasonReaction(next, outcome);
             next = human.squad;
             // The fans' mood scales the followers gain (× 0.8..1.2, `.claude/rules/game/board-fans.md`).
-            const followersAfter = solo.board
-              ? followersAfterMood(human.followersBefore, human.followersAfter, solo.board.fans)
+            const followersAfter = ds.board
+              ? followersAfterMood(human.followersBefore, human.followersAfter, ds.board.fans)
               : human.followersAfter;
             if (next.finances && followersAfter !== human.followersAfter) {
               next = { ...next, finances: { ...next.finances, followers: followersAfter } };
             }
             if (followersAfter !== human.followersBefore) {
-              playerFollowersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };
+              ds.rollover.followersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };
             }
             // The board judges the season: objective, league title, promotion/relegation; a happy
             // board pays a bonus, an angry one may sack the manager (sacking enabled only).
-            if (solo.board) {
+            if (ds.board) {
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
-              playerObjectiveMet = position !== null && !!solo.board.objective && position <= solo.board.objective.target;
-              solo.board = evaluateSeason(solo.board, { position });
-              if (position === 1) solo.board = applyCompetitionEvent(solo.board, { kind: "title", title: `league:${slug}` });
-              if (plan.playerMove?.kind === "promoted") solo.board = applyCompetitionEvent(solo.board, { kind: "promoted" });
-              if (plan.playerMove?.kind === "relegated") solo.board = applyCompetitionEvent(solo.board, { kind: "relegated" });
-              const bonus = boardBonus(solo.board.board, wageRevenueBasisOf(next));
+              ds.rollover.objectiveMet = position !== null && !!ds.board.objective && position <= ds.board.objective.target;
+              ds.board = evaluateSeason(ds.board, { position });
+              if (position === 1) ds.board = applyCompetitionEvent(ds.board, { kind: "title", title: `league:${slug}` });
+              if (ds.rollover.move?.kind === "promoted") ds.board = applyCompetitionEvent(ds.board, { kind: "promoted" });
+              if (ds.rollover.move?.kind === "relegated") ds.board = applyCompetitionEvent(ds.board, { kind: "relegated" });
+              const bonus = boardBonus(ds.board.board, wageRevenueBasisOf(next));
               if (bonus > 0) {
-                playerBoardBonusEntry = {
+                ds.rollover.boardBonusEntry = {
                   date: currentDate, kind: "prize", amount: bonus, label: "Board bonus", ref: { stage: "board_bonus" },
                 };
-                next = applyMoney(next, playerBoardBonusEntry);
-                solo.boardMessages.push({ date: currentDate, kind: "bonus", bonus, board: Math.round(solo.board.board) });
+                next = applyMoney(next, ds.rollover.boardBonusEntry);
+                ds.boardMessages.push({ date: currentDate, kind: "bonus", bonus, board: Math.round(ds.board.board) });
               }
               // Only the sacking is decided here; warnings/praise come from the daily review below,
               // on the carried-over meters of the new season.
-              const review = reviewBoardStatus(solo.board, { sackingEnabled: meta.sackingEnabled !== false, date: currentDate });
-              if (review.sacked) solo.sackedReason = review.sacked;
+              const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
+              if (review.sacked) ds.sackedReason = review.sacked;
             }
             if (leaguePrizeAmount > 0) {
               next = applyMoney(next, {
@@ -2164,7 +2146,7 @@ export async function advanceOneDay(
                 label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
                 ref: { competition: slug, position: tablePos + 1 },
               });
-              playerLeaguePrizeThisRollover = leaguePrizeAmount;
+              ds.rollover.leaguePrize = leaguePrizeAmount;
             }
           }
           // Wage factor for the season ahead, now that this club's tier-adjusted revenue is
@@ -2187,14 +2169,15 @@ export async function advanceOneDay(
               : targetWageFactor;
           next = { ...next, wageFactor: newWageFactor, wageRevenueBasis: newRevenue };
           await saveService.saveSquadById(saveId, next);
-          if (squad.id === playerClubSquadId) {
+          if (ds) {
             // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so
             // both entries go onto the NEW season's file — same "+1" the next-season calendar
             // below uses for cal.meta.year.
             const newSeasonEntries: LedgerEntry[] = [];
-            if (transition.playerBroadcastingCredit > 0) {
+            const credit = transition.humanBroadcastingCredit[squad.id] ?? 0;
+            if (credit > 0) {
               newSeasonEntries.push({
-                date: currentDate, kind: "broadcasting", amount: transition.playerBroadcastingCredit,
+                date: currentDate, kind: "broadcasting", amount: credit,
                 label: "Broadcasting revenue",
               });
             }
@@ -2205,8 +2188,8 @@ export async function advanceOneDay(
                 ref: { competition: slug, position: tablePos + 1 },
               });
             }
-            if (playerBoardBonusEntry) newSeasonEntries.push(playerBoardBonusEntry);
-            if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries);
+            if (ds.rollover.boardBonusEntry) newSeasonEntries.push(ds.rollover.boardBonusEntry);
+            if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries, ds.seatId);
           }
         }
       }
@@ -2256,18 +2239,19 @@ export async function advanceOneDay(
 
       // 7a. Loans held by clubs of this unit end with their season (`.claude/rules/game/negotiation.md`),
       //     with the contracts' grace window, before retirements and expiries touch those players.
-      {
-        const mk = await saveService.getMarket(saveId);
+      // Each seat's loans (its market) are checked.
+      for (const ds of daySeats) {
+        const mk = await saveService.getMarket(saveId, ds.seatId);
         if (mk?.loans?.length) {
           const unitIds = new Set<string>();
           for (const slug of unit.leagues) for (const sq of await saveService.getSquadsInLeague(saveId, slug)) unitIds.add(sq.id);
-          const back = await returnDueLoans(saveService, saveId, meta.seatId, meta, mk, currentDate, {
+          const back = await returnDueLoans(saveService, saveId, ds.seatId, ds.meta, mk, currentDate, {
             graceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS, onlyBorrowers: unitIds,
             // A loan of a rolling PARENT ends too when the contract does, so the expiry below sees him.
             parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
           });
-          if (back.market !== mk) await saveService.saveMarket(saveId, back.market);
-          solo.deferred.negotiation.push(...back.news);
+          if (back.market !== mk) await saveService.saveMarket(saveId, back.market, ds.seatId);
+          ds.deferred.negotiation.push(...back.news);
         }
       }
 
@@ -2279,12 +2263,13 @@ export async function advanceOneDay(
         worldLevelsMemo ??= buildWorldLevels(await saveService.getAllSquads(saveId));
         const levels = worldLevelsMemo;
         const rYear = closedYear.get(unit.leagues[0]!)! + 1;
-        const faDone = (freeAgentsRetiredYear ?? meta.freeAgentsRetiredYear) === rYear;
+        const faDone = (freeAgentsRetiredYear ?? world.freeAgentsRetiredYear) === rYear;
         const res = processRetirements({
           saveId, year: rYear, processFreeAgents: !faDone, date: currentDate, squads: unitSquads,
-          freeAgents: await saveService.getFreeAgents(saveId), levels, humanSquadId: playerClubSquadId, logs: closedLogs,
+          freeAgents: await saveService.getFreeAgents(saveId), levels, humanSeats: seatIdByClub, logs: closedLogs,
         });
-        const humanInUnit = unitSquads.some((s) => s.id === playerClubSquadId);
+        // TRANSITIONAL (Task 25 makes the expiry per seat): any seat's club in the unit expires the pending offers.
+        const humanInUnit = unitSquads.some((s) => humanClubs.has(s.id));
         let retiredAll = await saveService.getRetired(saveId);
         if (humanInUnit) retiredAll = expireOffers(retiredAll);
         if (res.retired.length > 0 || retiredAll.length > 0) {
@@ -2299,23 +2284,25 @@ export async function advanceOneDay(
           await saveService.writeFreeAgents(saveId, res.freeAgents);
           freeAgentsRetiredYear = rYear;
         }
-        const goneHuman = new Set(res.humanRetired.map((r) => r.id));
-        if (goneHuman.size > 0) {
-          const tac = await saveService.getTactics(saveId);
+        // A seat's retirees leave its lineup and its sell list.
+        for (const ds of daySeats) {
+          const goneHuman = new Set(res.humanRetired.filter((r) => r.squadId === ds.clubId).map((r) => r.id));
+          if (goneHuman.size === 0) continue;
+          const tac = await saveService.getTactics(saveId, ds.seatId);
           if (tac && tac.lineup.some((id) => goneHuman.has(id))) {
-            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) });
+            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) }, ds.seatId);
           }
-          const mk = await saveService.getMarket(saveId);
+          const mk = await saveService.getMarket(saveId, ds.seatId);
           if (mk?.playerSellList?.some((c) => goneHuman.has(c.playerId))) {
-            await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
+            await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) }, ds.seatId);
           }
         }
-        await pruneSellOnHeld(saveService, saveId, meta.seatId, res.retired.map((r) => r.id));
+        for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, res.retired.map((r) => r.id));
         if (newsCollector) {
           for (const r of res.retired) if (levels.top.has(r.id) && !r.freeAgent) newsCollector.retired.push({ playerId: r.id, player: r.name, squadId: r.squadId });
         }
         for (const r of res.humanRetired) {
-          deferredRetirementMessages.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
+          seatOf.get(r.squadId)?.deferred.retirement.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
         }
       }
 
@@ -2327,9 +2314,11 @@ export async function advanceOneDay(
       if (!options.marketFrozen) {
         const unitIds = new Set<string>();
         for (const slug of unit.leagues) for (const t of index.inLeague(slug)) unitIds.add(t.squadId);
-        const pc = await applyDuePreContracts(saveService, saveId, meta.seatId, meta, { unitIds, date: currentDate, humanClubId: playerClubSquadId ?? null });
-        solo.deferred.negotiation.push(...pc.news);
-        dayMoves.push(...pc.moves);
+        for (const ds of daySeats) {
+          const pc = await applyDuePreContracts(saveService, saveId, ds.seatId, ds.meta, { unitIds, date: currentDate, humanClubId: ds.clubId ?? null });
+          ds.deferred.negotiation.push(...pc.news);
+          dayMoves.push(...pc.moves);
+        }
       }
       const releasedNow: FreeAgent[] = [];
       const afterExpiry: { squad: Squad; nextEnd: string }[] = [];
@@ -2337,31 +2326,32 @@ export async function advanceOneDay(
         const nextEnd = updatedActiveLeagues[stateIdx(slug)]?.end;
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
-          const isHuman = sq.id === playerClubSquadId;
+          const ds = seatOf.get(sq.id);
+          const isHuman = !!ds;
           const res = processContractExpiries({ squad: sq, date: currentDate, nextSeasonEnd: nextEnd, isHuman });
           afterExpiry.push({ squad: res.squad, nextEnd });
           if (res.squad === sq) continue;
           await saveService.saveSquadById(saveId, res.squad);
           for (const p of res.released) releasedNow.push(toFreeAgent(p, currentDate));
-          if (isHuman && res.released.length > 0) {
+          if (ds && res.released.length > 0) {
             const gone = new Set(res.released.map((p) => p.id));
-            const tac = await saveService.getTactics(saveId);
+            const tac = await saveService.getTactics(saveId, ds.seatId);
             if (tac && tac.lineup.some((id) => gone.has(id))) {
-              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) });
+              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) }, ds.seatId);
             }
-            const mk = await saveService.getMarket(saveId);
+            const mk = await saveService.getMarket(saveId, ds.seatId);
             if (mk?.playerSellList?.some((c) => gone.has(c.playerId))) {
-              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) });
+              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) }, ds.seatId);
             }
-            deferredContractMessages.push({
+            ds.deferred.contract.push({
               date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
             });
             // The manager keeps knowing who leaves (`.claude/rules/game/scouting.md`).
-            await rememberPlayers(saveService, saveId, meta.seatId, res.released.map((p) => p.id), currentDate);
+            await rememberPlayers(saveService, saveId, ds.seatId, res.released.map((p) => p.id), currentDate);
           }
         }
       }
-      await pruneSellOnHeld(saveService, saveId, meta.seatId, releasedNow.map((f) => f.player.id));
+      for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, releasedNow.map((f) => f.player.id));
       if (releasedNow.length > 0 || due.units.length > 0) {
         const existing = await saveService.getFreeAgents(saveId);
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
@@ -2369,7 +2359,7 @@ export async function advanceOneDay(
         // filler youth; the human club only gets youth up to the per-role minimums.
         const trimmedIds: string[] = [];
         for (const { squad: sq, nextEnd } of afterExpiry) {
-          const isHuman = sq.id === playerClubSquadId;
+          const isHuman = humanClubs.has(sq.id);
           const r = refillSquad({ squad: sq, pool, nextSeasonEnd: nextEnd, isHuman, tagPrefix: `s${nextEnd.slice(0, 4)}` });
           if (r.squad === sq) continue;
           // A role minimum may take an AI club past 30: the weakest of the lines with a surplus leave.
@@ -2385,7 +2375,7 @@ export async function advanceOneDay(
           trimmedIds.push(...trimmed.released.map((p) => p.id));
         }
         await saveService.writeFreeAgents(saveId, pool);
-        await pruneSellOnHeld(saveService, saveId, meta.seatId, trimmedIds);
+        for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, trimmedIds);
       }
 
       // 9. Academy (.claude/rules/game/youth.md): every club gets a yearly intake of 16-17 year olds.
@@ -2398,18 +2388,18 @@ export async function advanceOneDay(
         const nextEnd = state.end;
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
-          const isHuman = sq.id === playerClubSquadId;
-          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman });
+          const ds = seatOf.get(sq.id);
+          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman: !!ds });
           await saveService.saveSquadById(saveId, res.squad);
-          if (!isHuman) continue;
+          if (!ds) continue;
           youthReleased = youthReleased.concat(res.autoReleased.map((p) => toFreeAgent(p, currentDate)));
           if (res.autoReleased.length > 0) {
-            deferredYouthMessages.push({
+            ds.deferred.youth.push({
               date: currentDate, kind: "released", players: res.autoReleased.map((p) => ({ id: p.id, name: p.name })),
             });
           }
           const best = [...res.intake].sort((a, b) => overallAvg(b) - overallAvg(a))[0];
-          deferredYouthMessages.push({
+          ds.deferred.youth.push({
             date: currentDate, kind: "intake", year: state.year, count: res.intake.length,
             best: best ? { id: best.id, name: best.name, position: best.positions[0] ?? "" } : undefined,
           });
@@ -2419,68 +2409,71 @@ export async function advanceOneDay(
         await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...youthReleased]);
       }
 
-      if (unit.leagues.includes(meta.leagueSlug)) {
-        seasonEnded = true;
+      // The season of each seat whose league is in the unit ended (an unemployed seat follows its last league).
+      for (const ds of daySeats) {
+        if (!unit.leagues.includes(ds.meta.leagueSlug)) continue;
+        ds.rollover.seasonEnded = true;
         // New season objective (new membership, after the moves), meters carried half-way to 60.
-        if (solo.board && !solo.sackedReason && playerSquadId) {
-          const newLeague = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
+        if (ds.board && !ds.sackedReason && ds.clubId) {
+          const newLeague = index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
           const state = updatedActiveLeagues[stateIdx(newLeague)];
           const catalogForBoard = await getLeagueData();
           const objective = objectiveFromSquads({
             squads: await saveService.getSquadsInLeague(saveId, newLeague),
-            playerSquadId,
+            playerSquadId: ds.clubId,
             leagueSlug: newLeague,
             zones: catalogForBoard.find((l) => l.slug === newLeague)?.zones ?? [],
             season: state ? seasonLabel(state.year, state.start, state.end) : "",
           });
-          boardAtSeasonEnd = solo.board.board;
-          solo.board = carryIntoNewSeason(solo.board, objective);
+          ds.rollover.boardAtSeasonEnd = ds.board.board;
+          ds.board = carryIntoNewSeason(ds.board, objective);
           if (objective) {
-            solo.boardMessages.push({
+            ds.boardMessages.push({
               date: currentDate, kind: "objective", objective,
               leagueName: competitionName(newLeague, catalogForBoard as unknown as LeagueData[], "en"),
             });
           }
         }
-        archiveYear = closedYear.get(meta.leagueSlug);
-        playerCountryMoves = plan.moves;
-        playerMove = plan.playerMove;
-        playerChampionOf = plan.playerChampionOf;
+        const archiveYear = closedYear.get(ds.meta.leagueSlug)!;
+        ds.rollover.archiveYear = archiveYear;
+        ds.rollover.moves = plan.moves;
         const nameOf = await leagueNameResolver(activeLeagues);
-        if (plan.playerChampionOf) {
-          seasonMessages.push({
-            date: currentDate, kind: "champion", leagueSlug: plan.playerChampionOf,
-            leagueName: nameOf(plan.playerChampionOf), seasonYear: archiveYear!,
+        const { move, championOf, followersChange, leaguePrize: prizeNow } = ds.rollover;
+        if (championOf) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "champion", leagueSlug: championOf,
+            leagueName: nameOf(championOf), seasonYear: archiveYear,
           });
         }
-        if (plan.playerMove) {
-          seasonMessages.push({
-            date: currentDate, kind: plan.playerMove.kind, leagueSlug: plan.playerMove.to,
-            leagueName: nameOf(plan.playerMove.to), fromLeagueSlug: plan.playerMove.from, seasonYear: archiveYear!,
+        if (move) {
+          ds.deferred.season.push({
+            date: currentDate, kind: move.kind, leagueSlug: move.to,
+            leagueName: nameOf(move.to), fromLeagueSlug: move.from, seasonYear: archiveYear,
           });
         }
-        if (playerFollowersChange) {
-          seasonMessages.push({
-            date: currentDate, kind: "followers", leagueSlug: playerFollowersChange.leagueSlug,
-            leagueName: nameOf(playerFollowersChange.leagueSlug), seasonYear: archiveYear!,
-            followersBefore: playerFollowersChange.before, followersAfter: playerFollowersChange.after,
+        if (followersChange) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "followers", leagueSlug: followersChange.leagueSlug,
+            leagueName: nameOf(followersChange.leagueSlug), seasonYear: archiveYear,
+            followersBefore: followersChange.before, followersAfter: followersChange.after,
           });
         }
         // Always fires once per rollover, independent of champion/promoted/relegated/followers —
         // a mid-table finish still earns (and shows) its merit prize, and this never doubles up
         // with those messages (review fix: a club can be BOTH champion of its league AND promoted
         // the same season, which used to attach the same prize to two messages).
-        if (playerLeaguePrizeThisRollover > 0) {
-          seasonMessages.push({
-            date: currentDate, kind: "league_prize", leagueSlug: meta.leagueSlug,
-            leagueName: nameOf(meta.leagueSlug), seasonYear: archiveYear!,
-            prize: playerLeaguePrizeThisRollover,
+        if (prizeNow > 0) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "league_prize", leagueSlug: ds.meta.leagueSlug,
+            leagueName: nameOf(ds.meta.leagueSlug), seasonYear: archiveYear,
+            prize: prizeNow,
           });
         }
         logDebug(LOG_NS_SEASON, "Season rollover complete", {
+          seatId: ds.seatId,
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
-          playerMove: plan.playerMove,
+          playerMove: move,
         });
       }
     }
@@ -2527,21 +2520,23 @@ export async function advanceOneDay(
       const tier1States = await continentalTier1LeagueStates(updatedActiveLeagues, catalog, pyramids);
       const compYear: Partial<Record<"Europe" | "South America", number>> = {};
 
-      // Player's-club "qualified" + "group" news for a competition pair just (re)generated below —
-      // queued into the deferred `continentalMessages` array (see its declaration above), never
-      // emitted directly here.
+      // Each seat club's "qualified" + "group" news for a competition pair just (re)generated below —
+      // queued into its deferred list (`DaySeat.deferred.continental`), never emitted directly here.
       const queueQualificationMessage = (result: Awaited<ReturnType<typeof createContinentalSeason>>) => {
-        const qual = continentalQualificationOf(playerClubSquadId, result);
-        if (!qual) return;
-        const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
-        const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
-        continentalMessages.push({
-          date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
-        });
-        continentalMessages.push({
-          date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
-          group: qual.group, opponentNames,
-        });
+        for (const ds of daySeats) {
+          if (!ds.clubId) continue;
+          const qual = continentalQualificationOf(ds.clubId, result);
+          if (!qual) continue;
+          const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
+          const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
+          ds.deferred.continental.push({
+            date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+          });
+          ds.deferred.continental.push({
+            date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
+            group: qual.group, opponentNames,
+          });
+        }
       };
       for (const continent of ["Europe", "South America"] as const) {
         const primarySlug = competitionsOf(continent)[0]!.slug;
@@ -2602,12 +2597,13 @@ export async function advanceOneDay(
       rescheduleMoves.push(...r.moves);
     }
 
-    // The human club's seeded rest days (day before / after each match) follow its rescheduled games.
-    if (playerSquadId && rescheduleMoves.length > 0) {
-      const i = stateIdx(index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug);
+    // Each seat club's seeded rest days (day before / after each match) follow its rescheduled games.
+    for (const ds of rescheduleMoves.length > 0 ? daySeats : []) {
+      if (!ds.clubId) continue;
+      const i = stateIdx(index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug);
       if (i >= 0) {
         const restDays = await playerRestDaysAfterMoves({
-          service: saveService, saveId, state: updatedActiveLeagues[i]!, clubId: playerSquadId, moves: rescheduleMoves,
+          service: saveService, saveId, state: updatedActiveLeagues[i]!, clubId: ds.clubId, moves: rescheduleMoves,
         });
         if (restDays) updatedActiveLeagues[i] = { ...updatedActiveLeagues[i]!, restDays };
       }
@@ -2662,7 +2658,7 @@ export async function advanceOneDay(
     // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
     // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
     let contract = meta.managerContract?.squadId === playerSquadId ? meta.managerContract : undefined;
-    if (!ended && solo.board && playerSquadId && seasonEnded && contract && contract.until <= currentDate) {
+    if (!ended && solo.board && playerSquadId && solo.rollover.seasonEnded && contract && contract.until <= currentDate) {
       const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
       ended = {
         date: currentDate, reason: "contract", clubName: meta.clubName,
@@ -2712,13 +2708,13 @@ export async function advanceOneDay(
     const newOffers: JobOffer[] = [];
     if (!ended && playerSquadId && solo.board) {
       const playerState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug));
-      if (seasonEnded && playerState) {
+      if (solo.rollover.seasonEnded && playerState) {
         // Valid until the eve of the club's first match of the new season.
         // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
         const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(playerState.leagueSlug) ?? [], rescheduleMoves, playerSquadId);
         newOffers.push(...await generateJobOffers(saveService, saveId, {
           window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
-          managers: await managerTracker.list(), board: boardAtSeasonEnd ?? solo.board.board,
+          managers: await managerTracker.list(), board: solo.rollover.boardAtSeasonEnd ?? solo.board.board,
           humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index, ...(contract ? { contract } : {}),
         }));
       } else if (playerState) {
@@ -2761,7 +2757,7 @@ export async function advanceOneDay(
       const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
       // The country rolled: the contract follows the NEW league's season end (seasons left kept).
       const oldEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
-      if (seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
+      if (solo.rollover.seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
       if (st) {
         const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === playerSquadId)?.mp ?? 0;
         const squad = await saveService.getSquadById(saveId, playerSquadId);
@@ -2792,9 +2788,14 @@ export async function advanceOneDay(
       const msg = await runWorldCeremony(saveService, saveId, currentDate, {
         managers: () => managerTracker.list(),
         applyManagers: (fn) => managerTracker.apply(fn),
-        playerClubId: !ended && !unemployed && meta.clubId ? meta.clubId : null,
+        // TRANSITIONAL (Task 19): the first seat's sacking / unemployment are still locals.
+        humanClubIds: new Set(daySeats.flatMap((ds) => {
+          const left = ds === solo ? ended || unemployed : ds.job.ended || ds.job.unemployed;
+          return ds.clubId && !left ? [ds.clubId] : [];
+        })),
       });
-      if (msg) deferredAwardsMessages.push(msg);
+      // The world ceremony is news for every seat.
+      if (msg) for (const ds of daySeats) ds.deferred.awards.push(msg);
       if (msg?.world && newsCollector) newsCollector.worldAwards = msg.world;
     }
 
@@ -2842,7 +2843,7 @@ export async function advanceOneDay(
         });
         let staff = r.staff;
         ds.staffNews = r.news;
-        if (seasonEnded) {
+        if (ds.rollover.seasonEnded) {
           const aged = ageStaff(staff);
           staff = aged.staff;
           ds.staffNews = [...ds.staffNews, ...aged.news];
@@ -2856,8 +2857,10 @@ export async function advanceOneDay(
         }
       }
     }
-    if (seasonEnded) {
-      const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
+    // The free staff pool is refreshed once per rollover date (`refreshPool` is idempotent on the date).
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug);
       if (homeState) {
         const pool = await saveService.getStaffPool(saveId, currentDate);
         const { getStaffNameBook } = await import("@/backend/staffNameBook");
@@ -2873,8 +2876,7 @@ export async function advanceOneDay(
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         bids: ds.moraleBids,
         unavailable: ds.moraleUnavailable,
-        // TRANSITIONAL (Task 18): the first seat's rollover.
-        seasonRolled: ds === solo ? seasonEnded : ds.rollover.seasonEnded,
+        seasonRolled: ds.rollover.seasonEnded,
         ...(directorInChargeOf(ds) ? { directorContractTalk: (p: RosterPlayer) => decidedNow[p.id]?.renew === true } : {}),
       })];
     }
@@ -2883,10 +2885,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       if (!seatActive(ds) || !ds.board) continue;
       const homeSlug = index.byId(ds.meta.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
-      // TRANSITIONAL (Task 18): the first seat's rollover.
-      const rolled = ds === solo
-        ? (seasonEnded ? { objectiveMet: playerObjectiveMet, move: playerMove, championOf: playerChampionOf } : null)
-        : (ds.rollover.seasonEnded ? { objectiveMet: ds.rollover.objectiveMet, move: ds.rollover.move, championOf: ds.rollover.championOf } : null);
+      const rolled = ds.rollover.seasonEnded
+        ? { objectiveMet: ds.rollover.objectiveMet, move: ds.rollover.move, championOf: ds.rollover.championOf }
+        : null;
       const pressOut = await pressDay({
         saveId, seatId: ds.seatId, service: saveService, meta: ds.meta, date: currentDate, clubId: ds.meta.clubId,
         leagueSlug: homeSlug,
@@ -2906,18 +2907,20 @@ export async function advanceOneDay(
       ds.pressOut = { state: pressOut.press, ...(pressOut.invite ? { invite: pressOut.invite } : {}), news: pressOut.news };
     }
 
-    // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
-    if (seasonEnded) {
-      await saveService.writeTransfers(saveId, []);
-      await saveService.clearInbox(saveId);
-      for (const msg of seasonMessages) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService);
+    // A seat's inbox is cleared when its country rolls; the season news goes in after. TRANSITIONAL (Task 26):
+    // the transfer list is still cleared once when any seat's country rolls.
+    if (daySeats.some((ds) => ds.rollover.seasonEnded)) await saveService.writeTransfers(saveId, []);
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      await saveService.clearInbox(saveId, ds.seatId);
+      for (const msg of ds.deferred.season) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService, ds.seatId);
       // A press conference still pending keeps its invite (stable id); a fresh one is emitted below.
-      const keptPress = solo.pressOut.state?.pending;
-      if (keptPress && keptPress.id !== solo.pressOut.invite?.pressId) {
+      const keptPress = ds.pressOut.state?.pending;
+      if (keptPress && keptPress.id !== ds.pressOut.invite?.pressId) {
         await emitInboxMessage(saveId, buildPressInviteMessage(keptPress.date, {
           pressId: keptPress.id, trigger: keptPress.trigger, kind: keptPress.kind, expires: keptPress.expires,
           ...(keptPress.params.opponent ? { opponent: keptPress.params.opponent } : {}),
-        }), saveService, solo.seatId);
+        }), saveService, ds.seatId);
       }
     }
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
@@ -2942,15 +2945,17 @@ export async function advanceOneDay(
       }
     }
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
-    for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
-    for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
     for (const ds of daySeats) {
+      for (const msg of ds.deferred.injury) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService, ds.seatId);
+      for (const msg of ds.deferred.contract) await emitInboxMessage(saveId, buildContractMessage(msg), saveService, ds.seatId);
       for (const msg of buildStaffContractMessages(currentDate, ds.staffNews)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       if (ds.director.outcomes.length > 0) {
         await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: ds.director.outcomes }), saveService, ds.seatId);
       }
     }
-    for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.youth) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService, ds.seatId);
+    }
     for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService);
     for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService);
     for (const ds of daySeats) {
@@ -2970,7 +2975,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.facility) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService, ds.seatId);
     }
-    for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.retirement) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService, ds.seatId);
+    }
     for (const ds of daySeats) {
       for (const msg of ds.scouting?.messages ?? []) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService, ds.seatId);
     }
@@ -2981,22 +2988,26 @@ export async function advanceOneDay(
       for (const msg of ds.moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService, ds.seatId);
     }
     // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
-    if (seasonEnded && meta.clubId && !ended) {
-      const humanT = await saveService.getSquadById(saveId, meta.clubId);
-      const freshTalks = new Set(solo.moraleNews.map((n) => n.talkId).filter(Boolean));
-      for (const talk of humanT?.moraleClub?.talks ?? []) {
-        if (freshTalks.has(talk.id)) continue;
-        await emitInboxMessage(saveId, buildPlayerMessage({
-          date: talk.date, kind: "talk", playerId: talk.playerId, playerName: talk.playerName, reason: talk.reason,
-          talkId: talk.id, ...(talk.clubName ? { clubName: talk.clubName } : {}),
-        }), saveService);
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      // TRANSITIONAL (Task 19): the first seat's sacking is still a local.
+      const left = ds === solo ? ended : ds.job.ended;
+      // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
+      if (ds.clubId && !left) {
+        const humanT = await saveService.getSquadById(saveId, ds.clubId);
+        const freshTalks = new Set(ds.moraleNews.map((n) => n.talkId).filter(Boolean));
+        for (const talk of humanT?.moraleClub?.talks ?? []) {
+          if (freshTalks.has(talk.id)) continue;
+          await emitInboxMessage(saveId, buildPlayerMessage({
+            date: talk.date, kind: "talk", playerId: talk.playerId, playerName: talk.playerName, reason: talk.reason,
+            talkId: talk.id, ...(talk.clubName ? { clubName: talk.clubName } : {}),
+          }), saveService, ds.seatId);
+        }
       }
-    }
-    // Bids still pending when the inbox was cleared keep their message (like job offers).
-    if (seasonEnded) {
-      const mkB = await saveService.getMarket(saveId);
-      const humanB = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
-      const fresh = new Set(solo.deferred.negotiation.map((n) => n.bidId).filter(Boolean));
+      // Bids still pending when the inbox was cleared keep their message (like job offers).
+      const mkB = await saveService.getMarket(saveId, ds.seatId);
+      const humanB = ds.meta.clubId ? await saveService.getSquadById(saveId, ds.meta.clubId) : null;
+      const fresh = new Set(ds.deferred.negotiation.map((n) => n.bidId).filter(Boolean));
       for (const bid of liveBids(mkB?.pendingBids, currentDate, humanB)) {
         if (fresh.has(bid.id)) continue;
         await emitInboxMessage(saveId, buildTransferNegotiationMessage({
@@ -3006,7 +3017,7 @@ export async function advanceOneDay(
           ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
           ...(bid.until ? { until: bid.until } : {}),
           expires: bid.expires,
-        }), saveService);
+        }), saveService, ds.seatId);
       }
     }
     for (const ds of daySeats) {
@@ -3014,7 +3025,7 @@ export async function advanceOneDay(
       if (ds.managerBanGiven) await emitInboxMessage(saveId, buildManagerBanMessage(currentDate, ds.managerBanGiven), saveService, ds.seatId);
     }
     // Offers still pending when the inbox was cleared keep their message.
-    if (seasonEnded) {
+    if (solo.rollover.seasonEnded) {
       const fresh = new Set(newOffers.map((o) => o.squadId));
       for (const offer of keptOffers) {
         if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService);
@@ -3024,7 +3035,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const r of ds.deferred.clubRecords) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService, ds.seatId);
     }
-    for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.awards) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
+    }
     for (const ds of daySeats) {
       if (ds.pressOut.invite) await emitInboxMessage(saveId, ds.pressOut.invite, saveService, ds.seatId);
     }
@@ -3053,7 +3066,7 @@ export async function advanceOneDay(
         managers: await managerTracker.list(),
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
-        ...(seasonEnded ? { rollover: { championOf: playerChampionOf, moves: playerCountryMoves, objectiveMet: playerObjectiveMet } } : {}),
+        ...(solo.rollover.seasonEnded ? { rollover: { championOf: solo.rollover.championOf, moves: solo.rollover.moves, objectiveMet: solo.rollover.objectiveMet } } : {}),
         sacked: !!ended && ended.reason !== "contract",
         leftClub: !!ended,
         ...(nationalDay.humanMatch ? { nationalMatch: await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, meta.manager?.nationalityIso) } : {}),
@@ -3167,8 +3180,8 @@ export async function advanceOneDay(
         ...dayLog,
         events: [...dayLog.events, ...transferEvents],
         newDate: updatedMeta.currentDate,
-        ...(seasonEnded
-          ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
+        ...(solo.rollover.seasonEnded
+          ? { seasonEnded: true as const, archiveYear: solo.rollover.archiveYear, moves: solo.rollover.moves, playerMove: solo.rollover.move, playerChampionOf: solo.rollover.championOf }
           : {}),
         ...(ended ? { sacked: true as const } : {}),
         ...(newOffers.length + nationalDay.offers > 0 ? { jobOffers: newOffers.length + nationalDay.offers } : {}),

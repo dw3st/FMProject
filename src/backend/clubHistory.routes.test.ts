@@ -42,9 +42,9 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
       table: [row(squadA.id, 80), row(squadB.id, 70)],
       fixtures: [{ id: "f1", date: "2026-09-01", competition: "premier_league", round: 1, home: squadA.id, away: squadB.id, played: true, result: { home: 4, away: 1 } }],
       squads: [withRow, squadB], titlesByClub: { [squadA.id]: ["league:premier_league"] }, tierChanges: {},
-      nameOf: (id) => index.byId(id)?.name ?? id, watchSquadId: squadA.id,
+      nameOf: (id) => index.byId(id)?.name ?? id, watchSquadIds: new Set([squadA.id]),
     });
-    expect(broken).toEqual([]);
+    expect(broken).toEqual({});
 
     // A sale by B to A: B's sale record, A's signing record.
     const bought = squadB.players[0]!;

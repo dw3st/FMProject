@@ -12,7 +12,8 @@ export interface SeasonTransitionInput {
   /** The league's clubs during the ENDING season (old membership): archive standings use them. */
   leagueTeams: LeagueTeam[];
   squadsInLeague: Squad[];
-  playerClubSquadId: string;
+  /** The clubs with a human manager (each seat's club): no AI reset of their money. */
+  humanClubIds: ReadonlySet<string>;
 }
 
 /**
@@ -29,8 +30,8 @@ export interface SeasonTransitionResult {
   archive: SeasonArchive;
   /** Squads to write after transition, by id (see SquadSaveRef). */
   squadsToSave: SquadSaveRef[];
-  /** Credit to squad budget for the human club (annual broadcasting). */
-  playerBroadcastingCredit: number;
+  /** Credit to the budget of each human club (annual broadcasting), by squad id. */
+  humanBroadcastingCredit: Record<string, number>;
 }
 
 function snapshotPlayerLogs(squads: Squad[]): Record<string, PlayerSeasonLog> {
@@ -92,7 +93,7 @@ function resetSquadForNewSeason(squad: Squad, isPlayerClub: boolean): { squad: S
  * because promotion/relegation changes the team list between the two steps.
  */
 export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransitionResult {
-  const { endingSeason, leagueSlug, leagueTeams, squadsInLeague, playerClubSquadId } = input;
+  const { endingSeason, leagueSlug, leagueTeams, squadsInLeague, humanClubIds } = input;
 
   const standings = computeStandings(leagueTeams, endingSeason.calendar, leagueSlug);
   const championRow = standings[0];
@@ -109,17 +110,17 @@ export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransit
     playerLogs: snapshotPlayerLogs(squadsInLeague),
   };
 
-  let playerBroadcastingCredit = 0;
+  const humanBroadcastingCredit: Record<string, number> = {};
   const squadsToSave: SquadSaveRef[] = [];
 
   for (const s of squadsInLeague) {
-    const isPlayer = s.id === playerClubSquadId;
-    const { squad: updated, playerBroadcasting } = resetSquadForNewSeason(s, isPlayer);
-    playerBroadcastingCredit += playerBroadcasting;
+    const isHuman = humanClubIds.has(s.id);
+    const { squad: updated, playerBroadcasting } = resetSquadForNewSeason(s, isHuman);
+    if (isHuman && playerBroadcasting > 0) humanBroadcastingCredit[s.id] = playerBroadcasting;
     squadsToSave.push({ squadId: s.id, squad: updated });
   }
 
-  return { archive, squadsToSave, playerBroadcastingCredit };
+  return { archive, squadsToSave, humanBroadcastingCredit };
 }
 
 /**
@@ -148,18 +149,16 @@ export function buildNextSeasonCalendar(args: {
 }
 
 /**
- * Credit the human club's annual broadcasting to its budget on the RESET squad the
- * transition produced (`squadsToSave`), so the new-season write carries both the
- * reset roster and the credit. Pure: returns new refs, never mutates the input.
+ * Credit each human club's annual broadcasting to its budget on the RESET squad the transition produced, so the
+ * new-season write carries both the reset roster and the credit. Pure: returns new refs, never mutates the input.
  */
-export function applyPlayerBroadcastingCredit(
+export function applyHumanBroadcastingCredit(
   squadsToSave: SquadSaveRef[],
-  playerSquadId: string,
-  credit: number,
+  credits: Readonly<Record<string, number>>,
 ): SquadSaveRef[] {
-  if (credit <= 0) return squadsToSave;
   return squadsToSave.map((ref) => {
-    if (ref.squad.id !== playerSquadId) return ref;
+    const credit = credits[ref.squad.id] ?? 0;
+    if (credit <= 0) return ref;
     const fin = ref.squad.finances ?? { broadcasting: 0, commercial: 0, total: 0, budget: 0, followers: 0 };
     return { ...ref, squad: { ...ref.squad, finances: { ...fin, budget: (fin.budget ?? 0) + credit } } };
   });
