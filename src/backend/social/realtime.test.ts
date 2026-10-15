@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { PRESENCE_WINDOW_MS, recordPresence, resetPresence } from "@/backend/presence";
+import { authRoutes } from "@/backend/auth/routes";
 import {
+  closeSessionSockets,
   deliverMessage,
   handleClientEvent,
   handleSocialUpgrade,
@@ -19,17 +21,22 @@ import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import { dmRoomId } from "@/Domain/social/rooms";
 import type { ServerEvent } from "@/types/socialTypes";
 
-type FakeSocket = SocialSocket & { events: ServerEvent[] };
+type FakeSocket = SocialSocket & { events: ServerEvent[]; closed: boolean };
 
-function fakeSocket(userId: string): FakeSocket {
+function fakeSocket(userId: string, session = "s"): FakeSocket {
   const events: ServerEvent[] = [];
-  return {
-    data: { userId, saveId: null, clubName: null },
+  const ws: FakeSocket = {
+    data: { userId, session, saveId: null, clubName: null },
     events,
+    closed: false,
     send(message: string) {
       events.push(JSON.parse(message) as ServerEvent);
     },
+    close() {
+      ws.closed = true;
+    },
   };
+  return ws;
 }
 
 beforeEach(() => {
@@ -194,6 +201,33 @@ describe("socket limits", () => {
   });
 });
 
+describe("logout", () => {
+  test("closes the sockets of that session only", async () => {
+    const a = makeUser(uniqueNick());
+    const mine = fakeSocket(a.id, a.token);
+    const otherSession = fakeSocket(a.id, "another-session");
+    onSocketOpen(mine);
+    onSocketOpen(otherSession);
+    const res = await authRoutes["/api/auth/logout"](new Request("http://localhost:3000/api/auth/logout", {
+      method: "POST",
+      headers: { cookie: `fs_session=${a.token}` },
+    }));
+    expect(res.status).toBe(200);
+    expect(mine.closed).toBe(true);
+    expect(otherSession.closed).toBe(false);
+  });
+
+  test("closeSessionSockets ignores unknown sessions", () => {
+    const a = makeUser(uniqueNick());
+    const w = fakeSocket(a.id, "t1");
+    onSocketOpen(w);
+    closeSessionSockets("t2");
+    expect(w.closed).toBe(false);
+    closeSessionSockets("t1");
+    expect(w.closed).toBe(true);
+  });
+});
+
 describe("handleSocialUpgrade", () => {
   const upgrades: unknown[] = [];
   const server = {
@@ -222,6 +256,6 @@ describe("handleSocialUpgrade", () => {
       headers: { cookie: `fs_session=${a.token}`, origin: "http://localhost:3000" },
     });
     expect(handleSocialUpgrade(req, server)).toBeUndefined();
-    expect(upgrades.at(-1)).toEqual({ userId: a.id, saveId: null, clubName: null });
+    expect(upgrades.at(-1)).toEqual({ userId: a.id, session: a.token, saveId: null, clubName: null });
   });
 });

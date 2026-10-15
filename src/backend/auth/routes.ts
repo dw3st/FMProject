@@ -10,6 +10,7 @@ import {
   readSessionCookie,
 } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
+import { closeSessionSockets } from "@/backend/social/realtime";
 import { isTesterEmail } from "@/backend/auth/testers";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -142,7 +143,10 @@ export const authRoutes = {
     if (req.method !== "POST")
       return Response.json({ error: "method not allowed" }, { status: 405 });
     const token = readSessionCookie(req);
-    if (token) deleteSession(token);
+    if (token) {
+      deleteSession(token);
+      closeSessionSockets(token);
+    }
     return Response.json(
       { ok: true },
       { headers: { "Set-Cookie": clearSessionCookieHeader() } },

@@ -1,6 +1,7 @@
 // Friends and chat in real time (`.claude/rules/social.md`). In memory, per process: the open sockets of each
 // user, and the last status sent to friends. Sending a message is HTTP; the socket only delivers.
 import type { ServerWebSocket } from "bun";
+import { readSessionCookie } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
 import { isPresent, onlineCount, recordPresence } from "@/backend/presence";
 import { saveService } from "@/backend/SaveService";
@@ -11,6 +12,8 @@ import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes
 
 export interface WsData {
   userId: string;
+  /** The session token the socket opened with (server only): logout closes these sockets. */
+  session: string;
   /** The save open in this tab (`hello`), when the user owns it or is a member. */
   saveId: string | null;
   /** That save's club, for the "playing" status. */
@@ -21,6 +24,7 @@ export interface WsData {
 export interface SocialSocket {
   data: WsData;
   send(message: string): unknown;
+  close(code?: number, reason?: string): unknown;
 }
 
 const MAX_CLIENT_FRAME = 2048;
@@ -105,6 +109,20 @@ export function notifyUser(userId: string, event: ServerEvent): void {
 
 export function notifyFriendUpdate(userIds: string[]): void {
   for (const id of userIds) notifyUser(id, { type: "friend_update" });
+}
+
+/** Logout: closes every socket opened with this session (the close handler then removes them). */
+export function closeSessionSockets(session: string): void {
+  for (const set of sockets.values()) {
+    for (const ws of [...set]) {
+      if (ws.data.session !== session) continue;
+      try {
+        ws.close(4001, "logout");
+      } catch {
+        // already closing
+      }
+    }
+  }
 }
 
 export function connectionCount(userId: string): number {
@@ -252,7 +270,8 @@ export function handleSocialUpgrade(
   if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
   const origin = req.headers.get("origin");
   if (origin && !sameSite(req, origin)) return Response.json({ error: "forbidden" }, { status: 403 });
-  if (server.upgrade(req, { data: { userId: auth.userId, saveId: null, clubName: null } })) return undefined;
+  const session = readSessionCookie(req) ?? "";
+  if (server.upgrade(req, { data: { userId: auth.userId, session, saveId: null, clubName: null } })) return undefined;
   return Response.json({ error: "upgrade failed" }, { status: 400 });
 }
 
