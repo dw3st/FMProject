@@ -5,7 +5,7 @@ import { resetPresence } from "@/backend/presence";
 import { withJsonErrors } from "@/backend/routeErrors";
 import { handleSocialUpgrade, resetRealtime, setClubNameResolver, socialWebSocket } from "@/backend/social/realtime";
 import { resetSocialRateLimit, socialRoutes } from "@/backend/social/socialRoutes";
-import { befriend } from "@/backend/social/socialStore";
+import { addWorldMember, befriend } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import type { ServerEvent } from "@/types/socialTypes";
 
@@ -101,28 +101,36 @@ test("hello with an own save shows the friend as playing with the club", async (
   cb.ws.close();
 });
 
-test("a blocked user receives nothing from the one who blocked", async () => {
+test("whoever blocked the sender gets nothing by socket (world room); the DM between them is 403", async () => {
   const a = makeUser(uniqueNick());
   const b = makeUser(uniqueNick());
+  const c = makeUser(uniqueNick());
   befriend(a.id, b.id, Date.now());
+  const saveId = randomUUID();
+  recordSaveOwnership(saveId, a.id);
+  addWorldMember(saveId, b.id, "member");
+  addWorldMember(saveId, c.id, "member");
   await fetch(`${base()}/api/social/blocks`, {
     method: "POST",
     headers: { cookie: `fs_session=${a.token}`, "content-type": "application/json" },
     body: JSON.stringify({ nickname: b.nickname }),
   });
-  const cb = await connect(b.token);
   const ca = await connect(a.token);
-  ca.ws.send(JSON.stringify({ type: "ping" }));
-  const res = await fetch(`${base()}/api/social/rooms/${encodeURIComponent(`dm:${b.nickname}`)}/messages`, {
-    method: "POST",
-    headers: { cookie: `fs_session=${a.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ body: "oi" }),
-  });
-  expect(res.status).toBe(403);
-  await Bun.sleep(300);
-  expect(cb.events.filter((e) => e.type === "message" || e.type === "presence")).toEqual([]);
+  const cc = await connect(c.token);
+  const post = (token: string, room: string, body: string) =>
+    fetch(`${base()}/api/social/rooms/${encodeURIComponent(room)}/messages`, {
+      method: "POST",
+      headers: { cookie: `fs_session=${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+  expect((await post(b.token, `dm:${a.nickname}`, "oi")).status).toBe(403);
+  expect((await post(b.token, `world:${saveId}`, "no mundo")).status).toBe(200);
+  // c (not blocking) gets it: by then a would have it too if the delivery filter were missing
+  await waitFor(cc.events, (e) => e.type === "message" && e.message.body === "no mundo");
+  await Bun.sleep(100);
+  expect(ca.events.filter((e) => e.type === "message")).toEqual([]);
   ca.ws.close();
-  cb.ws.close();
+  cc.ws.close();
 });
 
 test("the app's API routes include the social routes", async () => {
