@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { isGroupWorld, laterDate, resolveReadyUntil } from "@/Domain/groupAdvance/groupAdvance";
+import {
+  computeGroupTarget, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
+} from "@/Domain/groupAdvance/groupAdvance";
 
 describe("isGroupWorld", () => {
   test("only a multi world with a world state", () => {
@@ -39,5 +41,58 @@ describe("laterDate", () => {
     expect(laterDate("2027-03-11", "2027-03-12")).toBe("2027-03-12");
     expect(laterDate(null, "2027-03-12")).toBe("2027-03-12");
     expect(laterDate(undefined, "2027-03-12")).toBe("2027-03-12");
+  });
+});
+
+const seat = (seatId: string, over: Partial<GroupSeatInput> = {}): GroupSeatInput => ({
+  seatId, readyUntil: null, nextMatch: null, decisionDate: null, unemployed: false, ...over,
+});
+
+describe("computeGroupTarget", () => {
+  const today = "2027-03-10";
+  test("the smallest ready date of all seats", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-14" }), seat("b", { readyUntil: "2027-03-12" })]);
+    expect(plan).toEqual({ target: "2027-03-12", waitingFor: [], matchWaiting: [] });
+  });
+  test("a seat not ready holds the world today", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-14" }), seat("b")]);
+    expect(plan).toEqual({ target: today, waitingFor: ["b"], matchWaiting: [] });
+  });
+  test("a readyUntil in the past counts as not ready", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-09" })]);
+    expect(plan.waitingFor).toEqual(["a"]);
+  });
+  test("an undecided game stops ON its day", () => {
+    const plan = computeGroupTarget(today, [
+      seat("a", { readyUntil: "2027-03-20", nextMatch: "2027-03-13" }),
+      seat("b", { readyUntil: "2027-03-20" }),
+    ]);
+    expect(plan.target).toBe("2027-03-13");
+  });
+  test("an undecided game today holds the world and is a match wait", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", nextMatch: today })]);
+    expect(plan).toEqual({ target: today, waitingFor: ["a"], matchWaiting: ["a"] });
+  });
+  test("a decided game does not stop", () => {
+    const plan = computeGroupTarget(today, [seat("a", { readyUntil: "2027-03-20", nextMatch: today, decisionDate: today })]);
+    expect(plan.target).toBe("2027-03-20");
+  });
+  test("an unemployed seat has no game stop but still needs a date", () => {
+    expect(computeGroupTarget(today, [seat("a", { unemployed: true, nextMatch: today, readyUntil: "2027-03-15" })]).target)
+      .toBe("2027-03-15");
+    expect(computeGroupTarget(today, [seat("a", { unemployed: true })]).waitingFor).toEqual(["a"]);
+  });
+  test("no seats: no target", () => {
+    expect(computeGroupTarget(today, [])).toEqual({ target: today, waitingFor: [], matchWaiting: [] });
+  });
+});
+
+describe("memberStatus", () => {
+  const today = "2027-03-10";
+  test("ready, match, late, no club", () => {
+    expect(memberStatus(seat("a", { readyUntil: "2027-03-12" }), today)).toBe("ready");
+    expect(memberStatus(seat("a", { readyUntil: "2027-03-12", nextMatch: today }), today)).toBe("match");
+    expect(memberStatus(seat("a"), today)).toBe("late");
+    expect(memberStatus(seat("a", { unemployed: true }), today)).toBe("no_club");
   });
 });
