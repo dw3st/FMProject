@@ -731,6 +731,12 @@ function leaguePrizeTexts(
         : t("world.advance.inbox.preview", { until }),
     };
   }
+  if (message.category === "world" && message.kind === "live_refused") {
+    return {
+      subject: t("world.advance.refused.subject"),
+      preview: t(`world.advance.refused.reason.${message.reason}`),
+    };
+  }
   if (message.category === "world") {
     const vars = { manager: message.managerName, club: message.clubName };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
@@ -898,7 +904,12 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
               : t("world.advance.inbox.body", { until: formatInboxDate(message.until) })}
           </p>
         )}
-        {message.category === "world" && message.kind !== "auto_advanced" && (
+        {message.category === "world" && message.kind === "live_refused" && (
+          <p className="text-sm text-foreground m-0">
+            {t("world.advance.refused.body", { match: formatInboxDate(message.match), reason: t(`world.advance.refused.reason.${message.reason}`) })}
+          </p>
+        )}
+        {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && (
           <p className="text-sm text-foreground m-0">
             {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
           </p>

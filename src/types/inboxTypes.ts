@@ -476,7 +476,8 @@ export type InboxMessage =
   | NationalCoachInboxMessage
   | AchievementInboxMessage
   | WorldInboxMessage
-  | WorldAdvanceInboxMessage;
+  | WorldAdvanceInboxMessage
+  | WorldLiveRefusedInboxMessage;
 
 /** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
 export interface WorldAdvanceInboxMessage extends InboxMessageBase {
@@ -486,6 +487,18 @@ export interface WorldAdvanceInboxMessage extends InboxMessageBase {
   until:     string;
   /** The game the assistant simulated for him, or null. */
   simulated: string | null;
+}
+
+/** Why the day refused a seat's live recording (`liveRefusedReason`). */
+export type LiveRefusedReason = "unregistered" | "knockout" | "two_seats" | "other";
+
+/** Group advance (part 3): the day refused his live recording, so his game was simulated. */
+export interface WorldLiveRefusedInboxMessage extends InboxMessageBase {
+  category: "world";
+  kind:     "live_refused";
+  /** The game's date. */
+  match:    string;
+  reason:   LiveRefusedReason;
 }
 
 /** A manager joined or left the world of friends (multiplayer part 2). */

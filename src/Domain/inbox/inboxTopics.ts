@@ -64,6 +64,8 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "national_coach:callup_soon": "actions",
   // The assistant moved the seat on after the deadline: he must know.
   "world:auto_advanced": "actions",
+  // His live match was refused and simulated instead.
+  "world:live_refused": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",

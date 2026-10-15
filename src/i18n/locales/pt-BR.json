@@ -5112,6 +5112,16 @@
         "previewSimulated": "Pronto até {{until}} · jogo de {{match}} simulado",
         "body": "A liga estava esperando por você, então seu assistente marcou você como pronto até {{until}}.",
         "bodySimulated": "A liga estava esperando por você, então seu assistente simulou seu jogo de {{match}} e marcou você como pronto até {{until}}."
+      },
+      "refused": {
+        "subject": "Sua partida ao vivo foi simulada",
+        "body": "O dia recusou sua partida ao vivo de {{match}} ({{reason}}), então ela foi simulada.",
+        "reason": {
+          "unregistered": "um jogador não estava inscrito",
+          "knockout": "o mata-mata ficou sem vencedor",
+          "two_seats": "um jogo entre dois técnicos não pode ser ao vivo",
+          "other": "a gravação não era válida"
+        }
       }
     },
     "errors": {

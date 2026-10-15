@@ -5112,6 +5112,16 @@
         "previewSimulated": "Ready until {{until}} · game of {{match}} simulated",
         "body": "The league was waiting for you, so your assistant set you ready until {{until}}.",
         "bodySimulated": "The league was waiting for you, so your assistant simulated your game of {{match}} and set you ready until {{until}}."
+      },
+      "refused": {
+        "subject": "Your live match was simulated",
+        "body": "The day refused your live match of {{match}} ({{reason}}), so it was simulated instead.",
+        "reason": {
+          "unregistered": "a player was not registered",
+          "knockout": "the knockout game had no winner",
+          "two_seats": "a game between two managers cannot be played live",
+          "other": "the recording was invalid"
+        }
       }
     },
     "errors": {
