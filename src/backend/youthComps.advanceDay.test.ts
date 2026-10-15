@@ -92,7 +92,7 @@ describe("youth competitions in advanceOneDay", () => {
     const target = fixtures.sort((a, b) => (a.date < b.date ? -1 : 1))[5]!;
     const index = await saveService.getSquadIndex(saveId);
     const base = {
-      service: saveService, saveId, date: target.date, index, humanClubId: HUMAN, tactics: null,
+      service: saveService, saveId, date: target.date, index, humans: new Map([[HUMAN, { seatId: "s", tactics: null }]]),
       squadOf: (id: string) => saveService.getSquadById(saveId, id),
     };
     const res = await playYouthDay({ ...base, teamsPlayingToday: new Set([target.home]) });
@@ -128,7 +128,7 @@ describe("youth competitions in advanceOneDay", () => {
     await saveService.writeDateIndex(saveId, slug, { ...idx, [day]: [...(idx[day] ?? []), fx.round] });
     const index = await saveService.getSquadIndex(saveId);
     const res = await playYouthDay({
-      service: saveService, saveId, date: day, index, humanClubId: HUMAN, tactics: null,
+      service: saveService, saveId, date: day, index, humans: new Map([[HUMAN, { seatId: "s", tactics: null }]]),
       squadOf: (id: string) => saveService.getSquadById(saveId, id), teamsPlayingToday: new Set(),
     });
     expect(res.logs.filter((l) => l.fixtureId === fx.id && l.score !== null)).toEqual([]);

@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { continentalSlugsOf, countryByLeague, createCountryCup } from "@/backend/cupWorld";
@@ -140,7 +141,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
       // No decider — a level score with no penalty shootout is not a valid knockout result.
     };
 
-    const outcome = await advanceOneDay(saveService, saveId, recording);
+    const outcome = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
       expect(outcome.status).toBe(400);
@@ -193,7 +194,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
       durationMs: 0,
     };
 
-    const outcome = await advanceOneDay(saveService, saveId, recording);
+    const outcome = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
       expect(outcome.status).toBe(400);
@@ -245,7 +246,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
       durationMs: 0,
     };
 
-    const outcome = await advanceOneDay(saveService, saveId, recording);
+    const outcome = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(outcome.ok).toBe(true);
 
     const round1After = await saveService.getRound(saveId, "cup_england", stage0.round);

@@ -26,3 +26,11 @@ export function sanitizeFollowedLeagues(input: unknown, validSlugs: Set<string>,
   }
   return out;
 }
+
+/** Sim mode with several seats: full when any seat would resolve the league in the full engine. */
+export function resolveSimModeForSeats(
+  leagueSlug: string,
+  seats: readonly { leagueSlug: string; followedLeagues?: string[] }[],
+): SimMode {
+  return seats.some((s) => resolveSimMode(leagueSlug, s) === "full") ? "full" : "fast";
+}

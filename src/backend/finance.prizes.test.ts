@@ -69,7 +69,7 @@ describe("finance prizes — continental (UCL group round 1)", () => {
     // marketFrozen: no AI-AI transfer can touch groupmateClub's budget the same day, so the only
     // thing that can move it is the prize logic under test.
     await saveService.updateMeta(saveId, { currentDate: round1Date });
-    const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+    const outcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
     expect(outcome.ok).toBe(true);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
@@ -157,7 +157,7 @@ describe("finance prizes — league merit at rollover", () => {
     // included). Buffered like the live route (~11 s); the unbuffered day takes ~47 s and nearly
     // fills the 60 s timeout.
     await saveService.updateMeta(saveId, { currentDate: stateBefore.end });
-    const outcome = await runBufferedDay(saveId, null, { marketFrozen: true });
+    const outcome = await runBufferedDay(saveId, {}, { marketFrozen: true });
     expect(outcome.ok).toBe(true);
 
     const metaAfter = await saveService.getMeta(saveId);
@@ -228,7 +228,7 @@ describe("finance prizes — national cup (FA Cup stage 1)", () => {
     let myFixture: Fixture | undefined;
     for (let i = 0; i < 8 && !myFixture; i++) {
       await saveService.updateMeta(saveId, { currentDate: stage.date });
-      const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+      const outcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
       expect(outcome.ok).toBe(true);
       const round = await saveService.getRound(saveId, "cup_england", stage.round);
       myFixture = round!.fixtures.find((f) => f.home === meta.clubId || f.away === meta.clubId);
@@ -297,7 +297,7 @@ describe("finance prizes — national cup runner-up (FA Cup final)", () => {
         break;
       }
       await saveService.updateMeta(saveId, { currentDate: stage.date });
-      const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+      const outcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
       expect(outcome.ok).toBe(true);
     }
     expect(finalHome).toBeTruthy();
@@ -319,7 +319,7 @@ describe("finance prizes — national cup runner-up (FA Cup final)", () => {
     const awayBefore = await snapshot(finalAway);
 
     await saveService.updateMeta(saveId, { currentDate: finalStage.date });
-    const finalOutcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+    const finalOutcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
     expect(finalOutcome.ok).toBe(true);
 
     const finalRoundAfter = await saveService.getRound(saveId, "cup_england", finalStage.round);

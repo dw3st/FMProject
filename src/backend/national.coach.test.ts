@@ -1,4 +1,5 @@
 import { ownSolo } from "@/backend/testing/seatFixtures";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 /**
  * The human manager at a national team (Etapa 41b, `.claude/rules/game/national-teams.md`): an offer accepted by the
  * route, the call-up notice and his own call-up, his game played in the full engine (and from a live recording),
@@ -111,7 +112,7 @@ describe("the human manager at a national team", () => {
       homeFormation: homeIsMine ? setup.myFormation : setup.oppFormation, homeLineup: homeIsMine ? setup.myLineup : setup.oppLineup,
       awayFormation: homeIsMine ? setup.oppFormation : setup.myFormation, awayLineup: homeIsMine ? setup.oppLineup : setup.myLineup,
     });
-    const out = await advanceOneDay(saveService, saveId, recording);
+    const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
     const log = (await saveService.getDayLog(saveId, "2026-09-03"))!;
     expect(log.nationalMatch?.fixtureId).toBe(setup.fixture.id);
@@ -121,7 +122,7 @@ describe("the human manager at a national team", () => {
 
     // A recording of another fixture is refused (a buffered day: nothing written).
     await saveService.updateMeta(saveId, { currentDate: "2026-09-07" });
-    const wrong = await runBufferedDay(saveId, { ...recording, fixtureId: "nope" });
+    const wrong = await runBufferedDay(saveId, await soloRecording(saveId, { ...recording, fixtureId: "nope" }));
     expect(wrong.ok).toBe(false);
     // Without a recording the engine plays it.
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);

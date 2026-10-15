@@ -4,6 +4,7 @@
  * with an open window registers a signing after the market, the human club gets its automatic list and news.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -68,7 +69,7 @@ describe("registration in advanceOneDay", () => {
       playerStats: { [outId]: {} as never }, playerRatings: {}, playerEnergy: { [outId]: 80 },
       substitutions: [], durationMs: 1,
     };
-    const refused = await advanceOneDay(saveService, saveId, recording);
+    const refused = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(refused).toMatchObject({ ok: false, status: 400, error: "unregistered player in recording" });
 
     const out = await advanceOneDay(saveService, saveId);

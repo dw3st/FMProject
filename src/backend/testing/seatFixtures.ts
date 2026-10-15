@@ -9,3 +9,10 @@ export async function ownSolo(saveId: string, userId: string): Promise<string> {
   addSaveMember(saveId, userId, seatId, "owner");
   return seatId;
 }
+
+/** Tests: a live recording keyed by the only seat of a solo save (`advanceOneDay`/`runBufferedDay` take one per seat). */
+export async function soloRecording<R>(saveId: string, recording: R): Promise<Record<string, R>> {
+  const seatId = (await saveService.getWorldMeta(saveId))?.seats[0];
+  if (!seatId) throw new Error(`soloRecording: save ${saveId} has no seat`);
+  return { [seatId]: recording };
+}

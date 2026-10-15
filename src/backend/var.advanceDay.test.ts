@@ -3,6 +3,7 @@
  * ban (board down, inbox), the club's next official match serves it.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -40,7 +41,7 @@ describe("manager complaint cards in advanceOneDay", () => {
       managerCards: [{ card: "yellow", minute: 30, complaint: 1 }, { card: "red", minute: 60, complaint: 2 }],
       complaintMorale: true,
     };
-    const out = await advanceOneDay(saveService, saveId, recording);
+    const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
     const meta = (await saveService.getMeta(saveId))!;
     expect(meta.managerBan).toMatchObject({ matches: 1, since: first.date });

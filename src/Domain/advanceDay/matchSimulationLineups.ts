@@ -305,6 +305,70 @@ export function computeMatchSimulationLineups(
   };
 }
 
+/** A seat's side of a fixture: its saved tactics, the rotation it accepted and its man-marking. */
+export interface HumanMatchSide {
+  tactics: TacticsSave | null;
+  rotationOverride?: RotationOverride | null;
+  matchMarking?: MatchMarking | null;
+}
+
+/**
+ * Lineups for a fixture with up to two seats (`.claude/rules/game/multiplayer.md`). One seat is exactly
+ * `computeMatchSimulationLineups`; two seats meeting (part 1: simulated in the full engine) resolve each side the
+ * way the single human side is resolved.
+ */
+export function computeSeatedMatchLineups(
+  fixture: Fixture,
+  homeSquad: Squad,
+  awaySquad: Squad,
+  humans: { home?: HumanMatchSide; away?: HumanMatchSide },
+  registration?: { home?: MatchRegistration; away?: MatchRegistration },
+): ReturnType<typeof computeMatchSimulationLineups> {
+  if (!humans.home || !humans.away) {
+    const side = humans.home ?? humans.away;
+    const humanId = humans.home ? homeSquad.id : humans.away ? awaySquad.id : undefined;
+    return computeMatchSimulationLineups(
+      fixture, homeSquad, awaySquad, humanId, side?.tactics ?? null, side?.rotationOverride, side?.matchMarking, registration,
+    );
+  }
+  const date = fixture.date;
+  const resolveSide = (squad: Squad, side: HumanMatchSide, reg: MatchRegistration | undefined) => {
+    const t = side.tactics ?? ({
+      formation: DEFAULT_SIM_FORMATION_ID,
+      tactical_style: DEFAULT_TACTICAL_STYLE,
+      lineup: [],
+    } satisfies TacticsSave);
+    const formation = formationForTactics(t);
+    const tactics: TeamTactics = {
+      style: t.tactical_style,
+      axesOverride: t.axesOverride,
+      familiarity: squadFamiliarityLevels(squad, t.tactical_style),
+      ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
+      ...userInstructions(formation, t, side.matchMarking, date),
+    };
+    const user = resolveUserLineup(
+      squad, formation, t.lineup ?? [], date, { assistantRotation: t.assistantRotation, override: side.rotationOverride }, reg,
+    );
+    return { formation, tactics, user };
+  };
+  const h = resolveSide(homeSquad, humans.home, registration?.home);
+  const a = resolveSide(awaySquad, humans.away, registration?.away);
+  return {
+    homeFormation: h.formation,
+    homeLineup: h.user.lineup,
+    awayFormation: a.formation,
+    awayLineup: a.user.lineup,
+    userInjuredReplaced: [...h.user.injuredReplaced, ...a.user.injuredReplaced],
+    userRotationApplied: [...h.user.rotationApplied, ...a.user.rotationApplied],
+    tactics: { A: h.tactics, B: a.tactics },
+    aiFormations: {},
+    pools: {
+      ...(h.user.pool ? { home: h.user.pool } : {}),
+      ...(a.user.pool ? { away: a.user.pool } : {}),
+    },
+  };
+}
+
 /**
  * The human side's player instructions for a fixture (`.claude/rules/game/player-instructions.md`):
  * the saved per-slot instructions (sanitized against the formation) and the match marking of

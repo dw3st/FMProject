@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MAX_FOLLOWED_LEAGUES, resolveSimMode, sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
+import { MAX_FOLLOWED_LEAGUES, resolveSimMode, resolveSimModeForSeats, sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 
 describe("resolveSimMode", () => {
   test("liga do jogador é full", () => {
@@ -31,5 +31,16 @@ describe("sanitizeFollowedLeagues", () => {
   test("entrada que não é array vira []", () => {
     expect(sanitizeFollowedLeagues("a", valid, "own")).toEqual([]);
     expect(sanitizeFollowedLeagues([1, null, "b"], valid, "own")).toEqual(["b"]);
+  });
+});
+
+describe("resolveSimModeForSeats", () => {
+  test("seats: full when any seat's league or followed league", () => {
+    const seats = [{ leagueSlug: "pl", followedLeagues: ["ll"] }, { leagueSlug: "sa" }];
+    expect(resolveSimModeForSeats("pl", seats)).toBe("full");
+    expect(resolveSimModeForSeats("ll", seats)).toBe("full");
+    expect(resolveSimModeForSeats("sa", seats)).toBe("full");
+    expect(resolveSimModeForSeats("bl", seats)).toBe("fast");
+    expect(resolveSimModeForSeats("pl", [])).toBe("fast");
   });
 });

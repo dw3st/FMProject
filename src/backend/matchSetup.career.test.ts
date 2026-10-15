@@ -54,7 +54,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
         expect(res.status).toBe(200);
         expect(() => JSON.parse(text)).not.toThrow();
       }
-      const out = await runBufferedDay(saveId, null);
+      const out = await runBufferedDay(saveId, {});
       expect(out.ok).toBe(true);
     }
     console.log(seen.join(" | "));

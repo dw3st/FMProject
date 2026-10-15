@@ -1,4 +1,5 @@
 import { ownSolo } from "@/backend/testing/seatFixtures";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 /**
  * Achievements (`.claude/rules/game/achievements.md`): the day step over a recorded match of the human club,
  * idempotency, the routes (owner, profile, stadium, shop) and the attributes copied to the club.
@@ -73,7 +74,7 @@ describe("achievements", () => {
         { playerId: scorer, team: home ? "home" : "away", minute: 92, header: false, distance: 10, outsideBox: false },
       ],
     };
-    const out = await advanceOneDay(saveService, saveId, recording);
+    const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
     const state = await saveService.getAchievements(saveId);
     expect(state.lastDay).toBe(fixture.date);
