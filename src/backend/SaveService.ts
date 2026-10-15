@@ -211,6 +211,14 @@ export class SaveService {
     await this.dal.writeMeta({ ...world, mode: "multi", seats: [...world.seats, seatId], updatedAt: new Date().toISOString() });
   }
 
+  /** Removes a seat's files and takes it out of the world (`removeSeat` does the rest). */
+  async deleteSeat(saveId: string, seatId: string): Promise<void> {
+    const world = await this.dal.readMeta(saveId);
+    if (!world) throw new Error(`Save not found: ${saveId}`);
+    await this.dal.deleteSeat(saveId, seatId);
+    await this.dal.writeMeta({ ...world, seats: world.seats.filter((s) => s !== seatId), updatedAt: new Date().toISOString() });
+  }
+
   // ── Season ─────────────────────────────────────────────────────────────────
 
   readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {

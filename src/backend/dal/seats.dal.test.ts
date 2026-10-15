@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "crypto";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { SaveService, type SaveMeta } from "@/backend/SaveService";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -69,5 +70,51 @@ describe("seat files in the FileSystemDAL", () => {
     expect(await dal.readSeat(saveId, seatId)).toEqual(seat);
     expect((await dal.readSeatInbox(saveId, seatId)).map((m) => m.id)).toEqual(["m1"]);
     expect((await dal.readSeatLedger(saveId, seatId, 2027)).map((e) => e.amount)).toEqual([3]);
+  });
+});
+
+describe("deleteSeat", () => {
+  test("FileSystemDAL removes the seat folder only", async () => {
+    const saveId = `test-seatdel-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const b = randomUUID();
+    await dal.writeSeat(saveId, a, seat);
+    await dal.writeSeat(saveId, b, seat);
+    await dal.writeSeatInbox(saveId, b, [msg("m1")]);
+    await dal.deleteSeat(saveId, b);
+    expect(await dal.readSeat(saveId, a)).toEqual(seat);
+    expect(await dal.readSeat(saveId, b)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${b}/inbox.json`).exists()).toBe(false);
+  });
+
+  test("BufferingSaveDAL drops the seat's buffered writes and deletes on flush", async () => {
+    const saveId = `test-seatdel-buf-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.writeSeatInbox(saveId, s, [msg("late")]);
+    await buffer.deleteSeat(saveId, s);
+    expect(await buffer.readSeat(saveId, s)).toBeNull();
+    expect(await dal.readSeat(saveId, s)).toEqual(seat);
+    await buffer.flush();
+    expect(await dal.readSeat(saveId, s)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${s}/inbox.json`).exists()).toBe(false);
+  });
+
+  test("SaveService.deleteSeat removes the seat from the world", async () => {
+    const saveId = `test-seatdel-svc-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const b = randomUUID();
+    const now = new Date().toISOString();
+    const world: SaveMeta = { id: saveId, name: "W", createdAt: now, updatedAt: now, mode: "multi", seats: [a, b] };
+    await dal.writeMeta(world);
+    await dal.writeSeat(saveId, a, seat);
+    await dal.writeSeat(saveId, b, seat);
+    await new SaveService(dal).deleteSeat(saveId, b);
+    expect((await dal.readMeta(saveId))!.seats).toEqual([a]);
+    expect(await dal.readSeat(saveId, b)).toBeNull();
   });
 });

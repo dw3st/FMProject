@@ -518,4 +518,18 @@ export class BufferingSaveDAL implements ISaveDAL {
   async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
     this.buffer(`seatMarket:${saveId}:${seatId}`, market, () => this.inner.writeSeatMarket(saveId, seatId, market));
   }
+  /**
+   * Forgets every buffered write of the seat (seat, tactics, achievements, scouting, inbox, ledger, market) and
+   * removes its folder in the delete phase of `flush` (after the writes, before the meta, like a squad tombstone).
+   */
+  async deleteSeat(saveId: string, seatId: string): Promise<void> {
+    const tag = `:${saveId}:${seatId}`;
+    const ofSeat = (key: string) => key.startsWith("seat") && (key.endsWith(tag) || key.includes(`${tag}:`));
+    for (const key of [...this.cache.keys()]) if (ofSeat(key)) this.cache.delete(key);
+    for (const key of [...this.pending.keys()]) if (ofSeat(key)) this.pending.delete(key);
+    this.cache.set(`seat${tag}`, null);
+    const run = () => this.inner.deleteSeat(saveId, seatId);
+    this.deleteThunks.add(run);
+    this.pending.set(`seatDelete${tag}`, run);
+  }
 }

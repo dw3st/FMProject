@@ -683,4 +683,9 @@ export class FileSystemDAL implements ISaveDAL {
     await writeJsonFile(dir, `${dir}/market.json`, market, true);
     bumpSaveDataVersion(saveId);
   }
+
+  async deleteSeat(saveId: string, seatId: string): Promise<void> {
+    await rm(seatDir(saveId, seatId), { recursive: true, force: true });
+    bumpSaveDataVersion(saveId);
+  }
 }

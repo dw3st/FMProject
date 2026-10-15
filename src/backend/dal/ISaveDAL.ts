@@ -157,4 +157,6 @@ export interface ISaveDAL {
   writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
   readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null>;
   writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void>;
+  /** Removes the seat's folder (`seats/{seatId}/`): every file of that manager. */
+  deleteSeat(saveId: string, seatId: string): Promise<void>;
 }
