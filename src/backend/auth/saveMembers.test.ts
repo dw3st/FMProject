@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { randomUUID } from "crypto";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import {
-  addSaveMember, countOwnedSaves, deleteSaveMembers, isSaveMember, listMemberSaveIds, listSaveMembers, memberOf,
+  addSaveMember, countOwnedSaves, deleteSaveMembers, isSaveMember, listUserSaveIds, listSaveMembers, memberOf,
 } from "@/backend/auth/saveOwnership";
 
 describe("save_members", () => {
@@ -17,7 +17,7 @@ describe("save_members", () => {
     expect(memberOf(saveId, friend.id)).toMatchObject({ seatId: "seat-b", role: "member" });
     expect(isSaveMember(saveId, friend.id)).toBe(true);
     expect(listSaveMembers(saveId).map((m) => m.seatId).sort()).toEqual(["seat-a", "seat-b"]);
-    expect(listMemberSaveIds(friend.id)).toContain(saveId);
+    expect(listUserSaveIds(friend.id)).toContain(saveId);
     expect(countOwnedSaves(owner.id)).toBe(1);
     expect(countOwnedSaves(friend.id)).toBe(0);
   });
@@ -38,6 +38,6 @@ describe("save_members", () => {
     deleteSaveMembers(saveId);
     expect(memberOf(saveId, a.id)).toBeNull();
     expect(isSaveMember(saveId, a.id)).toBe(false);
-    expect(listMemberSaveIds(a.id)).not.toContain(saveId);
+    expect(listUserSaveIds(a.id)).not.toContain(saveId);
   });
 });

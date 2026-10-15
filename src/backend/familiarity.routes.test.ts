@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 
 describe("style familiarity: career start + training focus", () => {
@@ -28,7 +28,7 @@ describe("style familiarity: career start + training focus", () => {
     expect(other?.styleFamiliarity).toBeUndefined();
 
     const { user, session } = devAutoLogin(`familiarity-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const put = (body: unknown) => saveRoutes["/api/saves/:id"](Object.assign(
       new Request(`http://localhost/api/saves/${saveId}`, {
         method: "PUT",

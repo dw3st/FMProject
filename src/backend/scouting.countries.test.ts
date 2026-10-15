@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { scoutingDay } from "@/backend/scoutingWorld";
 import { addDays } from "@/Domain/dates";
 import { headOf, makeProfessional, signContract } from "@/Domain/staff/staff";
@@ -116,7 +116,7 @@ describe("routes: the scouts' country knowledge", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("scout-countries@test.local");
     const other = devAutoLogin("scout-countries-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const call = (path: string, token: string, params: Record<string, string> = {}, query = "") => {
       const handler = apiRoutes[path as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
       let url = path.replace(":saveId", saveId);

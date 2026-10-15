@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { contractDemand } from "@/Domain/contracts/contracts";
 
 describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
@@ -18,7 +18,7 @@ describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin("renew-route@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const squad = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const player = [...squad.players].filter((p) => p.age <= 26 && p.contract).sort((x, y) => x.contract!.until.localeCompare(y.contract!.until))[0]!;

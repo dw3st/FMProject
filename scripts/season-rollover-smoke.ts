@@ -234,11 +234,11 @@ try {
   {
     const { apiRoutes } = await import("@/backend/routes");
     const { devAutoLogin } = await import("@/backend/auth/AuthService");
-    const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
+    const { ownSolo } = await import("@/backend/testing/seatFixtures");
     const { recordMoney } = await import("@/backend/FinancialService");
     // The save has a single owner row: this user is reused by the reborn/negotiation/jobs sections below.
     const { user, session } = devAutoLogin("smoke-reborn@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const m = (await plain().getMeta(saveId))!;
     const sq = (await plain().getSquadById(saveId, playerSquadId))!;
     facTrack.seatsBefore = sq.venue?.capacity ?? 0;

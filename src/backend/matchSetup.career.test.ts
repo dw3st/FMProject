@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { advanceDayRoutes, runBufferedDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import type { TacticsSave } from "@/types/tacticsTypes";
@@ -25,7 +25,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
     });
     saveId = created.id;
     const { user, session } = devAutoLogin(`match-setup-fla-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const cookie = `fs_session=${session.token}`;
     const pre = await advanceDayRoutes["/api/saves/:saveId/presimulate"](Object.assign(
       new Request(`http://localhost/api/saves/${saveId}/presimulate`, { method: "POST", headers: { cookie } }),

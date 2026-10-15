@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { scoutingDay, loadViewer, ownSideOpponents, viewFor } from "@/backend/scoutingWorld";
 import { searchScout, parseScoutQuery } from "@/backend/scoutSearch";
 import { addDays } from "@/Domain/dates";
@@ -32,7 +32,7 @@ describe("scouting routes and the weekly step", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("scouting-route@test.local");
     const other = devAutoLogin("scouting-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (path: string, method: string, token: string, body?: unknown, params: Record<string, string> = {}) => {
       const handler = apiRoutes[path as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
@@ -257,7 +257,7 @@ describe("the chief scout plans the missions (#157)", () => {
     await saveService.updateMeta(meta.id, { currentDate: sunday });
     const cancelled = first.missions.find((m) => m.scoutId === field.id)!;
     const { user, session } = devAutoLogin("chief-plan@test.local");
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     const handler = apiRoutes["/api/saves/:saveId/scouting/missions/:missionId"] as (r: Request) => Promise<Response>;
     const del = await handler(Object.assign(
       new Request(`http://localhost/api/saves/${meta.id}/scouting/missions/${cancelled.id}`, {

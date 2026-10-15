@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { formationForTactics } from "@/Domain/matchFormations";
 
 /** Player instructions (`.claude/rules/game/player-instructions.md`): tactics PUT and match marking. */
@@ -20,7 +20,7 @@ describe("player instructions routes", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin(`instructions-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const stranger = devAutoLogin(`instructions-stranger-${saveId}@test.local`);
 
     const call = (route: keyof typeof saveRoutes, path: string, method: string, body: unknown, token = session.token) =>

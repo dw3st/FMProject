@@ -8,7 +8,7 @@ import {
   resetReportRateLimit,
 } from "@/backend/reports";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 
 // RUNTIME_DATA_DIR is isolated to a disposable temp dir for the whole test run by the
 // `[test] preload` in bunfig.toml (scripts/testPreload.ts), which runs before this file (or
@@ -352,7 +352,7 @@ describe("POST /api/reports — saveId ownership", () => {
   test("accepts a saveId that belongs to the user", async () => {
     const { token, userId } = sessionFor("tester@example.com");
     const saveId = `save-owned-by-tester-${randomUUID()}`;
-    recordSaveOwnership(saveId, userId);
+    addSaveMember(saveId, userId, "seat-1", "owner");
     const res = await handler()(postReport(token, { ...VALID_BODY, saveId }));
     expect(res.status).toBe(200);
   });
@@ -360,7 +360,7 @@ describe("POST /api/reports — saveId ownership", () => {
   test("a saveId owned by a different user is accepted, but stored as null", async () => {
     const { userId: otherUserId } = sessionFor("someone-else@example.com");
     const saveId = `save-owned-by-someone-else-${randomUUID()}`;
-    recordSaveOwnership(saveId, otherUserId);
+    addSaveMember(saveId, otherUserId, "seat-1", "owner");
     const { token } = sessionFor("tester@example.com");
     const res = await handler()(postReport(token, { ...VALID_BODY, saveId }));
     expect(res.status).toBe(200);
@@ -435,7 +435,7 @@ describe("POST /api/reports — append format", () => {
   test("appends one well-formed JSON line per report with the expected fields", async () => {
     const { token, userId } = sessionFor("tester@example.com");
     const saveId = `save-append-test-${randomUUID()}`;
-    recordSaveOwnership(saveId, userId);
+    addSaveMember(saveId, userId, "seat-1", "owner");
 
     const res = await handler()(
       postReport(token, {

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 // Design spec §2 "Brecha": all money on the player's club goes through the ledger
 // (FinancialService.recordMoney); the squad PUT route must never let a client write `finances`
@@ -34,7 +34,7 @@ describe("PUT /api/saves/:saveId/squad/:league/:club ignores finances from the b
     const originalBudget = before!.finances!.budget;
 
     const { user, session } = devAutoLogin(`squad-finances-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const handler = apiRoutes["/api/saves/:saveId/squad/:league/:club"];
 
     const req = Object.assign(
@@ -66,7 +66,7 @@ describe("PUT /api/saves/:saveId/squad/:league/:club ignores finances from the b
     saveId = meta.id;
 
     const { user, session } = devAutoLogin(`squad-finances-route-nowrite-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const handler = apiRoutes["/api/saves/:saveId/squad/:league/:club"];
 
     // Prove the route makes NO call to saveSquad at all (a stale-copy write would silently

@@ -1,3 +1,4 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
@@ -5,7 +6,6 @@ import { countryByLeague, leagueBusyDates } from "@/backend/cupWorld";
 import { continentalGoodClubsThisSeason, continentalTier1LeagueStates, playerContinentalSlug } from "@/backend/continentalWorld";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { CONTINENTAL, CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -233,7 +233,7 @@ describe("createSave generates continental competitions", () => {
 
   test("GET /api/saves/:id/continental/:slug returns meta, fixtures, names and 8 group tables of 4 rows each", async () => {
     const { user, session } = devAutoLogin(`continental-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const handler = apiRoutes["/api/saves/:saveId/continental/:slug"];
 
     const contSlug = "ucl";
@@ -305,7 +305,7 @@ describe("createSave generates continental competitions", () => {
       await saveService.updateMeta(saveId2, { currentDate: round1Date });
 
       const { user, session } = devAutoLogin(`match-setup-${saveId2}@test.local`);
-      recordSaveOwnership(saveId2, user.id);
+      await ownSolo(saveId2, user.id);
 
       const req = new Request(`http://localhost/api/match-setup?saveId=${saveId2}`, {
         headers: { cookie: `fs_session=${session.token}` },

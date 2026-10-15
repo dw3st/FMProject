@@ -1,10 +1,10 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { tierStepsDown } from "@/Domain/personality/personality";
 import { makeProfessional } from "@/Domain/staff/staff";
 import { emptyMarket } from "@/backend/negotiationWorld";
@@ -49,7 +49,7 @@ describe("personality: smaller-club refusal on the routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("personality-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const files = await saveService.listSquadFiles(saveId);
     elite = files.map(({ squad }) => squad).sort((a, b) => income(b) - income(a))[0]!;
     const human = (await saveService.getSquadById(saveId, meta.clubId))!;

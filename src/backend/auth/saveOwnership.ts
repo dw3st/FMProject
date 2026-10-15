@@ -1,32 +1,6 @@
 import { db } from "@/backend/db";
 import type { MemberRole } from "@/types/seatTypes";
 
-export function recordSaveOwnership(saveId: string, userId: string): void {
-  db.prepare(
-    "INSERT INTO saves (save_id, user_id, created_at) VALUES (?, ?, ?)",
-  ).run(saveId, userId, Date.now());
-}
-
-export function deleteSaveOwnership(saveId: string): void {
-  db.prepare("DELETE FROM saves WHERE save_id = ?").run(saveId);
-}
-
-export function isSaveOwner(saveId: string, userId: string): boolean {
-  const row = db
-    .prepare("SELECT 1 AS hit FROM saves WHERE save_id = ? AND user_id = ?")
-    .get(saveId, userId);
-  return !!row;
-}
-
-export function listUserSaveIds(userId: string): string[] {
-  const rows = db
-    .prepare(
-      "SELECT save_id AS saveId FROM saves WHERE user_id = ? ORDER BY created_at DESC",
-    )
-    .all(userId) as { saveId: string }[];
-  return rows.map((r) => r.saveId);
-}
-
 /** A user's seat in a world (`.claude/rules/game/multiplayer.md`). */
 export interface SaveMember {
   saveId: string;
@@ -64,7 +38,7 @@ export function listSaveMembers(saveId: string): SaveMember[] {
 }
 
 /** Worlds the user takes part in (owner or member), newest first. */
-export function listMemberSaveIds(userId: string): string[] {
+export function listUserSaveIds(userId: string): string[] {
   const rows = db
     .prepare("SELECT save_id AS saveId FROM save_members WHERE user_id = ? ORDER BY created_at DESC")
     .all(userId) as { saveId: string }[];

@@ -1,10 +1,10 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { compensationFee } from "@/Domain/managers/managerContract";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { recordMoney } from "@/backend/FinancialService";
 import { loadJobWorld, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
@@ -66,7 +66,7 @@ describe("jobs: sacking, offers, changing club", () => {
     const meta = await create();
     const { user, session } = devAutoLogin("jobs-route@test.local");
     const other = devAutoLogin("jobs-other@test.local");
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     const date = meta.currentDate!;
     // A starting balance, and an academy prospect at the old club.
     await recordMoney(saveService, meta.id, 2026, { leagueSlug: "premier_league", clubSlug: "33" },
@@ -201,7 +201,7 @@ describe("jobs: sacking, offers, changing club", () => {
   test("sacked: unemployed, old club AI, offers every two weeks, accepted from unemployment", async () => {
     const meta = await create();
     const { user, session } = devAutoLogin("jobs-unemployed@test.local");
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     await saveService.updateMeta(meta.id, { board: { ...meta.board!, board: 5 } });
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);

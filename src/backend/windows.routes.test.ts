@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { applyDuePreContracts } from "@/backend/rivalWorld";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { contractDemand } from "@/Domain/contracts/contracts";
@@ -42,7 +42,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     saveId = meta.id;
     const { user, session } = devAutoLogin("windows-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const sq = await human();
     await saveService.saveSquadById(saveId, { ...sq, players: sq.players.slice(0, 25), finances: { ...sq.finances!, budget: 2_000_000_000 } });
     // Mid-October: the summer window closed and the arrival grace is over.

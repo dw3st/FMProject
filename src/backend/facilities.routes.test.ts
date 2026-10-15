@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { recordMoney } from "@/backend/FinancialService";
 import { addDays } from "@/Domain/dates";
 import { conditionOf, wearFor } from "@/Domain/facilities/facilityItems";
@@ -31,7 +31,7 @@ describe("facilities routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("facilities-route@test.local");
     const other = devAutoLogin("facilities-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (path: string, method: string, token: string, body?: unknown) => {
       const key = `/api/saves/:saveId/facilities${path}`;
@@ -149,7 +149,7 @@ describe("facility item requests", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin("facilities-items@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const call = async (path: string, method: string, body?: unknown) => {
       const key = `/api/saves/:saveId/facilities${path}`;
       const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;

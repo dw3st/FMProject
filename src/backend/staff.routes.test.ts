@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
 import { contractEndFor } from "@/Domain/contracts/contracts";
 import { wageFactorOf } from "@/Domain/finance/wages";
@@ -28,7 +28,7 @@ describe("staff routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("staff-route@test.local");
     const other = devAutoLogin("staff-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (path: string, method: string, token: string, body?: unknown) => {
       const [route, query] = path.split("?");

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 
 describe("youth competition routes", () => {
@@ -18,7 +18,7 @@ describe("youth competition routes", () => {
     const { user, session } = devAutoLogin("youthcomp-route@test.local");
     token = session.token;
     other = devAutoLogin("youthcomp-other@test.local").session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 180_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 

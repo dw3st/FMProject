@@ -1,3 +1,4 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 /**
  * The human manager at a national team (Etapa 41b, `.claude/rules/game/national-teams.md`): an offer accepted by the
  * route, the call-up notice and his own call-up, his game played in the full engine (and from a live recording),
@@ -8,7 +9,6 @@ import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, runBufferedDay } from "@/backend/advanceDay";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { withOffer } from "@/backend/nationalWorld";
 import { nationalMatchSetup, playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { simulateRecording } from "@/Domain/advanceDay/matches";
@@ -34,7 +34,7 @@ describe("the human manager at a national team", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("national-coach@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 240_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 

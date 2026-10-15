@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 /**
  * `GET /api/saves/:saveId/ledger` — Task 7 of the prizes-and-finances plan. See design spec §2
@@ -22,7 +22,7 @@ describe("GET /api/saves/:saveId/ledger", () => {
     });
     meta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
     const { user, session } = devAutoLogin(`ledger-route-${emailSuffix}@test.local`);
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     return { meta, session };
   }
 

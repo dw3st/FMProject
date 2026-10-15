@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { Player } from "@/Domain/Player";
 import { playerOverallRating, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { returnDueLoans, emptyMarket } from "@/backend/negotiationWorld";
@@ -61,7 +61,7 @@ describe("negotiation routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("negotiation-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const sq = await human();
     await saveService.saveSquadById(saveId, { ...sq, players: sq.players.slice(0, 26), finances: { ...sq.finances!, budget: 2_000_000_000 } });
   }, 120_000);

@@ -1,3 +1,4 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 /**
  * Referees in the save and the day pipeline (`.claude/rules/game/referees.md`): the world pool on a new career,
  * the day's appointments (stable, no referee twice), the referee in the day log, the season stats, the renewal.
@@ -13,7 +14,6 @@ import type { MatchEvent } from "@/types/dayLogTypes";
 import { apiRoutes } from "@/backend/routes";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 const HUMAN = "33";
 
@@ -35,7 +35,7 @@ describe("referees in the save", () => {
     const { user, session } = devAutoLogin("referees-route@test.local");
     token = session.token;
     other = devAutoLogin("referees-other@test.local").session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const idx = (await saveService.getDateIndex(saveId, "premier_league"))!;
     day = Object.keys(idx).filter((d) => d >= (meta.currentDate ?? "")).sort()[0]!;
   }, 240_000);

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { INBOX_TOPICS } from "@/Domain/inbox/inboxTopics";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -27,7 +27,7 @@ describe("inbox prefs routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("resp-route@test.local");
     const other = devAutoLogin("resp-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (method: string, token: string, body?: unknown) => {
       const handler = apiRoutes["/api/saves/:saveId/inbox-prefs"] as (r: Request) => Promise<Response>;
@@ -184,7 +184,7 @@ describe("responsibilities: the director's contracts", () => {
     const { meta, a, until, originalEnd } = await setup();
     const { user, session } = devAutoLogin("resp-director@test.local");
     const other = devAutoLogin("resp-director-other@test.local");
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     expect((await callResp(meta.id, "GET", other.session.token)).status).toBe(404);
     expect(await (await callResp(meta.id, "GET", session.token)).json()).toEqual({ contracts: "director", scouting: "manager" });
     expect((await callResp(meta.id, "PUT", session.token, { contracts: "board" })).status).toBe(400);

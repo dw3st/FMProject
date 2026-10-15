@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { recordLeagueSeasonHistory, recordTransferHistory } from "@/backend/clubHistoryWorld";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
 import type { StandingRow } from "@/types/playerTypes";
@@ -21,7 +21,7 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
     saveId = meta.id;
     const { user, session } = devAutoLogin("club-history@test.local");
     const other = devAutoLogin("club-history-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const index = await saveService.getSquadIndex(saveId);
     const [a, b] = index.inLeague("premier_league");

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { contractDemand } from "@/Domain/contracts/contracts";
 import { searchScout } from "@/backend/scoutSearch";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
@@ -20,7 +20,7 @@ describe("free agents: demand + sign routes and scout view", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin("sign-route@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const full = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const squad = { ...full, players: full.players.slice(0, 25) };

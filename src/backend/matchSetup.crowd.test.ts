@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveService, type SaveMeta, type SaveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { attendanceOf, initialFacilities, seasonFraction } from "@/Domain/facilities/facilities";
 import { MATCH_IMPORTANCE } from "@/Domain/facilities/matchImportance";
@@ -121,7 +121,7 @@ describe("/api/match-setup crowd and managers", () => {
     await saveService.updateMeta(saveId, { currentDate: fx.date });
 
     const { user, session } = devAutoLogin(`match-setup-crowd-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, {
       headers: { cookie: `fs_session=${session.token}` },
     }));

@@ -1,3 +1,4 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 /**
  * Achievements (`.claude/rules/game/achievements.md`): the day step over a recorded match of the human club,
  * idempotency, the routes (owner, profile, stadium, shop) and the attributes copied to the club.
@@ -7,7 +8,6 @@ import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { emptyAchievements } from "@/Domain/achievements/progress";
 import { addDays } from "@/Domain/dates";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
@@ -34,7 +34,7 @@ describe("achievements", () => {
     const { user, session } = devAutoLogin("ach-route@test.local");
     token = session.token;
     otherToken = devAutoLogin("ach-other@test.local").session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 180_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { buildConference } from "@/Domain/press/questions";
 import { addDays } from "@/Domain/dates";
 import { applyPressEffect } from "@/Domain/boardFans/boardFans";
@@ -24,7 +24,7 @@ describe("press routes", () => {
     const { user, session } = devAutoLogin("press-route@test.local");
     token = session.token;
     otherToken = devAutoLogin("press-other@test.local").session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 180_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 

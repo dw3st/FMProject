@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, snapToZones } from "@/Domain/formation/zones";
 
@@ -20,7 +20,7 @@ describe("lineup presets route", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin(`presets-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const stranger = devAutoLogin(`presets-stranger-${saveId}@test.local`);
 
     const putTactics = (body: unknown, token = session.token) =>

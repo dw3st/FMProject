@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import type { NewsItem } from "@/types/newsTypes";
 
 /** News feed route (Etapa 42, `.claude/rules/game/press.md` → "Notícias"). */
@@ -21,7 +21,7 @@ describe("news route", () => {
     await saveService.updateMeta(saveId, { followedLeagues: ["la_liga"] });
     const { user, session } = devAutoLogin("news-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     await saveService.appendNews(saveId, [
       item("a", "2027-03-05", { clubIds: ["33", "40"], league: "premier_league", importance: 2 }),
       item("b", "2027-03-05", { clubIds: ["33"], league: "premier_league" }),

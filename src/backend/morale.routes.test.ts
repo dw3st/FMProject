@@ -1,10 +1,10 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { listedUnaskedMult, moraleVolatility } from "@/Domain/personality/personality";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { contractDemand } from "@/Domain/contracts/contracts";
 
@@ -23,7 +23,7 @@ describe("morale routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("morale-route@test.local");
     const other = devAutoLogin("morale-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (key: string, url: string, method: string, token: string, params: Record<string, string>, body?: unknown) => {
       const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;

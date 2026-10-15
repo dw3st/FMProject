@@ -24,9 +24,11 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { saveCompatibility } from "@/Domain/saveVersion";
 import {
-  recordSaveOwnership,
-  deleteSaveOwnership,
+  addSaveMember,
+  countOwnedSaves,
+  deleteSaveMembers,
   listUserSaveIds,
+  memberOf,
 } from "@/backend/auth/saveOwnership";
 
 export type { SaveMeta };
@@ -38,10 +40,14 @@ export const saveRoutes = {
     if (req.method === "GET") {
       const auth = requireAuth(req);
       if (auth instanceof Response) return auth;
+      // Every world the user is a member of, merged with his seat (a world without the seat files is skipped).
       const ids = listUserSaveIds(auth.userId);
-      const metas = (await Promise.all(ids.map((id) => saveService.getMeta(id))))
-        .filter((m): m is SaveMeta => !!m)
-        .map((m) => ({ ...m, compatible: saveCompatibility(m.gameVersion) === "ok" }));
+      const metas = [];
+      for (const id of ids) {
+        const member = memberOf(id, auth.userId);
+        const meta = member ? await saveService.getSeatMeta(id, member.seatId) : null;
+        if (meta && member) metas.push({ ...meta, role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok" });
+      }
       return Response.json(metas);
     }
 
@@ -49,14 +55,15 @@ export const saveRoutes = {
       const auth = requireAuth(req);
       if (auth instanceof Response) return auth;
 
-      const existing = listUserSaveIds(auth.userId);
-      if (existing.length >= MAX_SAVES_PER_USER) {
+      // The limit counts only the worlds the user owns (`.claude/rules/game/multiplayer.md`).
+      const owned = countOwnedSaves(auth.userId);
+      if (owned >= MAX_SAVES_PER_USER) {
         return Response.json(
           {
             error:   `Save limit reached. Delete an existing save to start a new one.`,
             code:    "SAVE_LIMIT_REACHED",
             limit:   MAX_SAVES_PER_USER,
-            current: existing.length,
+            current: owned,
           },
           { status: 409 },
         );
@@ -77,9 +84,9 @@ export const saveRoutes = {
       }
       try {
         const meta = await saveService.createSave(body as Parameters<typeof saveService.createSave>[0]);
-        recordSaveOwnership(meta.id, auth.userId);
+        addSaveMember(meta.id, auth.userId, meta.seatId, "owner");
         // Credit season broadcasting revenue to initial balance
-        const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+        const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
         return Response.json(finalMeta, { status: 201 });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "failed to create save";
@@ -200,10 +207,11 @@ export const saveRoutes = {
     }
 
     if (req.method === "DELETE") {
-      const existing = await saveService.getMeta(id);
+      if (auth.role !== "owner") return Response.json({ error: "only the owner deletes a world" }, { status: 403 });
+      const existing = await saveService.getWorldMeta(id);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
       await saveService.deleteSave(id);
-      deleteSaveOwnership(id);
+      deleteSaveMembers(id);
       return Response.json({ ok: true });
     }
 

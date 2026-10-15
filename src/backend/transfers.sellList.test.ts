@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 /**
  * M3: the sell-list POST is a read-modify-write over the save's market file. Without a lock, two
@@ -30,7 +30,7 @@ describe("POST /api/saves/:saveId/sell-list is serialised per save (M3)", () => 
     const [playerA, playerB] = squad!.players;
 
     const { user, session } = devAutoLogin(`sell-list-lock-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const handler = apiRoutes["/api/saves/:saveId/sell-list"];
 
     const post = (playerId: string) =>
