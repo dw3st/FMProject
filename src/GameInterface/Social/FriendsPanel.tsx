@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { dmRoomParam } from "@/Domain/social/rooms";
 import { Icon } from "@/GameInterface/Icons";
+import { FRIENDS_BUTTON_ID } from "@/GameInterface/Social/FriendsButton";
 import { socialApi, type ApiResult, type RequestAnswer } from "@/GameInterface/Social/socialApi";
 import { groupFriends } from "@/GameInterface/Social/socialState";
 import { useSocial } from "@/GameInterface/Social/useSocial";
@@ -30,6 +31,14 @@ export function FriendsPanel() {
   const [tab, setTab] = useState<PanelTab>("friends");
   const [editingNick, setEditingNick] = useState(false);
   const { panelOpen, setPanelOpen } = s;
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Opening moves the focus to the panel's first control; closing gives it back to the Friends button.
+  useEffect(() => {
+    if (!panelOpen) return;
+    panelRef.current?.querySelector<HTMLElement>("button, input, textarea, select, [tabindex]:not([tabindex='-1'])")?.focus();
+    return () => document.getElementById(FRIENDS_BUTTON_ID)?.focus();
+  }, [panelOpen]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -46,6 +55,7 @@ export function FriendsPanel() {
 
   return (
     <section
+      ref={panelRef}
       role="dialog"
       aria-label={t("social.panelTitle")}
       className="fixed bottom-14 right-6 z-40 w-[340px] max-h-[60vh] flex flex-col rounded-md border border-border bg-card"
@@ -379,10 +389,17 @@ function AddTab() {
       setResults(null);
       return;
     }
+    // A slower answer to an older query must not overwrite the newer one: the cleanup marks it stale.
+    let stale = false;
     const timer = setTimeout(() => {
-      void socialApi.search(query).then((r) => setResults(r.ok ? r.data.results : []));
+      void socialApi.search(query).then((r) => {
+        if (!stale) setResults(r.ok ? r.data.results : []);
+      });
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
   }, [q]);
 
   function report(r: ApiResult<RequestAnswer>) {
