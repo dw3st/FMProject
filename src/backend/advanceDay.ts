@@ -11,7 +11,8 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
-import { saveService, SaveService, type WorldMeta } from "@/backend/SaveService";
+import { saveService, SaveService, type SeatMeta, type WorldMeta } from "@/backend/SaveService";
+import { metaForSeat } from "@/Domain/seats/seats";
 import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -448,12 +449,15 @@ export async function advanceOneDay(
     // training; only the season rollover changes it, and it re-reads the index right after.
     let index = await saveService.getSquadIndex(saveId);
 
-    // The seats of the world (`.claude/rules/game/multiplayer.md`). TRANSITIONAL (Tasks 13–22): `solo` and `meta`
-    // keep the single-seat code running until each group of steps loops over `daySeats`.
+    // The seats of the world (`.claude/rules/game/multiplayer.md`): every step of the day loops over them.
     const daySeats = await loadDaySeats(saveService, saveId, world, index);
-    const solo = daySeats[0];
-    if (!solo) return { ok: false, status: 400, error: "save has no seat" };
-    const meta = solo.meta;
+    if (daySeats.length === 0) return { ok: false, status: 400, error: "save has no seat" };
+    // Task 24 makes national coaching per seat: until then the first seat is the human national coach.
+    const coachSeat = daySeats[0]!;
+    // The world as no seat sees it (AI-only flows that need a meta: the date of an AI fee, a clause paid to AI).
+    const noSeat: SeatMeta = metaForSeat(world, "", {
+      clubId: "", clubName: "", clubColors: ["#000000", "#ffffff"], leagueSlug: "", leagueName: "",
+    });
     // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
     const humanClubs = humanClubSet(daySeats);
 
@@ -467,7 +471,9 @@ export async function advanceOneDay(
     // the start-kit pre-simulation (the kit is generic; its dates are before the career).
     const newsCollector = options.marketFrozen ? null : newNewsCollector();
     if (newsCollector) {
-      newsCollector.startLeaders = await readLeaders(saveService, saveId, [meta.leagueSlug ?? "", ...(meta.followedLeagues ?? [])]);
+      newsCollector.startLeaders = await readLeaders(saveService, saveId, [
+        ...new Set(daySeats.flatMap((ds) => [ds.meta.leagueSlug ?? "", ...(ds.meta.followedLeagues ?? [])])),
+      ]);
     }
 
 
@@ -805,16 +811,16 @@ export async function advanceOneDay(
     // After the club games (no club plays in a FIFA window) and before training: who is with his national
     // team today neither trains nor rests at the club.
     const nationalDay = await playNationalDay({
-      service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
+      service: saveService, saveId, date: currentDate, index, humanClubId: coachSeat.meta.clubId,
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
         human: {
-          reputation: managerReputation(await saveService.getManagers(saveId), meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10)),
-          nationality: managerNation(meta.manager?.nationalityIso),
+          reputation: managerReputation(await saveService.getManagers(saveId), coachSeat.meta.unemployed ? coachSeat.meta.unemployed.board : (coachSeat.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10)),
+          nationality: managerNation(coachSeat.meta.manager?.nationalityIso),
         },
       }),
-      // TRANSITIONAL (Task 24): one human national coach, the first seat.
-      playedMatch: nationalRecordings[solo.seatId] ?? null,
+      // Task 24 makes national coaching per seat: one human national coach, the first seat.
+      playedMatch: nationalRecordings[coachSeat.seatId] ?? null,
     });
     if (Object.keys(nationalRecordings).length > 0 && !nationalDay.consumedRecording) {
       return {
@@ -1089,18 +1095,18 @@ export async function advanceOneDay(
 
     // Cup/continental titles won today wait in meta.pendingTitles until the club's next country
     // rollover writes its history row (`.claude/rules/game/history.md`).
-    let pendingTitles: Record<string, string[]> = meta.pendingTitles ?? {};
+    let pendingTitles: Record<string, string[]> = world.pendingTitles ?? {};
     let pendingTitlesChanged = false;
     // Manager ranking (`.claude/rules/game/managers.md`): titles and seasons of the day, written once at the end.
     const managerTracker = createManagerTracker({
       service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
-      weights: meta.managerWeights, date: currentDate,
+      weights: world.managerWeights, date: currentDate,
     });
     // AI managers (`.claude/rules/game/managers.md` → "Técnicos da IA"): Monday review, rollover
     // sackings, vacancies and hirings. Not in the start-kit pre-simulation (no career yet).
     const aiDesk = options.marketFrozen ? null : createAiManagerDesk({
       service: saveService, saveId, date: currentDate, tracker: managerTracker, getIndex: () => index,
-      catalog: getLeagueData, countries: getCountries, vacancies: meta.managerVacancies,
+      catalog: getLeagueData, countries: getCountries, vacancies: world.managerVacancies,
       humanClubIds: humanClubs,
     });
     const recordTitle = (squadId: string, title: string) => {
@@ -1513,7 +1519,7 @@ export async function advanceOneDay(
 
         await executeTransferFee(
           saveId,
-          meta,
+          noSeat,
           {
             squad: buying,
             leagueSlug: buyerResolved.leagueSlug,
@@ -1532,8 +1538,9 @@ export async function advanceOneDay(
         );
         // The clause is paid to the seat holding it (its ledger), or to the AI club's transfer budget.
         const ownerSeat = owed ? seatOf.get(owed.clubId) : undefined;
-        const payer = ownerSeat ?? solo;
-        const sellOnNews = await settleSellOn(saveService, saveId, payer.seatId, payer.meta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        const sellOnNews = ownerSeat
+          ? await settleSellOn(saveService, saveId, ownerSeat.seatId, ownerSeat.meta, owed, tx.player, tx.sellerSquad.name, currentDate)
+          : await settleSellOn(saveService, saveId, "", noSeat, owed, tx.player, tx.sellerSquad.name, currentDate);
         if (owed) sellOnPaidTo.add(owed.clubId);
         if (sellOnNews && ownerSeat) {
           ownerSeat.deferred.negotiation.push(sellOnNews);
@@ -2976,9 +2983,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.youth) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService, ds.seatId);
     }
-    // TRANSITIONAL (Task 24): the national news and the national coach's news are the first seat's.
-    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, solo.seatId);
-    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, solo.seatId);
+    // Task 24 makes national coaching per seat: the national news and the national coach's news are the first seat's.
+    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, coachSeat.seatId);
+    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, coachSeat.seatId);
     for (const ds of daySeats) {
       if (ds.registrationNotices.length === 0 || !ds.clubId || options.marketFrozen) continue;
       const humanNow = await saveService.getSquadById(saveId, ds.clubId);
@@ -3067,7 +3074,8 @@ export async function advanceOneDay(
     // ── World news of the day (`press.md` → "Notícias"): one build + append, press news included ──
     if (newsCollector) {
       await writeDayNews(saveService, saveId, await collectDayNews({
-        service: saveService, saveId, date: currentDate, meta, index,
+        // TRANSITIONAL (Task 27): the news of the first seat's club and leagues.
+        service: saveService, saveId, date: currentDate, meta: daySeats[0]!.meta, index,
         catalog: await getLeagueData(), pyramids: await getPyramids(),
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         transfers: [...dayMoves, ...(routeLog?.transfers ?? [])],
@@ -3081,8 +3089,8 @@ export async function advanceOneDay(
 
     // ── Achievements of each seat's manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
     for (const ds of options.marketFrozen ? [] : daySeats) {
-      // TRANSITIONAL (Task 24): the national game is the first seat's.
-      const national = ds === solo && nationalDay.humanMatch
+      // Task 24 makes national coaching per seat: the national game is the first seat's.
+      const national = ds === coachSeat && nationalDay.humanMatch
         ? await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, ds.meta.manager?.nationalityIso)
         : null;
       const msg = await achievementsDay(saveService, saveId, ds.seatId, {
@@ -3120,8 +3128,8 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
 
-    // TRANSITIONAL (Task 24): the national coach's wage is the first seat's.
-    solo.managerEarned += nationalDay.earned;
+    // Task 24 makes national coaching per seat: the national coach's wage is the first seat's.
+    coachSeat.managerEarned += nationalDay.earned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
 
     // Board, press, ban, earnings and the director's decisions, per seat.
@@ -3207,8 +3215,8 @@ export async function advanceOneDay(
     const transferEvents = (resolved?.events ?? []).filter((e) => e.kind === "transfer");
     const seats: Record<string, Record<string, unknown>> = {};
     for (const ds of daySeats) {
-      // TRANSITIONAL (Task 24): the national coach's offers are the first seat's.
-      const offers = ds.job.newOffers.length + (ds === solo ? nationalDay.offers : 0);
+      // Task 24 makes national coaching per seat: the national coach's offers are the first seat's.
+      const offers = ds.job.newOffers.length + (ds === coachSeat ? nationalDay.offers : 0);
       seats[ds.seatId] = {
         ...(ds.rollover.seasonEnded
           ? { seasonEnded: true as const, archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }

@@ -173,9 +173,11 @@ export async function nextPlayerFixtureDate(
   return best;
 }
 
-/** Real position reader: the player's league/club/date come from the save meta, re-read every call. */
-export async function readAdvancePosition(saveId: string, service: SaveService = defaultSaveService): Promise<AdvancePosition> {
-  const meta = await service.getMeta(saveId);
+/** Real position reader: the seat's league/club and the world's date (the seat's meta), re-read every call. */
+export async function readAdvancePosition(
+  saveId: string, seatId: string, service: SaveService = defaultSaveService,
+): Promise<AdvancePosition> {
+  const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) throw new Error("save not found");
   if (!meta.currentDate) throw new Error("save has no currentDate");
   const currentDate = meta.currentDate;
@@ -236,7 +238,7 @@ export const advanceUntilRoutes = {
     // for all of it. Checking the target inside the same lock keeps a concurrent advance-day from
     // pushing the save onto the player's match day between the check and the day.
     const result = await runAdvanceBatch(maxDays, {
-      readPosition: () => readAdvancePosition(saveId),
+      readPosition: () => readAdvancePosition(saveId, auth.seatId),
       runDay: async () => {
         const o = await runBufferedDay(saveId);
         return o.ok ? { ok: true as const, payload: payloadForSeat(o, auth.seatId) } : o;
