@@ -193,13 +193,13 @@ export function playerMatchesBand(player: RosterPlayer, band: MainRole): boolean
 
 /**
  * All players from other squads that fit the need (rating band + price cap + intent age filter).
- * `excludeSellerSquadId` excludes a squad from selling (e.g. human player club in AI market).
+ * `excludeSellerSquadIds` excludes squads from selling (the human clubs of every seat in the AI market).
  */
 export function findCandidates(
   need: TransferNeed,
   allSquads: Squad[],
   buyerSquadId: string,
-  excludeSellerSquadId?: string | null,
+  excludeSellerSquadIds?: ReadonlySet<string>,
 ): RosterPlayer[] {
   const cap = priceCapForTier(need.budgetTier);
   const out: RosterPlayer[] = [];
@@ -207,7 +207,7 @@ export function findCandidates(
 
   for (const squad of allSquads) {
     if (squad.id === buyerSquadId) continue;
-    if (excludeSellerSquadId && squad.id === excludeSellerSquadId) continue;
+    if (excludeSellerSquadIds?.has(squad.id)) continue;
     // A very ambitious player turns down a much smaller club (`personality.md`).
     const steps = buyer ? tierStepsDown(squad, buyer) : 0;
     for (const player of squad.players) {
@@ -399,7 +399,7 @@ export function processTeamTransferAttempt(
   profile: SquadMarketProfile | null,
   allSquads: Squad[],
   rng: () => number = defaultRng,
-  excludePlayerClubSquadId?: string | null,
+  excludeSquadIds?: ReadonlySet<string>,
   sellerSellLists: Record<string, SellCandidate[]> = {},
 ): TransferAttemptResult | null {
   if (!profile?.needs.length) return null;
@@ -414,7 +414,7 @@ export function processTeamTransferAttempt(
   const buyerBudget = aiTransferBudgetOf(buyerSquad);
   const buyerAvg = teamAvgRating(buyerSquad);
   const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
-  const candidates = findCandidates(need, allSquads, buyerSquad.id, excludePlayerClubSquadId);
+  const candidates = findCandidates(need, allSquads, buyerSquad.id, excludeSquadIds);
   if (candidates.length === 0) return null;
 
   const squadByPlayerId = new Map<string, string>();

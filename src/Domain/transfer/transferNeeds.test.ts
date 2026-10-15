@@ -164,7 +164,7 @@ describe("findCandidates", () => {
       intentType: "cover_need" as const,
     };
     const withSeller = findCandidates(need, [seller, makeSquad("buy", [])], "buy");
-    const withoutSeller = findCandidates(need, [seller, makeSquad("buy", [])], "buy", "sell");
+    const withoutSeller = findCandidates(need, [seller, makeSquad("buy", [])], "buy", new Set(["sell"]));
     expect(withSeller.length).toBe(1);
     expect(withoutSeller.length).toBe(0);
   });
@@ -340,7 +340,7 @@ describe("processTeamTransferAttempt", () => {
         },
       ],
     };
-    const attempt = processTeamTransferAttempt(buyer, profile, [seller, buyer], rng, "human");
+    const attempt = processTeamTransferAttempt(buyer, profile, [seller, buyer], rng, new Set(["human"]));
     expect(attempt).toBeNull();
   });
 });

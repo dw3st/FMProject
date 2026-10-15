@@ -108,7 +108,7 @@ describe("freeAgentTick", () => {
     const sq = squad(full().slice(0, 12));
     const r = freeAgentTick({
       squads: [sq], pool: [agent("fa1", "CM", 5)], date: "2027-07-01", rng: mulberry32(1),
-      excludeSquadId: "c1", seasonEndOf: () => "2028-05-31",
+      excludeSquadIds: new Set(["c1"]), seasonEndOf: () => "2028-05-31",
     });
     expect(r.signedIds.size).toBe(0);
   });

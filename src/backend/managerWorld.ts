@@ -163,23 +163,21 @@ export function createAiManagerDesk(args: {
   catalog: () => Promise<LeagueDataEntry[]>;
   countries: () => Promise<Record<string, { continent?: string }>>;
   vacancies?: Record<string, { since: string; hireOn: string }>;
-  /** The human club (never reviewed, never vacant). */
-  humanClubId: string | null;
-  /** The player's league: its sackings/hirings become inbox news. */
-  playerLeague: string | null;
+  /** The clubs with a human manager (every seat): never reviewed, never vacant. */
+  humanClubIds: ReadonlySet<string>;
 }) {
   const { service, saveId, date, tracker } = args;
   let vacancies = { ...(args.vacancies ?? {}) };
   let changed = false;
-  const news: ManagerNewsItem[] = [];
   /** Every club sacking/hiring of the day, any league (news page, `press.md`); filtered by tier there. */
   const worldNews: ManagerNewsItem[] = [];
+  /** The league of each news item's club when it happened (a seat's inbox gets its own league's). */
+  const newsLeague = new Map<ManagerNewsItem, string | undefined>();
   const pushNews = (item: ManagerNewsItem) => {
     worldNews.push(item);
-    if (inPlayerLeague(item.squadId)) news.push(item);
+    newsLeague.set(item, args.getIndex().byId(item.squadId)?.leagueSlug);
   };
   const nameOf = (squadId: string) => args.getIndex().byId(squadId)?.name ?? squadId;
-  const inPlayerLeague = (squadId: string) => !!args.playerLeague && args.getIndex().byId(squadId)?.leagueSlug === args.playerLeague;
   const rngFor = (squadId: string, tag: string) => mulberry32(seedFrom(`${saveId}:${squadId}:${date}:${tag}`));
 
   /** Objective targets of a league's clubs for `season`, cached on their managers. */
@@ -223,7 +221,8 @@ export function createAiManagerDesk(args: {
     vacanciesChanged: () => changed,
     /** Board objective target of every club of a league (cached on the managers; season awards). */
     targets: targetsOf,
-    news: () => news,
+    /** Sackings/hirings of the day in `leagueSlug` (a seat's inbox news). */
+    newsInLeague: (leagueSlug: string | undefined) => (leagueSlug ? worldNews.filter((i) => newsLeague.get(i) === leagueSlug) : []),
     worldNews: () => worldNews,
     openVacancy,
     /** A vacancy that no longer applies (the human took the club). */
@@ -252,7 +251,7 @@ export function createAiManagerDesk(args: {
         const already = clubsSackedSince(ms, state.start);
         for (let i = 0; i < table.length; i++) {
           const row = table[i]!;
-          if (row.squadId === args.humanClubId || vacancies[row.squadId] || sackedSet.has(row.squadId)) continue;
+          if (args.humanClubIds.has(row.squadId) || vacancies[row.squadId] || sackedSet.has(row.squadId)) continue;
           const m = ms.find((x) => x.squadId === row.squadId);
           if (!m || m.isPlayer) continue;
           const input = {
@@ -283,7 +282,7 @@ export function createAiManagerDesk(args: {
       const ms = await tracker.list();
       for (let i = 0; i < table.length; i++) {
         const row = table[i]!;
-        if (row.squadId === args.humanClubId || vacancies[row.squadId] || row.mp === 0) continue;
+        if (args.humanClubIds.has(row.squadId) || vacancies[row.squadId] || row.mp === 0) continue;
         const m = ms.find((x) => x.squadId === row.squadId);
         if (!m || m.isPlayer) continue;
         const tc = tierChanges[row.squadId];
@@ -301,7 +300,7 @@ export function createAiManagerDesk(args: {
       // Self-heal: an AI club with an interim and no vacancy (a vacancy lost to a retried day, an
       // old save) opens one, so no interim stays in charge for good.
       for (const m of await tracker.list()) {
-        if (m.interim && m.squadId && !m.isPlayer && m.squadId !== args.humanClubId && !vacancies[m.squadId]) openVacancy(m.squadId);
+        if (m.interim && m.squadId && !m.isPlayer && !args.humanClubIds.has(m.squadId) && !vacancies[m.squadId]) openVacancy(m.squadId);
       }
       const due = Object.entries(vacancies).filter(([, v]) => v.hireOn <= date).map(([id]) => id).sort();
       if (due.length === 0) return;
@@ -317,7 +316,7 @@ export function createAiManagerDesk(args: {
         delete rest[squadId];
         vacancies = rest;
         changed = true;
-        if (squadId === args.humanClubId || !index.byId(squadId)) continue;
+        if (args.humanClubIds.has(squadId) || !index.byId(squadId)) continue;
         const ms = await tracker.list();
         const homeOf = (club: string) => {
           const country = countryOfLeague.get(index.byId(club)?.leagueSlug ?? "") ?? null;
@@ -340,7 +339,7 @@ export function createAiManagerDesk(args: {
           prestige: prestige.get(squadId) ?? 0.5, ...homeOf(squadId),
           free: ms.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map(cand),
           // National-team coaches (`nat_…`, `national-teams.md`) are never poached by clubs.
-          employed: ms.filter((m) => !m.isPlayer && !!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && m.squadId !== args.humanClubId).map(cand),
+          employed: ms.filter((m) => !m.isPlayer && !!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && !args.humanClubIds.has(m.squadId)).map(cand),
           interim: interim ? { ...cand(interim), interimPpg } : null,
           allowPoach: !poached,
           rng: rngFor(squadId, "hire"),

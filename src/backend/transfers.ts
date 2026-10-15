@@ -9,7 +9,7 @@ import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
 import type { TransferRecord, TransfersSplitResponse } from "@/types/transferTypes";
 import type { TransferRef } from "@/types/dayLogTypes";
-import type { SellCandidate } from "@/types/transferMarketTypes";
+import type { MarketState, SellCandidate } from "@/types/transferMarketTypes";
 import { collectSellListedIds } from "@/Domain/scout/scoutQuery";
 import {
   squadsAfterAcceptedTransfer,
@@ -22,6 +22,7 @@ import { humanRosterSize, marketAfterSellOnPaid, sellOnFor, settleSellOn } from 
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
+import { emptySeatMarket } from "@/Domain/market/seatMarket";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
@@ -256,7 +257,7 @@ export const transferRoutes = {
           : answer.kind === "prefers_rival" ? { by: "club", fee, outcome: "prefers_rival" }
           : { by: "club", outcome: answer.reason === "insulted" ? "insulted" : "rejected" },
         );
-        const marketBase = marketWithRivals ?? initMarketState(await saveService.getAllSquads(saveId));
+        const marketBase: MarketState = marketWithRivals ?? { ...initMarketState(await saveService.getAllSquads(saveId)), ...emptySeatMarket() };
         await saveService.saveMarket(saveId, {
           ...marketBase,
           talks: { ...pruneTalks(marketBase.talks, date0), [key]: talk },
@@ -437,7 +438,7 @@ export const transferRoutes = {
         if (!listed && own?.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
         const allSquads = await saveService.getAllSquads(saveId);
-        const baseMarket = market ?? initMarketState(allSquads);
+        const baseMarket: MarketState = market ?? { ...initMarketState(allSquads), ...emptySeatMarket() };
         const currentList: SellCandidate[] = baseMarket.playerSellList;
 
         let newList: SellCandidate[];

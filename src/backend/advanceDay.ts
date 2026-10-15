@@ -14,7 +14,7 @@ import { directorHandlesContracts, type DirectorDecision, type DirectorOutcome }
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService, type SaveMeta, type WorldMeta } from "@/backend/SaveService";
-import { loadDaySeats } from "@/backend/daySeats";
+import { humanClubSet, loadDaySeats } from "@/backend/daySeats";
 import { splitSeatPatch } from "@/Domain/seats/seats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -31,7 +31,7 @@ import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
-import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
+import { isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
   buildContinentalMessage,
@@ -95,9 +95,10 @@ import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
-import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
+import { splitMarket } from "@/Domain/market/seatMarket";
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
@@ -453,6 +454,8 @@ export async function advanceOneDay(
     const solo = daySeats[0];
     if (!solo) return { ok: false, status: 400, error: "save has no seat" };
     const meta = solo.meta;
+    // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
+    const humanClubs = humanClubSet(daySeats);
 
     const tactics = solo.tactics;
 
@@ -1096,7 +1099,7 @@ export async function advanceOneDay(
     const aiDesk = options.marketFrozen ? null : createAiManagerDesk({
       service: saveService, saveId, date: currentDate, tracker: managerTracker, getIndex: () => index,
       catalog: getLeagueData, countries: getCountries, vacancies: meta.managerVacancies,
-      humanClubId: playerSquadId ?? null, playerLeague: playerSquadId ? meta.leagueSlug : null,
+      humanClubIds: humanClubs,
     });
     const recordTitle = (squadId: string, title: string) => {
       newsCollector?.champions.push({ competition: title.slice(title.indexOf(":") + 1), squadId });
@@ -1437,49 +1440,39 @@ export async function advanceOneDay(
     if (!options.marketFrozen) {
       let workingMeta = meta;
       // Loans due back today go home first, so the market below sees the squads as they are.
-      let rawMarket = await saveService.getMarket(saveId);
+      let rawMarket = await saveService.getMarket(saveId, solo.seatId);
       if (rawMarket?.loans?.length) {
         const back = await returnDueLoans(saveService, saveId, meta.seatId, meta, rawMarket, currentDate);
         if (back.market !== rawMarket) {
           rawMarket = back.market;
-          await saveService.saveMarket(saveId, rawMarket);
+          await saveService.saveMarket(saveId, rawMarket, solo.seatId);
         }
         negotiationNews.push(...back.news);
       }
       const allSquadsMarket = await saveService.getAllSquads(saveId);
-      // A market file written before the first tick (the human's sell/loan lists, from a route or
-      // `emptyMarket`) has no rotation yet: give it one instead of crashing or never refreshing.
-      const rotation = rawMarket?.shuffledTeamIds?.length ? null : initMarketState(allSquadsMarket);
-      const marketForTick = rawMarket
-        ? {
-            ...rawMarket,
-            ...(rotation ? { shuffledTeamIds: rotation.shuffledTeamIds, rotationIndex: 0 } : {}),
-            profiles: rawMarket.profiles ?? {},
-            playerSellList: rawMarket.playerSellList ?? [],
-          }
-        : initMarketState(allSquadsMarket);
-      const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
-      const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
+      // The world's rotation + AI profiles; a market written before the first tick (a seat's lists from a route)
+      // has no rotation yet: give it one instead of crashing or never refreshing.
+      const worldMarket = await saveService.getWorldMarket(saveId);
+      const marketForTick = worldMarket?.shuffledTeamIds?.length
+        ? { ...worldMarket, profiles: worldMarket.profiles ?? {} }
+        : { ...initMarketState(allSquadsMarket), profiles: worldMarket?.profiles ?? {} };
 
       // Clubs credited a sell-on clause today: their in-memory copy is stale, so they sit out the
       // free-agent tick below (it would save that copy over the credit).
       const sellOnPaidTo = new Set<string>();
-      const { updatedMarket, completedTransfers, newBids } = dailyMarketTick(
+      const { updatedMarket, completedTransfers } = dailyMarketTick(
         marketForTick,
         allSquadsMarket,
         currentDate,
         defaultRng,
         {
-          excludePlayerSquadId: resolvedPlayerSquadId,
-          playerSellList: marketForTick.playerSellList,
-          playerSquad: playerSquadForMarket,
+          excludeSquadIds: humanClubs,
           // Contract end for every signing: the buyer's league season end.
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
           historyFrom: (sq) => {
             const l = activeLeagues.find((x) => x.leagueSlug === sq.leagueSlug);
             return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
           },
-          newBidId: () => randomUUID(),
           // Only buyers whose country has an open window buy or bid (`.claude/rules/game/transfer-windows.md`).
           windows: {
             isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
@@ -1488,6 +1481,23 @@ export async function advanceOneDay(
           },
         },
       );
+      await saveService.saveWorldMarket(saveId, updatedMarket);
+      // AI bids for the seat's players (`.claude/rules/game/negotiation.md`), on the squads after today's tick.
+      // TRANSITIONAL (Task 17 loops over the seats): the first seat only.
+      const soloSquad = solo.clubId ? allSquadsMarket.find((s) => s.id === solo.clubId) : undefined;
+      const soloJoined: MarketState = { ...(rawMarket ?? { playerSellList: [] }), ...updatedMarket };
+      const { market: soloAfterBids, newBids } = soloSquad
+        ? humanBidsTick({
+            market: soloJoined, squads: squadsAfterTick(allSquadsMarket, completedTransfers), humanSquad: soloSquad,
+            currentDate, rng: defaultRng,
+            seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
+            windows: {
+              isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
+              closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
+            },
+            newBidId: () => randomUUID(),
+          })
+        : { market: soloJoined, newBids: [] as MarketBid[] };
       for (const bid of newBids) {
         if (bid.kind === "transfer") moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
         negotiationNews.push({
@@ -1499,9 +1509,9 @@ export async function advanceOneDay(
           expires: bid.expires,
         });
       }
-      let marketAfterTick: MarketState = { ...updatedMarket, talks: pruneTalks(updatedMarket.talks, currentDate) };
+      let marketAfterTick: MarketState = { ...soloAfterBids, talks: pruneTalks(soloAfterBids.talks, currentDate) };
       // A closed window ends the human's open conversations (bans stay).
-      if (resolvedPlayerSquadId && !windows.seat(meta.seatId).today.open && marketAfterTick.talks) {
+      if (solo.clubId && !windows.seat(meta.seatId).today.open && marketAfterTick.talks) {
         marketAfterTick = {
           ...marketAfterTick,
           talks: Object.fromEntries(Object.entries(marketAfterTick.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
@@ -1639,19 +1649,19 @@ export async function advanceOneDay(
         for (const m of res.moves) { sellOnPaidTo.add(m.from); sellOnPaidTo.add(m.to); }
         for (const id of new Set((marketAfterTick.rivalBids ?? []).map((r) => r.playerId))) {
           const first = liveRivals(marketAfterTick.rivalBids, id, currentDate)[0];
-          if (!first || !resolvedPlayerSquadId) continue;
+          if (!first || !solo.clubId) continue;
           const seller = allSquadsMarket.find((sq) => sq.id === first.fromClubId);
           const target = seller?.players.find((p) => p.id === id);
           if (!seller || !target) continue;
           const more = await rollRivalFor(saveService, saveId, {
-            market: marketAfterTick, player: target, seller, humanId: resolvedPlayerSquadId, date: currentDate, windows,
+            market: marketAfterTick, player: target, seller, humanId: solo.clubId, date: currentDate, windows,
           });
           marketAfterTick = more.market;
           if (more.news) negotiationNews.push(more.news);
         }
       }
 
-      await saveService.saveMarket(saveId, marketAfterTick);
+      await saveService.saveSeatMarket(saveId, solo.seatId, splitMarket(marketAfterTick).seat);
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
@@ -1666,7 +1676,7 @@ export async function advanceOneDay(
           pool: freeAgentPool,
           date: currentDate,
           rng: defaultRng,
-          excludeSquadId: resolvedPlayerSquadId,
+          excludeSquadIds: humanClubs,
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
         });
         if (fa.signedIds.size > 0) {
@@ -2999,7 +3009,7 @@ export async function advanceOneDay(
     }
 
     // Manager news of the player's league (sackings / hirings), grouped in one message.
-    const managerNews = aiDesk?.news() ?? [];
+    const managerNews = aiDesk?.newsInLeague(meta.leagueSlug) ?? [];
     if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService);
 
     await managerTracker.flush();

@@ -36,7 +36,7 @@ describe("AI managers: vacancies and hirings on a save", () => {
     const tracker = createManagerTracker({ service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids });
     const desk = createAiManagerDesk({
       service: saveService, saveId, date, tracker, getIndex: () => index, catalog: getLeagueData, countries: getCountries,
-      humanClubId: meta.clubId, playerLeague: "premier_league",
+      humanClubIds: new Set([meta.clubId]),
     });
     const before = (await tracker.list()).find((m) => m.squadId === club)!;
     // A sacking (as the Monday review does) and a vacancy due today.
@@ -53,7 +53,7 @@ describe("AI managers: vacancies and hirings on a save", () => {
     expect(hired.interim).toBeUndefined();
     expect(hired.hiredOn).toBe(date);
     expect(desk.vacancies()[club]).toBeUndefined();
-    expect(desk.news().some((n) => n.kind === "hired" && n.squadId === club)).toBe(true);
+    expect(desk.newsInLeague("premier_league").some((n) => n.kind === "hired" && n.squadId === club)).toBe(true);
     // Self-heal: an interim without a vacancy gets one on the next hiring pass.
     const other = index.inLeague("premier_league").find((t) => t.squadId !== meta.clubId && t.squadId !== club)!.squadId;
     await tracker.apply((ms) => sackManager(ms, { squadId: other, clubName: "Other", date }));

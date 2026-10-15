@@ -112,14 +112,14 @@ describe("dailyMarketTick", () => {
     const rng = () => 0;
     const market = initMarketState(squads, rng);
     const { updatedMarket } = dailyMarketTick(market, squads, "2025-01-01", rng, {
-      excludePlayerSquadId: "human",
+      excludeSquadIds: new Set(["human"]),
     });
     expect(updatedMarket.profiles["human"]).toBeUndefined();
     expect(updatedMarket.profiles["ai"]).toBeDefined();
   });
 });
 
-describe("dailyMarketTick — marketFrozen / excludePlayerSquadId", () => {
+describe("dailyMarketTick — marketFrozen / excludeSquadIds", () => {
   async function loadLeague(slug: string): Promise<Squad[]> {
     const out: Squad[] = [];
     for await (const f of new Bun.Glob(`src/example_data/squads/${slug}/*.json`).scan(".")) {
@@ -172,11 +172,11 @@ describe("dailyMarketTick — marketFrozen / excludePlayerSquadId", () => {
     expect(frozenMoves).toEqual([]);
   });
 
-  test("human club never appears as a seller unless it lists a player (live-path exclusion)", async () => {
+  test("two human clubs: the AI never buys from or sells to either", async () => {
     const england = await loadLeague("premier_league");
-    const humanId = england[0]!.id;
-
-    const moves = runTicks(england, 90, { excludePlayerSquadId: humanId });
-    expect(moves.some(([s, b]) => s === humanId || b === humanId)).toBe(false);
+    const humans = new Set([england[0]!.id, england[1]!.id]);
+    const moves = runTicks(england, 90, { excludeSquadIds: humans });
+    expect(moves.length).toBeGreaterThan(0);
+    expect(moves.some(([s, b]) => humans.has(s) || humans.has(b))).toBe(false);
   });
 });
