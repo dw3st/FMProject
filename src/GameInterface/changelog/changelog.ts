@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.25",
+    date: "2026-10-15",
+    items: [
+      {
+        pt: "Jogue com amigos: no novo jogo, escolha \"Com amigos\" para criar uma liga de até 8 técnicos, cada um no seu clube",
+        en: "Play with friends: in a new game, pick \"With friends\" to create a league of up to 8 managers, each at their own club",
+      },
+      {
+        pt: "Convide pelo link da liga ou pela lista de amigos; o dono começa a temporada, define o prazo, remove técnicos e pode passar a liga a outro",
+        en: "Invite friends with the league link or from your friends list; the owner starts the season, sets the deadline, removes managers and can hand the league over",
+      },
+      {
+        pt: "A liga avança sozinha: cada técnico marca até quando está pronto, joga ao vivo ou simula os próprios jogos, e quem perder o prazo tem os dias decididos pelo assistente",
+        en: "The league moves on by itself: each manager marks how far they are ready, plays or simulates their own matches, and anyone who misses the deadline has those days decided by the assistant",
+      },
+    ],
+  },
+  {
     version: "4.24.1",
     date: "2026-10-15",
     items: [
@@ -1574,6 +1592,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Multiplayer: crie uma liga com amigos, convide pelo link e cada um escolhe um clube", en: "Multiplayer: create a league with friends, invite them by link and each one picks a club" },
+  { pt: "Jogos entre amigos ao vivo e transferências entre técnicos da mesma liga", en: "Live matches between friends and transfers between managers in the same league" },
+  { pt: "Classificação dos técnicos da liga de amigos", en: "A ranking of the managers in your friends league" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

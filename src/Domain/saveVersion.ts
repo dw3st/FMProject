@@ -8,8 +8,9 @@ export const GAME_VERSION: string = PKG.version;
  * RAISE IT whenever the save format changes (new required file or field, changed shape):
  * saves created before it are flagged as incompatible on the start screen.
  * 4.22: the national-team state of the player's manager.
+ * 4.25: the friends league (`SaveMeta.world`) and the group advance state of each seat.
  */
-export const MIN_COMPATIBLE_SAVE_VERSION = "4.24.1";
+export const MIN_COMPATIBLE_SAVE_VERSION = "4.25";
 
 export type SaveCompatibility = "ok" | "outdated";
 
