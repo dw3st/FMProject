@@ -49,6 +49,14 @@ export function seasonEndOf(activeLeagues: LeagueSeasonState[] | undefined, leag
   return (activeLeagues ?? []).find((l) => l.leagueSlug === leagueSlug)?.end ?? defaultSeasonEnd(date);
 }
 
+/**
+ * True when `clubId` is another seat's club (`.claude/rules/game/multiplayer.md`): its players are not for the
+ * AI rule to sell, lend or let go on a pre-contract — human × human deals are part 4.
+ */
+export async function isOtherSeatClub(service: SaveService, saveId: string, clubId: string, ownClubId: string): Promise<boolean> {
+  return clubId !== ownClubId && (await service.humanClubIds(saveId)).has(clubId);
+}
+
 /** An empty market file (only the human-facing lists are used before the first tick). */
 export function emptyMarket(): MarketState {
   return { shuffledTeamIds: [], rotationIndex: 0, profiles: {}, playerSellList: [] };

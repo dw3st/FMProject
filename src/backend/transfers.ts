@@ -19,7 +19,7 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToOffer, talkGate, talkKey, type OfferResponse,
 } from "@/Domain/negotiation/negotiation";
-import { humanRosterSize, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { humanRosterSize, isOtherSeatClub, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
@@ -131,6 +131,8 @@ export const transferRoutes = {
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
         // Without a club (`.claude/rules/game/jobs.md`) there is nobody to buy for.
         if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
+        // Another seat's player is never sold by the AI rule (`.claude/rules/game/multiplayer.md`).
+        if (await isOtherSeatClub(saveService, saveId, fromSquadId, meta.clubId)) return Response.json({ error: "notFound" }, { status: 404 });
 
         // Transfer window of the buyer — the human club (`.claude/rules/game/transfer-windows.md`).
         const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
@@ -147,6 +149,7 @@ export const transferRoutes = {
         ]);
         if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
+        if (await isOtherSeatClub(saveService, saveId, sellerSquad.id, buyerSquad.id)) return Response.json({ error: "notFound" }, { status: 404 });
 
         if ((await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 

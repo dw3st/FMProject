@@ -3,7 +3,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import { getLeagueData, type LeagueDataEntry } from "@/backend/advanceDay";
-import { emptyMarket, humanRosterSize, seasonEndOf } from "@/backend/negotiationWorld";
+import { emptyMarket, humanRosterSize, isOtherSeatClub, seasonEndOf } from "@/backend/negotiationWorld";
 import { prestigeOf } from "@/backend/rivalWorld";
 import { reputationOf } from "@/backend/jobWorld";
 import { emitInboxMessage, buildBoardMessage, buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
@@ -83,6 +83,8 @@ export const marketRoutes = {
       const current = await saveService.getSquadById(saveId, fromSquadId);
       if (!human || !current) return json({ error: "squad not found" }, 404);
       if (current.id === human.id) return json({ error: "notEligible" }, 400);
+      // Another seat's player is never let go by the AI rule (`.claude/rules/game/multiplayer.md`).
+      if (await isOtherSeatClub(saveService, saveId, current.id, human.id)) return json({ error: "notFound" }, 404);
       const player = current.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();

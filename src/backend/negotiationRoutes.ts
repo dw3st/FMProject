@@ -14,7 +14,7 @@ import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
-  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, seasonEndOf, startLoan,
+  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, isOtherSeatClub, seasonEndOf, startLoan,
 } from "@/backend/negotiationWorld";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
@@ -202,6 +202,8 @@ export const negotiationRoutes = {
       const parent = await saveService.getSquadById(saveId, fromSquadId);
       if (!borrower || !parent) return json({ error: "squad not found" }, 404);
       if (parent.id === borrower.id) return json({ error: "not for loan" }, 400);
+      // Another seat's player is never lent by the AI rule (`.claude/rules/game/multiplayer.md`).
+      if (await isOtherSeatClub(saveService, saveId, parent.id, borrower.id)) return json({ error: "notFound" }, 404);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
       if ((await humanRosterSize(saveService, saveId, auth.seatId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
