@@ -310,12 +310,14 @@ export const worldRoutes = {
       if (auth.role === "owner") {
         // The owner passes the ownership first; alone, leaving deletes the world. Both checks and the delete share
         // one lock, so a join cannot slip in between (it would then see the world gone, or this would see it).
-        return withSaveLock(saveId, async () => {
-          if (!stillOwner(saveId, auth.userId)) return fail("transferFirst", 409);
+        const done = await withSaveLock(saveId, async () => {
+          // He passed the ownership meanwhile: null, and he leaves as a member below.
+          if (!stillOwner(saveId, auth.userId)) return null;
           if (listSaveMembers(saveId).some((m) => m.userId !== auth.userId)) return fail("transferFirst", 409);
           await deleteWorld(saveId, auth.userId);
           return Response.json({ ok: true, deleted: true });
         });
+        if (done) return done;
       }
       try {
         await removeSeat(saveId, auth.seatId, {

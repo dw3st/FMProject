@@ -1,3 +1,4 @@
+import { logError } from "@/Logger";
 import { randomUUID } from "crypto";
 import { saveService as defaultService, SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -126,9 +127,18 @@ export async function addSeat(
     }
     addSaveMember(saveId, args.userId, seatId, args.role ?? "member");
     const ctx = { seatId, seat: finalSeat };
-    await args.onLocked?.(ctx);
+    await runAnnounce("addSeat", saveId, () => args.onLocked?.(ctx));
     return ctx;
   });
+}
+
+/** An announcement that fails (inbox, news, socket) must not turn a done operation into a 500: it is only logged. */
+async function runAnnounce(op: string, saveId: string, fn: () => Promise<void> | void): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    logError("world", `${op}: announcement failed for ${saveId}`, e);
+  }
 }
 
 /** What `removeSeat` hands back to the routes (the announcement and the socket). */
@@ -172,7 +182,7 @@ export async function removeSeat(
       await buffer.flush();
       removeSaveMember(saveId, seatId);
       const gone: RemovedSeat = { userId: member?.userId ?? null, managerName: "", clubId: "", clubName: "", leagueSlug: "" };
-      await opts.onLocked?.(gone);
+      await runAnnounce("removeSeat", saveId, () => opts.onLocked?.(gone));
       return gone;
     }
     const date = world.currentDate;
@@ -225,7 +235,7 @@ export async function removeSeat(
       clubName: seat.clubName,
       leagueSlug: seat.leagueSlug,
     };
-    await opts.onLocked?.(removed);
+    await runAnnounce("removeSeat", saveId, () => opts.onLocked?.(removed));
     return removed;
   });
 }
