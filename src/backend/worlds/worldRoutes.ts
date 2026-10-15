@@ -1,17 +1,23 @@
 import { saveService } from "@/backend/SaveService";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
-import { listSaveMembers, memberOf } from "@/backend/auth/saveOwnership";
+import { listSaveMembers, memberBySeat, memberOf, transferOwnership } from "@/backend/auth/saveOwnership";
 import { withSaveLock } from "@/backend/saveLock";
-import { getSocialUser } from "@/backend/social/socialStore";
-import { addSeat, SeatError } from "@/backend/seats";
-import { announceMemberChange, worldView } from "@/backend/worlds/worldLifecycle";
+import { areFriends, blockedEitherWay, findUserByNickname, getSocialUser } from "@/backend/social/socialStore";
+import { notifyUser } from "@/backend/social/realtime";
+import { presimulateWorld } from "@/backend/advanceDay";
+import { addSeat, removeSeat, SeatError } from "@/backend/seats";
+import { announceMemberChange, deleteWorld, worldView } from "@/backend/worlds/worldLifecycle";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
-import { deleteWorldInvite, newWorldCode, setWorldCode, worldIdByCode } from "@/backend/worlds/worldStore";
+import {
+  addWorldInvite, deleteWorldInvite, hasWorldInvite, listWorldInvitesFor, newWorldCode, pendingInviteCount,
+  setWorldCode, worldCodeOf, worldIdByCode,
+} from "@/backend/worlds/worldStore";
 import { WORLD, isWorldDeadline } from "@/Domain/multiplayer/worldConfig";
 import { normalizeWorldCode } from "@/Domain/multiplayer/worldCode";
 import { parseSeatManager } from "@/Domain/multiplayer/seatManager";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { WorldByCode, WorldErrorCode } from "@/types/multiplayerTypes";
+import { isValidSeatId } from "@/Domain/seats/seats";
+import type { WorldByCode, WorldErrorCode, WorldInviteView } from "@/types/multiplayerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -142,6 +148,146 @@ export const worldRoutes = {
         notifyWorld(saveId, { type: "world_members", saveId });
         return Response.json({ deadlineHours });
       });
+    },
+  },
+
+  "/api/worlds/invites": {
+    GET: async (req: Req) => {
+      const auth = requireAuth(req);
+      if (auth instanceof Response) return auth;
+      const invites: WorldInviteView[] = [];
+      for (const inv of listWorldInvitesFor(auth.userId)) {
+        const meta = await multiWorld(inv.saveId);
+        const code = worldCodeOf(inv.saveId);
+        const from = getSocialUser(inv.fromUser)?.nickname;
+        if (!meta || !code || !from || memberOf(inv.saveId, auth.userId)) continue;
+        invites.push({ saveId: inv.saveId, name: meta.name, from, code });
+      }
+      return Response.json({ invites });
+    },
+  },
+
+  "/api/worlds/invites/:saveId": {
+    DELETE: async (req: Req) => {
+      const auth = requireAuth(req);
+      if (auth instanceof Response) return auth;
+      deleteWorldInvite(req.params.saveId!, auth.userId);
+      return Response.json({ ok: true });
+    },
+  },
+
+  "/api/worlds/:saveId/invites": {
+    POST: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (auth.role !== "owner") return fail("ownerOnly", 403);
+      const from = getSocialUser(auth.userId)?.nickname;
+      if (!from) return fail("noNickname", 409);
+      const body = await readBody(req);
+      if (!body || typeof body.nickname !== "string") return fail("invalidBody", 400);
+      const meta = await multiWorld(saveId);
+      if (!meta) return fail("notMulti", 404);
+      // Only a friend of the owner, never across a block; a stranger does not exist (404).
+      const target = findUserByNickname(body.nickname);
+      if (!target || !areFriends(auth.userId, target.id) || blockedEitherWay(auth.userId, target.id)) return fail("notFound", 404);
+      if (memberOf(saveId, target.id)) return fail("alreadyMember", 409);
+      if (meta.seats.length >= WORLD.MAX_MEMBERS) return fail("full", 409);
+      if (!hasWorldInvite(saveId, target.id) && pendingInviteCount(saveId) >= WORLD.MAX_PENDING_INVITES) return fail("inviteLimit", 409);
+      addWorldInvite(saveId, target.id, auth.userId, Date.now());
+      notifyUser(target.id, { type: "world_invite", saveId, name: meta.name, from, code: meta.world.inviteCode });
+      return Response.json({ ok: true });
+    },
+  },
+
+  "/api/worlds/:saveId/start": {
+    POST: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (auth.role !== "owner") return fail("ownerOnly", 403);
+      return withSaveLock(saveId, async () => {
+        const meta = await multiWorld(saveId);
+        if (!meta) return fail("notMulti", 404);
+        if (meta.world.phase !== "lobby") return fail("alreadyStarted", 409);
+        const result = await presimulateWorld(saveId, auth.seatId);
+        const fresh = (await multiWorld(saveId))!;
+        await saveService.updateMeta(saveId, { world: { ...fresh.world, phase: "running" } });
+        notifyWorld(saveId, { type: "world_started", saveId });
+        return Response.json({ ...result, phase: "running" });
+      });
+    },
+  },
+
+  "/api/worlds/:saveId/members/:seatId/remove": {
+    POST: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const seatId = req.params.seatId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (auth.role !== "owner") return fail("ownerOnly", 403);
+      if (!(await multiWorld(saveId))) return fail("notMulti", 404);
+      if (seatId === auth.seatId) return fail("useLeave", 400);
+      if (!isValidSeatId(seatId) || !memberBySeat(saveId, seatId)) return fail("notMember", 404);
+      try {
+        const removed = await removeSeat(saveId, seatId);
+        // He is no longer in save_members: tell him directly.
+        if (removed.userId) notifyUser(removed.userId, { type: "world_removed", saveId });
+        await announceMemberChange(saveId, {
+          seatId, event: "removed", managerName: removed.managerName, clubId: removed.clubId,
+          clubName: removed.clubName, leagueSlug: removed.leagueSlug,
+        });
+        return Response.json({ ok: true });
+      } catch (e) {
+        if (e instanceof SeatError) return e.code === "ownerOrLast" ? fail("useLeave", 400) : fail("notMember", 404);
+        throw e;
+      }
+    },
+  },
+
+  "/api/worlds/:saveId/leave": {
+    POST: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (!(await multiWorld(saveId))) return fail("notMulti", 404);
+      if (auth.role === "owner") {
+        // The owner passes the ownership first; alone, leaving deletes the world.
+        if (listSaveMembers(saveId).some((m) => m.userId !== auth.userId)) return fail("transferFirst", 409);
+        await withSaveLock(saveId, () => deleteWorld(saveId, auth.userId));
+        return Response.json({ ok: true, deleted: true });
+      }
+      try {
+        const removed = await removeSeat(saveId, auth.seatId);
+        await announceMemberChange(saveId, {
+          seatId: auth.seatId, event: "left", managerName: removed.managerName, clubId: removed.clubId,
+          clubName: removed.clubName, leagueSlug: removed.leagueSlug,
+        });
+        return Response.json({ ok: true });
+      } catch (e) {
+        if (e instanceof SeatError && e.code === "ownerOrLast") return fail("transferFirst", 409);
+        throw e;
+      }
+    },
+  },
+
+  "/api/worlds/:saveId/owner": {
+    POST: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (auth.role !== "owner") return fail("ownerOnly", 403);
+      const body = await readBody(req);
+      if (!body || typeof body.seatId !== "string") return fail("invalidBody", 400);
+      const target = memberBySeat(saveId, body.seatId);
+      if (!target || target.userId === auth.userId) return fail("notMember", 404);
+      try {
+        transferOwnership(saveId, auth.userId, target.userId);
+      } catch {
+        return fail("notMember", 404);
+      }
+      notifyWorld(saveId, { type: "world_members", saveId });
+      return Response.json({ ok: true });
     },
   },
 };
