@@ -3270,7 +3270,9 @@ export async function presimulateWorld(
     if (m?.currentDate) {
       try {
         const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
-        await syncPlayerRestDays(saveService, saveId, ownerSeatId, r.moves);
+        for (const { seatId } of await saveService.listSeats(saveId)) {
+          await syncPlayerRestDays(saveService, saveId, seatId, r.moves);
+        }
       } catch (e) {
         logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
       }

@@ -98,10 +98,19 @@ export const saveRoutes = {
       try {
         const meta = await saveService.createSave(body as Parameters<typeof saveService.createSave>[0]);
         addSaveMember(meta.id, auth.userId, meta.seatId, "owner");
+        // The world state right after the save exists: a failure below must not leave a solo save behind.
+        let world: Awaited<ReturnType<typeof createWorldState>> | undefined;
+        if (mode === "multi") {
+          try {
+            world = await createWorldState(meta.id, auth.userId);
+          } catch (e) {
+            await deleteWorld(meta.id, auth.userId).catch(() => {});
+            throw e;
+          }
+        }
         // Credit season broadcasting revenue to initial balance
         const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
-        if (mode === "multi") {
-          const world = await createWorldState(meta.id, auth.userId);
+        if (world) {
           return Response.json({ ...publicWorldMeta({ ...finalMeta, mode: "multi", world }) }, { status: 201 });
         }
         return Response.json(finalMeta, { status: 201 });
@@ -228,7 +237,12 @@ export const saveRoutes = {
       const existing = await saveService.getMeta(id);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
       // Every member loses the world; the others get `world_deleted` (multiplayer part 2).
-      await withSaveLock(id, () => deleteWorld(id, auth.userId));
+      const allowed = await withSaveLock(id, async () => {
+        if (memberOf(id, auth.userId)?.role !== "owner") return false;
+        await deleteWorld(id, auth.userId);
+        return true;
+      });
+      if (!allowed) return Response.json({ error: "only the owner deletes a world" }, { status: 403 });
       return Response.json({ ok: true });
     }
 
