@@ -82,7 +82,7 @@ export const nationalRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const [meta, state] = await Promise.all([saveService.getMeta(saveId), loadState(saveId)]);
+    const [meta, state] = await Promise.all([saveService.getSeatMeta(saveId, auth.seatId), loadState(saveId)]);
     if (!meta || !state) return Response.json({ error: "no national teams" }, { status: 404 });
     const managers = new Map((await saveService.getManagers(saveId)).map((m) => [m.id, m.name]));
     const ranking: NationalRankRow[] = rankTeams(Object.values(state.teams)).map((t, i) => ({
@@ -134,7 +134,7 @@ export const nationalRoutes = {
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const [meta, state] = await Promise.all([saveService.getMeta(saveId!), loadState(saveId!)]);
+    const [meta, state] = await Promise.all([saveService.getSeatMeta(saveId!, auth.seatId), loadState(saveId!)]);
     const team = state?.teams[teamId!];
     if (!meta || !state || !team) return Response.json({ error: "national team not found" }, { status: 404 });
     const rank = rankTeams(Object.values(state.teams)).findIndex((t) => t.id === team.id) + 1;
@@ -193,7 +193,7 @@ export const nationalRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const view = await nationalCoachView(saveService, saveId, meta);
     if (!view) return Response.json({ error: "no national teams" }, { status: 404 });
@@ -209,7 +209,7 @@ export const nationalRoutes = {
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
     if (!body || typeof body.accept !== "boolean") return Response.json({ error: "accept required" }, { status: 400 });
     return withSaveLock(saveId!, async () => {
-      const meta = await saveService.getMeta(saveId!);
+      const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const r = await answerNationalOffer(saveService, saveId!, offerId!, body.accept as boolean, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
@@ -224,7 +224,7 @@ export const nationalRoutes = {
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const r = await resignNationalTeam(saveService, saveId, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
@@ -241,7 +241,7 @@ export const nationalRoutes = {
     const body = (await req.json().catch(() => null)) as { players?: unknown } | null;
     if (!body || !("players" in body)) return Response.json({ error: "invalidCallUp", reason: "notList" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const r = await saveNationalCallUp(saveService, saveId, meta.currentDate, body.players);
       if (!r.ok) return Response.json({ error: r.error, ...(r.reason ? { reason: r.reason } : {}) }, { status: r.status });

@@ -22,7 +22,7 @@ export const clubHistoryRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const squadId = req.params.squadId ?? "";
     if (!SQUAD_ID.test(squadId)) return Response.json({ error: "club not found" }, { status: 404 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getWorldMeta(saveId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const squad = await saveService.getSquadById(saveId, squadId);
     if (!squad) return Response.json({ error: "club not found" }, { status: 404 });

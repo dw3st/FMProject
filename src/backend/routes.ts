@@ -34,7 +34,7 @@ import { pressRoutes } from "@/backend/pressRoutes";
 import { newsRoutes } from "@/backend/newsRoutes";
 import { socialRoutes } from "@/backend/social/socialRoutes";
 import { saveService } from "@/backend/SaveService";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import { readdir } from "fs/promises";
 import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -57,7 +57,7 @@ import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
-import { listUserSaveIds } from "@/backend/auth/saveOwnership";
+import { listUserSaveIds, memberOf } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayers } from "@/backend/starsIndex";
 import { getCompetitionRankings } from "@/backend/statsRankings";
@@ -381,16 +381,20 @@ export const apiRoutes = withJsonErrors({
 
     const url = new URL(req.url);
     const saveIdParam = url.searchParams.get("saveId");
-    let save: SaveMeta | null = null;
+    let save: SeatMeta | null = null;
     if (saveIdParam) {
       const owned = requireSeat(req, saveIdParam);
       if (owned instanceof Response) return owned;
-      save = await saveService.getMeta(saveIdParam);
+      save = await saveService.getSeatMeta(saveIdParam, owned.seatId);
       if (!save) return Response.json({ error: "save not found" }, { status: 404 });
     } else {
+      // Legacy: the user's latest world, in his seat.
       const userIds = listUserSaveIds(auth.userId);
-      const metas = (await Promise.all(userIds.map((id) => saveService.getMeta(id))))
-        .filter((m): m is SaveMeta => !!m);
+      const metas = (await Promise.all(userIds.map((id) => {
+        const member = memberOf(id, auth.userId);
+        return member ? saveService.getSeatMeta(id, member.seatId) : null;
+      })))
+        .filter((m): m is SeatMeta => !!m);
       save = metas[0] ?? null;
       if (!save) return Response.json({ error: "no save found" }, { status: 404 });
     }
@@ -463,7 +467,7 @@ export const apiRoutes = withJsonErrors({
       if (oppRow) opponentSquad = await saveService.getSquadById(save.id, oppRow.squadId);
     }
 
-    const tacticsRaw = await saveService.getTactics(save.id);
+    const tacticsRaw = await saveService.getTactics(save.id, save.seatId);
 
     let myTactics: TacticsSave;
     if (saveIdParam) {
@@ -643,7 +647,7 @@ export const apiRoutes = withJsonErrors({
     const { saveId, leagueSlug } = req.params;
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const squads = await saveService.getSquadsInLeague(saveId!, leagueSlug!);
     return Response.json(buildClubFinanceRows(squads, meta.clubId));
@@ -738,10 +742,10 @@ export const apiRoutes = withJsonErrors({
     const { saveId } = req.params;
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-    const seasons = await saveService.listLedgerSeasons(saveId!);
+    const seasons = await saveService.listLedgerSeasons(saveId!, auth.seatId);
     const url = new URL(req.url);
     const seasonParam = url.searchParams.get("season");
     let season: number;
@@ -756,7 +760,7 @@ export const apiRoutes = withJsonErrors({
       return Response.json({ error: "ledger not found" }, { status: 404 });
     }
 
-    const entries = await saveService.getLedger(saveId!, season);
+    const entries = await saveService.getLedger(saveId!, season, auth.seatId);
     const squad = await saveService.getSquadById(saveId!, meta.clubId);
     const balance = squad ? getClubBudget(squad) : 0;
     // A season that changed club (`.claude/rules/game/jobs.md`): totals and the weekly chart are the
@@ -779,7 +783,7 @@ export const apiRoutes = withJsonErrors({
     const { saveId } = req.params;
     const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getWorldMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },

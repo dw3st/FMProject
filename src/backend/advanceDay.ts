@@ -3107,7 +3107,7 @@ export const advanceDayRoutes = {
       if (m?.currentDate) {
         try {
           const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
-          await syncPlayerRestDays(saveService, saveId, r.moves);
+          await syncPlayerRestDays(saveService, saveId, auth.seatId, r.moves);
         } catch (e) {
           logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
         }

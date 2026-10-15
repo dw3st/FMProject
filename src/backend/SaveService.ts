@@ -1257,7 +1257,7 @@ export class SaveService {
         const { getLeagueData } = await import("@/backend/advanceDay");
         const { rescheduleFixtureConflicts, syncPlayerRestDays } = await import("@/backend/reschedulingWorld");
         const r = await rescheduleFixtureConflicts({ service: this, saveId: id, minDate: meta.currentDate, catalog: await getLeagueData() });
-        await syncPlayerRestDays(this, id, r.moves);
+        await syncPlayerRestDays(this, id, meta.seatId, r.moves);
       } catch (e) {
         logError("calendar", `save ${id}: failed to reschedule clashing league games`, e);
       }

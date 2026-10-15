@@ -35,7 +35,7 @@ export const managerRoutes = {
     if (!(offset >= 0) || !(limit >= 1 && limit <= PAGE_MAX) || (scope !== "world" && scope !== "country" && scope !== "free")) {
       return Response.json({ error: "invalid offset/limit/scope" }, { status: 400 });
     }
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const index = await saveService.getSquadIndex(saveId);
     const clubCountry = await clubCountryResolver(saveService, saveId);
@@ -55,7 +55,7 @@ export const managerRoutes = {
       offset, limit,
     );
     // The human manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
-    const profile = page.items.some((m) => m.isPlayer) ? shownProfile(await saveService.getAchievements(saveId)) : null;
+    const profile = page.items.some((m) => m.isPlayer) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;
     return Response.json({
       ...page,
       items: page.items.map((m) => ({

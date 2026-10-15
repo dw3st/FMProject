@@ -63,7 +63,7 @@ export const refereeRoutes = {
     const season = url.searchParams.get("season");
     if (!COMPETITION.test(competition)) return Response.json({ error: "invalid competition" }, { status: 400 });
     if (season !== null && !SEASON.test(season)) return Response.json({ error: "invalid season" }, { status: 400 });
-    const [meta, pool, state] = await Promise.all([saveService.getMeta(saveId), saveService.getRefereePool(saveId), saveService.getRefereeState(saveId)]);
+    const [meta, pool, state, seat] = await Promise.all([saveService.getWorldMeta(saveId), saveService.getRefereePool(saveId), saveService.getRefereeState(saveId), saveService.getSeat(saveId, auth.seatId)]);
     if (!meta || !pool) return Response.json({ error: "no referees" }, { status: 404 });
     const today = meta.currentDate ?? "";
     const keys = await saveService.listRefereeSeasons(saveId);
@@ -84,9 +84,10 @@ export const refereeRoutes = {
       info = (id) => { const r = byId.get(id); return r ? { name: r.name, country: r.country, strictness: r.strictness, fifa: r.fifa, gender: r.gender, age: ageOn(r.birthDate, today) } : undefined; };
     }
     let nextRefereeId: string | null = null;
-    if (meta.clubId && today) {
+    const myClubId = seat?.unemployed ? "" : seat?.clubId ?? "";
+    if (myClubId && today) {
       for (const date of [today, addOneDay(today)]) {
-        const f = (await saveService.getFixturesForDate(saveId, date)).find((x) => x.home === meta.clubId || x.away === meta.clubId);
+        const f = (await saveService.getFixturesForDate(saveId, date)).find((x) => x.home === myClubId || x.away === myClubId);
         const a = f ? state?.assignments[date]?.[fixtureKey(f.competition, f.id)] : undefined;
         if (a) { nextRefereeId = a.refereeId; break; }
       }

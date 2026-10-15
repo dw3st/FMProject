@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { getStarPlayers } from "@/backend/starsIndex";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, type WorldMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const player = (id: string, overall: number): RosterPlayer =>
@@ -18,11 +18,11 @@ const meta = (id: string, currentDate: string) =>
   ({
     id, name: "Save", createdAt: "", updatedAt: "", leagueSlug: "l", leagueName: "L",
     clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate,
-  }) as unknown as SaveMeta;
+  }) as unknown as WorldMeta;
 
 describe("getStarPlayers", () => {
   test("returns null when the save does not exist", async () => {
-    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(null);
+    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(null);
     try {
       expect(await getStarPlayers("missing-save")).toBeNull();
     } finally {
@@ -32,7 +32,7 @@ describe("getStarPlayers", () => {
 
   test("returns the top ids from the save's squads", async () => {
     const squad: Squad = { id: "s1", name: "Test FC", colors: ["#000", "#fff"], money: 0, players: [player("weak", 4), player("star", 9)] };
-    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta("save-a", "2026-01-01"));
+    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta("save-a", "2026-01-01"));
     const squadsSpy = spyOn(saveService, "getAllSquads").mockResolvedValue([squad]);
     try {
       const ids = await getStarPlayers("save-a");
@@ -45,7 +45,7 @@ describe("getStarPlayers", () => {
 
   test("concurrent calls for the same save+key share a single getAllSquads scan", async () => {
     const squad: Squad = { id: "s1", name: "Test FC", colors: ["#000", "#fff"], money: 0, players: [] };
-    const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta("save-b", "2026-01-01"));
+    const metaSpy = spyOn(saveService, "getWorldMeta").mockResolvedValue(meta("save-b", "2026-01-01"));
     let resolveSquads!: (v: Squad[]) => void;
     const squadsPromise = new Promise<Squad[]>((res) => { resolveSquads = res; });
     const squadsSpy = spyOn(saveService, "getAllSquads").mockReturnValue(squadsPromise);
@@ -70,7 +70,7 @@ describe("getStarPlayers", () => {
     const squadOld: Squad = { id: "sOld", name: "Old", colors: ["#000", "#fff"], money: 0, players: [player("old", 5)] };
     const squadNew: Squad = { id: "sNew", name: "New", colors: ["#000", "#fff"], money: 0, players: [player("new", 9)] };
 
-    const metaSpy = spyOn(saveService, "getMeta")
+    const metaSpy = spyOn(saveService, "getWorldMeta")
       .mockResolvedValueOnce(meta(saveId, "2026-01-01"))
       .mockResolvedValueOnce(meta(saveId, "2026-01-02"));
 
