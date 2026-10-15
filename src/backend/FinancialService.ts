@@ -17,6 +17,7 @@ type DatedMeta = { currentDate?: string };
 import type { Squad } from "@/types/playerTypes";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
+import { splitMarket } from "@/Domain/market/seatMarket";
 
 // ── Balance getters ───────────────────────────────────────────────────────────
 
@@ -184,7 +185,9 @@ export async function paySellOnReceiver(
   if (amount <= 0) return;
   const squad = await service.getSquadById(saveId, receiverId);
   if (!squad) return;
-  if (receiverId === meta.clubId) {
+  // The clause's holder: this seat, another seat (`.claude/rules/game/multiplayer.md`) or an AI club.
+  const ownerSeatId = receiverId === meta.clubId ? meta.seatId : await service.seatOfClub(saveId, receiverId);
+  if (ownerSeatId) {
     const ref = await service.resolveSquadId(saveId, receiverId);
     if (!ref) return;
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -193,7 +196,15 @@ export async function paySellOnReceiver(
       date, kind: "transfer_in", amount,
       label: `Sell-on clause: ${info.playerName}`,
       ref: { clubName: info.fromClubName, stage: "sell_on", playerName: info.playerName, playerId: info.playerId },
-    }, meta.seatId);
+    }, ownerSeatId);
+    // Another seat's receivable is paid: it leaves that seat's list (this seat's callers clean their own).
+    if (ownerSeatId !== meta.seatId) {
+      const held = await service.getMarket(saveId, ownerSeatId);
+      if (held?.sellOnHeld?.some((h) => h.playerId === info.playerId)) {
+        const { seat } = splitMarket({ ...held, sellOnHeld: held.sellOnHeld.filter((h) => h.playerId !== info.playerId) });
+        await service.saveSeatMarket(saveId, ownerSeatId, seat);
+      }
+    }
     return;
   }
   await service.saveSquadById(saveId, applyAITransferSale(squad, amount));

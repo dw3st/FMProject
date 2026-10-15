@@ -126,6 +126,27 @@ describe("seats: review fixes", () => {
     expect((await saveService.getSeat(id, meta.seatId))?.jobOffers ?? []).toEqual([]);
   });
 
+  test("4. a sell-on clause held by another seat is paid into that seat's ledger", async () => {
+    const id = meta.id;
+    const squadBefore = (await saveService.getSquadById(id, clubD))!;
+    const marketD = (await saveService.getMarket(id, seatD.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(id, {
+      ...marketD, sellOnHeld: [{ playerId: "sold-by-d", playerName: "Sold", pct: 20, toClubName: "X", date: meta.currentDate! }],
+    }, seatD.seatId);
+    const seatMeta = (await saveService.getSeatMeta(id, meta.seatId))!;
+    await paySellOnReceiver(saveService, id, seatMeta, clubD, 750_000, { playerName: "Sold", playerId: "sold-by-d", fromClubName: "A" });
+    const squadAfter = (await saveService.getSquadById(id, clubD))!;
+    expect((squadAfter.finances?.budget ?? 0) - (squadBefore.finances?.budget ?? 0)).toBe(750_000);
+    expect(squadAfter.aiTransferBudget).toBeUndefined();
+    let found = false;
+    for (const season of await saveService.listLedgerSeasons(id, seatD.seatId)) {
+      for (const e of await saveService.getLedger(id, season, seatD.seatId)) {
+        if (e.kind === "transfer_in" && e.ref?.stage === "sell_on" && e.amount === 750_000) found = true;
+      }
+    }
+    expect(found).toBe(true);
+    expect((await saveService.getMarket(id, seatD.seatId))?.sellOnHeld ?? []).toEqual([]);
+  });
 
 
 
