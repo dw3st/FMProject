@@ -52,6 +52,7 @@ export function StartScreen() {
   const pendingDeleteSave = saves.find((s) => s.id === pendingDeleteId) ?? null;
   const [pendingOutdatedId, setPendingOutdatedId] = useState<string | null>(null);
   const [pendingLeaveId, setPendingLeaveId] = useState<string | null>(null);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const pendingLeaveSave = saves.find((s) => s.id === pendingLeaveId) ?? null;
   const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
 
@@ -104,7 +105,12 @@ export function StartScreen() {
     setDeleting(true);
     try {
       const r = await worldApi.leave(pendingLeaveId);
-      if (r.ok) setSaves((prev) => prev.filter((s) => s.id !== pendingLeaveId));
+      if (r.ok) {
+        setSaves((prev) => prev.filter((s) => s.id !== pendingLeaveId));
+        setLeaveError(null);
+      } else {
+        setLeaveError(r.error);
+      }
       setPendingLeaveId(null);
     } finally {
       setDeleting(false);
@@ -143,6 +149,11 @@ export function StartScreen() {
         )}
 
         <SectionTitle className="mt-8 mb-3">{t("startScreen.savedGames")}</SectionTitle>
+        {leaveError && (
+          <p role="alert" className="mb-3 text-sm text-destructive">
+            {t(`world.errors.${leaveError}`)}
+          </p>
+        )}
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
@@ -256,10 +267,16 @@ export function StartScreen() {
         title={t("startScreen.deleteConfirmTitle")}
         body={
           pendingDeleteSave
-            ? t("startScreen.deleteConfirmBody", {
-                clubName: pendingDeleteSave.clubName,
-                leagueName: pendingDeleteSave.leagueName,
-              })
+            ? pendingDeleteSave.mode === "multi" && (pendingDeleteSave.members ?? 1) > 1
+              ? t("startScreen.deleteWorldBody", {
+                  clubName: pendingDeleteSave.clubName,
+                  leagueName: pendingDeleteSave.leagueName,
+                  count: (pendingDeleteSave.members ?? 1) - 1,
+                })
+              : t("startScreen.deleteConfirmBody", {
+                  clubName: pendingDeleteSave.clubName,
+                  leagueName: pendingDeleteSave.leagueName,
+                })
             : ""
         }
         confirmLabel={t("startScreen.deleteConfirmAction")}
