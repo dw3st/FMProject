@@ -5,6 +5,7 @@ import { memberOf } from "@/backend/auth/saveOwnership";
 import { ownSolo } from "@/backend/testing/seatFixtures";
 import { addSeat } from "@/backend/seats";
 import { seatManagerId } from "@/Domain/seats/seats";
+import { generateRestDays } from "@/Domain/season/generateRestDays";
 
 describe("addSeat", () => {
   const created: string[] = [];
@@ -49,5 +50,32 @@ describe("addSeat", () => {
 
     await expect(addSeat(meta.id, { userId: devAutoLogin("addseat-3@test.local").user.id, clubId: clubB, manager: { name: "X", nationalityIso: "es", backgroundId: "former-player" } }))
       .rejects.toThrow("already has a seat");
+  }, 300_000);
+
+  test("the seat rests the day before and after its own club's league games", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    created.push(meta.id);
+    await ownSolo(meta.id, devAutoLogin("addseat-rest-owner@test.local").user.id);
+    const world = (await saveService.getMeta(meta.id))!;
+    // A club whose league calendar differs from its league's: it has a game moved off the round date.
+    let pick: { clubId: string; league: string } | null = null;
+    for (const l of world.activeLeagues ?? []) {
+      if (l.leagueSlug === meta.leagueSlug) continue;
+      const moved = (await saveService.getAllFixturesForLeague(meta.id, l.leagueSlug)).find((f) => f.rescheduledFrom);
+      if (moved) { pick = { clubId: moved.home, league: l.leagueSlug }; break; }
+    }
+    expect(pick).not.toBeNull();
+    const seat = await addSeat(meta.id, {
+      userId: devAutoLogin("addseat-rest@test.local").user.id, clubId: pick!.clubId,
+      manager: { name: "Rest", nationalityIso: "br", backgroundId: "former-player" },
+    });
+    const own = (await saveService.getAllFixturesForLeague(meta.id, pick!.league))
+      .filter((f) => f.home === pick!.clubId || f.away === pick!.clubId);
+    expect(seat.seat.restDays).toEqual(generateRestDays(own));
+    const matchDays = new Set(own.map((f) => f.date));
+    expect(seat.seat.restDays!.some((d) => matchDays.has(d))).toBe(false);
   }, 300_000);
 });

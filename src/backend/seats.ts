@@ -15,6 +15,7 @@ import { contractUntil, managerWeeklyWage, MANAGER_CONTRACT } from "@/Domain/man
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { buildBoardMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
+import { generateRestDays } from "@/Domain/season/generateRestDays";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 
@@ -57,7 +58,9 @@ export async function addSeat(
       training_intensity: DEFAULT_TRAINING_INTENSITY,
       sackingEnabled: true,
       careerStart: date,
-      restDays: (await service.getLeagueMeta(saveId, entry.leagueSlug))?.restDays ?? [],
+      // The day before and after the club's own league games (its calendar, moved games included).
+      restDays: generateRestDays((await service.getAllFixturesForLeague(saveId, entry.leagueSlug))
+        .filter((f) => f.home === entry.squadId || f.away === entry.squadId)),
       managerEarnings: 0,
     };
     await service.insertSeat(saveId, seatId, seat);
