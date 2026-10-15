@@ -72,7 +72,13 @@ export type ServerEvent =
   | { type: "friend_update" }
   | { type: "read"; room: string; lastReadId: number }
   | { type: "typing"; room: string; from: string }
-  | { type: "pong"; online: number };
+  | { type: "pong"; online: number }
+  // Multiplayer part 2 (`.claude/rules/game/multiplayer.md`): only members of the world (or the invited user).
+  | { type: "world_invite"; saveId: string; name: string; from: string; code: string }
+  | { type: "world_started"; saveId: string }
+  | { type: "world_removed"; saveId: string }
+  | { type: "world_deleted"; saveId: string }
+  | { type: "world_members"; saveId: string };
 
 export type SocialErrorCode =
   | "invalidNickname"
