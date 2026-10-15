@@ -8,7 +8,7 @@ const get = (o: unknown, path: string): unknown =>
 
 const keys = [
   "running", "simulate", "play", "readyButton", "readyTomorrow", "readyNextMatch", "readyDate", "readyConfirm",
-  "readyUntil", "waiting_one", "waiting_other", "unmark", "dateInvalid", "retry", "networkError",
+  "readyUntil", "waiting_one", "waiting_other", "unmark", "dateInvalid", "retry",
   "band.title", "band.date", "band.target", "band.waitingFor", "band.allReady", "band.noDeadline",
   "band.deadlineHours_one", "band.deadlineHours_other", "band.deadlineMinutes_one", "band.deadlineMinutes_other",
   "band.deadlineNow", "band.error",

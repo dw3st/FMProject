@@ -5118,10 +5118,9 @@
       "waiting_one": "waiting for {{count}}",
       "waiting_other": "waiting for {{count}}",
       "unmark": "Not ready",
-      "dateInvalid": "Pick a date from {{min}} on.",
+      "dateInvalid": "Pick {{min}} or a later date.",
       "retry": "Try again",
-      "networkError": "No connection.",
-      "band": {
+        "band": {
         "title": "Group advance",
         "date": "World date",
         "target": "Target",
@@ -5138,7 +5137,7 @@
       "status": {
         "column": "Advance",
         "ready": "Ready",
-        "match": "Match to play",
+        "match": "Match day",
         "late": "Late",
         "no_club": "No club"
       },
@@ -5147,7 +5146,7 @@
       },
       "errors": {
         "generic": "Could not save. Try again.",
-        "invalidDate": "Pick a date from tomorrow on.",
+        "invalidDate": "Pick a date between tomorrow and about a year from now.",
         "dayClosed": "That day has already been played.",
         "notYourMatch": "That is not your match today.",
         "seatOpponent": "Against another manager the match is simulated.",
@@ -5170,12 +5169,12 @@
       },
       "refused": {
         "subject": "Your live match was simulated",
-        "body": "The day refused your live match of {{match}} ({{reason}}), so it was simulated instead.",
+        "body": "Your live match on {{match}} could not be recorded ({{reason}}), so it was simulated.",
         "reason": {
           "unregistered": "a player was not registered",
           "knockout": "the knockout game had no winner",
           "two_seats": "a game between two managers cannot be played live",
-          "other": "the recording was invalid"
+          "other": "the match could not be recorded"
         }
       }
     },

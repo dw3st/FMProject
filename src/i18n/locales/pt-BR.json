@@ -5117,15 +5117,14 @@
       "readyUntil": "Pronto até {{date}}",
       "waiting_one": "esperando {{count}}",
       "waiting_other": "esperando {{count}}",
-      "unmark": "Desmarcar",
+      "unmark": "Não estou pronto",
       "dateInvalid": "Escolha uma data a partir de {{min}}.",
       "retry": "Tentar de novo",
-      "networkError": "Sem conexão.",
-      "band": {
+        "band": {
         "title": "Avanço do grupo",
         "date": "Data do mundo",
         "target": "Alvo",
-        "waitingFor": "Falta: {{names}}",
+        "waitingFor": "Esperando {{names}}",
         "allReady": "Todos prontos",
         "noDeadline": "Sem prazo: a liga espera todos",
         "deadlineHours_one": "Avança sem eles em {{count}} hora",
@@ -5138,7 +5137,7 @@
       "status": {
         "column": "Avanço",
         "ready": "Pronto",
-        "match": "Jogo a decidir",
+        "match": "Jogo do dia",
         "late": "Atrasado",
         "no_club": "Sem clube"
       },
@@ -5147,7 +5146,7 @@
       },
       "errors": {
         "generic": "Não foi possível salvar. Tente de novo.",
-        "invalidDate": "Escolha uma data a partir de amanhã.",
+        "invalidDate": "Escolha uma data entre amanhã e cerca de um ano.",
         "dayClosed": "Esse dia já foi jogado.",
         "notYourMatch": "Esse não é o seu jogo de hoje.",
         "seatOpponent": "Contra outro técnico o jogo é simulado.",
@@ -5170,12 +5169,12 @@
       },
       "refused": {
         "subject": "Sua partida ao vivo foi simulada",
-        "body": "O dia recusou sua partida ao vivo de {{match}} ({{reason}}), então ela foi simulada.",
+        "body": "Sua partida ao vivo de {{match}} não pôde ser registrada ({{reason}}) e foi simulada.",
         "reason": {
           "unregistered": "um jogador não estava inscrito",
           "knockout": "o mata-mata ficou sem vencedor",
           "two_seats": "um jogo entre dois técnicos não pode ser ao vivo",
-          "other": "a gravação não era válida"
+          "other": "não foi possível registrar a partida"
         }
       }
     },
