@@ -256,6 +256,20 @@ async function humanGames(service: SaveService, saveId: string, state: NationalS
   return out;
 }
 
+/** Every unplayed game date of his national team on or after `from`, ascending. */
+export async function nationalFixtureDates(service: SaveService, saveId: string, seatId: string, from: string): Promise<string[]> {
+  const state = await service.getNationalState(saveId);
+  if (!state?.human?.[seatId]) return [];
+  return (await humanGames(service, saveId, state, seatId)).filter((f) => !f.played && f.date >= from).map((f) => f.date).sort();
+}
+
+/** His national team's unplayed game of `date` (Etapa 41b), or null. */
+export async function nationalFixtureOn(service: SaveService, saveId: string, seatId: string, date: string): Promise<Fixture | null> {
+  const state = await service.getNationalState(saveId);
+  if (!state?.human?.[seatId]) return null;
+  return (await humanGames(service, saveId, state, seatId)).find((f) => !f.played && f.date === date) ?? null;
+}
+
 /** The next unplayed game day of his national team (the fast-forward stops there), or null. */
 export async function nextNationalFixtureDate(service: SaveService, saveId: string, seatId: string, from: string): Promise<string | null> {
   const state = await service.getNationalState(saveId);

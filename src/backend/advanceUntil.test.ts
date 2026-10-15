@@ -4,6 +4,8 @@ import {
   computeAdvanceTarget,
   nextPlayerFixtureDate,
   readAdvancePosition,
+  seatMatchDates,
+  seatNextMatchDate,
   runAdvanceBatch,
   type AdvanceBatchDeps,
   type AdvancePosition,
@@ -270,5 +272,41 @@ describe("readAdvancePosition", () => {
     expect(posA.target).toBe("2025-08-03");
     expect(posB.target).toBe("2025-08-06");
     expect(posA.target).not.toEqual(posB.target);
+  });
+});
+
+describe("seatMatchDates / seatNextMatchDate", () => {
+  const fixture = (id: string, date: string, round: number, home: string, away: string, played = false): Fixture => ({
+    id, date, competition: "lg", round, home, away, played, result: null,
+  }) as Fixture;
+  const rounds: Record<number, RoundFixtures> = {
+    1: { leagueSlug: "lg", round: 1, fixtures: [fixture("f1", "2025-08-03", 1, "A", "X"), fixture("f0", "2025-08-01", 1, "A", "Z", true)] },
+    2: { leagueSlug: "lg", round: 2, fixtures: [fixture("f2", "2025-08-06", 2, "Y", "A")] },
+    3: { leagueSlug: "lg", round: 3, fixtures: [fixture("f3", "2025-08-09", 3, "B", "Y")] },
+  };
+  const make = (over: Record<string, unknown> = {}) => ({
+    getSeatMeta: async (_s: string, seatId: string) => ({ seatId, currentDate: "2025-08-01", leagueSlug: "lg", clubId: "A", activeLeagues: [] }),
+    getDateIndex: async () => ({ "2025-08-01": [1], "2025-08-03": [1], "2025-08-06": [2], "2025-08-09": [3] }) as LeagueDateIndex,
+    getRound: async (_s: string, _l: string, r: number) => rounds[r] ?? null,
+    getLeagueMeta: async () => null,
+    getNationalState: async () => null,
+    ...over,
+  }) as unknown as SaveService;
+
+  test("every unplayed game of the club from a date, ascending, bounded by until", async () => {
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-01")).toEqual(["2025-08-03", "2025-08-06"]);
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-04")).toEqual(["2025-08-06"]);
+    expect(await seatMatchDates(make(), "S", "a", "2025-08-01", "2025-08-03")).toEqual(["2025-08-03"]);
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-01")).toBe("2025-08-03");
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-04")).toBe("2025-08-06");
+    expect(await seatNextMatchDate(make(), "S", "a", "2025-08-07")).toBeNull();
+  });
+
+  test("a world without league folders gives no games instead of throwing", async () => {
+    const broken = make({ getDateIndex: async () => { throw new Error("ENOENT"); } });
+    expect(await seatMatchDates(broken, "S", "a", "2025-08-01")).toEqual([]);
+    expect(await seatNextMatchDate(broken, "S", "a", "2025-08-01")).toBeNull();
+    const noLeague = make({ getLeagueMeta: async () => { throw new Error("ENOENT"); } });
+    expect(await seatMatchDates(noLeague, "S", "a", "2025-08-01")).toEqual([]);
   });
 });
