@@ -163,7 +163,9 @@ export const achievementRoutes = {
       if (pointsBalance(state) < ACHIEVEMENTS.SHOP.legend) return bad("notEnoughPoints", 409);
       if (state.legendOptions) return Response.json(await view(saveId, auth.seatId, state));
       const { date } = await nextSeasonEndOf(saveId, auth.seatId);
-      const ids = legendOptions(await saveService.getRetired(saveId), saveId, date);
+      // A world of seats: each seat draws its own three (`.claude/rules/game/multiplayer.md`).
+      const multi = (await saveService.getMeta(saveId))?.mode === "multi";
+      const ids = legendOptions(await saveService.getRetired(saveId), saveId, date, multi ? auth.seatId : undefined);
       if (ids.length === 0) return bad("noLegends", 409);
       const next = { ...state, legendOptions: { date, ids } };
       await saveService.writeAchievements(saveId, next, auth.seatId);
@@ -188,11 +190,17 @@ export const achievementRoutes = {
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return bad("youthFull");
-      const retired = (await saveService.getRetired(saveId)).find((r) => r.id === retiredId);
-      if (!retired) return bad("notOffered");
+      const allRetired = await saveService.getRetired(saveId);
+      const retired = allRetired.find((r) => r.id === retiredId);
+      // Brought back already (by any seat, or as a reborn): one comeback per player in the world.
+      if (!retired || retired.legendBy || retired.rebornOffer === "accepted") return bad("notOffered");
       const season = await nextSeasonEndOf(saveId, auth.seatId);
       const player = legendPlayer({ retired, squad: club.squad, year: season.year, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
+      // Marked in the world's list: never a legend again, and a pending reborn offer for him closes.
+      await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
+        ? { ...r, legendBy: auth.seatId, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
+        : r)));
       const next: AchievementsState = {
         ...state, spent: state.spent + ACHIEVEMENTS.SHOP.legend, bought: { ...state.bought, legend: season.date }, legendOptions: undefined,
       };

@@ -148,6 +148,29 @@ describe("seats: review fixes", () => {
     expect((await saveService.getMarket(id, seatD.seatId))?.sellOnHeld ?? []).toEqual([]);
   });
 
+  test("6. a legend brought back by one seat is gone for the others (and its reborn offer closes)", async () => {
+    const id = meta.id;
+    const date = (await saveService.getMeta(id))!.currentDate!;
+    const source = (await saveService.getSquadById(id, aiClub))!.players[1]!;
+    const legend: RetiredPlayer = {
+      id: "legend-test", name: "Legend", nationality: source.nationality ?? null, positions: source.positions,
+      preferredFoot: source.preferredFoot, profile: source.profile, retiredOn: date, squadId: clubD, age: 36,
+      wasWorldClass: true, statsAtRetirement: source.stats, appearances: 10, goals: 1,
+      rebornOffer: "pending", rebornSeatId: seatD.seatId,
+    };
+    await saveService.writeRetired(id, [...(await saveService.getRetired(id)), legend]);
+    for (const seatId of [meta.seatId, seatD.seatId]) {
+      const state = await saveService.getAchievements(id, seatId);
+      await saveService.writeAchievements(id, { ...state, spent: -10_000, legendOptions: { date, ids: [legend.id] } }, seatId);
+    }
+    const buy = (who: Login) => call("/api/saves/:saveId/achievements/shop/legend", `/api/saves/${id}/achievements/shop/legend`, "POST",
+      who.session.token, { saveId: id }, { retiredId: legend.id });
+    expect((await buy(a)).status).toBe(200);
+    const after = (await saveService.getRetired(id)).find((r) => r.id === legend.id)!;
+    expect(after.legendBy).toBe(meta.seatId);
+    expect(after.rebornOffer).toBe("expired");
+    expect((await buy(d)).status).toBe(400);
+  });
 
 
 
