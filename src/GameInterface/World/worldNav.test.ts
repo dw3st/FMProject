@@ -9,6 +9,11 @@ describe("world navigation", () => {
     expect(worldRedirect("/world", lobby)).toBeNull();
   });
 
+  test("the lobby never redirects the entry pages", () => {
+    const lobby = { mode: "multi" as const, world: { phase: "lobby" as const } };
+    for (const p of ["/join/23456789AB", "/new-game", "/start", "/login", "/world"]) expect(worldRedirect(p, lobby)).toBeNull();
+  });
+
   test("running: nothing moves; a solo save has no /world", () => {
     expect(worldRedirect("/dashboard", { mode: "multi", world: { phase: "running" } })).toBeNull();
     expect(worldRedirect("/world", { mode: "multi", world: { phase: "running" } })).toBeNull();
