@@ -400,6 +400,11 @@ export async function takeOverClub(
     const { [args.squadId]: _gone, ...profiles } = world.profiles;
     await service.saveWorldMarket(saveId, { ...world, profiles });
   }
+  // One human per club: the other seats' offers from this club close.
+  for (const other of await service.listSeats(saveId)) {
+    if (other.seatId === seatId || !other.seat.jobOffers?.some((o) => o.squadId === args.squadId)) continue;
+    await service.updateSeat(saveId, other.seatId, { jobOffers: other.seat.jobOffers.filter((o) => o.squadId !== args.squadId) });
+  }
 
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
   const catalog = await getLeagueData();

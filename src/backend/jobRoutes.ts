@@ -48,6 +48,11 @@ export const jobRoutes = {
         await saveService.updateSeat(saveId, auth.seatId, { jobOffers: offers.filter((o) => o.id !== offerId) });
         return Response.json({ ok: true, status: "declined" });
       }
+      // Another seat took the club since the offer (`.claude/rules/game/multiplayer.md`): one human per club.
+      if ((await saveService.humanClubIds(saveId)).has(offer.squadId)) {
+        await saveService.updateSeat(saveId, auth.seatId, { jobOffers: offers.filter((o) => o.squadId !== offer.squadId) });
+        return Response.json({ error: "offerClosed" }, { status: 409 });
+      }
       const index = await saveService.getSquadIndex(saveId);
       if (!index.byId(offer.squadId)) return Response.json({ error: "offerClosed" }, { status: 409 });
 

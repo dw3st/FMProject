@@ -115,10 +115,30 @@ describe("seats: review fixes", () => {
     expect((await saveService.getSquadById(id, aiClub))!.players.some((q) => q.id === target.id)).toBe(true);
   });
 
+  test("3. an offer from a club that already has a seat closes (409)", async () => {
+    const id = meta.id;
+    const date = (await saveService.getMeta(id))!.currentDate!;
+    await saveService.updateSeat(id, meta.seatId, { jobOffers: [offerFor(clubD, date, "offer-d")] });
+    const res = await call("/api/saves/:saveId/jobs/:offerId", `/api/saves/${id}/jobs/offer-d`, "POST", a.session.token,
+      { saveId: id, offerId: "offer-d" }, { accept: true });
+    expect(res.status).toBe(409);
+    expect((await saveService.getSeat(id, meta.seatId))?.clubId).toBe(meta.clubId);
+    expect((await saveService.getSeat(id, meta.seatId))?.jobOffers ?? []).toEqual([]);
+  });
 
 
 
 
 
 
+  test("3. a club taken by a seat leaves the other seats' offers", async () => {
+    const id = meta.id;
+    const date = (await saveService.getMeta(id))!.currentDate!;
+    await saveService.updateSeat(id, meta.seatId, { jobOffers: [offerFor(aiClub, date, "offer-x")] });
+    await addSeat(id, {
+      userId: devAutoLogin("seat-review-e@test.local").user.id, clubId: aiClub,
+      manager: { name: "Técnico E", nationalityIso: "br", backgroundId: "former-player" },
+    });
+    expect((await saveService.getSeat(id, meta.seatId))?.jobOffers ?? []).toEqual([]);
+  }, 300_000);
 });
