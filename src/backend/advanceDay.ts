@@ -63,8 +63,7 @@ import {
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import { pressDay } from "@/backend/pressWorld";
 import { collectDayNews, newNewsCollector, readLeaders, writeDayNews } from "@/backend/newsWorld";
-import type { CareerEnded } from "@/types/boardTypes";
-import type { JobOffer, Unemployment } from "@/types/jobTypes";
+import type { JobOffer } from "@/types/jobTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { mergeOffers, pruneOffers, sackHumanManager } from "@/Domain/jobs/jobs";
 import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
@@ -2653,146 +2652,146 @@ export async function advanceOneDay(
         ds.boardMessages.push({ date: currentDate, kind: "sacked", reason: ds.sackedReason, board: Math.round(b.board) });
       }
     }
-    // TRANSITIONAL (Task 19): the sacking, the contract and the job offers below are the first seat's.
-    let ended: CareerEnded | undefined = solo.job.ended;
-    // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
-    // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
-    let contract = meta.managerContract?.squadId === playerSquadId ? meta.managerContract : undefined;
-    if (!ended && solo.board && playerSquadId && solo.rollover.seasonEnded && contract && contract.until <= currentDate) {
-      const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
-      ended = {
-        date: currentDate, reason: "contract", clubName: meta.clubName,
-        leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
-        position: null, board: Math.round(solo.board.board), fans: Math.round(solo.board.fans), record: solo.board.record,
-      };
-      solo.boardMessages.push({ date: currentDate, kind: "contract_ended", board: Math.round(solo.board.board) });
-    }
-    let unemployed: Unemployment | undefined = meta.unemployed;
-    if (ended && solo.board && playerSquadId) {
-      // Sacked mid-contract: half the wage of the weeks left (max 52) to the manager, paid by the club
-      // before its balance leaves the ledger (D9: display only).
-      const severance = ended.reason !== "contract" && contract ? severancePay(contract, currentDate) : 0;
-      if (severance > 0) {
-        const entry = index.byId(playerSquadId);
-        if (entry) {
-          await recordMoney(
-            saveService, saveId, (await saveService.getLeagueMeta(saveId, entry.leagueSlug))?.year ?? parseInt(currentDate.slice(0, 4), 10),
-            { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
-            { date: currentDate, kind: "manager", amount: -severance, label: "Manager severance", ref: { stage: "severance" } },
-          );
-          solo.managerEarned += severance;
-        }
+    // ── Per seat: the manager's contract end, the sacking (→ unemployed), job offers and the contract ──
+    // No club with a seat ever offers a job (`.claude/rules/game/multiplayer.md`).
+    for (const ds of daySeats) {
+      const clubId = ds.clubId;
+      // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
+      // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
+      let contract = ds.job.contract;
+      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate) {
+        const leagueNow = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+        ds.job.ended = {
+          date: currentDate, reason: "contract", clubName: ds.meta.clubName,
+          leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
+          position: null, board: Math.round(ds.board.board), fans: Math.round(ds.board.fans), record: ds.board.record,
+        };
+        ds.boardMessages.push({ date: currentDate, kind: "contract_ended", board: Math.round(ds.board.board) });
       }
-      await releaseHumanClub(saveService, saveId, meta.seatId, { squadId: playerSquadId, date: currentDate });
-      await managerTracker.apply((ms) => sackHumanManager(ms, {
-        date: currentDate, clubName: meta.clubName, left: ended!.reason === "contract" ? "contract" : "sacked",
-      }));
-      // The club hires by the AI rule (interim + vacancy).
-      aiDesk?.openVacancy(playerSquadId);
-      unemployed = {
-        since: currentDate,
-        lastClubId: playerSquadId,
-        lastClubName: meta.clubName,
-        lastLeagueSlug: index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug,
-        board: Math.round(solo.board.board),
-        nextOfferDate: addDays(currentDate, JOBS.unemployed.FIRST_OFFER_DAYS),
-        sacking: ended,
-      };
-    }
-
-    // ── Job offers (`.claude/rules/game/jobs.md`): the player's season end, one mid-season window,
-    // every two weeks while unemployed. Messages are deferred like the rest (after `clearInbox`).
-    const offersBefore = meta.jobOffers ?? [];
-    let jobOffers: JobOffer[] = pruneOffers(offersBefore, nextDate);
-    let jobsMidSeason = meta.jobsMidSeason;
-    const newOffers: JobOffer[] = [];
-    if (!ended && playerSquadId && solo.board) {
-      const playerState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug));
-      if (solo.rollover.seasonEnded && playerState) {
-        // Valid until the eve of the club's first match of the new season.
-        // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
-        const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(playerState.leagueSlug) ?? [], rescheduleMoves, playerSquadId);
-        newOffers.push(...await generateJobOffers(saveService, saveId, {
-          window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
-          managers: await managerTracker.list(), board: solo.rollover.boardAtSeasonEnd ?? solo.board.board,
-          humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index, ...(contract ? { contract } : {}),
+      const ended = ds.job.ended;
+      if (ended && ds.board && clubId) {
+        // Sacked mid-contract: half the wage of the weeks left (max 52) to the manager, paid by the club
+        // before its balance leaves the ledger (D9: display only).
+        const severance = ended.reason !== "contract" && contract ? severancePay(contract, currentDate) : 0;
+        if (severance > 0) {
+          const entry = index.byId(clubId);
+          if (entry) {
+            await recordMoney(
+              saveService, saveId, (await saveService.getLeagueMeta(saveId, entry.leagueSlug))?.year ?? parseInt(currentDate.slice(0, 4), 10),
+              { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
+              { date: currentDate, kind: "manager", amount: -severance, label: "Manager severance", ref: { stage: "severance" } },
+              ds.seatId,
+            );
+            ds.managerEarned += severance;
+          }
+        }
+        await releaseHumanClub(saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate });
+        // Task 23 puts the seat's manager id here.
+        await managerTracker.apply((ms) => sackHumanManager(ms, {
+          date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
         }));
-      } else if (playerState) {
-        const label = seasonLabel(playerState.year, playerState.start, playerState.end);
-        if (jobsMidSeason !== label) {
-          const table = (await saveService.getLeagueStandings(saveId, playerState.leagueSlug)) ?? [];
-          const mp = table.find((r) => r.squadId === playerSquadId)?.mp ?? 0;
-          if (playerState.totalRounds > 0 && mp >= playerState.totalRounds * JOBS.midSeason.PROGRESS) {
-            jobsMidSeason = label;
-            newOffers.push(...await generateJobOffers(saveService, saveId, {
-              window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
-              managers: await managerTracker.list(), board: solo.board.board,
-              humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index, ...(contract ? { contract } : {}),
-            }));
+        // The club hires by the AI rule (interim + vacancy).
+        aiDesk?.openVacancy(clubId);
+        ds.job.unemployed = {
+          since: currentDate,
+          lastClubId: clubId,
+          lastClubName: ds.meta.clubName,
+          lastLeagueSlug: index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug,
+          board: Math.round(ds.board.board),
+          nextOfferDate: addDays(currentDate, JOBS.unemployed.FIRST_OFFER_DAYS),
+          sacking: ended,
+        };
+      }
+
+      // ── Job offers (`.claude/rules/game/jobs.md`): the seat's season end, one mid-season window,
+      // every two weeks while unemployed. Messages are deferred like the rest (after `clearInbox`).
+      ds.job.offers = pruneOffers(ds.job.offersBefore, nextDate);
+      const newOffers: JobOffer[] = [];
+      if (!ended && clubId && ds.board) {
+        const seatState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug));
+        if (ds.rollover.seasonEnded && seatState) {
+          // Valid until the eve of the club's first match of the new season.
+          // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
+          const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(seatState.leagueSlug) ?? [], rescheduleMoves, clubId);
+          newOffers.push(...await generateJobOffers(saveService, saveId, {
+            window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
+            managers: await managerTracker.list(), board: ds.rollover.boardAtSeasonEnd ?? ds.board.board,
+            humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+            ...(contract ? { contract } : {}),
+          }));
+        } else if (seatState) {
+          const label = seasonLabel(seatState.year, seatState.start, seatState.end);
+          if (ds.job.midSeason !== label) {
+            const table = (await saveService.getLeagueStandings(saveId, seatState.leagueSlug)) ?? [];
+            const mp = table.find((r) => r.squadId === clubId)?.mp ?? 0;
+            if (seatState.totalRounds > 0 && mp >= seatState.totalRounds * JOBS.midSeason.PROGRESS) {
+              ds.job.midSeason = label;
+              newOffers.push(...await generateJobOffers(saveService, saveId, {
+                window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
+                managers: await managerTracker.list(), board: ds.board.board,
+                humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+                ...(contract ? { contract } : {}),
+              }));
+            }
+          }
+        }
+      } else if (!ended && ds.job.unemployed && currentDate >= ds.job.unemployed.nextOfferDate) {
+        const unemployed = ds.job.unemployed;
+        const offers = await generateJobOffers(saveService, saveId, {
+          window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
+          managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
+          unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
+          activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+          // Offers while unemployed come from real vacancies first (× VACANCY_WEIGHT).
+          vacant: new Set(Object.keys(aiDesk?.vacancies() ?? world.managerVacancies ?? {})),
+        });
+        newOffers.push(...offers);
+        ds.job.unemployed = {
+          ...unemployed,
+          nextOfferDate: addDays(currentDate, JOBS.unemployed.EVERY_DAYS),
+          ...(offers.length > 0 ? { lastOfferDate: currentDate } : {}),
+        };
+      }
+      // ── The manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"): the board's
+      // renewal at 85% of the last season, the warning a week before the end. Messages deferred.
+      if (!ended && ds.board && clubId && contract) {
+        const league = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+        const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
+        // The country rolled: the contract follows the NEW league's season end (seasons left kept).
+        const oldEnd = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug)?.end;
+        if (ds.rollover.seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
+        if (st) {
+          const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === clubId)?.mp ?? 0;
+          const squad = await saveService.getSquadById(saveId, clubId);
+          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10));
+          const day = contractDay({
+            date: currentDate, contract, ...(ds.job.renewal ? { renewal: ds.job.renewal } : {}),
+            notices: ds.job.notices ?? [], board: ds.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
+            sackingEnabled: ds.meta.sackingEnabled !== false,
+            reputationWage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),
+          });
+          ds.job.renewal = day.renewal;
+          ds.job.notices = day.notices;
+          if (day.message) {
+            ds.boardMessages.push({
+              date: currentDate, kind: day.message.kind, board: Math.round(ds.board.board),
+              ...(day.message.contract ? { contract: day.message.contract } : {}),
+            });
           }
         }
       }
-    } else if (!ended && unemployed && currentDate >= unemployed.nextOfferDate) {
-      const offers = await generateJobOffers(saveService, saveId, {
-        window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
-        managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
-        unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
-        activeLeagues: updatedActiveLeagues, index,
-        // Offers while unemployed come from real vacancies first (× VACANCY_WEIGHT).
-        vacant: new Set(Object.keys(aiDesk?.vacancies() ?? meta.managerVacancies ?? {})),
-      });
-      newOffers.push(...offers);
-      unemployed = {
-        ...unemployed,
-        nextOfferDate: addDays(currentDate, JOBS.unemployed.EVERY_DAYS),
-        ...(offers.length > 0 ? { lastOfferDate: currentDate } : {}),
-      };
+      ds.job.contract = contract;
+      ds.job.kept = ds.job.offers;
+      ds.job.newOffers = newOffers;
+      if (newOffers.length > 0) ds.job.offers = mergeOffers(ds.job.offers, newOffers);
     }
-    // ── The manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"): the board's
-    // renewal at 85% of the last season, the warning a week before the end. Messages deferred.
-    let managerRenewal = meta.managerRenewal;
-    let managerContractNotices = meta.managerContractNotices;
-    if (!ended && solo.board && playerSquadId && contract) {
-      const league = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
-      const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
-      // The country rolled: the contract follows the NEW league's season end (seasons left kept).
-      const oldEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
-      if (solo.rollover.seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
-      if (st) {
-        const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === playerSquadId)?.mp ?? 0;
-        const squad = await saveService.getSquadById(saveId, playerSquadId);
-        const rep = managerReputation(await managerTracker.list(), solo.board.board, parseInt(currentDate.slice(0, 4), 10));
-        const day = contractDay({
-          date: currentDate, contract, ...(managerRenewal ? { renewal: managerRenewal } : {}),
-          notices: managerContractNotices ?? [], board: solo.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
-          sackingEnabled: meta.sackingEnabled !== false,
-          reputationWage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),
-        });
-        managerRenewal = day.renewal;
-        managerContractNotices = day.notices;
-        if (day.message) {
-          solo.boardMessages.push({
-            date: currentDate, kind: day.message.kind, board: Math.round(solo.board.board),
-            ...(day.message.contract ? { contract: day.message.contract } : {}),
-          });
-        }
-      }
-    }
-
-    const keptOffers = jobOffers;
-    if (newOffers.length > 0) jobOffers = mergeOffers(jobOffers, newOffers);
-    const jobMessages: Parameters<typeof buildJobMessage>[0][] = newOffers.map((offer) => ({ date: currentDate, kind: "offer" as const, offer }));
 
     // ── World awards (`.claude/rules/game/awards.md` §5): January, once per year, after the rollovers ──
     {
       const msg = await runWorldCeremony(saveService, saveId, currentDate, {
         managers: () => managerTracker.list(),
         applyManagers: (fn) => managerTracker.apply(fn),
-        // TRANSITIONAL (Task 19): the first seat's sacking / unemployment are still locals.
-        humanClubIds: new Set(daySeats.flatMap((ds) => {
-          const left = ds === solo ? ended || unemployed : ds.job.ended || ds.job.unemployed;
-          return ds.clubId && !left ? [ds.clubId] : [];
-        })),
+        humanClubIds: new Set(daySeats.flatMap((ds) => (ds.clubId && !ds.job.ended && !ds.job.unemployed ? [ds.clubId] : []))),
       });
       // The world ceremony is news for every seat.
       if (msg) for (const ds of daySeats) ds.deferred.awards.push(msg);
@@ -2807,7 +2806,7 @@ export async function advanceOneDay(
     // the others' talks with his decision. The summary is deferred past `clearInbox` like the rest.
     // A seat is active today when it still has its club (not sacked today, not unemployed) and the career runs.
     const seatActive = (ds: DaySeat) =>
-      !(ds === solo ? ended : ds.job.ended) && !!ds.meta.clubId && !(ds === solo ? unemployed : ds.job.unemployed)
+      !ds.job.ended && !!ds.meta.clubId && !ds.job.unemployed
       && !options.marketFrozen;
     const directorInChargeOf = (ds: DaySeat) => seatActive(ds) && directorHandlesContracts(ds.meta.responsibilities);
     for (const ds of daySeats) {
@@ -2990,10 +2989,8 @@ export async function advanceOneDay(
     // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
     for (const ds of daySeats) {
       if (!ds.rollover.seasonEnded) continue;
-      // TRANSITIONAL (Task 19): the first seat's sacking is still a local.
-      const left = ds === solo ? ended : ds.job.ended;
       // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
-      if (ds.clubId && !left) {
+      if (ds.clubId && !ds.job.ended) {
         const humanT = await saveService.getSquadById(saveId, ds.clubId);
         const freshTalks = new Set(ds.moraleNews.map((n) => n.talkId).filter(Boolean));
         for (const talk of humanT?.moraleClub?.talks ?? []) {
@@ -3024,14 +3021,18 @@ export async function advanceOneDay(
       for (const msg of ds.boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService, ds.seatId);
       if (ds.managerBanGiven) await emitInboxMessage(saveId, buildManagerBanMessage(currentDate, ds.managerBanGiven), saveService, ds.seatId);
     }
-    // Offers still pending when the inbox was cleared keep their message.
-    if (solo.rollover.seasonEnded) {
-      const fresh = new Set(newOffers.map((o) => o.squadId));
-      for (const offer of keptOffers) {
-        if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService);
+    for (const ds of daySeats) {
+      // Offers still pending when the inbox was cleared keep their message.
+      if (ds.rollover.seasonEnded) {
+        const fresh = new Set(ds.job.newOffers.map((o) => o.squadId));
+        for (const offer of ds.job.kept) {
+          if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService, ds.seatId);
+        }
+      }
+      for (const offer of ds.job.newOffers) {
+        await emitInboxMessage(saveId, buildJobMessage({ date: currentDate, kind: "offer", offer }), saveService, ds.seatId);
       }
     }
-    for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
     for (const ds of daySeats) {
       for (const r of ds.deferred.clubRecords) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService, ds.seatId);
     }
@@ -3067,8 +3068,8 @@ export async function advanceOneDay(
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
         ...(solo.rollover.seasonEnded ? { rollover: { championOf: solo.rollover.championOf, moves: solo.rollover.moves, objectiveMet: solo.rollover.objectiveMet } } : {}),
-        sacked: !!ended && ended.reason !== "contract",
-        leftClub: !!ended,
+        sacked: !!solo.job.ended && solo.job.ended.reason !== "contract",
+        leftClub: !!solo.job.ended,
         ...(nationalDay.humanMatch ? { nationalMatch: await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, meta.manager?.nationalityIso) } : {}),
       });
       if (msg) {
@@ -3092,12 +3093,6 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
 
-    if (jobOffers.length !== offersBefore.length || newOffers.length > 0) metaPatch.jobOffers = jobOffers;
-    if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
-    if (unemployed !== meta.unemployed) metaPatch.unemployed = unemployed;
-    if (managerRenewal !== meta.managerRenewal) metaPatch.managerRenewal = managerRenewal;
-    if (contract && contract !== meta.managerContract) metaPatch.managerContract = contract;
-    if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
     // TRANSITIONAL (Task 24): the national coach's wage is the first seat's.
     solo.managerEarned += nationalDay.earned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
@@ -3136,26 +3131,38 @@ export async function advanceOneDay(
       ds.patch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
       ds.patch.youthCallUpsSkipped = skipped.u21 || skipped.u19 ? skipped : undefined;
     }
-    if (ended) {
-      metaPatch.managerContract = undefined;
-      metaPatch.managerRenewal = undefined;
-      metaPatch.managerContractNotices = undefined;
-      // Without a club: the career follows nobody until an offer is accepted.
-      metaPatch.clubId = "";
-      metaPatch.board = undefined;
-      metaPatch.press = undefined;
-      metaPatch.rotationOverride = undefined;
-      metaPatch.youthCallUps = undefined;
-      metaPatch.youthCallUpsSkipped = undefined;
-    }
-    const playerHome = index.byId(meta.clubId)?.leagueSlug;
-    if (!ended && playerHome && playerHome !== meta.leagueSlug) {
-      const catalog = await getLeagueData();
-      metaPatch.leagueSlug = playerHome;
-      metaPatch.leagueName = (await leagueNameResolver(updatedActiveLeagues))(playerHome);
-      metaPatch.followedLeagues = sanitizeFollowedLeagues(
-        meta.followedLeagues ?? [], new Set(catalog.map((l) => l.slug)), playerHome,
-      );
+    // The job of each seat: offers, mid-season window, unemployment, the contract; a sacking clears the club's keys.
+    for (const ds of daySeats) {
+      const job = ds.job;
+      if (job.offers.length !== job.offersBefore.length || job.newOffers.length > 0) ds.patch.jobOffers = job.offers;
+      if (job.midSeason !== ds.meta.jobsMidSeason) ds.patch.jobsMidSeason = job.midSeason;
+      if (job.unemployed !== ds.meta.unemployed) ds.patch.unemployed = job.unemployed;
+      if (job.renewal !== ds.meta.managerRenewal) ds.patch.managerRenewal = job.renewal;
+      if (job.contract && job.contract !== ds.meta.managerContract) ds.patch.managerContract = job.contract;
+      if (job.notices !== ds.meta.managerContractNotices) ds.patch.managerContractNotices = job.notices;
+      if (job.ended) {
+        ds.patch.managerContract = undefined;
+        ds.patch.managerRenewal = undefined;
+        ds.patch.managerContractNotices = undefined;
+        // Without a club: the career follows nobody until an offer is accepted.
+        ds.patch.clubId = "";
+        ds.patch.board = undefined;
+        ds.patch.press = undefined;
+        ds.patch.rotationOverride = undefined;
+        ds.patch.youthCallUps = undefined;
+        ds.patch.youthCallUpsSkipped = undefined;
+        continue;
+      }
+      // The career follows the club to its new league (also repairs a seat left stale by a partial flush).
+      const seatHome = ds.clubId ? index.byId(ds.clubId)?.leagueSlug : undefined;
+      if (seatHome && seatHome !== ds.meta.leagueSlug) {
+        const catalog = await getLeagueData();
+        ds.patch.leagueSlug = seatHome;
+        ds.patch.leagueName = (await leagueNameResolver(updatedActiveLeagues))(seatHome);
+        ds.patch.followedLeagues = sanitizeFollowedLeagues(
+          ds.meta.followedLeagues ?? [], new Set(catalog.map((l) => l.slug)), seatHome,
+        );
+      }
     }
 
     // ── Next currentDate: always the next day (no season jump) ─────────────────
@@ -3183,8 +3190,8 @@ export async function advanceOneDay(
         ...(solo.rollover.seasonEnded
           ? { seasonEnded: true as const, archiveYear: solo.rollover.archiveYear, moves: solo.rollover.moves, playerMove: solo.rollover.move, playerChampionOf: solo.rollover.championOf }
           : {}),
-        ...(ended ? { sacked: true as const } : {}),
-        ...(newOffers.length + nationalDay.offers > 0 ? { jobOffers: newOffers.length + nationalDay.offers } : {}),
+        ...(solo.job.ended ? { sacked: true as const } : {}),
+        ...(solo.job.newOffers.length + nationalDay.offers > 0 ? { jobOffers: solo.job.newOffers.length + nationalDay.offers } : {}),
         ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
         ...(solo.pressOut.invite ? { pressInvite: true as const } : {}),
       },

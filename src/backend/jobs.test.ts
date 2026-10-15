@@ -6,7 +6,7 @@ import { advanceOneDay } from "@/backend/advanceDay";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordMoney } from "@/backend/FinancialService";
-import { loadJobWorld, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
+import { generateJobOffers, loadJobWorld, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RetiredPlayer } from "@/types/playerTypes";
@@ -277,6 +277,22 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(world.candidates.length).toBeGreaterThan(1000);
     expect(world.candidates.every((c) => c.prestige >= 0 && c.prestige <= 1)).toBe(true);
   }, 120_000);
+
+  test("job offers never come from a club with a seat", async () => {
+    const meta = await create();
+    const index = await saveService.getSquadIndex(meta.id);
+    const world = (await saveService.getWorldMeta(meta.id))!;
+    // the seat's club and every other club of its league stand for "clubs with a seat"
+    const excluded = new Set([meta.clubId, ...index.inLeague("premier_league").map((t) => t.squadId)]);
+    const offers = await generateJobOffers(saveService, meta.id, {
+      window: "unemployed", date: meta.currentDate!, expires: addDays(meta.currentDate!, 14),
+      managers: await saveService.getManagers(meta.id), board: 90, humanSquadId: null,
+      unemployed: { lastClubId: meta.clubId, since: meta.currentDate! },
+      activeLeagues: world.activeLeagues ?? [], index, excludeClubs: excluded,
+    });
+    expect(offers.length).toBeGreaterThan(0);
+    expect(offers.every((o) => !excluded.has(o.squadId))).toBe(true);
+  }, 300_000);
 });
 
 describe("season-end offer validity", () => {

@@ -180,6 +180,8 @@ export interface OfferRequest {
   vacant?: Set<string>;
   /** The human manager's current contract (compensation, D3). */
   contract?: ManagerContract;
+  /** The clubs with a seat (`.claude/rules/game/multiplayer.md`): no club with a human manager offers a job. */
+  excludeClubs?: ReadonlySet<string>;
 }
 
 /**
@@ -204,7 +206,7 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   const from = world.candidates.find((c) => c.squadId === fromId);
   const fromPrestige = world.prestige.get(fromId) ?? 0.5;
   const band: PrestigeBand = req.window === "unemployed" ? unemployedBand(fromPrestige) : employedBand(fromPrestige, rep);
-  const exclude = new Set([fromId]);
+  const exclude = new Set([fromId, ...(req.excludeClubs ?? [])]);
   const eligible = eligibleCandidates(world.candidates, {
     band, exclude,
     ...(req.window === "mid_season" && from?.city ? { rivalCity: from.city } : {}),
