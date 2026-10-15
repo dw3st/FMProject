@@ -52,7 +52,8 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
         seen.push(`${meta.currentDate} ${today[0]!.competition} ${today[0]!.home === CLUB ? "home" : "away"} ${res.status}`);
         if (res.status !== 200) console.log(seen.at(-1), text.slice(0, 300));
         expect(res.status).toBe(200);
-        expect(() => JSON.parse(text)).not.toThrow();
+        const body = JSON.parse(text);
+        expect(body.matchDay).toEqual({ date: body.fixture.date, fixtureId: body.fixture.id });
       }
       const out = await runBufferedDay(saveId, {});
       expect(out.ok).toBe(true);

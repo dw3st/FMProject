@@ -455,6 +455,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
             referee: null,
             managerBanned: false,
             national: { teamId: nat.teamId, competition: nat.fixture.competition },
+            matchDay: { date: nat.fixture.date, fixtureId: nat.fixture.id },
           });
         }
         return Response.json(
@@ -619,6 +620,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       mySquad,
       mySquadId: myInternalId,
       fixture: matchFixture,
+      matchDay: matchFixture ? { date: matchFixture.date, fixtureId: matchFixture.id } : null,
       opponentSquad,
       myFormation:  resolvedMyFormation,
       oppFormation: oppFormation ?? defaultFormation,
