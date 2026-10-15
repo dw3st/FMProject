@@ -50,16 +50,18 @@ export const managerRoutes = {
     const page = rankingPage(
       rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired)),
       scope === "world" ? () => true
-        : scope === "free" ? (m) => !m.squadId && !m.isPlayer
+        : scope === "free" ? (m) => !m.squadId && !m.seatId
         : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
-      offset, limit,
+      offset, limit, auth.seatId,
     );
-    // The human manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
-    const profile = page.items.some((m) => m.isPlayer) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;
+    const mine = (m: { seatId?: string }) => m.seatId === auth.seatId;
+    // The asking seat's manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
+    const profile = page.items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;
     return Response.json({
       ...page,
       items: page.items.map((m) => ({
         ...m,
+        isPlayer: mine(m),
         clubName: m.squadId ? clubNameOf(m.squadId) : null,
         ...(m.squadId.startsWith("nat_") ? { national: true } : {}),
         free: !m.squadId,
@@ -68,11 +70,11 @@ export const managerRoutes = {
         awards: m.awards ?? [],
         // Every manager's passages (Etapa 25), with the clubs' names.
         clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: clubNameOf(c.squadId) })),
-        ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0, ...(profile ? { profile } : {}) } : {}),
+        ...(mine(m) ? { earnings: meta.managerEarnings ?? 0, ...(profile ? { profile } : {}) } : {}),
         // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
         // nationality, an AI manager's appearance from the country of his first club (stable).
         clubColors: m.squadId ? index.byId(m.squadId)?.colors ?? null : null,
-        ...(m.isPlayer
+        ...(mine(m)
           ? { face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) }
           : { nationality: countryOfClub(m.clubs?.[0]?.squadId ?? m.squadId) }),
       })),

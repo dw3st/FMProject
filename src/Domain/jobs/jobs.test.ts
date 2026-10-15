@@ -26,7 +26,7 @@ import type { ManagerRecord } from "@/types/managerTypes";
 import type { JobOffer } from "@/types/jobTypes";
 
 const mgr = (id: string, points: number, extra: Partial<ManagerRecord> = {}): ManagerRecord => ({
-  id, name: id, squadId: `s_${id}`, isPlayer: false, points, seasons: 0, titles: [], ...extra,
+  id, name: id, squadId: `s_${id}`, points, seasons: 0, titles: [], ...extra,
 });
 
 describe("reputation", () => {
@@ -51,8 +51,8 @@ describe("reputation", () => {
   });
 
   test("a new career sits around 40", () => {
-    const all = [mgr("player", 0, { isPlayer: true }), mgr("b", 0), mgr("c", 0)];
-    expect(managerReputation(all, 60, 2027)).toBe(40.5);
+    const all = [mgr("seat:s1", 0, { seatId: "s1" }), mgr("b", 0), mgr("c", 0)];
+    expect(managerReputation(all, 60, 2027, "s1")).toBe(40.5);
   });
 });
 
@@ -167,31 +167,31 @@ describe("offers in the save", () => {
 
 describe("managers when the human changes club", () => {
   const base = (): ManagerRecord[] => [
-    mgr("player", 10, { isPlayer: true, squadId: "old", clubs: [{ squadId: "old", from: "2026-08-01" }] }),
+    mgr("seat:s1", 10, { seatId: "s1", squadId: "old", clubs: [{ squadId: "old", from: "2026-08-01" }] }),
     mgr("x", 5, { squadId: "new" }),
     mgr("y", 0, { squadId: "other" }),
   ];
 
   test("no swap (D4): the new club's coach goes free, the old club gets an interim", () => {
-    const out = moveHumanManager(base(), { toSquadId: "new", fromSquadId: "old", fromClubName: "Old FC", date: "2027-05-20" });
-    expect(out.find((m) => m.isPlayer)).toMatchObject({
+    const out = moveHumanManager(base(), { seatId: "s1", toSquadId: "new", fromSquadId: "old", fromClubName: "Old FC", date: "2027-05-20" });
+    expect(out.find((m) => m.seatId === "s1")).toMatchObject({
       squadId: "new",
       clubs: [{ squadId: "old", from: "2026-08-01", to: "2027-05-20", left: "moved" }, { squadId: "new", from: "2027-05-20" }],
     });
     expect(out.find((m) => m.id === "x")).toMatchObject({ squadId: "", freeSince: "2027-05-20" });
-    const interim = out.find((m) => m.squadId === "old" && !m.isPlayer)!;
+    const interim = out.find((m) => m.squadId === "old" && !m.seatId)!;
     expect(interim.interim).toBe(true);
     expect(interim.name).toContain("Old FC");
     expect(new Set(out.filter((m) => m.squadId).map((m) => m.squadId)).size).toBe(3);
   });
 
   test("sacked: an interim coach for the old club; hired while unemployed: the displaced coach is clubless", () => {
-    const sacked = sackHumanManager(base(), { date: "2027-02-01", clubName: "Old FC" });
-    expect(sacked.find((m) => m.isPlayer)!.squadId).toBe("");
-    expect(sacked.find((m) => m.isPlayer)!.clubs!.at(-1)!.left).toBe("sacked");
-    expect(sacked.find((m) => !m.isPlayer && m.squadId === "old")!.interim).toBe(true);
-    const hired = moveHumanManager(sacked, { toSquadId: "new", fromSquadId: null, date: "2027-03-01" });
-    expect(hired.find((m) => m.isPlayer)!.clubs!.map((c) => c.squadId)).toEqual(["old", "new"]);
+    const sacked = sackHumanManager(base(), { seatId: "s1", date: "2027-02-01", clubName: "Old FC" });
+    expect(sacked.find((m) => m.seatId === "s1")!.squadId).toBe("");
+    expect(sacked.find((m) => m.seatId === "s1")!.clubs!.at(-1)!.left).toBe("sacked");
+    expect(sacked.find((m) => !m.seatId && m.squadId === "old")!.interim).toBe(true);
+    const hired = moveHumanManager(sacked, { seatId: "s1", toSquadId: "new", fromSquadId: null, date: "2027-03-01" });
+    expect(hired.find((m) => m.seatId === "s1")!.clubs!.map((c) => c.squadId)).toEqual(["old", "new"]);
     expect(hired.find((m) => m.id === "x")!.squadId).toBe("");
     const clubs = hired.filter((m) => m.squadId).map((m) => m.squadId);
     expect(new Set(clubs).size).toBe(clubs.length);

@@ -38,7 +38,7 @@ async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: 
 async function view(saveId: string, seatId: string, state: AchievementsState) {
   const club = await humanClub(saveId, seatId);
   const managers = await saveService.getManagers(saveId);
-  const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers));
+  const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId));
   const a = state.attributes;
   const retired = state.legendOptions ? await saveService.getRetired(saveId) : [];
   return {

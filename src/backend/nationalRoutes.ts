@@ -177,7 +177,7 @@ export const nationalRoutes = {
     for (const f of games) for (const id of [f.home, f.away]) names[id] = state.teams[id]?.nation ?? id;
     return Response.json({
       id: team.id, nation: team.nation, confed: team.confed, elo: Math.round(team.elo), rank, games: team.games,
-      manager: manager ? { id: manager.id, name: manager.name, interim: !!manager.interim, isPlayer: manager.isPlayer } : null,
+      manager: manager ? { id: manager.id, name: manager.name, interim: !!manager.interim, isPlayer: manager.seatId === auth.seatId } : null,
       callUp: cu ? { from: cu.from, until: cu.until, active: !!active, competition: cu.competition ?? null, players } : null,
       recent: games.filter((f) => f.played).slice(-8).reverse(),
       upcoming: games.filter((f) => !f.played).slice(0, 5),
@@ -211,7 +211,7 @@ export const nationalRoutes = {
     return withSaveLock(saveId!, async () => {
       const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await answerNationalOffer(saveService, saveId!, offerId!, body.accept as boolean, meta.currentDate);
+      const r = await answerNationalOffer(saveService, saveId!, auth.seatId, offerId!, body.accept as boolean, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true, status: body.accept ? "accepted" : "declined", teamId: r.teamId });
     });
@@ -226,7 +226,7 @@ export const nationalRoutes = {
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await resignNationalTeam(saveService, saveId, meta.currentDate);
+      const r = await resignNationalTeam(saveService, saveId, auth.seatId, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true });
     });

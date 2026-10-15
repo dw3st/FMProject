@@ -4,6 +4,7 @@
  */
 import type { SaveMeta, SaveService } from "@/backend/SaveService";
 import { addDays } from "@/Domain/dates";
+import { seatManagerId } from "@/Domain/seats/seats";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 import { overallAvg } from "@/Domain/playerRating";
@@ -34,7 +35,7 @@ const DEFAULT_TACTICS: NationalTactics = { formation: NATIONAL_SQUAD.FORMATION, 
 
 /** Answers a national-team job offer. Accept: he takes the team (keeps his club); decline: the offer goes. */
 export async function answerNationalOffer(
-  service: SaveService, saveId: string, offerId: string, accept: boolean, date: string,
+  service: SaveService, saveId: string, seatId: string, offerId: string, accept: boolean, date: string,
 ): Promise<{ ok: true; teamId: string } | Fail> {
   const state = await service.getNationalState(saveId);
   const offer = state?.offers?.find((o) => o.id === offerId);
@@ -51,13 +52,13 @@ export async function answerNationalOffer(
     return { ok: true, teamId: offer.teamId };
   }
   if (state.human || !team || !state.vacancies[team.id]) return { ok: false, status: 409, error: "offerClosed" };
-  await service.writeManagers(saveId, takeNationalJob(await service.getManagers(saveId), { teamId: team.id, date }));
+  await service.writeManagers(saveId, takeNationalJob(await service.getManagers(saveId), { seatId, teamId: team.id, date }));
   const { [team.id]: _v, ...vacancies } = state.vacancies;
   await service.writeNationalState(saveId, {
     ...state,
     offers: others,
     vacancies,
-    teams: { ...state.teams, [team.id]: { ...team, managerId: "player" } },
+    teams: { ...state.teams, [team.id]: { ...team, managerId: seatManagerId(seatId) } },
     human: { teamId: team.id, since: date, wage: offer.wage, tactics: DEFAULT_TACTICS },
   });
   await emitInboxMessage(saveId, buildNationalCoachMessage({ kind: "hired", date, teamId: team.id, nation: team.nation }), service);
@@ -67,11 +68,11 @@ export async function answerNationalOffer(
 const maxDate = (a: string, b: string) => (a > b ? a : b);
 
 /** He leaves his national team on his own (`left: "moved"`): interim + AI vacancy, his club untouched. */
-export async function resignNationalTeam(service: SaveService, saveId: string, date: string): Promise<{ ok: true } | Fail> {
+export async function resignNationalTeam(service: SaveService, saveId: string, seatId: string, date: string): Promise<{ ok: true } | Fail> {
   const state = await service.getNationalState(saveId);
   if (!state?.human) return { ok: false, status: 409, error: "notCoach" };
   const team = state.teams[state.human.teamId]!;
-  const r = await leaveNationalTeam(service, saveId, state, date, "moved");
+  const r = await leaveNationalTeam(service, saveId, seatId, state, date, "moved");
   await service.writeNationalState(saveId, r.state);
   await emitInboxMessage(saveId, buildNationalCoachMessage({ kind: "resigned", date, teamId: team.id, nation: team.nation }), service);
   return { ok: true };

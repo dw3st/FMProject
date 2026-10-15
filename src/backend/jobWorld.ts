@@ -163,6 +163,8 @@ async function currentRank(service: SaveService, saveId: string, league: string,
 }
 
 export interface OfferRequest {
+  /** The seat whose manager gets the offers (his reputation). */
+  seatId: string;
   window: JobWindow;
   date: string;
   /** Last day the offers can be accepted. */
@@ -190,7 +192,7 @@ export interface OfferRequest {
  */
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
-  const rep = managerReputation(req.managers, req.board, year);
+  const rep = managerReputation(req.managers, req.board, year, req.seatId);
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.date}:${req.window}`));
   const count = req.window === "season_end"
     ? seasonEndOfferCount(rep, rng)
@@ -437,7 +439,7 @@ export async function acceptJobOffer(
   const managers = await service.getManagers(saveId);
   if (managers.length > 0) {
     await service.writeManagers(saveId, moveHumanManager(managers, {
-      toSquadId: offer.squadId, fromSquadId: employedAt, fromClubName: employedAt ? meta.clubName : undefined, date,
+      seatId, toSquadId: offer.squadId, fromSquadId: employedAt, fromClubName: employedAt ? meta.clubName : undefined, date,
     }));
   }
   // The old club hires by the AI rule (interim + vacancy, D4); the new one is no longer vacant.
@@ -510,7 +512,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
   const board = meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60);
   const year = parseInt((meta.currentDate ?? "2026").slice(0, 4), 10);
   try {
-    return managerReputation(managers, board, year);
+    return managerReputation(managers, board, year, meta.seatId);
   } catch (e) {
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;

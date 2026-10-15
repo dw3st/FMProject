@@ -4,6 +4,7 @@
  * file per competition (`national/comps/<slug>.json`). Every national game is a quickSim.
  */
 import { faceRegionOf } from "@/Domain/faces/faceProfile";
+import { seatIdOfManager } from "@/Domain/seats/seats";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { countryKey } from "@/Domain/cups/cupIds";
@@ -134,7 +135,7 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
       for (let n = 2; taken.has(managerId); n++) managerId = `coach_${id}_${n}`;
       taken.add(managerId);
       newManagers.push(cleanRecord({
-        id: managerId, name: coachName(nation, donorsOf(nation, cands, pool), id), squadId: id, isPlayer: false,
+        id: managerId, name: coachName(nation, donorsOf(nation, cands, pool), id), squadId: id,
         points: 0, seasons: 0, titles: [], clubs: [{ squadId: id, from: date }],
       }));
     }
@@ -713,7 +714,7 @@ async function sackAfter(
       const o = outcome(id);
       hc.news.push({ kind: "result", date, teamId: id, nation: team.nation, competition: comp.slug, met: objectiveMet(o) });
       if (objectiveFailedBadly(o)) {
-        const r = await leaveNationalTeam(service, saveId, state, date, "sacked", managers);
+        const r = await leaveNationalTeam(service, saveId, seatIdOfManager(team.managerId) ?? "", state, date, "sacked", managers);
         state = r.state;
         managers = r.managers;
         hc.news.push({ kind: "sacked", date, teamId: id, nation: team.nation, competition: comp.slug, met: false });
@@ -721,7 +722,7 @@ async function sackAfter(
       continue;
     }
     const m = managers.find((x) => x.id === team.managerId);
-    if (!m || m.isPlayer || m.interim) continue;
+    if (!m || m.seatId || m.interim) continue;
     const o = outcome(id);
     const p = rolloverSackChance({ ...o, champion: o.position === 1 });
     if (p <= 0 || mulberry32(seedFrom(`${saveId}:${id}:${comp.slug}:sack`))() >= p) continue;
@@ -750,7 +751,7 @@ async function hireDue(service: SaveService, saveId: string, state0: NationalSta
   for (const [id] of due) {
     const team = state.teams[id]!;
     const pct = ranked.length > 1 ? 1 - ranked.findIndex((t) => t.id === id) / (ranked.length - 1) : 1;
-    const free = managers.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map((m) => ({
+    const free = managers.filter((m) => !m.seatId && !m.squadId && !m.retired).map((m) => ({
       managerId: m.id, reputation: aiManagerReputation(managers, m, year), country: null, continent: null,
       freeDays: m.freeSince ? daysBetween(m.freeSince, date) : 0,
     }));
@@ -858,12 +859,12 @@ export function withOffer(state: NationalState, offer: NationalCoachOffer): Nati
  * team hires by the AI rule. Writes `managers.json`; the caller writes the state.
  */
 export async function leaveNationalTeam(
-  service: SaveService, saveId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
+  service: SaveService, saveId: string, seatId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
 ): Promise<{ state: NationalState; managers: ManagerRecord[] }> {
   const h = state.human;
   if (!h) return { state, managers: managers0 ?? (await service.getManagers(saveId)) };
   const team = state.teams[h.teamId]!;
-  const r = leaveNationalJob(managers0 ?? (await service.getManagers(saveId)), { teamId: team.id, nation: team.nation, date, left });
+  const r = leaveNationalJob(managers0 ?? (await service.getManagers(saveId)), { seatId, teamId: team.id, nation: team.nation, date, left });
   await service.writeManagers(saveId, r.managers);
   const { human: _h, ...rest } = state;
   return {

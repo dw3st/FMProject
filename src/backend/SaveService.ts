@@ -1166,7 +1166,7 @@ export class SaveService {
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
     // replacing the imported coach of his club. Start kits never touch this file.
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
-      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
+      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, seatId, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
       : null, playerLeagueStart));
 
     // National teams (`.claude/rules/game/national-teams.md`): every nation of the world, its Elo and AI coach,
@@ -1190,7 +1190,7 @@ export class SaveService {
         const squad = squadCache.get(playerSquadId);
         const managers = await this.dal.readManagers(id);
         const start = playerLeagueStart ?? now.slice(0, 10);
-        const rep = managerReputation(managers, 60, parseInt(start.slice(0, 4), 10));
+        const rep = managerReputation(managers, 60, parseInt(start.slice(0, 4), 10), seatId);
         const seasonEnd = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.end ?? defaultSeasonEnd(start);
         seat.managerContract = {
           squadId: playerSquadId,

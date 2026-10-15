@@ -11,6 +11,7 @@ import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
 import type { ClubFacilities, StandId } from "@/types/facilityTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import { seatManagerId } from "@/Domain/seats/seats";
 import type { Squad } from "@/types/playerTypes";
 
 /** Crowd of the live match (spec 2026-10-08-match-visual §7). */
@@ -108,9 +109,9 @@ export async function clubCountryResolver(service: SaveService, saveId: string):
 export function matchManagers(
   meta: SeatMeta, records: readonly ManagerRecord[], opponentId: string, countryOfClub: (squadId: string) => string | null,
 ): MatchManagers {
-  const opp = records.find((m) => m.squadId === opponentId && !m.isPlayer);
+  const opp = records.find((m) => m.squadId === opponentId && !m.seatId);
   return {
-    mine: { id: "player", face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) },
+    mine: { id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) },
     opponent: opp ? { id: opp.id, nationality: countryOfClub(opp.clubs?.[0]?.squadId ?? opp.squadId) } : null,
   };
 }

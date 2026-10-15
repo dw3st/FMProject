@@ -65,9 +65,9 @@ export function reputation(r: ReputationInput): number {
   return Math.round(v * 10) / 10;
 }
 
-/** The human manager's reputation from the ranking file, the board and the date's year. */
-export function managerReputation(managers: ManagerRecord[], board: number, year: number): number {
-  const me = managers.find((m) => m.isPlayer);
+/** A seat's manager's reputation from the ranking file, the board and the date's year. */
+export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string): number {
+  const me = managers.find((m) => m.seatId === seatId);
   return reputation({
     rankPercentile: me ? rankPercentile(managers, me.id) : 0.5,
     board,
@@ -297,21 +297,21 @@ export function mergeOffers(current: JobOffer[], incoming: JobOffer[]): JobOffer
  */
 export function moveHumanManager(
   managers: ManagerRecord[],
-  args: { toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string },
+  args: { seatId: string; toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string },
 ): ManagerRecord[] {
   const out: ManagerRecord[] = [];
   for (const m of managers) {
-    if (m.isPlayer) {
+    if (m.seatId === args.seatId) {
       const clubs = closePassage(m.clubs, args.date, "moved");
       out.push(cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] }));
-    } else if (m.squadId === args.toSquadId) {
+    } else if (!m.seatId && m.squadId === args.toSquadId) {
       // An interim with nothing to his name just disappears (as when an AI club hires).
       if (!(m.interim && m.points === 0 && m.titles.length === 0)) out.push(toFree(m, args.date, m.interim ? "interim" : "moved"));
     } else {
       out.push(m);
     }
   }
-  if (args.fromSquadId && !out.some((m) => !m.isPlayer && m.squadId === args.fromSquadId)) {
+  if (args.fromSquadId && !out.some((m) => !m.seatId && m.squadId === args.fromSquadId)) {
     out.push(makeInterim(args.fromSquadId, args.fromClubName ?? args.fromSquadId, args.date, new Set(out.map((m) => m.id))));
   }
   return out;
@@ -323,13 +323,13 @@ export function moveHumanManager(
  */
 export function sackHumanManager(
   managers: ManagerRecord[],
-  args: { date: string; clubName: string; left?: "sacked" | "contract" },
+  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" },
 ): ManagerRecord[] {
-  const me = managers.find((m) => m.isPlayer);
+  const me = managers.find((m) => m.seatId === args.seatId);
   if (!me || !me.squadId) return managers;
   const out = managers.map((m) =>
-    m.isPlayer ? cleanRecord({ ...m, squadId: "", freeSince: args.date, clubs: closePassage(m.clubs, args.date, args.left ?? "sacked") }) : m);
-  if (!out.some((m) => !m.isPlayer && m.squadId === me.squadId)) {
+    m.seatId === args.seatId ? cleanRecord({ ...m, squadId: "", freeSince: args.date, clubs: closePassage(m.clubs, args.date, args.left ?? "sacked") }) : m);
+  if (!out.some((m) => !m.seatId && m.squadId === me.squadId)) {
     out.push(makeInterim(me.squadId, args.clubName, args.date, new Set(out.map((m) => m.id))));
   }
   return out;

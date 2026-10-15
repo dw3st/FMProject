@@ -111,17 +111,17 @@ describe("national coach", () => {
 
   test("taking and leaving the job keeps one coach per team and the club", () => {
     const managers: ManagerRecord[] = [
-      { id: "player", name: "Me", squadId: "club1", isPlayer: true, points: 0, seasons: 0, titles: [], clubs: [{ squadId: "club1", from: "2027-01-01" }] },
-      { id: "coach_nat_x_2027-06-01", name: "Interim", squadId: "nat_x", isPlayer: false, points: 0, seasons: 0, titles: [], interim: true },
-      { id: "c2", name: "Other", squadId: "club2", isPlayer: false, points: 5, seasons: 1, titles: [] },
+      { id: "seat:s1", seatId: "s1", name: "Me", squadId: "club1", points: 0, seasons: 0, titles: [], clubs: [{ squadId: "club1", from: "2027-01-01" }] },
+      { id: "coach_nat_x_2027-06-01", name: "Interim", squadId: "nat_x", points: 0, seasons: 0, titles: [], interim: true },
+      { id: "c2", name: "Other", squadId: "club2", points: 5, seasons: 1, titles: [] },
     ];
-    const taken = takeNationalJob(managers, { teamId: "nat_x", date: "2027-06-05" });
+    const taken = takeNationalJob(managers, { seatId: "s1", teamId: "nat_x", date: "2027-06-05" });
     expect(taken.some((m) => m.squadId === "nat_x")).toBe(false);
-    const me = taken.find((m) => m.isPlayer)!;
+    const me = taken.find((m) => m.seatId === "s1")!;
     expect(me.squadId).toBe("club1");
     expect(currentNationalTeam(me)).toBe("nat_x");
-    const left = leaveNationalJob(taken, { teamId: "nat_x", nation: "X", date: "2028-07-01", left: "sacked" });
-    const me2 = left.managers.find((m) => m.isPlayer)!;
+    const left = leaveNationalJob(taken, { seatId: "s1", teamId: "nat_x", nation: "X", date: "2028-07-01", left: "sacked" });
+    const me2 = left.managers.find((m) => m.seatId === "s1")!;
     expect(currentNationalTeam(me2)).toBeNull();
     expect(me2.national?.[0]).toEqual({ squadId: "nat_x", from: "2027-06-05", to: "2028-07-01", left: "sacked" });
     expect(left.managers.filter((m) => m.squadId === "nat_x")).toHaveLength(1);

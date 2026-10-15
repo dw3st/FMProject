@@ -31,7 +31,7 @@ const fakeService = (squads: Squad[]) => ({
 }) as unknown as SaveService;
 
 const meta = {
-  id: "s1", leagueSlug: "premier_league", clubId: "me", board: { fans: 60 },
+  id: "s1", seatId: "seat1", leagueSlug: "premier_league", clubId: "me", board: { fans: 60 },
   activeLeagues: [{ leagueSlug: "premier_league", start: "2026-08-15", end: "2027-05-20" }],
 } as unknown as SaveMeta;
 
@@ -91,11 +91,11 @@ describe("match crowd", () => {
 
   test("managers: the human and the opponent's record; none = null", () => {
     const records = [
-      { id: "player", squadId: "me", isPlayer: true },
-      { id: "coach_7", squadId: "opp", isPlayer: false, clubs: [{ squadId: "old", from: "2026-08-01" }] },
+      { id: "seat:seat1", squadId: "me", seatId: "seat1" },
+      { id: "coach_7", squadId: "opp", clubs: [{ squadId: "old", from: "2026-08-01" }] },
     ] as unknown as ManagerRecord[];
     const m = matchManagers({ ...meta, manager: { name: "X", nationalityIso: "br" } } as unknown as SaveMeta, records, "opp", (id) => (id === "old" ? "Brazil" : null));
-    expect(m.mine.id).toBe("player");
+    expect(m.mine.id).toBe("seat:seat1");
     expect(m.mine.nationality).toBe("Brazil");
     expect(m.opponent).toEqual({ id: "coach_7", nationality: "Brazil" });
     expect(matchManagers(meta, [], "opp", () => null).opponent).toBeNull();
@@ -131,8 +131,8 @@ describe("/api/match-setup crowd and managers", () => {
     expect(body.crowd.attendance).toBeGreaterThan(0);
     expect(body.crowd.attendance).toBeLessThanOrEqual(body.crowd.capacity);
     expect(body.crowd.importance).toBeGreaterThanOrEqual(1);
-    expect(body.managers.mine.id).toBe("player");
-    const oppRecord = (await saveService.getManagers(saveId)).find((m) => m.squadId === fx.away && !m.isPlayer);
+    expect(body.managers.mine.id).toBe(`seat:${created.seatId}`);
+    const oppRecord = (await saveService.getManagers(saveId)).find((m) => m.squadId === fx.away && !m.seatId);
     expect(body.managers.opponent?.id).toBe(oppRecord!.id);
   }, 300_000);
 });

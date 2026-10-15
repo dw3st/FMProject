@@ -2789,7 +2789,7 @@ try {
   console.log("\n── Técnicos ──");
   {
     const managers = await plain().getManagers(saveId);
-    const mine = managers.filter((m) => m.isPlayer);
+    const mine = managers.filter((m) => !!m.seatId);
     check(mine.length === 1 && mine[0]!.squadId === playerSquadId, `técnicos: exactly one player manager, at ${playerSquadId}`);
     // Since 4.0 free managers (`squadId` "") live in the same file (`.claude/rules/game/transfer-windows.md`).
     const employed = managers.filter((m) => m.squadId !== "");
@@ -2828,7 +2828,7 @@ try {
       + `promotion ${titles.filter((t) => t.kind === "promotion").length})`);
     const top = rankManagers(managers).slice(0, 5);
     for (const [i, m] of top.entries()) console.log(`  ${i + 1}. ${m.name} (${m.squadId}) ${m.points} pts, ${m.titles.length} titles`);
-    const myRank = rankManagers(managers).findIndex((m) => m.isPlayer) + 1;
+    const myRank = rankManagers(managers).findIndex((m) => !!m.seatId) + 1;
     console.log(`  player manager: #${myRank} of ${managers.length}, ${mine[0]?.points ?? 0} pts`);
   }
 
@@ -3151,7 +3151,7 @@ try {
     const ms = await plain().getManagers(saveId);
     const sacked = ms.flatMap((m) => (m.clubs ?? []).filter((c) => c.left === "sacked")).length;
     console.log(`  ${livelyTrack.managerChecks} Monday manager check(s); ${sacked} sacking(s); ${livelyTrack.vacancyFilled} vacancy(ies) filled; ` +
-      `${ms.filter((m) => !m.isPlayer && !m.squadId && !m.retired).length} free manager(s)`);
+      `${ms.filter((m) => !m.seatId && !m.squadId && !m.retired).length} free manager(s)`);
     check(livelyTrack.managerChecks > 0 && livelyTrack.invariantBreaks.length === 0,
       `mercado vivo: one manager per club on every Monday (${livelyTrack.invariantBreaks.slice(0, 2).join("; ")})`);
     check(livelyTrack.closedWithoutLeft === 0 && livelyTrack.openPassagesWithLeft === 0,
@@ -3485,7 +3485,7 @@ try {
     const acc = await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_smoke`, "POST", { accept: true }, { offerId: "natjob_smoke" });
     check(acc.status === 200, `técnico de seleção: forced offer of ${team.nation} accepted (status ${acc.status})`);
     let ms = await plain().getManagers(saveId);
-    const me = ms.find((m) => m.isPlayer)!;
+    const me = ms.find((m) => !!m.seatId)!;
     check(currentNationalTeam(me) === team.id && me.squadId === metaN.clubId, "técnico de seleção: he coaches the national team and keeps his club");
     check(ms.filter((m) => m.squadId === team.id).length === 0, "técnico de seleção: the team's AI coach left");
 
@@ -3589,7 +3589,7 @@ try {
       };
       const managerChecks = async (when: string) => {
         const ms = await plain().getManagers(saveId!);
-        const me = ms.filter((m) => m.isPlayer);
+        const me = ms.filter((m) => !!m.seatId);
         check(me.length === 1 && me[0]!.squadId === newClub.squadId, `convites (${when}): the player's manager is at ${newClub.squadId}`);
         const clubs = ms.filter((m) => m.squadId).map((m) => m.squadId);
         check(new Set(clubs).size === clubs.length, `convites (${when}): one manager per club (${clubs.length - new Set(clubs).size} duplicate(s))`);
@@ -3605,7 +3605,7 @@ try {
         console.log(`  arrival balance ${arrive?.amount} (offer budget 5M, compensation 1M)`);
         check(arrive?.amount === 4_000_000, "convites: the compensation to the old club came out of the arrival balance");
         const msA = await plain().getManagers(saveId);
-        check(msA.find((m) => !m.isPlayer && m.squadId === playerSquadId)?.interim === true && !!metaA.managerVacancies?.[playerSquadId],
+        check(msA.find((m) => !m.seatId && m.squadId === playerSquadId)?.interim === true && !!metaA.managerVacancies?.[playerSquadId],
           "convites: the old club has an interim and a vacancy (no manager swap)");
         check(metaA.managerContract?.squadId === newClub.squadId, "convites: the manager has a contract at the new club");
       }

@@ -19,7 +19,7 @@ export function makeInterim(squadId: string, clubName: string, date: string, tak
   let id = interimId(squadId, date);
   for (let n = 2; taken?.has(id); n++) id = `${interimId(squadId, date)}_${n}`;
   return {
-    id, name: interimName(clubName), squadId, isPlayer: false,
+    id, name: interimName(clubName), squadId,
     points: 0, seasons: 0, titles: [], interim: true, clubs: [{ squadId, from: date }], hiredOn: date,
   };
 }

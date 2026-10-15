@@ -815,7 +815,7 @@ export async function advanceOneDay(
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
         human: {
-          reputation: managerReputation(await saveService.getManagers(saveId), coachSeat.meta.unemployed ? coachSeat.meta.unemployed.board : (coachSeat.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10)),
+          reputation: managerReputation(await saveService.getManagers(saveId), coachSeat.meta.unemployed ? coachSeat.meta.unemployed.board : (coachSeat.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), coachSeat.seatId),
           nationality: managerNation(coachSeat.meta.manager?.nationalityIso),
         },
       }),
@@ -2713,9 +2713,8 @@ export async function advanceOneDay(
           }
         }
         await releaseHumanClub(saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate });
-        // Task 23 puts the seat's manager id here.
         await managerTracker.apply((ms) => sackHumanManager(ms, {
-          date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
+          seatId: ds.seatId, date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
         }));
         // The club hires by the AI rule (interim + vacancy).
         aiDesk?.openVacancy(clubId);
@@ -2741,7 +2740,7 @@ export async function advanceOneDay(
           // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
           const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(seatState.leagueSlug) ?? [], rescheduleMoves, clubId);
           newOffers.push(...await generateJobOffers(saveService, saveId, {
-            window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
+            seatId: ds.seatId, window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
             managers: await managerTracker.list(), board: ds.rollover.boardAtSeasonEnd ?? ds.board.board,
             humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
             ...(contract ? { contract } : {}),
@@ -2754,7 +2753,7 @@ export async function advanceOneDay(
             if (seatState.totalRounds > 0 && mp >= seatState.totalRounds * JOBS.midSeason.PROGRESS) {
               ds.job.midSeason = label;
               newOffers.push(...await generateJobOffers(saveService, saveId, {
-                window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
+                seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
                 managers: await managerTracker.list(), board: ds.board.board,
                 humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
                 ...(contract ? { contract } : {}),
@@ -2765,7 +2764,7 @@ export async function advanceOneDay(
       } else if (!ended && ds.job.unemployed && currentDate >= ds.job.unemployed.nextOfferDate) {
         const unemployed = ds.job.unemployed;
         const offers = await generateJobOffers(saveService, saveId, {
-          window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
+          seatId: ds.seatId, window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
           managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
           unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
           activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
@@ -2790,7 +2789,7 @@ export async function advanceOneDay(
         if (st) {
           const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === clubId)?.mp ?? 0;
           const squad = await saveService.getSquadById(saveId, clubId);
-          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10));
+          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId);
           const day = contractDay({
             date: currentDate, contract, ...(ds.job.renewal ? { renewal: ds.job.renewal } : {}),
             notices: ds.job.notices ?? [], board: ds.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,

@@ -67,10 +67,10 @@ async function cheapestOfLeague(args: AchievementsDayArgs, clubId: string, leagu
 }
 
 /** What the game keeps that the tracks read (titles, ranking, money, stadium, facilities). */
-export function achievementSnapshot(state: AchievementsState, club: Squad | null, managers: ManagerRecord[]): AchievementSnapshot {
-  const player = managers.find((m) => m.isPlayer) ?? null;
+export function achievementSnapshot(state: AchievementsState, club: Squad | null, managers: ManagerRecord[], seatId: string): AchievementSnapshot {
+  const player = managers.find((m) => m.seatId === seatId) ?? null;
   const ranked = rankManagers(managers.filter((m) => !m.retired));
-  const pos = ranked.findIndex((m) => m.isPlayer);
+  const pos = ranked.findIndex((m) => m.seatId === seatId);
   return {
     manager: player,
     rank: pos >= 0 && (player?.points ?? 0) > 0 ? pos + 1 : null,
@@ -111,7 +111,7 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
   if (state.lastDay && state.lastDay >= args.date) return null;
   const clubId = args.clubId || null;
   const club = clubId ? await args.squadOf(clubId) : null;
-  const player = args.managers.find((m) => m.isPlayer) ?? null;
+  const player = args.managers.find((m) => m.seatId === seatId) ?? null;
 
   // Today's official matches of the club.
   const matches: MatchFacts[] = [];
@@ -131,7 +131,7 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
 
   const transfers: DayTransfer[] = (await service.getDayLog(saveId, args.date))?.transfers ?? [];
 
-  const snapshot = achievementSnapshot(state, club, args.managers);
+  const snapshot = achievementSnapshot(state, club, args.managers, seatId);
 
   // Season awards of the club's players (recorded at the club's rollover).
   const awards: { key: string; kind: "young_player" | "top_scorer" }[] = [];

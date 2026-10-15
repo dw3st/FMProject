@@ -178,13 +178,13 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(tactics.lineup.every((id) => !id || mine.players.some((p) => p.id === id))).toBe(true);
 
     const managers = await saveService.getManagers(meta.id);
-    const me = managers.find((m) => m.isPlayer)!;
+    const me = managers.find((m) => !!m.seatId)!;
     expect(me.squadId).toBe(target);
     expect(me.clubs?.map((c) => c.squadId)).toEqual(["33", target]);
     const clubs = managers.filter((m) => m.squadId).map((m) => m.squadId);
     expect(new Set(clubs).size).toBe(clubs.length);
     // D4: no swap — the old club has an interim and a vacancy, the new club's coach went free.
-    expect(managers.find((m) => !m.isPlayer && m.squadId === "33")?.interim).toBe(true);
+    expect(managers.find((m) => !m.seatId && m.squadId === "33")?.interim).toBe(true);
     expect(after.managerVacancies?.["33"]).toBeDefined();
     expect(after.managerContract).toMatchObject({ squadId: target });
     expect(after.careerStart).toBeUndefined();
@@ -216,7 +216,7 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(old.financialTier).toBeDefined();
     expect(await ledgerSum(meta.id)).toBe(0);
     const managers = await saveService.getManagers(meta.id);
-    expect(managers.find((m) => m.isPlayer)!.squadId).toBe("");
+    expect(managers.find((m) => !!m.seatId)!.squadId).toBe("");
     expect(managers.filter((m) => m.squadId === "33").length).toBe(1);
 
     // Unemployed days advance (no matches of his own); the next batch of offers arrives on schedule.
@@ -242,7 +242,7 @@ describe("jobs: sacking, offers, changing club", () => {
     const mine = (await saveService.getSquadById(meta.id, offer.squadId))!;
     expect(await ledgerSum(meta.id)).toBe(mine.finances!.budget);
     const ms = await saveService.getManagers(meta.id);
-    expect(ms.find((m) => m.isPlayer)!.squadId).toBe(offer.squadId);
+    expect(ms.find((m) => !!m.seatId)!.squadId).toBe(offer.squadId);
     const clubs = ms.filter((m) => m.squadId).map((m) => m.squadId);
     expect(new Set(clubs).size).toBe(clubs.length);
     const inboxAfter = await saveService.getInbox(meta.id);
@@ -285,7 +285,7 @@ describe("jobs: sacking, offers, changing club", () => {
     // the seat's club and every other club of its league stand for "clubs with a seat"
     const excluded = new Set([meta.clubId, ...index.inLeague("premier_league").map((t) => t.squadId)]);
     const offers = await generateJobOffers(saveService, meta.id, {
-      window: "unemployed", date: meta.currentDate!, expires: addDays(meta.currentDate!, 14),
+      seatId: meta.seatId, window: "unemployed", date: meta.currentDate!, expires: addDays(meta.currentDate!, 14),
       managers: await saveService.getManagers(meta.id), board: 90, humanSquadId: null,
       unemployed: { lastClubId: meta.clubId, since: meta.currentDate! },
       activeLeagues: world.activeLeagues ?? [], index, excludeClubs: excluded,

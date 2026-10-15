@@ -21,6 +21,7 @@ const TEAM = "nat_wales";
 
 describe("the human manager at a national team", () => {
   let saveId = "";
+  let seatId = "";
   let token = "";
   const call = (key: string, path: string, init: RequestInit = {}, params: Record<string, string> = {}) => {
     const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
@@ -33,6 +34,7 @@ describe("the human manager at a national team", () => {
       clubId: HUMAN, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    seatId = meta.seatId;
     const { user, session } = devAutoLogin("national-coach@test.local");
     token = session.token;
     await ownSolo(saveId, user.id);
@@ -53,11 +55,11 @@ describe("the human manager at a national team", () => {
     const res = await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_test`, { method: "POST", body: JSON.stringify({ accept: true }) }, { offerId: "natjob_test" });
     expect(res.status).toBe(200);
     state = (await saveService.getNationalState(saveId))!;
-    expect(state.teams[TEAM]!.managerId).toBe("player");
+    expect(state.teams[TEAM]!.managerId).toBe(`seat:${seatId}`);
     expect(state.human).toMatchObject({ teamId: TEAM, wage: 30_000 });
     expect(state.vacancies[TEAM]).toBeUndefined();
     const managers = await saveService.getManagers(saveId);
-    const me = managers.find((m) => m.isPlayer)!;
+    const me = managers.find((m) => m.seatId === seatId)!;
     expect(me.squadId).toBe(HUMAN);
     expect(currentNationalTeam(me)).toBe(TEAM);
     expect(managers.find((m) => m.id === oldCoach)?.squadId ?? "").not.toBe(TEAM);
@@ -135,11 +137,11 @@ describe("the human manager at a national team", () => {
     expect(res.status).toBe(200);
     const state = (await saveService.getNationalState(saveId))!;
     expect(state.human).toBeUndefined();
-    expect(state.teams[TEAM]!.managerId).not.toBe("player");
+    expect(state.teams[TEAM]!.managerId).not.toBe(`seat:${seatId}`);
     expect(state.vacancies[TEAM]).toBeDefined();
     const managers = await saveService.getManagers(saveId);
     expect(managers.filter((m) => m.squadId === TEAM)).toHaveLength(1);
-    const me = managers.find((m) => m.isPlayer)!;
+    const me = managers.find((m) => m.seatId === seatId)!;
     expect(me.squadId).toBe(HUMAN);
     expect(currentNationalTeam(me)).toBeNull();
     expect((await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, { method: "POST" })).status).toBe(409);

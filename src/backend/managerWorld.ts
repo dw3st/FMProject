@@ -187,7 +187,7 @@ export function createAiManagerDesk(args: {
     const out = new Map<string, number>();
     let missing = false;
     for (const t of teams) {
-      const m = ms.find((x) => x.squadId === t.squadId && !x.isPlayer);
+      const m = ms.find((x) => x.squadId === t.squadId && !x.seatId);
       if (m?.target?.season === season) out.set(t.squadId, m.target.target);
       else missing = true;
     }
@@ -200,7 +200,7 @@ export function createAiManagerDesk(args: {
     });
     const zones = (await args.catalog()).find((l) => l.slug === slug)?.zones ?? [];
     for (const c of clubs) out.set(c.squadId, objectiveFor({ squadId: c.squadId, clubs, zones, leagueSlug: slug, season }).target);
-    await tracker.apply((list) => list.map((m) => (m.squadId && out.has(m.squadId) && !m.isPlayer ? { ...m, target: { season, target: out.get(m.squadId)! } } : m)));
+    await tracker.apply((list) => list.map((m) => (m.squadId && out.has(m.squadId) && !m.seatId ? { ...m, target: { season, target: out.get(m.squadId)! } } : m)));
     return out;
   };
 
@@ -210,7 +210,7 @@ export function createAiManagerDesk(args: {
   };
 
   const sack = async (squadId: string, left: "sacked" | "moved" = "sacked") => {
-    const before = (await tracker.list()).find((m) => !m.isPlayer && m.squadId === squadId);
+    const before = (await tracker.list()).find((m) => !m.seatId && m.squadId === squadId);
     await tracker.apply((ms) => sackManager(ms, { squadId, clubName: nameOf(squadId), date, left }));
     openVacancy(squadId);
     if (before) pushNews({ kind: "sacked", squadId, clubName: nameOf(squadId), managerName: before.name });
@@ -253,7 +253,7 @@ export function createAiManagerDesk(args: {
           const row = table[i]!;
           if (args.humanClubIds.has(row.squadId) || vacancies[row.squadId] || sackedSet.has(row.squadId)) continue;
           const m = ms.find((x) => x.squadId === row.squadId);
-          if (!m || m.isPlayer) continue;
+          if (!m || m.seatId) continue;
           const input = {
             position: i + 1, target: targets.get(row.squadId) ?? Math.ceil(table.length / 2), size: table.length,
             form: formPpg(row.form),
@@ -284,7 +284,7 @@ export function createAiManagerDesk(args: {
         const row = table[i]!;
         if (args.humanClubIds.has(row.squadId) || vacancies[row.squadId] || row.mp === 0) continue;
         const m = ms.find((x) => x.squadId === row.squadId);
-        if (!m || m.isPlayer) continue;
+        if (!m || m.seatId) continue;
         const tc = tierChanges[row.squadId];
         const p = rolloverSackChance({
           position: i + 1, target: targets.get(row.squadId) ?? Math.ceil(table.length / 2), size: table.length,
@@ -300,7 +300,7 @@ export function createAiManagerDesk(args: {
       // Self-heal: an AI club with an interim and no vacancy (a vacancy lost to a retried day, an
       // old save) opens one, so no interim stays in charge for good.
       for (const m of await tracker.list()) {
-        if (m.interim && m.squadId && !m.isPlayer && !args.humanClubIds.has(m.squadId) && !vacancies[m.squadId]) openVacancy(m.squadId);
+        if (m.interim && m.squadId && !m.seatId && !args.humanClubIds.has(m.squadId) && !vacancies[m.squadId]) openVacancy(m.squadId);
       }
       const due = Object.entries(vacancies).filter(([, v]) => v.hireOn <= date).map(([id]) => id).sort();
       if (due.length === 0) return;
@@ -337,9 +337,9 @@ export function createAiManagerDesk(args: {
         }
         const pick = chooseHire({
           prestige: prestige.get(squadId) ?? 0.5, ...homeOf(squadId),
-          free: ms.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map(cand),
+          free: ms.filter((m) => !m.seatId && !m.squadId && !m.retired).map(cand),
           // National-team coaches (`nat_…`, `national-teams.md`) are never poached by clubs.
-          employed: ms.filter((m) => !m.isPlayer && !!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && !args.humanClubIds.has(m.squadId)).map(cand),
+          employed: ms.filter((m) => !m.seatId &&!!m.squadId && !m.squadId.startsWith("nat_") && !m.interim && m.squadId !== squadId && !args.humanClubIds.has(m.squadId)).map(cand),
           interim: interim ? { ...cand(interim), interimPpg } : null,
           allowPoach: !poached,
           rng: rngFor(squadId, "hire"),

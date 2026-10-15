@@ -118,7 +118,7 @@ describe("computeLeagueAwards", () => {
       squadId, name: squadId.toUpperCase(), colors: ["#000", "#fff"], mp: 38, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts, form: [],
     });
     const m = (id: string, squadId: string, hiredOn?: string): ManagerRecord => ({
-      id, name: id, squadId, isPlayer: false, points: 0, seasons: 0, titles: [], ...(hiredOn ? { hiredOn } : {}),
+      id, name: id, squadId, points: 0, seasons: 0, titles: [], ...(hiredOn ? { hiredOn } : {}),
     });
     const table = [row("a", 80), row("b", 70), row("c", 60), row("d", 50)];
     const a = computeLeagueAwards({
@@ -135,7 +135,7 @@ describe("computeLeagueAwards", () => {
     const row: StandingRow = { squadId: "a", name: "A", colors: ["#000", "#fff"], mp: 38, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 1, form: [] };
     const a = computeLeagueAwards({
       ...base, squads: [], table: [row], targets: new Map([["a", 1]]),
-      managers: [{ id: "ma", name: "ma", squadId: "a", isPlayer: false, points: 0, seasons: 0, titles: [] }],
+      managers: [{ id: "ma", name: "ma", squadId: "a", points: 0, seasons: 0, titles: [] }],
       tierChanges: { a: { from: 2, to: 1 } },
     });
     expect(a.bestManager!.score).toBeCloseTo(0.3 + 0.15);

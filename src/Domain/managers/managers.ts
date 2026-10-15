@@ -2,6 +2,7 @@ import { MANAGERS } from "@/Domain/managers/managerConfig";
 import { CONTINENTAL, isContinentalSlug } from "@/Domain/continental/competitions";
 import type { ManagerRecord, ManagerTitle } from "@/types/managerTypes";
 import type { Squad } from "@/types/playerTypes";
+import { seatManagerId } from "@/Domain/seats/seats";
 
 /** Pure manager-ranking logic (`.claude/rules/game/managers.md`). No I/O. */
 
@@ -70,7 +71,7 @@ export function rankManagers(managers: ManagerRecord[]): ManagerRecord[] {
  */
 export function buildInitialManagers(
   squads: Pick<Squad, "id" | "name" | "coach">[],
-  player: { squadId: string; name: string; from?: string } | null,
+  player: { squadId: string; name: string; seatId: string; from?: string } | null,
   /** Career start: every manager's first passage starts here (Etapa 25). */
   from?: string,
 ): ManagerRecord[] {
@@ -80,10 +81,10 @@ export function buildInitialManagers(
   for (const s of squads) {
     if (player && s.id === player.squadId) {
       out.push({
-        id: "player", name: player.name, squadId: s.id, isPlayer: true, points: 0, seasons: 0, titles: [],
+        id: seatManagerId(player.seatId), seatId: player.seatId, name: player.name, squadId: s.id, points: 0, seasons: 0, titles: [],
         ...(start ? { clubs: [{ squadId: s.id, from: start }] } : {}),
       });
-      used.add("player");
+      used.add(seatManagerId(player.seatId));
       continue;
     }
     let id = s.coach?.id !== undefined && s.coach?.id !== null ? `coach_${s.coach.id}` : `coach_${s.id}`;
@@ -92,7 +93,7 @@ export function buildInitialManagers(
     used.add(id);
     const name = s.coach?.name?.trim() || `Técnico do ${s.name}`;
     out.push({
-      id, name, squadId: s.id, isPlayer: false, points: 0, seasons: 0, titles: [],
+      id, name, squadId: s.id, points: 0, seasons: 0, titles: [],
       ...(start ? { clubs: [{ squadId: s.id, from: start }] } : {}),
     });
   }
@@ -108,9 +109,11 @@ export function rankingPage(
   inScope: (m: ManagerRecord) => boolean,
   offset: number,
   limit: number,
+  /** The asking seat: `playerRank` is its manager's rank. */
+  seatId?: string,
 ): { total: number; playerRank: number | null; items: (ManagerRecord & { rank: number })[] } {
   const scoped = ranked.filter(inScope);
-  const p = scoped.findIndex((m) => m.isPlayer);
+  const p = seatId ? scoped.findIndex((m) => m.seatId === seatId) : -1;
   return {
     total: scoped.length,
     playerRank: p >= 0 ? p + 1 : null,
