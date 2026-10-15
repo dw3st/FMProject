@@ -37,6 +37,32 @@ describe("aggregatePendingDays", () => {
     expect(a.matchReportDate).toBeNull();
   });
 
+  test("training and rest of every day summed per player, with the day counts", () => {
+    const train = (fit: number, pts: number) => ({
+      kind: "training" as const, squadId: "me",
+      effects: [{ playerId: "p1", name: "A", fitnessDelta: fit, trainingPoints: pts, dpGained: 1 }],
+    });
+    const rest = (fit: number) => ({
+      kind: "rest" as const, squadId: "me", effects: [{ playerId: "p1", name: "A", fitnessDelta: fit, pointsDelta: -0.2 }],
+    });
+    const days: PendingDay[] = [
+      { ...day("2027-03-10", "2027-03-11"), club: [train(-3, 0.5)] },
+      { ...day("2027-03-11", "2027-03-12"), club: [train(-2, 0.75)] },
+      { ...day("2027-03-12", "2027-03-13"), club: [rest(6)] },
+    ];
+    // The stored logs (no effects) are ignored for training and rest once the pending days carry them.
+    const logs = days.map((d) => log(d.date, [{ kind: "rest", squadId: "me", effects: [] } as never]));
+    const a = aggregatePendingDays(days, logs, "me")!;
+    expect(a.range).toEqual({ from: "2027-03-10", to: "2027-03-12", days: 3, trainingDays: 2, restDays: 1 });
+    const t = a.log.events.find((e) => e.kind === "training");
+    const r = a.log.events.filter((e) => e.kind === "rest");
+    expect(t && t.kind === "training" ? t.effects : null).toEqual([
+      { playerId: "p1", name: "A", fitnessDelta: -5, trainingPoints: 1.25, dpGained: 2 },
+    ]);
+    expect(r).toHaveLength(1);
+    expect(r[0]!.kind === "rest" ? r[0]!.effects : null).toEqual([{ playerId: "p1", name: "A", fitnessDelta: 6, pointsDelta: -0.2 }]);
+  });
+
   test("no day, no summary", () => {
     expect(aggregatePendingDays([], [], "me")).toBeNull();
   });

@@ -5157,7 +5157,11 @@
         "transfers": "Transferências",
         "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
         "injuries": "Lesões",
-        "injuryLine": "{{player}} · {{severity}}"
+        "injuryLine": "{{player}} · {{severity}}",
+        "trainingDays_one": "{{count}} dia de treino",
+        "trainingDays_other": "{{count}} dias de treino",
+        "restDays_one": "{{count}} dia de folga",
+        "restDays_other": "{{count}} dias de folga"
       },
       "result": {
         "pending": "Resultado provisório: vale quando a liga chegar a este dia."

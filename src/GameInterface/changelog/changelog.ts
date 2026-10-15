@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.25.1",
+    date: "2026-10-15",
+    items: [
+      {
+        pt: "Liga de amigos: o resumo de vários dias mostra o treino e a folga de todos os dias, somados por jogador",
+        en: "Friends league: the summary of several days shows the training and rest of every day, summed per player",
+      },
+    ],
+  },
+  {
     version: "4.25",
     date: "2026-10-15",
     items: [
