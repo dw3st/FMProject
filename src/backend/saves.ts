@@ -25,10 +25,11 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { saveCompatibility } from "@/Domain/saveVersion";
 import { publicWorldMeta } from "@/Domain/multiplayer/worldPublic";
+import { createWorldState, deleteWorld } from "@/backend/worlds/worldLifecycle";
 import {
   addSaveMember,
   countOwnedSaves,
-  deleteSaveMembers,
+  listSaveMembers,
   listUserSaveIds,
   memberOf,
 } from "@/backend/auth/saveOwnership";
@@ -48,7 +49,12 @@ export const saveRoutes = {
       for (const id of ids) {
         const member = memberOf(id, auth.userId);
         const meta = member ? await saveService.getSeatMeta(id, member.seatId) : null;
-        if (meta && member) metas.push({ ...publicWorldMeta(meta), role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok" });
+        if (meta && member) {
+          metas.push({
+            ...publicWorldMeta(meta), role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok",
+            ...(meta.mode === "multi" ? { members: listSaveMembers(id).length } : {}),
+          });
+        }
       }
       return Response.json(metas);
     }
@@ -84,11 +90,20 @@ export const saveRoutes = {
         if (!face) return Response.json({ error: "invalid manager face" }, { status: 400 });
         body = { ...body, manager: { ...rawManager, face } };
       }
+      // A world of friends starts in the lobby: no `/presimulate` until the owner starts it (multiplayer part 2).
+      const mode = body.mode;
+      if (mode !== undefined && mode !== "solo" && mode !== "multi") {
+        return Response.json({ error: "invalid mode" }, { status: 400 });
+      }
       try {
         const meta = await saveService.createSave(body as Parameters<typeof saveService.createSave>[0]);
         addSaveMember(meta.id, auth.userId, meta.seatId, "owner");
         // Credit season broadcasting revenue to initial balance
         const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
+        if (mode === "multi") {
+          const world = await createWorldState(meta.id, auth.userId);
+          return Response.json({ ...publicWorldMeta({ ...finalMeta, mode: "multi", world }) }, { status: 201 });
+        }
         return Response.json(finalMeta, { status: 201 });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "failed to create save";
@@ -212,8 +227,8 @@ export const saveRoutes = {
       if (auth.role !== "owner") return Response.json({ error: "only the owner deletes a world" }, { status: 403 });
       const existing = await saveService.getMeta(id);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
-      await saveService.deleteSave(id);
-      deleteSaveMembers(id);
+      // Every member loses the world; the others get `world_deleted` (multiplayer part 2).
+      await withSaveLock(id, () => deleteWorld(id, auth.userId));
       return Response.json({ ok: true });
     }
 
