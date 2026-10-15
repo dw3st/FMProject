@@ -239,6 +239,16 @@ export function TopNavigation({
               <Icon name="report" size={NAV_ICON} />
             </button>
           )}
+          {save?.mode === "multi" && (
+            <a
+              href="/world"
+              title={t("nav.world")}
+              aria-label={t("nav.world")}
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-chart-2 hover:bg-muted/50"
+            >
+              <Icon name="users" size={NAV_ICON} />
+            </a>
+          )}
           {currentDate && (
             <>
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">

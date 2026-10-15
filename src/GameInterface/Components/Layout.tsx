@@ -16,6 +16,7 @@ import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
+import { worldRedirect } from "@/GameInterface/World/worldNav";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
@@ -48,13 +49,20 @@ export function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
+  const lobby = save?.world?.phase === "lobby";
+
+  // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
+  useEffect(() => {
+    const target = worldRedirect(window.location.pathname, save);
+    if (target) window.location.replace(target);
+  }, [save]);
 
   return (
     <SocialProvider saveId={session?.saveId ?? null}>
       <div className="h-screen overflow-hidden bg-background">
         <TopNavigation
-          onAdvanceDay={handleAdvanceDay}
-          onFastForward={canFastForward ? handleFastForward : undefined}
+          onAdvanceDay={lobby ? undefined : handleAdvanceDay}
+          onFastForward={!lobby && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
         />
