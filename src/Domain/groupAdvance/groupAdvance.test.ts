@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  computeGroupTarget, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
+  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 
 describe("isGroupWorld", () => {
@@ -94,5 +94,56 @@ describe("memberStatus", () => {
     expect(memberStatus(seat("a", { readyUntil: "2027-03-12", nextMatch: today }), today)).toBe("match");
     expect(memberStatus(seat("a"), today)).toBe("late");
     expect(memberStatus(seat("a", { unemployed: true }), today)).toBe("no_club");
+  });
+});
+
+describe("deadline", () => {
+  const since = "2027-01-01T10:00:00.000Z";
+  test("deadlineAt adds the hours; null without a deadline or a wait", () => {
+    expect(deadlineAt(since, 24)).toBe("2027-01-02T10:00:00.000Z");
+    expect(deadlineAt(since, null)).toBeNull();
+    expect(deadlineAt(null, 24)).toBeNull();
+  });
+  test("deadlinePassed from the exact instant", () => {
+    expect(deadlinePassed(since, 12, Date.parse("2027-01-01T21:59:59.000Z"))).toBe(false);
+    expect(deadlinePassed(since, 12, Date.parse("2027-01-01T22:00:00.000Z"))).toBe(true);
+    expect(deadlinePassed(since, null, Date.parse("2030-01-01T00:00:00.000Z"))).toBe(false);
+    expect(deadlinePassed(null, 12, Date.parse("2030-01-01T00:00:00.000Z"))).toBe(false);
+  });
+});
+
+describe("assistantPatches", () => {
+  const today = "2027-03-10";
+  test("the late seat goes to the others' smallest stop and simulates his game in it", () => {
+    const seats = [
+      seat("a", { readyUntil: "2027-03-15" }),
+      seat("b", { readyUntil: "2027-03-13" }),
+      seat("late", { nextMatch: "2027-03-12" }),
+    ];
+    const plan = computeGroupTarget(today, seats);
+    expect(assistantPatches(today, seats, plan)).toEqual([{ seatId: "late", readyUntil: "2027-03-13", decisionDate: "2027-03-12" }]);
+  });
+  test("nobody ready: tomorrow; a game today is simulated", () => {
+    const seats = [seat("a", { nextMatch: today }), seat("b")];
+    const plan = computeGroupTarget(today, seats);
+    expect(assistantPatches(today, seats, plan)).toEqual([
+      { seatId: "a", readyUntil: "2027-03-11", decisionDate: today },
+      { seatId: "b", readyUntil: "2027-03-11", decisionDate: null },
+    ]);
+  });
+  test("a game on the stop date is not decided (it is the next stop)", () => {
+    const seats = [seat("a", { readyUntil: "2027-03-13" }), seat("late", { nextMatch: "2027-03-13" })];
+    const plan = computeGroupTarget(today, seats);
+    expect(assistantPatches(today, seats, plan)).toEqual([{ seatId: "late", readyUntil: "2027-03-13", decisionDate: null }]);
+  });
+});
+
+describe("seatStops", () => {
+  test("sacked, job or national offers, season end", () => {
+    expect(seatStops({ sacked: true })).toBe(true);
+    expect(seatStops({ jobOffers: 1 })).toBe(true);
+    expect(seatStops({ seasonEnded: true })).toBe(true);
+    expect(seatStops({ jobOffers: 0, pressInvite: true })).toBe(false);
+    expect(seatStops({})).toBe(false);
   });
 });

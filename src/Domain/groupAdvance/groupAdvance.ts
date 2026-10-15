@@ -79,3 +79,47 @@ export function memberStatus(s: GroupSeatInput, currentDate: string): MemberAdva
   if (matchToday) return "match";
   return limit > currentDate ? "ready" : "late";
 }
+
+const HOUR_MS = 3_600_000;
+
+/** When the world goes on without the late ones, or null (no deadline, or not waiting). */
+export function deadlineAt(waitingSince: string | null, hours: number | null): string | null {
+  if (!waitingSince || hours == null) return null;
+  return new Date(Date.parse(waitingSince) + hours * HOUR_MS).toISOString();
+}
+
+export function deadlinePassed(waitingSince: string | null, hours: number | null, nowMs: number): boolean {
+  const at = deadlineAt(waitingSince, hours);
+  return at !== null && nowMs >= Date.parse(at);
+}
+
+export interface AssistantPatch {
+  seatId: string;
+  readyUntil: string;
+  /** The game the assistant simulates for him (the executor finds the fixture), or null. */
+  decisionDate: string | null;
+}
+
+/**
+ * Deadline passed: each late seat goes to the smallest stop of the seats that are ready (tomorrow when nobody is) and
+ * the assistant simulates his first game before that stop. A game ON the stop date is the next stop.
+ */
+export function assistantPatches(currentDate: string, seats: readonly GroupSeatInput[], plan: GroupPlan): AssistantPatch[] {
+  const late = new Set(plan.waitingFor);
+  const others = seats.filter((s) => !late.has(s.seatId)).map((s) => seatLimit(s, currentDate).limit);
+  const tomorrow = addDays(currentDate, 1);
+  const until = laterDate(others.length > 0 ? others.reduce((m, d) => (d < m ? d : m)) : null, tomorrow);
+  return seats.filter((s) => late.has(s.seatId)).map((s) => ({
+    seatId: s.seatId,
+    readyUntil: until,
+    decisionDate: !s.unemployed && s.nextMatch && s.nextMatch >= currentDate && s.nextMatch < until
+      && s.decisionDate !== s.nextMatch ? s.nextMatch : null,
+  }));
+}
+
+/** The seat's part of a day asks him to look before the world goes on: sacked, a job/national offer, his season end. */
+export function seatStops(part: Record<string, unknown>): boolean {
+  return part.sacked === true
+    || (typeof part.jobOffers === "number" && part.jobOffers > 0)
+    || part.seasonEnded === true;
+}
