@@ -76,6 +76,7 @@ export function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): G
       s.training_intensity ??
       DEFAULT_TRAINING_INTENSITY,
     followedLeagues: (raw.followedLeagues as string[] | undefined) ?? s.followedLeagues,
+    groupAdvance: raw.mode !== undefined ? raw.mode === "multi" && !!raw.world : s.groupAdvance,
   };
 }
 

@@ -72,6 +72,8 @@ export interface SocialContextValue {
   declineWorldInvite: (saveId: string) => Promise<void>;
   /** Bumped on `world_members` of the open world: the world screen reloads. */
   worldVersion: number;
+  /** Every parsed server event, for screens with their own socket needs (group advance). Returns the unsubscribe. */
+  subscribe: (fn: (event: ServerEvent) => void) => () => void;
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
@@ -235,6 +237,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
+  const listenersRef = useRef(new Set<(event: ServerEvent) => void>());
+  const subscribe = useCallback((fn: (event: ServerEvent) => void) => {
+    listenersRef.current.add(fn);
+    return () => { listenersRef.current.delete(fn); };
+  }, []);
 
   const loadMessages = useCallback(async (room: string, older: boolean) => {
     const current = messagesRef.current[room];
@@ -291,7 +298,10 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       };
       ws.onmessage = (e) => {
         const event = parseServerEvent(e.data);
-        if (event) handleRef.current(event);
+        if (event) {
+          handleRef.current(event);
+          for (const fn of listenersRef.current) fn(event);
+        }
       };
       ws.onclose = (e) => {
         if (wsRef.current === ws) wsRef.current = null;
@@ -364,11 +374,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     () => ({
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
-      loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion,
+      loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion, subscribe,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
       hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
-      declineWorldInvite, worldVersion],
+      declineWorldInvite, worldVersion, subscribe],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
