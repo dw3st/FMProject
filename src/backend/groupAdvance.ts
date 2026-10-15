@@ -10,11 +10,11 @@ import { listWorldCodeIds } from "@/backend/worlds/worldStore";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import {
-  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, isGroupWorld, memberStatus, seatStops,
-  type GroupPlan, type GroupSeatInput,
+  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, errorRetryDue, isGroupWorld, laterDate,
+  memberStatus, seatStops, type GroupPlan, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
-import { buildAutoAdvancedMessage } from "@/Domain/inbox/worldAdvanceMessage";
+import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -27,23 +27,24 @@ export interface GroupAdvanceDeps {
   runDay(saveId: string, recordings: Record<string, PlayedMatchRecording>): Promise<AdvanceDayOutcome>;
   notify(userId: string, event: ServerEvent): void;
   now(): number;
-  /** Dates (ascending) of the seat's unplayed official games, club and national, on or after `from`. */
-  matchDates(service: SaveService, saveId: string, seatId: string, from: string): Promise<string[]>;
+  /** Dates (ascending) of the seat's unplayed official games, club and national, from `from` up to `until`. */
+  matchDates(service: SaveService, saveId: string, seatId: string, from: string, until: string): Promise<string[]>;
   /** The seat's unplayed official game of `date`, or null. */
   matchOn(service: SaveService, saveId: string, seatId: string, date: string): Promise<Fixture | null>;
+  /** Safety cap of days in one run (tests lower it); default `GROUP_ADVANCE.MAX_DAYS_PER_RUN`. */
+  maxDaysPerRun?: number;
 }
 
-/** The seat's unplayed official game of `date`: his club's, else his national team's (Etapa 41b). */
+/**
+ * The seat's unplayed official game of `date`: his club's, else his national team's (Etapa 41b). A read failure
+ * throws (never "no game": the executor would run over his game).
+ */
 export async function seatMatchOn(service: SaveService, saveId: string, seatId: string, date: string): Promise<Fixture | null> {
   const seat = await service.getSeat(saveId, seatId);
   if (seat?.clubId && !seat.unemployed) {
-    try {
-      const club = (await service.getFixturesForDate(saveId, date))
-        .find((f) => !f.played && (f.home === seat.clubId || f.away === seat.clubId));
-      if (club) return club;
-    } catch {
-      // A world without league folders (a bare test save) has no games.
-    }
+    const club = (await service.getFixturesForDate(saveId, date))
+      .find((f) => !f.played && (f.home === seat.clubId || f.away === seat.clubId));
+    if (club) return club;
   }
   return nationalFixtureOn(service, saveId, seatId, date);
 }
@@ -53,7 +54,7 @@ export const defaultGroupDeps: GroupAdvanceDeps = {
   runDay: (saveId, recordings) => runBufferedDay(saveId, recordings),
   notify: notifyUser,
   now: () => Date.now(),
-  matchDates: (service, saveId, seatId, from) => seatMatchDates(service, saveId, seatId, from),
+  matchDates: (service, saveId, seatId, from, until) => seatMatchDates(service, saveId, seatId, from, until),
   matchOn: seatMatchOn,
 };
 
@@ -68,16 +69,22 @@ export interface GroupRunResult {
 
 interface GroupSeat { seatId: string; seat: SeatState; input: GroupSeatInput }
 
+/**
+ * The seats as the target sees them. Games only matter up to the furthest "ready until" of the group (a later game
+ * never sets the target), so the calendar is read up to there; an unemployed seat never stops for a game.
+ */
 async function loadGroupSeats(deps: GroupAdvanceDeps, saveId: string, currentDate: string): Promise<GroupSeat[]> {
+  const list = await deps.service.listSeats(saveId);
+  const until = list.reduce((max, { seat }) => laterDate(seat.readyUntil ?? null, max), addDays(currentDate, 1));
   const out: GroupSeat[] = [];
-  for (const { seatId, seat } of await deps.service.listSeats(saveId)) {
+  for (const { seatId, seat } of list) {
     const unemployed = !!seat.unemployed || !seat.clubId;
     out.push({
       seatId, seat,
       input: {
         seatId,
         readyUntil: seat.readyUntil ?? null,
-        matchDates: await deps.matchDates(deps.service, saveId, seatId, currentDate),
+        matchDates: unemployed ? [] : await deps.matchDates(deps.service, saveId, seatId, currentDate, until),
         decisionDate: seat.matchDecision?.date ?? null,
         unemployed,
       },
@@ -86,10 +93,25 @@ async function loadGroupSeats(deps: GroupAdvanceDeps, saveId: string, currentDat
   return out;
 }
 
-async function setAdvance(service: SaveService, saveId: string, advance: WorldAdvance): Promise<void> {
+const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries"] as const;
+
+function sameAdvance(a: WorldAdvance, b: WorldAdvance): boolean {
+  return ADVANCE_KEYS.every((k) => (a[k] ?? null) === (b[k] ?? null));
+}
+
+/** Merges `patch` into `world.advance`; writes nothing when nothing changes. Always called under the save lock. */
+async function updateAdvance(service: SaveService, saveId: string, patch: Partial<WorldAdvance>): Promise<void> {
   const meta = await service.getMeta(saveId);
   if (!meta?.world) return;
-  await service.updateMeta(saveId, { world: { ...meta.world, advance } });
+  const prev: WorldAdvance = meta.world.advance ?? { running: false, waitingSince: null, target: null };
+  const next: WorldAdvance = { ...prev, ...patch };
+  if (meta.world.advance && sameAdvance(prev, next)) return;
+  await service.updateMeta(saveId, { world: { ...meta.world, advance: next } });
+}
+
+/** Clears a past failure. `errorTries` 0 reads like absent in `sameAdvance` only through `?? null`, so keep it explicit. */
+function noError(adv: WorldAdvance | undefined): Partial<WorldAdvance> {
+  return adv?.error || adv?.errorAt || adv?.errorTries ? { error: null, errorAt: null, errorTries: 0 } : {};
 }
 
 /** Deadline passed: the assistant moves every late seat on (`assistantPatches`) and tells him. */
@@ -98,7 +120,11 @@ async function applyAssistant(deps: GroupAdvanceDeps, saveId: string, currentDat
     let matchDecision: MatchDecision | undefined;
     if (p.decisionDate) {
       const fixture = await deps.matchOn(deps.service, saveId, p.seatId, p.decisionDate);
-      if (fixture) matchDecision = { date: p.decisionDate, fixtureId: fixture.id, mode: "simulate" };
+      if (!fixture) {
+        // The calendar lists a game the day reader does not find: settle the date anyway, so it never holds again.
+        logError("world", `save ${saveId}: seat ${p.seatId} has a game on ${p.decisionDate} with no fixture; settled as simulated`);
+      }
+      matchDecision = { date: p.decisionDate, fixtureId: fixture?.id ?? "", mode: "simulate" };
     }
     await deps.service.updateSeat(saveId, p.seatId, { readyUntil: p.readyUntil, ...(matchDecision ? { matchDecision } : {}) });
     await deps.service.appendInbox(
@@ -115,8 +141,33 @@ async function liveRecordingsFor(service: SaveService, saveId: string, date: str
     if (d?.mode !== "live" || d.date !== date) continue;
     const file = await service.getLiveRecording(saveId, s.seatId);
     if (file && file.date === date && file.fixtureId === d.fixtureId) out[s.seatId] = file.recording;
+    else logError("world", `save ${saveId}: seat ${s.seatId} chose to play ${date} live but sent no recording; it is simulated`);
   }
   return out;
+}
+
+/** `runDay` with a throw turned into a failed outcome (the executor's error path handles both). */
+async function safeRunDay(deps: GroupAdvanceDeps, saveId: string, recordings: Record<string, PlayedMatchRecording>): Promise<AdvanceDayOutcome> {
+  try {
+    return await deps.runDay(saveId, recordings);
+  } catch (e) {
+    return { ok: false, status: 500, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * The day refused the live recordings (400): those games are simulated instead and each seat is told why. The day
+ * does not say which recording it refused, so with more than one every one of them is simulated.
+ */
+async function refuseRecordings(service: SaveService, saveId: string, date: string, seatIds: string[], error: string) {
+  logError("world", `save ${saveId}: live recordings of ${date} refused (${error}); simulating them`);
+  const reason = liveRefusedReason(error);
+  for (const seatId of seatIds) {
+    await service.writeLiveRecording(saveId, seatId, null);
+    const d = (await service.getSeat(saveId, seatId))?.matchDecision;
+    if (d?.date === date) await service.updateSeat(saveId, seatId, { matchDecision: { ...d, mode: "simulate" } });
+    await service.appendInbox(saveId, buildLiveRefusedMessage({ date, reason }), seatId);
+  }
 }
 
 type Step =
@@ -132,53 +183,65 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
   }
   const currentDate = meta.currentDate;
   const world = meta.world!;
+  const nowIso = new Date(deps.now()).toISOString();
+  let waitingSince = world.advance?.waitingSince ?? null;
   let seats = await loadGroupSeats(deps, saveId, currentDate);
   let plan = computeGroupTarget(currentDate, seats.map((s) => s.input));
 
-  if (plan.target <= currentDate && deadlinePassed(world.advance?.waitingSince ?? null, world.deadlineHours, deps.now())) {
+  if (plan.target <= currentDate && deadlinePassed(waitingSince, world.deadlineHours, deps.now())) {
     await applyAssistant(deps, saveId, currentDate, seats, plan);
     seats = await loadGroupSeats(deps, saveId, currentDate);
     plan = computeGroupTarget(currentDate, seats.map((s) => s.input));
+    if (plan.target <= currentDate) {
+      // Still held: the deadline starts again, so the assistant acts at most once per deadline.
+      logError("world", `save ${saveId}: the assistant could not move ${plan.waitingFor.join(", ")} on from ${currentDate}`);
+      waitingSince = nowIso;
+    }
   }
 
   if (plan.target <= currentDate) {
-    const waitingSince = plan.waitingFor.length > 0
-      ? (world.advance?.waitingSince ?? new Date(deps.now()).toISOString())
-      : null;
-    await setAdvance(service, saveId, { running: false, waitingSince, target: plan.target });
+    await updateAdvance(service, saveId, {
+      running: false,
+      waitingSince: plan.waitingFor.length > 0 ? (waitingSince ?? nowIso) : null,
+      target: plan.target,
+      ...noError(world.advance),
+    });
     return { kind: "stopped", date: currentDate, target: plan.target, waitingFor: plan.waitingFor };
   }
 
-  await setAdvance(service, saveId, { running: true, waitingSince: null, target: plan.target });
+  await updateAdvance(service, saveId, { running: true, waitingSince: null, target: plan.target });
   const recordings = await liveRecordingsFor(service, saveId, currentDate, seats);
-  let outcome = await deps.runDay(saveId, recordings);
+  let outcome = await safeRunDay(deps, saveId, recordings);
   if (!outcome.ok && outcome.status === 400 && Object.keys(recordings).length > 0) {
-    // A refused live recording must not lock the world: the assistant simulates that game instead.
-    logError("world", `save ${saveId}: live recordings of ${currentDate} refused (${outcome.error}); simulating them`);
-    for (const seatId of Object.keys(recordings)) {
-      await service.writeLiveRecording(saveId, seatId, null);
-      const d = seats.find((s) => s.seatId === seatId)!.seat.matchDecision!;
-      await service.updateSeat(saveId, seatId, { matchDecision: { ...d, mode: "simulate" } });
-    }
-    outcome = await deps.runDay(saveId, {});
+    // A refused live recording must not lock the world: the game is simulated instead.
+    await refuseRecordings(service, saveId, currentDate, Object.keys(recordings), outcome.error);
+    outcome = await safeRunDay(deps, saveId, {});
   }
   if (!outcome.ok) {
     logError("world", `save ${saveId}: day ${currentDate} failed (${outcome.status} ${outcome.error})`);
-    await setAdvance(service, saveId, { running: false, waitingSince: null, target: plan.target });
+    await updateAdvance(service, saveId, {
+      running: false, waitingSince: null, target: plan.target,
+      error: outcome.error, errorAt: nowIso, errorTries: (world.advance?.errorTries ?? 0) + 1,
+    });
     return { kind: "error", date: currentDate, target: plan.target, waitingFor: [], error: outcome.error };
   }
 
   const newDate = typeof outcome.payload.newDate === "string" ? outcome.payload.newDate : addDays(currentDate, 1);
   for (const s of seats) {
     const part = outcome.seats[s.seatId] ?? {};
-    const patch: Partial<SeatState> = {};
-    if (seatStops(part)) patch.readyUntil = null;
-    if (s.seat.matchDecision && s.seat.matchDecision.date <= currentDate) patch.matchDecision = undefined;
-    if (Object.keys(patch).length > 0) await service.updateSeat(saveId, s.seatId, patch);
+    // Re-read: the day itself (or a decision for a later game) may have written the seat since the step began.
+    const fresh = await service.getSeat(saveId, s.seatId);
+    if (fresh) {
+      const patch: Partial<SeatState> = {};
+      if (seatStops(part) && fresh.readyUntil != null) patch.readyUntil = null;
+      if (fresh.matchDecision && fresh.matchDecision.date <= currentDate) patch.matchDecision = undefined;
+      if (Object.keys(patch).length > 0) await service.updateSeat(saveId, s.seatId, patch);
+    }
     const live = await service.getLiveRecording(saveId, s.seatId);
     if (live && live.date <= currentDate) await service.writeLiveRecording(saveId, s.seatId, null);
     await service.appendPendingDay(saveId, s.seatId, { date: currentDate, newDate, seat: part }, GROUP_ADVANCE.PENDING_SUMMARY_MAX);
   }
+  await updateAdvance(service, saveId, noError(world.advance));
   return { kind: "ran", date: newDate, target: plan.target, waitingFor: [] };
 }
 
@@ -210,41 +273,61 @@ async function broadcast(
   }
 }
 
+/** A step that threw outside the day (a calendar read, a seat file): recorded like a failed day, under the lock. */
+async function recordCrash(saveId: string, deps: GroupAdvanceDeps, e: unknown): Promise<Step> {
+  const error = e instanceof Error ? e.message : String(e);
+  logError("world", `save ${saveId}: group advance step crashed`, e);
+  const failed: Step = { kind: "error", date: null, target: null, waitingFor: [], error };
+  return withSaveLock(saveId, async (): Promise<Step> => {
+    const meta = await deps.service.getMeta(saveId);
+    await updateAdvance(deps.service, saveId, {
+      running: false, waitingSince: null,
+      error, errorAt: new Date(deps.now()).toISOString(), errorTries: (meta?.world?.advance?.errorTries ?? 0) + 1,
+    });
+    return { ...failed, date: meta?.currentDate ?? null, target: meta?.world?.advance?.target ?? null };
+  }).catch(() => failed);
+}
+
+/** The run hit its day cap: stop cleanly (the deadline clock or the next kick goes on). */
+async function haltAtCap(saveId: string, deps: GroupAdvanceDeps, max: number): Promise<Step> {
+  logError("world", `save ${saveId}: ${max} days in one run, stopping`);
+  return withSaveLock(saveId, async (): Promise<Step> => {
+    const meta = await deps.service.getMeta(saveId);
+    await updateAdvance(deps.service, saveId, { running: false, waitingSince: new Date(deps.now()).toISOString() });
+    return { kind: "stopped", date: meta?.currentDate ?? null, target: meta?.world?.advance?.target ?? null, waitingFor: [] };
+  });
+}
+
 async function advanceGroup(saveId: string, deps: GroupAdvanceDeps): Promise<GroupRunResult> {
   const result: GroupRunResult = { days: 0, date: null, target: null, waitingFor: [] };
-  for (let guard = 0; guard < GROUP_ADVANCE.MAX_DAYS_PER_RUN; guard++) {
+  const max = deps.maxDaysPerRun ?? GROUP_ADVANCE.MAX_DAYS_PER_RUN;
+  const finish = async (step: Step): Promise<GroupRunResult> => {
+    result.date = step.date;
+    result.target = step.target;
+    result.waitingFor = step.waitingFor;
+    if (step.kind === "error") result.error = step.error;
+    if (step.kind !== "idle") {
+      await broadcast(saveId, deps, {
+        date: step.date, target: step.target, running: false, waitingFor: step.waitingFor,
+        ...(step.kind === "error" ? { error: step.error } : {}),
+      });
+    }
+    return result;
+  };
+  while (result.days < max) {
     let step: Step;
     try {
       step = await withSaveLock(saveId, () => stepWorld(saveId, deps));
     } catch (e) {
-      // A crash inside a day must not leave the world marked as running.
-      const error = e instanceof Error ? e.message : String(e);
-      logError("world", `save ${saveId}: group advance step crashed`, e);
-      await withSaveLock(saveId, async () => {
-        const meta = await deps.service.getMeta(saveId);
-        if (meta?.world?.advance) await setAdvance(deps.service, saveId, { ...meta.world.advance, running: false });
-      }).catch(() => undefined);
-      step = { kind: "error", date: result.date, target: result.target, waitingFor: [], error };
+      step = await recordCrash(saveId, deps, e);
     }
+    if (step.kind !== "ran") return finish(step);
+    result.days++;
     result.date = step.date;
     result.target = step.target;
-    result.waitingFor = step.waitingFor;
-    if (step.kind === "ran") {
-      result.days++;
-      await broadcast(saveId, deps, { date: step.date, target: step.target, running: true, waitingFor: [] });
-      continue;
-    }
-    if (step.kind === "error") {
-      result.error = step.error;
-      await broadcast(saveId, deps, { date: step.date, target: step.target, running: false, waitingFor: [], error: step.error });
-      return result;
-    }
-    if (step.kind === "stopped") {
-      await broadcast(saveId, deps, { date: step.date, target: step.target, running: false, waitingFor: step.waitingFor });
-    }
-    return result;
+    await broadcast(saveId, deps, { date: step.date, target: step.target, running: true, waitingFor: [] });
   }
-  return result;
+  return finish(await haltAtCap(saveId, deps, max));
 }
 
 const runningWorlds = new Map<string, Promise<GroupRunResult>>();
@@ -260,9 +343,14 @@ export function isWorldAdvancing(saveId: string): boolean {
   return runningWorlds.has(saveId);
 }
 
+/** Resolves when the world's current executor (if any) stops. */
+export async function waitWorld(saveId: string): Promise<void> {
+  for (let run = runningWorlds.get(saveId); run; run = runningWorlds.get(saveId)) await run.catch(() => undefined);
+}
+
 /**
  * Runs the world's days in the background while every seat is ready (`.claude/rules/game/multiplayer.md`, part 3).
- * One executor per world: a kick while one runs only asks it to look once more when it stops.
+ * One executor per world: a kick while one runs only asks it to look once more when it stops (even after an error).
  */
 export function kickWorld(saveId: string, deps: GroupAdvanceDeps = defaultGroupDeps): Promise<GroupRunResult> {
   rememberWorld(saveId);
@@ -271,14 +359,23 @@ export function kickWorld(saveId: string, deps: GroupAdvanceDeps = defaultGroupD
     kickAgain.add(saveId);
     return current;
   }
-  const run = (async () => {
-    let last: GroupRunResult;
-    do {
-      kickAgain.delete(saveId);
-      last = await advanceGroup(saveId, deps);
-    } while (kickAgain.has(saveId) && !last.error);
-    return last;
-  })().finally(() => runningWorlds.delete(saveId));
+  // eslint-disable-next-line prefer-const
+  let run!: Promise<GroupRunResult>;
+  run = (async () => {
+    try {
+      for (;;) {
+        kickAgain.delete(saveId);
+        const last = await advanceGroup(saveId, deps);
+        // Same tick as the check: a kick after this line starts a new executor, none is lost in between.
+        if (!kickAgain.has(saveId)) {
+          runningWorlds.delete(saveId);
+          return last;
+        }
+      }
+    } finally {
+      if (runningWorlds.get(saveId) === run) runningWorlds.delete(saveId);
+    }
+  })();
   runningWorlds.set(saveId, run);
   return run;
 }
@@ -304,8 +401,7 @@ export async function groupAdvanceView(
   const meta = await service.getMeta(saveId);
   if (!meta?.currentDate || !meta.world) return null;
   const currentDate = meta.currentDate;
-  const viewDeps = { ...deps, service };
-  const seats = await loadGroupSeats(viewDeps, saveId, currentDate);
+  const seats = await loadGroupSeats({ ...deps, service }, saveId, currentDate);
   const plan = computeGroupTarget(currentDate, seats.map((s) => s.input));
   const members = listSaveMembers(saveId);
   const names = await namesOf(service, saveId, seats.map((s) => s.seatId));
@@ -353,29 +449,45 @@ function isRunningWorld(meta: SaveMeta | null): boolean {
   return !!meta && isGroupWorld(meta) && meta.world!.phase === "running";
 }
 
-/** One tick of the deadline clock: kicks every world whose deadline passed. Returns the kicked ids. */
+/**
+ * One tick of the deadline clock: kicks every world whose deadline passed, or whose failed run is due a retry
+ * (`errorRetryDue`). Returns the kicked ids.
+ */
 export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps): Promise<string[]> {
   const kicked: string[] = [];
   for (const saveId of [...knownWorlds]) {
     if (runningWorlds.has(saveId)) continue;
     const meta = await deps.service.getMeta(saveId);
     if (!meta) { knownWorlds.delete(saveId); continue; }
-    const adv = meta.world?.advance;
-    if (!isRunningWorld(meta) || !adv?.waitingSince) continue;
-    if (!deadlinePassed(adv.waitingSince, meta.world!.deadlineHours, deps.now())) continue;
+    if (!isRunningWorld(meta)) continue;
+    const adv = meta.world!.advance;
+    const due = adv?.error
+      ? errorRetryDue(adv, deps.now())
+      : !!adv?.waitingSince && deadlinePassed(adv.waitingSince, meta.world!.deadlineHours, deps.now());
+    if (!due) continue;
     kicked.push(saveId);
     void kickWorld(saveId, deps).catch((e) => logError("world", `save ${saveId}: group advance crashed`, e));
   }
   return kicked;
 }
 
-/** Server start: an executor that died with the process is freed, then every running world looks again. */
+/**
+ * Server start: an executor that died with the process is freed, then every running world looks again. The check and
+ * the reset run under the save lock and skip a world whose executor is alive (a resume never rewrites its meta).
+ */
 export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): Promise<void> {
   loadKnownWorlds();
-  for (const saveId of knownWorlds) {
-    const meta = await deps.service.getMeta(saveId);
-    if (meta?.world?.advance?.running) await setAdvance(deps.service, saveId, { ...meta.world.advance, running: false });
-    if (isRunningWorld(meta)) void kickWorld(saveId, deps).catch((e) => logError("world", `save ${saveId}: resume failed`, e));
+  for (const saveId of [...knownWorlds]) {
+    const kick = await withSaveLock(saveId, async () => {
+      if (runningWorlds.has(saveId)) return false;
+      const meta = await deps.service.getMeta(saveId);
+      if (meta?.world?.advance?.running) await updateAdvance(deps.service, saveId, { running: false });
+      return isRunningWorld(meta);
+    }).catch((e) => {
+      logError("world", `save ${saveId}: resume failed`, e);
+      return false;
+    });
+    if (kick) void kickWorld(saveId, deps).catch((e) => logError("world", `save ${saveId}: resume failed`, e));
   }
 }
 
