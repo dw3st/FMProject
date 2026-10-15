@@ -88,6 +88,11 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+/** The world left or was deleted (multiplayer part 2): forget the session if it was that one. */
+export function forgetSession(saveId: string): void {
+  if (loadSession()?.saveId === saveId) clearSession();
+}
+
 export async function createGameSave(data: {
   leagueSlug: string;
   leagueName: string;
@@ -97,6 +102,7 @@ export async function createGameSave(data: {
   database?: SaveDatabase;
   manager?:  SaveManager;
   sackingEnabled?: boolean;
+  mode?: "solo" | "multi";
 }): Promise<GameSession> {
   const res = await fetch("/api/saves", {
     method: "POST",

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SOCIAL } from "@/Domain/social/socialConfig";
+import { forgetSession } from "@/GameInterface/gameSession";
 import { socialApi } from "@/GameInterface/Social/socialApi";
 import {
   DOCK_STORAGE_KEY,
@@ -21,6 +22,8 @@ import {
   unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
+import { worldApi } from "@/GameInterface/World/worldApi";
+import type { WorldInviteView } from "@/types/multiplayerTypes";
 import type {
   ChatMessageView,
   ClientEvent,
@@ -63,6 +66,12 @@ export interface SocialContextValue {
   send: (room: string, body: string) => Promise<SocialErrorCode | null>;
   markRoomRead: (room: string) => void;
   sendTyping: (room: string) => void;
+  /** Invites to worlds of friends (multiplayer part 2). */
+  worldInvites: WorldInviteView[];
+  refreshWorldInvites: () => Promise<void>;
+  declineWorldInvite: (saveId: string) => Promise<void>;
+  /** Bumped on `world_members` of the open world: the world screen reloads. */
+  worldVersion: number;
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
@@ -128,6 +137,19 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     setDock((d) => pruneDmChats(d, r.data.friends.map((f) => f.nickname)));
   }, []);
 
+  const [worldInvites, setWorldInvites] = useState<WorldInviteView[]>([]);
+  const [worldVersion, setWorldVersion] = useState(0);
+
+  const refreshWorldInvites = useCallback(async () => {
+    const r = await worldApi.invites();
+    if (r.ok) setWorldInvites(r.data.invites);
+  }, []);
+
+  const declineWorldInvite = useCallback(async (inviteSaveId: string) => {
+    await worldApi.declineInvite(inviteSaveId);
+    setWorldInvites((prev) => prev.filter((i) => i.saveId !== inviteSaveId));
+  }, []);
+
   useEffect(() => {
     void socialApi.me().then((r) => {
       if (!r.ok) return;
@@ -135,7 +157,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       setAvailable(true);
     });
     void refreshFriends();
-  }, [refreshFriends]);
+    void refreshWorldInvites();
+  }, [refreshFriends, refreshWorldInvites]);
 
   const sendWs = useCallback((event: ClientEvent) => {
     const ws = wsRef.current;
@@ -192,9 +215,25 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         case "pong":
           setOnline(event.online);
           break;
+        case "world_invite":
+          void refreshWorldInvites();
+          break;
+        case "world_members":
+          if (event.saveId === saveId) setWorldVersion((v) => v + 1);
+          break;
+        case "world_started":
+          if (event.saveId === saveId && window.location.pathname === "/world") window.location.replace("/dashboard");
+          break;
+        case "world_removed":
+        case "world_deleted":
+          if (event.saveId === saveId) {
+            forgetSession(event.saveId);
+            window.location.replace("/start");
+          }
+          break;
       }
     },
-    [refreshFriends],
+    [refreshFriends, refreshWorldInvites, saveId],
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
@@ -326,10 +365,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     () => ({
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
-      loadMessages, send, markRoomRead, sendTyping,
+      loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
-      hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping],
+      hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
+      declineWorldInvite, worldVersion],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
