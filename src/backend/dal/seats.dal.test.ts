@@ -8,6 +8,8 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
+import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 
 const dal = new FileSystemDAL();
 const created: string[] = [];
@@ -156,5 +158,42 @@ describe("deleteSeat", () => {
     await new SaveService(dal).deleteSeat(saveId, b);
     expect((await dal.readMeta(saveId))!.seats).toEqual([a]);
     expect(await dal.readSeat(saveId, b)).toBeNull();
+  });
+});
+
+describe("group advance seat files", () => {
+  test("liveRecording.json round-trips and null deletes it; pendingSummary.json defaults to []", async () => {
+    const saveId = `test-seat-${randomUUID()}`;
+    created.push(saveId);
+    const seatId = randomUUID();
+    await dal.writeSeat(saveId, seatId, seat);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toBeNull();
+    const file: LiveRecordingFile = {
+      date: "2027-03-10", fixtureId: "f1",
+      recording: { fixtureId: "f1", score: { home: 1, away: 0 } } as unknown as PlayedMatchRecording,
+    };
+    await dal.writeSeatLiveRecording(saveId, seatId, file);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toEqual(file);
+    await dal.writeSeatLiveRecording(saveId, seatId, null);
+    expect(await dal.readSeatLiveRecording(saveId, seatId)).toBeNull();
+    expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${seatId}/liveRecording.json`).exists()).toBe(false);
+
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual([]);
+    const days: PendingDay[] = [{ date: "2027-03-10", newDate: "2027-03-11", seat: { sacked: true } }];
+    await dal.writeSeatPendingSummary(saveId, seatId, days);
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual(days);
+  });
+
+  test("the BufferingSaveDAL holds them until flush", async () => {
+    const saveId = `test-seat-${randomUUID()}`;
+    created.push(saveId);
+    const seatId = randomUUID();
+    await dal.writeSeat(saveId, seatId, seat);
+    const buffered = new BufferingSaveDAL(dal);
+    await buffered.writeSeatPendingSummary(saveId, seatId, [{ date: "2027-03-10", newDate: "2027-03-11", seat: {} }]);
+    expect(await dal.readSeatPendingSummary(saveId, seatId)).toEqual([]);
+    expect((await buffered.readSeatPendingSummary(saveId, seatId)).length).toBe(1);
+    await buffered.flush();
+    expect((await dal.readSeatPendingSummary(saveId, seatId)).length).toBe(1);
   });
 });

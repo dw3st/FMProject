@@ -20,6 +20,7 @@ import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -134,7 +135,7 @@ export class BufferingSaveDAL implements ISaveDAL {
 
   private async readThrough<T>(key: string, loader: () => Promise<T>): Promise<T> {
     if (this.cache.has(key)) return this.cache.get(key) as T;
-    if (this.deletedSeatOf(key)) return (key.startsWith("seatInbox:") || key.startsWith("seatLedger:") ? [] : null) as T;
+    if (this.deletedSeatOf(key)) return (key.startsWith("seatInbox:") || key.startsWith("seatLedger:") || key.startsWith("seatPending:") ? [] : null) as T;
     const value = await loader();
     this.cache.set(key, value);
     return value;
@@ -537,6 +538,18 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
     this.buffer(`seatMarket:${saveId}:${seatId}`, market, () => this.inner.writeSeatMarket(saveId, seatId, market));
+  }
+  readSeatLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null> {
+    return this.readThrough(`seatLive:${saveId}:${seatId}`, () => this.inner.readSeatLiveRecording(saveId, seatId));
+  }
+  async writeSeatLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void> {
+    this.buffer(`seatLive:${saveId}:${seatId}`, file, () => this.inner.writeSeatLiveRecording(saveId, seatId, file));
+  }
+  readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
+    return this.readThrough(`seatPending:${saveId}:${seatId}`, () => this.inner.readSeatPendingSummary(saveId, seatId));
+  }
+  async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
+    this.buffer(`seatPending:${saveId}:${seatId}`, days, () => this.inner.writeSeatPendingSummary(saveId, seatId, days));
   }
   /**
    * Forgets every buffered write of the seat (seat, tactics, achievements, scouting, inbox, ledger, market) and

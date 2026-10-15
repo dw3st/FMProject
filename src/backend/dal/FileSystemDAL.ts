@@ -14,6 +14,7 @@ import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 import type { SeatState } from "@/types/seatTypes";
 import { SEAT_ID_PATTERN } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
@@ -682,6 +683,28 @@ export class FileSystemDAL implements ISaveDAL {
     const dir = seatDir(saveId, seatId);
     await writeJsonFile(dir, `${dir}/market.json`, market, true);
     bumpSaveDataVersion(saveId);
+  }
+
+  async readSeatLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null> {
+    return readJsonFile<LiveRecordingFile>(`${seatDir(saveId, seatId)}/liveRecording.json`);
+  }
+
+  async writeSeatLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    if (file === null) {
+      await rm(`${dir}/liveRecording.json`, { force: true });
+      return;
+    }
+    await writeJsonFile(dir, `${dir}/liveRecording.json`, file);
+  }
+
+  async readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
+    return (await readJsonFile<PendingDay[]>(`${seatDir(saveId, seatId)}/pendingSummary.json`)) ?? [];
+  }
+
+  async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/pendingSummary.json`, days);
   }
 
   async deleteSeat(saveId: string, seatId: string): Promise<void> {

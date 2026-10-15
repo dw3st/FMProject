@@ -56,6 +56,7 @@ export type { SaveManager } from "@/types/seatTypes";
 import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
 import type { WorldState } from "@/types/multiplayerTypes";
 import { metaForSeat } from "@/Domain/seats/seats";
+import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 
 /**
  * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
@@ -355,6 +356,29 @@ export class SaveService {
   }
 
   // ── Achievements (`.claude/rules/game/achievements.md`) ─────────────────────
+
+  // ── Group advance (`.claude/rules/game/multiplayer.md`, part 3) ─────────────
+  getLiveRecording(saveId: string, seatId: string): Promise<LiveRecordingFile | null> {
+    return this.dal.readSeatLiveRecording(saveId, seatId);
+  }
+
+  writeLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void> {
+    return this.dal.writeSeatLiveRecording(saveId, seatId, file);
+  }
+
+  getPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
+    return this.dal.readSeatPendingSummary(saveId, seatId);
+  }
+
+  /** Appends one day to the seat's pending summary, keeping the last `max`. */
+  async appendPendingDay(saveId: string, seatId: string, day: PendingDay, max: number): Promise<void> {
+    const days = await this.dal.readSeatPendingSummary(saveId, seatId);
+    await this.dal.writeSeatPendingSummary(saveId, seatId, [...days, day].slice(-max));
+  }
+
+  clearPendingSummary(saveId: string, seatId: string): Promise<void> {
+    return this.dal.writeSeatPendingSummary(saveId, seatId, []);
+  }
 
   /** The seat's achievements; an empty state when the file does not exist. */
   async getAchievements(saveId: string, seatId: string): Promise<AchievementsState> {
