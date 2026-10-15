@@ -5105,6 +5105,15 @@
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." }
     },
+    "advance": {
+      "inbox": {
+        "subject": "O assistente avançou por você",
+        "preview": "Pronto até {{until}}",
+        "previewSimulated": "Pronto até {{until}} · jogo de {{match}} simulado",
+        "body": "A liga estava esperando por você, então seu assistente marcou você como pronto até {{until}}.",
+        "bodySimulated": "A liga estava esperando por você, então seu assistente simulou seu jogo de {{match}} e marcou você como pronto até {{until}}."
+      }
+    },
     "errors": {
       "notFound": "Este convite não vale mais.",
       "full": "A liga está cheia.",

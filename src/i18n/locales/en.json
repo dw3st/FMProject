@@ -5105,6 +5105,15 @@
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." }
     },
+    "advance": {
+      "inbox": {
+        "subject": "The assistant advanced for you",
+        "preview": "Ready until {{until}}",
+        "previewSimulated": "Ready until {{until}} · game of {{match}} simulated",
+        "body": "The league was waiting for you, so your assistant set you ready until {{until}}.",
+        "bodySimulated": "The league was waiting for you, so your assistant simulated your game of {{match}} and set you ready until {{until}}."
+      }
+    },
     "errors": {
       "notFound": "This invite is not valid any more.",
       "full": "The league is full.",
