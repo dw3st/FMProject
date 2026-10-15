@@ -1,5 +1,6 @@
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { withJsonErrors } from "@/backend/routeErrors";
+import { withLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
 import { fileURLToPath } from "node:url";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
@@ -93,7 +94,7 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
   return _clubProfileLeagueDataCache;
 }
 
-export const apiRoutes = withJsonErrors({
+export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...authRoutes,
   ...reportRoutes,
   ...presenceRoutes,
@@ -797,4 +798,4 @@ export const apiRoutes = withJsonErrors({
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(meta.activeLeagues ?? []);
   },
-} as const);
+} as const));

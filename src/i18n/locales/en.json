@@ -5122,6 +5122,8 @@
       "useLeave": "To leave, use \"Leave the league\".",
       "notMember": "This manager is not in the league.",
       "tooLarge": "The request is too large.",
+      "ownerLimit": "That manager already owns 5 leagues.",
+      "lobby": "The league has not started yet.",
       "generic": "Something went wrong. Try again."
     }
   }

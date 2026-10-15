@@ -49,6 +49,7 @@ export function WorldScreen() {
     if (!saveId) return;
     const r = await worldApi.view(saveId);
     if (r.ok) { setView(r.data); setError(null); }
+    else if (r.error === "notMember" || r.error === "notFound") { forgetSession(saveId); window.location.href = "/start"; }
     else setError(r.error);
   }, [saveId]);
 

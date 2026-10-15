@@ -9,6 +9,18 @@ export type WorldByCodeView = WorldByCode & { leagueSlug?: string; leagueName?: 
 export type WorldApiError = WorldErrorCode | "generic";
 export type WorldResult<T> = { ok: true; data: T } | { ok: false; status: number; error: WorldApiError; saveId?: string };
 
+const KNOWN: ReadonlySet<string> = new Set<WorldErrorCode>([
+  "notFound", "full", "alreadyMember", "clubTaken", "invalidManager", "invalidClub", "invalidBody", "ownerOnly",
+  "transferFirst", "alreadyStarted", "notMulti", "inviteLimit", "noNickname", "useLeave", "notMember", "tooLarge",
+  "ownerLimit", "generic", "lobby",
+]);
+
+/** A server error that is not a world code becomes `generic`; a bare 404 of a world route means he is not a member. */
+export function mapWorldError(status: number, error: unknown): WorldApiError {
+  if (typeof error === "string" && KNOWN.has(error)) return error as WorldApiError;
+  return status === 404 ? "notMember" : "generic";
+}
+
 const seg = (s: string) => encodeURIComponent(s);
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<WorldResult<T>> {
@@ -23,7 +35,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<Wo
     return {
       ok: false,
       status: res.status,
-      error: (typeof json?.error === "string" ? json.error : "generic") as WorldApiError,
+      error: mapWorldError(res.status, json?.error),
       ...(typeof json?.saveId === "string" ? { saveId: json.saveId } : {}),
     };
   } catch {

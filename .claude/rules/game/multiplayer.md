@@ -6,7 +6,7 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
 ## Regra
 
 - Um save é um **mundo** com N técnicos humanos (**assentos**). O solo é um mundo com um assento (`mode: "solo"`).
-  `addSeat` (`src/backend/seats.ts`, só testes e scripts) acrescenta assentos (`mode: "multi"`). Convites e a tela
+  `addSeat` (`src/backend/seats.ts`: testes, scripts e `POST /api/worlds/join`) acrescenta assentos (`mode: "multi"`). Convites e a tela
   do mundo: seção "Parte 2: liga de amigos".
 - Um técnico humano por clube. Um usuário tem no máximo um assento por mundo (`save_members`). Aceitar a proposta de
   um clube que já tem assento dá 409 `offerClosed`; quando um assento assume um clube (`takeOverClub`: troca de
@@ -139,11 +139,11 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
   `lobby`, sem `/presimulate`. `SaveMeta.world = { phase, inviteCode, deadlineHours, createdBy }` (`WorldState`,
   `src/types/multiplayerTypes.ts`); o solo não tem `world`.
 - **`lobby`:** o dia não avança (`advance-day` e `advance-until` 409 `lobby`; `/presimulate` 409 `useWorldStart`); toda
-  tela do jogo redireciona para `/world` (`worldRedirect`, com caminhos livres: Amigos, `/start`, `/join`). **`running`:**
+  tela do jogo redireciona para `/world` (`worldRedirect`, com caminhos livres `/join/*`, `/new-game`, `/start`, `/login` e `/world`). Guarda de lobby (`worldLobbyGuard`, `src/backend/worlds/worldLobbyGuard.ts`, aplicada por `withLobbyGuard` em `routes.ts` depois da checagem de assento): as rotas que gravam o jogo (compras, propostas, empréstimos, pré-contratos, livres, renovações, listas de venda e empréstimo, comissão, obras, missões e prospectos, base, loja de conquistas) respondem 409 `lobby` também por chamada direta; táticas, preferências e responsabilidades seguem livres. **`running`:**
   depois de "Começar" (`POST /api/worlds/:saveId/start`: dono, uma vez; `presimulateWorld` + evento `world_started`).
   Entrar continua possível depois.
 - Até 8 técnicos (`WORLD.MAX_MEMBERS`, conferido dentro do lock do `addSeat` por `maxSeats`). O limite de 5 saves conta
-  só os mundos de que o usuário é dono.
+  só os mundos de que o usuário é dono; passar a posse a quem já é dono de 5 dá 409 `ownerLimit` (`WORLD.MAX_OWNED`, mesmo contador).
 - **Convite:** link `/join/<código>` (10 caracteres base32 sem 0/1/I/O, tabela `world_codes`; trocar o código derruba
   o link antigo) e convite pela lista de amigos (`world_invites`, só amigos do dono, até 20 pendentes
   `WORLD.MAX_PENDING_INVITES`, evento `world_invite`, bloco "Convites para ligas" do painel de Amigos). Convites cujo
@@ -170,7 +170,7 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
 | Arquivo | Papel |
 |---|---|
 | `src/types/multiplayerTypes.ts` | `WorldState`, `WorldView`, `WorldMemberView`, `WorldDeadline`, convites |
-| `src/Domain/multiplayer/*` | `worldConfig` (`WORLD`), `worldCode`, `seatManager` (regras de sair/tirar), `worldMessages` (caixa e notícia), `worldPublic` (visão pública por código) |
+| `src/Domain/multiplayer/*` | `worldConfig` (`WORLD`), `worldCode`, `seatManager` (`parseSeatManager`: valida o técnico do join), `worldMessages` (caixa e notícia), `worldPublic` (`publicWorldMeta`: tira `createdBy` de toda resposta de save) |
 | `src/backend/worlds/worldStore.ts` | SQLite: `world_codes`, `world_invites` |
 | `src/backend/worlds/worldLifecycle.ts` | `createWorldState`, `worldView`, `deleteWorld`, anúncios de entrada e saída |
 | `src/backend/worlds/worldNotify.ts` | Eventos `world_*` pelo socket |
@@ -183,17 +183,17 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
 
 | Rota | Quem | Faz |
 |---|---|---|
-| `GET /api/worlds/by-code/:code` | logado | `{ saveId, name, owner, members, max, phase, takenClubs }`; 404, 409 `full` / `alreadyMember` (com `saveId`) |
+| `GET /api/worlds/by-code/:code` | logado | `{ saveId, name, leagueSlug, leagueName, owner, members, max, phase, takenClubs }`; 404, 409 `full` / `alreadyMember` (com `saveId`) |
 | `POST /api/worlds/join { code, clubId, manager, sackingEnabled }` | logado | entra; 201 `{ saveId, seatId, phase }` |
 | `GET /api/worlds/invites` · `DELETE /api/worlds/invites/:saveId` | logado | convites recebidos; recusar |
 | `GET /api/worlds/:saveId` | membro | `WorldView` (membros, código, prazo, papel) |
 | `POST /api/worlds/:saveId/invite-code` | dono | código novo |
 | `PUT /api/worlds/:saveId/settings { deadlineHours }` | dono | 12 / 24 / 48 / `null` |
 | `POST /api/worlds/:saveId/invites { nickname }` | dono | convite a um amigo (404 se não é amigo) |
-| `POST /api/worlds/:saveId/start` | dono | começa (409 `alreadyStarted`) |
+| `POST /api/worlds/:saveId/start` | dono | começa (409 `alreadyStarted`); se `presimulateWorld` falha: `logError("world")`, 500 `generic`, fase continua `lobby` (uma falha no meio pode deixar o kit aplicado) |
 | `POST /api/worlds/:saveId/members/:seatId/remove` | dono | tira (400 `useLeave` para si) |
 | `POST /api/worlds/:saveId/leave` | membro | sai; o dono: 409 `transferFirst`, ou apaga sozinho |
-| `POST /api/worlds/:saveId/owner { seatId }` | dono | passa a posse |
+| `POST /api/worlds/:saveId/owner { seatId }` | dono | passa a posse (409 `ownerLimit`) |
 
 Eventos de socket (`ServerEvent`, `src/types/socialTypes.ts`): `world_invite`, `world_started`, `world_removed`,
 `world_deleted`, `world_members`.
@@ -221,6 +221,6 @@ bun test src/Domain/multiplayer src/backend/worlds src/backend/seats.addSeat.tes
 - O assistente de entrada lista clubes e perfis pelos dados estáticos, não pela composição atual do mundo.
 - Convites pela lista só para amigos do dono; ficam só no SQLite (o código continua valendo sem eles).
 - Sem reserva de assento nem troca de clube de um membro (sair e entrar de novo).
-- Quem sai perde os empréstimos do mercado do assento: os cedidos voltam pela regra de volta do mundo.
+- `removeSeat` encerra na hora todos os empréstimos do assento (cedidos e recebidos), sem notícia de mundo para essas voltas.
 - Notícias e mensagens de entrada e saída são escritas na rota, com a data do mundo, não no avanço do dia.
 - Um processo de servidor só (sockets, locks e presença em memória).

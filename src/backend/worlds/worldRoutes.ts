@@ -1,9 +1,10 @@
 import { saveService } from "@/backend/SaveService";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
-import { listSaveMembers, memberBySeat, memberOf, transferOwnership } from "@/backend/auth/saveOwnership";
+import { countOwnedSaves, listSaveMembers, memberBySeat, memberOf, transferOwnership } from "@/backend/auth/saveOwnership";
 import { withSaveLock } from "@/backend/saveLock";
 import { areFriends, blockedEitherWay, findUserByNickname, getSocialUser } from "@/backend/social/socialStore";
 import { notifyUser } from "@/backend/social/realtime";
+import { logError } from "@/Logger";
 import { presimulateWorld } from "@/backend/advanceDay";
 import { addSeat, removeSeat, SeatError } from "@/backend/seats";
 import { announceMemberChange, deleteWorld, worldView } from "@/backend/worlds/worldLifecycle";
@@ -255,7 +256,14 @@ export const worldRoutes = {
         const meta = await multiWorld(saveId);
         if (!meta) return fail("notMulti", 404);
         if (meta.world.phase !== "lobby") return fail("alreadyStarted", 409);
-        const result = await presimulateWorld(saveId, auth.seatId);
+        let result;
+        try {
+          result = await presimulateWorld(saveId, auth.seatId);
+        } catch (e) {
+          // The phase stays `lobby`; a failure midway may leave the start kit applied.
+          logError("world", `start failed for ${saveId}: ${e instanceof Error ? e.message : String(e)}`);
+          return fail("generic", 500);
+        }
         const fresh = (await multiWorld(saveId))!;
         await saveService.updateMeta(saveId, { world: { ...fresh.world, phase: "running" } });
         notifyWorld(saveId, { type: "world_started", saveId });
@@ -351,6 +359,7 @@ export const worldRoutes = {
         if (!stillOwner(saveId, auth.userId)) return fail("ownerOnly", 403);
         const target = memberBySeat(saveId, seatId);
         if (!target || target.userId === auth.userId) return fail("notMember", 404);
+        if (countOwnedSaves(target.userId) >= WORLD.MAX_OWNED) return fail("ownerLimit", 409);
         try {
           transferOwnership(saveId, auth.userId, target.userId);
         } catch {

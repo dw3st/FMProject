@@ -5122,6 +5122,8 @@
       "useLeave": "Para sair, use \"Sair da liga\".",
       "notMember": "Este técnico não está na liga.",
       "tooLarge": "O pedido é grande demais.",
+      "ownerLimit": "Esse técnico já é dono de 5 ligas.",
+      "lobby": "A liga ainda não começou.",
       "generic": "Algo deu errado. Tente de novo."
     }
   }

@@ -229,7 +229,7 @@ export const saveRoutes = {
       if (!patch.tactical_style && !existing.tactical_style) patch.tactical_style = DEFAULT_TACTICAL_STYLE;
 
       await saveService.updateSeat(id, auth.seatId, patch);
-      return Response.json(await saveService.getSeatMeta(id, auth.seatId));
+      return Response.json(publicWorldMeta((await saveService.getSeatMeta(id, auth.seatId))!));
     }
 
     if (req.method === "DELETE") {
