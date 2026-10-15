@@ -26,6 +26,9 @@ import { Icon, iconOf } from "@/GameInterface/Icons";
 import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Flag } from "@/GameInterface/Components/Flag";
+import { Notice } from "@/GameInterface/ui/Notice";
+import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 const Clock = iconOf("clock");
@@ -305,6 +308,8 @@ export function MatchResultScreen() {
   const [redirectingToDashboard, setRedirectingToDashboard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedDate, setResolvedDate] = useState<string>("");
+  /** Group world: the recorded live match, shown before the day runs. */
+  const [pendingResult, setPendingResult] = useState(false);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const nationalTeamId = fixtures.find((f) => f.nationalTeam)?.nationalTeam ?? null;
@@ -326,6 +331,12 @@ export function MatchResultScreen() {
 
     void (async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const errorCode = params.get("error");
+        if (errorCode && session.groupAdvance) {
+          if (!cancelled) setError(t(groupAdvanceErrorKey(errorCode)));
+          return;
+        }
         const qDate = parseDateQuery();
         const date =
           qDate ??
@@ -340,6 +351,25 @@ export function MatchResultScreen() {
             }, 1500);
           }
           return;
+        }
+
+        if (params.get("pending") === "1" && session.groupAdvance) {
+          const live = await groupAdvanceApi.pendingLive(session.saveId);
+          if (live.ok && live.data.event && live.data.date === date) {
+            const ev = live.data.event;
+            const [hs, as] = await Promise.all([
+              fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.home)}`).then((r) => (r.ok ? (r.json() as Promise<Squad>) : null)),
+              fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.away)}`).then((r) => (r.ok ? (r.json() as Promise<Squad>) : null)),
+            ]);
+            if (cancelled) return;
+            setMatchEvent(ev);
+            setResolvedDate(date);
+            setHomeSquad(hs);
+            setAwaySquad(as);
+            setPendingResult(true);
+            return;
+          }
+          // The executor already ran that day: the official result is in the day log.
         }
 
         const lastDayForResult = addOneDay(date);
@@ -489,6 +519,7 @@ export function MatchResultScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+      {pendingResult && <Notice className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">{t("world.advance.result.pending")}</Notice>}
       {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
       <div aria-hidden />

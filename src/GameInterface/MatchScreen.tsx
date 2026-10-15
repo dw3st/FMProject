@@ -88,6 +88,7 @@ import { GoalOverlay } from "@/GameInterface/GoalOverlay";
 import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
+import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { resolveComplaint } from "@/GameEngine/Domain/Var";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
@@ -309,6 +310,8 @@ export function MatchScreen() {
     mySquadId: string;
     homeSquad: Squad;
     awaySquad: Squad;
+    /** Group world: the day and fixture the recording belongs to (`match-setup` → `matchDay`). */
+    matchDay: { date: string; fixtureId: string } | null;
   } | null>(null);
   /**
    * Resume after a reload (#64): `matchResume.ts`. `matchKeyRef` is set once the match is built;
@@ -367,6 +370,7 @@ export function MatchScreen() {
           managerBanned?: boolean;
           /** His national team's game (Etapa 41b): the teams are nations. */
           national?: { teamId: string; competition: string } | null;
+          matchDay?: { date: string; fixtureId: string } | null;
         };
       })
       .then((data) => {
@@ -509,6 +513,7 @@ export function MatchScreen() {
           mySquadId: data.mySquadId,
           homeSquad,
           awaySquad,
+          matchDay: data.matchDay ?? null,
         };
 
         // National teams (Etapa 41b): the nation's name in the player's language.
@@ -807,22 +812,33 @@ export function MatchScreen() {
             try {
               const ctx = matchContextRef.current;
               const gs = gameStateRef.current;
-              const payload =
+              const recording =
                 ctx && gs
-                  ? JSON.stringify({
-                      playedMatch: {
-                        ...buildPlayedMatchRecording(
-                          gs,
-                          ctx.fixture,
-                          ctx.mySquadId,
-                          ctx.homeSquad,
-                          ctx.awaySquad,
-                          managerCardsRef.current,
-                        ),
-                        ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
-                      },
-                    })
+                  ? {
+                      ...buildPlayedMatchRecording(
+                        gs,
+                        ctx.fixture,
+                        ctx.mySquadId,
+                        ctx.homeSquad,
+                        ctx.awaySquad,
+                        managerCardsRef.current,
+                      ),
+                      ...(complaintMoraleRef.current ? { complaintMorale: true as const } : {}),
+                    }
                   : null;
+              if (session?.groupAdvance && ctx?.matchDay && recording) {
+                // Group world (part 3): the recording waits for the executor; the day runs with the group.
+                const r = await groupAdvanceApi.liveRecording(saveId, ctx.matchDay.date, ctx.matchDay.fixtureId, recording);
+                if (!r.ok) {
+                  window.location.href = `/match-result?error=${encodeURIComponent(r.error)}`;
+                  return;
+                }
+                recordedRef.current = true;
+                clearMatchSnapshot();
+                window.location.href = `/match-result?date=${encodeURIComponent(ctx.matchDay.date)}&pending=1`;
+                return;
+              }
+              const payload = recording ? JSON.stringify({ playedMatch: recording }) : null;
               const res = await fetch(`/api/advance-day/${encodeURIComponent(saveId)}`, {
                 method: "POST",
                 ...(payload

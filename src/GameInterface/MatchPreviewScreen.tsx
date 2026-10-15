@@ -34,6 +34,8 @@ import { Player } from "@/Domain/Player";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
+import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -576,6 +578,8 @@ function LastMinuteSubsModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 interface MatchSetupData {
+  /** Group world: the day and fixture a decision or recording belongs to. */
+  matchDay?: { date: string; fixtureId: string } | null;
   mySquad: Squad;
   opponentSquad: Squad | null;
   myFormation: { id: string; attacking: FormationSlotDef[] };
@@ -626,6 +630,8 @@ export function MatchPreviewScreen() {
   const [matchSetupError, setMatchSetupError] = useState<string | null>(null);
   /** Today's opponent is another seat's club (`match-setup` → 409 `seatOpponent`). */
   const [seatOpponent, setSeatOpponent] = useState(false);
+  /** Group world: error code of the last "Simular" decision. */
+  const [groupError, setGroupError] = useState<string | null>(null);
   const [commencing, setCommencing] = useState(false);
   const [localLineup, setLocalLineup] = useState<string[]>([]);
   const [showLastMinuteSubs, setShowLastMinuteSubs] = useState(false);
@@ -810,6 +816,18 @@ export function MatchPreviewScreen() {
     const matchDate = session.currentDate ?? "";
     // Simulating instead of watching abandons any half-played live match of today (#64).
     clearMatchSnapshot();
+    if (session.groupAdvance) {
+      // Group world (part 3): the decision is stored; the day runs with the group.
+      const day = matchSetup?.matchDay;
+      const r = day ? await groupAdvanceApi.simulate(session.saveId, day.date, day.fixtureId) : null;
+      if (r && !r.ok) {
+        setCommencing(false);
+        setGroupError(r.error);
+        return;
+      }
+      window.location.href = "/dashboard";
+      return;
+    }
     try {
       await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
     } catch {
@@ -1298,6 +1316,12 @@ export function MatchPreviewScreen() {
 
       {/* Action buttons: the standard Button for all four (#65 follow-up) — secondary for the
           side actions, primary for Start game, same font and height. */}
+      {groupError && (
+        <div className="shrink-0 flex items-center gap-4 flex-wrap justify-center">
+          <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(groupError))}</p>
+          <a href="/dashboard" className="text-primary font-bold text-sm no-underline hover:underline">{t("common.backToDashboard")}</a>
+        </div>
+      )}
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
         <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
           <Icon name="settings" size={16} />
