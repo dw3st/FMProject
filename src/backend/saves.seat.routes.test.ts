@@ -39,4 +39,21 @@ describe("/api/saves/:id acts on the requester's seat", () => {
     expect((await saveService.getSeat(meta.id, meta.seatId))?.training_intensity).toBe("heavy");
     expect((await saveService.getWorldMeta(meta.id))?.currentDate).toBe(meta.currentDate);
   }, 300_000);
+
+  test("the inbox route reads the requester's seat", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    created.push(meta.id);
+    const { user, session } = devAutoLogin("seat-inbox@test.local");
+    await ownSolo(meta.id, user.id);
+    await saveService.appendInbox(meta.id, { id: "only-mine", category: "season", read: false, createdAt: "2027-01-01T00:00:00Z" } as never, meta.seatId);
+    const handler = apiRoutes["/api/saves/:saveId/inbox"] as (r: Request) => Promise<Response>;
+    const res = await handler(Object.assign(
+      new Request(`http://localhost/api/saves/${meta.id}/inbox`, { headers: { cookie: `fs_session=${session.token}` } }),
+      { params: { saveId: meta.id } },
+    ));
+    expect((await res.json()).map((m: { id: string }) => m.id)).toContain("only-mine");
+  }, 300_000);
 });

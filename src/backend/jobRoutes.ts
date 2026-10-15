@@ -16,7 +16,7 @@ export const jobRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const date = meta.currentDate ?? "";
     return Response.json({
@@ -39,13 +39,13 @@ export const jobRoutes = {
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
     if (!body || typeof body.accept !== "boolean") return Response.json({ error: "accept required" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const offers = meta.jobOffers ?? [];
       const offer = offers.find((o) => o.id === offerId);
       if (!offer || offer.expires < meta.currentDate) return Response.json({ error: "offerClosed" }, { status: 409 });
       if (!body.accept) {
-        await saveService.updateMeta(saveId, { jobOffers: offers.filter((o) => o.id !== offerId) });
+        await saveService.updateSeat(saveId, auth.seatId, { jobOffers: offers.filter((o) => o.id !== offerId) });
         return Response.json({ ok: true, status: "declined" });
       }
       const index = await saveService.getSquadIndex(saveId);
@@ -55,7 +55,7 @@ export const jobRoutes = {
       const service = new SaveService(buffer);
       let next;
       try {
-        next = await acceptJobOffer(service, saveId, (await service.getMeta(saveId))!, offer);
+        next = await acceptJobOffer(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, offer);
         await buffer.flush();
       } catch (err) {
         logError("jobs", `save ${saveId}: failed to accept offer ${offerId}`, err);

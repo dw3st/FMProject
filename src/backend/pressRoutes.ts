@@ -46,7 +46,7 @@ export const pressRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return bad("save not found", 404);
     const press = meta.press;
     // The history goes out without the tones (only whether it was answered).
@@ -63,7 +63,7 @@ export const pressRoutes = {
     const answers = parseAnswers(await req.json().catch(() => null));
     if (!answers) return bad("invalidAnswers");
     return withSaveLock(saveId, () => inUnit(saveId, async (service) => {
-      const meta = await service.getMeta(saveId);
+      const meta = await service.getSeatMeta(saveId, auth.seatId);
       if (!meta) return bad("save not found", 404);
       if (!meta.clubId) return bad("noClub", 409);
       const pending = meta.press?.pending;
@@ -78,7 +78,7 @@ export const pressRoutes = {
         conference: pending, answers, squad, board: meta.board, state: meta.press ?? emptyPressState(),
       });
       await service.saveSquadById(saveId, out.squad);
-      await service.updateMeta(saveId, { press: out.state, board: out.board });
+      await service.updateSeat(saveId, auth.seatId, { press: out.state, board: out.board });
 
       if (out.quotes.length > 0) {
         const club = { id: meta.clubId, name: meta.clubName ?? squad.name };

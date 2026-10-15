@@ -256,7 +256,7 @@ describe("jobs: sacking, offers, changing club", () => {
     const extra = Array.from({ length: 33 - old.players.length }, (_, i) => ({ ...old.players[i % old.players.length]!, id: `extra_${i}` }));
     await saveService.saveSquadById(meta.id, { ...old, players: [...old.players, ...extra] });
     const freeBefore = (await saveService.getFreeAgents(meta.id)).length;
-    await releaseHumanClub(saveService, meta.id, { squadId: "33", date: meta.currentDate! });
+    await releaseHumanClub(saveService, meta.id, meta.seatId, { squadId: "33", date: meta.currentDate! });
     const ai = (await saveService.getSquadById(meta.id, "33"))!;
     expect(ai.players.length).toBe(MAX_SQUAD);
     for (const [role, min] of Object.entries(MIN_BY_ROLE)) {

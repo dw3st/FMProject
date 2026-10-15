@@ -49,7 +49,7 @@ describe("emitContinentalSeasonStartNews", () => {
       const contSlug = await playerContinentalSlug(saveService, saveId, qualifiedClub);
       expect(contSlug).not.toBeNull();
 
-      await emitContinentalSeasonStartNews(saveId, qualifiedClub, meta.currentDate!);
+      await emitContinentalSeasonStartNews(saveId, meta.seatId, qualifiedClub, meta.currentDate!);
 
       const inbox = await saveService.getInbox(saveId);
       const continentalMsgs = inbox.filter(
@@ -107,7 +107,7 @@ describe("emitContinentalSeasonStartNews", () => {
       const contMeta = await saveService.getLeagueMeta(saveId, contSlug!);
       expect(contMeta!.continental!.stages.find((s) => s.name === "r16")!.drawn).toBe(true);
 
-      await emitContinentalSeasonStartNews(saveId, qualifiedClub, meta.currentDate!);
+      await emitContinentalSeasonStartNews(saveId, meta.seatId, qualifiedClub, meta.currentDate!);
 
       const inbox = await saveService.getInbox(saveId);
       const continentalMsgs = inbox.filter(

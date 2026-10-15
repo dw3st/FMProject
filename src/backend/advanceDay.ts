@@ -349,6 +349,7 @@ export async function presimulatePreStart(
  */
 export async function emitContinentalSeasonStartNews(
   saveId: string,
+  seatId: string,
   clubId: string,
   date: string,
 ): Promise<void> {
@@ -362,24 +363,24 @@ export async function emitContinentalSeasonStartNews(
 
   await emitInboxMessage(saveId, buildContinentalMessage({
     date, kind: "qualified", competition: slug, competitionName: compName, stage: "group",
-  }), saveService);
+  }), saveService, seatId);
 
   if (status.kind === "group") {
     const opponentNames = status.opponentIds.map((id) => index.byId(id)?.name ?? id);
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "group", competition: slug, competitionName: compName, stage: "group",
       group: status.group, opponentNames,
-    }), saveService);
+    }), saveService, seatId);
   } else if (status.kind === "eliminatedGroup") {
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "eliminated", competition: slug, competitionName: compName, stage: "group",
-    }), saveService);
+    }), saveService, seatId);
   } else {
     const opponentName = index.byId(status.opponentId)?.name ?? status.opponentId;
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "draw", competition: slug, competitionName: compName, stage: status.stage,
       opponentName, firstLegDate: status.firstLegDate, venue: status.venue,
-    }), saveService);
+    }), saveService, seatId);
   }
 }
 
@@ -2637,7 +2638,7 @@ export async function advanceOneDay(
           managerEarned += severance;
         }
       }
-      await releaseHumanClub(saveService, saveId, { squadId: playerSquadId, date: currentDate });
+      await releaseHumanClub(saveService, saveId, meta.seatId, { squadId: playerSquadId, date: currentDate });
       await managerTracker.apply((ms) => sackHumanManager(ms, {
         date: currentDate, clubName: meta.clubName, left: ended!.reason === "contract" ? "contract" : "sacked",
       }));
@@ -3102,7 +3103,7 @@ export const advanceDayRoutes = {
     // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
     // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
     if (result.applied) {
-      const m = await saveService.getMeta(saveId);
+      const m = await saveService.getWorldMeta(saveId);
       if (m?.currentDate) {
         try {
           const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
@@ -3116,7 +3117,7 @@ export const advanceDayRoutes = {
     // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
     // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
     {
-      const m = await saveService.getMeta(saveId);
+      const m = await saveService.getWorldMeta(saveId);
       if (m?.currentDate) {
         try {
           await ensureYouthCompetitions({
@@ -3132,7 +3133,7 @@ export const advanceDayRoutes = {
     // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
     // world drawn from the world's start, with past games; it is drawn again from the career's day.
     {
-      const m = await saveService.getMeta(saveId);
+      const m = await saveService.getWorldMeta(saveId);
       if (m?.currentDate) {
         try {
           await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
@@ -3144,10 +3145,10 @@ export const advanceDayRoutes = {
 
     // Continental season-start news, read from whatever is on disk AFTER the kit decision above
     // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (meta?.clubId && meta.currentDate) {
       try {
-        await emitContinentalSeasonStartNews(saveId, meta.clubId, meta.currentDate);
+        await emitContinentalSeasonStartNews(saveId, auth.seatId, meta.clubId, meta.currentDate);
       } catch (e) {
         logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
       }
@@ -3157,7 +3158,7 @@ export const advanceDayRoutes = {
         await emitInboxMessage(saveId, buildBoardMessage({
           date: meta.currentDate, kind: "objective", objective: meta.board.objective,
           leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
-        }), saveService);
+        }), saveService, auth.seatId);
       }
     }
 
@@ -3252,7 +3253,7 @@ export const advanceDayRoutes = {
     if (body.type !== "training" && body.type !== "rest") {
       return Response.json({ error: "type must be 'training' or 'rest'" }, { status: 400 });
     }
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
     const activeLeagues = meta.activeLeagues ?? [];

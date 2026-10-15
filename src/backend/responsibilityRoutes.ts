@@ -29,7 +29,7 @@ export const responsibilityRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeat(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       return Response.json(responsibilitiesView(meta.responsibilities));
     }
@@ -40,10 +40,10 @@ export const responsibilityRoutes = {
       const patch = parseResponsibilitiesPatch(body);
       if (!patch) return Response.json({ error: "invalid responsibilities" }, { status: 400 });
       return withSaveLock(saveId, async () => {
-        const meta = await saveService.getMeta(saveId);
+        const meta = await saveService.getSeat(saveId, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
         const next: Responsibilities = { ...responsibilitiesOf(meta.responsibilities), ...patch };
-        const updated = await saveService.updateMeta(saveId, { responsibilities: next });
+        const updated = await saveService.updateSeat(saveId, auth.seatId, { responsibilities: next });
         return Response.json(responsibilitiesView(updated.responsibilities));
       });
     }
@@ -58,7 +58,7 @@ export const responsibilityRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeat(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       return Response.json(prefsView(meta.inboxPrefs));
     }
@@ -71,9 +71,9 @@ export const responsibilityRoutes = {
         return Response.json({ error: e instanceof Error ? e.message : "invalid prefs" }, { status: 400 });
       }
       return withSaveLock(saveId, async () => {
-        const meta = await saveService.getMeta(saveId);
+        const meta = await saveService.getSeat(saveId, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-        const updated = await saveService.updateMeta(saveId, { inboxPrefs: prefs });
+        const updated = await saveService.updateSeat(saveId, auth.seatId, { inboxPrefs: prefs });
         return Response.json(prefsView(updated.inboxPrefs));
       });
     }

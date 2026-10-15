@@ -225,9 +225,9 @@ export const saveRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(id);
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       return Response.json(tactics);
     }
 
@@ -238,10 +238,10 @@ export const saveRoutes = {
       }
       // Read-modify-write of tactics.json + meta: serialized with the other writers of the save.
       return withSaveLock(id, async () => {
-        const meta = await saveService.getMeta(id);
+        const meta = await saveService.getSeatMeta(id, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-        const existing = (await saveService.getTactics(id)) ?? {
+        const existing = (await saveService.getTactics(id, auth.seatId)) ?? {
           formation:      meta.formation      ?? "4-3-3",
           tactical_style: meta.tactical_style ?? DEFAULT_TACTICAL_STYLE,
           lineup:         [],
@@ -310,8 +310,8 @@ export const saveRoutes = {
           if (marks.length !== matchMarking.marks.length) matchMarking = marks.length > 0 ? { ...matchMarking, marks } : undefined;
         }
 
-        await saveService.saveTactics(id, updated);
-        await saveService.updateMeta(id, {
+        await saveService.saveTactics(id, updated, auth.seatId);
+        await saveService.updateSeat(id, auth.seatId, {
           formation:      updated.formation,
           tactical_style: updated.tactical_style,
           ...(matchMarking !== meta.matchMarking ? { matchMarking } : {}),
@@ -337,7 +337,7 @@ export const saveRoutes = {
       return Response.json({ error: "invalid body" }, { status: 400 });
     }
     return withSaveLock(id, async () => {
-      const meta = await saveService.getMeta(id);
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       if (!meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
       if (body.date !== meta.currentDate) {
@@ -348,7 +348,7 @@ export const saveRoutes = {
       if (!fixture) return Response.json({ error: "no match today" }, { status: 400 });
       const opponent = await saveService.getSquadById(id, fixture.home === meta.clubId ? fixture.away : fixture.home);
       if (!opponent) return Response.json({ error: "opponent squad not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       const formation = formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" });
       const parsed = parseMatchMarks(
         body.marks,
@@ -357,7 +357,7 @@ export const saveRoutes = {
         new Set(opponent.players.filter((p) => (p.positions?.[0] ?? "") === "GK").map((p) => p.id)),
       );
       if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-      await saveService.updateMeta(id, {
+      await saveService.updateSeat(id, auth.seatId, {
         matchMarking: parsed.value.length > 0 ? { date: meta.currentDate!, marks: parsed.value } : undefined,
       });
       return Response.json({ ok: true, matchMarking: parsed.value.length > 0 ? { date: meta.currentDate, marks: parsed.value } : null });
@@ -369,7 +369,7 @@ export const saveRoutes = {
     const id = req.params.id!;
     const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(id);
+    const meta = await saveService.getSeatMeta(id, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
     let body: { date?: unknown; swaps?: unknown; optOut?: unknown };
@@ -388,7 +388,7 @@ export const saveRoutes = {
     if (!optOut && swaps.length > 0) {
       const squad = await saveService.getSquadById(id, meta.clubId);
       if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       // Same registered pool as the preview (`match-setup`), so its suggestions validate here.
       const reg = await humanMatchRegistrationToday(saveService, id, meta, squad);
       const valid = resolveUserLineup(
@@ -403,7 +403,7 @@ export const saveRoutes = {
       if (!ok) return Response.json({ error: "swap not in today's suggestion" }, { status: 400 });
     }
 
-    await saveService.updateMeta(id, {
+    await saveService.updateSeat(id, auth.seatId, {
       rotationOverride: {
         date: body.date as string,
         swaps: optOut ? [] : swaps,

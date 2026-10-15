@@ -11,7 +11,7 @@ export const inboxRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
-    const messages = await saveService.getInbox(saveId);
+    const messages = await saveService.getInbox(saveId, auth.seatId);
     const sorted = [...messages].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return Response.json(sorted);
   },
@@ -25,7 +25,7 @@ export const inboxRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
-    const messages = await saveService.getInbox(saveId);
+    const messages = await saveService.getInbox(saveId, auth.seatId);
     const count = messages.reduce((acc, m) => (m.read ? acc : acc + 1), 0);
     return Response.json({ count });
   },
@@ -52,7 +52,7 @@ export const inboxRoutes = {
     if (!Array.isArray(ids) || !ids.every((x) => typeof x === "string")) {
       return Response.json({ error: "ids must be string[]" }, { status: 400 });
     }
-    const updated = await saveService.markInboxRead(saveId, ids as string[]);
+    const updated = await saveService.markInboxRead(saveId, ids as string[], auth.seatId);
     return Response.json(updated);
   },
 
@@ -65,7 +65,7 @@ export const inboxRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
-    const updated = await saveService.markAllInboxRead(saveId);
+    const updated = await saveService.markAllInboxRead(saveId, auth.seatId);
     return Response.json(updated);
   },
 };
