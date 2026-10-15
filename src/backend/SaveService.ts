@@ -854,6 +854,21 @@ export class SaveService {
     return result;
   }
 
+  /** Clubs with an official (non-youth) fixture on `date`, played or not. */
+  async getClubsWithFixtureOn(saveId: string, date: string): Promise<Set<string>> {
+    const activeRounds = await this.getActiveRoundsForDate(saveId, date);
+    const out = new Set<string>();
+    await Promise.all(
+      Array.from(activeRounds.entries()).map(async ([slug, rounds]) => {
+        const roundData = await Promise.all(rounds.map((r) => this.dal.readRound(saveId, slug, r)));
+        for (const rd of roundData) {
+          for (const f of rd?.fixtures ?? []) if (f.date === date) { out.add(f.home); out.add(f.away); }
+        }
+      }),
+    );
+    return out;
+  }
+
   /**
    * Get all unplayed fixtures scheduled for today across all leagues.
    * Loads only the specific round files needed (not all fixtures).
@@ -920,6 +935,8 @@ export class SaveService {
     // Generate calendars for ALL configured leagues
     const activeLeagues: LeagueSeasonState[] = [];
     let playerLeagueStart: string | undefined;
+    // The seat's seeded rest days (day before / after each of its league's matches).
+    let playerLeagueRestDays: string[] = [];
 
     try {
       const leagueFile = Bun.file(`${DATA_DIR}/leagueData.json`);
@@ -968,11 +985,11 @@ export class SaveService {
           end:          meta.end,
           totalRounds:  meta.totalRounds,
           currentRound: 0,
-          restDays:     meta.restDays,
         });
 
         if (config.slug === body.leagueSlug) {
           playerLeagueStart = meta.start;
+          playerLeagueRestDays = meta.restDays ?? [];
         }
       }
     } catch (e) {
@@ -1005,6 +1022,7 @@ export class SaveService {
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
       sackingEnabled: body.sackingEnabled !== false,
+      restDays: playerLeagueRestDays,
     };
     // The merged view the rest of createSave (and its caller) reads: same shape as before seats.
     const meta: SeatMeta = metaForSeat(world, seatId, seat);

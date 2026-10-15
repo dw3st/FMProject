@@ -253,5 +253,12 @@ export async function applyRandomStartKit(
     }
   }
 
+  // The kit rewrites the league calendars: each seat's seeded rest days follow its league's.
+  for (const { seatId, seat } of await saveService.listSeats(saveId)) {
+    if (!seat.leagueSlug) continue;
+    const restDays = (await saveService.getLeagueMeta(saveId, seat.leagueSlug))?.restDays ?? [];
+    await saveService.updateSeat(saveId, seatId, { restDays });
+  }
+
   return { applied: true, kit };
 }

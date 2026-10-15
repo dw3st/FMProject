@@ -177,7 +177,6 @@ export interface LeagueSeasonState {
   end:          string;
   totalRounds:  number;
   currentRound: number;  // last completed round (0 = none played yet)
-  restDays?:    string[];
 }
 
 /** Result of generating a league calendar */

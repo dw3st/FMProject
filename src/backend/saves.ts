@@ -148,7 +148,7 @@ export const saveRoutes = {
             end: playerLeagueState.end,
             calendar: fullCalendar,
             ...(youthCalendar.length > 0 ? { youthCalendar } : {}),
-            restDays: playerLeagueState.restDays ?? [],
+            restDays: meta.restDays ?? [],
             ...(national.teamId ? { nationalTeamId: national.teamId, teamNames: national.teamNames } : {}),
           };
         }

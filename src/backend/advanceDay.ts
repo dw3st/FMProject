@@ -78,6 +78,7 @@ import {
 import { resolveSimModeForSeats } from "@/Domain/advanceDay/simMode";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
+import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
@@ -456,7 +457,6 @@ export async function advanceOneDay(
     // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
     const humanClubs = humanClubSet(daySeats);
 
-    const tactics = solo.tactics;
 
     // Board and fans of each seat's club (`.claude/rules/game/board-fans.md`): `DaySeat.board`, updated in memory
     // through the day and written with the seat patch at the end; messages deferred like the rest. Press conferences
@@ -505,9 +505,8 @@ export async function advanceOneDay(
     // A seat's ledger season: the year of its league, read once (prizes and the money block).
     const ledgerSeasonOf = async (ds: DaySeat): Promise<number> =>
       (ds.ledgerSeason ??= (await saveService.getLeagueMeta(saveId, ds.meta.leagueSlug))?.year ?? new Date(currentDate).getFullYear());
-    // TRANSITIONAL (Task 21): a seat rests on its league's rest days (`seat.restDays` later).
-    const restToday = (ds: DaySeat) =>
-      (activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug)?.restDays ?? []).includes(currentDate);
+    // A seat rests on its own rest days (`seat.restDays`, seeded from its league's calendar, edited by the manager).
+    const restToday = (ds: DaySeat) => (ds.meta.restDays ?? []).includes(currentDate);
 
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
@@ -888,9 +887,17 @@ export async function advanceOneDay(
     }
 
     // ── Training / rest for non-playing teams in ALL active leagues ──────────
-    // Determine if it's a rest day for the player's league
-    const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
-    const isRestDay = (playerLeagueState?.restDays ?? []).includes(currentDate);
+    // A seat's club rests on the seat's rest days; an AI club the day before and after each of its own official
+    // matches (`aiRestingClubs`, `.claude/rules/game/multiplayer.md`).
+    const aiResting = aiRestingClubs({
+      playedYesterday: await saveService.getClubsWithFixtureOn(saveId, addDays(currentDate, -1)),
+      playsTomorrow: await saveService.getClubsWithFixtureOn(saveId, nextDate),
+      playsToday: teamsPlayingToday,
+    });
+    const isRestDay = (squadId: string): boolean => {
+      const ds = seatOf.get(squadId);
+      return ds ? restToday(ds) : aiResting.has(squadId);
+    };
 
     for (const leagueState of activeLeagues) {
       const league = leagueState.leagueSlug;
@@ -901,7 +908,7 @@ export async function advanceOneDay(
         const squad = squadWrites.get(row.squadId)?.squad ?? await saveService.getSquad(saveId, league, club);
         if (!squad) continue;
 
-        if (isRestDay) {
+        if (isRestDay(row.squadId)) {
           const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate, { skipPlayerIds: clubDayOff });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
@@ -910,9 +917,11 @@ export async function advanceOneDay(
             injuryInboxEvents.push({ kind: "returned", squadId: row.squadId, playerId, playerName });
           }
         } else {
-          // No explicit focus: the human club drills the style it plays (tactics.json).
+          // No explicit focus: a seat's club drills the style it plays (its tactics.json); an AI club the default.
+          const ds = seatOf.get(row.squadId);
           const policy = resolveTrainingPolicy(
-            { ...meta, style_focus: meta.style_focus ?? tactics?.tactical_style }, club, row.squadId,
+            ds ? { ...ds.meta, style_focus: ds.meta.style_focus ?? ds.tactics?.tactical_style } : { clubId: "" },
+            club, row.squadId,
           );
           const { event, updatedSquad, healedPlayerIds, newInjuries } =
             buildTrainingEvent(row.squadId, squad, policy, currentDate, Math.random, { skipPlayerIds: clubDayOff });
@@ -1917,7 +1926,7 @@ export async function advanceOneDay(
       logError("season", `save ${saveId}: ${slug} already rolled to ${lm.year} on disk — resyncing activeLeagues`);
       updatedActiveLeagues[i] = {
         ...updatedActiveLeagues[i]!, year: lm.year, start: lm.start, end: lm.end,
-        totalRounds: lm.totalRounds, currentRound: 0, restDays: lm.restDays,
+        totalRounds: lm.totalRounds, currentRound: 0,
       };
     }
 
@@ -2241,8 +2250,11 @@ export async function advanceOneDay(
           end: cal.meta.end,
           totalRounds: cal.meta.totalRounds,
           currentRound: 0,
-          restDays: cal.meta.restDays,
         };
+        // A seat whose club plays this league next season gets its seeded rest days.
+        for (const ds of daySeats) {
+          if (ds.clubId && index.byId(ds.clubId)?.leagueSlug === slug) ds.patch.restDays = cal.meta.restDays ?? [];
+        }
       }
 
       // 7a. Loans held by clubs of this unit end with their season (`.claude/rules/game/negotiation.md`),
@@ -2608,13 +2620,12 @@ export async function advanceOneDay(
     // Each seat club's seeded rest days (day before / after each match) follow its rescheduled games.
     for (const ds of rescheduleMoves.length > 0 ? daySeats : []) {
       if (!ds.clubId) continue;
-      const i = stateIdx(index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug);
-      if (i >= 0) {
-        const restDays = await playerRestDaysAfterMoves({
-          service: saveService, saveId, state: updatedActiveLeagues[i]!, clubId: ds.clubId, moves: rescheduleMoves,
-        });
-        if (restDays) updatedActiveLeagues[i] = { ...updatedActiveLeagues[i]!, restDays };
-      }
+      const leagueSlug = index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+      const restDays = await playerRestDaysAfterMoves({
+        service: saveService, saveId, state: { leagueSlug, restDays: ds.patch.restDays ?? ds.meta.restDays ?? [] },
+        clubId: ds.clubId, moves: rescheduleMoves,
+      });
+      if (restDays) ds.patch.restDays = restDays;
     }
 
     // ── Youth competitions: archived and regenerated when the country's tier-1 league rolled (same
@@ -3383,23 +3394,14 @@ export const advanceDayRoutes = {
     if (body.type !== "training" && body.type !== "rest") {
       return Response.json({ error: "type must be 'training' or 'rest'" }, { status: 400 });
     }
-    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
-    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-
-    const activeLeagues = meta.activeLeagues ?? [];
-    const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
-
-    if (!playerLeagueState) return Response.json({ error: "season not found" }, { status: 404 });
-
-    const current = new Set(playerLeagueState.restDays ?? []);
+    // The seat's own rest days (`.claude/rules/game/multiplayer.md`).
+    const seat = await saveService.getSeat(saveId!, auth.seatId);
+    if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+    const current = new Set(seat.restDays ?? []);
     if (body.type === "rest") current.add(date!);
     else current.delete(date!);
     const restDays = Array.from(current).sort();
-
-    const updatedLeagues = activeLeagues.map((l) =>
-      l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
-    );
-    await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
+    await saveService.updateSeat(saveId!, auth.seatId, { restDays });
     return Response.json({ restDays });
   },
 };
