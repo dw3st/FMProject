@@ -137,7 +137,7 @@
     "lobby": "Na sala de espera",
     "leave": "Sair da liga",
     "leaveConfirmTitle": "Sair da liga?",
-    "leaveConfirmBody": "O \"{{clubName}}\" volta para a IA e a sua vaga fica livre.",
+    "leaveConfirmBody": "Clube: {{clubName}}. Ele volta para a IA e a sua vaga fica livre.",
     "deleteWorldBody_one": "Excluir \"{{clubName}}\" ({{leagueName}}) apaga a liga para você e para mais {{count}} técnico. Isso não pode ser desfeito.",
     "deleteWorldBody_other": "Excluir \"{{clubName}}\" ({{leagueName}}) apaga a liga para você e para mais {{count}} técnicos. Isso não pode ser desfeito.",
     "saveVersion": "v{{version}}",
@@ -3943,7 +3943,7 @@
     },
     "freeHint": "Sempre inscrito: não ocupa vaga",
     "add": "Incluir",
-    "remove": "Tirar",
+    "remove": "Remover",
     "auto": "Automático",
     "autoConfirmTitle": "Voltar à lista automática?",
     "autoConfirmBody": "A lista é refeita com os melhores dentro das regras e as suas mudanças se perdem.",
@@ -4877,7 +4877,7 @@
         "text": "A diretoria decidiu pela troca no comando."
       },
       "2": {
-        "title": "{{manager}} deixa o {{club}}",
+        "title": "{{manager}} deixa: {{club}}",
         "text": "Demissão confirmada pelo clube."
       }
     },
@@ -5022,9 +5022,9 @@
       }
     },
     "world_member": {
-      "0": { "title": "{{manager}} assume o {{club}}", "text": "Um novo técnico entra na liga." },
+      "0": { "title": "{{manager}} assume: {{club}}", "text": "Um novo técnico entra na liga." },
       "1": { "title": "{{club}} tem novo técnico: {{manager}}", "text": "Mais um amigo na liga." },
-      "2": { "title": "{{manager}} chega ao {{club}}", "text": "A liga ganha mais um técnico." }
+      "2": { "title": "{{manager}} chega: {{club}}", "text": "A liga ganha mais um técnico." }
     },
     "world_member_left": {
       "title": "{{manager}} deixa o {{club}}",
@@ -5043,12 +5043,12 @@
       "owner": "Dono",
       "member": "Membro",
       "unemployed": "Sem clube",
-      "transfer": "Passar a posse",
-      "remove": "Tirar",
-      "removeConfirmTitle": "Tirar este técnico?",
-      "removeConfirmBody": "{{manager}} sai da liga e o {{club}} volta para a IA.",
+      "transfer": "Tornar dono",
+      "remove": "Remover",
+      "removeConfirmTitle": "Remover este técnico?",
+      "removeConfirmBody": "{{manager}} sai da liga. Clube: {{club}}, que volta para a IA.",
       "removeConfirmBodyNoClub": "{{manager}} sai da liga.",
-      "transferConfirmTitle": "Passar a posse?",
+      "transferConfirmTitle": "Tornar este técnico dono da liga?",
       "transferConfirmBody": "{{manager}} vira o dono; você continua como membro."
     },
     "invite": {
@@ -5077,7 +5077,7 @@
     "chat": "Chat da liga",
     "leave": {
       "button": "Sair da liga",
-      "transferFirst": "Passe a posse antes de sair.",
+      "transferFirst": "Passe a liga a outro técnico antes de sair.",
       "confirmTitle": "Sair da liga?",
       "confirmBody": "Seu clube volta para a IA e a sua vaga fica livre.",
       "deleteBody": "Você é o único técnico: sair apaga a liga."
@@ -5090,7 +5090,7 @@
       "open": "Abrir a liga",
       "toStart": "Voltar ao início",
       "humanClub": "Técnico humano",
-      "joinWith": "Entrar com o {{club}}",
+      "joinWith": "Entrar com {{club}}",
       "clubSubtitle": "{{world}} · {{league}}",
       "clubSubtitleNoLeague": "{{world}}"
     },
@@ -5101,9 +5101,9 @@
       "decline": "Recusar"
     },
     "inbox": {
-      "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume o {{club}}." },
-      "member_left": { "subject": "{{manager}} sai da liga", "body": "O {{club}} volta para a IA." },
-      "member_removed": { "subject": "{{manager}} foi tirado da liga", "body": "O {{club}} volta para a IA." }
+      "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
+      "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." }
     },
     "errors": {
       "notFound": "Este convite não vale mais.",
@@ -5114,7 +5114,7 @@
       "invalidClub": "Este clube não está no mundo da liga.",
       "invalidBody": "Falta alguma coisa no pedido.",
       "ownerOnly": "Só o dono pode fazer isso.",
-      "transferFirst": "Passe a posse para outro técnico antes de sair.",
+      "transferFirst": "Passe a liga a outro técnico antes de sair.",
       "alreadyStarted": "A liga já começou.",
       "notMulti": "Este save não é uma liga de amigos.",
       "inviteLimit": "Convites pendentes demais. Espere algumas respostas.",

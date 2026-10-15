@@ -5048,7 +5048,7 @@
       "removeConfirmTitle": "Remove this manager?",
       "removeConfirmBody": "{{manager}} leaves the league and {{club}} goes back to the AI.",
       "removeConfirmBodyNoClub": "{{manager}} leaves the league.",
-      "transferConfirmTitle": "Pass the ownership?",
+      "transferConfirmTitle": "Make this manager the league owner?",
       "transferConfirmBody": "{{manager}} becomes the owner; you stay as a member."
     },
     "invite": {
@@ -5068,7 +5068,7 @@
     },
     "deadline": {
       "title": "Deadline",
-      "hint": "Real time each manager has to be ready before the league moves on without him.",
+      "hint": "Real time each manager has to be ready before the league moves on without them.",
       "hours_one": "{{count}} h",
       "hours_other": "{{count}} h",
       "none": "No deadline"
@@ -5077,7 +5077,7 @@
     "chat": "League chat",
     "leave": {
       "button": "Leave the league",
-      "transferFirst": "Pass the ownership before leaving.",
+      "transferFirst": "Hand the league to another manager before leaving.",
       "confirmTitle": "Leave the league?",
       "confirmBody": "Your club goes back to the AI and your seat is freed.",
       "deleteBody": "You are the only manager: leaving deletes the league."
@@ -5114,7 +5114,7 @@
       "invalidClub": "This club is not in the league's world.",
       "invalidBody": "Something is missing in the request.",
       "ownerOnly": "Only the owner can do this.",
-      "transferFirst": "Pass the ownership to another manager before leaving.",
+      "transferFirst": "Hand the league to another manager before leaving.",
       "alreadyStarted": "The league has already started.",
       "notMulti": "This save is not a league of friends.",
       "inviteLimit": "Too many pending invites. Wait for some answers.",
