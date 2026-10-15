@@ -1,16 +1,21 @@
 import { randomUUID } from "crypto";
-import { saveService as defaultService, type SaveService } from "@/backend/SaveService";
+import { saveService as defaultService, SaveService } from "@/backend/SaveService";
+import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { MemberRole, SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
 import type { LeagueData } from "@/types/playerTypes";
-import { addSaveMember, memberOf } from "@/backend/auth/saveOwnership";
+import { addSaveMember, memberBySeat, memberOf, removeSaveMember } from "@/backend/auth/saveOwnership";
 import { withSaveLock } from "@/backend/saveLock";
-import { takeOverClub } from "@/backend/jobWorld";
+import { releaseHumanClub, takeOverClub } from "@/backend/jobWorld";
+import { resignNationalTeam } from "@/backend/nationalCoachWorld";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { competitionName } from "@/Domain/world/labels";
 import { metaForSeat } from "@/Domain/seats/seats";
 import { placeSeatManager } from "@/Domain/managers/seatManagers";
-import { managerReputation } from "@/Domain/jobs/jobs";
+import { managerReputation, sackHumanManager } from "@/Domain/jobs/jobs";
+import { vacancyHireOn } from "@/Domain/managers/aiManagers";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import { contractUntil, managerWeeklyWage, MANAGER_CONTRACT } from "@/Domain/managers/managerContract";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -18,6 +23,16 @@ import { buildBoardMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents"
 import { generateRestDays } from "@/Domain/season/generateRestDays";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
+
+export type SeatErrorCode = "notFound" | "alreadyMember" | "clubTaken" | "clubNotFound" | "full";
+
+/** A seat could not be added or removed; the routes turn `code` into the response. */
+export class SeatError extends Error {
+  constructor(readonly code: SeatErrorCode, message: string) {
+    super(message);
+    this.name = "SeatError";
+  }
+}
 
 /**
  * A new seat in an existing world (`.claude/rules/game/multiplayer.md`): tests and scripts only in part 1 (the invite
@@ -28,17 +43,24 @@ import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types
  */
 export async function addSeat(
   saveId: string,
-  args: { userId: string; clubId: string; manager: SaveManager; role?: MemberRole },
+  args: {
+    userId: string; clubId: string; manager: SaveManager; role?: MemberRole;
+    /** The board may sack the manager (`.claude/rules/game/board-fans.md`); default true. */
+    sackingEnabled?: boolean;
+    /** Seats the world may have; checked inside the lock (the join route passes `WORLD.MAX_MEMBERS`). */
+    maxSeats?: number;
+  },
   service: SaveService = defaultService,
 ): Promise<SeatContext> {
   return withSaveLock(saveId, async () => {
     const world = await service.getMeta(saveId);
-    if (!world?.currentDate) throw new Error(`addSeat: save ${saveId} not found or without a date`);
-    if (memberOf(saveId, args.userId)) throw new Error(`addSeat: user ${args.userId} already has a seat in ${saveId}`);
-    if ((await service.humanClubIds(saveId)).has(args.clubId)) throw new Error(`addSeat: club ${args.clubId} already has a seat`);
+    if (!world?.currentDate) throw new SeatError("notFound", `addSeat: save ${saveId} not found or without a date`);
+    if (memberOf(saveId, args.userId)) throw new SeatError("alreadyMember", `addSeat: user ${args.userId} already has a seat in ${saveId}`);
+    if (args.maxSeats !== undefined && world.seats.length >= args.maxSeats) throw new SeatError("full", `addSeat: save ${saveId} is full`);
+    if ((await service.humanClubIds(saveId)).has(args.clubId)) throw new SeatError("clubTaken", `addSeat: club ${args.clubId} already has a seat`);
     const index = await service.getSquadIndex(saveId);
     const entry = index.byId(args.clubId);
-    if (!entry) throw new Error(`addSeat: club ${args.clubId} is not in save ${saveId}`);
+    if (!entry) throw new SeatError("clubNotFound", `addSeat: club ${args.clubId} is not in save ${saveId}`);
 
     const date = world.currentDate;
     const activeLeagues = world.activeLeagues ?? [];
@@ -56,7 +78,7 @@ export async function addSeat(
       tactical_style: DEFAULT_TACTICAL_STYLE,
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
-      sackingEnabled: true,
+      sackingEnabled: args.sackingEnabled !== false,
       careerStart: date,
       // The day before and after the club's own league games (its calendar, moved games included).
       restDays: generateRestDays((await service.getAllFixturesForLeague(saveId, entry.leagueSlug))
@@ -98,5 +120,58 @@ export async function addSeat(
     }
     addSaveMember(saveId, args.userId, seatId, args.role ?? "member");
     return { seatId, seat: finalSeat };
+  });
+}
+
+/** What `removeSeat` hands back to the routes (the announcement and the socket). */
+export interface RemovedSeat {
+  userId: string | null;
+  managerName: string;
+  clubId: string;
+  clubName: string;
+  leagueSlug: string;
+}
+
+/**
+ * A manager leaves the world (`.claude/rules/game/multiplayer.md`, part 2): his club goes back to the AI as after a
+ * sacking (`releaseHumanClub`, interim + vacancy), his manager stays in the ranking as free (`left: "left_world"`),
+ * a national team he coaches gets an interim, and his seat's files and `save_members` row go. One buffered unit,
+ * flushed with the meta last.
+ */
+export async function removeSeat(saveId: string, seatId: string): Promise<RemovedSeat> {
+  return withSaveLock(saveId, async () => {
+    const buffer = new BufferingSaveDAL(new FileSystemDAL());
+    const service = new SaveService(buffer);
+    const world = await service.getMeta(saveId);
+    const seat = world?.seats.includes(seatId) ? await service.getSeat(saveId, seatId) : null;
+    if (!world?.currentDate || !seat) throw new SeatError("notFound", `removeSeat: seat ${seatId} not in save ${saveId}`);
+    const date = world.currentDate;
+    const member = memberBySeat(saveId, seatId);
+    const managerName = seat.manager?.name?.trim() || seat.clubName;
+
+    // A national team he coaches (Etapa 41b) gets an interim and a vacancy; nothing when he coaches none.
+    await resignNationalTeam(service, saveId, seatId, date);
+
+    if (seat.clubId && !seat.unemployed) {
+      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date });
+      await service.writeManagers(saveId, sackHumanManager(await service.getManagers(saveId), {
+        seatId, date, clubName: seat.clubName, left: "left_world",
+      }));
+      const meta = (await service.getMeta(saveId))!;
+      const rng = mulberry32(seedFrom(`${saveId}:${seat.clubId}:${date}:vacancy`));
+      await service.updateMeta(saveId, {
+        managerVacancies: { ...(meta.managerVacancies ?? {}), [seat.clubId]: { since: date, hireOn: vacancyHireOn(date, rng) } },
+      });
+    }
+    await service.deleteSeat(saveId, seatId);
+    await buffer.flush();
+    removeSaveMember(saveId, seatId);
+    return {
+      userId: member?.userId ?? null,
+      managerName,
+      clubId: seat.unemployed ? "" : seat.clubId,
+      clubName: seat.clubName,
+      leagueSlug: seat.leagueSlug,
+    };
   });
 }
