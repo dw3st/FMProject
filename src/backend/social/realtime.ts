@@ -24,6 +24,44 @@ export interface SocialSocket {
 }
 
 const MAX_CLIENT_FRAME = 2048;
+/** Per socket: at most this many `hello` / `ping` per minute and one `typing` per room every 2 s (excess ignored). */
+const HELLO_PER_MINUTE = 5;
+const PING_PER_MINUTE = 10;
+const TYPING_GAP_MS = 2_000;
+const MINUTE_MS = 60_000;
+
+interface SocketLimits {
+  hello: number[];
+  ping: number[];
+  typing: Map<string, number>;
+}
+
+const limits = new WeakMap<SocialSocket, SocketLimits>();
+
+/** Whether this client event fits the socket's limits (and counts it when it does). */
+function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolean {
+  let l = limits.get(ws);
+  if (!l) {
+    l = { hello: [], ping: [], typing: new Map() };
+    limits.set(ws, l);
+  }
+  if (event.type === "typing") {
+    const last = l.typing.get(event.room);
+    if (last !== undefined && now - last < TYPING_GAP_MS) return false;
+    if (l.typing.size > 50) l.typing.clear();
+    l.typing.set(event.room, now);
+    return true;
+  }
+  const max = event.type === "hello" ? HELLO_PER_MINUTE : PING_PER_MINUTE;
+  const recent = l[event.type].filter((t) => now - t < MINUTE_MS);
+  if (recent.length >= max) {
+    l[event.type] = recent;
+    return false;
+  }
+  recent.push(now);
+  l[event.type] = recent;
+  return true;
+}
 const sockets = new Map<string, Set<SocialSocket>>();
 /** userId → "status|club" last sent to friends (absent = offline). */
 const lastStatus = new Map<string, string>();
@@ -143,7 +181,7 @@ function relayTyping(userId: string, rawRoom: string): void {
 
 export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise<void> {
   const event = parseClientEvent(raw);
-  if (!event) return;
+  if (!event || !withinLimits(ws, event, Date.now())) return;
   const { userId } = ws.data;
   if (event.type === "typing") {
     relayTyping(userId, event.room);

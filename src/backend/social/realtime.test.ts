@@ -165,6 +165,35 @@ describe("delivery", () => {
   });
 });
 
+describe("socket limits", () => {
+  test("hello at most 5 and ping at most 10 per minute per socket; the excess is ignored", async () => {
+    const a = makeUser(uniqueNick());
+    const wa = fakeSocket(a.id);
+    onSocketOpen(wa);
+    for (let i = 0; i < 7; i++) await handleClientEvent(wa, JSON.stringify({ type: "hello", saveId: null }));
+    expect(wa.events.filter((e) => e.type === "pong")).toHaveLength(5);
+    wa.events.length = 0;
+    for (let i = 0; i < 12; i++) await handleClientEvent(wa, JSON.stringify({ type: "ping" }));
+    expect(wa.events.filter((e) => e.type === "pong")).toHaveLength(10);
+  });
+
+  test("typing at most once per 2 s per room", async () => {
+    const a = makeUser(uniqueNick());
+    const b = makeUser(uniqueNick());
+    const c = makeUser(uniqueNick());
+    befriend(a.id, b.id, Date.now());
+    befriend(a.id, c.id, Date.now());
+    const wa = fakeSocket(a.id);
+    const wb = fakeSocket(b.id);
+    const wc = fakeSocket(c.id);
+    for (const w of [wa, wb, wc]) onSocketOpen(w);
+    for (let i = 0; i < 3; i++) await handleClientEvent(wa, JSON.stringify({ type: "typing", room: `dm:${b.nickname}` }));
+    await handleClientEvent(wa, JSON.stringify({ type: "typing", room: `dm:${c.nickname}` }));
+    expect(wb.events.filter((e) => e.type === "typing")).toHaveLength(1);
+    expect(wc.events.filter((e) => e.type === "typing")).toHaveLength(1);
+  });
+});
+
 describe("handleSocialUpgrade", () => {
   const upgrades: unknown[] = [];
   const server = {
