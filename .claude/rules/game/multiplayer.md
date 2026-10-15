@@ -8,11 +8,35 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
 - Um save é um **mundo** com N técnicos humanos (**assentos**). O solo é um mundo com um assento (`mode: "solo"`).
   `addSeat` (`src/backend/seats.ts`, só testes e scripts) acrescenta assentos (`mode: "multi"`). Convites e a tela
   do mundo são a parte 2.
-- Um técnico humano por clube. Um usuário tem no máximo um assento por mundo (`save_members`).
+- Um técnico humano por clube. Um usuário tem no máximo um assento por mundo (`save_members`). Aceitar a proposta de
+  um clube que já tem assento dá 409 `offerClosed`; quando um assento assume um clube (`takeOverClub`: troca de
+  emprego ou `addSeat`), as propostas desse clube saem dos outros assentos.
 - A IA nunca age sobre um clube humano: não compra, não vende, não contrata livres, não demite o técnico, não abre
   vaga e não convoca para a base (as convocações são do assento). Nenhum clube humano oferece emprego.
+  - O perfil da IA (necessidades, lista de venda) do clube que ganha um assento sai do mercado do mundo
+    (`takeOverClub`); as propostas da IA pelos jogadores de um assento (`humanBidsTick`, `humanClubIds`) e os rivais
+    (`rollRivalFor`) nunca vêm de um clube humano. Uma proposta pendente cujo comprador virou humano dá 409
+    `offerClosed` no aceite; um rival desse clube (comprador ou vendedor) é descartado no prazo
+    (`resolveRivalDeadlines`).
+  - Um assento não compra, não pede emprestado nem faz pré-contrato com jogador de outro assento pela regra da IA:
+    `POST /transfers`, `/loans` e `/pre-contracts` dão 404 `notFound` (`isOtherSeatClub`). Humano × humano é a
+    parte 4.
 - Cada assento só age sobre o próprio clube. Data, ligas, calendário, notícias, árbitros, histórico, prêmios,
   livres, aposentados e a lista de livres da comissão são do mundo.
+- Dinheiro entre assentos: uma cláusula de venda futura que outro assento tem é paga no extrato dele
+  (`paySellOnReceiver` → `seatOfClub` → `recordMoney`) e sai do `sellOnHeld` dele.
+- Únicos no mundo: o prospecto de uma missão de jovens leva o assento na semente e no id
+  (`prospect_<assento>_<hash>_<i>`, só em `mode: "multi"`; o solo sorteia como antes). A lenda da loja de conquistas
+  só volta uma vez: o aposentado fica com `legendBy` em `retired.json` (não é oferecido nem vendido de novo, e a
+  oferta de renascido pendente dele fecha); o sorteio das três lendas leva o assento na semente num mundo `multi`.
+- Só o dono: apagar o mundo, `/presimulate` (dentro de `withSaveLock`, uma vez por mundo: `SaveMeta.presimulated`;
+  a segunda chamada é um no-op 200 com `applied: false`) e `/import-squads` (403 para um membro).
+- Finanças da liga (`ai-finances`): todo clube humano mostra só popularidade e folha (`isHumanClub`; o do próprio
+  assento continua `isPlayerClub`), com o rótulo "Técnico humano".
+- Jogo entre dois assentos: `match-setup` dá 409 `seatOpponent` (sem partida ao vivo); a prévia oferece simular a
+  partida (o avanço do dia joga no motor completo com as duas táticas) ou voltar ao painel.
+- Avanço rápido (`advance-until`) com mais de um assento: 409 `multiSeat` (o avanço em grupo é a parte 3); o avanço
+  de um dia continua.
 - Sem migração: saves de antes da parte 1 não têm membros e somem da lista.
 
 ## Dados
@@ -75,13 +99,21 @@ bun test src/Domain/seats src/Domain/market/seatMarket.test.ts src/backend/dal/s
   src/backend/seats.saveService.test.ts src/backend/saves.seat.routes.test.ts src/backend/worldRoutes.member.test.ts \
   src/backend/daySeats.test.ts src/backend/seats.addSeat.test.ts src/backend/seats.twoSeats.test.ts \
   src/backend/national.seats.test.ts src/backend/marketWindow.seats.test.ts src/Domain/advanceDay/aiRest.test.ts \
-  src/GameInterface/gameSession.seat.test.ts
+  src/GameInterface/gameSession.seat.test.ts src/backend/seats.review.test.ts src/Domain/achievements/shop.test.ts \
+  src/Domain/aiFinance/financeRows.test.ts
 ```
 
 `seats.twoSeats.test.ts`: três assentos (dois na Premier, um na La Liga), 8 dias. Diretoria, imprensa, salário,
 caixa e extrato próprios; a IA não negocia, não demite nem convoca nos clubes humanos; ações de um assento não
 tocam os outros; 404 agindo sobre o clube de outro assento; rotas do mundo para todos os membros; a virada do país
 de um assento limpa só a caixa dele.
+
+`seats.review.test.ts`: dois assentos na Premier. Compra / empréstimo / pré-contrato de jogador do outro assento
+(404), perfil da IA fora do mercado, proposta e rival em nome de um clube humano, proposta de emprego de clube com
+assento (409) e limpeza das propostas dos outros, cláusula paga no extrato do outro assento, lenda única,
+`/presimulate` só do dono e uma vez, `ai-finances`, `import-squads`, `match-setup` (409 `seatOpponent`) e
+`advance-until` (409 `multiSeat`). Puros: `negotiation.test.ts` (propostas sem clube humano), `missions.test.ts`
+(prospectos por assento), `shop.test.ts` (lendas), `financeRows.test.ts`.
 
 ## Limitações
 
@@ -91,3 +123,7 @@ de um assento limpa só a caixa dele.
   arquivo, então não colidem.
 - Sem convites, "pronto"/prazo, humano × humano ao vivo nem classificação (partes 2–5).
 - O smoke de temporada não tem modo de dois assentos.
+- A cláusula paga a outro assento entra no extrato dele sem mensagem na caixa (a mensagem `sell_on` só vai para o
+  assento que fez a operação).
+- Um jogo entre dois assentos não tem prévia (o `match-setup` recusa): só "simular partida" ou voltar ao painel.
+- Avanço rápido desligado com dois ou mais assentos até a parte 3.
