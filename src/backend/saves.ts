@@ -1,5 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatState } from "@/types/seatTypes";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import { playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { youthCompsOfCountry } from "@/backend/youthCompWorld";
@@ -103,7 +104,8 @@ export const saveRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(id);
+      // The world merged with the requester's seat (`metaForSeat`): the meta's shape before seats, plus `seatId`.
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
       // The player's season view: league + cup + continental fixtures of the club.
@@ -152,11 +154,11 @@ export const saveRoutes = {
         }
       }
 
-      return Response.json({ ...meta, season });
+      return Response.json({ ...meta, role: auth.role, season });
     }
 
     if (req.method === "PUT") {
-      const existing = await saveService.getMeta(id);
+      const existing = await saveService.getSeatMeta(id, auth.seatId);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
 
       let body: Record<string, unknown>;
@@ -166,11 +168,10 @@ export const saveRoutes = {
         return Response.json({ error: "invalid body" }, { status: 400 });
       }
 
-      // Build an explicit patch to prevent overwriting protected fields
-      const patch: Partial<Omit<SaveMeta, "id" | "createdAt">> = {};
+      // An explicit patch of the requester's seat (the world's date is never written from here).
+      const patch: Partial<SeatState> = {};
       if (body.formation      !== undefined) patch.formation      = body.formation      as string;
       if (body.tactical_style !== undefined) patch.tactical_style = body.tactical_style as TacticalStyle;
-      if (body.currentDate    !== undefined) patch.currentDate    = body.currentDate    as string;
       if (body.min_energy_to_train !== undefined) {
         const n = Number(body.min_energy_to_train);
         if (!Number.isFinite(n)) return Response.json({ error: "invalid min_energy_to_train" }, { status: 400 });
@@ -202,8 +203,8 @@ export const saveRoutes = {
       if (!patch.formation      && !existing.formation)      patch.formation      = "4-3-3";
       if (!patch.tactical_style && !existing.tactical_style) patch.tactical_style = DEFAULT_TACTICAL_STYLE;
 
-      const updated = await saveService.updateMeta(id, patch);
-      return Response.json(updated);
+      await saveService.updateSeat(id, auth.seatId, patch);
+      return Response.json(await saveService.getSeatMeta(id, auth.seatId));
     }
 
     if (req.method === "DELETE") {
