@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { DAY_MS } from "@/Domain/social/socialConfig";
+import { DAY_MS, SOCIAL } from "@/Domain/social/socialConfig";
 import { resetPresence, recordPresence } from "@/backend/presence";
 import { resetRealtime } from "@/backend/social/realtime";
 import { callSocial, type CallResult } from "@/backend/social/socialRouteTestUtils";
@@ -174,5 +174,25 @@ describe("body size", () => {
     const actual = await putNickname(a.token, JSON.stringify({ nickname: "x".repeat(9000) }));
     expect(actual).toEqual({ status: 413, json: { error: "tooLarge" } });
     expect(getSocialUser(a.id)?.nickname).toBeNull();
+  });
+});
+
+describe("request and search limits", () => {
+  test("at most 20 friend requests per hour per user (429 rateLimited)", async () => {
+    const a = makeUser(uniqueNick());
+    for (let i = 0; i < SOCIAL.REQUEST_RATE_MAX; i++) {
+      const r = await callSocial("POST", "/api/social/requests", a.token, { body: { nickname: uniqueNick() } });
+      expect(r.status).toBe(404);
+    }
+    const over = await callSocial("POST", "/api/social/requests", a.token, { body: { nickname: makeUser(uniqueNick()).nickname } });
+    expect(over).toMatchObject({ status: 429, json: { error: "rateLimited" } });
+  });
+
+  test("at most 30 searches per minute per user (429 rateLimited)", async () => {
+    const a = makeUser(uniqueNick());
+    for (let i = 0; i < SOCIAL.SEARCH_RATE_MAX; i++) {
+      expect((await callSocial("GET", "/api/social/search", a.token, { query: { q: "abc" } })).status).toBe(200);
+    }
+    expect((await callSocial("GET", "/api/social/search", a.token, { query: { q: "abc" } })).json).toEqual({ error: "rateLimited" });
   });
 });

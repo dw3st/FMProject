@@ -12,6 +12,12 @@ export const SOCIAL = {
   /** At most RATE_MAX messages per RATE_WINDOW_MS per user (429 past that). */
   RATE_WINDOW_MS: 10_000,
   RATE_MAX: 10,
+  /** Friend requests (by nickname or code): at most this many per hour per user. */
+  REQUEST_RATE_MAX: 20,
+  REQUEST_RATE_WINDOW_MS: 3_600_000,
+  /** Nickname searches: at most this many per minute per user. */
+  SEARCH_RATE_MAX: 30,
+  SEARCH_RATE_WINDOW_MS: 60_000,
   /** Messages older than this are deleted by the daily cleanup. */
   HISTORY_DAYS: 90,
   /** History page size (and the largest `limit` accepted). */

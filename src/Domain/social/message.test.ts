@@ -28,6 +28,13 @@ describe("rateLimit", () => {
     expect(rateLimit(stamps, 1_500).allowed).toBe(false);
     expect(rateLimit(stamps, 1_000 + SOCIAL.RATE_WINDOW_MS).allowed).toBe(true);
   });
+  test("takes another rule", () => {
+    const rule = { windowMs: 100, max: 2 };
+    const first = rateLimit([], 0, rule);
+    const second = rateLimit(first.stamps, 10, rule);
+    expect(rateLimit(second.stamps, 20, rule).allowed).toBe(false);
+    expect(rateLimit(second.stamps, 100, rule).allowed).toBe(true);
+  });
 });
 
 test("messageCutoff is 90 days before now", () => {

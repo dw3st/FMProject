@@ -15,10 +15,21 @@ export function cleanMessageBody(raw: unknown): string | null {
   return body;
 }
 
-/** Sliding window: the send times kept for the user and whether this send is allowed. */
-export function rateLimit(stamps: readonly number[], now: number): { allowed: boolean; stamps: number[] } {
-  const recent = stamps.filter((t) => now - t < SOCIAL.RATE_WINDOW_MS);
-  if (recent.length >= SOCIAL.RATE_MAX) return { allowed: false, stamps: recent };
+export interface RateRule {
+  windowMs: number;
+  max: number;
+}
+
+const MESSAGE_RATE: RateRule = { windowMs: SOCIAL.RATE_WINDOW_MS, max: SOCIAL.RATE_MAX };
+
+/** Sliding window (messages by default): the stamps kept for the user and whether this attempt is allowed. */
+export function rateLimit(
+  stamps: readonly number[],
+  now: number,
+  rule: RateRule = MESSAGE_RATE,
+): { allowed: boolean; stamps: number[] } {
+  const recent = stamps.filter((t) => now - t < rule.windowMs);
+  if (recent.length >= rule.max) return { allowed: false, stamps: recent };
   return { allowed: true, stamps: [...recent, now] };
 }
 

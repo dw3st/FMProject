@@ -32,7 +32,7 @@ import {
   type ChatMessageRow,
   type NamedUser,
 } from "@/backend/social/socialStore";
-import { cleanMessageBody, rateLimit } from "@/Domain/social/message";
+import { cleanMessageBody, rateLimit, type RateRule } from "@/Domain/social/message";
 import { nicknameChangeableAt } from "@/Domain/social/nickname";
 import { dmRoomId, worldRoomId, worldRoomParam } from "@/Domain/social/rooms";
 import { SOCIAL } from "@/Domain/social/socialConfig";
@@ -44,10 +44,23 @@ type AuthedHandler = (req: ParamReq, userId: string) => Response | Promise<Respo
 const NICK_RE = new RegExp(`^[A-Za-z0-9_.-]{1,${SOCIAL.NICKNAME_MAX}}$`);
 const MAX_BODY_BYTES = 8 * 1024;
 const sendStamps = new Map<string, number[]>();
+const requestStamps = new Map<string, number[]>();
+const searchStamps = new Map<string, number[]>();
+const REQUEST_RATE: RateRule = { windowMs: SOCIAL.REQUEST_RATE_WINDOW_MS, max: SOCIAL.REQUEST_RATE_MAX };
+const SEARCH_RATE: RateRule = { windowMs: SOCIAL.SEARCH_RATE_WINDOW_MS, max: SOCIAL.SEARCH_RATE_MAX };
 
 /** Tests only. */
 export function resetSocialRateLimit(): void {
   sendStamps.clear();
+  requestStamps.clear();
+  searchStamps.clear();
+}
+
+/** Counts one attempt of `userId` in `table`; false when over the rule (the caller answers 429). */
+function allow(table: Map<string, number[]>, userId: string, now: number, rule?: RateRule): boolean {
+  const limited = rateLimit(table.get(userId) ?? [], now, rule);
+  table.set(userId, limited.stamps);
+  return limited.allowed;
 }
 
 function fail(error: SocialErrorCode, status: number, extra?: Record<string, unknown>): Response {
@@ -192,6 +205,7 @@ export const socialRoutes = {
       if (!myNickname(userId)) return fail("noNickname", 409);
       const q = (new URL(req.url).searchParams.get("q") ?? "").trim();
       if (q.length < SOCIAL.SEARCH_MIN || !NICK_RE.test(q)) return fail("invalidQuery", 400);
+      if (!allow(searchStamps, userId, Date.now(), SEARCH_RATE)) return fail("rateLimited", 429);
       return Response.json({ results: searchUsers(userId, q) });
     }),
   },
@@ -204,6 +218,8 @@ export const socialRoutes = {
       if (!body) return fail("invalidBody", 400);
       const target = requestTarget(userId, body);
       if (target === "invalid") return fail("invalidBody", 400);
+      // counted before the lookup: an unknown nickname or code also costs an attempt (no free probing)
+      if (!allow(requestStamps, userId, Date.now(), REQUEST_RATE)) return fail("rateLimited", 429);
       if (!target) return fail("notFound", 404);
       const result = sendFriendRequest(userId, target.id, Date.now());
       if (result === "requested") {
@@ -316,9 +332,7 @@ export const socialRoutes = {
       const body = cleanMessageBody(json?.body);
       if (!body) return fail("invalidBody", 400);
       const now = Date.now();
-      const limited = rateLimit(sendStamps.get(userId) ?? [], now);
-      sendStamps.set(userId, limited.stamps);
-      if (!limited.allowed) return fail("rateLimited", 429);
+      if (!allow(sendStamps, userId, now)) return fail("rateLimited", 429);
       const row = insertMessage(room.roomId, userId, body, now);
       markRead(userId, room.roomId, row.id);
       deliverMessage(row);
