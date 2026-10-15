@@ -35,8 +35,8 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
   assento continua `isPlayerClub`), com o rótulo "Técnico humano".
 - Jogo entre dois assentos: `match-setup` dá 409 `seatOpponent` (sem partida ao vivo); a prévia oferece simular a
   partida (o avanço do dia joga no motor completo com as duas táticas) ou voltar ao painel.
-- Avanço rápido (`advance-until`) com mais de um assento: 409 `multiSeat` (o avanço em grupo é a parte 3); o avanço
-  de um dia continua.
+- Avanço manual (`/advance-day`, `/advance-until`) num mundo em grupo: 409 `groupAdvance` (só o executor avança, parte 3);
+  num mundo multi sem `world` (testes), o avanço rápido dá 409 `multiSeat`.
 - Sem migração: saves de antes da parte 1 não têm membros e somem da lista.
 
 ## Dados
@@ -121,12 +121,11 @@ assento (409) e limpeza das propostas dos outros, cláusula paga no extrato do o
 - `withSaveLock` é local ao processo: um servidor só por mundo.
 - Ids de mensagem podem se repetir entre assentos (ex. a lista da Champions de dois clubes humanos): cada caixa é um
   arquivo, então não colidem.
-- Sem "pronto"/prazo em ação, humano × humano ao vivo nem classificação (partes 3–5).
+- Sem humano × humano ao vivo nem classificação (partes 4–5).
 - O smoke de temporada não tem modo de dois assentos.
 - A cláusula paga a outro assento entra no extrato dele sem mensagem na caixa (a mensagem `sell_on` só vai para o
   assento que fez a operação).
 - Um jogo entre dois assentos não tem prévia (o `match-setup` recusa): só "simular partida" ou voltar ao painel.
-- Avanço rápido desligado com dois ou mais assentos até a parte 3.
 
 ## Parte 2: liga de amigos
 
@@ -152,7 +151,7 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
 - **Entrar** (`POST /api/worlds/join`): o assistente do novo jogo no modo "entrar" (clubes humanos desabilitados),
   `addSeat` como membro com `guard` (código ainda válido, reconferido dentro do lock) e `onLocked` (anúncio dentro do
   lock). Erros: 404 código, 409 `full` / `alreadyMember` / `clubTaken`, 400 técnico ou clube (`SeatError`).
-- **Prazo:** `deadlineHours` 12 / 24 / 48 / `null`, padrão 24; só gravado e mostrado (quem o usa é a parte 3).
+- **Prazo:** `deadlineHours` 12 / 24 / 48 / `null`, padrão 24; usado pelo avanço em grupo (parte 3).
 - **Sair / tirar** (`removeSeat`, `src/backend/seats.ts`, também com `guard` e `onLocked`): empréstimos do assento
   devolvidos, ofertas de seleção dele apagadas e as vagas reabertas, seleção que ele treina fica com interino
   (`left_world`), o clube volta à IA como numa demissão (`releaseHumanClub`, interino e vaga), o técnico fica no
@@ -224,3 +223,110 @@ bun test src/Domain/multiplayer src/backend/worlds src/backend/seats.addSeat.tes
 - `removeSeat` encerra na hora todos os empréstimos do assento (cedidos e recebidos), sem notícia de mundo para essas voltas.
 - Notícias e mensagens de entrada e saída são escritas na rota, com a data do mundo, não no avanço do dia.
 - Um processo de servidor só (sockets, locks e presença em memória).
+
+## Parte 3: avanço em grupo
+
+Spec: `docs/superpowers/specs/2026-10-15-multiplayer-group-advance-design.md`. Plano:
+`docs/superpowers/plans/2026-10-15-multiplayer-group-advance.md`. Vale com `mode: "multi"` e `world` (parte 2); só anda
+em `world.phase === "running"`. O solo não muda.
+
+### Regra
+
+- **Pronto até:** `SeatState.readyUntil` = a data em que o mundo pode parar sem o assento (o `currentDate` alvo). "Amanhã" =
+  um dia; "meu próximo jogo" = o dia do jogo (a véspera é o último dia rodado; acima de `MAX_READY_DAYS` 400 vale amanhã);
+  data antes de amanhã → 400. `null` = não está pronto.
+- **Alvo** (`computeGroupTarget`, `src/Domain/groupAdvance/groupAdvance.ts`): `min(readyUntil)` de todos os assentos, e um
+  jogo oficial do assento (clube ou seleção) sem `matchDecision` para o mundo **no** dia do jogo. Sem clube: só a data.
+  Decidir o jogo (`live`/`simulate`) conta como pronto até o dia seguinte.
+- **Paradas do dia** (`seatStops`): demissão, proposta de emprego ou de seleção, fim da temporada do país do assento; o
+  `readyUntil` dele volta a `null`. Técnico desempregado nunca para por jogo (o jogo da seleção dele é simulado).
+- **Prazo e assistente:** toda parada grava `world.advance.waitingSince`. Passadas `deadlineHours` (12/24/48; `null` =
+  espera todos), o assistente leva cada atrasado ao menor `readyUntil` dos outros (ou amanhã), simula o primeiro jogo dele
+  no trecho (`simulate`; jogo de seleção sem fixture vira `simulate` com `fixtureId ""`) e manda a mensagem `world` /
+  `auto_advanced`. O prazo recomeça na próxima parada.
+- **Executor** (`src/backend/groupAdvance.ts`): `kickWorld` roda em segundo plano, um por mundo (um segundo chamado só pede
+  nova olhada no fim); um dia por vez com `runBufferedDay` dentro de `withSaveLock`, relendo o alvo a cada dia, até
+  `MAX_DAYS_PER_RUN` 450 (depois do teto, sem prazo, só um novo kick continua). Gravações ao vivo do dia entram como
+  `recordings[seatId]`; uma gravação ausente, ou recusada pelo dia (400), vira `simulate` e o assento recebe `world` /
+  `live_refused`; com várias recusadas no mesmo dia todas viram simulação (o dia não diz qual). Depois de cada dia: limpa
+  decisões e gravações usadas, guarda a parte do assento em `pendingSummary.json` e manda
+  `world_progress { saveId, date, target, running, waitingFor (apelidos), error? }` aos membros. O resumo pendente
+  (`trimPendingSummary`, até `PENDING_SUMMARY_MAX` 120 dias) nunca descarta um dia com parada.
+- **Erro num dia:** `logError("world", …)`, `advance.running = false`, `error/errorAt/errorTries` no `advance`. O relógio
+  tenta de novo depois de 5, 15, 60 e 60 min (`ERROR_RETRY_MINUTES`, `errorRetryDue`), no máximo `MAX_ERROR_RETRIES` 5
+  seguidas; depois só um kick (ação de um técnico) tenta. Sucesso limpa o erro.
+- **Relógio e retomada:** `startWorldClock()` (subida, `src/index.ts`) libera um `advance.running` preso (`resumeWorlds`),
+  dá kick nos mundos `running` e, a cada `CLOCK_MS` 60 s (`worldClockTick`), nos de prazo vencido ou erro com nova tentativa.
+- **Calendário dos assentos:** `seatMatchDates` (`src/backend/advanceUntil.ts`) lista os jogos não jogados do assento (clube e
+  seleção) até o maior `readyUntil`. `match-setup` devolve `matchDay { date, fixtureId }`, também no 409 `seatOpponent` e
+  no jogo de seleção. `src/backend/playedMatchValidation.ts` (`validatePlayedMatch`, `knockoutRecordingDecided`) valida a
+  gravação ao vivo (forma, mata-mata sem vencedor).
+- `POST /api/advance-day` e `/advance-until` → 409 `groupAdvance`; num mundo multi sem `world` (testes), o avanço rápido
+  segue 409 `multiSeat`.
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `src/types/groupAdvanceTypes.ts` | `MatchDecision`, `PendingDay`, `MemberAdvanceStatus`, resposta de `GET …/advance` |
+| `src/Domain/groupAdvance/groupAdvanceConfig.ts` | Constantes (`GROUP_ADVANCE`) |
+| `src/Domain/groupAdvance/groupAdvance.ts` (+ teste) | Puro: `resolveReadyUntil`, `computeGroupTarget`, `memberStatus`, `deadlineAt`/`deadlinePassed`, `assistantPatches`, `seatStops`, `trimPendingSummary`, `errorRetryDue` |
+| `src/Domain/inbox/worldAdvanceMessage.ts` | Mensagens `world` / `auto_advanced` e `live_refused` |
+| `src/backend/groupAdvance.ts` | Executor, relógio, retomada, `groupAdvanceView` |
+| `src/backend/groupAdvanceRoutes.ts` | Rotas |
+| `src/backend/playedMatchValidation.ts` | Validação da gravação ao vivo |
+| `src/backend/dal/*` | `liveRecording.json` (apagado quando o dia roda), `pendingSummary.json` do assento |
+| `src/GameInterface/World/*` | `GroupAdvanceProvider`, `ReadyControl` (`readyBranch`), `GroupAdvanceBand`, `groupAdvanceApi`, `groupAdvanceText`, `groupAdvanceErrors` |
+| `scripts/group-advance-measure.ts` | Medição |
+
+### Rotas (`requireSeat`; solo → 409 `notMulti`, lobby → 409 `lobby`)
+
+| Rota | Faz |
+|---|---|
+| `POST /api/worlds/:saveId/ready { until }` | Marca (ou `null` desmarca) e dá kick |
+| `POST …/match-decision { date, fixtureId, mode: "simulate" }` | Decide o jogo do dia |
+| `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
+| `GET …/live-recording` | Resultado provisório (404 sem gravação do dia) |
+| `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, erro, status por membro) |
+| `GET/DELETE …/summary` | Resumo pendente do assento |
+
+Evento de socket: `world_progress`.
+
+### Telas
+
+- Barra superior: **Pronto até…** (amanhã, meu próximo jogo, uma data) no lugar do Continuar; marcado, "Pronto até 12/03 ·
+  esperando 2" com desmarcar; no dia de jogo **Jogar** (prévia → partida) e **Simular**; durante o avanço "Avançando…
+  14/03 de 20/03". `GroupAdvanceBand` no Painel e em `/world` (data, alvo, quem falta, prazo restante, status por membro:
+  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço, o Painel mostra o resumo, o fim de temporada e a
+  demissão.
+- Erro do executor: texto com a próxima tentativa; esgotadas as 5, botão **Tentar de novo** (novo kick). Gravação do jogo
+  ao vivo que falha fica em `sessionStorage`, e o "Tentar de novo" dela só funciona na mesma aba.
+- A partida ao vivo grava para o grupo; prévia e resultado mostram o resultado provisório (`/match-result?pending=1`).
+  i18n `world.advance.*`.
+
+### Medição (`bun scripts/group-advance-measure.ts 21`, 2026-10-15)
+
+| Assentos | Ligas | Dias | Paradas | Tempo total | Por dia | Por parada |
+|---|---|---|---|---|---|---|
+| 3 | Premier, La Liga, Brasileirão A | 29 | 6 | 123,1 s | 4,24 s | ~20,5 s |
+
+Um dia com rodada de uma liga com assento roda no motor completo (~12–14 s); um dia sem rodada custa ~1,5–2 s.
+
+### Testes
+
+```
+bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts src/backend/playedMatchValidation.test.ts \
+  src/backend/groupAdvance.test.ts src/backend/groupAdvance.routes.test.ts src/backend/groupAdvance.live.test.ts \
+  src/backend/dal/seats.dal.test.ts src/GameInterface/World src/i18n/groupAdvance.keys.test.ts
+```
+
+### Limitações (parte 3)
+
+- Um processo de servidor só: executor e relógio ficam em memória (a subida retoma os mundos `running`).
+- O resultado oficial do jogo ao vivo só aparece no mundo quando o executor roda aquele dia.
+- Várias gravações recusadas no mesmo dia viram todas simulação.
+- O "Tentar de novo" da gravação só vale na mesma aba (`sessionStorage`).
+- Técnico desempregado: o jogo da seleção dele é simulado e não para o mundo; o jogo da seleção ao vivo não tem resultado
+  provisório (só o do clube).
+- Sem pausa da liga pelo dono (o "sem prazo" já espera todos).
+- Depois do teto de 450 dias, sem prazo, só um novo kick continua.

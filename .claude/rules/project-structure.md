@@ -111,3 +111,6 @@ A save is a world with N human seats: the world meta (`saves/{id}.json`) plus on
 route acts on the caller's seat (`requireSeat`); world routes answer any member (`save_members` in SQLite). The
 format changed without a new version: saves from before have no members and leave the list. See
 `.claude/rules/game/multiplayer.md`.
+
+## Group advance (multiplayer part 3)
+In a `running` multi world only `src/backend/groupAdvance.ts` advances the day (in the background, one run per world, a deadline clock started by `startWorldClock()` in `src/index.ts`); `/advance-day` and `/advance-until` answer 409 `groupAdvance`. Pure rules in `src/Domain/groupAdvance/`, routes in `src/backend/groupAdvanceRoutes.ts`, push as the `world_progress` `ServerEvent`. See `.claude/rules/game/multiplayer.md`.
