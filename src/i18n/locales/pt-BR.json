@@ -1805,6 +1805,7 @@
       "transferBudget": "Verba de transferências",
       "perWeek": "/sem",
       "yourClub": "Seu clube",
+      "humanClub": "Técnico humano",
       "tiers": {
         "LOW": "Baixo",
         "MEDIUM": "Médio",
@@ -2287,6 +2288,10 @@
     "loadingMatchPreview": "Carregando pré-jogo…",
     "cannotLoadMatchSetup": "Não foi possível carregar a formação",
     "noMatchToday": "Nenhuma partida hoje",
+    "seatOpponentTitle": "Jogo contra outro técnico humano",
+    "seatOpponentText": "Ainda não dá para assistir a este jogo. Ele será simulado com a tática dos dois técnicos.",
+    "simulateMatch": "Simular partida",
+    "backToDashboard": "Voltar ao painel",
     "redirectingToDashboard": "Redirecionando para o painel…",
     "noTacticsTitle": "Táticas ainda não definidas",
     "noTacticsSubtitle": "Levando você para Formação e Táticas para escolher sua escalação…",

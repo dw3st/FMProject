@@ -215,6 +215,11 @@ export const advanceUntilRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    // Fast-forward moves every seat's days: with more than one seat it waits for the group advance (part 3,
+    // `.claude/rules/game/multiplayer.md`). A single day still advances.
+    if (((await defaultSaveService.getMeta(saveId))?.seats.length ?? 0) > 1) {
+      return Response.json({ error: "multiSeat" }, { status: 409 });
+    }
 
     let maxDays = ADVANCE_UNTIL_DEFAULT_DAYS;
     const raw = await req.text();

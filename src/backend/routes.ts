@@ -332,6 +332,8 @@ export const apiRoutes = withJsonErrors({
     const saveId        = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    // Changes the world's clubs: the owner's (`.claude/rules/game/multiplayer.md`).
+    if (auth.role !== "owner") return Response.json({ error: "only the owner imports squads" }, { status: 403 });
     const squadsRootSrc = `${DATA_DIR}/squads`;
     const leagues = (await readdir(squadsRootSrc, { withFileTypes: true }))
       .filter((d) => d.isDirectory())
@@ -456,6 +458,11 @@ export const apiRoutes = withJsonErrors({
         );
       }
       const oppId = todayFixture.home === myInternalId ? todayFixture.away : todayFixture.home;
+      // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
+      // the day's advance plays it in the full engine with both seats' tactics.
+      if ((await saveService.humanClubIds(save.id)).has(oppId)) {
+        return Response.json({ error: "seatOpponent" }, { status: 409 });
+      }
       opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {
         return Response.json({ error: "opponent squad not found" }, { status: 404 });
@@ -650,7 +657,8 @@ export const apiRoutes = withJsonErrors({
     const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const squads = await saveService.getSquadsInLeague(saveId!, leagueSlug!);
-    return Response.json(buildClubFinanceRows(squads, meta.clubId));
+    // Every seat's club runs the full financial system: none of them shows AI budgets.
+    return Response.json(buildClubFinanceRows(squads, meta.clubId, await saveService.humanClubIds(saveId!)));
   },
 
   "/api/saves/:saveId/leagues/:leagueSlug/fixtures": async (req: Request & { params: Record<string, string> }) => {

@@ -79,7 +79,9 @@ export function ClubFinancesTable({
                       {t(`leagues.finances.tiers.${row.tier}`)}
                     </span>
                   ) : (
-                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary font-display">{t("leagues.finances.yourClub")}</span>
+                    <span className={`text-[13px] font-bold uppercase tracking-[0.08em] font-display ${row.isPlayerClub ? "text-primary" : "text-muted-foreground"}`}>
+                      {t(row.isPlayerClub ? "leagues.finances.yourClub" : "leagues.finances.humanClub")}
+                    </span>
                   )}
                 </div>
 

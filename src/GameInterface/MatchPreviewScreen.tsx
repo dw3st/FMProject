@@ -624,6 +624,8 @@ export function MatchPreviewScreen() {
   const [noMatchDay, setNoMatchDay] = useState(false);
   const [needsTactics, setNeedsTactics] = useState(false);
   const [matchSetupError, setMatchSetupError] = useState<string | null>(null);
+  /** Today's opponent is another seat's club (`match-setup` → 409 `seatOpponent`). */
+  const [seatOpponent, setSeatOpponent] = useState(false);
   const [commencing, setCommencing] = useState(false);
   const [localLineup, setLocalLineup] = useState<string[]>([]);
   const [showLastMinuteSubs, setShowLastMinuteSubs] = useState(false);
@@ -689,6 +691,11 @@ export function MatchPreviewScreen() {
 
         const setupRes = await fetch(`/api/match-setup?saveId=${encodeURIComponent(s.saveId)}`);
         const setupJson = await readJsonBody(setupRes);
+        // Against another seat there is no live match yet (multiplayer part 1): simulate it or go back.
+        if (setupRes.status === 409 && setupJson.error === "seatOpponent") {
+          if (!cancelled) setSeatOpponent(true);
+          return;
+        }
         if (!setupRes.ok) {
           throw new Error(typeof setupJson.error === "string" ? setupJson.error : `match-setup failed (${setupRes.status})`);
         }
@@ -830,6 +837,21 @@ export function MatchPreviewScreen() {
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground text-sm">{t("matchPreview.loadingMatchPreview")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (seatOpponent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("matchPreview.seatOpponentTitle")}</h2>
+          <p className="text-muted-foreground text-sm m-0">{t("matchPreview.seatOpponentText")}</p>
+          <div className="flex items-center justify-center gap-3">
+            <Button variant="secondary" onClick={() => { window.location.href = "/dashboard"; }}>{t("matchPreview.backToDashboard")}</Button>
+            <Button onClick={() => void handleSendAssistant()} disabled={commencing}>{t("matchPreview.simulateMatch")}</Button>
+          </div>
         </div>
       </div>
     );

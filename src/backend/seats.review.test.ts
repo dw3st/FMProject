@@ -185,8 +185,38 @@ describe("seats: review fixes", () => {
     expect((await saveService.getInbox(id, meta.seatId)).length).toBe(inboxBefore);
   }, 300_000);
 
+  test("8. ai-finances shows every human club as human; import-squads is the owner's; advance-until waits for part 3", async () => {
+    const id = meta.id;
+    const rows = await (await call("/api/saves/:saveId/leagues/:leagueSlug/ai-finances", `/api/saves/${id}/leagues/premier_league/ai-finances`, "GET",
+      a.session.token, { saveId: id, leagueSlug: "premier_league" })).json() as { squadId: string; isPlayerClub: boolean; isHumanClub: boolean; tier: string | null }[];
+    const rowD = rows.find((r) => r.squadId === clubD)!;
+    expect(rowD.tier).toBeNull();
+    expect(rowD.isHumanClub).toBe(true);
+    expect(rowD.isPlayerClub).toBe(false);
+    expect(rows.find((r) => r.squadId === meta.clubId)!.isPlayerClub).toBe(true);
+    expect((await call("/api/saves/:saveId/import-squads", `/api/saves/${id}/import-squads`, "POST", d.session.token, { saveId: id })).status).toBe(403);
+    const until = await call("/api/saves/:saveId/advance-until", `/api/saves/${id}/advance-until`, "POST", a.session.token, { saveId: id });
+    expect(until.status).toBe(409);
+    expect((await until.json()).error).toBe("multiSeat");
+  });
 
+  test("8. match-setup of a game between two seats answers 409 seatOpponent", async () => {
+    const id = meta.id;
+    const world = (await saveService.getMeta(id))!;
+    const game = (await saveService.getAllFixturesForLeague(id, "premier_league"))
+      .find((f) => !f.played && ((f.home === meta.clubId && f.away === clubD) || (f.home === clubD && f.away === meta.clubId)))!;
+    expect(game).toBeDefined();
+    await saveService.updateMeta(id, { currentDate: game.date });
+    try {
+      const res = await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", a.session.token, {});
+      expect(res.status).toBe(409);
+      expect((await res.json()).error).toBe("seatOpponent");
+    } finally {
+      await saveService.updateMeta(id, { currentDate: world.currentDate });
+    }
+  });
 
+  // Last: a third seat changes who is human.
   test("3. a club taken by a seat leaves the other seats' offers", async () => {
     const id = meta.id;
     const date = (await saveService.getMeta(id))!.currentDate!;
