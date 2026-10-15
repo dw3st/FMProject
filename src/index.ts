@@ -2,6 +2,7 @@ import { serve } from "bun";
 import { apiRoutes } from "@/backend/routes";
 import { handleSocialUpgrade, socialWebSocket } from "@/backend/social/realtime";
 import { startSocialMaintenance } from "@/backend/social/maintenance";
+import { startWorldClock } from "@/backend/groupAdvance";
 
 import landingPage from "./pages/landing/index.html";
 import loginPage from "./pages/login/index.html";
@@ -91,3 +92,4 @@ const server = serve({
 console.log(`🚀 Server running at ${server.url}`);
 
 startSocialMaintenance();
+startWorldClock();
