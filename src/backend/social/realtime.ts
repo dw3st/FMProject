@@ -69,6 +69,18 @@ function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolea
 const sockets = new Map<string, Set<SocialSocket>>();
 /** userId → "status|club" last sent to friends (absent = offline). */
 const lastStatus = new Map<string, string>();
+/**
+ * A socket that showed a club closed: the user still counts as playing that club during the grace period, and the
+ * status is published only when it ends — a reload (close then open) never makes the status blink.
+ */
+const DEFAULT_CLOSE_GRACE_MS = 15_000;
+let closeGraceMs = DEFAULT_CLOSE_GRACE_MS;
+const lingering = new Map<string, { club: string; until: number; timer: ReturnType<typeof setTimeout> }>();
+
+/** Tests only: a shorter grace period. `null` restores the default. */
+export function setCloseGraceMs(ms: number | null): void {
+  closeGraceMs = ms ?? DEFAULT_CLOSE_GRACE_MS;
+}
 
 type ClubNameResolver = (saveId: string) => Promise<string | null>;
 
@@ -92,6 +104,9 @@ export function setClubNameResolver(fn: ClubNameResolver | null): void {
 export function resetRealtime(): void {
   sockets.clear();
   lastStatus.clear();
+  for (const l of lingering.values()) clearTimeout(l.timer);
+  lingering.clear();
+  closeGraceMs = DEFAULT_CLOSE_GRACE_MS;
   clubNameOf = defaultClubName;
 }
 
@@ -129,12 +144,17 @@ export function connectionCount(userId: string): number {
   return sockets.get(userId)?.size ?? 0;
 }
 
-/** online = seen in the last 2.5 minutes; playing = online with a save of theirs open in some tab. */
+/**
+ * online = seen in the last 2.5 minutes (a visible page's ping); playing = online with a save of theirs open in
+ * some tab, or in a tab closed less than the grace period ago.
+ */
 export function statusOf(userId: string, now: number): { status: FriendStatus; club: string | null } {
   if (!isPresent(userId, now)) return { status: "offline", club: null };
   for (const ws of sockets.get(userId) ?? []) {
     if (ws.data.clubName) return { status: "playing", club: ws.data.clubName };
   }
+  const l = lingering.get(userId);
+  if (l && l.until > now) return { status: "playing", club: l.club };
   return { status: "online", club: null };
 }
 
@@ -180,7 +200,9 @@ function parseClientEvent(raw: unknown): ClientEvent | null {
   if (!v || typeof v !== "object") return null;
   const e = v as Record<string, unknown>;
   if (e.type === "ping") return { type: "ping" };
-  if (e.type === "hello") return { type: "hello", saveId: typeof e.saveId === "string" ? e.saveId : null };
+  if (e.type === "hello") {
+    return { type: "hello", saveId: typeof e.saveId === "string" ? e.saveId : null, hidden: e.hidden === true };
+  }
   if (e.type === "typing" && typeof e.room === "string") return { type: "typing", room: e.room };
   return null;
 }
@@ -214,11 +236,13 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
     }
   }
   const now = Date.now();
-  recordPresence(userId, now);
+  // A hidden tab's hello (a reconnect in the background) does not mark presence; its next visible ping will.
+  if (event.type === "ping" || !event.hidden) recordPresence(userId, now);
   publishStatus(userId, now);
   sendTo(ws, { type: "pong", online: onlineCount(now) });
 }
 
+/** No presence on open (a hidden tab reconnecting must not show the user online): the hello or the ping marks it. */
 export function onSocketOpen(ws: SocialSocket): void {
   const { userId } = ws.data;
   let set = sockets.get(userId);
@@ -227,19 +251,25 @@ export function onSocketOpen(ws: SocialSocket): void {
     sockets.set(userId, set);
   }
   set.add(ws);
-  const now = Date.now();
-  recordPresence(userId, now);
-  publishStatus(userId, now);
 }
 
 export function onSocketClose(ws: SocialSocket): void {
-  const { userId } = ws.data;
+  const { userId, clubName } = ws.data;
   const set = sockets.get(userId);
   if (set) {
     set.delete(ws);
     if (set.size === 0) sockets.delete(userId);
   }
-  publishStatus(userId, Date.now());
+  // Closing a socket without a club changes nothing (presence follows the pings). One with a club waits for the
+  // grace period, then publishes whatever the status is by then (nothing when a reload brought the club back).
+  if (!clubName) return;
+  const previous = lingering.get(userId);
+  if (previous) clearTimeout(previous.timer);
+  const timer = setTimeout(() => {
+    lingering.delete(userId);
+    publishStatus(userId, Date.now());
+  }, closeGraceMs);
+  lingering.set(userId, { club: clubName, until: Date.now() + closeGraceMs, timer });
 }
 
 function sameSite(req: Request, origin: string): boolean {

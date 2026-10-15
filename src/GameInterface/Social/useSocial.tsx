@@ -202,7 +202,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       ws.onopen = () => {
         attempt = 0;
         setConnected(true);
-        ws.send(JSON.stringify({ type: "hello", saveId } satisfies ClientEvent));
+        ws.send(JSON.stringify({ type: "hello", saveId, hidden: document.hidden } satisfies ClientEvent));
       };
       ws.onmessage = (e) => {
         const event = parseServerEvent(e.data);

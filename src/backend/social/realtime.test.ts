@@ -12,6 +12,7 @@ import {
   onSocketOpen,
   resetRealtime,
   setClubNameResolver,
+  setCloseGraceMs,
   statusOf,
   sweepStatuses,
   type SocialSocket,
@@ -53,6 +54,7 @@ describe("presence", () => {
     onSocketOpen(wb);
     const wa = fakeSocket(a.id);
     onSocketOpen(wa);
+    await handleClientEvent(wa, JSON.stringify({ type: "ping" }));
     expect(wb.events).toContainEqual({ type: "presence", nickname: a.nickname!, status: "online", club: null });
     const saveId = randomUUID();
     recordSaveOwnership(saveId, a.id);
@@ -88,7 +90,7 @@ describe("presence", () => {
     expect(wc.events.filter((e) => e.type === "presence")).toEqual([]);
   });
 
-  test("closing the socket keeps the presence window; the sweep then sends offline", () => {
+  test("closing the socket keeps the presence window; the sweep then sends offline", async () => {
     const a = makeUser(uniqueNick());
     const b = makeUser(uniqueNick());
     befriend(a.id, b.id, Date.now());
@@ -96,10 +98,53 @@ describe("presence", () => {
     onSocketOpen(wb);
     const wa = fakeSocket(a.id);
     onSocketOpen(wa);
+    await handleClientEvent(wa, JSON.stringify({ type: "ping" }));
     onSocketClose(wa);
     expect(statusOf(a.id, Date.now()).status).toBe("online");
     sweepStatuses(Date.now() + PRESENCE_WINDOW_MS + 1);
     expect(wb.events.at(-1)).toEqual({ type: "presence", nickname: a.nickname!, status: "offline", club: null });
+  });
+
+  test("opening a socket or a hidden hello marks no presence; a ping does", async () => {
+    const a = makeUser(uniqueNick());
+    const wa = fakeSocket(a.id);
+    onSocketOpen(wa);
+    expect(statusOf(a.id, Date.now()).status).toBe("offline");
+    await handleClientEvent(wa, JSON.stringify({ type: "hello", saveId: null, hidden: true }));
+    expect(statusOf(a.id, Date.now()).status).toBe("offline");
+    await handleClientEvent(wa, JSON.stringify({ type: "hello", saveId: null }));
+    expect(statusOf(a.id, Date.now()).status).toBe("online");
+  });
+
+  test("a reload within the grace period publishes nothing; after it, the change goes out", async () => {
+    setCloseGraceMs(60);
+    const a = makeUser(uniqueNick());
+    const b = makeUser(uniqueNick());
+    befriend(a.id, b.id, Date.now());
+    const saveId = randomUUID();
+    recordSaveOwnership(saveId, a.id);
+    setClubNameResolver(async () => "Bahia");
+    const wb = fakeSocket(b.id);
+    onSocketOpen(wb);
+    const wa = fakeSocket(a.id);
+    onSocketOpen(wa);
+    await handleClientEvent(wa, JSON.stringify({ type: "hello", saveId }));
+    expect(statusOf(a.id, Date.now())).toEqual({ status: "playing", club: "Bahia" });
+    wb.events.length = 0;
+
+    onSocketClose(wa);
+    expect(statusOf(a.id, Date.now())).toEqual({ status: "playing", club: "Bahia" });
+    const again = fakeSocket(a.id);
+    onSocketOpen(again);
+    await handleClientEvent(again, JSON.stringify({ type: "hello", saveId }));
+    await Bun.sleep(100);
+    expect(wb.events.filter((e) => e.type === "presence")).toEqual([]);
+
+    onSocketClose(again);
+    await Bun.sleep(100);
+    expect(wb.events.filter((e) => e.type === "presence")).toEqual([
+      { type: "presence", nickname: a.nickname!, status: "online", club: null },
+    ]);
   });
 
   test("statusOf without any socket follows the HTTP presence", () => {

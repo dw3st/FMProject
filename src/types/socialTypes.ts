@@ -63,7 +63,7 @@ export interface MessagesResponse {
 }
 
 export type ClientEvent =
-  | { type: "hello"; saveId: string | null }
+  | { type: "hello"; saveId: string | null; hidden?: boolean }
   | { type: "ping" }
   | { type: "typing"; room: string };
 
