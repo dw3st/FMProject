@@ -3,7 +3,7 @@ import { DAY_MS } from "@/Domain/social/socialConfig";
 import { resetPresence, recordPresence } from "@/backend/presence";
 import { resetRealtime } from "@/backend/social/realtime";
 import { callSocial, type CallResult } from "@/backend/social/socialRouteTestUtils";
-import { resetSocialRateLimit } from "@/backend/social/socialRoutes";
+import { resetSocialRateLimit, socialRoutes } from "@/backend/social/socialRoutes";
 import { getSocialUser } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick, type TestUser } from "@/backend/social/socialTestUtils";
 
@@ -152,5 +152,27 @@ describe("friends and blocks", () => {
       .toBe(200);
     expect((await callSocial("GET", "/api/social/friends", a.token)).json.friends).toEqual([]);
     expectNoLeak([online, blocked], [a, b]);
+  });
+});
+
+describe("body size", () => {
+  async function putNickname(token: string, body: string, headers: Record<string, string> = {}) {
+    const req = new Request("http://localhost:3000/api/social/nickname", {
+      method: "PUT",
+      headers: { cookie: `fs_session=${token}`, "content-type": "application/json", ...headers },
+      body,
+    }) as Request & { params: Record<string, string> };
+    req.params = {};
+    const res = await socialRoutes["/api/social/nickname"].PUT(req);
+    return { status: res.status, json: await res.json() };
+  }
+
+  test("a declared or actual body over 8 KB answers 413 tooLarge before parsing", async () => {
+    const a = makeUser();
+    const declared = await putNickname(a.token, JSON.stringify({ nickname: uniqueNick() }), { "content-length": "9000" });
+    expect(declared).toEqual({ status: 413, json: { error: "tooLarge" } });
+    const actual = await putNickname(a.token, JSON.stringify({ nickname: "x".repeat(9000) }));
+    expect(actual).toEqual({ status: 413, json: { error: "tooLarge" } });
+    expect(getSocialUser(a.id)?.nickname).toBeNull();
   });
 });

@@ -677,7 +677,8 @@
       "limit": "Limite de amigos ou de pedidos atingido.",
       "invalidBody": "Mensagem inválida.",
       "noAccess": "Você não pode escrever nesta conversa.",
-      "rateLimited": "Muitas mensagens seguidas. Espere alguns segundos.",
+      "rateLimited": "Muitas tentativas seguidas. Espere um pouco e tente de novo.",
+      "tooLarge": "Texto grande demais.",
       "unauthorized": "Sessão expirada. Entre de novo.",
       "network": "Sem conexão. Tente de novo."
     }

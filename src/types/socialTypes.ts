@@ -88,5 +88,6 @@ export type SocialErrorCode =
   | "invalidBody"
   | "noAccess"
   | "rateLimited"
+  | "tooLarge"
   | "unauthorized"
   | "network";

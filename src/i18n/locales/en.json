@@ -677,7 +677,8 @@
       "limit": "Friend or request limit reached.",
       "invalidBody": "Invalid message.",
       "noAccess": "You can't write in this chat.",
-      "rateLimited": "Too many messages in a row. Wait a few seconds.",
+      "rateLimited": "Too many attempts in a row. Wait a little and try again.",
+      "tooLarge": "Too much text.",
       "unauthorized": "Session expired. Sign in again.",
       "network": "No connection. Try again."
     }

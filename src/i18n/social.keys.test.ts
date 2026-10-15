@@ -5,7 +5,7 @@ import type { SocialErrorCode } from "@/types/socialTypes";
 
 const ERRORS: Record<SocialErrorCode, true> = {
   invalidNickname: true, nicknameTaken: true, tooSoon: true, noNickname: true, invalidQuery: true, notFound: true,
-  alreadyFriends: true, limit: true, invalidBody: true, noAccess: true, rateLimited: true, unauthorized: true,
+  alreadyFriends: true, limit: true, invalidBody: true, noAccess: true, rateLimited: true, tooLarge: true, unauthorized: true,
   network: true,
 };
 

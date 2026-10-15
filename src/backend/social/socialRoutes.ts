@@ -58,17 +58,31 @@ function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+/** Thrown by `readJson` for a body over 8 KB; `authed` answers 413. */
+class BodyTooLarge extends Error {}
+
 function authed(handler: AuthedHandler) {
   return async (req: ParamReq): Promise<Response> => {
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
-    return handler(req, auth.userId);
+    try {
+      return await handler(req, auth.userId);
+    } catch (e) {
+      if (e instanceof BodyTooLarge) return fail("tooLarge", 413);
+      throw e;
+    }
   };
 }
 
+/**
+ * The JSON object of the body, or null when it is not one. Over 8 KB throws `BodyTooLarge`: a declared
+ * `Content-Length` is refused before reading, and the bytes actually read are checked too (the header can lie).
+ */
 async function readJson(req: Request): Promise<Record<string, unknown> | null> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new BodyTooLarge();
   const text = await req.text();
-  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) return null;
+  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) throw new BodyTooLarge();
   try {
     const v: unknown = JSON.parse(text);
     return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
