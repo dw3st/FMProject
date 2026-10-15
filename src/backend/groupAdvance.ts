@@ -418,7 +418,8 @@ export async function groupAdvanceView(
     target: advance?.running ? advance.target : plan.target,
     running: !!advance?.running || isWorldAdvancing(saveId),
     deadlineHours: meta.world.deadlineHours,
-    deadlineAt: deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours),
+    // Nobody late = no deadline to show (the world is not waiting on anyone).
+    deadlineAt: plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
     waitingFor: plan.waitingFor.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
     members: seats.map((s, i) => ({
       seatId: s.seatId,

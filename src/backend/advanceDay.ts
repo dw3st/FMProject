@@ -72,6 +72,7 @@ import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/
 import { cancelScoutMissions, rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { addDays, addOneDay } from "@/Domain/dates";
+import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
 import {
   buildMatchEvent,
   buildMatchEventFromRecording,
@@ -3356,9 +3357,12 @@ export const advanceDayRoutes = {
     const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
     // A world of friends in the lobby does not move until the owner starts it (multiplayer part 2).
-    if ((await saveService.getMeta(req.params.saveId!))?.world?.phase === "lobby") {
+    const worldMeta = await saveService.getMeta(req.params.saveId!);
+    if (worldMeta?.world?.phase === "lobby") {
       return Response.json({ error: "lobby" }, { status: 409 });
     }
+    // A group world advances by the ready marks (multiplayer part 3), never by one seat's request.
+    if (worldMeta && isGroupWorld(worldMeta)) return Response.json({ error: "groupAdvance" }, { status: 409 });
 
     // ── Parse body ──────────────────────────────────────────────────────────
     let playedMatchOverride: PlayedMatchRecording | null = null;

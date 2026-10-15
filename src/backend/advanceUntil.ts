@@ -7,6 +7,7 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 import { addDays } from "@/Domain/dates";
+import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
 import { nationalFixtureDates, nextNationalFixtureDate } from "@/backend/nationalCoachWorld";
 
 /**
@@ -285,6 +286,8 @@ export const advanceUntilRoutes = {
     if ((await defaultSaveService.getMeta(saveId))?.world?.phase === "lobby") {
       return Response.json({ error: "lobby" }, { status: 409 });
     }
+    const worldMeta = await defaultSaveService.getMeta(saveId);
+    if (worldMeta && isGroupWorld(worldMeta)) return Response.json({ error: "groupAdvance" }, { status: 409 });
     // Fast-forward moves every seat's days: with more than one seat it waits for the group advance (part 3,
     // `.claude/rules/game/multiplayer.md`). A single day still advances.
     if (((await defaultSaveService.getMeta(saveId))?.seats.length ?? 0) > 1) {

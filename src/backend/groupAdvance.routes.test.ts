@@ -1,0 +1,142 @@
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { saveService } from "@/backend/SaveService";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { addSaveMember, deleteSaveMembers } from "@/backend/auth/saveOwnership";
+import { setKickScheduler } from "@/backend/groupAdvance";
+import { callApi } from "@/backend/worlds/worldTestUtils";
+import { fakeWorld } from "@/backend/testing/worldFixtures";
+
+const D = "2027-03-10";
+
+describe("group advance routes", () => {
+  const created: string[] = [];
+  const kicks: string[] = [];
+  let token = "";
+  let multi = "";
+  let solo = "";
+  let lobby = "";
+  beforeAll(async () => {
+    setKickScheduler((id) => kicks.push(id));
+    const login = devAutoLogin("ga-routes@test.local");
+    token = login.session.token;
+    multi = await fakeWorld({ seatIds: ["a", "b"], date: D });
+    solo = await fakeWorld({ seatIds: ["s"], date: D, world: null, mode: "solo" });
+    lobby = await fakeWorld({ seatIds: ["l"], date: D, world: { phase: "lobby" } });
+    created.push(multi, solo, lobby);
+    addSaveMember(multi, login.user.id, "a", "owner");
+    addSaveMember(solo, login.user.id, "s", "owner");
+    addSaveMember(lobby, login.user.id, "l", "owner");
+  });
+  afterEach(() => { kicks.length = 0; });
+  afterAll(async () => {
+    setKickScheduler(null);
+    for (const id of created) {
+      deleteSaveMembers(id);
+      await saveService.deleteSave(id);
+    }
+  }, 60_000);
+
+  const api = (method: "GET" | "POST" | "DELETE", route: string, saveId: string, body?: unknown, tok: string | null = token) =>
+    callApi(method, `/api/worlds/:saveId/${route}`, tok, { params: { saveId }, body });
+
+  test("solo answers 409 notMulti, lobby 409 lobby, a stranger 404", async () => {
+    expect((await api("POST", "ready", solo, { until: "tomorrow" })).json.error).toBe("notMulti");
+    const l = await api("POST", "ready", lobby, { until: "tomorrow" });
+    expect(l.status).toBe(409);
+    expect(l.json.error).toBe("lobby");
+    const stranger = devAutoLogin("ga-routes-stranger@test.local").session.token;
+    expect((await api("POST", "ready", multi, { until: "tomorrow" }, stranger)).status).toBe(404);
+    expect((await api("POST", "ready", multi, { until: "tomorrow" }, null)).status).toBe(401);
+  });
+
+  test("ready tomorrow is stored and kicks the world; null unmarks", async () => {
+    const res = await api("POST", "ready", multi, { until: "tomorrow" });
+    expect(res.status).toBe(200);
+    expect(res.json).toEqual({ readyUntil: "2027-03-11" });
+    expect((await saveService.getSeat(multi, "a"))!.readyUntil).toBe("2027-03-11");
+    expect(kicks).toEqual([multi]);
+    expect((await api("POST", "ready", multi, { until: null })).json.readyUntil).toBeNull();
+  });
+
+  test("a real future date is stored; next_match without a game is tomorrow", async () => {
+    expect((await api("POST", "ready", multi, { until: "2027-03-14" })).json.readyUntil).toBe("2027-03-14");
+    expect((await api("POST", "ready", multi, { until: "next_match" })).json.readyUntil).toBe("2027-03-11");
+  });
+
+  test("invalid dates 400, nothing kicked", async () => {
+    for (const until of ["2027-03-10", "2027-02-30", "later", undefined]) {
+      const res = await api("POST", "ready", multi, { until });
+      expect(res.status).toBe(400);
+      expect(res.json.error).toBe("invalidDate");
+    }
+    expect(kicks).toEqual([]);
+  });
+
+  test("match-decision: wrong shape 400; another day 409 dayClosed; no game today 400 notYourMatch", async () => {
+    const decide = (body: unknown) => api("POST", "match-decision", multi, body);
+    expect((await decide({ date: D, fixtureId: "x", mode: "live" })).status).toBe(400);
+    const other = await decide({ date: "2027-03-11", fixtureId: "x", mode: "simulate" });
+    expect(other.status).toBe(409);
+    expect(other.json.error).toBe("dayClosed");
+    const none = await decide({ date: D, fixtureId: "x", mode: "simulate" });
+    expect(none.status).toBe(400);
+    expect(none.json.error).toBe("notYourMatch");
+    expect(kicks).toEqual([]);
+  });
+
+  test("live-recording: invalid 400, wrong fixture 400, other day 409", async () => {
+    const send = (body: unknown) => api("POST", "live-recording", multi, body);
+    expect((await send({ date: D, fixtureId: "x", recording: { nope: 1 } })).json.error).toBe("invalidRecording");
+    const rec = {
+      fixtureId: "y", score: { home: 0, away: 0 }, teamStats: { home: {}, away: {} },
+      playerStats: {}, playerRatings: {}, playerEnergy: {}, substitutions: [], durationMs: 1,
+    };
+    expect((await send({ date: D, fixtureId: "x", recording: rec })).json.error).toBe("notYourMatch");
+    const okShape = { ...rec, fixtureId: "x" };
+    expect((await send({ date: "2027-03-11", fixtureId: "x", recording: okShape })).status).toBe(409);
+    expect((await send({ date: D, fixtureId: "x", recording: okShape })).json.error).toBe("notYourMatch");
+    expect((await api("GET", "live-recording", multi)).status).toBe(404);
+  });
+
+  test("GET advance: the seat's view, no ids, no deadline while nobody is late", async () => {
+    const res = await api("GET", "advance", multi);
+    expect(res.status).toBe(200);
+    expect(res.json.currentDate).toBe(D);
+    expect(res.json.members).toHaveLength(2);
+    expect(res.json.members.filter((m: { me: boolean }) => m.me)).toHaveLength(1);
+    expect(JSON.stringify(res.json)).not.toContain("@");
+    expect(res.json.waitingFor).toEqual(["Manager b"]);
+    expect(res.json.deadlineAt).toBeNull();
+    await saveService.updateSeat(multi, "a", { readyUntil: "2027-03-12" });
+    await saveService.updateSeat(multi, "b", { readyUntil: "2027-03-12" });
+    const ready = (await api("GET", "advance", multi)).json;
+    expect(ready.waitingFor).toEqual([]);
+    expect(ready.deadlineAt).toBeNull();
+  });
+
+  test("the deadline shows only while someone is late", async () => {
+    const meta = (await saveService.getMeta(multi))!;
+    await saveService.updateMeta(multi, { world: { ...meta.world!, advance: { running: false, waitingSince: "2026-10-15T12:00:00.000Z", target: D } } });
+    expect((await api("GET", "advance", multi)).json.deadlineAt).toBeNull();
+    await saveService.updateSeat(multi, "b", { readyUntil: null });
+    const view = (await api("GET", "advance", multi)).json;
+    expect(view.waitingFor).toEqual(["Manager b"]);
+    expect(view.deadlineAt).toBe("2026-10-16T12:00:00.000Z");
+  });
+
+  test("summary: GET then DELETE clears", async () => {
+    await saveService.appendPendingDay(multi, "a", { date: D, newDate: "2027-03-11", seat: {} }, 10);
+    expect((await api("GET", "summary", multi)).json.days).toHaveLength(1);
+    expect((await api("DELETE", "summary", multi)).status).toBe(200);
+    expect(await saveService.getPendingSummary(multi, "a")).toEqual([]);
+  });
+
+  test("the single-seat advance routes refuse a group world", async () => {
+    const day = await callApi("POST", "/api/advance-day/:saveId", token, { params: { saveId: multi } });
+    expect(day.status).toBe(409);
+    expect(day.json.error).toBe("groupAdvance");
+    const until = await callApi("POST", "/api/saves/:saveId/advance-until", token, { params: { saveId: multi } });
+    expect(until.status).toBe(409);
+    expect(until.json.error).toBe("groupAdvance");
+  });
+});
