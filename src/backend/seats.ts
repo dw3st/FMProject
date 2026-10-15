@@ -7,7 +7,8 @@ import type { LeagueData } from "@/types/playerTypes";
 import { addSaveMember, memberBySeat, memberOf, removeSaveMember } from "@/backend/auth/saveOwnership";
 import { withSaveLock } from "@/backend/saveLock";
 import { releaseHumanClub, takeOverClub } from "@/backend/jobWorld";
-import { resignNationalTeam } from "@/backend/nationalCoachWorld";
+import { leaveNationalTeam } from "@/backend/nationalWorld";
+import { returnDueLoans } from "@/backend/negotiationWorld";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { competitionName } from "@/Domain/world/labels";
@@ -24,7 +25,7 @@ import { generateRestDays } from "@/Domain/season/generateRestDays";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 
-export type SeatErrorCode = "notFound" | "alreadyMember" | "clubTaken" | "clubNotFound" | "full";
+export type SeatErrorCode = "notFound" | "alreadyMember" | "clubTaken" | "clubNotFound" | "full" | "ownerOrLast";
 
 /** A seat could not be added or removed; the routes turn `code` into the response. */
 export class SeatError extends Error {
@@ -143,14 +144,46 @@ export async function removeSeat(saveId: string, seatId: string): Promise<Remove
     const buffer = new BufferingSaveDAL(new FileSystemDAL());
     const service = new SaveService(buffer);
     const world = await service.getMeta(saveId);
-    const seat = world?.seats.includes(seatId) ? await service.getSeat(saveId, seatId) : null;
-    if (!world?.currentDate || !seat) throw new SeatError("notFound", `removeSeat: seat ${seatId} not in save ${saveId}`);
-    const date = world.currentDate;
+    if (!world?.currentDate || !world.seats.includes(seatId)) throw new SeatError("notFound", `removeSeat: seat ${seatId} not in save ${saveId}`);
     const member = memberBySeat(saveId, seatId);
+    // The owner hands the world over first (`transferOwnership`); the last seat deletes the world instead.
+    if (member?.role === "owner" || world.seats.length <= 1) throw new SeatError("ownerOrLast", `removeSeat: seat ${seatId} is the owner or the last seat`);
+    const seat = await service.getSeat(saveId, seatId);
+    if (!seat) {
+      // Broken world (the id is in `seats` but the folder is gone): just drop the id and the member row.
+      await service.deleteSeat(saveId, seatId);
+      await buffer.flush();
+      removeSaveMember(saveId, seatId);
+      return { userId: member?.userId ?? null, managerName: "", clubId: "", clubName: "", leagueSlug: "" };
+    }
+    const date = world.currentDate;
     const managerName = seat.manager?.name?.trim() || seat.clubName;
 
-    // A national team he coaches (Etapa 41b) gets an interim and a vacancy; nothing when he coaches none.
-    await resignNationalTeam(service, saveId, seatId, date);
+    // Every loan the seat's market tracks ends now (lent and borrowed): the market file goes with the seat,
+    // so nothing would end them later.
+    const market = await service.getMarket(saveId, seatId);
+    if (market?.loans?.length) {
+      await returnDueLoans(service, saveId, seatId, metaForSeat(world, seatId, seat), market, date, { graceDays: 100_000 });
+    }
+
+    // A national team he coaches (Etapa 41b) gets an interim and a vacancy (no "resigned" message); his job offers go
+    // and the vacancies they were holding reopen on the offer's date.
+    const natState = await service.getNationalState(saveId);
+    if (natState) {
+      let st = (await leaveNationalTeam(service, saveId, seatId, natState, date, "left_world")).state;
+      const mine = st.offers?.[seatId] ?? [];
+      if (mine.length > 0) {
+        const { [seatId]: _o, ...offers } = st.offers ?? {};
+        const vacancies = { ...st.vacancies };
+        for (const o of mine) {
+          const v = vacancies[o.teamId];
+          const held = Object.values(offers).some((l) => l.some((x) => x.teamId === o.teamId));
+          if (v && !held && v.hireOn > o.date) vacancies[o.teamId] = { ...v, hireOn: o.date };
+        }
+        st = { ...st, offers, vacancies };
+      }
+      if (st !== natState) await service.writeNationalState(saveId, st);
+    }
 
     if (seat.clubId && !seat.unemployed) {
       await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date });

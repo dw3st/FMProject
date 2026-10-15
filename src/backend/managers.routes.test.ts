@@ -3,6 +3,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
+import { addSeat, removeSeat } from "@/backend/seats";
+import { seatManagerId } from "@/Domain/seats/seats";
 
 type Page = {
   total: number; playerRank: number | null;
@@ -73,4 +75,31 @@ describe("GET /api/saves/:saveId/managers", () => {
     expect(second.items).toHaveLength(1);
     expect(second.items[0]!).toMatchObject({ id: english.id, rank: 2 });
   }, 60_000);
+
+  test("a manager who left the world shows up in scope=free", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    const id = meta.id;
+    try {
+      const { user, session } = devAutoLogin("managers-left-owner@test.local");
+      await ownSolo(id, user.id);
+      const clubB = (await saveService.getSquadIndex(id)).inLeague("premier_league").find((e) => e.squadId !== "33")!.squadId;
+      const b = await addSeat(id, { userId: devAutoLogin("managers-left-friend@test.local").user.id, clubId: clubB, manager: { name: "Bia", nationalityIso: "br", backgroundId: "analyst" } });
+      const free = async () => {
+        const handler = apiRoutes["/api/saves/:saveId/managers" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+        const res = await handler(Object.assign(
+          new Request(`http://localhost/api/saves/${id}/managers?scope=free&limit=100`, { headers: { cookie: `fs_session=${session.token}` } }),
+          { params: { saveId: id } },
+        ));
+        return ((await res.json()) as Page).items.map((m) => m.id);
+      };
+      expect(await free()).not.toContain(seatManagerId(b.seatId));
+      await removeSeat(id, b.seatId);
+      expect(await free()).toContain(seatManagerId(b.seatId));
+    } finally {
+      await saveService.deleteSave(id);
+    }
+  }, 300_000);
 });
