@@ -40,6 +40,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   national: "competitions",
   // The human manager at a national team: news; the offer and the call-up notice ask for an answer.
   national_coach: "competitions",
+  // The world of friends: a manager joined or left (multiplayer part 2).
+  world: "competitions",
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   achievement: "achievements",

@@ -1500,6 +1500,7 @@
       "registration": "Inscrição",
       "schedule": "Calendário",
       "press": "Imprensa",
+      "world": "Liga",
       "discipline": "Disciplina",
       "national": "Seleções",
       "achievement": "Conquistas",
@@ -4996,6 +4997,15 @@
         "title": "{{manager}} é cobrado pela promessa",
         "text": "A imprensa lembra o que foi dito na coletiva."
       }
+    },
+    "world_member": {
+      "0": { "title": "{{manager}} assume o {{club}}", "text": "Um novo técnico entra na liga." },
+      "1": { "title": "{{club}} tem novo técnico: {{manager}}", "text": "Mais um amigo na liga." },
+      "2": { "title": "{{manager}} chega ao {{club}}", "text": "A liga ganha mais um técnico." }
+    },
+    "world_member_left": {
+      "title": "{{manager}} deixa o {{club}}",
+      "text": "O clube volta a escolher o técnico pela diretoria."
     }
   }
 }

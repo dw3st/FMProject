@@ -1500,6 +1500,7 @@
       "registration": "Registration",
       "schedule": "Schedule",
       "press": "Press",
+      "world": "League",
       "discipline": "Discipline",
       "national": "National teams",
       "achievement": "Achievements",
@@ -4996,6 +4997,15 @@
         "title": "{{manager}} reminded of his promise",
         "text": "The press recall what was said in the press room."
       }
+    },
+    "world_member": {
+      "0": { "title": "{{manager}} takes over {{club}}", "text": "A new manager joins the league." },
+      "1": { "title": "{{club}} have a new manager: {{manager}}", "text": "One more friend in the league." },
+      "2": { "title": "{{manager}} arrives at {{club}}", "text": "The league grows by one manager." }
+    },
+    "world_member_left": {
+      "title": "{{manager}} leaves {{club}}",
+      "text": "The club goes back to its board's choice of manager."
     }
   }
 }

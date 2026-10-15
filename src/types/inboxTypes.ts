@@ -34,7 +34,8 @@ export type InboxCategory =
   | "national"
   | "national_coach"
   | "achievement"
-  | "press";
+  | "press"
+  | "world";
 
 interface InboxMessageBase {
   id:        string;
@@ -473,7 +474,16 @@ export type InboxMessage =
   | DisciplineInboxMessage
   | NationalInboxMessage
   | NationalCoachInboxMessage
-  | AchievementInboxMessage;
+  | AchievementInboxMessage
+  | WorldInboxMessage;
+
+/** A manager joined or left the world of friends (multiplayer part 2; part 3 adds `auto_advanced`). */
+export interface WorldInboxMessage extends InboxMessageBase {
+  category:    "world";
+  kind:        "member_joined" | "member_left" | "member_removed";
+  managerName: string;
+  clubName:    string;
+}
 
 /** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */
 export interface NationalInboxMessage extends InboxMessageBase {
