@@ -17,6 +17,7 @@ import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
+import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
@@ -61,10 +62,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <SocialProvider saveId={session?.saveId ?? null}>
+      <GroupAdvanceProvider leagues={leagues} mySquadId={mySquadId}>
       <div className="h-screen overflow-hidden bg-background">
         <TopNavigation
-          onAdvanceDay={lobby ? undefined : handleAdvanceDay}
-          onFastForward={!lobby && canFastForward ? handleFastForward : undefined}
+          onAdvanceDay={lobby || session?.groupAdvance ? undefined : handleAdvanceDay}
+          onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
         />
@@ -129,6 +131,7 @@ export function Layout({ children }: { children: ReactNode }) {
           />
         )}
       </div>
+      </GroupAdvanceProvider>
     </SocialProvider>
   );
 }

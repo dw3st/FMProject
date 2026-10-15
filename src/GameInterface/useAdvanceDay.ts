@@ -75,6 +75,8 @@ export function useAdvanceDay() {
     !!session && !!simDate && (nextMatchDate === null || daysBetween(simDate, nextMatchDate) > FAST_FORWARD_MIN_DAYS);
 
   const handleAdvanceDay = useCallback(async () => {
+    // A world advanced by the group: the executor runs the days (multiplayer part 3).
+    if (session?.groupAdvance) return;
     if (!session || advancing || fastForward) return;
 
     const todayFixture = fixtures.find(
@@ -116,6 +118,7 @@ export function useAdvanceDay() {
   }, [session, mySquadId, advancing, fastForward, fixtures, simDate]);
 
   const handleFastForward = useCallback(async () => {
+    if (session?.groupAdvance) return;
     if (!session || advancing || fastForward || !simDate) return;
     stopRequested.current = false;
     const initialTotal = nextMatchDate ? Math.max(1, daysBetween(simDate, nextMatchDate)) : 1;
