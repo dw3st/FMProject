@@ -11,9 +11,8 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
-import { saveService, SaveService, type SaveMeta, type WorldMeta } from "@/backend/SaveService";
+import { saveService, SaveService, type WorldMeta } from "@/backend/SaveService";
 import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
-import { splitSeatPatch } from "@/Domain/seats/seats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
@@ -239,7 +238,20 @@ async function leagueNameResolver(states: LeagueSeasonState[]): Promise<(slug: s
 
 export type AdvanceDayOutcome =
   | { ok: false; status: number; error: string }
+  | { ok: true; payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> };
+
+/** One seat's view of a day: the world's payload merged with that seat's part (`payloadForSeat`). */
+export type SeatDayOutcome =
+  | { ok: false; status: number; error: string }
   | { ok: true; payload: Record<string, unknown> };
+
+/** The response of a day for one seat: the world's part plus that seat's (season end, sacking, offers…). */
+export function payloadForSeat(
+  outcome: { payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> },
+  seatId: string,
+): Record<string, unknown> {
+  return { ...outcome.payload, ...(outcome.seats[seatId] ?? {}) };
+}
 
 /**
  * One day as a unit of work: a fresh BufferingSaveDAL, `advanceOneDay` against it, then one
@@ -458,9 +470,6 @@ export async function advanceOneDay(
       newsCollector.startLeaders = await readLeaders(saveService, saveId, [meta.leagueSlug ?? "", ...(meta.followedLeagues ?? [])]);
     }
 
-    // The player's squad: meta.clubId is the squadId.
-    const playerEntry = index.byId(meta.clubId);
-    const playerSquadId: string | undefined = playerEntry?.squadId;
 
     // Transfer windows of the day (`.claude/rules/game/transfer-windows.md`), from today's seasons.
     const seatRefs = daySeats.map((ds) => seatWindowRef(ds.meta));
@@ -1336,7 +1345,7 @@ export async function advanceOneDay(
 
     // ── Continental competition inbox news for the human club ─────────────────
     // Unlike the national-cup block above, this is NEVER emitted directly — it is only QUEUED
-    // into `continentalMessages`, flushed after the "Transfers + inbox are cleared" block further
+    // into each seat's `DaySeat.deferred.continental`, flushed after the "Transfers + inbox are cleared" block further
     // down. A national cup's window always ends >= FINAL_BEFORE_END_DAYS before its own country's
     // league end, so a cup tie can never land on that country's own rollover day. A continental
     // competition has no such guarantee against a DIFFERENT country's rollover: the European
@@ -2927,15 +2936,16 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.continental) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService, ds.seatId);
     }
-    // The human club's league games moved today (draws / rollover): one message, after any `clearInbox`.
-    if (playerSquadId && rescheduleMoves.length > 0) {
+    // Each seat club's league games moved today (draws / rollover): one message, after any `clearInbox`.
+    for (const ds of rescheduleMoves.length > 0 ? daySeats : []) {
+      if (!ds.clubId || ds.job.ended) continue;
       const catalog = await getLeagueData();
       const games = rescheduledGamesOf(
-        rescheduleMoves, playerSquadId,
+        rescheduleMoves, ds.clubId,
         (id) => index.byId(id)?.name ?? id,
         (slug) => competitionName(slug, catalog as unknown as LeagueData[], "en"),
       );
-      if (games.length > 0) await emitInboxMessage(saveId, buildScheduleMessage(currentDate, games), saveService);
+      if (games.length > 0) await emitInboxMessage(saveId, buildScheduleMessage(currentDate, games), saveService, ds.seatId);
     }
     // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
     for (const ds of daySeats) {
@@ -2955,8 +2965,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.youth) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService, ds.seatId);
     }
-    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService);
-    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService);
+    // TRANSITIONAL (Task 24): the national news and the national coach's news are the first seat's.
+    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, solo.seatId);
+    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, solo.seatId);
     for (const ds of daySeats) {
       if (ds.registrationNotices.length === 0 || !ds.clubId || options.marketFrozen) continue;
       const humanNow = await saveService.getSquadById(saveId, ds.clubId);
@@ -3057,38 +3068,43 @@ export async function advanceOneDay(
       }));
     }
 
-    // ── Achievements of the human manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
-    let achievementsUnlocked = 0;
-    if (!options.marketFrozen) {
-      const msg = await achievementsDay(saveService, saveId, meta.seatId, {
+    // ── Achievements of each seat's manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
+    for (const ds of options.marketFrozen ? [] : daySeats) {
+      // TRANSITIONAL (Task 24): the national game is the first seat's.
+      const national = ds === solo && nationalDay.humanMatch
+        ? await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, ds.meta.manager?.nationalityIso)
+        : null;
+      const msg = await achievementsDay(saveService, saveId, ds.seatId, {
         date: currentDate,
-        clubId: meta.clubId,
+        clubId: ds.clubId ?? "",
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         managers: await managerTracker.list(),
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
-        ...(solo.rollover.seasonEnded ? { rollover: { championOf: solo.rollover.championOf, moves: solo.rollover.moves, objectiveMet: solo.rollover.objectiveMet } } : {}),
-        sacked: !!solo.job.ended && solo.job.ended.reason !== "contract",
-        leftClub: !!solo.job.ended,
-        ...(nationalDay.humanMatch ? { nationalMatch: await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, meta.manager?.nationalityIso) } : {}),
+        ...(ds.rollover.seasonEnded ? { rollover: { championOf: ds.rollover.championOf, moves: ds.rollover.moves, objectiveMet: ds.rollover.objectiveMet } } : {}),
+        sacked: !!ds.job.ended && ds.job.ended.reason !== "contract",
+        leftClub: !!ds.job.ended,
+        ...(national ? { nationalMatch: national } : {}),
       });
       if (msg) {
-        achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
-        await emitInboxMessage(saveId, msg, saveService);
+        ds.achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
+        await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       }
     }
 
-    // Manager news of the player's league (sackings / hirings), grouped in one message.
-    const managerNews = aiDesk?.newsInLeague(meta.leagueSlug) ?? [];
-    if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService);
+    // Manager news of each seat's league (sackings / hirings), grouped in one message.
+    for (const ds of daySeats) {
+      const managerNews = aiDesk?.newsInLeague(ds.meta.leagueSlug) ?? [];
+      if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService, ds.seatId);
+    }
 
     await managerTracker.flush();
     // Tomorrow's referees, after today's matches (rest) and rollovers (renewed pools): the preview reads them.
     await ensureTomorrow(saveService, saveId, currentDate);
     await saveService.appendDayTransfers(saveId, currentDate, dayMoves);
 
-    // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
-    const metaPatch: Partial<SaveMeta> = {};
+    // World keys of the day; each seat's keys go into its `DaySeat.patch`.
+    const metaPatch: Partial<WorldMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
@@ -3097,10 +3113,10 @@ export async function advanceOneDay(
     solo.managerEarned += nationalDay.earned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
 
-    // Man-marking is chosen per match day (player instructions): the advance clears it.
-    if (meta.matchMarking) metaPatch.matchMarking = undefined;
     // Board, press, ban, earnings and the director's decisions, per seat.
     for (const ds of daySeats) {
+      // Man-marking is chosen per match day (player instructions): the advance clears it.
+      if (ds.meta.matchMarking) ds.patch.matchMarking = undefined;
       if (ds.board) ds.patch.board = ds.board;
       if (ds.pressOut.state) ds.patch.press = ds.pressOut.state;
       if (ds.managerBan !== ds.meta.managerBan) ds.patch.managerBan = ds.managerBan;
@@ -3166,35 +3182,36 @@ export async function advanceOneDay(
     }
 
     // ── Next currentDate: always the next day (no season jump) ─────────────────
-    // World and seat written apart (the seat in phase 1 of the flush, the world meta last). TRANSITIONAL: the seat keys
-    // still in `metaPatch` are the first seat's and win over its own patch (e.g. a sacking clears its call-ups).
-    const split = splitSeatPatch(metaPatch);
+    // World and seats written apart (the seats in phase 1 of the flush, the world meta last).
     for (const ds of daySeats) {
-      const patch = { ...ds.patch, ...(ds === solo ? split.seat : {}) };
-      if (Object.keys(patch).length > 0) await saveService.updateSeat(saveId, ds.seatId, patch);
+      if (Object.keys(ds.patch).length > 0) await saveService.updateSeat(saveId, ds.seatId, ds.patch);
     }
     const updatedMeta = await saveService.updateMeta(saveId, {
-      ...(split.world as Partial<WorldMeta>),
+      ...metaPatch,
       currentDate: nextDate,
       activeLeagues: updatedActiveLeagues.length > 0 ? updatedActiveLeagues : undefined,
     });
 
     const resolved = await saveService.resolveDayLog(saveId, currentDate);
     const transferEvents = (resolved?.events ?? []).filter((e) => e.kind === "transfer");
+    const seats: Record<string, Record<string, unknown>> = {};
+    for (const ds of daySeats) {
+      // TRANSITIONAL (Task 24): the national coach's offers are the first seat's.
+      const offers = ds.job.newOffers.length + (ds === solo ? nationalDay.offers : 0);
+      seats[ds.seatId] = {
+        ...(ds.rollover.seasonEnded
+          ? { seasonEnded: true as const, archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }
+          : {}),
+        ...(ds.job.ended ? { sacked: true as const } : {}),
+        ...(offers > 0 ? { jobOffers: offers } : {}),
+        ...(ds.achievementsUnlocked > 0 ? { achievements: ds.achievementsUnlocked } : {}),
+        ...(ds.pressOut.invite ? { pressInvite: true as const } : {}),
+      };
+    }
     return {
       ok: true,
-      payload: {
-        ...dayLog,
-        events: [...dayLog.events, ...transferEvents],
-        newDate: updatedMeta.currentDate,
-        ...(solo.rollover.seasonEnded
-          ? { seasonEnded: true as const, archiveYear: solo.rollover.archiveYear, moves: solo.rollover.moves, playerMove: solo.rollover.move, playerChampionOf: solo.rollover.championOf }
-          : {}),
-        ...(solo.job.ended ? { sacked: true as const } : {}),
-        ...(solo.job.newOffers.length + nationalDay.offers > 0 ? { jobOffers: solo.job.newOffers.length + nationalDay.offers } : {}),
-        ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
-        ...(solo.pressOut.invite ? { pressInvite: true as const } : {}),
-      },
+      payload: { ...dayLog, events: [...dayLog.events, ...transferEvents], newDate: updatedMeta.currentDate },
+      seats,
     };
 }
 
@@ -3335,7 +3352,7 @@ export const advanceDayRoutes = {
     return withSaveLock(saveId, async () => {
       const outcome = await runBufferedDay(saveId, recordings);
       if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-      return Response.json(outcome.payload);
+      return Response.json(payloadForSeat(outcome, auth.seatId));
     });
   },
 

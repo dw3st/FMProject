@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
-import { advanceOneDay } from "@/backend/advanceDay";
+import { advanceOneDay, payloadForSeat } from "@/backend/advanceDay";
 
 /**
  * Board and fans in the day pipeline (`.claude/rules/game/board-fans.md`): the objective is set at
@@ -33,7 +33,7 @@ describe("board and fans in advanceOneDay", () => {
     await saveService.updateMeta(meta.id, { board: { ...meta.board!, board: 5 } });
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.payload.sacked).toBe(true);
+    if (out.ok) expect(payloadForSeat(out, meta.seatId).sacked).toBe(true);
 
     const after = (await saveService.getMeta(meta.id))!;
     expect(after.unemployed?.sacking).toMatchObject({ reason: "board", clubName: "Test", date: meta.currentDate });
@@ -57,7 +57,7 @@ describe("board and fans in advanceOneDay", () => {
 
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.payload.sacked).toBeUndefined();
+    if (out.ok) expect(payloadForSeat(out, meta.seatId).sacked).toBeUndefined();
 
     const after = (await saveService.getMeta(meta.id))!;
     expect(after.unemployed).toBeUndefined();

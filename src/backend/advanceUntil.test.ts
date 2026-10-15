@@ -7,7 +7,7 @@ import {
   type AdvanceBatchDeps,
   type AdvancePosition,
 } from "@/backend/advanceUntil";
-import type { AdvanceDayOutcome } from "@/backend/advanceDay";
+import type { SeatDayOutcome } from "@/backend/advanceDay";
 import { SaveService } from "@/backend/SaveService";
 import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
 import type { Fixture, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
@@ -131,7 +131,7 @@ function fakeDeps(opts: {
     async readPosition(): Promise<AdvancePosition> {
       return { currentDate, target: opts.target(currentDate), matchDate: opts.target(currentDate) };
     },
-    async runDay(): Promise<AdvanceDayOutcome> {
+    async runDay(): Promise<SeatDayOutcome> {
       if (currentDate === opts.failOn) return { ok: false, status: 500, error: "failed to persist day" };
       days.push(currentDate);
       const ended = currentDate === opts.seasonEndOn;

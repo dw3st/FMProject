@@ -53,7 +53,7 @@ const MAX_DAYS = 500;
 
 const { SaveService, saveService } = await import("@/backend/SaveService");
 const { FileSystemDAL } = await import("@/backend/dal/FileSystemDAL");
-const { runBufferedDay, getPyramids } = await import("@/backend/advanceDay");
+const { runBufferedDay, getPyramids, payloadForSeat } = await import("@/backend/advanceDay");
 const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
@@ -1261,7 +1261,7 @@ try {
         });
       }
     }
-    const payload = outcome.payload as Record<string, unknown>;
+    const payload = payloadForSeat(outcome, meta0.seatId);
     const playedMine = prePlayerFixtures.length > 0 || ms > 4000;
     if (playedMine) { matchDays++; matchDayMs += ms; }
 

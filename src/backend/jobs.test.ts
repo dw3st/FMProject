@@ -2,7 +2,7 @@ import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { compensationFee } from "@/Domain/managers/managerContract";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
-import { advanceOneDay } from "@/backend/advanceDay";
+import { advanceOneDay, payloadForSeat } from "@/backend/advanceDay";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordMoney } from "@/backend/FinancialService";
@@ -205,7 +205,7 @@ describe("jobs: sacking, offers, changing club", () => {
     await saveService.updateMeta(meta.id, { board: { ...meta.board!, board: 5 } });
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.payload.sacked).toBe(true);
+    if (out.ok) expect(payloadForSeat(out, meta.seatId).sacked).toBe(true);
 
     let after = (await saveService.getMeta(meta.id))!;
     expect(after.clubId).toBe("");

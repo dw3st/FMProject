@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
-import { advanceOneDay } from "@/backend/advanceDay";
+import { advanceOneDay, payloadForSeat } from "@/backend/advanceDay";
 import { buildConference } from "@/Domain/press/questions";
 import { addDays } from "@/Domain/dates";
 import type { Fixture } from "@/types/calendarTypes";
@@ -54,7 +54,7 @@ describe("press in advanceOneDay", () => {
 
     const out = await advanceOneDay(saveService, meta.id);
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.payload.seasonEnded).toBe(true);
+    if (out.ok) expect(payloadForSeat(out, meta.seatId).seasonEnded).toBe(true);
     const after = (await saveService.getMeta(meta.id))!;
     const pendingId = after.press?.pending?.id;
     expect(pendingId).toBeDefined();
@@ -102,7 +102,7 @@ describe("press in advanceOneDay", () => {
     expect(m!.press?.pending?.fixtureId).toBe(next!.id);
     expect(m!.press?.pending?.expires).toBe(addDays(next!.date, -1));
     expect(m!.press?.pending?.date).toBe(addDays(next!.date, -1));
-    if (out.ok) expect(out.payload.pressInvite).toBe(true);
+    if (out.ok) expect(payloadForSeat(out, meta.seatId).pressInvite).toBe(true);
     const inbox = await saveService.getInbox(meta.id);
     expect(inbox.some((x) => x.category === "press")).toBe(true);
   }, 600_000);

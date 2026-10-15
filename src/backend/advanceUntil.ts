@@ -1,7 +1,7 @@
 import { saveService as defaultSaveService, type SaveService } from "@/backend/SaveService";
 import { withSaveLock } from "@/backend/saveLock";
 import { requireSeat } from "@/backend/auth/middleware";
-import { getPyramids, runBufferedDay, type AdvanceDayOutcome } from "@/backend/advanceDay";
+import { getPyramids, payloadForSeat, runBufferedDay, type SeatDayOutcome } from "@/backend/advanceDay";
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -70,7 +70,7 @@ export interface AdvanceBatchDeps {
   /** Read `currentDate` and recompute the target (league and calendar change at a rollover). */
   readPosition(): Promise<AdvancePosition>;
   /** Advance one day (flushed on success). */
-  runDay(): Promise<AdvanceDayOutcome>;
+  runDay(): Promise<SeatDayOutcome>;
   /** Held around each position check + day, so no other day-advance slips in between. */
   withLock<T>(fn: () => Promise<T>): Promise<T>;
 }
@@ -237,7 +237,10 @@ export const advanceUntilRoutes = {
     // pushing the save onto the player's match day between the check and the day.
     const result = await runAdvanceBatch(maxDays, {
       readPosition: () => readAdvancePosition(saveId),
-      runDay: () => runBufferedDay(saveId),
+      runDay: async () => {
+        const o = await runBufferedDay(saveId);
+        return o.ok ? { ok: true as const, payload: payloadForSeat(o, auth.seatId) } : o;
+      },
       withLock: (fn) => withSaveLock(saveId, fn),
     });
     const { error, ...body } = result;
