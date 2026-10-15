@@ -35,6 +35,8 @@ describe("review fixes of the world of friends", () => {
     expect(buy).toMatchObject({ status: 409, json: { error: "lobby" } });
     const hire = await callApi("POST", "/api/saves/:saveId/staff/hire", token, { params: { saveId }, body: { memberId: "x", years: 1 } });
     expect(hire).toMatchObject({ status: 409, json: { error: "lobby" } });
+    const talk = await callApi("POST", "/api/saves/:saveId/talks/:playerId", token, { params: { saveId, playerId: "x" }, body: { answer: "praise" } });
+    expect(talk).toMatchObject({ status: 409, json: { error: "lobby" } });
     // Reads and tactics stay free; a stranger still sees a 404.
     expect((await callApi("GET", "/api/saves/:saveId/staff", token, { params: { saveId } })).status).toBe(200);
     const stranger = devAutoLogin("wf-stranger@test.local");
