@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -27,7 +27,7 @@ type DeadlineKey = "12" | "24" | "48" | "none";
 const toKey = (d: WorldDeadline): DeadlineKey => (d === null ? "none" : (String(d) as DeadlineKey));
 const fromKey = (k: DeadlineKey): WorldDeadline => (k === "none" ? null : (Number(k) as 12 | 24 | 48));
 
-type Pending = { kind: "remove" | "owner"; member: WorldMemberView } | { kind: "leave" } | null;
+type Pending = { kind: "remove" | "owner"; member: WorldMemberView } | { kind: "leave" } | { kind: "code" } | null;
 
 /** "YOUR LEAGUE": members, invite, deadline, start, leave (`.claude/rules/game/multiplayer.md`, part 2). */
 export function WorldScreen() {
@@ -39,14 +39,16 @@ export function WorldScreen() {
   const [error, setError] = useState<WorldApiError | null>(null);
   const [starting, setStarting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
+  const linkRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!saveId) return;
     const r = await worldApi.view(saveId);
-    if (r.ok) setView(r.data);
+    if (r.ok) { setView(r.data); setError(null); }
     else setError(r.error);
   }, [saveId]);
 
@@ -75,6 +77,7 @@ export function WorldScreen() {
   async function confirmPending() {
     if (!pending) return;
     if (pending.kind === "remove") await run(worldApi.remove(saveId, pending.member.seatId));
+    else if (pending.kind === "code") await run(worldApi.newCode(saveId), () => setCopied(false));
     else if (pending.kind === "owner") await run(worldApi.transferOwner(saveId, pending.member.seatId));
     else {
       setBusy(true);
@@ -90,8 +93,11 @@ export function WorldScreen() {
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
+      setCopyFailed(false);
     } catch {
       setCopied(false);
+      linkRef.current?.select();
+      setCopyFailed(true);
     }
   }
 
@@ -179,6 +185,7 @@ export function WorldScreen() {
             <div className="flex flex-wrap items-center gap-3">
               <input
                 id="world-invite-link"
+                ref={linkRef}
                 readOnly
                 value={link}
                 className="h-10 flex-1 min-w-[280px] rounded border border-border bg-transparent px-3 text-sm text-foreground tabular-nums"
@@ -189,7 +196,7 @@ export function WorldScreen() {
               </Button>
               {owner && (
                 <>
-                  <Button variant="secondary" onClick={() => void run(worldApi.newCode(saveId), () => setCopied(false))} disabled={busy}>
+                  <Button variant="secondary" onClick={() => setPending({ kind: "code" })} disabled={busy}>
                     <Icon name="refresh" size={16} />
                     {t("world.invite.newCode")}
                   </Button>
@@ -202,6 +209,7 @@ export function WorldScreen() {
             </div>
           </section>
 
+          {copyFailed && <Notice kind="warning">{t("world.invite.copyFailed")}</Notice>}
           <section className="flex flex-col gap-3">
             <SectionTitle>{t("world.deadline.title")}</SectionTitle>
             <p className="text-sm text-muted-foreground m-0">{t("world.deadline.hint")}</p>
@@ -237,7 +245,12 @@ export function WorldScreen() {
                 {t("world.chat")}
               </Button>
             )}
-            <Button variant="danger" onClick={() => setPending({ kind: "leave" })}>
+            <Button
+              variant="danger"
+              onClick={() => setPending({ kind: "leave" })}
+              disabled={owner && view.members.length > 1}
+              title={owner && view.members.length > 1 ? t("world.leave.transferFirst") : undefined}
+            >
               <Icon name="log-out" size={16} />
               {t("world.leave.button")}
             </Button>
@@ -253,17 +266,22 @@ export function WorldScreen() {
             open={pending !== null}
             title={
               pending?.kind === "remove" ? t("world.members.removeConfirmTitle")
+                : pending?.kind === "code" ? t("world.invite.newCodeConfirmTitle")
                 : pending?.kind === "owner" ? t("world.members.transferConfirmTitle")
                 : t("world.leave.confirmTitle")
             }
             body={
-              pending?.kind === "remove" ? t("world.members.removeConfirmBody", { manager: pending.member.managerName, club: pending.member.clubName })
+              pending?.kind === "remove" ? (pending.member.unemployed
+                  ? t("world.members.removeConfirmBodyNoClub", { manager: pending.member.managerName })
+                  : t("world.members.removeConfirmBody", { manager: pending.member.managerName, club: pending.member.clubName }))
+                : pending?.kind === "code" ? t("world.invite.newCodeConfirmBody")
                 : pending?.kind === "owner" ? t("world.members.transferConfirmBody", { manager: pending.member.managerName })
                 : owner && view.members.length === 1 ? t("world.leave.deleteBody")
                 : t("world.leave.confirmBody")
             }
             confirmLabel={
               pending?.kind === "remove" ? t("world.members.remove")
+                : pending?.kind === "code" ? t("world.invite.newCode")
                 : pending?.kind === "owner" ? t("world.members.transfer")
                 : t("world.leave.button")
             }

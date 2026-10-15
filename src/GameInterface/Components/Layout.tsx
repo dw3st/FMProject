@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { TopNavigation } from "@/GameInterface/Components/TopNavigation";
 import { StatusBar } from "@/GameInterface/Components/StatusBar";
 import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
@@ -19,9 +20,10 @@ import { ChatDock } from "@/GameInterface/Social/ChatDock";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
-const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
+const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world"];
 
 export function Layout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { session, squad, save } = useGameSave();
   const noClub = !!save?.unemployed
     && !(typeof window !== "undefined" && NO_CLUB_PATHS.some((p) => window.location.pathname.startsWith(p)));
@@ -52,10 +54,10 @@ export function Layout({ children }: { children: ReactNode }) {
   const lobby = save?.world?.phase === "lobby";
 
   // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
+  const redirectTo = typeof window === "undefined" ? null : worldRedirect(window.location.pathname, save);
   useEffect(() => {
-    const target = worldRedirect(window.location.pathname, save);
-    if (target) window.location.replace(target);
-  }, [save]);
+    if (redirectTo) window.location.replace(redirectTo);
+  }, [redirectTo]);
 
   return (
     <SocialProvider saveId={session?.saveId ?? null}>
@@ -68,7 +70,9 @@ export function Layout({ children }: { children: ReactNode }) {
         />
 
         <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
-          {noClub ? <NoClubScreen /> : children}
+          {redirectTo ? (
+            <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : noClub ? <NoClubScreen /> : children}
         </main>
 
         <StatusBar
