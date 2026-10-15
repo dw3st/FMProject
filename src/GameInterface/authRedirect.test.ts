@@ -15,5 +15,10 @@ describe("auth redirect", () => {
     expect(safeNextPath("?next=%2F%2Fevil.example")).toBe("/start");
     expect(safeNextPath("?next=%2F%5Cevil")).toBe("/start");
     expect(safeNextPath("?next=%2Flogin")).toBe("/start");
+    expect(safeNextPath("?next=%2FLogin")).toBe("/start");
+    expect(safeNextPath("?next=%2F%09%2Fevil.example")).toBe("/start");
+    expect(safeNextPath("?next=%2F%0A%2Fevil.example")).toBe("/start");
+    expect(safeNextPath("?next=%2F%0D%2Fevil.example")).toBe("/start");
+    expect(safeNextPath("?next=%2Fdashboard%3Ftab%3Dx%23h")).toBe("/dashboard?tab=x#h");
   });
 });

@@ -146,8 +146,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   }, []);
 
   const declineWorldInvite = useCallback(async (inviteSaveId: string) => {
-    await worldApi.declineInvite(inviteSaveId);
-    setWorldInvites((prev) => prev.filter((i) => i.saveId !== inviteSaveId));
+    const r = await worldApi.declineInvite(inviteSaveId);
+    if (r.ok) setWorldInvites((prev) => prev.filter((i) => i.saveId !== inviteSaveId));
   }, []);
 
   useEffect(() => {
@@ -226,10 +226,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
           break;
         case "world_removed":
         case "world_deleted":
-          if (event.saveId === saveId) {
-            forgetSession(event.saveId);
-            window.location.replace("/start");
-          }
+          forgetSession(event.saveId);
+          if (event.saveId === saveId) window.location.replace("/start");
           break;
       }
     },
@@ -287,6 +285,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         if (reconnected) {
           // Whatever arrived while disconnected: the lists (unread, presence) and every room already loaded.
           void refreshFriends();
+          void refreshWorldInvites();
           for (const room of Object.keys(messagesRef.current)) void loadMessages(room, false);
         }
       };
@@ -338,7 +337,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [available, saveId, sendWs, markRoomRead, refreshFriends, loadMessages]);
+  }, [available, saveId, sendWs, markRoomRead, refreshFriends, refreshWorldInvites, loadMessages]);
 
   const send = useCallback(async (room: string, body: string): Promise<SocialErrorCode | null> => {
     const r = await socialApi.send(room, body);

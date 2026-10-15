@@ -7,6 +7,15 @@ export function loginUrlFor(pathname: string, search: string): string {
 /** The page to open after the login: a same-site path from `?next=`, never the login itself; `/start` otherwise. */
 export function safeNextPath(search: string): string {
   const next = new URLSearchParams(search).get("next");
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\") || next.startsWith("/login")) return "/start";
-  return next;
+  // Any control character (tab, newline…) or backslash is dropped by browsers inside URLs: reject outright.
+  // eslint-disable-next-line no-control-regex
+  if (!next || !next.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(next)) return "/start";
+  let url: URL;
+  try {
+    url = new URL(next, "https://x.invalid");
+  } catch {
+    return "/start";
+  }
+  if (url.origin !== "https://x.invalid" || url.pathname.toLowerCase().startsWith("/login")) return "/start";
+  return `${url.pathname}${url.search}${url.hash}`;
 }
