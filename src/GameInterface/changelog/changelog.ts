@@ -25,6 +25,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.24.1",
+    date: "2026-10-15",
+    items: [
+      {
+        pt: "Preparação do multiplayer: o mundo do save passa a guardar cada técnico à parte, pronto para receber amigos",
+        en: "Multiplayer groundwork: the save's world now keeps each manager separately, ready to welcome friends",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O apelido escolhido fica fixo na sua conta e não pode mais ser trocado",
+        en: "Your chosen nickname is now fixed to your account and can no longer be changed",
+      },
+    ],
+  },
+  {
     version: "4.24",
     date: "2026-10-14",
     items: [
@@ -1558,6 +1574,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
+  { pt: "Multiplayer: crie uma liga com amigos, convide pelo link e cada um escolhe um clube", en: "Multiplayer: create a league with friends, invite them by link and each one picks a club" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

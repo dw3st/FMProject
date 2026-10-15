@@ -9,7 +9,7 @@ export const GAME_VERSION: string = PKG.version;
  * saves created before it are flagged as incompatible on the start screen.
  * 4.22: the national-team state of the player's manager.
  */
-export const MIN_COMPATIBLE_SAVE_VERSION = "4.22";
+export const MIN_COMPATIBLE_SAVE_VERSION = "4.24.1";
 
 export type SaveCompatibility = "ok" | "outdated";
 
