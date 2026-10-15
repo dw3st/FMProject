@@ -16,6 +16,7 @@ import transfersPage from "./pages/transfers/index.html";
 import comingSoonPage from "./pages/coming-soon/index.html";
 import formationPage from "./pages/formation/index.html";
 import newGamePage from "./pages/new-game/index.html";
+import joinPage from "./pages/join/index.html";
 import developmentPage from "./pages/development/index.html";
 import seasonEndPage from "./pages/season-end/index.html";
 import firedPage from "./pages/fired/index.html";
@@ -35,6 +36,7 @@ const server = serve({
     "/login": loginPage,
     "/start": startPage,
     "/new-game": newGamePage,
+    "/join/:code": joinPage,
     "/dashboard": dashboardPage,
     "/match": matchPage,
     "/scout": scoutPage,
