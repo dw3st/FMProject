@@ -36,7 +36,11 @@ type News = {
  */
 export async function rollRivalFor(
   service: SaveService, saveId: string,
-  args: { market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext },
+  args: {
+    market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext;
+    /** Every human club of the world (`.claude/rules/game/multiplayer.md`): never a rival. Absent = `humanId` only. */
+    humanClubIds?: ReadonlySet<string>;
+  },
 ): Promise<{ market: MarketState; rival: RivalBid | null; news: News | null }> {
   const { market, player, seller, date, windows } = args;
   // Route tests that check exact counters turn the random rivals off (`FM_NO_RIVALS=1`).
@@ -46,7 +50,7 @@ export async function rollRivalFor(
   const rating = playerOverallRating(player);
   const squads = new Map<string, Squad>();
   for (const [id, prof] of Object.entries(market.profiles ?? {})) {
-    if (id === seller.id || id === args.humanId) continue;
+    if (id === seller.id || id === args.humanId || args.humanClubIds?.has(id)) continue;
     if (!prof.needs?.some((n) => playerMatchesBand(player, n.position) && rating >= n.targetMin - 0.5 && rating <= n.targetMax + 0.5)) continue;
     const sq = await service.getSquadById(saveId, id);
     if (sq) squads.set(id, sq);

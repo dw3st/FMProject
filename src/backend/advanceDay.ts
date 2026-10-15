@@ -29,7 +29,6 @@ import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
-import { isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
   buildContinentalMessage,
@@ -93,7 +92,7 @@ import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
-import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
+import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
@@ -935,14 +934,13 @@ export async function advanceOneDay(
     // Facilities news (finished works, attendance record): `DaySeat.deferred.facility`, same deferral.
     // Retirement news for the human club: same deferral.
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
-    // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
-    const clubRecordMessages: ClubRecordBroken[] = [];
+    // Club history: beaten records of each seat's club (`.claude/rules/game/club-history.md`), same deferral:
+    // `DaySeat.deferred.clubRecords`.
     // Season awards (`.claude/rules/game/awards.md`): the player's league at its rollover, the world
     // ceremony in January. Same deferral.
     const deferredAwardsMessages: AwardsInboxMessage[] = [];
-    // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money.
-    // Deferred like the rest: emitted after any `clearInbox` this day.
-    const negotiationNews: Parameters<typeof buildTransferNegotiationMessage>[0][] = [];
+    // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money, per seat
+    // (`DaySeat.deferred.negotiation`), emitted after any `clearInbox` this day.
     // New AI transfer bids for a seat's players today (`DaySeat.moraleBids`): a player who wants the move asks
     // to talk (`.claude/rules/game/morale.md`).
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
@@ -1446,17 +1444,16 @@ export async function advanceOneDay(
     // ── Transfer market tick ─────────────────────────────────────────────────
     // When the whole market is frozen (start-kit pre-simulation), dailyMarketTick would be a
     // guaranteed no-op — skip loading every squad + the market file for it (~25 MB/day).
+    // The AI tick runs once for the world; what is a seat's (loans, bids, talks, rivals) runs per seat.
     if (!options.marketFrozen) {
-      let workingMeta = meta;
-      // Loans due back today go home first, so the market below sees the squads as they are.
-      let rawMarket = await saveService.getMarket(saveId, solo.seatId);
-      if (rawMarket?.loans?.length) {
-        const back = await returnDueLoans(saveService, saveId, meta.seatId, meta, rawMarket, currentDate);
-        if (back.market !== rawMarket) {
-          rawMarket = back.market;
-          await saveService.saveMarket(saveId, rawMarket, solo.seatId);
-        }
-        negotiationNews.push(...back.news);
+      // Loans due back today go home first (each seat's market lists its loans), so the market below sees the
+      // squads as they are.
+      for (const ds of daySeats) {
+        const seatMarket = await saveService.getMarket(saveId, ds.seatId);
+        if (!seatMarket?.loans?.length) continue;
+        const back = await returnDueLoans(saveService, saveId, ds.seatId, ds.meta, seatMarket, currentDate);
+        if (back.market !== seatMarket) await saveService.saveMarket(saveId, back.market, ds.seatId);
+        ds.deferred.negotiation.push(...back.news);
       }
       const allSquadsMarket = await saveService.getAllSquads(saveId);
       // The world's rotation + AI profiles; a market written before the first tick (a seat's lists from a route)
@@ -1469,6 +1466,8 @@ export async function advanceOneDay(
       // Clubs credited a sell-on clause today: their in-memory copy is stale, so they sit out the
       // free-agent tick below (it would save that copy over the credit).
       const sellOnPaidTo = new Set<string>();
+      // Sell-on clauses a seat held and was paid today (their entries leave the seat's market below).
+      const sellOnPaidOf = new Map<string, Set<string>>();
       const { updatedMarket, completedTransfers } = dailyMarketTick(
         marketForTick,
         allSquadsMarket,
@@ -1482,7 +1481,7 @@ export async function advanceOneDay(
             const l = activeLeagues.find((x) => x.leagueSlug === sq.leagueSlug);
             return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
           },
-          // Only buyers whose country has an open window buy or bid (`.claude/rules/game/transfer-windows.md`).
+          // Only buyers whose country has an open window buy (`.claude/rules/game/transfer-windows.md`).
           windows: {
             isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
             closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
@@ -1491,41 +1490,6 @@ export async function advanceOneDay(
         },
       );
       await saveService.saveWorldMarket(saveId, updatedMarket);
-      // AI bids for the seat's players (`.claude/rules/game/negotiation.md`), on the squads after today's tick.
-      // TRANSITIONAL (Task 17 loops over the seats): the first seat only.
-      const soloSquad = solo.clubId ? allSquadsMarket.find((s) => s.id === solo.clubId) : undefined;
-      const soloJoined: MarketState = { ...(rawMarket ?? { playerSellList: [] }), ...updatedMarket };
-      const { market: soloAfterBids, newBids } = soloSquad
-        ? humanBidsTick({
-            market: soloJoined, squads: squadsAfterTick(allSquadsMarket, completedTransfers), humanSquad: soloSquad,
-            currentDate, rng: defaultRng,
-            seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
-            windows: {
-              isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
-              closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
-            },
-            newBidId: () => randomUUID(),
-          })
-        : { market: soloJoined, newBids: [] as MarketBid[] };
-      for (const bid of newBids) {
-        if (bid.kind === "transfer") solo.moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
-        negotiationNews.push({
-          date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
-          playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
-          ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
-          ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
-          ...(bid.until ? { until: bid.until } : {}),
-          expires: bid.expires,
-        });
-      }
-      let marketAfterTick: MarketState = { ...soloAfterBids, talks: pruneTalks(soloAfterBids.talks, currentDate) };
-      // A closed window ends the human's open conversations (bans stay).
-      if (solo.clubId && !windows.seat(meta.seatId).today.open && marketAfterTick.talks) {
-        marketAfterTick = {
-          ...marketAfterTick,
-          talks: Object.fromEntries(Object.entries(marketAfterTick.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
-        };
-      }
 
       for (const tx of completedTransfers) {
         const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
@@ -1535,35 +1499,42 @@ export async function advanceOneDay(
         const buying = withDefaultFinances(tx.updatedBuyer);
         const selling = withDefaultFinances(tx.updatedSeller);
 
-        const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
-        const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
+        // The AI never trades with a human club (`excludeSquadIds`): both are always undefined, the code stays
+        // correct if that ever changes.
+        const buyerSeat = seatOf.get(tx.buyerSquad.id);
+        const sellerSeat = seatOf.get(tx.sellerSquad.id);
         // A sell-on clause the player carried comes out of this fee (`.claude/rules/game/negotiation.md`).
         const owed = sellOnFor(tx.player, tx.sellerSquad.id, tx.fee);
 
-        workingMeta = await executeTransferFee(
+        await executeTransferFee(
           saveId,
-          workingMeta,
+          meta,
           {
             squad: buying,
             leagueSlug: buyerResolved.leagueSlug,
             clubSlug: buyerResolved.clubSlug,
-            ...(isBuyerPlayer ? { seatId: meta.seatId } : {}),
+            ...(buyerSeat ? { seatId: buyerSeat.seatId } : {}),
           },
           {
             squad: selling,
             leagueSlug: sellerResolved.leagueSlug,
             clubSlug: sellerResolved.clubSlug,
-            ...(isSellerPlayer ? { seatId: meta.seatId } : {}),
+            ...(sellerSeat ? { seatId: sellerSeat.seatId } : {}),
           },
           tx.fee,
           saveService,
           { playerName: tx.player.name, playerId: tx.player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
         );
-        const sellOnNews = await settleSellOn(saveService, saveId, meta.seatId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        // The clause is paid to the seat holding it (its ledger), or to the AI club's transfer budget.
+        const ownerSeat = owed ? seatOf.get(owed.clubId) : undefined;
+        const payer = ownerSeat ?? solo;
+        const sellOnNews = await settleSellOn(saveService, saveId, payer.seatId, payer.meta, owed, tx.player, tx.sellerSquad.name, currentDate);
         if (owed) sellOnPaidTo.add(owed.clubId);
-        if (sellOnNews) {
-          negotiationNews.push(sellOnNews);
-          marketAfterTick = marketAfterSellOnPaid(marketAfterTick, tx.player.id);
+        if (sellOnNews && ownerSeat) {
+          ownerSeat.deferred.negotiation.push(sellOnNews);
+          const paid = sellOnPaidOf.get(ownerSeat.seatId) ?? new Set<string>();
+          paid.add(tx.player.id);
+          sellOnPaidOf.set(ownerSeat.seatId, paid);
         }
         // Club history: transfer records + the player's stats at the seller (`.claude/rules/game/club-history.md`).
         {
@@ -1575,7 +1546,7 @@ export async function advanceOneDay(
             buyer: buying, seller: selling, playerId: tx.player.id, fee: tx.fee, date: currentDate,
             buyerSeason: seasonOf(buyerResolved.leagueSlug), sellerSeason: seasonOf(sellerResolved.leagueSlug),
           });
-          for (const c of changes) if (isPlayerSquadId(c.squadId, meta)) clubRecordMessages.push(...c.broken);
+          for (const c of changes) seatOf.get(c.squadId)?.deferred.clubRecords.push(...c.broken);
           if (newsCollector) {
             newsCollector.transferNames.set(tx.player.id, tx.player.name);
             for (const c of changes) {
@@ -1600,7 +1571,7 @@ export async function advanceOneDay(
           toSquadId: tx.buyerSquad.id,
           toSquadName: tx.buyerSquad.name,
           fee: tx.fee,
-          direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
+          direction: buyerSeat ? "in" : sellerSeat ? "out" : "in",
           status: "accepted",
           reason: "AI transfer",
         };
@@ -1610,7 +1581,7 @@ export async function advanceOneDay(
           transferId,
         });
 
-        if (isBuyerPlayer) {
+        if (buyerSeat) {
           await emitInboxMessage(
             saveId,
             buildTransferInMessage({
@@ -1622,10 +1593,11 @@ export async function advanceOneDay(
               feeEuros:   tx.fee,
             }),
             saveService,
+            buyerSeat.seatId,
           );
-        } else if (isSellerPlayer) {
-          if (solo.board) {
-            solo.board = applyTransferSale(solo.board, {
+        } else if (sellerSeat) {
+          if (sellerSeat.board) {
+            sellerSeat.board = applyTransferSale(sellerSeat.board, {
               fee: tx.fee,
               annualRevenue: wageRevenueBasisOf(tx.sellerSquad),
               idol: isIdol(tx.player, tx.sellerSquad),
@@ -1642,35 +1614,75 @@ export async function advanceOneDay(
               feeEuros:   tx.fee,
             }),
             saveService,
+            sellerSeat.seatId,
           );
         }
       }
 
-      // Competition for the human's targets (`.claude/rules/game/negotiation.md` → "Disputa"): rivals
-      // whose deadline is today buy the player; targets with a live rival may draw another one.
-      if (marketAfterTick.rivalBids?.length) {
-        const res = await resolveRivalDeadlines(saveService, saveId, meta.seatId, workingMeta, { market: marketAfterTick, date: currentDate, windows });
-        marketAfterTick = res.market;
-        workingMeta = res.meta;
-        negotiationNews.push(...res.news);
-        dayMoves.push(...res.moves);
-        // Their in-memory copies are stale: they sit out the free-agent tick below.
-        for (const m of res.moves) { sellOnPaidTo.add(m.from); sellOnPaidTo.add(m.to); }
-        for (const id of new Set((marketAfterTick.rivalBids ?? []).map((r) => r.playerId))) {
-          const first = liveRivals(marketAfterTick.rivalBids, id, currentDate)[0];
-          if (!first || !solo.clubId) continue;
-          const seller = allSquadsMarket.find((sq) => sq.id === first.fromClubId);
-          const target = seller?.players.find((p) => p.id === id);
-          if (!seller || !target) continue;
-          const more = await rollRivalFor(saveService, saveId, {
-            market: marketAfterTick, player: target, seller, humanId: solo.clubId, date: currentDate, windows,
+      // What is each seat's: the AI's bids for its players, its talks, the rivals for its targets.
+      const squadsNow = squadsAfterTick(allSquadsMarket, completedTransfers);
+      for (const ds of daySeats) {
+        if (!ds.clubId) continue;
+        const seatMarket = await saveService.getMarket(saveId, ds.seatId);
+        let market: MarketState = { ...(seatMarket ?? { playerSellList: [] }), ...updatedMarket };
+        // AI bids for the seat's players (`.claude/rules/game/negotiation.md`), on the squads after today's tick.
+        const humanSquad = squadsNow.find((s) => s.id === ds.clubId);
+        if (humanSquad) {
+          const bids = humanBidsTick({
+            market, squads: squadsNow, humanSquad, currentDate, rng: defaultRng,
+            seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
+            windows: {
+              isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
+              closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
+            },
+            newBidId: () => randomUUID(),
           });
-          marketAfterTick = more.market;
-          if (more.news) negotiationNews.push(more.news);
+          market = bids.market;
+          for (const bid of bids.newBids) {
+            if (bid.kind === "transfer") ds.moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
+            ds.deferred.negotiation.push({
+              date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
+              playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
+              ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
+              ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
+              ...(bid.until ? { until: bid.until } : {}),
+              expires: bid.expires,
+            });
+          }
         }
+        market = { ...market, talks: pruneTalks(market.talks, currentDate) };
+        // A closed window ends the seat's open conversations (bans stay).
+        if (!windows.seat(ds.seatId).today.open && market.talks) {
+          market = {
+            ...market,
+            talks: Object.fromEntries(Object.entries(market.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
+          };
+        }
+        for (const playerId of sellOnPaidOf.get(ds.seatId) ?? []) market = marketAfterSellOnPaid(market, playerId);
+        // Competition for the seat's targets (`.claude/rules/game/negotiation.md` → "Disputa"): rivals
+        // whose deadline is today buy the player; targets with a live rival may draw another one.
+        if (market.rivalBids?.length) {
+          const res = await resolveRivalDeadlines(saveService, saveId, ds.seatId, ds.meta, { market, date: currentDate, windows });
+          market = res.market;
+          ds.deferred.negotiation.push(...res.news);
+          dayMoves.push(...res.moves);
+          // Their in-memory copies are stale: they sit out the free-agent tick below.
+          for (const m of res.moves) { sellOnPaidTo.add(m.from); sellOnPaidTo.add(m.to); }
+          for (const id of new Set((market.rivalBids ?? []).map((r) => r.playerId))) {
+            const first = liveRivals(market.rivalBids, id, currentDate)[0];
+            if (!first) continue;
+            const seller = allSquadsMarket.find((sq) => sq.id === first.fromClubId);
+            const target = seller?.players.find((p) => p.id === id);
+            if (!seller || !target) continue;
+            const more = await rollRivalFor(saveService, saveId, {
+              market, player: target, seller, humanId: ds.clubId, humanClubIds: humanClubs, date: currentDate, windows,
+            });
+            market = more.market;
+            if (more.news) ds.deferred.negotiation.push(more.news);
+          }
+        }
+        await saveService.saveSeatMarket(saveId, ds.seatId, splitMarket(market).seat);
       }
-
-      await saveService.saveSeatMarket(saveId, solo.seatId, splitMarket(marketAfterTick).seat);
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
@@ -1715,16 +1727,17 @@ export async function advanceOneDay(
       for (const sq of await refreshAiRegistrations(regCtx, regSquads)) await saveService.saveSquadById(saveId, sq);
     }
 
-    // ── Transfer windows: news for the human club's country (open / closing / closed) ──────────
-    if (playerSquadId && !options.marketFrozen) {
-      const today = windows.seat(meta.seatId).today;
-      const yesterday = windows.seat(meta.seatId).on(addDays(currentDate, -1));
-      const country = windows.seat(meta.seatId).country;
+    // ── Transfer windows: news for each seat's country (open / closing / closed) ──────────────
+    for (const ds of daySeats) {
+      if (!ds.clubId || options.marketFrozen) continue;
+      const today = windows.seat(ds.seatId).today;
+      const yesterday = windows.seat(ds.seatId).on(addDays(currentDate, -1));
+      const country = windows.seat(ds.seatId).country;
       const base = { date: currentDate, playerId: "", playerName: "", clubName: country, country };
-      if (today.open && !yesterday.open) negotiationNews.push({ ...base, kind: "window_open", ...(today.until ? { until: today.until } : {}) });
+      if (today.open && !yesterday.open) ds.deferred.negotiation.push({ ...base, kind: "window_open", ...(today.until ? { until: today.until } : {}) });
       else if (today.open && daysToClose(today, currentDate) === WINDOWS.CLOSING_NOTICE_DAYS) {
-        negotiationNews.push({ ...base, kind: "window_closing", ...(today.until ? { until: today.until } : {}) });
-      } else if (!today.open && yesterday.open) negotiationNews.push({ ...base, kind: "window_closed", ...(today.opensOn ? { opensOn: today.opensOn } : {}) });
+        ds.deferred.negotiation.push({ ...base, kind: "window_closing", ...(today.until ? { until: today.until } : {}) });
+      } else if (!today.open && yesterday.open) ds.deferred.negotiation.push({ ...base, kind: "window_closed", ...(today.opensOn ? { opensOn: today.opensOn } : {}) });
     }
 
     // ── AI managers: Monday review of every league, then today's hirings ──────────────────────
@@ -2066,7 +2079,7 @@ export async function advanceOneDay(
             if (res.message) deferredAwardsMessages.push(res.message);
           }
           // Club history: the season row, scorers and records of every club of the league.
-          clubRecordMessages.push(...await recordLeagueSeasonHistory(saveService, saveId, {
+          solo.deferred.clubRecords.push(...await recordLeagueSeasonHistory(saveService, saveId, {
             league: slug, tier: unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1, season,
             start: state.start, end: state.end, table,
             fixtures: [...fixturesByLeague.get(slug)!, ...(unitCupFixtures ??= await cupAndContinentalFixtures(saveService, saveId, unitCountry))],
@@ -2254,7 +2267,7 @@ export async function advanceOneDay(
             parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
           });
           if (back.market !== mk) await saveService.saveMarket(saveId, back.market);
-          negotiationNews.push(...back.news);
+          solo.deferred.negotiation.push(...back.news);
         }
       }
 
@@ -2315,7 +2328,7 @@ export async function advanceOneDay(
         const unitIds = new Set<string>();
         for (const slug of unit.leagues) for (const t of index.inLeague(slug)) unitIds.add(t.squadId);
         const pc = await applyDuePreContracts(saveService, saveId, meta.seatId, meta, { unitIds, date: currentDate, humanClubId: playerClubSquadId ?? null });
-        negotiationNews.push(...pc.news);
+        solo.deferred.negotiation.push(...pc.news);
         dayMoves.push(...pc.moves);
       }
       const releasedNow: FreeAgent[] = [];
@@ -2961,7 +2974,9 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.scouting?.messages ?? []) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService, ds.seatId);
     }
-    for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.negotiation) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService, ds.seatId);
+    }
     for (const ds of daySeats) {
       for (const msg of ds.moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService, ds.seatId);
     }
@@ -2981,7 +2996,7 @@ export async function advanceOneDay(
     if (seasonEnded) {
       const mkB = await saveService.getMarket(saveId);
       const humanB = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
-      const fresh = new Set(negotiationNews.map((n) => n.bidId).filter(Boolean));
+      const fresh = new Set(solo.deferred.negotiation.map((n) => n.bidId).filter(Boolean));
       for (const bid of liveBids(mkB?.pendingBids, currentDate, humanB)) {
         if (fresh.has(bid.id)) continue;
         await emitInboxMessage(saveId, buildTransferNegotiationMessage({
@@ -3006,7 +3021,9 @@ export async function advanceOneDay(
       }
     }
     for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
-    for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
+    for (const ds of daySeats) {
+      for (const r of ds.deferred.clubRecords) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService, ds.seatId);
+    }
     for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
     for (const ds of daySeats) {
       if (ds.pressOut.invite) await emitInboxMessage(saveId, ds.pressOut.invite, saveService, ds.seatId);
