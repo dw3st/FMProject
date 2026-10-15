@@ -143,6 +143,11 @@ describe("group advance routes", () => {
     await saveService.updateMeta(multi, { world: { ...meta.world!, advance: failed } });
     const view = (await api("GET", "advance", multi)).json;
     expect(view).toMatchObject({ error: "dayFailed", errorTries: 2, nextRetryAt: "2026-10-15T12:15:00.000Z", gaveUp: false });
+    const early = await api("POST", "advance/retry", multi);
+    expect(early.status).toBe(409);
+    expect(early.json.error).toBe("notGaveUp");
+    expect((await saveService.getMeta(multi))!.world!.advance!.errorTries).toBe(2);
+    expect(kicks).toEqual([]);
 
     await saveService.updateMeta(multi, { world: { ...meta.world!, advance: { ...failed, errorTries: 5 } } });
     expect((await api("GET", "advance", multi)).json).toMatchObject({ errorTries: 5, nextRetryAt: null, gaveUp: true });

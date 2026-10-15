@@ -5178,7 +5178,8 @@
         "invalidRecording": "Não foi possível salvar o jogo. Ele será simulado.",
         "network": "Sem conexão.",
         "dayFailed": "A liga não conseguiu avançar este dia.",
-        "noError": "Não há nada para tentar de novo."
+        "noError": "Não há nada para tentar de novo.",
+        "notGaveUp": "A liga ainda está tentando sozinha."
       },
       "inbox": {
         "subject": "O assistente avançou por você",

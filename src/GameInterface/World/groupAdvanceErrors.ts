@@ -3,7 +3,7 @@ import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 /** Error codes the group-advance routes (and the client) can produce; each has `world.advance.errors.<code>`. */
 export const GROUP_ADVANCE_ERROR_CODES = [
   "dayClosed", "notYourMatch", "seatOpponent", "noWinner", "notMulti", "lobby", "groupAdvance", "tooLarge",
-  "invalidBody", "invalidDecision", "invalidRecording", "invalidDate", "network", "generic", "dayFailed", "noError",
+  "invalidBody", "invalidDecision", "invalidRecording", "invalidDate", "network", "generic", "dayFailed", "noError", "notGaveUp",
 ] as const;
 export type GroupAdvanceErrorCode = (typeof GROUP_ADVANCE_ERROR_CODES)[number];
 

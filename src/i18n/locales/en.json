@@ -5178,7 +5178,8 @@
         "invalidRecording": "The match could not be saved. It will be simulated.",
         "network": "No connection.",
         "dayFailed": "The league could not advance this day.",
-        "noError": "There is nothing to try again."
+        "noError": "There is nothing to try again.",
+        "notGaveUp": "The league is still trying on its own."
       },
       "inbox": {
         "subject": "The assistant advanced for you",

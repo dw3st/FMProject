@@ -447,14 +447,15 @@ export async function groupAdvanceView(
 
 /**
  * "Try again" after the clock gave up (`POST /api/worlds/:saveId/advance/retry`): the failure count starts over, under
- * the save lock; the caller kicks the world. False when there is no failure to retry.
+ * the save lock; the caller kicks the world. `noError` without a failure, `notGaveUp` while the clock still retries.
  */
-export async function resetAdvanceError(service: SaveService, saveId: string): Promise<boolean> {
+export async function resetAdvanceError(service: SaveService, saveId: string): Promise<true | "noError" | "notGaveUp"> {
   return withSaveLock(saveId, async () => {
     const adv = (await service.getMeta(saveId))?.world?.advance;
-    if (!adv?.error) return false;
+    if (!adv?.error) return "noError" as const;
+    if (!errorGaveUp(adv)) return "notGaveUp" as const;
     await updateAdvance(service, saveId, { errorTries: 0 });
-    return true;
+    return true as const;
   });
 }
 

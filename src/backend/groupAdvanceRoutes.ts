@@ -183,7 +183,8 @@ export const groupAdvanceRoutes = {
     if (req.method !== "POST") return methodNotAllowed();
     const ctx = await worldSeat(req);
     if (ctx instanceof Response) return ctx;
-    if (!(await resetAdvanceError(saveService, ctx.saveId))) return Response.json({ error: "noError" }, { status: 409 });
+    const reset = await resetAdvanceError(saveService, ctx.saveId);
+    if (reset !== true) return Response.json({ error: reset }, { status: 409 });
     scheduleKick(ctx.saveId);
     return Response.json({ ok: true });
   }),

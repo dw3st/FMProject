@@ -291,7 +291,7 @@ em `world.phase === "running"`. O solo não muda.
 | `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
 | `GET …/live-recording` | Resultado provisório (404 sem gravação do dia) |
 | `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
-| `POST …/advance/retry` | "Tentar de novo": zera `errorTries` e dá kick (409 `noError` sem erro) |
+| `POST …/advance/retry` | "Tentar de novo", só depois de o relógio desistir: zera `errorTries` e dá kick (409 `noError` sem erro, 409 `notGaveUp` enquanto o relógio ainda tenta) |
 | `GET/DELETE …/summary` | Resumo pendente do assento: `{ days, aggregate }` (`aggregate` = os dias num resumo só, `PendingSummaryAggregate`; os logs lidos em lotes de 6) |
 
 Evento de socket: `world_progress`.
