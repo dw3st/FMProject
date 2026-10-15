@@ -71,8 +71,10 @@ export function removeSaveMember(saveId: string, seatId: string): void {
 
 /** The owner passes the ownership: `to` becomes the owner, `from` a member (one transaction). */
 export function transferOwnership(saveId: string, fromUserId: string, toUserId: string): void {
+  if (fromUserId === toUserId) throw new Error("transferOwnership: same user");
   db.transaction(() => {
-    db.prepare("UPDATE save_members SET role = 'owner' WHERE save_id = ? AND user_id = ?").run(saveId, toUserId);
-    db.prepare("UPDATE save_members SET role = 'member' WHERE save_id = ? AND user_id = ?").run(saveId, fromUserId);
+    const a = db.prepare("UPDATE save_members SET role = 'owner' WHERE save_id = ? AND user_id = ?").run(saveId, toUserId);
+    const b = db.prepare("UPDATE save_members SET role = 'member' WHERE save_id = ? AND user_id = ?").run(saveId, fromUserId);
+    if (a.changes !== 1 || b.changes !== 1) throw new Error("transferOwnership: not both members"); // rolls back
   })();
 }

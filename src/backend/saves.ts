@@ -24,6 +24,7 @@ import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { saveCompatibility } from "@/Domain/saveVersion";
+import { publicWorldMeta } from "@/Domain/multiplayer/worldPublic";
 import {
   addSaveMember,
   countOwnedSaves,
@@ -47,7 +48,7 @@ export const saveRoutes = {
       for (const id of ids) {
         const member = memberOf(id, auth.userId);
         const meta = member ? await saveService.getSeatMeta(id, member.seatId) : null;
-        if (meta && member) metas.push({ ...meta, role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok" });
+        if (meta && member) metas.push({ ...publicWorldMeta(meta), role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok" });
       }
       return Response.json(metas);
     }
@@ -154,7 +155,7 @@ export const saveRoutes = {
         }
       }
 
-      return Response.json({ ...meta, role: auth.role, season });
+      return Response.json({ ...publicWorldMeta(meta), role: auth.role, season });
     }
 
     if (req.method === "PUT") {

@@ -33,10 +33,11 @@ export function listWorldCodeIds(): string[] {
 
 /** A code no world uses. */
 export function newWorldCode(pick: (n: number) => number = (n) => randomInt(n)): string {
-  for (;;) {
+  for (let i = 0; i < 50; i++) {
     const code = generateWorldCode(pick);
     if (!worldIdByCode(code)) return code;
   }
+  throw new Error("newWorldCode: no free code after 50 tries");
 }
 
 // ── Invites (`world_invites`) ────────────────────────────────────────────────
@@ -58,7 +59,7 @@ export function pendingInviteCount(saveId: string): number {
 
 export function listWorldInvitesFor(userId: string): { saveId: string; fromUser: string; createdAt: number }[] {
   return db
-    .prepare("SELECT save_id AS saveId, from_user AS fromUser, created_at AS createdAt FROM world_invites WHERE user_id = ? ORDER BY created_at DESC")
+    .prepare("SELECT save_id AS saveId, from_user AS fromUser, created_at AS createdAt FROM world_invites WHERE user_id = ? ORDER BY created_at DESC, save_id")
     .all(userId) as { saveId: string; fromUser: string; createdAt: number }[];
 }
 

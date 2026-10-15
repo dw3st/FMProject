@@ -215,8 +215,10 @@ export class SaveService {
   async deleteSeat(saveId: string, seatId: string): Promise<void> {
     const world = await this.dal.readMeta(saveId);
     if (!world) throw new Error(`Save not found: ${saveId}`);
-    await this.dal.deleteSeat(saveId, seatId);
+    if (!world.seats.includes(seatId)) return;
+    // Meta first: a crash in between leaves an orphan folder, never a seat without files.
     await this.dal.writeMeta({ ...world, seats: world.seats.filter((s) => s !== seatId), updatedAt: new Date().toISOString() });
+    await this.dal.deleteSeat(saveId, seatId);
   }
 
   // ── Season ─────────────────────────────────────────────────────────────────

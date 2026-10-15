@@ -60,4 +60,14 @@ describe("save_members", () => {
     expect(memberOf(saveId, a.id)).toBeNull();
     expect(listSaveMembers(saveId).map((m) => m.seatId)).toEqual(["seat-b"]);
   });
+
+  test("transferOwnership rejects the same user and a non-member, leaving the owner", () => {
+    const saveId = `w-${randomUUID()}`;
+    const a = devAutoLogin(`a-${randomUUID()}@test.local`).user;
+    const outsider = devAutoLogin(`o-${randomUUID()}@test.local`).user;
+    addSaveMember(saveId, a.id, "seat-a", "owner");
+    expect(() => transferOwnership(saveId, a.id, a.id)).toThrow();
+    expect(() => transferOwnership(saveId, a.id, outsider.id)).toThrow();
+    expect(memberOf(saveId, a.id)?.role).toBe("owner");
+  });
 });

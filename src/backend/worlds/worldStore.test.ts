@@ -30,6 +30,13 @@ describe("world codes", () => {
     expect(code).toBe("3333333333");
     deleteWorldCode(saveId);
   });
+
+  test("gives up after 50 collisions", () => {
+    const saveId = `w-${randomUUID()}`;
+    setWorldCode(saveId, "2222222222");
+    expect(() => newWorldCode(() => 0)).toThrow();
+    deleteWorldCode(saveId);
+  });
 });
 
 describe("world invites", () => {

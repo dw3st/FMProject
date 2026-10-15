@@ -103,6 +103,46 @@ describe("deleteSeat", () => {
     expect(await Bun.file(`${RUNTIME_DATA_DIR}/saves/${saveId}/seats/${s}/inbox.json`).exists()).toBe(false);
   });
 
+  test("after a buffered delete every seat read is empty, not the disk", async () => {
+    const saveId = `test-seatdel-read-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    await dal.writeSeatInbox(saveId, s, [msg("old")]);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.deleteSeat(saveId, s);
+    expect(await buffer.readSeat(saveId, s)).toBeNull();
+    expect(await buffer.readSeatInbox(saveId, s)).toEqual([]);
+    expect(await buffer.readSeatTactics(saveId, s)).toBeNull();
+    expect(await buffer.readSeatLedger(saveId, s, 2027)).toEqual([]);
+    expect(await buffer.listSeatLedgerSeasons(saveId, s)).toEqual([]);
+  });
+
+  test("a write after the delete cancels the pending folder delete", async () => {
+    const saveId = `test-seatdel-undo-${randomUUID()}`;
+    created.push(saveId);
+    const s = randomUUID();
+    await dal.writeSeat(saveId, s, seat);
+    const buffer = new BufferingSaveDAL(dal);
+    await buffer.deleteSeat(saveId, s);
+    await buffer.writeSeatInbox(saveId, s, [msg("new")]);
+    await buffer.flush();
+    expect(await dal.readSeat(saveId, s)).toEqual(seat);
+    expect((await dal.readSeatInbox(saveId, s)).map((m) => m.id)).toEqual(["new"]);
+  });
+
+  test("SaveService.deleteSeat ignores a seat that is not in the world", async () => {
+    const saveId = `test-seatdel-noop-${randomUUID()}`;
+    created.push(saveId);
+    const a = randomUUID();
+    const now = new Date().toISOString();
+    await dal.writeMeta({ id: saveId, name: "W", createdAt: now, updatedAt: now, mode: "multi", seats: [a] });
+    await dal.writeSeat(saveId, a, seat);
+    await new SaveService(dal).deleteSeat(saveId, randomUUID());
+    expect((await dal.readMeta(saveId))!.seats).toEqual([a]);
+    expect(await dal.readSeat(saveId, a)).toEqual(seat);
+  });
+
   test("SaveService.deleteSeat removes the seat from the world", async () => {
     const saveId = `test-seatdel-svc-${randomUUID()}`;
     created.push(saveId);
