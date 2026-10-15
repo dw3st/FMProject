@@ -79,6 +79,8 @@ export interface SaveMeta {
   activeLeagues?: LeagueSeasonState[];
   /** World year whose free-agent retirement draw already ran. */
   freeAgentsRetiredYear?: number;
+  /** The world's start (start kit + safety nets, `/presimulate`) already ran: once per world. */
+  presimulated?: true;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
   pendingTitles?: Record<string, string[]>;
   /** Manager-ranking country weights, computed once per country per season. */

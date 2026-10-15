@@ -3258,74 +3258,82 @@ export const advanceDayRoutes = {
     const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
     const saveId = req.params.saveId!;
-    // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
-    // (presimulatePreStart) is reserved for the offline kit generator — running it
-    // here would block for minutes.
-    const result = await applyRandomStartKit(saveId);
+    // The world's start: the owner's, once (`.claude/rules/game/multiplayer.md`). A second call is a no-op.
+    if (auth.role !== "owner") return Response.json({ error: "only the owner starts a world" }, { status: 403 });
+    return withSaveLock(saveId, async () => {
+      if ((await saveService.getMeta(saveId))?.presimulated) {
+        return Response.json({ applied: false, reason: "already presimulated" });
+      }
+      // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
+      // (presimulatePreStart) is reserved for the offline kit generator — running it
+      // here would block for minutes.
+      const result = await applyRandomStartKit(saveId);
 
-    // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
-    // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
-    if (result.applied) {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
-          await syncPlayerRestDays(saveService, saveId, auth.seatId, r.moves);
-        } catch (e) {
-          logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
+      // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
+      // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
+      if (result.applied) {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
+            await syncPlayerRestDays(saveService, saveId, auth.seatId, r.moves);
+          } catch (e) {
+            logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
+          }
         }
       }
-    }
 
-    // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
-    // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
-    {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          await ensureYouthCompetitions({
-            service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId),
-            catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues: m.activeLeagues ?? [],
-          });
-        } catch (e) {
-          logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+      // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
+      // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
+      {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            await ensureYouthCompetitions({
+              service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId),
+              catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues: m.activeLeagues ?? [],
+            });
+          } catch (e) {
+            logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+          }
         }
       }
-    }
 
-    // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
-    // world drawn from the world's start, with past games; it is drawn again from the career's day.
-    {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
-        } catch (e) {
-          logError("national", `save ${saveId}: failed to ensure the national teams`, e);
+      // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
+      // world drawn from the world's start, with past games; it is drawn again from the career's day.
+      {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
+          } catch (e) {
+            logError("national", `save ${saveId}: failed to ensure the national teams`, e);
+          }
         }
       }
-    }
 
-    // Continental season-start news, read from whatever is on disk AFTER the kit decision above
-    // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
-    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
-    if (meta?.clubId && meta.currentDate) {
-      try {
-        await emitContinentalSeasonStartNews(saveId, auth.seatId, meta.clubId, meta.currentDate);
-      } catch (e) {
-        logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+      // Continental season-start news, read from whatever is on disk AFTER the kit decision above
+      // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (meta?.clubId && meta.currentDate) {
+        try {
+          await emitContinentalSeasonStartNews(saveId, auth.seatId, meta.clubId, meta.currentDate);
+        } catch (e) {
+          logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+        }
+        // The board's first season objective (set by createSave), once the career begins.
+        if (meta.board?.objective) {
+          const catalog = await getLeagueData();
+          await emitInboxMessage(saveId, buildBoardMessage({
+            date: meta.currentDate, kind: "objective", objective: meta.board.objective,
+            leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
+          }), saveService, auth.seatId);
+        }
       }
-      // The board's first season objective (set by createSave), once the career begins.
-      if (meta.board?.objective) {
-        const catalog = await getLeagueData();
-        await emitInboxMessage(saveId, buildBoardMessage({
-          date: meta.currentDate, kind: "objective", objective: meta.board.objective,
-          leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
-        }), saveService, auth.seatId);
-      }
-    }
 
-    return Response.json(result);
+      await saveService.updateMeta(saveId, { presimulated: true });
+      return Response.json(result);
+    });
   },
 
   "/api/advance-day/:saveId": async (req: Request & { params: Record<string, string> }) => {

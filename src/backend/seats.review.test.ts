@@ -172,6 +172,18 @@ describe("seats: review fixes", () => {
     expect((await buy(d)).status).toBe(400);
   });
 
+  test("7. only the owner presimulates, once per world", async () => {
+    const id = meta.id;
+    const pre = (who: Login) => call("/api/saves/:saveId/presimulate", `/api/saves/${id}/presimulate`, "POST", who.session.token, { saveId: id });
+    expect((await pre(d)).status).toBe(403);
+    expect((await pre(a)).status).toBe(200);
+    expect((await saveService.getMeta(id))?.presimulated).toBe(true);
+    const inboxBefore = (await saveService.getInbox(id, meta.seatId)).length;
+    const again = await pre(a);
+    expect(again.status).toBe(200);
+    expect((await again.json()).applied).toBe(false);
+    expect((await saveService.getInbox(id, meta.seatId)).length).toBe(inboxBefore);
+  }, 300_000);
 
 
 
