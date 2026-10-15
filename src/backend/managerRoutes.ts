@@ -37,6 +37,8 @@ export const managerRoutes = {
     }
     const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    // A manager who left the world keeps his seat id but no seat (part 2): he counts as free.
+    const liveSeats = new Set((await saveService.getMeta(saveId))?.seats ?? []);
     const index = await saveService.getSquadIndex(saveId);
     const clubCountry = await clubCountryResolver(saveService, saveId);
     // National-team coaches (`nat_…`, `.claude/rules/game/national-teams.md`): the nation is the "club" and the country.
@@ -50,7 +52,7 @@ export const managerRoutes = {
     const page = rankingPage(
       rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired)),
       scope === "world" ? () => true
-        : scope === "free" ? (m) => !m.squadId && !m.seatId
+        : scope === "free" ? (m) => !m.squadId && (!m.seatId || !liveSeats.has(m.seatId))
         : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
       offset, limit, auth.seatId,
     );
