@@ -251,3 +251,48 @@ describe("verifyLoginCode (regression — unaffected by the dev-login refactor)"
     expect(second!.user.id).toBe(first!.user.id);
   });
 });
+
+describe("GET /api/auth/dev-login?as= (second dev user)", () => {
+  test("logs in as dev-<as>@localhost", async () => {
+    process.env.DEV_AUTO_LOGIN = "1";
+    process.env.NODE_ENV = "development";
+    const res = await handler()(new Request("http://127.0.0.1:3000/api/auth/dev-login?as=2"), LOOPBACK);
+    expect(res.status).toBe(302);
+    const token = decodeURIComponent(res.headers.get("Set-Cookie")!.split(";")[0]!.split("=")[1]!);
+    const { getSessionByToken } = await import("@/backend/auth/AuthService");
+    expect(getSessionByToken(token)!.user.email).toBe("dev-2@localhost");
+  });
+
+  test("400 for an alias outside [a-z0-9]{1,16}", async () => {
+    process.env.DEV_AUTO_LOGIN = "1";
+    process.env.NODE_ENV = "development";
+    for (const as of ["", "Two", "a@b", "x".repeat(17)]) {
+      const res = await handler()(new Request(`http://localhost:3000/api/auth/dev-login?as=${encodeURIComponent(as)}`), LOOPBACK);
+      expect(res.status).toBe(400);
+    }
+  });
+
+  test("still 404 in production, with or without as", async () => {
+    process.env.DEV_AUTO_LOGIN = "1";
+    process.env.NODE_ENV = "production";
+    const res = await handler()(new Request("http://localhost:3000/api/auth/dev-login?as=2"), LOOPBACK);
+    expect(res.status).toBe(404);
+  });
+
+  test("still 404 from a non-loopback socket", async () => {
+    process.env.DEV_AUTO_LOGIN = "1";
+    process.env.NODE_ENV = "development";
+    const res = await handler()(new Request("http://localhost:3000/api/auth/dev-login?as=2"), stubServer("10.0.0.5"));
+    expect(res.status).toBe(404);
+  });
+
+  test("a bad alias is still 404 (not 400) when a gate fails: as= is read only after the gates", async () => {
+    process.env.DEV_AUTO_LOGIN = "1";
+    process.env.NODE_ENV = "production";
+    const prod = await handler()(new Request("http://localhost:3000/api/auth/dev-login?as=Bad!"), LOOPBACK);
+    expect(prod.status).toBe(404);
+    process.env.NODE_ENV = "development";
+    const remote = await handler()(new Request("http://localhost:3000/api/auth/dev-login?as=Bad!"), stubServer("10.0.0.5"));
+    expect(remote.status).toBe(404);
+  });
+});

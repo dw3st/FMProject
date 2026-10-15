@@ -7,6 +7,8 @@ import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { formatEuros } from "@/Domain/money";
 import { usePresence } from "@/GameInterface/usePresence";
+import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
+import { useSocial } from "@/GameInterface/Social/useSocial";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 const ICON_BTN =
@@ -33,7 +35,10 @@ export function StatusBar({
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
   // People with the game open right now (#134): only the number, never who.
-  const online = usePresence();
+  // The friends socket pings while open (and answers the count); the HTTP ping is the fallback.
+  const social = useSocial();
+  const httpOnline = usePresence(social.connected);
+  const online = social.online ?? httpOnline;
 
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
@@ -77,6 +82,7 @@ export function StatusBar({
           </a>
         </span>
         <div className="flex items-center justify-end gap-4">
+          <FriendsButton />
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
               Today's date lives in the top bar's day block. */}
           <button

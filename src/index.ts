@@ -1,5 +1,7 @@
 import { serve } from "bun";
 import { apiRoutes } from "@/backend/routes";
+import { handleSocialUpgrade, socialWebSocket } from "@/backend/social/realtime";
+import { startSocialMaintenance } from "@/backend/social/maintenance";
 
 import landingPage from "./pages/landing/index.html";
 import loginPage from "./pages/login/index.html";
@@ -65,6 +67,15 @@ const server = serve({
     ...apiRoutes,
   },
 
+  // Friends and chat (`.claude/rules/social.md`): the WebSocket upgrade lives in `fetch` (the fallback for paths
+  // no route matched), the socket handlers in `websocket`.
+  fetch(req, srv) {
+    if (new URL(req.url).pathname === "/api/ws") return handleSocialUpgrade(req, srv);
+    return new Response("Not Found", { status: 404 });
+  },
+
+  websocket: socialWebSocket,
+
   idleTimeout: 120,
 
   development: process.env.NODE_ENV !== "production" && {
@@ -74,3 +85,5 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
+
+startSocialMaintenance();

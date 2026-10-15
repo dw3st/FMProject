@@ -10,10 +10,13 @@ import {
   readSessionCookie,
 } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
+import { closeSessionSockets } from "@/backend/social/realtime";
 import { isTesterEmail } from "@/backend/auth/testers";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DEV_LOGIN_EMAIL = "dev@localhost";
+/** `?as=<alias>` logs in as `dev-<alias>@localhost` — a second local user to test friends and chat. */
+const DEV_LOGIN_ALIAS_RE = /^[a-z0-9]{1,16}$/;
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const LOOPBACK_SOCKET_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
@@ -120,7 +123,13 @@ export const authRoutes = {
   "/api/auth/dev-login": async (req: Request, server: RequestIPServer) => {
     if (!isDevAutoLoginAllowed(req, server)) return new Response("Not Found", { status: 404 });
 
-    const { session } = devAutoLogin(DEV_LOGIN_EMAIL);
+    // `?as=` is read only after the four gates above: in production or from a non-loopback socket the route
+    // stays a plain 404 whatever the alias.
+    const alias = new URL(req.url).searchParams.get("as");
+    if (alias !== null && !DEV_LOGIN_ALIAS_RE.test(alias)) return new Response("Bad Request", { status: 400 });
+    const email = alias === null ? DEV_LOGIN_EMAIL : `dev-${alias}@localhost`;
+
+    const { session } = devAutoLogin(email);
     return new Response(null, {
       status: 302,
       headers: {
@@ -134,7 +143,10 @@ export const authRoutes = {
     if (req.method !== "POST")
       return Response.json({ error: "method not allowed" }, { status: 405 });
     const token = readSessionCookie(req);
-    if (token) deleteSession(token);
+    if (token) {
+      deleteSession(token);
+      closeSessionSockets(token);
+    }
     return Response.json(
       { ok: true },
       { headers: { "Set-Cookie": clearSessionCookieHeader() } },
