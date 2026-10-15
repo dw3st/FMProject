@@ -2747,7 +2747,8 @@
         "sacked": "sacked",
         "moved": "left for another club",
         "contract": "contract ended",
-        "interim": "interim spell"
+        "interim": "interim spell",
+        "left_world": "left the league"
       }
     },
     "referees": {

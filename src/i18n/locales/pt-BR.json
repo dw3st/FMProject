@@ -2747,7 +2747,8 @@
         "sacked": "demitido",
         "moved": "saiu para outro clube",
         "contract": "fim de contrato",
-        "interim": "interino"
+        "interim": "interino",
+        "left_world": "saiu da liga"
       }
     },
     "referees": {
