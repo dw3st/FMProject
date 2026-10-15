@@ -131,6 +131,32 @@ describe("group advance routes", () => {
     expect(await saveService.getPendingSummary(multi, "a")).toEqual([]);
   });
 
+  test("GET advance shows the executor's failure as a code with the next retry; retry resets the count and kicks", async () => {
+    const meta = (await saveService.getMeta(multi))!;
+    const failed = { running: false, waitingSince: null, target: D, error: "dayFailed", errorAt: "2026-10-15T12:00:00.000Z", errorTries: 2 };
+    await saveService.updateMeta(multi, { world: { ...meta.world!, advance: failed } });
+    const view = (await api("GET", "advance", multi)).json;
+    expect(view).toMatchObject({ error: "dayFailed", errorTries: 2, nextRetryAt: "2026-10-15T12:15:00.000Z", gaveUp: false });
+
+    await saveService.updateMeta(multi, { world: { ...meta.world!, advance: { ...failed, errorTries: 5 } } });
+    expect((await api("GET", "advance", multi)).json).toMatchObject({ errorTries: 5, nextRetryAt: null, gaveUp: true });
+
+    const retry = await api("POST", "advance/retry", multi);
+    expect(retry.status).toBe(200);
+    expect((await saveService.getMeta(multi))!.world!.advance!.errorTries).toBe(0);
+    expect(kicks).toEqual([multi]);
+    expect((await api("GET", "advance", multi)).json).toMatchObject({ error: "dayFailed", gaveUp: false });
+
+    await saveService.updateMeta(multi, { world: { ...meta.world!, advance: { running: false, waitingSince: null, target: D } } });
+    const none = await api("POST", "advance/retry", multi);
+    expect(none.status).toBe(409);
+    expect(none.json.error).toBe("noError");
+    expect((await api("GET", "advance", multi)).json).toMatchObject({ error: null, errorTries: 0, nextRetryAt: null, gaveUp: false });
+    expect((await api("POST", "advance/retry", solo)).json.error).toBe("notMulti");
+    expect((await api("POST", "advance/retry", lobby)).json.error).toBe("lobby");
+    expect((await api("GET", "advance/retry", multi)).status).toBe(405);
+  });
+
   test("the single-seat advance routes refuse a group world", async () => {
     const day = await callApi("POST", "/api/advance-day/:saveId", token, { params: { saveId: multi } });
     expect(day.status).toBe(409);

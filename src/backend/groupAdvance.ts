@@ -10,10 +10,10 @@ import { listWorldCodeIds } from "@/backend/worlds/worldStore";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import {
-  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, errorRetryDue, isGroupWorld, laterDate,
+  assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, errorGaveUp, errorRetryAt, errorRetryDue, isGroupWorld, laterDate,
   memberStatus, seatStops, type GroupPlan, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
-import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
+import { DAY_FAILED, GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
 import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -218,12 +218,13 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
     outcome = await safeRunDay(deps, saveId, {});
   }
   if (!outcome.ok) {
+    // The text stays in the log; the meta and the members only see the fixed code.
     logError("world", `save ${saveId}: day ${currentDate} failed (${outcome.status} ${outcome.error})`);
     await updateAdvance(service, saveId, {
       running: false, waitingSince: null, target: plan.target,
-      error: outcome.error, errorAt: nowIso, errorTries: (world.advance?.errorTries ?? 0) + 1,
+      error: DAY_FAILED, errorAt: nowIso, errorTries: (world.advance?.errorTries ?? 0) + 1,
     });
-    return { kind: "error", date: currentDate, target: plan.target, waitingFor: [], error: outcome.error };
+    return { kind: "error", date: currentDate, target: plan.target, waitingFor: [], error: DAY_FAILED };
   }
 
   const newDate = typeof outcome.payload.newDate === "string" ? outcome.payload.newDate : addDays(currentDate, 1);
@@ -275,7 +276,7 @@ async function broadcast(
 
 /** A step that threw outside the day (a calendar read, a seat file): recorded like a failed day, under the lock. */
 async function recordCrash(saveId: string, deps: GroupAdvanceDeps, e: unknown): Promise<Step> {
-  const error = e instanceof Error ? e.message : String(e);
+  const error = DAY_FAILED;
   logError("world", `save ${saveId}: group advance step crashed`, e);
   const failed: Step = { kind: "error", date: null, target: null, waitingFor: [], error };
   return withSaveLock(saveId, async (): Promise<Step> => {
@@ -421,6 +422,10 @@ export async function groupAdvanceView(
     // Nobody late = no deadline to show (the world is not waiting on anyone).
     deadlineAt: plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
     waitingFor: plan.waitingFor.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
+    error: advance?.error ?? null,
+    errorTries: advance?.error ? advance.errorTries ?? 0 : 0,
+    nextRetryAt: errorRetryAt(advance),
+    gaveUp: errorGaveUp(advance),
     members: seats.map((s, i) => ({
       seatId: s.seatId,
       nickname: nicknameOf(s.seatId),
@@ -438,6 +443,19 @@ export async function groupAdvanceView(
       decision: mine?.seat.matchDecision ?? null,
     },
   };
+}
+
+/**
+ * "Try again" after the clock gave up (`POST /api/worlds/:saveId/advance/retry`): the failure count starts over, under
+ * the save lock; the caller kicks the world. False when there is no failure to retry.
+ */
+export async function resetAdvanceError(service: SaveService, saveId: string): Promise<boolean> {
+  return withSaveLock(saveId, async () => {
+    const adv = (await service.getMeta(saveId))?.world?.advance;
+    if (!adv?.error) return false;
+    await updateAdvance(service, saveId, { errorTries: 0 });
+    return true;
+  });
 }
 
 /** World ids from the invite codes (part 2), for the deadline clock. */

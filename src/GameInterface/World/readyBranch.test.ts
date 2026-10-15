@@ -4,7 +4,8 @@ import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 
 function view(over: Partial<GroupAdvanceView> = {}, me: Partial<GroupAdvanceView["me"]> = {}): GroupAdvanceView {
   return {
-    currentDate: "2027-03-10", target: null, running: false, deadlineHours: null, deadlineAt: null, waitingFor: [], members: [],
+    currentDate: "2027-03-10", target: null, running: false, deadlineHours: null, deadlineAt: null, waitingFor: [],
+    error: null, errorTries: 0, nextRetryAt: null, gaveUp: false, members: [],
     me: { readyUntil: null, matchToday: null, decision: null, ...me },
     ...over,
   };

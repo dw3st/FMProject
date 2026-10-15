@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  assistantPatches, errorRetryDue, nextUndecided, trimPendingSummary, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
+  assistantPatches, errorRetryAt, errorRetryDue, errorGaveUp, nextUndecided, trimPendingSummary, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 
 describe("isGroupWorld", () => {
@@ -239,5 +239,22 @@ describe("errorRetryDue", () => {
   test("no error, no retry", () => {
     expect(errorRetryDue({}, t0)).toBe(false);
     expect(errorRetryDue(null, t0)).toBe(false);
+  });
+});
+
+describe("errorRetryAt / errorGaveUp", () => {
+  const at = "2026-10-15T12:00:00.000Z";
+  test("the clock's next try, null once it gave up or without an error", () => {
+    expect(errorRetryAt({ error: "dayFailed", errorAt: at, errorTries: 1 })).toBe("2026-10-15T12:05:00.000Z");
+    expect(errorRetryAt({ error: "dayFailed", errorAt: at, errorTries: 2 })).toBe("2026-10-15T12:15:00.000Z");
+    expect(errorRetryAt({ error: "dayFailed", errorAt: at, errorTries: 4 })).toBe("2026-10-15T13:00:00.000Z");
+    expect(errorRetryAt({ error: "dayFailed", errorAt: at, errorTries: 5 })).toBeNull();
+    expect(errorRetryAt({ error: null, errorAt: at, errorTries: 1 })).toBeNull();
+    expect(errorRetryAt(null)).toBeNull();
+  });
+  test("gave up after MAX_ERROR_RETRIES failures in a row", () => {
+    expect(errorGaveUp({ error: "dayFailed", errorTries: 4 })).toBe(false);
+    expect(errorGaveUp({ error: "dayFailed", errorTries: 5 })).toBe(true);
+    expect(errorGaveUp({ error: null, errorTries: 9 })).toBe(false);
   });
 });

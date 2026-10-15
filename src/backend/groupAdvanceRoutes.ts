@@ -2,7 +2,7 @@ import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { requireSeat, type SeatAuth } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { seatNextMatchDate } from "@/backend/advanceUntil";
-import { groupAdvanceView, scheduleKick, seatMatchOn } from "@/backend/groupAdvance";
+import { groupAdvanceView, resetAdvanceError, scheduleKick, seatMatchOn } from "@/backend/groupAdvance";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
@@ -159,6 +159,15 @@ export const groupAdvanceRoutes = {
     const view = await groupAdvanceView(saveService, ctx.saveId, ctx.auth.seatId, Date.now());
     if (!view) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(view);
+  }),
+
+  "/api/worlds/:saveId/advance/retry": safe("advance-retry", async (req) => {
+    if (req.method !== "POST") return methodNotAllowed();
+    const ctx = await worldSeat(req);
+    if (ctx instanceof Response) return ctx;
+    if (!(await resetAdvanceError(saveService, ctx.saveId))) return Response.json({ error: "noError" }, { status: 409 });
+    scheduleKick(ctx.saveId);
+    return Response.json({ ok: true });
   }),
 
   "/api/worlds/:saveId/summary": safe("summary", async (req) => {

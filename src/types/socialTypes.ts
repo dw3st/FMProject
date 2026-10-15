@@ -89,6 +89,7 @@ export type ServerEvent =
     running: boolean;
     /** Nicknames (or manager names) holding the world. */
     waitingFor: string[];
+    /** The executor's failure: a fixed code (`dayFailed`), never the error text. */
     error?: string;
   };
 

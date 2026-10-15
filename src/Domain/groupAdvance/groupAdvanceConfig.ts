@@ -13,3 +13,6 @@ export const GROUP_ADVANCE = {
   /** Days kept in a seat's pending summary. */
   PENDING_SUMMARY_MAX: 120,
 } as const;
+
+/** Error code of a failed day in `world.advance.error` and `world_progress.error` (the text only goes to the log). */
+export const DAY_FAILED = "dayFailed";

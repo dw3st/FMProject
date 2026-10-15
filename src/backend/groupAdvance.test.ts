@@ -149,16 +149,16 @@ describe("group advance executor", () => {
     const id = await world({ a: { readyUntil: "2027-03-15" } });
     const deps = stubDeps(id, { runDay: async () => ({ ok: false, status: 500, error: "boom" }) });
     const r = await kickWorld(id, deps);
-    expect(r.error).toBe("boom");
+    expect(r.error).toBe("dayFailed");
     const meta = (await saveService.getMeta(id))!;
     expect(meta.currentDate).toBe(D);
-    expect(meta.world!.advance).toMatchObject({ running: false, error: "boom", errorAt: new Date(NOW).toISOString(), errorTries: 1 });
+    expect(meta.world!.advance).toMatchObject({ running: false, error: "dayFailed", errorAt: new Date(NOW).toISOString(), errorTries: 1 });
   });
 
   test("a throwing day is an error; the clock retries it later, then gives up", async () => {
     const id = await world({ a: { readyUntil: "2027-03-12" } });
     const throwing = stubDeps(id, { runDay: async () => { throw new Error("kaput"); } });
-    expect((await kickWorld(id, throwing)).error).toBe("kaput");
+    expect((await kickWorld(id, throwing)).error).toBe("dayFailed");
     expect((await saveService.getMeta(id))!.world!.advance!.errorTries).toBe(1);
 
     expect(await worldClockTick({ ...throwing, now: () => NOW + 4 * MIN })).not.toContain(id);
@@ -326,7 +326,7 @@ describe("group advance executor", () => {
     const failing = stubDeps(id, { runDay: async () => ({ ok: false, status: 500, error: "boom" }) });
     await kickWorld(id, failing);
     expect(failing.events).toHaveLength(2);
-    expect(failing.events[0]!.event).toMatchObject({ type: "world_progress", running: false, error: "boom" });
+    expect(failing.events[0]!.event).toMatchObject({ type: "world_progress", running: false, error: "dayFailed" });
   });
 
   test("deadline passed: the assistant takes the late seat to the others' stop", async () => {

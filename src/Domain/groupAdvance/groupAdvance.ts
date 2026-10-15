@@ -146,13 +146,26 @@ export function trimPendingSummary(days: readonly PendingDay[], max: number): Pe
   });
 }
 
-/** A failed run the deadline clock retries now (`ERROR_RETRY_MINUTES` after it, at most `MAX_ERROR_RETRIES` runs). */
-export function errorRetryDue(adv: Pick<WorldAdvance, "error" | "errorAt" | "errorTries"> | null | undefined, nowMs: number): boolean {
-  if (!adv?.error || !adv.errorAt) return false;
+type AdvanceError = Pick<WorldAdvance, "error" | "errorAt" | "errorTries">;
+
+/** The clock gave up on a failed run (`MAX_ERROR_RETRIES` in a row): only a manager's action tries again. */
+export function errorGaveUp(adv: Pick<WorldAdvance, "error" | "errorTries"> | null | undefined): boolean {
+  return !!adv?.error && (adv.errorTries ?? 0) >= GROUP_ADVANCE.MAX_ERROR_RETRIES;
+}
+
+/** When the deadline clock retries a failed run (ISO): `ERROR_RETRY_MINUTES` after it; null when none or it gave up. */
+export function errorRetryAt(adv: AdvanceError | null | undefined): string | null {
+  if (!adv?.error || !adv.errorAt) return null;
   const tries = Math.max(1, adv.errorTries ?? 1);
-  if (tries >= GROUP_ADVANCE.MAX_ERROR_RETRIES) return false;
-  const waits = GROUP_ADVANCE.ERROR_RETRY_MINUTES;
-  const wait = waits[Math.min(tries, waits.length) - 1]! * 60_000;
+  if (tries >= GROUP_ADVANCE.MAX_ERROR_RETRIES) return null;
   const at = Date.parse(adv.errorAt);
-  return !Number.isNaN(at) && nowMs >= at + wait;
+  if (Number.isNaN(at)) return null;
+  const waits = GROUP_ADVANCE.ERROR_RETRY_MINUTES;
+  return new Date(at + waits[Math.min(tries, waits.length) - 1]! * 60_000).toISOString();
+}
+
+/** A failed run the deadline clock retries now (`errorRetryAt` passed). */
+export function errorRetryDue(adv: AdvanceError | null | undefined, nowMs: number): boolean {
+  const at = errorRetryAt(adv);
+  return at !== null && nowMs >= Date.parse(at);
 }

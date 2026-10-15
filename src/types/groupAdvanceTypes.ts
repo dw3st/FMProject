@@ -15,7 +15,7 @@ export interface WorldAdvance {
   waitingSince: string | null;
   /** The date the current/last advance aims at. */
   target: string | null;
-  /** Last failed day (error text), cleared by the next day that runs or the next stop. */
+  /** Last failed day (a fixed code, `DAY_FAILED`; the text only goes to the log), cleared by the next day that runs or the next stop. */
   error?: string | null;
   /** Real-time ISO of that failure; the deadline clock retries from it. */
   errorAt?: string | null;
@@ -62,6 +62,14 @@ export interface GroupAdvanceView {
   deadlineAt: string | null;
   /** Nicknames (or manager names) holding the world. */
   waitingFor: string[];
+  /** The executor's last failure: a fixed code (`dayFailed`), never the error text; null when none. */
+  error: string | null;
+  /** Failed runs in a row (0 without an error, or after a manager's retry). */
+  errorTries: number;
+  /** When the deadline clock tries again (ISO), or null (no error, or it gave up). */
+  nextRetryAt: string | null;
+  /** The clock gave up (`MAX_ERROR_RETRIES`): only "Try again" (`POST .../advance/retry`) runs it. */
+  gaveUp: boolean;
   members: GroupMemberView[];
   me: {
     readyUntil: string | null;
