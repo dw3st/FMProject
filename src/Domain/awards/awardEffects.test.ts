@@ -55,7 +55,7 @@ describe("award boost", () => {
 
 describe("manager awards", () => {
   test("once per season/kind/competition", () => {
-    const ms: ManagerRecord[] = [{ id: "m", name: "m", squadId: "c", isPlayer: false, points: 0, seasons: 0, titles: [] }];
+    const ms: ManagerRecord[] = [{ id: "m", name: "m", squadId: "c", points: 0, seasons: 0, titles: [] }];
     const once = addManagerAward(ms, "m", { season: "2026-27", kind: "best_manager", competition: "pl", squadId: "c" });
     expect(once[0]!.awards).toHaveLength(1);
     expect(addManagerAward(once, "m", { season: "2026-27", kind: "best_manager", competition: "pl", squadId: "c" })).toBe(once);

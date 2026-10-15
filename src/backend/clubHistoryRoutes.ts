@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { clubFacts, clubLegends, emptyClubHistory, titleGallery, topPlayers } from "@/Domain/clubHistory/clubHistory";
 import { seasonLabel } from "@/Domain/history/history";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
@@ -17,7 +17,7 @@ export const clubHistoryRoutes = {
    */
   "/api/saves/:saveId/clubs/:squadId/history": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const squadId = req.params.squadId ?? "";

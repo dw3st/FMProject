@@ -3,7 +3,7 @@
  * competition (groups, knockout, games, leaders, awards) and one national team (coach, call-up, games, titles).
  */
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { groupRows } from "@/Domain/national/competitions";
 import { rankTeams } from "@/Domain/national/elo";
@@ -79,10 +79,10 @@ const compSummary = (c: NationalCompetition): NationalCompSummary => ({
 export const nationalRoutes = {
   "/api/saves/:saveId/national": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const [meta, state] = await Promise.all([saveService.getMeta(saveId), loadState(saveId)]);
+    const [meta, state] = await Promise.all([saveService.getSeatMeta(saveId, auth.seatId), loadState(saveId)]);
     if (!meta || !state) return Response.json({ error: "no national teams" }, { status: 404 });
     const managers = new Map((await saveService.getManagers(saveId)).map((m) => [m.id, m.name]));
     const ranking: NationalRankRow[] = rankTeams(Object.values(state.teams)).map((t, i) => ({
@@ -98,8 +98,8 @@ export const nationalRoutes = {
     const home = normalizeNation(country);
     const homeTeam = Object.values(state.teams).find((t) => t.nation === home)?.id ?? null;
     const coach = {
-      teamId: state.human?.teamId ?? null,
-      offers: (state.offers ?? []).filter((o) => !meta.currentDate || o.expires >= meta.currentDate).length,
+      teamId: state.human?.[auth.seatId]?.teamId ?? null,
+      offers: (state.offers?.[auth.seatId] ?? []).filter((o) => !meta.currentDate || o.expires >= meta.currentDate).length,
     };
     const body: NationalOverview = { ranking, competitions, homeTeam, next: meta.currentDate ? nextBreak(meta.currentDate) : null, coach };
     return Response.json(body);
@@ -107,7 +107,7 @@ export const nationalRoutes = {
 
   "/api/saves/:saveId/national/competitions/:slug": async (req: Req) => {
     const { saveId, slug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     if (!/^[a-z0-9_]{1,40}$/.test(slug!)) return Response.json({ error: "invalid competition" }, { status: 400 });
@@ -131,10 +131,10 @@ export const nationalRoutes = {
 
   "/api/saves/:saveId/national/teams/:teamId": async (req: Req) => {
     const { saveId, teamId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const [meta, state] = await Promise.all([saveService.getMeta(saveId!), loadState(saveId!)]);
+    const [meta, state] = await Promise.all([saveService.getSeatMeta(saveId!, auth.seatId), loadState(saveId!)]);
     const team = state?.teams[teamId!];
     if (!meta || !state || !team) return Response.json({ error: "national team not found" }, { status: 404 });
     const rank = rankTeams(Object.values(state.teams)).findIndex((t) => t.id === team.id) + 1;
@@ -177,7 +177,7 @@ export const nationalRoutes = {
     for (const f of games) for (const id of [f.home, f.away]) names[id] = state.teams[id]?.nation ?? id;
     return Response.json({
       id: team.id, nation: team.nation, confed: team.confed, elo: Math.round(team.elo), rank, games: team.games,
-      manager: manager ? { id: manager.id, name: manager.name, interim: !!manager.interim, isPlayer: manager.isPlayer } : null,
+      manager: manager ? { id: manager.id, name: manager.name, interim: !!manager.interim, isPlayer: manager.seatId === auth.seatId } : null,
       callUp: cu ? { from: cu.from, until: cu.until, active: !!active, competition: cu.competition ?? null, players } : null,
       recent: games.filter((f) => f.played).slice(-8).reverse(),
       upcoming: games.filter((f) => !f.played).slice(0, 5),
@@ -190,12 +190,12 @@ export const nationalRoutes = {
   /** "My national team": offers, the team, objectives, the next call-up (suggestion, candidates), tactics, games. */
   "/api/saves/:saveId/national/coach": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-    const view = await nationalCoachView(saveService, saveId, meta);
+    const view = await nationalCoachView(saveService, saveId, auth.seatId, meta);
     if (!view) return Response.json({ error: "no national teams" }, { status: 404 });
     return Response.json(view);
   },
@@ -203,15 +203,15 @@ export const nationalRoutes = {
   /** `POST { accept }`: answer a national-team job offer. 409 `offerClosed`. */
   "/api/saves/:saveId/national/coach/offers/:offerId": async (req: Req) => {
     const { saveId, offerId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
     if (!body || typeof body.accept !== "boolean") return Response.json({ error: "accept required" }, { status: 400 });
     return withSaveLock(saveId!, async () => {
-      const meta = await saveService.getMeta(saveId!);
+      const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await answerNationalOffer(saveService, saveId!, offerId!, body.accept as boolean, meta.currentDate);
+      const r = await answerNationalOffer(saveService, saveId!, auth.seatId, offerId!, body.accept as boolean, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true, status: body.accept ? "accepted" : "declined", teamId: r.teamId });
     });
@@ -220,13 +220,13 @@ export const nationalRoutes = {
   /** He leaves his national team (his club stays). 409 `notCoach`. */
   "/api/saves/:saveId/national/coach/resign": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await resignNationalTeam(saveService, saveId, meta.currentDate);
+      const r = await resignNationalTeam(saveService, saveId, auth.seatId, meta.currentDate);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true });
     });
@@ -235,15 +235,15 @@ export const nationalRoutes = {
   /** `PUT { players: string[] | null }`: his call-up for the next call-up date. 400 `invalidCallUp { reason }`. */
   "/api/saves/:saveId/national/coach/callup": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { players?: unknown } | null;
     if (!body || !("players" in body)) return Response.json({ error: "invalidCallUp", reason: "notList" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
-      const r = await saveNationalCallUp(saveService, saveId, meta.currentDate, body.players);
+      const r = await saveNationalCallUp(saveService, saveId, auth.seatId, meta.currentDate, body.players);
       if (!r.ok) return Response.json({ error: r.error, ...(r.reason ? { reason: r.reason } : {}) }, { status: r.status });
       return Response.json({ ok: true });
     });
@@ -252,12 +252,12 @@ export const nationalRoutes = {
   /** `PUT { formation, tactical_style, lineup }`: his national tactics (separate from the club's). */
   "/api/saves/:saveId/national/coach/tactics": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await req.json().catch(() => null);
     return withSaveLock(saveId, async () => {
-      const r = await saveNationalTactics(saveService, saveId, body);
+      const r = await saveNationalTactics(saveService, saveId, auth.seatId, body);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true });
     });

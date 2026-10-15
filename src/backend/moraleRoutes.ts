@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { marketAfterRequests } from "@/backend/moraleWorld";
@@ -16,8 +16,8 @@ type Req = Request & { params: Record<string, string> };
 const ANSWERS: readonly TalkAnswer[] = ["promise_minutes", "promise_sale", "promise_renewal", "praise", "demand", "refuse"];
 
 /** The human club, or a 409 `noClub` when the manager is unemployed (`.claude/rules/game/jobs.md`). */
-async function loadHuman(saveId: string): Promise<{ squad: Squad; date: string } | Response> {
-  const meta = await saveService.getMeta(saveId);
+async function loadHuman(saveId: string, seatId: string): Promise<{ squad: Squad; date: string } | Response> {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
   const squad = await saveService.getSquadById(saveId, meta.clubId);
@@ -61,10 +61,10 @@ export const moraleRoutes = {
   /** `GET /api/saves/:saveId/morale` — players' morale, status and trend; open talks and promises. */
   "/api/saves/:saveId/morale": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const found = await loadHuman(saveId);
+    const found = await loadHuman(saveId, auth.seatId);
     if (found instanceof Response) return found;
     return Response.json(moraleView(found.squad));
   },
@@ -77,7 +77,7 @@ export const moraleRoutes = {
   "/api/saves/:saveId/talks/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
@@ -90,7 +90,7 @@ export const moraleRoutes = {
     if (days !== undefined && typeof days !== "number") return Response.json({ error: "invalidDays" }, { status: 400 });
 
     return withSaveLock(saveId, async () => {
-      const found = await loadHuman(saveId);
+      const found = await loadHuman(saveId, auth.seatId);
       if (found instanceof Response) return found;
       const r = answerTalk({
         squad: found.squad, playerId, answer: answer as TalkAnswer, date: found.date,
@@ -103,8 +103,8 @@ export const moraleRoutes = {
       }
       await saveService.saveSquadById(saveId, r.squad);
       if (r.listRequested) {
-        const market = (await saveService.getMarket(saveId)) ?? emptyMarket();
-        await saveService.saveMarket(saveId, marketAfterRequests(market, [playerId], []));
+        const market = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
+        await saveService.saveMarket(saveId, marketAfterRequests(market, [playerId], []), auth.seatId);
       }
       const player = r.squad.players.find((p) => p.id === playerId)!;
       return Response.json({
@@ -121,7 +121,7 @@ export const moraleRoutes = {
   "/api/saves/:saveId/players/:playerId/squad-status": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
@@ -131,7 +131,7 @@ export const moraleRoutes = {
       return Response.json({ error: "invalidStatus" }, { status: 400 });
     }
     return withSaveLock(saveId, async () => {
-      const found = await loadHuman(saveId);
+      const found = await loadHuman(saveId, auth.seatId);
       if (found instanceof Response) return found;
       const player = found.squad.players.find((p) => p.id === playerId);
       if (!player) return Response.json({ error: "notYourPlayer" }, { status: 404 });

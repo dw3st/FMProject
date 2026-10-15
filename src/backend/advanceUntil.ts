@@ -1,7 +1,7 @@
 import { saveService as defaultSaveService, type SaveService } from "@/backend/SaveService";
 import { withSaveLock } from "@/backend/saveLock";
-import { requireSaveOwner } from "@/backend/auth/middleware";
-import { getPyramids, runBufferedDay, type AdvanceDayOutcome } from "@/backend/advanceDay";
+import { requireSeat } from "@/backend/auth/middleware";
+import { getPyramids, payloadForSeat, runBufferedDay, type SeatDayOutcome } from "@/backend/advanceDay";
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -70,7 +70,7 @@ export interface AdvanceBatchDeps {
   /** Read `currentDate` and recompute the target (league and calendar change at a rollover). */
   readPosition(): Promise<AdvancePosition>;
   /** Advance one day (flushed on success). */
-  runDay(): Promise<AdvanceDayOutcome>;
+  runDay(): Promise<SeatDayOutcome>;
   /** Held around each position check + day, so no other day-advance slips in between. */
   withLock<T>(fn: () => Promise<T>): Promise<T>;
 }
@@ -173,9 +173,11 @@ export async function nextPlayerFixtureDate(
   return best;
 }
 
-/** Real position reader: the player's league/club/date come from the save meta, re-read every call. */
-export async function readAdvancePosition(saveId: string, service: SaveService = defaultSaveService): Promise<AdvancePosition> {
-  const meta = await service.getMeta(saveId);
+/** Real position reader: the seat's league/club and the world's date (the seat's meta), re-read every call. */
+export async function readAdvancePosition(
+  saveId: string, seatId: string, service: SaveService = defaultSaveService,
+): Promise<AdvancePosition> {
+  const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) throw new Error("save not found");
   if (!meta.currentDate) throw new Error("save has no currentDate");
   const currentDate = meta.currentDate;
@@ -190,7 +192,7 @@ export async function readAdvancePosition(saveId: string, service: SaveService =
   const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);
   const clubMatch = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
   // His national team's games stop the fast-forward too (Etapa 41b).
-  const nationalMatch = await nextNationalFixtureDate(service, saveId, currentDate);
+  const nationalMatch = await nextNationalFixtureDate(service, saveId, seatId, currentDate);
   const matchDate = [clubMatch, nationalMatch].filter((d): d is string => !!d).sort()[0] ?? null;
 
   let rolloverDay: string | null = null;
@@ -211,8 +213,13 @@ export const advanceUntilRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    // Fast-forward moves every seat's days: with more than one seat it waits for the group advance (part 3,
+    // `.claude/rules/game/multiplayer.md`). A single day still advances.
+    if (((await defaultSaveService.getMeta(saveId))?.seats.length ?? 0) > 1) {
+      return Response.json({ error: "multiSeat" }, { status: 409 });
+    }
 
     let maxDays = ADVANCE_UNTIL_DEFAULT_DAYS;
     const raw = await req.text();
@@ -236,8 +243,11 @@ export const advanceUntilRoutes = {
     // for all of it. Checking the target inside the same lock keeps a concurrent advance-day from
     // pushing the save onto the player's match day between the check and the day.
     const result = await runAdvanceBatch(maxDays, {
-      readPosition: () => readAdvancePosition(saveId),
-      runDay: () => runBufferedDay(saveId),
+      readPosition: () => readAdvancePosition(saveId, auth.seatId),
+      runDay: async () => {
+        const o = await runBufferedDay(saveId);
+        return o.ok ? { ok: true as const, payload: payloadForSeat(o, auth.seatId) } : o;
+      },
       withLock: (fn) => withSaveLock(saveId, fn),
     });
     const { error, ...body } = result;

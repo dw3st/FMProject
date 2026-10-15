@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { INBOX_TOPICS } from "@/Domain/inbox/inboxTopics";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { addDays } from "@/Domain/dates";
@@ -27,7 +27,7 @@ describe("inbox prefs routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("resp-route@test.local");
     const other = devAutoLogin("resp-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (method: string, token: string, body?: unknown) => {
       const handler = apiRoutes["/api/saves/:saveId/inbox-prefs"] as (r: Request) => Promise<Response>;
@@ -66,20 +66,20 @@ describe("inbox prefs routes", () => {
     expect(put.status).toBe(200);
     const after = await put.json() as any;
     expect(after.prefs).toEqual({ injuries: false, manager_news: true });
-    expect((await saveService.getMeta(saveId))!.inboxPrefs).toEqual({ injuries: false, manager_news: true });
+    expect((await saveService.getSeatMeta(saveId, meta.seatId))!.inboxPrefs).toEqual({ injuries: false, manager_news: true });
 
     // The filter applies in appendInbox, with the meta written after the service instance was created.
-    await saveService.clearInbox(saveId);
+    await saveService.clearInbox(saveId, meta.seatId);
     await saveService.appendInbox(saveId, {
       ...base("inj"), category: "injury", kind: "injured", playerId: "p", playerName: "P",
-    } as unknown as InboxMessage);
+    } as unknown as InboxMessage, meta.seatId);
     await saveService.appendInbox(saveId, {
       ...base("bid"), category: "transfer", kind: "bid", playerId: "p", playerName: "P", clubName: "C",
-    } as unknown as InboxMessage);
+    } as unknown as InboxMessage, meta.seatId);
     await saveService.appendInbox(saveId, {
       ...base("mgr"), category: "manager_news", items: [],
-    } as unknown as InboxMessage);
-    const ids = (await saveService.getInbox(saveId)).map((m) => m.id).sort();
+    } as unknown as InboxMessage, meta.seatId);
+    const ids = (await saveService.getInbox(saveId, meta.seatId)).map((m) => m.id).sort();
     expect(ids).toEqual(["bid", "mgr"]);
   }, 60_000);
 });
@@ -164,11 +164,11 @@ describe("responsibilities: the director's contracts", () => {
     expect((squad.moraleClub?.talks ?? []).some((t) => t.reason === "contract")).toBe(false);
     expect(B.morale!).toBeLessThan(60);
 
-    const after = (await saveService.getMeta(meta.id))!;
+    const after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     expect(after.directorDecisions?.[a.id]?.renew).toBe(true);
     expect(after.directorDecisions?.[b.id]?.renew).toBe(false);
 
-    const inbox = await saveService.getInbox(meta.id);
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     const summaries = inbox.filter((m) => m.category === "contract" && m.kind === "director_summary");
     expect(summaries).toHaveLength(1);
     const s0 = summaries[0]!;
@@ -184,7 +184,7 @@ describe("responsibilities: the director's contracts", () => {
     const { meta, a, until, originalEnd } = await setup();
     const { user, session } = devAutoLogin("resp-director@test.local");
     const other = devAutoLogin("resp-director-other@test.local");
-    recordSaveOwnership(meta.id, user.id);
+    await ownSolo(meta.id, user.id);
     expect((await callResp(meta.id, "GET", other.session.token)).status).toBe(404);
     expect(await (await callResp(meta.id, "GET", session.token)).json()).toEqual({ contracts: "director", scouting: "manager" });
     expect((await callResp(meta.id, "PUT", session.token, { contracts: "board" })).status).toBe(400);
@@ -199,14 +199,14 @@ describe("responsibilities: the director's contracts", () => {
     const chief = await callResp(meta.id, "PUT", session.token, { scouting: "chief" });
     expect(chief.status).toBe(200);
     expect(await chief.json()).toEqual({ contracts: "manager", scouting: "chief" });
-    expect((await saveService.getMeta(meta.id))!.responsibilities).toEqual({ contracts: "manager", scouting: "chief" });
+    expect((await saveService.getSeatMeta(meta.id, meta.seatId))!.responsibilities).toEqual({ contracts: "manager", scouting: "chief" });
     expect((await (await callResp(meta.id, "PUT", session.token, { scouting: "manager" })).json())).toEqual({ contracts: "manager", scouting: "manager" });
 
     await runThroughMonday(meta.id, originalEnd);
     const squad = (await saveService.getSquadById(meta.id, meta.clubId))!;
     expect(squad.players.find((p) => p.id === a.id)!.contract!.until).toBe(until);
-    expect((await saveService.getMeta(meta.id))!.directorDecisions).toBeUndefined();
-    const inbox = await saveService.getInbox(meta.id);
+    expect((await saveService.getSeatMeta(meta.id, meta.seatId))!.directorDecisions).toBeUndefined();
+    const inbox = await saveService.getInbox(meta.id, meta.seatId);
     expect(inbox.some((m) => m.category === "contract" && m.kind === "expiring")).toBe(true);
     expect(inbox.some((m) => m.category === "contract" && m.kind === "director_summary")).toBe(false);
     expect((squad.moraleClub?.talks ?? []).some((t) => t.reason === "contract")).toBe(true);

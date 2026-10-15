@@ -17,8 +17,8 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
   Desbloquear não refaz a amizade.
 - Salas internas `dm:<idA>:<idB>` (ids em ordem) e `world:<saveId>`. O cliente só vê `dm:<apelido do outro>` e
   `world:<saveId>`. DM: escreve quem é amigo sem bloqueio; o participante lê o histórico enquanto não houver bloqueio
-  (sem amizade e sem bloqueio, o histórico antigo continua legível). Mundo: dono (`saves`) ou
-  membro (`save_members`) de um mundo com 2+ membros.
+  (sem amizade e sem bloqueio, o histórico antigo continua legível). Mundo: dono ou membro
+  (`save_members`, `isSaveMember`) de um mundo com 2+ membros.
 - Limites por usuário (429 `rateLimited`): mensagens 10 a cada 10 s, pedidos de amizade 20 por hora (contados antes da
   busca do alvo: um apelido ou código inexistente também gasta), buscas 30 por minuto. Corpo acima de 8 KB: 413
   `tooLarge` (pelo `Content-Length` antes de ler e pelos bytes lidos).
@@ -37,7 +37,7 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 | `src/Domain/social/socialConfig.ts` | Constantes (`SOCIAL`) |
 | `src/Domain/social/nickname.ts`, `rooms.ts`, `message.ts` (+ testes) | Apelido, código, salas, corpo, limite |
 | `src/types/socialTypes.ts` | Respostas, eventos do socket, códigos de erro |
-| `src/backend/db.ts` (`migrateSocialSchema`) | Colunas `users.nickname/nickname_changed_at/friend_code` e tabelas `friend_requests`, `friendships`, `blocks`, `chat_messages`, `chat_reads`, `save_members` — só acrescenta |
+| `src/backend/db.ts` (`migrateSocialSchema`) | Colunas `users.nickname/nickname_changed_at/friend_code` e tabelas `friend_requests`, `friendships`, `blocks`, `chat_messages`, `chat_reads` — só acrescenta (`save_members` é do multiplayer, `migrateSaveMembersSchema`) |
 | `src/backend/social/socialStore.ts` | Consultas |
 | `src/backend/social/roomAccess.ts` | Parâmetro de sala ↔ sala interna, escrita, destinatários |
 | `src/backend/social/realtime.ts` | Sockets por usuário, presença, entrega, upgrade de `/api/ws` |
@@ -107,6 +107,6 @@ Navegador: `DEV_AUTO_LOGIN=1 bun run dev`; aba 1 `http://localhost:3000/api/auth
 
 - Um processo só (sockets e presença em memória); o mundo público vai precisar de um barramento entre processos.
 - Sem sala pública, denúncia ou moderação; sem anexos, emojis especiais ou edição.
-- A sala do mundo só tem membros quando a parte 2 do multiplayer gravar `save_members`.
+- A sala do mundo lê `save_members` (um membro por assento do mundo, multiplayer).
 - Um participante de DM lê o histórico mesmo depois de a amizade acabar (só não escreve), salvo com bloqueio.
 - Os limites (mensagens, pedidos, buscas, socket) ficam em memória: reiniciar o servidor zera.

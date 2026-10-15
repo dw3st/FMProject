@@ -91,6 +91,15 @@ describe("GET /api/faces/person/:id.svg and /api/faces/manager/avatar.svg", () =
     expect(parsePersonFaceRequest("s1.svg", new URLSearchParams({ age: "61" }))).toMatchObject({ personId: "s1", age: 61 });
   });
 
+  test("a seat manager's id (`seat:<uuid>`) gets a face the route serves", () => {
+    const url = personFaceUrl("seat:3f2b8c1e-1d2a-4f5b-9c6d-7e8f9a0b1c2d", "Brazil", ["#DA291C"]);
+    expect(url).not.toContain("%3A");
+    const res = getFrom(personRoute, "/api/faces/person/", url);
+    expect(res.status).toBe(200);
+    // the colon never opens a path: anything else outside the id shape is still a 404
+    expect(getFrom(personRoute, "/api/faces/person/", "/api/faces/person/..%2Fx.svg").status).toBe(404);
+  });
+
   test("referee faces: referee kit, female face with g=f, 400 on another g", async () => {
     const url = refereeFaceUrl("ref_Q42", "England", 41);
     expect(url).toContain("colors=111418%2C111418%2Cf5d020");

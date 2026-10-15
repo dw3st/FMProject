@@ -31,7 +31,8 @@ export interface ManagerRecord {
   id: string;
   name: string;
   squadId: string;
-  isPlayer: boolean;
+  /** The seat of a human manager (`.claude/rules/game/multiplayer.md`); his id is `seat:<seatId>`. Absent = AI. */
+  seatId?: string;
   points: number;
   /** Seasons completed (country rollovers of the manager's club). */
   seasons: number;

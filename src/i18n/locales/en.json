@@ -1805,6 +1805,7 @@
       "transferBudget": "Transfer budget",
       "perWeek": "/wk",
       "yourClub": "Your club",
+      "humanClub": "Human manager",
       "tiers": {
         "LOW": "Low",
         "MEDIUM": "Medium",
@@ -2287,6 +2288,10 @@
     "loadingMatchPreview": "Loading match preview…",
     "cannotLoadMatchSetup": "Cannot load match setup",
     "noMatchToday": "No match today",
+    "seatOpponentTitle": "Match against another human manager",
+    "seatOpponentText": "This match can't be watched yet. It will be simulated with both managers' tactics.",
+    "simulateMatch": "Simulate match",
+    "backToDashboard": "Back to dashboard",
     "redirectingToDashboard": "Redirecting to dashboard…",
     "noTacticsTitle": "No tactics set up yet",
     "noTacticsSubtitle": "Taking you to Formation & Tactics to pick your lineup…",

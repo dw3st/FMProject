@@ -1,10 +1,10 @@
 import { saveService, SaveService } from "@/backend/SaveService";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { cancelScoutMissions } from "@/backend/scoutingWorld";
 import { logError } from "@/Logger";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import {
@@ -28,11 +28,11 @@ import type { Squad } from "@/types/playerTypes";
 type Req = Request & { params: Record<string, string> };
 type CountryInfo = { slug: string; name: string; flag: string; iso2: string; continent?: string };
 
-interface Human { meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
+interface Human { meta: SeatMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
 
 /** The human club (409 `noClub` when unemployed). */
-async function human(saveId: string, service: SaveService = saveService): Promise<Human | Response> {
-  const meta = await service.getMeta(saveId);
+async function human(saveId: string, seatId: string, service: SaveService = saveService): Promise<Human | Response> {
+  const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
   const ref = await service.resolveSquadId(saveId, meta.clubId);
@@ -181,10 +181,10 @@ function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
 export const staffRoutes = {
   "/api/saves/:saveId/staff": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const h = await human(saveId);
+    const h = await human(saveId, auth.seatId);
     if (h instanceof Response) return h;
     return Response.json(staffView(h.squad, h));
   },
@@ -192,7 +192,7 @@ export const staffRoutes = {
   /** `GET ?role=&minStars=&maxWage=&sort=name|role|age|stars|wage&dir=asc|desc&offset=&limit=` - the free pool, asking wage at the club's factor. */
   "/api/saves/:saveId/staff/pool": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = parsePoolQuery(new URL(req.url).searchParams);
@@ -203,7 +203,7 @@ export const staffRoutes = {
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
       // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
-      const h = await human(saveId);
+      const h = await human(saveId, auth.seatId);
       const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
       return Response.json(searchPool(pool, q, factor, meta.currentDate ?? undefined));
     });
@@ -212,7 +212,7 @@ export const staffRoutes = {
   /** `POST { memberId, years }` - signs a professional of the pool (409 `roleFull` past the tier's limit). */
   "/api/saves/:saveId/staff/hire": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -221,7 +221,7 @@ export const staffRoutes = {
     const years = body.years;
     const memberId = body.memberId;
     return withSaveLock(saveId, () => inUnit(saveId, "hire", async (service) => {
-      const h = await human(saveId, service);
+      const h = await human(saveId, auth.seatId, service);
       if (h instanceof Response) return h;
       const pool = await service.getStaffPool(saveId, h.date);
       const taken = takeFromPool(pool, memberId);
@@ -242,7 +242,7 @@ export const staffRoutes = {
   /** `POST { memberId }` (or `{ role }`) - dismisses a professional: severance in the ledger, back to the pool. */
   "/api/saves/:saveId/staff/fire": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -250,7 +250,7 @@ export const staffRoutes = {
     const role = body?.role;
     if (typeof memberId !== "string" && !isStaffRole(role)) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     return withSaveLock(saveId, () => inUnit(saveId, "fire", async (service) => {
-      const h = await human(saveId, service);
+      const h = await human(saveId, auth.seatId, service);
       if (h instanceof Response) return h;
       const staff = h.squad.staff ?? { members: [] };
       const member = typeof memberId === "string"
@@ -269,11 +269,11 @@ export const staffRoutes = {
       if (severance > 0) {
         next = await recordMoney(service, saveId, await ledgerSeason(service, saveId, h.ref.leagueSlug, h.date), h.ref, {
           date: h.date, kind: "staff", amount: -severance, label: `Staff severance: ${member.name}`, ref: { stage: "severance" },
-        });
+        }, auth.seatId);
       }
       const pool = await service.getStaffPool(saveId, h.date);
       await service.writeStaffPool(saveId, returnToPool(pool, member, h.date));
-      if (member.role === "fieldScout") await cancelScoutMissions(service, saveId, [member.id]);
+      if (member.role === "fieldScout") await cancelScoutMissions(service, saveId, auth.seatId, [member.id]);
       return Response.json({ ...staffView(next, h), severance });
     }));
   },
@@ -281,7 +281,7 @@ export const staffRoutes = {
   /** `POST { memberId, years }` - renews a contract from its current end (400 `tooManyYears`). */
   "/api/saves/:saveId/staff/renew": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -290,7 +290,7 @@ export const staffRoutes = {
     const years = body.years;
     const memberId = body.memberId;
     return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+      const h = await human(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const staff = h.squad.staff ?? { members: [] };
       const member = staff.members.find((m) => m.id === memberId);
@@ -313,10 +313,10 @@ export const staffRoutes = {
    */
   "/api/saves/:saveId/staff/:memberId/countries": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const date = meta.currentDate ?? "";
     const id = req.params.memberId!;
@@ -342,13 +342,13 @@ export const staffRoutes = {
 
   "/api/saves/:saveId/staff/areas": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
     if (!body) return Response.json({ error: "invalid body" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+      const h = await human(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const staff = h.squad.staff ?? { members: [] };
       const coaches = new Set(staff.members.filter((m) => m.role === "coach").map((m) => m.id));

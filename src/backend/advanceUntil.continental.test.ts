@@ -59,7 +59,7 @@ describe("readAdvancePosition includes the player's continental competition", ()
     expect(withoutContinental).not.toBe(round1Date);
 
     await saveService.updateMeta(saveId, { currentDate: round1Date });
-    const pos = await readAdvancePosition(saveId);
+    const pos = await readAdvancePosition(saveId, meta.seatId);
     expect(pos.matchDate).toBe(round1Date);
     expect(pos.target).toBe(round1Date);
   }, 300_000);

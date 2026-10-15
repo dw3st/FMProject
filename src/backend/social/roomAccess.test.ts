@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 import { isPresent, lastSeenAt, recordPresence, resetPresence, PRESENCE_WINDOW_MS } from "@/backend/presence";
 import { canWrite, resolveRoom, roomParamFor, roomRecipients } from "@/backend/social/roomAccess";
-import { addWorldMember, befriend, blockUser } from "@/backend/social/socialStore";
+import { befriend, blockUser } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import { dmRoomId, worldRoomId } from "@/Domain/social/rooms";
 
@@ -33,9 +33,9 @@ describe("resolveRoom", () => {
     const b = makeUser(uniqueNick());
     const c = makeUser(uniqueNick());
     const saveId = randomUUID();
-    recordSaveOwnership(saveId, a.id);
+    addSaveMember(saveId, a.id, "seat-a", "owner");
     expect(resolveRoom(a.id, `world:${saveId}`)).toBeNull();
-    addWorldMember(saveId, b.id, "member");
+    addSaveMember(saveId, b.id, "seat-b", "member");
     expect(resolveRoom(a.id, `world:${saveId}`)).toEqual({
       kind: "world",
       roomId: worldRoomId(saveId),

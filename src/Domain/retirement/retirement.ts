@@ -104,13 +104,14 @@ export function processRetirements(args: {
   squads: Squad[];
   freeAgents: FreeAgent[];
   levels: WorldLevels;
-  humanSquadId: string | null;
+  /** Human club → its seat (`.claude/rules/game/multiplayer.md`): a world-class retiree of one gets the seat's reborn offer. */
+  humanSeats: ReadonlyMap<string, string>;
   /** Draw the free-agent pool too. The caller does this at most once per world year. Default true. */
   processFreeAgents?: boolean;
   /** Last season logs by player id (the squad logs were already reset by the transition). */
   logs?: Record<string, { appearances: number; goals: number }>;
 }): RetirementResult {
-  const { saveId, year, date, freeAgents, levels, humanSquadId, logs } = args;
+  const { saveId, year, date, freeAgents, levels, humanSeats, logs } = args;
   const records: RetiredPlayer[] = [];
   const humanRetired: RetiredPlayer[] = [];
   const squads = args.squads.map((sq) => {
@@ -118,12 +119,13 @@ export function processRetirements(args: {
     const leaving = sq.players.filter((p) =>
       !p.loan && p.age >= R.MIN_AGE && retires(saveId, p.id, year, p.age, levelPercentile(levels.byRole[roleOf(p)], overallAvg(p))));
     if (leaving.length === 0) return sq;
-    const isHuman = sq.id === humanSquadId;
+    const seatId = humanSeats.get(sq.id);
+    const isHuman = seatId !== undefined;
     for (const p of leaving) {
       const worldClass = isHuman && levels.top.has(p.id);
       const rec: RetiredPlayer = {
         ...toRetiredRecord(p, date, sq.id, worldClass, logs?.[p.id]),
-        ...(worldClass ? { rebornOffer: "pending" as const } : {}),
+        ...(worldClass ? { rebornOffer: "pending" as const, rebornSeatId: seatId } : {}),
       };
       records.push(rec);
       if (isHuman) humanRetired.push(rec);
@@ -144,9 +146,9 @@ export function processRetirements(args: {
   return { squads, freeAgents: args.processFreeAgents === false ? freeAgents : keptFree, retired: records, humanRetired };
 }
 
-/** Expires every pending reborn offer (the offer lives until the next country rollover). */
-export function expireOffers(retired: RetiredPlayer[]): RetiredPlayer[] {
-  return retired.map((r) => (r.rebornOffer === "pending" ? { ...r, rebornOffer: "expired" as const } : r));
+/** The pending reborn offers of one seat expire (its country's next rollover, or the seat leaving the club). */
+export function expireOffers(retired: RetiredPlayer[], seatId: string): RetiredPlayer[] {
+  return retired.map((r) => (r.rebornOffer === "pending" && r.rebornSeatId === seatId ? { ...r, rebornOffer: "expired" as const } : r));
 }
 
 /**

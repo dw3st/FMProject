@@ -1,10 +1,10 @@
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { Squad } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { RegistrationCompKind, RegistrationNotice } from "@/types/registrationTypes";
 import countriesRaw from "@/Data/countries.json";
-import { loadWindowContext, type WindowContext } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef, type SeatWindowRef, type WindowContext } from "@/backend/marketWindowWorld";
 import { seasonLabel } from "@/Domain/history/history";
 import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
 import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
@@ -24,7 +24,8 @@ const COUNTRIES = countriesRaw as Record<string, { continent?: string }>;
 export interface RegistrationDayCtx {
   date: string;
   windows: WindowContext;
-  humanClubId?: string;
+  /** Human clubs and their seats. */
+  seatByClub: ReadonlyMap<string, string>;
   /** Competition info of a club (null for youth competitions and competitions the club does not play). */
   infoFor(squad: Squad, leagueSlug: string, slug: string): Promise<CompInfo | null>;
   /** Every competition of the club with a list: league, national cup, continental. */
@@ -47,14 +48,18 @@ function gateOf(meta: LeagueSeasonMeta | null): ContinentalGate | undefined {
 export async function registrationDayCtx(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  world: Pick<SaveMeta, "activeLeagues" | "currentDate">,
   index: SquadIndex | null,
-  date = meta.currentDate ?? "",
+  /** The seats (their clubs are human: their lists follow the seat's window and send it the notices). */
+  seats: SeatWindowRef[],
+  date = world.currentDate ?? "",
   windows?: WindowContext,
 ): Promise<RegistrationDayCtx> {
-  const w = windows ?? (await loadWindowContext(meta, index, date));
-  const humanClubId = meta.unemployed ? undefined : meta.clubId || undefined;
-  const states = new Map((meta.activeLeagues ?? []).map((l) => [l.leagueSlug, l] as const));
+  const w = windows ?? (await loadWindowContext(world, index, date, seats));
+  const seatByClub: ReadonlyMap<string, string> = new Map(
+    seats.filter((s) => s.clubId).map((s) => [s.clubId!, s.seatId] as const),
+  );
+  const states = new Map((world.activeLeagues ?? []).map((l) => [l.leagueSlug, l] as const));
   const metaCache = new Map<string, Promise<LeagueSeasonMeta | null>>();
   const metaOf = (slug: string) => {
     let p = metaCache.get(slug);
@@ -87,7 +92,7 @@ export async function registrationDayCtx(
       country,
       squadId: squad.id,
     };
-    const window = squad.id === humanClubId ? w.human() : w.ofLeague(leagueSlug);
+    const window = seatByClub.has(squad.id) ? w.seat(seatByClub.get(squad.id)!).today : w.ofLeague(leagueSlug);
     const status = registrationStatus({ kind, window, date, ...(kind === "continental" ? { continental: gateOf(compMeta) } : {}) });
     return { slug, kind, season, rule: ruleFor(slug, leagueSlug, country, COUNTRIES[country]?.continent), ctx, status };
   };
@@ -108,7 +113,7 @@ export async function registrationDayCtx(
     return out;
   };
 
-  return { date, windows: w, humanClubId, infoFor, infosFor };
+  return { date, windows: w, seatByClub, infoFor, infosFor };
 }
 
 /**
@@ -129,7 +134,7 @@ export async function matchRegistration(
     reg: { ids, rule: info.rule, country: info.ctx.country },
     squad: r.squad,
     changed: r.changed,
-    notices: squad.id === dctx.humanClubId ? r.notices : [],
+    notices: dctx.seatByClub.has(squad.id) ? r.notices : [],
   };
 }
 
@@ -137,9 +142,11 @@ export async function matchRegistration(
 export async function humanMatchRegistrationToday(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  seatId: string,
   squad: Squad,
 ): Promise<MatchRegistration | null> {
+  const meta = await service.getSeatMeta(saveId, seatId);
+  if (!meta) return null;
   const date = meta.currentDate ?? "";
   if (!date) return null;
   const fixture = (await service.getFixturesForDate(saveId, date))
@@ -147,7 +154,7 @@ export async function humanMatchRegistrationToday(
   if (!fixture) return null;
   const index = await service.getSquadIndex(saveId);
   const league = index.byId(squad.id)?.leagueSlug ?? meta.leagueSlug;
-  const dctx = await registrationDayCtx(service, saveId, meta, index, date);
+  const dctx = await registrationDayCtx(service, saveId, meta, index, [seatWindowRef(meta)], date);
   return (await matchRegistration(dctx, squad, league, fixture.competition))?.reg ?? null;
 }
 
@@ -178,7 +185,7 @@ export async function refreshAiRegistrations(
 ): Promise<Squad[]> {
   const out: Squad[] = [];
   for (const { squad, leagueSlug } of squads) {
-    if (squad.id === dctx.humanClubId) continue;
+    if (dctx.seatByClub.has(squad.id)) continue;
     let cur = squad;
     let changed = false;
     for (const info of await dctx.infosFor(squad, leagueSlug)) {

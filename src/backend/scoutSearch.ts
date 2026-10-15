@@ -26,7 +26,9 @@ interface ScoutIndex {
 
 /** One entry per save; a couple of saves at most so a long-running server does not grow unbounded. */
 const MAX_CACHED_SAVES = 2;
+/** Rows depend on the seat's knowledge (the blur), so the cache is per save and seat. */
 const cache = new Map<string, ScoutIndex>();
+const cacheKey = (saveId: string, seatId: string) => `${saveId}:${seatId}`;
 
 /**
  * In-flight index builds keyed by `saveId#key`, so concurrent misses (e.g. two scout requests
@@ -40,16 +42,16 @@ const inFlight = new Map<string, Promise<ScoutIndex | null>>();
  * save's write version (bumped by FileSystemDAL on every squad/market write, so a mid-day
  * transfer or sell-list edit invalidates the entry).
  */
-async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex> {
+async function buildScoutIndex(saveId: string, seatId: string, key: string): Promise<ScoutIndex> {
   const [squads, market, freeAgents] = await Promise.all([
     saveService.getAllSquads(saveId),
-    saveService.getMarket(saveId),
+    saveService.getMarket(saveId, seatId),
     saveService.getFreeAgents(saveId),
   ]);
   // What the user sees of players outside his own squad is blurred by how well he knows each one
   // (`.claude/rules/game/scouting.md`); his own squad is always exact. Rows carry `knowledge`,
   // `hiddenAttrs` and the ranges (`toDisplayPlayer` reads `scoutView`).
-  const viewer = await loadViewer(saveService, saveId, { squads });
+  const viewer = await loadViewer(saveService, saveId, seatId, { squads });
   const seen = viewer ? squads.map((s) => obscureSquadForViewer(viewer, s)) : squads;
   const seenAgents = viewer
     ? freeAgents.map((f) => ({ ...f, player: obscurePlayerForViewer(viewer, f.player, "") }))
@@ -63,7 +65,7 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
       return extras ? { ...r, ...extras } : r;
     })
     : rows;
-  const shortlistIds = new Set((await saveService.getScouting(saveId)).shortlist.map((e) => e.playerId));
+  const shortlistIds = new Set((await saveService.getScouting(saveId, seatId)).shortlist.map((e) => e.playerId));
   const entry: ScoutIndex = {
     key,
     players,
@@ -71,8 +73,8 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
     sellListedIds: new Set(collectSellListedIds(market)),
     shortlistIds,
   };
-  cache.delete(saveId);
-  cache.set(saveId, entry);
+  cache.delete(cacheKey(saveId, seatId));
+  cache.set(cacheKey(saveId, seatId), entry);
   while (cache.size > MAX_CACHED_SAVES) {
     const oldest = cache.keys().next().value;
     if (oldest === undefined) break;
@@ -104,15 +106,15 @@ function buyerContext(squads: Squad[], clubId: string): BuyerContext | null {
   };
 }
 
-export async function getScoutIndex(saveId: string): Promise<ScoutIndex | null> {
+export async function getScoutIndex(saveId: string, seatId: string): Promise<ScoutIndex | null> {
   const meta = await saveService.getMeta(saveId);
   if (!meta) return null;
   // Read the version before loading so a write racing the build yields a newer key next time.
-  const key = `${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;
-  const hit = cache.get(saveId);
+  const key = `${seatId}:${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;
+  const hit = cache.get(cacheKey(saveId, seatId));
   if (hit && hit.key === key) {
-    cache.delete(saveId);
-    cache.set(saveId, hit);
+    cache.delete(cacheKey(saveId, seatId));
+    cache.set(cacheKey(saveId, seatId), hit);
     return hit;
   }
 
@@ -121,7 +123,7 @@ export async function getScoutIndex(saveId: string): Promise<ScoutIndex | null> 
   const pending = inFlight.get(flightKey);
   if (pending) return pending;
 
-  const promise = buildScoutIndex(saveId, key).finally(() => {
+  const promise = buildScoutIndex(saveId, seatId, key).finally(() => {
     inFlight.delete(flightKey);
   });
   inFlight.set(flightKey, promise);
@@ -192,8 +194,8 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
   };
 }
 
-export async function searchScout(saveId: string, query: ScoutQuery): Promise<ScoutSearchResponse | null> {
-  const index = await getScoutIndex(saveId);
+export async function searchScout(saveId: string, seatId: string, query: ScoutQuery): Promise<ScoutSearchResponse | null> {
+  const index = await getScoutIndex(saveId, seatId);
   if (!index) return null;
   const page = runScoutQuery(index.players, query, index.sellListedIds, index.shortlistIds);
   return {

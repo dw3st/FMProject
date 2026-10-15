@@ -146,17 +146,18 @@ export function freeAgentTick(args: {
   pool: FreeAgent[];
   date: string;
   rng: () => number;
-  excludeSquadId?: string | null;
+  /** Clubs with a human manager (every seat): never hire from the free pool here. */
+  excludeSquadIds?: ReadonlySet<string>;
   seasonEndOf: (squad: Squad) => string;
   clubsPerDay?: number;
 }): FreeAgentTickResult {
-  const { pool, date, rng, excludeSquadId, seasonEndOf } = args;
+  const { pool, date, rng, excludeSquadIds, seasonEndOf } = args;
   const squads = [...args.squads];
   const changedIds = new Set<string>();
   const signedIds = new Set<string>();
   if (pool.length === 0) return { squads, changedIds, signedIds };
 
-  const eligible = squads.map((_, i) => i).filter((i) => squads[i]!.id !== excludeSquadId);
+  const eligible = squads.map((_, i) => i).filter((i) => !excludeSquadIds?.has(squads[i]!.id));
   const n = Math.min(args.clubsPerDay ?? C.FREE_AGENT_CLUBS_PER_DAY, eligible.length);
   for (let k = 0; k < n; k++) {
     const idx = eligible.splice(Math.floor(rng() * eligible.length), 1)[0]!;

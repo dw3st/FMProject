@@ -1,4 +1,4 @@
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -28,9 +28,11 @@ import type { PressParams, PressState, PressTrigger } from "@/types/pressTypes";
 
 export interface PressDayInput {
   saveId: string;
+  /** The seat holding the press conferences (`.claude/rules/game/multiplayer.md`); its press state is `meta.press`. */
+  seatId: string;
   service: SaveService;
-  /** The meta as the day started. */
-  meta: SaveMeta;
+  /** The world + the seat as the day started. */
+  meta: SeatMeta;
   /** The day being advanced (`currentDate`). */
   date: string;
   clubId: string;

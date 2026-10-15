@@ -5,6 +5,7 @@ import { readSessionCookie } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
 import { isPresent, onlineCount, recordPresence } from "@/backend/presence";
 import { saveService } from "@/backend/SaveService";
+import { memberOf } from "@/backend/auth/saveOwnership";
 import { canWrite, resolveRoom, roomParamFor, roomRecipients } from "@/backend/social/roomAccess";
 import { friendIds, getSocialUser, isBlocked, isWorldMember, type ChatMessageRow } from "@/backend/social/socialStore";
 import { isSaveIdShape } from "@/Domain/social/rooms";
@@ -82,11 +83,13 @@ export function setCloseGraceMs(ms: number | null): void {
   closeGraceMs = ms ?? DEFAULT_CLOSE_GRACE_MS;
 }
 
-type ClubNameResolver = (saveId: string) => Promise<string | null>;
+/** The club the user manages in a world: his own seat's (`.claude/rules/game/multiplayer.md`). */
+type ClubNameResolver = (saveId: string, userId: string) => Promise<string | null>;
 
-const defaultClubName: ClubNameResolver = async (saveId) => {
+const defaultClubName: ClubNameResolver = async (saveId, userId) => {
   try {
-    const meta = await saveService.getMeta(saveId);
+    const member = memberOf(saveId, userId);
+    const meta = member ? await saveService.getSeatMeta(saveId, member.seatId) : null;
     return meta && meta.clubId ? meta.clubName : null;
   } catch {
     return null;
@@ -232,7 +235,7 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
     ws.data.clubName = null;
     if (event.saveId && isSaveIdShape(event.saveId) && isWorldMember(userId, event.saveId)) {
       ws.data.saveId = event.saveId;
-      ws.data.clubName = await clubNameOf(event.saveId);
+      ws.data.clubName = await clubNameOf(event.saveId, userId);
     }
   }
   const now = Date.now();

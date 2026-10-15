@@ -1,7 +1,7 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { acceptJobOffer, reputationOf } from "@/backend/jobWorld";
 import { logError } from "@/Logger";
@@ -13,10 +13,10 @@ export const jobRoutes = {
   /** `GET` - reputation (0..100), pending offers and the unemployment state. */
   "/api/saves/:saveId/jobs": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const date = meta.currentDate ?? "";
     return Response.json({
@@ -33,20 +33,25 @@ export const jobRoutes = {
   "/api/saves/:saveId/jobs/:offerId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const offerId = req.params.offerId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
     if (!body || typeof body.accept !== "boolean") return Response.json({ error: "accept required" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const offers = meta.jobOffers ?? [];
       const offer = offers.find((o) => o.id === offerId);
       if (!offer || offer.expires < meta.currentDate) return Response.json({ error: "offerClosed" }, { status: 409 });
       if (!body.accept) {
-        await saveService.updateMeta(saveId, { jobOffers: offers.filter((o) => o.id !== offerId) });
+        await saveService.updateSeat(saveId, auth.seatId, { jobOffers: offers.filter((o) => o.id !== offerId) });
         return Response.json({ ok: true, status: "declined" });
+      }
+      // Another seat took the club since the offer (`.claude/rules/game/multiplayer.md`): one human per club.
+      if ((await saveService.humanClubIds(saveId)).has(offer.squadId)) {
+        await saveService.updateSeat(saveId, auth.seatId, { jobOffers: offers.filter((o) => o.squadId !== offer.squadId) });
+        return Response.json({ error: "offerClosed" }, { status: 409 });
       }
       const index = await saveService.getSquadIndex(saveId);
       if (!index.byId(offer.squadId)) return Response.json({ error: "offerClosed" }, { status: 409 });
@@ -55,7 +60,7 @@ export const jobRoutes = {
       const service = new SaveService(buffer);
       let next;
       try {
-        next = await acceptJobOffer(service, saveId, (await service.getMeta(saveId))!, offer);
+        next = await acceptJobOffer(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, offer);
         await buffer.flush();
       } catch (err) {
         logError("jobs", `save ${saveId}: failed to accept offer ${offerId}`, err);

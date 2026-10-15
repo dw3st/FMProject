@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 import { appendFile, mkdir } from "node:fs/promises";
 import { requireAuth } from "@/backend/auth/middleware";
 import { isTesterEmail } from "@/backend/auth/testers";
-import { isSaveOwner } from "@/backend/auth/saveOwnership";
+import { isSaveMember } from "@/backend/auth/saveOwnership";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { isRealIsoDate } from "@/Domain/dates";
 
@@ -203,7 +203,7 @@ function validateReportBody(
       return { ok: false, error: "invalid saveId" };
     }
     const trimmed = body.saveId.trim();
-    if (trimmed && isSaveOwner(trimmed, userId)) {
+    if (trimmed && isSaveMember(trimmed, userId)) {
       saveId = trimmed;
     }
   }

@@ -16,8 +16,8 @@ const squad = (id: string, budget: number, extra: Partial<Squad> = {}): Squad =>
 describe("transferFeeSquads", () => {
   test("human buys from AI: human budget pays, AI seller refills part of its transfer budget", () => {
     const { buyer, seller } = transferFeeSquads(
-      { squad: squad("h", 20_000_000), isPlayerClub: true },
-      { squad: squad("ai", 5, { aiTransferBudget: 0 }), isPlayerClub: false },
+      { squad: squad("h", 20_000_000), seatId: "s1" },
+      { squad: squad("ai", 5, { aiTransferBudget: 0 }) },
       10_000_000,
     );
     expect(buyer.finances!.budget).toBe(10_000_000);
@@ -27,8 +27,8 @@ describe("transferFeeSquads", () => {
   });
   test("AI buys from human: AI transfer budget pays, human budget receives the full fee", () => {
     const { buyer, seller } = transferFeeSquads(
-      { squad: squad("ai", 7), isPlayerClub: false },
-      { squad: squad("h", 1_000_000), isPlayerClub: true },
+      { squad: squad("ai", 7) },
+      { squad: squad("h", 1_000_000), seatId: "s1" },
       10_000_000,
     );
     expect(buyer.aiTransferBudget).toBe(seasonalTransferBudgetFor("HIGH", 0) - 10_000_000);
@@ -57,11 +57,14 @@ function memoryDAL(files: SquadFile[]): { dal: ISaveDAL; disk: Map<string, Squad
     async listLeagues() {
       return [...new Set(Array.from(disk.values()).map((f) => f.leagueSlug))];
     },
-    async readLedger(_s, season) {
-      return ledger.get(`${_s}:${season}`) ?? [];
+    async readMeta() {
+      return { seats: ["seat-1"] } as never;
     },
-    async appendLedger(_s, season, entries) {
-      const key = `${_s}:${season}`;
+    async readSeatLedger(_s, seat, season) {
+      return ledger.get(`${_s}:${seat}:${season}`) ?? [];
+    },
+    async appendSeatLedger(_s, seat, season, entries) {
+      const key = `${_s}:${seat}:${season}`;
       ledger.set(key, [...(ledger.get(key) ?? []), ...entries]);
     },
   };
@@ -79,6 +82,7 @@ function memoryDAL(files: SquadFile[]): { dal: ISaveDAL; disk: Map<string, Squad
 
 describe("recordMoney", () => {
   const SAVE = "save-1";
+  const SEAT = "seat-1";
 
   test("moves the squad's budget by the entry amount, saves the squad, and appends the ledger entry", async () => {
     const { dal, disk, ledger } = memoryDAL([
@@ -87,11 +91,11 @@ describe("recordMoney", () => {
     const service = new SaveService(dal);
     const entry: LedgerEntry = { date: "2027-03-10", kind: "gate", amount: 5000, label: "test" };
 
-    const updated = await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, entry);
+    const updated = await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, entry, SEAT);
 
     expect(updated.finances!.budget).toBe(105_000);
     expect(disk.get("lg/c1")!.squad.finances!.budget).toBe(105_000);
-    expect(ledger.get(`${SAVE}:2027`)).toEqual([entry]);
+    expect(ledger.get(`${SAVE}:${SEAT}:2027`)).toEqual([entry]);
   });
 
   test("the balance can go negative — no clamp", async () => {
@@ -99,7 +103,7 @@ describe("recordMoney", () => {
     const service = new SaveService(dal);
     const entry: LedgerEntry = { date: "2027-03-10", kind: "wages", amount: -5000, label: "wages" };
 
-    const updated = await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, entry);
+    const updated = await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, entry, SEAT);
 
     expect(updated.finances!.budget).toBe(-4000);
   });
@@ -107,10 +111,10 @@ describe("recordMoney", () => {
   test("several entries in a row accumulate in the same season's ledger", async () => {
     const { dal, ledger } = memoryDAL([{ leagueSlug: "lg", clubSlug: "c1", squad: squad("h", 0) }]);
     const service = new SaveService(dal);
-    await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, { date: "2027-03-10", kind: "commercial", amount: 1000, label: "a" });
-    await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, { date: "2027-03-10", kind: "wages", amount: -400, label: "b" });
+    await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, { date: "2027-03-10", kind: "commercial", amount: 1000, label: "a" }, SEAT);
+    await recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "c1" }, { date: "2027-03-10", kind: "wages", amount: -400, label: "b" }, SEAT);
 
-    expect(ledger.get(`${SAVE}:2027`)!.map((e) => e.label)).toEqual(["a", "b"]);
+    expect(ledger.get(`${SAVE}:${SEAT}:2027`)!.map((e) => e.label)).toEqual(["a", "b"]);
   });
 
   test("throws when the squad cannot be found", async () => {
@@ -119,7 +123,7 @@ describe("recordMoney", () => {
     await expect(
       recordMoney(service, SAVE, 2027, { leagueSlug: "lg", clubSlug: "missing" }, {
         date: "2027-03-10", kind: "gate", amount: 100, label: "x",
-      }),
+      }, SEAT),
     ).rejects.toThrow(/missing/);
   });
 });

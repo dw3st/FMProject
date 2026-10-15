@@ -29,14 +29,14 @@ try {
     mapSquadsToScoutPlayers(seen);
     mapFreeAgentsToScoutPlayers(free.map((f) => ({ ...f, player: obscurePlayer(f.player, 0.6, meta.id) })));
   });
-  const viewer = (await loadViewer(saveService, meta.id, { squads }))!;
+  const viewer = (await loadViewer(saveService, meta.id, meta.seatId, { squads }))!;
   const newMs = time(() => {
     const seen = squads.map((s) => obscureSquadForViewer(viewer, s));
     mapSquadsToScoutPlayers(seen);
     mapFreeAgentsToScoutPlayers(free.map((f) => ({ ...f, player: obscurePlayerForViewer(viewer, f.player, "") })));
   });
   const t0 = performance.now();
-  await loadViewer(saveService, meta.id, { squads });
+  await loadViewer(saveService, meta.id, meta.seatId, { squads });
   const viewerMs = performance.now() - t0;
   console.log(`players ${players}, free ${free.length}`);
   console.log(`old uniform blur + rows: ${oldMs.toFixed(0)} ms`);

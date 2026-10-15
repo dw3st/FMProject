@@ -149,8 +149,8 @@ describe("getScoutIndex — shared in-flight build", () => {
     const marketSpy = spyOn(saveService, "getMarket").mockResolvedValue(null);
 
     try {
-      const p1 = getScoutIndex("concurrent-save");
-      const p2 = getScoutIndex("concurrent-save");
+      const p1 = getScoutIndex("concurrent-save", "s1");
+      const p2 = getScoutIndex("concurrent-save", "s1");
 
       // Let both calls reach the in-flight check before the build resolves.
       await Promise.resolve();
@@ -179,10 +179,10 @@ describe("getScoutIndex — shared in-flight build", () => {
     const squadsSpy = spyOn(saveService, "getAllSquads").mockRejectedValueOnce(new Error("boom"));
 
     try {
-      await expect(getScoutIndex("failing-save")).rejects.toThrow("boom");
+      await expect(getScoutIndex("failing-save", "s1")).rejects.toThrow("boom");
 
       squadsSpy.mockResolvedValueOnce([squad]);
-      const result = await getScoutIndex("failing-save");
+      const result = await getScoutIndex("failing-save", "s1");
       expect(result?.players).toEqual([]);
       expect(squadsSpy).toHaveBeenCalledTimes(2);
     } finally {

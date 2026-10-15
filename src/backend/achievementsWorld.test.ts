@@ -16,7 +16,7 @@ describe("finance tracks count what the manager built", () => {
     const day1 = rich(200_000_000, 60_000, 9);
     const input = (club: Squad, date: string, state = emptyAchievements()) => ({
       date, squadId: club.id, arrival: clubArrival(club), matches: [], transfers: [], awards: [],
-      snapshot: achievementSnapshot(state, club, []),
+      snapshot: achievementSnapshot(state, club, [], "s1"),
     });
     const first = applyAchievementDay(emptyAchievements(), input(day1, "2027-02-05"));
     expect(first.unlocked).toEqual([]);

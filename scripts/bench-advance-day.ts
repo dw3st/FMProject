@@ -7,13 +7,15 @@
  * N days (default 14) exactly as the live route does, prints a per-day table and
  * deletes the save at the end (also on failure).
  *
- * Run:  bun scripts/bench-advance-day.ts [--days 14] [--buffered | --compare]
+ * Run:  bun scripts/bench-advance-day.ts [--days 14] [--buffered | --compare] [--seats 2]
  *
  *   (default)   each day runs straight on FileSystemDAL (the pre-buffer live route)
  *   --buffered  each day runs in its own BufferingSaveDAL, flushed when the day
  *               succeeds — exactly what POST /api/advance-day/:saveId does
  *   --compare   snapshot the fresh save, run unbuffered, restore the snapshot, run
  *               buffered, and compare the deterministic outcomes of both runs
+ *   --seats N   N human seats (multiplayer part 1): the first on the Premier League, the others (`addSeat`) on
+ *               the first club of La Liga, Bundesliga, Serie A, Ligue 1 — each in the full engine
  *
  * Timing is instrumented inside this script only: engine / quickSim / training /
  * market / standings functions are wrapped via `mock.module` before the backend is
@@ -36,6 +38,7 @@ const MODE: "unbuffered" | "buffered" | "compare" = args.includes("--compare")
   : args.includes("--buffered")
     ? "buffered"
     : "unbuffered";
+const SEATS = Math.max(1, parseInt(argValue("--seats") ?? "1", 10) || 1);
 
 // ── Function timers (installed before the backend is imported) ────────────────
 
@@ -167,8 +170,25 @@ async function createBenchSave(): Promise<string> {
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Bench Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
+  if (SEATS >= 2) {
+    // More seats, each in its own league: more leagues in the full engine per day (`multiplayer.md`).
+    const { addSeat } = await import("@/backend/seats");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    const index = await saveService.getSquadIndex(meta.id);
+    const leagues = ["la_liga", "bundesliga", "serie_a", "ligue_1"];
+    for (let n = 2; n <= SEATS; n++) {
+      const league = leagues[(n - 2) % leagues.length]!;
+      const taken = await saveService.humanClubIds(meta.id);
+      const clubId = index.inLeague(league).find((e) => !taken.has(e.squadId))!.squadId;
+      await addSeat(meta.id, {
+        userId: devAutoLogin(`bench-seat-${n}@local`).user.id, clubId,
+        manager: { name: `Bench ${n}`, nationalityIso: "gb", backgroundId: "former-player" },
+      });
+      console.log(`Seat ${n}: ${clubId} (${league})`);
+    }
+  }
   console.log(
     `Save ${meta.id} — ${club.name} (${pl.name}), start ${meta.currentDate}, ` +
       `${meta.activeLeagues?.length ?? 0} active leagues, kit: ${kit.applied ? kit.kit : kit.reason}, ` +
@@ -411,6 +431,8 @@ try {
 } finally {
   if (saveId) {
     await saveService.deleteSave(saveId);
+    const { deleteSaveMembers } = await import("@/backend/auth/saveOwnership");
+    deleteSaveMembers(saveId);
     console.log(`\nDeleted save ${saveId}`);
   }
   if (snapshotDir) await rm(snapshotDir, { recursive: true, force: true });

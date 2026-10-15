@@ -1,3 +1,5 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
+import { soloRecording } from "@/backend/testing/seatFixtures";
 /**
  * The human manager at a national team (Etapa 41b, `.claude/rules/game/national-teams.md`): an offer accepted by the
  * route, the call-up notice and his own call-up, his game played in the full engine (and from a live recording),
@@ -8,7 +10,6 @@ import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, runBufferedDay } from "@/backend/advanceDay";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { withOffer } from "@/backend/nationalWorld";
 import { nationalMatchSetup, playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { simulateRecording } from "@/Domain/advanceDay/matches";
@@ -20,6 +21,7 @@ const TEAM = "nat_wales";
 
 describe("the human manager at a national team", () => {
   let saveId = "";
+  let seatId = "";
   let token = "";
   const call = (key: string, path: string, init: RequestInit = {}, params: Record<string, string> = {}) => {
     const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
@@ -32,9 +34,10 @@ describe("the human manager at a national team", () => {
       clubId: HUMAN, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
+    seatId = meta.seatId;
     const { user, session } = devAutoLogin("national-coach@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 240_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 
@@ -43,7 +46,7 @@ describe("the human manager at a national team", () => {
     let state = (await saveService.getNationalState(saveId))!;
     const oldCoach = state.teams[TEAM]!.managerId;
     state = { ...state, vacancies: { ...state.vacancies, [TEAM]: { since: "2026-08-24", hireOn: "2026-08-30" } } };
-    state = withOffer(state, { id: "natjob_test", teamId: TEAM, nation: "Wales", date: "2026-08-24", expires: "2026-09-07", prestige: 0.5, rank: 40, wage: 30_000 });
+    state = withOffer(state, seatId, { id: "natjob_test", teamId: TEAM, nation: "Wales", date: "2026-08-24", expires: "2026-09-07", prestige: 0.5, rank: 40, wage: 30_000 });
     expect(state.vacancies[TEAM]!.hireOn).toBe("2026-09-08");
     await saveService.writeNationalState(saveId, state);
 
@@ -52,11 +55,11 @@ describe("the human manager at a national team", () => {
     const res = await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_test`, { method: "POST", body: JSON.stringify({ accept: true }) }, { offerId: "natjob_test" });
     expect(res.status).toBe(200);
     state = (await saveService.getNationalState(saveId))!;
-    expect(state.teams[TEAM]!.managerId).toBe("player");
-    expect(state.human).toMatchObject({ teamId: TEAM, wage: 30_000 });
+    expect(state.teams[TEAM]!.managerId).toBe(`seat:${seatId}`);
+    expect(state.human?.[seatId]).toMatchObject({ teamId: TEAM, wage: 30_000 });
     expect(state.vacancies[TEAM]).toBeUndefined();
     const managers = await saveService.getManagers(saveId);
-    const me = managers.find((m) => m.isPlayer)!;
+    const me = managers.find((m) => m.seatId === seatId)!;
     expect(me.squadId).toBe(HUMAN);
     expect(currentNationalTeam(me)).toBe(TEAM);
     expect(managers.find((m) => m.id === oldCoach)?.squadId ?? "").not.toBe(TEAM);
@@ -65,7 +68,7 @@ describe("the human manager at a national team", () => {
 
   test("the notice, the coach view and his call-up", async () => {
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, seatId);
     expect(inbox.some((m) => m.category === "national_coach" && (m as NationalCoachInboxMessage).kind === "callup_soon")).toBe(true);
     await saveService.updateMeta(saveId, { currentDate: "2026-08-31" });
     const view = (await (await call("/api/saves/:saveId/national/coach", `/api/saves/${saveId}/national/coach`)).json()) as any;
@@ -89,18 +92,18 @@ describe("the human manager at a national team", () => {
     expect(cu.players).toHaveLength(23);
     const real = cu.players.filter((p) => !p.generated).map((p) => p.id);
     expect(real.sort()).toEqual([...chosen].sort());
-    expect(state.human?.callUp).toBeUndefined();
+    expect(state.human?.[seatId]?.callUp).toBeUndefined();
   }, 240_000);
 
   test("his game: the calendar, match-setup, a live recording, then the engine", async () => {
     await saveService.updateMeta(saveId, { currentDate: "2026-09-03" });
-    const cal = await playerNationalCalendar(saveService, saveId, HUMAN);
+    const cal = await playerNationalCalendar(saveService, saveId, seatId, HUMAN);
     const today = cal.fixtures.find((f) => f.date === "2026-09-03");
     expect(today).toBeDefined();
     expect(today!.home === HUMAN || today!.away === HUMAN).toBe(true);
     expect(today!.nationalTeam).toBe(TEAM);
 
-    const setup = (await nationalMatchSetup(saveService, saveId, "2026-09-03"))!;
+    const setup = (await nationalMatchSetup(saveService, saveId, seatId, "2026-09-03"))!;
     expect(setup.teamId).toBe(TEAM);
     expect(setup.mySquad.players).toHaveLength(23);
     expect(setup.myFormation.id).toBe("4-4-2");
@@ -111,34 +114,34 @@ describe("the human manager at a national team", () => {
       homeFormation: homeIsMine ? setup.myFormation : setup.oppFormation, homeLineup: homeIsMine ? setup.myLineup : setup.oppLineup,
       awayFormation: homeIsMine ? setup.oppFormation : setup.myFormation, awayLineup: homeIsMine ? setup.oppLineup : setup.myLineup,
     });
-    const out = await advanceOneDay(saveService, saveId, recording);
+    const out = await advanceOneDay(saveService, saveId, await soloRecording(saveId, recording));
     expect(out.ok).toBe(true);
     const log = (await saveService.getDayLog(saveId, "2026-09-03"))!;
-    expect(log.nationalMatch?.fixtureId).toBe(setup.fixture.id);
-    expect(log.nationalMatch?.score).toEqual(recording.score);
+    expect(log.nationalMatches?.[seatId]?.fixtureId).toBe(setup.fixture.id);
+    expect(log.nationalMatches?.[seatId]?.score).toEqual(recording.score);
     const comp = (await saveService.getNationalComp(saveId, setup.fixture.competition))!;
     expect(comp.fixtures.find((f) => f.id === setup.fixture.id)?.result).toEqual(recording.score);
 
     // A recording of another fixture is refused (a buffered day: nothing written).
     await saveService.updateMeta(saveId, { currentDate: "2026-09-07" });
-    const wrong = await runBufferedDay(saveId, { ...recording, fixtureId: "nope" });
+    const wrong = await runBufferedDay(saveId, await soloRecording(saveId, { ...recording, fixtureId: "nope" }));
     expect(wrong.ok).toBe(false);
     // Without a recording the engine plays it.
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
     const log2 = (await saveService.getDayLog(saveId, "2026-09-07"))!;
-    if (cal.fixtures.some((f) => f.date === "2026-09-07")) expect(log2.nationalMatch).toBeDefined();
+    if (cal.fixtures.some((f) => f.date === "2026-09-07")) expect(log2.nationalMatches?.[seatId]).toBeDefined();
   }, 240_000);
 
   test("resigning: an interim and an AI vacancy, the club untouched", async () => {
     const res = await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, { method: "POST" });
     expect(res.status).toBe(200);
     const state = (await saveService.getNationalState(saveId))!;
-    expect(state.human).toBeUndefined();
-    expect(state.teams[TEAM]!.managerId).not.toBe("player");
+    expect(state.human?.[seatId]).toBeUndefined();
+    expect(state.teams[TEAM]!.managerId).not.toBe(`seat:${seatId}`);
     expect(state.vacancies[TEAM]).toBeDefined();
     const managers = await saveService.getManagers(saveId);
     expect(managers.filter((m) => m.squadId === TEAM)).toHaveLength(1);
-    const me = managers.find((m) => m.isPlayer)!;
+    const me = managers.find((m) => m.seatId === seatId)!;
     expect(me.squadId).toBe(HUMAN);
     expect(currentNationalTeam(me)).toBeNull();
     expect((await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, { method: "POST" })).status).toBe(409);

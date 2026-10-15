@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { generateIntake } from "@/Domain/youth/youth";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 
@@ -20,7 +20,7 @@ describe("youth routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("youth-route@test.local");
     const other = devAutoLogin("youth-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (key: string, path: string, method: string, token: string) => {
       const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;

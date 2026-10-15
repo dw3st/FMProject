@@ -1,3 +1,4 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 /**
  * National teams in the day pipeline (`.claude/rules/game/national-teams.md`): the world is created with the
  * career, a FIFA window calls players up (unavailable for the club, no club training), the window's games are
@@ -9,7 +10,6 @@ import { advanceOneDay } from "@/backend/advanceDay";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import type { Squad } from "@/types/playerTypes";
 
 const HUMAN = "33";
@@ -29,7 +29,7 @@ describe("national teams in advanceOneDay", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("national-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
   }, 240_000);
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 

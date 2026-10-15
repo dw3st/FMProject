@@ -22,7 +22,7 @@ describe("pressDay", () => {
     });
     const board = meta.board!;
     const out = await pressDay({
-      saveId, service: saveService,
+      saveId, seatId: meta.seatId, service: saveService,
       meta: { ...meta, press: { pending, winless: 0, promises: [], history: [] } },
       date: today, clubId: "33", leagueSlug: "premier_league",
       leagueState: meta.activeLeagues?.find((l) => l.leagueSlug === "premier_league"),

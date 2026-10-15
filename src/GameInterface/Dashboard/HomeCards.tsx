@@ -170,7 +170,8 @@ export function ClubCard({
   managerName: string | null;
   managerRank: number | null;
   /** The human manager's face (Etapa 31b): saved avatar and nationality; absent avatar = drawn from the id. */
-  managerFace?: { face?: ManagerFace | null; nationality?: string | null } | null;
+  /** `id` is the manager's id in the ranking (`seat:<seatId>`), so the drawn face matches it. */
+  managerFace?: { id?: string; face?: ManagerFace | null; nationality?: string | null } | null;
   /** Manager reputation 0..100 (`.claude/rules/game/jobs.md`); null while loading. */
   reputation: number | null;
   /** Pending job offers. */
@@ -209,7 +210,7 @@ export function ClubCard({
       <div className="flex items-center gap-4 min-w-0">
         {managerName && (
           <ManagerFaceImage
-            manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+            manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
             clubColors={club.colors}
             size={64}
             ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}

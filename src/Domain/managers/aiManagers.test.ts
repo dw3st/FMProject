@@ -10,7 +10,7 @@ import {
 } from "@/Domain/managers/managerContract";
 
 const m = (id: string, squadId: string, extra: Partial<ManagerRecord> = {}): ManagerRecord => ({
-  id, name: id, squadId, isPlayer: false, points: 0, seasons: 0, titles: [],
+  id, name: id, squadId, points: 0, seasons: 0, titles: [],
   clubs: squadId ? [{ squadId, from: "2026-08-01" }] : [], ...extra,
 });
 

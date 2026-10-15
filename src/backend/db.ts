@@ -36,6 +36,31 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_saves_user ON saves(user_id);
 `);
 
+migrateSaveMembersSchema(db);
+
+/**
+ * `save_members` (`.claude/rules/game/multiplayer.md`): one row per user in a world, with his seat. One schema,
+ * created here only. A database from 4.24 (friends and chat) may already have the table without `created_at`
+ * (and with `seat_id` nullable): the column is added, nothing is dropped.
+ */
+export function migrateSaveMembersSchema(database: Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS save_members (
+      save_id    TEXT NOT NULL,
+      user_id    TEXT NOT NULL REFERENCES users(id),
+      seat_id    TEXT NOT NULL,
+      role       TEXT NOT NULL CHECK (role IN ('owner', 'member')),
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (save_id, user_id)
+    );
+  `);
+  addColumnIfMissing(database, "save_members", "created_at", "INTEGER NOT NULL DEFAULT 0");
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_save_members_seat ON save_members(save_id, seat_id);
+    CREATE INDEX IF NOT EXISTS idx_save_members_user ON save_members(user_id);
+  `);
+}
+
 function addColumnIfMissing(database: Database, table: string, column: string, decl: string): void {
   const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (!cols.some((c) => c.name === column)) database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
@@ -44,7 +69,7 @@ function addColumnIfMissing(database: Database, table: string, column: string, d
 /**
  * Friends and chat (`.claude/rules/social.md`). Only adds: the production database already has users, so
  * nothing is dropped or rewritten. SQLite cannot ADD COLUMN ... UNIQUE, so uniqueness lives in partial indexes.
- * `save_members` follows the multiplayer spec (`save_id, user_id, seat_id, role`); the world room reads it.
+ * The world room reads `save_members` (`migrateSaveMembersSchema`, the multiplayer's table).
  */
 export function migrateSocialSchema(database: Database): void {
   addColumnIfMissing(database, "users", "nickname", "TEXT");
@@ -95,16 +120,8 @@ export function migrateSocialSchema(database: Database): void {
       last_read_id INTEGER NOT NULL,
       PRIMARY KEY (user_id, room)
     );
-
-    CREATE TABLE IF NOT EXISTS save_members (
-      save_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      seat_id TEXT,
-      role    TEXT NOT NULL DEFAULT 'member',
-      PRIMARY KEY (save_id, user_id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_save_members_user ON save_members(user_id);
   `);
+  migrateSaveMembersSchema(database);
 }
 
 migrateSocialSchema(db);

@@ -377,3 +377,7 @@ A reforma pequena de um item das instalações (≤ 2% da receita anual) é paga
 `facilities` com `ref = { facility: "repair", item }` (`ledgerText` → `facilityRepair`), sem `board_funding`, gravada
 com o squad no mesmo `BufferingSaveDAL` da requisição. Reconstrução, melhoria e reforma grande seguem as parcelas
 mensais (`facilityRebuild`/`facilityUpgrade`/`boardFundingItem`). Ver `facilities.md`.
+
+## Assentos (Etapa 43)
+
+O extrato é do assento (`seats/{seatId}/ledger/`); a invariante soma do extrato = saldo vale por assento. Ver `.claude/rules/game/multiplayer.md`.

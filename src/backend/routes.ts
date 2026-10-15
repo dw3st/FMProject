@@ -18,6 +18,7 @@ import { nationalRoutes } from "@/backend/nationalRoutes";
 import { matchSetupReferee, refereeRoutes } from "@/backend/refereeRoutes";
 import { registrationRoutes } from "@/backend/registrationRoutes";
 import { matchRegistration, registrationDayCtx } from "@/backend/registrationWorld";
+import { seatWindowRef } from "@/backend/marketWindowWorld";
 import { registeredPool, type MatchRegistration } from "@/Domain/advanceDay/matchSimulationLineups";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
@@ -33,7 +34,7 @@ import { pressRoutes } from "@/backend/pressRoutes";
 import { newsRoutes } from "@/backend/newsRoutes";
 import { socialRoutes } from "@/backend/social/socialRoutes";
 import { saveService } from "@/backend/SaveService";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
 import { readdir } from "fs/promises";
 import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -55,8 +56,8 @@ import { reportRoutes } from "@/backend/reports";
 import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
-import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
-import { listUserSaveIds } from "@/backend/auth/saveOwnership";
+import { requireAuth, requireSeat } from "@/backend/auth/middleware";
+import { listUserSaveIds, memberOf } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayers } from "@/backend/starsIndex";
 import { getCompetitionRankings } from "@/backend/statsRankings";
@@ -250,7 +251,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId, league, club } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     // The club param is resolved inside :league first, then as a squadId anywhere in
     // the save (a club that moved leagues keeps answering on its id).
@@ -263,7 +264,7 @@ export const apiRoutes = withJsonErrors({
     // (`.claude/rules/game/scouting.md`); the engine paths (match setup, advance day) never pass it
     // and always get exact values.
     if (new URL(req.url).searchParams.get("scouted") === "1") {
-      const viewer = await loadViewer(saveService, saveId!);
+      const viewer = await loadViewer(saveService, saveId!, auth.seatId);
       if (viewer && viewer.ownClubId !== squad.id) squad = obscureSquadForViewer(viewer, squad);
     }
     if (req.method === "PUT") {
@@ -282,7 +283,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId, league } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const squads = await saveService.getSquadsInLeague(saveId!, league!);
     if (squads.length === 0)
@@ -294,7 +295,7 @@ export const apiRoutes = withJsonErrors({
     req: Request & { params: Record<string, string> },
   ) => {
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const squads = await saveService.getAllSquads(saveId!);
     if (squads.length === 0)
@@ -309,7 +310,7 @@ export const apiRoutes = withJsonErrors({
     if (req.method !== "POST")
       return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     let body: unknown;
     try {
@@ -317,7 +318,7 @@ export const apiRoutes = withJsonErrors({
     } catch {
       return Response.json({ error: "invalid json" }, { status: 400 });
     }
-    const result = await searchScout(saveId!, parseScoutQuery(body));
+    const result = await searchScout(saveId!, auth.seatId, parseScoutQuery(body));
     if (!result) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(result);
   },
@@ -329,8 +330,10 @@ export const apiRoutes = withJsonErrors({
       return Response.json({ error: "method not allowed" }, { status: 405 });
 
     const saveId        = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    // Changes the world's clubs: the owner's (`.claude/rules/game/multiplayer.md`).
+    if (auth.role !== "owner") return Response.json({ error: "only the owner imports squads" }, { status: 403 });
     const squadsRootSrc = `${DATA_DIR}/squads`;
     const leagues = (await readdir(squadsRootSrc, { withFileTypes: true }))
       .filter((d) => d.isDirectory())
@@ -380,16 +383,20 @@ export const apiRoutes = withJsonErrors({
 
     const url = new URL(req.url);
     const saveIdParam = url.searchParams.get("saveId");
-    let save: SaveMeta | null = null;
+    let save: SeatMeta | null = null;
     if (saveIdParam) {
-      const owned = requireSaveOwner(req, saveIdParam);
+      const owned = requireSeat(req, saveIdParam);
       if (owned instanceof Response) return owned;
-      save = await saveService.getMeta(saveIdParam);
+      save = await saveService.getSeatMeta(saveIdParam, owned.seatId);
       if (!save) return Response.json({ error: "save not found" }, { status: 404 });
     } else {
+      // Legacy: the user's latest world, in his seat.
       const userIds = listUserSaveIds(auth.userId);
-      const metas = (await Promise.all(userIds.map((id) => saveService.getMeta(id))))
-        .filter((m): m is SaveMeta => !!m);
+      const metas = (await Promise.all(userIds.map((id) => {
+        const member = memberOf(id, auth.userId);
+        return member ? saveService.getSeatMeta(id, member.seatId) : null;
+      })))
+        .filter((m): m is SeatMeta => !!m);
       save = metas[0] ?? null;
       if (!save) return Response.json({ error: "no save found" }, { status: 404 });
     }
@@ -418,7 +425,7 @@ export const apiRoutes = withJsonErrors({
       if (!todayFixture) {
         // His national team's game of the day (Etapa 41b): the national squads, his national tactics, no crowd,
         // no registration, no referee.
-        const nat = await nationalMatchSetup(saveService, save.id, currentDate);
+        const nat = await nationalMatchSetup(saveService, save.id, save.seatId, currentDate);
         if (nat) {
           const myTactics: TacticsSave = { formation: nat.tactics.formation, tactical_style: nat.tactics.tactical_style, lineup: nat.myLineup };
           return Response.json({
@@ -451,6 +458,11 @@ export const apiRoutes = withJsonErrors({
         );
       }
       const oppId = todayFixture.home === myInternalId ? todayFixture.away : todayFixture.home;
+      // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
+      // the day's advance plays it in the full engine with both seats' tactics.
+      if ((await saveService.humanClubIds(save.id)).has(oppId)) {
+        return Response.json({ error: "seatOpponent" }, { status: 409 });
+      }
       opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {
         return Response.json({ error: "opponent squad not found" }, { status: 404 });
@@ -462,7 +474,7 @@ export const apiRoutes = withJsonErrors({
       if (oppRow) opponentSquad = await saveService.getSquadById(save.id, oppRow.squadId);
     }
 
-    const tacticsRaw = await saveService.getTactics(save.id);
+    const tacticsRaw = await saveService.getTactics(save.id, save.seatId);
 
     let myTactics: TacticsSave;
     if (saveIdParam) {
@@ -554,7 +566,7 @@ export const apiRoutes = withJsonErrors({
     let oppReg: MatchRegistration | undefined;
     if (saveIdParam && matchFixture && opponentSquad && matchDate) {
       const regIndex = await saveService.getSquadIndex(save.id);
-      const dctx = await registrationDayCtx(saveService, save.id, save, regIndex, matchDate);
+      const dctx = await registrationDayCtx(saveService, save.id, save, regIndex, [seatWindowRef(save)], matchDate);
       myReg = (await matchRegistration(dctx, mySquad, regIndex.byId(myInternalId)?.leagueSlug ?? save.leagueSlug, matchFixture.competition))?.reg;
       oppReg = (await matchRegistration(dctx, opponentSquad, regIndex.byId(opponentSquad.id)?.leagueSlug ?? "", matchFixture.competition))?.reg;
     }
@@ -591,7 +603,7 @@ export const apiRoutes = withJsonErrors({
       ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
       : null;
     const managers = saveIdParam && opponentSquad
-      ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id))
+      ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id), await saveService.listSeats(save.id))
       : null;
 
     // Referee of the match (`.claude/rules/game/referees.md`): the appointment the day advance will use.
@@ -629,7 +641,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues/:leagueSlug/standings": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const standings = await saveService.getLeagueStandings(saveId!, leagueSlug!);
     if (!standings) return Response.json({ error: "standings not found" }, { status: 404 });
@@ -640,18 +652,19 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues/:leagueSlug/ai-finances": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const squads = await saveService.getSquadsInLeague(saveId!, leagueSlug!);
-    return Response.json(buildClubFinanceRows(squads, meta.clubId));
+    // Every seat's club runs the full financial system: none of them shows AI budgets.
+    return Response.json(buildClubFinanceRows(squads, meta.clubId, await saveService.humanClubIds(saveId!)));
   },
 
   "/api/saves/:saveId/leagues/:leagueSlug/fixtures": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, leagueSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, leagueSlug!);
     return Response.json(fixtures);
@@ -661,7 +674,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/cups/:cupSlug": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, cupSlug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (!/^cup_[a-z0-9_]+$/.test(cupSlug!)) return Response.json({ error: "not a cup" }, { status: 400 });
     const meta = await saveService.getLeagueMeta(saveId!, cupSlug!);
@@ -682,7 +695,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/continental/:slug": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId, slug } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (!isContinentalSlug(slug!)) {
       return Response.json({ error: "not a continental competition" }, { status: 400 });
@@ -705,7 +718,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/stats": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const competition = new URL(req.url).searchParams.get("competition") ?? "";
     if (!/^[a-z0-9_]{1,80}$/.test(competition)) return Response.json({ error: "invalid competition" }, { status: 400 });
@@ -719,7 +732,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/stars": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const stars = await getStarPlayers(saveId!);
     if (!stars) return Response.json({ error: "save not found" }, { status: 404 });
@@ -735,12 +748,12 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/ledger": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(saveId!);
+    const meta = await saveService.getSeatMeta(saveId!, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-    const seasons = await saveService.listLedgerSeasons(saveId!);
+    const seasons = await saveService.listLedgerSeasons(saveId!, auth.seatId);
     const url = new URL(req.url);
     const seasonParam = url.searchParams.get("season");
     let season: number;
@@ -755,7 +768,7 @@ export const apiRoutes = withJsonErrors({
       return Response.json({ error: "ledger not found" }, { status: 404 });
     }
 
-    const entries = await saveService.getLedger(saveId!, season);
+    const entries = await saveService.getLedger(saveId!, season, auth.seatId);
     const squad = await saveService.getSquadById(saveId!, meta.clubId);
     const balance = squad ? getClubBudget(squad) : 0;
     // A season that changed club (`.claude/rules/game/jobs.md`): totals and the weekly chart are the
@@ -776,7 +789,7 @@ export const apiRoutes = withJsonErrors({
   "/api/saves/:saveId/leagues": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const meta = await saveService.getMeta(saveId!);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });

@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { contractDemand } from "@/Domain/contracts/contracts";
 import { searchScout } from "@/backend/scoutSearch";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
@@ -20,7 +20,7 @@ describe("free agents: demand + sign routes and scout view", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin("sign-route@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const full = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const squad = { ...full, players: full.players.slice(0, 25) };
@@ -29,11 +29,11 @@ describe("free agents: demand + sign routes and scout view", () => {
     const free = { ...donor, id: "free_test_1", name: "Free Tester", squadId: "", contract: undefined };
     await saveService.writeFreeAgents(saveId, [{ player: free, since: meta.currentDate! }]);
 
-    const free1 = await searchScout(saveId, {
+    const free1 = await searchScout(saveId, meta.seatId, {
       filters: { ...createDefaultScoutFilters(), onlyFree: true }, sortKey: "avg", sortDir: "desc", page: 0, pageSize: 50,
     });
     expect(free1!.rows.map((r) => r.id)).toEqual(["free_test_1"]);
-    const normal = await searchScout(saveId, {
+    const normal = await searchScout(saveId, meta.seatId, {
       filters: createDefaultScoutFilters(), sortKey: "avg", sortDir: "desc", page: 0, pageSize: 50,
     });
     expect(normal!.rows.some((r) => r.free)).toBe(false);

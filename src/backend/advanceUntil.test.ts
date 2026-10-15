@@ -3,11 +3,12 @@ import { addDays } from "@/Domain/dates";
 import {
   computeAdvanceTarget,
   nextPlayerFixtureDate,
+  readAdvancePosition,
   runAdvanceBatch,
   type AdvanceBatchDeps,
   type AdvancePosition,
 } from "@/backend/advanceUntil";
-import type { AdvanceDayOutcome } from "@/backend/advanceDay";
+import type { SeatDayOutcome } from "@/backend/advanceDay";
 import { SaveService } from "@/backend/SaveService";
 import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
 import type { Fixture, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
@@ -131,7 +132,7 @@ function fakeDeps(opts: {
     async readPosition(): Promise<AdvancePosition> {
       return { currentDate, target: opts.target(currentDate), matchDate: opts.target(currentDate) };
     },
-    async runDay(): Promise<AdvanceDayOutcome> {
+    async runDay(): Promise<SeatDayOutcome> {
       if (currentDate === opts.failOn) return { ok: false, status: 500, error: "failed to persist day" };
       days.push(currentDate);
       const ended = currentDate === opts.seasonEndOn;
@@ -242,5 +243,32 @@ describe("runAdvanceBatch", () => {
         playerChampionOf: "b",
       },
     ]);
+  });
+});
+
+describe("readAdvancePosition", () => {
+  test("the position follows the seat that asks", async () => {
+    // Two seats in one league: seat "a" (club A) plays on day 3, seat "b" (club B) on day 6.
+    const fixture = (id: string, date: string, round: number, home: string, away: string): Fixture => ({
+      id, date, competition: "lg", round, home, away, played: false, result: null,
+    }) as Fixture;
+    const rounds: Record<number, RoundFixtures> = {
+      1: { leagueSlug: "lg", round: 1, fixtures: [fixture("f1", "2025-08-03", 1, "A", "X")] },
+      2: { leagueSlug: "lg", round: 2, fixtures: [fixture("f2", "2025-08-06", 2, "B", "Y")] },
+    };
+    const fake = {
+      getSeatMeta: async (_saveId: string, seatId: string) => ({
+        seatId, currentDate: "2025-08-01", leagueSlug: "lg", clubId: seatId === "a" ? "A" : "B", activeLeagues: [],
+      }),
+      getDateIndex: async () => ({ "2025-08-03": [1], "2025-08-06": [2] }) as LeagueDateIndex,
+      getRound: async (_s: string, _l: string, r: number) => rounds[r] ?? null,
+      getLeagueMeta: async () => null,
+      getNationalState: async () => null,
+    } as unknown as SaveService;
+    const posA = await readAdvancePosition("S", "a", fake);
+    const posB = await readAdvancePosition("S", "b", fake);
+    expect(posA.target).toBe("2025-08-03");
+    expect(posB.target).toBe("2025-08-06");
+    expect(posA.target).not.toEqual(posB.target);
   });
 });

@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -19,7 +19,7 @@ export const rebornRoutes = {
    */
   "/api/saves/:saveId/retired": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = new URL(req.url).searchParams;
@@ -34,7 +34,7 @@ export const rebornRoutes = {
     }
     let retired = [...(await saveService.getRetired(saveId))].reverse();
     if (q.get("mine") === "1") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
     const index = await saveService.getSquadIndex(saveId);
@@ -48,12 +48,12 @@ export const rebornRoutes = {
   /** `GET` - the offers still pending. */
   "/api/saves/:saveId/reborn": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const retired = await saveService.getRetired(saveId);
     return Response.json({
-      offers: retired.filter((r) => r.rebornOffer === "pending").map((r) => ({
+      offers: retired.filter((r) => r.rebornSeatId === auth.seatId && r.rebornOffer === "pending").map((r) => ({
         id: r.id, name: r.name, positions: r.positions, age: r.age, nationality: r.nationality,
       })),
     });
@@ -63,7 +63,7 @@ export const rebornRoutes = {
   "/api/saves/:saveId/reborn/:retiredId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const retiredId = req.params.retiredId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
@@ -72,9 +72,10 @@ export const rebornRoutes = {
       const retired = await saveService.getRetired(saveId);
       const rec = retired.find((r) => r.id === retiredId);
       if (!rec) return Response.json({ error: "not found" }, { status: 404 });
-      if (rec.rebornOffer !== "pending") return Response.json({ error: "offerClosed" }, { status: 409 });
+      // The offer is the seat's (`.claude/rules/game/retirement.md`); it closes when the seat leaves the club.
+      if (rec.rebornOffer !== "pending" || rec.rebornSeatId !== auth.seatId) return Response.json({ error: "offerClosed" }, { status: 409 });
       // Only the club the player retired from can take him back (`.claude/rules/game/jobs.md`).
-      const owner = await saveService.getMeta(saveId);
+      const owner = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!owner || rec.squadId !== owner.clubId) return Response.json({ error: "offerClosed" }, { status: 409 });
       const mark = (status: NonNullable<RetiredPlayer["rebornOffer"]>) =>
         saveService.writeRetired(saveId, retired.map((r) => (r.id === retiredId ? { ...r, rebornOffer: status } : r)));
@@ -82,7 +83,7 @@ export const rebornRoutes = {
         await mark("declined");
         return Response.json({ ok: true, status: "declined" });
       }
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       const ref = meta ? await saveService.resolveSquadId(saveId, meta.clubId) : null;
       const squad = ref ? await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
       if (!meta || !ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });

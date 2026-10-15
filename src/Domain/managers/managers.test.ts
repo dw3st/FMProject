@@ -8,7 +8,7 @@ import type { ManagerRecord } from "@/types/managerTypes";
 import type { Squad } from "@/types/playerTypes";
 
 const rec = (id: string, over: Partial<ManagerRecord> = {}): ManagerRecord => ({
-  id, name: id, squadId: `s_${id}`, isPlayer: false, points: 0, seasons: 0, titles: [], ...over,
+  id, name: id, squadId: `s_${id}`, points: 0, seasons: 0, titles: [], ...over,
 });
 
 describe("points", () => {
@@ -75,11 +75,12 @@ describe("records", () => {
       { id: "2", name: "Beta" },
       { id: "3", name: "Gamma", coach: { id: 9, name: "Old Coach" } },
     ] as unknown as Squad[];
-    const out = buildInitialManagers(squads, { squadId: "3", name: "Me" });
+    const out = buildInitialManagers(squads, { squadId: "3", name: "Me", seatId: "s1" });
     expect(out).toHaveLength(3);
-    expect(out.find((m) => m.squadId === "1")).toMatchObject({ id: "coach_7", name: "Coach Seven", isPlayer: false, points: 0 });
+    expect(out.find((m) => m.squadId === "1")).toMatchObject({ id: "coach_7", name: "Coach Seven", points: 0 });
+    expect(out.find((m) => m.squadId === "1")?.seatId).toBeUndefined();
     expect(out.find((m) => m.squadId === "2")).toMatchObject({ id: "coach_2", name: "Técnico do Beta" });
-    expect(out.find((m) => m.squadId === "3")).toMatchObject({ id: "player", name: "Me", isPlayer: true });
+    expect(out.find((m) => m.squadId === "3")).toMatchObject({ id: "seat:s1", name: "Me", seatId: "s1" });
   });
 
   test("coach ids shared by two clubs stay unique", () => {
@@ -95,14 +96,14 @@ describe("records", () => {
 describe("rankingPage", () => {
   test("filters by scope, ranks within it, pages and finds the player", () => {
     const ranked = rankManagers([
-      rec("a", { points: 50 }), rec("b", { points: 40 }), rec("me", { points: 30, isPlayer: true }), rec("c", { points: 20 }),
+      rec("a", { points: 50 }), rec("b", { points: 40 }), rec("me", { points: 30, seatId: "s1" }), rec("c", { points: 20 }),
     ]);
-    const all = rankingPage(ranked, () => true, 1, 2);
+    const all = rankingPage(ranked, () => true, 1, 2, "s1");
     expect(all.total).toBe(4);
     expect(all.playerRank).toBe(3);
     expect(all.items.map((m) => [m.id, m.rank])).toEqual([["b", 2], ["me", 3]]);
-    const noB = rankingPage(ranked, (m) => m.id !== "b", 0, 10);
+    const noB = rankingPage(ranked, (m) => m.id !== "b", 0, 10, "s1");
     expect(noB.playerRank).toBe(2);
-    expect(rankingPage(ranked, (m) => !m.isPlayer, 0, 10).playerRank).toBeNull();
+    expect(rankingPage(ranked, (m) => !m.seatId, 0, 10, "s1").playerRank).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { readSessionCookie } from "@/backend/auth/cookie";
 import { getSessionByToken } from "@/backend/auth/AuthService";
-import { isSaveOwner } from "@/backend/auth/saveOwnership";
+import { memberOf } from "@/backend/auth/saveOwnership";
+import type { MemberRole } from "@/types/seatTypes";
 
 export interface AuthContext { userId: string; email: string }
 
@@ -18,11 +19,20 @@ export function requireAuth(req: Request): AuthContext | Response {
   return auth;
 }
 
-export function requireSaveOwner(req: Request, saveId: string): AuthContext | Response {
+/** The authenticated user acting as his seat of a world (`.claude/rules/game/multiplayer.md`). */
+export interface SeatAuth extends AuthContext {
+  seatId: string;
+  role: MemberRole;
+}
+
+/**
+ * 401 without a session; 404 when the user is not a member of the world (the save "does not exist" for him).
+ * Every route of the manager acts on `seatId`; the world's routes accept any member.
+ */
+export function requireSeat(req: Request, saveId: string): SeatAuth | Response {
   const auth = requireAuth(req);
   if (auth instanceof Response) return auth;
-  if (!isSaveOwner(saveId, auth.userId)) {
-    return Response.json({ error: "save not found" }, { status: 404 });
-  }
-  return auth;
+  const member = memberOf(saveId, auth.userId);
+  if (!member) return Response.json({ error: "save not found" }, { status: 404 });
+  return { ...auth, seatId: member.seatId, role: member.role };
 }

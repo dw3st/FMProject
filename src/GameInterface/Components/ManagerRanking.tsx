@@ -19,6 +19,8 @@ import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
+  /** The asking seat's own manager (computed by the route). */
+  isPlayer: boolean;
   clubName: string | null;
   /** Every manager's passages through clubs, with the reason he left (Etapa 25). */
   clubs?: { squadId: string; from: string; to?: string; left?: string; clubName: string | null }[];

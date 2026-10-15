@@ -5,6 +5,7 @@ import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
@@ -338,7 +339,10 @@ export function MatchScreen() {
       .then(async (r) => {
         const body = await readJsonBody(r);
         if (!r.ok) {
-          const msg = typeof body.error === "string" ? body.error : `match-setup failed (${r.status})`;
+          // Against another seat (multiplayer part 1): no live match, the preview simulates it.
+          const msg = body.error === "seatOpponent"
+            ? t("matchPreview.seatOpponentText")
+            : typeof body.error === "string" ? body.error : `match-setup failed (${r.status})`;
           throw new Error(msg);
         }
         return body as {
@@ -1074,6 +1078,7 @@ export function MatchScreen() {
         <div className="max-w-lg text-center space-y-3">
           <p className="text-destructive font-bold font-display uppercase tracking-[0.08em] text-sm">{t("common.cannotStartMatch")}</p>
           <p className="text-muted-foreground text-sm leading-relaxed m-0">{loadError}</p>
+          <Button variant="secondary" onClick={() => { window.location.href = "/dashboard"; }}>{t("matchPreview.backToDashboard")}</Button>
         </div>
       </div>
     );

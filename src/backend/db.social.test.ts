@@ -39,3 +39,20 @@ test("a friendship row must be stored in order", () => {
   d.prepare("INSERT INTO friendships (user_a, user_b, since) VALUES ('u1', 'u2', 1)").run();
   expect(() => d.prepare("INSERT INTO friendships (user_a, user_b, since) VALUES ('u2', 'u1', 1)").run()).toThrow();
 });
+
+test("a 4.24 save_members (no created_at) gets the column; nothing is dropped", () => {
+  const d = oldDatabase();
+  d.exec(
+    "CREATE TABLE save_members (save_id TEXT NOT NULL, user_id TEXT NOT NULL, seat_id TEXT, role TEXT NOT NULL DEFAULT 'member', PRIMARY KEY (save_id, user_id))",
+  );
+  d.prepare("INSERT INTO save_members (save_id, user_id, seat_id, role) VALUES ('w', 'u1', NULL, 'owner')").run();
+  migrateSocialSchema(d);
+  migrateSocialSchema(d);
+  const cols = (d.prepare("PRAGMA table_info(save_members)").all() as { name: string }[]).map((c) => c.name);
+  expect(cols).toEqual(expect.arrayContaining(["save_id", "user_id", "seat_id", "role", "created_at"]));
+  expect(d.prepare("SELECT user_id AS u, created_at AS c FROM save_members").get()).toEqual({ u: "u1", c: 0 });
+  d.prepare("INSERT INTO save_members (save_id, user_id, seat_id, role, created_at) VALUES ('w', 'u2', 's2', 'member', 5)").run();
+  expect(() =>
+    d.prepare("INSERT INTO save_members (save_id, user_id, seat_id, role, created_at) VALUES ('w', 'u3', 's2', 'member', 6)").run(),
+  ).toThrow();
+});

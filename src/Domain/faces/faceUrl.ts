@@ -47,6 +47,14 @@ function colorsParam(params: URLSearchParams, colors: readonly string[] | undefi
 }
 
 /**
+ * Id the face route accepts (`FACE_ID_RE`): a seat manager is `seat:<uuid>` and the colon is outside the shape, so
+ * it becomes `_`. The face is drawn from this id, so the same manager always gets the same face.
+ */
+export function faceIdOf(id: string): string {
+  return id.replace(/:/g, "_");
+}
+
+/**
  * URL of a staff member's or an AI manager's generated face (`GET /api/faces/person/:id.svg`):
  * deterministic per id, an adult (older with `age`), shirt in the club colours.
  */
@@ -63,7 +71,7 @@ export function personFaceUrl(
   if (age != null && Number.isFinite(age)) {
     params.set("age", String(Math.min(MAX_FACE_AGE, Math.max(MIN_FACE_AGE, Math.round(age)))));
   }
-  return `/api/faces/person/${encodeURIComponent(personId)}.svg?${params.toString()}`;
+  return `/api/faces/person/${encodeURIComponent(faceIdOf(personId))}.svg?${params.toString()}`;
 }
 
 /** URL of the human manager's avatar (`GET /api/faces/manager/avatar.svg`), from its saved parameters. */

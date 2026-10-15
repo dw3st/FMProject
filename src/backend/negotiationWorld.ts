@@ -5,7 +5,7 @@
  */
 import { randomUUID } from "crypto";
 import { rememberPlayers } from "@/backend/scoutingWorld";
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { executeTransferFee, paySellOnReceiver } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import { seasonLabel } from "@/Domain/history/history";
@@ -23,7 +23,8 @@ import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { LeagueSeasonState } from "@/types/calendarTypes";
 import type { PlayerLoan, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ActiveLoan, MarketBid, MarketState } from "@/types/transferMarketTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord, TransferRecord } from "@/types/transferTypes";
+import { withDirection } from "@/Domain/transfer/transferView";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
 
 type NewsArgs = {
@@ -48,6 +49,14 @@ export function seasonEndOf(activeLeagues: LeagueSeasonState[] | undefined, leag
   return (activeLeagues ?? []).find((l) => l.leagueSlug === leagueSlug)?.end ?? defaultSeasonEnd(date);
 }
 
+/**
+ * True when `clubId` is another seat's club (`.claude/rules/game/multiplayer.md`): its players are not for the
+ * AI rule to sell, lend or let go on a pre-contract — human × human deals are part 4.
+ */
+export async function isOtherSeatClub(service: SaveService, saveId: string, clubId: string, ownClubId: string): Promise<boolean> {
+  return clubId !== ownClubId && (await service.humanClubIds(saveId)).has(clubId);
+}
+
 /** An empty market file (only the human-facing lists are used before the first tick). */
 export function emptyMarket(): MarketState {
   return { shuffledTeamIds: [], rotationIndex: 0, profiles: {}, playerSellList: [] };
@@ -67,13 +76,13 @@ function marketWithoutPlayer(market: MarketState, playerId: string): MarketState
  * Takes a player who left the human club out of its saved lineup (the slot stays, empty). The
  * manager keeps knowing him fully (`.claude/rules/game/scouting.md`, decaying as usual).
  */
-async function dropFromLineup(service: SaveService, saveId: string, playerId: string): Promise<void> {
-  const tac = await service.getTactics(saveId);
+async function dropFromLineup(service: SaveService, saveId: string, seatId: string, playerId: string): Promise<void> {
+  const tac = await service.getTactics(saveId, seatId);
   if (tac && tac.lineup.includes(playerId)) {
-    await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) });
+    await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) }, seatId);
   }
   const date = (await service.getMeta(saveId))?.currentDate;
-  if (date) await rememberPlayers(service, saveId, [playerId], date);
+  if (date) await rememberPlayers(service, saveId, seatId, [playerId], date);
 }
 
 /**
@@ -84,7 +93,8 @@ async function dropFromLineup(service: SaveService, saveId: string, playerId: st
 export async function startLoan(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  seatId: string,
+  meta: SeatMeta,
   market: MarketState,
   args: { player: RosterPlayer; parent: Squad; borrower: Squad; wageShare: number; until: string; fee: number },
 ): Promise<MarketState> {
@@ -99,8 +109,8 @@ export async function startLoan(
   const moved = squadsAfterLoanStart(player, parent, borrower, loan, historyFromOf(meta.activeLeagues, parentRef.leagueSlug));
   await executeTransferFee(
     saveId, meta,
-    { squad: moved.borrower, ...borrowerRef, isPlayerClub: borrower.id === meta.clubId },
-    { squad: moved.parent, ...parentRef, isPlayerClub: parent.id === meta.clubId },
+    { squad: moved.borrower, ...borrowerRef, ...(borrower.id === meta.clubId ? { seatId } : {}) },
+    { squad: moved.parent, ...parentRef, ...(parent.id === meta.clubId ? { seatId } : {}) },
     args.fee, service, { loan: true, playerName: player.name, playerId: player.id },
   );
   const record: ActiveLoan = {
@@ -108,7 +118,7 @@ export async function startLoan(
     fromClubId: parent.id, fromClubName: parent.name, toClubId: borrower.id, toClubName: borrower.name,
     until, wageShare: args.wageShare, wage: currentWage(player, wageFactorOf(parent)), fee: args.fee, start: date,
   };
-  if (parent.id === meta.clubId) await dropFromLineup(service, saveId, player.id);
+  if (parent.id === meta.clubId) await dropFromLineup(service, saveId, seatId, player.id);
   return { ...marketWithoutPlayer(market, player.id), loans: [...(market.loans ?? []).filter((l) => l.playerId !== player.id), record] };
 }
 
@@ -123,7 +133,8 @@ export async function startLoan(
 export async function returnDueLoans(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  seatId: string,
+  meta: SeatMeta,
   market: MarketState,
   date: string,
   opts: {
@@ -188,7 +199,7 @@ export async function returnDueLoans(
     await service.saveSquadById(saveId, borrowerAfter);
     await service.saveSquadById(saveId, parentAfter);
     if (humanBorrower) {
-      await dropFromLineup(service, saveId, l.playerId);
+      await dropFromLineup(service, saveId, seatId, l.playerId);
       news.push({ date, kind: "loan_back", playerId: l.playerId, playerName: l.playerName, clubName: l.fromClubName });
     } else if (humanParent) {
       news.push({ date, kind: "loan_home", playerId: l.playerId, playerName: l.playerName, clubName: l.toClubName });
@@ -199,8 +210,8 @@ export async function returnDueLoans(
 }
 
 /** Squad size for the human club's 30-player cap: its players plus those out on loan. */
-export async function humanRosterSize(service: SaveService, saveId: string, squad: Squad): Promise<number> {
-  return squad.players.length + outgoingLoanCount((await service.getMarket(saveId))?.loans, squad.id);
+export async function humanRosterSize(service: SaveService, saveId: string, seatId: string, squad: Squad): Promise<number> {
+  return squad.players.length + outgoingLoanCount((await service.getMarket(saveId, seatId))?.loans, squad.id);
 }
 
 /**
@@ -215,7 +226,8 @@ export function sellOnFor(player: RosterPlayer, sellerId: string, fee: number) {
 export async function settleSellOn(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  seatId: string,
+  meta: SeatMeta,
   owed: ReturnType<typeof sellOnOwed>,
   player: RosterPlayer,
   sellerName: string,
@@ -245,10 +257,11 @@ function aiContractFor(player: RosterPlayer, buyer: Squad, date: string, seasonE
 export async function completeHumanSale(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  seatId: string,
+  meta: SeatMeta,
   market: MarketState,
   args: { player: RosterPlayer; seller: Squad; buyer: Squad; fee: number; sellOnPct: number },
-): Promise<{ market: MarketState; record: TransferRecord; meta: SaveMeta }> {
+): Promise<{ market: MarketState; record: TransferRecord; meta: SeatMeta }> {
   const { player, seller, buyer, fee } = args;
   const date = meta.currentDate ?? "";
   const sellerRef = await service.resolveSquadId(saveId, seller.id);
@@ -264,12 +277,12 @@ export async function completeHumanSale(
   const owed = sellOnFor(player, seller.id, fee);
   let nextMeta = await executeTransferFee(
     saveId, meta,
-    { squad: buying, ...buyerRef, isPlayerClub: false },
-    { squad: selling, ...sellerRef, isPlayerClub: true },
+    { squad: buying, ...buyerRef },
+    { squad: selling, ...sellerRef, seatId },
     fee, service,
     { playerName: player.name, playerId: player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
   );
-  await settleSellOn(service, saveId, nextMeta, owed, player, seller.name, date);
+  await settleSellOn(service, saveId, seatId, nextMeta, owed, player, seller.name, date);
 
   const seasonOf = (slug: string) => historyFromOf(meta.activeLeagues, slug)?.season ?? date.slice(0, 4);
   await recordTransferHistory(service, saveId, {
@@ -277,17 +290,17 @@ export async function completeHumanSale(
     buyerSeason: seasonOf(buyerRef.leagueSlug), sellerSeason: seasonOf(sellerRef.leagueSlug),
   });
   if (nextMeta.board) {
-    nextMeta = await service.updateMeta(saveId, {
-      board: applyTransferSale(nextMeta.board, { fee, annualRevenue: wageRevenueBasisOf(seller), idol: isIdol(player, seller) }),
-    });
+    const board = applyTransferSale(nextMeta.board, { fee, annualRevenue: wageRevenueBasisOf(seller), idol: isIdol(player, seller) });
+    await service.updateSeat(saveId, seatId, { board });
+    nextMeta = { ...nextMeta, board };
   }
-  await dropFromLineup(service, saveId, player.id);
+  await dropFromLineup(service, saveId, seatId, player.id);
 
-  const record: TransferRecord = {
+  const record: StoredTransferRecord = {
     id: randomUUID(), date, playerId: player.id, playerName: player.name,
     playerPosition: player.positions[0] ?? "—", playerAge: player.age,
     fromSquadId: seller.id, fromSquadName: seller.name, toSquadId: buyer.id, toSquadName: buyer.name,
-    fee, direction: "out", status: "accepted", reason: "bidAccepted",
+    fee, status: "accepted", reason: "bidAccepted",
   };
   await service.appendTransfer(saveId, record);
   await service.appendDayEvent(saveId, date, { kind: "transfer_ref", transferId: record.id });
@@ -300,19 +313,19 @@ export async function completeHumanSale(
         ? [...(market.sellOnHeld ?? []), { playerId: player.id, playerName: player.name, pct: newClause.pct, toClubName: buyer.name, date }]
         : market.sellOnHeld,
     },
-    record,
+    record: withDirection(record, seller.id),
     meta: nextMeta,
   };
 }
 
 /** Players retired or released free: their clauses can never be paid, so they leave the receivables. */
-export async function pruneSellOnHeld(service: SaveService, saveId: string, playerIds: string[]): Promise<void> {
+export async function pruneSellOnHeld(service: SaveService, saveId: string, seatId: string, playerIds: string[]): Promise<void> {
   if (playerIds.length === 0) return;
-  const market = await service.getMarket(saveId);
+  const market = await service.getMarket(saveId, seatId);
   if (!market?.sellOnHeld?.length) return;
   const gone = new Set(playerIds);
   if (!market.sellOnHeld.some((h) => gone.has(h.playerId))) return;
-  await service.saveMarket(saveId, { ...market, sellOnHeld: market.sellOnHeld.filter((h) => !gone.has(h.playerId)) });
+  await service.saveMarket(saveId, { ...market, sellOnHeld: market.sellOnHeld.filter((h) => !gone.has(h.playerId)) }, seatId);
 }
 
 /** The held clause was paid: drop it from the human's receivables. */

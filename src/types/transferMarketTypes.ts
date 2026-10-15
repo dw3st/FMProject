@@ -57,6 +57,12 @@ export interface MarketState {
   lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
 }
 
+/** The world's part of `market.json`: the AI rotation and profiles (`saves/{id}/market.json`). */
+export type WorldMarketState = Pick<MarketState, "shuffledTeamIds" | "rotationIndex" | "profiles">;
+
+/** A seat's part of the market (`seats/{seatId}/market.json`): lists, bids, talks, loans, clauses of its club. */
+export type SeatMarketState = Omit<MarketState, keyof WorldMarketState>;
+
 /** An AI club competing with the human for the same AI player (Etapa 25). */
 export interface RivalBid {
   playerId: string;

@@ -134,7 +134,7 @@ export async function createNationalWorld(args: { service: SaveService; saveId: 
       for (let n = 2; taken.has(managerId); n++) managerId = `coach_${id}_${n}`;
       taken.add(managerId);
       newManagers.push(cleanRecord({
-        id: managerId, name: coachName(nation, donorsOf(nation, cands, pool), id), squadId: id, isPlayer: false,
+        id: managerId, name: coachName(nation, donorsOf(nation, cands, pool), id), squadId: id,
         points: 0, seasons: 0, titles: [], clubs: [{ squadId: id, from: date }],
       }));
     }
@@ -270,24 +270,31 @@ export interface NationalNews {
   players: { id: string; name: string; nation: string; from?: string; until?: string; apps?: number; goals?: number; injured?: boolean }[];
 }
 
-export interface NationalDayResult {
-  squads: Map<string, Squad>;
-  /** News of the human manager at a national team (Etapa 41b). */
+/** What the national day gives one seat (`.claude/rules/game/multiplayer.md`). */
+export interface NationalSeatDay {
+  /** Call-ups and returns of the players of the seat's club. */
+  news: NationalNews[];
+  /** News of the seat's manager at a national team (Etapa 41b). */
   coachNews: NationalCoachNews[];
-  /** The live recording of his national game was used today. */
-  consumedRecording: boolean;
-  /** His national game of the day (the result screen reads it from the day log). */
-  humanMatch?: MatchEvent;
-  /** His national team (set with `humanMatch`). */
-  humanTeamId?: string;
   /** National-team wage earned today (Mondays, `managerEarnings` only). */
   earned: number;
   /** New national-team job offers today (the fast-forward stops). */
   offers: number;
+  /** His national game of the day (the result screen reads it from the day log). */
+  humanMatch?: MatchEvent;
+  /** His national team (set with `humanMatch`). */
+  humanTeamId?: string;
+  /** The live recording of his national game was used today. */
+  consumedRecording: boolean;
+}
+
+export interface NationalDayResult {
+  squads: Map<string, Squad>;
+  /** What the day gives each seat (an entry only for a seat with something). */
+  bySeat: Record<string, NationalSeatDay>;
   /** Real players with their national team today (they neither train nor rest at the club). */
   participants: Set<string>;
   injuries: { squadId: string; playerId: string; playerName: string; severity: "light" | "medium" | "severe"; returnDate: string }[];
-  news: NationalNews[];
   played: number;
   /** Tournament headlines of the day for the news page (`press.md`): a champion, a top-8 (Elo) side knocked out. */
   headlines: { kind: "champion" | "favourite_out"; competition: string; team: string; teamId: string }[];
@@ -326,26 +333,38 @@ export async function playNationalDay(args: {
   saveId: string;
   date: string;
   index: SquadIndex;
-  humanClubId: string;
+  /** The seats' clubs (squad id → seat): their players' call-up news go to that seat. */
+  humanClubs: ReadonlyMap<string, string>;
   squadOf: (id: string) => Promise<Squad | null>;
   rng?: () => number;
-  /** The human manager (offers when a vacancy opens, Etapa 41b); absent = no offers. */
-  human?: { reputation: number; nationality: string | null };
-  /** The live recording of today's game of his national team (`playedMatch` of the day advance). */
-  playedMatch?: PlayedMatchRecording | null;
+  /** Each active seat's manager (offers when a vacancy opens, Etapa 41b); absent seat = no offers for it. */
+  humans?: Record<string, { reputation: number; nationality: string | null }>;
+  /** Today's live recordings of a seat's national game, by seat (`playedMatch` of the day advance). */
+  playedMatches?: Record<string, PlayedMatchRecording>;
 }): Promise<NationalDayResult> {
-  const { service, saveId, date, index, humanClubId } = args;
+  const { service, saveId, date, index, humanClubs } = args;
   const rng = args.rng ?? Math.random;
   const out: NationalDayResult = {
-    squads: new Map(), participants: new Set(), injuries: [], news: [], played: 0, coachNews: [], consumedRecording: false, earned: 0, offers: 0, headlines: [],
+    squads: new Map(), bySeat: {}, participants: new Set(), injuries: [], played: 0, headlines: [],
   };
+  const seatOut = (sid: string): NationalSeatDay =>
+    (out.bySeat[sid] ??= { news: [], coachNews: [], earned: 0, offers: 0, consumedRecording: false });
   const loaded = await service.getNationalState(saveId);
-  if (!loaded || (!loaded.human && !(loaded.offers?.length) && !isNationalDate(loaded, date))) return out;
+  if (!loaded || (!Object.keys(loaded.human ?? {}).length && !Object.values(loaded.offers ?? {}).some((l) => l.length) && !isNationalDate(loaded, date))) return out;
   let state: NationalState = loaded;
-  // Offers that expired yesterday drop; the national-team wage on Mondays.
-  if (state.offers?.some((o) => o.expires < date)) state = { ...state, offers: state.offers.filter((o) => o.expires >= date) };
-  if (state.human && new Date(`${date}T12:00:00Z`).getUTCDay() === 1) out.earned = state.human.wage;
-  const hc: HumanCtx = { saveId, date, human: args.human, news: out.coachNews, offers: 0 };
+  // Offers that expired yesterday drop (per seat); the national-team wage on Mondays.
+  if (Object.values(state.offers ?? {}).some((l) => l.some((o) => o.expires < date))) {
+    state = { ...state, offers: Object.fromEntries(Object.entries(state.offers ?? {}).map(([sid, l]) => [sid, l.filter((o) => o.expires >= date)])) };
+  }
+  if (new Date(`${date}T12:00:00Z`).getUTCDay() === 1) {
+    for (const [sid, h] of Object.entries(state.human ?? {})) seatOut(sid).earned = h.wage;
+  }
+  const hc: HumanCtx = { saveId, date, humans: args.humans ?? {}, seatOut };
+  /** The seat coaching a team today, or null. */
+  const coachOf = (teamId: string): string | null => {
+    for (const [sid, h] of Object.entries(state.human ?? {})) if (h.teamId === teamId) return sid;
+    return null;
+  };
 
   const squadNow = async (id: string): Promise<Squad | null> => out.squads.get(id) ?? (await args.squadOf(id));
   const setPlayer = async (squadId: string, playerId: string, f: (p: RosterPlayer, squad: Squad) => RosterPlayer): Promise<boolean> => {
@@ -356,7 +375,7 @@ export async function playNationalDay(args: {
   };
 
   // 1. Returns: call-ups whose duty ended yesterday (one inbox message for all the nations of the day).
-  const back: NationalNews["players"] = [];
+  const back = new Map<string, NationalNews["players"]>();
   for (const [teamId, cu] of Object.entries(state.callUps)) {
     if (cu.until >= date) continue;
     const team = state.teams[teamId]!;
@@ -380,14 +399,17 @@ export async function playNationalDay(args: {
           if (done) break;
         }
       }
-      if (pl.squadId === humanClubId) {
-        back.push({ id: pl.id, name: pl.name, nation: team.nation, apps: cu.tally?.[pl.id]?.apps ?? 0, goals: cu.tally?.[pl.id]?.goals ?? 0, injured });
+      const sid = humanClubs.get(pl.squadId);
+      if (sid) {
+        const list = back.get(sid) ?? [];
+        list.push({ id: pl.id, name: pl.name, nation: team.nation, apps: cu.tally?.[pl.id]?.apps ?? 0, goals: cu.tally?.[pl.id]?.goals ?? 0, injured });
+        back.set(sid, list);
       }
     }
     const { [teamId]: _gone, ...rest } = state.callUps;
     state = { ...state, callUps: rest };
   }
-  if (back.length > 0) out.news.push({ kind: "returned", date, players: back });
+  for (const [sid, players] of back) seatOut(sid).news.push({ kind: "returned", date, players });
 
   // 2. Draws.
   state = await runDraws(service, saveId, state, date);
@@ -402,15 +424,16 @@ export async function playNationalDay(args: {
   const changed = new Set<string>();
   const elo = (id: string) => state.teams[id]?.elo ?? 0;
 
-  // The human manager's call-up notice (a week before; once per call-up date).
-  if (state.human) {
-    const h = state.human;
+  // Each seat's call-up notice (a week before; once per call-up date).
+  if (Object.keys(state.human ?? {}).length > 0) {
     const drawn = [...comps.values()].filter((c) => c.kind === "tournament" && c.tournament)
       .map((c) => ({ callUp: tournamentDates(c.tournament!, c.year).callUp, teams: c.teams }));
-    const next = nextCallUpDate(date, h.teamId, drawn);
-    if (next && addDays(next, -NATIONAL_NOTICE_DAYS) <= date && !(h.notified ?? []).includes(next)) {
-      out.coachNews.push({ kind: "callup_soon", date, teamId: h.teamId, nation: state.teams[h.teamId]?.nation ?? h.teamId, callUpDate: next });
-      state = { ...state, human: { ...h, notified: [...(h.notified ?? []), next].slice(-6) } };
+    for (const [sid, h] of Object.entries(state.human ?? {})) {
+      const next = nextCallUpDate(date, h.teamId, drawn);
+      if (next && addDays(next, -NATIONAL_NOTICE_DAYS) <= date && !(h.notified ?? []).includes(next)) {
+        seatOut(sid).coachNews.push({ kind: "callup_soon", date, teamId: h.teamId, nation: state.teams[h.teamId]?.nation ?? h.teamId, callUpDate: next });
+        state = { ...state, human: { ...state.human, [sid]: { ...h, notified: [...(h.notified ?? []), next].slice(-6) } } };
+      }
     }
   }
 
@@ -445,17 +468,19 @@ export async function playNationalDay(args: {
       for (const c of comps.values()) for (const f of c.fixtures) if (!f.played && f.date >= date && (f.home === teamId || f.away === teamId) && f.date < first) first = f.date;
       return first === "9999-12-31" ? date : first;
     };
-    const humanCalled: NationalNews["players"] = [];
+    const humanCalled = new Map<string, NationalNews["players"]>();
     for (const plan of callUpPlans) {
       const team = state.teams[plan.teamId];
       if (!team || state.callUps[plan.teamId]) continue;
       const all = pool.get(team.nation) ?? [];
       const callable = callableCandidates(all, firstMatch(plan.teamId));
-      // The human manager's own call-up (Etapa 41b): his choice of the day, the players still callable.
-      const draft = state.human?.teamId === team.id && state.human.callUp?.date === date ? state.human.callUp.players : null;
+      // A seat's own call-up (Etapa 41b): its manager's choice of the day, the players still callable.
+      const coach = coachOf(team.id);
+      const coachH = coach ? state.human?.[coach] : undefined;
+      const draft = coachH?.callUp?.date === date ? coachH.callUp.players : null;
       const chosen = draft ? draft.map((id) => callable.find((c) => c.player.id === id)).filter((c): c is NationCandidate => !!c) : [];
       const real = chosen.length > 0 ? chosen.slice(0, NATIONAL_SQUAD.SIZE) : pickCallUp(callable);
-      if (draft && state.human) { const { callUp: _c, ...h } = state.human; state = { ...state, human: h }; }
+      if (draft && coach && coachH) { const { callUp: _c, ...h } = coachH; state = { ...state, human: { ...state.human, [coach]: h } }; }
       const fill = fillersFor({ saveId, id: team.id, nation: team.nation, year, real: real.map((c) => c.player), all, confed: team.confed, pool });
       const cu: NationalCallUp & { fillers?: FillerSpec } = {
         nation: team.nation, from: date, until: plan.until, ...(plan.competition ? { competition: plan.competition } : {}),
@@ -470,14 +495,19 @@ export async function playNationalDay(args: {
       const { tally: _t, ...last } = cu;
       state = { ...state, lastCallUps: { ...(state.lastCallUps ?? {}), [team.id]: last } };
       for (const c of real) {
+        const sid = humanClubs.get(c.squadId);
         await setPlayer(c.squadId, c.player.id, (p) => {
           const duty = { ...p, nationalDuty: { nation: team.nation, from: date, until: plan.until } };
-          return c.squadId === humanClubId ? afterNationalCallUp(duty) : duty;
+          return sid ? afterNationalCallUp(duty) : duty;
         });
-        if (c.squadId === humanClubId) humanCalled.push({ id: c.player.id, name: c.player.name, nation: team.nation, from: date, until: plan.until });
+        if (sid) {
+          const list = humanCalled.get(sid) ?? [];
+          list.push({ id: c.player.id, name: c.player.name, nation: team.nation, from: date, until: plan.until });
+          humanCalled.set(sid, list);
+        }
       }
     }
-    if (humanCalled.length > 0) out.news.push({ kind: "called_up", date, players: humanCalled });
+    for (const [sid, players] of humanCalled) seatOut(sid).news.push({ kind: "called_up", date, players });
   }
 
   // 4. Today's games.
@@ -516,18 +546,24 @@ export async function playNationalDay(args: {
         continue;
       }
       const pseudo = (teamId: string, players: RosterPlayer[]): Squad => nationalPseudoSquad(state, teamId, players);
-      const humanTeam = state.human && (fx.home === state.human.teamId || fx.away === state.human.teamId) ? state.human.teamId : null;
+      // The seats coaching a side of this game (both sides when two seats meet).
+      const coaches = [fx.home, fx.away].map((teamId) => ({ teamId, sid: coachOf(teamId) }))
+        .filter((c): c is { teamId: string; sid: string } => !!c.sid);
       let recording: PlayedMatchRecording;
-      if (humanTeam) {
-        // The human manager's game (Etapa 41b): his live recording, or the full engine with his tactics.
-        if (args.playedMatch && args.playedMatch.fixtureId === fx.id) {
-          recording = args.playedMatch;
-          out.consumedRecording = true;
+      if (coaches.length > 0) {
+        // A seat's game (Etapa 41b): its live recording, or the full engine with the coaches' tactics.
+        const live = coaches.find((c) => args.playedMatches?.[c.sid]?.fixtureId === fx.id);
+        if (live) {
+          recording = args.playedMatches![live.sid]!;
+          seatOut(live.sid).consumedRecording = true;
         } else {
-          const t = state.human!.tactics;
-          const sideOf = (teamId: string, players: RosterPlayer[]) => teamId === humanTeam
-            ? { formation: formationForSimId(t?.formation), lineup: coachLineup(players, t?.formation, t?.lineup, date), style: t?.tactical_style ?? ("balanced" as const) }
-            : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), style: "balanced" as const };
+          const sideOf = (teamId: string, players: RosterPlayer[]) => {
+            const sid = coaches.find((c) => c.teamId === teamId)?.sid;
+            const t = sid ? state.human?.[sid]?.tactics : undefined;
+            return sid
+              ? { formation: formationForSimId(t?.formation), lineup: coachLineup(players, t?.formation, t?.lineup, date), style: t?.tactical_style ?? ("balanced" as const) }
+              : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), style: "balanced" as const };
+          };
           const h = sideOf(fx.home, home.players);
           const a = sideOf(fx.away, away.players);
           recording = simulateRecording(fx, pseudo(fx.home, home.players), pseudo(fx.away, away.players), {
@@ -535,8 +571,11 @@ export async function playNationalDay(args: {
             tactics: { A: { style: h.style }, B: { style: a.style } },
           }).recording;
         }
-        out.humanMatch = nationalMatchEvent(fx, recording, home.players, away.players);
-        out.humanTeamId = humanTeam;
+        const event = nationalMatchEvent(fx, recording, home.players, away.players);
+        for (const c of coaches) {
+          seatOut(c.sid).humanMatch = event;
+          seatOut(c.sid).humanTeamId = c.teamId;
+        }
       } else {
         const hSquad = pseudo(fx.home, home.players);
         const aSquad = pseudo(fx.away, away.players);
@@ -642,9 +681,10 @@ export async function playNationalDay(args: {
         state = await sackAfter(service, saveId, state, date, { ...comp, teams: change.eliminated.filter((id) => id !== comp.championId) },
           (id) => tournamentOutcome(comp, id, all), hc);
       }
-      // The human manager won it: the objective is met.
-      if (change.finished && state.human && comp.championId === state.human.teamId) {
-        out.coachNews.push({ kind: "result", date, teamId: state.human.teamId, nation: state.teams[state.human.teamId]!.nation, competition: comp.slug, met: true });
+      // A seat's manager won it: the objective is met.
+      const championCoach = change.finished && comp.championId ? coachOf(comp.championId) : null;
+      if (championCoach && comp.championId) {
+        seatOut(championCoach).coachNews.push({ kind: "result", date, teamId: comp.championId, nation: state.teams[comp.championId]!.nation, competition: comp.slug, met: true });
       }
       if (change.finished) comp = { ...comp, awards: await closeTournament(service, saveId, state, comp, date, index, setPlayer) };
     }
@@ -663,7 +703,6 @@ export async function playNationalDay(args: {
 
   // 7. Coach hires due today.
   state = await hireDue(service, saveId, state, date, rng);
-  out.offers = hc.offers;
 
   await service.writeNationalState(saveId, state);
   return out;
@@ -708,20 +747,21 @@ async function sackAfter(
   for (const id of comp.teams) {
     const team = state.teams[id];
     if (!team || state.vacancies[id] || comp.championId === id) continue;
-    // The human manager (Etapa 41b): his objective is judged without a draw; failed badly = sacked from the team only.
-    if (state.human?.teamId === id) {
+    // A seat's manager (Etapa 41b): his objective is judged without a draw; failed badly = sacked from the team only.
+    const coach = Object.entries(state.human ?? {}).find(([, h]) => h.teamId === id)?.[0];
+    if (coach) {
       const o = outcome(id);
-      hc.news.push({ kind: "result", date, teamId: id, nation: team.nation, competition: comp.slug, met: objectiveMet(o) });
+      hc.seatOut(coach).coachNews.push({ kind: "result", date, teamId: id, nation: team.nation, competition: comp.slug, met: objectiveMet(o) });
       if (objectiveFailedBadly(o)) {
-        const r = await leaveNationalTeam(service, saveId, state, date, "sacked", managers);
+        const r = await leaveNationalTeam(service, saveId, coach, state, date, "sacked", managers);
         state = r.state;
         managers = r.managers;
-        hc.news.push({ kind: "sacked", date, teamId: id, nation: team.nation, competition: comp.slug, met: false });
+        hc.seatOut(coach).coachNews.push({ kind: "sacked", date, teamId: id, nation: team.nation, competition: comp.slug, met: false });
       }
       continue;
     }
     const m = managers.find((x) => x.id === team.managerId);
-    if (!m || m.isPlayer || m.interim) continue;
+    if (!m || m.seatId || m.interim) continue;
     const o = outcome(id);
     const p = rolloverSackChance({ ...o, champion: o.position === 1 });
     if (p <= 0 || mulberry32(seedFrom(`${saveId}:${id}:${comp.slug}:sack`))() >= p) continue;
@@ -750,7 +790,7 @@ async function hireDue(service: SaveService, saveId: string, state0: NationalSta
   for (const [id] of due) {
     const team = state.teams[id]!;
     const pct = ranked.length > 1 ? 1 - ranked.findIndex((t) => t.id === id) / (ranked.length - 1) : 1;
-    const free = managers.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map((m) => ({
+    const free = managers.filter((m) => !m.seatId && !m.squadId && !m.retired).map((m) => ({
       managerId: m.id, reputation: aiManagerReputation(managers, m, year), country: null, continent: null,
       freeDays: m.freeSince ? daysBetween(m.freeSince, date) : 0,
     }));
@@ -823,52 +863,60 @@ export const NATIONAL_NOTICE_DAYS = 7;
 interface HumanCtx {
   saveId: string;
   date: string;
-  human?: { reputation: number; nationality: string | null };
-  news: NationalCoachNews[];
-  offers: number;
+  /** The active seats' managers that can get offers. */
+  humans: Record<string, { reputation: number; nationality: string | null }>;
+  seatOut: (seatId: string) => NationalSeatDay;
 }
 
-/** A vacancy that just opened may offer its job to the human manager; the AI hire waits for his answer. */
-function offerToHuman(state: NationalState, teamId: string, hc: HumanCtx): NationalState {
-  if (!hc.human || state.human || state.offers?.some((o) => o.teamId === teamId)) return state;
+/**
+ * A vacancy that just opened may offer its job to each seat's manager without a national team and without an offer
+ * of that team; the AI hire waits for the answers.
+ */
+function offerToHuman(state0: NationalState, teamId: string, hc: HumanCtx): NationalState {
+  let state = state0;
   const team = state.teams[teamId]!;
-  const offer = rollNationalOffer({
-    saveId: hc.saveId, teamId, nation: team.nation, date: hc.date, reputation: hc.human.reputation,
-    ownNation: normalizeNation(hc.human.nationality ?? "") === team.nation, teams: Object.values(state.teams),
-  });
-  if (!offer) return state;
-  hc.news.push({ kind: "offer", date: hc.date, teamId, nation: team.nation, offer });
-  hc.offers++;
-  return withOffer(state, offer);
+  for (const [sid, human] of Object.entries(hc.humans)) {
+    if (state.human?.[sid] || state.offers?.[sid]?.some((o) => o.teamId === teamId)) continue;
+    const offer = rollNationalOffer({
+      saveId: hc.saveId, teamId, nation: team.nation, date: hc.date, reputation: human.reputation,
+      ownNation: normalizeNation(human.nationality ?? "") === team.nation, teams: Object.values(state.teams),
+    });
+    if (!offer) continue;
+    hc.seatOut(sid).coachNews.push({ kind: "offer", date: hc.date, teamId, nation: team.nation, offer });
+    hc.seatOut(sid).offers++;
+    state = withOffer(state, sid, offer);
+  }
+  return state;
 }
 
-/** Adds an offer; the vacancy's AI hire waits until the day after it expires. */
-export function withOffer(state: NationalState, offer: NationalCoachOffer): NationalState {
+/** Adds an offer to a seat; the vacancy's AI hire waits until the day after it expires. */
+export function withOffer(state: NationalState, seatId: string, offer: NationalCoachOffer): NationalState {
   const v = state.vacancies[offer.teamId];
   const hold = addDays(offer.expires, 1);
   return {
     ...state,
-    offers: [...(state.offers ?? []).filter((o) => o.teamId !== offer.teamId), offer],
+    offers: { ...(state.offers ?? {}), [seatId]: [...(state.offers?.[seatId] ?? []).filter((o) => o.teamId !== offer.teamId), offer] },
     vacancies: v ? { ...state.vacancies, [offer.teamId]: { ...v, hireOn: v.hireOn > hold ? v.hireOn : hold } } : state.vacancies,
   };
 }
 
 /**
- * The human manager leaves his national team (sacked or resigned): his spell closes, an interim takes over and the
+ * A seat's manager leaves his national team (sacked or resigned): his spell closes, an interim takes over and the
  * team hires by the AI rule. Writes `managers.json`; the caller writes the state.
  */
 export async function leaveNationalTeam(
-  service: SaveService, saveId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
+  service: SaveService, saveId: string, seatId: string, state: NationalState, date: string, left: "sacked" | "moved", managers0?: ManagerRecord[],
 ): Promise<{ state: NationalState; managers: ManagerRecord[] }> {
-  const h = state.human;
+  const h = state.human?.[seatId];
   if (!h) return { state, managers: managers0 ?? (await service.getManagers(saveId)) };
   const team = state.teams[h.teamId]!;
-  const r = leaveNationalJob(managers0 ?? (await service.getManagers(saveId)), { teamId: team.id, nation: team.nation, date, left });
+  const r = leaveNationalJob(managers0 ?? (await service.getManagers(saveId)), { seatId, teamId: team.id, nation: team.nation, date, left });
   await service.writeManagers(saveId, r.managers);
-  const { human: _h, ...rest } = state;
+  const { [seatId]: _h, ...human } = state.human ?? {};
   return {
     state: {
-      ...rest,
+      ...state,
+      human,
       teams: { ...state.teams, [team.id]: { ...team, managerId: r.interimId } },
       vacancies: { ...state.vacancies, [team.id]: { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${team.id}:${date}:hire`))) } },
     },

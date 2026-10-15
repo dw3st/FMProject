@@ -11,7 +11,7 @@
  * test run wins that default for every test file for the rest of the run — including test files
  * that never meant to touch it. That import can come from a file that never explicitly sets
  * RUNTIME_DATA_DIR at all: `src/backend/advanceUntil.ts` statically imports
- * `requireSaveOwner` from `@/backend/auth/middleware`, so `src/backend/advanceUntil.test.ts`
+ * `requireSeat` from `@/backend/auth/middleware`, so `src/backend/advanceUntil.test.ts`
  * loading it is enough to freeze the real `src/Data` in for the rest of the process — before
  * `src/backend/auth/devLogin.test.ts` or `src/backend/reports.test.ts` (both of which used to set
  * their own temp `RUNTIME_DATA_DIR` in `beforeAll`) ever got a chance to.

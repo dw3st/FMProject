@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
-import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { applyHumanBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 
 function minimalSquad(
   id: string,
@@ -82,7 +82,7 @@ describe("runSeasonTransition", () => {
       leagueSlug: "test_league",
       leagueTeams,
       squadsInLeague: squads,
-      playerClubSquadId: "a",
+      humanClubIds: new Set(["a"]),
     });
 
     expect(result.archive.year).toBe(2025);
@@ -91,7 +91,7 @@ describe("runSeasonTransition", () => {
     expect(result.archive.titles[0]!.coachName).toBe("Coach A");
     expect(result.archive.playerLogs["p_a"]!.goals).toBe(3);
 
-    expect(result.playerBroadcastingCredit).toBe(10_000_000);
+    expect(result.humanBroadcastingCredit).toEqual({ a: 10_000_000 });
 
     const alphaOut = result.squadsToSave.find((r) => r.squadId === "a")!;
     // Refs are addressed by id only (written wherever the club lives now).
@@ -115,7 +115,7 @@ describe("runSeasonTransition", () => {
     const result = runSeasonTransition({
       endingSeason: { year: 2025, start: "2025-08-15", end: "2026-05-20", calendar: [] },
       leagueSlug: "x", leagueTeams: [{ squadId: "a", name: "A", colors: ["#000", "#fff"] }],
-      squadsInLeague: [squad], playerClubSquadId: "a",
+      squadsInLeague: [squad], humanClubIds: new Set(["a"]),
     });
     const out = result.squadsToSave[0]!.squad.youth![0]!;
     expect(out.seasonLog!.youthCup).toBeUndefined();
@@ -162,12 +162,12 @@ describe("runSeasonTransition", () => {
       leagueSlug: "x",
       leagueTeams,
       squadsInLeague: squads,
-      playerClubSquadId: "a",
+      humanClubIds: new Set(["a"]),
     });
 
     const bOut = result.squadsToSave.find((r) => r.squad.id === "b")!;
     expect(bOut.squad.finances!.budget).toBe(1_000_000);
-    expect(result.playerBroadcastingCredit).toBe(0);
+    expect(result.humanBroadcastingCredit).toEqual({});
   });
 });
 
@@ -195,7 +195,7 @@ describe("buildNextSeasonCalendar", () => {
   });
 });
 
-describe("applyPlayerBroadcastingCredit", () => {
+describe("applyHumanBroadcastingCredit", () => {
   const leagueTeams: LeagueTeam[] = [
     { squadId: "a", name: "Alpha", colors: ["#000", "#fff"] },
     { squadId: "b", name: "Beta", colors: ["#111", "#eee"] },
@@ -214,12 +214,12 @@ describe("applyPlayerBroadcastingCredit", () => {
           finances: { broadcasting: 2_000_000, commercial: 0, total: 0, budget: 1_000_000, followers: 0 },
         }),
       ],
-      playerClubSquadId: "a",
+      humanClubIds: new Set(["a"]),
     });
 
   test("credits the reset player squad: aged, seasonLog cleared, budget += credit", () => {
     const t = transition();
-    const out = applyPlayerBroadcastingCredit(t.squadsToSave, "a", t.playerBroadcastingCredit);
+    const out = applyHumanBroadcastingCredit(t.squadsToSave, t.humanBroadcastingCredit);
     const alpha = out.find((r) => r.squad.id === "a")!;
     expect(alpha.squad.players[0]!.age).toBe(25);
     expect(alpha.squad.players[0]!.seasonLog!.goals).toBe(0);
@@ -231,19 +231,29 @@ describe("applyPlayerBroadcastingCredit", () => {
 
   test("does not mutate the input refs", () => {
     const t = transition();
-    applyPlayerBroadcastingCredit(t.squadsToSave, "a", t.playerBroadcastingCredit);
+    applyHumanBroadcastingCredit(t.squadsToSave, t.humanBroadcastingCredit);
     expect(t.squadsToSave.find((r) => r.squad.id === "a")!.squad.finances!.budget).toBe(5_000_000);
   });
 
   test("zero credit or absent player squad returns refs unchanged", () => {
     const t = transition();
-    expect(applyPlayerBroadcastingCredit(t.squadsToSave, "a", 0)).toEqual(t.squadsToSave);
-    expect(applyPlayerBroadcastingCredit(t.squadsToSave, "zzz", 1_000)).toEqual(t.squadsToSave);
+    expect(applyHumanBroadcastingCredit(t.squadsToSave, { a: 0 })).toEqual(t.squadsToSave);
+    expect(applyHumanBroadcastingCredit(t.squadsToSave, { zzz: 1_000 })).toEqual(t.squadsToSave);
   });
 
   test("player squad without finances gets a default finances block holding the credit", () => {
     const refs = [{ squadId: "a", squad: minimalSquad("a", "a", "A", {}) }];
-    const out = applyPlayerBroadcastingCredit(refs, "a", 7);
+    const out = applyHumanBroadcastingCredit(refs, { a: 7 });
     expect(out[0]!.squad.finances!.budget).toBe(7);
+  });
+
+  test("every human club gets its own broadcasting credit on the reset squad", () => {
+    const refs = [
+      { squadId: "a", squad: { id: "a", finances: { broadcasting: 0, commercial: 0, total: 0, budget: 10, followers: 0 } } },
+      { squadId: "b", squad: { id: "b", finances: { broadcasting: 0, commercial: 0, total: 0, budget: 20, followers: 0 } } },
+      { squadId: "c", squad: { id: "c", finances: { broadcasting: 0, commercial: 0, total: 0, budget: 30, followers: 0 } } },
+    ] as never;
+    const out = applyHumanBroadcastingCredit(refs, { a: 5, b: 7 });
+    expect(out.map((r) => r.squad.finances!.budget)).toEqual([15, 27, 30]);
   });
 });

@@ -451,6 +451,10 @@ export interface RetiredPlayer {
   /** Retired from the free-agent pool (not from a squad). */
   freeAgent?: true;
   rebornOffer?: "pending" | "accepted" | "declined" | "expired";
+  /** The seat whose club he retired from (the reborn offer is that seat's). */
+  rebornSeatId?: string;
+  /** The seat that brought him back as a legend (achievements shop): never offered again, to anyone. */
+  legendBy?: string;
   /** Career history at retirement. */
   history?: PlayerHistoryRow[];
   /** National-team career at retirement (`national-teams.md`). */

@@ -4,7 +4,7 @@
  * the rival on the deadline. The rules live in `src/Domain/negotiation/rivals.ts`.
  */
 import { randomUUID } from "crypto";
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { WindowContext } from "@/backend/marketWindowWorld";
 import { executeTransferFee } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -21,7 +21,7 @@ import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { playerMatchesBand, playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketState, RivalBid } from "@/types/transferMarketTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { DayTransfer } from "@/types/dayLogTypes";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
 
@@ -36,7 +36,11 @@ type News = {
  */
 export async function rollRivalFor(
   service: SaveService, saveId: string,
-  args: { market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext },
+  args: {
+    market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext;
+    /** Every human club of the world (`.claude/rules/game/multiplayer.md`): never a rival. Absent = `humanId` only. */
+    humanClubIds?: ReadonlySet<string>;
+  },
 ): Promise<{ market: MarketState; rival: RivalBid | null; news: News | null }> {
   const { market, player, seller, date, windows } = args;
   // Route tests that check exact counters turn the random rivals off (`FM_NO_RIVALS=1`).
@@ -46,7 +50,7 @@ export async function rollRivalFor(
   const rating = playerOverallRating(player);
   const squads = new Map<string, Squad>();
   for (const [id, prof] of Object.entries(market.profiles ?? {})) {
-    if (id === seller.id || id === args.humanId) continue;
+    if (id === seller.id || id === args.humanId || args.humanClubIds?.has(id)) continue;
     if (!prof.needs?.some((n) => playerMatchesBand(player, n.position) && rating >= n.targetMin - 0.5 && rating <= n.targetMax + 0.5)) continue;
     const sq = await service.getSquadById(saveId, id);
     if (sq) squads.set(id, sq);
@@ -77,9 +81,9 @@ export async function rollRivalFor(
  * seller would not accept just lapse.
  */
 export async function resolveRivalDeadlines(
-  service: SaveService, saveId: string, meta: SaveMeta,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta,
   args: { market: MarketState; date: string; windows: WindowContext },
-): Promise<{ market: MarketState; meta: SaveMeta; news: News[]; moves: DayTransfer[] }> {
+): Promise<{ market: MarketState; meta: SeatMeta; news: News[]; moves: DayTransfer[] }> {
   const { date } = args;
   let market = args.market;
   let workingMeta = meta;
@@ -88,8 +92,11 @@ export async function resolveRivalDeadlines(
   const due = (market.rivalBids ?? []).filter((r) => r.deadline <= date);
   if (due.length === 0) return { market, meta, news, moves };
   const done = new Set<string>();
+  // A club that got a human manager since the rival was drawn neither buys nor sells by the AI rule.
+  const humans = await service.humanClubIds(saveId);
   for (const r of [...due].sort((a, b) => b.fee - a.fee)) {
     if (done.has(r.playerId) || !r.sellerAccepts) continue;
+    if (humans.has(r.clubId) || humans.has(r.fromClubId)) continue;
     const seller = await service.getSquadById(saveId, r.fromClubId);
     const buyer = await service.getSquadById(saveId, r.clubId);
     const player = seller?.players.find((p) => p.id === r.playerId && !p.loan);
@@ -106,12 +113,12 @@ export async function resolveRivalDeadlines(
     const owed = sellOnFor(player, seller.id, r.fee);
     workingMeta = await executeTransferFee(
       saveId, workingMeta,
-      { squad: buying, ...buyerRef, isPlayerClub: false },
-      { squad: selling, ...sellerRef, isPlayerClub: false },
+      { squad: buying, ...buyerRef },
+      { squad: selling, ...sellerRef },
       r.fee, service,
       { playerName: player.name, playerId: player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
     );
-    const sellOnNews = await settleSellOn(service, saveId, workingMeta, owed, player, seller.name, date);
+    const sellOnNews = await settleSellOn(service, saveId, seatId, workingMeta, owed, player, seller.name, date);
     if (sellOnNews) news.push(sellOnNews);
     const seasonOf = (slug: string) => {
       const l = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === slug);
@@ -121,10 +128,10 @@ export async function resolveRivalDeadlines(
       buyer: buying, seller: selling, playerId: player.id, fee: r.fee, date,
       buyerSeason: seasonOf(buyerRef.leagueSlug), sellerSeason: seasonOf(sellerRef.leagueSlug),
     });
-    const record: TransferRecord = {
+    const record: StoredTransferRecord = {
       id: randomUUID(), date, playerId: player.id, playerName: player.name, playerPosition: player.positions[0] ?? "—",
       playerAge: player.age, fromSquadId: seller.id, fromSquadName: seller.name, toSquadId: buyer.id, toSquadName: buyer.name,
-      fee: r.fee, direction: "in", status: "accepted", reason: "AI transfer",
+      fee: r.fee, status: "accepted", reason: "AI transfer",
     };
     await service.appendTransfer(saveId, record);
     await service.appendDayEvent(saveId, date, { kind: "transfer_ref", transferId: record.id });
@@ -156,10 +163,10 @@ export async function prestigeOf(service: SaveService, saveId: string, date: str
  * he is gone from that club, the human squad is full or the manager changed club.
  */
 export async function applyDuePreContracts(
-  service: SaveService, saveId: string, meta: SaveMeta,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta,
   args: { unitIds: Set<string>; date: string; humanClubId: string | null },
 ): Promise<{ news: News[]; moves: DayTransfer[] }> {
-  const market = await service.getMarket(saveId);
+  const market = await service.getMarket(saveId, seatId);
   const due = (market?.preContracts ?? []).filter((p) => args.unitIds.has(p.fromClubId));
   if (!market || due.length === 0) return { news: [], moves: [] };
   const news: News[] = [];
@@ -168,7 +175,7 @@ export async function applyDuePreContracts(
     const from = await service.getSquadById(saveId, pc.fromClubId);
     const player = from?.players.find((p) => p.id === pc.playerId && !p.loan);
     const human = args.humanClubId === pc.toClubId ? await service.getSquadById(saveId, pc.toClubId) : null;
-    const full = human ? (await humanRosterSize(service, saveId, human)) >= HUMAN_MAX_SQUAD : true;
+    const full = human ? (await humanRosterSize(service, saveId, seatId, human)) >= HUMAN_MAX_SQUAD : true;
     if (!from || !player || !human || full) {
       news.push({ date: args.date, kind: "pre_contract_failed", playerId: pc.playerId, playerName: pc.playerName, clubName: pc.fromClubName });
       continue;
@@ -183,8 +190,8 @@ export async function applyDuePreContracts(
     moves.push({ playerId: player.id, from: from.id, to: human.id, fee: 0, kind: "pre_contract", date: args.date });
     news.push({ date: args.date, kind: "pre_contract_joined", playerId: player.id, playerName: player.name, clubName: from.name });
   }
-  const latest = (await service.getMarket(saveId)) ?? market;
+  const latest = (await service.getMarket(saveId, seatId)) ?? market;
   const doneIds = new Set(due.map((p) => p.playerId));
-  await service.saveMarket(saveId, { ...latest, preContracts: (latest.preContracts ?? []).filter((p) => !doneIds.has(p.playerId)) });
+  await service.saveMarket(saveId, { ...latest, preContracts: (latest.preContracts ?? []).filter((p) => !doneIds.has(p.playerId)) }, seatId);
   return { news, moves };
 }

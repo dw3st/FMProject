@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -21,7 +21,7 @@ export const awardsRoutes = {
    */
   "/api/saves/:saveId/awards": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const raw = new URL(req.url).searchParams.get("year");

@@ -75,3 +75,7 @@ O pool de livres só é sorteado uma vez por ano de mundo (`meta.freeAgentsRetir
 
 O renascido herda a personalidade do original (`personalityOf` usa `reborn.fromId`). Ver
 `.claude/rules/game/personality.md`.
+
+## Assentos (Etapa 43)
+
+A oferta de renascido é do assento do clube (`rebornSeatId`). Ver `.claude/rules/game/multiplayer.md`.

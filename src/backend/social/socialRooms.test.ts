@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 import { resetPresence } from "@/backend/presence";
 import { resetRealtime } from "@/backend/social/realtime";
 import { callSocial } from "@/backend/social/socialRouteTestUtils";
 import { resetSocialRateLimit } from "@/backend/social/socialRoutes";
-import { addWorldMember, befriend } from "@/backend/social/socialStore";
+import { befriend } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 
@@ -126,9 +126,9 @@ describe("world rooms", () => {
     const c = makeUser(uniqueNick());
     const saveId = randomUUID();
     const room = `world:${saveId}`;
-    recordSaveOwnership(saveId, a.id);
+    addSaveMember(saveId, a.id, "seat-a", "owner");
     expect((await post(a.token, room, "sozinho")).status).toBe(403);
-    addWorldMember(saveId, b.id, "member");
+    addSaveMember(saveId, b.id, "seat-b", "member");
     expect((await post(a.token, room, "bem-vindo")).status).toBe(200);
     expect((await history(b.token, room)).json.messages.map((m: { body: string }) => m.body)).toEqual(["bem-vindo"]);
     expect((await history(c.token, room)).status).toBe(403);

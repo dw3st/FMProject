@@ -27,11 +27,12 @@ import { fileURLToPath } from "node:url";
 // Windows-safe default for the runtime dir; must be set before backend modules load.
 process.env.RUNTIME_DATA_DIR ||= fileURLToPath(new URL("../src/Data", import.meta.url));
 
-// Route check without a login: every request counts as the save owner.
+// Route check without a login: every request counts as the save owner, in the smoke save's seat.
+let smokeSeatId = "";
 mock.module("@/backend/auth/middleware", () => ({
   getAuth: () => ({ userId: "smoke", email: "smoke@local" }),
   requireAuth: () => ({ userId: "smoke", email: "smoke@local" }),
-  requireSaveOwner: () => ({ userId: "smoke", email: "smoke@local" }),
+  requireSeat: () => ({ userId: "smoke", email: "smoke@local", seatId: smokeSeatId, role: "owner" }),
 }));
 
 const { SaveService, saveService } = await import("@/backend/SaveService");
@@ -73,7 +74,8 @@ async function createSmokeSave(): Promise<string> {
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Smoke Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
-  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+  smokeSeatId = meta.seatId;
+  await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
   const kit = await applyRandomStartKit(meta.id);
   console.log(`Save ${meta.id} — ${club.name} (${pl.name}), start ${meta.currentDate}, kit: ${kit.applied ? kit.kit : kit.reason}\n`);
   return meta.id;
@@ -101,7 +103,7 @@ async function squadRoute(saveId: string, league: string, club: string): Promise
 let saveId: string | null = null;
 try {
   saveId = await createSmokeSave();
-  const meta = (await saveService.getMeta(saveId))!;
+  const meta = (await saveService.getSeatMeta(saveId, smokeSeatId))!;
   await checkFiles(saveId, "fresh save");
 
   // ── Pick the clubs ────────────────────────────────────────────────────────

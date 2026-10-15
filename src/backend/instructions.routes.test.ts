@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { formationForTactics } from "@/Domain/matchFormations";
 
 /** Player instructions (`.claude/rules/game/player-instructions.md`): tactics PUT and match marking. */
@@ -20,7 +20,7 @@ describe("player instructions routes", () => {
     });
     saveId = meta.id;
     const { user, session } = devAutoLogin(`instructions-route-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const stranger = devAutoLogin(`instructions-stranger-${saveId}@test.local`);
 
     const call = (route: keyof typeof saveRoutes, path: string, method: string, body: unknown, token = session.token) =>
@@ -48,7 +48,7 @@ describe("player instructions routes", () => {
     expect((await putTactics({ formation: "4-3-3", slotInstructions: list }, stranger.session.token)).status).toBe(404); // not the owner
     const ok = await putTactics({ formation: "4-3-3", slotInstructions: list });
     expect(ok.status).toBe(200);
-    expect((await saveService.getTactics(saveId))?.slotInstructions?.[st]).toEqual({ variant: "st_target", press: "more" });
+    expect((await saveService.getTactics(saveId, meta.seatId))?.slotInstructions?.[st]).toEqual({ variant: "st_target", press: "more" });
 
     const misfit = [...list];
     misfit[lb] = { variant: "st_target" };
@@ -59,7 +59,7 @@ describe("player instructions routes", () => {
     // A formation change sanitizes the kept instructions (variant dropped where the role changes).
     expect((await putTactics({ formation: "3-5-2" })).status).toBe(200);
     const f352 = formationForTactics({ formation: "3-5-2" });
-    const kept = (await saveService.getTactics(saveId))?.slotInstructions ?? [];
+    const kept = (await saveService.getTactics(saveId, meta.seatId))?.slotInstructions ?? [];
     kept.forEach((instr, i) => {
       if (instr?.variant) expect(f352.attacking[i]!.role === "LB" || f352.attacking[i]!.role === "ST").toBe(true);
     });
@@ -95,17 +95,17 @@ describe("player instructions routes", () => {
     })).status).toBe(400);
     const good = await mark({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }] });
     expect(good.status).toBe(200);
-    expect((await saveService.getMeta(saveId))?.matchMarking).toEqual({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }] });
+    expect((await saveService.getSeatMeta(saveId, meta.seatId))?.matchMarking).toEqual({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }] });
 
     // A formation change drops the pairs whose marker slot changed role (LB -> CB in the 3-5-2).
     expect((await mark({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }, { slot: lb, targetId: oppOutfield[1]!.id }] })).status).toBe(200);
     expect((await putTactics({ formation: "3-5-2" })).status).toBe(200);
-    expect((await saveService.getMeta(saveId))?.matchMarking?.marks).toEqual([{ slot: cm, targetId: oppOutfield[0]!.id }]);
+    expect((await saveService.getSeatMeta(saveId, meta.seatId))?.matchMarking?.marks).toEqual([{ slot: cm, targetId: oppOutfield[0]!.id }]);
     expect((await putTactics({ formation: "4-3-3", slotInstructions: list })).status).toBe(200);
 
     // The next advance plays the match with the instructions and clears the marking.
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);
-    expect((await saveService.getMeta(saveId))?.matchMarking).toBeUndefined();
+    expect((await saveService.getSeatMeta(saveId, meta.seatId))?.matchMarking).toBeUndefined();
   }, 180_000);
 });

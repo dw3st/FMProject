@@ -163,6 +163,24 @@ describe("prospects", () => {
     }
     expect(total).toBeGreaterThan(0);
   });
+  test("two seats on the same country and week never draw the same prospect (multiplayer)", () => {
+    const args = { saveId: "s", country: "Spain", week: "2027-03-01", topLeagueSquads: [top], nextSeasonEnd: "2027-06-01", fee: 100_000 };
+    // Without a seat (solo) the draw is the one of before.
+    expect(generateProspects({ ...args, seatId: undefined })).toEqual(generateProspects(args));
+    const ids = new Set<string>();
+    let total = 0;
+    for (let w = 0; w < 20; w++) {
+      const week = `2027-0${1 + (w % 9)}-1${w % 10}`;
+      for (const seatId of ["seat-a", "seat-b"]) {
+        for (const p of generateProspects({ ...args, week, seatId })) {
+          expect(ids.has(p.player.id)).toBe(false);
+          ids.add(p.player.id);
+          total++;
+        }
+      }
+    }
+    expect(total).toBeGreaterThan(0);
+  });
   test("fee by tier, prospects join with a report and expire", () => {
     expect(prospectFee("LOW", 1)).toBe(50_000);
     expect(prospectFee("ELITE", 1)).toBe(400_000);

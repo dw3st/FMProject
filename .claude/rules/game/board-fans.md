@@ -150,3 +150,7 @@ do dia; a de seguidores aceita a faixa 0,8..1,2.
 ## Imprensa (Etapa 42)
 
 As respostas das coletivas, as promessas cumpridas ou quebradas e ignorar um convite movem os dois medidores (`applyPressEffect`, os mesmos `moveMeters` dos demais eventos); os números ficam em `src/Domain/press/pressConfig.ts` (`TONE`, `PROMISE`, `IGNORED_BOARD`). A promessa `objective` se resolve na virada do país, junto da avaliação da meta da diretoria. Ver `.claude/rules/game/press.md`.
+
+## Assentos (Etapa 43)
+
+Diretoria, torcida, meta e ultimato são do assento (`seat.json` → `board`); cada clube humano tem os seus. Ver `.claude/rules/game/multiplayer.md`.

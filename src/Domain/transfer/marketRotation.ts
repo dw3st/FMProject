@@ -3,7 +3,9 @@ import {
   squadsAfterAcceptedTransfer,
 } from "@/Domain/transfer/transferAcceptance";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import type { MarketBid, MarketState, SellCandidate, SquadMarketProfile, TransferNeed } from "@/types/transferMarketTypes";
+import type {
+  MarketBid, MarketState, SellCandidate, SquadMarketProfile, TransferNeed, WorldMarketState,
+} from "@/types/transferMarketTypes";
 import { generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
 import { defaultRng, generateTransferNeeds, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
 import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
@@ -30,9 +32,9 @@ function squadRef(s: Squad): { leagueSlug: string; clubSlug: string } {
 /**
  * Fisher–Yates shuffle of squad IDs; empty profiles.
  */
-export function initMarketState(allSquads: Squad[], rng: () => number = defaultRng): MarketState {
+export function initMarketState(allSquads: Squad[], rng: () => number = defaultRng): WorldMarketState {
   const shuffledTeamIds = shuffle(allSquads.map((s) => s.id), rng);
-  return { shuffledTeamIds, rotationIndex: 0, profiles: {}, playerSellList: [] };
+  return { shuffledTeamIds, rotationIndex: 0, profiles: {} };
 }
 
 /** Pick up to `count` distinct indices from 0..pool.length-1 using rng. */
@@ -42,7 +44,7 @@ function sampleIndices(poolLen: number, count: number, rng: () => number): numbe
   return idx.slice(0, Math.min(count, poolLen));
 }
 
-interface CompletedAITransfer {
+export interface CompletedAITransfer {
   player: RosterPlayer;
   sellerSquad: Squad;
   buyerSquad: Squad;
@@ -54,15 +56,14 @@ interface CompletedAITransfer {
 }
 
 export interface DailyMarketTickResult {
-  updatedMarket: MarketState;
+  /** The world's part of the market (rotation + AI profiles); every seat's part is untouched. */
+  updatedMarket: WorldMarketState;
   completedTransfers: CompletedAITransfer[];
-  /** Bids made today for the human's players (already in `updatedMarket.pendingBids`). */
-  newBids: MarketBid[];
 }
 
 export interface DailyMarketTickOptions {
-  /** Human-controlled club: excluded from AI needs refresh, buying, and selling in this tick. */
-  excludePlayerSquadId?: string | null;
+  /** Clubs with a human manager (every seat): never refreshed, never buying, never selling to the AI. */
+  excludeSquadIds?: ReadonlySet<string>;
   /**
    * The whole market sits out this tick: no needs refresh, no buying, no selling, no sell-list
    * matching, for every club. Used by the start-kit pre-simulation — every club is pickable for
@@ -70,12 +71,6 @@ export interface DailyMarketTickOptions {
    * the market unchanged.
    */
   marketFrozen?: boolean;
-  /** Human-managed sell list. AI clubs bid for these players through the inbox. */
-  playerSellList?: SellCandidate[];
-  /** Squad object for the human's club (needed for the bids). */
-  playerSquad?: Squad | null;
-  /** Id of a new bid (default: a counter). */
-  newBidId?: () => string;
   /** Last day of the squad's league season (contract end). Falls back to the next May 31. */
   seasonEndOf?: (squad: Squad) => string | undefined;
   /** League + season label of a selling squad, for the player's partial history row. */
@@ -161,15 +156,15 @@ function buildSellerSellLists(profiles: Record<string, SquadMarketProfile>): Rec
 }
 
 export function dailyMarketTick(
-  market: MarketState,
+  market: WorldMarketState,
   allSquads: Squad[],
   currentDate: string,
   rng: () => number = defaultRng,
   options?: DailyMarketTickOptions,
 ): DailyMarketTickResult {
-  if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [], newBids: [] };
+  if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [] };
 
-  const excludePlayerSquadId = options?.excludePlayerSquadId ?? null;
+  const excluded: ReadonlySet<string> = options?.excludeSquadIds ?? new Set<string>();
   const squadById = new Map(allSquads.map((s) => [s.id, s] as const));
   let shuffledTeamIds = [...market.shuffledTeamIds];
   let rotationIndex = market.rotationIndex;
@@ -188,7 +183,7 @@ export function dailyMarketTick(
       const candidate = shuffledTeamIds[rotationIndex]!;
       rotationIndex++;
       guard++;
-      if (excludePlayerSquadId && candidate === excludePlayerSquadId) continue;
+      if (excluded.has(candidate)) continue;
       id = candidate;
       break;
     }
@@ -212,8 +207,7 @@ export function dailyMarketTick(
     .map((s) => s.id)
     .filter(
       (id) =>
-        (profiles[id]?.needs?.length ?? 0) > 0 &&
-        (!excludePlayerSquadId || id !== excludePlayerSquadId),
+        (profiles[id]?.needs?.length ?? 0) > 0 && !excluded.has(id),
     );
   const buyers = pickBuyers(poolIds, squads, rng, options?.windows);
 
@@ -231,7 +225,7 @@ export function dailyMarketTick(
       profile,
       latestList,
       rng,
-      excludePlayerSquadId,
+      excluded,
       sellerSellLists,
     );
     if (!attempt) continue;
@@ -284,39 +278,65 @@ export function dailyMarketTick(
     });
   }
 
-  // Bids for the human club's players (`.claude/rules/game/negotiation.md`): AI clubs no longer
-  // buy from the human's sell list on their own — they send a bid the player answers in the inbox.
-  const playerSellList = options?.playerSellList ?? market.playerSellList ?? [];
-  const playerSquad = options?.playerSquad ?? null;
-  const pending = playerSquad ? liveBids(market.pendingBids, currentDate, squads.get(playerSquad.id) ?? playerSquad) : [];
-  let bidSeq = 0;
-  const newBids = playerSquad && excludePlayerSquadId
-    ? generateBidsForHuman({
-      date: currentDate,
-      rng,
-      humanSquad: squads.get(playerSquad.id) ?? playerSquad,
-      squads,
-      profiles,
-      sellList: playerSellList,
-      loanList: market.playerLoanList ?? [],
-      pending,
-      seasonEndOf: (sq) => options?.seasonEndOf?.(sq) ?? defaultSeasonEnd(currentDate),
-      ...(options?.windows ? { buyerOpen: options.windows.isOpen, ...(options.windows.closesOn ? { buyerClosesOn: options.windows.closesOn } : {}) } : {}),
-      newId: options?.newBidId ?? (() => `bid-${currentDate}-${++bidSeq}`),
-    })
-    : [];
-  if (newBids.length > 0) logDebug("transfers", `${newBids.length} bid(s) for the human club's players`);
-
   return {
-    updatedMarket: {
-      ...market,
-      shuffledTeamIds,
-      rotationIndex,
-      profiles,
-      playerSellList: market.playerSellList ?? [],
-      pendingBids: [...pending, ...newBids],
-    },
+    updatedMarket: { shuffledTeamIds, rotationIndex, profiles },
     completedTransfers,
-    newBids,
   };
+}
+
+/** The squads after a tick's transfers (sellers and buyers replaced by their updated copies). */
+export function squadsAfterTick(allSquads: Squad[], completed: readonly CompletedAITransfer[]): Squad[] {
+  if (completed.length === 0) return allSquads;
+  const byId = new Map(allSquads.map((s) => [s.id, s] as const));
+  for (const tx of completed) {
+    byId.set(tx.updatedSeller.id, tx.updatedSeller);
+    byId.set(tx.updatedBuyer.id, tx.updatedBuyer);
+  }
+  return allSquads.map((s) => byId.get(s.id) ?? s);
+}
+
+export interface HumanBidsArgs {
+  /** The joined market: the world's profiles + the seat's lists and pending bids. */
+  market: MarketState;
+  /** The squads after today's AI tick (`squadsAfterTick`). */
+  squads: Squad[];
+  humanSquad: Squad;
+  currentDate: string;
+  rng?: () => number;
+  seasonEndOf?: (squad: Squad) => string | undefined;
+  windows?: DailyMarketTickOptions["windows"];
+  newBidId?: () => string;
+  /** Every human club of the world: never a bidder (`.claude/rules/game/multiplayer.md`). */
+  humanClubIds?: ReadonlySet<string>;
+}
+
+/**
+ * AI bids for one seat's players (`.claude/rules/game/negotiation.md`): AI clubs never buy from a human sell
+ * list on their own — they send a bid the seat answers in its inbox. Returns the seat's market with the live
+ * bids (expired ones dropped) plus today's.
+ */
+export function humanBidsTick(args: HumanBidsArgs): { market: MarketState; newBids: MarketBid[] } {
+  const rng = args.rng ?? defaultRng;
+  const squads = new Map(args.squads.map((s) => [s.id, s] as const));
+  const human = squads.get(args.humanSquad.id) ?? args.humanSquad;
+  const pending = liveBids(args.market.pendingBids, args.currentDate, human);
+  let seq = 0;
+  const newBids = generateBidsForHuman({
+    date: args.currentDate,
+    rng,
+    humanSquad: human,
+    squads,
+    profiles: args.market.profiles ?? {},
+    sellList: args.market.playerSellList ?? [],
+    loanList: args.market.playerLoanList ?? [],
+    pending,
+    seasonEndOf: (sq) => args.seasonEndOf?.(sq) ?? defaultSeasonEnd(args.currentDate),
+    ...(args.windows
+      ? { buyerOpen: args.windows.isOpen, ...(args.windows.closesOn ? { buyerClosesOn: args.windows.closesOn } : {}) }
+      : {}),
+    newId: args.newBidId ?? (() => `bid-${args.currentDate}-${++seq}`),
+    ...(args.humanClubIds ? { humanClubIds: args.humanClubIds } : {}),
+  });
+  if (newBids.length > 0) logDebug("transfers", `${newBids.length} bid(s) for the human club's players`);
+  return { market: { ...args.market, pendingBids: [...pending, ...newBids] }, newBids };
 }

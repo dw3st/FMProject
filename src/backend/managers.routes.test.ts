@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 type Page = {
   total: number; playerRank: number | null;
@@ -23,12 +23,12 @@ describe("GET /api/saves/:saveId/managers", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("managers-route@test.local");
     const other = devAutoLogin("managers-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     // Give one English AI manager and one foreign manager points.
     const managers = await saveService.getManagers(saveId);
     const index = await saveService.getSquadIndex(saveId);
-    const english = managers.find((m) => !m.isPlayer && index.byId(m.squadId)?.leagueSlug === "premier_league")!;
+    const english = managers.find((m) => !m.seatId &&index.byId(m.squadId)?.leagueSlug === "premier_league")!;
     const foreign = managers.find((m) => index.byId(m.squadId)?.leagueSlug === "la_liga")!;
     const t = { season: "2026-27", kind: "league" as const, competition: "x", squadId: "", points: 0 };
     await saveService.writeManagers(saveId, managers.map((m) =>

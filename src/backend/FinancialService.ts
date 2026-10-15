@@ -10,10 +10,14 @@
  */
 
 import { saveService, SaveService } from "@/backend/SaveService";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta } from "@/backend/SaveService";
+
+/** Any meta that knows the world's date (the world meta or a seat's merged meta). */
+type DatedMeta = { currentDate?: string };
 import type { Squad } from "@/types/playerTypes";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
+import { splitMarket } from "@/Domain/market/seatMarket";
 
 // ── Balance getters ───────────────────────────────────────────────────────────
 
@@ -45,12 +49,13 @@ async function ledgerSeasonFor(
  * Credit the full season broadcasting fee to the player's club budget via the ledger
  * (`recordMoney` — see `.claude/rules/game/finances.md`). Called once when a new save is created.
  */
-export async function applyBroadcasting(
+export async function applyBroadcasting<M extends DatedMeta>(
   saveId: string,
-  meta: SaveMeta,
+  meta: M,
   leagueSlug: string,
   clubSlug: string,
-): Promise<SaveMeta> {
+  seatId: string,
+): Promise<M> {
   const squad = await saveService.getSquad(saveId, leagueSlug, clubSlug);
   const broadcasting = squad?.finances?.broadcasting ?? 0;
   if (broadcasting <= 0 || !squad?.finances) return meta;
@@ -61,7 +66,7 @@ export async function applyBroadcasting(
     kind: "broadcasting",
     amount: broadcasting,
     label: "Broadcasting revenue",
-  });
+  }, seatId);
 
   return meta;
 }
@@ -72,7 +77,8 @@ type ClubRef = {
   squad: Squad;
   leagueSlug: string;
   clubSlug: string;
-  isPlayerClub: boolean;
+  /** The seat managing the club (its ledger gets the entry); absent = an AI club. */
+  seatId?: string;
 };
 
 /**
@@ -84,11 +90,11 @@ type ClubRef = {
  * of the fee back into it (`applyAITransferSpend` / `applyAITransferSale`, src/Domain/aiFinance) —
  * no ledger entry, the ledger is the player club's cash extract only.
  *
- * Returns the updated SaveMeta.
+ * Returns the meta it was given.
  */
-export async function executeTransferFee(
+export async function executeTransferFee<M extends DatedMeta>(
   saveId: string,
-  meta: SaveMeta,
+  meta: M,
   buyer: ClubRef,
   seller: ClubRef,
   fee: number,
@@ -99,7 +105,7 @@ export async function executeTransferFee(
    * fee (ledger text). `playerName` labels the ledger lines.
    */
   opts: { sellOn?: { amount: number; clubName: string }; loan?: boolean; playerName?: string; playerId?: string } = {},
-): Promise<SaveMeta> {
+): Promise<M> {
   const sellOnAmount = Math.min(fee, Math.max(0, opts.sellOn?.amount ?? 0));
   const { buyer: paid, seller: credited } = transferFeeSquads(buyer, seller, fee, sellOnAmount);
   await Promise.all([
@@ -107,38 +113,34 @@ export async function executeTransferFee(
     service.saveSquad(saveId, seller.leagueSlug, seller.clubSlug, credited),
   ]);
 
-  if (buyer.isPlayerClub || seller.isPlayerClub) {
-    const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-    const playerRef = buyer.isPlayerClub ? buyer : seller;
-    const season = await ledgerSeasonFor(service, saveId, playerRef.leagueSlug, date);
-    const entries: LedgerEntry[] = [];
-    const stage = opts.loan ? { stage: "loan_fee" } : {};
-    const who = opts.playerName ? { playerName: opts.playerName, ...(opts.playerId ? { playerId: opts.playerId } : {}) } : {};
-    if (buyer.isPlayerClub && fee > 0) {
-      entries.push({
-        date, kind: "transfer_out", amount: -fee,
-        label: opts.loan ? `Loan fee paid to ${seller.squad.name}` : `Transfer fee paid to ${seller.squad.name}`,
-        ref: { opponentId: seller.squad.id, clubName: seller.squad.name, ...stage, ...who },
-      });
-    }
-    if (seller.isPlayerClub && fee > 0) {
-      entries.push({
-        date, kind: "transfer_in", amount: fee,
-        label: opts.loan ? `Loan fee from ${buyer.squad.name}` : `Transfer fee from ${buyer.squad.name}`,
-        ref: { opponentId: buyer.squad.id, clubName: buyer.squad.name, ...stage, ...who },
-      });
-      if (sellOnAmount > 0) {
-        entries.push({
-          date, kind: "transfer_out", amount: -sellOnAmount,
-          label: `Sell-on clause paid to ${opts.sellOn!.clubName}${opts.playerName ? `: ${opts.playerName}` : ""}`,
-          ref: { clubName: opts.sellOn!.clubName, stage: "sell_on", ...who },
-        });
-      }
-    }
-    if (entries.length === 0) return meta;
-    await service.appendLedger(saveId, season, entries);
+  const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+  const stage = opts.loan ? { stage: "loan_fee" } : {};
+  const who = opts.playerName ? { playerName: opts.playerName, ...(opts.playerId ? { playerId: opts.playerId } : {}) } : {};
+  // Each human side writes in its own seat's ledger (`.claude/rules/game/multiplayer.md`).
+  if (buyer.seatId !== undefined && fee > 0) {
+    const season = await ledgerSeasonFor(service, saveId, buyer.leagueSlug, date);
+    await service.appendLedger(saveId, season, [{
+      date, kind: "transfer_out", amount: -fee,
+      label: opts.loan ? `Loan fee paid to ${seller.squad.name}` : `Transfer fee paid to ${seller.squad.name}`,
+      ref: { opponentId: seller.squad.id, clubName: seller.squad.name, ...stage, ...who },
+    }], buyer.seatId);
   }
-
+  if (seller.seatId !== undefined && fee > 0) {
+    const season = await ledgerSeasonFor(service, saveId, seller.leagueSlug, date);
+    const entries: LedgerEntry[] = [{
+      date, kind: "transfer_in", amount: fee,
+      label: opts.loan ? `Loan fee from ${buyer.squad.name}` : `Transfer fee from ${buyer.squad.name}`,
+      ref: { opponentId: buyer.squad.id, clubName: buyer.squad.name, ...stage, ...who },
+    }];
+    if (sellOnAmount > 0) {
+      entries.push({
+        date, kind: "transfer_out", amount: -sellOnAmount,
+        label: `Sell-on clause paid to ${opts.sellOn!.clubName}${opts.playerName ? `: ${opts.playerName}` : ""}`,
+        ref: { clubName: opts.sellOn!.clubName, stage: "sell_on", ...who },
+      });
+    }
+    await service.appendLedger(saveId, season, entries, seller.seatId);
+  }
   return meta;
 }
 
@@ -148,16 +150,16 @@ export async function executeTransferFee(
  * human side — the balance may go negative (design spec §2, "Extrato").
  */
 export function transferFeeSquads(
-  buyer: Pick<ClubRef, "squad" | "isPlayerClub">,
-  seller: Pick<ClubRef, "squad" | "isPlayerClub">,
+  buyer: Pick<ClubRef, "squad" | "seatId">,
+  seller: Pick<ClubRef, "squad" | "seatId">,
   fee: number,
   /** Part of the fee the seller passes on under a sell-on clause. */
   sellOnAmount = 0,
 ): { buyer: Squad; seller: Squad } {
   const net = fee - sellOnAmount;
   return {
-    buyer: buyer.isPlayerClub ? humanDelta(buyer.squad, -fee) : applyAITransferSpend(buyer.squad, fee),
-    seller: seller.isPlayerClub ? humanDelta(seller.squad, net) : applyAITransferSale(seller.squad, net),
+    buyer: buyer.seatId !== undefined ? humanDelta(buyer.squad, -fee) : applyAITransferSpend(buyer.squad, fee),
+    seller: seller.seatId !== undefined ? humanDelta(seller.squad, net) : applyAITransferSale(seller.squad, net),
   };
 }
 
@@ -174,7 +176,8 @@ const humanDelta = (s: Squad, delta: number): Squad =>
 export async function paySellOnReceiver(
   service: SaveService,
   saveId: string,
-  meta: SaveMeta,
+  /** The seat that may hold the clause (`meta.seatId`, its club `meta.clubId`). */
+  meta: SeatMeta,
   receiverId: string,
   amount: number,
   info: { playerName: string; playerId: string; fromClubName: string },
@@ -182,7 +185,9 @@ export async function paySellOnReceiver(
   if (amount <= 0) return;
   const squad = await service.getSquadById(saveId, receiverId);
   if (!squad) return;
-  if (receiverId === meta.clubId) {
+  // The clause's holder: this seat, another seat (`.claude/rules/game/multiplayer.md`) or an AI club.
+  const ownerSeatId = receiverId === meta.clubId ? meta.seatId : await service.seatOfClub(saveId, receiverId);
+  if (ownerSeatId) {
     const ref = await service.resolveSquadId(saveId, receiverId);
     if (!ref) return;
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -191,7 +196,15 @@ export async function paySellOnReceiver(
       date, kind: "transfer_in", amount,
       label: `Sell-on clause: ${info.playerName}`,
       ref: { clubName: info.fromClubName, stage: "sell_on", playerName: info.playerName, playerId: info.playerId },
-    });
+    }, ownerSeatId);
+    // Another seat's receivable is paid: it leaves that seat's list (this seat's callers clean their own).
+    if (ownerSeatId !== meta.seatId) {
+      const held = await service.getMarket(saveId, ownerSeatId);
+      if (held?.sellOnHeld?.some((h) => h.playerId === info.playerId)) {
+        const { seat } = splitMarket({ ...held, sellOnHeld: held.sellOnHeld.filter((h) => h.playerId !== info.playerId) });
+        await service.saveSeatMarket(saveId, ownerSeatId, seat);
+      }
+    }
     return;
   }
   await service.saveSquadById(saveId, applyAITransferSale(squad, amount));
@@ -220,6 +233,8 @@ export async function recordMoney(
   season: number,
   squadRef: SquadRef,
   entry: LedgerEntry,
+  /** The seat whose ledger gets the entry. */
+  seatId: string,
 ): Promise<Squad> {
   const squad = await service.getSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug);
   if (!squad) {
@@ -227,6 +242,6 @@ export async function recordMoney(
   }
   const updated = applyMoney(squad, entry);
   await service.saveSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug, updated);
-  await service.appendLedger(saveId, season, [entry]);
+  await service.appendLedger(saveId, season, [entry], seatId);
   return updated;
 }

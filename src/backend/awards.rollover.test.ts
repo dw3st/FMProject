@@ -123,7 +123,7 @@ describe("season awards at the rollover", () => {
     const bm = managers.find((m) => m.id === entry.bestManager!.managerId)!;
     expect(bm.awards?.some((a) => a.kind === "best_manager" && a.competition === "premier_league" && a.season === entry.season)).toBe(true);
 
-    const inbox = await saveService.getInbox(saveId);
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
     expect(inbox.some((m) => m.category === "awards" && "kind" in m && m.kind === "league")).toBe(true);
 
     // Rerun on the same state (a retried day): no duplicate entry, no duplicate award on the row.
@@ -132,20 +132,20 @@ describe("season awards at the rollover", () => {
     await recordLeagueAwards(saveService, saveId, {
       league: "premier_league", season: entry.season, closedOn: today, country: "England", tier: 1, weight: entry.weight,
       state: { ...pl, end: today }, squads: inLeague, table: [], managers, targets: new Map(), tierChanges: {},
-      playerClubId: null, leagueName: "Premier League",
+      humanClubIds: new Set<string>(), leagueName: "Premier League",
     });
     const again = (await saveService.getAwardsYear(saveId, year))!;
     expect(again.leagues.filter((l) => l.league === "premier_league" && l.season === entry.season)).toHaveLength(1);
     const res = await recordLeagueAwards(saveService, saveId, {
       league: "premier_league", season: entry.season, closedOn: today, country: "England", tier: 1, weight: entry.weight,
       state: { ...pl, end: today }, squads: inLeague, table: [], managers, targets: new Map(), tierChanges: {},
-      playerClubId: null, leagueName: "Premier League",
+      humanClubIds: new Set<string>(), leagueName: "Premier League",
     });
     // Retried with the human club: the award morale is not applied twice.
     const mine = await recordLeagueAwards(saveService, saveId, {
       league: "premier_league", season: entry.season, closedOn: today, country: "England", tier: 1, weight: entry.weight,
       state: { ...pl, end: today }, squads: inLeague, table: [], managers, targets: new Map(), tierChanges: {},
-      playerClubId: "33", leagueName: "Premier League",
+      humanClubIds: new Set(["33"]), leagueName: "Premier League",
     });
     expect(mine.squads.find((s) => s.id === "33")!.players.find((x) => x.id === star)!.morale).toBe(
       inLeague.find((s) => s.id === "33")!.players.find((x) => x.id === star)!.morale,

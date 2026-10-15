@@ -116,6 +116,8 @@ export function generateBidsForHuman(args: {
   buyerOpen?: (squad: Squad) => boolean;
   /** Last open day of the buyer's window: the bid expires by then. */
   buyerClosesOn?: (squad: Squad) => string | undefined;
+  /** Every human club of the world (`.claude/rules/game/multiplayer.md`): never a bidder. */
+  humanClubIds?: ReadonlySet<string>;
 }): MarketBid[] {
   const { rng, humanSquad, squads, profiles, date } = args;
   const pushed: MarketBid[] = [];
@@ -133,7 +135,7 @@ export function generateBidsForHuman(args: {
     humanSquad.players.find((p) => p.id === id && !p.loan && !squadDepthBlocked(p, humanSquad, false)) ?? null;
   const buyersFor = (player: RosterPlayer, needKind?: "cover_need") =>
     Object.entries(profiles)
-      .filter(([id]) => id !== humanSquad.id && squads.has(id) && !bidClubs(all(), player.id).has(id))
+      .filter(([id]) => id !== humanSquad.id && !args.humanClubIds?.has(id) && squads.has(id) && !bidClubs(all(), player.id).has(id))
       .filter(([id]) => !args.buyerOpen || args.buyerOpen(squads.get(id)!))
       .filter(([, prof]) => prof.needs?.some((n) => playerMatchesBand(player, n.position) && (!needKind || n.intentType === needKind)))
       // A transfer (not a loan): a very ambitious player refuses a much smaller club (`personality.md`).

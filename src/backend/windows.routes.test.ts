@@ -1,8 +1,8 @@
+import { ownSolo, updateSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, type SeatMeta } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { applyDuePreContracts } from "@/backend/rivalWorld";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { contractDemand } from "@/Domain/contracts/contracts";
@@ -15,7 +15,7 @@ type Params = Record<string, string>;
  * buyer's window open; free agents and pre-contracts do not; the manager's renewal.
  */
 describe("transfer windows, pre-contracts and the manager contract (routes)", () => {
-  let meta: SaveMeta;
+  let meta: SeatMeta;
   let saveId = "";
   let token = "";
 
@@ -42,11 +42,11 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     saveId = meta.id;
     const { user, session } = devAutoLogin("windows-route@test.local");
     token = session.token;
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const sq = await human();
     await saveService.saveSquadById(saveId, { ...sq, players: sq.players.slice(0, 25), finances: { ...sq.finances!, budget: 2_000_000_000 } });
     // Mid-October: the summer window closed and the arrival grace is over.
-    meta = await saveService.updateMeta(saveId, { currentDate: "2026-10-10" });
+    meta = await updateSolo(saveId, { currentDate: "2026-10-10" });
   }, 120_000);
 
   afterAll(async () => {
@@ -79,7 +79,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     await saveService.saveMarket(saveId, {
       ...emptyMarket(),
       pendingBids: [{ id: "bid-x", kind: "transfer", playerId: mine.id, playerName: mine.name, clubId: club.id, clubName: club.name, date: "2026-10-10", expires: "2026-10-15", fee: 1_000_000, maxFee: 2_000_000 }],
-    });
+    }, meta.seatId);
     const bid = await route("/api/saves/:saveId/bids/:bidId")(req(`/api/saves/${saveId}/bids/bid-x`, "POST", { saveId, bidId: "bid-x" }, { action: "accept" }));
     expect(bid.status).toBe(409);
     expect(await bid.json()).toMatchObject({ error: "windowClosed" });
@@ -104,18 +104,18 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     const ok = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ accepted: true });
-    expect((await saveService.getMarket(saveId))!.preContracts!.map((p) => p.playerId)).toEqual([target.id]);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts!.map((p) => p.playerId)).toEqual([target.id]);
     const again = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
     expect(again.status).toBe(400);
 
     // The origin club's country rolls: he leaves for free, before the AI renewals.
-    const res = await applyDuePreContracts(saveService, saveId, (await saveService.getMeta(saveId))!, {
+    const res = await applyDuePreContracts(saveService, saveId, meta.seatId, (await saveService.getSeatMeta(saveId, meta.seatId))!, {
       unitIds: new Set([club.id]), date: "2027-05-20", humanClubId: meta.clubId,
     });
     expect(res.moves).toEqual([{ playerId: target.id, from: club.id, to: meta.clubId, fee: 0, kind: "pre_contract", date: "2027-05-20" }]);
     expect((await human()).players.find((p) => p.id === target.id)?.contract?.wage).toBe(5_000_000);
     expect((await saveService.getSquadById(saveId, club.id))!.players.some((p) => p.id === target.id)).toBe(false);
-    expect((await saveService.getMarket(saveId))!.preContracts).toEqual([]);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts).toEqual([]);
   }, 60_000);
 
   test("the manager's contract: a renewal accepted once, then 409", async () => {
@@ -125,11 +125,11 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     expect(body.revenueShare).toBeGreaterThan(0.014);
     expect(body.revenueShare).toBeLessThan(0.041);
     const until = body.contract.until;
-    await saveService.updateMeta(saveId, { managerRenewal: { offeredOn: "2026-10-10", expires: "2027-08-01", wage: body.contract.wage + 1000, seasons: 2 } });
+    await saveService.updateSeat(saveId, meta.seatId, { managerRenewal: { offeredOn: "2026-10-10", expires: "2027-08-01", wage: body.contract.wage + 1000, seasons: 2 } });
     const post = (accept: boolean) => route("/api/saves/:saveId/manager-contract")(req(`/api/saves/${saveId}/manager-contract`, "POST", { saveId }, { accept }));
     const ok = await post(true);
     expect(ok.status).toBe(200);
-    const after = (await saveService.getMeta(saveId))!;
+    const after = (await saveService.getSeatMeta(saveId, meta.seatId))!;
     expect(after.managerContract!.until > until).toBe(true);
     expect(after.managerContract!.wage).toBe(body.contract.wage + 1000);
     expect(after.managerRenewal).toBeUndefined();

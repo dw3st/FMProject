@@ -240,8 +240,8 @@ const hireDue = (date: string) => {
     const row = leagueSeasons.get(sqLeague)?.rows.get(squadId);
     const pick = chooseHire({
       prestige: prestige.get(squadId) ?? 0.5, country, continent: continentOf(squadId),
-      free: managers.filter((m) => !m.isPlayer && !m.squadId && !m.retired).map(cand),
-      employed: managers.filter((m) => !m.isPlayer && m.squadId && !m.interim && m.squadId !== squadId).map(cand),
+      free: managers.filter((m) => !m.seatId && !m.squadId && !m.retired).map(cand),
+      employed: managers.filter((m) => !m.seatId && m.squadId && !m.interim && m.squadId !== squadId).map(cand),
       interim: interim ? { ...cand(interim), interimPpg: row && row.mp > 0 ? row.pts / row.mp : 0 } : null,
       allowPoach: !poached, rng,
     });
@@ -430,7 +430,7 @@ for (let season = 0; season < seasons; season++) {
   const t1 = [...changed].filter((id) => tierOne.has(id)).length;
   const t2 = changed.size - t1;
   const avgSquad = squads.reduce((n, s) => n + s.players.length, 0) / squads.length;
-  const freePool = managers.filter((m) => !m.isPlayer && !m.squadId && !m.retired).length;
+  const freePool = managers.filter((m) => !m.seatId && !m.squadId && !m.retired).length;
   const breaks = managerInvariantBreaks(managers, squads.map((s) => s.id));
   console.log(`\nseason ${year}/${String(year + 1).slice(2)}: ${signings} AI×AI fee transfers (pre ${pre}, mid ${mid}, outside the buyer's window ${outside}; ` +
     `pre ${(100 * pre / Math.max(1, pre + mid)).toFixed(0)}% / mid ${(100 * mid / Math.max(1, pre + mid)).toFixed(0)}%), ${freeSigned} free signings, avg squad ${avgSquad.toFixed(1)}`);
@@ -443,8 +443,8 @@ for (let season = 0; season < seasons; season++) {
 }
 
 // Tenure: closed spells of AI managers, in seasons.
-const spells = managers.flatMap((m) => (m.isPlayer ? [] : (m.clubs ?? []).filter((c) => c.to && !m.interim).map((c) => daysBetween(c.from, c.to!) / 365)));
-const open = managers.filter((m) => !m.isPlayer && m.squadId && !m.interim).map((m) => daysBetween(m.clubs?.at(-1)?.from ?? `${START_YEAR}-06-01`, `${START_YEAR + seasons}-05-31`) / 365);
+const spells = managers.flatMap((m) => (m.seatId ? [] : (m.clubs ?? []).filter((c) => c.to && !m.interim).map((c) => daysBetween(c.from, c.to!) / 365)));
+const open = managers.filter((m) => !m.seatId && m.squadId && !m.interim).map((m) => daysBetween(m.clubs?.at(-1)?.from ?? `${START_YEAR}-06-01`, `${START_YEAR + seasons}-05-31`) / 365);
 const all = [...spells, ...open].sort((a, b) => a - b);
 console.log("\nall seasons:");
 report("hiring state, sampled monthly", total);

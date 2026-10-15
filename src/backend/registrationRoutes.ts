@@ -3,9 +3,10 @@
  * hand-edited list and back to automatic. Writes only with the deadline open.
  */
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { registrationDayCtx, type RegistrationDayCtx } from "@/backend/registrationWorld";
+import { seatWindowRef } from "@/backend/marketWindowWorld";
 import { automaticList, ensureList, manualList, withList, type CompInfo } from "@/Domain/registration/lists";
 import { canAdd, countsOf, validateList } from "@/Domain/registration/rules";
 import { clubTrained, domesticNations, isForeign, isFree, isGreenCardHolder, nationTrained } from "@/Domain/registration/formed";
@@ -51,10 +52,10 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
   };
 }
 
-async function humanCtx(saveId: string): Promise<
+async function humanCtx(saveId: string, seatId: string): Promise<
   Response | { squad: Squad; leagueSlug: string; dctx: RegistrationDayCtx; date: string }
 > {
-  const meta = await saveService.getMeta(saveId);
+  const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
   const index = await saveService.getSquadIndex(saveId);
@@ -62,7 +63,7 @@ async function humanCtx(saveId: string): Promise<
   const squad = await saveService.getSquadById(saveId, meta.clubId);
   if (!entry || !squad) return Response.json({ error: "noClub" }, { status: 409 });
   const date = meta.currentDate ?? "";
-  return { squad, leagueSlug: entry.leagueSlug, dctx: await registrationDayCtx(saveService, saveId, meta, index, date), date };
+  return { squad, leagueSlug: entry.leagueSlug, dctx: await registrationDayCtx(saveService, saveId, meta, index, [seatWindowRef(meta)], date), date };
 }
 
 async function readJson(req: Request): Promise<Record<string, unknown> | null> {
@@ -85,10 +86,10 @@ export const registrationRoutes = {
   /** Every competition of the human club with its rule, deadline, counters and players. */
   "/api/saves/:saveId/registration": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const h = await humanCtx(saveId);
+    const h = await humanCtx(saveId, auth.seatId);
     if (h instanceof Response) return h;
     const infos = await h.dctx.infosFor(h.squad, h.leagueSlug);
     return Response.json({ date: h.date, competitions: infos.map((i) => compView(h.squad, i, h.date)) });
@@ -97,7 +98,7 @@ export const registrationRoutes = {
   /** `PUT { ids }`: a hand-edited list (manual mode). */
   "/api/saves/:saveId/registration/:competition": async (req: Req) => {
     const { saveId, competition } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await readJson(req);
@@ -106,7 +107,7 @@ export const registrationRoutes = {
       return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     }
     return withSaveLock(saveId!, async () => {
-      const h = await humanCtx(saveId!);
+      const h = await humanCtx(saveId!, auth.seatId);
       if (h instanceof Response) return h;
       const info = await h.dctx.infoFor(h.squad, h.leagueSlug, competition!);
       if (!info) return Response.json({ error: "notInCompetition" }, { status: 404 });
@@ -126,11 +127,11 @@ export const registrationRoutes = {
   /** `POST`: back to the automatic list. */
   "/api/saves/:saveId/registration/:competition/auto": async (req: Req) => {
     const { saveId, competition } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     return withSaveLock(saveId!, async () => {
-      const h = await humanCtx(saveId!);
+      const h = await humanCtx(saveId!, auth.seatId);
       if (h instanceof Response) return h;
       const info = await h.dctx.infoFor(h.squad, h.leagueSlug, competition!);
       if (!info) return Response.json({ error: "notInCompetition" }, { status: 404 });

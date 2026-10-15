@@ -8,6 +8,7 @@ import { gateRevenue } from "@/Domain/finance/gate";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
+import { soloSeatId } from "@/backend/testing/seatFixtures";
 
 /**
  * Integration coverage for the "every money move goes through the ledger" plan (Task 4). See
@@ -25,13 +26,13 @@ describe("finance ledger — new save", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const squad = await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId);
     expect(squad?.finances?.budget).toBeGreaterThan(0);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     expect(ledger).toHaveLength(1);
     expect(ledger[0]!.kind).toBe("broadcasting");
     expect(ledger[0]!.amount).toBe(squad!.finances!.budget);
@@ -53,7 +54,7 @@ describe("finance ledger — weekly tick", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     // Advance day by day (via the same buffered pipeline the live route uses) until currentDate
     // lands on a Monday, then run that day too.
@@ -72,7 +73,7 @@ describe("finance ledger — weekly tick", () => {
     expect(outcome.ok).toBe(true);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     const mondayWeeklyKinds = ledger
       .filter((e) => e.date === mondayDate && (e.kind === "commercial" || e.kind === "wages" || e.kind === "operational"))
       .map((e) => e.kind);
@@ -133,14 +134,14 @@ describe("finance ledger — continental home gate", () => {
       clubId: homeClub, clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     await saveService.updateMeta(saveId, { currentDate: matchDate });
     const outcome = await advanceOneDay(saveService, saveId);
     expect(outcome.ok).toBe(true);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, meta.seatId);
     const gateEntry = ledger.find((e) => e.date === matchDate && e.kind === "gate" && e.ref?.competition === contSlug);
     expect(gateEntry).toBeTruthy();
 
@@ -148,7 +149,7 @@ describe("finance ledger — continental home gate", () => {
     const capacity = squad!.venue!.capacity;
     // The human club's stadium fill comes from its fans after today's match
     // (`.claude/rules/game/board-fans.md`); continental days are never Mondays (no weekly drift).
-    const fans = (await saveService.getMeta(saveId))!.board!.fans;
+    const fans = (await saveService.getSeatMeta(saveId, meta.seatId))!.board!.fans;
     const fill = stadiumFillRate(fans);
     // Facilities (`.claude/rules/game/facilities.md`): the gate comes from the attendance — with the
     // default facilities it is the old capacity × fill gate times the season phase (0.98..1.06) and the comfort.
@@ -179,14 +180,14 @@ describe("finance ledger — start kit reconciliation", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveIdNoKit = meta.id;
-    meta = await applyBroadcasting(saveIdNoKit, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveIdNoKit, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const result = await applyRandomStartKit(saveIdNoKit);
     expect(result.applied).toBe(false);
 
     const squad = await saveService.getSquad(saveIdNoKit, meta.leagueSlug, meta.clubId);
     const leagueMeta = await saveService.getLeagueMeta(saveIdNoKit, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveIdNoKit, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveIdNoKit, leagueMeta!.year, meta.seatId);
     const sum = ledger.reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(squad!.finances!.budget);
   }, 300_000); // createSave now also computes every squad's wage factor (#12 curve + club factor) — see SaveService.createSave
@@ -197,7 +198,7 @@ describe("finance ledger — start kit reconciliation", () => {
       clubId: "118", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveIdKit = meta.id;
-    meta = await applyBroadcasting(saveIdKit, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveIdKit, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const preKitSquad = await saveService.getSquad(saveIdKit, meta.leagueSlug, meta.clubId);
     const preKitBudget = preKitSquad!.finances!.budget;
@@ -221,7 +222,7 @@ describe("finance ledger — start kit reconciliation", () => {
     expect(others.filter((f) => f.squad.staff || f.squad.styleFamiliarity).map((f) => f.squad.id)).toEqual([]);
 
     const leagueMeta = await saveService.getLeagueMeta(saveIdKit, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveIdKit, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveIdKit, leagueMeta!.year, meta.seatId);
     const sum = ledger.reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(postKitSquad!.finances!.budget);
   }, 300_000);
@@ -255,7 +256,7 @@ describe("finance ledger — client budget is never trusted (M1)", () => {
     expect(squad?.finances?.budget).toBe(squad?.finances?.broadcasting);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year, await soloSeatId(saveId));
     expect(ledger).toHaveLength(1);
     expect(ledger[0]!.kind).toBe("broadcasting");
     const sum = ledger.reduce((s, e) => s + e.amount, 0);
@@ -278,7 +279,7 @@ describe("finance ledger — rollover broadcasting (L4)", () => {
       clubId: "of_is_breidablik", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const stateBefore = meta.activeLeagues!.find((l) => l.leagueSlug === meta.leagueSlug)!;
     const oldYear = stateBefore.year;
@@ -294,12 +295,12 @@ describe("finance ledger — rollover broadcasting (L4)", () => {
     const outcome = await runBufferedDay(saveId);
     expect(outcome.ok).toBe(true);
 
-    const metaAfter = await saveService.getMeta(saveId);
+    const metaAfter = await saveService.getSeatMeta(saveId, meta.seatId);
     const stateAfter = metaAfter!.activeLeagues!.find((l) => l.leagueSlug === meta.leagueSlug)!;
     expect(stateAfter.year).toBe(oldYear + 1);
 
-    const oldLedger = await saveService.getLedger(saveId, oldYear);
-    const newLedger = await saveService.getLedger(saveId, oldYear + 1);
+    const oldLedger = await saveService.getLedger(saveId, oldYear, meta.seatId);
+    const newLedger = await saveService.getLedger(saveId, oldYear + 1, meta.seatId);
     const newBroadcastingEntries = newLedger.filter((e) => e.kind === "broadcasting");
     expect(newBroadcastingEntries).toHaveLength(1);
     expect(newBroadcastingEntries[0]!.amount).toBe(broadcastingFee);
@@ -325,7 +326,7 @@ describe("finance ledger — negative balance fires once (L4)", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     // Force a guaranteed-negative weekly net: zero commercial income, but weekly wages are always
     // > 0 (the wage curve has a floor per player — src/Domain/finance/wageConfig.ts), so the very
@@ -337,7 +338,7 @@ describe("finance ledger — negative balance fires once (L4)", () => {
     });
 
     const negativeBalanceMsgs = async () => {
-      const inbox = await saveService.getInbox(saveId);
+      const inbox = await saveService.getInbox(saveId, meta.seatId);
       return inbox.filter((m) => m.category === "season" && m.kind === "negative_balance");
     };
 
@@ -377,7 +378,7 @@ describe("finance ledger — transfer entries (L4)", () => {
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
-    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
 
     const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
     const season = leagueMeta!.year;
@@ -388,8 +389,8 @@ describe("finance ledger — transfer entries (L4)", () => {
     const aiSquad = (await saveService.getSquad(saveId, "premier_league", "34"))!;
     await executeTransferFee(
       saveId, meta,
-      { squad: playerSquad, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, isPlayerClub: true },
-      { squad: aiSquad, leagueSlug: "premier_league", clubSlug: "34", isPlayerClub: false },
+      { squad: playerSquad, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, seatId: meta.seatId },
+      { squad: aiSquad, leagueSlug: "premier_league", clubSlug: "34" },
       buyFee,
     );
 
@@ -400,12 +401,12 @@ describe("finance ledger — transfer entries (L4)", () => {
     const playerSquadAfterBuy = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     await executeTransferFee(
       saveId, meta,
-      { squad: aiSquadAfter, leagueSlug: "premier_league", clubSlug: "34", isPlayerClub: false },
-      { squad: playerSquadAfterBuy, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, isPlayerClub: true },
+      { squad: aiSquadAfter, leagueSlug: "premier_league", clubSlug: "34" },
+      { squad: playerSquadAfterBuy, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, seatId: meta.seatId },
       sellFee,
     );
 
-    const ledger = await saveService.getLedger(saveId, season);
+    const ledger = await saveService.getLedger(saveId, season, meta.seatId);
     const transferOut = ledger.find((e) => e.kind === "transfer_out");
     const transferIn = ledger.find((e) => e.kind === "transfer_in");
     expect(transferOut?.amount).toBe(-buyFee);

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, type SeatMeta } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorld";
 import { getCountries } from "@/backend/continentalWorld";
@@ -11,7 +11,7 @@ import { managerInvariantBreaks } from "@/Domain/managers/aiManagers";
  * advance writes the vacancies and the human manager's weekly wage.
  */
 describe("AI managers: vacancies and hirings on a save", () => {
-  let meta: SaveMeta;
+  let meta: SeatMeta;
   let saveId = "";
 
   beforeAll(async () => {
@@ -36,7 +36,7 @@ describe("AI managers: vacancies and hirings on a save", () => {
     const tracker = createManagerTracker({ service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids });
     const desk = createAiManagerDesk({
       service: saveService, saveId, date, tracker, getIndex: () => index, catalog: getLeagueData, countries: getCountries,
-      humanClubId: meta.clubId, playerLeague: "premier_league",
+      humanClubIds: new Set([meta.clubId]),
     });
     const before = (await tracker.list()).find((m) => m.squadId === club)!;
     // A sacking (as the Monday review does) and a vacancy due today.
@@ -53,7 +53,7 @@ describe("AI managers: vacancies and hirings on a save", () => {
     expect(hired.interim).toBeUndefined();
     expect(hired.hiredOn).toBe(date);
     expect(desk.vacancies()[club]).toBeUndefined();
-    expect(desk.news().some((n) => n.kind === "hired" && n.squadId === club)).toBe(true);
+    expect(desk.newsInLeague("premier_league").some((n) => n.kind === "hired" && n.squadId === club)).toBe(true);
     // Self-heal: an interim without a vacancy gets one on the next hiring pass.
     const other = index.inLeague("premier_league").find((t) => t.squadId !== meta.clubId && t.squadId !== club)!.squadId;
     await tracker.apply((ms) => sackManager(ms, { squadId: other, clubName: "Other", date }));
@@ -77,12 +77,12 @@ describe("AI managers: vacancies and hirings on a save", () => {
     await saveService.appendDayTransfers(saveId, date, [{ playerId: "p_route", from: "a", to: "b", fee: 1, kind: "transfer", date }]);
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);
-    const m = (await saveService.getMeta(saveId))!;
+    const m = (await saveService.getSeatMeta(saveId, meta.seatId))!;
     expect(m.managerVacancies?.x_missing_club).toBeUndefined();
     expect((await saveService.getDayLog(saveId, date))?.transfers?.some((t) => t.playerId === "p_route")).toBe(true);
     expect(m.managerEarnings).toBe(m.managerContract!.wage);
     const year = (await saveService.getLeagueMeta(saveId, m.leagueSlug))!.year;
-    const ledger = await saveService.getLedger(saveId, year);
+    const ledger = await saveService.getLedger(saveId, year, meta.seatId);
     expect(ledger.filter((e) => e.kind === "manager" && e.date === date).map((e) => e.amount)).toEqual([-m.managerContract!.wage]);
   }, 240_000);
 });

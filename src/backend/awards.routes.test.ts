@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import type { AwardsYear, LeagueSeasonAwards } from "@/types/awardTypes";
 
 function league(slug: string, season: string): LeagueSeasonAwards {
@@ -26,7 +26,7 @@ describe("GET /api/saves/:saveId/awards", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("awards-route@test.local");
     const other = devAutoLogin("awards-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const key = "/api/saves/:saveId/awards";
     const call = (qs: string, token: string | null = session.token) => {

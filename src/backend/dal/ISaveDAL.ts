@@ -7,10 +7,11 @@ import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -33,10 +34,10 @@ export interface ISaveDAL {
   writeSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
 
   // ── Transfers ─────────────────────────────────────────────────────────────
-  readTransfers(saveId: string): Promise<TransferRecord[]>;
-  writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void>;
-  readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null>;
-  writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void>;
+  readTransfers(saveId: string): Promise<StoredTransferRecord[]>;
+  writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void>;
+  readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null>;
+  writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void>;
 
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
@@ -66,16 +67,6 @@ export interface ISaveDAL {
   readNationalComp(saveId: string, slug: string): Promise<import("@/types/nationalTypes").NationalCompetition | null>;
   writeNationalComp(saveId: string, comp: import("@/types/nationalTypes").NationalCompetition): Promise<void>;
 
-  // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ─────────────
-  /** `null` when nothing was ever observed. */
-  readScouting(saveId: string): Promise<ScoutingState | null>;
-  writeScouting(saveId: string, state: ScoutingState): Promise<void>;
-
-  // ── Achievements (human manager, `.claude/rules/game/achievements.md`) ─────
-  /** `null` when the career has none yet. */
-  readAchievements(saveId: string): Promise<AchievementsState | null>;
-  writeAchievements(saveId: string, state: AchievementsState): Promise<void>;
-
   // ── Manager ranking ───────────────────────────────────────────────────────
   readManagers(saveId: string): Promise<ManagerRecord[]>;
   writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void>;
@@ -101,18 +92,9 @@ export interface ISaveDAL {
   /** Every squad with the league + club file stem it is stored under (what readSquad/writeSquad address). */
   listSquadFiles(saveId: string): Promise<SquadFile[]>;
 
-  // ── Tactics ───────────────────────────────────────────────────────────────
-  readTactics(saveId: string): Promise<TacticsSave | null>;
-  writeTactics(saveId: string, tactics: TacticsSave): Promise<void>;
-
   // ── Transfer market (AI needs + rotation) ─────────────────────────────────
-  readMarket(saveId: string): Promise<MarketState | null>;
-  writeMarket(saveId: string, market: MarketState): Promise<void>;
-
-  // ── Inbox ─────────────────────────────────────────────────────────────────
-  readInbox(saveId: string): Promise<InboxMessage[]>;
-  writeInbox(saveId: string, messages: InboxMessage[]): Promise<void>;
-  appendInboxMessage(saveId: string, message: InboxMessage): Promise<void>;
+  readMarket(saveId: string): Promise<WorldMarketState | null>;
+  writeMarket(saveId: string, market: WorldMarketState): Promise<void>;
 
   // ── Day logs ──────────────────────────────────────────────────────────────
   readDayLog(saveId: string, date: string): Promise<StoredDayLog | null>;
@@ -135,21 +117,8 @@ export interface ISaveDAL {
 
   readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null>;
   writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null>;
-  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void>;
-
-  // ── Ledger (player club cash extract) ────────────────────────────────────────
-  /** Every season year that has a ledger file for this save, ascending. */
-  listLedgerSeasons(saveId: string): Promise<number[]>;
-  readLedger(saveId: string, season: number): Promise<LedgerEntry[]>;
-  /** Append entries to the season's ledger, preserving whatever is already there. */
-  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
-  /**
-   * Replace the season's ledger entirely (idempotent full write). Used by `BufferingSaveDAL`'s
-   * flush, whose pending thunk always writes the complete list (on-disk baseline + everything
-   * buffered) so a write re-run after a partial flush never duplicates entries.
-   */
-  writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null>;
+  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void>;
 
   // ── Season awards (`.claude/rules/game/awards.md`) ───────────────────────────
   /** `awards/{year}.json`: league seasons closed in `year` (+ the world awards for it). */
@@ -169,4 +138,23 @@ export interface ISaveDAL {
   writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void>;
   deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void>;
   listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]>;
+
+  // ── Seats (`.claude/rules/game/multiplayer.md`): `saves/{saveId}/seats/{seatId}/` ──────────────
+  readSeat(saveId: string, seatId: string): Promise<SeatState | null>;
+  writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void>;
+  readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null>;
+  writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void>;
+  readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null>;
+  writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void>;
+  readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null>;
+  writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void>;
+  readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]>;
+  writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void>;
+  appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void>;
+  listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]>;
+  readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]>;
+  appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null>;
+  writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void>;
 }

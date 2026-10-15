@@ -1,5 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatState } from "@/types/seatTypes";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import { playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { youthCompsOfCountry } from "@/backend/youthCompWorld";
@@ -17,16 +18,18 @@ import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { withSaveLock } from "@/backend/saveLock";
 import { parseManagerFace } from "@/Domain/faces/managerFace";
-import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
+import { requireAuth, requireSeat } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { saveCompatibility } from "@/Domain/saveVersion";
 import {
-  recordSaveOwnership,
-  deleteSaveOwnership,
+  addSaveMember,
+  countOwnedSaves,
+  deleteSaveMembers,
   listUserSaveIds,
+  memberOf,
 } from "@/backend/auth/saveOwnership";
 
 export type { SaveMeta };
@@ -38,10 +41,14 @@ export const saveRoutes = {
     if (req.method === "GET") {
       const auth = requireAuth(req);
       if (auth instanceof Response) return auth;
+      // Every world the user is a member of, merged with his seat (a world without the seat files is skipped).
       const ids = listUserSaveIds(auth.userId);
-      const metas = (await Promise.all(ids.map((id) => saveService.getMeta(id))))
-        .filter((m): m is SaveMeta => !!m)
-        .map((m) => ({ ...m, compatible: saveCompatibility(m.gameVersion) === "ok" }));
+      const metas = [];
+      for (const id of ids) {
+        const member = memberOf(id, auth.userId);
+        const meta = member ? await saveService.getSeatMeta(id, member.seatId) : null;
+        if (meta && member) metas.push({ ...meta, role: member.role, compatible: saveCompatibility(meta.gameVersion) === "ok" });
+      }
       return Response.json(metas);
     }
 
@@ -49,14 +56,15 @@ export const saveRoutes = {
       const auth = requireAuth(req);
       if (auth instanceof Response) return auth;
 
-      const existing = listUserSaveIds(auth.userId);
-      if (existing.length >= MAX_SAVES_PER_USER) {
+      // The limit counts only the worlds the user owns (`.claude/rules/game/multiplayer.md`).
+      const owned = countOwnedSaves(auth.userId);
+      if (owned >= MAX_SAVES_PER_USER) {
         return Response.json(
           {
             error:   `Save limit reached. Delete an existing save to start a new one.`,
             code:    "SAVE_LIMIT_REACHED",
             limit:   MAX_SAVES_PER_USER,
-            current: existing.length,
+            current: owned,
           },
           { status: 409 },
         );
@@ -77,9 +85,9 @@ export const saveRoutes = {
       }
       try {
         const meta = await saveService.createSave(body as Parameters<typeof saveService.createSave>[0]);
-        recordSaveOwnership(meta.id, auth.userId);
+        addSaveMember(meta.id, auth.userId, meta.seatId, "owner");
         // Credit season broadcasting revenue to initial balance
-        const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
+        const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
         return Response.json(finalMeta, { status: 201 });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "failed to create save";
@@ -92,11 +100,12 @@ export const saveRoutes = {
 
   "/api/saves/:id": async (req: Request & { params: Record<string, string> }) => {
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(id);
+      // The world merged with the requester's seat (`metaForSeat`): the meta's shape before seats, plus `seatId`.
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
       // The player's season view: league + cup + continental fixtures of the club.
@@ -119,7 +128,7 @@ export const saveRoutes = {
               )
             : [];
           // His national team's games (Etapa 41b), with the club's id on the national side.
-          const national = myId ? await playerNationalCalendar(saveService, id, myId) : { teamId: null, fixtures: [], teamNames: {} };
+          const national = myId ? await playerNationalCalendar(saveService, id, auth.seatId, myId) : { teamId: null, fixtures: [], teamNames: {} };
           const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures, ...national.fixtures].sort((a, b) =>
             a.date.localeCompare(b.date),
           );
@@ -139,17 +148,17 @@ export const saveRoutes = {
             end: playerLeagueState.end,
             calendar: fullCalendar,
             ...(youthCalendar.length > 0 ? { youthCalendar } : {}),
-            restDays: playerLeagueState.restDays ?? [],
+            restDays: meta.restDays ?? [],
             ...(national.teamId ? { nationalTeamId: national.teamId, teamNames: national.teamNames } : {}),
           };
         }
       }
 
-      return Response.json({ ...meta, season });
+      return Response.json({ ...meta, role: auth.role, season });
     }
 
     if (req.method === "PUT") {
-      const existing = await saveService.getMeta(id);
+      const existing = await saveService.getSeatMeta(id, auth.seatId);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
 
       let body: Record<string, unknown>;
@@ -159,11 +168,10 @@ export const saveRoutes = {
         return Response.json({ error: "invalid body" }, { status: 400 });
       }
 
-      // Build an explicit patch to prevent overwriting protected fields
-      const patch: Partial<Omit<SaveMeta, "id" | "createdAt">> = {};
+      // An explicit patch of the requester's seat (the world's date is never written from here).
+      const patch: Partial<SeatState> = {};
       if (body.formation      !== undefined) patch.formation      = body.formation      as string;
       if (body.tactical_style !== undefined) patch.tactical_style = body.tactical_style as TacticalStyle;
-      if (body.currentDate    !== undefined) patch.currentDate    = body.currentDate    as string;
       if (body.min_energy_to_train !== undefined) {
         const n = Number(body.min_energy_to_train);
         if (!Number.isFinite(n)) return Response.json({ error: "invalid min_energy_to_train" }, { status: 400 });
@@ -195,15 +203,16 @@ export const saveRoutes = {
       if (!patch.formation      && !existing.formation)      patch.formation      = "4-3-3";
       if (!patch.tactical_style && !existing.tactical_style) patch.tactical_style = DEFAULT_TACTICAL_STYLE;
 
-      const updated = await saveService.updateMeta(id, patch);
-      return Response.json(updated);
+      await saveService.updateSeat(id, auth.seatId, patch);
+      return Response.json(await saveService.getSeatMeta(id, auth.seatId));
     }
 
     if (req.method === "DELETE") {
+      if (auth.role !== "owner") return Response.json({ error: "only the owner deletes a world" }, { status: 403 });
       const existing = await saveService.getMeta(id);
       if (!existing) return Response.json({ error: "save not found" }, { status: 404 });
       await saveService.deleteSave(id);
-      deleteSaveOwnership(id);
+      deleteSaveMembers(id);
       return Response.json({ ok: true });
     }
 
@@ -212,13 +221,13 @@ export const saveRoutes = {
 
   "/api/saves/:id/tactics": async (req: Request & { params: Record<string, string> }) => {
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(id);
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       return Response.json(tactics);
     }
 
@@ -229,10 +238,10 @@ export const saveRoutes = {
       }
       // Read-modify-write of tactics.json + meta: serialized with the other writers of the save.
       return withSaveLock(id, async () => {
-        const meta = await saveService.getMeta(id);
+        const meta = await saveService.getSeatMeta(id, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-        const existing = (await saveService.getTactics(id)) ?? {
+        const existing = (await saveService.getTactics(id, auth.seatId)) ?? {
           formation:      meta.formation      ?? "4-3-3",
           tactical_style: meta.tactical_style ?? DEFAULT_TACTICAL_STYLE,
           lineup:         [],
@@ -301,8 +310,8 @@ export const saveRoutes = {
           if (marks.length !== matchMarking.marks.length) matchMarking = marks.length > 0 ? { ...matchMarking, marks } : undefined;
         }
 
-        await saveService.saveTactics(id, updated);
-        await saveService.updateMeta(id, {
+        await saveService.saveTactics(id, updated, auth.seatId);
+        await saveService.updateSeat(id, auth.seatId, {
           formation:      updated.formation,
           tactical_style: updated.tactical_style,
           ...(matchMarking !== meta.matchMarking ? { matchMarking } : {}),
@@ -321,14 +330,14 @@ export const saveRoutes = {
   "/api/saves/:id/match-marking": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
     let body: { date?: unknown; marks?: unknown };
     try { body = await req.json(); } catch {
       return Response.json({ error: "invalid body" }, { status: 400 });
     }
     return withSaveLock(id, async () => {
-      const meta = await saveService.getMeta(id);
+      const meta = await saveService.getSeatMeta(id, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       if (!meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
       if (body.date !== meta.currentDate) {
@@ -339,7 +348,7 @@ export const saveRoutes = {
       if (!fixture) return Response.json({ error: "no match today" }, { status: 400 });
       const opponent = await saveService.getSquadById(id, fixture.home === meta.clubId ? fixture.away : fixture.home);
       if (!opponent) return Response.json({ error: "opponent squad not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       const formation = formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" });
       const parsed = parseMatchMarks(
         body.marks,
@@ -348,7 +357,7 @@ export const saveRoutes = {
         new Set(opponent.players.filter((p) => (p.positions?.[0] ?? "") === "GK").map((p) => p.id)),
       );
       if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-      await saveService.updateMeta(id, {
+      await saveService.updateSeat(id, auth.seatId, {
         matchMarking: parsed.value.length > 0 ? { date: meta.currentDate!, marks: parsed.value } : undefined,
       });
       return Response.json({ ok: true, matchMarking: parsed.value.length > 0 ? { date: meta.currentDate, marks: parsed.value } : null });
@@ -358,9 +367,9 @@ export const saveRoutes = {
   "/api/saves/:id/rotation-override": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const id = req.params.id!;
-    const auth = requireSaveOwner(req, id);
+    const auth = requireSeat(req, id);
     if (auth instanceof Response) return auth;
-    const meta = await saveService.getMeta(id);
+    const meta = await saveService.getSeatMeta(id, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
     let body: { date?: unknown; swaps?: unknown; optOut?: unknown };
@@ -379,9 +388,9 @@ export const saveRoutes = {
     if (!optOut && swaps.length > 0) {
       const squad = await saveService.getSquadById(id, meta.clubId);
       if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
-      const tactics = await saveService.getTactics(id);
+      const tactics = await saveService.getTactics(id, auth.seatId);
       // Same registered pool as the preview (`match-setup`), so its suggestions validate here.
-      const reg = await humanMatchRegistrationToday(saveService, id, meta, squad);
+      const reg = await humanMatchRegistrationToday(saveService, id, auth.seatId, squad);
       const valid = resolveUserLineup(
         squad,
         formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" }),
@@ -394,7 +403,7 @@ export const saveRoutes = {
       if (!ok) return Response.json({ error: "swap not in today's suggestion" }, { status: 400 });
     }
 
-    await saveService.updateMeta(id, {
+    await saveService.updateSeat(id, auth.seatId, {
       rotationOverride: {
         date: body.date as string,
         swaps: optOut ? [] : swaps,

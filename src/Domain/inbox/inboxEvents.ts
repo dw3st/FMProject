@@ -29,20 +29,20 @@ import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
 export interface InboxSink {
-  appendInbox(saveId: string, message: InboxMessage): Promise<void>;
+  appendInbox(saveId: string, message: InboxMessage, seatId: string): Promise<void>;
 }
 
 /**
- * Append a message to the save's inbox. Pass the unit of work's service (e.g. the
- * buffered day service in advanceOneDay) so the message is persisted — or not —
- * together with the rest of that unit of work.
+ * Append a message to a seat's inbox. Pass the unit of work's service (e.g. the buffered day service in
+ * advanceOneDay) so the message is persisted — or not — together with the rest of that unit of work.
  */
 export async function emitInboxMessage(
   saveId: string,
   message: InboxMessage,
   service: InboxSink,
+  seatId: string,
 ): Promise<void> {
-  await service.appendInbox(saveId, message);
+  await service.appendInbox(saveId, message, seatId);
 }
 
 export function buildDevelopmentMessage(args: {

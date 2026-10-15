@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { advanceDayRoutes, runBufferedDay } from "@/backend/advanceDay";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import type { TacticsSave } from "@/types/tacticsTypes";
@@ -25,7 +25,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
     });
     saveId = created.id;
     const { user, session } = devAutoLogin(`match-setup-fla-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const cookie = `fs_session=${session.token}`;
     const pre = await advanceDayRoutes["/api/saves/:saveId/presimulate"](Object.assign(
       new Request(`http://localhost/api/saves/${saveId}/presimulate`, { method: "POST", headers: { cookie } }),
@@ -35,7 +35,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
 
     const mySquad = (await saveService.getSquadById(saveId, CLUB))!;
     const tactics: TacticsSave = { tactical_style: "balanced", formation: FORMATION, lineup: autoLineupForFormation(mySquad, formationForSimId(FORMATION)) };
-    await saveService.saveTactics(saveId, tactics);
+    await saveService.saveTactics(saveId, tactics, created.seatId);
 
     // Advance day by day (as the player does); on every main-team match day open the preview.
     const DAYS = Number(process.env.MS_DAYS);
@@ -54,7 +54,7 @@ describe("/api/match-setup, Brazilian career (brazil_serie_a)", () => {
         expect(res.status).toBe(200);
         expect(() => JSON.parse(text)).not.toThrow();
       }
-      const out = await runBufferedDay(saveId, null);
+      const out = await runBufferedDay(saveId, {});
       expect(out.ok).toBe(true);
     }
     console.log(seen.join(" | "));

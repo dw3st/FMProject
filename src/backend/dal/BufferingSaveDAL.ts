@@ -16,10 +16,11 @@ import type {
   LeagueSeasonMeta,
   RoundFixtures,
 } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -215,22 +216,6 @@ export class BufferingSaveDAL implements ISaveDAL {
     this.buffer(`managers:${saveId}`, managers, () => this.inner.writeManagers(saveId, managers));
   }
 
-  // ── Scouting ──────────────────────────────────────────────────────────────────
-  readScouting(saveId: string): Promise<ScoutingState | null> {
-    return this.readThrough(`scouting:${saveId}`, () => this.inner.readScouting(saveId));
-  }
-  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
-    this.buffer(`scouting:${saveId}`, state, () => this.inner.writeScouting(saveId, state));
-  }
-
-  // ── Achievements ──────────────────────────────────────────────────────────────
-  readAchievements(saveId: string): Promise<AchievementsState | null> {
-    return this.readThrough(`achievements:${saveId}`, () => this.inner.readAchievements(saveId));
-  }
-  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
-    this.buffer(`achievements:${saveId}`, state, () => this.inner.writeAchievements(saveId, state));
-  }
-
   // ── Retired players ───────────────────────────────────────────────────────────
   readRetired(saveId: string): Promise<RetiredPlayer[]> {
     return this.readThrough(`retired:${saveId}`, () => this.inner.readRetired(saveId));
@@ -248,16 +233,16 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────────
-  readTransfers(saveId: string): Promise<TransferRecord[]> {
+  readTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     return this.readThrough(`transfers:${saveId}`, () => this.inner.readTransfers(saveId));
   }
-  async writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`transfers:${saveId}`, transfers, () => this.inner.writeTransfers(saveId, transfers));
   }
-  readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null> {
+  readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     return this.readThrough(`transfersArchive:${saveId}:${year}`, () => this.inner.readTransfersArchive(saveId, year));
   }
-  async writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`transfersArchive:${saveId}:${year}`, transfers, () => this.inner.writeTransfersArchive(saveId, year, transfers));
   }
 
@@ -355,32 +340,12 @@ export class BufferingSaveDAL implements ISaveDAL {
     return (await this.squadFilesView(saveId)).map((f) => f.squad);
   }
 
-  // ── Tactics ─────────────────────────────────────────────────────────────────
-  readTactics(saveId: string): Promise<TacticsSave | null> {
-    return this.readThrough(`tactics:${saveId}`, () => this.inner.readTactics(saveId));
-  }
-  async writeTactics(saveId: string, tactics: TacticsSave): Promise<void> {
-    this.buffer(`tactics:${saveId}`, tactics, () => this.inner.writeTactics(saveId, tactics));
-  }
-
   // ── Transfer market ───────────────────────────────────────────────────────────
-  readMarket(saveId: string): Promise<MarketState | null> {
+  readMarket(saveId: string): Promise<WorldMarketState | null> {
     return this.readThrough(`market:${saveId}`, () => this.inner.readMarket(saveId));
   }
-  async writeMarket(saveId: string, market: MarketState): Promise<void> {
+  async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
     this.buffer(`market:${saveId}`, market, () => this.inner.writeMarket(saveId, market));
-  }
-
-  // ── Inbox ─────────────────────────────────────────────────────────────────────
-  readInbox(saveId: string): Promise<InboxMessage[]> {
-    return this.readThrough(`inbox:${saveId}`, () => this.inner.readInbox(saveId));
-  }
-  async writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
-    this.buffer(`inbox:${saveId}`, messages, () => this.inner.writeInbox(saveId, messages));
-  }
-  async appendInboxMessage(saveId: string, message: InboxMessage): Promise<void> {
-    const existing = await this.readInbox(saveId);
-    await this.writeInbox(saveId, [...existing, message]);
   }
 
   // ── Day logs ──────────────────────────────────────────────────────────────────
@@ -425,45 +390,11 @@ export class BufferingSaveDAL implements ISaveDAL {
   async writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
     this.buffer(`leagueSeasonArchive:${saveId}:${archive.leagueSlug}:${archive.year}`, archive, () => this.inner.writeLeagueSeasonArchive(saveId, archive));
   }
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null> {
+  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
     return this.readThrough(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, () => this.inner.readLeagueTransfersArchive(saveId, leagueSlug, year));
   }
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, transfers, () => this.inner.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers));
-  }
-
-  // ── Ledger (player club cash extract) ────────────────────────────────────────
-  //
-  // Same shape as inbox: `writeLedger` (full replace) is the buffered resource;
-  // `appendLedger` is a read-then-write on top of it, so re-flushing an already
-  // partially-flushed write (a write re-buffered while its flush was in flight —
-  // see the squad "re-buffered while in flight" test) is idempotent — the pending
-  // thunk always writes the COMPLETE list, never just what changed since the last
-  // flush, so it can never duplicate entries already on disk from an earlier
-  // partial flush.
-
-  /** Not buffered — a season's ledger file only starts existing via `writeLedger`, and a listing
-   * mid-flush (rollover creating the next season's file) is not a case this read-only helper needs
-   * to cover; callers that need the season just created should already know its year. */
-  listLedgerSeasons(saveId: string): Promise<number[]> {
-    return this.inner.listLedgerSeasons(saveId);
-  }
-  readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
-    return this.readThrough(`ledger:${saveId}:${season}`, () => this.inner.readLedger(saveId, season));
-  }
-  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    this.buffer(`ledger:${saveId}:${season}`, entries, () => this.inner.writeLedger(saveId, season, entries));
-  }
-  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    if (entries.length === 0) return;
-    const key = `ledger:${saveId}:${season}`;
-    await this.readLedger(saveId, season);
-    // Read the cache AFTER the await, not the value `readLedger` resolved with: a concurrent
-    // append may have already landed its own buffered write (updating `cache`) while this call
-    // was awaiting — building from the fresh cache instead of a stale local variable keeps that
-    // append's entries instead of overwriting them.
-    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
-    await this.writeLedger(saveId, season, [...current, ...entries]);
   }
 
   // ── Season awards ─────────────────────────────────────────────────────────────
@@ -521,5 +452,70 @@ export class BufferingSaveDAL implements ISaveDAL {
       else if (this.pending.has(key)) out.delete(rest);
     }
     return [...out.values()];
+  }
+
+  // ── Seats: plain buffered resources (phase 1 of the flush, before the meta) ─────────────────
+  // Seat ids are validated by the inner DAL when the thunk runs; a bad id never reaches the cache
+  // because every caller gets it from `SaveMeta.seats` / `save_members`.
+
+  readSeat(saveId: string, seatId: string): Promise<SeatState | null> {
+    return this.readThrough(`seat:${saveId}:${seatId}`, () => this.inner.readSeat(saveId, seatId));
+  }
+  async writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void> {
+    this.buffer(`seat:${saveId}:${seatId}`, seat, () => this.inner.writeSeat(saveId, seatId, seat));
+  }
+  readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null> {
+    return this.readThrough(`seatTactics:${saveId}:${seatId}`, () => this.inner.readSeatTactics(saveId, seatId));
+  }
+  async writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void> {
+    this.buffer(`seatTactics:${saveId}:${seatId}`, tactics, () => this.inner.writeSeatTactics(saveId, seatId, tactics));
+  }
+  readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null> {
+    return this.readThrough(`seatAchievements:${saveId}:${seatId}`, () => this.inner.readSeatAchievements(saveId, seatId));
+  }
+  async writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void> {
+    this.buffer(`seatAchievements:${saveId}:${seatId}`, state, () => this.inner.writeSeatAchievements(saveId, seatId, state));
+  }
+  readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {
+    return this.readThrough(`seatScouting:${saveId}:${seatId}`, () => this.inner.readSeatScouting(saveId, seatId));
+  }
+  async writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void> {
+    this.buffer(`seatScouting:${saveId}:${seatId}`, state, () => this.inner.writeSeatScouting(saveId, seatId, state));
+  }
+  readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    return this.readThrough(`seatInbox:${saveId}:${seatId}`, () => this.inner.readSeatInbox(saveId, seatId));
+  }
+  async writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void> {
+    this.buffer(`seatInbox:${saveId}:${seatId}`, messages, () => this.inner.writeSeatInbox(saveId, seatId, messages));
+  }
+  async appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void> {
+    const key = `seatInbox:${saveId}:${seatId}`;
+    await this.readSeatInbox(saveId, seatId);
+    // The cache AFTER the await (a concurrent append may have landed while this call waited).
+    const current = (this.cache.get(key) as InboxMessage[] | undefined) ?? [];
+    await this.writeSeatInbox(saveId, seatId, [...current, message]);
+  }
+  /** Not buffered (same reason as `listLedgerSeasons`). */
+  listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    return this.inner.listSeatLedgerSeasons(saveId, seatId);
+  }
+  readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]> {
+    return this.readThrough(`seatLedger:${saveId}:${seatId}:${season}`, () => this.inner.readSeatLedger(saveId, seatId, season));
+  }
+  async writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    this.buffer(`seatLedger:${saveId}:${seatId}:${season}`, entries, () => this.inner.writeSeatLedger(saveId, seatId, season, entries));
+  }
+  async appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const key = `seatLedger:${saveId}:${seatId}:${season}`;
+    await this.readSeatLedger(saveId, seatId, season);
+    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
+    await this.writeSeatLedger(saveId, seatId, season, [...current, ...entries]);
+  }
+  readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null> {
+    return this.readThrough(`seatMarket:${saveId}:${seatId}`, () => this.inner.readSeatMarket(saveId, seatId));
+  }
+  async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
+    this.buffer(`seatMarket:${saveId}:${seatId}`, market, () => this.inner.writeSeatMarket(saveId, seatId, market));
   }
 }

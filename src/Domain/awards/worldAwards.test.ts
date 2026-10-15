@@ -15,7 +15,7 @@ function league(slug: string, weight: number, players: [string, number][], manag
 
 function manager(id: string, titles: { on?: string; points: number }[]): ManagerRecord {
   return {
-    id, name: id, squadId: "club", isPlayer: false, seasons: 1, points: titles.reduce((s, t) => s + t.points, 0),
+    id, name: id, squadId: "club", seasons: 1, points: titles.reduce((s, t) => s + t.points, 0),
     titles: titles.map((t) => ({ season: "2026-27", kind: "league" as const, competition: "pl", squadId: "club", points: t.points, ...(t.on ? { on: t.on } : {}) })),
   };
 }

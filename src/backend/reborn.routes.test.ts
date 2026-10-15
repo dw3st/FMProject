@@ -1,8 +1,8 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { RetiredPlayer, RosterPlayer } from "@/types/playerTypes";
 
@@ -20,7 +20,7 @@ describe("reborn routes", () => {
     saveId = meta.id;
     const { user, session } = devAutoLogin("reborn-route@test.local");
     const other = devAutoLogin("reborn-other@test.local");
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
 
     const call = (key: string, path: string, method: string, token: string, body?: unknown) => {
       const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
@@ -36,7 +36,7 @@ describe("reborn routes", () => {
     const mkRetired = (id: string): RetiredPlayer => ({
       id, name: `Legend ${id}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
       profile: { summary: "s", archetype: "a" }, retiredOn: "2027-06-01", squadId: meta.clubId, age: 39,
-      wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending",
+      wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending", rebornSeatId: meta.seatId,
       statsAtRetirement: {
         passing: 6, vision: 7, finishing: 10, dribbling: 8, speed: 5, acceleration: 6, tackling: 2,
         pressing: 3, stamina: 5, heading: 9, strength: 7, reflex: 0, jump: 0,

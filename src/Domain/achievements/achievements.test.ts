@@ -20,7 +20,7 @@ function facts(over: Partial<MatchFacts> = {}): MatchFacts {
 }
 
 function manager(over: Partial<ManagerRecord> = {}): ManagerRecord {
-  return { id: "player", name: "Me", squadId: "club", isPlayer: true, points: 0, seasons: 0, titles: [], ...over };
+  return { id: "seat:s1", seatId: "s1", name: "Me", squadId: "club", points: 0, seasons: 0, titles: [], ...over };
 }
 
 function day(state: AchievementsState, over: Partial<AchievementDayInput> = {}) {

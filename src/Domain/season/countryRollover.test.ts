@@ -1,5 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import {
+  clubRolloverOutcome,
   findDueRollovers,
   planCountryRollover,
   pyramidByLeague,
@@ -188,5 +189,20 @@ describe("planCountryRollover", () => {
     const plan = planCountryRollover(englandUnit(), { premier_league: table("pl", 20) }, undefined);
     expect(plan.moves).toEqual([]);
     warn.mockRestore();
+  });
+});
+
+describe("clubRolloverOutcome", () => {
+  test("a club's move and title out of a planned unit", () => {
+    const unit = { country: "X", leagues: ["a1", "a2"], pyramid: null, partial: false } as never;
+    const standings = {
+      a1: [{ squadId: "c1", mp: 3 }, { squadId: "c2", mp: 3 }],
+      a2: [{ squadId: "c3", mp: 0 }],
+    } as never;
+    const moves = [{ squadId: "c2", from: "a1", to: "a2", kind: "relegated" }] as never;
+    expect(clubRolloverOutcome(unit, standings, moves, "c1")).toEqual({ move: null, championOf: "a1" });
+    expect(clubRolloverOutcome(unit, standings, moves, "c2").move).toMatchObject({ squadId: "c2", kind: "relegated" });
+    // a table nobody played does not crown anyone
+    expect(clubRolloverOutcome(unit, standings, moves, "c3").championOf).toBeNull();
   });
 });

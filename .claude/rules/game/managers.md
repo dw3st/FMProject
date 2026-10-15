@@ -183,3 +183,7 @@ no lugar do clube. Ver `.claude/rules/game/national-teams.md`.
 para a regra "um técnico por clube" continuar sobre `squadId` (o jogador segue com o clube). A seleção dele tem
 `managerId = "player"` e nenhum registro com `squadId = nat_…`; ao sair (demissão pela meta ou pedido), interino e vaga da
 IA. Título de torneio com ele credita `kind: "national"` no registro do jogador. Ver `.claude/rules/game/national-teams.md`.
+
+## Assentos (Etapa 43)
+
+O técnico humano é `seat:<seatId>` com `seatId` (no lugar de `id: "player"`), um por assento; a IA nunca o demite nem abre vaga no clube dele. Ver `.claude/rules/game/multiplayer.md`.

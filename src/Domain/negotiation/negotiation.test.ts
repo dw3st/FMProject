@@ -280,6 +280,24 @@ describe("AI bids", () => {
     expect(liveBids(bids, "2027-03-07", human)).toEqual([]);
     expect(liveBids(bids, "2027-03-06", human).length).toBe(2);
   });
+  test("another seat's club never bids (multiplayer): transfer, bigger-club and loan bids skip human clubs", () => {
+    const human = squad("h");
+    const buyer = squad("b", 7, { financialTier: "HIGH" });
+    const listed = human.players.find((q) => q.id === "hcm0")!;
+    const loanee = human.players.find((q) => q.id === "hst0")!;
+    const need = (position: "GK" | "Defender" | "Midfielder" | "Forward") =>
+      ({ position, targetMin: 0, targetMax: 10, urgency: 1, budgetTier: "high" as const, intentType: "cover_need" as const });
+    const profiles = {
+      b: { squadId: "b", sellList: [], lastUpdateDay: "2027-03-01", needs: [need("Midfielder"), need("Forward"), need("Defender"), need("GK")] },
+    };
+    const args = (humanClubIds?: ReadonlySet<string>) => ({
+      date: "2027-03-01", rng: () => 0.001, humanSquad: human, squads: new Map([["b", buyer]]), profiles,
+      sellList: [{ playerId: listed.id, priority: 1 }], loanList: [loanee.id], pending: [],
+      seasonEndOf: () => "2027-05-31", newId: () => "x", ...(humanClubIds ? { humanClubIds } : {}),
+    });
+    expect(generateBidsForHuman(args()).length).toBeGreaterThan(0);
+    expect(generateBidsForHuman(args(new Set(["h", "b"])))).toEqual([]);
+  });
 });
 
 describe("transfer request (morale)", () => {

@@ -419,7 +419,8 @@ export function prospectFee(tier: FinancialTier, ownWageFactor: number): number 
 /**
  * 0–2 club-less 16–17-year-olds of `country` for one week of a youth mission: the academy intake
  * model (`generateIntake`) anchored on the country's top league (its clubs give the level and the
- * names), deterministic by save + country + week. Ids `prospect_<hash>_<i>`.
+ * names), deterministic by save + (seat) + country + week. Ids `prospect_<hash>_<i>`; in a world of seats
+ * (`seatId`, `.claude/rules/game/multiplayer.md`) `prospect_<seat>_<hash>_<i>`, so two seats never draw the same one.
  */
 export function generateProspects(args: {
   saveId: string;
@@ -428,13 +429,17 @@ export function generateProspects(args: {
   topLeagueSquads: Squad[];
   nextSeasonEnd: string;
   fee: number;
+  /** The seat whose mission found them (multi worlds); absent = solo (the draw of before). */
+  seatId?: string;
 }): ScoutProspect[] {
   const players = args.topLeagueSquads.flatMap((s) => s.players);
   if (players.length === 0) return [];
-  const key = `${args.saveId}:${args.country}:${args.week}`;
+  const key = args.seatId ? `${args.saveId}:${args.seatId}:${args.country}:${args.week}` : `${args.saveId}:${args.country}:${args.week}`;
   const count = Math.floor(mulberry32(seedFrom(`${key}:count`))() * (S.PROSPECTS_MAX_PER_WEEK + 1));
   if (count === 0) return [];
-  const tag = `prospect_${seedFrom(key).toString(36)}`;
+  const tag = args.seatId
+    ? `prospect_${args.seatId.replace(/[^A-Za-z0-9]/g, "").slice(0, 12)}_${seedFrom(key).toString(36)}`
+    : `prospect_${seedFrom(key).toString(36)}`;
   const anchor: Squad = {
     id: tag, name: args.country, colors: ["#555", "#888"], money: 0, country: args.country,
     players, financialTier: "MEDIUM",

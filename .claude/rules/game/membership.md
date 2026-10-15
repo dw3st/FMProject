@@ -128,3 +128,7 @@ dela). Ver `.claude/rules/game/rescheduling.md`.
 
 `leagues/` também guarda copas (`cup_*`), continentais (`ucl`/`uel`/`lib`/`sud`) e torneios de base (`u21_*`/`u19_*`):
 nenhuma entra em `activeLeagues` nem muda o pertencimento; a tabela da base usa `meta.youth.clubs`, não o índice.
+
+## Assentos (Etapa 43)
+
+A liga e o clube de cada assento seguem o índice na virada do país do assento (`seat.json`, não a meta do mundo). "Clube do jogador" aqui = o clube de cada assento. Ver `.claude/rules/game/multiplayer.md`.

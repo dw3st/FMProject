@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { SaveService, saveService, type SaveMeta } from "@/backend/SaveService";
+import { SaveService, saveService, type SeatMeta } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { recordMoney } from "@/backend/FinancialService";
 import { logError } from "@/Logger";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
@@ -31,15 +31,15 @@ type Req = Request & { params: Record<string, string> };
 const STANDS: readonly StandId[] = ["north", "south", "east", "west"];
 
 interface Human {
-  meta: SaveMeta;
+  meta: SeatMeta;
   squad: Squad;
   ref: { leagueSlug: string; clubSlug: string };
   date: string;
 }
 
 /** The human club (with facilities set up if missing), or 409 `noClub` when unemployed. */
-async function loadHuman(saveId: string, service: SaveService = saveService): Promise<Human | Response> {
-  const meta = await service.getMeta(saveId);
+async function loadHuman(saveId: string, seatId: string, service: SaveService = saveService): Promise<Human | Response> {
+  const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
   const index = await service.getSquadIndex(saveId);
@@ -253,10 +253,10 @@ async function facilitiesView(h: Human) {
 export const facilityRoutes = {
   "/api/saves/:saveId/facilities": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const h = await loadHuman(saveId);
+    const h = await loadHuman(saveId, auth.seatId);
     if (h instanceof Response) return h;
     return Response.json(await facilitiesView(h));
   },
@@ -264,7 +264,7 @@ export const facilityRoutes = {
   /** `POST` a `FacilityRequest`: the board approves (project started) or refuses (reason). */
   "/api/saves/:saveId/facilities/request": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
@@ -272,7 +272,7 @@ export const facilityRoutes = {
     const request = parseFacilityRequest(body);
     if (!request) return Response.json({ error: "invalidRequest" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const h = await loadHuman(saveId);
+      const h = await loadHuman(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const f = h.squad.facilities!;
       const itemRequest = request.kind === "repair" || request.kind === "rebuild" || request.kind === "upgrade";
@@ -297,7 +297,7 @@ export const facilityRoutes = {
           const paid = payRepairNow(f, quote, { id: `fac_${randomUUID()}`, date: h.date });
           await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, withFacilities(h.squad, paid.facilities));
           const season = (await service.getLeagueMeta(saveId, h.meta.leagueSlug))?.year ?? parseInt(h.date.slice(0, 4), 10);
-          const squad = await recordMoney(service, saveId, season, h.ref, paid.entry);
+          const squad = await recordMoney(service, saveId, season, h.ref, paid.entry, auth.seatId);
           const project = paid.facilities.projects.at(-1)!;
           return Response.json({ approved: true, paidByClub: true, boardShare: 0, project, view: await facilitiesView({ ...h, squad }) });
         });
@@ -325,7 +325,7 @@ export const facilityRoutes = {
       const project = next.projects.at(-1)!;
       await emitInboxMessage(saveId, buildFacilityMessage({
         date: h.date, kind: "approved", ...what, boardShare: decision.boardShare, end: project.end,
-      }), saveService);
+      }), saveService, auth.seatId);
       return Response.json({ approved: true, boardShare: decision.boardShare, project, view: await facilitiesView({ ...h, squad }) });
     });
   },

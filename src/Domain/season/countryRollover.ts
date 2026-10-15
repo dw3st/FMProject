@@ -157,3 +157,19 @@ export function planCountryRollover(
 
   return { moves, playerMove, playerChampionOf, tierChanges, nextMembership };
 }
+
+/** A club's promotion/relegation and league title out of a unit's plan (one per seat at the rollover). */
+export function clubRolloverOutcome(
+  unit: RolloverUnit,
+  standings: Record<string, StandingRow[]>,
+  moves: ClubMove[],
+  squadId: string,
+): { move: ClubMove | null; championOf: string | null } {
+  return {
+    move: moves.find((m) => m.squadId === squadId) ?? null,
+    championOf: unit.leagues.find((slug) => {
+      const top = standings[slug]?.[0];
+      return top?.squadId === squadId && (top.mp ?? 0) > 0;
+    }) ?? null,
+  };
+}

@@ -30,7 +30,7 @@ try {
     const index = await saveService.getSquadIndex(saveId);
     const t0 = performance.now();
     const day = await playNationalDay({
-      service: saveService, saveId, date, index, humanClubId: "33",
+      service: saveService, saveId, date, index, humanClubs: new Map([[meta.clubId, meta.seatId]]),
       squadOf: (id) => saveService.getSquadById(saveId, id),
     });
     for (const s of day.squads.values()) await saveService.saveSquadById(saveId, s);

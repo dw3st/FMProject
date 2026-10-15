@@ -63,6 +63,7 @@ export function marketAfterRequests(market: MarketState, add: string[], remove: 
 export async function applyMoraleDay(
   service: SaveService,
   saveId: string,
+  seatId: string,
   args: {
     clubId: string;
     date: string;
@@ -87,7 +88,7 @@ export async function applyMoraleDay(
     const buyer = await service.getSquadById(saveId, b.clubId);
     bids.push({ playerId: b.playerId, clubName: b.clubName, stronger: buyer ? teamAvgRating(buyer) > avg : false });
   }
-  const market = await service.getMarket(saveId);
+  const market = await service.getMarket(saveId, seatId);
   const out = moraleDay({
     squad,
     date: args.date,
@@ -99,15 +100,15 @@ export async function applyMoraleDay(
     ...(args.seasonRolled ? { seasonRolled: true } : {}),
     ...(args.directorContractTalk ? { directorContractTalk: args.directorContractTalk } : {}),
     // The manager's Motivation (`.claude/rules/game/achievements.md`).
-    motivation: (await service.getAchievements(saveId)).attributes.motivation,
+    motivation: (await service.getAchievements(saveId, seatId)).attributes.motivation,
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);
   if (market && (out.listRequested.length > 0 || out.unlistRequested.length > 0)) {
-    await service.saveMarket(saveId, marketAfterRequests(market, out.listRequested, out.unlistRequested));
+    await service.saveMarket(saveId, marketAfterRequests(market, out.listRequested, out.unlistRequested), seatId);
   } else if (!market && out.listRequested.length > 0) {
     // No market file yet (first days): the next tick builds one from this list.
-    await service.saveMarket(saveId, marketAfterRequests(emptyMarket(), out.listRequested, []));
+    await service.saveMarket(saveId, marketAfterRequests(emptyMarket(), out.listRequested, []), seatId);
   }
   return out.news;
 }

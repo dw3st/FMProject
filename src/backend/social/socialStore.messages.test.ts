@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 import { DAY_MS } from "@/Domain/social/socialConfig";
 import { dmRoomId, worldRoomId } from "@/Domain/social/rooms";
 import {
-  addWorldMember,
   blockUser,
   insertMessage,
   isWorldMember,
@@ -25,10 +24,10 @@ describe("worlds", () => {
     const b = makeUser(uniqueNick());
     const c = makeUser(uniqueNick());
     const saveId = randomUUID();
-    recordSaveOwnership(saveId, a.id);
+    addSaveMember(saveId, a.id, "seat-a", "owner");
     expect(isWorldMember(a.id, saveId)).toBe(true);
     expect(worldsOf(a.id)).not.toContain(saveId);
-    addWorldMember(saveId, b.id, "member");
+    addSaveMember(saveId, b.id, "seat-b", "member");
     expect(worldMemberIds(saveId).sort()).toEqual([a.id, b.id].sort());
     expect(worldsOf(a.id)).toContain(saveId);
     expect(worldsOf(b.id)).toContain(saveId);

@@ -304,6 +304,16 @@ export interface YouthDayInjury {
   returnDate: string;
 }
 
+/** One seat's youth day: the call-ups of its club used today and its players' ratings. */
+export interface YouthSeatDay {
+  /** Ages whose call-ups of the seat's club were used today (played or cancelled). */
+  consumedCallUps: YouthCompAge[];
+  /** The seat's call-ups of a game played today who did not play, per age. */
+  skippedCallUps: Partial<Record<YouthCompAge, string[]>>;
+  /** Players of the seat's club who played a youth game today and their rating, per age. */
+  humanRatings: Partial<Record<YouthCompAge, Record<string, number>>>;
+}
+
 export interface YouthDayResult {
   /** Squads changed by today's youth games (to merge into the day's `squadWrites`). */
   squads: Map<string, Squad>;
@@ -313,12 +323,8 @@ export interface YouthDayResult {
   injuries: YouthDayInjury[];
   /** Players whose injury cleared at a youth game today ("returned" inbox message). */
   healed: { squadId: string; playerId: string; playerName: string }[];
-  /** Ages whose call-ups of the human club were used today (played or cancelled). */
-  consumedCallUps: YouthCompAge[];
-  /** Human call-ups of a game played today who did not play, per age. */
-  skippedCallUps: Partial<Record<YouthCompAge, string[]>>;
-  /** Players of the human club who played a youth game today and their rating, per age. */
-  humanRatings: Partial<Record<YouthCompAge, Record<string, number>>>;
+  /** Per seat (`.claude/rules/game/multiplayer.md`): its call-ups used today, who of them did not play, its ratings. */
+  bySeat: Record<string, YouthSeatDay>;
   postponed: number;
   cancelled: number;
 }
@@ -335,20 +341,19 @@ export async function playYouthDay(args: {
   saveId: string;
   date: string;
   index: SquadIndex;
-  /** Human club (`meta.clubId`, "" when unemployed). */
-  humanClubId: string;
-  callUps?: YouthCallUps;
-  tactics: TacticsSave | null;
+  /** The seats' clubs (squad id -> its seat's call-ups and tactics). */
+  humans: ReadonlyMap<string, { seatId: string; callUps?: YouthCallUps; tactics: TacticsSave | null }>;
   teamsPlayingToday: ReadonlySet<string>;
   squadOf: (id: string) => Promise<Squad | null>;
   rng?: () => number;
 }): Promise<YouthDayResult> {
-  const { service, saveId, date, index, humanClubId } = args;
+  const { service, saveId, date, index, humans } = args;
   const rng = args.rng ?? Math.random;
   const out: YouthDayResult = {
-    squads: new Map(), participants: new Set(), logs: [], injuries: [], healed: [], consumedCallUps: [],
-    skippedCallUps: {}, humanRatings: {}, postponed: 0, cancelled: 0,
+    squads: new Map(), participants: new Set(), logs: [], injuries: [], healed: [], bySeat: {}, postponed: 0, cancelled: 0,
   };
+  const seatDay = (seatId: string): YouthSeatDay =>
+    (out.bySeat[seatId] ??= { consumedCallUps: [], skippedCallUps: {}, humanRatings: {} });
   const todays = await service.getYouthFixturesForDate(saveId, date);
   if (todays.length === 0) return out;
 
@@ -407,8 +412,14 @@ export async function playYouthDay(args: {
 
   const firstTeamXIs = new Map<string, Set<string>>();
   const squadNow = async (id: string): Promise<Squad | null> => out.squads.get(id) ?? (await args.squadOf(id));
-  const consume = (age: YouthCompAge) => {
-    if (!out.consumedCallUps.includes(age)) out.consumedCallUps.push(age);
+  /** The call-ups of `age` of every seat of the fixture were used today (played or cancelled). */
+  const consume = (age: YouthCompAge, fx: Fixture) => {
+    for (const club of [fx.home, fx.away]) {
+      const h = humans.get(club);
+      if (!h) continue;
+      const d = seatDay(h.seatId);
+      if (!d.consumedCallUps.includes(age)) d.consumedCallUps.push(age);
+    }
   };
 
   for (const slug of slugs) {
@@ -444,7 +455,7 @@ export async function playYouthDay(args: {
     };
 
     for (const fx of bySlug.get(slug)!) {
-      const humanSide = fx.home === humanClubId || fx.away === humanClubId;
+      const humanSide = humans.has(fx.home) || humans.has(fx.away);
       // Also a game left on a FIFA / tournament day (a calendar generated before the national teams,
       // e.g. an old start kit) is moved off it.
       if (blocked.has(date) || args.teamsPlayingToday.has(fx.home) || args.teamsPlayingToday.has(fx.away)) {
@@ -464,7 +475,7 @@ export async function playYouthDay(args: {
           continue;
         }
         cancel(fx);
-        if (humanSide) consume(age);
+        if (humanSide) consume(age, fx);
         continue;
       }
 
@@ -476,28 +487,30 @@ export async function playYouthDay(args: {
       }
       const filler = { saveId, slug, year: meta.year };
       const side = (squad: Squad) => {
-        const human = squad.id === humanClubId;
+        const human = humans.get(squad.id);
         // The club's first-team XI, computed only when a candidate needs it and once per club a day.
         const firstTeamXI = () => {
           let xi = firstTeamXIs.get(squad.id);
           if (!xi) {
-            const saved = human ? (args.tactics?.lineup ?? []).filter((id) => id) : [];
+            const saved = human ? (human.tactics?.lineup ?? []).filter((id) => id) : [];
             xi = new Set(saved.length > 0
               ? saved
-              : firstTeamLineup(squad, human ? args.tactics?.formation : squad.aiFormation?.id, date));
+              : firstTeamLineup(squad, human ? human.tactics?.formation : squad.aiFormation?.id, date));
             firstTeamXIs.set(squad.id, xi);
           }
           return xi;
         };
         return pickYouthLineup({
-          age, squad, firstTeamXI, callUps: human ? callUpIds(args.callUps?.[age]) : [],
+          age, squad, firstTeamXI, callUps: human ? callUpIds(human.callUps?.[age]) : [],
           playedToday: out.participants, date, filler, nationality: country,
         });
       };
       const hl = side(home);
       const al = side(away);
-      if (home.id === humanClubId) out.skippedCallUps[age] = hl.skippedCallUps;
-      if (away.id === humanClubId) out.skippedCallUps[age] = al.skippedCallUps;
+      const homeHuman = humans.get(home.id);
+      const awayHuman = humans.get(away.id);
+      if (homeHuman) seatDay(homeHuman.seatId).skippedCallUps[age] = hl.skippedCallUps;
+      if (awayHuman) seatDay(awayHuman.seatId).skippedCallUps[age] = al.skippedCallUps;
       const roles = slotRoles(formationForSimId("4-3-3"));
       const { recording } = quickSimMatch({
         fixtureId: fx.id,
@@ -517,11 +530,13 @@ export async function playYouthDay(args: {
       const info = (id: string): YouthPlayerInfo => names.get(id) ?? { name: id, squadId: "" };
 
       for (const squad of [home, away]) {
-        const res = applyYouthMatch(squad, recording, { date, rng, trackMorale: squad.id === humanClubId });
-        if (squad.id === humanClubId) {
-          const ratings = { ...out.humanRatings[age] };
+        const seat = humans.get(squad.id);
+        const res = applyYouthMatch(squad, recording, { date, rng, trackMorale: !!seat });
+        if (seat) {
+          const d = seatDay(seat.seatId);
+          const ratings = { ...d.humanRatings[age] };
           for (const id of res.participants) ratings[id] = recording.playerRatings[id] ?? 6;
-          out.humanRatings[age] = ratings;
+          d.humanRatings[age] = ratings;
         }
         out.squads.set(squad.id, res.squad);
         for (const id of res.participants) out.participants.add(id);
@@ -539,7 +554,7 @@ export async function playYouthDay(args: {
       out.logs.push(youthMatchLog(fx, recording, info, { home: hl.lineup, away: al.lineup }, generated));
       replace({ ...fx, played: true, result: { ...recording.score } });
       played = true;
-      if (humanSide) consume(age);
+      if (humanSide) consume(age, fx);
     }
 
     for (const r of changedRounds) {

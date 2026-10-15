@@ -2,18 +2,18 @@ import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerB
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard } from "@/Domain/boardFans/boardFans";
 import { afterManagerComplaint } from "@/Domain/morale/morale";
-import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
 import { achievementsDay } from "@/backend/achievementsWorld";
 import { applyDirectorDay } from "@/backend/directorWorld";
-import type { PlayerNews } from "@/Domain/morale/morale";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { directorHandlesContracts, type DirectorDecision, type DirectorOutcome } from "@/Domain/responsibilities/director";
+import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
-import { saveService, SaveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, SaveService, type SeatMeta, type SaveMeta } from "@/backend/SaveService";
+import { metaForSeat } from "@/Domain/seats/seats";
+import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
@@ -25,11 +25,11 @@ import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
-import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
+import type { Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
+import { pruneTransferLog } from "@/Domain/transfer/transferView";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
-import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
   buildContinentalMessage,
@@ -61,14 +61,10 @@ import {
   snapshotBoard,
   stadiumFillRate,
 } from "@/Domain/boardFans/boardFans";
-import { boardAfterMatches, objectiveFromSquads, type MatchContext } from "@/backend/boardWorld";
+import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import { pressDay } from "@/backend/pressWorld";
 import { collectDayNews, newNewsCollector, readLeaders, writeDayNews } from "@/backend/newsWorld";
-import type { DayNewsInput } from "@/types/newsTypes";
-import type { PressInboxMessage } from "@/types/inboxTypes";
-import type { PressState } from "@/types/pressTypes";
-import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
-import type { JobOffer, Unemployment } from "@/types/jobTypes";
+import type { JobOffer } from "@/types/jobTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { mergeOffers, pruneOffers, sackHumanManager } from "@/Domain/jobs/jobs";
 import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
@@ -81,9 +77,10 @@ import {
   buildQuickMatchEvent,
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay/matches";
-import { resolveSimMode } from "@/Domain/advanceDay/simMode";
+import { resolveSimModeForSeats } from "@/Domain/advanceDay/simMode";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
+import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
@@ -91,9 +88,10 @@ import { matchPitchCondition } from "@/Domain/facilities/pitch";
 import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
-import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
+import { computeSeatedMatchLineups, type HumanMatchSide } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
-import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
+import { splitMarket } from "@/Domain/market/seatMarket";
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
@@ -105,8 +103,8 @@ import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
 import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
 import { managerNation } from "@/Domain/national/nationalCoach";
-import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
-import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
+import { applyHumanBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { clubRolloverOutcome, findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
@@ -117,7 +115,7 @@ import {
 } from "@/Domain/finance/prizes";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
@@ -141,19 +139,17 @@ import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/D
 import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorld";
 import { recordLeagueAwards, recordSeasonGoals, runWorldCeremony } from "@/backend/awardsWorld";
 import { tierFactor } from "@/Domain/awards/awardsConfig";
-import type { AwardsInboxMessage } from "@/types/inboxTypes";
-import { loadWindowContext } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import {
   humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
 } from "@/backend/registrationWorld";
 import { buildRegistrationMessage } from "@/Domain/inbox/registrationMessage";
-import type { RegistrationNotice } from "@/types/registrationTypes";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
 import { buildManagerNewsMessage, buildPressInviteMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
 import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts, syncPlayerRestDays } from "@/backend/reschedulingWorld";
 import { firstMatchAfterMoves, rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
-import { ageStaff, staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
+import { ageStaff, staffContractDay } from "@/Domain/staff/staffContracts";
 import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
@@ -245,7 +241,20 @@ async function leagueNameResolver(states: LeagueSeasonState[]): Promise<(slug: s
 
 export type AdvanceDayOutcome =
   | { ok: false; status: number; error: string }
+  | { ok: true; payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> };
+
+/** One seat's view of a day: the world's payload merged with that seat's part (`payloadForSeat`). */
+export type SeatDayOutcome =
+  | { ok: false; status: number; error: string }
   | { ok: true; payload: Record<string, unknown> };
+
+/** The response of a day for one seat: the world's part plus that seat's (season end, sacking, offers…). */
+export function payloadForSeat(
+  outcome: { payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> },
+  seatId: string,
+): Record<string, unknown> {
+  return { ...outcome.payload, ...(outcome.seats[seatId] ?? {}) };
+}
 
 /**
  * One day as a unit of work: a fresh BufferingSaveDAL, `advanceOneDay` against it, then one
@@ -255,13 +264,13 @@ export type AdvanceDayOutcome =
  */
 export async function runBufferedDay(
   saveId: string,
-  playedMatchOverride: PlayedMatchRecording | null = null,
+  recordings: Record<string, PlayedMatchRecording> = {},
   options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
   // Each squad is read at most once and written once.
   const buffer = new BufferingSaveDAL(new FileSystemDAL());
   const dayService = new SaveService(buffer);
-  const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride, options);
+  const outcome = await advanceOneDay(dayService, saveId, recordings, options);
   if (!outcome.ok) return outcome;
   try {
     await buffer.flush();
@@ -324,7 +333,7 @@ export async function presimulatePreStart(
   for (let guard = 0; guard < 2000; guard++) {
     const current = (await service.getMeta(saveId))?.currentDate;
     if (!current || current >= playerStart) break;
-    const outcome = await advanceOneDay(service, saveId, null, { marketFrozen: true });
+    const outcome = await advanceOneDay(service, saveId, {}, { marketFrozen: true });
     if (!outcome.ok) break;
     days++;
   }
@@ -349,6 +358,7 @@ export async function presimulatePreStart(
  */
 export async function emitContinentalSeasonStartNews(
   saveId: string,
+  seatId: string,
   clubId: string,
   date: string,
 ): Promise<void> {
@@ -362,24 +372,24 @@ export async function emitContinentalSeasonStartNews(
 
   await emitInboxMessage(saveId, buildContinentalMessage({
     date, kind: "qualified", competition: slug, competitionName: compName, stage: "group",
-  }), saveService);
+  }), saveService, seatId);
 
   if (status.kind === "group") {
     const opponentNames = status.opponentIds.map((id) => index.byId(id)?.name ?? id);
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "group", competition: slug, competitionName: compName, stage: "group",
       group: status.group, opponentNames,
-    }), saveService);
+    }), saveService, seatId);
   } else if (status.kind === "eliminatedGroup") {
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "eliminated", competition: slug, competitionName: compName, stage: "group",
-    }), saveService);
+    }), saveService, seatId);
   } else {
     const opponentName = index.byId(status.opponentId)?.name ?? status.opponentId;
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "draw", competition: slug, competitionName: compName, stage: status.stage,
       opponentName, firstLegDate: status.firstLegDate, venue: status.venue,
-    }), saveService);
+    }), saveService, seatId);
   }
 }
 
@@ -405,17 +415,18 @@ export interface AdvanceOneDayOptions {
 export async function advanceOneDay(
   saveService: SaveService,
   saveId: string,
-  playedMatchOverride: PlayedMatchRecording | null = null,
+  /** Live recordings of today's matches, by seat id (`.claude/rules/game/multiplayer.md`). */
+  recordings: Record<string, PlayedMatchRecording> = {},
   options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
     // ── Load core state ──────────────────────────────────────────────────────
-    const meta = await saveService.getMeta(saveId);
-    if (!meta) return { ok: false, status: 404, error: "save not found" };
-    if (!meta.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
+    const world = await saveService.getMeta(saveId);
+    if (!world) return { ok: false, status: 404, error: "save not found" };
+    if (!world.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
 
-    const currentDate = meta.currentDate;
+    const currentDate = world.currentDate;
     const nextDate = addOneDay(currentDate);
-    const activeLeagues = meta.activeLeagues ?? [];
+    const activeLeagues = world.activeLeagues ?? [];
 
     const dayEvents: Array<StoredDayLog["events"][number] | TrainingEvent | RestEvent> = [];
     // Keyed by squadId (not appended) so a club with two fixtures today (should not normally
@@ -432,74 +443,75 @@ export async function advanceOneDay(
       | { kind: "returned"; squadId: string; playerId: string; playerName: string }
       | { kind: "suspended"; squadId: string; playerId: string; playerName: string; matches: number }
     > = [];
-    // The player's club home fixtures today, across every competition (league, cup, continental —
-    // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
-    // loop below processes each competition's rounds for the day.
-    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string; importance?: number }> = [];
-    // Big-match demand (derby, knockout — spec 2026-10-08-match-visual §6): the league table is read
-    // once, before today's games are played (the same table the board sees).
-    let importanceStandings: StandingRow[] | null | undefined;
-
-    const tactics = await saveService.getTactics(saveId);
-
-    // Board and fans of the human club (`.claude/rules/game/board-fans.md`): updated in memory
-    // through the day, written with the meta patch at the end. Messages are deferred like the rest.
-    let board: BoardState | undefined = meta.board;
-    const boardMessages: Parameters<typeof buildBoardMessage>[0][] = [];
-    let sackedReason: SackReason | null = null;
-    // Press conferences (Etapa 42, `.claude/rules/game/press.md`): the human club's titles and knockout exits of the
-    // day, and the expectation/derby of each of its matches (from the board), read by `pressDay` at the end of the day.
-    const pressTitles: string[] = [];
-    const pressEliminated: string[] = [];
-    let pressMatchContext = new Map<string, MatchContext>();
+    // Each seat's home fixtures today (`DaySeat.homeFixtures`, for the gate and the facilities) and its
+    // big-match table (`DaySeat.importanceStandings`, read once before today's games) are filled by the match loop.
 
     // Membership comes from the save's squad folders. Built once for the day's matches and
     // training; only the season rollover changes it, and it re-reads the index right after.
     let index = await saveService.getSquadIndex(saveId);
 
+    // The seats of the world (`.claude/rules/game/multiplayer.md`): every step of the day loops over them.
+    const daySeats = await loadDaySeats(saveService, saveId, world, index);
+    if (daySeats.length === 0) return { ok: false, status: 400, error: "save has no seat" };
+    // The world as no seat sees it (AI-only flows that need a meta: the date of an AI fee, a clause paid to AI).
+    const noSeat: SeatMeta = metaForSeat(world, "", {
+      clubId: "", clubName: "", clubColors: ["#000000", "#ffffff"], leagueSlug: "", leagueName: "",
+    });
+    // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
+    const humanClubs = humanClubSet(daySeats);
+
+
+    // Board and fans of each seat's club (`.claude/rules/game/board-fans.md`): `DaySeat.board`, updated in memory
+    // through the day and written with the seat patch at the end; messages deferred like the rest. Press conferences
+    // (Etapa 42, `.claude/rules/game/press.md`): `DaySeat.press` keeps the club's titles and knockout exits of the day
+    // and the expectation/derby of each of its matches (from the board), read by `pressDay` at the end of the day.
+
     // World news of the day (Etapa 42, `press.md` → "Notícias"): pushed as the day goes, written at the end. Never in
     // the start-kit pre-simulation (the kit is generic; its dates are before the career).
     const newsCollector = options.marketFrozen ? null : newNewsCollector();
     if (newsCollector) {
-      newsCollector.startLeaders = await readLeaders(saveService, saveId, [meta.leagueSlug ?? "", ...(meta.followedLeagues ?? [])]);
+      newsCollector.startLeaders = await readLeaders(saveService, saveId, [
+        ...new Set(daySeats.flatMap((ds) => [ds.meta.leagueSlug ?? "", ...(ds.meta.followedLeagues ?? [])])),
+      ]);
     }
 
-    // The player's squad: meta.clubId is the squadId.
-    const playerEntry = index.byId(meta.clubId);
-    const playerSquadId: string | undefined = playerEntry?.squadId;
 
     // Transfer windows of the day (`.claude/rules/game/transfer-windows.md`), from today's seasons.
-    const windows = await loadWindowContext(meta, index, currentDate);
+    const seatRefs = daySeats.map((ds) => seatWindowRef(ds.meta));
+    const windows = await loadWindowContext(world, index, currentDate, seatRefs);
     // Player moves of the day, written to the day log (`StoredDayLog.transfers`) after the market.
     const dayMoves: DayTransfer[] = [];
 
     // Competition registration (`.claude/rules/game/registration.md`): the human club's lists move in the
     // morning (before the matches, so a signing made today by a route can play today with the deadline open);
     // every club's list is ensured at match time; the AI refreshes after the market. News deferred past `clearInbox`.
-    const regCtx = await registrationDayCtx(saveService, saveId, meta, index, currentDate, windows);
-    const registrationNotices: RegistrationNotice[] = [];
+    const regCtx = await registrationDayCtx(saveService, saveId, world, index, seatRefs, currentDate, windows);
     let registrationViolations = 0;
-    // Cards of the user's manager in today's live match (`.claude/rules/game/var.md` §4).
-    let humanManagerCards: ManagerCardRecord[] = [];
-    if (playerSquadId && playerEntry && !options.marketFrozen) {
-      const humanReg = await saveService.getSquadById(saveId, playerSquadId);
+    for (const ds of daySeats) {
+      if (!ds.clubId || !ds.entry || options.marketFrozen) continue;
+      const humanReg = await saveService.getSquadById(saveId, ds.clubId);
       if (humanReg) {
-        const r = await humanRegistrationDay(regCtx, humanReg, playerEntry.leagueSlug);
+        const r = await humanRegistrationDay(regCtx, humanReg, ds.entry.leagueSlug);
         if (r.changed) await saveService.saveSquadById(saveId, r.squad);
-        registrationNotices.push(...r.notices);
+        ds.registrationNotices.push(...r.notices);
       }
+      // Morale (`.claude/rules/game/morale.md`): who could not play today (injured / suspended before
+      // the matches) — those matches never count against his minutes.
+      for (const p of humanReg?.players ?? []) if (isUnavailable(p, currentDate)) ds.moraleUnavailable.add(p.id);
     }
 
-    // Morale (`.claude/rules/game/morale.md`): who could not play today (injured / suspended before
-    // the matches) — those matches never count against his minutes.
-    const moraleUnavailable = new Set<string>();
-    if (playerSquadId && !options.marketFrozen) {
-      const pre = await saveService.getSquadById(saveId, playerSquadId);
-      for (const p of pre?.players ?? []) if (isUnavailable(p, currentDate)) moraleUnavailable.add(p.id);
-    }
-
-    // Cup ties run in the full engine only when a club of the player's league is involved.
-    const playerLeagueClubs = new Set(index.inLeague(meta.leagueSlug).map((t) => t.squadId));
+    // Cup ties run in the full engine only when a club of a seat's league is involved.
+    const humanLeagueClubs = new Set(
+      daySeats.flatMap((ds) => (ds.clubId ? index.inLeague(ds.meta.leagueSlug).map((t) => t.squadId) : [])),
+    );
+    // The seat of each human club; the live recordings not yet taken by a match (a leftover is the national game).
+    const seatOf = seatByClub(daySeats);
+    const pending = new Map(Object.entries(recordings));
+    // A seat's ledger season: the year of its league, read once (prizes and the money block).
+    const ledgerSeasonOf = async (ds: DaySeat): Promise<number> =>
+      (ds.ledgerSeason ??= (await saveService.getLeagueMeta(saveId, ds.meta.leagueSlug))?.year ?? new Date(currentDate).getFullYear());
+    // A seat rests on its own rest days (`seat.restDays`, seeded from its league's calendar, edited by the manager).
+    const restToday = (ds: DaySeat) => (ds.meta.restDays ?? []).includes(currentDate);
 
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
@@ -578,7 +590,10 @@ export async function advanceOneDay(
           const regAway = await matchRegistration(regCtx, awaySquadRaw, awayEntry.leagueSlug, leagueSlug);
           const homeSquad = regHome?.squad ?? homeSquadRaw;
           const awaySquad = regAway?.squad ?? awaySquadRaw;
-          if (!options.marketFrozen) registrationNotices.push(...(regHome?.notices ?? []), ...(regAway?.notices ?? []));
+          if (!options.marketFrozen) {
+            seatOf.get(rawFixture.home)?.registrationNotices.push(...(regHome?.notices ?? []));
+            seatOf.get(rawFixture.away)?.registrationNotices.push(...(regAway?.notices ?? []));
+          }
           const registration = { ...(regHome ? { home: regHome.reg } : {}), ...(regAway ? { away: regAway.reg } : {}) };
           // Ids of a side that are not registered for this competition (always 0 — checked by the season smoke).
           const unregisteredOf = (ids: Iterable<string>) => {
@@ -625,49 +640,54 @@ export async function advanceOneDay(
             }
           }
 
-          const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
-          if (fixture.home === playerSquadId) {
+          const homeSeat = seatOf.get(fixture.home);
+          const awaySeat = seatOf.get(fixture.away);
+          if (homeSeat) {
             const gateKind: GateKind = isContinentalSlug(leagueSlug) ? "continental" : isCupSlug(leagueSlug) ? "cup" : "league";
-            if (importanceStandings === undefined) {
-              importanceStandings = meta.leagueSlug ? await saveService.getLeagueStandings(saveId, meta.leagueSlug) : null;
+            if (homeSeat.importanceStandings === undefined) {
+              homeSeat.importanceStandings = homeSeat.meta.leagueSlug
+                ? await saveService.getLeagueStandings(saveId, homeSeat.meta.leagueSlug)
+                : null;
             }
-            const importance = await homeMatchImportance(saveService, saveId, fixture, playerSquadId, {
-              leagueSlug: meta.leagueSlug ?? "",
-              standings: importanceStandings,
+            const importance = await homeMatchImportance(saveService, saveId, fixture, fixture.home, {
+              leagueSlug: homeSeat.meta.leagueSlug ?? "",
+              standings: homeSeat.importanceStandings,
               squadOf: async (id) => (id === homeSquad.id ? homeSquad : id === awaySquad.id ? awaySquad : saveService.getSquadById(saveId, id)),
             });
-            playerHomeFixturesToday.push({
+            homeSeat.homeFixtures.push({
               competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away,
               ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
             });
           }
-          const useRecording =
-            playedMatchOverride !== null &&
-            playedMatchOverride.fixtureId === fixture.id &&
-            userPlaysThis;
+          // A seat's live recording of this fixture (only against the AI; human x human live is part 4).
+          const recSeat = [homeSeat, awaySeat].find((ds) => ds && pending.get(ds.seatId)?.fixtureId === fixture.id);
+          const recording = recSeat ? pending.get(recSeat.seatId)! : null;
+          if (recording && homeSeat && awaySeat) {
+            return { ok: false, status: 400, error: "a match between two seats has no live recording" };
+          }
 
-          if (useRecording && playedMatchOverride) {
-            const result = playedMatchOverride.score;
+          if (recording && recSeat) {
+            const result = recording.score;
             const level =
               result.home + (fixture.aggregate?.home ?? 0) === result.away + (fixture.aggregate?.away ?? 0);
             if (fixture.knockout && level) {
-              const pens = playedMatchOverride.decider?.penalties;
+              const pens = recording.decider?.penalties;
               if (!pens || pens.home === pens.away) {
                 return { ok: false, status: 400, error: "knockout recording without a winner" };
               }
             }
-            const recorded = new Set([...Object.keys(playedMatchOverride.playerStats), ...Object.keys(playedMatchOverride.playerEnergy ?? {})]);
+            const recorded = new Set([...Object.keys(recording.playerStats), ...Object.keys(recording.playerEnergy ?? {})]);
             if (unregisteredOf(recorded) > 0) {
               return { ok: false, status: 400, error: "unregistered player in recording" };
             }
-            const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
+            const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording);
             r.event = withRefereeLog(r.event, await refereeOf(fixture));
             dayEvents.push(r.event);
-            const complained = playedMatchOverride.complaintMorale === true;
-            const backed = (sq: Squad) => (complained && sq.id === playerSquadId ? afterManagerComplaint(sq) : sq);
+            const complained = recording.complaintMorale === true;
+            const backed = (sq: Squad) => (complained && sq.id === recSeat.clubId ? afterManagerComplaint(sq) : sq);
             squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: backed(r.updatedHome) });
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: backed(r.updatedAway) });
-            humanManagerCards = sanitizeManagerCards(playedMatchOverride.managerCards);
+            recSeat.managerCards = sanitizeManagerCards(recording.managerCards);
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
             for (const inj of r.injuriesApplied) {
@@ -696,17 +716,20 @@ export async function advanceOneDay(
               ...updatedFixtures[idx]!, played: true, result: r.event.score,
               ...(r.event.decider ? { decider: r.event.decider } : {}),
             };
-            playedMatchOverride = null;
+            pending.delete(recSeat.seatId);
           } else {
-            const sim = computeMatchSimulationLineups(
-              fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride, meta.matchMarking, registration,
-            );
-            const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
-            const mode = userPlays
+            const humanSide = (ds: DaySeat): HumanMatchSide => ({
+              tactics: ds.tactics, rotationOverride: ds.meta.rotationOverride, matchMarking: ds.meta.matchMarking,
+            });
+            const sim = computeSeatedMatchLineups(fixture, homeSquad, awaySquad, {
+              ...(homeSeat ? { home: humanSide(homeSeat) } : {}),
+              ...(awaySeat ? { away: humanSide(awaySeat) } : {}),
+            }, registration);
+            const mode = homeSeat || awaySeat
               ? "full"
               : isKnockoutComp(leagueSlug)
-                ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
-                : resolveSimMode(leagueSlug, meta);
+                ? (humanLeagueClubs.has(fixture.home) || humanLeagueClubs.has(fixture.away) ? "full" : "fast")
+                : resolveSimModeForSeats(leagueSlug, daySeats.map((ds) => ds.meta));
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
             const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
             const referee = await refereeOf(fixture);
@@ -759,8 +782,7 @@ export async function advanceOneDay(
 
     // A recording no club fixture took may be the human manager's national game (Etapa 41b): the national day
     // below takes it, or the day fails.
-    const nationalRecording = playedMatchOverride;
-    playedMatchOverride = null;
+    const nationalRecordings = Object.fromEntries(pending);
 
     // ── Goal of the season candidates (`.claude/rules/game/awards.md`) ───────────
     // Full-engine league matches only (quickSim events carry no `goals`); idempotent by key.
@@ -770,8 +792,11 @@ export async function advanceOneDay(
     // After the first-team matches (the day knows `teamsPlayingToday`) and before training: who
     // played a youth game neither trains nor rests; the games stay out of `dayEvents`.
     const youthDay = await playYouthDay({
-      service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
-      callUps: meta.youthCallUps, tactics, teamsPlayingToday,
+      service: saveService, saveId, date: currentDate, index,
+      humans: new Map(daySeats.flatMap((ds) => (ds.clubId
+        ? [[ds.clubId, { seatId: ds.seatId, callUps: ds.meta.youthCallUps, tactics: ds.tactics }] as const]
+        : []))),
+      teamsPlayingToday,
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
     });
     for (const [id, squad] of youthDay.squads) {
@@ -784,23 +809,27 @@ export async function advanceOneDay(
     // ── National teams (`.claude/rules/game/national-teams.md`): returns, draws, call-ups, today's games ──
     // After the club games (no club plays in a FIFA window) and before training: who is with his national
     // team today neither trains nor rests at the club.
+    const managersToday = options.marketFrozen ? [] : await saveService.getManagers(saveId);
     const nationalDay = await playNationalDay({
-      service: saveService, saveId, date: currentDate, index, humanClubId: meta.clubId,
+      service: saveService, saveId, date: currentDate, index,
+      humanClubs: new Map(daySeats.filter((ds) => ds.clubId).map((ds) => [ds.clubId!, ds.seatId] as const)),
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
-        human: {
-          reputation: managerReputation(await saveService.getManagers(saveId), meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10)),
-          nationality: managerNation(meta.manager?.nationalityIso),
-        },
+        humans: Object.fromEntries(daySeats.map((ds) => [ds.seatId, {
+          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId),
+          nationality: managerNation(ds.meta.manager?.nationalityIso),
+        }])),
       }),
-      playedMatch: nationalRecording,
+      playedMatches: nationalRecordings,
     });
-    if (nationalRecording && !nationalDay.consumedRecording) {
-      return {
-        ok: false,
-        status: 400,
-        error: "playedMatch fixture does not match today's calendar or was already consumed",
-      };
+    for (const sid of Object.keys(nationalRecordings)) {
+      if (!nationalDay.bySeat[sid]?.consumedRecording) {
+        return {
+          ok: false,
+          status: 400,
+          error: "playedMatch fixture does not match today's calendar or was already consumed",
+        };
+      }
     }
     for (const [id, squad] of nationalDay.squads) {
       const e = index.byId(id);
@@ -809,9 +838,10 @@ export async function advanceOneDay(
     for (const inj of nationalDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
     const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants]);
 
-    // ── Aggregate development messages for user's club ────────────────────────
+    // ── Aggregate development messages for each seat's club ───────────────────
     // One message per player per day, merging stat changes across multiple matches.
-    if (playerSquadId) {
+    for (const ds of daySeats) {
+      if (!ds.clubId) continue;
       const aggregated = new Map<
         string,
         { playerName: string; changes: Map<string, { from: number; to: number }> }
@@ -820,8 +850,8 @@ export async function advanceOneDay(
       for (const event of dayEvents) {
         if (event.kind !== "match") continue;
         const userSide =
-          event.home === playerSquadId ? "home" :
-          event.away === playerSquadId ? "away" : null;
+          event.home === ds.clubId ? "home" :
+          event.away === ds.clubId ? "away" : null;
         if (!userSide) continue;
 
         for (const dc of event.developmentChanges) {
@@ -859,14 +889,23 @@ export async function advanceOneDay(
             changes: net,
           }),
           saveService,
+          ds.seatId,
         );
       }
     }
 
     // ── Training / rest for non-playing teams in ALL active leagues ──────────
-    // Determine if it's a rest day for the player's league
-    const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
-    const isRestDay = (playerLeagueState?.restDays ?? []).includes(currentDate);
+    // A seat's club rests on the seat's rest days; an AI club the day before and after each of its own official
+    // matches (`aiRestingClubs`, `.claude/rules/game/multiplayer.md`).
+    const aiResting = aiRestingClubs({
+      playedYesterday: await saveService.getClubsWithFixtureOn(saveId, addDays(currentDate, -1)),
+      playsTomorrow: await saveService.getClubsWithFixtureOn(saveId, nextDate),
+      playsToday: teamsPlayingToday,
+    });
+    const isRestDay = (squadId: string): boolean => {
+      const ds = seatOf.get(squadId);
+      return ds ? restToday(ds) : aiResting.has(squadId);
+    };
 
     for (const leagueState of activeLeagues) {
       const league = leagueState.leagueSlug;
@@ -877,7 +916,7 @@ export async function advanceOneDay(
         const squad = squadWrites.get(row.squadId)?.squad ?? await saveService.getSquad(saveId, league, club);
         if (!squad) continue;
 
-        if (isRestDay) {
+        if (isRestDay(row.squadId)) {
           const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate, { skipPlayerIds: clubDayOff });
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
@@ -886,9 +925,11 @@ export async function advanceOneDay(
             injuryInboxEvents.push({ kind: "returned", squadId: row.squadId, playerId, playerName });
           }
         } else {
-          // No explicit focus: the human club drills the style it plays (tactics.json).
+          // No explicit focus: a seat's club drills the style it plays (its tactics.json); an AI club the default.
+          const ds = seatOf.get(row.squadId);
           const policy = resolveTrainingPolicy(
-            { ...meta, style_focus: meta.style_focus ?? tactics?.tactical_style }, club, row.squadId,
+            ds ? { ...ds.meta, style_focus: ds.meta.style_focus ?? ds.tactics?.tactical_style } : { clubId: "" },
+            club, row.squadId,
           );
           const { event, updatedSquad, healedPlayerIds, newInjuries } =
             buildTrainingEvent(row.squadId, squad, policy, currentDate, Math.random, { skipPlayerIds: clubDayOff });
@@ -905,50 +946,38 @@ export async function advanceOneDay(
       }
     }
 
-    // ── Injury news for the human club (match + training + return-to-play) ───
+    // ── Injury news for each seat's club (match + training + return-to-play) ───
     // Not emitted yet — `clearInbox` (season rollover, further below) would wipe it if it landed
-    // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
-    // `continentalMessages` / `negativeBalanceMessage`.
-    const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
-    // Contract news (90-day warning, released at the rollover): same deferral, same reason.
-    const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
-    // Academy news (new intake, released at 19): same deferral.
-    const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
-    // Facilities news (finished works, attendance record): same deferral, same reason.
-    const facilityMessages: Parameters<typeof buildFacilityMessage>[0][] = [];
-    // Retirement news for the human club: same deferral.
-    const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
-    // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
-    const clubRecordMessages: ClubRecordBroken[] = [];
-    // Season awards (`.claude/rules/game/awards.md`): the player's league at its rollover, the world
-    // ceremony in January. Same deferral.
-    const deferredAwardsMessages: AwardsInboxMessage[] = [];
-    // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money.
-    // Deferred like the rest: emitted after any `clearInbox` this day.
-    const negotiationNews: Parameters<typeof buildTransferNegotiationMessage>[0][] = [];
-    // New AI transfer bids for the human club's players today: a player who wants the move asks to
-    // talk (`.claude/rules/game/morale.md`).
-    const moraleBids: { playerId: string; clubId: string; clubName: string }[] = [];
+    // now. Queued into `DaySeat.deferred.injury` and flushed after `clearInbox`, like the other deferred news:
+    // contracts (90-day warning, released at the rollover), academy (intake, released at 19), facilities,
+    // retirement, club records (`.claude/rules/game/club-history.md`), season awards (the seat's league at its
+    // rollover, the world ceremony in January, `.claude/rules/game/awards.md`).
+    // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money, per seat
+    // (`DaySeat.deferred.negotiation`), emitted after any `clearInbox` this day.
+    // New AI transfer bids for a seat's players today (`DaySeat.moraleBids`): a player who wants the move asks
+    // to talk (`.claude/rules/game/morale.md`).
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     // With the director in charge of contracts there is no 90-day warning (he decides them himself).
-    if (playerSquadId && !directorHandlesContracts(meta.responsibilities)) {
-      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
+    for (const ds of daySeats) {
+      if (!ds.clubId || directorHandlesContracts(ds.meta.responsibilities)) continue;
+      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDays(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
-        const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
+        const humanSquad = await saveService.getSquadById(saveId, ds.clubId);
         const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
         if (ending.length > 0) {
-          deferredContractMessages.push({
+          ds.deferred.contract.push({
             date: currentDate, kind: "expiring", players: ending.map((p) => ({ id: p.id, name: p.name })),
           });
         }
       }
     }
-    if (playerSquadId) {
+    for (const ds of daySeats) {
+      if (!ds.clubId) continue;
       for (const inj of injuryInboxEvents) {
-        if (inj.squadId !== playerSquadId) continue;
-        deferredInjuryMessages.push(
+        if (inj.squadId !== ds.clubId) continue;
+        ds.deferred.injury.push(
           inj.kind === "injured"
             ? {
                 date: currentDate, kind: "injured", playerId: inj.playerId, playerName: inj.playerName,
@@ -1008,29 +1037,29 @@ export async function advanceOneDay(
       }
     }
 
-    // ── Board and fans: today's official matches of the human club (standings already written) ──
-    if (board && playerSquadId) {
+    // ── Board and fans: today's official matches of each seat's club (standings already written) ──
+    for (const ds of daySeats) {
+      if (!ds.board || !ds.clubId) continue;
       const boardOut = await boardAfterMatches({
-        board, service: saveService, saveId, playerSquadId,
-        playerLeagueSlug: meta.leagueSlug,
-        playerLeagueState: activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug),
+        board: ds.board, service: saveService, saveId, playerSquadId: ds.clubId,
+        playerLeagueSlug: ds.meta.leagueSlug,
+        playerLeagueState: activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug),
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         fixtureOf: (competition, round, fixtureId) =>
           roundUpdates.get(competition)?.get(round)?.find((f) => f.id === fixtureId),
         squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       });
-      board = boardOut.board;
-      pressMatchContext = boardOut.context;
+      ds.board = boardOut.board;
+      ds.press.matchContext = boardOut.context;
     }
 
     // ── The manager's ban (`.claude/rules/game/var.md` §4): served by an official match, a red starts one ──
-    let managerBan = meta.managerBan;
-    let managerBanGiven: number | null = null;
-    if (playerSquadId) {
-      const step = nextManagerBan(meta.managerBan, teamsPlayingToday.has(playerSquadId), humanManagerCards, currentDate);
-      managerBan = step.ban;
-      managerBanGiven = step.given;
-      if (board) for (const c of humanManagerCards) board = applyManagerCard(board, c.card);
+    for (const ds of daySeats) {
+      if (!ds.clubId) continue;
+      const step = nextManagerBan(ds.meta.managerBan, teamsPlayingToday.has(ds.clubId), ds.managerCards, currentDate);
+      ds.managerBan = step.ban;
+      ds.managerBanGiven = step.given;
+      if (ds.board) for (const c of ds.managerCards) ds.board = applyManagerCard(ds.board, c.card);
     }
 
     // ── Prize money: cup + continental (league prize is at rollover, further down) ───────────
@@ -1040,25 +1069,19 @@ export async function advanceOneDay(
     // prize the same day (e.g. continental participation + a group result), and this always runs
     // AFTER the day's match writes are flushed (`squadWrites`, above) — never races or clobbers
     // them, and any market-tick write later this same day (below) re-reads the squad fresh.
-    let playerLedgerSeasonCache: number | null = null;
-    const playerLedgerSeason = async (): Promise<number> => {
-      if (playerLedgerSeasonCache !== null) return playerLedgerSeasonCache;
-      const lm = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-      playerLedgerSeasonCache = lm?.year ?? new Date(currentDate).getFullYear();
-      return playerLedgerSeasonCache;
-    };
     const awardClubPrize = async (
       clubId: string, amount: number, label: string, ref?: LedgerEntry["ref"],
     ): Promise<number> => {
       if (amount <= 0) return 0;
       const entry = index.byId(clubId);
       if (!entry) return 0;
-      if (clubId === playerSquadId) {
-        const season = await playerLedgerSeason();
+      const ds = seatOf.get(clubId);
+      if (ds) {
         await recordMoney(
-          saveService, saveId, season,
+          saveService, saveId, await ledgerSeasonOf(ds),
           { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
           { date: currentDate, kind: "prize", amount, label, ...(ref ? { ref } : {}) },
+          ds.seatId,
         );
         return amount;
       }
@@ -1074,19 +1097,19 @@ export async function advanceOneDay(
 
     // Cup/continental titles won today wait in meta.pendingTitles until the club's next country
     // rollover writes its history row (`.claude/rules/game/history.md`).
-    let pendingTitles: Record<string, string[]> = meta.pendingTitles ?? {};
+    let pendingTitles: Record<string, string[]> = world.pendingTitles ?? {};
     let pendingTitlesChanged = false;
     // Manager ranking (`.claude/rules/game/managers.md`): titles and seasons of the day, written once at the end.
     const managerTracker = createManagerTracker({
       service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
-      weights: meta.managerWeights, date: currentDate,
+      weights: world.managerWeights, date: currentDate,
     });
     // AI managers (`.claude/rules/game/managers.md` → "Técnicos da IA"): Monday review, rollover
     // sackings, vacancies and hirings. Not in the start-kit pre-simulation (no career yet).
     const aiDesk = options.marketFrozen ? null : createAiManagerDesk({
       service: saveService, saveId, date: currentDate, tracker: managerTracker, getIndex: () => index,
-      catalog: getLeagueData, countries: getCountries, vacancies: meta.managerVacancies,
-      humanClubId: playerSquadId ?? null, playerLeague: playerSquadId ? meta.leagueSlug : null,
+      catalog: getLeagueData, countries: getCountries, vacancies: world.managerVacancies,
+      humanClubIds: humanClubs,
     });
     const recordTitle = (squadId: string, title: string) => {
       newsCollector?.champions.push({ competition: title.slice(title.indexOf(":") + 1), squadId });
@@ -1129,14 +1152,17 @@ export async function advanceOneDay(
         const label = competitionName(cSlug, catalogForCupPrizes as unknown as LeagueData[], "en");
         const base = await cupBaseFor(cupMeta.cup.country);
 
-        if (playerSquadId && winnerId === playerSquadId && stage === "final") pressTitles.push(`cup:${cSlug}`);
-        if (playerSquadId && loserId === playerSquadId) pressEliminated.push(cSlug);
-        if (board && playerSquadId && (winnerId === playerSquadId || loserId === playerSquadId)) {
-          if (winnerId === playerSquadId) {
-            board = applyCompetitionEvent(board, stage === "final" ? { kind: "title", title: `cup:${cSlug}` } : { kind: "stage" });
-          } else if (!["qf", "sf", "final"].includes(stage)) {
-            board = applyCompetitionEvent(board, { kind: "early_exit" });
-          }
+        const winnerSeat = seatOf.get(winnerId);
+        const loserSeat = seatOf.get(loserId);
+        if (winnerSeat && stage === "final") winnerSeat.press.titles.push(`cup:${cSlug}`);
+        if (loserSeat) loserSeat.press.eliminated.push(cSlug);
+        if (winnerSeat?.board) {
+          winnerSeat.board = applyCompetitionEvent(
+            winnerSeat.board, stage === "final" ? { kind: "title", title: `cup:${cSlug}` } : { kind: "stage" },
+          );
+        }
+        if (loserSeat?.board && !["qf", "sf", "final"].includes(stage)) {
+          loserSeat.board = applyCompetitionEvent(loserSeat.board, { kind: "early_exit" });
         }
 
         const winnerPrize = cupStagePrize(base, stage);
@@ -1221,14 +1247,15 @@ export async function advanceOneDay(
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
         for (const ev of events) {
-          if (playerSquadId && "clubId" in ev && ev.clubId === playerSquadId) {
-            if (ev.kind === "champion") pressTitles.push(`continental:${cSlug}`);
-            else if (ev.kind === "eliminated") pressEliminated.push(cSlug);
+          const evSeat = "clubId" in ev ? seatOf.get(ev.clubId) : undefined;
+          if (evSeat) {
+            if (ev.kind === "champion") evSeat.press.titles.push(`continental:${cSlug}`);
+            else if (ev.kind === "eliminated") evSeat.press.eliminated.push(cSlug);
           }
-          if (board && "clubId" in ev && ev.clubId === playerSquadId) {
-            if (ev.kind === "champion") board = applyCompetitionEvent(board, { kind: "title", title: `continental:${cSlug}` });
-            else if (ev.kind === "advanced") board = applyCompetitionEvent(board, { kind: "stage" });
-            else if (ev.kind === "eliminated" && ev.stage === "group") board = applyCompetitionEvent(board, { kind: "early_exit" });
+          if (evSeat?.board) {
+            if (ev.kind === "champion") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "title", title: `continental:${cSlug}` });
+            else if (ev.kind === "advanced") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "stage" });
+            else if (ev.kind === "eliminated" && ev.stage === "group") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "early_exit" });
           }
           if (ev.kind !== "champion") continue;
           recordTitle(ev.clubId, `continental:${cSlug}`);
@@ -1250,15 +1277,17 @@ export async function advanceOneDay(
       }
     }
 
-    // ── National cup inbox news for the human club ────────────────────────────
+    // ── National cup inbox news for each seat's club ───────────────────────────
     // These messages are emitted on the same day the tie/draw happens, before the "Transfers +
     // inbox are cleared" block further down (only runs when `seasonEnded`). They never collide
     // with that clear because no cup tie can fall on the rollover day itself: every cup stage's
     // date window ends at least FINAL_BEFORE_END_DAYS (7) days before the league window end
     // (src/Domain/cups/cupDates.ts), so the final is always played and read well before the
     // season rolls.
-    if (playerSquadId) {
-      const myCup = await playerCupSlug(meta.leagueSlug);
+    for (const ds of daySeats) {
+      if (!ds.clubId) continue;
+      const myClub = ds.clubId;
+      const myCup = await playerCupSlug(ds.meta.leagueSlug);
       const cupMeta = myCup ? await saveService.getLeagueMeta(saveId, myCup) : null;
       if (myCup && cupMeta?.cup) {
         const catalogForCups = await getLeagueData();
@@ -1271,7 +1300,7 @@ export async function advanceOneDay(
         // Elimination / champion: from today's played fixtures in the player's cup.
         for (const event of dayEvents) {
           if (event.kind !== "match" || event.competition !== myCup) continue;
-          if (event.home !== playerSquadId && event.away !== playerSquadId) continue;
+          if (event.home !== myClub && event.away !== myClub) continue;
           const roundFixtures = roundUpdates.get(myCup)?.get(event.round) ?? [];
           const fixture = roundFixtures.find((f) => f.id === event.fixtureId);
           if (!fixture) continue;
@@ -1280,27 +1309,29 @@ export async function advanceOneDay(
           const stage = stageNameOf(event.round);
           if (stage === null) continue;
 
-          if (winner === playerSquadId) {
+          if (winner === myClub) {
             if (stage === "final") {
               await emitInboxMessage(
                 saveId,
                 buildCupMessage({
                   date: currentDate, kind: "champion", cupSlug: myCup, cupName: cupDisplayName, stage,
-                  prize: cupPrizeAwardedTo.get(playerSquadId),
+                  prize: cupPrizeAwardedTo.get(myClub),
                 }),
                 saveService,
+                ds.seatId,
               );
             }
           } else {
-            const opponentId = event.home === playerSquadId ? event.away : event.home;
+            const opponentId = event.home === myClub ? event.away : event.home;
             const opponentName = index.byId(opponentId)?.name ?? opponentId;
             await emitInboxMessage(
               saveId,
               buildCupMessage({
                 date: currentDate, kind: "eliminated", cupSlug: myCup, cupName: cupDisplayName, stage, opponentName,
-                prize: cupPrizeAwardedTo.get(playerSquadId),
+                prize: cupPrizeAwardedTo.get(myClub),
               }),
               saveService,
+              ds.seatId,
             );
           }
         }
@@ -1311,11 +1342,11 @@ export async function advanceOneDay(
           const drawnStage = stageNameOf(change.drawnRound);
           if (drawnStage === null) continue;
           const round = await saveService.getRound(saveId, myCup, change.drawnRound);
-          const fixture = round?.fixtures.find((f) => f.home === playerSquadId || f.away === playerSquadId);
+          const fixture = round?.fixtures.find((f) => f.home === myClub || f.away === myClub);
           if (!fixture) continue;
-          const opponentId = fixture.home === playerSquadId ? fixture.away : fixture.home;
+          const opponentId = fixture.home === myClub ? fixture.away : fixture.home;
           const opponentName = index.byId(opponentId)?.name ?? opponentId;
-          const venue = fixture.neutral ? "neutral" : fixture.home === playerSquadId ? "home" : "away";
+          const venue = fixture.neutral ? "neutral" : fixture.home === myClub ? "home" : "away";
           await emitInboxMessage(
             saveId,
             buildCupMessage({
@@ -1323,6 +1354,7 @@ export async function advanceOneDay(
               stage: drawnStage, opponentName, tieDate: fixture.date, venue,
             }),
             saveService,
+            ds.seatId,
           );
         }
       }
@@ -1330,7 +1362,7 @@ export async function advanceOneDay(
 
     // ── Continental competition inbox news for the human club ─────────────────
     // Unlike the national-cup block above, this is NEVER emitted directly — it is only QUEUED
-    // into `continentalMessages`, flushed after the "Transfers + inbox are cleared" block further
+    // into each seat's `DaySeat.deferred.continental`, flushed after the "Transfers + inbox are cleared" block further
     // down. A national cup's window always ends >= FINAL_BEFORE_END_DAYS before its own country's
     // league end, so a cup tie can never land on that country's own rollover day. A continental
     // competition has no such guarantee against a DIFFERENT country's rollover: the European
@@ -1339,8 +1371,9 @@ export async function advanceOneDay(
     // group stage runs to 12-15, with no coordination between the two — so a group-stage draw/
     // elimination for a club in one of those leagues CAN fall on that same country's rollover day,
     // right before `clearInbox` runs later in this same function call.
-    const continentalMessages: Array<Parameters<typeof buildContinentalMessage>[0]> = [];
-    if (playerSquadId && continentalChanges.some(({ events }) => events.length > 0)) {
+    for (const ds of continentalChanges.some(({ events }) => events.length > 0) ? daySeats : []) {
+      if (!ds.clubId) continue;
+      const myClub = ds.clubId;
       const catalogForContinental = await getLeagueData();
       for (const { slug, events } of continentalChanges) {
         if (events.length === 0) continue;
@@ -1352,14 +1385,14 @@ export async function advanceOneDay(
         const opponentOfTodaysFixture = (): string | undefined => {
           if (!slugRounds) return undefined;
           for (const fixtures of slugRounds.values()) {
-            const f = fixtures.find((x) => x.played && (x.home === playerSquadId || x.away === playerSquadId));
-            if (f) return f.home === playerSquadId ? f.away : f.home;
+            const f = fixtures.find((x) => x.played && (x.home === myClub || x.away === myClub));
+            if (f) return f.home === myClub ? f.away : f.home;
           }
           return undefined;
         };
 
         for (const event of events) {
-          if (event.kind === "eliminated" && event.clubId === playerSquadId) {
+          if (event.kind === "eliminated" && event.clubId === myClub) {
             const opponentId = event.stage === "group" ? undefined : opponentOfTodaysFixture();
             const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
             // No prize field here — the design table has no continental runner-up/elimination
@@ -1367,29 +1400,29 @@ export async function advanceOneDay(
             // round-6 result (win/draw), which DOES pay via `continentalPrizeAwardedTo` — but that
             // money is for the match result, not for being eliminated, so it must never be shown
             // on this message (review fix — see `.claude/rules/game/finances.md`).
-            continentalMessages.push({
+            ds.deferred.continental.push({
               date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
               stage: event.stage, opponentName,
             });
-          } else if (event.kind === "champion" && event.clubId === playerSquadId) {
-            continentalMessages.push({
+          } else if (event.kind === "champion" && event.clubId === myClub) {
+            ds.deferred.continental.push({
               date: currentDate, kind: "champion", competition: compSlug, competitionName: compDisplayName, stage: "final",
-              prize: continentalPrizeAwardedTo.get(playerSquadId),
+              prize: continentalPrizeAwardedTo.get(myClub),
             });
           } else if (event.kind === "drawn") {
-            const myTie = event.ties.find((tie) => tie.home === playerSquadId || tie.away === playerSquadId);
+            const myTie = event.ties.find((tie) => tie.home === myClub || tie.away === myClub);
             if (!myTie) continue;
-            const opponentId = myTie.home === playerSquadId ? myTie.away : myTie.home;
+            const opponentId = myTie.home === myClub ? myTie.away : myTie.home;
             const opponentName = index.byId(opponentId)?.name ?? opponentId;
             const venue: "home" | "away" | "neutral" =
-              !myTie.tieId ? "neutral" : myTie.home === playerSquadId ? "home" : "away";
+              !myTie.tieId ? "neutral" : myTie.home === myClub ? "home" : "away";
             // Only the r16 draw (classificação às oitavas) carries a prize — see the separate
             // `continentalR16PrizeAwardedTo` map above (kept apart from group-stage match prizes
             // paid the same day).
-            continentalMessages.push({
+            ds.deferred.continental.push({
               date: currentDate, kind: "draw", competition: compSlug, competitionName: compDisplayName,
               stage: event.stage, opponentName, firstLegDate: myTie.firstLegDate, venue,
-              ...(event.stage === "r16" ? { prize: continentalR16PrizeAwardedTo.get(playerSquadId) } : {}),
+              ...(event.stage === "r16" ? { prize: continentalR16PrizeAwardedTo.get(myClub) } : {}),
             });
           }
         }
@@ -1409,6 +1442,9 @@ export async function advanceOneDay(
     });
     await recordRefereeDay(saveService, saveId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"));
     const dayLog = { saveId, date: currentDate, events: dayEvents };
+    // Each seat's national game of the day (the result screen reads its own).
+    const nationalMatchList = Object.entries(nationalDay.bySeat).flatMap(([sid, d]) => (d.humanMatch ? [[sid, d.humanMatch] as const] : []));
+    const nationalMatches = nationalMatchList.length > 0 ? Object.fromEntries(nationalMatchList) : null;
     // Keep what the routes already logged today (transfers bought / sold / loaned before advancing):
     // their `transfer_ref` events and `transfers` moves.
     const routeLog = await saveService.getDayLog(saveId, currentDate);
@@ -1417,60 +1453,51 @@ export async function advanceOneDay(
       events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
       ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
       ...(youthDay.logs.length > 0 ? { youthMatches: youthDay.logs } : {}),
-      ...(nationalDay.humanMatch ? { nationalMatch: nationalDay.humanMatch } : {}),
+      ...(nationalMatches ? { nationalMatches } : {}),
       registrationViolations,
     });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
     // When the whole market is frozen (start-kit pre-simulation), dailyMarketTick would be a
     // guaranteed no-op — skip loading every squad + the market file for it (~25 MB/day).
+    // The AI tick runs once for the world; what is a seat's (loans, bids, talks, rivals) runs per seat.
     if (!options.marketFrozen) {
-      let workingMeta = meta;
-      // Loans due back today go home first, so the market below sees the squads as they are.
-      let rawMarket = await saveService.getMarket(saveId);
-      if (rawMarket?.loans?.length) {
-        const back = await returnDueLoans(saveService, saveId, meta, rawMarket, currentDate);
-        if (back.market !== rawMarket) {
-          rawMarket = back.market;
-          await saveService.saveMarket(saveId, rawMarket);
-        }
-        negotiationNews.push(...back.news);
+      // Loans due back today go home first (each seat's market lists its loans), so the market below sees the
+      // squads as they are.
+      for (const ds of daySeats) {
+        const seatMarket = await saveService.getMarket(saveId, ds.seatId);
+        if (!seatMarket?.loans?.length) continue;
+        const back = await returnDueLoans(saveService, saveId, ds.seatId, ds.meta, seatMarket, currentDate);
+        if (back.market !== seatMarket) await saveService.saveMarket(saveId, back.market, ds.seatId);
+        ds.deferred.negotiation.push(...back.news);
       }
       const allSquadsMarket = await saveService.getAllSquads(saveId);
-      // A market file written before the first tick (the human's sell/loan lists, from a route or
-      // `emptyMarket`) has no rotation yet: give it one instead of crashing or never refreshing.
-      const rotation = rawMarket?.shuffledTeamIds?.length ? null : initMarketState(allSquadsMarket);
-      const marketForTick = rawMarket
-        ? {
-            ...rawMarket,
-            ...(rotation ? { shuffledTeamIds: rotation.shuffledTeamIds, rotationIndex: 0 } : {}),
-            profiles: rawMarket.profiles ?? {},
-            playerSellList: rawMarket.playerSellList ?? [],
-          }
-        : initMarketState(allSquadsMarket);
-      const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
-      const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
+      // The world's rotation + AI profiles; a market written before the first tick (a seat's lists from a route)
+      // has no rotation yet: give it one instead of crashing or never refreshing.
+      const worldMarket = await saveService.getWorldMarket(saveId);
+      const marketForTick = worldMarket?.shuffledTeamIds?.length
+        ? { ...worldMarket, profiles: worldMarket.profiles ?? {} }
+        : { ...initMarketState(allSquadsMarket), profiles: worldMarket?.profiles ?? {} };
 
       // Clubs credited a sell-on clause today: their in-memory copy is stale, so they sit out the
       // free-agent tick below (it would save that copy over the credit).
       const sellOnPaidTo = new Set<string>();
-      const { updatedMarket, completedTransfers, newBids } = dailyMarketTick(
+      // Sell-on clauses a seat held and was paid today (their entries leave the seat's market below).
+      const sellOnPaidOf = new Map<string, Set<string>>();
+      const { updatedMarket, completedTransfers } = dailyMarketTick(
         marketForTick,
         allSquadsMarket,
         currentDate,
         defaultRng,
         {
-          excludePlayerSquadId: resolvedPlayerSquadId,
-          playerSellList: marketForTick.playerSellList,
-          playerSquad: playerSquadForMarket,
+          excludeSquadIds: humanClubs,
           // Contract end for every signing: the buyer's league season end.
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
           historyFrom: (sq) => {
             const l = activeLeagues.find((x) => x.leagueSlug === sq.leagueSlug);
             return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
           },
-          newBidId: () => randomUUID(),
-          // Only buyers whose country has an open window buy or bid (`.claude/rules/game/transfer-windows.md`).
+          // Only buyers whose country has an open window buy (`.claude/rules/game/transfer-windows.md`).
           windows: {
             isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
             closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
@@ -1478,25 +1505,7 @@ export async function advanceOneDay(
           },
         },
       );
-      for (const bid of newBids) {
-        if (bid.kind === "transfer") moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
-        negotiationNews.push({
-          date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
-          playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
-          ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
-          ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
-          ...(bid.until ? { until: bid.until } : {}),
-          expires: bid.expires,
-        });
-      }
-      let marketAfterTick: MarketState = { ...updatedMarket, talks: pruneTalks(updatedMarket.talks, currentDate) };
-      // A closed window ends the human's open conversations (bans stay).
-      if (resolvedPlayerSquadId && !windows.human().open && marketAfterTick.talks) {
-        marketAfterTick = {
-          ...marketAfterTick,
-          talks: Object.fromEntries(Object.entries(marketAfterTick.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
-        };
-      }
+      await saveService.saveWorldMarket(saveId, updatedMarket);
 
       for (const tx of completedTransfers) {
         const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
@@ -1506,35 +1515,43 @@ export async function advanceOneDay(
         const buying = withDefaultFinances(tx.updatedBuyer);
         const selling = withDefaultFinances(tx.updatedSeller);
 
-        const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
-        const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
+        // The AI never trades with a human club (`excludeSquadIds`): both are always undefined, the code stays
+        // correct if that ever changes.
+        const buyerSeat = seatOf.get(tx.buyerSquad.id);
+        const sellerSeat = seatOf.get(tx.sellerSquad.id);
         // A sell-on clause the player carried comes out of this fee (`.claude/rules/game/negotiation.md`).
         const owed = sellOnFor(tx.player, tx.sellerSquad.id, tx.fee);
 
-        workingMeta = await executeTransferFee(
+        await executeTransferFee(
           saveId,
-          workingMeta,
+          noSeat,
           {
             squad: buying,
             leagueSlug: buyerResolved.leagueSlug,
             clubSlug: buyerResolved.clubSlug,
-            isPlayerClub: isBuyerPlayer,
+            ...(buyerSeat ? { seatId: buyerSeat.seatId } : {}),
           },
           {
             squad: selling,
             leagueSlug: sellerResolved.leagueSlug,
             clubSlug: sellerResolved.clubSlug,
-            isPlayerClub: isSellerPlayer,
+            ...(sellerSeat ? { seatId: sellerSeat.seatId } : {}),
           },
           tx.fee,
           saveService,
           { playerName: tx.player.name, playerId: tx.player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
         );
-        const sellOnNews = await settleSellOn(saveService, saveId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        // The clause is paid to the seat holding it (its ledger), or to the AI club's transfer budget.
+        const ownerSeat = owed ? seatOf.get(owed.clubId) : undefined;
+        const sellOnNews = ownerSeat
+          ? await settleSellOn(saveService, saveId, ownerSeat.seatId, ownerSeat.meta, owed, tx.player, tx.sellerSquad.name, currentDate)
+          : await settleSellOn(saveService, saveId, "", noSeat, owed, tx.player, tx.sellerSquad.name, currentDate);
         if (owed) sellOnPaidTo.add(owed.clubId);
-        if (sellOnNews) {
-          negotiationNews.push(sellOnNews);
-          marketAfterTick = marketAfterSellOnPaid(marketAfterTick, tx.player.id);
+        if (sellOnNews && ownerSeat) {
+          ownerSeat.deferred.negotiation.push(sellOnNews);
+          const paid = sellOnPaidOf.get(ownerSeat.seatId) ?? new Set<string>();
+          paid.add(tx.player.id);
+          sellOnPaidOf.set(ownerSeat.seatId, paid);
         }
         // Club history: transfer records + the player's stats at the seller (`.claude/rules/game/club-history.md`).
         {
@@ -1546,7 +1563,7 @@ export async function advanceOneDay(
             buyer: buying, seller: selling, playerId: tx.player.id, fee: tx.fee, date: currentDate,
             buyerSeason: seasonOf(buyerResolved.leagueSlug), sellerSeason: seasonOf(sellerResolved.leagueSlug),
           });
-          for (const c of changes) if (isPlayerSquadId(c.squadId, meta)) clubRecordMessages.push(...c.broken);
+          for (const c of changes) seatOf.get(c.squadId)?.deferred.clubRecords.push(...c.broken);
           if (newsCollector) {
             newsCollector.transferNames.set(tx.player.id, tx.player.name);
             for (const c of changes) {
@@ -1559,7 +1576,7 @@ export async function advanceOneDay(
 
         dayMoves.push({ playerId: tx.player.id, from: tx.sellerSquad.id, to: tx.buyerSquad.id, fee: tx.fee, kind: "transfer", date: currentDate });
         const transferId = randomUUID();
-        const record: TransferRecord = {
+        const record: StoredTransferRecord = {
           id: transferId,
           date: currentDate,
           playerId: tx.player.id,
@@ -1571,7 +1588,6 @@ export async function advanceOneDay(
           toSquadId: tx.buyerSquad.id,
           toSquadName: tx.buyerSquad.name,
           fee: tx.fee,
-          direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
           status: "accepted",
           reason: "AI transfer",
         };
@@ -1581,7 +1597,7 @@ export async function advanceOneDay(
           transferId,
         });
 
-        if (isBuyerPlayer) {
+        if (buyerSeat) {
           await emitInboxMessage(
             saveId,
             buildTransferInMessage({
@@ -1593,10 +1609,11 @@ export async function advanceOneDay(
               feeEuros:   tx.fee,
             }),
             saveService,
+            buyerSeat.seatId,
           );
-        } else if (isSellerPlayer) {
-          if (board) {
-            board = applyTransferSale(board, {
+        } else if (sellerSeat) {
+          if (sellerSeat.board) {
+            sellerSeat.board = applyTransferSale(sellerSeat.board, {
               fee: tx.fee,
               annualRevenue: wageRevenueBasisOf(tx.sellerSquad),
               idol: isIdol(tx.player, tx.sellerSquad),
@@ -1613,35 +1630,76 @@ export async function advanceOneDay(
               feeEuros:   tx.fee,
             }),
             saveService,
+            sellerSeat.seatId,
           );
         }
       }
 
-      // Competition for the human's targets (`.claude/rules/game/negotiation.md` → "Disputa"): rivals
-      // whose deadline is today buy the player; targets with a live rival may draw another one.
-      if (marketAfterTick.rivalBids?.length) {
-        const res = await resolveRivalDeadlines(saveService, saveId, workingMeta, { market: marketAfterTick, date: currentDate, windows });
-        marketAfterTick = res.market;
-        workingMeta = res.meta;
-        negotiationNews.push(...res.news);
-        dayMoves.push(...res.moves);
-        // Their in-memory copies are stale: they sit out the free-agent tick below.
-        for (const m of res.moves) { sellOnPaidTo.add(m.from); sellOnPaidTo.add(m.to); }
-        for (const id of new Set((marketAfterTick.rivalBids ?? []).map((r) => r.playerId))) {
-          const first = liveRivals(marketAfterTick.rivalBids, id, currentDate)[0];
-          if (!first || !resolvedPlayerSquadId) continue;
-          const seller = allSquadsMarket.find((sq) => sq.id === first.fromClubId);
-          const target = seller?.players.find((p) => p.id === id);
-          if (!seller || !target) continue;
-          const more = await rollRivalFor(saveService, saveId, {
-            market: marketAfterTick, player: target, seller, humanId: resolvedPlayerSquadId, date: currentDate, windows,
+      // What is each seat's: the AI's bids for its players, its talks, the rivals for its targets.
+      const squadsNow = squadsAfterTick(allSquadsMarket, completedTransfers);
+      for (const ds of daySeats) {
+        if (!ds.clubId) continue;
+        const seatMarket = await saveService.getMarket(saveId, ds.seatId);
+        let market: MarketState = { ...(seatMarket ?? { playerSellList: [] }), ...updatedMarket };
+        // AI bids for the seat's players (`.claude/rules/game/negotiation.md`), on the squads after today's tick.
+        const humanSquad = squadsNow.find((s) => s.id === ds.clubId);
+        if (humanSquad) {
+          const bids = humanBidsTick({
+            market, squads: squadsNow, humanSquad, currentDate, rng: defaultRng,
+            seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
+            windows: {
+              isOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
+              closesOn: (sq) => windows.ofLeague(sq.leagueSlug ?? "").until,
+            },
+            newBidId: () => randomUUID(),
+            humanClubIds: humanClubs,
           });
-          marketAfterTick = more.market;
-          if (more.news) negotiationNews.push(more.news);
+          market = bids.market;
+          for (const bid of bids.newBids) {
+            if (bid.kind === "transfer") ds.moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
+            ds.deferred.negotiation.push({
+              date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
+              playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
+              ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
+              ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
+              ...(bid.until ? { until: bid.until } : {}),
+              expires: bid.expires,
+            });
+          }
         }
+        market = { ...market, talks: pruneTalks(market.talks, currentDate) };
+        // A closed window ends the seat's open conversations (bans stay).
+        if (!windows.seat(ds.seatId).today.open && market.talks) {
+          market = {
+            ...market,
+            talks: Object.fromEntries(Object.entries(market.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
+          };
+        }
+        for (const playerId of sellOnPaidOf.get(ds.seatId) ?? []) market = marketAfterSellOnPaid(market, playerId);
+        // Competition for the seat's targets (`.claude/rules/game/negotiation.md` → "Disputa"): rivals
+        // whose deadline is today buy the player; targets with a live rival may draw another one.
+        if (market.rivalBids?.length) {
+          const res = await resolveRivalDeadlines(saveService, saveId, ds.seatId, ds.meta, { market, date: currentDate, windows });
+          market = res.market;
+          ds.deferred.negotiation.push(...res.news);
+          dayMoves.push(...res.moves);
+          // Their in-memory copies are stale: they sit out the free-agent tick below.
+          for (const m of res.moves) { sellOnPaidTo.add(m.from); sellOnPaidTo.add(m.to); }
+          for (const id of new Set((market.rivalBids ?? []).map((r) => r.playerId))) {
+            const first = liveRivals(market.rivalBids, id, currentDate)[0];
+            if (!first) continue;
+            const seller = allSquadsMarket.find((sq) => sq.id === first.fromClubId);
+            const target = seller?.players.find((p) => p.id === id);
+            if (!seller || !target) continue;
+            const more = await rollRivalFor(saveService, saveId, {
+              market, player: target, seller, humanId: ds.clubId, humanClubIds: humanClubs, date: currentDate, windows,
+            });
+            market = more.market;
+            if (more.news) ds.deferred.negotiation.push(more.news);
+          }
+        }
+        await saveService.saveSeatMarket(saveId, ds.seatId, splitMarket(market).seat);
       }
-
-      await saveService.saveMarket(saveId, marketAfterTick);
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
@@ -1656,7 +1714,7 @@ export async function advanceOneDay(
           pool: freeAgentPool,
           date: currentDate,
           rng: defaultRng,
-          excludeSquadId: resolvedPlayerSquadId,
+          excludeSquadIds: humanClubs,
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
         });
         if (fa.signedIds.size > 0) {
@@ -1686,16 +1744,17 @@ export async function advanceOneDay(
       for (const sq of await refreshAiRegistrations(regCtx, regSquads)) await saveService.saveSquadById(saveId, sq);
     }
 
-    // ── Transfer windows: news for the human club's country (open / closing / closed) ──────────
-    if (playerSquadId && !options.marketFrozen) {
-      const today = windows.human();
-      const yesterday = windows.humanOn(addDays(currentDate, -1));
-      const country = windows.humanCountry();
+    // ── Transfer windows: news for each seat's country (open / closing / closed) ──────────────
+    for (const ds of daySeats) {
+      if (!ds.clubId || options.marketFrozen) continue;
+      const today = windows.seat(ds.seatId).today;
+      const yesterday = windows.seat(ds.seatId).on(addDays(currentDate, -1));
+      const country = windows.seat(ds.seatId).country;
       const base = { date: currentDate, playerId: "", playerName: "", clubName: country, country };
-      if (today.open && !yesterday.open) negotiationNews.push({ ...base, kind: "window_open", ...(today.until ? { until: today.until } : {}) });
+      if (today.open && !yesterday.open) ds.deferred.negotiation.push({ ...base, kind: "window_open", ...(today.until ? { until: today.until } : {}) });
       else if (today.open && daysToClose(today, currentDate) === WINDOWS.CLOSING_NOTICE_DAYS) {
-        negotiationNews.push({ ...base, kind: "window_closing", ...(today.until ? { until: today.until } : {}) });
-      } else if (!today.open && yesterday.open) negotiationNews.push({ ...base, kind: "window_closed", ...(today.opensOn ? { opensOn: today.opensOn } : {}) });
+        ds.deferred.negotiation.push({ ...base, kind: "window_closing", ...(today.until ? { until: today.until } : {}) });
+      } else if (!today.open && yesterday.open) ds.deferred.negotiation.push({ ...base, kind: "window_closed", ...(today.opensOn ? { opensOn: today.opensOn } : {}) });
     }
 
     // ── AI managers: Monday review of every league, then today's hirings ──────────────────────
@@ -1705,76 +1764,79 @@ export async function advanceOneDay(
       await aiDesk.retire();
     }
 
-    // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ────────────
+    // ── Scouting (each seat's manager, `.claude/rules/game/scouting.md`) ────────
     // Opponents of today's matches are noticed; Mondays the missions work, the shortlist is checked
     // and the travel is charged (ledger lines added to the money block below); the 1st of the month
     // the chief recommends. Messages are deferred past any `clearInbox` like the rest.
-    const scouting = await scoutingDay(saveService, saveId, {
-      date: currentDate, meta,
-      matchEvents: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
-    });
+    for (const ds of daySeats) {
+      ds.scouting = await scoutingDay(saveService, saveId, ds.seatId, {
+        date: currentDate, meta: ds.meta,
+        matchEvents: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+      });
+    }
 
-    // ── Financial updates (player's club ledger) ─────────────────────────────
+    // ── Financial updates (each seat's club ledger) ──────────────────────────
     // Weekly commercial/wages/operational on Mondays, plus a gate entry for every home fixture
-    // of the player's club today across every competition (playerHomeFixturesToday, filled by the
+    // of the seat's club today across every competition (`DaySeat.homeFixtures`, filled by the
     // main match loop above). See computeAdvanceDayMoney / .claude/rules/game/finances.md.
     // The negative-balance message is QUEUED, not emitted immediately: a rollover later this same
     // function call may clearInbox() (see "Transfers + inbox are cleared" below) — emitting here
-    // would have it wiped the same day it was raised. Flushed after that clear, like
-    // `continentalMessages`.
-    let negativeBalanceMessage: Parameters<typeof buildSeasonMessage>[0] | null = null;
-    // Wages and severance the human manager earned today (`meta.managerEarnings`, display only).
-    let managerEarned = 0;
+    // would have it wiped the same day it was raised. Flushed after that clear, like the
+    // continental news (`DaySeat.deferred`).
     const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
     const isWeeklyTick = dayOfWeek === 1;
     // Facilities (`.claude/rules/game/facilities.md`): instalments and finished works can fall on
-    // any day, so the human squad is read every day.
-    if (playerEntry && playerSquadId) {
+    // any day, so each seat's squad is read every day.
+    for (const ds of daySeats) {
+      const seatEntry = ds.entry;
+      const seatClubId = ds.clubId;
+      if (!seatEntry || !seatClubId) continue;
+      const seatLeagueState = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug);
       // Re-read the squad: it may have been updated by the match loop above (own fixture today).
-      let playerSquad = await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem);
+      let playerSquad = await saveService.getSquad(saveId, seatEntry.leagueSlug, seatEntry.stem);
       // Facilities day: instalments / finished works, then today's home attendance.
       let facilityEntries: LedgerEntry[] = [];
       let attendanceToday: number[] | null = null;
       if (playerSquad?.facilities?.items) {
         // Today's wear (time, home games, training), then the 40% / 15% warnings.
-        const session = isRestDay || teamsPlayingToday.has(playerSquadId)
+        const session = restToday(ds) || teamsPlayingToday.has(seatClubId)
           ? null
-          : resolveTrainingPolicy(meta, playerEntry.stem, playerSquadId).intensity;
+          : resolveTrainingPolicy(ds.meta, seatEntry.stem, seatClubId).intensity;
         const worn = wearDay(playerSquad.facilities.items, {
-          homeGames: playerHomeFixturesToday.filter((g) => !g.neutral).length,
+          homeGames: ds.homeFixtures.filter((g) => !g.neutral).length,
           session,
           pitchWearMult: staffEffectsOf(playerSquad).pitchWearMult,
         });
         for (const c of worn.crossings) {
-          facilityMessages.push({ date: currentDate, kind: c.kind, item: c.item, condition: Math.round(c.condition) });
+          ds.deferred.facility.push({ date: currentDate, kind: c.kind, item: c.item, condition: Math.round(c.condition) });
         }
         const day = advanceFacilities({ ...playerSquad.facilities, items: worn.items }, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
           if (p.item) {
-            facilityMessages.push({
+            ds.deferred.facility.push({
               date: currentDate, kind: "repaired", facility: p.kind, item: p.item, condition: p.kind === "repair" ? p.to ?? 100 : 100,
               ...(p.kind === "upgrade" ? { level: day.facilities.items[p.item].level } : {}),
             });
             continue;
           }
-          facilityMessages.push({
+          ds.deferred.facility.push({
             date: currentDate, kind: "completed", facility: p.kind,
             ...(p.stand ? { stand: p.stand, seats: p.seats } : {}), ...(p.level !== undefined ? { level: p.level } : {}),
           });
         }
         let next = day.facilities;
-        if (playerHomeFixturesToday.length > 0) {
-          const md = facilitiesMatchday(next, playerHomeFixturesToday, currentDate, {
+        if (ds.homeFixtures.length > 0) {
+          const md = facilitiesMatchday(next, ds.homeFixtures, currentDate, {
             followers: playerSquad.finances?.followers ?? 0,
-            tier: await leagueTierOf(playerEntry.leagueSlug),
-            ...(board ? { fans: board.fans } : {}),
-            ...(playerLeagueState ? { fraction: seasonFraction(currentDate, playerLeagueState.start, playerLeagueState.end) } : {}),
+            tier: await leagueTierOf(seatEntry.leagueSlug),
+            ...(ds.board ? { fans: ds.board.fans } : {}),
+            ...(seatLeagueState ? { fraction: seasonFraction(currentDate, seatLeagueState.start, seatLeagueState.end) } : {}),
           });
           next = md.facilities;
           attendanceToday = md.attendance;
           if (md.recordBroken) {
-            facilityMessages.push({
+            ds.deferred.facility.push({
               date: currentDate, kind: "attendance_record", attendance: Math.round(md.recordBroken.attendance),
               previous: md.recordBroken.previous, competition: md.recordBroken.competition,
             });
@@ -1782,33 +1844,33 @@ export async function advanceOneDay(
         }
         if (next !== playerSquad.facilities) {
           playerSquad = withFacilities(playerSquad, next);
-          await saveService.saveSquad(saveId, playerEntry.leagueSlug, playerEntry.stem, playerSquad);
+          await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
         }
       }
-      if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0 || scouting.entries.length > 0)) {
+      const scoutingEntries = ds.scouting?.entries ?? [];
+      if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0)) {
         const catalogForFinance = await getLeagueData();
         const priceMult = playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1;
-        const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f, i) => ({
+        const homeFixturesToday: PlayerHomeFixtureToday[] = ds.homeFixtures.map((f, i) => ({
           competition: f.competition, kind: f.kind, ...(f.neutral ? { neutral: true } : {}),
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),
           ...(attendanceToday ? { attendance: attendanceToday[i]!, priceMult } : {}),
         }));
         const loanedOutWages = isWeeklyTick
-          ? parentLoanWages((await saveService.getMarket(saveId))?.loans, playerSquad.id)
+          ? parentLoanWages((await saveService.getMarket(saveId, ds.seatId))?.loans, playerSquad.id)
           : 0;
         const moneyEntries = [
           ...computeAdvanceDayMoney({
             currentDate, playerSquad, homeFixturesToday, loanedOutWages,
             // The manager's own wage (`.claude/rules/game/jobs.md` → "Contrato do técnico").
-            ...(meta.managerContract?.squadId === playerSquad.id ? { managerWage: meta.managerContract.wage } : {}),
-            ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
+            ...(ds.meta.managerContract?.squadId === playerSquad.id ? { managerWage: ds.meta.managerContract.wage } : {}),
+            ...(ds.board ? { fillRate: stadiumFillRate(ds.board.fans) } : {}),
           }),
           ...facilityEntries,
-          ...(meta.clubId && playerSquad.id === meta.clubId ? scouting.entries : []),
+          ...(playerSquad.id === seatClubId ? scoutingEntries : []),
         ];
         if (moneyEntries.length > 0) {
-          const playerLeagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
-          const season = playerLeagueMeta?.year ?? new Date(currentDate).getFullYear();
+          const season = await ledgerSeasonOf(ds);
           const balanceBefore = playerSquad.finances?.budget ?? 0;
           let balanceAfter = balanceBefore;
           // Sequential, never parallel: each entry read-modify-writes the squad's budget, so the
@@ -1816,22 +1878,23 @@ export async function advanceOneDay(
           for (const entry of moneyEntries) {
             const updated = await recordMoney(
               saveService, saveId, season,
-              { leagueSlug: playerEntry.leagueSlug, clubSlug: playerEntry.stem },
+              { leagueSlug: seatEntry.leagueSlug, clubSlug: seatEntry.stem },
               entry,
+              ds.seatId,
             );
             balanceAfter = updated.finances?.budget ?? balanceAfter;
           }
-          managerEarned += moneyEntries.filter((e) => e.kind === "manager").reduce((t, e) => t - e.amount, 0);
+          ds.managerEarned += moneyEntries.filter((e) => e.kind === "manager").reduce((t, e) => t - e.amount, 0);
           // Monday: the balance moves the board, then both meters drift towards 60.
-          if (board && isWeeklyTick) {
-            board = applyWeekly(board, { balance: balanceAfter, weeklyRevenue: wageRevenueBasisOf(playerSquad) / 52 });
+          if (ds.board && isWeeklyTick) {
+            ds.board = applyWeekly(ds.board, { balance: balanceAfter, weeklyRevenue: wageRevenueBasisOf(playerSquad) / 52 });
           }
           if (balanceBefore >= 0 && balanceAfter < 0) {
-            negativeBalanceMessage = {
+            ds.deferred.negativeBalance = {
               date: currentDate,
               kind: "negative_balance",
-              leagueSlug: meta.leagueSlug,
-              leagueName: competitionName(meta.leagueSlug, catalogForFinance as unknown as LeagueData[], "en"),
+              leagueSlug: ds.meta.leagueSlug,
+              leagueName: competitionName(ds.meta.leagueSlug, catalogForFinance as unknown as LeagueData[], "en"),
               seasonYear: season,
               balance: balanceAfter,
             };
@@ -1846,24 +1909,11 @@ export async function advanceOneDay(
     // date never jumps: leagues that ended early just have no games until their country rolls.
     // Idempotency: a rolled league carries next season's year/end in activeLeagues, so it is no
     // longer "ended"; the league meta's year on disk catches a roll whose save meta was lost.
-    let seasonEnded = false;
-    let archiveYear: number | undefined;
-    let playerCountryMoves: ClubMove[] = [];
-    let playerMove: ClubMove | null = null;
-    let playerChampionOf: string | null = null;
-    // The board's objective met at the human club's rollover (achievements, Motivation).
-    let playerObjectiveMet = false;
-    const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
-    let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
-    // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
-    // champion/promoted/relegated season message below. 0 when no rollover happens this day.
-    let playerLeaguePrizeThisRollover = 0;
-    // Board end-of-season bonus credited at this rollover (ledger `prize`, ref.stage "board_bonus").
-    let playerBoardBonusEntry: LedgerEntry | null = null;
+    // Each seat's rollover (its season end, move, title, objective, followers, league prize, board bonus, board at
+    // the season end) goes into `DaySeat.rollover`; its season messages into `DaySeat.deferred.season`.
     let freeAgentsRetiredYear: number | undefined;
-    // Board confidence at the end of the player's season, before the carry-over (job offers'
-    // reputation, `.claude/rules/game/jobs.md`).
-    let boardAtSeasonEnd: number | undefined;
+    // club id → seat id (the reborn offer of a world-class retiree is his seat's).
+    const seatIdByClub = new Map(daySeats.flatMap((d) => (d.clubId ? [[d.clubId, d.seatId] as const] : [])));
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1888,11 +1938,10 @@ export async function advanceOneDay(
       logError("season", `save ${saveId}: ${slug} already rolled to ${lm.year} on disk — resyncing activeLeagues`);
       updatedActiveLeagues[i] = {
         ...updatedActiveLeagues[i]!, year: lm.year, start: lm.start, end: lm.end,
-        totalRounds: lm.totalRounds, currentRound: 0, restDays: lm.restDays,
+        totalRounds: lm.totalRounds, currentRound: 0,
       };
     }
 
-    const playerClubSquadId = playerSquadId ?? meta.clubId;
     const transfersAtSeasonEnd = due.units.length > 0 ? await saveService.getTransfers(saveId) : [];
     // Every league's brand-new next-season fixtures (step 6 below), for the calendar-year vs.
     // continental clash check right after this loop.
@@ -1926,8 +1975,14 @@ export async function advanceOneDay(
         standings[slug] = teams.length > 0 ? computeStandings(teams, fixtures, slug) : [];
       }
 
-      // 2. Plan the moves.
-      const plan = planCountryRollover(unit, standings, playerSquadId);
+      // 2. Plan the moves. Each seat whose club plays in the unit (old membership) gets its move and title.
+      const plan = planCountryRollover(unit, standings, undefined);
+      for (const ds of daySeats) {
+        if (!ds.clubId || !unit.leagues.includes(index.byId(ds.clubId)?.leagueSlug ?? "")) continue;
+        const outcome = clubRolloverOutcome(unit, standings, plan.moves, ds.clubId);
+        ds.rollover.move = outcome.move;
+        ds.rollover.championOf = outcome.championOf;
+      }
       if (newsCollector) {
         for (const m of plan.moves) {
           newsCollector.moves.push({ ...m, fromTier: unit.pyramid ? tierOfLeague(unit.pyramid, m.from) : 1 });
@@ -1960,7 +2015,7 @@ export async function advanceOneDay(
           leagueSlug: slug,
           leagueTeams,
           squadsInLeague: await saveService.getSquadsInLeague(saveId, slug),
-          playerClubSquadId,
+          humanClubIds: humanClubs,
         });
         await saveService.writeLeagueSeasonArchive(saveId, transition.archive);
         // History rows of the closed season (the squads are already reset: logs come from the archive).
@@ -1973,8 +2028,8 @@ export async function advanceOneDay(
           // board targets, taken before the rollover sackings below.
           const awardManagers = await managerTracker.list();
           const awardTargets = new Map(aiDesk ? await aiDesk.targets(slug, season) : []);
-          if (playerClubSquadId && board?.objective && board.objective.leagueSlug === slug) {
-            awardTargets.set(playerClubSquadId, board.objective.target);
+          for (const ds of daySeats) {
+            if (ds.clubId && ds.board?.objective?.leagueSlug === slug) awardTargets.set(ds.clubId, ds.board.objective.target);
           }
           // Manager ranking: league title (tier × country weight), promotions out of this league, one more season.
           {
@@ -2025,30 +2080,33 @@ export async function advanceOneDay(
               league: slug, season, closedOn: currentDate, country: unitCountry, tier: leagueTier,
               weight: unitWeight * tierFactor(leagueTier), state, squads: transition.squadsToSave.map((r) => r.squad),
               table, managers: awardManagers, targets: awardTargets, tierChanges: plan.tierChanges,
-              playerClubId: playerClubSquadId, leagueName: state.leagueName,
+              humanClubIds: humanClubs, leagueName: state.leagueName,
             });
             transition.squadsToSave.forEach((ref, i) => { ref.squad = res.squads[i]!; });
             newsCollector?.leagueAwards.push(res.awards);
             await managerTracker.apply(res.managers);
-            if (res.message) deferredAwardsMessages.push(res.message);
+            for (const [clubId, msg] of Object.entries(res.messages)) seatOf.get(clubId)?.deferred.awards.push(msg);
           }
           // Club history: the season row, scorers and records of every club of the league.
-          clubRecordMessages.push(...await recordLeagueSeasonHistory(saveService, saveId, {
+          const records = await recordLeagueSeasonHistory(saveService, saveId, {
             league: slug, tier: unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1, season,
             start: state.start, end: state.end, table,
             fixtures: [...fixturesByLeague.get(slug)!, ...(unitCupFixtures ??= await cupAndContinentalFixtures(saveService, saveId, unitCountry))],
             squads: transition.squadsToSave.map((r) => r.squad), titlesByClub, tierChanges: plan.tierChanges,
-            nameOf: (id) => index.byId(id)?.name ?? id, watchSquadId: playerClubSquadId,
+            nameOf: (id) => index.byId(id)?.name ?? id, watchSquadIds: humanClubs,
             ...(newsCollector ? { onBroken: (squadId: string, broken: ClubRecordBroken[]) => newsCollector.clubRecords.push({ squadId, broken }) } : {}),
-          }));
+          });
+          for (const [clubId, broken] of Object.entries(records)) seatOf.get(clubId)?.deferred.clubRecords.push(...broken);
         }
         for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
           closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
         }
-        await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year, transfersAtSeasonEnd);
+        // The league's archive keeps the window of the season that closes (the world's log spans every season).
+        await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year,
+          transfersAtSeasonEnd.filter((t) => t.date >= state.start && t.date <= state.end));
 
-        // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
-        const refs = applyPlayerBroadcastingCredit(transition.squadsToSave, playerClubSquadId, transition.playerBroadcastingCredit);
+        // Each human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
+        const refs = applyHumanBroadcastingCredit(transition.squadsToSave, transition.humanBroadcastingCredit);
         const table = standings[slug] ?? [];
         // Then every club reacts to its season: AI clubs get followers + financial tier + next
         // season's transfer budget; the human club only its followers. Every club with a final
@@ -2063,7 +2121,8 @@ export async function advanceOneDay(
           const tc = plan.tierChanges[squad.id];
           let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
           const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves, continentalSeasonStatus);
-          if (squad.id !== playerClubSquadId) {
+          const ds = seatOf.get(squad.id);
+          if (!ds) {
             next = applyAISeasonReaction(next, outcome);
             if (leaguePrizeAmount > 0) {
               // Prize is granted on top of the NEW season's budget applyAISeasonReaction just set —
@@ -2080,37 +2139,37 @@ export async function advanceOneDay(
             const human = applyHumanSeasonReaction(next, outcome);
             next = human.squad;
             // The fans' mood scales the followers gain (× 0.8..1.2, `.claude/rules/game/board-fans.md`).
-            const followersAfter = board
-              ? followersAfterMood(human.followersBefore, human.followersAfter, board.fans)
+            const followersAfter = ds.board
+              ? followersAfterMood(human.followersBefore, human.followersAfter, ds.board.fans)
               : human.followersAfter;
             if (next.finances && followersAfter !== human.followersAfter) {
               next = { ...next, finances: { ...next.finances, followers: followersAfter } };
             }
             if (followersAfter !== human.followersBefore) {
-              playerFollowersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };
+              ds.rollover.followersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };
             }
             // The board judges the season: objective, league title, promotion/relegation; a happy
             // board pays a bonus, an angry one may sack the manager (sacking enabled only).
-            if (board) {
+            if (ds.board) {
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
-              playerObjectiveMet = position !== null && !!board.objective && position <= board.objective.target;
-              board = evaluateSeason(board, { position });
-              if (position === 1) board = applyCompetitionEvent(board, { kind: "title", title: `league:${slug}` });
-              if (plan.playerMove?.kind === "promoted") board = applyCompetitionEvent(board, { kind: "promoted" });
-              if (plan.playerMove?.kind === "relegated") board = applyCompetitionEvent(board, { kind: "relegated" });
-              const bonus = boardBonus(board.board, wageRevenueBasisOf(next));
+              ds.rollover.objectiveMet = position !== null && !!ds.board.objective && position <= ds.board.objective.target;
+              ds.board = evaluateSeason(ds.board, { position });
+              if (position === 1) ds.board = applyCompetitionEvent(ds.board, { kind: "title", title: `league:${slug}` });
+              if (ds.rollover.move?.kind === "promoted") ds.board = applyCompetitionEvent(ds.board, { kind: "promoted" });
+              if (ds.rollover.move?.kind === "relegated") ds.board = applyCompetitionEvent(ds.board, { kind: "relegated" });
+              const bonus = boardBonus(ds.board.board, wageRevenueBasisOf(next));
               if (bonus > 0) {
-                playerBoardBonusEntry = {
+                ds.rollover.boardBonusEntry = {
                   date: currentDate, kind: "prize", amount: bonus, label: "Board bonus", ref: { stage: "board_bonus" },
                 };
-                next = applyMoney(next, playerBoardBonusEntry);
-                boardMessages.push({ date: currentDate, kind: "bonus", bonus, board: Math.round(board.board) });
+                next = applyMoney(next, ds.rollover.boardBonusEntry);
+                ds.boardMessages.push({ date: currentDate, kind: "bonus", bonus, board: Math.round(ds.board.board) });
               }
               // Only the sacking is decided here; warnings/praise come from the daily review below,
               // on the carried-over meters of the new season.
-              const review = reviewBoardStatus(board, { sackingEnabled: meta.sackingEnabled !== false, date: currentDate });
-              if (review.sacked) sackedReason = review.sacked;
+              const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
+              if (review.sacked) ds.sackedReason = review.sacked;
             }
             if (leaguePrizeAmount > 0) {
               next = applyMoney(next, {
@@ -2118,7 +2177,7 @@ export async function advanceOneDay(
                 label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
                 ref: { competition: slug, position: tablePos + 1 },
               });
-              playerLeaguePrizeThisRollover = leaguePrizeAmount;
+              ds.rollover.leaguePrize = leaguePrizeAmount;
             }
           }
           // Wage factor for the season ahead, now that this club's tier-adjusted revenue is
@@ -2141,14 +2200,15 @@ export async function advanceOneDay(
               : targetWageFactor;
           next = { ...next, wageFactor: newWageFactor, wageRevenueBasis: newRevenue };
           await saveService.saveSquadById(saveId, next);
-          if (squad.id === playerClubSquadId) {
+          if (ds) {
             // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so
             // both entries go onto the NEW season's file — same "+1" the next-season calendar
             // below uses for cal.meta.year.
             const newSeasonEntries: LedgerEntry[] = [];
-            if (transition.playerBroadcastingCredit > 0) {
+            const credit = transition.humanBroadcastingCredit[squad.id] ?? 0;
+            if (credit > 0) {
               newSeasonEntries.push({
-                date: currentDate, kind: "broadcasting", amount: transition.playerBroadcastingCredit,
+                date: currentDate, kind: "broadcasting", amount: credit,
                 label: "Broadcasting revenue",
               });
             }
@@ -2159,8 +2219,8 @@ export async function advanceOneDay(
                 ref: { competition: slug, position: tablePos + 1 },
               });
             }
-            if (playerBoardBonusEntry) newSeasonEntries.push(playerBoardBonusEntry);
-            if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries);
+            if (ds.rollover.boardBonusEntry) newSeasonEntries.push(ds.rollover.boardBonusEntry);
+            if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries, ds.seatId);
           }
         }
       }
@@ -2204,24 +2264,28 @@ export async function advanceOneDay(
           end: cal.meta.end,
           totalRounds: cal.meta.totalRounds,
           currentRound: 0,
-          restDays: cal.meta.restDays,
         };
+        // A seat whose club plays this league next season gets its seeded rest days.
+        for (const ds of daySeats) {
+          if (ds.clubId && index.byId(ds.clubId)?.leagueSlug === slug) ds.patch.restDays = cal.meta.restDays ?? [];
+        }
       }
 
       // 7a. Loans held by clubs of this unit end with their season (`.claude/rules/game/negotiation.md`),
       //     with the contracts' grace window, before retirements and expiries touch those players.
-      {
-        const mk = await saveService.getMarket(saveId);
+      // Each seat's loans (its market) are checked.
+      for (const ds of daySeats) {
+        const mk = await saveService.getMarket(saveId, ds.seatId);
         if (mk?.loans?.length) {
           const unitIds = new Set<string>();
           for (const slug of unit.leagues) for (const sq of await saveService.getSquadsInLeague(saveId, slug)) unitIds.add(sq.id);
-          const back = await returnDueLoans(saveService, saveId, meta, mk, currentDate, {
+          const back = await returnDueLoans(saveService, saveId, ds.seatId, ds.meta, mk, currentDate, {
             graceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS, onlyBorrowers: unitIds,
             // A loan of a rolling PARENT ends too when the contract does, so the expiry below sees him.
             parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
           });
-          if (back.market !== mk) await saveService.saveMarket(saveId, back.market);
-          negotiationNews.push(...back.news);
+          if (back.market !== mk) await saveService.saveMarket(saveId, back.market, ds.seatId);
+          ds.deferred.negotiation.push(...back.news);
         }
       }
 
@@ -2233,14 +2297,17 @@ export async function advanceOneDay(
         worldLevelsMemo ??= buildWorldLevels(await saveService.getAllSquads(saveId));
         const levels = worldLevelsMemo;
         const rYear = closedYear.get(unit.leagues[0]!)! + 1;
-        const faDone = (freeAgentsRetiredYear ?? meta.freeAgentsRetiredYear) === rYear;
+        const faDone = (freeAgentsRetiredYear ?? world.freeAgentsRetiredYear) === rYear;
         const res = processRetirements({
           saveId, year: rYear, processFreeAgents: !faDone, date: currentDate, squads: unitSquads,
-          freeAgents: await saveService.getFreeAgents(saveId), levels, humanSquadId: playerClubSquadId, logs: closedLogs,
+          freeAgents: await saveService.getFreeAgents(saveId), levels, humanSeats: seatIdByClub, logs: closedLogs,
         });
-        const humanInUnit = unitSquads.some((s) => s.id === playerClubSquadId);
+        // The pending reborn offers of each seat whose club is in the unit expire (the new ones are added after).
         let retiredAll = await saveService.getRetired(saveId);
-        if (humanInUnit) retiredAll = expireOffers(retiredAll);
+        for (const s of unitSquads) {
+          const sid = seatIdByClub.get(s.id);
+          if (sid) retiredAll = expireOffers(retiredAll, sid);
+        }
         if (res.retired.length > 0 || retiredAll.length > 0) {
           await saveService.writeRetired(saveId, [...retiredAll, ...res.retired]);
         }
@@ -2253,23 +2320,25 @@ export async function advanceOneDay(
           await saveService.writeFreeAgents(saveId, res.freeAgents);
           freeAgentsRetiredYear = rYear;
         }
-        const goneHuman = new Set(res.humanRetired.map((r) => r.id));
-        if (goneHuman.size > 0) {
-          const tac = await saveService.getTactics(saveId);
+        // A seat's retirees leave its lineup and its sell list.
+        for (const ds of daySeats) {
+          const goneHuman = new Set(res.humanRetired.filter((r) => r.squadId === ds.clubId).map((r) => r.id));
+          if (goneHuman.size === 0) continue;
+          const tac = await saveService.getTactics(saveId, ds.seatId);
           if (tac && tac.lineup.some((id) => goneHuman.has(id))) {
-            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) });
+            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) }, ds.seatId);
           }
-          const mk = await saveService.getMarket(saveId);
+          const mk = await saveService.getMarket(saveId, ds.seatId);
           if (mk?.playerSellList?.some((c) => goneHuman.has(c.playerId))) {
-            await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
+            await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) }, ds.seatId);
           }
         }
-        await pruneSellOnHeld(saveService, saveId, res.retired.map((r) => r.id));
+        for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, res.retired.map((r) => r.id));
         if (newsCollector) {
           for (const r of res.retired) if (levels.top.has(r.id) && !r.freeAgent) newsCollector.retired.push({ playerId: r.id, player: r.name, squadId: r.squadId });
         }
         for (const r of res.humanRetired) {
-          deferredRetirementMessages.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
+          seatOf.get(r.squadId)?.deferred.retirement.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
         }
       }
 
@@ -2281,9 +2350,11 @@ export async function advanceOneDay(
       if (!options.marketFrozen) {
         const unitIds = new Set<string>();
         for (const slug of unit.leagues) for (const t of index.inLeague(slug)) unitIds.add(t.squadId);
-        const pc = await applyDuePreContracts(saveService, saveId, meta, { unitIds, date: currentDate, humanClubId: playerClubSquadId ?? null });
-        negotiationNews.push(...pc.news);
-        dayMoves.push(...pc.moves);
+        for (const ds of daySeats) {
+          const pc = await applyDuePreContracts(saveService, saveId, ds.seatId, ds.meta, { unitIds, date: currentDate, humanClubId: ds.clubId ?? null });
+          ds.deferred.negotiation.push(...pc.news);
+          dayMoves.push(...pc.moves);
+        }
       }
       const releasedNow: FreeAgent[] = [];
       const afterExpiry: { squad: Squad; nextEnd: string }[] = [];
@@ -2291,31 +2362,32 @@ export async function advanceOneDay(
         const nextEnd = updatedActiveLeagues[stateIdx(slug)]?.end;
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
-          const isHuman = sq.id === playerClubSquadId;
+          const ds = seatOf.get(sq.id);
+          const isHuman = !!ds;
           const res = processContractExpiries({ squad: sq, date: currentDate, nextSeasonEnd: nextEnd, isHuman });
           afterExpiry.push({ squad: res.squad, nextEnd });
           if (res.squad === sq) continue;
           await saveService.saveSquadById(saveId, res.squad);
           for (const p of res.released) releasedNow.push(toFreeAgent(p, currentDate));
-          if (isHuman && res.released.length > 0) {
+          if (ds && res.released.length > 0) {
             const gone = new Set(res.released.map((p) => p.id));
-            const tac = await saveService.getTactics(saveId);
+            const tac = await saveService.getTactics(saveId, ds.seatId);
             if (tac && tac.lineup.some((id) => gone.has(id))) {
-              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) });
+              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) }, ds.seatId);
             }
-            const mk = await saveService.getMarket(saveId);
+            const mk = await saveService.getMarket(saveId, ds.seatId);
             if (mk?.playerSellList?.some((c) => gone.has(c.playerId))) {
-              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) });
+              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) }, ds.seatId);
             }
-            deferredContractMessages.push({
+            ds.deferred.contract.push({
               date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
             });
             // The manager keeps knowing who leaves (`.claude/rules/game/scouting.md`).
-            await rememberPlayers(saveService, saveId, res.released.map((p) => p.id), currentDate);
+            await rememberPlayers(saveService, saveId, ds.seatId, res.released.map((p) => p.id), currentDate);
           }
         }
       }
-      await pruneSellOnHeld(saveService, saveId, releasedNow.map((f) => f.player.id));
+      for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, releasedNow.map((f) => f.player.id));
       if (releasedNow.length > 0 || due.units.length > 0) {
         const existing = await saveService.getFreeAgents(saveId);
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
@@ -2323,7 +2395,7 @@ export async function advanceOneDay(
         // filler youth; the human club only gets youth up to the per-role minimums.
         const trimmedIds: string[] = [];
         for (const { squad: sq, nextEnd } of afterExpiry) {
-          const isHuman = sq.id === playerClubSquadId;
+          const isHuman = humanClubs.has(sq.id);
           const r = refillSquad({ squad: sq, pool, nextSeasonEnd: nextEnd, isHuman, tagPrefix: `s${nextEnd.slice(0, 4)}` });
           if (r.squad === sq) continue;
           // A role minimum may take an AI club past 30: the weakest of the lines with a surplus leave.
@@ -2339,7 +2411,7 @@ export async function advanceOneDay(
           trimmedIds.push(...trimmed.released.map((p) => p.id));
         }
         await saveService.writeFreeAgents(saveId, pool);
-        await pruneSellOnHeld(saveService, saveId, trimmedIds);
+        for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, trimmedIds);
       }
 
       // 9. Academy (.claude/rules/game/youth.md): every club gets a yearly intake of 16-17 year olds.
@@ -2352,18 +2424,18 @@ export async function advanceOneDay(
         const nextEnd = state.end;
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
-          const isHuman = sq.id === playerClubSquadId;
-          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman });
+          const ds = seatOf.get(sq.id);
+          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman: !!ds });
           await saveService.saveSquadById(saveId, res.squad);
-          if (!isHuman) continue;
+          if (!ds) continue;
           youthReleased = youthReleased.concat(res.autoReleased.map((p) => toFreeAgent(p, currentDate)));
           if (res.autoReleased.length > 0) {
-            deferredYouthMessages.push({
+            ds.deferred.youth.push({
               date: currentDate, kind: "released", players: res.autoReleased.map((p) => ({ id: p.id, name: p.name })),
             });
           }
           const best = [...res.intake].sort((a, b) => overallAvg(b) - overallAvg(a))[0];
-          deferredYouthMessages.push({
+          ds.deferred.youth.push({
             date: currentDate, kind: "intake", year: state.year, count: res.intake.length,
             best: best ? { id: best.id, name: best.name, position: best.positions[0] ?? "" } : undefined,
           });
@@ -2373,68 +2445,71 @@ export async function advanceOneDay(
         await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...youthReleased]);
       }
 
-      if (unit.leagues.includes(meta.leagueSlug)) {
-        seasonEnded = true;
+      // The season of each seat whose league is in the unit ended (an unemployed seat follows its last league).
+      for (const ds of daySeats) {
+        if (!unit.leagues.includes(ds.meta.leagueSlug)) continue;
+        ds.rollover.seasonEnded = true;
         // New season objective (new membership, after the moves), meters carried half-way to 60.
-        if (board && !sackedReason && playerSquadId) {
-          const newLeague = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
+        if (ds.board && !ds.sackedReason && ds.clubId) {
+          const newLeague = index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
           const state = updatedActiveLeagues[stateIdx(newLeague)];
           const catalogForBoard = await getLeagueData();
           const objective = objectiveFromSquads({
             squads: await saveService.getSquadsInLeague(saveId, newLeague),
-            playerSquadId,
+            playerSquadId: ds.clubId,
             leagueSlug: newLeague,
             zones: catalogForBoard.find((l) => l.slug === newLeague)?.zones ?? [],
             season: state ? seasonLabel(state.year, state.start, state.end) : "",
           });
-          boardAtSeasonEnd = board.board;
-          board = carryIntoNewSeason(board, objective);
+          ds.rollover.boardAtSeasonEnd = ds.board.board;
+          ds.board = carryIntoNewSeason(ds.board, objective);
           if (objective) {
-            boardMessages.push({
+            ds.boardMessages.push({
               date: currentDate, kind: "objective", objective,
               leagueName: competitionName(newLeague, catalogForBoard as unknown as LeagueData[], "en"),
             });
           }
         }
-        archiveYear = closedYear.get(meta.leagueSlug);
-        playerCountryMoves = plan.moves;
-        playerMove = plan.playerMove;
-        playerChampionOf = plan.playerChampionOf;
+        const archiveYear = closedYear.get(ds.meta.leagueSlug)!;
+        ds.rollover.archiveYear = archiveYear;
+        ds.rollover.moves = plan.moves;
         const nameOf = await leagueNameResolver(activeLeagues);
-        if (plan.playerChampionOf) {
-          seasonMessages.push({
-            date: currentDate, kind: "champion", leagueSlug: plan.playerChampionOf,
-            leagueName: nameOf(plan.playerChampionOf), seasonYear: archiveYear!,
+        const { move, championOf, followersChange, leaguePrize: prizeNow } = ds.rollover;
+        if (championOf) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "champion", leagueSlug: championOf,
+            leagueName: nameOf(championOf), seasonYear: archiveYear,
           });
         }
-        if (plan.playerMove) {
-          seasonMessages.push({
-            date: currentDate, kind: plan.playerMove.kind, leagueSlug: plan.playerMove.to,
-            leagueName: nameOf(plan.playerMove.to), fromLeagueSlug: plan.playerMove.from, seasonYear: archiveYear!,
+        if (move) {
+          ds.deferred.season.push({
+            date: currentDate, kind: move.kind, leagueSlug: move.to,
+            leagueName: nameOf(move.to), fromLeagueSlug: move.from, seasonYear: archiveYear,
           });
         }
-        if (playerFollowersChange) {
-          seasonMessages.push({
-            date: currentDate, kind: "followers", leagueSlug: playerFollowersChange.leagueSlug,
-            leagueName: nameOf(playerFollowersChange.leagueSlug), seasonYear: archiveYear!,
-            followersBefore: playerFollowersChange.before, followersAfter: playerFollowersChange.after,
+        if (followersChange) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "followers", leagueSlug: followersChange.leagueSlug,
+            leagueName: nameOf(followersChange.leagueSlug), seasonYear: archiveYear,
+            followersBefore: followersChange.before, followersAfter: followersChange.after,
           });
         }
         // Always fires once per rollover, independent of champion/promoted/relegated/followers —
         // a mid-table finish still earns (and shows) its merit prize, and this never doubles up
         // with those messages (review fix: a club can be BOTH champion of its league AND promoted
         // the same season, which used to attach the same prize to two messages).
-        if (playerLeaguePrizeThisRollover > 0) {
-          seasonMessages.push({
-            date: currentDate, kind: "league_prize", leagueSlug: meta.leagueSlug,
-            leagueName: nameOf(meta.leagueSlug), seasonYear: archiveYear!,
-            prize: playerLeaguePrizeThisRollover,
+        if (prizeNow > 0) {
+          ds.deferred.season.push({
+            date: currentDate, kind: "league_prize", leagueSlug: ds.meta.leagueSlug,
+            leagueName: nameOf(ds.meta.leagueSlug), seasonYear: archiveYear,
+            prize: prizeNow,
           });
         }
         logDebug(LOG_NS_SEASON, "Season rollover complete", {
+          seatId: ds.seatId,
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
-          playerMove: plan.playerMove,
+          playerMove: move,
         });
       }
     }
@@ -2481,21 +2556,23 @@ export async function advanceOneDay(
       const tier1States = await continentalTier1LeagueStates(updatedActiveLeagues, catalog, pyramids);
       const compYear: Partial<Record<"Europe" | "South America", number>> = {};
 
-      // Player's-club "qualified" + "group" news for a competition pair just (re)generated below —
-      // queued into the deferred `continentalMessages` array (see its declaration above), never
-      // emitted directly here.
+      // Each seat club's "qualified" + "group" news for a competition pair just (re)generated below —
+      // queued into its deferred list (`DaySeat.deferred.continental`), never emitted directly here.
       const queueQualificationMessage = (result: Awaited<ReturnType<typeof createContinentalSeason>>) => {
-        const qual = continentalQualificationOf(playerClubSquadId, result);
-        if (!qual) return;
-        const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
-        const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
-        continentalMessages.push({
-          date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
-        });
-        continentalMessages.push({
-          date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
-          group: qual.group, opponentNames,
-        });
+        for (const ds of daySeats) {
+          if (!ds.clubId) continue;
+          const qual = continentalQualificationOf(ds.clubId, result);
+          if (!qual) continue;
+          const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
+          const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
+          ds.deferred.continental.push({
+            date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+          });
+          ds.deferred.continental.push({
+            date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
+            group: qual.group, opponentNames,
+          });
+        }
       };
       for (const continent of ["Europe", "South America"] as const) {
         const primarySlug = competitionsOf(continent)[0]!.slug;
@@ -2556,15 +2633,15 @@ export async function advanceOneDay(
       rescheduleMoves.push(...r.moves);
     }
 
-    // The human club's seeded rest days (day before / after each match) follow its rescheduled games.
-    if (playerSquadId && rescheduleMoves.length > 0) {
-      const i = stateIdx(index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug);
-      if (i >= 0) {
-        const restDays = await playerRestDaysAfterMoves({
-          service: saveService, saveId, state: updatedActiveLeagues[i]!, clubId: playerSquadId, moves: rescheduleMoves,
-        });
-        if (restDays) updatedActiveLeagues[i] = { ...updatedActiveLeagues[i]!, restDays };
-      }
+    // Each seat club's seeded rest days (day before / after each match) follow its rescheduled games.
+    for (const ds of rescheduleMoves.length > 0 ? daySeats : []) {
+      if (!ds.clubId) continue;
+      const leagueSlug = index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+      const restDays = await playerRestDaysAfterMoves({
+        service: saveService, saveId, state: { leagueSlug, restDays: ds.patch.restDays ?? ds.meta.restDays ?? [] },
+        clubId: ds.clubId, moves: rescheduleMoves,
+      });
+      if (restDays) ds.patch.restDays = restDays;
     }
 
     // ── Youth competitions: archived and regenerated when the country's tier-1 league rolled (same
@@ -2579,172 +2656,180 @@ export async function advanceOneDay(
     // ── Board and fans: daily review (warning, ultimatum, praise, sacking) + today's snapshot ──
     // A sacking leaves the manager without a club (`.claude/rules/game/jobs.md`): the club becomes
     // an AI club today and the career goes on, with offers arriving every two weeks.
-    let ended: CareerEnded | undefined;
-    if (board) {
-      if (!sackedReason) {
-        const review = reviewBoardStatus(board, { sackingEnabled: meta.sackingEnabled !== false, date: currentDate });
-        board = review.state;
-        sackedReason = review.sacked;
+    for (const ds of daySeats) {
+      let b = ds.board;
+      if (!b) continue;
+      if (!ds.sackedReason) {
+        const review = reviewBoardStatus(b, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
+        b = review.state;
+        ds.sackedReason = review.sacked;
         for (const kind of review.messages) {
           if (kind === "sacked") continue;
-          boardMessages.push({
-            date: currentDate, kind, board: Math.round(board.board),
-            ...(kind === "ultimatum" && board.ultimatum
-              ? { ultimatum: { matches: board.ultimatum.matchesLeft, points: board.ultimatum.pointsNeeded } }
+          ds.boardMessages.push({
+            date: currentDate, kind, board: Math.round(b.board),
+            ...(kind === "ultimatum" && b.ultimatum
+              ? { ultimatum: { matches: b.ultimatum.matchesLeft, points: b.ultimatum.pointsNeeded } }
               : {}),
           });
         }
       }
-      board = snapshotBoard(board, currentDate);
-      if (sackedReason) {
-        const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+      b = snapshotBoard(b, currentDate);
+      ds.board = b;
+      if (ds.sackedReason) {
+        const leagueNow = index.byId(ds.meta.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
         const table = (await saveService.getLeagueStandings(saveId, leagueNow)) ?? [];
-        const pos = table.findIndex((r) => r.squadId === meta.clubId);
-        ended = {
-          date: currentDate, reason: sackedReason, clubName: meta.clubName,
+        const pos = table.findIndex((r) => r.squadId === ds.meta.clubId);
+        ds.job.ended = {
+          date: currentDate, reason: ds.sackedReason, clubName: ds.meta.clubName,
           leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
           position: pos >= 0 && table[pos]!.mp > 0 ? pos + 1 : null,
-          board: Math.round(board.board), fans: Math.round(board.fans), record: board.record,
+          board: Math.round(b.board), fans: Math.round(b.fans), record: b.record,
         };
-        boardMessages.push({ date: currentDate, kind: "sacked", reason: sackedReason, board: Math.round(board.board) });
+        ds.boardMessages.push({ date: currentDate, kind: "sacked", reason: ds.sackedReason, board: Math.round(b.board) });
       }
     }
-    // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
-    // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
-    let contract = meta.managerContract?.squadId === playerSquadId ? meta.managerContract : undefined;
-    if (!ended && board && playerSquadId && seasonEnded && contract && contract.until <= currentDate) {
-      const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
-      ended = {
-        date: currentDate, reason: "contract", clubName: meta.clubName,
-        leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
-        position: null, board: Math.round(board.board), fans: Math.round(board.fans), record: board.record,
-      };
-      boardMessages.push({ date: currentDate, kind: "contract_ended", board: Math.round(board.board) });
-    }
-    let unemployed: Unemployment | undefined = meta.unemployed;
-    if (ended && board && playerSquadId) {
-      // Sacked mid-contract: half the wage of the weeks left (max 52) to the manager, paid by the club
-      // before its balance leaves the ledger (D9: display only).
-      const severance = ended.reason !== "contract" && contract ? severancePay(contract, currentDate) : 0;
-      if (severance > 0) {
-        const entry = index.byId(playerSquadId);
-        if (entry) {
-          await recordMoney(
-            saveService, saveId, (await saveService.getLeagueMeta(saveId, entry.leagueSlug))?.year ?? parseInt(currentDate.slice(0, 4), 10),
-            { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
-            { date: currentDate, kind: "manager", amount: -severance, label: "Manager severance", ref: { stage: "severance" } },
-          );
-          managerEarned += severance;
+    // ── Per seat: the manager's contract end, the sacking (→ unemployed), job offers and the contract ──
+    // No club with a seat ever offers a job (`.claude/rules/game/multiplayer.md`).
+    for (const ds of daySeats) {
+      const clubId = ds.clubId;
+      // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
+      // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
+      let contract = ds.job.contract;
+      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate) {
+        const leagueNow = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+        ds.job.ended = {
+          date: currentDate, reason: "contract", clubName: ds.meta.clubName,
+          leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
+          position: null, board: Math.round(ds.board.board), fans: Math.round(ds.board.fans), record: ds.board.record,
+        };
+        ds.boardMessages.push({ date: currentDate, kind: "contract_ended", board: Math.round(ds.board.board) });
+      }
+      const ended = ds.job.ended;
+      if (ended && ds.board && clubId) {
+        // Sacked mid-contract: half the wage of the weeks left (max 52) to the manager, paid by the club
+        // before its balance leaves the ledger (D9: display only).
+        const severance = ended.reason !== "contract" && contract ? severancePay(contract, currentDate) : 0;
+        if (severance > 0) {
+          const entry = index.byId(clubId);
+          if (entry) {
+            await recordMoney(
+              saveService, saveId, (await saveService.getLeagueMeta(saveId, entry.leagueSlug))?.year ?? parseInt(currentDate.slice(0, 4), 10),
+              { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
+              { date: currentDate, kind: "manager", amount: -severance, label: "Manager severance", ref: { stage: "severance" } },
+              ds.seatId,
+            );
+            ds.managerEarned += severance;
+          }
         }
-      }
-      await releaseHumanClub(saveService, saveId, { squadId: playerSquadId, date: currentDate });
-      await managerTracker.apply((ms) => sackHumanManager(ms, {
-        date: currentDate, clubName: meta.clubName, left: ended!.reason === "contract" ? "contract" : "sacked",
-      }));
-      // The club hires by the AI rule (interim + vacancy).
-      aiDesk?.openVacancy(playerSquadId);
-      unemployed = {
-        since: currentDate,
-        lastClubId: playerSquadId,
-        lastClubName: meta.clubName,
-        lastLeagueSlug: index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug,
-        board: Math.round(board.board),
-        nextOfferDate: addDays(currentDate, JOBS.unemployed.FIRST_OFFER_DAYS),
-        sacking: ended,
-      };
-    }
-
-    // ── Job offers (`.claude/rules/game/jobs.md`): the player's season end, one mid-season window,
-    // every two weeks while unemployed. Messages are deferred like the rest (after `clearInbox`).
-    const offersBefore = meta.jobOffers ?? [];
-    let jobOffers: JobOffer[] = pruneOffers(offersBefore, nextDate);
-    let jobsMidSeason = meta.jobsMidSeason;
-    const newOffers: JobOffer[] = [];
-    if (!ended && playerSquadId && board) {
-      const playerState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug));
-      if (seasonEnded && playerState) {
-        // Valid until the eve of the club's first match of the new season.
-        // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
-        const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(playerState.leagueSlug) ?? [], rescheduleMoves, playerSquadId);
-        newOffers.push(...await generateJobOffers(saveService, saveId, {
-          window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
-          managers: await managerTracker.list(), board: boardAtSeasonEnd ?? board.board,
-          humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index, ...(contract ? { contract } : {}),
+        await releaseHumanClub(saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate });
+        await managerTracker.apply((ms) => sackHumanManager(ms, {
+          seatId: ds.seatId, date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
         }));
-      } else if (playerState) {
-        const label = seasonLabel(playerState.year, playerState.start, playerState.end);
-        if (jobsMidSeason !== label) {
-          const table = (await saveService.getLeagueStandings(saveId, playerState.leagueSlug)) ?? [];
-          const mp = table.find((r) => r.squadId === playerSquadId)?.mp ?? 0;
-          if (playerState.totalRounds > 0 && mp >= playerState.totalRounds * JOBS.midSeason.PROGRESS) {
-            jobsMidSeason = label;
-            newOffers.push(...await generateJobOffers(saveService, saveId, {
-              window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
-              managers: await managerTracker.list(), board: board.board,
-              humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index, ...(contract ? { contract } : {}),
-            }));
+        // The club hires by the AI rule (interim + vacancy).
+        aiDesk?.openVacancy(clubId);
+        ds.job.unemployed = {
+          since: currentDate,
+          lastClubId: clubId,
+          lastClubName: ds.meta.clubName,
+          lastLeagueSlug: index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug,
+          board: Math.round(ds.board.board),
+          nextOfferDate: addDays(currentDate, JOBS.unemployed.FIRST_OFFER_DAYS),
+          sacking: ended,
+        };
+      }
+
+      // ── Job offers (`.claude/rules/game/jobs.md`): the seat's season end, one mid-season window,
+      // every two weeks while unemployed. Messages are deferred like the rest (after `clearInbox`).
+      ds.job.offers = pruneOffers(ds.job.offersBefore, nextDate);
+      const newOffers: JobOffer[] = [];
+      if (!ended && clubId && ds.board) {
+        const seatState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug));
+        if (ds.rollover.seasonEnded && seatState) {
+          // Valid until the eve of the club's first match of the new season.
+          // After today's rescheduling (`.claude/rules/game/rescheduling.md`).
+          const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(seatState.leagueSlug) ?? [], rescheduleMoves, clubId);
+          newOffers.push(...await generateJobOffers(saveService, saveId, {
+            seatId: ds.seatId, window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
+            managers: await managerTracker.list(), board: ds.rollover.boardAtSeasonEnd ?? ds.board.board,
+            humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+            ...(contract ? { contract } : {}),
+          }));
+        } else if (seatState) {
+          const label = seasonLabel(seatState.year, seatState.start, seatState.end);
+          if (ds.job.midSeason !== label) {
+            const table = (await saveService.getLeagueStandings(saveId, seatState.leagueSlug)) ?? [];
+            const mp = table.find((r) => r.squadId === clubId)?.mp ?? 0;
+            if (seatState.totalRounds > 0 && mp >= seatState.totalRounds * JOBS.midSeason.PROGRESS) {
+              ds.job.midSeason = label;
+              newOffers.push(...await generateJobOffers(saveService, saveId, {
+                seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
+                managers: await managerTracker.list(), board: ds.board.board,
+                humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+                ...(contract ? { contract } : {}),
+              }));
+            }
+          }
+        }
+      } else if (!ended && ds.job.unemployed && currentDate >= ds.job.unemployed.nextOfferDate) {
+        const unemployed = ds.job.unemployed;
+        const offers = await generateJobOffers(saveService, saveId, {
+          seatId: ds.seatId, window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
+          managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
+          unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
+          activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
+          // Offers while unemployed come from real vacancies first (× VACANCY_WEIGHT).
+          vacant: new Set(Object.keys(aiDesk?.vacancies() ?? world.managerVacancies ?? {})),
+        });
+        newOffers.push(...offers);
+        ds.job.unemployed = {
+          ...unemployed,
+          nextOfferDate: addDays(currentDate, JOBS.unemployed.EVERY_DAYS),
+          ...(offers.length > 0 ? { lastOfferDate: currentDate } : {}),
+        };
+      }
+      // ── The manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"): the board's
+      // renewal at 85% of the last season, the warning a week before the end. Messages deferred.
+      if (!ended && ds.board && clubId && contract) {
+        const league = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+        const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
+        // The country rolled: the contract follows the NEW league's season end (seasons left kept).
+        const oldEnd = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug)?.end;
+        if (ds.rollover.seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
+        if (st) {
+          const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === clubId)?.mp ?? 0;
+          const squad = await saveService.getSquadById(saveId, clubId);
+          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId);
+          const day = contractDay({
+            date: currentDate, contract, ...(ds.job.renewal ? { renewal: ds.job.renewal } : {}),
+            notices: ds.job.notices ?? [], board: ds.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
+            sackingEnabled: ds.meta.sackingEnabled !== false,
+            reputationWage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),
+          });
+          ds.job.renewal = day.renewal;
+          ds.job.notices = day.notices;
+          if (day.message) {
+            ds.boardMessages.push({
+              date: currentDate, kind: day.message.kind, board: Math.round(ds.board.board),
+              ...(day.message.contract ? { contract: day.message.contract } : {}),
+            });
           }
         }
       }
-    } else if (!ended && unemployed && currentDate >= unemployed.nextOfferDate) {
-      const offers = await generateJobOffers(saveService, saveId, {
-        window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
-        managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
-        unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
-        activeLeagues: updatedActiveLeagues, index,
-        // Offers while unemployed come from real vacancies first (× VACANCY_WEIGHT).
-        vacant: new Set(Object.keys(aiDesk?.vacancies() ?? meta.managerVacancies ?? {})),
-      });
-      newOffers.push(...offers);
-      unemployed = {
-        ...unemployed,
-        nextOfferDate: addDays(currentDate, JOBS.unemployed.EVERY_DAYS),
-        ...(offers.length > 0 ? { lastOfferDate: currentDate } : {}),
-      };
+      ds.job.contract = contract;
+      ds.job.kept = ds.job.offers;
+      ds.job.newOffers = newOffers;
+      if (newOffers.length > 0) ds.job.offers = mergeOffers(ds.job.offers, newOffers);
     }
-    // ── The manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"): the board's
-    // renewal at 85% of the last season, the warning a week before the end. Messages deferred.
-    let managerRenewal = meta.managerRenewal;
-    let managerContractNotices = meta.managerContractNotices;
-    if (!ended && board && playerSquadId && contract) {
-      const league = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
-      const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
-      // The country rolled: the contract follows the NEW league's season end (seasons left kept).
-      const oldEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
-      if (seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
-      if (st) {
-        const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === playerSquadId)?.mp ?? 0;
-        const squad = await saveService.getSquadById(saveId, playerSquadId);
-        const rep = managerReputation(await managerTracker.list(), board.board, parseInt(currentDate.slice(0, 4), 10));
-        const day = contractDay({
-          date: currentDate, contract, ...(managerRenewal ? { renewal: managerRenewal } : {}),
-          notices: managerContractNotices ?? [], board: board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
-          sackingEnabled: meta.sackingEnabled !== false,
-          reputationWage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),
-        });
-        managerRenewal = day.renewal;
-        managerContractNotices = day.notices;
-        if (day.message) {
-          boardMessages.push({
-            date: currentDate, kind: day.message.kind, board: Math.round(board.board),
-            ...(day.message.contract ? { contract: day.message.contract } : {}),
-          });
-        }
-      }
-    }
-
-    const keptOffers = jobOffers;
-    if (newOffers.length > 0) jobOffers = mergeOffers(jobOffers, newOffers);
-    const jobMessages: Parameters<typeof buildJobMessage>[0][] = newOffers.map((offer) => ({ date: currentDate, kind: "offer" as const, offer }));
 
     // ── World awards (`.claude/rules/game/awards.md` §5): January, once per year, after the rollovers ──
     {
       const msg = await runWorldCeremony(saveService, saveId, currentDate, {
         managers: () => managerTracker.list(),
         applyManagers: (fn) => managerTracker.apply(fn),
-        playerClubId: !ended && !unemployed && meta.clubId ? meta.clubId : null,
+        humanClubIds: new Set(daySeats.flatMap((ds) => (ds.clubId && !ds.job.ended && !ds.job.unemployed ? [ds.clubId] : []))),
       });
-      if (msg) deferredAwardsMessages.push(msg);
+      // The world ceremony is news for every seat.
+      if (msg) for (const ds of daySeats) ds.deferred.awards.push(msg);
       if (msg?.world && newsCollector) newsCollector.worldAwards = msg.world;
     }
 
@@ -2754,59 +2839,62 @@ export async function advanceOneDay(
     // ── The director's Monday (contracts, `docs/superpowers/specs/2026-10-07-responsibilities-inbox-design.md`) ──
     // Before morale: a renewed player no longer asks for a contract talk, and the director answers
     // the others' talks with his decision. The summary is deferred past `clearInbox` like the rest.
-    const humanActive = !ended && !!meta.clubId && !unemployed && !options.marketFrozen;
-    const directorInCharge = humanActive && directorHandlesContracts(meta.responsibilities);
-    let directorDecided: Record<string, DirectorDecision> | undefined;
-    let directorOutcomes: DirectorOutcome[] = [];
-    const directorNews: PlayerNews[] = [];
-    if (directorInCharge && new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1) {
-      const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+    // A seat is active today when it still has its club (not sacked today, not unemployed) and the career runs.
+    const seatActive = (ds: DaySeat) =>
+      !ds.job.ended && !!ds.meta.clubId && !ds.job.unemployed
+      && !options.marketFrozen;
+    const directorInChargeOf = (ds: DaySeat) => seatActive(ds) && directorHandlesContracts(ds.meta.responsibilities);
+    for (const ds of daySeats) {
+      if (!directorInChargeOf(ds) || new Date(`${currentDate}T12:00:00Z`).getUTCDay() !== 1) continue;
+      const homeSlug = index.byId(ds.meta.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
       const d = await applyDirectorDay(saveService, saveId, {
-        clubId: meta.clubId, date: currentDate,
+        clubId: ds.meta.clubId, date: currentDate,
         league: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug),
-        decided: meta.directorDecisions ?? {},
+        decided: ds.meta.directorDecisions ?? {},
       });
-      directorDecided = d.decided;
-      directorOutcomes = d.outcomes;
-      directorNews.push(...d.news);
+      ds.director.decided = d.decided;
+      ds.director.outcomes = d.outcomes;
+      ds.director.news.push(...d.news);
     }
     // ── Coaching-staff contracts (`.claude/rules/game/staff.md`) ──
     // Every day whoever is past his contract leaves (back to the pool; a field scout's missions end);
     // on Monday, contracts within 60 days get one decision (director renews or lets go; the manager
     // is warned). When the human club's country rolls the staff ages a year (the retirement age
     // retires) and the free pool is refreshed, once per rollover date. News deferred past `clearInbox`.
-    let staffContractNews: StaffContractNews[] = [];
-    if (humanActive) {
-      const humanForStaff = await saveService.getSquadById(saveId, meta.clubId);
+    for (const ds of daySeats) {
+      if (!seatActive(ds)) continue;
+      const humanForStaff = await saveService.getSquadById(saveId, ds.meta.clubId);
       if (humanForStaff?.staff) {
-        const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+        const homeSlug = index.byId(ds.meta.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
         const r = staffContractDay({
           staff: humanForStaff.staff,
           date: currentDate,
           monday: new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1,
           seasonEnd: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug)?.end ?? currentDate,
-          directorHandles: directorInCharge,
+          directorHandles: directorInChargeOf(ds),
           impliedStars: impliedStars(humanForStaff),
           clubFactor: wageFactorOf(humanForStaff),
         });
         let staff = r.staff;
-        staffContractNews = r.news;
-        if (seasonEnded) {
+        ds.staffNews = r.news;
+        if (ds.rollover.seasonEnded) {
           const aged = ageStaff(staff);
           staff = aged.staff;
-          staffContractNews = [...staffContractNews, ...aged.news];
+          ds.staffNews = [...ds.staffNews, ...aged.news];
         }
         if (staff !== humanForStaff.staff) await saveService.saveSquadById(saveId, { ...humanForStaff, staff });
         if (r.left.length > 0) {
           let pool = await saveService.getStaffPool(saveId, currentDate);
           for (const m of r.left) pool = returnToPool(pool, m, currentDate);
           await saveService.writeStaffPool(saveId, pool);
-          await cancelScoutMissions(saveService, saveId, r.left.filter((m) => m.role === "fieldScout").map((m) => m.id));
+          await cancelScoutMissions(saveService, saveId, ds.seatId, r.left.filter((m) => m.role === "fieldScout").map((m) => m.id));
         }
       }
     }
-    if (seasonEnded) {
-      const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
+    // The free staff pool is refreshed once per rollover date (`refreshPool` is idempotent on the date).
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug);
       if (homeState) {
         const pool = await saveService.getStaffPool(saveId, currentDate);
         const { getStaffNameBook } = await import("@/backend/staffNameBook");
@@ -2814,119 +2902,152 @@ export async function advanceOneDay(
         if (next !== pool) await saveService.writeStaffPool(saveId, next);
       }
     }
-    const decidedNow = directorDecided ?? meta.directorDecisions ?? {};
-    const moraleNews = humanActive
-      ? [...directorNews, ...await applyMoraleDay(saveService, saveId, {
-          clubId: meta.clubId, date: currentDate,
-          events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
-          bids: moraleBids,
-          unavailable: moraleUnavailable,
-          seasonRolled: seasonEnded,
-          ...(directorInCharge ? { directorContractTalk: (p: RosterPlayer) => decidedNow[p.id]?.renew === true } : {}),
-        })]
-      : [];
+    for (const ds of daySeats) {
+      if (!seatActive(ds)) continue;
+      const decidedNow = ds.director.decided ?? ds.meta.directorDecisions ?? {};
+      ds.moraleNews = [...ds.director.news, ...await applyMoraleDay(saveService, saveId, ds.seatId, {
+        clubId: ds.meta.clubId, date: currentDate,
+        events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+        bids: ds.moraleBids,
+        unavailable: ds.moraleUnavailable,
+        seasonRolled: ds.rollover.seasonEnded,
+        ...(directorInChargeOf(ds) ? { directorContractTalk: (p: RosterPlayer) => decidedNow[p.id]?.renew === true } : {}),
+      })];
+    }
 
     // ── Press conferences (Etapa 42): after the board and morale; the invite goes out after any `clearInbox` ──
-    let pressState: PressState | undefined;
-    let pressInvite: PressInboxMessage | undefined;
-    let pressNews: DayNewsInput["press"] = [];
-    if (humanActive && board) {
-      const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+    for (const ds of daySeats) {
+      if (!seatActive(ds) || !ds.board) continue;
+      const homeSlug = index.byId(ds.meta.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
+      const rolled = ds.rollover.seasonEnded
+        ? { objectiveMet: ds.rollover.objectiveMet, move: ds.rollover.move, championOf: ds.rollover.championOf }
+        : null;
       const pressOut = await pressDay({
-        saveId, service: saveService, meta, date: currentDate, clubId: meta.clubId,
+        saveId, seatId: ds.seatId, service: saveService, meta: ds.meta, date: currentDate, clubId: ds.meta.clubId,
         leagueSlug: homeSlug,
         leagueState: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug),
         leagueZones: (await getLeagueData()).find((l) => l.slug === homeSlug)?.zones ?? [],
-        index, board,
+        index, board: ds.board,
         myMatches: dayEvents.filter((e): e is MatchEvent =>
-          e.kind === "match" && (e.home === meta.clubId || e.away === meta.clubId)),
-        titlesToday: pressTitles,
-        eliminatedToday: pressEliminated,
-        ...(seasonEnded
-          ? { rollover: { objectiveMet: playerObjectiveMet, move: playerMove ? { kind: playerMove.kind, to: playerMove.to } : null, championOf: playerChampionOf } }
+          e.kind === "match" && (e.home === ds.meta.clubId || e.away === ds.meta.clubId)),
+        titlesToday: ds.press.titles,
+        eliminatedToday: ds.press.eliminated,
+        ...(rolled
+          ? { rollover: { objectiveMet: rolled.objectiveMet, move: rolled.move ? { kind: rolled.move.kind, to: rolled.move.to } : null, championOf: rolled.championOf } }
           : {}),
-        matchContext: pressMatchContext,
+        matchContext: ds.press.matchContext,
       });
-      board = pressOut.board;
-      pressState = pressOut.press;
-      pressInvite = pressOut.invite;
-      pressNews = pressOut.news;
+      ds.board = pressOut.board;
+      ds.pressOut = { state: pressOut.press, ...(pressOut.invite ? { invite: pressOut.invite } : {}), news: pressOut.news };
     }
 
-    // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
-    if (seasonEnded) {
-      await saveService.writeTransfers(saveId, []);
-      await saveService.clearInbox(saveId);
-      for (const msg of seasonMessages) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService);
+    // The world's transfer log is never cleared: a rollover drops only what no running season still covers.
+    if (due.units.length > 0) {
+      await saveService.writeTransfers(saveId, pruneTransferLog(await saveService.getTransfers(saveId), updatedActiveLeagues.map((l) => l.start)));
+    }
+    // A seat's inbox is cleared when its country rolls; the season news goes in after.
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      await saveService.clearInbox(saveId, ds.seatId);
+      for (const msg of ds.deferred.season) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService, ds.seatId);
       // A press conference still pending keeps its invite (stable id); a fresh one is emitted below.
-      const keptPress = pressState?.pending;
-      if (keptPress && keptPress.id !== pressInvite?.pressId) {
+      const keptPress = ds.pressOut.state?.pending;
+      if (keptPress && keptPress.id !== ds.pressOut.invite?.pressId) {
         await emitInboxMessage(saveId, buildPressInviteMessage(keptPress.date, {
           pressId: keptPress.id, trigger: keptPress.trigger, kind: keptPress.kind, expires: keptPress.expires,
           ...(keptPress.params.opponent ? { opponent: keptPress.params.opponent } : {}),
-        }), saveService);
+        }), saveService, ds.seatId);
       }
     }
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
     // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
-    for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
-    // The human club's league games moved today (draws / rollover): one message, after any `clearInbox`.
-    if (playerSquadId && rescheduleMoves.length > 0) {
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.continental) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService, ds.seatId);
+    }
+    // Each seat club's league games moved today (draws / rollover): one message, after any `clearInbox`.
+    for (const ds of rescheduleMoves.length > 0 ? daySeats : []) {
+      if (!ds.clubId || ds.job.ended) continue;
       const catalog = await getLeagueData();
       const games = rescheduledGamesOf(
-        rescheduleMoves, playerSquadId,
+        rescheduleMoves, ds.clubId,
         (id) => index.byId(id)?.name ?? id,
         (slug) => competitionName(slug, catalog as unknown as LeagueData[], "en"),
       );
-      if (games.length > 0) await emitInboxMessage(saveId, buildScheduleMessage(currentDate, games), saveService);
+      if (games.length > 0) await emitInboxMessage(saveId, buildScheduleMessage(currentDate, games), saveService, ds.seatId);
     }
     // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
-    if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
-    // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
-    for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
-    for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
-    for (const msg of buildStaffContractMessages(currentDate, staffContractNews)) await emitInboxMessage(saveId, msg, saveService);
-    if (directorOutcomes.length > 0) {
-      await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: directorOutcomes }), saveService);
+    for (const ds of daySeats) {
+      if (ds.deferred.negativeBalance) {
+        await emitInboxMessage(saveId, buildSeasonMessage(ds.deferred.negativeBalance), saveService, ds.seatId);
+      }
     }
-    for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
-    for (const news of nationalDay.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService);
-    for (const news of nationalDay.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService);
-    if (registrationNotices.length > 0 && meta.clubId && !options.marketFrozen) {
-      const humanNow = await saveService.getSquadById(saveId, meta.clubId);
+    // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.injury) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService, ds.seatId);
+      for (const msg of ds.deferred.contract) await emitInboxMessage(saveId, buildContractMessage(msg), saveService, ds.seatId);
+      for (const msg of buildStaffContractMessages(currentDate, ds.staffNews)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
+      if (ds.director.outcomes.length > 0) {
+        await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: ds.director.outcomes }), saveService, ds.seatId);
+      }
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.youth) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService, ds.seatId);
+    }
+    // Each seat's national news: its club's call-ups and returns, its manager's national team.
+    for (const ds of daySeats) {
+      const nat = nationalDay.bySeat[ds.seatId];
+      if (!nat) continue;
+      for (const news of nat.news) await emitInboxMessage(saveId, buildNationalMessage(news), saveService, ds.seatId);
+      for (const news of nat.coachNews) await emitInboxMessage(saveId, buildNationalCoachMessage(news), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      if (ds.registrationNotices.length === 0 || !ds.clubId || options.marketFrozen) continue;
+      const humanNow = await saveService.getSquadById(saveId, ds.clubId);
       const nameOf = (id: string) => humanNow?.players.find((p) => p.id === id)?.name ?? id;
       const catalog = await getLeagueData();
-      for (const notice of registrationNotices) {
+      for (const notice of ds.registrationNotices) {
         await emitInboxMessage(saveId, buildRegistrationMessage({
           date: currentDate,
           notice,
           competitionName: competitionName(notice.competition, catalog as unknown as LeagueData[], "en"),
           ...(notice.playerIds ? { players: notice.playerIds.map((id) => ({ id, name: nameOf(id) })) } : {}),
-        }), saveService);
+        }), saveService, ds.seatId);
       }
     }
-    for (const msg of facilityMessages) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService);
-    for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
-    for (const msg of scouting.messages) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService);
-    for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
-    for (const msg of moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.facility) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.retirement) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.scouting?.messages ?? []) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.negotiation) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService, ds.seatId);
+    }
     // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
-    if (seasonEnded && meta.clubId && !ended) {
-      const humanT = await saveService.getSquadById(saveId, meta.clubId);
-      const freshTalks = new Set(moraleNews.map((n) => n.talkId).filter(Boolean));
-      for (const talk of humanT?.moraleClub?.talks ?? []) {
-        if (freshTalks.has(talk.id)) continue;
-        await emitInboxMessage(saveId, buildPlayerMessage({
-          date: talk.date, kind: "talk", playerId: talk.playerId, playerName: talk.playerName, reason: talk.reason,
-          talkId: talk.id, ...(talk.clubName ? { clubName: talk.clubName } : {}),
-        }), saveService);
+    for (const ds of daySeats) {
+      if (!ds.rollover.seasonEnded) continue;
+      // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
+      if (ds.clubId && !ds.job.ended) {
+        const humanT = await saveService.getSquadById(saveId, ds.clubId);
+        const freshTalks = new Set(ds.moraleNews.map((n) => n.talkId).filter(Boolean));
+        for (const talk of humanT?.moraleClub?.talks ?? []) {
+          if (freshTalks.has(talk.id)) continue;
+          await emitInboxMessage(saveId, buildPlayerMessage({
+            date: talk.date, kind: "talk", playerId: talk.playerId, playerName: talk.playerName, reason: talk.reason,
+            talkId: talk.id, ...(talk.clubName ? { clubName: talk.clubName } : {}),
+          }), saveService, ds.seatId);
+        }
       }
-    }
-    // Bids still pending when the inbox was cleared keep their message (like job offers).
-    if (seasonEnded) {
-      const mkB = await saveService.getMarket(saveId);
-      const humanB = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
-      const fresh = new Set(negotiationNews.map((n) => n.bidId).filter(Boolean));
+      // Bids still pending when the inbox was cleared keep their message (like job offers).
+      const mkB = await saveService.getMarket(saveId, ds.seatId);
+      const humanB = ds.meta.clubId ? await saveService.getSquadById(saveId, ds.meta.clubId) : null;
+      const fresh = new Set(ds.deferred.negotiation.map((n) => n.bidId).filter(Boolean));
       for (const bid of liveBids(mkB?.pendingBids, currentDate, humanB)) {
         if (fresh.has(bid.id)) continue;
         await emitInboxMessage(saveId, buildTransferNegotiationMessage({
@@ -2936,131 +3057,170 @@ export async function advanceOneDay(
           ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
           ...(bid.until ? { until: bid.until } : {}),
           expires: bid.expires,
-        }), saveService);
+        }), saveService, ds.seatId);
       }
     }
-    for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
-    if (managerBanGiven) await emitInboxMessage(saveId, buildManagerBanMessage(currentDate, managerBanGiven), saveService);
-    // Offers still pending when the inbox was cleared keep their message.
-    if (seasonEnded) {
-      const fresh = new Set(newOffers.map((o) => o.squadId));
-      for (const offer of keptOffers) {
-        if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService);
+    for (const ds of daySeats) {
+      for (const msg of ds.boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService, ds.seatId);
+      if (ds.managerBanGiven) await emitInboxMessage(saveId, buildManagerBanMessage(currentDate, ds.managerBanGiven), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      // Offers still pending when the inbox was cleared keep their message.
+      if (ds.rollover.seasonEnded) {
+        const fresh = new Set(ds.job.newOffers.map((o) => o.squadId));
+        for (const offer of ds.job.kept) {
+          if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService, ds.seatId);
+        }
+      }
+      for (const offer of ds.job.newOffers) {
+        await emitInboxMessage(saveId, buildJobMessage({ date: currentDate, kind: "offer", offer }), saveService, ds.seatId);
       }
     }
-    for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
-    for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
-    for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
-    if (pressInvite) await emitInboxMessage(saveId, pressInvite, saveService);
+    for (const ds of daySeats) {
+      for (const r of ds.deferred.clubRecords) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      for (const msg of ds.deferred.awards) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
+    }
+    for (const ds of daySeats) {
+      if (ds.pressOut.invite) await emitInboxMessage(saveId, ds.pressOut.invite, saveService, ds.seatId);
+    }
     // ── World news of the day (`press.md` → "Notícias"): one build + append, press news included ──
     if (newsCollector) {
       await writeDayNews(saveService, saveId, await collectDayNews({
-        service: saveService, saveId, date: currentDate, meta, index,
+        // Every seat's club and leagues count as near.
+        service: saveService, saveId, date: currentDate, index,
+        seats: daySeats.map((ds) => ({ clubId: ds.clubId, leagueSlug: ds.meta.leagueSlug, followedLeagues: ds.meta.followedLeagues })),
         catalog: await getLeagueData(), pyramids: await getPyramids(),
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         transfers: [...dayMoves, ...(routeLog?.transfers ?? [])],
         managers: aiDesk?.worldNews() ?? [],
         national: nationalDay.headlines,
-        press: pressNews,
+        press: daySeats.flatMap((ds) => ds.pressOut.news),
         collector: newsCollector,
         squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       }));
     }
 
-    // ── Achievements of the human manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
-    let achievementsUnlocked = 0;
-    if (!options.marketFrozen) {
-      const msg = await achievementsDay(saveService, saveId, {
+    // ── Achievements of each seat's manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
+    for (const ds of options.marketFrozen ? [] : daySeats) {
+      // The seat's national game of the day.
+      const natDay = nationalDay.bySeat[ds.seatId];
+      const national = natDay?.humanMatch
+        ? await achievementNationalMatch(saveService, saveId, natDay.humanMatch, natDay.humanTeamId ?? natDay.humanMatch.home, ds.meta.manager?.nationalityIso)
+        : null;
+      const msg = await achievementsDay(saveService, saveId, ds.seatId, {
         date: currentDate,
-        clubId: meta.clubId,
+        clubId: ds.clubId ?? "",
         events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
         managers: await managerTracker.list(),
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
-        ...(seasonEnded ? { rollover: { championOf: playerChampionOf, moves: playerCountryMoves, objectiveMet: playerObjectiveMet } } : {}),
-        sacked: !!ended && ended.reason !== "contract",
-        leftClub: !!ended,
-        ...(nationalDay.humanMatch ? { nationalMatch: await achievementNationalMatch(saveService, saveId, nationalDay.humanMatch, nationalDay.humanTeamId ?? nationalDay.humanMatch.home, meta.manager?.nationalityIso) } : {}),
+        ...(ds.rollover.seasonEnded ? { rollover: { championOf: ds.rollover.championOf, moves: ds.rollover.moves, objectiveMet: ds.rollover.objectiveMet } } : {}),
+        sacked: !!ds.job.ended && ds.job.ended.reason !== "contract",
+        leftClub: !!ds.job.ended,
+        ...(national ? { nationalMatch: national } : {}),
       });
       if (msg) {
-        achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
-        await emitInboxMessage(saveId, msg, saveService);
+        ds.achievementsUnlocked = msg.category === "achievement" ? msg.keys.length : 0;
+        await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       }
     }
 
-    // Manager news of the player's league (sackings / hirings), grouped in one message.
-    const managerNews = aiDesk?.news() ?? [];
-    if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService);
+    // Manager news of each seat's league (sackings / hirings), grouped in one message.
+    for (const ds of daySeats) {
+      const managerNews = aiDesk?.newsInLeague(ds.meta.leagueSlug) ?? [];
+      if (managerNews.length > 0) await emitInboxMessage(saveId, buildManagerNewsMessage(currentDate, managerNews), saveService, ds.seatId);
+    }
 
     await managerTracker.flush();
     // Tomorrow's referees, after today's matches (rest) and rollovers (renewed pools): the preview reads them.
     await ensureTomorrow(saveService, saveId, currentDate);
     await saveService.appendDayTransfers(saveId, currentDate, dayMoves);
 
-    // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
+    // World keys of the day; each seat's keys go into its `DaySeat.patch`.
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
-    if (board) metaPatch.board = board;
-    if (pressState) metaPatch.press = pressState;
-    if (managerBan !== meta.managerBan) metaPatch.managerBan = managerBan;
-    if (jobOffers.length !== offersBefore.length || newOffers.length > 0) metaPatch.jobOffers = jobOffers;
-    if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
-    if (unemployed !== meta.unemployed) metaPatch.unemployed = unemployed;
-    if (managerRenewal !== meta.managerRenewal) metaPatch.managerRenewal = managerRenewal;
-    if (contract && contract !== meta.managerContract) metaPatch.managerContract = contract;
-    if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
-    managerEarned += nationalDay.earned;
-    if (managerEarned > 0) metaPatch.managerEarnings = (meta.managerEarnings ?? 0) + managerEarned;
+
+    // Each seat's national-team wage (Mondays).
+    for (const ds of daySeats) ds.managerEarned += nationalDay.bySeat[ds.seatId]?.earned ?? 0;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
-    if (directorDecided) metaPatch.directorDecisions = directorDecided;
-    // Man-marking is chosen per match day (player instructions): the advance clears it.
-    if (meta.matchMarking) metaPatch.matchMarking = undefined;
-    if (youthDay.consumedCallUps.length > 0) {
-      const callUps = { ...meta.youthCallUps };
-      const skipped = { ...meta.youthCallUpsSkipped };
-      const humanNow = meta.clubId
-        ? (squadWrites.get(meta.clubId)?.squad ?? (await saveService.getSquadById(saveId, meta.clubId)))
+
+    // Board, press, ban, earnings and the director's decisions, per seat.
+    for (const ds of daySeats) {
+      // Man-marking is chosen per match day (player instructions): the advance clears it.
+      if (ds.meta.matchMarking) ds.patch.matchMarking = undefined;
+      if (ds.board) ds.patch.board = ds.board;
+      if (ds.pressOut.state) ds.patch.press = ds.pressOut.state;
+      if (ds.managerBan !== ds.meta.managerBan) ds.patch.managerBan = ds.managerBan;
+      if (ds.managerEarned > 0) ds.patch.managerEarnings = (ds.meta.managerEarnings ?? 0) + ds.managerEarned;
+      if (ds.director.decided) ds.patch.directorDecisions = ds.director.decided;
+    }
+    // Youth call-ups used today, per seat (`.claude/rules/game/youth-competitions.md` → convocação).
+    for (const ds of daySeats) {
+      const yd = youthDay.bySeat[ds.seatId];
+      if (!yd || yd.consumedCallUps.length === 0) continue;
+      const callUps = { ...ds.meta.youthCallUps };
+      const skipped = { ...ds.meta.youthCallUpsSkipped };
+      const humanNow = ds.clubId
+        ? (squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId)))
         : null;
-      for (const age of youthDay.consumedCallUps) {
+      for (const age of yd.consumedCallUps) {
         // Each call-up counts the game down by its duration (`youthComps/callUps.ts`).
-        const ratings = youthDay.humanRatings[age];
+        const ratings = yd.humanRatings[age];
         const left = humanNow
           ? advanceCallUps(callUps[age] ?? [], ratings ? new Map(Object.entries(ratings)) : null, callUpEligibleIds(humanNow, age))
           : [];
         if (left.length > 0) callUps[age] = left;
         else delete callUps[age];
-        const ids = youthDay.skippedCallUps[age] ?? [];
+        const ids = yd.skippedCallUps[age] ?? [];
         if (ids.length > 0) skipped[age] = { date: currentDate, players: ids };
         else delete skipped[age];
       }
-      metaPatch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
-      metaPatch.youthCallUpsSkipped = skipped.u21 || skipped.u19 ? skipped : undefined;
+      ds.patch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
+      ds.patch.youthCallUpsSkipped = skipped.u21 || skipped.u19 ? skipped : undefined;
     }
-    if (ended) {
-      metaPatch.managerContract = undefined;
-      metaPatch.managerRenewal = undefined;
-      metaPatch.managerContractNotices = undefined;
-      // Without a club: the career follows nobody until an offer is accepted.
-      metaPatch.clubId = "";
-      metaPatch.board = undefined;
-      metaPatch.press = undefined;
-      metaPatch.rotationOverride = undefined;
-      metaPatch.youthCallUps = undefined;
-      metaPatch.youthCallUpsSkipped = undefined;
-    }
-    const playerHome = index.byId(meta.clubId)?.leagueSlug;
-    if (!ended && playerHome && playerHome !== meta.leagueSlug) {
-      const catalog = await getLeagueData();
-      metaPatch.leagueSlug = playerHome;
-      metaPatch.leagueName = (await leagueNameResolver(updatedActiveLeagues))(playerHome);
-      metaPatch.followedLeagues = sanitizeFollowedLeagues(
-        meta.followedLeagues ?? [], new Set(catalog.map((l) => l.slug)), playerHome,
-      );
+    // The job of each seat: offers, mid-season window, unemployment, the contract; a sacking clears the club's keys.
+    for (const ds of daySeats) {
+      const job = ds.job;
+      if (job.offers.length !== job.offersBefore.length || job.newOffers.length > 0) ds.patch.jobOffers = job.offers;
+      if (job.midSeason !== ds.meta.jobsMidSeason) ds.patch.jobsMidSeason = job.midSeason;
+      if (job.unemployed !== ds.meta.unemployed) ds.patch.unemployed = job.unemployed;
+      if (job.renewal !== ds.meta.managerRenewal) ds.patch.managerRenewal = job.renewal;
+      if (job.contract && job.contract !== ds.meta.managerContract) ds.patch.managerContract = job.contract;
+      if (job.notices !== ds.meta.managerContractNotices) ds.patch.managerContractNotices = job.notices;
+      if (job.ended) {
+        ds.patch.managerContract = undefined;
+        ds.patch.managerRenewal = undefined;
+        ds.patch.managerContractNotices = undefined;
+        // Without a club: the career follows nobody until an offer is accepted.
+        ds.patch.clubId = "";
+        ds.patch.board = undefined;
+        ds.patch.press = undefined;
+        ds.patch.rotationOverride = undefined;
+        ds.patch.youthCallUps = undefined;
+        ds.patch.youthCallUpsSkipped = undefined;
+        continue;
+      }
+      // The career follows the club to its new league (also repairs a seat left stale by a partial flush).
+      const seatHome = ds.clubId ? index.byId(ds.clubId)?.leagueSlug : undefined;
+      if (seatHome && seatHome !== ds.meta.leagueSlug) {
+        const catalog = await getLeagueData();
+        ds.patch.leagueSlug = seatHome;
+        ds.patch.leagueName = (await leagueNameResolver(updatedActiveLeagues))(seatHome);
+        ds.patch.followedLeagues = sanitizeFollowedLeagues(
+          ds.meta.followedLeagues ?? [], new Set(catalog.map((l) => l.slug)), seatHome,
+        );
+      }
     }
 
     // ── Next currentDate: always the next day (no season jump) ─────────────────
+    // World and seats written apart (the seats in phase 1 of the flush, the world meta last).
+    for (const ds of daySeats) {
+      if (Object.keys(ds.patch).length > 0) await saveService.updateSeat(saveId, ds.seatId, ds.patch);
+    }
     const updatedMeta = await saveService.updateMeta(saveId, {
       ...metaPatch,
       currentDate: nextDate,
@@ -3069,20 +3229,24 @@ export async function advanceOneDay(
 
     const resolved = await saveService.resolveDayLog(saveId, currentDate);
     const transferEvents = (resolved?.events ?? []).filter((e) => e.kind === "transfer");
+    const seats: Record<string, Record<string, unknown>> = {};
+    for (const ds of daySeats) {
+      // Club offers and national-team offers of the seat (the fast-forward stops).
+      const offers = ds.job.newOffers.length + (nationalDay.bySeat[ds.seatId]?.offers ?? 0);
+      seats[ds.seatId] = {
+        ...(ds.rollover.seasonEnded
+          ? { seasonEnded: true as const, archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }
+          : {}),
+        ...(ds.job.ended ? { sacked: true as const } : {}),
+        ...(offers > 0 ? { jobOffers: offers } : {}),
+        ...(ds.achievementsUnlocked > 0 ? { achievements: ds.achievementsUnlocked } : {}),
+        ...(ds.pressOut.invite ? { pressInvite: true as const } : {}),
+      };
+    }
     return {
       ok: true,
-      payload: {
-        ...dayLog,
-        events: [...dayLog.events, ...transferEvents],
-        newDate: updatedMeta.currentDate,
-        ...(seasonEnded
-          ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
-          : {}),
-        ...(ended ? { sacked: true as const } : {}),
-        ...(newOffers.length + nationalDay.offers > 0 ? { jobOffers: newOffers.length + nationalDay.offers } : {}),
-        ...(achievementsUnlocked > 0 ? { achievements: achievementsUnlocked } : {}),
-        ...(pressInvite ? { pressInvite: true as const } : {}),
-      },
+      payload: { ...dayLog, events: [...dayLog.events, ...transferEvents], newDate: updatedMeta.currentDate },
+      seats,
     };
 }
 
@@ -3091,77 +3255,85 @@ export const advanceDayRoutes = {
     if (req.method !== "POST") {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
-    const auth = requireSaveOwner(req, req.params.saveId!);
+    const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
     const saveId = req.params.saveId!;
-    // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
-    // (presimulatePreStart) is reserved for the offline kit generator — running it
-    // here would block for minutes.
-    const result = await applyRandomStartKit(saveId);
+    // The world's start: the owner's, once (`.claude/rules/game/multiplayer.md`). A second call is a no-op.
+    if (auth.role !== "owner") return Response.json({ error: "only the owner starts a world" }, { status: 403 });
+    return withSaveLock(saveId, async () => {
+      if ((await saveService.getMeta(saveId))?.presimulated) {
+        return Response.json({ applied: false, reason: "already presimulated" });
+      }
+      // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
+      // (presimulatePreStart) is reserved for the offline kit generator — running it
+      // here would block for minutes.
+      const result = await applyRandomStartKit(saveId);
 
-    // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
-    // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
-    if (result.applied) {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
-          await syncPlayerRestDays(saveService, saveId, r.moves);
-        } catch (e) {
-          logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
+      // A kit's calendars come from its own pre-simulation (older kits never rescheduled clashing league games):
+      // run the whole-world pass again from today (`.claude/rules/game/rescheduling.md`). Silent: the career starts now.
+      if (result.applied) {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            const r = await rescheduleFixtureConflicts({ service: saveService, saveId, minDate: m.currentDate, catalog: await getLeagueData() });
+            await syncPlayerRestDays(saveService, saveId, auth.seatId, r.moves);
+          } catch (e) {
+            logError("calendar", `save ${saveId}: failed to reschedule clashing league games after the start kit`, e);
+          }
         }
       }
-    }
 
-    // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
-    // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
-    {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          await ensureYouthCompetitions({
-            service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId),
-            catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues: m.activeLeagues ?? [],
-          });
-        } catch (e) {
-          logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+      // Youth competitions safety net (`.claude/rules/game/youth-competitions.md` → "Criação"): an old
+      // kit without them, or no kit with past rounds of the European ones, rebuilds them from tomorrow.
+      {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            await ensureYouthCompetitions({
+              service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId),
+              catalog: await getLeagueData(), pyramids: await getPyramids(), activeLeagues: m.activeLeagues ?? [],
+            });
+          } catch (e) {
+            logError("youthComps", `save ${saveId}: failed to ensure the youth competitions`, e);
+          }
         }
       }
-    }
 
-    // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
-    // world drawn from the world's start, with past games; it is drawn again from the career's day.
-    {
-      const m = await saveService.getMeta(saveId);
-      if (m?.currentDate) {
-        try {
-          await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
-        } catch (e) {
-          logError("national", `save ${saveId}: failed to ensure the national teams`, e);
+      // National teams safety net (`.claude/rules/game/national-teams.md`): no kit for a Brazilian career leaves the
+      // world drawn from the world's start, with past games; it is drawn again from the career's day.
+      {
+        const m = await saveService.getMeta(saveId);
+        if (m?.currentDate) {
+          try {
+            await ensureNationalWorld({ service: saveService, saveId, today: m.currentDate, index: await saveService.getSquadIndex(saveId) });
+          } catch (e) {
+            logError("national", `save ${saveId}: failed to ensure the national teams`, e);
+          }
         }
       }
-    }
 
-    // Continental season-start news, read from whatever is on disk AFTER the kit decision above
-    // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
-    const meta = await saveService.getMeta(saveId);
-    if (meta?.clubId && meta.currentDate) {
-      try {
-        await emitContinentalSeasonStartNews(saveId, meta.clubId, meta.currentDate);
-      } catch (e) {
-        logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+      // Continental season-start news, read from whatever is on disk AFTER the kit decision above
+      // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (meta?.clubId && meta.currentDate) {
+        try {
+          await emitContinentalSeasonStartNews(saveId, auth.seatId, meta.clubId, meta.currentDate);
+        } catch (e) {
+          logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+        }
+        // The board's first season objective (set by createSave), once the career begins.
+        if (meta.board?.objective) {
+          const catalog = await getLeagueData();
+          await emitInboxMessage(saveId, buildBoardMessage({
+            date: meta.currentDate, kind: "objective", objective: meta.board.objective,
+            leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
+          }), saveService, auth.seatId);
+        }
       }
-      // The board's first season objective (set by createSave), once the career begins.
-      if (meta.board?.objective) {
-        const catalog = await getLeagueData();
-        await emitInboxMessage(saveId, buildBoardMessage({
-          date: meta.currentDate, kind: "objective", objective: meta.board.objective,
-          leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
-        }), saveService);
-      }
-    }
 
-    return Response.json(result);
+      await saveService.updateMeta(saveId, { presimulated: true });
+      return Response.json(result);
+    });
   },
 
   "/api/advance-day/:saveId": async (req: Request & { params: Record<string, string> }) => {
@@ -3169,7 +3341,7 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
 
-    const auth = requireSaveOwner(req, req.params.saveId!);
+    const auth = requireSeat(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
 
     // ── Parse body ──────────────────────────────────────────────────────────
@@ -3218,10 +3390,12 @@ export const advanceDayRoutes = {
     // Serialise days per save: a second request for the same save waits until the
     // first has flushed, so it reads the advanced state instead of racing it.
     const saveId = req.params.saveId!;
+    // The seat's live recording (a seat records only its own match).
+    const recordings: Record<string, PlayedMatchRecording> = playedMatchOverride ? { [auth.seatId]: playedMatchOverride } : {};
     return withSaveLock(saveId, async () => {
-      const outcome = await runBufferedDay(saveId, playedMatchOverride);
+      const outcome = await runBufferedDay(saveId, recordings);
       if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-      return Response.json(outcome.payload);
+      return Response.json(payloadForSeat(outcome, auth.seatId));
     });
   },
 
@@ -3232,9 +3406,9 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const { saveId, date } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
-    const resolved = await saveService.resolveDayLog(saveId!, date!);
+    const resolved = await saveService.resolveDayLog(saveId!, date!, auth.seatId);
     if (!resolved) return Response.json({ error: "day log not found" }, { status: 404 });
     return Response.json(resolved);
   },
@@ -3246,29 +3420,20 @@ export const advanceDayRoutes = {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
     const { saveId, date } = req.params;
-    const auth = requireSaveOwner(req, saveId!);
+    const auth = requireSeat(req, saveId!);
     if (auth instanceof Response) return auth;
     const body = (await req.json()) as { type?: string };
     if (body.type !== "training" && body.type !== "rest") {
       return Response.json({ error: "type must be 'training' or 'rest'" }, { status: 400 });
     }
-    const meta = await saveService.getMeta(saveId!);
-    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-
-    const activeLeagues = meta.activeLeagues ?? [];
-    const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
-
-    if (!playerLeagueState) return Response.json({ error: "season not found" }, { status: 404 });
-
-    const current = new Set(playerLeagueState.restDays ?? []);
+    // The seat's own rest days (`.claude/rules/game/multiplayer.md`).
+    const seat = await saveService.getSeat(saveId!, auth.seatId);
+    if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+    const current = new Set(seat.restDays ?? []);
     if (body.type === "rest") current.add(date!);
     else current.delete(date!);
     const restDays = Array.from(current).sort();
-
-    const updatedLeagues = activeLeagues.map((l) =>
-      l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
-    );
-    await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
+    await saveService.updateSeat(saveId!, auth.seatId, { restDays });
     return Response.json({ restDays });
   },
 };

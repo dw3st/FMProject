@@ -1,9 +1,9 @@
+import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { matchCrowd, matchManagers } from "@/backend/matchCrowd";
-import { saveService, type SaveMeta, type SaveService } from "@/backend/SaveService";
+import { saveService, type SaveService, type SeatMeta } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { attendanceOf, initialFacilities, seasonFraction } from "@/Domain/facilities/facilities";
 import { MATCH_IMPORTANCE } from "@/Domain/facilities/matchImportance";
@@ -13,6 +13,7 @@ import { emptyAchievements } from "@/Domain/achievements/progress";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 
 function squad(id: string, city: string, capacity: number): Squad {
@@ -31,9 +32,9 @@ const fakeService = (squads: Squad[]) => ({
 }) as unknown as SaveService;
 
 const meta = {
-  id: "s1", leagueSlug: "premier_league", clubId: "me", board: { fans: 60 },
+  id: "s1", seatId: "seat1", leagueSlug: "premier_league", clubId: "me", board: { fans: 60 },
   activeLeagues: [{ leagueSlug: "premier_league", start: "2026-08-15", end: "2027-05-20" }],
-} as unknown as SaveMeta;
+} as unknown as SeatMeta;
 
 const fixture = (over: Partial<Fixture> = {}): Fixture => ({
   id: "fix_9", date: "2026-11-01", competition: "premier_league", round: 9, home: "me", away: "opp",
@@ -91,14 +92,25 @@ describe("match crowd", () => {
 
   test("managers: the human and the opponent's record; none = null", () => {
     const records = [
-      { id: "player", squadId: "me", isPlayer: true },
-      { id: "coach_7", squadId: "opp", isPlayer: false, clubs: [{ squadId: "old", from: "2026-08-01" }] },
+      { id: "seat:seat1", squadId: "me", seatId: "seat1" },
+      { id: "coach_7", squadId: "opp", clubs: [{ squadId: "old", from: "2026-08-01" }] },
     ] as unknown as ManagerRecord[];
-    const m = matchManagers({ ...meta, manager: { name: "X", nationalityIso: "br" } } as unknown as SaveMeta, records, "opp", (id) => (id === "old" ? "Brazil" : null));
-    expect(m.mine.id).toBe("player");
+    const m = matchManagers({ ...meta, manager: { name: "X", nationalityIso: "br" } } as unknown as SeatMeta, records, "opp", (id) => (id === "old" ? "Brazil" : null));
+    expect(m.mine.id).toBe("seat:seat1");
     expect(m.mine.nationality).toBe("Brazil");
     expect(m.opponent).toEqual({ id: "coach_7", nationality: "Brazil" });
     expect(matchManagers(meta, [], "opp", () => null).opponent).toBeNull();
+  });
+
+  test("managers: against another seat, the opponent is that seat's manager with his avatar", () => {
+    const face = { seed: 7 };
+    const records = [
+      { id: "seat:seat1", squadId: "me", seatId: "seat1" },
+      { id: "seat:seat2", squadId: "opp", seatId: "seat2" },
+    ] as unknown as ManagerRecord[];
+    const seats = [{ seatId: "seat2", seat: { clubId: "opp", manager: { name: "B", nationalityIso: "br", face } } }] as unknown as { seatId: string; seat: SeatState }[];
+    const m = matchManagers(meta, records, "opp", () => null, seats);
+    expect(m.opponent).toEqual({ id: "seat:seat2", face, nationality: "Brazil" });
   });
 });
 
@@ -117,11 +129,11 @@ describe("/api/match-setup crowd and managers", () => {
       .sort((a, b) => a.date.localeCompare(b.date))[0]!;
     const mySquad = (await saveService.getSquadById(saveId, "33"))!;
     const tactics: TacticsSave = { tactical_style: "balanced", formation: "4-3-3", lineup: autoLineupDefaultFormation(mySquad) };
-    await saveService.saveTactics(saveId, tactics);
+    await saveService.saveTactics(saveId, tactics, created.seatId);
     await saveService.updateMeta(saveId, { currentDate: fx.date });
 
     const { user, session } = devAutoLogin(`match-setup-crowd-${saveId}@test.local`);
-    recordSaveOwnership(saveId, user.id);
+    await ownSolo(saveId, user.id);
     const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, {
       headers: { cookie: `fs_session=${session.token}` },
     }));
@@ -131,8 +143,8 @@ describe("/api/match-setup crowd and managers", () => {
     expect(body.crowd.attendance).toBeGreaterThan(0);
     expect(body.crowd.attendance).toBeLessThanOrEqual(body.crowd.capacity);
     expect(body.crowd.importance).toBeGreaterThanOrEqual(1);
-    expect(body.managers.mine.id).toBe("player");
-    const oppRecord = (await saveService.getManagers(saveId)).find((m) => m.squadId === fx.away && !m.isPlayer);
+    expect(body.managers.mine.id).toBe(`seat:${created.seatId}`);
+    const oppRecord = (await saveService.getManagers(saveId)).find((m) => m.squadId === fx.away && !m.seatId);
     expect(body.managers.opponent?.id).toBe(oppRecord!.id);
   }, 300_000);
 });

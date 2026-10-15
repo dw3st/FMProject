@@ -1,4 +1,4 @@
-import type { SaveMeta } from "@/backend/SaveService";
+import type { SeatMeta, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { getLeagueData, getPyramids, type LeagueDataEntry } from "@/backend/advanceDay";
 import { topLeagueOf } from "@/backend/continentalWorld";
@@ -19,16 +19,38 @@ export interface WindowContext {
   ofLeague: (leagueSlug: string) => WindowStatus;
   /** Status for a club, from the squad index (open when the club is unknown). */
   ofSquad: (squadId: string) => WindowStatus;
-  /** The human club: its country's window, plus the new-career arrival grace (D1). */
-  human: () => WindowStatus;
-  /** Same, on another day (window news compare with yesterday). */
-  humanOn: (date: string) => WindowStatus;
-  /** Country of the human club ("" when unknown or without a club). */
-  humanCountry: () => string;
+  /**
+   * A seat's club: its country's window (today and on any day), plus the new-career arrival grace (D1).
+   * Open with country "" for a seat without a club or not given to the context.
+   */
+  seat: (seatId: string) => SeatWindows;
   /** Deadline rush for a league's clubs (last days of the window). */
   rush: (leagueSlug: string) => boolean;
   /** Every country with its tier-1 season, for the Windows tab. */
   countries: () => { country: string; status: WindowStatus }[];
+}
+
+/** A seat's club and career start, for its transfer window (`.claude/rules/game/transfer-windows.md`). */
+export interface SeatWindowRef {
+  seatId: string;
+  /** Absent while the seat is unemployed. */
+  clubId?: string;
+  careerStart?: string;
+}
+
+/** The window of one seat's club: today, any day, and its country. */
+export interface SeatWindows {
+  today: WindowStatus;
+  on: (day: string) => WindowStatus;
+  country: string;
+}
+
+export function seatWindowRef(meta: SeatMeta): SeatWindowRef {
+  return {
+    seatId: meta.seatId,
+    ...(meta.unemployed || !meta.clubId ? {} : { clubId: meta.clubId }),
+    ...(meta.careerStart ? { careerStart: meta.careerStart } : {}),
+  };
 }
 
 function buildWindowContext(args: {
@@ -37,9 +59,8 @@ function buildWindowContext(args: {
   catalog: LeagueDataEntry[];
   pyramids: Pyramids;
   index?: SquadIndex | null;
-  /** Human club and career start (arrival grace). */
-  humanClubId?: string;
-  careerStart?: string;
+  /** The seats (club and career start, for the arrival grace). */
+  seats?: SeatWindowRef[];
 }): WindowContext {
   const { date } = args;
   const countryOf = new Map(args.catalog.map((l) => [l.slug, l.country ?? ""] as const));
@@ -73,11 +94,14 @@ function buildWindowContext(args: {
     return league ? ofLeague(league) : { open: true };
   };
 
-  const humanOn = (day: string): WindowStatus => {
-    const league = args.humanClubId ? args.index?.byId(args.humanClubId)?.leagueSlug : undefined;
-    if (!league) return { open: true };
+  const seatRefs = new Map((args.seats ?? []).map((s) => [s.seatId, s] as const));
+  const seat = (seatId: string): SeatWindows => {
+    const ref = seatRefs.get(seatId);
+    const league = ref?.clubId ? args.index?.byId(ref.clubId)?.leagueSlug : undefined;
+    if (!league) return { today: { open: true }, on: () => ({ open: true }), country: "" };
     const country = countryOf.get(league) ?? "";
-    return humanWindowStatus(seasonOfCountry(country, league), day, args.careerStart);
+    const on = (day: string): WindowStatus => humanWindowStatus(seasonOfCountry(country, league), day, ref?.careerStart);
+    return { today: on(date), on, country };
   };
 
   return {
@@ -85,12 +109,7 @@ function buildWindowContext(args: {
     countryOfLeague: (slug) => countryOf.get(slug) ?? "",
     ofLeague,
     ofSquad,
-    human: () => humanOn(date),
-    humanOn,
-    humanCountry: () => {
-      const league = args.humanClubId ? args.index?.byId(args.humanClubId)?.leagueSlug : undefined;
-      return league ? countryOf.get(league) ?? "" : "";
-    },
+    seat,
     rush: (slug) => isDeadlineRush(ofLeague(slug), date),
     countries: () => {
       const seen = new Set<string>();
@@ -106,16 +125,20 @@ function buildWindowContext(args: {
   };
 }
 
-/** The window context of a save on its current date. */
-export async function loadWindowContext(meta: SaveMeta, index: SquadIndex | null, date = meta.currentDate ?? ""): Promise<WindowContext> {
+/** The window context of a world on `date`, with the windows of the given seats. */
+export async function loadWindowContext(
+  world: Pick<SaveMeta, "activeLeagues" | "currentDate">,
+  index: SquadIndex | null,
+  date = world.currentDate ?? "",
+  seats: SeatWindowRef[] = [],
+): Promise<WindowContext> {
   return buildWindowContext({
     date,
-    activeLeagues: meta.activeLeagues ?? [],
+    activeLeagues: world.activeLeagues ?? [],
     catalog: await getLeagueData(),
     pyramids: await getPyramids(),
     index,
-    humanClubId: meta.unemployed ? undefined : meta.clubId,
-    careerStart: meta.careerStart,
+    seats,
   });
 }
 

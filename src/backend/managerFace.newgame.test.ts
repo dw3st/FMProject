@@ -3,6 +3,7 @@ import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { devAutoLogin } from "@/backend/auth/AuthService";
+import { soloMeta } from "@/backend/testing/seatFixtures";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 
 /** New game (Etapa 31b): the manager's avatar is saved as parameters; invalid ones are a 400. */
@@ -36,7 +37,7 @@ describe("POST /api/saves with the manager's avatar", () => {
     expect(res.status).toBe(201);
     const meta = (await res.json()) as SaveMeta;
     created.push(meta.id);
-    const stored = await saveService.getMeta(meta.id);
+    const stored = await soloMeta(meta.id);
     expect(stored?.manager?.face).toEqual(face);
   }, 120_000);
 });

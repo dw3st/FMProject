@@ -81,7 +81,7 @@ export function sackManager(
   args: { squadId: string; clubName: string; date: string; left?: ManagerLeftReason },
 ): ManagerRecord[] {
   const out = managers.map((m) =>
-    !m.isPlayer && m.squadId === args.squadId ? toFree(m, args.date, args.left ?? "sacked") : m);
+    !m.seatId && m.squadId === args.squadId ? toFree(m, args.date, args.left ?? "sacked") : m);
   if (!out.some((m) => m.squadId === args.squadId)) {
     out.push(makeInterim(args.squadId, args.clubName, args.date, new Set(out.map((m) => m.id))));
   }
@@ -116,7 +116,7 @@ export function hireManager(
       }
       continue;
     }
-    if (!m.isPlayer && m.squadId === args.squadId) {
+    if (!m.seatId && m.squadId === args.squadId) {
       if (m.interim && m.points === 0 && m.titles.length === 0) continue;
       out.push(toFree(m, args.date, m.interim ? "interim" : "moved"));
       continue;
@@ -133,7 +133,7 @@ export function hireManager(
 export function retireStale(managers: ManagerRecord[], date: string): ManagerRecord[] {
   let changed = false;
   const out = managers.map((m) => {
-    if (m.isPlayer || m.squadId || m.retired || !m.freeSince) return m;
+    if (m.seatId || m.squadId || m.retired || !m.freeSince) return m;
     const limit = m.points > 0 ? AI_MANAGERS.RETIRE_AFTER_DAYS : AI_MANAGERS.RETIRE_NO_POINTS_AFTER_DAYS;
     if (daysBetween(m.freeSince, date) <= limit) return m;
     changed = true;

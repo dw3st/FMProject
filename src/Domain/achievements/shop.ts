@@ -75,14 +75,16 @@ function retiredLevel(r: RetiredPlayer): number {
 
 /**
  * Three retired stars to choose from: world class first, then the best level at retirement; never one
- * already brought back (reborn offer accepted). Deterministic per save + date.
+ * already brought back (reborn offer accepted, or a legend of any seat). Deterministic per save + date (+ the seat
+ * in a world of seats, `.claude/rules/game/multiplayer.md`).
  */
-export function legendOptions(retired: readonly RetiredPlayer[], saveId: string, date: string): string[] {
-  const pool = retired.filter((r) => r.rebornOffer !== "accepted" && !r.freeAgent);
+export function legendOptions(retired: readonly RetiredPlayer[], saveId: string, date: string, seatId?: string): string[] {
+  const pool = retired.filter((r) => r.rebornOffer !== "accepted" && !r.legendBy && !r.freeAgent);
   const ranked = [...pool].sort((a, b) =>
     Number(b.wasWorldClass) - Number(a.wasWorldClass) || retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
   const top = ranked.slice(0, Math.max(A.LEGEND_OPTIONS, 12));
-  return shuffle(top, mulberry32(seedFrom(`legend:${saveId}:${date}`))).slice(0, A.LEGEND_OPTIONS).map((r) => r.id);
+  const seed = seatId ? `legend:${saveId}:${seatId}:${date}` : `legend:${saveId}:${date}`;
+  return shuffle(top, mulberry32(seedFrom(seed))).slice(0, A.LEGEND_OPTIONS).map((r) => r.id);
 }
 
 /** The legend back as a 17-year-old (the reborn rule), with its own id. */

@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 import { resetPresence } from "@/backend/presence";
 import { withJsonErrors } from "@/backend/routeErrors";
 import { handleSocialUpgrade, resetRealtime, setClubNameResolver, socialWebSocket } from "@/backend/social/realtime";
 import { resetSocialRateLimit, socialRoutes } from "@/backend/social/socialRoutes";
-import { addWorldMember, befriend } from "@/backend/social/socialStore";
+import { befriend } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import type { ServerEvent } from "@/types/socialTypes";
 
@@ -89,7 +89,7 @@ test("hello with an own save shows the friend as playing with the club", async (
   const b = makeUser(uniqueNick());
   befriend(a.id, b.id, Date.now());
   const saveId = randomUUID();
-  recordSaveOwnership(saveId, a.id);
+  addSaveMember(saveId, a.id, "seat-a", "owner");
   setClubNameResolver(async () => "Fluminense");
   const cb = await connect(b.token);
   const ca = await connect(a.token);
@@ -107,9 +107,9 @@ test("whoever blocked the sender gets nothing by socket (world room); the DM bet
   const c = makeUser(uniqueNick());
   befriend(a.id, b.id, Date.now());
   const saveId = randomUUID();
-  recordSaveOwnership(saveId, a.id);
-  addWorldMember(saveId, b.id, "member");
-  addWorldMember(saveId, c.id, "member");
+  addSaveMember(saveId, a.id, "seat-a", "owner");
+  addSaveMember(saveId, b.id, "seat-b", "member");
+  addSaveMember(saveId, c.id, "seat-c", "member");
   await fetch(`${base()}/api/social/blocks`, {
     method: "POST",
     headers: { cookie: `fs_session=${a.token}`, "content-type": "application/json" },

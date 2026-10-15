@@ -208,3 +208,7 @@ tem chance × 2 quando o elenco tem um premiado, e o alvo é ele. Ver `.claude/r
 
 `respondToOffer({ ..., negotiation })`: nas compras do jogador a taxa que o vendedor precisa é × (1 − 5% t) pela
 Negociação do técnico (`.claude/rules/game/achievements.md`); `DemandContext.negotiation` faz o mesmo com o salário pedido.
+
+## Assentos (Etapa 43)
+
+Listas de venda e empréstimo, propostas, conversas, empréstimos e cláusulas do humano ficam no mercado do assento (`seats/{seatId}/market.json`); a IA ignora todos os clubes humanos, e os lances pelos jogadores de um assento saem por assento. Ver `.claude/rules/game/multiplayer.md`.

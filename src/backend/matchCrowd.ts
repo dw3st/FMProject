@@ -1,6 +1,6 @@
 import { shownDecor } from "@/Domain/achievements/items";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { homeMatchImportance } from "@/backend/matchImportance";
@@ -11,6 +11,8 @@ import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
 import type { ClubFacilities, StandId } from "@/types/facilityTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { SeatState } from "@/types/seatTypes";
+import { seatManagerId } from "@/Domain/seats/seats";
 import type { Squad } from "@/types/playerTypes";
 
 /** Crowd of the live match (spec 2026-10-08-match-visual §7). */
@@ -29,14 +31,14 @@ export interface MatchCrowd {
 }
 
 /** The decorations to draw at home (only those chosen and unlocked; absent when none). */
-async function homeDecor(service: SaveService, saveId: string): Promise<{ decor?: StadiumDecor }> {
-  const d = shownDecor(await service.getAchievements(saveId));
+async function homeDecor(service: SaveService, saveId: string, seatId: string): Promise<{ decor?: StadiumDecor }> {
+  const d = shownDecor(await service.getAchievements(saveId, seatId));
   return d.banner || d.flag || d.mosaic ? { decor: d } : {};
 }
 
 export interface MatchManagers {
   mine: { id: string; face?: ManagerFace | null; nationality: string | null };
-  opponent: { id: string; nationality: string | null } | null;
+  opponent: { id: string; face?: ManagerFace | null; nationality: string | null } | null;
 }
 
 /**
@@ -46,7 +48,7 @@ export interface MatchManagers {
  * a neutral venue is unknown.
  */
 export async function matchCrowd(
-  service: SaveService, meta: SaveMeta, fixture: Fixture, mySquad: Squad, opponentSquad: Squad,
+  service: SaveService, meta: SeatMeta, fixture: Fixture, mySquad: Squad, opponentSquad: Squad,
 ): Promise<MatchCrowd> {
   const home = fixture.home === mySquad.id ? mySquad : opponentSquad;
   const homeCapacity = home.venue?.capacity ?? 0;
@@ -59,7 +61,7 @@ export async function matchCrowd(
   const fans = meta.board?.fans;
   if (!mySquad.facilities) {
     const fill = fans === undefined ? GATE.FILL_RATE : stadiumFillRate(fans);
-    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...(await homeDecor(service, meta.id)) };
+    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...(await homeDecor(service, meta.id, meta.seatId)) };
   }
   const index = await service.getSquadIndex(meta.id);
   const leagueSlug = index.byId(mySquad.id)?.leagueSlug ?? meta.leagueSlug;
@@ -80,7 +82,7 @@ export async function matchCrowd(
   return {
     attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true,
     ...(works.length > 0 ? { works } : {}),
-    ...(await homeDecor(service, meta.id)),
+    ...(await homeDecor(service, meta.id, meta.seatId)),
   };
 }
 
@@ -103,14 +105,22 @@ export async function clubCountryResolver(service: SaveService, saveId: string):
 /**
  * Both managers of today's game: the human (saved avatar and nationality) and the opponent's
  * (the `managers.json` record of that club, appearance from the country of his first club, as on
- * the managers tab). No record (save without `managers.json`) = null: the screen draws a silhouette.
+ * the managers tab). No record (save without `managers.json`) = null: the screen draws a silhouette. Against another
+ * seat (`seats`), the opponent is that seat's manager, with his saved avatar and nationality.
  */
 export function matchManagers(
-  meta: SaveMeta, records: readonly ManagerRecord[], opponentId: string, countryOfClub: (squadId: string) => string | null,
+  meta: SeatMeta, records: readonly ManagerRecord[], opponentId: string, countryOfClub: (squadId: string) => string | null,
+  seats: readonly { seatId: string; seat: SeatState }[] = [],
 ): MatchManagers {
-  const opp = records.find((m) => m.squadId === opponentId && !m.isPlayer);
+  const mine = { id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) };
+  const oppSeat = seats.find((s) => s.seatId !== meta.seatId && s.seat.clubId === opponentId && !s.seat.unemployed);
+  if (oppSeat) {
+    const m = oppSeat.seat.manager;
+    return { mine, opponent: { id: seatManagerId(oppSeat.seatId), face: m?.face ?? null, nationality: managerFaceCountry(m?.nationalityIso) } };
+  }
+  const opp = records.find((m) => m.squadId === opponentId && !m.seatId);
   return {
-    mine: { id: "player", face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) },
+    mine,
     opponent: opp ? { id: opp.id, nationality: countryOfClub(opp.clubs?.[0]?.squadId ?? opp.squadId) } : null,
   };
 }

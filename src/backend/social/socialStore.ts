@@ -2,6 +2,7 @@
 // routes and the socket translate them to nicknames.
 import { randomInt } from "crypto";
 import { db } from "@/backend/db";
+import { isSaveMember, listSaveMembers } from "@/backend/auth/saveOwnership";
 import { messageCutoff } from "@/Domain/social/message";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import {
@@ -286,38 +287,20 @@ export function listBlocked(me: string): NamedUser[] {
 
 // ── Worlds (multiplayer, part 2: `save_members`) ────────────────────────────
 
-const WORLD_USERS_SQL = "SELECT save_id, user_id FROM saves UNION SELECT save_id, user_id FROM save_members";
-
-/** Used by tests today; the multiplayer (part 2) writes `save_members` when a world gets a second manager. */
-export function addWorldMember(saveId: string, userId: string, role: "owner" | "member"): void {
-  db.prepare("INSERT OR IGNORE INTO save_members (save_id, user_id, seat_id, role) VALUES (?, ?, NULL, ?)").run(
-    saveId,
-    userId,
-    role,
-  );
-}
-
-/** The save's owner (`saves`) or a member (`save_members`). */
+/** Owner or member of the world (`save_members`, one row per seat). */
 export function isWorldMember(userId: string, saveId: string): boolean {
-  return !!db
-    .prepare(
-      "SELECT 1 AS hit FROM saves WHERE save_id = ? AND user_id = ? UNION SELECT 1 AS hit FROM save_members WHERE save_id = ? AND user_id = ? LIMIT 1",
-    )
-    .get(saveId, userId, saveId, userId);
+  return isSaveMember(saveId, userId);
 }
 
 export function worldMemberIds(saveId: string): string[] {
-  const rows = db
-    .prepare(`SELECT DISTINCT user_id AS userId FROM (${WORLD_USERS_SQL}) WHERE save_id = ?`)
-    .all(saveId) as { userId: string }[];
-  return rows.map((r) => r.userId);
+  return listSaveMembers(saveId).map((m) => m.userId);
 }
 
 /** Worlds of the user with at least two members (the only ones with a chat room). */
 export function worldsOf(userId: string): string[] {
   const rows = db
     .prepare(
-      `SELECT save_id AS saveId FROM (${WORLD_USERS_SQL})
+      `SELECT save_id AS saveId FROM save_members
        GROUP BY save_id
        HAVING COUNT(DISTINCT user_id) >= ? AND SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END) > 0
        ORDER BY save_id`,

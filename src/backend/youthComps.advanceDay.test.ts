@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
+import { soloMeta, updateSolo } from "@/backend/testing/seatFixtures";
 import { playYouthDay, youthCompFixtures } from "@/backend/youthCompWorld";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { computeStandings } from "@/Domain/season/computeStandings";
@@ -37,7 +38,7 @@ describe("youth competitions in advanceOneDay", () => {
     const clubs = new Set(onDay.flatMap((f) => [f.home, f.away]));
     const before = new Map<string, Squad>();
     for (const c of clubs) before.set(c, (await saveService.getSquadById(saveId, c))!);
-    const metaBefore = (await saveService.getMeta(saveId))!;
+    const metaBefore = (await soloMeta(saveId))!;
     await saveService.updateMeta(saveId, { currentDate: day });
 
     const outcome = await advanceOneDay(saveService, saveId);
@@ -80,7 +81,7 @@ describe("youth competitions in advanceOneDay", () => {
 
     // The human club in a youth round only: board and fans untouched by the youth game.
     const humanPlayedYouth = youthLogs.some((m) => m.home === HUMAN || m.away === HUMAN);
-    const metaAfter = (await saveService.getMeta(saveId))!;
+    const metaAfter = (await soloMeta(saveId))!;
     if (humanPlayedYouth && !firstTeam.has(HUMAN) && new Date(`${day}T12:00:00Z`).getUTCDay() !== 1) {
       expect(metaAfter.board!.board).toBe(metaBefore.board!.board);
       expect(metaAfter.board!.fans).toBe(metaBefore.board!.fans);
@@ -92,7 +93,7 @@ describe("youth competitions in advanceOneDay", () => {
     const target = fixtures.sort((a, b) => (a.date < b.date ? -1 : 1))[5]!;
     const index = await saveService.getSquadIndex(saveId);
     const base = {
-      service: saveService, saveId, date: target.date, index, humanClubId: HUMAN, tactics: null,
+      service: saveService, saveId, date: target.date, index, humans: new Map([[HUMAN, { seatId: "s", tactics: null }]]),
       squadOf: (id: string) => saveService.getSquadById(saveId, id),
     };
     const res = await playYouthDay({ ...base, teamsPlayingToday: new Set([target.home]) });
@@ -128,7 +129,7 @@ describe("youth competitions in advanceOneDay", () => {
     await saveService.writeDateIndex(saveId, slug, { ...idx, [day]: [...(idx[day] ?? []), fx.round] });
     const index = await saveService.getSquadIndex(saveId);
     const res = await playYouthDay({
-      service: saveService, saveId, date: day, index, humanClubId: HUMAN, tactics: null,
+      service: saveService, saveId, date: day, index, humans: new Map([[HUMAN, { seatId: "s", tactics: null }]]),
       squadOf: (id: string) => saveService.getSquadById(saveId, id), teamsPlayingToday: new Set(),
     });
     expect(res.logs.filter((l) => l.fixtureId === fx.id && l.score !== null)).toEqual([]);
@@ -147,7 +148,7 @@ describe("youth competitions in advanceOneDay", () => {
     const [star, second, third] = [...squad.players]
       .sort((a, b) => (b.seasonLog?.appearances ?? 0) - (a.seasonLog?.appearances ?? 0) || a.id.localeCompare(b.id))
       .filter((p) => !p.injury && !p.suspension);
-    await saveService.updateMeta(saveId, {
+    await updateSolo(saveId, {
       currentDate: next.date,
       youthCallUps: { u21: [
         { id: star!.id, duration: "next", left: 1 },
@@ -165,7 +166,7 @@ describe("youth competitions in advanceOneDay", () => {
     expect(mine).toContain(star!.id);
     const secondLeft = mine.includes(second!.id) ? 2 : 3;
     // `next` is used up, `games3` counts the game he played, `indefinite` stays, a stranger leaves.
-    expect((await saveService.getMeta(saveId))!.youthCallUps).toEqual({ u21: [
+    expect((await soloMeta(saveId))!.youthCallUps).toEqual({ u21: [
       { id: second!.id, duration: "games3", left: secondLeft },
       { id: third!.id, duration: "indefinite" },
     ] });

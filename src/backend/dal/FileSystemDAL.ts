@@ -10,10 +10,12 @@ import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
-import type { MarketState } from "@/types/transferMarketTypes";
+import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
+import type { SeatState } from "@/types/seatTypes";
+import { SEAT_ID_PATTERN } from "@/types/seatTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
@@ -47,8 +49,6 @@ function nationalCompPath(saveId: string, slug: string) {
   return `${nationalDir(saveId)}/comps/${slug}.json`;
 }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
-function achievementsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/achievements.json`; }
-function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
   return `${SAVES_DIR}/${saveId}/clubHistory/${squadId}.json`;
 }
@@ -60,10 +60,7 @@ function transfersArchivePath(saveId: string, year: number) {
 function squadPath(saveId: string, league: string, club: string) {
   return `${SAVES_DIR}/${saveId}/squads/${league}/${club}.json`;
 }
-function tacticsPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/tactics.json`; }
 function marketPath(saveId: string)      { return `${SAVES_DIR}/${saveId}/market.json`; }
-function inboxPath(saveId: string)       { return `${SAVES_DIR}/${saveId}/inbox.json`; }
-function ledgerPath(saveId: string, season: number) { return `${SAVES_DIR}/${saveId}/ledger/${season}.json`; }
 /** Awards files: validate before building a path (league slug and year come from the world / meta). */
 function awardYear(year: number): number {
   if (!Number.isInteger(year) || year < 1900 || year > 2999) throw new Error(`invalid awards year: ${year}`);
@@ -81,6 +78,23 @@ function seasonGoalsPath(saveId: string, league: string, year: number) {
 function dayLogPath(saveId: string, date: string) {
   const [yyyy, mm] = date.split("-");
   return `${SAVES_DIR}/${saveId}/days/${yyyy}/${mm}/${date}.json`;
+}
+
+/** A seat's folder; the id is validated before it reaches a path. */
+function seatDir(saveId: string, seatId: string): string {
+  if (!SEAT_ID_PATTERN.test(seatId)) throw new Error(`invalid seat id: ${seatId}`);
+  return `${SAVES_DIR}/${saveId}/seats/${seatId}`;
+}
+
+async function readJsonFile<T>(path: string): Promise<T | null> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) return null;
+  return file.json() as Promise<T>;
+}
+
+async function writeJsonFile(dir: string, path: string, value: unknown, pretty = false): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await Bun.write(path, pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value));
 }
 
 function leagueDir(saveId: string, leagueSlug: string) {
@@ -242,30 +256,6 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(nationalCompPath(saveId, comp.slug), JSON.stringify(comp));
   }
 
-  async readAchievements(saveId: string): Promise<AchievementsState | null> {
-    const file = Bun.file(achievementsPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<AchievementsState>;
-  }
-
-  async writeAchievements(saveId: string, state: AchievementsState): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(achievementsPath(saveId), JSON.stringify(state));
-  }
-
-  async readScouting(saveId: string): Promise<ScoutingState | null> {
-    const file = Bun.file(scoutingPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<ScoutingState>;
-  }
-
-  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(scoutingPath(saveId), JSON.stringify(state));
-    // The scout search blurs every player by this file's knowledge: rebuild its index.
-    bumpSaveDataVersion(saveId);
-  }
-
   async readManagers(saveId: string): Promise<ManagerRecord[]> {
     const file = Bun.file(managersPath(saveId));
     if (!(await file.exists())) return [];
@@ -299,24 +289,24 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(clubHistoryPath(saveId, history.squadId), JSON.stringify(history));
   }
 
-  async readTransfers(saveId: string): Promise<TransferRecord[]> {
+  async readTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     const file = Bun.file(transfersPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(transfersPath(saveId), JSON.stringify(transfers, null, 2));
   }
 
-  async readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null> {
+  async readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     const file = Bun.file(transfersArchivePath(saveId, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(transfersArchivePath(saveId, year), JSON.stringify(transfers, null, 2));
@@ -416,46 +406,16 @@ export class FileSystemDAL implements ISaveDAL {
 
   // ── Tactics ───────────────────────────────────────────────────────────────
 
-  async readTactics(saveId: string): Promise<TacticsSave | null> {
-    const file = Bun.file(tacticsPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<TacticsSave>;
-  }
-
-  async writeTactics(saveId: string, tactics: TacticsSave): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(tacticsPath(saveId), JSON.stringify(tactics, null, 2));
-  }
-
-  async readMarket(saveId: string): Promise<MarketState | null> {
+  async readMarket(saveId: string): Promise<WorldMarketState | null> {
     const file = Bun.file(marketPath(saveId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<MarketState>;
+    return file.json() as Promise<WorldMarketState>;
   }
 
-  async writeMarket(saveId: string, market: MarketState): Promise<void> {
+  async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(marketPath(saveId), JSON.stringify(market, null, 2));
     bumpSaveDataVersion(saveId);
-  }
-
-  // ── Inbox ─────────────────────────────────────────────────────────────────
-
-  async readInbox(saveId: string): Promise<InboxMessage[]> {
-    const file = Bun.file(inboxPath(saveId));
-    if (!(await file.exists())) return [];
-    return file.json() as Promise<InboxMessage[]>;
-  }
-
-  async writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(inboxPath(saveId), JSON.stringify(messages, null, 2));
-  }
-
-  async appendInboxMessage(saveId: string, message: InboxMessage): Promise<void> {
-    const existing = await this.readInbox(saveId);
-    existing.push(message);
-    await this.writeInbox(saveId, existing);
   }
 
   // ── Day logs ──────────────────────────────────────────────────────────────
@@ -540,50 +500,16 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(leagueSeasonArchivePath2(saveId, archive.leagueSlug, archive.year), JSON.stringify(archive, null, 2));
   }
 
-  async readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null> {
+  async readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
     const file = Bun.file(leagueTransfersArchivePath2(saveId, leagueSlug, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(leagueTransfersArchivePath2(saveId, leagueSlug, year), JSON.stringify(transfers, null, 2));
-  }
-
-  // ── Ledger (player club cash extract) ────────────────────────────────────────
-
-  async listLedgerSeasons(saveId: string): Promise<number[]> {
-    const dir = `${SAVES_DIR}/${saveId}/ledger`;
-    let names: string[];
-    try {
-      names = await readdir(dir);
-    } catch {
-      return [];
-    }
-    return names
-      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
-      .filter((n): n is string => n !== undefined)
-      .map(Number)
-      .sort((a, b) => a - b);
-  }
-
-  async readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
-    const file = Bun.file(ledgerPath(saveId, season));
-    if (!(await file.exists())) return [];
-    return file.json() as Promise<LedgerEntry[]>;
-  }
-
-  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    if (entries.length === 0) return;
-    const existing = await this.readLedger(saveId, season);
-    await this.writeLedger(saveId, season, [...existing, ...entries]);
-  }
-
-  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}/ledger`, { recursive: true });
-    await Bun.write(ledgerPath(saveId, season), JSON.stringify(entries, null, 2));
   }
 
   // ── Season awards ─────────────────────────────────────────────────────────────
@@ -661,5 +587,100 @@ export class FileSystemDAL implements ISaveDAL {
       .map((n) => /^([a-z0-9_]+)-(\d{4})\.json$/.exec(n))
       .filter((m): m is RegExpExecArray => m !== null)
       .map((m) => ({ league: m[1]!, year: Number(m[2]) }));
+  }
+
+  // ── Seats ─────────────────────────────────────────────────────────────────
+
+  async readSeat(saveId: string, seatId: string): Promise<SeatState | null> {
+    return readJsonFile<SeatState>(`${seatDir(saveId, seatId)}/seat.json`);
+  }
+
+  async writeSeat(saveId: string, seatId: string, seat: SeatState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/seat.json`, seat, true);
+  }
+
+  async readSeatTactics(saveId: string, seatId: string): Promise<TacticsSave | null> {
+    return readJsonFile<TacticsSave>(`${seatDir(saveId, seatId)}/tactics.json`);
+  }
+
+  async writeSeatTactics(saveId: string, seatId: string, tactics: TacticsSave): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/tactics.json`, tactics, true);
+  }
+
+  async readSeatAchievements(saveId: string, seatId: string): Promise<AchievementsState | null> {
+    return readJsonFile<AchievementsState>(`${seatDir(saveId, seatId)}/achievements.json`);
+  }
+
+  async writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/achievements.json`, state);
+  }
+
+  async readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {
+    return readJsonFile<ScoutingState>(`${seatDir(saveId, seatId)}/scouting.json`);
+  }
+
+  async writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/scouting.json`, state);
+    // The scout search blurs every player by this file's knowledge: rebuild its index.
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]> {
+    return (await readJsonFile<InboxMessage[]>(`${seatDir(saveId, seatId)}/inbox.json`)) ?? [];
+  }
+
+  async writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/inbox.json`, messages, true);
+  }
+
+  async appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void> {
+    const existing = await this.readSeatInbox(saveId, seatId);
+    existing.push(message);
+    await this.writeSeatInbox(saveId, seatId, existing);
+  }
+
+  async listSeatLedgerSeasons(saveId: string, seatId: string): Promise<number[]> {
+    let names: string[];
+    try {
+      names = await readdir(`${seatDir(saveId, seatId)}/ledger`);
+    } catch {
+      return [];
+    }
+    return names
+      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .sort((a, b) => a - b);
+  }
+
+  async readSeatLedger(saveId: string, seatId: string, season: number): Promise<LedgerEntry[]> {
+    return (await readJsonFile<LedgerEntry[]>(`${seatDir(saveId, seatId)}/ledger/${season}.json`)) ?? [];
+  }
+
+  async appendSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const existing = await this.readSeatLedger(saveId, seatId, season);
+    await this.writeSeatLedger(saveId, seatId, season, [...existing, ...entries]);
+  }
+
+  async writeSeatLedger(saveId: string, seatId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (!Number.isInteger(season)) throw new Error(`invalid ledger season: ${season}`);
+    const dir = `${seatDir(saveId, seatId)}/ledger`;
+    await writeJsonFile(dir, `${dir}/${season}.json`, entries, true);
+  }
+
+  async readSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null> {
+    return readJsonFile<SeatMarketState>(`${seatDir(saveId, seatId)}/market.json`);
+  }
+
+  async writeSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/market.json`, market, true);
+    bumpSaveDataVersion(saveId);
   }
 }

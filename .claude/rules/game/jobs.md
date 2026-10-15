@@ -191,3 +191,7 @@ Convites de seleções são à parte das propostas de clube (`NationalState.offe
 `managerReputation` contra o percentil do Elo, e aceitar **não** troca de clube (acumula; vale desempregado). A
 contagem de convites novos do dia entra no `jobOffers` da resposta (o avanço rápido para). Ver
 `.claude/rules/game/national-teams.md` → "Técnico do jogador".
+
+## Assentos (Etapa 43)
+
+Emprego, propostas, demissão e contrato do técnico são do assento (`seat.json`); nenhum clube com assento oferece emprego. "O clube do jogador" = o clube do assento. Ver `.claude/rules/game/multiplayer.md`.

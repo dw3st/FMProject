@@ -28,9 +28,9 @@ describe("manager ranking at the rollover", () => {
     expect(initial).toHaveLength(squads.length);
     expect(new Set(initial.map((m) => m.id)).size).toBe(initial.length);
     expect(new Set(initial.map((m) => m.squadId)).size).toBe(initial.length);
-    const mine = initial.filter((m) => m.isPlayer);
+    const mine = initial.filter((m) => !!m.seatId);
     expect(mine).toHaveLength(1);
-    expect(mine[0]).toMatchObject({ name: "Zé Tester", squadId: "33", points: 0 });
+    expect(mine[0]).toMatchObject({ id: `seat:${meta.seatId}`, seatId: meta.seatId, name: "Zé Tester", squadId: "33", points: 0 });
 
     // The human club's round-1 fixture is already won 9-0, so it tops the table at the rollover.
     const r1 = (await saveService.getRound(saveId, "premier_league", 1))!;
@@ -52,7 +52,7 @@ describe("manager ranking at the rollover", () => {
     expect(out.ok).toBe(true);
 
     const after = await saveService.getManagers(saveId);
-    const me = after.find((m) => m.isPlayer)!;
+    const me = after.find((m) => m.seatId === meta.seatId)!;
     expect(me.seasons).toBe(1);
     const league = me.titles.find((t) => t.kind === "league");
     expect(league?.competition).toBe("premier_league");

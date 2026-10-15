@@ -193,11 +193,11 @@ export function checkCallUp(ids: unknown, candidates: Map<string, RosterPlayer>)
 
 // ── Manager records ───────────────────────────────────────────────────────────
 
-/** The human manager takes the national team: its coach leaves (an interim with nothing is dropped). */
-export function takeNationalJob(managers: ManagerRecord[], a: { teamId: string; date: string }): ManagerRecord[] {
+/** A seat's manager takes the national team: its coach leaves (an interim with nothing is dropped). */
+export function takeNationalJob(managers: ManagerRecord[], a: { seatId: string; teamId: string; date: string }): ManagerRecord[] {
   const out: ManagerRecord[] = [];
   for (const m of managers) {
-    if (m.isPlayer) {
+    if (m.seatId === a.seatId) {
       const national = closePassage(m.national, a.date, "moved");
       out.push(cleanRecord({ ...m, national: [...national, { squadId: a.teamId, from: a.date }] }));
     } else if (m.squadId === a.teamId) {
@@ -212,9 +212,9 @@ export function takeNationalJob(managers: ManagerRecord[], a: { teamId: string; 
 /** The human manager leaves the national team (sacked or resigned): his spell closes, an interim takes over. */
 export function leaveNationalJob(
   managers: ManagerRecord[],
-  a: { teamId: string; nation: string; date: string; left: ManagerLeftReason },
+  a: { seatId: string; teamId: string; nation: string; date: string; left: ManagerLeftReason },
 ): { managers: ManagerRecord[]; interimId: string } {
-  const out = managers.map((m) => (m.isPlayer ? cleanRecord({ ...m, national: closePassage(m.national, a.date, a.left) }) : m));
+  const out = managers.map((m) => (m.seatId === a.seatId ?cleanRecord({ ...m, national: closePassage(m.national, a.date, a.left) }) : m));
   const interim = makeInterim(a.teamId, a.nation, a.date, new Set(out.map((m) => m.id)));
   return { managers: [...out, interim], interimId: interim.id };
 }

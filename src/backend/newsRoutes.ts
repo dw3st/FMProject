@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { isRealIsoDate } from "@/Domain/dates";
 import type { NewsItem } from "@/types/newsTypes";
 
@@ -13,11 +13,13 @@ export const newsRoutes = {
   /** `?scope=all|club|league|followed&competition=&before=YYYY-MM-DD&limit=1..100`. */
   "/api/saves/:saveId/news": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return bad("method not allowed", 405);
-    const meta = await saveService.getMeta(saveId);
-    if (!meta) return bad("save not found", 404);
+    const world = await saveService.getMeta(saveId);
+    if (!world) return bad("save not found", 404);
+    // The requester's seat picks "my club", "my league" and the followed leagues (none for a seat not set up yet).
+    const seat = await saveService.getSeat(saveId, auth.seatId);
 
     const q = new URL(req.url).searchParams;
     const scope = (q.get("scope") ?? "all") as Scope;
@@ -30,11 +32,11 @@ export const newsRoutes = {
     const competition = q.get("competition") || null;
     if (competition !== null && !/^[a-z0-9_]{1,80}$/i.test(competition)) return bad("invalid competition");
 
-    const followed = meta.followedLeagues ?? [];
+    const followed = seat?.followedLeagues ?? [];
     const keep = (n: NewsItem): boolean => {
       if (before !== null && n.date >= before) return false;
-      if (scope === "club" && !(meta.clubId && n.clubIds.includes(meta.clubId))) return false;
-      if (scope === "league" && n.league !== meta.leagueSlug) return false;
+      if (scope === "club" && !(seat?.clubId && n.clubIds.includes(seat.clubId))) return false;
+      if (scope === "league" && n.league !== seat?.leagueSlug) return false;
       if (scope === "followed" && !(n.league && followed.includes(n.league))) return false;
       if (competition !== null && n.league !== competition && n.competition !== competition) return false;
       return true;

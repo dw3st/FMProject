@@ -1,5 +1,5 @@
 import { saveService } from "@/backend/SaveService";
-import { requireSaveOwner } from "@/backend/auth/middleware";
+import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { logError } from "@/Logger";
 import {
@@ -14,10 +14,10 @@ import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
-  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, seasonEndOf, startLoan,
+  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, isOtherSeatClub, seasonEndOf, startLoan,
 } from "@/backend/negotiationWorld";
 import type { MarketState } from "@/types/transferMarketTypes";
-import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { liveRivals } from "@/Domain/negotiation/rivals";
 
 type Req = Request & { params: Record<string, string> };
@@ -29,18 +29,18 @@ export const negotiationRoutes = {
   /** `GET` - pending AI bids, active loans, the loan list and the sell-on clauses held. */
   "/api/saves/:saveId/negotiation": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return json({ error: "save not found" }, 404);
-    const market = await saveService.getMarket(saveId);
+    const market = await saveService.getMarket(saveId, auth.seatId);
     const squad = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
     const date = meta.currentDate ?? "";
-    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
+    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
     return json({
       clubId: meta.clubId,
-      window: windows.human(),
+      window: windows.seat(auth.seatId).today,
       preContracts: market?.preContracts ?? [],
       rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
       lostTargets: market?.lostTargets ?? [],
@@ -54,21 +54,21 @@ export const negotiationRoutes = {
   /** `GET ?kind=transfer|loan` - today's talks about a player (rounds left, last counter, ban). */
   "/api/saves/:saveId/negotiation/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
     const kind = new URL(req.url).searchParams.get("kind") === "loan" ? "loan" : "transfer";
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return json({ error: "save not found" }, 404);
-    const market = await saveService.getMarket(saveId);
+    const market = await saveService.getMarket(saveId, auth.seatId);
     const talk = market?.talks?.[talkKey(kind, req.params.playerId!)];
     const date = meta.currentDate ?? "";
     const today = talk && (talk.date === date || (talk.closedUntil && talk.closedUntil >= date)) ? talk : null;
-    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
+    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
     return json({
       talk: today, gate: talkGate(today ?? undefined, date),
       // Etapa 25: the buyer's (human) window, rivals for the target, a loss to a rival.
-      window: windows.human(),
+      window: windows.seat(auth.seatId).today,
       rivals: liveRivals(market?.rivalBids, req.params.playerId!, date)
         .map((r) => ({ clubId: r.clubId, clubName: r.clubName, fee: r.fee, deadline: r.deadline, sellerAccepts: r.sellerAccepts })),
       lost: market?.lostTargets?.find((l) => l.playerId === req.params.playerId) ?? null,
@@ -83,7 +83,7 @@ export const negotiationRoutes = {
   "/api/saves/:saveId/bids/:bidId": async (req: Req) => {
     const saveId = req.params.saveId!;
     const bidId = req.params.bidId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as { action?: unknown; fee?: unknown; sellOnPct?: unknown } | null;
@@ -94,21 +94,26 @@ export const negotiationRoutes = {
       return json({ error: "missing or invalid fields" }, 400);
     }
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return json({ error: "save not found" }, 404);
       if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
       const date = meta.currentDate ?? "";
-      const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+      const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const bid = findLiveBid(market, bidId, date);
       if (!bid) return json({ error: "offerClosed" }, 409);
       const withoutBid = { ...market, pendingBids: (market.pendingBids ?? []).filter((b) => b.id !== bidId) };
 
       if (action === "reject") {
-        await saveService.saveMarket(saveId, withoutBid);
+        await saveService.saveMarket(saveId, withoutBid, auth.seatId);
         return json({ ok: true, status: "rejected" });
       }
+      // The bidder got a human manager since: the AI no longer speaks for it (`.claude/rules/game/multiplayer.md`).
+      if ((await saveService.humanClubIds(saveId)).has(bid.clubId)) {
+        await saveService.saveMarket(saveId, withoutBid, auth.seatId);
+        return json({ error: "offerClosed" }, 409);
+      }
       // The buyer's window (an AI club here) must be open to sign (`.claude/rules/game/transfer-windows.md`).
-      const buyerWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId))).ofSquad(bid.clubId);
+      const buyerWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)])).ofSquad(bid.clubId);
       if (!buyerWindow.open) return windowClosedResponse(buyerWindow);
 
       const seller = await saveService.getSquadById(saveId, meta.clubId);
@@ -117,7 +122,7 @@ export const negotiationRoutes = {
       // The human club never lets a player go below its squad / position / role minimums.
       if (seller && player && squadDepthBlocked(player, seller, false)) return json({ error: "squadDepth" }, 409);
       if (!seller || !buyer || !player || buyer.players.length >= MAX_SQUAD) {
-        await saveService.saveMarket(saveId, withoutBid);
+        await saveService.saveMarket(saveId, withoutBid, auth.seatId);
         return json({ error: "offerClosed" }, 409);
       }
 
@@ -126,11 +131,11 @@ export const negotiationRoutes = {
       if (action === "counter" && bid.kind === "transfer") {
         const r = respondToHumanCounter(bid, body!.fee as number, sellOnPct ?? 0, player.age);
         if (r.kind === "closed") {
-          await saveService.saveMarket(saveId, withoutBid);
+          await saveService.saveMarket(saveId, withoutBid, auth.seatId);
           return json({ error: "noRounds" }, 409);
         }
         if (r.kind === "counter") {
-          await saveService.saveMarket(saveId, { ...market, pendingBids: (market.pendingBids ?? []).map((b) => (b.id === bidId ? r.bid : b)) });
+          await saveService.saveMarket(saveId, { ...market, pendingBids: (market.pendingBids ?? []).map((b) => (b.id === bidId ? r.bid : b)) }, auth.seatId);
           return json({ ok: true, status: "countered", bid: r.bid });
         }
         fee = r.fee;
@@ -142,24 +147,24 @@ export const negotiationRoutes = {
       try {
         if (bid.kind === "transfer") {
           if (fee > aiTransferBudgetOf(buyer) || !passesWageGate(aiClubFinance(buyer), estimateWeeklyWage(player, wageFactorOf(buyer)), fee)) {
-            await saveService.saveMarket(saveId, withoutBid);
+            await saveService.saveMarket(saveId, withoutBid, auth.seatId);
             return json({ error: "offerClosed" }, 409);
           }
-          const done = await completeHumanSale(saveService, saveId, meta, withoutBid, { player, seller, buyer, fee, sellOnPct: pct });
-          await saveService.saveMarket(saveId, done.market);
+          const done = await completeHumanSale(saveService, saveId, auth.seatId, meta, withoutBid, { player, seller, buyer, fee, sellOnPct: pct });
+          await saveService.saveMarket(saveId, done.market, auth.seatId);
           await saveService.appendDayTransfers(saveId, date, [{ playerId: player.id, from: seller.id, to: buyer.id, fee, kind: "transfer", date }]);
           return json({ ok: true, status: "sold", record: done.record });
         }
         const share = bid.wageShare ?? 1;
         if (!passesWageGate(aiClubFinance(buyer), Math.round(currentWage(player, wageFactorOf(seller)) * share), 0)) {
-          await saveService.saveMarket(saveId, withoutBid);
+          await saveService.saveMarket(saveId, withoutBid, auth.seatId);
           return json({ error: "offerClosed" }, 409);
         }
-        const next = await startLoan(saveService, saveId, meta, withoutBid, {
+        const next = await startLoan(saveService, saveId, auth.seatId, meta, withoutBid, {
           player, parent: seller, borrower: buyer, wageShare: bid.wageShare ?? 1,
           until: bid.until ?? seasonEndOf(meta.activeLeagues, buyer.leagueSlug, date), fee: bid.fee,
         });
-        await saveService.saveMarket(saveId, next);
+        await saveService.saveMarket(saveId, next, auth.seatId);
         await saveService.appendDayTransfers(saveId, date, [{ playerId: player.id, from: seller.id, to: buyer.id, fee: bid.fee, kind: "loan", date }]);
         return json({ ok: true, status: "loaned" });
       } catch (err) {
@@ -175,7 +180,7 @@ export const negotiationRoutes = {
    */
   "/api/saves/:saveId/loans": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -191,23 +196,25 @@ export const negotiationRoutes = {
     const wageShare = rawShare / 100;
 
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return json({ error: "save not found" }, 404);
       if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
       const date = meta.currentDate ?? "";
       // The borrower is the human club: its window must be open to start a loan.
-      const humanWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId))).human();
+      const humanWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)])).seat(auth.seatId).today;
       if (!humanWindow.open) return windowClosedResponse(humanWindow);
       const borrower = await saveService.getSquadById(saveId, meta.clubId);
       const parent = await saveService.getSquadById(saveId, fromSquadId);
       if (!borrower || !parent) return json({ error: "squad not found" }, 404);
       if (parent.id === borrower.id) return json({ error: "not for loan" }, 400);
+      // Another seat's player is never lent by the AI rule (`.claude/rules/game/multiplayer.md`).
+      if (await isOtherSeatClub(saveService, saveId, parent.id, borrower.id)) return json({ error: "notFound" }, 404);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
-      if ((await humanRosterSize(saveService, saveId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
+      if ((await humanRosterSize(saveService, saveId, auth.seatId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
       if (fee > (borrower.finances?.budget ?? 0)) return json({ error: "Insufficient funds" }, 400);
 
-      const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+      const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const key = talkKey("loan", playerId);
       const counter = activeCounter(market.talks?.[key], date);
       const meetsCounter = !!counter && wageShare >= (counter.wageShare ?? 1) && fee >= counter.fee;
@@ -232,14 +239,14 @@ export const negotiationRoutes = {
       let next: MarketState = { ...market, talks: { ...pruneTalks(market.talks, date), [key]: talk } };
       if (answer.kind === "accept") {
         try {
-          next = await startLoan(saveService, saveId, meta, next, { player, parent, borrower, wageShare, until, fee });
+          next = await startLoan(saveService, saveId, auth.seatId, meta, next, { player, parent, borrower, wageShare, until, fee });
           await saveService.appendDayTransfers(saveId, date, [{ playerId, from: parent.id, to: borrower.id, fee, kind: "loan", date }]);
         } catch (err) {
           logError("negotiation", `save ${saveId}: failed to start loan of ${playerId}`, err);
           return json({ error: "failed to complete" }, 500);
         }
       }
-      await saveService.saveMarket(saveId, next);
+      await saveService.saveMarket(saveId, next, auth.seatId);
       return json({ response: answer, talk, until });
     });
   },
@@ -247,31 +254,31 @@ export const negotiationRoutes = {
   /** `GET` the human's loan list, `POST { playerId }` toggles a player on it. */
   "/api/saves/:saveId/loan-list": async (req: Req) => {
     const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
+    const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
-      return json((await saveService.getMarket(saveId))?.playerLoanList ?? []);
+      return json((await saveService.getMarket(saveId, auth.seatId))?.playerLoanList ?? []);
     }
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as { playerId?: unknown } | null;
     const playerId = body?.playerId;
     if (typeof playerId !== "string" || !playerId) return json({ error: "missing playerId" }, 400);
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return json({ error: "save not found" }, 404);
       if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
-      const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+      const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const list = market.playerLoanList ?? [];
       if (list.includes(playerId)) {
         const next = list.filter((id) => id !== playerId);
-        await saveService.saveMarket(saveId, { ...market, playerLoanList: next });
+        await saveService.saveMarket(saveId, { ...market, playerLoanList: next }, auth.seatId);
         return json({ playerLoanList: next });
       }
       const own = (await saveService.getSquadById(saveId, meta.clubId))?.players.find((p) => p.id === playerId);
       if (!own) return json({ error: "not your player" }, 400);
       if (own.loan) return json({ error: "onLoan" }, 400);
       const next = [...list, playerId];
-      await saveService.saveMarket(saveId, { ...market, playerLoanList: next });
+      await saveService.saveMarket(saveId, { ...market, playerLoanList: next }, auth.seatId);
       return json({ playerLoanList: next });
     });
   },

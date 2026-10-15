@@ -66,10 +66,10 @@ export interface NationalState {
   localCaps?: Record<string, [number, number]>;
   /** Last window / tournament start whose call-ups were made (idempotent per day). */
   lastCallUpDate?: string;
-  /** Job offers of national teams to the human manager (`.claude/rules/game/national-teams.md` → 41b). */
-  offers?: NationalCoachOffer[];
-  /** The national team the human manager coaches (41b), absent when he coaches none. */
-  human?: NationalHumanCoach;
+  /** Job offers of national teams to each seat's manager, by seat id (`.claude/rules/game/national-teams.md` → 41b). */
+  offers?: Record<string, NationalCoachOffer[]>;
+  /** The national team each seat's manager coaches (41b), by seat id; a seat without one has no entry. */
+  human?: Record<string, NationalHumanCoach>;
 }
 
 /** A national team offers its job to the human manager (Etapa 41b). */

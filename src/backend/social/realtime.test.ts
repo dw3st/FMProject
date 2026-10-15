@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { addSaveMember } from "@/backend/auth/saveOwnership";
 import { PRESENCE_WINDOW_MS, recordPresence, resetPresence } from "@/backend/presence";
 import { authRoutes } from "@/backend/auth/routes";
 import {
@@ -57,7 +57,7 @@ describe("presence", () => {
     await handleClientEvent(wa, JSON.stringify({ type: "ping" }));
     expect(wb.events).toContainEqual({ type: "presence", nickname: a.nickname!, status: "online", club: null });
     const saveId = randomUUID();
-    recordSaveOwnership(saveId, a.id);
+    addSaveMember(saveId, a.id, "seat-a", "owner");
     setClubNameResolver(async () => "Manchester United");
     await handleClientEvent(wa, JSON.stringify({ type: "hello", saveId }));
     expect(wb.events).toContainEqual({
@@ -73,7 +73,7 @@ describe("presence", () => {
     const a = makeUser(uniqueNick());
     const other = makeUser(uniqueNick());
     const saveId = randomUUID();
-    recordSaveOwnership(saveId, other.id);
+    addSaveMember(saveId, other.id, "seat-other", "owner");
     setClubNameResolver(async () => "Arsenal");
     const wa = fakeSocket(a.id);
     onSocketOpen(wa);
@@ -122,7 +122,7 @@ describe("presence", () => {
     const b = makeUser(uniqueNick());
     befriend(a.id, b.id, Date.now());
     const saveId = randomUUID();
-    recordSaveOwnership(saveId, a.id);
+    addSaveMember(saveId, a.id, "seat-a", "owner");
     setClubNameResolver(async () => "Bahia");
     const wb = fakeSocket(b.id);
     onSocketOpen(wb);
