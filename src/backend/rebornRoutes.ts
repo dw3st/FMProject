@@ -53,7 +53,7 @@ export const rebornRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const retired = await saveService.getRetired(saveId);
     return Response.json({
-      offers: retired.filter((r) => r.rebornOffer === "pending").map((r) => ({
+      offers: retired.filter((r) => r.rebornSeatId === auth.seatId && r.rebornOffer === "pending").map((r) => ({
         id: r.id, name: r.name, positions: r.positions, age: r.age, nationality: r.nationality,
       })),
     });
@@ -72,7 +72,8 @@ export const rebornRoutes = {
       const retired = await saveService.getRetired(saveId);
       const rec = retired.find((r) => r.id === retiredId);
       if (!rec) return Response.json({ error: "not found" }, { status: 404 });
-      if (rec.rebornOffer !== "pending") return Response.json({ error: "offerClosed" }, { status: 409 });
+      // The offer is the seat's (`.claude/rules/game/retirement.md`); it closes when the seat leaves the club.
+      if (rec.rebornOffer !== "pending" || rec.rebornSeatId !== auth.seatId) return Response.json({ error: "offerClosed" }, { status: 409 });
       // Only the club the player retired from can take him back (`.claude/rules/game/jobs.md`).
       const owner = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!owner || rec.squadId !== owner.clubId) return Response.json({ error: "offerClosed" }, { status: 409 });

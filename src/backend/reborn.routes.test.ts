@@ -36,7 +36,7 @@ describe("reborn routes", () => {
     const mkRetired = (id: string): RetiredPlayer => ({
       id, name: `Legend ${id}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
       profile: { summary: "s", archetype: "a" }, retiredOn: "2027-06-01", squadId: meta.clubId, age: 39,
-      wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending",
+      wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending", rebornSeatId: meta.seatId,
       statsAtRetirement: {
         passing: 6, vision: 7, finishing: 10, dribbling: 8, speed: 5, acceleration: 6, tackling: 2,
         pressing: 3, stamina: 5, heading: 9, strength: 7, reflex: 0, jump: 0,

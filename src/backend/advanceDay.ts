@@ -2299,10 +2299,12 @@ export async function advanceOneDay(
           saveId, year: rYear, processFreeAgents: !faDone, date: currentDate, squads: unitSquads,
           freeAgents: await saveService.getFreeAgents(saveId), levels, humanSeats: seatIdByClub, logs: closedLogs,
         });
-        // TRANSITIONAL (Task 25 makes the expiry per seat): any seat's club in the unit expires the pending offers.
-        const humanInUnit = unitSquads.some((s) => humanClubs.has(s.id));
+        // The pending reborn offers of each seat whose club is in the unit expire (the new ones are added after).
         let retiredAll = await saveService.getRetired(saveId);
-        if (humanInUnit) retiredAll = expireOffers(retiredAll);
+        for (const s of unitSquads) {
+          const sid = seatIdByClub.get(s.id);
+          if (sid) retiredAll = expireOffers(retiredAll, sid);
+        }
         if (res.retired.length > 0 || retiredAll.length > 0) {
           await saveService.writeRetired(saveId, [...retiredAll, ...res.retired]);
         }

@@ -146,9 +146,9 @@ export function processRetirements(args: {
   return { squads, freeAgents: args.processFreeAgents === false ? freeAgents : keptFree, retired: records, humanRetired };
 }
 
-/** Expires every pending reborn offer (the offer lives until the next country rollover). */
-export function expireOffers(retired: RetiredPlayer[]): RetiredPlayer[] {
-  return retired.map((r) => (r.rebornOffer === "pending" ? { ...r, rebornOffer: "expired" as const } : r));
+/** The pending reborn offers of one seat expire (its country's next rollover, or the seat leaving the club). */
+export function expireOffers(retired: RetiredPlayer[], seatId: string): RetiredPlayer[] {
+  return retired.map((r) => (r.rebornOffer === "pending" && r.rebornSeatId === seatId ? { ...r, rebornOffer: "expired" as const } : r));
 }
 
 /**

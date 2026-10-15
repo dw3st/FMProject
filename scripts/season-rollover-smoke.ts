@@ -2876,7 +2876,7 @@ try {
     const legend = {
       id: "smoke_legend", name: "Smoke Legend", nationality: template.nationality ?? null, positions: ["ST"],
       preferredFoot: "left" as const, profile: template.profile, retiredOn: endDate, squadId: playerSquadId,
-      age: 39, wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending" as const,
+      age: 39, wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending" as const, rebornSeatId: meta0.seatId,
       statsAtRetirement: { ...template.stats, finishing: 10, tackling: 2 },
     };
     await plain().writeRetired(saveId, [...(await plain().getRetired(saveId)), legend]);

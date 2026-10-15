@@ -46,6 +46,7 @@ import {
   compensationFee, contractUntil, MANAGER_CONTRACT, managerWeeklyWage, offerSeasons, type ManagerContract,
 } from "@/Domain/managers/managerContract";
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
+import { expireOffers } from "@/Domain/retirement/retirement";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 
 /**
@@ -311,11 +312,10 @@ export async function releaseHumanClub(
   // Scouting (`.claude/rules/game/scouting.md`): missions and prospects stay with the club, the
   // knowledge and shortlist follow the manager, who keeps knowing his old players.
   await scoutingOnClubLeft(service, saveId, seatId, squad.players.map((p) => p.id), args.date);
-  // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
+  // The seat's reborn offers close when it leaves the club (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
-  if (retired.some((r) => r.squadId === args.squadId && r.rebornOffer === "pending")) {
-    await service.writeRetired(saveId, retired.map((r) =>
-      r.squadId === args.squadId && r.rebornOffer === "pending" ? { ...r, rebornOffer: "expired" as const } : r));
+  if (retired.some((r) => r.rebornSeatId === seatId && r.rebornOffer === "pending")) {
+    await service.writeRetired(saveId, expireOffers(retired, seatId));
   }
 }
 

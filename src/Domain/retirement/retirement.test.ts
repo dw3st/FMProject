@@ -100,12 +100,12 @@ describe("processRetirements", () => {
     expect(ai.retired.find((x) => x.id === "star")!.rebornOffer).toBeUndefined();
   });
 
-  test("percentile bounds and expireOffers", () => {
+  test("percentile bounds and expireOffers of one seat", () => {
     expect(levelPercentile([1, 2, 3, 4], 0)).toBe(0);
     expect(levelPercentile([1, 2, 3, 4], 10)).toBe(1);
-    const rec = { id: "x", rebornOffer: "pending" } as RetiredPlayer;
-    expect(expireOffers([rec, { ...rec, id: "y", rebornOffer: "accepted" }]).map((r) => r.rebornOffer))
-      .toEqual(["expired", "accepted"]);
+    const rec = { id: "x", rebornOffer: "pending", rebornSeatId: "s1" } as RetiredPlayer;
+    const out = expireOffers([rec, { ...rec, id: "y", rebornSeatId: "s2" }, { ...rec, id: "z", rebornOffer: "accepted" }], "s1");
+    expect(out.map((r) => r.rebornOffer)).toEqual(["expired", "pending", "accepted"]);
   });
 });
 
