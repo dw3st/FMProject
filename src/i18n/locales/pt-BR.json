@@ -611,8 +611,7 @@
     "yourCode": "Seu código",
     "copy": "Copiar",
     "copied": "Copiado",
-    "changeNickname": "Trocar apelido",
-    "changeableOn": "Troca em {{date}}",
+    "nicknameFinal": "O apelido não pode ser mudado depois.",
     "tabs": { "friends": "Amigos", "requests": "Pedidos", "add": "Adicionar" },
     "groups": { "playing": "Jogando", "online": "Online", "offline": "Offline", "worlds": "Mundos" },
     "status": { "playing": "Jogando · {{club}}", "online": "Online", "offline": "Offline" },
@@ -650,8 +649,7 @@
       "title": "Escolha seu apelido",
       "hint": "3 a 20 caracteres: letras, números, _ . -. Os outros técnicos acham você por ele.",
       "label": "Apelido",
-      "save": "Salvar",
-      "cancel": "Cancelar"
+      "save": "Salvar"
     },
     "chat": {
       "minimize": "Minimizar",
@@ -671,7 +669,7 @@
     "errors": {
       "invalidNickname": "Apelido inválido.",
       "nicknameTaken": "Esse apelido já está em uso.",
-      "tooSoon": "Você só pode trocar o apelido a cada 30 dias.",
+      "nicknameLocked": "O apelido já foi escolhido e não pode ser mudado.",
       "noNickname": "Escolha um apelido primeiro.",
       "invalidQuery": "Busca inválida.",
       "notFound": "Técnico não encontrado.",

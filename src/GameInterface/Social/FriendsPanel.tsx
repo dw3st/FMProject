@@ -29,7 +29,6 @@ export function FriendsPanel() {
   const { t } = useTranslation();
   const s = useSocial();
   const [tab, setTab] = useState<PanelTab>("friends");
-  const [editingNick, setEditingNick] = useState(false);
   const { panelOpen, setPanelOpen } = s;
   const panelRef = useRef<HTMLElement>(null);
 
@@ -68,11 +67,11 @@ export function FriendsPanel() {
       </header>
       {me === null ? (
         <p className="px-4 py-3 text-sm text-muted-foreground">{t("social.loading")}</p>
-      ) : !me.nickname || editingNick ? (
-        <NicknameForm current={me.nickname} onDone={() => setEditingNick(false)} />
+      ) : !me.nickname ? (
+        <NicknameForm />
       ) : (
         <>
-          <IdentityRow onChangeNickname={() => setEditingNick(true)} />
+          <IdentityRow />
           <div className="px-4 pt-3">
             <SegmentedTabs
               fill
@@ -96,8 +95,8 @@ export function FriendsPanel() {
   );
 }
 
-function IdentityRow({ onChangeNickname }: { onChangeNickname: () => void }) {
-  const { t, i18n } = useTranslation();
+function IdentityRow() {
+  const { t } = useTranslation();
   const { me } = useSocial();
   const [copied, setCopied] = useState(false);
   if (!me?.nickname) return null;
@@ -110,21 +109,9 @@ function IdentityRow({ onChangeNickname }: { onChangeNickname: () => void }) {
       })
       .catch(() => {});
   };
-  const changeDate = me.nicknameChangeableOn
-    ? new Date(`${me.nicknameChangeableOn}T00:00:00`).toLocaleDateString(i18n.language)
-    : null;
   return (
     <div className="px-4 pt-3 flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold text-foreground truncate">{me.nickname}</span>
-        {changeDate ? (
-          <span className="text-sm text-muted-foreground whitespace-nowrap">{t("social.changeableOn", { date: changeDate })}</span>
-        ) : (
-          <Button variant="secondary" flush onClick={onChangeNickname}>
-            {t("social.changeNickname")}
-          </Button>
-        )}
-      </div>
+      <span className="font-semibold text-foreground truncate">{me.nickname}</span>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-muted-foreground">
           {t("social.yourCode")} <span className="font-semibold text-foreground tabular-nums">{me.friendCode}</span>
@@ -138,10 +125,10 @@ function IdentityRow({ onChangeNickname }: { onChangeNickname: () => void }) {
   );
 }
 
-function NicknameForm({ current, onDone }: { current: string | null; onDone: () => void }) {
+function NicknameForm() {
   const { t } = useTranslation();
   const { setMe } = useSocial();
-  const [value, setValue] = useState(current ?? "");
+  const [value, setValue] = useState("");
   const [error, setError] = useState<SocialErrorCode | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -156,12 +143,11 @@ function NicknameForm({ current, onDone }: { current: string | null; onDone: () 
       return;
     }
     setMe(r.data);
-    onDone();
   }
 
   return (
     <form onSubmit={(e) => void save(e)} className="px-4 py-3 flex flex-col gap-3">
-      {!current && <h3 className="font-display font-black uppercase text-xl leading-none">{t("social.nickname.title")}</h3>}
+      <h3 className="font-display font-black uppercase text-xl leading-none">{t("social.nickname.title")}</h3>
       <TextField
         id="social-nickname"
         variant="box"
@@ -172,6 +158,7 @@ function NicknameForm({ current, onDone }: { current: string | null; onDone: () 
         onChange={(e) => setValue(e.target.value)}
       />
       <p className="text-sm text-muted-foreground">{t("social.nickname.hint")}</p>
+      <p className="text-sm text-muted-foreground">{t("social.nicknameFinal")}</p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {t(`social.errors.${error}`)}
@@ -181,11 +168,6 @@ function NicknameForm({ current, onDone }: { current: string | null; onDone: () 
         <Button type="submit" disabled={busy || value.trim().length < 3}>
           {t("social.nickname.save")}
         </Button>
-        {current && (
-          <Button variant="secondary" onClick={onDone}>
-            {t("social.nickname.cancel")}
-          </Button>
-        )}
       </div>
     </form>
   );

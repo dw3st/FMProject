@@ -2,8 +2,6 @@
 export const SOCIAL = {
   NICKNAME_MIN: 3,
   NICKNAME_MAX: 20,
-  /** A nickname can be changed once every 30 days. */
-  NICKNAME_CHANGE_DAYS: 30,
   MAX_FRIENDS: 200,
   MAX_PENDING_OUT: 50,
   SEARCH_MIN: 3,

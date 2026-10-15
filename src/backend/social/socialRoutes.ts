@@ -33,7 +33,6 @@ import {
   type NamedUser,
 } from "@/backend/social/socialStore";
 import { cleanMessageBody, rateLimit, type RateRule } from "@/Domain/social/message";
-import { nicknameChangeableAt } from "@/Domain/social/nickname";
 import { dmRoomId, worldRoomId, worldRoomParam } from "@/Domain/social/rooms";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import type { ChatMessageView, FriendsResponse, SocialErrorCode, SocialMe } from "@/types/socialTypes";
@@ -65,10 +64,6 @@ function allow(table: Map<string, number[]>, userId: string, now: number, rule?:
 
 function fail(error: SocialErrorCode, status: number, extra?: Record<string, unknown>): Response {
   return Response.json({ error, ...extra }, { status });
-}
-
-function isoDay(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10);
 }
 
 /** Thrown by `readJson` for a body over 8 KB; `authed` answers 413. */
@@ -117,15 +112,10 @@ function myNickname(userId: string): string | null {
   return getSocialUser(userId)?.nickname ?? null;
 }
 
-function meView(userId: string, now: number): SocialMe {
+function meView(userId: string): SocialMe {
   const friendCode = ensureFriendCode(userId);
   const u = getSocialUser(userId)!;
-  const at = nicknameChangeableAt(u.nicknameChangedAt);
-  return {
-    nickname: u.nickname,
-    friendCode,
-    nicknameChangeableOn: u.nickname !== null && at !== null && at > now ? isoDay(at) : null,
-  };
+  return { nickname: u.nickname, friendCode };
 }
 
 /** Someone `me` may send a request to; null when unknown, oneself or blocked either way (all answer 404). */
@@ -179,7 +169,7 @@ async function friendsResponse(userId: string, now: number): Promise<FriendsResp
 
 export const socialRoutes = {
   "/api/social/me": {
-    GET: authed((_req, userId) => Response.json(meView(userId, Date.now()))),
+    GET: authed((_req, userId) => Response.json(meView(userId))),
   },
 
   "/api/social/nickname": {
@@ -187,16 +177,10 @@ export const socialRoutes = {
       const body = await readJson(req);
       const raw = body?.nickname;
       if (typeof raw !== "string") return fail("invalidNickname", 400);
-      const now = Date.now();
-      const result = setNickname(userId, raw, now);
-      if (!result.ok) {
-        if (result.error === "tooSoon") {
-          return fail("tooSoon", 409, { nicknameChangeableOn: meView(userId, now).nicknameChangeableOn });
-        }
-        return fail(result.error, result.error === "invalidNickname" ? 400 : 409);
-      }
+      const result = setNickname(userId, raw, Date.now());
+      if (!result.ok) return fail(result.error, result.error === "invalidNickname" ? 400 : 409);
       notifyFriendUpdate(friendIds(userId));
-      return Response.json(meView(userId, now));
+      return Response.json(meView(userId));
     }),
   },
 

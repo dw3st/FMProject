@@ -9,8 +9,6 @@ export type Relation = "friend" | "pending_out" | "pending_in" | "none";
 export interface SocialMe {
   nickname: string | null;
   friendCode: string;
-  /** ISO date (YYYY-MM-DD) from which the nickname can be changed again; null when it can be changed now. */
-  nicknameChangeableOn: string | null;
 }
 
 export interface FriendView {
@@ -79,7 +77,7 @@ export type ServerEvent =
 export type SocialErrorCode =
   | "invalidNickname"
   | "nicknameTaken"
-  | "tooSoon"
+  | "nicknameLocked"
   | "noNickname"
   | "invalidQuery"
   | "notFound"

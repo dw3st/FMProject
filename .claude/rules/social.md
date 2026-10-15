@@ -6,8 +6,8 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 ## Regra
 
 - Apelido único (3–20, `[A-Za-z0-9_.-]`, sem diferenciar maiúsculas, sem `admin`/`fmproject`/`westlab`/moderador e
-  afins), escolhido na primeira abertura de Amigos. A primeira escolha não conta a carência (`nickname_changed_at`
-  fica nulo); cada troca depois dela só a cada 30 dias. Código de amigo `FM-XXXX-XXXX` (base32 sem
+  afins), escolhido na primeira abertura de Amigos e **fixo** depois disso: fica atrelado à conta (e-mail) para sempre,
+  sem troca (`nickname_changed_at` guarda a data da escolha). Código de amigo `FM-XXXX-XXXX` (base32 sem
   0/1/I/O), gerado na primeira chamada de `GET /api/social/me`.
 - Amizade só por pedido aceito (apelido ou código); pedido cruzado vira amizade na hora. Máximo 200 amigos e 50
   pedidos enviados pendentes.
@@ -49,8 +49,8 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 
 | Rota | Faz |
 |---|---|
-| `GET /api/social/me` | `{ nickname, friendCode, nicknameChangeableOn }` |
-| `PUT /api/social/nickname { nickname }` | 400 `invalidNickname`, 409 `nicknameTaken`, 409 `tooSoon { nicknameChangeableOn }`, 413 `tooLarge` |
+| `GET /api/social/me` | `{ nickname, friendCode }` |
+| `PUT /api/social/nickname { nickname }` | só a primeira escolha (o mesmo nome de novo = 200); 400 `invalidNickname`, 409 `nicknameTaken`, 409 `nicknameLocked` (já tem apelido), 413 `tooLarge` |
 | `GET /api/social/search?q=` | até 20 `{ nickname, relation }`; 409 `noNickname`, 400 `invalidQuery`, 429 `rateLimited` (30/min) |
 | `POST /api/social/requests { nickname \| code }` | `{ status: requested \| friends, nickname }`; 404 `notFound`, 409 `alreadyFriends` / `limit` / `noNickname`, 429 `rateLimited` (20/h) |
 | `POST …/requests/:nickname/accept` · `/decline` · `DELETE …/requests/:nickname` | aceitar, recusar, cancelar |
@@ -83,13 +83,13 @@ nem abre.
 - Barra inferior: "Amigos · N" (amigos online) com o selo de não lidas + pedidos; abre o painel (340px, até 60% da
   altura, acima da barra, à direita; Escape fecha). O rótulo do botão diz as não lidas ("Amigos: 3 online, 2 não
   lidas"); abrir o painel põe o foco no primeiro controle, fechar devolve ao botão.
-- Painel: apelido e código (copiar, trocar apelido), abas Amigos (Jogando / Online / Offline / Mundos, menu da linha
+- Painel: apelido e código (copiar), abas Amigos (Jogando / Online / Offline / Mundos, menu da linha
   com desfazer amizade e bloquear, com confirmação), Pedidos, Adicionar (busca, código, bloqueados). Sem apelido: só o
-  formulário.
+  formulário, com o aviso "O apelido não pode ser mudado depois.".
 - Janelas: até 3 abertas à esquerda do painel, as outras como abas minimizadas; "Carregar mais", Enter envia,
   Shift+Enter quebra linha, contador de 500, "digitando…". Abrir (ou reabrir) a janela busca o histórico de novo; se
   falhar, "Tentar de novo"; Escape fecha a janela com o foco. Ao recarregar os amigos, as DMs com quem não é mais
-  amigo (desfez a amizade ou trocou o apelido) fecham. Estado por aba no `sessionStorage`
+  amigo (desfez a amizade) fecham. Estado por aba no `sessionStorage`
   (`fm.social.chats.v1`); o socket reconecta a cada tela.
 - A partida ao vivo não tem a barra: o selo aparece ao voltar.
 
