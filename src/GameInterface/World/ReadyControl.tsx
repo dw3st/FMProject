@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
-import { addDays } from "@/Domain/dates";
+import { addDays, isRealIsoDate } from "@/Domain/dates";
+import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
 
 const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
+const ICON_ONLY = "flex items-center justify-center w-9 h-9 rounded-md border border-border bg-card text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 const MENU_ITEM = "w-full text-left h-10 px-3 rounded text-sm font-semibold text-foreground hover:bg-secondary/40 cursor-pointer bg-transparent border-0";
+const LABEL_TRUNC = "max-w-[200px] truncate";
+const MENU_ID = "ready-until-panel";
 
 /** The day block's action in a group world (`.claude/rules/game/multiplayer.md`, part 3). */
 export function ReadyControl() {
@@ -15,82 +20,159 @@ export function ReadyControl() {
   const { view, busy, error, markReady, simulateToday } = useGroupAdvance();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState("");
-  const boxRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const firstRef = useRef<HTMLButtonElement>(null);
   const fmt = (d: string | null) => (d ? formatGameDate(d, i18n.language, "dayMonth") : "—");
+
+  const place = useCallback(() => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+  }, []);
+
+  const close = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    setDate("");
+    if (restoreFocus) triggerRef.current?.focus();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
+
+  useEffect(() => {
+    if (!open || !pos) return;
+    firstRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pos !== null]);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    const onClick = (e: MouseEvent) => { if (!boxRef.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(true); };
+    const onClick = (e: MouseEvent) => {
+      const n = e.target as Node;
+      if (!triggerRef.current?.contains(n) && !panelRef.current?.contains(n)) close(false);
+    };
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onClick);
-    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onClick); };
-  }, [open]);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, close, place]);
 
-  if (!view) return null;
+  const errorText = error ? t(`world.advance.errors.${error}`, { defaultValue: t("world.advance.errors.generic") }) : null;
+  const errorLine = errorText && <span className="text-sm text-destructive whitespace-nowrap max-w-[220px] truncate" role="alert" title={errorText}>{errorText}</span>;
 
-  if (view.running) {
+  const { branch, canPlay } = readyBranch(view);
+  const unmarkButton = (
+    <button
+      type="button"
+      className={ICON_ONLY}
+      onClick={() => void markReady(null)}
+      disabled={busy}
+      title={t("world.advance.unmark")}
+      aria-label={t("world.advance.unmark")}
+    >
+      <Icon name="close" size={16} />
+    </button>
+  );
+
+  if (!view || branch === "disabled") {
     return (
-      <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums" role="status">
-        <Icon name="clock" size={16} />
-        {t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) })}
+      <div className="flex items-center gap-2">
+        {errorLine}
+        <button type="button" className={PRIMARY} disabled>
+          {t("world.advance.readyButton")}
+          <Icon name="chevron-down" size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  if (branch === "running") {
+    const text = t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) });
+    return (
+      <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${LABEL_TRUNC}`} role="status" title={text}>
+        <Icon name="clock" size={16} className="shrink-0" />
+        <span className="truncate">{text}</span>
       </span>
     );
   }
 
+  const minDate = addDays(view.currentDate, 1);
+  const dateValid = isRealIsoDate(date) && date >= minDate;
+  const dateInvalid = date !== "" && !dateValid;
+
   const choose = async (until: string) => {
-    setOpen(false);
+    if (until !== "tomorrow" && until !== "next_match" && !(isRealIsoDate(until) && until >= minDate)) return;
+    close(true);
     await markReady(until);
   };
 
   const today = view.me.matchToday;
-  if (today && !view.me.decision) {
+  if (branch === "match" && today) {
     return (
       <div className="flex items-center gap-2">
+        {errorLine}
         <button type="button" className={SECONDARY} onClick={() => void simulateToday()} disabled={busy}>
           {t("world.advance.simulate")}
         </button>
-        {!today.humanOpponent && (
+        {canPlay && (
           <button type="button" className={PRIMARY} onClick={() => { window.location.href = "/match-preview"; }} disabled={busy}>
             <Icon name="play" size={16} />
             {t("world.advance.play")}
           </button>
         )}
+        {readyBranch(view).marked && unmarkButton}
       </div>
     );
   }
 
-  if (view.me.readyUntil && view.me.readyUntil > view.currentDate) {
+  if (branch === "ready" && view.me.readyUntil) {
+    const text = t("world.advance.readyUntil", { date: fmt(view.me.readyUntil) });
+    const waiting = view.waitingFor.length > 0 ? t("world.advance.waiting", { count: view.waitingFor.length }) : "";
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold whitespace-nowrap tabular-nums">
-          {t("world.advance.readyUntil", { date: fmt(view.me.readyUntil) })}
-          {view.waitingFor.length > 0 && <span className="text-muted-foreground"> · {t("world.advance.waiting", { count: view.waitingFor.length })}</span>}
+        {errorLine}
+        <span className={`text-sm font-semibold whitespace-nowrap tabular-nums ${LABEL_TRUNC}`} title={waiting ? `${text} · ${waiting}` : text}>
+          {text}
+          {waiting && <span className="hidden xl:inline text-muted-foreground"> · {waiting}</span>}
         </span>
-        <button
-          type="button"
-          className={`${SECONDARY} w-9 px-0 justify-center`}
-          onClick={() => void markReady(null)}
-          disabled={busy}
-          title={t("world.advance.unmark")}
-          aria-label={t("world.advance.unmark")}
-        >
-          <Icon name="close" size={16} />
-        </button>
+        {unmarkButton}
       </div>
     );
   }
 
   return (
-    <div className="relative" ref={boxRef}>
-      <button type="button" className={PRIMARY} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} disabled={busy}>
+    <div className="flex items-center gap-2">
+      {errorLine}
+      <button
+        ref={triggerRef}
+        type="button"
+        className={PRIMARY}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={MENU_ID}
+        disabled={busy}
+      >
         {t("world.advance.readyButton")}
         <Icon name="chevron-down" size={16} />
       </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-11 z-50 w-64 rounded-md border border-border bg-card p-2 shadow-sm flex flex-col gap-1">
-          <button type="button" role="menuitem" className={MENU_ITEM} onClick={() => void choose("tomorrow")}>{t("world.advance.readyTomorrow")}</button>
-          <button type="button" role="menuitem" className={MENU_ITEM} onClick={() => void choose("next_match")}>{t("world.advance.readyNextMatch")}</button>
+      {open && pos && createPortal(
+        <div
+          id={MENU_ID}
+          ref={panelRef}
+          style={{ position: "fixed", top: pos.top, right: pos.right }}
+          className="z-[60] w-64 rounded-md border border-border bg-card p-2 shadow-sm flex flex-col gap-1"
+        >
+          <button ref={firstRef} type="button" className={MENU_ITEM} onClick={() => void choose("tomorrow")}>{t("world.advance.readyTomorrow")}</button>
+          <button type="button" className={MENU_ITEM} onClick={() => void choose("next_match")}>{t("world.advance.readyNextMatch")}</button>
           <label htmlFor="ready-until-date" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground px-3 pt-2">
             {t("world.advance.readyDate")}
           </label>
@@ -98,16 +180,23 @@ export function ReadyControl() {
             <input
               id="ready-until-date"
               type="date"
-              min={addDays(view.currentDate, 1)}
+              min={minDate}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="h-10 flex-1 rounded border border-border bg-transparent px-2 text-sm"
+              aria-invalid={dateInvalid}
+              aria-describedby={dateInvalid ? "ready-until-date-error" : undefined}
+              className="h-10 flex-1 min-w-0 rounded border border-border bg-transparent px-2 text-sm"
             />
-            <button type="button" className={SECONDARY} disabled={!date} onClick={() => void choose(date)}>{t("world.advance.readyConfirm")}</button>
+            <button type="button" className={SECONDARY} disabled={!dateValid} onClick={() => void choose(date)}>{t("world.advance.readyConfirm")}</button>
           </div>
-        </div>
+          {dateInvalid && (
+            <p id="ready-until-date-error" className="text-sm text-destructive px-3 m-0" role="alert">
+              {t("world.advance.dateInvalid", { min: fmt(minDate) })}
+            </p>
+          )}
+        </div>,
+        document.body,
       )}
-      {error && <span className="sr-only" role="alert">{t(`world.advance.errors.${error}`, { defaultValue: t("world.advance.errors.generic") })}</span>}
     </div>
   );
 }

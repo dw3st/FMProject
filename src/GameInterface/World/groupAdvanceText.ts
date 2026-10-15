@@ -1,3 +1,4 @@
+import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 import type { PendingDay } from "@/types/groupAdvanceTypes";
 import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
 import type { ClubMove } from "@/types/pyramidTypes";
@@ -38,4 +39,16 @@ export function summaryOutcome(days: readonly PendingDay[]): SummaryOutcome | nu
       }
       : null,
   };
+}
+
+export type ReadyBranch = "disabled" | "running" | "match" | "ready" | "menu";
+
+/** Which control the day block shows, and whether a ready mark can be undone. */
+export function readyBranch(view: GroupAdvanceView | null): { branch: ReadyBranch; marked: boolean; canPlay: boolean } {
+  if (!view) return { branch: "disabled", marked: false, canPlay: false };
+  const marked = !!view.me.readyUntil && view.me.readyUntil > view.currentDate;
+  if (view.running) return { branch: "running", marked, canPlay: false };
+  const today = view.me.matchToday;
+  if (today && !view.me.decision) return { branch: "match", marked, canPlay: !today.humanOpponent };
+  return { branch: marked ? "ready" : "menu", marked, canPlay: false };
 }

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
@@ -118,10 +119,12 @@ function useCompactTabs(tabCount: number) {
 export function TopNavigation({
   onAdvanceDay,
   onFastForward,
-  advancing,
+  advancing: advancingProp,
   leagues = [],
   dayAction,
 }: Props = {}) {
+  const group = useGroupAdvance();
+  const advancing = advancingProp || (group.enabled && !!group.view?.running);
   const { t, i18n } = useTranslation();
   const { currentDate, session, squad, save, fixtures, restDays, toggleDayType } = useGameSave();
   // Without a club (`.claude/rules/game/jobs.md`): no day type, Continue waits for offers.

@@ -54,7 +54,7 @@ export function GroupAdvanceBand() {
       )}
       {error && (
         <p className="text-sm text-destructive m-0 basis-full" role="alert">
-          {t("world.advance.band.error", { error })}
+          {t("world.advance.band.error", { error: t(`world.advance.errors.${error}`, { defaultValue: t("world.advance.errors.generic") }) })}
         </p>
       )}
     </section>
