@@ -7,10 +7,12 @@ const PING_MS = 60_000;
  * Number of people with the game open (#134). Pings `POST /api/presence/ping` now and every minute
  * while the page is visible (a hidden tab stops pinging and drops out after the server window);
  * the answer is just the count. `null` until the first answer (or when it fails).
+ * With `skip` (the friends socket is open and pings itself) no HTTP ping is sent.
  */
-export function usePresence(): number | null {
+export function usePresence(skip = false): number | null {
   const [online, setOnline] = useState<number | null>(null);
   useEffect(() => {
+    if (skip) return;
     let alive = true;
     let timer: ReturnType<typeof setInterval> | null = null;
     const ping = () => {
@@ -45,6 +47,6 @@ export function usePresence(): number | null {
       if (timer) clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [skip]);
   return online;
 }

@@ -13,6 +13,9 @@ import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import type { LeagueData } from "@/types/playerTypes";
 import { NoClubScreen } from "@/GameInterface/NoClubScreen";
+import { SocialProvider } from "@/GameInterface/Social/useSocial";
+import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
+import { ChatDock } from "@/GameInterface/Social/ChatDock";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
@@ -47,68 +50,73 @@ export function Layout({ children }: { children: ReactNode }) {
   const mySquadId = squad?.id ?? session?.clubId ?? "";
 
   return (
-    <div className="h-screen overflow-hidden bg-background">
-      <TopNavigation
-        onAdvanceDay={handleAdvanceDay}
-        onFastForward={canFastForward ? handleFastForward : undefined}
-        advancing={advancing}
-        leagues={leagues}
-      />
-
-      <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
-        {noClub ? <NoClubScreen /> : children}
-      </main>
-
-      <StatusBar
-        onOpenInbox={() => setIsInboxOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenChangelog={openChangelog}
-        changelogNotice={
-          showChangelogNotice
-            ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
-            : null
-        }
-      />
-
-      <Modal
-        open={isInboxOpen}
-        onClose={() => setIsInboxOpen(false)}
-        size="xl"
-        panelClassName="h-[80vh] flex flex-col overflow-hidden"
-      >
-        <InboxScreen onClose={() => setIsInboxOpen(false)} />
-      </Modal>
-
-      <SettingsOverlay
-        open={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onExitToMenu={() => { window.location.href = "/start"; }}
-      />
-
-      <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
-
-      {dayLog && (
-        <DaySummaryModal
-          dayLog={dayLog}
-          onDismiss={dismissDayLog}
-          mySquadId={mySquadId}
+    <SocialProvider saveId={session?.saveId ?? null}>
+      <div className="h-screen overflow-hidden bg-background">
+        <TopNavigation
+          onAdvanceDay={handleAdvanceDay}
+          onFastForward={canFastForward ? handleFastForward : undefined}
+          advancing={advancing}
           leagues={leagues}
         />
-      )}
 
-      {fastForward && (
-        <FastForwardModal progress={fastForward} onStop={stopFastForward} onDismiss={dismissFastForward} unemployed={!!save?.unemployed} />
-      )}
+        <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
+          {noClub ? <NoClubScreen /> : children}
+        </main>
 
-      {/* Rendered last so it stacks above the day summary. */}
-      {seasonNotice && !fastForward && (
-        <SeasonNoticeModal
-          notice={seasonNotice}
-          leagues={leagues}
-          currentLeagueName={session?.leagueName ?? ""}
-          onDismiss={dismissSeasonNotice}
+        <StatusBar
+          onOpenInbox={() => setIsInboxOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenChangelog={openChangelog}
+          changelogNotice={
+            showChangelogNotice
+              ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
+              : null
+          }
         />
-      )}
-    </div>
+
+        <FriendsPanel />
+        <ChatDock />
+
+        <Modal
+          open={isInboxOpen}
+          onClose={() => setIsInboxOpen(false)}
+          size="xl"
+          panelClassName="h-[80vh] flex flex-col overflow-hidden"
+        >
+          <InboxScreen onClose={() => setIsInboxOpen(false)} />
+        </Modal>
+
+        <SettingsOverlay
+          open={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onExitToMenu={() => { window.location.href = "/start"; }}
+        />
+
+        <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
+
+        {dayLog && (
+          <DaySummaryModal
+            dayLog={dayLog}
+            onDismiss={dismissDayLog}
+            mySquadId={mySquadId}
+            leagues={leagues}
+          />
+        )}
+
+        {fastForward && (
+          <FastForwardModal progress={fastForward} onStop={stopFastForward} onDismiss={dismissFastForward} unemployed={!!save?.unemployed} />
+        )}
+
+        {/* Rendered last so it stacks above the day summary. */}
+        {seasonNotice && !fastForward && (
+          <SeasonNoticeModal
+            notice={seasonNotice}
+            leagues={leagues}
+            currentLeagueName={session?.leagueName ?? ""}
+            onDismiss={dismissSeasonNotice}
+          />
+        )}
+      </div>
+    </SocialProvider>
   );
 }

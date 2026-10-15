@@ -9,6 +9,7 @@ import { serve } from "bun";
 import { labApiRoutes } from "@/lab/routes";
 import { debugApiRoutes } from "@/lab/debugApi";
 import { apiRoutes } from "@/backend/routes";
+import { labAppRoutes } from "@/lab/labAppRoutes";
 import labPage from "./index.html";
 import testPage from "./pages/test/index.html";
 import simulatePage from "./pages/simulate/index.html";
@@ -26,7 +27,7 @@ const server = serve({
     "/simulate": simulatePage,
     "/promo": promoPage,
     "/matrix": matrixPage,
-    ...apiRoutes,
+    ...labAppRoutes(apiRoutes),
     ...debugApiRoutes,
     ...labApiRoutes,
   },

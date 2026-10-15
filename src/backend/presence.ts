@@ -19,6 +19,17 @@ export function onlineCount(now: number): number {
   return lastSeen.size;
 }
 
+/** When the user last pinged (page visible, HTTP or socket), or null. Used for a friend's status. */
+export function lastSeenAt(userId: string): number | null {
+  return lastSeen.get(userId) ?? null;
+}
+
+/** Seen within the presence window (the same 2.5 minutes as the "N online" count). */
+export function isPresent(userId: string, now: number): boolean {
+  const at = lastSeen.get(userId);
+  return at !== undefined && now - at <= PRESENCE_WINDOW_MS;
+}
+
 /** Tests only. */
 export function resetPresence(): void {
   lastSeen.clear();

@@ -123,7 +123,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 41b ✅ | Técnico do jogador numa seleção (4.22) | — | Convite quando uma seleção demite o técnico da IA, pela reputação contra o prestígio (percentil do Elo; a da nacionalidade do técnico com teto maior e chance 0,9), válido 14 dias e segurando a contratação da IA; acumula com o clube e vale desempregado; aceite troca `NationalTeam.managerId` para `player` e guarda a passagem em `ManagerRecord.national`; aba Minha seleção (convites, metas, convocação com sugestão da IA editável até o dia, formação, estilo e XI próprios); aviso de convocação 7 dias antes; jogos da seleção no calendário do jogador, o avanço para no dia, prévia, partida ao vivo (mesmo `match-setup`/`MatchScreen`) ou simulação no motor completo, o resto do mundo no quickSim; meta da federação pelo Elo (posição no grupo/classificar; fase do torneio), demissão determinística quando falha feio; pedir demissão; salário simbólico em `managerEarnings`; trilha de conquistas Herói nacional e secretas Campeão do mundo e Contra a pátria (98 conquistas). Spec `docs/superpowers/specs/2026-10-12-national-coach-design.md`, regra `.claude/rules/game/national-teams.md` → "Técnico do jogador" |
 | 42 ✅ | Imprensa e notícias (4.23) | — | Coletivas de imprensa do clube do jogador nos momentos marcantes (clássico, mata-mata, reta final, ultimato, título, goleada, zebra, sequência sem vencer), três perguntas com três tons cada, efeitos na moral, na diretoria e na torcida e promessas cobradas depois; página de notícias do mundo (goleadas, zebras, campeões, transferências, técnicos, prêmios) e cartão no Painel. Regra `.claude/rules/game/press.md` |
 | 43 | Multiplayer | #106 | Vários técnicos humanos no mesmo mundo; precisa de desenho próprio |
-| 44 | Chat e amigos | #153 | Chat global e por país/idioma, lista de amigos com status e bloqueio; depende do multiplayer |
+| 44 ✅ | Amigos e chat (4.24) | #153 | Apelido único e código de amigo, pedidos (apelido ou código), bloqueio, status online/offline/jogando com o clube, conversas diretas em janelas acima da barra inferior (estilo Steam) por WebSocket, histórico de 90 dias, limite de 10 mensagens em 10 s; sala por mundo pronta para o multiplayer (`save_members`); sem sala pública. Spec `docs/superpowers/specs/2026-10-14-friends-chat-design.md`, regra `.claude/rules/social.md` |
 
 ### Próximas etapas em detalhe
 
@@ -196,7 +196,7 @@ Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etap
 
 **39c–39g · Melhorias dos testers (4.19):** feitas em paralelo, uma branch por grupo; decidido (2026-10-11): obras no máximo uma por grupo (estádio, CT, base).
 
-**43–44 · Multiplayer e chat (a 42, imprensa, saiu na 4.23):** cada uma com desenho próprio quando chegar a vez.
+**43 · Multiplayer (a 42, imprensa, saiu na 4.23; a 44, amigos e chat, na 4.24):** desenho próprio em `docs/superpowers/specs/2026-10-14-multiplayer-design.md`; a sala do mundo do chat espera a parte 2 (`save_members`).
 
 **Depois (sem ordem ainda):** pênalti com câmera em primeira pessoa (#130), deixado para depois pelo usuário (2026-10-11).
 

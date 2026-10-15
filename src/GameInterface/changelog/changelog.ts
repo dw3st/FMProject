@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.24",
+    date: "2026-10-14",
+    items: [
+      {
+        pt: "Amigos na barra de baixo: escolha um apelido, adicione técnicos pelo apelido ou pelo código de amigo e veja quem está online ou jogando, com o clube",
+        en: "Friends in the bottom bar: pick a nickname, add managers by nickname or friend code and see who is online or playing, with their club",
+      },
+      {
+        pt: "Converse com seus amigos em janelas de chat que ficam abertas enquanto você joga; dá para bloquear quem incomoda",
+        en: "Chat with your friends in windows that stay open while you play; you can block anyone who bothers you",
+      },
+    ],
+  },
+  {
     version: "4.23",
     date: "2026-10-14",
     items: [
@@ -1545,6 +1559,5 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Multiplayer: vários técnicos no mesmo mundo", en: "Multiplayer: several managers in the same world" },
-  { pt: "Chat e amigos: converse com outros técnicos", en: "Chat and friends: talk to other managers" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

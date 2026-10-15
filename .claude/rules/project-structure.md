@@ -89,6 +89,13 @@ screens (see `frontend.md`). Replacing React means re-subscribing those screens 
 
 ---
 
+## Realtime: WebSocket `/api/ws` (Etapa 44, 4.24)
+The only server → browser push channel. `Bun.serve` in `src/index.ts` upgrades `/api/ws` in `fetch` (the fallback
+for paths no route matched) and hands the socket to `handleSocialUpgrade` (`src/backend/social/realtime.ts`). Auth is the
+session cookie at the upgrade; the payloads are typed in `src/types/socialTypes.ts` (`ClientEvent`, `ServerEvent`) and
+carry nicknames, never user ids. Writes stay HTTP; the socket only delivers. Connections live in memory per process.
+A new push feature adds a `ServerEvent` member there instead of opening another socket. See `.claude/rules/social.md`.
+
 ## Save version (#155, 4.22)
 `SaveMeta.gameVersion` is written by `createSave` from `GAME_VERSION` (`@/Domain/saveVersion`, read
 from `package.json`). `MIN_COMPATIBLE_SAVE_VERSION` in the same file is the oldest version whose saves
