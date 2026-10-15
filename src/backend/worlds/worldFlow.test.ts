@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { resetRealtime } from "@/backend/social/realtime";
@@ -8,7 +8,7 @@ import { callApi, createMultiWorld, TEST_MANAGER } from "@/backend/worlds/worldT
 describe("world of friends: the whole flow", () => {
   let saveId = "";
   const kicks: string[] = [];
-  setKickScheduler((id) => kicks.push(id));
+  beforeAll(() => setKickScheduler((id) => kicks.push(id)));
   afterAll(async () => { setKickScheduler(null); if (saveId) await saveService.deleteSave(saveId).catch(() => {}); }, 120_000);
 
   test("owner creates, two friends join, owner starts, one leaves, another takes the freed club", async () => {

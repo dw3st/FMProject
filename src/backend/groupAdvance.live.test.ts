@@ -41,7 +41,9 @@ describe("group advance with real days", () => {
       .filter((f) => !f.played && (f.home === "33" || f.away === "33") && f.date > addDays(meta.currentDate!, 3))
       .sort((x, y) => x.date.localeCompare(y.date))[0]!;
     const oppA = matchA.home === "33" ? matchA.away : matchA.home;
-    matchB = all.find((f) => f.date === matchA.date && ![f.home, f.away].some((c) => c === "33" || c === oppA))!;
+    const foundB = all.find((f) => f.date === matchA.date && ![f.home, f.away].some((c) => c === "33" || c === oppA));
+    if (!foundB) throw new Error(`calendar has no second Premier League game on ${matchA.date} for seat B`);
+    matchB = foundB;
     seatB = (await addSeat(saveId, {
       userId: b.user.id, clubId: matchB.home,
       manager: { name: "Técnico B", nationalityIso: "br", backgroundId: "former-player" },
@@ -82,6 +84,9 @@ describe("group advance with real days", () => {
     const played = (await saveService.getAllFixturesForLeague(saveId, "premier_league")).find((f) => f.id === matchA.id)!;
     expect(played.played).toBe(true);
     expect(played.result).toEqual({ home: 2, away: 1 });
+    const playedB = (await saveService.getAllFixturesForLeague(saveId, "premier_league")).find((f) => f.id === matchB.id)!;
+    expect(playedB.played).toBe(true);
+    expect((await saveService.getSeat(saveId, seatB))!.matchDecision).toBeUndefined();
     expect(await saveService.getLiveRecording(saveId, seatA)).toBeNull();
     expect((await saveService.getSeat(saveId, seatA))!.matchDecision).toBeUndefined();
     expect((await saveService.getPendingSummary(saveId, seatA)).map((d) => d.date))
