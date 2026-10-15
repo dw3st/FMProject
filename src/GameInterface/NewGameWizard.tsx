@@ -149,19 +149,26 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
     }
   }, [selectedCountry, leagues]);
 
-  // Joining: the world's league is fixed, so open its country and league.
+  // Joining: start on the world's league (applied once; the picker stays free afterwards).
   const joinLeagueSlug = join?.leagueSlug;
+  const appliedJoinLeague = useRef(false);
+  const [pendingJoinLeague, setPendingJoinLeague] = useState(false);
   useEffect(() => {
-    if (!joinLeagueSlug) return;
+    if (!joinLeagueSlug || appliedJoinLeague.current) return;
     const league = leagues.find((l) => l.slug === joinLeagueSlug);
     if (!league) return;
-    if (!selectedCountry) {
-      const country = countries.find((c) => c.name === league.country);
-      if (country) setSelectedCountry(country);
-      return;
-    }
+    const country = countries.find((c) => c.name === league.country);
+    if (!country) { appliedJoinLeague.current = true; return; }
+    appliedJoinLeague.current = true;
+    setSelectedCountry(country);
+    setPendingJoinLeague(true);
+  }, [joinLeagueSlug, leagues]);
+  // Runs after the country-change reset above, which picks the country's first league.
+  useEffect(() => {
+    if (!pendingJoinLeague || !selectedCountry || !joinLeagueSlug) return;
     setSelectedLeagueSlug(joinLeagueSlug);
-  }, [joinLeagueSlug, leagues, selectedCountry]);
+    setPendingJoinLeague(false);
+  }, [pendingJoinLeague, selectedCountry, joinLeagueSlug]);
 
   const displayName = (c: CountryEntry) => countryDisplayName(c, i18n.language, t);
   const filteredCountries = countries.filter((c) => {
@@ -251,7 +258,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
         await loadGameSave(r.data.saveId);
       } catch {
         // The world screen reloads the session itself.
-        window.location.href = "/world";
+        window.location.href = r.data.phase === "running" ? "/dashboard" : "/world";
         return;
       }
       window.location.href = r.data.phase === "lobby" ? "/world" : "/dashboard";
@@ -455,7 +462,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
       <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
         <section className="flex-1 min-w-0 min-h-0 flex flex-col px-6 pt-5 md:pb-0 pb-5">
           <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 2 })}</p>
-          <ScreenTitle subtitle={join ? t("world.join.clubSubtitle", { world: join.worldName, league: join.leagueName ?? "" }) : undefined}>{t("newGame.chooseClubTitle")}</ScreenTitle>
+          <ScreenTitle subtitle={join ? (join.leagueName ? t("world.join.clubSubtitle", { world: join.worldName, league: join.leagueName }) : t("world.join.clubSubtitleNoLeague", { world: join.worldName })) : undefined}>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
             <div className="flex-1 min-h-0 overflow-y-auto pb-5">
               <p className="text-sm text-muted-foreground mt-6 xl:hidden">{t("newGame.selectTerritoryDetail")}</p>
