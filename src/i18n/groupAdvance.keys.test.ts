@@ -14,7 +14,7 @@ const keys = [
   "band.deadlineNow", "band.error", "band.retryAt", "band.gaveUp",
   "summary.days_one", "summary.days_other", "summary.range", "summary.noticesTitle", "summary.readyCleared",
   "summary.jobOffers_one", "summary.jobOffers_other", "summary.sacked", "summary.seasonEnded", "summary.pressInvite",
-  "summary.transfers", "summary.transferLine",
+  "summary.transfers", "summary.transferLine", "summary.injuries", "summary.injuryLine",
   "status.column", "status.ready", "status.match", "status.late", "status.no_club",
   "result.pending",
   "inbox.subject", "inbox.preview", "inbox.previewSimulated", "inbox.body", "inbox.bodySimulated",

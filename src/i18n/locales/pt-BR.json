@@ -5155,7 +5155,9 @@
         "seasonEnded": "A temporada terminou",
         "pressInvite": "Há um convite para coletiva na sua caixa de entrada",
         "transfers": "Transferências",
-        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}"
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
+        "injuries": "Lesões",
+        "injuryLine": "{{player}} · {{severity}}"
       },
       "result": {
         "pending": "Resultado provisório: vale quando a liga chegar a este dia."

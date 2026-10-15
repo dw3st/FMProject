@@ -5155,7 +5155,9 @@
         "seasonEnded": "The season ended",
         "pressInvite": "A press conference invite is in your inbox",
         "transfers": "Transfers",
-        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}"
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
+        "injuries": "Injuries",
+        "injuryLine": "{{player}} · {{severity}}"
       },
       "result": {
         "pending": "Provisional result: it counts when the league reaches this day."

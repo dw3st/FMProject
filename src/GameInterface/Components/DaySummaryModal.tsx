@@ -79,6 +79,23 @@ function SummaryNoticesBlock({ notices, t }: { notices: SummaryNotices; t: TFunc
   );
 }
 
+/** The club's injuries of the summary's games (group advance: the days merged into one). */
+function InjuriesBlock({ injuries, t }: { injuries: { playerId: string; playerName: string; severity: string }[]; t: TFunc }) {
+  if (injuries.length === 0) return null;
+  return (
+    <section>
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">{t("world.advance.summary.injuries")}</h3>
+      <ul className="m-0 p-0 list-none space-y-1.5">
+        {injuries.map((inj, i) => (
+          <li key={`${inj.playerId}-${i}`} className="text-sm">
+            {t("world.advance.summary.injuryLine", { player: inj.playerName, severity: t(`match.injurySeverity.${inj.severity}`) })}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** The club's transfers of the summary (group advance: the days merged into one). */
 function TransfersBlock({ transfers, leagues, t }: { transfers: TransferEvent[]; leagues: LeagueData[]; t: TFunc }) {
   if (transfers.length === 0) return null;
@@ -520,6 +537,10 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues, range, 
     ? dayLog.events.filter((e): e is TransferEvent =>
       e.kind === "transfer" && e.status === "accepted" && (e.fromSquadId === mySquadId || e.toSquadId === mySquadId))
     : [];
+  const myInjuries = range
+    ? matchEvents.flatMap((e) =>
+      (e.injuries ?? []).filter((inj) => (inj.team === "home" ? e.home : e.away) === mySquadId))
+    : [];
   const reportDate = matchReportDate ?? dayLog.date;
 
   // Collect development changes for my squad's players only
@@ -600,6 +621,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues, range, 
             <OtherLeaguesSection matches={otherMatches} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
           )}
 
+          <InjuriesBlock injuries={myInjuries} t={t} />
           <TransfersBlock transfers={myTransfers} leagues={leagues} t={t} />
 
           {myDevChanges.length > 0 && (
