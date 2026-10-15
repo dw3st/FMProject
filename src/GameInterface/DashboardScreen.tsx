@@ -43,6 +43,7 @@ import {
   type MatchSide,
 } from "@/GameInterface/Dashboard/HomeCards";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
+import { seatManagerId } from "@/Domain/seats/seats";
 
 interface LedgerApiResponse {
   entries: LedgerEntry[];
@@ -272,7 +273,7 @@ export function DashboardScreen() {
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
         achievements={achievements}
-        managerFace={session.manager ? { face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
+        managerFace={session.manager ? { id: session.seatId ? seatManagerId(session.seatId) : "", face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
         reputation={jobs?.reputation ?? null}
         pendingOffers={jobs?.offers.length ?? 0}
         contract={save?.managerContract ?? null}

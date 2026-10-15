@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { seatManagerId } from "@/Domain/seats/seats";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
@@ -204,7 +205,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
       <div className="flex flex-col items-center gap-3 rounded-md border border-border p-4">
         <Label>{t("achievements.profile.preview")}</Label>
         <ManagerFaceImage
-          manager={{ id: "player", name: manager?.name ?? session?.clubName ?? "", face: manager?.face ?? null }}
+          manager={{ id: session?.seatId ? seatManagerId(session.seatId) : "", name: manager?.name ?? session?.clubName ?? "", face: manager?.face ?? null }}
           clubColors={session?.clubColors}
           size={96}
           ringClassName={FRAME_RING[frame]}

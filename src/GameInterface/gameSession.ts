@@ -9,6 +9,8 @@ const STORAGE_KEY = "fmproject:session";
 
 export interface GameSession {
   saveId: string;
+  /** The user's seat in the world (`multiplayer.md`). Absent only in a session stored before the seats. */
+  seatId?: string;
   leagueSlug: string;
   leagueName: string;
   clubId: string;
@@ -29,9 +31,10 @@ export interface GameSession {
   followedLeagues?: string[];
 }
 
-function sessionFromSave(save: Record<string, unknown>): GameSession {
+export function sessionFromSave(save: Record<string, unknown>): GameSession {
   return {
     saveId: save.id as string,
+    seatId: save.seatId as string | undefined,
     leagueSlug: save.leagueSlug as string,
     leagueName: save.leagueName as string,
     clubId: save.clubId as string,

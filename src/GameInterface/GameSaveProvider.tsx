@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import type { SeatMeta } from "@/backend/SaveService";
+import type { MemberRole } from "@/types/seatTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import { loadSession, saveSession, type GameSession } from "@/GameInterface/gameSession";
@@ -18,7 +19,7 @@ import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 
-export type GameSaveApiResponse = SeatMeta & { season?: SeasonData };
+export type GameSaveApiResponse = SeatMeta & { season?: SeasonData; role?: MemberRole };
 
 export interface GameSaveContextValue {
   session: GameSession | null;
@@ -52,9 +53,10 @@ export interface GameSaveContextValue {
 
 const GameSaveContext = createContext<GameSaveContextValue | null>(null);
 
-function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): GameSession {
+export function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): GameSession {
   return {
     ...s,
+    seatId: raw.seatId ?? s.seatId,
     // The career follows the club across promotion/relegation: league + club come from the server.
     leagueSlug: raw.leagueSlug ?? s.leagueSlug,
     leagueName: raw.leagueName ?? s.leagueName,
