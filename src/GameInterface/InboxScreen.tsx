@@ -722,6 +722,15 @@ function leaguePrizeTexts(
     return { subject: x.subject, preview: x.body };
   }
   if (message.category === "awards") return awardsTexts(message, t);
+  if (message.category === "world" && message.kind === "auto_advanced") {
+    const until = formatInboxDate(message.until);
+    return {
+      subject: t("world.advance.inbox.subject"),
+      preview: message.simulated
+        ? t("world.advance.inbox.previewSimulated", { until, match: formatInboxDate(message.simulated) })
+        : t("world.advance.inbox.preview", { until }),
+    };
+  }
   if (message.category === "world") {
     const vars = { manager: message.managerName, club: message.clubName };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
@@ -882,7 +891,14 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "awards" && <AwardsInboxBody message={message} />}
         {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
         {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
-        {message.category === "world" && (
+        {message.category === "world" && message.kind === "auto_advanced" && (
+          <p className="text-sm text-foreground m-0">
+            {message.simulated
+              ? t("world.advance.inbox.bodySimulated", { until: formatInboxDate(message.until), match: formatInboxDate(message.simulated) })
+              : t("world.advance.inbox.body", { until: formatInboxDate(message.until) })}
+          </p>
+        )}
+        {message.category === "world" && message.kind !== "auto_advanced" && (
           <p className="text-sm text-foreground m-0">
             {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
           </p>

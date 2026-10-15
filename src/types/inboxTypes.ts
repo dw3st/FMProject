@@ -475,9 +475,20 @@ export type InboxMessage =
   | NationalInboxMessage
   | NationalCoachInboxMessage
   | AchievementInboxMessage
-  | WorldInboxMessage;
+  | WorldInboxMessage
+  | WorldAdvanceInboxMessage;
 
-/** A manager joined or left the world of friends (multiplayer part 2; part 3 adds `auto_advanced`). */
+/** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
+export interface WorldAdvanceInboxMessage extends InboxMessageBase {
+  category:  "world";
+  kind:      "auto_advanced";
+  /** His new stop date. */
+  until:     string;
+  /** The game the assistant simulated for him, or null. */
+  simulated: string | null;
+}
+
+/** A manager joined or left the world of friends (multiplayer part 2). */
 export interface WorldInboxMessage extends InboxMessageBase {
   category:    "world";
   kind:        "member_joined" | "member_left" | "member_removed";

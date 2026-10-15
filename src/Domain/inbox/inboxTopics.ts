@@ -62,6 +62,8 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "retirement:reborn": "actions",
   "national_coach:offer": "actions",
   "national_coach:callup_soon": "actions",
+  // The assistant moved the seat on after the deadline: he must know.
+  "world:auto_advanced": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",
