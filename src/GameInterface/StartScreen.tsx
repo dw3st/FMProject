@@ -10,6 +10,8 @@ import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticeP
 import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
+import { worldApi } from "@/GameInterface/World/worldApi";
+import { WORLD } from "@/Domain/multiplayer/worldConfig";
 import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
@@ -31,6 +33,11 @@ interface SaveEntry {
   gameVersion?: string;
   /** False when the save predates `MIN_COMPATIBLE_SAVE_VERSION`: loading asks first. */
   compatible?: boolean;
+  role?: "owner" | "member";
+  mode?: "solo" | "multi";
+  world?: { phase: "lobby" | "running" };
+  /** Members of a world of friends (`GET /api/saves`). */
+  members?: number;
 }
 
 export function StartScreen() {
@@ -44,6 +51,8 @@ export function StartScreen() {
   const [deleting, setDeleting] = useState(false);
   const pendingDeleteSave = saves.find((s) => s.id === pendingDeleteId) ?? null;
   const [pendingOutdatedId, setPendingOutdatedId] = useState<string | null>(null);
+  const [pendingLeaveId, setPendingLeaveId] = useState<string | null>(null);
+  const pendingLeaveSave = saves.find((s) => s.id === pendingLeaveId) ?? null;
   const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
 
   function openChangelog() {
@@ -52,7 +61,7 @@ export function StartScreen() {
   }
 
   const MAX_SAVES = 5;
-  const atLimit = saves.length >= MAX_SAVES;
+  const atLimit = saves.filter((s) => s.role !== "member").length >= MAX_SAVES;
 
   useEffect(() => {
     fetch("/api/saves")
@@ -65,7 +74,8 @@ export function StartScreen() {
     setLoadingId(id);
     try {
       await loadGameSave(id);
-      window.location.href = "/dashboard";
+      const save = saves.find((s) => s.id === id);
+      window.location.href = save?.world?.phase === "lobby" ? "/world" : "/dashboard";
     } catch {
       setLoadingId(null);
     }
@@ -84,6 +94,18 @@ export function StartScreen() {
       await deleteGameSave(pendingDeleteId);
       setSaves((prev) => prev.filter((s) => s.id !== pendingDeleteId));
       setPendingDeleteId(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleConfirmLeave() {
+    if (!pendingLeaveId) return;
+    setDeleting(true);
+    try {
+      const r = await worldApi.leave(pendingLeaveId);
+      if (r.ok) setSaves((prev) => prev.filter((s) => s.id !== pendingLeaveId));
+      setPendingLeaveId(null);
     } finally {
       setDeleting(false);
     }
@@ -140,12 +162,23 @@ export function StartScreen() {
                     <span className="truncate">{save.leagueName}</span>
                     {save.unemployed && <span className="shrink-0 whitespace-nowrap text-destructive">&nbsp;· {t("startScreen.unemployed")}</span>}
                     <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
+                    {save.mode === "multi" && (
+                      <span className="shrink-0 whitespace-nowrap tabular-nums text-chart-2">
+                        &nbsp;· {t("startScreen.withFriends", { count: save.members ?? 1, max: WORLD.MAX_MEMBERS })}
+                      </span>
+                    )}
                     {save.gameVersion && save.compatible !== false && (
                       <span className="shrink-0 whitespace-nowrap tabular-nums">
                         &nbsp;· {t("startScreen.saveVersion", { version: save.gameVersion })}
                       </span>
                     )}
                   </div>
+                  {save.mode === "multi" && (
+                    <div className="truncate text-sm text-muted-foreground">
+                      {save.role === "owner" ? t("startScreen.owner") : t("startScreen.member")}
+                      {save.world?.phase === "lobby" && <> · {t("startScreen.lobby")}</>}
+                    </div>
+                  )}
                   {save.compatible === false && (
                     <div className="flex items-center gap-1 text-sm text-destructive">
                       <Icon name="alert" size={16} />
@@ -160,16 +193,29 @@ export function StartScreen() {
                 <Button className="px-4 shrink-0" onClick={() => requestLoad(save)} disabled={loadingId !== null}>
                   {t("startScreen.continue")}
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDeleteId(save.id)}
-                  disabled={loadingId !== null}
-                  aria-label={t("common.delete")}
-                  title={t("common.delete")}
-                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-destructive disabled:opacity-50"
-                >
-                  <Icon name="close" size={16} />
-                </button>
+                {save.role === "member" ? (
+                  <button
+                    type="button"
+                    onClick={() => setPendingLeaveId(save.id)}
+                    disabled={loadingId !== null}
+                    aria-label={t("startScreen.leave")}
+                    title={t("startScreen.leave")}
+                    className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-destructive disabled:opacity-50"
+                  >
+                    <Icon name="log-out" size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteId(save.id)}
+                    disabled={loadingId !== null}
+                    aria-label={t("common.delete")}
+                    title={t("common.delete")}
+                    className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-destructive disabled:opacity-50"
+                  >
+                    <Icon name="close" size={16} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -219,6 +265,15 @@ export function StartScreen() {
         confirmLabel={t("startScreen.deleteConfirmAction")}
         onConfirm={handleConfirmDelete}
         onClose={() => setPendingDeleteId(null)}
+        busy={deleting}
+      />
+      <ConfirmDialog
+        open={pendingLeaveSave !== null}
+        title={t("startScreen.leaveConfirmTitle")}
+        body={pendingLeaveSave ? t("startScreen.leaveConfirmBody", { clubName: pendingLeaveSave.clubName }) : ""}
+        confirmLabel={t("startScreen.leave")}
+        onConfirm={handleConfirmLeave}
+        onClose={() => setPendingLeaveId(null)}
         busy={deleting}
       />
       <ConfirmDialog
