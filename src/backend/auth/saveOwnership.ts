@@ -56,3 +56,23 @@ export function countOwnedSaves(userId: string): number {
 export function deleteSaveMembers(saveId: string): void {
   db.prepare("DELETE FROM save_members WHERE save_id = ?").run(saveId);
 }
+
+export function memberBySeat(saveId: string, seatId: string): SaveMember | null {
+  const row = db
+    .prepare(`SELECT ${MEMBER_COLUMNS} FROM save_members WHERE save_id = ? AND seat_id = ?`)
+    .get(saveId, seatId) as MemberRow | null;
+  return row ?? null;
+}
+
+/** The seat's user leaves the world (`removeSeat`). */
+export function removeSaveMember(saveId: string, seatId: string): void {
+  db.prepare("DELETE FROM save_members WHERE save_id = ? AND seat_id = ?").run(saveId, seatId);
+}
+
+/** The owner passes the ownership: `to` becomes the owner, `from` a member (one transaction). */
+export function transferOwnership(saveId: string, fromUserId: string, toUserId: string): void {
+  db.transaction(() => {
+    db.prepare("UPDATE save_members SET role = 'owner' WHERE save_id = ? AND user_id = ?").run(saveId, toUserId);
+    db.prepare("UPDATE save_members SET role = 'member' WHERE save_id = ? AND user_id = ?").run(saveId, fromUserId);
+  })();
+}
