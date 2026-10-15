@@ -7,7 +7,7 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
 
 - Um save é um **mundo** com N técnicos humanos (**assentos**). O solo é um mundo com um assento (`mode: "solo"`).
   `addSeat` (`src/backend/seats.ts`, só testes e scripts) acrescenta assentos (`mode: "multi"`). Convites e a tela
-  do mundo são a parte 2.
+  do mundo: seção "Parte 2: liga de amigos".
 - Um técnico humano por clube. Um usuário tem no máximo um assento por mundo (`save_members`). Aceitar a proposta de
   um clube que já tem assento dá 409 `offerClosed`; quando um assento assume um clube (`takeOverClub`: troca de
   emprego ou `addSeat`), as propostas desse clube saem dos outros assentos.
@@ -121,9 +121,106 @@ assento (409) e limpeza das propostas dos outros, cláusula paga no extrato do o
 - `withSaveLock` é local ao processo: um servidor só por mundo.
 - Ids de mensagem podem se repetir entre assentos (ex. a lista da Champions de dois clubes humanos): cada caixa é um
   arquivo, então não colidem.
-- Sem convites, "pronto"/prazo, humano × humano ao vivo nem classificação (partes 2–5).
+- Sem "pronto"/prazo em ação, humano × humano ao vivo nem classificação (partes 3–5).
 - O smoke de temporada não tem modo de dois assentos.
 - A cláusula paga a outro assento entra no extrato dele sem mensagem na caixa (a mensagem `sell_on` só vai para o
   assento que fez a operação).
 - Um jogo entre dois assentos não tem prévia (o `match-setup` recusa): só "simular partida" ou voltar ao painel.
 - Avanço rápido desligado com dois ou mais assentos até a parte 3.
+
+## Parte 2: liga de amigos
+
+Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
+`docs/superpowers/plans/2026-10-15-multiplayer-world.md`. Sai junto com a parte 3 (avanço em grupo).
+
+### Regra
+
+- A liga nasce no novo jogo ("Com amigos", `POST /api/saves` com `mode: "multi"`, `createWorldState`): o mundo do dono em
+  `lobby`, sem `/presimulate`. `SaveMeta.world = { phase, inviteCode, deadlineHours, createdBy }` (`WorldState`,
+  `src/types/multiplayerTypes.ts`); o solo não tem `world`.
+- **`lobby`:** o dia não avança (`advance-day` e `advance-until` 409 `lobby`; `/presimulate` 409 `useWorldStart`); toda
+  tela do jogo redireciona para `/world` (`worldRedirect`, com caminhos livres: Amigos, `/start`, `/join`). **`running`:**
+  depois de "Começar" (`POST /api/worlds/:saveId/start`: dono, uma vez; `presimulateWorld` + evento `world_started`).
+  Entrar continua possível depois.
+- Até 8 técnicos (`WORLD.MAX_MEMBERS`, conferido dentro do lock do `addSeat` por `maxSeats`). O limite de 5 saves conta
+  só os mundos de que o usuário é dono.
+- **Convite:** link `/join/<código>` (10 caracteres base32 sem 0/1/I/O, tabela `world_codes`; trocar o código derruba
+  o link antigo) e convite pela lista de amigos (`world_invites`, só amigos do dono, até 20 pendentes
+  `WORLD.MAX_PENDING_INVITES`, evento `world_invite`, bloco "Convites para ligas" do painel de Amigos). Convites cujo
+  mundo sumiu ou que já viraram membro são filtrados na leitura. O login volta para a página pedida (`?next=`,
+  `safeNextPath` em `authRedirect.ts`).
+- **Entrar** (`POST /api/worlds/join`): o assistente do novo jogo no modo "entrar" (clubes humanos desabilitados),
+  `addSeat` como membro com `guard` (código ainda válido, reconferido dentro do lock) e `onLocked` (anúncio dentro do
+  lock). Erros: 404 código, 409 `full` / `alreadyMember` / `clubTaken`, 400 técnico ou clube (`SeatError`).
+- **Prazo:** `deadlineHours` 12 / 24 / 48 / `null`, padrão 24; só gravado e mostrado (quem o usa é a parte 3).
+- **Sair / tirar** (`removeSeat`, `src/backend/seats.ts`, também com `guard` e `onLocked`): empréstimos do assento
+  devolvidos, ofertas de seleção dele apagadas e as vagas reabertas, seleção que ele treina fica com interino
+  (`left_world`), o clube volta à IA como numa demissão (`releaseHumanClub`, interino e vaga), o técnico fica no
+  ranking como livre (aparece no escopo "Livres"), a pasta do assento e a linha de `save_members` somem. O removido
+  recebe `world_removed`. `SeatError("ownerOrLast")` para o dono ou o último assento.
+- **Posse:** `POST /api/worlds/:saveId/owner` troca os papéis. O dono só sai depois de passar a posse (409
+  `transferFirst`); sozinho, sair apaga o mundo (`deleteWorld`, os outros recebem `world_deleted`).
+- Entrada e saída viram mensagem na caixa dos outros assentos (categoria `world`, tópico `competitions`) e notícia
+  `world_member` (importância 3); as telas recarregam com `world_members`. Um anúncio que falha só é registrado
+  (`logError`), nunca desfaz a operação.
+- Todas as rotas de gestão reconferem o dono dentro do lock do mundo e recusam corpo acima de 8 KB (413).
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `src/types/multiplayerTypes.ts` | `WorldState`, `WorldView`, `WorldMemberView`, `WorldDeadline`, convites |
+| `src/Domain/multiplayer/*` | `worldConfig` (`WORLD`), `worldCode`, `seatManager` (regras de sair/tirar), `worldMessages` (caixa e notícia), `worldPublic` (visão pública por código) |
+| `src/backend/worlds/worldStore.ts` | SQLite: `world_codes`, `world_invites` |
+| `src/backend/worlds/worldLifecycle.ts` | `createWorldState`, `worldView`, `deleteWorld`, anúncios de entrada e saída |
+| `src/backend/worlds/worldNotify.ts` | Eventos `world_*` pelo socket |
+| `src/backend/worlds/worldRoutes.ts` | Rotas |
+| `src/backend/seats.ts` | `addSeat` (`guard`, `onLocked`, `maxSeats`), `removeSeat`, `SeatError` |
+| `src/GameInterface/World/*` | `WorldScreen`, `JoinScreen`, `InviteFriendsModal`, `worldApi`, `worldNav` |
+| `src/GameInterface/StartScreen.tsx`, `NewGameWizard.tsx`, `authRedirect.ts` | Lista de saves, passo Sozinho / Com amigos e modo entrar, volta do login |
+
+### Rotas (`src/backend/worlds/worldRoutes.ts`)
+
+| Rota | Quem | Faz |
+|---|---|---|
+| `GET /api/worlds/by-code/:code` | logado | `{ saveId, name, owner, members, max, phase, takenClubs }`; 404, 409 `full` / `alreadyMember` (com `saveId`) |
+| `POST /api/worlds/join { code, clubId, manager, sackingEnabled }` | logado | entra; 201 `{ saveId, seatId, phase }` |
+| `GET /api/worlds/invites` · `DELETE /api/worlds/invites/:saveId` | logado | convites recebidos; recusar |
+| `GET /api/worlds/:saveId` | membro | `WorldView` (membros, código, prazo, papel) |
+| `POST /api/worlds/:saveId/invite-code` | dono | código novo |
+| `PUT /api/worlds/:saveId/settings { deadlineHours }` | dono | 12 / 24 / 48 / `null` |
+| `POST /api/worlds/:saveId/invites { nickname }` | dono | convite a um amigo (404 se não é amigo) |
+| `POST /api/worlds/:saveId/start` | dono | começa (409 `alreadyStarted`) |
+| `POST /api/worlds/:saveId/members/:seatId/remove` | dono | tira (400 `useLeave` para si) |
+| `POST /api/worlds/:saveId/leave` | membro | sai; o dono: 409 `transferFirst`, ou apaga sozinho |
+| `POST /api/worlds/:saveId/owner { seatId }` | dono | passa a posse |
+
+Eventos de socket (`ServerEvent`, `src/types/socialTypes.ts`): `world_invite`, `world_started`, `world_removed`,
+`world_deleted`, `world_members`.
+
+### Telas
+
+- Novo jogo: passo "Sozinho / Com amigos". `/join/:code`: card da liga e o assistente no modo entrar. i18n `world.*`.
+- `/world` ("SUA **LIGA**"): membros (rosto, técnico, apelido, clube, papel; o dono passa a posse e tira), convite
+  (link, copiar, trocar código, convidar amigos), prazo (`OptionChips`), Começar / "Esperando o dono começar", "Chat da
+  liga" (`world:<saveId>`), "Sair da liga". Ícone de liga na barra superior só no multi.
+- `/start`: "Com amigos · N/8", papel, "Na sala de espera"; o membro tem "Sair da liga" no lugar de excluir.
+
+### Testes
+
+```
+bun test src/Domain/multiplayer src/backend/worlds src/backend/seats.addSeat.test.ts src/backend/seats.removeSeat.test.ts \
+  src/backend/seats.review.test.ts src/backend/saves.seat.routes.test.ts src/backend/dal/seats.dal.test.ts \
+  src/backend/auth src/backend/db.world.test.ts src/GameInterface src/i18n
+```
+
+### Limitações (parte 2)
+
+- O técnico que saiu fica no ranking com `seatId`, mas fora do mercado de técnicos da IA (nunca é contratado, não se
+  aposenta); um usuário que volta ganha outro registro.
+- O assistente de entrada lista clubes e perfis pelos dados estáticos, não pela composição atual do mundo.
+- Convites pela lista só para amigos do dono; ficam só no SQLite (o código continua valendo sem eles).
+- Sem reserva de assento nem troca de clube de um membro (sair e entrar de novo).
+- Quem sai perde os empréstimos do mercado do assento: os cedidos voltam pela regra de volta do mundo.
+- Notícias e mensagens de entrada e saída são escritas na rota, com a data do mundo, não no avanço do dia.
+- Um processo de servidor só (sockets, locks e presença em memória).

@@ -28,7 +28,8 @@ FMProject/
 │   │                       #   continental, injuries, youth, stats, plus shared helpers
 │   │                       #   (dates, math, money, rng, roles, attributes, color)
 │   ├── backend/            # Server: routes, SaveService + DAL (dal/), advanceDay, auth/, *World I/O
-│   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat)
+│   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat, removeSeat)
+│   │                       #   worlds/ (friends' league: lobby/running, invite codes, join/leave routes)
 │   ├── types/              # Shared data types (players, calendar, inbox, tactics, …)
 │   ├── lab/                # /lab, /test, /simulate, /matrix, /promo (separate server: lab/server.ts)
 │   ├── mcp/                # fmproject-engine MCP server (queries over debug snapshots)
