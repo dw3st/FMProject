@@ -40,9 +40,10 @@ export function ChatWindow({ room }: { room: string }) {
   const typing = s.typing[room];
   const showTyping = typing !== undefined && now - typing.at < SOCIAL.TYPING_SHOW_MS;
 
+  // Every time the window opens (mount): the newest page, merged with what is already here (spec §3).
   useEffect(() => {
-    if (!msgs && !loadError) void loadMessages(room, false);
-  }, [room, msgs, loadError, loadMessages]);
+    void loadMessages(room, false);
+  }, [room, loadMessages]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -82,6 +83,11 @@ export function ChatWindow({ room }: { room: string }) {
   return (
     <section
       aria-label={title}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.stopPropagation(); // the friends panel also closes on Escape: only this window closes
+        s.closeChat(room);
+      }}
       className="pointer-events-auto w-[300px] h-[420px] flex flex-col rounded-md border border-border bg-card"
     >
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
@@ -97,8 +103,13 @@ export function ChatWindow({ room }: { room: string }) {
       </header>
 
       <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-3 py-2 flex flex-col gap-2">
-        {loadError ? (
-          <p className="text-sm text-muted-foreground">{t("social.chat.unavailable")}</p>
+        {loadError && !msgs ? (
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-sm text-muted-foreground">{t("social.chat.unavailable")}</p>
+            <Button variant="secondary" flush onClick={() => void loadMessages(room, false)}>
+              {t("social.chat.retry")}
+            </Button>
+          </div>
         ) : !msgs ? (
           <p className="text-sm text-muted-foreground">{t("social.loading")}</p>
         ) : (

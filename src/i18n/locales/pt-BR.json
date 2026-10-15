@@ -602,6 +602,7 @@
   },
   "social": {
     "button": "Amigos: {{count}} online",
+    "buttonUnread": "Amigos: {{count}} online, {{unread}} não lidas",
     "buttonShort": "Amigos · {{count}}",
     "unreadBadge": "{{count}} não lidas",
     "panelTitle": "Amigos",
@@ -664,6 +665,7 @@
       "readOnly": "Vocês não são mais amigos: a conversa é só leitura.",
       "unavailable": "Conversa indisponível.",
       "world": "Mundo",
+      "retry": "Tentar de novo",
       "minimizedTab": "Abrir conversa com {{name}}"
     },
     "errors": {

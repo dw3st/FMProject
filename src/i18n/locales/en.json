@@ -602,6 +602,7 @@
   },
   "social": {
     "button": "Friends: {{count}} online",
+    "buttonUnread": "Friends: {{count}} online, {{unread}} unread",
     "buttonShort": "Friends · {{count}}",
     "unreadBadge": "{{count}} unread",
     "panelTitle": "Friends",
@@ -664,6 +665,7 @@
       "readOnly": "You are no longer friends: this chat is read-only.",
       "unavailable": "Chat unavailable.",
       "world": "World",
+      "retry": "Try again",
       "minimizedTab": "Open chat with {{name}}"
     },
     "errors": {

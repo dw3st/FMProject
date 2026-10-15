@@ -22,7 +22,7 @@ const keys = [
   "add.befriended", "add.blocked", "add.noBlocked", "add.unblock", "nickname.title", "nickname.hint",
   "nickname.label", "nickname.save", "nickname.cancel", "chat.minimize", "chat.close", "chat.loadMore", "chat.empty",
   "chat.placeholder", "chat.send", "chat.counter", "chat.typing", "chat.readOnly", "chat.unavailable", "chat.world",
-  "chat.minimizedTab",
+  "chat.minimizedTab", "chat.retry", "buttonUnread",
   ...Object.keys(ERRORS).map((e) => `errors.${e}`),
 ].map((k) => `social.${k}`);
 
