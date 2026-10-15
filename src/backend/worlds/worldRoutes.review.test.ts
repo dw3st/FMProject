@@ -1,3 +1,4 @@
+import { setKickScheduler } from "@/backend/groupAdvance";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
@@ -26,6 +27,9 @@ function nicked(email: string): { login: Login; nick: string } {
 }
 
 beforeEach(() => resetRealtime());
+
+beforeAll(() => setKickScheduler(() => {}));
+afterAll(() => setKickScheduler(null));
 
 describe("world routes review: invites, events, body limits", () => {
   let owner: Login;

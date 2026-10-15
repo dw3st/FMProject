@@ -5,6 +5,7 @@ import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import { playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { youthCompsOfCountry } from "@/backend/youthCompWorld";
 import { applyBroadcasting } from "@/backend/FinancialService";
+import { rememberWorld } from "@/backend/groupAdvance";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -111,6 +112,7 @@ export const saveRoutes = {
         // Credit season broadcasting revenue to initial balance
         const finalMeta = await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId, meta.seatId);
         if (world) {
+          rememberWorld(meta.id);
           return Response.json({ ...publicWorldMeta({ ...finalMeta, mode: "multi", world }) }, { status: 201 });
         }
         return Response.json(finalMeta, { status: 201 });

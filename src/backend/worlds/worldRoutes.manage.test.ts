@@ -1,3 +1,4 @@
+import { setKickScheduler } from "@/backend/groupAdvance";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
@@ -18,6 +19,9 @@ function listen(userId: string): ServerEvent[] {
 }
 
 beforeEach(() => resetRealtime());
+
+beforeAll(() => setKickScheduler(() => {}));
+afterAll(() => setKickScheduler(null));
 
 describe("world routes: invites, start, remove, leave, owner", () => {
   let owner: Login;

@@ -9,6 +9,7 @@ import { presimulateWorld } from "@/backend/advanceDay";
 import { addSeat, removeSeat, SeatError } from "@/backend/seats";
 import { announceMemberChange, deleteWorld, worldView } from "@/backend/worlds/worldLifecycle";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
+import { scheduleKick } from "@/backend/groupAdvance";
 import {
   addWorldInvite, deleteWorldInvite, hasWorldInvite, listWorldInvitesFor, newWorldCode, pendingInviteCount,
   setWorldCode, worldCodeOf, worldIdByCode,
@@ -117,6 +118,8 @@ export const worldRoutes = {
             });
           },
         });
+        // A new seat (not ready) holds the world: the executor looks again, outside the lock.
+        scheduleKick(saveId);
         const phase = (await multiWorld(saveId))?.world.phase ?? "running";
         return Response.json({ saveId, seatId, phase }, { status: 201 });
       } catch (e) {
@@ -203,7 +206,7 @@ export const worldRoutes = {
       if (body instanceof Response) return body;
       if (!isWorldDeadline(body.deadlineHours)) return fail("invalidBody", 400);
       const deadlineHours = body.deadlineHours;
-      return withSaveLock(saveId, async () => {
+      const res = await withSaveLock(saveId, async () => {
         if (!stillOwner(saveId, auth.userId)) return fail("ownerOnly", 403);
         const meta = await multiWorld(saveId);
         if (!meta) return fail("notMulti", 404);
@@ -211,6 +214,8 @@ export const worldRoutes = {
         notifyWorld(saveId, { type: "world_members", saveId });
         return Response.json({ deadlineHours });
       });
+      if (res.ok) scheduleKick(saveId);
+      return res;
     },
   },
 
@@ -251,7 +256,7 @@ export const worldRoutes = {
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
-      return withSaveLock(saveId, async () => {
+      const res = await withSaveLock(saveId, async () => {
         if (!stillOwner(saveId, auth.userId)) return fail("ownerOnly", 403);
         const meta = await multiWorld(saveId);
         if (!meta) return fail("notMulti", 404);
@@ -269,6 +274,9 @@ export const worldRoutes = {
         notifyWorld(saveId, { type: "world_started", saveId });
         return Response.json({ ...result, phase: "running" });
       });
+      // The world is running: the executor records the first stop and starts the deadline (outside the lock).
+      if (res.ok) scheduleKick(saveId);
+      return res;
     },
   },
 
@@ -298,6 +306,8 @@ export const worldRoutes = {
             });
           },
         });
+        // He may have been the only one missing: the executor looks again, outside the lock.
+        scheduleKick(saveId);
         return Response.json({ ok: true });
       } catch (e) {
         if (e instanceof SeatError) {
@@ -336,6 +346,7 @@ export const worldRoutes = {
             });
           },
         });
+        scheduleKick(saveId);
         return Response.json({ ok: true });
       } catch (e) {
         if (e instanceof SeatError && e.code === "ownerOrLast") return fail("transferFirst", 409);

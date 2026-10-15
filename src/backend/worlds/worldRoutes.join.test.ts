@@ -1,3 +1,4 @@
+import { setKickScheduler } from "@/backend/groupAdvance";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
@@ -9,6 +10,9 @@ import { callApi, createMultiWorld, TEST_MANAGER } from "@/backend/worlds/worldT
 type Login = ReturnType<typeof devAutoLogin>;
 
 beforeEach(() => resetRealtime());
+
+beforeAll(() => setKickScheduler(() => {}));
+afterAll(() => setKickScheduler(null));
 
 describe("world routes: view, by-code, join, code, settings", () => {
   let owner: Login;
