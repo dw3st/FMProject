@@ -129,7 +129,7 @@ describe("removeSeat", () => {
   }, 300_000);
 
   test("sell list and bids die with the seat; a seat without seat.json is just dropped", async () => {
-    const { meta, b, friend, clubs } = await twoSeats("lists");
+    const { meta, b, clubs } = await twoSeats("lists");
     const sq = (await saveService.getSquadById(meta.id, clubs[0]!))!;
     const market: MarketState = (await saveService.getMarket(meta.id, b.seatId)) ?? { shuffledTeamIds: [], rotationIndex: 0, profiles: {}, playerSellList: [] };
     await saveService.saveMarket(meta.id, { ...market, playerSellList: [{ playerId: sq.players[0]!.id, priority: 1 }] }, b.seatId);
@@ -138,13 +138,14 @@ describe("removeSeat", () => {
     expect((await saveService.getMarket(meta.id, b.seatId))?.playerSellList ?? []).toEqual([]);
 
     // Broken world: the id is in `seats` but the folder is gone.
-    const c = await addSeat(meta.id, { userId: devAutoLogin("rmseat-lists-c@test.local").user.id, clubId: clubs[1]!, manager: { name: "Cy", nationalityIso: "br", backgroundId: "analyst" } });
+    const cUserId = devAutoLogin("rmseat-lists-c@test.local").user.id;
+    const c = await addSeat(meta.id, { userId: cUserId, clubId: clubs[1]!, manager: { name: "Cy", nationalityIso: "br", backgroundId: "analyst" } });
     const { rm } = await import("fs/promises");
     await rm(`${RUNTIME_DATA_DIR}/saves/${meta.id}/seats/${c.seatId}`, { recursive: true, force: true });
     const r = await removeSeat(meta.id, c.seatId);
     expect(r.managerName).toBe("");
     expect((await saveService.getMeta(meta.id))!.seats).toEqual([meta.seatId]);
-    expect(memberOf(meta.id, friend.user.id)).toBeNull();
+    expect(memberOf(meta.id, cUserId)).toBeNull();
   }, 300_000);
 
   test("the owner and the last seat cannot be removed", async () => {

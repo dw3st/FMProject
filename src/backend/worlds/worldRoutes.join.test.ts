@@ -28,9 +28,10 @@ describe("world routes: view, by-code, join, code, settings", () => {
   test("by-code: 404 with a bad code, the world for a stranger, 409 alreadyMember for the owner", async () => {
     const stranger = devAutoLogin("wr-stranger@test.local");
     expect((await callApi("GET", "/api/worlds/by-code/:code", stranger.session.token, { params: { code: "ZZZZZZZZZZ" } })).status).toBe(404);
+    expect((await callApi("GET", "/api/worlds/by-code/:code", stranger.session.token, { params: { code: "%E0%A4%A" } })).status).toBe(404);
     const found = await callApi("GET", "/api/worlds/by-code/:code", stranger.session.token, { params: { code: code.toLowerCase() } });
     expect(found.status).toBe(200);
-    expect(found.json).toMatchObject({ saveId, members: 1, max: 8, phase: "lobby", takenClubs: ["33"] });
+    expect(found.json).toMatchObject({ saveId, members: 1, max: 8, phase: "lobby", takenClubs: ["33"], leagueSlug: "premier_league", leagueName: "Premier League" });
     expect(JSON.stringify(found.json)).not.toContain("wr-owner@test.local");
     expect(await callApi("GET", "/api/worlds/by-code/:code", owner.session.token, { params: { code } }))
       .toMatchObject({ status: 409, json: { error: "alreadyMember", saveId } });

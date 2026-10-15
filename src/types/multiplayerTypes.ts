@@ -50,6 +50,9 @@ export interface WorldView {
 export interface WorldByCode {
   saveId: string;
   name: string;
+  /** The owner's league (the entry screen shows it). */
+  leagueSlug: string;
+  leagueName: string;
   /** Owner's nickname, or his manager's name. */
   owner: string;
   members: number;
@@ -71,4 +74,4 @@ export interface WorldInviteView {
 export type WorldErrorCode =
   | "notFound" | "full" | "alreadyMember" | "clubTaken" | "invalidManager" | "invalidClub" | "invalidBody"
   | "ownerOnly" | "transferFirst" | "alreadyStarted" | "notMulti" | "inviteLimit" | "noNickname" | "useLeave"
-  | "notMember";
+  | "notMember" | "tooLarge";

@@ -50,10 +50,15 @@ export async function addSeat(
     sackingEnabled?: boolean;
     /** Seats the world may have; checked inside the lock (the join route passes `WORLD.MAX_MEMBERS`). */
     maxSeats?: number;
+    /** Runs first inside the lock; `false` aborts with `SeatError("notFound")` (the join route rechecks the invite code). */
+    guard?: () => boolean | Promise<boolean>;
+    /** Runs inside the lock after the seat exists (invite cleanup, inbox and news: they must not race the day advance). */
+    onLocked?: (ctx: SeatContext) => Promise<void> | void;
   },
   service: SaveService = defaultService,
 ): Promise<SeatContext> {
   return withSaveLock(saveId, async () => {
+    if (args.guard && !(await args.guard())) throw new SeatError("notFound", `addSeat: guard refused ${saveId}`);
     const world = await service.getMeta(saveId);
     if (!world?.currentDate) throw new SeatError("notFound", `addSeat: save ${saveId} not found or without a date`);
     if (memberOf(saveId, args.userId)) throw new SeatError("alreadyMember", `addSeat: user ${args.userId} already has a seat in ${saveId}`);
@@ -120,7 +125,9 @@ export async function addSeat(
       }), service, seatId);
     }
     addSaveMember(saveId, args.userId, seatId, args.role ?? "member");
-    return { seatId, seat: finalSeat };
+    const ctx = { seatId, seat: finalSeat };
+    await args.onLocked?.(ctx);
+    return ctx;
   });
 }
 
@@ -139,8 +146,18 @@ export interface RemovedSeat {
  * a national team he coaches gets an interim, and his seat's files and `save_members` row go. One buffered unit,
  * flushed with the meta last.
  */
-export async function removeSeat(saveId: string, seatId: string): Promise<RemovedSeat> {
+export async function removeSeat(
+  saveId: string,
+  seatId: string,
+  opts: {
+    /** Runs first inside the lock; `false` aborts with `SeatError("notFound")` (the caller is still the owner). */
+    guard?: () => boolean | Promise<boolean>;
+    /** Runs inside the lock after the seat is gone (socket, inbox and news must not race the day advance). */
+    onLocked?: (removed: RemovedSeat) => Promise<void> | void;
+  } = {},
+): Promise<RemovedSeat> {
   return withSaveLock(saveId, async () => {
+    if (opts.guard && !(await opts.guard())) throw new SeatError("notFound", `removeSeat: guard refused ${saveId}`);
     const buffer = new BufferingSaveDAL(new FileSystemDAL());
     const service = new SaveService(buffer);
     const world = await service.getMeta(saveId);
@@ -154,7 +171,9 @@ export async function removeSeat(saveId: string, seatId: string): Promise<Remove
       await service.deleteSeat(saveId, seatId);
       await buffer.flush();
       removeSaveMember(saveId, seatId);
-      return { userId: member?.userId ?? null, managerName: "", clubId: "", clubName: "", leagueSlug: "" };
+      const gone: RemovedSeat = { userId: member?.userId ?? null, managerName: "", clubId: "", clubName: "", leagueSlug: "" };
+      await opts.onLocked?.(gone);
+      return gone;
     }
     const date = world.currentDate;
     const managerName = seat.manager?.name?.trim() || seat.clubName;
@@ -199,12 +218,14 @@ export async function removeSeat(saveId: string, seatId: string): Promise<Remove
     await service.deleteSeat(saveId, seatId);
     await buffer.flush();
     removeSaveMember(saveId, seatId);
-    return {
+    const removed: RemovedSeat = {
       userId: member?.userId ?? null,
       managerName,
       clubId: seat.unemployed ? "" : seat.clubId,
       clubName: seat.clubName,
       leagueSlug: seat.leagueSlug,
     };
+    await opts.onLocked?.(removed);
+    return removed;
   });
 }
