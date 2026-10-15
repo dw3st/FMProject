@@ -1,7 +1,7 @@
 import { dateLocale } from "@/GameInterface/formatDate";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { loadGameSave, deleteGameSave } from "@/GameInterface/gameSession";
+import { loadGameSave, deleteGameSave, forgetSession } from "@/GameInterface/gameSession";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
@@ -107,6 +107,7 @@ export function StartScreen() {
       const r = await worldApi.leave(pendingLeaveId);
       if (r.ok) {
         setSaves((prev) => prev.filter((s) => s.id !== pendingLeaveId));
+        forgetSession(pendingLeaveId);
         setLeaveError(null);
       } else {
         setLeaveError(r.error);
@@ -207,7 +208,10 @@ export function StartScreen() {
                 {save.role === "member" ? (
                   <button
                     type="button"
-                    onClick={() => setPendingLeaveId(save.id)}
+                    onClick={() => {
+                      setLeaveError(null);
+                      setPendingLeaveId(save.id);
+                    }}
                     disabled={loadingId !== null}
                     aria-label={t("startScreen.leave")}
                     title={t("startScreen.leave")}
