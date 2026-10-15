@@ -20,6 +20,7 @@ import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
 import { joinLink } from "@/GameInterface/World/worldNav";
 import { InviteFriendsModal } from "@/GameInterface/World/InviteFriendsModal";
 import { seatManagerId } from "@/Domain/seats/seats";
+import { GroupAdvanceBand, MemberAdvanceStatus } from "@/GameInterface/World/GroupAdvanceBand";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import type { WorldDeadline, WorldMemberView, WorldView } from "@/types/multiplayerTypes";
 
@@ -111,6 +112,8 @@ export function WorldScreen() {
         {t("screenTitles.world.main")}
       </ScreenTitle>
 
+      {view?.phase !== "lobby" && <GroupAdvanceBand />}
+
       {error && <Notice kind="error">{t(`world.errors.${error}`)}</Notice>}
       {!view && !error && <p className="text-sm text-muted-foreground">{t("common.loading")}</p>}
 
@@ -125,6 +128,7 @@ export function WorldScreen() {
                     <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.manager")}</th>
                     <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.club")}</th>
                     <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.role")}</th>
+                    {view.phase !== "lobby" && <th className={`${TABLE_CELL.head} text-left`}>{t("world.advance.status.column")}</th>}
                     {owner && <th className={TABLE_CELL.head} aria-label={t("world.members.actions")} />}
                   </tr>
                 </thead>
@@ -162,6 +166,9 @@ export function WorldScreen() {
                         <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>
                           {m.role === "owner" ? t("world.members.owner") : t("world.members.member")}
                         </td>
+                        {view.phase !== "lobby" && (
+                          <td className={TABLE_CELL.body}><MemberAdvanceStatus seatId={m.seatId} /></td>
+                        )}
                         {owner && (
                           <td className={`${TABLE_CELL.body} text-right`}>
                             {!me && (

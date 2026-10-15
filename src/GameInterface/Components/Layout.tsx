@@ -17,6 +17,7 @@ import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
+import { ReadyControl } from "@/GameInterface/World/ReadyControl";
 import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
 
@@ -69,6 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
           onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
+          dayAction={!lobby && session?.groupAdvance ? <ReadyControl /> : undefined}
         />
 
         <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">

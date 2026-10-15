@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
+import { GroupAdvanceBand } from "@/GameInterface/World/GroupAdvanceBand";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { fetchNews, topNews } from "@/GameInterface/News/newsApi";
@@ -266,6 +267,8 @@ export function DashboardScreen() {
       <ScreenTitle subtitle={subtitle || undefined} accent={t("screenTitles.dashboard.accent")}>
         {t("screenTitles.dashboard.main")}
       </ScreenTitle>
+
+      <GroupAdvanceBand />
 
       <ClubCard
         club={myClub}
