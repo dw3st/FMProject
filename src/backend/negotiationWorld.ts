@@ -23,7 +23,8 @@ import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { LeagueSeasonState } from "@/types/calendarTypes";
 import type { PlayerLoan, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ActiveLoan, MarketBid, MarketState } from "@/types/transferMarketTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord, TransferRecord } from "@/types/transferTypes";
+import { withDirection } from "@/Domain/transfer/transferView";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
 
 type NewsArgs = {
@@ -287,11 +288,11 @@ export async function completeHumanSale(
   }
   await dropFromLineup(service, saveId, seatId, player.id);
 
-  const record: TransferRecord = {
+  const record: StoredTransferRecord = {
     id: randomUUID(), date, playerId: player.id, playerName: player.name,
     playerPosition: player.positions[0] ?? "—", playerAge: player.age,
     fromSquadId: seller.id, fromSquadName: seller.name, toSquadId: buyer.id, toSquadName: buyer.name,
-    fee, direction: "out", status: "accepted", reason: "bidAccepted",
+    fee, status: "accepted", reason: "bidAccepted",
   };
   await service.appendTransfer(saveId, record);
   await service.appendDayEvent(saveId, date, { kind: "transfer_ref", transferId: record.id });
@@ -304,7 +305,7 @@ export async function completeHumanSale(
         ? [...(market.sellOnHeld ?? []), { playerId: player.id, playerName: player.name, pct: newClause.pct, toClubName: buyer.name, date }]
         : market.sellOnHeld,
     },
-    record,
+    record: withDirection(record, seller.id),
     meta: nextMeta,
   };
 }

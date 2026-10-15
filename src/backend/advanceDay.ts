@@ -27,7 +27,8 @@ import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/ret
 import { overallAvg } from "@/Domain/playerRating";
 import type { Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
+import { pruneTransferLog } from "@/Domain/transfer/transferView";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import {
   emitInboxMessage,
@@ -1575,7 +1576,7 @@ export async function advanceOneDay(
 
         dayMoves.push({ playerId: tx.player.id, from: tx.sellerSquad.id, to: tx.buyerSquad.id, fee: tx.fee, kind: "transfer", date: currentDate });
         const transferId = randomUUID();
-        const record: TransferRecord = {
+        const record: StoredTransferRecord = {
           id: transferId,
           date: currentDate,
           playerId: tx.player.id,
@@ -1587,7 +1588,6 @@ export async function advanceOneDay(
           toSquadId: tx.buyerSquad.id,
           toSquadName: tx.buyerSquad.name,
           fee: tx.fee,
-          direction: buyerSeat ? "in" : sellerSeat ? "out" : "in",
           status: "accepted",
           reason: "AI transfer",
         };
@@ -2100,7 +2100,9 @@ export async function advanceOneDay(
         for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
           closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
         }
-        await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year, transfersAtSeasonEnd);
+        // The league's archive keeps the window of the season that closes (the world's log spans every season).
+        await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year,
+          transfersAtSeasonEnd.filter((t) => t.date >= state.start && t.date <= state.end));
 
         // Each human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
         const refs = applyHumanBroadcastingCredit(transition.squadsToSave, transition.humanBroadcastingCredit);
@@ -2938,9 +2940,11 @@ export async function advanceOneDay(
       ds.pressOut = { state: pressOut.press, ...(pressOut.invite ? { invite: pressOut.invite } : {}), news: pressOut.news };
     }
 
-    // A seat's inbox is cleared when its country rolls; the season news goes in after. TRANSITIONAL (Task 26):
-    // the transfer list is still cleared once when any seat's country rolls.
-    if (daySeats.some((ds) => ds.rollover.seasonEnded)) await saveService.writeTransfers(saveId, []);
+    // The world's transfer log is never cleared: a rollover drops only what no running season still covers.
+    if (due.units.length > 0) {
+      await saveService.writeTransfers(saveId, pruneTransferLog(await saveService.getTransfers(saveId), updatedActiveLeagues.map((l) => l.start)));
+    }
+    // A seat's inbox is cleared when its country rolls; the season news goes in after.
     for (const ds of daySeats) {
       if (!ds.rollover.seasonEnded) continue;
       await saveService.clearInbox(saveId, ds.seatId);

@@ -7,7 +7,7 @@ import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
@@ -34,10 +34,10 @@ export interface ISaveDAL {
   writeSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
 
   // ── Transfers ─────────────────────────────────────────────────────────────
-  readTransfers(saveId: string): Promise<TransferRecord[]>;
-  writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void>;
-  readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null>;
-  writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void>;
+  readTransfers(saveId: string): Promise<StoredTransferRecord[]>;
+  writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void>;
+  readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null>;
+  writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void>;
 
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
@@ -117,8 +117,8 @@ export interface ISaveDAL {
 
   readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null>;
   writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null>;
-  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void>;
+  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null>;
+  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void>;
 
   // ── Season awards (`.claude/rules/game/awards.md`) ───────────────────────────
   /** `awards/{year}.json`: league seasons closed in `year` (+ the world awards for it). */

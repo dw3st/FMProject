@@ -7,7 +7,8 @@ import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import { buildClubRecordMessage } from "@/Domain/clubHistory/recordMessage";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
-import type { TransferRecord, TransfersSplitResponse } from "@/types/transferTypes";
+import type { StoredTransferRecord, TransferRecord, TransfersSplitResponse } from "@/types/transferTypes";
+import { seasonTransfers, withDirection } from "@/Domain/transfer/transferView";
 import type { TransferRef } from "@/types/dayLogTypes";
 import type { MarketState, SellCandidate } from "@/types/transferMarketTypes";
 import { collectSellListedIds } from "@/Domain/scout/scoutQuery";
@@ -87,7 +88,9 @@ export const transferRoutes = {
     if (req.method === "GET") {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-      const raw = await saveService.getTransfers(saveId);
+      // The world's log, the asking seat's season (its league's start) and direction.
+      const seasonStart = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.start ?? "";
+      const raw = seasonTransfers(await saveService.getTransfers(saveId), seasonStart).map((r) => withDirection(r, meta.clubId));
       const enriched = await enrichTransfersWithLogos(saveId, raw);
       const playerSquadId = meta.clubId;
       const body: TransfersSplitResponse = splitTransfersByClub(enriched, playerSquadId);
@@ -208,6 +211,8 @@ export const transferRoutes = {
         if (market && talks[key]?.date !== date0) {
           const rolled = await rollRivalFor(saveService, saveId, {
             market, player, seller: sellerSquad, humanId: buyerSquad.id, date: date0, windows,
+            // No club with a seat is ever a rival (`.claude/rules/game/multiplayer.md`).
+            humanClubIds: await saveService.humanClubIds(saveId),
           });
           marketWithRivals = rolled.market;
           if (rolled.news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(rolled.news), saveService, auth.seatId);
@@ -273,7 +278,7 @@ export const transferRoutes = {
         const transferId = randomUUID();
         const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
 
-        const record: TransferRecord = {
+        const record: StoredTransferRecord = {
           id: transferId,
           date,
           playerId,
@@ -285,7 +290,6 @@ export const transferRoutes = {
           toSquadId: buyerSquad.id,
           toSquadName: buyerSquad.name,
           fee,
-          direction: "in",
           status: accepted ? "accepted" : "rejected",
           reason,
         };
@@ -380,7 +384,7 @@ export const transferRoutes = {
         // new budget, the real value already comes from executeTransferFee's persisted squad.
         const oldBudget = buyerSquad.finances?.budget ?? 0;
         const newBudget = accepted ? oldBudget - fee : oldBudget;
-        return Response.json({ record, newBudget, response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
+        return Response.json({ record: withDirection(record, buyerSquad.id), newBudget, response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
       });
     }
 

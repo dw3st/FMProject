@@ -9,7 +9,7 @@ import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { emptySeatMarket, joinMarket, splitMarket } from "@/Domain/market/seatMarket";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 
@@ -35,7 +35,7 @@ interface KitWorld {
     dateIndex: LeagueDateIndex | null;
     rounds: RoundFixtures[];
   }>;
-  transfers: TransferRecord[];
+  transfers: StoredTransferRecord[];
   market: MarketState | null;
   /** National teams (`.claude/rules/game/national-teams.md`): state and every competition. */
   national?: { state: NationalState; comps: NationalCompetition[] } | null;

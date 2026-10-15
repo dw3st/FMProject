@@ -16,7 +16,7 @@ import type {
   LeagueSeasonMeta,
   RoundFixtures,
 } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
@@ -233,16 +233,16 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────────
-  readTransfers(saveId: string): Promise<TransferRecord[]> {
+  readTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     return this.readThrough(`transfers:${saveId}`, () => this.inner.readTransfers(saveId));
   }
-  async writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`transfers:${saveId}`, transfers, () => this.inner.writeTransfers(saveId, transfers));
   }
-  readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null> {
+  readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     return this.readThrough(`transfersArchive:${saveId}:${year}`, () => this.inner.readTransfersArchive(saveId, year));
   }
-  async writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`transfersArchive:${saveId}:${year}`, transfers, () => this.inner.writeTransfersArchive(saveId, year, transfers));
   }
 
@@ -390,10 +390,10 @@ export class BufferingSaveDAL implements ISaveDAL {
   async writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
     this.buffer(`leagueSeasonArchive:${saveId}:${archive.leagueSlug}:${archive.year}`, archive, () => this.inner.writeLeagueSeasonArchive(saveId, archive));
   }
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null> {
+  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
     return this.readThrough(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, () => this.inner.readLeagueTransfersArchive(saveId, leagueSlug, year));
   }
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     this.buffer(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, transfers, () => this.inner.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers));
   }
 

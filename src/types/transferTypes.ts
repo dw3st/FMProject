@@ -20,6 +20,9 @@ export interface TransferRecord {
   toClubSlug?: string;
 }
 
+/** A transfer as stored in `transfers.json`: the direction is computed per seat in the response. */
+export type StoredTransferRecord = Omit<TransferRecord, "direction">;
+
 /** GET /api/saves/:saveId/transfers — your club vs rest of the world (AI↔AI). */
 export interface TransfersSplitResponse {
   club: TransferRecord[];

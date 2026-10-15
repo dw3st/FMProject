@@ -21,7 +21,7 @@ import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { playerMatchesBand, playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketState, RivalBid } from "@/types/transferMarketTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { DayTransfer } from "@/types/dayLogTypes";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
 
@@ -125,10 +125,10 @@ export async function resolveRivalDeadlines(
       buyer: buying, seller: selling, playerId: player.id, fee: r.fee, date,
       buyerSeason: seasonOf(buyerRef.leagueSlug), sellerSeason: seasonOf(sellerRef.leagueSlug),
     });
-    const record: TransferRecord = {
+    const record: StoredTransferRecord = {
       id: randomUUID(), date, playerId: player.id, playerName: player.name, playerPosition: player.positions[0] ?? "—",
       playerAge: player.age, fromSquadId: seller.id, fromSquadName: seller.name, toSquadId: buyer.id, toSquadName: buyer.name,
-      fee: r.fee, direction: "in", status: "accepted", reason: "AI transfer",
+      fee: r.fee, status: "accepted", reason: "AI transfer",
     };
     await service.appendTransfer(saveId, record);
     await service.appendDayEvent(saveId, date, { kind: "transfer_ref", transferId: record.id });

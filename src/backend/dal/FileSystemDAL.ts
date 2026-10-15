@@ -10,7 +10,7 @@ import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
@@ -289,24 +289,24 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(clubHistoryPath(saveId, history.squadId), JSON.stringify(history));
   }
 
-  async readTransfers(saveId: string): Promise<TransferRecord[]> {
+  async readTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     const file = Bun.file(transfersPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(transfersPath(saveId), JSON.stringify(transfers, null, 2));
   }
 
-  async readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null> {
+  async readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     const file = Bun.file(transfersArchivePath(saveId, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(transfersArchivePath(saveId, year), JSON.stringify(transfers, null, 2));
@@ -500,13 +500,13 @@ export class FileSystemDAL implements ISaveDAL {
     await Bun.write(leagueSeasonArchivePath2(saveId, archive.leagueSlug, archive.year), JSON.stringify(archive, null, 2));
   }
 
-  async readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null> {
+  async readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
     const file = Bun.file(leagueTransfersArchivePath2(saveId, leagueSlug, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<TransferRecord[]>;
+    return file.json() as Promise<StoredTransferRecord[]>;
   }
 
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(leagueTransfersArchivePath2(saveId, leagueSlug, year), JSON.stringify(transfers, null, 2));

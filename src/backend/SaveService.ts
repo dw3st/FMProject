@@ -22,7 +22,7 @@ import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
-import type { TransferRecord } from "@/types/transferTypes";
+import type { StoredTransferRecord } from "@/types/transferTypes";
 import type { MarketState, SeatMarketState, WorldMarketState } from "@/types/transferMarketTypes";
 import { joinMarket, splitMarket } from "@/Domain/market/seatMarket";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
@@ -414,11 +414,11 @@ export class SaveService {
 
   // ── Transfers ──────────────────────────────────────────────────────────────
 
-  getTransfers(saveId: string): Promise<TransferRecord[]> {
+  getTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     return this.dal.readTransfers(saveId);
   }
 
-  async appendTransfer(saveId: string, record: TransferRecord): Promise<TransferRecord[]> {
+  async appendTransfer(saveId: string, record: StoredTransferRecord): Promise<StoredTransferRecord[]> {
     const existing = await this.dal.readTransfers(saveId);
     const updated  = [...existing, record];
     await this.dal.writeTransfers(saveId, updated);
@@ -426,15 +426,15 @@ export class SaveService {
   }
 
   /** Replace the active transfer log (e.g. clear to `[]` after archiving a season). */
-  writeTransfers(saveId: string, transfers: TransferRecord[]): Promise<void> {
+  writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     return this.dal.writeTransfers(saveId, transfers);
   }
 
-  readTransfersArchive(saveId: string, year: number): Promise<TransferRecord[] | null> {
+  readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     return this.dal.readTransfersArchive(saveId, year);
   }
 
-  writeTransfersArchive(saveId: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     return this.dal.writeTransfersArchive(saveId, year, transfers);
   }
 
@@ -823,7 +823,7 @@ export class SaveService {
     return this.dal.readLeagueSeasonArchive(saveId, leagueSlug, year);
   }
 
-  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
+  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     return this.dal.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers);
   }
 
