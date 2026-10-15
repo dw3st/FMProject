@@ -1,5 +1,5 @@
 import { addDays, isRealIsoDate } from "@/Domain/dates";
-import type { MemberAdvanceStatus } from "@/types/groupAdvanceTypes";
+import type { MemberAdvanceStatus, PendingDay, WorldAdvance } from "@/types/groupAdvanceTypes";
 import type { WorldDeadline } from "@/types/multiplayerTypes";
 import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
 
@@ -134,4 +134,25 @@ export function seatStops(part: Record<string, unknown>): boolean {
   return part.sacked === true
     || (typeof part.jobOffers === "number" && part.jobOffers > 0)
     || part.seasonEnded === true;
+}
+
+/** Keeps at most `max` days, dropping the oldest days without a stop first; a day with a stop is never dropped. */
+export function trimPendingSummary(days: readonly PendingDay[], max: number): PendingDay[] {
+  let over = days.length - max;
+  if (over <= 0) return [...days];
+  return days.filter((d) => {
+    if (over > 0 && !seatStops(d.seat)) { over--; return false; }
+    return true;
+  });
+}
+
+/** A failed run the deadline clock retries now (`ERROR_RETRY_MINUTES` after it, at most `MAX_ERROR_RETRIES` runs). */
+export function errorRetryDue(adv: Pick<WorldAdvance, "error" | "errorAt" | "errorTries"> | null | undefined, nowMs: number): boolean {
+  if (!adv?.error || !adv.errorAt) return false;
+  const tries = Math.max(1, adv.errorTries ?? 1);
+  if (tries >= GROUP_ADVANCE.MAX_ERROR_RETRIES) return false;
+  const waits = GROUP_ADVANCE.ERROR_RETRY_MINUTES;
+  const wait = waits[Math.min(tries, waits.length) - 1]! * 60_000;
+  const at = Date.parse(adv.errorAt);
+  return !Number.isNaN(at) && nowMs >= at + wait;
 }

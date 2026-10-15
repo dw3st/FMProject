@@ -15,6 +15,12 @@ export interface WorldAdvance {
   waitingSince: string | null;
   /** The date the current/last advance aims at. */
   target: string | null;
+  /** Last failed day (error text), cleared by the next day that runs or the next stop. */
+  error?: string | null;
+  /** Real-time ISO of that failure; the deadline clock retries from it. */
+  errorAt?: string | null;
+  /** Failed runs in a row (the clock gives up after `GROUP_ADVANCE.MAX_ERROR_RETRIES`). */
+  errorTries?: number;
 }
 
 /** `seats/{seatId}/liveRecording.json`: the seat's live match of `date`, kept until the executor runs that day. */

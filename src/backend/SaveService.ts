@@ -57,6 +57,7 @@ import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
 import type { WorldState } from "@/types/multiplayerTypes";
 import { metaForSeat } from "@/Domain/seats/seats";
 import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
+import { trimPendingSummary } from "@/Domain/groupAdvance/groupAdvance";
 
 /**
  * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
@@ -370,10 +371,10 @@ export class SaveService {
     return this.dal.readSeatPendingSummary(saveId, seatId);
   }
 
-  /** Appends one day to the seat's pending summary, keeping the last `max`. */
+  /** Appends one day to the seat's pending summary, keeping `max` days (a day with a stop is never dropped). */
   async appendPendingDay(saveId: string, seatId: string, day: PendingDay, max: number): Promise<void> {
     const days = await this.dal.readSeatPendingSummary(saveId, seatId);
-    await this.dal.writeSeatPendingSummary(saveId, seatId, [...days, day].slice(-max));
+    await this.dal.writeSeatPendingSummary(saveId, seatId, trimPendingSummary([...days, day], max));
   }
 
   clearPendingSummary(saveId: string, seatId: string): Promise<void> {

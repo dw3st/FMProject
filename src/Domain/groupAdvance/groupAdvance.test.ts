@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  assistantPatches, nextUndecided, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
+  assistantPatches, errorRetryDue, nextUndecided, trimPendingSummary, computeGroupTarget, deadlineAt, deadlinePassed, seatStops, isGroupWorld, laterDate, memberStatus, resolveReadyUntil, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 
 describe("isGroupWorld", () => {
@@ -204,5 +204,40 @@ describe("review fixes", () => {
     const plan = computeGroupTarget(today, seats);
     expect(plan.waitingFor).toEqual(["a", "b"]);
     expect(assistantPatches(today, seats, plan).map((p) => p.readyUntil)).toEqual(["2027-03-11", "2027-03-11"]);
+  });
+});
+
+describe("trimPendingSummary", () => {
+  const day = (date: string, seat: Record<string, unknown> = {}) => ({ date, newDate: date, seat });
+  test("drops the oldest days without a stop, never a day with one", () => {
+    const days = [day("1", { jobOffers: 1 }), day("2"), day("3", { sacked: true }), day("4"), day("5")];
+    expect(trimPendingSummary(days, 3).map((d) => d.date)).toEqual(["1", "3", "5"]);
+  });
+  test("keeps every stop even above the cap", () => {
+    const days = [day("1", { seasonEnded: true }), day("2", { jobOffers: 2 }), day("3")];
+    expect(trimPendingSummary(days, 1).map((d) => d.date)).toEqual(["1", "2"]);
+  });
+  test("under the cap nothing changes", () => {
+    const days = [day("1"), day("2")];
+    expect(trimPendingSummary(days, 5)).toEqual(days);
+  });
+});
+
+describe("errorRetryDue", () => {
+  const at = "2026-10-15T12:00:00.000Z";
+  const t0 = Date.parse(at);
+  const min = 60_000;
+  test("waits longer after each failure and gives up after the last", () => {
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 1 }, t0 + 4 * min)).toBe(false);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 1 }, t0 + 5 * min)).toBe(true);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 2 }, t0 + 14 * min)).toBe(false);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 2 }, t0 + 15 * min)).toBe(true);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 3 }, t0 + 60 * min)).toBe(true);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 4 }, t0 + 60 * min)).toBe(true);
+    expect(errorRetryDue({ error: "x", errorAt: at, errorTries: 5 }, t0 + 999 * min)).toBe(false);
+  });
+  test("no error, no retry", () => {
+    expect(errorRetryDue({}, t0)).toBe(false);
+    expect(errorRetryDue(null, t0)).toBe(false);
   });
 });
