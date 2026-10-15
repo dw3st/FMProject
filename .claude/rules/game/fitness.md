@@ -401,3 +401,7 @@ não treina nem descansa (`skipPlayerIds`). A base do clube do jogador recupera 
 
 O jogo de seleção conta no fôlego e na carga (90/120 min, `applyNationalMatch`); o convocado não treina no clube e
 recupera pela curva de descanso nos dias da concentração (`nationalCampDay`). Ver `.claude/rules/game/national-teams.md`.
+
+## Assentos (Etapa 43)
+
+Cada assento folga nos próprios `restDays`; um clube da IA folga na véspera e no dia seguinte dos próprios jogos (`aiRestingClubs`). Medido (Premier, 28 dias): fôlego médio da IA 82,07 → 82,15, lesões por partida 0,267 → 0,272. Ver `.claude/rules/game/multiplayer.md`.

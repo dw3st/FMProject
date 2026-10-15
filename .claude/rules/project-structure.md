@@ -28,6 +28,7 @@ FMProject/
 │   │                       #   continental, injuries, youth, stats, plus shared helpers
 │   │                       #   (dates, math, money, rng, roles, attributes, color)
 │   ├── backend/            # Server: routes, SaveService + DAL (dal/), advanceDay, auth/, *World I/O
+│   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat)
 │   ├── types/              # Shared data types (players, calendar, inbox, tactics, …)
 │   ├── lab/                # /lab, /test, /simulate, /matrix, /promo (separate server: lab/server.ts)
 │   ├── mcp/                # fmproject-engine MCP server (queries over debug snapshots)
@@ -102,3 +103,10 @@ from `package.json`). `MIN_COMPATIBLE_SAVE_VERSION` in the same file is the olde
 still load: **raise it in the same branch whenever the save format changes**. `GET /api/saves` adds
 `compatible` (`saveCompatibility`: absent or older = outdated); the start screen shows `vX.Y` on every
 save, a warning line on an outdated one and asks before loading it. No migration (prototype).
+
+## Seats (multiplayer part 1, Etapa 43)
+A save is a world with N human seats: the world meta (`saves/{id}.json`) plus one folder per seat
+(`saves/{id}/seats/{seatId}/`: `seat.json`, tactics, achievements, scouting, inbox, ledger, market). Every manager
+route acts on the caller's seat (`requireSeat`); world routes answer any member (`save_members` in SQLite). The
+format changed without a new version: saves from before have no members and leave the list. See
+`.claude/rules/game/multiplayer.md`.

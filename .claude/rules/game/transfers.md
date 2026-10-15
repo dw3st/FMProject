@@ -197,3 +197,7 @@ This gives:
 A regra acima (aceita com `decisionScore > 0,8`) continua sendo a da IA × IA. Para o jogador humano a
 resposta ganhou a **contraproposta**, a **paciência** e a **cláusula de venda futura**, e as vendas do jogador
 passam por propostas na inbox. Ver `.claude/rules/game/negotiation.md`.
+
+## Assentos (Etapa 43)
+
+O mercado da IA ignora o conjunto de clubes humanos (todos os assentos). Ver `.claude/rules/game/multiplayer.md`.

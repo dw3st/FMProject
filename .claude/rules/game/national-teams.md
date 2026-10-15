@@ -260,3 +260,7 @@ Smoke: seção "Técnico de seleção" de `scripts/season-rollover-smoke.ts`.
 clube não há tela de partida); no dia raro de jogo do clube e da seleção (Euro/Copa América com o clube de outra
 confederação) o do clube é o ao vivo e o da seleção é simulado; sem instruções individuais, bola parada nem marcação na
 seleção; nomes das nações nas telas da partida no idioma do carregamento da página.
+
+## Assentos (Etapa 43)
+
+`NationalState.human` e `offers` são por assento; a seleção de um humano tem `managerId = "seat:<seatId>"`. Aceitar fecha as ofertas daquela seleção para todos os assentos. Ver `.claude/rules/game/multiplayer.md`.
