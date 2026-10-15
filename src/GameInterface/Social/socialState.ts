@@ -90,6 +90,16 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
     case "world_deleted":
     case "world_members":
       return str(e.saveId) ? { type: e.type, saveId: e.saveId } : null;
+    case "world_progress": {
+      const okTarget = e.target === null || str(e.target);
+      const okWaiting = Array.isArray(e.waitingFor) && (e.waitingFor as unknown[]).every(str);
+      if (!str(e.saveId) || !str(e.date) || !okTarget || typeof e.running !== "boolean" || !okWaiting) return null;
+      if (e.error !== undefined && !str(e.error)) return null;
+      return {
+        type: "world_progress", saveId: e.saveId, date: e.date, target: e.target as string | null,
+        running: e.running, waitingFor: e.waitingFor as string[], ...(str(e.error) ? { error: e.error } : {}),
+      };
+    }
     default:
       return null;
   }

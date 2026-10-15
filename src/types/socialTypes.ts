@@ -78,7 +78,19 @@ export type ServerEvent =
   | { type: "world_started"; saveId: string }
   | { type: "world_removed"; saveId: string }
   | { type: "world_deleted"; saveId: string }
-  | { type: "world_members"; saveId: string };
+  | { type: "world_members"; saveId: string }
+  // Multiplayer part 3 (group advance): the world's progress, for its members.
+  | {
+    type: "world_progress";
+    saveId: string;
+    /** The world's date now. */
+    date: string;
+    target: string | null;
+    running: boolean;
+    /** Nicknames (or manager names) holding the world. */
+    waitingFor: string[];
+    error?: string;
+  };
 
 export type SocialErrorCode =
   | "invalidNickname"

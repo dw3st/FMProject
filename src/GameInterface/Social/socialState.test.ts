@@ -59,6 +59,14 @@ describe("parseServerEvent", () => {
     }
     expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s" }))).toBeNull();
   });
+  test("world_progress", () => {
+    const ev = { type: "world_progress", saveId: "s1", date: "2027-03-11", target: "2027-03-14", running: true, waitingFor: ["ana"] };
+    expect(parseServerEvent(JSON.stringify(ev))).toEqual(ev as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, error: "boom" }))).toEqual({ ...ev, error: "boom" } as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, target: null }))).toEqual({ ...ev, target: null } as never);
+    expect(parseServerEvent(JSON.stringify({ ...ev, waitingFor: [1] }))).toBeNull();
+    expect(parseServerEvent(JSON.stringify({ ...ev, target: 3 }))).toBeNull();
+  });
   test("rejects garbage", () => {
     expect(parseServerEvent("nope")).toBeNull();
     expect(parseServerEvent(JSON.stringify({ type: "message", room: 1 }))).toBeNull();
