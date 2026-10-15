@@ -10,7 +10,7 @@ import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
-import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
@@ -20,31 +20,24 @@ import type { AchievementsState } from "@/types/achievementTypes";
 import { normalizeAchievements } from "@/Domain/achievements/progress";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
-import type { ManagerFace } from "@/Domain/faces/managerFace";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
-import type { BoardState } from "@/types/boardTypes";
-import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { TrainingIntensity } from "@/types/developmentTypes";
-import type { FamiliarityKey } from "@/types/familiarityTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { DayTransfer, StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
-import { inboxAllowed, type InboxPrefs } from "@/Domain/inbox/inboxTopics";
+import { inboxAllowed } from "@/Domain/inbox/inboxTopics";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
 import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { buildInitialManagers } from "@/Domain/managers/managers";
-import type { ManagerContract, ManagerRenewalOffer } from "@/Domain/managers/managerContract";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
-import type { DirectorDecision, Responsibilities } from "@/Domain/responsibilities/director";
 import { GAME_VERSION } from "@/Domain/saveVersion";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
@@ -58,94 +51,49 @@ export interface SaveDatabase {
   startDate: string;   // ISO display date
 }
 
-export interface SaveManager {
-  name:           string;
-  nationalityIso: string;   // e.g. "br", "pt"
-  backgroundId:   string;   // e.g. "former-player"
-  /** Avatar picked in the new game (Etapa 31b); absent = the face drawn from the manager id. */
-  face?:          ManagerFace;
-}
+export type { SaveManager } from "@/types/seatTypes";
+import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
+import { metaForSeat, splitSeatPatch } from "@/Domain/seats/seats";
 
-export interface SaveMeta {
+/**
+ * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
+ * everything shared by the seats. What belonged to the player lives in `seats/{seatId}/seat.json`.
+ */
+export interface WorldMeta {
   id:         string;
   name:       string;
   createdAt:  string;
   updatedAt:  string;
-  leagueSlug: string;
-  leagueName: string;
-  clubId:     string;
-  clubName:   string;
-  clubColors: [string, string];
-  /** Game version that created the save (`GAME_VERSION`); absent = before 4.22. See `@/Domain/saveVersion`. */
+  /** Game version that created the save (`GAME_VERSION`). See `@/Domain/saveVersion`. */
   gameVersion?: string;
-  /** Database picked at new-game time — versions/datasets the save was started against. */
+  /** Database picked at new-game time. */
   database?: SaveDatabase;
-  /** Manager identity picked at new-game time. */
-  manager?:  SaveManager;
-  formation?: string;
-  tactical_style?: TacticalStyle;
-  /** Current in-game date "YYYY-MM-DD". Advances as matches are played. */
+  /** "solo": one seat; "multi": a world of friends (seats added later). */
+  mode:  "solo" | "multi";
+  /** Seat ids, in creation order. */
+  seats: string[];
+  /** Current in-game date "YYYY-MM-DD". */
   currentDate?: string;
-  /** Minimum fitness (0–100) for a player to participate in a training day. */
-  min_energy_to_train?: number;
-  /** Training load for your club's sessions (advance-day simulation). */
-  training_intensity?: TrainingIntensity;
-  /** Style the human club drills on training days (`src/Domain/familiarity`); absent = the tactics style. */
-  style_focus?: FamiliarityKey;
   /** State for all active leagues in this save. */
   activeLeagues?: LeagueSeasonState[];
-  /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
-  followedLeagues?: string[];
-  /** World year whose free-agent retirement draw already ran (it runs once per year, not per country rollover). */
+  /** World year whose free-agent retirement draw already ran. */
   freeAgentsRetiredYear?: number;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
   pendingTitles?: Record<string, string[]>;
-  /** Manager-ranking country weights, computed once per country per season (`.claude/rules/game/managers.md`). */
+  /** Manager-ranking country weights, computed once per country per season. */
   managerWeights?: Record<string, CountryWeight>;
-  /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
-  rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
-  /** Man-marking chosen for the match on `date` (player instructions, max 2 pairs); cleared by the next advance. */
-  matchMarking?: MatchMarking;
-  /** Human club call-ups for the youth competitions, each with a duration (`youthComps/callUps.ts`). */
-  youthCallUps?: import("@/Domain/youthComps/callUps").YouthCallUps;
-  /** Call-ups of the last youth game of each competition who did not play (shown on the call-up panel). */
-  youthCallUpsSkipped?: { u21?: { date: string; players: string[] }; u19?: { date: string; players: string[] } };
-  /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
-  board?: BoardState;
-  /** Etapa 42: coletivas do técnico do jogador (`.claude/rules/game/press.md`). Ausente = nenhuma ainda. */
-  press?: import("@/types/pressTypes").PressState;
-  /** The human manager's touchline ban after a red card for complaining (`.claude/rules/game/var.md` §4). */
-  managerBan?: import("@/Domain/referees/managerBan").ManagerBan;
-  /** New-game option: the board may sack the manager (default on). */
-  sackingEnabled?: boolean;
-  /**
-   * Set while the manager has no club (sacked, `.claude/rules/game/jobs.md`): `clubId` is "" and
-   * the game keeps advancing; offers arrive every two weeks.
-   */
-  unemployed?: Unemployment;
-  /** Pending job offers (`.claude/rules/game/jobs.md`). */
-  jobOffers?: JobOffer[];
-  /** Season label of the player's league whose mid-season offer window already ran. */
-  jobsMidSeason?: string;
-  /** First in-game day of the career (the new-career transfer grace, `.claude/rules/game/transfer-windows.md`). */
-  careerStart?: string;
-  /** The human manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"). */
-  managerContract?: ManagerContract;
-  /** Wages + severance the human manager received in the career (display only). */
-  managerEarnings?: number;
-  /** The board's pending renewal offer (answered through `POST /api/saves/:id/manager-contract`). */
-  managerRenewal?: ManagerRenewalOffer;
-  /** Contract notices already sent, as `<kind>:<until>` ("decided", "warned"). */
-  managerContractNotices?: string[];
-  /** AI clubs without a manager (interim in charge) and the day they hire (`.claude/rules/game/managers.md`). */
+  /** AI clubs without a manager (interim in charge) and the day they hire. */
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
-  /** Inbox topics switched on/off by the player (`src/Domain/inbox/inboxTopics.ts`); absent = defaults. */
-  inboxPrefs?: InboxPrefs;
-  /** Who handles the human club's contracts (renewals, contract talks); absent = the director. */
-  responsibilities?: Responsibilities;
-  /** The director's decisions of the current season, by player (`src/Domain/responsibilities/director.ts`). */
-  directorDecisions?: Record<string, DirectorDecision>;
 }
+
+/** The world meta merged with one seat (`metaForSeat`): the shape the meta had before seats, plus `seatId`. */
+export type SeatMeta = WorldMeta & SeatState & { seatId: string };
+
+/**
+ * TRANSITIONAL (Tasks 4–29 of the seats plan): the merged meta of the FIRST seat. Task 29 turns `SaveMeta`
+ * into the world meta (renaming `WorldMeta`) and deletes this alias.
+ */
+export type SaveMeta = SeatMeta;
 
 // ── SaveService ──────────────────────────────────────────────────────────────
 
@@ -178,33 +126,125 @@ export class SaveService {
 
   // ── Meta ───────────────────────────────────────────────────────────────────
 
-  listSaves(): Promise<SaveMeta[]> {
+  listSaves(): Promise<WorldMeta[]> {
     return this.dal.listSaves();
   }
 
-  getMeta(saveId: string): Promise<SaveMeta | null> {
-    return this.dal.readMeta(saveId);
+  /** TRANSITIONAL (Task 29 makes it return the world meta only): the world merged with the FIRST seat. */
+  async getMeta(saveId: string): Promise<SaveMeta | null> {
+    const world = await this.dal.readMeta(saveId);
+    if (!world) return null;
+    const seatId = world.seats?.[0];
+    const seat = seatId ? await this.dal.readSeat(saveId, seatId) : null;
+    // A world without a seat only exists in tests that write a bare meta: it has no seat fields.
+    return seat && seatId ? metaForSeat(world, seatId, seat) : (world as SaveMeta);
   }
 
+  /**
+   * TRANSITIONAL (Task 29 makes it world-only): seat keys of the patch go to the FIRST seat, the rest to the
+   * world meta (`splitSeatPatch`).
+   */
   async updateMeta(
     saveId: string,
-    patch: Partial<Omit<SaveMeta, "id" | "createdAt">>,
+    patch: Partial<Omit<SaveMeta, "id" | "createdAt" | "seatId">>,
   ): Promise<SaveMeta> {
     const meta = await this.dal.readMeta(saveId);
     if (!meta) throw new Error(`Save not found: ${saveId}`);
-    const updated: SaveMeta = {
+    const seatId = meta.seats?.[0];
+    // A world without a seat (a bare meta written by a test) keeps every key in the meta, as before seats.
+    const split = seatId ? splitSeatPatch(patch) : { world: patch as Record<string, unknown>, seat: {} };
+    const world: WorldMeta = {
       ...meta,
-      ...patch,
+      ...(split.world as Partial<WorldMeta>),
       id:        meta.id,
       createdAt: meta.createdAt,
       updatedAt: new Date().toISOString(),
     };
-    await this.dal.writeMeta(updated);
-    return updated;
+    await this.dal.writeMeta(world);
+    if (!seatId) return world as SaveMeta;
+    const seat = Object.keys(split.seat).length > 0
+      ? await this.updateSeat(saveId, seatId, split.seat)
+      : await this.dal.readSeat(saveId, seatId);
+    return seat ? metaForSeat(world, seatId, seat) : (world as SaveMeta);
   }
 
   deleteSave(saveId: string): Promise<void> {
     return this.dal.deleteSave(saveId);
+  }
+
+  // ── Seats (`.claude/rules/game/multiplayer.md`) ──────────────────────────────
+
+  /** The world meta as stored (no seat merged). */
+  getWorldMeta(saveId: string): Promise<WorldMeta | null> {
+    return this.dal.readMeta(saveId);
+  }
+
+  getSeat(saveId: string, seatId: string): Promise<SeatState | null> {
+    return this.dal.readSeat(saveId, seatId);
+  }
+
+  /** The world meta merged with the seat; null when the save or the seat does not exist. */
+  async getSeatMeta(saveId: string, seatId: string): Promise<SeatMeta | null> {
+    const world = await this.dal.readMeta(saveId);
+    if (!world || !world.seats?.includes(seatId)) return null;
+    const seat = await this.dal.readSeat(saveId, seatId);
+    return seat ? metaForSeat(world, seatId, seat) : null;
+  }
+
+  async updateSeat(saveId: string, seatId: string, patch: Partial<SeatState>): Promise<SeatState> {
+    const seat = await this.dal.readSeat(saveId, seatId);
+    if (!seat) throw new Error(`Seat not found: ${saveId}/${seatId}`);
+    const updated: SeatState = { ...seat, ...patch };
+    await this.dal.writeSeat(saveId, seatId, updated);
+    return updated;
+  }
+
+  /** Every seat of the world, in creation order (a seat whose file is missing is skipped). */
+  async listSeats(saveId: string): Promise<SeatContext[]> {
+    const world = await this.dal.readMeta(saveId);
+    const out: SeatContext[] = [];
+    for (const seatId of world?.seats ?? []) {
+      const seat = await this.dal.readSeat(saveId, seatId);
+      if (seat) out.push({ seatId, seat });
+    }
+    return out;
+  }
+
+  /** Clubs with a human manager (a seat that is not unemployed). The AI never acts on these. */
+  async humanClubIds(saveId: string): Promise<Set<string>> {
+    const out = new Set<string>();
+    for (const { seat } of await this.listSeats(saveId)) if (seat.clubId && !seat.unemployed) out.add(seat.clubId);
+    return out;
+  }
+
+  /** The seat managing `clubId`, or null for an AI club. */
+  async seatOfClub(saveId: string, clubId: string): Promise<string | null> {
+    for (const { seatId, seat } of await this.listSeats(saveId)) {
+      if (seat.clubId === clubId && !seat.unemployed) return seatId;
+    }
+    return null;
+  }
+
+  /** Writes a new seat and appends it to the world (`addSeat` builds the rest). */
+  async insertSeat(saveId: string, seatId: string, seat: SeatState): Promise<void> {
+    const world = await this.dal.readMeta(saveId);
+    if (!world) throw new Error(`Save not found: ${saveId}`);
+    if (world.seats.includes(seatId)) throw new Error(`Seat already exists: ${seatId}`);
+    await this.dal.writeSeat(saveId, seatId, seat);
+    await this.dal.writeMeta({ ...world, mode: "multi", seats: [...world.seats, seatId], updatedAt: new Date().toISOString() });
+  }
+
+  /** TRANSITIONAL (removed in Task 29): the first seat of the world. */
+  private async primarySeatId(saveId: string): Promise<string> {
+    const world = await this.dal.readMeta(saveId);
+    const seatId = world?.seats?.[0];
+    if (!seatId) throw new Error(`save ${saveId} has no seat`);
+    return seatId;
+  }
+
+  /** TRANSITIONAL (removed in Task 29): `seatId`, or the first seat when absent. */
+  protected async seatOr(saveId: string, seatId: string | undefined): Promise<string> {
+    return seatId ?? this.primarySeatId(saveId);
   }
 
   // ── Season ─────────────────────────────────────────────────────────────────
@@ -388,7 +428,7 @@ export class SaveService {
    * `BufferingSaveDAL` caches it), so a preference saved mid-session holds for the next append.
    */
   async appendInbox(saveId: string, message: InboxMessage): Promise<void> {
-    const meta = await this.dal.readMeta(saveId);
+    const meta = await this.getMeta(saveId);
     if (!inboxAllowed(message, meta?.inboxPrefs)) return;
     return this.dal.appendInboxMessage(saveId, message);
   }
@@ -847,7 +887,7 @@ export class SaveService {
     manager?:  SaveManager;
     /** The board may sack the manager (`.claude/rules/game/board-fans.md`); default true. */
     sackingEnabled?: boolean;
-  }): Promise<SaveMeta> {
+  }): Promise<SeatMeta> {
     const id  = randomUUID();
     const now = new Date().toISOString();
 
@@ -913,30 +953,37 @@ export class SaveService {
       console.error("Failed to generate league calendars:", e);
     }
 
-    const meta: SaveMeta = {
+    const seatId = randomUUID();
+    const world: WorldMeta = {
       id,
       name:        body.clubName ?? "Unnamed Save",
       createdAt:   now,
       updatedAt:   now,
       gameVersion: GAME_VERSION,
-      leagueSlug:  body.leagueSlug,
-      leagueName:  body.leagueName,
-      clubId:      body.clubId,
-      clubName:    body.clubName,
-      clubColors:  body.clubColors,
       database:    body.database,
-      manager:     body.manager,
+      mode:        "solo",
+      seats:       [seatId],
+      currentDate: playerLeagueStart,
+      activeLeagues,
+    };
+    const seat: SeatState = {
+      clubId:     body.clubId,
+      clubName:   body.clubName,
+      clubColors: body.clubColors,
+      leagueSlug: body.leagueSlug,
+      leagueName: body.leagueName,
+      manager:    body.manager,
       formation:      body.formation      ?? "4-3-3",
       tactical_style: body.tactical_style ?? DEFAULT_TACTICAL_STYLE,
-      currentDate: playerLeagueStart,
       ...(playerLeagueStart ? { careerStart: playerLeagueStart } : {}),
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
-      activeLeagues,
       sackingEnabled: body.sackingEnabled !== false,
     };
-
-    await this.dal.writeMeta(meta);
+    // The merged view the rest of createSave (and its caller) reads: same shape as before seats.
+    const meta: SeatMeta = metaForSeat(world, seatId, seat);
+    await this.dal.writeMeta(world);
+    await this.dal.writeSeat(id, seatId, seat);
 
     // Copy all squads from global Data/squads/ into the save-local directory
     const squadsRootSrc = `${DATA_DIR}/squads`;
@@ -1046,8 +1093,9 @@ export class SaveService {
           zones: catalog.find((l) => l.slug === body.leagueSlug)?.zones ?? [],
           season: state ? seasonLabel(state.year, state.start, state.end) : "",
         });
-        meta.board = initialBoardState(playerLeagueStart ?? now.slice(0, 10), objective);
-        await this.dal.writeMeta(meta);
+        seat.board = initialBoardState(playerLeagueStart ?? now.slice(0, 10), objective);
+        meta.board = seat.board;
+        await this.dal.writeSeat(id, seatId, seat);
       } catch (e) {
         logError("board", `save ${id}: failed to set the board objective`, e);
       }
@@ -1100,14 +1148,16 @@ export class SaveService {
         const start = playerLeagueStart ?? now.slice(0, 10);
         const rep = managerReputation(managers, 60, parseInt(start.slice(0, 4), 10));
         const seasonEnd = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.end ?? defaultSeasonEnd(start);
-        meta.managerContract = {
+        seat.managerContract = {
           squadId: playerSquadId,
           wage: managerWeeklyWage(squad?.wageRevenueBasis ?? 0, rep),
           until: contractUntil(seasonEnd, MANAGER_CONTRACT.INITIAL_SEASONS),
           signed: start,
         };
+        seat.managerEarnings = 0;
+        meta.managerContract = seat.managerContract;
         meta.managerEarnings = 0;
-        await this.dal.writeMeta(meta);
+        await this.dal.writeSeat(id, seatId, seat);
       } catch (e) {
         logError("jobs", `save ${id}: failed to set the manager contract`, e);
       }

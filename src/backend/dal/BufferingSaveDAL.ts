@@ -1,7 +1,7 @@
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
-import type { SaveMeta } from "@/backend/SaveService";
+import type { WorldMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
@@ -134,13 +134,13 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
 
   // ── Save meta ───────────────────────────────────────────────────────────────
-  listSaves(): Promise<SaveMeta[]> {
+  listSaves(): Promise<WorldMeta[]> {
     return this.inner.listSaves();
   }
-  readMeta(saveId: string): Promise<SaveMeta | null> {
+  readMeta(saveId: string): Promise<WorldMeta | null> {
     return this.readThrough(`meta:${saveId}`, () => this.inner.readMeta(saveId));
   }
-  async writeMeta(meta: SaveMeta): Promise<void> {
+  async writeMeta(meta: WorldMeta): Promise<void> {
     this.buffer(`meta:${meta.id}`, meta, () => this.inner.writeMeta(meta));
   }
   deleteSave(saveId: string): Promise<void> {
