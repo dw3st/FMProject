@@ -13,7 +13,9 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { directorHandlesContracts, type DirectorDecision, type DirectorOutcome } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
-import { saveService, SaveService, type SaveMeta } from "@/backend/SaveService";
+import { saveService, SaveService, type SaveMeta, type WorldMeta } from "@/backend/SaveService";
+import { loadDaySeats } from "@/backend/daySeats";
+import { splitSeatPatch } from "@/Domain/seats/seats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
@@ -410,13 +412,13 @@ export async function advanceOneDay(
   options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
     // ── Load core state ──────────────────────────────────────────────────────
-    const meta = await saveService.getMeta(saveId);
-    if (!meta) return { ok: false, status: 404, error: "save not found" };
-    if (!meta.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
+    const world = await saveService.getWorldMeta(saveId);
+    if (!world) return { ok: false, status: 404, error: "save not found" };
+    if (!world.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
 
-    const currentDate = meta.currentDate;
+    const currentDate = world.currentDate;
     const nextDate = addOneDay(currentDate);
-    const activeLeagues = meta.activeLeagues ?? [];
+    const activeLeagues = world.activeLeagues ?? [];
 
     const dayEvents: Array<StoredDayLog["events"][number] | TrainingEvent | RestEvent> = [];
     // Keyed by squadId (not appended) so a club with two fixtures today (should not normally
@@ -441,11 +443,22 @@ export async function advanceOneDay(
     // once, before today's games are played (the same table the board sees).
     let importanceStandings: StandingRow[] | null | undefined;
 
-    const tactics = await saveService.getTactics(saveId);
+    // Membership comes from the save's squad folders. Built once for the day's matches and
+    // training; only the season rollover changes it, and it re-reads the index right after.
+    let index = await saveService.getSquadIndex(saveId);
+
+    // The seats of the world (`.claude/rules/game/multiplayer.md`). TRANSITIONAL (Tasks 13–22): `solo` and `meta`
+    // keep the single-seat code running until each group of steps loops over `daySeats`.
+    const daySeats = await loadDaySeats(saveService, saveId, world, index);
+    const solo = daySeats[0];
+    if (!solo) return { ok: false, status: 400, error: "save has no seat" };
+    const meta = solo.meta;
+
+    const tactics = solo.tactics;
 
     // Board and fans of the human club (`.claude/rules/game/board-fans.md`): updated in memory
     // through the day, written with the meta patch at the end. Messages are deferred like the rest.
-    let board: BoardState | undefined = meta.board;
+    let board: BoardState | undefined = solo.board;
     const boardMessages: Parameters<typeof buildBoardMessage>[0][] = [];
     let sackedReason: SackReason | null = null;
     // Press conferences (Etapa 42, `.claude/rules/game/press.md`): the human club's titles and knockout exits of the
@@ -453,10 +466,6 @@ export async function advanceOneDay(
     const pressTitles: string[] = [];
     const pressEliminated: string[] = [];
     let pressMatchContext = new Map<string, MatchContext>();
-
-    // Membership comes from the save's squad folders. Built once for the day's matches and
-    // training; only the season rollover changes it, and it re-reads the index right after.
-    let index = await saveService.getSquadIndex(saveId);
 
     // World news of the day (Etapa 42, `press.md` → "Notícias"): pushed as the day goes, written at the end. Never in
     // the start-kit pre-simulation (the kit is generic; its dates are before the career).
@@ -3062,8 +3071,11 @@ export async function advanceOneDay(
     }
 
     // ── Next currentDate: always the next day (no season jump) ─────────────────
+    // World and seat written apart (the seat in phase 1 of the flush, the world meta last).
+    const split = splitSeatPatch(metaPatch);
+    if (Object.keys(split.seat).length > 0) await saveService.updateSeat(saveId, solo.seatId, split.seat);
     const updatedMeta = await saveService.updateMeta(saveId, {
-      ...metaPatch,
+      ...(split.world as Partial<WorldMeta>),
       currentDate: nextDate,
       activeLeagues: updatedActiveLeagues.length > 0 ? updatedActiveLeagues : undefined,
     });
