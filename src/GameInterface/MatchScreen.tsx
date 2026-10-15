@@ -92,6 +92,7 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import {
   clearPendingRecording,
   isTerminalGroupError,
+  liveSendFailureUrl,
   sendWithRetry,
   storePendingRecording,
 } from "@/GameInterface/World/groupAdvanceErrors";
@@ -844,7 +845,12 @@ export function MatchScreen() {
                 const r = await sendWithRetry(() => groupAdvanceApi.liveRecording(saveId, date, fixtureId, recording));
                 if (!r.ok) {
                   if (isTerminalGroupError(r.error)) clearPendingRecording(saveId);
-                  window.location.href = `/match-result?error=${encodeURIComponent(r.error)}`;
+                  if (r.error === "dayClosed") {
+                    // The deadline ran the day while he played: the assistant's game is the official one.
+                    recordedRef.current = true;
+                    clearMatchSnapshot();
+                  }
+                  window.location.href = liveSendFailureUrl(r.error, date);
                   return;
                 }
                 clearPendingRecording(saveId);

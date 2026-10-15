@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { deadlineLeft } from "@/GameInterface/World/groupAdvanceText";
+import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
+import { Button } from "@/GameInterface/ui/Button";
 import type { GroupMemberView } from "@/types/groupAdvanceTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -19,7 +21,7 @@ function useNow(ms: number): number {
 /** The group's date, target, who is missing and the deadline (Painel and league screen). */
 export function GroupAdvanceBand() {
   const { t, i18n } = useTranslation();
-  const { enabled, view, error } = useGroupAdvance();
+  const { enabled, view, error, busy, retryAdvance } = useGroupAdvance();
   const now = useNow(60_000);
   if (!enabled || !view) return null;
   const fmt = (d: string | null) => (d ? formatGameDate(d, i18n.language, "dayMonth") : "—");
@@ -52,9 +54,26 @@ export function GroupAdvanceBand() {
                 : t("world.advance.band.deadlineNow")}
         </p>
       )}
+      {view.error && !view.running && (
+        <div className="basis-full flex flex-wrap items-center gap-x-4 gap-y-2" role="alert">
+          <p className="text-sm text-destructive m-0">{t(groupAdvanceErrorKey(view.error))}</p>
+          {view.gaveUp ? (
+            <>
+              <p className="text-sm text-muted-foreground m-0">{t("world.advance.band.gaveUp")}</p>
+              <Button onClick={() => void retryAdvance()} disabled={busy}>{t("world.advance.retry")}</Button>
+            </>
+          ) : view.nextRetryAt ? (
+            <p className="text-sm text-muted-foreground m-0 tabular-nums">
+              {t("world.advance.band.retryAt", {
+                time: new Date(view.nextRetryAt).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" }),
+              })}
+            </p>
+          ) : null}
+        </div>
+      )}
       {error && (
         <p className="text-sm text-destructive m-0 basis-full" role="alert">
-          {t("world.advance.band.error", { error: t(`world.advance.errors.${error}`, { defaultValue: t("world.advance.errors.generic") }) })}
+          {t("world.advance.band.error", { error: t(groupAdvanceErrorKey(error)) })}
         </p>
       )}
     </section>

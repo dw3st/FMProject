@@ -1,4 +1,5 @@
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 
 /** The seat's own game of day `date` already settled (`.claude/rules/game/multiplayer.md`, part 3). */
 export interface MatchDecision {
@@ -38,6 +39,26 @@ export interface PendingDay {
   newDate: string;
   /** The seat's part of the day (`outcome.seats[seatId]`: seasonEnded, sacked, jobOffers...). */
   seat: Record<string, unknown>;
+}
+
+/** What happened to the seat while he was away (shown in the summary; a stop also cleared his "ready until"). */
+export interface SummaryNotices {
+  jobOffers: number;
+  sacked: boolean;
+  seasonEnded: boolean;
+  pressInvite: boolean;
+  /** A stop (offers, sacking, season end) cleared his "ready until". */
+  readyCleared: boolean;
+}
+
+/** The pending days as one summary (`GET /api/worlds/:saveId/summary` → `aggregate`). */
+export interface PendingSummaryAggregate {
+  range: { from: string; to: string; days: number };
+  /** The days merged into one day log: the club's games and transfers, the last day's training/rest. */
+  log: AdvanceDayResponse;
+  /** Date of the club's last game in the range (the "full match report" link), or null. */
+  matchReportDate: string | null;
+  notices: SummaryNotices;
 }
 
 export type MemberAdvanceStatus = "ready" | "match" | "late" | "no_club";

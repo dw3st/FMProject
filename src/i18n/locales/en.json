@@ -5132,7 +5132,9 @@
         "deadlineMinutes_one": "Goes on without them in {{count}} minute",
         "deadlineMinutes_other": "Goes on without them in {{count}} minutes",
         "deadlineNow": "Goes on without them now",
-        "error": "{{error}}"
+        "error": "{{error}}",
+        "retryAt": "Tries again at {{time}}",
+        "gaveUp": "The league stopped trying."
       },
       "status": {
         "column": "Advance",
@@ -5140,6 +5142,20 @@
         "match": "Match day",
         "late": "Late",
         "no_club": "No club"
+      },
+      "summary": {
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "range": "{{from}} to {{to}}",
+        "noticesTitle": "While you were away",
+        "readyCleared": "Your “ready until” was cleared:",
+        "jobOffers_one": "You have a new job offer",
+        "jobOffers_other": "You have {{count}} new job offers",
+        "sacked": "You were sacked",
+        "seasonEnded": "The season ended",
+        "pressInvite": "A press conference invite is in your inbox",
+        "transfers": "Transfers",
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}"
       },
       "result": {
         "pending": "Provisional result: it counts when the league reaches this day."
@@ -5158,7 +5174,9 @@
         "invalidBody": "Something is missing in the request.",
         "invalidDecision": "Something is missing in the request.",
         "invalidRecording": "The match could not be saved. It will be simulated.",
-        "network": "No connection."
+        "network": "No connection.",
+        "dayFailed": "The league could not advance this day.",
+        "noError": "There is nothing to try again."
       },
       "inbox": {
         "subject": "The assistant advanced for you",

@@ -5132,7 +5132,9 @@
         "deadlineMinutes_one": "Avança sem eles em {{count}} minuto",
         "deadlineMinutes_other": "Avança sem eles em {{count}} minutos",
         "deadlineNow": "Avança sem eles agora",
-        "error": "{{error}}"
+        "error": "{{error}}",
+        "retryAt": "Tenta de novo às {{time}}",
+        "gaveUp": "A liga parou de tentar."
       },
       "status": {
         "column": "Avanço",
@@ -5140,6 +5142,20 @@
         "match": "Jogo do dia",
         "late": "Atrasado",
         "no_club": "Sem clube"
+      },
+      "summary": {
+        "days_one": "{{count}} dia",
+        "days_other": "{{count}} dias",
+        "range": "{{from}} a {{to}}",
+        "noticesTitle": "Enquanto você estava fora",
+        "readyCleared": "Seu “Pronto até” foi desmarcado:",
+        "jobOffers_one": "Você tem uma proposta nova",
+        "jobOffers_other": "Você tem {{count}} propostas novas",
+        "sacked": "Você foi demitido",
+        "seasonEnded": "A temporada terminou",
+        "pressInvite": "Há um convite para coletiva na sua caixa de entrada",
+        "transfers": "Transferências",
+        "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}"
       },
       "result": {
         "pending": "Resultado provisório: vale quando a liga chegar a este dia."
@@ -5158,7 +5174,9 @@
         "invalidBody": "Falta alguma coisa no pedido.",
         "invalidDecision": "Falta alguma coisa no pedido.",
         "invalidRecording": "Não foi possível salvar o jogo. Ele será simulado.",
-        "network": "Sem conexão."
+        "network": "Sem conexão.",
+        "dayFailed": "A liga não conseguiu avançar este dia.",
+        "noError": "Não há nada para tentar de novo."
       },
       "inbox": {
         "subject": "O assistente avançou por você",

@@ -33,6 +33,7 @@ import {
   clearPendingRecording,
   groupAdvanceErrorKey,
   isTerminalGroupError,
+  liveSendFailureUrl,
   loadPendingRecording,
   sendWithRetry,
 } from "@/GameInterface/World/groupAdvanceErrors";
@@ -387,10 +388,11 @@ export function MatchResultScreen() {
         }
 
         const lastDayForResult = addOneDay(date);
+        // A group world may have run several days past it (the result stays in the day log).
         if (
           !simCurrentDate ||
           simCurrentDate < date ||
-          simCurrentDate > lastDayForResult
+          (simCurrentDate > lastDayForResult && !session.groupAdvance)
         ) {
           if (!cancelled) {
             setRedirectingToDashboard(true);
@@ -504,6 +506,12 @@ export function MatchResultScreen() {
                 if (isTerminalGroupError(r.error)) {
                   clearPendingRecording(session.saveId);
                   setRetryable(false);
+                }
+                if (r.error === "dayClosed") {
+                  // The day ran meanwhile (the assistant simulated it): show the official result.
+                  clearMatchSnapshot();
+                  window.location.href = liveSendFailureUrl(r.error, stored.date);
+                  return;
                 }
                 setError(t(groupAdvanceErrorKey(r.error)));
                 setRetrying(false);

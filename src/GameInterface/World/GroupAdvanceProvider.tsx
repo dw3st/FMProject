@@ -9,8 +9,7 @@ import { isDashboardPath } from "@/GameInterface/World/worldNav";
 import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
 import { SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
 import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
-import type { AdvanceDayResponse } from "@/types/dayLogTypes";
-import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
+import type { GroupAdvanceView, PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
 import type { LeagueData } from "@/types/playerTypes";
 
 export interface GroupAdvanceContextValue {
@@ -21,12 +20,14 @@ export interface GroupAdvanceContextValue {
   /** `until`: "tomorrow", "next_match", a date, or null (not ready). */
   markReady: (until: string | null) => Promise<void>;
   simulateToday: () => Promise<void>;
+  /** "Try again" after the executor gave up on a failed day. */
+  retryAdvance: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
 const OFF: GroupAdvanceContextValue = {
   enabled: false, view: null, busy: false, error: null,
-  markReady: async () => {}, simulateToday: async () => {}, refresh: async () => {},
+  markReady: async () => {}, simulateToday: async () => {}, retryAdvance: async () => {}, refresh: async () => {},
 };
 
 const GroupAdvanceContext = createContext<GroupAdvanceContextValue>(OFF);
@@ -45,8 +46,8 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   const [view, setView] = useState<GroupAdvanceView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // One modal per day that ran without the seat looking, oldest first.
-  const [dayQueue, setDayQueue] = useState<AdvanceDayResponse[]>([]);
+  // The days that ran without the seat looking, as one summary.
+  const [summary, setSummary] = useState<PendingSummaryAggregate | null>(null);
   const [notice, setNotice] = useState<SeasonNotice | null>(null);
   const lastDate = useRef<string | null>(null);
   const inFlight = useRef(false);
@@ -62,8 +63,8 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     else if (r.status === 0) setError("network");
   }, [enabled, saveId, t]);
 
-  // The days that ran while the seat was away: a sacking sends him to /fired from any screen; the day modals
-  // (one per day, oldest first) only show on the dashboard, once the world stopped.
+  // The days that ran while the seat was away: a sacking sends him to /fired from any screen; the summary (one
+  // window for every day, built by the server) only shows on the dashboard, once the world stopped.
   const showSummary = useCallback(async () => {
     if (!enabled || inFlight.current) return;
     inFlight.current = true;
@@ -82,14 +83,9 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
       }
       if (!isDashboardPath(window.location.pathname) || shownKey.current === out.lastDate) return;
       shownKey.current = out.lastDate;
-      const logs = await Promise.all(r.data.days.map(async (d) => {
-        const res = await fetch(`/api/saves/${encodeURIComponent(saveId)}/days/${encodeURIComponent(d.date)}`).catch(() => null);
-        return res?.ok ? ({ ...(await res.json()), newDate: d.newDate } as AdvanceDayResponse) : null;
-      }));
-      const days = logs.filter((l): l is AdvanceDayResponse => l !== null);
-      setDayQueue(days);
+      setSummary(r.data.aggregate);
       if (out.notice) setNotice(out.notice);
-      if (days.length === 0 && !out.notice) await groupAdvanceApi.clearSummary(saveId);
+      if (!r.data.aggregate && !out.notice) await groupAdvanceApi.clearSummary(saveId);
     } finally {
       inFlight.current = false;
     }
@@ -103,8 +99,10 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     if (!enabled) return;
     return subscribe((event) => {
       if (event.type !== "world_progress" || event.saveId !== saveId) return;
-      setView((v) => (v ? { ...v, currentDate: event.date, target: event.target, running: event.running, waitingFor: event.waitingFor } : v));
-      setError(event.error ?? null);
+      // The executor's failure lives in the view (a code, with the next retry); the action error stays the seat's own.
+      setView((v) => (v
+        ? { ...v, currentDate: event.date, target: event.target, running: event.running, waitingFor: event.waitingFor, error: event.error ?? null }
+        : v));
       if (!event.running) {
         updateSessionCurrentDate(event.date);
         void refresh();
@@ -136,6 +134,15 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(false);
   }, [saveId, view, refresh]);
 
+  const retryAdvance = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    const r = await groupAdvanceApi.retry(saveId);
+    if (!r.ok) setError(r.error);
+    await refresh();
+    setBusy(false);
+  }, [saveId, refresh]);
+
   // After a socket drop the world may have moved on: look again.
   useEffect(() => {
     if (connected && !wasConnected.current) {
@@ -149,30 +156,30 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   }, [connected, refresh, showSummary]);
 
   const dismissDay = () => {
-    const rest = dayQueue.slice(1);
-    setDayQueue(rest);
-    if (rest.length > 0) return;
-    if (notice) void refreshSave({ background: true });
-    else {
-      void groupAdvanceApi.clearSummary(saveId);
-      void refreshSave();
-    }
+    setSummary(null);
+    if (!notice) void groupAdvanceApi.clearSummary(saveId);
+    void refreshSave({ background: true });
   };
   const dismissNotice = () => {
     setNotice(null);
     void groupAdvanceApi.clearSummary(saveId);
-    void refreshSave();
+    void refreshSave({ background: true });
   };
 
   const value: GroupAdvanceContextValue = enabled
-    ? { enabled, view, busy, error, markReady, simulateToday, refresh }
+    ? { enabled, view, busy, error, markReady, simulateToday, retryAdvance, refresh }
     : OFF;
 
   return (
     <GroupAdvanceContext.Provider value={value}>
       {children}
-      {dayQueue[0] && <DaySummaryModal dayLog={dayQueue[0]} onDismiss={dismissDay} mySquadId={mySquadId} leagues={leagues} />}
-      {notice && dayQueue.length === 0 && (
+      {summary && (
+        <DaySummaryModal
+          dayLog={summary.log} range={summary.range} notices={summary.notices} matchReportDate={summary.matchReportDate}
+          onDismiss={dismissDay} mySquadId={mySquadId} leagues={leagues}
+        />
+      )}
+      {notice && !summary && (
         <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} onDismiss={dismissNotice} />
       )}
     </GroupAdvanceContext.Provider>

@@ -3,7 +3,7 @@ import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 /** Error codes the group-advance routes (and the client) can produce; each has `world.advance.errors.<code>`. */
 export const GROUP_ADVANCE_ERROR_CODES = [
   "dayClosed", "notYourMatch", "seatOpponent", "noWinner", "notMulti", "lobby", "groupAdvance", "tooLarge",
-  "invalidBody", "invalidDecision", "invalidRecording", "invalidDate", "network", "generic",
+  "invalidBody", "invalidDecision", "invalidRecording", "invalidDate", "network", "generic", "dayFailed", "noError",
 ] as const;
 export type GroupAdvanceErrorCode = (typeof GROUP_ADVANCE_ERROR_CODES)[number];
 
@@ -16,6 +16,16 @@ export function groupAdvanceErrorKey(code: string): string {
 }
 
 const TERMINAL = new Set<string>(TERMINAL_CODES);
+
+/**
+ * Where the match screen goes when its live recording was refused. `dayClosed`: the deadline ran the day meanwhile
+ * (the assistant simulated the game), so the official result of `date`, without an error.
+ */
+export function liveSendFailureUrl(code: string, date: string): string {
+  return code === "dayClosed"
+    ? `/match-result?date=${encodeURIComponent(date)}`
+    : `/match-result?error=${encodeURIComponent(code)}`;
+}
 
 /** Terminal errors never get better by trying again. */
 export function isTerminalGroupError(code: string): boolean {

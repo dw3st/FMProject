@@ -1,4 +1,4 @@
-import type { GroupAdvanceView, PendingDay } from "@/types/groupAdvanceTypes";
+import type { GroupAdvanceView, PendingDay, PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { MatchEvent } from "@/types/dayLogTypes";
 
@@ -26,6 +26,7 @@ export const groupAdvanceApi = {
     call<{ ok: true }>(`${base(saveId)}/live-recording`, { method: "POST", body: JSON.stringify({ date, fixtureId, recording }) }),
   pendingLive: (saveId: string) =>
     call<{ date: string; fixtureId: string; event: MatchEvent | null }>(`${base(saveId)}/live-recording`),
-  summary: (saveId: string) => call<{ days: PendingDay[] }>(`${base(saveId)}/summary`),
+  summary: (saveId: string) => call<{ days: PendingDay[]; aggregate: PendingSummaryAggregate | null }>(`${base(saveId)}/summary`),
+  retry: (saveId: string) => call<{ ok: true }>(`${base(saveId)}/advance/retry`, { method: "POST", body: "{}" }),
   clearSummary: (saveId: string) => call<{ ok: true }>(`${base(saveId)}/summary`, { method: "DELETE" }),
 };

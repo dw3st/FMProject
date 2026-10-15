@@ -124,9 +124,15 @@ describe("group advance routes", () => {
     expect(view.deadlineAt).toBe("2026-10-16T12:00:00.000Z");
   });
 
-  test("summary: GET then DELETE clears", async () => {
-    await saveService.appendPendingDay(multi, "a", { date: D, newDate: "2027-03-11", seat: {} }, 10);
-    expect((await api("GET", "summary", multi)).json.days).toHaveLength(1);
+  test("summary: GET (days and one aggregate) then DELETE clears", async () => {
+    expect((await api("GET", "summary", multi)).json).toEqual({ days: [], aggregate: null });
+    await saveService.appendPendingDay(multi, "a", { date: D, newDate: "2027-03-11", seat: { jobOffers: 1 } }, 10);
+    await saveService.appendPendingDay(multi, "a", { date: "2027-03-11", newDate: "2027-03-12", seat: { achievements: 2 } }, 10);
+    const got = (await api("GET", "summary", multi)).json;
+    expect(got.days).toHaveLength(2);
+    expect(got.aggregate.range).toEqual({ from: D, to: "2027-03-11", days: 2 });
+    expect(got.aggregate.log.achievements).toBe(2);
+    expect(got.aggregate.notices).toMatchObject({ jobOffers: 1, readyCleared: true });
     expect((await api("DELETE", "summary", multi)).status).toBe(200);
     expect(await saveService.getPendingSummary(multi, "a")).toEqual([]);
   });
