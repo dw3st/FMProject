@@ -693,9 +693,11 @@ export class FileSystemDAL implements ISaveDAL {
     const dir = seatDir(saveId, seatId);
     if (file === null) {
       await rm(`${dir}/liveRecording.json`, { force: true });
+      bumpSaveDataVersion(saveId);
       return;
     }
     await writeJsonFile(dir, `${dir}/liveRecording.json`, file);
+    bumpSaveDataVersion(saveId);
   }
 
   async readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
@@ -705,6 +707,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
     const dir = seatDir(saveId, seatId);
     await writeJsonFile(dir, `${dir}/pendingSummary.json`, days);
+    bumpSaveDataVersion(saveId);
   }
 
   async deleteSeat(saveId: string, seatId: string): Promise<void> {

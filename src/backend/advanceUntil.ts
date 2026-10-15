@@ -203,7 +203,7 @@ async function playerFixtureDates(
 
 /**
  * The seat's unplayed official games (club and national team) on or after `from` (and up to `until`), ascending dates:
- * the group advance's `matchDates`. Unemployed: only his national team's. A world with no league folders gives [].
+ * the group advance's `matchDates`. Unemployed: only his national team's. A read failure throws (never "no game").
  */
 export async function seatMatchDates(
   service: SaveService, saveId: string, seatId: string, from: string, until: string | null = null,
@@ -211,17 +211,13 @@ export async function seatMatchDates(
   const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) return [];
   const dates: string[] = [];
-  try {
-    const state = await service.getNationalState(saveId);
-    if (state?.human?.[seatId]) dates.push(...(await nationalFixtureDates(service, saveId, seatId, from)).filter((d) => !until || d <= until));
-    if (!meta.unemployed && meta.clubId) {
-      const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
-      dates.push(...(await playerFixtureDates(service, saveId, competitions, meta.clubId, from, until)));
-    }
-  } catch {
-    // A world without league folders (a bare test save) has no games.
+  // A read failure propagates: it must never read as "no game" (the group advance would run over his game).
+  dates.push(...(await nationalFixtureDates(service, saveId, seatId, from)).filter((d) => !until || d <= until));
+  if (!meta.unemployed && meta.clubId) {
+    const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
+    dates.push(...(await playerFixtureDates(service, saveId, competitions, meta.clubId, from, until)));
   }
-  return dates.sort();
+  return [...new Set(dates)].sort();
 }
 
 /**
@@ -233,15 +229,11 @@ export async function seatNextMatchDate(
 ): Promise<string | null> {
   const meta = await service.getSeatMeta(saveId, seatId);
   if (!meta) return null;
-  try {
-    const national = await nextNationalFixtureDate(service, saveId, seatId, from);
-    if (meta.unemployed || !meta.clubId) return national;
-    const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
-    const club = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, from);
-    return [club, national].filter((d): d is string => !!d).sort()[0] ?? null;
-  } catch {
-    return null;
-  }
+  const national = await nextNationalFixtureDate(service, saveId, seatId, from);
+  if (meta.unemployed || !meta.clubId) return national;
+  const competitions = await seatCompetitions(service, saveId, meta.leagueSlug, meta.clubId);
+  const club = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, from);
+  return [club, national].filter((d): d is string => !!d).sort()[0] ?? null;
 }
 
 async function seatMatchDateOrThrow(
