@@ -283,14 +283,14 @@ export const advanceUntilRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
-    if ((await defaultSaveService.getMeta(saveId))?.world?.phase === "lobby") {
+    const worldMeta = await defaultSaveService.getMeta(saveId);
+    if (worldMeta?.world?.phase === "lobby") {
       return Response.json({ error: "lobby" }, { status: 409 });
     }
-    const worldMeta = await defaultSaveService.getMeta(saveId);
     if (worldMeta && isGroupWorld(worldMeta)) return Response.json({ error: "groupAdvance" }, { status: 409 });
     // Fast-forward moves every seat's days: with more than one seat it waits for the group advance (part 3,
     // `.claude/rules/game/multiplayer.md`). A single day still advances.
-    if (((await defaultSaveService.getMeta(saveId))?.seats.length ?? 0) > 1) {
+    if ((worldMeta?.seats.length ?? 0) > 1) {
       return Response.json({ error: "multiSeat" }, { status: 409 });
     }
 

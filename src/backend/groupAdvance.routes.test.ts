@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { addSaveMember, deleteSaveMembers } from "@/backend/auth/saveOwnership";
@@ -138,5 +138,84 @@ describe("group advance routes", () => {
     const until = await callApi("POST", "/api/saves/:saveId/advance-until", token, { params: { saveId: multi } });
     expect(until.status).toBe(409);
     expect(until.json.error).toBe("groupAdvance");
+  });
+});
+
+describe("group advance routes: the seat has a game today", () => {
+  const kicks: string[] = [];
+  let token = "";
+  let id = "";
+  let fixture: Record<string, unknown> = {};
+  const spies: { mockRestore(): void }[] = [];
+  const rec = (over: Record<string, unknown> = {}) => ({
+    fixtureId: "fx1", score: { home: 1, away: 0 }, teamStats: { home: {}, away: {} },
+    playerStats: {}, playerRatings: {}, playerEnergy: {}, substitutions: [], durationMs: 1, ...over,
+  });
+  const api = (method: "GET" | "POST", route: string, body?: unknown) =>
+    callApi(method, "/api/worlds/:saveId/" + route, token, { params: { saveId: id }, body });
+
+  beforeAll(async () => {
+    setKickScheduler((sid) => kicks.push(sid));
+    const login = devAutoLogin("ga-routes-game@test.local");
+    token = login.session.token;
+    id = await fakeWorld({ seatIds: ["a", "b"], date: D });
+    addSaveMember(id, login.user.id, "a", "owner");
+    fixture = { id: "fx1", competition: "premier_league", round: 1, date: D, home: "club-a", away: "club-x", played: false };
+    spies.push(spyOn(saveService, "getFixturesForDate").mockImplementation(async () => [fixture] as never));
+    spies.push(spyOn(saveService, "getSquadById").mockImplementation(
+      async (_s: string, sid: string) => ({ id: sid, name: sid, players: [], youth: [] }) as never,
+    ));
+  });
+  afterEach(() => { kicks.length = 0; });
+  afterAll(async () => {
+    setKickScheduler(null);
+    for (const sp of spies) sp.mockRestore();
+    deleteSaveMembers(id);
+    await saveService.deleteSave(id);
+  }, 60_000);
+
+  test("match-decision: stores the decision, readyUntil >= D+1, drops a live recording, kicks", async () => {
+    await saveService.writeLiveRecording(id, "a", { date: D, fixtureId: "fx1", recording: rec() as never });
+    const res = await api("POST", "match-decision", { date: D, fixtureId: "fx1", mode: "simulate" });
+    expect(res.status).toBe(200);
+    const seat = (await saveService.getSeat(id, "a"))!;
+    expect(seat.matchDecision).toEqual({ date: D, fixtureId: "fx1", mode: "simulate" });
+    expect(seat.readyUntil! >= "2027-03-11").toBe(true);
+    expect(await saveService.getLiveRecording(id, "a")).toBeNull();
+    expect(kicks).toEqual([id]);
+    expect((await api("POST", "match-decision", { date: D, fixtureId: "other", mode: "simulate" })).json.error).toBe("notYourMatch");
+  });
+
+  test("live-recording: stores the file and the live decision, kicks; GET builds the event", async () => {
+    const res = await api("POST", "live-recording", { date: D, fixtureId: "fx1", recording: rec() });
+    expect(res.status).toBe(200);
+    const seat = (await saveService.getSeat(id, "a"))!;
+    expect(seat.matchDecision).toEqual({ date: D, fixtureId: "fx1", mode: "live" });
+    expect((await saveService.getLiveRecording(id, "a"))!.fixtureId).toBe("fx1");
+    expect(kicks).toEqual([id]);
+    const got = await api("GET", "live-recording");
+    expect(got.status).toBe(200);
+    expect(got.json.event.fixtureId).toBe("fx1");
+    expect(got.json.event.score).toEqual({ home: 1, away: 0 });
+  });
+
+  test("GET live-recording of an earlier date is 404", async () => {
+    await saveService.writeLiveRecording(id, "a", { date: "2027-03-09", fixtureId: "fx1", recording: rec() as never });
+    expect((await api("GET", "live-recording")).status).toBe(404);
+  });
+
+  test("a knockout level without a shootout winner is 400 noWinner", async () => {
+    fixture = { ...fixture, knockout: true };
+    const res = await api("POST", "live-recording", { date: D, fixtureId: "fx1", recording: rec({ score: { home: 1, away: 1 } }) });
+    expect(res.status).toBe(400);
+    expect(res.json.error).toBe("noWinner");
+    fixture = { ...fixture, knockout: undefined };
+  });
+
+  test("a game against another seat is 409 seatOpponent", async () => {
+    fixture = { ...fixture, away: "club-b" };
+    const res = await api("POST", "live-recording", { date: D, fixtureId: "fx1", recording: rec() });
+    expect(res.status).toBe(409);
+    expect(res.json.error).toBe("seatOpponent");
   });
 });

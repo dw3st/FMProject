@@ -42,7 +42,7 @@ async function jsonBody(req: Request): Promise<Record<string, unknown> | Respons
   const declared = Number(req.headers.get("content-length") ?? "0");
   if (declared > MAX_BODY_BYTES) return Response.json({ error: "tooLarge" }, { status: 413 });
   const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) return Response.json({ error: "tooLarge" }, { status: 413 });
+  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return Response.json({ error: "tooLarge" }, { status: 413 });
   try {
     const v = raw ? JSON.parse(raw) : {};
     return v && typeof v === "object" && !Array.isArray(v)
@@ -113,7 +113,8 @@ export const groupAdvanceRoutes = {
     if (req.method === "GET") {
       // The provisional result of the seat's live match, until the executor runs that day.
       const file = await saveService.getLiveRecording(saveId, auth.seatId);
-      if (!file) return Response.json({ error: "not found" }, { status: 404 });
+      const current = (await saveService.getMeta(saveId))!.currentDate;
+      if (!file || file.date < current!) return Response.json({ error: "not found" }, { status: 404 });
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, file.date);
       const home = fixture ? await saveService.getSquadById(saveId, fixture.home) : null;
       const away = fixture ? await saveService.getSquadById(saveId, fixture.away) : null;
