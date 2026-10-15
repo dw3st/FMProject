@@ -11,6 +11,7 @@ import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
 import type { ClubFacilities, StandId } from "@/types/facilityTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { SeatState } from "@/types/seatTypes";
 import { seatManagerId } from "@/Domain/seats/seats";
 import type { Squad } from "@/types/playerTypes";
 
@@ -37,7 +38,7 @@ async function homeDecor(service: SaveService, saveId: string, seatId: string): 
 
 export interface MatchManagers {
   mine: { id: string; face?: ManagerFace | null; nationality: string | null };
-  opponent: { id: string; nationality: string | null } | null;
+  opponent: { id: string; face?: ManagerFace | null; nationality: string | null } | null;
 }
 
 /**
@@ -104,14 +105,22 @@ export async function clubCountryResolver(service: SaveService, saveId: string):
 /**
  * Both managers of today's game: the human (saved avatar and nationality) and the opponent's
  * (the `managers.json` record of that club, appearance from the country of his first club, as on
- * the managers tab). No record (save without `managers.json`) = null: the screen draws a silhouette.
+ * the managers tab). No record (save without `managers.json`) = null: the screen draws a silhouette. Against another
+ * seat (`seats`), the opponent is that seat's manager, with his saved avatar and nationality.
  */
 export function matchManagers(
   meta: SeatMeta, records: readonly ManagerRecord[], opponentId: string, countryOfClub: (squadId: string) => string | null,
+  seats: readonly { seatId: string; seat: SeatState }[] = [],
 ): MatchManagers {
+  const mine = { id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) };
+  const oppSeat = seats.find((s) => s.seatId !== meta.seatId && s.seat.clubId === opponentId && !s.seat.unemployed);
+  if (oppSeat) {
+    const m = oppSeat.seat.manager;
+    return { mine, opponent: { id: seatManagerId(oppSeat.seatId), face: m?.face ?? null, nationality: managerFaceCountry(m?.nationalityIso) } };
+  }
   const opp = records.find((m) => m.squadId === opponentId && !m.seatId);
   return {
-    mine: { id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) },
+    mine,
     opponent: opp ? { id: opp.id, nationality: countryOfClub(opp.clubs?.[0]?.squadId ?? opp.squadId) } : null,
   };
 }

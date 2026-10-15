@@ -13,6 +13,7 @@ import { emptyAchievements } from "@/Domain/achievements/progress";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { SeatState } from "@/types/seatTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 
 function squad(id: string, city: string, capacity: number): Squad {
@@ -99,6 +100,17 @@ describe("match crowd", () => {
     expect(m.mine.nationality).toBe("Brazil");
     expect(m.opponent).toEqual({ id: "coach_7", nationality: "Brazil" });
     expect(matchManagers(meta, [], "opp", () => null).opponent).toBeNull();
+  });
+
+  test("managers: against another seat, the opponent is that seat's manager with his avatar", () => {
+    const face = { seed: 7 };
+    const records = [
+      { id: "seat:seat1", squadId: "me", seatId: "seat1" },
+      { id: "seat:seat2", squadId: "opp", seatId: "seat2" },
+    ] as unknown as ManagerRecord[];
+    const seats = [{ seatId: "seat2", seat: { clubId: "opp", manager: { name: "B", nationalityIso: "br", face } } }] as unknown as { seatId: string; seat: SeatState }[];
+    const m = matchManagers(meta, records, "opp", () => null, seats);
+    expect(m.opponent).toEqual({ id: "seat:seat2", face, nationality: "Brazil" });
   });
 });
 

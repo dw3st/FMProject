@@ -596,7 +596,7 @@ export const apiRoutes = withJsonErrors({
       ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
       : null;
     const managers = saveIdParam && opponentSquad
-      ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id))
+      ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id), await saveService.listSeats(save.id))
       : null;
 
     // Referee of the match (`.claude/rules/game/referees.md`): the appointment the day advance will use.
