@@ -26,7 +26,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
-import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
@@ -84,7 +84,7 @@ export const transferRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
       const raw = await saveService.getTransfers(saveId);
       const enriched = await enrichTransfersWithLogos(saveId, raw);
@@ -123,14 +123,14 @@ export const transferRoutes = {
       // and appending the transfer/day-event must not interleave with a concurrent advance-day
       // on the same save (which also touches finances and the transfer log).
       return withSaveLock(saveId, async () => {
-        const meta = await saveService.getMeta(saveId);
+        const meta = await saveService.getSeatMeta(saveId, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
         // Without a club (`.claude/rules/game/jobs.md`) there is nobody to buy for.
         if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
 
         // Transfer window of the buyer — the human club (`.claude/rules/game/transfer-windows.md`).
-        const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
-        if (!windows.human().open) return windowClosedResponse(windows.human());
+        const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
+        if (!windows.seat(auth.seatId).today.open) return windowClosedResponse(windows.seat(auth.seatId).today);
 
         // ── Resolve squads ────────────────────────────────────────────────────
         const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
@@ -144,7 +144,7 @@ export const transferRoutes = {
         if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
 
-        if ((await humanRosterSize(saveService, saveId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+        if ((await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
@@ -155,7 +155,7 @@ export const transferRoutes = {
         const player = sellerSquad.players.find((p) => p.id === playerId);
         if (!player) {
           // Sold to a rival on the deadline (`.claude/rules/game/negotiation.md` → "Disputa").
-          const lost = (await saveService.getMarket(saveId))?.lostTargets?.find((l) => l.playerId === playerId);
+          const lost = (await saveService.getMarket(saveId, auth.seatId))?.lostTargets?.find((l) => l.playerId === playerId);
           if (lost) return Response.json({ response: { kind: "lost", clubName: lost.clubName, fee: lost.fee } });
           return Response.json({ error: "player not found" }, { status: 404 });
         }
@@ -164,7 +164,7 @@ export const transferRoutes = {
         if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
         // ── Look up seller's sell list for acceptance boost ───────────────────
-        const rawMarket = await saveService.getMarket(saveId);
+        const rawMarket = await saveService.getMarket(saveId, auth.seatId);
         const market = rawMarket ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] } : null;
         const sellerProfile = market?.profiles[fromSquadId];
         const sellPriority = sellerProfile
@@ -175,7 +175,7 @@ export const transferRoutes = {
         // Every signing creates a contract. `wage` defaults to the player's demand and `years`
         // to 3 (shortened to fit the age limit) when the client sends neither.
         // Personality (`personality.md`): the seller's club is where he comes from (smaller-club premium / refusal).
-        const negotiation = (await saveService.getAchievements(saveId)).attributes.negotiation;
+        const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
         const demandCtx = { fromSquad: sellerSquad, negotiation };
         const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "", demandCtx);
         const contractYears = typeof offeredYears === "number"
@@ -209,7 +209,7 @@ export const transferRoutes = {
             market, player, seller: sellerSquad, humanId: buyerSquad.id, date: date0, windows,
           });
           marketWithRivals = rolled.market;
-          if (rolled.news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(rolled.news), saveService);
+          if (rolled.news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(rolled.news), saveService, auth.seatId);
         }
         const rivals = liveRivals(marketWithRivals?.rivalBids, playerId, date0);
         const floor = rivalFloor(rivals);
@@ -262,7 +262,7 @@ export const transferRoutes = {
           talks: { ...pruneTalks(marketBase.talks, date0), [key]: talk },
           // Bought: the rivals for him are gone.
           ...(answer.kind === "accept" ? { rivalBids: (marketBase.rivalBids ?? []).filter((r) => r.playerId !== playerId) } : {}),
-        });
+        }, auth.seatId);
         if (answer.kind === "counter" || answer.kind === "prefers_rival") {
           return Response.json({ response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
         }
@@ -315,18 +315,18 @@ export const transferRoutes = {
           updatedMeta = await executeTransferFee(
             saveId,
             meta,
-            { squad: buying, ...buyerResolved, isPlayerClub: true },
-            { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
+            { squad: buying, ...buyerResolved, seatId: auth.seatId },
+            { squad: selling, ...sellerResolved, ...(isSellerPlayerClub ? { seatId: auth.seatId } : {}) },
             fee,
             saveService,
             { playerName: player.name, playerId, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
           );
-          const sellOnNews = await settleSellOn(saveService, saveId, updatedMeta, owed, player, sellerSquad.name, date);
+          const sellOnNews = await settleSellOn(saveService, saveId, auth.seatId, updatedMeta, owed, player, sellerSquad.name, date);
           if (sellOnNews) {
-            await emitInboxMessage(saveId, buildTransferNegotiationMessage(sellOnNews), saveService);
+            await emitInboxMessage(saveId, buildTransferNegotiationMessage(sellOnNews), saveService, auth.seatId);
             // Buying back a player whose clause we held: it was paid (to us), drop the receivable.
-            const held = await saveService.getMarket(saveId);
-            if (held) await saveService.saveMarket(saveId, marketAfterSellOnPaid(held, playerId));
+            const held = await saveService.getMarket(saveId, auth.seatId);
+            if (held) await saveService.saveMarket(saveId, marketAfterSellOnPaid(held, playerId), auth.seatId);
           }
 
           // Club history (`.claude/rules/game/club-history.md`): transfer records of both clubs.
@@ -342,20 +342,20 @@ export const transferRoutes = {
             // The buyer is the human club here.
             for (const c of changes) {
               if (c.squadId !== buyerSquad.id) continue;
-              for (const r of c.broken) await emitInboxMessage(saveId, buildClubRecordMessage(date, r), saveService);
+              for (const r of c.broken) await emitInboxMessage(saveId, buildClubRecordMessage(date, r), saveService, auth.seatId);
             }
           }
 
           // Board (`.claude/rules/game/board-fans.md`): spending past the balance costs confidence.
           const budgetAfter = (buyerSquad.finances?.budget ?? 0) - fee;
           if (updatedMeta.board && budgetAfter < 0) {
-            updatedMeta = await saveService.updateMeta(saveId, {
-              board: applyPurchase(updatedMeta.board, { balanceAfter: budgetAfter }),
-            });
+            const board = applyPurchase(updatedMeta.board, { balanceAfter: budgetAfter });
+            await saveService.updateSeat(saveId, auth.seatId, { board });
+            updatedMeta = { ...updatedMeta, board };
           }
 
           // Remove the sold player from the seller's sell list in the market profile
-          const latest = await saveService.getMarket(saveId);
+          const latest = await saveService.getMarket(saveId, auth.seatId);
           if (latest && sellerProfile) {
             const updatedProfile = {
               ...sellerProfile,
@@ -364,7 +364,7 @@ export const transferRoutes = {
             await saveService.saveMarket(saveId, {
               ...latest,
               profiles: { ...latest.profiles, [fromSquadId]: updatedProfile },
-            });
+            }, auth.seatId);
           }
         }
 
@@ -396,7 +396,7 @@ export const transferRoutes = {
     if (auth instanceof Response) return auth;
 
     if (req.method === "GET") {
-      const rawMarket = await saveService.getMarket(saveId);
+      const rawMarket = await saveService.getMarket(saveId, auth.seatId);
       const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
       return Response.json(market?.playerSellList ?? []);
     }
@@ -421,11 +421,11 @@ export const transferRoutes = {
       // dailyMarketTick (advance-day) or another sell-list toggle on the same save must not
       // interleave with this read-modify-write, or one toggle can silently undo another.
       return withSaveLock(saveId, async () => {
-        const meta = await saveService.getMeta(saveId);
+        const meta = await saveService.getSeatMeta(saveId, auth.seatId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
         // Without a club (`.claude/rules/game/jobs.md`) there is nothing to sell.
         if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
-        const rawMarket = await saveService.getMarket(saveId);
+        const rawMarket = await saveService.getMarket(saveId, auth.seatId);
         const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
         const listed = (market?.playerSellList ?? []).some((c) => c.playerId === playerId);
         // Only the human club's own players can be listed (toggling one off always works).
@@ -468,7 +468,7 @@ export const transferRoutes = {
         }
 
         const updatedMarket = { ...baseMarket, playerSellList: newList };
-        await saveService.saveMarket(saveId, updatedMarket);
+        await saveService.saveMarket(saveId, updatedMarket, auth.seatId);
         // Listed without asking for it: −8 morale (`.claude/rules/game/morale.md`).
         if (existingIdx < 0 && own) {
           const human = await saveService.getSquadById(saveId, meta.clubId);
@@ -495,7 +495,7 @@ export const transferRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     // Same source as the scout search `onlyForSale` filter: every AI sell list + the human one.
-    const ids = collectSellListedIds(await saveService.getMarket(saveId));
+    const ids = collectSellListedIds(await saveService.getMarket(saveId, auth.seatId));
 
     return Response.json(ids);
   },

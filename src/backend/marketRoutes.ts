@@ -1,7 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { loadWindowContext } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import { getLeagueData, type LeagueDataEntry } from "@/backend/advanceDay";
 import { emptyMarket, humanRosterSize, seasonEndOf } from "@/backend/negotiationWorld";
 import { prestigeOf } from "@/backend/rivalWorld";
@@ -31,12 +31,12 @@ export const marketRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return json({ error: "method not allowed" }, 405);
-    const meta = await saveService.getMeta(saveId);
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return json({ error: "save not found" }, 404);
-    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
-    const mine = windows.humanCountry() || windows.countryOfLeague(meta.leagueSlug);
+    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
+    const mine = windows.seat(auth.seatId).country || windows.countryOfLeague(meta.leagueSlug);
     const followed = new Set((meta.followedLeagues ?? []).map((l) => windows.countryOfLeague(l)));
-    const human = windows.human();
+    const human = windows.seat(auth.seatId).today;
     const catalog = (await getLeagueData()) as (LeagueDataEntry & { iso2?: string })[];
     const iso2Of = (country: string) => catalog.find((l) => l.country === country && l.iso2)?.iso2;
     const countries = windows.countries()
@@ -65,7 +65,7 @@ export const marketRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
-      return json((await saveService.getMarket(saveId))?.preContracts ?? []);
+      return json((await saveService.getMarket(saveId, auth.seatId))?.preContracts ?? []);
     }
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -75,7 +75,7 @@ export const marketRoutes = {
       return json({ error: "missing or invalid fields" }, 400);
     }
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return json({ error: "save not found" }, 404);
       if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
       const date = meta.currentDate;
@@ -85,18 +85,18 @@ export const marketRoutes = {
       if (current.id === human.id) return json({ error: "notEligible" }, 400);
       const player = current.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
-      const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+      const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const signed = market.preContracts ?? [];
       if (signed.some((p) => p.playerId === playerId)) return json({ error: "notEligible" }, 400);
       // The human club's limit; only this club's pending pre-contracts count.
       const mine = signed.filter((p) => p.toClubId === human.id).length;
-      if ((await humanRosterSize(saveService, saveId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);
+      if ((await humanRosterSize(saveService, saveId, auth.seatId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
       const answer = answerPreContract({
         offer: { wage, years }, player, human, current, date,
         humanPrestige: prestige.get(human.id) ?? 0.5, currentPrestige: prestige.get(current.id) ?? 0.5,
         nextSeasonEnd: addYearsIso(seasonEndOf(meta.activeLeagues, current.leagueSlug, date), 1),
-        negotiation: (await saveService.getAchievements(saveId)).attributes.negotiation,
+        negotiation: (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation,
       });
       if (!answer.accepted) {
         const status = answer.reason === "prefersCurrent" ? 200 : 400;
@@ -110,10 +110,10 @@ export const marketRoutes = {
           playerId, playerName: player.name, fromClubId: current.id, fromClubName: current.name, toClubId: human.id,
           wage, years, date,
         }],
-      });
+      }, auth.seatId);
       await emitInboxMessage(saveId, buildTransferNegotiationMessage({
         date, kind: "pre_contract", playerId, playerName: player.name, clubName: current.name, wage, years,
-      }), saveService);
+      }), saveService, auth.seatId);
       return json({ accepted: true, preference: answer.preference });
     });
   },
@@ -127,7 +127,7 @@ export const marketRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method === "GET") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta) return json({ error: "save not found" }, 404);
       const squad = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
       const contract = meta.managerContract ?? null;
@@ -143,20 +143,20 @@ export const marketRoutes = {
     const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
     if (!body || typeof body.accept !== "boolean") return json({ error: "accept required" }, 400);
     return withSaveLock(saveId, async () => {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return json({ error: "save not found" }, 404);
       const offer = meta.managerRenewal;
       if (!offer || !meta.managerContract || offer.expires < meta.currentDate) return json({ error: "offerClosed" }, 409);
       if (!body.accept) {
-        await saveService.updateMeta(saveId, { managerRenewal: undefined });
+        await saveService.updateSeat(saveId, auth.seatId, { managerRenewal: undefined });
         return json({ ok: true, status: "declined" });
       }
       const contract = renewedContract(meta.managerContract, offer, meta.currentDate);
-      await saveService.updateMeta(saveId, { managerContract: contract, managerRenewal: undefined });
+      await saveService.updateSeat(saveId, auth.seatId, { managerContract: contract, managerRenewal: undefined });
       await emitInboxMessage(saveId, buildBoardMessage({
         date: meta.currentDate, kind: "contract_renewed",
         contract: { wage: contract.wage, seasons: offer.seasons, until: contract.until },
-      }), saveService);
+      }), saveService, auth.seatId);
       return json({ ok: true, status: "renewed", contract });
     });
   },

@@ -388,8 +388,8 @@ describe("finance ledger — transfer entries (L4)", () => {
     const aiSquad = (await saveService.getSquad(saveId, "premier_league", "34"))!;
     await executeTransferFee(
       saveId, meta,
-      { squad: playerSquad, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, isPlayerClub: true },
-      { squad: aiSquad, leagueSlug: "premier_league", clubSlug: "34", isPlayerClub: false },
+      { squad: playerSquad, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, seatId: meta.seatId },
+      { squad: aiSquad, leagueSlug: "premier_league", clubSlug: "34" },
       buyFee,
     );
 
@@ -400,8 +400,8 @@ describe("finance ledger — transfer entries (L4)", () => {
     const playerSquadAfterBuy = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     await executeTransferFee(
       saveId, meta,
-      { squad: aiSquadAfter, leagueSlug: "premier_league", clubSlug: "34", isPlayerClub: false },
-      { squad: playerSquadAfterBuy, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, isPlayerClub: true },
+      { squad: aiSquadAfter, leagueSlug: "premier_league", clubSlug: "34" },
+      { squad: playerSquadAfterBuy, leagueSlug: meta.leagueSlug, clubSlug: meta.clubId, seatId: meta.seatId },
       sellFee,
     );
 

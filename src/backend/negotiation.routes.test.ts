@@ -170,7 +170,7 @@ describe("negotiation routes", () => {
 
     const mk = (await saveService.getMarket(saveId))!;
     expect(mk.loans?.some((l) => l.playerId === player.id)).toBe(true);
-    const back = await returnDueLoans(saveService, saveId, (await saveService.getMeta(saveId))!, mk, loaned.loan!.until);
+    const back = await returnDueLoans(saveService, saveId, meta.seatId, (await saveService.getMeta(saveId))!, mk, loaned.loan!.until);
     await saveService.saveMarket(saveId, back.market);
     expect(back.news.map((n) => n.kind)).toContain("loan_back");
     expect((await human()).players.some((p) => p.id === player.id)).toBe(false);

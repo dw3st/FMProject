@@ -519,7 +519,7 @@ try {
   };
 
   // ── Mercado vivo (see "Mercado vivo" section below, `.claude/rules/game/transfer-windows.md`) ──
-  const { loadWindowContext } = await import("@/backend/marketWindowWorld");
+  const { loadWindowContext, seatWindowRef } = await import("@/backend/marketWindowWorld");
   const { managerInvariantBreaks } = await import("@/Domain/managers/aiManagers");
   const livelyTrack = {
     moves: 0, outside: [] as string[], kinds: new Set<string>(),
@@ -1271,10 +1271,10 @@ try {
     const dayLog = await plain().getDayLog(saveId, date);
     // Mercado vivo: every fee transfer / loan start of the day inside the buyer's window.
     if (dayLog?.transfers?.length) {
-      const wctx = await loadWindowContext(meta, await plain().getSquadIndex(saveId), date);
+      const wctx = await loadWindowContext(meta, await plain().getSquadIndex(saveId), date, [seatWindowRef(meta)]);
       for (const mv of dayLog.transfers) {
         if (mv.kind !== "transfer" && mv.kind !== "loan") continue;
-        const st = mv.to === meta.clubId ? wctx.human() : wctx.ofSquad(mv.to);
+        const st = mv.to === meta.clubId ? wctx.seat(meta.seatId).today : wctx.ofSquad(mv.to);
         livelyTrack.moves++;
         if (!st.open) livelyTrack.outside.push(`${date} ${mv.playerId} -> ${mv.to}`);
         else livelyTrack.kinds.add(st.current?.kind ?? "grace");
@@ -2906,11 +2906,11 @@ try {
   // the deals below check exact counters (the "Mercado vivo" section forces its own rival).
   process.env.FM_NO_RIVALS = "1";
   {
-    const { loadWindowContext: lwc } = await import("@/backend/marketWindowWorld");
+    const { loadWindowContext: lwc, seatWindowRef: swr } = await import("@/backend/marketWindowWorld");
     let waited = 0;
     for (; waited < 60; waited++) {
       const m = (await plain().getMeta(saveId))!;
-      if ((await lwc(m, await plain().getSquadIndex(saveId))).human().open) break;
+      if ((await lwc(m, await plain().getSquadIndex(saveId), undefined, [swr(m)])).seat(m.seatId).today.open) break;
       const out = await runBufferedDay(saveId);
       if (!out.ok) { check(false, `negociação: day failed ${out.status} ${out.error}`); break; }
     }
@@ -3022,9 +3022,9 @@ try {
         const owed = sellOnFor(sold, sellerN.id, 25_000_000);
         const sRef = (await svcN.resolveSquadId(saveId, sellerN.id))!;
         const bRef = (await svcN.resolveSquadId(saveId, buyerN.id))!;
-        await executeTransferFee(saveId, metaN, { squad: moved.buying, ...bRef, isPlayerClub: false }, { squad: moved.selling, ...sRef, isPlayerClub: false },
+        await executeTransferFee(saveId, metaN, { squad: moved.buying, ...bRef }, { squad: moved.selling, ...sRef },
           25_000_000, svcN, { playerName: sold.name, playerId: sold.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) });
-        const news = await settleSellOn(svcN, saveId, metaN, owed, sold, sellerN.name, dateN);
+        const news = await settleSellOn(svcN, saveId, metaN.seatId, metaN, owed, sold, sellerN.name, dateN);
         check(owed?.amount === 5_000_000 && news?.kind === "sell_on", "negociação: a resale paid the human's 20% clause (5M)");
         const entries: LedgerEntry[] = [];
         for (const season of await plain().listLedgerSeasons(saveId)) entries.push(...(await plain().getLedger(saveId, season)));

@@ -4,7 +4,7 @@
  * the rival on the deadline. The rules live in `src/Domain/negotiation/rivals.ts`.
  */
 import { randomUUID } from "crypto";
-import type { SaveMeta, SaveService } from "@/backend/SaveService";
+import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { WindowContext } from "@/backend/marketWindowWorld";
 import { executeTransferFee } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -77,9 +77,9 @@ export async function rollRivalFor(
  * seller would not accept just lapse.
  */
 export async function resolveRivalDeadlines(
-  service: SaveService, saveId: string, meta: SaveMeta,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta,
   args: { market: MarketState; date: string; windows: WindowContext },
-): Promise<{ market: MarketState; meta: SaveMeta; news: News[]; moves: DayTransfer[] }> {
+): Promise<{ market: MarketState; meta: SeatMeta; news: News[]; moves: DayTransfer[] }> {
   const { date } = args;
   let market = args.market;
   let workingMeta = meta;
@@ -106,12 +106,12 @@ export async function resolveRivalDeadlines(
     const owed = sellOnFor(player, seller.id, r.fee);
     workingMeta = await executeTransferFee(
       saveId, workingMeta,
-      { squad: buying, ...buyerRef, isPlayerClub: false },
-      { squad: selling, ...sellerRef, isPlayerClub: false },
+      { squad: buying, ...buyerRef },
+      { squad: selling, ...sellerRef },
       r.fee, service,
       { playerName: player.name, playerId: player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
     );
-    const sellOnNews = await settleSellOn(service, saveId, workingMeta, owed, player, seller.name, date);
+    const sellOnNews = await settleSellOn(service, saveId, seatId, workingMeta, owed, player, seller.name, date);
     if (sellOnNews) news.push(sellOnNews);
     const seasonOf = (slug: string) => {
       const l = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === slug);
@@ -156,10 +156,10 @@ export async function prestigeOf(service: SaveService, saveId: string, date: str
  * he is gone from that club, the human squad is full or the manager changed club.
  */
 export async function applyDuePreContracts(
-  service: SaveService, saveId: string, meta: SaveMeta,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta,
   args: { unitIds: Set<string>; date: string; humanClubId: string | null },
 ): Promise<{ news: News[]; moves: DayTransfer[] }> {
-  const market = await service.getMarket(saveId);
+  const market = await service.getMarket(saveId, seatId);
   const due = (market?.preContracts ?? []).filter((p) => args.unitIds.has(p.fromClubId));
   if (!market || due.length === 0) return { news: [], moves: [] };
   const news: News[] = [];
@@ -168,7 +168,7 @@ export async function applyDuePreContracts(
     const from = await service.getSquadById(saveId, pc.fromClubId);
     const player = from?.players.find((p) => p.id === pc.playerId && !p.loan);
     const human = args.humanClubId === pc.toClubId ? await service.getSquadById(saveId, pc.toClubId) : null;
-    const full = human ? (await humanRosterSize(service, saveId, human)) >= HUMAN_MAX_SQUAD : true;
+    const full = human ? (await humanRosterSize(service, saveId, seatId, human)) >= HUMAN_MAX_SQUAD : true;
     if (!from || !player || !human || full) {
       news.push({ date: args.date, kind: "pre_contract_failed", playerId: pc.playerId, playerName: pc.playerName, clubName: pc.fromClubName });
       continue;
@@ -183,8 +183,8 @@ export async function applyDuePreContracts(
     moves.push({ playerId: player.id, from: from.id, to: human.id, fee: 0, kind: "pre_contract", date: args.date });
     news.push({ date: args.date, kind: "pre_contract_joined", playerId: player.id, playerName: player.name, clubName: from.name });
   }
-  const latest = (await service.getMarket(saveId)) ?? market;
+  const latest = (await service.getMarket(saveId, seatId)) ?? market;
   const doneIds = new Set(due.map((p) => p.playerId));
-  await service.saveMarket(saveId, { ...latest, preContracts: (latest.preContracts ?? []).filter((p) => !doneIds.has(p.playerId)) });
+  await service.saveMarket(saveId, { ...latest, preContracts: (latest.preContracts ?? []).filter((p) => !doneIds.has(p.playerId)) }, seatId);
   return { news, moves };
 }

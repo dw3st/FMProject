@@ -109,7 +109,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     expect(again.status).toBe(400);
 
     // The origin club's country rolls: he leaves for free, before the AI renewals.
-    const res = await applyDuePreContracts(saveService, saveId, (await saveService.getMeta(saveId))!, {
+    const res = await applyDuePreContracts(saveService, saveId, meta.seatId, (await saveService.getMeta(saveId))!, {
       unitIds: new Set([club.id]), date: "2027-05-20", humanClubId: meta.clubId,
     });
     expect(res.moves).toEqual([{ playerId: target.id, from: club.id, to: meta.clubId, fee: 0, kind: "pre_contract", date: "2027-05-20" }]);

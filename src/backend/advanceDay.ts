@@ -142,7 +142,7 @@ import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorl
 import { recordLeagueAwards, recordSeasonGoals, runWorldCeremony } from "@/backend/awardsWorld";
 import { tierFactor } from "@/Domain/awards/awardsConfig";
 import type { AwardsInboxMessage } from "@/types/inboxTypes";
-import { loadWindowContext } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import {
   humanRegistrationDay, matchRegistration, refreshAiRegistrations, registrationDayCtx,
 } from "@/backend/registrationWorld";
@@ -470,7 +470,7 @@ export async function advanceOneDay(
     const playerSquadId: string | undefined = playerEntry?.squadId;
 
     // Transfer windows of the day (`.claude/rules/game/transfer-windows.md`), from today's seasons.
-    const windows = await loadWindowContext(meta, index, currentDate);
+    const windows = await loadWindowContext(meta, index, currentDate, [seatWindowRef(meta)]);
     // Player moves of the day, written to the day log (`StoredDayLog.transfers`) after the market.
     const dayMoves: DayTransfer[] = [];
 
@@ -1430,7 +1430,7 @@ export async function advanceOneDay(
       // Loans due back today go home first, so the market below sees the squads as they are.
       let rawMarket = await saveService.getMarket(saveId);
       if (rawMarket?.loans?.length) {
-        const back = await returnDueLoans(saveService, saveId, meta, rawMarket, currentDate);
+        const back = await returnDueLoans(saveService, saveId, meta.seatId, meta, rawMarket, currentDate);
         if (back.market !== rawMarket) {
           rawMarket = back.market;
           await saveService.saveMarket(saveId, rawMarket);
@@ -1492,7 +1492,7 @@ export async function advanceOneDay(
       }
       let marketAfterTick: MarketState = { ...updatedMarket, talks: pruneTalks(updatedMarket.talks, currentDate) };
       // A closed window ends the human's open conversations (bans stay).
-      if (resolvedPlayerSquadId && !windows.human().open && marketAfterTick.talks) {
+      if (resolvedPlayerSquadId && !windows.seat(meta.seatId).today.open && marketAfterTick.talks) {
         marketAfterTick = {
           ...marketAfterTick,
           talks: Object.fromEntries(Object.entries(marketAfterTick.talks).filter(([, t]) => t.closedUntil && t.closedUntil >= currentDate)),
@@ -1519,19 +1519,19 @@ export async function advanceOneDay(
             squad: buying,
             leagueSlug: buyerResolved.leagueSlug,
             clubSlug: buyerResolved.clubSlug,
-            isPlayerClub: isBuyerPlayer,
+            ...(isBuyerPlayer ? { seatId: meta.seatId } : {}),
           },
           {
             squad: selling,
             leagueSlug: sellerResolved.leagueSlug,
             clubSlug: sellerResolved.clubSlug,
-            isPlayerClub: isSellerPlayer,
+            ...(isSellerPlayer ? { seatId: meta.seatId } : {}),
           },
           tx.fee,
           saveService,
           { playerName: tx.player.name, playerId: tx.player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
         );
-        const sellOnNews = await settleSellOn(saveService, saveId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        const sellOnNews = await settleSellOn(saveService, saveId, meta.seatId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
         if (owed) sellOnPaidTo.add(owed.clubId);
         if (sellOnNews) {
           negotiationNews.push(sellOnNews);
@@ -1621,7 +1621,7 @@ export async function advanceOneDay(
       // Competition for the human's targets (`.claude/rules/game/negotiation.md` → "Disputa"): rivals
       // whose deadline is today buy the player; targets with a live rival may draw another one.
       if (marketAfterTick.rivalBids?.length) {
-        const res = await resolveRivalDeadlines(saveService, saveId, workingMeta, { market: marketAfterTick, date: currentDate, windows });
+        const res = await resolveRivalDeadlines(saveService, saveId, meta.seatId, workingMeta, { market: marketAfterTick, date: currentDate, windows });
         marketAfterTick = res.market;
         workingMeta = res.meta;
         negotiationNews.push(...res.news);
@@ -1689,9 +1689,9 @@ export async function advanceOneDay(
 
     // ── Transfer windows: news for the human club's country (open / closing / closed) ──────────
     if (playerSquadId && !options.marketFrozen) {
-      const today = windows.human();
-      const yesterday = windows.humanOn(addDays(currentDate, -1));
-      const country = windows.humanCountry();
+      const today = windows.seat(meta.seatId).today;
+      const yesterday = windows.seat(meta.seatId).on(addDays(currentDate, -1));
+      const country = windows.seat(meta.seatId).country;
       const base = { date: currentDate, playerId: "", playerName: "", clubName: country, country };
       if (today.open && !yesterday.open) negotiationNews.push({ ...base, kind: "window_open", ...(today.until ? { until: today.until } : {}) });
       else if (today.open && daysToClose(today, currentDate) === WINDOWS.CLOSING_NOTICE_DAYS) {
@@ -2216,7 +2216,7 @@ export async function advanceOneDay(
         if (mk?.loans?.length) {
           const unitIds = new Set<string>();
           for (const slug of unit.leagues) for (const sq of await saveService.getSquadsInLeague(saveId, slug)) unitIds.add(sq.id);
-          const back = await returnDueLoans(saveService, saveId, meta, mk, currentDate, {
+          const back = await returnDueLoans(saveService, saveId, meta.seatId, meta, mk, currentDate, {
             graceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS, onlyBorrowers: unitIds,
             // A loan of a rolling PARENT ends too when the contract does, so the expiry below sees him.
             parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
@@ -2265,7 +2265,7 @@ export async function advanceOneDay(
             await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
           }
         }
-        await pruneSellOnHeld(saveService, saveId, res.retired.map((r) => r.id));
+        await pruneSellOnHeld(saveService, saveId, meta.seatId, res.retired.map((r) => r.id));
         if (newsCollector) {
           for (const r of res.retired) if (levels.top.has(r.id) && !r.freeAgent) newsCollector.retired.push({ playerId: r.id, player: r.name, squadId: r.squadId });
         }
@@ -2282,7 +2282,7 @@ export async function advanceOneDay(
       if (!options.marketFrozen) {
         const unitIds = new Set<string>();
         for (const slug of unit.leagues) for (const t of index.inLeague(slug)) unitIds.add(t.squadId);
-        const pc = await applyDuePreContracts(saveService, saveId, meta, { unitIds, date: currentDate, humanClubId: playerClubSquadId ?? null });
+        const pc = await applyDuePreContracts(saveService, saveId, meta.seatId, meta, { unitIds, date: currentDate, humanClubId: playerClubSquadId ?? null });
         negotiationNews.push(...pc.news);
         dayMoves.push(...pc.moves);
       }
@@ -2316,7 +2316,7 @@ export async function advanceOneDay(
           }
         }
       }
-      await pruneSellOnHeld(saveService, saveId, releasedNow.map((f) => f.player.id));
+      await pruneSellOnHeld(saveService, saveId, meta.seatId, releasedNow.map((f) => f.player.id));
       if (releasedNow.length > 0 || due.units.length > 0) {
         const existing = await saveService.getFreeAgents(saveId);
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
@@ -2340,7 +2340,7 @@ export async function advanceOneDay(
           trimmedIds.push(...trimmed.released.map((p) => p.id));
         }
         await saveService.writeFreeAgents(saveId, pool);
-        await pruneSellOnHeld(saveService, saveId, trimmedIds);
+        await pruneSellOnHeld(saveService, saveId, meta.seatId, trimmedIds);
       }
 
       // 9. Academy (.claude/rules/game/youth.md): every club gets a yearly intake of 16-17 year olds.

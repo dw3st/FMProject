@@ -57,7 +57,7 @@ export const youthRoutes = {
       const { squad } = found;
       const player = squad.youth?.find((p) => p.id === playerId);
       if (!player) return Response.json({ error: "player not found" }, { status: 404 });
-      if ((await humanRosterSize(saveService, saveId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+      if ((await humanRosterSize(saveService, saveId, auth.seatId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
       if (!player.contract) return Response.json({ error: "noContract" }, { status: 409 });
       const promoted: RosterPlayer = {
         ...player,

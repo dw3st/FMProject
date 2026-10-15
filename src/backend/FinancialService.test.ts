@@ -16,8 +16,8 @@ const squad = (id: string, budget: number, extra: Partial<Squad> = {}): Squad =>
 describe("transferFeeSquads", () => {
   test("human buys from AI: human budget pays, AI seller refills part of its transfer budget", () => {
     const { buyer, seller } = transferFeeSquads(
-      { squad: squad("h", 20_000_000), isPlayerClub: true },
-      { squad: squad("ai", 5, { aiTransferBudget: 0 }), isPlayerClub: false },
+      { squad: squad("h", 20_000_000), seatId: "s1" },
+      { squad: squad("ai", 5, { aiTransferBudget: 0 }) },
       10_000_000,
     );
     expect(buyer.finances!.budget).toBe(10_000_000);
@@ -27,8 +27,8 @@ describe("transferFeeSquads", () => {
   });
   test("AI buys from human: AI transfer budget pays, human budget receives the full fee", () => {
     const { buyer, seller } = transferFeeSquads(
-      { squad: squad("ai", 7), isPlayerClub: false },
-      { squad: squad("h", 1_000_000), isPlayerClub: true },
+      { squad: squad("ai", 7) },
+      { squad: squad("h", 1_000_000), seatId: "s1" },
       10_000_000,
     );
     expect(buyer.aiTransferBudget).toBe(seasonalTransferBudgetFor("HIGH", 0) - 10_000_000);

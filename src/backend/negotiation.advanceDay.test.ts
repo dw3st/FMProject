@@ -27,7 +27,7 @@ describe("negotiation in advanceOneDay", () => {
     const parent = others[0]!;
     const loanee = parent.players.find((p) => p.positions[0] !== "GK")!;
 
-    const market = await startLoan(saveService, saveId, meta, emptyMarket(), {
+    const market = await startLoan(saveService, saveId, meta.seatId, meta, emptyMarket(), {
       player: loanee, parent, borrower: human, wageShare: 0.5, until: date, fee: 0,
     });
     const listed = human.players.filter((p) => p.positions[0] !== "GK").slice(-2).map((p) => p.id);

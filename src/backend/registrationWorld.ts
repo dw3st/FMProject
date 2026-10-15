@@ -4,7 +4,7 @@ import type { Squad } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { RegistrationCompKind, RegistrationNotice } from "@/types/registrationTypes";
 import countriesRaw from "@/Data/countries.json";
-import { loadWindowContext, type WindowContext } from "@/backend/marketWindowWorld";
+import { loadWindowContext, seatWindowRef, type WindowContext } from "@/backend/marketWindowWorld";
 import { seasonLabel } from "@/Domain/history/history";
 import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
 import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
@@ -52,7 +52,7 @@ export async function registrationDayCtx(
   date = meta.currentDate ?? "",
   windows?: WindowContext,
 ): Promise<RegistrationDayCtx> {
-  const w = windows ?? (await loadWindowContext(meta, index, date));
+  const w = windows ?? (await loadWindowContext(meta, index, date, [seatWindowRef(meta)]));
   const humanClubId = meta.unemployed ? undefined : meta.clubId || undefined;
   const states = new Map((meta.activeLeagues ?? []).map((l) => [l.leagueSlug, l] as const));
   const metaCache = new Map<string, Promise<LeagueSeasonMeta | null>>();
@@ -87,7 +87,7 @@ export async function registrationDayCtx(
       country,
       squadId: squad.id,
     };
-    const window = squad.id === humanClubId ? w.human() : w.ofLeague(leagueSlug);
+    const window = squad.id === humanClubId ? w.seat(meta.seatId).today : w.ofLeague(leagueSlug);
     const status = registrationStatus({ kind, window, date, ...(kind === "continental" ? { continental: gateOf(compMeta) } : {}) });
     return { slug, kind, season, rule: ruleFor(slug, leagueSlug, country, COUNTRIES[country]?.continent), ctx, status };
   };

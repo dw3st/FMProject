@@ -34,7 +34,7 @@ export const rebornRoutes = {
     }
     let retired = [...(await saveService.getRetired(saveId))].reverse();
     if (q.get("mine") === "1") {
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
     const index = await saveService.getSquadIndex(saveId);
@@ -74,7 +74,7 @@ export const rebornRoutes = {
       if (!rec) return Response.json({ error: "not found" }, { status: 404 });
       if (rec.rebornOffer !== "pending") return Response.json({ error: "offerClosed" }, { status: 409 });
       // Only the club the player retired from can take him back (`.claude/rules/game/jobs.md`).
-      const owner = await saveService.getMeta(saveId);
+      const owner = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!owner || rec.squadId !== owner.clubId) return Response.json({ error: "offerClosed" }, { status: 409 });
       const mark = (status: NonNullable<RetiredPlayer["rebornOffer"]>) =>
         saveService.writeRetired(saveId, retired.map((r) => (r.id === retiredId ? { ...r, rebornOffer: status } : r)));
@@ -82,7 +82,7 @@ export const rebornRoutes = {
         await mark("declined");
         return Response.json({ ok: true, status: "declined" });
       }
-      const meta = await saveService.getMeta(saveId);
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       const ref = meta ? await saveService.resolveSquadId(saveId, meta.clubId) : null;
       const squad = ref ? await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
       if (!meta || !ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });
