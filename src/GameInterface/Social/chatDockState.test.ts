@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { closeInDock, isRoomVisible, openInDock, parseDock, toggleInDock } from "@/GameInterface/Social/chatDockState";
+import { closeInDock, isRoomVisible, openInDock, parseDock, pruneDmChats, toggleInDock } from "@/GameInterface/Social/chatDockState";
 
 test("opening a fourth chat minimizes the oldest open one", () => {
   let dock = openInDock([], "dm:a");
@@ -40,4 +40,18 @@ test("parseDock keeps only valid entries and the open limit", () => {
   ]);
   expect(parseDock("not json")).toEqual([]);
   expect(parseDock(null)).toEqual([]);
+});
+
+test("pruneDmChats closes DMs with someone who is no longer a friend (unfriended or renamed); worlds stay", () => {
+  const dock = [
+    { room: "dm:Ana", minimized: false },
+    { room: "dm:old_name", minimized: true },
+    { room: "world:abc", minimized: false },
+  ];
+  expect(pruneDmChats(dock, ["Ana", "new_name"])).toEqual([
+    { room: "dm:Ana", minimized: false },
+    { room: "world:abc", minimized: false },
+  ]);
+  const same = [{ room: "dm:Ana", minimized: false }];
+  expect(pruneDmChats(same, ["Ana"])).toBe(same);
 });

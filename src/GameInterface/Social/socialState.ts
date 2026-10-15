@@ -85,3 +85,29 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
       return null;
   }
 }
+
+/** Unread left in a room after a read mark: the others' messages above it. Null when the room is not loaded. */
+export function unreadAfterRead(list: readonly ChatMessageView[] | undefined, lastReadId: number): number | null {
+  if (!list) return null;
+  return list.filter((m) => !m.mine && m.id > lastReadId).length;
+}
+
+const RECONNECT_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
+/** Attempts in a row that never opened before the client gives up (a server without the socket). */
+export const MAX_FAILED_CONNECTS = 5;
+
+/** Wait before reconnect attempt `attempt` (0-based): grows, capped at 30 s. */
+export function reconnectDelay(attempt: number): number {
+  return RECONNECT_MS[Math.min(attempt, RECONNECT_MS.length - 1)]!;
+}
+
+/**
+ * Whether to reconnect after the socket closed. `meStatus` is the answer of `/api/social/me` checked before
+ * retrying (0 = no network): 401 (session gone) or 404 (no social routes) stop for good; so do 5 attempts in a
+ * row that never opened when the socket never opened at all.
+ */
+export function reconnectAction(s: { meStatus: number; failedInARow: number; everOpened: boolean }): "retry" | "stop" {
+  if (s.meStatus === 401 || s.meStatus === 404) return "stop";
+  if (!s.everOpened && s.failedInARow >= MAX_FAILED_CONNECTS) return "stop";
+  return "retry";
+}

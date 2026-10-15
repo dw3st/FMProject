@@ -60,3 +60,10 @@ export function parseDock(raw: string | null): DockChat[] {
     return [];
   }
 }
+
+/** Closes the DMs with someone who is no longer a friend (unfriended, or renamed: the old name is gone). */
+export function pruneDmChats(dock: DockChat[], friendNicknames: readonly string[]): DockChat[] {
+  const friends = new Set(friendNicknames);
+  const next = dock.filter((c) => !c.room.startsWith("dm:") || friends.has(c.room.slice(3)));
+  return next.length === dock.length ? dock : next;
+}

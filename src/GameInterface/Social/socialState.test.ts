@@ -5,7 +5,10 @@ import {
   mergeMessages,
   onlineFriendCount,
   parseServerEvent,
+  reconnectAction,
+  reconnectDelay,
   totalUnread,
+  unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
 import type { FriendView } from "@/types/socialTypes";
@@ -51,5 +54,33 @@ describe("parseServerEvent", () => {
     expect(parseServerEvent("nope")).toBeNull();
     expect(parseServerEvent(JSON.stringify({ type: "message", room: 1 }))).toBeNull();
     expect(parseServerEvent(JSON.stringify({ type: "other" }))).toBeNull();
+  });
+});
+
+describe("unreadAfterRead", () => {
+  const msg = (id: number, mine = false) => ({ id, from: mine ? "me" : "Ana", mine, body: "x", at: id });
+  test("only messages after the read mark still count", () => {
+    expect(unreadAfterRead([msg(1), msg(2), msg(3, true), msg(4), msg(5)], 3)).toBe(2);
+    expect(unreadAfterRead([msg(1), msg(2)], 2)).toBe(0);
+  });
+  test("unknown without the room's messages loaded", () => {
+    expect(unreadAfterRead(undefined, 9)).toBeNull();
+  });
+});
+
+describe("reconnectAction", () => {
+  test("stops on a closed session or a server without the social routes", () => {
+    expect(reconnectAction({ meStatus: 401, failedInARow: 1, everOpened: true })).toBe("stop");
+    expect(reconnectAction({ meStatus: 404, failedInARow: 1, everOpened: false })).toBe("stop");
+  });
+  test("stops after 5 failures in a row when it never opened; keeps trying otherwise", () => {
+    expect(reconnectAction({ meStatus: 200, failedInARow: 4, everOpened: false })).toBe("retry");
+    expect(reconnectAction({ meStatus: 200, failedInARow: 5, everOpened: false })).toBe("stop");
+    expect(reconnectAction({ meStatus: 0, failedInARow: 9, everOpened: true })).toBe("retry");
+  });
+  test("backoff grows and has a ceiling", () => {
+    expect(reconnectDelay(0)).toBe(1_000);
+    expect(reconnectDelay(3)).toBe(10_000);
+    expect(reconnectDelay(50)).toBe(30_000);
   });
 });

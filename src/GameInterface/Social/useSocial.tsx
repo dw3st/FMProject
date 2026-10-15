@@ -7,6 +7,7 @@ import {
   isRoomVisible,
   openInDock,
   parseDock,
+  pruneDmChats,
   toggleInDock,
   type DockChat,
 } from "@/GameInterface/Social/chatDockState";
@@ -14,7 +15,10 @@ import {
   applyPresence,
   mergeMessages,
   parseServerEvent,
+  reconnectAction,
+  reconnectDelay,
   totalUnread,
+  unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
 import type {
@@ -26,7 +30,8 @@ import type {
   SocialMe,
 } from "@/types/socialTypes";
 
-const RECONNECT_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
+/** Close code the server uses when the session logged out: never reconnect. */
+const LOGOUT_CLOSE_CODE = 4001;
 const EMPTY_LISTS: FriendsResponse = { friends: [], incoming: [], outgoing: [], worlds: [] };
 
 export interface TypingInfo {
@@ -119,6 +124,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     if (!r.ok) return;
     setLists(r.data);
     setUnread(unreadFromLists(r.data));
+    // A DM with someone no longer a friend (unfriended, or renamed) closes; the dock's storage follows.
+    setDock((d) => pruneDmChats(d, r.data.friends.map((f) => f.nickname)));
   }, []);
 
   useEffect(() => {
@@ -172,9 +179,13 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
         case "friend_update":
           void refreshFriends();
           break;
-        case "read":
-          setUnread((prev) => ({ ...prev, [event.room]: 0 }));
+        case "read": {
+          // Only what is above the read mark stops counting (a message may have arrived since).
+          const left = unreadAfterRead(messagesRef.current[event.room], event.lastReadId);
+          if (left === null) void refreshFriends();
+          else setUnread((prev) => ({ ...prev, [event.room]: left }));
           break;
+        }
         case "typing":
           setTyping((prev) => ({ ...prev, [event.room]: { from: event.from, at: Date.now() } }));
           break;
@@ -188,33 +199,83 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
 
+  const loadMessages = useCallback(async (room: string, older: boolean) => {
+    const current = messagesRef.current[room];
+    const before = older ? current?.[0]?.id : undefined;
+    if (older && before === undefined) return;
+    const r = await socialApi.messages(room, before);
+    if (!r.ok) {
+      setRoomErrors((prev) => ({ ...prev, [room]: r.error }));
+      return;
+    }
+    setRoomErrors((prev) => {
+      if (!prev[room]) return prev;
+      const next = { ...prev };
+      delete next[room];
+      return next;
+    });
+    setMessages((prev) => ({ ...prev, [room]: mergeMessages(prev[room] ?? [], r.data.messages) }));
+    setHasMore((prev) => ({ ...prev, [room]: r.data.hasMore }));
+  }, []);
+
   useEffect(() => {
     if (!available) return;
     let stopped = false;
     let attempt = 0;
+    let everOpened = false;
+    let failedInARow = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const stop = () => {
+      stopped = true;
+      setConnected(false);
+    };
 
     const connect = () => {
       if (stopped) return;
       const proto = window.location.protocol === "https:" ? "wss" : "ws";
       const ws = new WebSocket(`${proto}://${window.location.host}/api/ws`);
       wsRef.current = ws;
+      let opened = false;
       ws.onopen = () => {
+        opened = true;
+        const reconnected = everOpened;
+        everOpened = true;
         attempt = 0;
+        failedInARow = 0;
         setConnected(true);
         ws.send(JSON.stringify({ type: "hello", saveId, hidden: document.hidden } satisfies ClientEvent));
+        if (reconnected) {
+          // Whatever arrived while disconnected: the lists (unread, presence) and every room already loaded.
+          void refreshFriends();
+          for (const room of Object.keys(messagesRef.current)) void loadMessages(room, false);
+        }
       };
       ws.onmessage = (e) => {
         const event = parseServerEvent(e.data);
         if (event) handleRef.current(event);
       };
-      ws.onclose = () => {
+      ws.onclose = (e) => {
         if (wsRef.current === ws) wsRef.current = null;
         setConnected(false);
         if (stopped) return;
-        const delay = RECONNECT_MS[Math.min(attempt, RECONNECT_MS.length - 1)]!;
+        if (e.code === LOGOUT_CLOSE_CODE) {
+          stop();
+          return;
+        }
+        failedInARow = opened ? 0 : failedInARow + 1;
+        const delay = reconnectDelay(attempt);
         attempt++;
-        reconnectTimer = setTimeout(connect, delay);
+        reconnectTimer = setTimeout(() => {
+          if (stopped) return;
+          // The browser never says why an upgrade failed: ask the API (401 = logged out, 404 = no social routes).
+          void socialApi.me().then((r) => {
+            if (stopped) return;
+            const meStatus = r.ok ? 200 : r.status;
+            if (reconnectAction({ meStatus, failedInARow, everOpened }) === "stop") stop();
+            else connect();
+          });
+        }, delay);
       };
       ws.onerror = () => ws.close();
     };
@@ -238,26 +299,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [available, saveId, sendWs, markRoomRead]);
-
-  const loadMessages = useCallback(async (room: string, older: boolean) => {
-    const current = messagesRef.current[room];
-    const before = older ? current?.[0]?.id : undefined;
-    if (older && before === undefined) return;
-    const r = await socialApi.messages(room, before);
-    if (!r.ok) {
-      setRoomErrors((prev) => ({ ...prev, [room]: r.error }));
-      return;
-    }
-    setRoomErrors((prev) => {
-      if (!prev[room]) return prev;
-      const next = { ...prev };
-      delete next[room];
-      return next;
-    });
-    setMessages((prev) => ({ ...prev, [room]: mergeMessages(prev[room] ?? [], r.data.messages) }));
-    setHasMore((prev) => ({ ...prev, [room]: r.data.hasMore }));
-  }, []);
+  }, [available, saveId, sendWs, markRoomRead, refreshFriends, loadMessages]);
 
   const send = useCallback(async (room: string, body: string): Promise<SocialErrorCode | null> => {
     const r = await socialApi.send(room, body);
