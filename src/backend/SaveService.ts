@@ -54,6 +54,7 @@ export interface SaveDatabase {
 
 export type { SaveManager } from "@/types/seatTypes";
 import type { SaveManager, SeatContext, SeatState } from "@/types/seatTypes";
+import type { WorldState } from "@/types/multiplayerTypes";
 import { metaForSeat } from "@/Domain/seats/seats";
 
 /**
@@ -87,6 +88,8 @@ export interface SaveMeta {
   managerWeights?: Record<string, CountryWeight>;
   /** AI clubs without a manager (interim in charge) and the day they hire. */
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
+  /** The world of friends (`mode: "multi"`, multiplayer part 2): phase, invite code, deadline. Absent in a solo save. */
+  world?: WorldState;
 }
 
 /** The world meta merged with one seat (`metaForSeat`): the shape the meta had before seats, plus `seatId`. */
