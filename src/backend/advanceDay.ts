@@ -1,3 +1,4 @@
+import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard } from "@/Domain/boardFans/boardFans";
@@ -667,14 +668,8 @@ export async function advanceOneDay(
           }
 
           if (recording && recSeat) {
-            const result = recording.score;
-            const level =
-              result.home + (fixture.aggregate?.home ?? 0) === result.away + (fixture.aggregate?.away ?? 0);
-            if (fixture.knockout && level) {
-              const pens = recording.decider?.penalties;
-              if (!pens || pens.home === pens.away) {
-                return { ok: false, status: 400, error: "knockout recording without a winner" };
-              }
+            if (!knockoutRecordingDecided(fixture, recording)) {
+              return { ok: false, status: 400, error: "knockout recording without a winner" };
             }
             const recorded = new Set([...Object.keys(recording.playerStats), ...Object.keys(recording.playerEnergy ?? {})]);
             if (unregisteredOf(recorded) > 0) {
@@ -3377,28 +3372,8 @@ export const advanceDayRoutes = {
       }
 
       if (parsed?.playedMatch !== undefined) {
-        const pm = parsed.playedMatch;
-        const pe = pm?.playerEnergy;
-        const peOk =
-          pe &&
-          typeof pe === "object" &&
-          pm?.playerStats &&
-          Object.keys(pm.playerStats).every(
-            (id) => typeof (pe as Record<string, unknown>)[id] === "number",
-          );
-        if (
-          !pm ||
-          typeof pm.fixtureId !== "string" ||
-          !pm.score ||
-          typeof pm.score.home !== "number" ||
-          typeof pm.score.away !== "number" ||
-          !pm.teamStats?.home ||
-          !pm.teamStats?.away ||
-          !pm.playerStats ||
-          !pm.playerRatings ||
-          !peOk ||
-          typeof pm.durationMs !== "number"
-        ) {
+        const pm = validatePlayedMatch(parsed.playedMatch);
+        if (!pm) {
           return Response.json(
             { error: "playedMatch payload failed validation — refusing to simulate headlessly" },
             { status: 400 },
