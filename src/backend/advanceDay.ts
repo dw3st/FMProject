@@ -8,7 +8,8 @@ import type { SeatSeasonRow, StandingItem } from "@/types/standingsTypes";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
-import { applyManagerCard } from "@/Domain/boardFans/boardFans";
+import { applyManagerCard, applyPressEffect } from "@/Domain/boardFans/boardFans";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { afterManagerComplaint } from "@/Domain/morale/morale";
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
@@ -93,7 +94,7 @@ import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
-import { matchPitchCondition } from "@/Domain/facilities/pitch";
+import { matchPitch } from "@/Domain/facilities/pitch";
 import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
@@ -752,11 +753,13 @@ export async function advanceOneDay(
                 ? (humanLeagueClubs.has(fixture.home) || humanLeagueClubs.has(fixture.away) ? "full" : "fast")
                 : resolveSimModeForSeats(leagueSlug, daySeats.map((ds) => ds.meta));
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
-            const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
+            const pitch = matchPitch(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
+            const pitchCondition = pitch.condition;
+            const turf = pitch.turf;
             const referee = await refereeOf(fixture);
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee })
-              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, referee });
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee })
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee });
             registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
@@ -1856,6 +1859,12 @@ export async function advanceOneDay(
         const day = advanceFacilities({ ...playerSquad.facilities, items: worn.items }, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
+          if (p.kind === "turf" && p.turf) {
+            ds.deferred.facility.push({ date: currentDate, kind: "turf_changed", item: "stadiumPitch", turf: p.turf, condition: 100 });
+            // Synthetic grass: the fans dislike it (spec 2026-10-16).
+            if (p.turf === "synthetic" && ds.board) ds.board = applyPressEffect(ds.board, 0, FACILITIES.TURF.SYNTHETIC_FANS);
+            continue;
+          }
           if (p.item) {
             ds.deferred.facility.push({
               date: currentDate, kind: "repaired", facility: p.kind, item: p.item, condition: p.kind === "repair" ? p.to ?? 100 : 100,

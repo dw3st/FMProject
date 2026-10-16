@@ -107,3 +107,44 @@ describe("facilities in advanceOneDay", () => {
     expect((await facilityNews()).length).toBe(newsBefore);
   }, 300_000);
 });
+
+describe("turf works in advanceOneDay", () => {
+  let saveId = "";
+  afterAll(async () => {
+    if (saveId) await saveService.deleteSave(saveId);
+  });
+
+  test("delivered by the day advance: grass laid, message, fans down for synthetic", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    saveId = meta.id;
+    await saveService.updateSeat(saveId, meta.seatId, { sackingEnabled: false });
+    const entry = (await saveService.getSquadIndex(saveId)).byId("33")!;
+    // A day with no club match and not a Monday: only the grass moves the fans.
+    for (let i = 0; i < 14; i++) {
+      const m = (await saveService.getMeta(saveId))!;
+      const day = new Date(`${m.currentDate}T00:00:00Z`).getUTCDay();
+      const plays = (await saveService.getFixturesForDate(saveId, m.currentDate!)).some((f) => f.home === "33" || f.away === "33");
+      if (day !== 1 && !plays) break;
+      expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
+    }
+    const m = (await saveService.getMeta(saveId))!;
+    const squad = (await saveService.getSquadById(saveId, "33"))!;
+    const f = squad.facilities!;
+    const project = {
+      id: "turf1", kind: "turf" as const, item: "stadiumPitch" as const, turf: "synthetic" as const, to: 100,
+      start: m.currentDate!, end: m.currentDate!, cost: 1000, boardShare: 0, instalments: 1, paid: 1,
+    };
+    await saveService.saveSquad(saveId, entry.leagueSlug, entry.stem, { ...squad, facilities: { ...f, projects: [project] } });
+    const fansBefore = (await saveService.getSeatMeta(saveId, meta.seatId))!.board!.fans;
+    expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
+    const after = (await saveService.getSquadById(saveId, "33"))!;
+    expect(after.facilities!.items.stadiumPitch.turf).toBe("synthetic");
+    const inbox = await saveService.getInbox(saveId, meta.seatId);
+    expect(inbox.some((x) => x.category === "facilities" && x.kind === "turf_changed" && x.turf === "synthetic")).toBe(true);
+    const fansAfter = (await saveService.getSeatMeta(saveId, meta.seatId))!.board!.fans;
+    expect(fansAfter).toBeLessThan(fansBefore);
+  }, 300_000);
+});

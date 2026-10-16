@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { FacilityInboxMessage } from "@/types/inboxTypes";
-import type { BoardRefusal, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
+import type { TurfType, BoardRefusal, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** English fallbacks; the inbox screen translates (`facilities.inbox.*`). */
@@ -51,6 +51,7 @@ export function buildFacilityMessage(args: {
   competition?: string;
   item?: FacilityItemId;
   condition?: number;
+  turf?: TurfType;
 }): FacilityInboxMessage {
   const what = args.item ? ITEM_NAME[args.item] : args.facility ? NAME[args.facility] : "";
   const pct = `${Math.round(args.condition ?? 0)}%`;
@@ -60,12 +61,14 @@ export function buildFacilityMessage(args: {
     : args.kind === "worn" ? `Worn: ${what}`
     : args.kind === "condemned" ? `Out of use: ${what}`
     : args.kind === "repaired" ? `Works finished: ${what}`
+    : args.kind === "turf_changed" ? `New grass: ${args.turf ?? ""}`
     : "New home attendance record";
   const preview = args.kind === "approved" ? `${formatEurosText(args.cost ?? 0)}, ready on ${args.end ?? ""}`
     : args.kind === "refused" ? REASON[args.reason ?? "board_low"]
     : args.kind === "completed" ? (args.seats ? `+${args.seats} seats` : `Level ${args.level ?? ""}`)
     : args.kind === "worn" ? `Condition ${pct}: it starts to cost the club`
     : args.kind === "condemned" ? `Condition ${pct}: closed until rebuilt`
+    : args.kind === "turf_changed" ? `The stadium pitch has ${args.turf ?? ""} grass, at 100%`
     : args.kind === "repaired" ? `Condition ${pct}${args.level !== undefined ? `, level ${args.level} of 10` : ""}`
     : `${args.attendance ?? 0} fans`;
   const { date, ...rest } = args;
