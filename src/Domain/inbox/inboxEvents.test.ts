@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildBoardMessage, buildContinentalMessage, buildCupMessage, buildInjuryMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
+import { buildBoardMessage, buildContinentalMessage, buildCupMessage, buildInjuryMessage, buildSeasonMessage, buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
+import { inboxTopicOf } from "@/Domain/inbox/inboxTopics";
 
 describe("buildSeasonMessage", () => {
   test("promoted names the new league and keeps the one left", () => {
@@ -182,5 +183,20 @@ describe("buildBoardMessage", () => {
     expect(buildBoardMessage({ date: "d", kind: "ultimatum", ultimatum: { matches: 5, points: 7 }, board: 24 }).ultimatum).toEqual({ matches: 5, points: 7 });
     expect(buildBoardMessage({ date: "d", kind: "bonus", bonus: 2_000_000 }).bonus).toBe(2_000_000);
     expect(buildBoardMessage({ date: "d", kind: "sacked", reason: "ultimatum" }).reason).toBe("ultimatum");
+  });
+});
+
+describe("seat_offer message", () => {
+  test("id per event, no historyLength field, an action topic", () => {
+    const args = {
+      date: "2027-01-10", kind: "seat_offer" as const, playerId: "p1", playerName: "P One", clubName: "Buyer FC", fee: 5_000_000,
+      offerId: "o1", offerAction: "counter" as const, offerKind: "transfer" as const, myTurn: true, historyLength: 2,
+    };
+    const m = buildTransferNegotiationMessage(args);
+    expect(m.id).toBe("transfer-seat_offer-o1-counter-2");
+    expect(buildTransferNegotiationMessage({ ...args, historyLength: 3 }).id).not.toBe(m.id);
+    expect("historyLength" in m).toBe(false);
+    expect(m).toMatchObject({ offerId: "o1", offerAction: "counter", offerKind: "transfer", myTurn: true, subject: "Offer from Buyer FC for P One" });
+    expect(inboxTopicOf(m)).toBe("actions");
   });
 });

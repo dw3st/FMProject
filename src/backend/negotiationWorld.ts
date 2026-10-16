@@ -77,7 +77,7 @@ function marketWithoutPlayer(market: MarketState, playerId: string): MarketState
  * Takes a player who left the human club out of its saved lineup (the slot stays, empty). The
  * manager keeps knowing him fully (`.claude/rules/game/scouting.md`, decaying as usual).
  */
-async function dropFromLineup(service: SaveService, saveId: string, seatId: string, playerId: string): Promise<void> {
+export async function dropFromLineup(service: SaveService, saveId: string, seatId: string, playerId: string): Promise<void> {
   const tac = await service.getTactics(saveId, seatId);
   if (tac && tac.lineup.includes(playerId)) {
     await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) }, seatId);

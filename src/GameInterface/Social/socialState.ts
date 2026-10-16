@@ -89,6 +89,7 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
     case "world_removed":
     case "world_deleted":
     case "world_members":
+    case "seat_offer":
       return str(e.saveId) ? { type: e.type, saveId: e.saveId } : null;
     case "world_progress": {
       const okTarget = e.target === null || str(e.target);

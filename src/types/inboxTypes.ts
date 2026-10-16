@@ -282,7 +282,9 @@ export interface TransferInboxMessage extends InboxMessageBase {
     | "bid" | "loan_bid" | "loan_back" | "loan_home" | "sell_on"
     // Etapa 25 (`.claude/rules/game/transfer-windows.md`, `negotiation.md`)
     | "window_open" | "window_closing" | "window_closed"
-    | "rival_bid" | "lost_to_rival" | "pre_contract" | "pre_contract_joined" | "pre_contract_failed";
+    | "rival_bid" | "lost_to_rival" | "pre_contract" | "pre_contract_joined" | "pre_contract_failed"
+    // Offers between two human seats (multiplayer part 4, `.claude/rules/game/multiplayer.md`)
+    | "seat_offer";
   /** "" for the window news. */
   playerId: string;
   playerName: string;
@@ -303,6 +305,11 @@ export interface TransferInboxMessage extends InboxMessageBase {
   /** pre_contract: weekly wage and seasons agreed. */
   wage?: number;
   years?: number;
+  /** seat_offer: the offer, what just happened, its kind and whose turn it is now. */
+  offerId?: string;
+  offerAction?: "offer" | "counter" | "accept" | "reject" | "withdraw" | "expired" | "closed";
+  offerKind?: "transfer" | "loan";
+  myTurn?: boolean;
 }
 
 /**
