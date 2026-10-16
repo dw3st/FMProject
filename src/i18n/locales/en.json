@@ -5243,8 +5243,10 @@
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
       "season_closed": {
         "subject": "{{manager}}'s season is closed",
-        "preview": "{{points}} points · {{rank}} of {{of}}",
-        "body": "{{manager}} closed the {{season}} season at {{club}} with {{points}} points and is {{rank}} of {{of}} in the league standings.",
+        "preview_one": "{{points}} point · {{rank}} of {{of}}",
+        "preview_other": "{{points}} points · {{rank}} of {{of}}",
+        "body_one": "{{manager}} closed the {{season}} season at {{club}} with {{points}} point and is {{rank}} of {{of}} in the league standings.",
+        "body_other": "{{manager}} closed the {{season}} season at {{club}} with {{points}} points and is {{rank}} of {{of}} in the league standings.",
         "open": "See the standings"
       }
     },

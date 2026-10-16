@@ -740,7 +740,7 @@ function leaguePrizeTexts(
     };
   }
   if (message.category === "world" && message.kind === "season_closed") {
-    const vars = { manager: message.managerName, club: message.clubName, season: message.season, points: message.points, rank: message.rank, of: message.of };
+    const vars = { manager: message.managerName, club: message.clubName, season: message.season, points: message.points, count: message.points, rank: message.rank, of: message.of };
     return { subject: t("world.inbox.season_closed.subject", vars), preview: t("world.inbox.season_closed.preview", vars) };
   }
   if (message.category === "world") {
@@ -920,7 +920,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             <p className="text-sm text-foreground m-0">
               {t("world.inbox.season_closed.body", {
                 manager: message.managerName, club: message.clubName, season: message.season,
-                points: message.points, rank: message.rank, of: message.of,
+                points: message.points, count: message.points, rank: message.rank, of: message.of,
               })}
             </p>
             <a href="/world?tab=standings" className="font-semibold text-primary hover:underline w-fit">{t("world.inbox.season_closed.open")}</a>

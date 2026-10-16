@@ -5243,8 +5243,10 @@
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "season_closed": {
         "subject": "Temporada de {{manager}} fechada",
-        "preview": "{{points}} pontos · {{rank}}º de {{of}}",
-        "body": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} pontos e está em {{rank}}º de {{of}} na classificação da liga.",
+        "preview_one": "{{points}} ponto · {{rank}}º de {{of}}",
+        "preview_other": "{{points}} pontos · {{rank}}º de {{of}}",
+        "body_one": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} ponto e está em {{rank}}º de {{of}} na classificação da liga.",
+        "body_other": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} pontos e está em {{rank}}º de {{of}} na classificação da liga.",
         "open": "Ver a classificação"
       }
     },
