@@ -356,3 +356,23 @@ Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clu
 | premier_league | 20 | 6 | 2,00 | +2,1% | +6,0% | +6,0% |
 | brazil_serie_a | 20 | 14 | 1,85 | +3,0% | +4,0% | +4,0% |
 | of_championship | 24 | 0 | 0,96 | +1,7% | +1,7% | +1,7% |
+
+## Tipos de grama e padrão de corte (4.28)
+
+Spec: `docs/superpowers/specs/2026-10-16-pitch-types-design.md`. Lógica em `src/Domain/facilities/turf.ts` e `FACILITIES.TURF`; o gramado de cada jogo em `matchPitch` (`pitch.ts`).
+
+| Grama | Desgaste do gramado | Lesões (jogos em casa) | Custo da obra | Torcida |
+|---|---|---|---|---|
+| Natural (padrão) | ×1 | ×1 | — | — |
+| Híbrida | mais lento | ×1 | reconstrução × 1,5 (`COST_MULT`) | — |
+| Sintética | bem mais lento, nunca remenda | ×1,1 nos dois times | reconstrução × 1 | −4 |
+
+- **IA:** o tipo sai do id e do tier (`aiTurfOf`, `AI_SHARE`): LOW 10% sintética, MEDIUM 15% híbrida, HIGH/ELITE 50% híbrida; a queda do gramado da IA × desgaste do tipo; o corte por id (`aiMowingOf`). Campo neutro: 90, natural, listras.
+- **Obra `turf`:** `POST .../facilities/request { kind: "turf", turf }`. Custo = valor de reconstrução do gramado × `COST_MULT`, prazo da reconstrução, diretoria + parcelas mensais, ocupa a vaga de obra do estádio. Entrega com o gramado a 100% e inbox `facilities` / `turf_changed`; sintética tira 4 de torcida.
+- **Corte:** `PUT .../facilities/mowing { mowing }` (listras, xadrez, diagonal, círculos), grátis, a qualquer hora, fora da guarda de lobby.
+- `GET .../facilities` devolve `turf`, `mowing` e `turfQuotes`. `match-setup` devolve `pitch`.
+- **Telas:** cartão Gramado em `/club` (`TurfCard`), `PitchSurfaceSvg` na prévia e no Clube, linha "Grama … · N%" sob o placar da partida ao vivo (vermelha abaixo de 40). `/test`: chips Turf e Mowing. `/lab`: `Variant.turf` e linha "Turf injury ×".
+
+Medições (`bun scripts/facilities-wear.ts --turf natural,hybrid,synthetic --seasons 4`, gramado do estádio nível 6, temporadas até 40%; sem / 3★ / 5★ jardineiro): natural 0,43 / 0,71 / 1,09; híbrida 0,74 / 1,31 / 1,70; sintética 2,02 / 3,21 / não chega em 4 temporadas.
+
+Lesões (`bun scripts/injury-calibrate.ts 300 --pitch ai,aiturf --quicksim`): motor Premier + Championship, 600 jogos: 0,243 → 0,243 por jogo (×1,000; gramado médio 64,2 → 67,5, jogos abaixo de 40%: 9,3% → 7,5%); quickSim 26 ligas × 3000 pareado: 0,256 → 0,257 (+0,1%).

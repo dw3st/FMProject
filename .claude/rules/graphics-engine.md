@@ -72,3 +72,7 @@ only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
 `PitchStadium.decor` (faixa, bandeirão, mosaico; `stadiumDecor.ts` → `drawDecor`): desenhados na arquibancada de trás do gol
 da casa, na cor do clube, dentro da torcida assada (nenhum custo por quadro); nunca em campo neutro nem numa arquibancada em
 obra. Vêm do `match-setup` (`crowd.decor`) só nos jogos em casa do clube do jogador. Ver `.claude/rules/game/achievements.md`.
+
+## Superfície do gramado (4.28)
+
+`pitchSurface.ts`: faixas por condição (≥ 70 nítido, 70–40 desbotado, 40–15 gasto, < 15 terra e lama), formas em jardas, sintética nunca remenda; linhas tracejadas num gramado podre. Prop `pitch` do `PixiPitch` (tipo, corte, condição): desenhada uma vez em Graphics estático e refeita só quando o gramado muda. `PitchSurfaceSvg` desenha o mesmo na prévia e no Clube. Ver `.claude/rules/game/facilities.md`.

@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.28",
+    date: "2026-10-16",
+    items: [
+      {
+        pt: "Tipos de grama: natural, híbrida ou sintética, trocados como obra na tela Clube.",
+        en: "Grass types: natural, hybrid or synthetic, changed as a works in the Club screen.",
+      },
+      {
+        pt: "Escolha o padrão de corte do gramado: listras, xadrez, diagonal ou círculos.",
+        en: "Pick the pitch mowing pattern: stripes, checker, diagonal or circles.",
+      },
+      {
+        pt: "O gramado da partida mostra o desgaste: de nítido a terra e lama.",
+        en: "The match pitch shows its wear: from crisp to dirt and mud.",
+      },
+      {
+        pt: "Tipo e condição do gramado na partida ao vivo e na prévia.",
+        en: "Grass type and condition in the live match and the preview.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A linha de um save com amigos na tela inicial não vaza mais por baixo do botão Continuar.",
+        en: "A friends' save row on the start screen no longer runs under the Continue button.",
+      },
+    ],
+  },
+  {
     version: "4.27",
     date: "2026-10-16",
     items: [
