@@ -31,6 +31,15 @@ describe("seat offers", () => {
     expect(respondSeatOffer(o, "seller", { action: "withdraw" }, "2027-01-11")).toEqual({ ok: false, error: "notYourTurn" });
   });
 
+  test("a counter without a clause keeps the clause already on the table", () => {
+    const r = respondSeatOffer(base(), "seller", { action: "counter", fee: 8_000_000 }, "2027-01-12");
+    if (!r.ok || r.closed) throw new Error("unexpected");
+    expect(r.offer.terms.sellOnPct).toBe(10);
+    const none = respondSeatOffer(base({ terms: { fee: 5_000_000, wage: 20_000, years: 3 } } as never), "seller", { action: "counter", fee: 8_000_000 }, "2027-01-12");
+    if (!none.ok || none.closed) throw new Error("unexpected");
+    expect(none.offer.terms.sellOnPct).toBe(0);
+  });
+
   test("a counter changes fee and clause only, swaps the turn and renews the expiry", () => {
     const r = respondSeatOffer(base(), "seller", { action: "counter", fee: 8_000_000, sellOnPct: 20 }, "2027-01-12");
     expect(r.ok).toBe(true);

@@ -41,7 +41,7 @@ const isFee = (v: unknown): v is number => typeof v === "number" && Number.isFin
 export function counterTerms(offer: SeatOffer, a: { fee: number; sellOnPct?: number; wageShare?: number }): SeatOfferTerms | null {
   if (!isFee(a.fee)) return null;
   if (offer.kind === "transfer") {
-    const pct = a.sellOnPct ?? 0;
+    const pct = a.sellOnPct ?? offer.terms.sellOnPct ?? 0;
     if (!isPct(pct)) return null;
     return { ...offer.terms, fee: a.fee, sellOnPct: pct };
   }
