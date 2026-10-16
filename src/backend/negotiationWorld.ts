@@ -25,6 +25,7 @@ import type { PlayerLoan, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ActiveLoan, MarketBid, MarketState } from "@/types/transferMarketTypes";
 import type { StoredTransferRecord, TransferRecord } from "@/types/transferTypes";
 import { withDirection } from "@/Domain/transfer/transferView";
+import { splitMarket } from "@/Domain/market/seatMarket";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
 
 type NewsArgs = {
@@ -107,10 +108,14 @@ export async function startLoan(
   const until = player.contract?.until && player.contract.until < args.until ? player.contract.until : args.until;
   const loan: PlayerLoan = { fromClubId: parent.id, fromClubName: parent.name, until, wageShare: args.wageShare };
   const moved = squadsAfterLoanStart(player, parent, borrower, loan, historyFromOf(meta.activeLeagues, parentRef.leagueSlug));
+  // Each side's seat (`.claude/rules/game/multiplayer.md`): the caller's own club, another seat's club, or the AI.
+  const seatOfSide = async (clubId: string) => (clubId === meta.clubId ? seatId : await service.seatOfClub(saveId, clubId));
+  const parentSeat = await seatOfSide(parent.id);
+  const borrowerSeat = await seatOfSide(borrower.id);
   await executeTransferFee(
     saveId, meta,
-    { squad: moved.borrower, ...borrowerRef, ...(borrower.id === meta.clubId ? { seatId } : {}) },
-    { squad: moved.parent, ...parentRef, ...(parent.id === meta.clubId ? { seatId } : {}) },
+    { squad: moved.borrower, ...borrowerRef, ...(borrowerSeat ? { seatId: borrowerSeat } : {}) },
+    { squad: moved.parent, ...parentRef, ...(parentSeat ? { seatId: parentSeat } : {}) },
     args.fee, service, { loan: true, playerName: player.name, playerId: player.id },
   );
   const record: ActiveLoan = {
@@ -119,6 +124,18 @@ export async function startLoan(
     until, wageShare: args.wageShare, wage: currentWage(player, wageFactorOf(parent)), fee: args.fee, start: date,
   };
   if (parent.id === meta.clubId) await dropFromLineup(service, saveId, seatId, player.id);
+  // The other side is another seat: the loan goes in its market too (wages line, return, screens). Only the
+  // seat part is written, so the world's AI rotation is not rewritten from a stale copy.
+  const otherSeat = parent.id === meta.clubId ? borrowerSeat : parentSeat;
+  if (otherSeat && otherSeat !== seatId) {
+    const other = (await service.getMarket(saveId, otherSeat)) ?? emptyMarket();
+    const next: MarketState = {
+      ...marketWithoutPlayer(other, player.id),
+      loans: [...(other.loans ?? []).filter((l) => l.playerId !== player.id), record],
+    };
+    await service.saveSeatMarket(saveId, otherSeat, splitMarket(next).seat);
+    if (parentSeat === otherSeat) await dropFromLineup(service, saveId, otherSeat, player.id);
+  }
   return { ...marketWithoutPlayer(market, player.id), loans: [...(market.loans ?? []).filter((l) => l.playerId !== player.id), record] };
 }
 
@@ -142,6 +159,8 @@ export async function returnDueLoans(
     onlyBorrowers?: ReadonlySet<string>;
     parentUnit?: ReadonlySet<string>;
     contractGraceDays?: number;
+    /** Every seat's club (`service.humanClubIds`); read here when absent. */
+    humanClubs?: ReadonlySet<string>;
   } = {},
 ): Promise<{ market: MarketState; news: NewsArgs[] }> {
   const dueIds = new Set(dueLoans(market.loans, date, opts.graceDays ?? 0)
@@ -157,6 +176,7 @@ export async function returnDueLoans(
   }
   const due = (market.loans ?? []).filter((l) => dueIds.has(l.playerId));
   if (due.length === 0) return { market, news: [] };
+  const humans = opts.humanClubs ?? (await service.humanClubIds(saveId));
   const news: NewsArgs[] = [];
   const ended = new Set<string>();
   let pool: FreeAgent[] | null = null;
@@ -165,12 +185,27 @@ export async function returnDueLoans(
     const borrower = await service.getSquadById(saveId, l.toClubId);
     const parent = await service.getSquadById(saveId, l.fromClubId);
     const player = borrower?.players.find((p) => p.id === l.playerId && p.loan);
-    if (!borrower || !parent || !player) continue; // retired, released or gone: nothing to move back
+    if (!borrower || !parent || !player) {
+      // Retired, released or gone: nothing to move back. A loan with another seat may already be back (that
+      // seat's loop ran first): this seat still gets its news.
+      const home = parent?.players.find((p) => p.id === l.playerId && !p.loan);
+      if (home && parent && (parent.id === meta.clubId || l.toClubId === meta.clubId)) {
+        if (parent.id === meta.clubId) {
+          news.push({ date, kind: "loan_home", playerId: l.playerId, playerName: l.playerName, clubName: l.toClubName });
+        } else {
+          await dropFromLineup(service, saveId, seatId, l.playerId);
+          news.push({ date, kind: "loan_back", playerId: l.playerId, playerName: l.playerName, clubName: l.fromClubName });
+        }
+      }
+      continue;
+    }
     const back = squadsAfterLoanEnd(player, borrower, parent, historyFromOf(meta.activeLeagues, borrower.leagueSlug));
     let borrowerAfter = back.borrower;
     let parentAfter = back.parent;
-    const humanParent = parent.id === meta.clubId;
-    const humanBorrower = borrower.id === meta.clubId;
+    const ownParent = parent.id === meta.clubId;
+    const ownBorrower = borrower.id === meta.clubId;
+    const humanParent = humans.has(parent.id) || ownParent;
+    const humanBorrower = humans.has(borrower.id) || ownBorrower;
     // AI parent above the cap: the worst player (never the one coming back) goes to the free pool.
     if (!humanParent && parentAfter.players.length > MAX_SQUAD) {
       pool ??= await service.getFreeAgents(saveId);
@@ -198,10 +233,10 @@ export async function returnDueLoans(
     }
     await service.saveSquadById(saveId, borrowerAfter);
     await service.saveSquadById(saveId, parentAfter);
-    if (humanBorrower) {
+    if (ownBorrower) {
       await dropFromLineup(service, saveId, seatId, l.playerId);
       news.push({ date, kind: "loan_back", playerId: l.playerId, playerName: l.playerName, clubName: l.fromClubName });
-    } else if (humanParent) {
+    } else if (ownParent) {
       news.push({ date, kind: "loan_home", playerId: l.playerId, playerName: l.playerName, clubName: l.toClubName });
     }
   }
