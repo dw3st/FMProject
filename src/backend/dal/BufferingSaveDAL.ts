@@ -6,6 +6,7 @@ import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { SeatOffer } from "@/types/seatOfferTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -181,6 +182,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     this.buffer(`freeAgents:${saveId}`, agents, () => this.inner.writeFreeAgents(saveId, agents));
+  }
+
+  // ── Seat offers ───────────────────────────────────────────────────────────────
+  readSeatOffers(saveId: string): Promise<SeatOffer[]> {
+    return this.readThrough(`seatOffers:${saveId}`, () => this.inner.readSeatOffers(saveId));
+  }
+  async writeSeatOffers(saveId: string, offers: SeatOffer[]): Promise<void> {
+    this.buffer(`seatOffers:${saveId}`, offers, () => this.inner.writeSeatOffers(saveId, offers));
   }
 
   // ── Coaching-staff pool ───────────────────────────────────────────────────────

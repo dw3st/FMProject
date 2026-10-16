@@ -79,6 +79,8 @@ export type ServerEvent =
   | { type: "world_removed"; saveId: string }
   | { type: "world_deleted"; saveId: string }
   | { type: "world_members"; saveId: string }
+  // Multiplayer part 4: an offer between two seats changed (the seat re-reads its offers).
+  | { type: "seat_offer"; saveId: string }
   // Multiplayer part 3 (group advance): the world's progress, for its members.
   | {
     type: "world_progress";

@@ -5,6 +5,7 @@ import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { SeatOffer } from "@/types/seatOfferTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -35,6 +36,7 @@ function seasonArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/season.json`;
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
+function seatOffersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/seatOffers.json`; }
 function staffPoolPath(saveId: string) { return `${SAVES_DIR}/${saveId}/staffPool.json`; }
 function refereesDir(saveId: string) { return `${SAVES_DIR}/${saveId}/referees`; }
 /** Archive keys are `<country>-<season>`; anything outside this shape never reaches a path. */
@@ -180,6 +182,18 @@ export class FileSystemDAL implements ISaveDAL {
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readSeatOffers(saveId: string): Promise<SeatOffer[]> {
+    const file = Bun.file(seatOffersPath(saveId));
+    if (!(await file.exists())) return [];
+    return file.json() as Promise<SeatOffer[]>;
+  }
+
+  async writeSeatOffers(saveId: string, offers: SeatOffer[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(seatOffersPath(saveId), JSON.stringify(offers));
     bumpSaveDataVersion(saveId);
   }
 

@@ -58,6 +58,8 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "transfer:bid": "actions",
   "transfer:loan_bid": "actions",
   "transfer:rival_bid": "actions",
+  // An offer from another human manager (multiplayer part 4): it may need an answer.
+  "transfer:seat_offer": "actions",
   "season:negative_balance": "actions",
   "retirement:reborn": "actions",
   "national_coach:offer": "actions",

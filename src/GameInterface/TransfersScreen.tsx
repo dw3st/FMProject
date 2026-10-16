@@ -87,7 +87,7 @@ export function TransfersScreen() {
         ) : activeTab === "windows" ? (
           <WindowsTable data={windows} />
         ) : activeTab === "loans" ? (
-          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["bids", "rivals", "preContracts", "out", "in", "sellOn"]} /> : null
+          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["seatOffers", "bids", "rivals", "preContracts", "out", "in", "sellOn"]} /> : null
         ) : loading && activeTab !== "sell" ? (
           <div className="card-arcade rounded-md p-12 text-center">
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>

@@ -212,3 +212,5 @@ Negociação do técnico (`.claude/rules/game/achievements.md`); `DemandContext.
 ## Assentos (Etapa 43)
 
 Listas de venda e empréstimo, propostas, conversas, empréstimos e cláusulas do humano ficam no mercado do assento (`seats/{seatId}/market.json`); a IA ignora todos os clubes humanos, e os lances pelos jogadores de um assento saem por assento. Ver `.claude/rules/game/multiplayer.md`.
+
+Entre dois técnicos humanos as propostas de transferência e empréstimo são `SeatOffer`s do mundo (`seatOffers.json`), não esta conversa: ver `.claude/rules/game/multiplayer.md` → "Parte 4: humano × humano".

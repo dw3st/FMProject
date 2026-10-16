@@ -578,6 +578,8 @@ function LastMinuteSubsModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 interface MatchSetupData {
+  /** Opponent is another seat's club: the match can only be simulated. */
+  seatOpponent?: boolean;
   /** Group world: the day and fixture a decision or recording belongs to. */
   matchDay?: { date: string; fixtureId: string } | null;
   mySquad: Squad;
@@ -716,6 +718,7 @@ export function MatchPreviewScreen() {
         const setupR = setupJson as unknown as MatchSetupData;
         if (cancelled) return;
         setMatchSetup(setupR);
+        if (setupR.seatOpponent) setSeatOpponent(true);
 
         const isHome = todayFixture.home === myInternalId;
         const oppId = isHome ? todayFixture.away : todayFixture.home;
@@ -871,7 +874,7 @@ export function MatchPreviewScreen() {
     );
   }
 
-  if (seatOpponent) {
+  if (seatOpponent && !matchSetup) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
@@ -1345,15 +1348,27 @@ export function MatchPreviewScreen() {
           {t("matchPreview.lastMinuteSubs")}
         </Button>
 
-        <Button variant="secondary" onClick={handleSendAssistant} disabled={commencing}>
-          {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
-          {!commencing && <Icon name="chevron-right" size={16} />}
-        </Button>
+        {seatOpponent ? (
+          <>
+            <p className="text-sm text-muted-foreground m-0 basis-full text-center">{t("matchPreview.seatSimulateNote")}</p>
+            <Button variant="primary" onClick={() => void handleSendAssistant()} disabled={commencing}>
+              {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
+              {!commencing && <Icon name="play" size={16} />}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={handleSendAssistant} disabled={commencing}>
+              {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
+              {!commencing && <Icon name="chevron-right" size={16} />}
+            </Button>
 
-        <Button variant="primary" onClick={handleStartGame} disabled={commencing}>
-          {t("matchPreview.startGame")}
-          <Icon name="play" size={16} />
-        </Button>
+            <Button variant="primary" onClick={handleStartGame} disabled={commencing}>
+              {t("matchPreview.startGame")}
+              <Icon name="play" size={16} />
+            </Button>
+          </>
+        )}
       </div>
 
       {showLastMinuteSubs && matchSetup && (

@@ -10,6 +10,8 @@ import { withSaveLock } from "@/backend/saveLock";
 import { releaseHumanClub, takeOverClub } from "@/backend/jobWorld";
 import { leaveNationalTeam } from "@/backend/nationalWorld";
 import { returnDueLoans } from "@/backend/negotiationWorld";
+import { closeOffersOfSeat, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
+import { splitMarket } from "@/Domain/market/seatMarket";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { competitionName } from "@/Domain/world/labels";
@@ -192,8 +194,27 @@ export async function removeSeat(
     // so nothing would end them later.
     const market = await service.getMarket(saveId, seatId);
     if (market?.loans?.length) {
-      await returnDueLoans(service, saveId, seatId, metaForSeat(world, seatId, seat), market, date, { graceDays: 100_000 });
+      const res = await returnDueLoans(service, saveId, seatId, metaForSeat(world, seatId, seat), market, date, { graceDays: 100_000 });
+      // A loan with another seat is in that seat's market too (both sides track it): it ends there as well, or
+      // that seat would keep paying its part of the wage (`parentLoanWages`) until the old date.
+      const still = new Set((res.market.loans ?? []).map((l) => l.playerId));
+      const ended = (market.loans ?? []).filter((l) => !still.has(l.playerId));
+      if (ended.length > 0) {
+        const isEnded = (l: { playerId: string; fromClubId: string; toClubId: string }) =>
+          ended.some((e) => e.playerId === l.playerId && e.fromClubId === l.fromClubId && e.toClubId === l.toClubId);
+        for (const other of await service.listSeats(saveId)) {
+          if (other.seatId === seatId) continue;
+          const m = await service.getMarket(saveId, other.seatId);
+          if (!m?.loans?.some(isEnded)) continue;
+          await service.saveSeatMarket(saveId, other.seatId, splitMarket({ ...m, loans: m.loans.filter((l) => !isEnded(l)) }).seat);
+        }
+      }
     }
+    // Offers with other seats (multiplayer part 4) close and the other side is told (idempotent with the
+    // `releaseHumanClub` below, which closes them too).
+    // Socket nudges of the other side go only after the flush.
+    const nudges: SeatNudges = new Set();
+    await closeOffersOfSeat(service, saveId, seatId, date, undefined, nudges);
 
     // A national team he coaches (Etapa 41b) gets an interim and a vacancy (no "resigned" message); his job offers go
     // and the vacancies they were holding reopen on the offer's date.
@@ -215,7 +236,7 @@ export async function removeSeat(
     }
 
     if (seat.clubId && !seat.unemployed) {
-      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date });
+      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date }, { nudges });
       await service.writeManagers(saveId, sackHumanManager(await service.getManagers(saveId), {
         seatId, date, clubName: seat.clubName, left: "left_world",
       }));
@@ -227,6 +248,7 @@ export async function removeSeat(
     }
     await service.deleteSeat(saveId, seatId);
     await buffer.flush();
+    nudgeSeats(saveId, nudges);
     removeSaveMember(saveId, seatId);
     const removed: RemovedSeat = {
       userId: member?.userId ?? null,

@@ -4,6 +4,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import { notifySeatOffersChanged } from "@/GameInterface/Negotiation/seatOfferApi";
 import { summaryOutcome } from "@/GameInterface/World/groupAdvanceText";
 import { isDashboardPath } from "@/GameInterface/World/worldNav";
 import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
@@ -98,6 +99,12 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   useEffect(() => {
     if (!enabled) return;
     return subscribe((event) => {
+      // Another manager touched an offer with this seat (part 4): inbox, squad and the open offer cards reload.
+      if (event.type === "seat_offer" && event.saveId === saveId) {
+        void refreshSave({ background: true });
+        notifySeatOffersChanged();
+        return;
+      }
       if (event.type !== "world_progress" || event.saveId !== saveId) return;
       // The executor's failure lives in the view (a code, with the next retry); the action error stays the seat's own.
       setView((v) => (v

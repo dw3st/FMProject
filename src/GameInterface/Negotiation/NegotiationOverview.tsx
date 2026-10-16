@@ -3,9 +3,14 @@ import { useTranslation } from "react-i18next";
 import { DataTable } from "@/GameInterface/ui/DataTable";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { formatFee } from "@/Domain/money";
+import { Button } from "@/GameInterface/ui/Button";
+import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
+import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
+import { loadSession } from "@/GameInterface/gameSession";
+import type { SeatOfferView } from "@/types/seatOfferTypes";
 import type { ActiveLoan, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
 
-type Section = "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts";
+type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts";
 
 interface Overview {
   clubId: string;
@@ -27,6 +32,12 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<Overview | null>(null);
   const [failed, setFailed] = useState(false);
+  // Offers with other human managers (multiplayer part 4); only in a friends' league.
+  const withSeats = sections.includes("seatOffers") && !!loadSession()?.groupAdvance;
+  const seatOffers = useSeatOffers(withSeats ? saveId : null);
+  const [openOfferId, setOpenOfferId] = useState<string | null>(null);
+  // How the last offer answered here ended (the card goes with it): kept on screen.
+  const [closedNote, setClosedNote] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -44,9 +55,10 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const inn = data.loans.filter((l) => l.toClubId === data.clubId);
   const share = (l: ActiveLoan) => `${Math.round(l.wageShare * 100)}%`;
 
-  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean) => (
+  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => (
     <section key={key} className="space-y-2">
       <SectionTitle>{title}</SectionTitle>
+      {note && <p className="text-sm font-semibold text-foreground m-0" role="status">{note}</p>}
       {empty ? <p className="text-sm text-muted-foreground m-0">{t("negotiation.overview.none")}</p> : body}
     </section>
   );
@@ -54,6 +66,55 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   return (
     <div className="flex flex-col gap-6">
       {sections.map((s) => {
+        if (s === "seatOffers") {
+          if (!withSeats) return null;
+          const offers = seatOffers.data?.offers ?? [];
+          const open = offers.find((o) => o.id === openOfferId) ?? null;
+          const otherClub = (o: SeatOfferView) => (o.side === "buyer" ? o.seller.clubName : o.buyer.clubName);
+          const terms = (o: SeatOfferView) => (o.kind === "loan"
+            ? t("negotiation.overview.loanOffer", { share: Math.round((o.terms.wageShare ?? 1) * 100) })
+            : formatFee(o.terms.fee));
+          return block(s, t("seatOffers.title"), (
+            <div className="space-y-4">
+              <DataTable
+                rows={offers}
+                rowKey={(o) => o.id}
+                isHighlighted={(o) => o.id === openOfferId}
+                columns={[
+                  { key: "p", header: t("negotiation.overview.player"), cell: (o) => <span className="font-semibold text-foreground">{o.playerName}</span> },
+                  { key: "k", header: t("seatOffers.kind"), cell: (o) => t(o.kind === "transfer" ? "seatOffers.transfer" : "seatOffers.loan") },
+                  { key: "c", header: t("negotiation.overview.club"), cell: (o) => `${otherClub(o)}${o.otherManager ? ` · ${o.otherManager}` : ""}` },
+                  { key: "t", header: t("negotiation.overview.offer"), cell: terms, className: "tabular-nums" },
+                  {
+                    key: "w", header: t("seatOffers.turn"),
+                    cell: (o) => (o.myTurn
+                      ? <span className="text-primary font-semibold">{t("seatOffers.yourTurn")}</span>
+                      : t("seatOffers.theirTurn", { manager: o.otherManager || otherClub(o) })),
+                  },
+                  { key: "e", header: t("seatOffers.validUntil"), cell: (o) => fmtDate(o.expires), className: "tabular-nums" },
+                  {
+                    key: "a", header: "",
+                    cell: (o) => (
+                      <Button variant="secondary" flush onClick={() => { setClosedNote(null); setOpenOfferId(o.id === openOfferId ? null : o.id); }}>
+                        {o.id === openOfferId ? t("common.close") : t("seatOffers.open")}
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
+              {open && (
+                <SeatOfferCard
+                  saveId={saveId}
+                  offer={open}
+                  onChanged={(closed) => {
+                    if (closed) { setClosedNote(closed.text); setOpenOfferId(null); }
+                    seatOffers.reload();
+                  }}
+                />
+              )}
+            </div>
+          ), offers.length === 0, closedNote);
+        }
         if (s === "rivals") {
           const rivals = data.rivals ?? [];
           return block(s, t("negotiation.overview.rivals"), (

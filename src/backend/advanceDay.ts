@@ -99,6 +99,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
+import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
@@ -243,7 +244,11 @@ async function leagueNameResolver(states: LeagueSeasonState[]): Promise<(slug: s
 
 export type AdvanceDayOutcome =
   | { ok: false; status: number; error: string }
-  | { ok: true; payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> };
+  | {
+      ok: true; payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>>;
+      /** Seats whose offers with another seat changed today: nudged by socket once the day is written. */
+      seatOfferNudges?: string[];
+    };
 
 /** One seat's view of a day: the world's payload merged with that seat's part (`payloadForSeat`). */
 export type SeatDayOutcome =
@@ -281,6 +286,7 @@ export async function runBufferedDay(
     for (const e of errors) logError("advance-day", `failed to persist day for save ${saveId}`, e);
     return { ok: false, status: 500, error: "failed to persist day" };
   }
+  if (outcome.seatOfferNudges?.length) nudgeSeats(saveId, outcome.seatOfferNudges);
   return outcome;
 }
 
@@ -461,6 +467,8 @@ export async function advanceOneDay(
     });
     // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
     const humanClubs = humanClubSet(daySeats);
+    // Seats whose offers with another seat change today: nudged by socket after the day is written (`runBufferedDay`).
+    const seatOfferNudges: SeatNudges = new Set();
 
 
     // Board and fans of each seat's club (`.claude/rules/game/board-fans.md`): `DaySeat.board`, updated in memory
@@ -1697,6 +1705,15 @@ export async function advanceOneDay(
         await saveService.saveSeatMarket(saveId, ds.seatId, splitMarket(market).seat);
       }
 
+      // Offers between seats (multiplayer part 4): expired, the buyer's window closed, or the world moved on.
+      // Their messages go out after any `clearInbox` of the day, with the seats' other negotiation news.
+      await expireSeatOffers(
+        saveService, saveId, currentDate,
+        (seatId) => windows.seat(seatId).today.open,
+        (seatId, args) => { daySeats.find((d) => d.seatId === seatId)?.deferred.negotiation.push(args); },
+        seatOfferNudges,
+      );
+
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
       const rawFreeAgents = await saveService.getFreeAgents(saveId);
@@ -2717,7 +2734,11 @@ export async function advanceOneDay(
             ds.managerEarned += severance;
           }
         }
-        await releaseHumanClub(saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate });
+        // The other seats' "closed" messages are deferred past any `clearInbox` of the day, the nudges past the flush.
+        await releaseHumanClub(
+          saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate },
+          { sink: (seatId, args) => { daySeats.find((d) => d.seatId === seatId)?.deferred.negotiation.push(args); }, nudges: seatOfferNudges },
+        );
         await managerTracker.apply((ms) => sackHumanManager(ms, {
           seatId: ds.seatId, date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
         }));
@@ -3243,6 +3264,7 @@ export async function advanceOneDay(
       ok: true,
       payload: { ...dayLog, events: [...dayLog.events, ...transferEvents], newDate: updatedMeta.currentDate },
       seats,
+      ...(seatOfferNudges.size > 0 ? { seatOfferNudges: [...seatOfferNudges] } : {}),
     };
 }
 

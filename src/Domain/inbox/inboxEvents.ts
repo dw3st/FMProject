@@ -587,10 +587,18 @@ export function buildTransferNegotiationMessage(args: {
   opensOn?: string;
   wage?: number;
   years?: number;
+  /** seat_offer (multiplayer part 4). `historyLength` makes the id unique per event of the offer. */
+  offerId?: string;
+  offerAction?: TransferInboxMessage["offerAction"];
+  offerKind?: TransferInboxMessage["offerKind"];
+  myTurn?: boolean;
+  historyLength?: number;
 }): TransferInboxMessage {
-  const { date, kind, playerName, clubName } = args;
+  const { historyLength, ...fields } = args;
+  const { date, kind, playerName, clubName } = fields;
   const subject =
-    kind === "window_open" ? `Transfer window open until ${args.until ?? ""}`
+    kind === "seat_offer" ? `Offer from ${clubName} for ${playerName}`
+    : kind === "window_open" ? `Transfer window open until ${args.until ?? ""}`
     : kind === "window_closing" ? `Transfer window closes on ${args.until ?? ""}`
     : kind === "window_closed" ? `Transfer window closed${args.opensOn ? ` — opens on ${args.opensOn}` : ""}`
     : kind === "rival_bid" ? `${clubName} bid for ${playerName}`
@@ -604,8 +612,9 @@ export function buildTransferNegotiationMessage(args: {
     : kind === "loan_home" ? `${playerName} is back from ${clubName}`
     : `Sell-on clause: ${playerName}`;
   return {
-    ...args,
-    id: kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}`
+    ...fields,
+    id: kind === "seat_offer" ? `transfer-seat_offer-${args.offerId}-${args.offerAction}-${historyLength ?? 0}`
+      : kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}`
       : kind.startsWith("window_") ? `transfer-${date}-${kind}-${args.country ?? ""}`
       : `transfer-${date}-${kind}-${args.playerId}-${randomUUID()}`,
     createdAt: date,

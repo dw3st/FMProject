@@ -60,6 +60,10 @@ describe("parseServerEvent", () => {
     }
     expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s" }))).toBeNull();
   });
+  test("seat_offer", () => {
+    expect(parseServerEvent(JSON.stringify({ type: "seat_offer", saveId: "s" }))).toEqual({ type: "seat_offer", saveId: "s" });
+    expect(parseServerEvent(JSON.stringify({ type: "seat_offer" }))).toBeNull();
+  });
   test("world_progress", () => {
     const ev = { type: "world_progress", saveId: "s1", date: "2027-03-11", target: "2027-03-14", running: true, waitingFor: ["ana"] };
     expect(parseServerEvent(JSON.stringify(ev))).toEqual(ev as never);

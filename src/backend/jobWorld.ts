@@ -48,6 +48,7 @@ import {
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 import { expireOffers } from "@/Domain/retirement/retirement";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
+import { closeOffersOfSeat, type SeatNudges, type SeatOfferSink } from "@/backend/seatOfferWorld";
 
 /**
  * Job offers and club changes of the human manager — save I/O (`.claude/rules/game/jobs.md`).
@@ -257,6 +258,7 @@ async function ledgerSeasonOf(service: SaveService, saveId: string, league: stri
  */
 export async function releaseHumanClub(
   service: SaveService, saveId: string, seatId: string, args: { squadId: string; date: string; compensation?: number },
+  defer?: { sink?: SeatOfferSink; nudges?: SeatNudges },
 ): Promise<void> {
   const index = await service.getSquadIndex(saveId);
   const entry = index.byId(args.squadId);
@@ -309,6 +311,10 @@ export async function releaseHumanClub(
     || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
     await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] }, seatId);
   }
+  // Offers with other seats (multiplayer part 4) were the old club's: they close, the other side is told.
+  // A buffered caller passes `defer`: the messages land after the day's `clearInbox` (`sink`), the socket nudges
+  // after its flush (`nudges`).
+  await closeOffersOfSeat(service, saveId, seatId, args.date, defer?.sink, defer?.nudges);
   // Scouting (`.claude/rules/game/scouting.md`): missions and prospects stay with the club, the
   // knowledge and shortlist follow the manager, who keeps knowing his old players.
   await scoutingOnClubLeft(service, saveId, seatId, squad.players.map((p) => p.id), args.date);
@@ -437,7 +443,7 @@ export async function takeOverClub(
  * their inbox messages drop, and the meta follows the new club.
  */
 export async function acceptJobOffer(
-  service: SaveService, saveId: string, seatId: string, meta: SeatMeta, offer: JobOffer,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta, offer: JobOffer, nudges?: SeatNudges,
 ): Promise<SeatMeta> {
   const date = meta.currentDate!;
   const activeLeagues = meta.activeLeagues ?? [];
@@ -446,7 +452,7 @@ export async function acceptJobOffer(
   // D3: leaving mid-contract, the new club compensates the old one (out of the arriving balance).
   // The compensation shown on the offer (what the player saw), never more than the arriving budget.
   const compensation = employedAt ? Math.min(Math.max(0, offer.compensation ?? 0), Math.max(0, offer.budget)) : 0;
-  if (employedAt) await releaseHumanClub(service, saveId, seatId, { squadId: employedAt, date, compensation });
+  if (employedAt) await releaseHumanClub(service, saveId, seatId, { squadId: employedAt, date, compensation }, { nudges });
 
   const managers = await service.getManagers(saveId);
   if (managers.length > 0) {
