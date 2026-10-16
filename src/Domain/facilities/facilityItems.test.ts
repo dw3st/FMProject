@@ -210,3 +210,17 @@ describe("itemEffects", () => {
     expect(itemEffects("seats", 20)[0]!.value).toBeCloseTo(effectAt(F.WEAR.SEATS_DEMAND_MIN, 20), 10);
   });
 });
+
+describe("turf wear (spec 2026-10-16)", () => {
+  test("the stadium pitch wears × the grass; other items do not change", () => {
+    const base = initialItems("33", 3);
+    const day = { homeGames: 1, session: "normal" as const, pitchWearMult: 1 };
+    const natural = wearDay(base, day).items;
+    const hybrid = wearDay({ ...base, stadiumPitch: { ...base.stadiumPitch, turf: "hybrid" } }, day).items;
+    const dN = natural.stadiumPitch.wear - base.stadiumPitch.wear;
+    const dH = hybrid.stadiumPitch.wear - base.stadiumPitch.wear;
+    expect(dH).toBeCloseTo(dN * 0.6, 12);
+    expect(hybrid.stadiumPitch.turf).toBe("hybrid");
+    expect(hybrid.seats.wear).toBe(natural.seats.wear);
+  });
+});
