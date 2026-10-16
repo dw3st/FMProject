@@ -68,6 +68,12 @@ export function rankEntries<T extends { total: number; managerName: string; part
     b.total - a.total || (b.partial?.total ?? 0) - (a.partial?.total ?? 0) || a.managerName.localeCompare(b.managerName));
 }
 
+/** A seat's place: 1 + how many have a higher total (equal totals share the place); 0 when the seat is absent. */
+export function rankOf(entries: readonly { seatId: string; total: number }[], seatId: string): number {
+  const me = entries.find((e) => e.seatId === seatId);
+  return me ? 1 + entries.filter((e) => e.total > me.total).length : 0;
+}
+
 /** Points of a continental campaign stage (the best one counts). */
 export function continentalPoints(reached: "groups" | "semifinal" | "finalist" | "champion"): number {
   return STANDINGS.CONTINENTAL[reached];

@@ -46,6 +46,7 @@ import {
 } from "@/GameInterface/Dashboard/HomeCards";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { seatManagerId } from "@/Domain/seats/seats";
+import { rankOf } from "@/Domain/multiplayer/standings";
 
 interface LedgerApiResponse {
   entries: LedgerEntry[];
@@ -149,7 +150,7 @@ export function DashboardScreen() {
       if (cancelled) return;
       if (!r.ok || r.data.entries.length < 2) { setFriendsRank(null); return; }
       const me = r.data.entries.find((e) => e.seatId === mySeatId);
-      setFriendsRank(me ? { rank: 1 + r.data.entries.filter((e) => e.total > me.total).length, of: r.data.entries.length } : null);
+      setFriendsRank(me ? { rank: rankOf(r.data.entries, mySeatId), of: r.data.entries.length } : null);
     });
     return () => { cancelled = true; };
   }, [saveId, groupAdvance, mySeatId, currentDate]);

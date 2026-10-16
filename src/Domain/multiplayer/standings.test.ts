@@ -1,6 +1,6 @@
 // src/Domain/multiplayer/standings.test.ts
 import { describe, expect, test } from "bun:test";
-import { objectiveItems, withExtra, passageItems, closePassage, rankEntries, sumItems } from "@/Domain/multiplayer/standings";
+import { objectiveItems, withExtra, passageItems, closePassage, rankEntries, rankOf, sumItems } from "@/Domain/multiplayer/standings";
 import type { SeatStanding } from "@/types/standingsTypes";
 
 const open = (over: Partial<SeatStanding> = {}): SeatStanding => ({
@@ -66,5 +66,9 @@ describe("standings", () => {
     const e = (seatId: string, total: number, partial: number, managerName: string) => ({ seatId, total, managerName, partial: { total: partial } });
     expect(rankEntries([e("a", 10, 1, "Zé"), e("b", 10, 5, "Ana"), e("c", 12, 0, "Bia"), e("d", 10, 1, "Ana")]).map((x) => x.seatId))
       .toEqual(["c", "b", "d", "a"]);
+  });
+  test("place: 1 + how many have more points; ties share; absent = 0", () => {
+    const list = [{ seatId: "c", total: 12 }, { seatId: "b", total: 10 }, { seatId: "a", total: 10 }, { seatId: "d", total: 3 }];
+    expect(["c", "b", "a", "d", "x"].map((id) => rankOf(list, id))).toEqual([1, 2, 2, 4, 0]);
   });
 });

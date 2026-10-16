@@ -8,6 +8,7 @@ import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { competitionName } from "@/Domain/world/labels";
+import { rankOf } from "@/Domain/multiplayer/standings";
 import type { LeagueData } from "@/types/playerTypes";
 import type { SeatSeasonRow, StandingItem, StandingsEntry, StandingsView } from "@/types/standingsTypes";
 
@@ -19,11 +20,6 @@ export function signedPoints(n: number): string {
   if (n > 0) return `+${n}`;
   if (n < 0) return `−${Math.abs(n)}`;
   return "0";
-}
-
-/** Place of each entry: equal totals share the place. */
-function rankOf(entries: readonly StandingsEntry[], e: StandingsEntry): number {
-  return 1 + entries.filter((o) => o.total > e.total).length;
 }
 
 /** Friends' league standings (multiplayer part 5a): one row per manager, details on click. */
@@ -64,7 +60,7 @@ export function StandingsTable({ view, mySeatId }: { view: StandingsView; mySeat
         return (
           <Fragment key={e.seatId}>
             <StatsRow highlight={me} expanded={expanded} onActivate={() => setOpen(expanded ? null : e.seatId)}>
-              <RankCell rank={rankOf(view.entries, e)} />
+              <RankCell rank={rankOf(view.entries, e.seatId)} />
               <StatsCell className="w-12">
                 <ManagerFaceImage
                   manager={{ id: seatManagerId(e.seatId), name: e.managerName, face: e.face, nationality: managerFaceCountry(e.nationalityIso) }}
