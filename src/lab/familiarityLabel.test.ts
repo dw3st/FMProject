@@ -19,6 +19,13 @@ describe("lab: morale in the variant label", () => {
   });
 });
 
+describe("lab: turf in the variant label", () => {
+  test("turf in the label (non-natural only)", () => {
+    expect(variantAutoLabel(v({ turf: "natural" }))).toBe("4-3-3 · Possession");
+    expect(variantAutoLabel(v({ turf: "synthetic" }))).toBe("4-3-3 · Possession · turf synthetic");
+  });
+});
+
 describe("lab: pitch condition in the variant label", () => {
   test("absent or 90 = no suffix; set = ' · pitch N%'", () => {
     expect(variantAutoLabel(v({ pitchCondition: 90 }))).toBe("4-3-3 · Possession");

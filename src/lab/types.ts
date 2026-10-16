@@ -116,6 +116,8 @@ export interface Variant {
    * sides below 40%. Variant A (the home side) sets it for the match. Absent = 90.
    */
   pitchCondition?: number;
+  /** Grass type of the match (`src/Domain/facilities/turf.ts`): injury multiplier of both sides. Variant A sets it. Absent = natural. */
+  turf?: import("@/types/facilityTypes").TurfType;
   /**
    * Referee rigor −1..1 of the match (`.claude/rules/game/referees.md`): fouls and cards of both sides. Variant A
    * sets it for the match (like the pitch). Absent = no referee (neutral).
@@ -236,6 +238,8 @@ export interface TeamRawStats {
   managerDiscipline: number;
   /** Pitch condition the match was played on (90 when absent), summed across games. */
   pitchCondition: number;
+  /** Injury multiplier of the grass type played on (1 when natural/absent), summed across games. */
+  turfInjuryMult: number;
   /** Referee rigor of the match (0 when absent), summed across games. */
   refereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls of the match (both sides, `var.md`), summed across games. */
@@ -394,6 +398,8 @@ export interface PerMatchView {
   avgManagerDiscipline: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
+  /** Injury multiplier of the grass type of the matches. */
+  avgTurfInjuryMult: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */
@@ -505,6 +511,8 @@ export interface VariantSummary {
   avgManagerDiscipline: number;
   /** Pitch condition the matches were played on (0..100). */
   avgPitchCondition: number;
+  /** Injury multiplier of the grass type of the matches. */
+  avgTurfInjuryMult: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */
