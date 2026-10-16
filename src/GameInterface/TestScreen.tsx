@@ -1,5 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
-import { pitchInjuryMult } from '@/Domain/facilities/facilityItems';
+import { pitchInjury, TURF_TYPES, MOWING_PATTERNS } from '@/Domain/facilities/turf';
+import type { TurfType, MowingPattern } from '@/types/facilityTypes';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { MORALE } from '@/Domain/morale/moraleConfig';
@@ -141,8 +142,8 @@ function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
 }
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
-function withPitch(state: GameState, pitch: number): GameState {
-  const m = pitchInjuryMult(pitch);
+function withPitch(state: GameState, pitch: number, turf: TurfType): GameState {
+  const m = pitchInjury(pitch, turf);
   if (m === 1) return state;
   return { ...state, players: state.players.map((p) => ({ ...p, injuryMult: (p.injuryMult ?? 1) * m })) };
 }
@@ -439,6 +440,8 @@ export function TestScreen() {
   const [tempB, setTempB] = useState<number | undefined>(undefined);
   // Pitch condition of the whole match (both sides): injury risk below 40%.
   const [pitch, setPitch] = useState<number>(90);
+  const [turf, setTurf] = useState<TurfType>('natural');
+  const [mowing, setMowing] = useState<MowingPattern>('stripes');
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
   // The managers' Discipline (achievements.md): fouls and cards of a side; null = no attribute.
@@ -676,7 +679,7 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
+    let state: GameState = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
@@ -688,7 +691,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn, mgrDisc]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -696,7 +699,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
+    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
@@ -717,12 +720,12 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch), refS), mgrDisc);
+    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, refS, refErr, varOn, mgrDisc]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1201,7 +1204,7 @@ export function TestScreen() {
           </div>
           {/* Pitch of the whole match (both sides): injury risk x1 from 40%, x1.6 at 0% */}
           <div className="space-y-1">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Pitch ({pitch}% · injury x{pitchInjuryMult(pitch).toFixed(2)})</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Pitch ({pitch}% · {turf} · injury x{pitchInjury(pitch, turf).toFixed(2)})</p>
             <div className="flex gap-1 flex-wrap">
               {PITCH_TEST_OPTIONS.map(v => (
                 <button
@@ -1214,6 +1217,20 @@ export function TestScreen() {
                   }`}
                 >
                   {v}%
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {TURF_TYPES.map(v => (
+                <button key={v} onClick={() => setTurf(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${turf === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                  Turf: {v}
+                </button>
+              ))}
+              {MOWING_PATTERNS.map(v => (
+                <button key={v} onClick={() => setMowing(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${mowing === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                  Mow: {v}
                 </button>
               ))}
             </div>
@@ -1725,7 +1742,7 @@ export function TestScreen() {
           <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
         </div>
       )}
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} refereeStrictness={refS ?? undefined} managerDiscipline={{ home: mgrDisc.A ?? undefined, away: mgrDisc.B ?? undefined }} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} turf={turf} refereeStrictness={refS ?? undefined} managerDiscipline={{ home: mgrDisc.A ?? undefined, away: mgrDisc.B ?? undefined }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel
@@ -1744,7 +1761,7 @@ export function TestScreen() {
             teamColorB="#df3b2d"
             staffA={staffOfTestSquad(SQUADS[squadA]!)}
             staffB={staffOfTestSquad(SQUADS[squadB]!)}
-            pitch={{ condition: pitch, injuryMult: pitchInjuryMult(pitch) }}
+            pitch={{ condition: pitch, injuryMult: pitchInjury(pitch, turf) }}
             styleA={{ familiarity: famA, execution: getTeamExecutionMult('A'), pressStamina: getDefenseConfig('A').PRESS_STAMINA_MULT }}
             styleB={{ familiarity: famB, execution: getTeamExecutionMult('B'), pressStamina: getDefenseConfig('B').PRESS_STAMINA_MULT }}
           />
@@ -1793,6 +1810,7 @@ export function TestScreen() {
               perfRef={pitchPerfRef}
               stadium={pitchStadium}
               extras={extrasOn}
+              pitch={{ condition: pitch, turf, mowing, seed: 'test' }}
               officials={officialsOn && refS !== null ? { refereeFace: refereeFaceUrl(TEST_REFEREE.id, TEST_REFEREE.country, 40) } : officialsOn}
               coaches={TEST_COACHES}
             />

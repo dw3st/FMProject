@@ -1090,7 +1090,8 @@
     "stadium": {
       "label": "Stadium",
       "attendance": "{{crowd}} fans",
-      "neutral": "Neutral venue"
+      "neutral": "Neutral venue",
+      "pitch": "{{turf}} · {{pct}}%"
     },
     "feedWindow": {
       "title": "Events",
@@ -3329,6 +3330,18 @@
     }
   },
   "facilities": {
+    "turf": {
+      "title": "Pitch",
+      "type": { "natural": "Natural grass", "hybrid": "Hybrid grass", "synthetic": "Synthetic grass" },
+      "about": { "natural": "Wears at the normal pace.", "hybrid": "Wears 40% slower.", "synthetic": "Barely wears; 10% more injuries in home games; the fans dislike it." },
+      "change": "Change grass",
+      "current": "Current",
+      "condition": "Condition {{pct}}%"
+    },
+    "mowing": {
+      "label": "Mowing pattern",
+      "stripes": "Stripes", "checker": "Checker", "diagonal": "Diagonal", "circles": "Circles"
+    },
     "kpi": {
       "capacity": "Capacity",
       "duringWorks": "{{seats}} during works",
@@ -3388,7 +3401,8 @@
       "academy": "Academy",
       "repair": "Repair",
       "rebuild": "Rebuild",
-      "upgrade": "Upgrade"
+      "upgrade": "Upgrade",
+      "turf": "grass change"
     },
     "comfort": {
       "about": "Seats, roofing, boxes: a higher ticket price.",
@@ -3432,7 +3446,8 @@
         "attendance_record": "New attendance record",
         "worn": "Worn: {{what}}",
         "condemned": "Closed: {{what}}",
-        "repaired": "Works finished: {{what}}"
+        "repaired": "Works finished: {{what}}",
+        "turf_changed": "New grass laid"
       },
       "approved": "The board approved {{what}} ({{cost}}). Ready on {{date}}; paid in monthly instalments.",
       "approvedFunded": "The board approved {{what}} ({{cost}}) and pays {{pct}}% itself. Ready on {{date}}; paid in monthly instalments.",
@@ -3444,7 +3459,8 @@
       "worn": "{{what}} is down to {{condition}}% and starts to cost the club. Repair it in the Club screen.",
       "condemned": "{{what}} is down to {{condition}}% and has been closed. Only a rebuild brings it back.",
       "repaired": "{{what}} is back to {{condition}}%.",
-      "upgraded": "{{what}} is now level {{level}} of 10, at 100%."
+      "upgraded": "{{what}} is now level {{level}} of 10, at 100%.",
+      "turf_changed": "The stadium pitch now has {{turf}}, at 100%."
     },
     "item": {
       "stadiumPitch": "Stadium pitch",

@@ -1090,7 +1090,8 @@
     "stadium": {
       "label": "Estádio",
       "attendance": "{{crowd}} torcedores",
-      "neutral": "Campo neutro"
+      "neutral": "Campo neutro",
+      "pitch": "{{turf}} · {{pct}}%"
     },
     "feedWindow": {
       "title": "Lances",
@@ -3329,6 +3330,18 @@
     }
   },
   "facilities": {
+    "turf": {
+      "title": "Gramado",
+      "type": { "natural": "Grama natural", "hybrid": "Grama híbrida", "synthetic": "Grama sintética" },
+      "about": { "natural": "Desgasta no ritmo normal.", "hybrid": "Desgasta 40% mais devagar.", "synthetic": "Quase não desgasta; 10% mais lesões nos jogos em casa; a torcida não gosta." },
+      "change": "Trocar grama",
+      "current": "Atual",
+      "condition": "Condição {{pct}}%"
+    },
+    "mowing": {
+      "label": "Padrão de corte",
+      "stripes": "Listras", "checker": "Xadrez", "diagonal": "Diagonal", "circles": "Círculos"
+    },
     "kpi": {
       "capacity": "Capacidade",
       "duringWorks": "{{seats}} durante a obra",
@@ -3388,7 +3401,8 @@
       "academy": "Base",
       "repair": "Reforma",
       "rebuild": "Reconstrução",
-      "upgrade": "Melhoria"
+      "upgrade": "Melhoria",
+      "turf": "troca de grama"
     },
     "comfort": {
       "about": "Cadeiras, cobertura, camarotes: ingresso mais caro.",
@@ -3432,7 +3446,8 @@
         "attendance_record": "Novo recorde de público",
         "worn": "Desgastado: {{what}}",
         "condemned": "Interditado: {{what}}",
-        "repaired": "Obra concluída: {{what}}"
+        "repaired": "Obra concluída: {{what}}",
+        "turf_changed": "Grama nova instalada"
       },
       "approved": "A diretoria aprovou {{what}} ({{cost}}). Pronta em {{date}}; paga em parcelas mensais.",
       "approvedFunded": "A diretoria aprovou {{what}} ({{cost}}) e paga {{pct}}% com verba própria. Pronta em {{date}}; paga em parcelas mensais.",
@@ -3444,7 +3459,8 @@
       "worn": "{{what}} caiu para {{condition}}% e começa a custar ao clube. Reforme na tela Clube.",
       "condemned": "{{what}} caiu para {{condition}}% e foi interditado. Só a reconstrução o recupera.",
       "repaired": "{{what}} voltou a {{condition}}%.",
-      "upgraded": "{{what}} agora é nível {{level}} de 10, a 100%."
+      "upgraded": "{{what}} agora é nível {{level}} de 10, a 100%.",
+      "turf_changed": "O gramado do estádio agora tem {{turf}}, a 100%."
     },
     "item": {
       "stadiumPitch": "Gramado do estádio",

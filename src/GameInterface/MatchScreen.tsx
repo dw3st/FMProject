@@ -1,3 +1,6 @@
+import { pitchInjury } from "@/Domain/facilities/turf";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import type { MatchPitch as SetupPitch } from "@/Domain/facilities/pitch";
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import { shirtName } from "@/Domain/shirtName";
 import { readJsonBody } from "@/GameInterface/readJsonBody";
@@ -203,7 +206,7 @@ export function MatchScreen() {
   /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
   /** Stadium of the home side (#149): name under the scoreboard, with the crowd. */
   const [venueName, setVenueName] = useState<string | null>(null);
-  const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null } | null>(null);
+  const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null; pitch: SetupPitch | null } | null>(null);
   /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
   const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
   // ── Complaint and VAR (`.claude/rules/game/var.md` §4) ──
@@ -372,6 +375,8 @@ export function MatchScreen() {
           managers?: MatchManagers | null;
           /** Referee of the match (`referees.md`): his rigor plays in the engine, the screens show the band. */
           referee?: MatchSetupReferee | null;
+          /** Grass, mowing and condition of the pitch (spec 2026-10-16-pitch-types). */
+          pitch?: SetupPitch | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;
           /** The user's manager serves a touchline ban in this match (`var.md` §4). */
@@ -447,6 +452,7 @@ export function MatchScreen() {
         setTeamMoraleOverride("B", data.opponentSquad ? undefined : MORALE.NEUTRAL);
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);
+        const pitchMult = pitchInjury(data.pitch?.condition ?? 90, data.pitch?.turf);
         const fresh: GameState | null = snap ? null : {
           ...createMatchState(
             myEligiblePlayers,
@@ -456,8 +462,8 @@ export function MatchScreen() {
             data.myLineup,
             oppLineup,
             {
-              A: staffEffectsOf(data.mySquad).injuryMult,
-              ...(data.opponentSquad ? { B: staffEffectsOf(data.opponentSquad).injuryMult } : {}),
+              A: staffEffectsOf(data.mySquad).injuryMult * pitchMult,
+              ...(data.opponentSquad ? { B: staffEffectsOf(data.opponentSquad).injuryMult * pitchMult } : {}),
             },
           ),
           knockout: data.fixture.knockout === true,
@@ -541,7 +547,7 @@ export function MatchScreen() {
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
         setVenueName(homeSquad.venue?.name ?? null);
-        setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null });
+        setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null });
         if (data.managerBanned) setManagerOut("banned");
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
@@ -1196,6 +1202,10 @@ export function MatchScreen() {
           ? t("match.stadium.attendance", { crowd: crowdInfo.attendance.toLocaleString(i18n.language) })
           : null,
       ].filter(Boolean).join(" · ") || null;
+  const setupPitch = touchline?.pitch ?? null;
+  const pitchInfo = setupPitch
+    ? t("match.stadium.pitch", { turf: t(`facilities.turf.type.${setupPitch.turf}`), pct: Math.round(setupPitch.condition) })
+    : null;
 
   const overlayProgress =
     matchOverlay === "halfTime" || matchOverlay === "extraTime"
@@ -1244,10 +1254,15 @@ export function MatchScreen() {
           {matchHeadingText && (
             <p className="m-0 -mt-1 text-center text-sm text-muted-foreground truncate">{matchHeadingText}</p>
           )}
-          {stadiumLine && (
+          {(stadiumLine || pitchInfo) && (
             <p className="m-0 -mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground truncate">
               <Icon name="stadium" size={16} aria-label={t("match.stadium.label")} />
               <span className="truncate tabular-nums">{stadiumLine}</span>
+              {pitchInfo && setupPitch && (
+                <span className={`tabular-nums ${setupPitch.condition < FACILITIES.WEAR.WARN_BELOW ? "text-destructive" : ""}`}>
+                  {stadiumLine ? " · " : ""}{pitchInfo}
+                </span>
+              )}
             </p>
           )}
 
@@ -1417,6 +1432,7 @@ export function MatchScreen() {
                   coachCue={coachCue}
                   coachCard={coachCard}
                   extras
+                  pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id } : null}
                 />
                 {notice && (
                   <div
