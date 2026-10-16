@@ -246,4 +246,24 @@ describe("seats: review fixes", () => {
     });
     expect((await saveService.getSeat(id, meta.seatId))?.jobOffers ?? []).toEqual([]);
   }, 300_000);
+
+  // Advances the world: keep it last.
+  test("8b. after the day, the game between two seats is in the day log for both clubs", async () => {
+    const id = meta.id;
+    const game = (await saveService.getAllFixturesForLeague(id, "premier_league"))
+      .find((f) => !f.played && ((f.home === meta.clubId && f.away === clubD) || (f.home === clubD && f.away === meta.clubId)))!;
+    expect(game).toBeDefined();
+    const world = (await saveService.getMeta(id))!;
+    const { runBufferedDay } = await import("@/backend/advanceDay");
+    await saveService.updateMeta(id, { currentDate: game.date });
+    try {
+      const r = await runBufferedDay(id);
+      expect(r.ok).toBe(true);
+      const log = await saveService.getDayLog(id, game.date);
+      const ev = log!.events.find((e) => e.kind === "match" && e.home === game.home && e.away === game.away);
+      expect(ev).toBeDefined();
+    } finally {
+      await saveService.updateMeta(id, { currentDate: world.currentDate });
+    }
+  }, 300_000);
 });
