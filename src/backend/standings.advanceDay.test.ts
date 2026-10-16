@@ -109,6 +109,75 @@ describe("standings in advanceOneDay", () => {
     expect(after.clubId).toBe("");
   }, 120_000);
 
+  /** Forces the seat's country (Premier League + Championship) to roll today. */
+  const rollToday = async (saveId: string): Promise<string> => {
+    const world = (await saveService.getMeta(saveId))!;
+    const today = world.currentDate!;
+    await saveService.updateMeta(saveId, {
+      activeLeagues: (world.activeLeagues ?? []).map((l) =>
+        l.leagueSlug === "premier_league" || l.leagueSlug === "of_championship" ? { ...l, end: today } : l),
+    });
+    return today;
+  };
+
+  test("a sacking on the rollover day puts −5 on the rollover row and opens no passage", async () => {
+    const meta = await friendsLeague(true);
+    const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
+    await saveService.updateSeat(meta.id, meta.seatId, { board: { ...seat.board!, board: 5 } });
+    const today = await rollToday(meta.id);
+    expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+
+    const rows = await saveService.getSeatSeasons(meta.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ reason: "rollover", clubId: "33", closedOn: today });
+    expect(rows[0]!.items).toContainEqual({ key: "sacked", points: -5 });
+    expect(rows[0]!.total).toBe(rows[0]!.items.reduce((n, i) => n + i.points, 0));
+    const after = (await saveService.getSeat(meta.id, meta.seatId))!;
+    expect(after.standing).toBeUndefined();
+    expect(after.clubId).toBe("");
+  }, 180_000);
+
+  test("a contract ending on the rollover day keeps the rollover row as it is and opens no passage", async () => {
+    const meta = await friendsLeague(false);
+    const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
+    const today = await rollToday(meta.id);
+    await saveService.updateSeat(meta.id, meta.seatId, { managerContract: { ...seat.managerContract!, until: today } });
+    expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+
+    const rows = await saveService.getSeatSeasons(meta.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ reason: "rollover", clubId: "33", closedOn: today });
+    expect(rows[0]!.items.map((i) => i.key)).not.toContain("sacked");
+    expect(rows[0]!.items.map((i) => i.key)).not.toContain("half");
+    const after = (await saveService.getSeat(meta.id, meta.seatId))!;
+    expect(after.standing).toBeUndefined();
+    expect(after.clubId).toBe("");
+  }, 180_000);
+
+  test("a passage opened today by a club change closes with the sacking (not dropped)", async () => {
+    const meta = await friendsLeague(true);
+    const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
+    await saveService.updateSeat(meta.id, meta.seatId, {
+      board: { ...seat.board!, board: 5 }, standing: { ...seat.standing!, from: meta.currentDate! },
+    });
+    expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+    const rows = await saveService.getSeatSeasons(meta.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ reason: "sacked", from: meta.currentDate });
+    expect(rows[0]!.items).toContainEqual({ key: "sacked", points: -5 });
+  }, 120_000);
+
+  test("a replayed rollover day leaves the new season's passage (written by the failed try) open", async () => {
+    const meta = await friendsLeague(false);
+    const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
+    const today = await rollToday(meta.id);
+    const reopened = { ...seat.standing!, from: today, season: "next-season", extras: [] };
+    await saveService.updateSeat(meta.id, meta.seatId, { standing: reopened });
+    expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+    expect((await saveService.getSeatSeasons(meta.id)).filter((r) => r.seatId === meta.seatId)).toEqual([]);
+    expect((await saveService.getSeat(meta.id, meta.seatId))!.standing).toMatchObject({ from: today, season: "next-season" });
+  }, 180_000);
+
   test("a solo save keeps no standings", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",

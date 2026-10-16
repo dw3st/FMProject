@@ -1,6 +1,6 @@
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { appendSeatSeasons, newPassage, positionOf, standingsOn, standingsView } from "@/backend/standingsWorld";
-import { closePassage, sumItems, withExtra } from "@/Domain/multiplayer/standings";
+import { closePassage, rankOf, sumItems, withExtra } from "@/Domain/multiplayer/standings";
 import { continentalEventItem, cupTieItems, nationalNewsItems } from "@/Domain/multiplayer/standingsEvents";
 import { buildSeasonClosedMessage } from "@/Domain/multiplayer/worldMessages";
 import { STANDINGS } from "@/Domain/multiplayer/standingsConfig";
@@ -2219,8 +2219,14 @@ export async function advanceOneDay(
               const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
               if (review.sacked) ds.sackedReason = review.sacked;
             }
-            // The seat's standings passage closes with the season (still the old objective).
-            if (standingsActive && ds.standing) {
+            // The seat's standings passage closes with the season (still the old objective). A passage of the NEW
+            // season (opened today by an earlier try of this same day whose flush wrote the seat but not the meta)
+            // is not closed: it stays the open passage.
+            const closingSeason = seasonLabel(state.year, state.start, state.end);
+            const reopened = !!ds.standing && ds.standing.from === currentDate
+              && ds.standing.season !== "" && ds.standing.season !== closingSeason;
+            if (standingsActive && reopened) ds.standingOpenedByRollover = true;
+            if (standingsActive && ds.standing && !reopened) {
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
               const closed = closePassage(ds.standing, {
@@ -2536,6 +2542,7 @@ export async function advanceOneDay(
             date: currentDate, clubId: ds.clubId, clubName: ds.meta.clubName,
             leagueSlug: index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug, board: ds.board,
           });
+          ds.standingOpenedByRollover = true;
         }
         const archiveYear = closedYear.get(ds.meta.leagueSlug)!;
         ds.rollover.archiveYear = archiveYear;
@@ -2789,15 +2796,16 @@ export async function advanceOneDay(
           }
         }
         // Standings: the passage closes with the reason (sacked −5, contract end no penalty). A passage opened
-        // today by the rollover is dropped without a row; a sacking on the rollover day adds −5 to that row.
+        // today by the rollover is dropped without a row; a sacking on the rollover day adds −5 to that row. A
+        // passage opened earlier (even today, by a club change or a join) closes normally.
         if (standingsActive) {
           const sacked = ended.reason !== "contract";
-          if (ds.standing && ds.standing.from !== currentDate) {
+          if (ds.standing && !ds.standingOpenedByRollover) {
             standingRows.push(closePassage(ds.standing, {
               seatId: ds.seatId, closedOn: currentDate, reason: sacked ? "sacked" : "contract",
               position: await positionOf(saveService, saveId, ds.standing.leagueSlug, ds.standing.clubId),
             }));
-          } else if (!ds.standing && sacked && ds.standingClosed) {
+          } else if (sacked && ds.standingClosed) {
             const before = ds.standingClosed;
             const items = [...before.items, { key: "sacked" as const, points: STANDINGS.SACKED }];
             const after: SeatSeasonRow = { ...before, items, total: sumItems(items) };
@@ -3064,7 +3072,7 @@ export async function advanceOneDay(
       });
       const of = view.entries.length;
       for (const { ds: owner, row } of closedToday) {
-        const rank = view.entries.findIndex((e) => e.seatId === owner.seatId) + 1;
+        const rank = rankOf(view.entries, owner.seatId);
         const msg = buildSeasonClosedMessage(currentDate, {
           seatId: owner.seatId, managerName: owner.meta.manager?.name ?? "", clubName: row.clubName,
           season: row.season, points: row.total, rank: rank > 0 ? rank : of, of,

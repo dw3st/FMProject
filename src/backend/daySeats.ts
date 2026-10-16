@@ -107,6 +107,8 @@ export interface DaySeat {
   standing: SeatStanding | undefined;
   /** The passage closed by today's rollover (for the `season_closed` message). */
   standingClosed: SeatSeasonRow | null;
+  /** `standing` was opened by today's rollover (a sacking or contract end later today drops it). */
+  standingOpenedByRollover: boolean;
   /** Seat fields to write at the end of the day. */
   patch: Partial<SeatState>;
 }
@@ -161,6 +163,7 @@ export function newDaySeat(args: {
     achievementsUnlocked: 0,
     standing: seat.standing,
     standingClosed: null,
+    standingOpenedByRollover: false,
     patch: {},
   };
 }
