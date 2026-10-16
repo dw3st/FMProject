@@ -442,3 +442,83 @@ bun test src/Domain/seatOffers src/backend/dal/seatOffers.dal.test.ts src/backen
 - Sem rival da IA nem disputa na proposta entre técnicos; a preferência do jogador (`preferenceScore`) não entra, só a
   recusa de contrato no aceite.
 - Elenco cheio e mínimos do vendedor aparecem só no aceite, não ao propor.
+
+## Parte 5a: classificação dos técnicos
+
+Spec: `docs/superpowers/specs/2026-10-16-multiplayer-standings-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-standings.md`.
+Versão **4.27**. A parte 5 foi dividida: esta é a classificação dos técnicos de uma liga de amigos; o mundo público é a 5b.
+
+### Regra
+
+- Vale em mundos `mode: "multi"` com `world` (liga de amigos); no solo nada aparece e nada é gravado (`standingsOn`).
+- Cada assento soma pontos por **passagem** (um clube numa temporada). A passagem fecha na virada do país do clube, numa
+  troca de clube, numa demissão ou no fim do contrato. Total = soma das passagens fechadas; a aberta aparece como
+  **parcial**, calculado na hora com a posição de hoje.
+- Pontos (constantes em `STANDINGS`, `src/Domain/multiplayer/standingsConfig.ts`):
+
+| Componente | Pontos |
+|---|---|
+| Meta da diretoria cumprida (posição ≤ `target`) | +10, mais +1 por posição acima da meta (até +10) |
+| Meta falhada | −1 por posição abaixo (até −10) |
+| Título da liga (na virada) | +15 |
+| Acesso / rebaixamento (na virada) | +8 / −8 |
+| Copa nacional | campeão +8, finalista +3 |
+| Continental (só a maior fase) | campeão +15, finalista +6, semifinal +3, passou dos grupos +1 |
+| Melhor técnico da liga / do mundo | +4 / +8 |
+| Seleção: título de torneio / meta da federação cumprida | +6 / +2 |
+| Demissão | −5 |
+
+- Copa e continental pontuam **no dia do evento**, pela maior fase da passagem (`withExtra`: copa e continental guardam o
+  maior, os demais somam); o perdedor da final da copa leva o de finalista. Prêmios e seleção também entram no dia, na
+  passagem aberta (desempregado não pontua).
+- **Fechamento no meio da temporada** (troca, demissão, fim de contrato): a parte da meta vale metade (arredondada para
+  zero, item `half`); títulos e fases contam inteiros; demissão soma −5. Sem jogos na liga a parte da meta vale 0.
+- **Demissão no próprio dia da virada:** o −5 vai na linha `rollover` e não se abre passagem nova.
+- **Começo do mundo:** depois do kit, todas as passagens reabrem na data do mundo (`/start`).
+- **Posição** na tabela é compartilhada em empate de total; a ordem é total, parcial, nome.
+- Idempotente: o id da linha é `seatId:clubId:season:closedOn`; um dia refeito não grava de novo.
+
+### Dados
+
+- `saves/{id}/seatSeasons.json` (do mundo, bufferizado): `SeatSeasonRow[]` (`src/types/standingsTypes.ts`: clube, liga,
+  temporada, `reason`, posição, meta, `items`, `total`).
+- `SeatState.standing?: SeatStanding` — a passagem aberta (começo, clube, temporada, `target`, `extras`). O resto do
+  parcial vem da tabela na hora. Sem migração.
+
+### Onde grava
+
+| Onde | O que |
+|---|---|
+| `addSeat` (`seats.ts`) e `acceptJobOffer` (`jobWorld.ts`) | Abrem a passagem; a troca fecha a antiga antes (`club_change`) |
+| `advanceDay.ts` (`standingExtra`) | Copa, continental, melhor técnico e seleção entram em `extras` do dia |
+| `advanceDay.ts`, virada do país | Fecha (`rollover`) com título/acesso/rebaixamento e abre a seguinte |
+| `advanceDay.ts`, demissão / fim de contrato | Fecha com `sacked` / `contract` |
+| `standingsWorld.ts` | E/S: `newPassage`, `closeSeatPassage`, `appendSeatSeasons`, `positionOf`, `standingsView` |
+
+Mensagem `world` / `season_closed` (pontos, posição) para **todos** os assentos na virada, depois do `clearInbox`; não
+duplica num dia refeito. O socket `world_members` recarrega as telas.
+
+### Rota
+
+`GET /api/worlds/:saveId/standings` (qualquer membro; solo 409 `notMulti`): `{ entries, rows }`, uma entrada por técnico
+(`partial`, `closedTotal`, `total`, `seasons`) ordenada, e as linhas fechadas, mais novas primeiro.
+
+### Telas
+
+- `/world` → aba **Classificação** (`World/StandingsTable.tsx`): #, rosto, técnico, apelido, clube, "Temporada atual"
+  (parcial), "Fechadas" e "Total"; a linha do próprio técnico destacada; abrir mostra cada temporada com os itens.
+- Painel: linha "Liga de amigos: Nº de N" no `ClubCard`, link para a aba. Caixa: `season_closed`.
+- i18n `world.standings.*` (en, pt-BR).
+
+### Testes
+
+```
+bun test src/Domain/multiplayer src/backend/dal/seatSeasons.dal.test.ts src/backend/standings.world.test.ts \
+  src/backend/standings.advanceDay.test.ts src/backend/standings.routes.test.ts src/i18n/standings.keys.test.ts
+```
+
+### Limitações (parte 5a)
+
+- Começa do zero em cada mundo; sem troféu para o campeão da liga de amigos.
+- A meta é a da diretoria: meta fácil pontua mais pela posição relativa, por desenho.
+- Só liga de amigos; o mundo público é a 5b.
