@@ -465,9 +465,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
         );
       }
       const oppId = todayFixture.home === myInternalId ? todayFixture.away : todayFixture.home;
-      // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
-      // the day's advance plays it in the full engine with both seats' tactics.
-      // Multiplayer part 4: the preview is the normal one, the opponent read like an AI club (its own formation and
+      // Against another seat (`.claude/rules/game/multiplayer.md`, part 4) the day's advance plays it in the full engine
+      // with both seats' tactics. The preview is the normal one, the opponent read like an AI club (its own formation and
       // auto XI, never the other seat's saved tactics); only the live match (`?live=1`) is refused.
       if ((await saveService.humanClubIds(save.id)).has(oppId)) {
         if (url.searchParams.get("live") === "1") {
