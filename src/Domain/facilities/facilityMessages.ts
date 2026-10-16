@@ -12,6 +12,7 @@ const NAME: Record<FacilityKind, string> = {
   repair: "repair",
   rebuild: "rebuild",
   upgrade: "upgrade",
+  turf: "grass change",
 };
 
 const ITEM_NAME: Record<FacilityItemId, string> = {

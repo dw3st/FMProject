@@ -6,8 +6,13 @@
 
 export type StandId = "north" | "south" | "east" | "west";
 
+/** Grass of the stadium pitch (`docs/superpowers/specs/2026-10-16-pitch-types-design.md`). */
+export type TurfType = "natural" | "hybrid" | "synthetic";
+/** Mowing pattern of the stadium pitch: drawing only. */
+export type MowingPattern = "stripes" | "checker" | "diagonal" | "circles";
+
 /** What a project builds. One project per kind (per item for item projects) at a time. */
-export type FacilityKind = "stand" | "comfort" | "training" | "academy" | "repair" | "rebuild" | "upgrade";
+export type FacilityKind = "stand" | "comfort" | "training" | "academy" | "repair" | "rebuild" | "upgrade" | "turf";
 
 /** The ten facility items (`docs/superpowers/specs/2026-10-08-living-facilities-design.md`). */
 export type FacilityItemId =
@@ -25,6 +30,8 @@ export interface FacilityItem {
   condemned?: true;
   /** Last threshold warned (40 or 15); cleared when the condition goes back above it. */
   alert?: 40 | 15;
+  /** Stadium pitch only: the grass; absent = natural. */
+  turf?: TurfType;
 }
 
 export interface StadiumStand {
@@ -44,6 +51,8 @@ export interface FacilityProject {
   item?: FacilityItemId;
   /** Repair: target condition (rebuild/upgrade: 100). */
   to?: number;
+  /** Turf projects: the grass laid on completion. */
+  turf?: TurfType;
   /** Day the board approved it (first instalment due). */
   start: string;
   /** Completion day: the effect applies from this day on. */
@@ -68,6 +77,8 @@ export interface CompletedFacilityProject {
   level?: number;
   item?: FacilityItemId;
   to?: number;
+  /** Turf projects: the grass laid on completion. */
+  turf?: TurfType;
   date: string;
 }
 
@@ -107,6 +118,8 @@ export interface ClubFacilities {
   attendance: AttendanceRow[];
   /** Best home attendance since the facilities were set up. */
   record?: { date: string; attendance: number; competition: string; opponentId: string };
+  /** Mowing pattern of the stadium pitch (drawing only); absent = stripes. */
+  mowing?: MowingPattern;
 }
 
 /** Body of `POST /api/saves/:id/facilities/request`. */
@@ -114,6 +127,7 @@ export type FacilityRequest =
   | { kind: "stand"; stand: StandId; seats: number }
   | { kind: "comfort" | "training" | "academy" }
   | { kind: "repair"; item: FacilityItemId; to: number }
-  | { kind: "rebuild" | "upgrade"; item: FacilityItemId };
+  | { kind: "rebuild" | "upgrade"; item: FacilityItemId }
+  | { kind: "turf"; turf: TurfType };
 
 export type BoardRefusal = "board_low" | "negative_balance" | "too_big" | "no_money";
