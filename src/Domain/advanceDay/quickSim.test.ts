@@ -610,6 +610,24 @@ describe("quickSimMatch — pitch condition (Etapa 34)", () => {
   });
 });
 
+describe("quickSimMatch — turf", () => {
+  const home = makeSquad("h", 5);
+  const away = makeSquad("a", 5);
+  const base = { fixtureId: "f1", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) };
+
+  test("synthetic grass: more injuries over many seeds, natural = the same draws", () => {
+    let natural = 0, synthetic = 0;
+    for (let s = 1; s <= 1500; s++) {
+      const a = { ...quickSimMatch({ ...base, turf: "natural" as const }, mulberry32(s)).recording, durationMs: 0 };
+      const b = { ...quickSimMatch(base, mulberry32(s)).recording, durationMs: 0 };
+      expect(a).toEqual(b);
+      natural += b.injuries?.length ?? 0;
+      synthetic += quickSimMatch({ ...base, turf: "synthetic" as const }, mulberry32(s)).recording.injuries?.length ?? 0;
+    }
+    expect(synthetic).toBeGreaterThan(natural);
+  }, 120_000);
+});
+
 describe("quickSimMatch — referee rigor", () => {
   const home = makeSquad("h", 5);
   const away = makeSquad("a", 5);

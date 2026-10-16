@@ -9,7 +9,7 @@ import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
 import { academyEffectsOf, committedSpend, itemBusy, itemValue, payRepairNow, projectRunning, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { comfortLevelPriceMult, facilitiesAppeal } from "@/Domain/facilities/facilities";
-import { busyGroups, groupBusy, projectGroup, requestGroup, worksSizeFactor } from "@/Domain/facilities/facilities";
+import { applyCompletion, busyGroups, groupBusy, projectGroup, requestGroup, worksSizeFactor } from "@/Domain/facilities/facilities";
 import { FACILITY_ITEMS, conditionOf, groupLevel as groupLevelOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { FacilityItemId } from "@/types/facilityTypes";
@@ -522,5 +522,41 @@ describe("facilitiesAppeal", () => {
     const human = { ...sq, facilities: { ...f, items } };
     expect(facilitiesAppeal(human, { age: 26 })).toBeCloseTo(20, 8);
     expect(facilitiesAppeal(human, { age: 19 })).toBeCloseTo(50, 8);
+  });
+});
+
+describe("turf works (spec 2026-10-16)", () => {
+  const revenue = 100_000_000;
+  const ctx = { revenue, seatCost: 3000 };
+  const f0 = () => initialFacilities(squad(), 3);
+
+  test("quote: the pitch's rebuild value × the grass, rebuild weeks; the current grass is not a quote", () => {
+    const f = f0();
+    const lv = f.items.stadiumPitch.level;
+    const q = quoteProject(f, { kind: "turf", turf: "hybrid" }, ctx)!;
+    expect(q).toMatchObject({ kind: "turf", item: "stadiumPitch", turf: "hybrid", to: 100 });
+    expect(q.cost).toBe(Math.round(itemValue(revenue, "stadiumPitch", lv) * 1.5));
+    expect(q.weeks).toBe(Math.ceil(F.ITEMS.stadiumPitch.rebuildWeeks * worksSizeFactor(lv)));
+    expect(quoteProject(f, { kind: "turf", turf: "natural" }, ctx)).toBeNull();
+    expect(requestGroup({ kind: "turf", turf: "hybrid" })).toBe("stadium");
+  });
+
+  test("delivery: new grass at 100%, warnings gone; a later rebuild keeps the grass", () => {
+    const base = f0();
+    const worn = { ...base, items: { ...base.items, stadiumPitch: { ...base.items.stadiumPitch, wear: 0.95, condemned: true as const, alert: 15 as const } } };
+    const q = quoteProject(worn, { kind: "turf", turf: "synthetic" }, ctx)!;
+    const started = startProject(worn, q, { id: "p1", date: "2027-01-01", boardShare: 0 });
+    expect(started.projects[0]!.turf).toBe("synthetic");
+    const done = advanceFacilities(started, started.projects[0]!.end);
+    expect(done.completed[0]!.turf).toBe("synthetic");
+    expect(done.facilities.items.stadiumPitch).toEqual({ level: worn.items.stadiumPitch.level, wear: wearFor(100), turf: "synthetic" });
+    expect(done.facilities.completed.at(-1)!.turf).toBe("synthetic");
+
+    const pitch = { ...done.facilities.items.stadiumPitch, wear: 0.95, condemned: true as const };
+    const again = applyCompletion({ ...done.facilities.items, stadiumPitch: pitch }, {
+      id: "p2", kind: "rebuild", item: "stadiumPitch", to: 100, start: "2027-03-01", end: "2027-04-01",
+      cost: 1, boardShare: 0, instalments: 1, paid: 1,
+    });
+    expect(again.stadiumPitch.turf).toBe("synthetic");
   });
 });

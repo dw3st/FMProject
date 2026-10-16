@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AcademyEffects, ProjectQuote, TrainingGroundEffects } from "@/Domain/facilities/facilities";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
 import type {
-  BoardRefusal, ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest,
+  BoardRefusal, ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, MowingPattern, TurfType,
 } from "@/types/facilityTypes";
 
 /** What happens to a quote if requested now (`facilityRoutes.ts` → `forecast`). */
@@ -48,6 +48,11 @@ export interface FacilitiesViewData {
   weeklyUpkeep: number;
   /** Groups with a works running: one at a time per group (#152). */
   busyGroups?: FacilityGroup[];
+  /** Grass and mowing of the stadium pitch (spec 2026-10-16-pitch-types). */
+  turf: TurfType;
+  mowing: MowingPattern;
+  /** The turf works to each grass (null: the current one). */
+  turfQuotes: Record<TurfType, ItemQuote | null>;
   committed: number;
   demandInput: { followers: number; tier: number; fans: number };
   season: { start: string; end: string } | null;
@@ -110,5 +115,18 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
     }
   }, [saveId]);
 
-  return { data, error, request };
+  const setMowing = useCallback(async (mowing: MowingPattern): Promise<boolean> => {
+    if (!saveId) return false;
+    try {
+      const r = await fetch(`/api/saves/${saveId}/facilities/mowing`, {
+        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ mowing }),
+      });
+      if (!r.ok) return false;
+      const body = await r.json() as { view?: FacilitiesViewData };
+      if (body.view) setData(body.view);
+      return true;
+    } catch { return false; }
+  }, [saveId]);
+
+  return { data, error, request, setMowing };
 }

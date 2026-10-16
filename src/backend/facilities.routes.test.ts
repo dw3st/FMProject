@@ -296,3 +296,52 @@ describe("facility item requests", () => {
     if (fixture!.home === "33") expect(setup.pitchCondition).toBeCloseTo(conditionOf(homeSquad.facilities!.items.stadiumPitch), 6);
   }, 240_000);
 });
+
+describe("turf and mowing requests", () => {
+  let saveId = "";
+  afterAll(async () => {
+    if (saveId) await saveService.deleteSave(saveId);
+  });
+
+  test("turf: quote in the view, approved request, busy stadium, invalid grass; mowing PUT", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    saveId = meta.id;
+    const { user, session } = devAutoLogin("facilities-turf@test.local");
+    await ownSolo(saveId, user.id);
+    const call = async (path: string, method: string, body?: unknown) => {
+      const key = `/api/saves/:saveId/facilities${path}`;
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/facilities${path}`, {
+          method,
+          headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        }),
+        { params: { saveId } },
+      ));
+    };
+    const season = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
+    await recordMoney(saveService, saveId, season, { leagueSlug: "premier_league", clubSlug: "33" },
+      { date: meta.currentDate!, kind: "prize", amount: 500_000_000, label: "test money", ref: { stage: "board_bonus" } }, meta.seatId);
+    await saveService.updateSeat(saveId, meta.seatId, { board: { ...meta.board!, board: 100 } });
+
+    const view = await (await call("", "GET")).json() as any;
+    expect(view.turf).toBe("natural");
+    expect(view.mowing).toBe("stripes");
+    expect(view.turfQuotes.natural).toBeNull();
+    expect(view.turfQuotes.hybrid).toMatchObject({ kind: "turf", turf: "hybrid", forecast: expect.any(Object) });
+    expect((await call("/request", "POST", { kind: "turf", turf: "natural" })).status).toBe(400);
+    expect((await call("/request", "POST", { kind: "turf", turf: "grass" })).status).toBe(400);
+    const ok = await (await call("/request", "POST", { kind: "turf", turf: "hybrid" })).json() as any;
+    expect(ok.approved).toBe(true);
+    expect(ok.project).toMatchObject({ kind: "turf", turf: "hybrid", item: "stadiumPitch" });
+    expect((await call("/request", "POST", { kind: "turf", turf: "synthetic" })).status).toBe(409);
+
+    expect((await call("/mowing", "PUT", { mowing: "checker" })).status).toBe(200);
+    expect(((await (await call("", "GET")).json()) as any).mowing).toBe("checker");
+    expect((await call("/mowing", "PUT", { mowing: "zigzag" })).status).toBe(400);
+  }, 240_000);
+});

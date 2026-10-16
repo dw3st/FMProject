@@ -8,6 +8,7 @@ import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
 import { matchVarStats, toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
+import type { TurfType } from "@/types/facilityTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type {
   MatchEvent,
@@ -503,6 +504,8 @@ export interface EngineMatchSim {
   tactics?: { A: TeamTactics; B: TeamTactics };
   /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
   pitchCondition?: number;
+  /** Grass of the pitch (`matchPitch`); absent = natural. */
+  turf?: TurfType;
   /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
   referee?: EngineReferee;
   /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
@@ -538,6 +541,7 @@ function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: 
       knockout: fixture.knockout === true,
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
+      ...(sim.turf ? { turf: sim.turf } : {}),
       ...(sim.referee ? { referee: sim.referee } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
       // The human manager's Discipline (`.claude/rules/game/achievements.md`): only his club stores it.
@@ -847,6 +851,8 @@ export function buildQuickMatchEvent(
     awayFormation?: Formation;
     /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
     pitchCondition?: number;
+    /** Grass of the pitch (`matchPitch`); absent = natural. */
+    turf?: TurfType;
     /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
     referee?: EngineReferee;
   },
@@ -865,6 +871,7 @@ export function buildQuickMatchEvent(
       neutral: fixture.neutral === true,
       aggregate: fixture.aggregate,
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
+      ...(sim.turf ? { turf: sim.turf } : {}),
       ...(sim.referee ? { refereeStrictness: sim.referee.strictness } : {}),
       ...(typeof sim.referee?.quality === "number" ? { refereeQuality: sim.referee.quality, refereeVar: sim.referee.var === true } : {}),
       ...(homeSquad.managerAttributes ? { homeManagerDiscipline: homeSquad.managerAttributes.discipline } : {}),

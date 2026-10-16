@@ -13,6 +13,7 @@ import {
   validSeats, weeklyUpkeep, withFacilities, type ProjectQuote,
 } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { TURF_TYPES, isTurfType, isMowingPattern } from "@/Domain/facilities/turf";
 import {
   FACILITY_ITEMS, ITEM_GROUP, comfortLevel, conditionOf, groupLevel, isFacilityItemId, itemEffects,
 } from "@/Domain/facilities/facilityItems";
@@ -71,6 +72,7 @@ function parseFacilityRequest(body: unknown): FacilityRequest | null {
     if (typeof to !== "number" || !Number.isInteger(to) || to % FACILITIES.REPAIR.STEP !== 0 || to <= 0 || to > 100) return null;
     return { kind: "repair", item: b.item, to };
   }
+  if (b.kind === "turf") return isTurfType(b.turf) ? { kind: "turf", turf: b.turf } : null;
   return null;
 }
 
@@ -189,6 +191,9 @@ async function facilitiesView(h: Human) {
   const revenue = wageRevenueBasisOf(h.squad);
   const ctx = { revenue, seatCost: await seatCostFor(saveService, h.meta.id, h.meta, h.ref.leagueSlug) };
   const state = (h.meta.activeLeagues ?? []).find((l) => l.leagueSlug === h.meta.leagueSlug);
+  const money = {
+    board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, revenue, committed: committedSpend(f),
+  };
   const nextLevel = (lv: number) => Math.min(FACILITIES.MAX_LEVEL, Math.floor(lv) + 1);
   const levels = { comfort: comfortLevel(f), training: groupLevel(f, "training"), academy: groupLevel(f, "academy") };
   const own = trainingGroundEffectsOf(h.squad);
@@ -225,9 +230,15 @@ async function facilitiesView(h: Human) {
       fans: h.meta.board?.fans ?? BOARD_FANS.START,
     },
     season: state ? { start: state.start, end: state.end } : null,
-    items: itemsView(f, h.date, {
-      board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, revenue, committed: committedSpend(f),
-    }),
+    items: itemsView(f, h.date, money),
+    /** Grass and mowing of the stadium pitch (spec 2026-10-16-pitch-types). */
+    turf: f.items.stadiumPitch.turf ?? "natural",
+    mowing: f.mowing ?? "stripes",
+    /** The works to each grass (null: the current one), with what would happen if requested now. */
+    turfQuotes: Object.fromEntries(TURF_TYPES.map((t) => {
+      const q = quoteProject(f, { kind: "turf", turf: t }, ctx);
+      return [t, q ? { ...q, forecast: forecast(q, money) } : null];
+    })),
     /** Big-match multiplier of each coming home game (`demandInput.importance` of that game). */
     importanceByFixture: await importanceByFixture(h),
     quotes: {
@@ -261,6 +272,25 @@ export const facilityRoutes = {
     return Response.json(await facilitiesView(h));
   },
 
+  /** `PUT { mowing }`: the stadium pitch's mowing pattern (drawing only; free, any time). */
+  "/api/saves/:saveId/facilities/mowing": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    let body: unknown;
+    try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
+    const mowing = (body as { mowing?: unknown } | null)?.mowing;
+    if (!isMowingPattern(mowing)) return Response.json({ error: "invalidRequest" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const h = await loadHuman(saveId, auth.seatId);
+      if (h instanceof Response) return h;
+      const squad = withFacilities(h.squad, { ...h.squad.facilities!, mowing });
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, squad);
+      return Response.json({ mowing, view: await facilitiesView({ ...h, squad }) });
+    });
+  },
+
   /** `POST` a `FacilityRequest`: the board approves (project started) or refuses (reason). */
   "/api/saves/:saveId/facilities/request": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -275,8 +305,9 @@ export const facilityRoutes = {
       const h = await loadHuman(saveId, auth.seatId);
       if (h instanceof Response) return h;
       const f = h.squad.facilities!;
-      const itemRequest = request.kind === "repair" || request.kind === "rebuild" || request.kind === "upgrade";
-      if (itemRequest ? itemBusy(f, request.item) : projectRunning(f, request.kind)) {
+      const itemRequest = request.kind === "repair" || request.kind === "rebuild" || request.kind === "upgrade" || request.kind === "turf";
+      const busyItem = request.kind === "turf" ? "stadiumPitch" : itemRequest ? request.item : null;
+      if (busyItem ? itemBusy(f, busyItem) : projectRunning(f, request.kind)) {
         return Response.json({ error: "busy" }, { status: 409 });
       }
       const revenue = wageRevenueBasisOf(h.squad);
@@ -314,6 +345,7 @@ export const facilityRoutes = {
         ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
         ...(quote.level !== undefined ? { level: quote.level } : {}),
         ...(quote.item ? { item: quote.item } : {}),
+        ...(quote.turf ? { turf: quote.turf } : {}),
       };
       // A refusal is answered on screen only (no inbox line: the request was just made).
       if (!decision.approved) {

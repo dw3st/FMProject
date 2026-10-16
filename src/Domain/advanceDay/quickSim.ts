@@ -28,7 +28,8 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { familiarityFactor } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { moraleQuickSimMult } from "@/Domain/morale/morale";
-import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
+import { pitchInjury } from "@/Domain/facilities/turf";
+import type { TurfType } from "@/types/facilityTypes";
 import { refereeFoulMult, refereeRedMult, refereeYellowMult } from "@/Domain/referees/strictness";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { qualityMult } from "@/GameEngine/Domain/Var";
@@ -102,6 +103,8 @@ export interface QuickSimInput {
    * multiplies both sides' injury risk (× 1.6 at 0%). Absent = 90 (no change, no extra draw).
    */
   pitchCondition?: number;
+  /** Grass of the match pitch (`matchPitch`); absent = natural. */
+  turf?: TurfType;
   /** Referee rigor −1..1 (`src/Domain/referees`): fouls, penalties and cards of both sides. Absent / 0 = no change. */
   refereeStrictness?: number;
   /**
@@ -875,7 +878,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
   const totalMinutes = decider?.extraTime ? 120 : 90;
   // Match pitch (Etapa 34): × both sides' injury risk below 40%; 90 / absent = × 1, same draws.
-  const pitchMult = pitchInjuryMult(input.pitchCondition ?? 90);
+  const pitchMult = pitchInjury(input.pitchCondition ?? 90, input.turf);
   const injuries = [
     ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult * pitchMult),
     ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult * pitchMult),

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { aiPitchCondition, matchPitchCondition, pitchInjuryMult } from "@/Domain/facilities/pitch";
+import { aiPitchCondition, matchPitch, matchPitchCondition, pitchInjuryMult } from "@/Domain/facilities/pitch";
+import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
+import { aiMowingOf, clubTurf } from "@/Domain/facilities/turf";
+import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { initialFacilities, withFacilities } from "@/Domain/facilities/facilities";
 import { conditionOf, wearFor } from "@/Domain/facilities/facilityItems";
 import type { Squad } from "@/types/playerTypes";
@@ -53,5 +56,36 @@ describe("match pitch", () => {
     const last = matchPitchCondition(club(20e6), {}, window, window.end);
     const first = matchPitchCondition(club(20e6), {}, next, next.start);
     expect(last).toBeLessThan(first);
+  });
+});
+
+describe("matchPitch (spec 2026-10-16)", () => {
+  const window = { start: "2026-08-15", end: "2027-05-20" };
+  const ai = { ...club(500_000_000), id: "33" } as Squad;
+
+  test("neutral venue: 90, natural, stripes", () => {
+    expect(matchPitch(ai, { neutral: true }, window, "2027-01-01")).toEqual({ condition: 90, turf: "natural", mowing: "stripes" });
+  });
+
+  test("AI home: its grass and mowing; the season drop x the grass wear", () => {
+    const p = matchPitch(ai, {}, window, "2027-05-20");
+    const turf = clubTurf(ai);
+    expect(p.turf).toBe(turf);
+    expect(p.mowing).toBe(aiMowingOf("33"));
+    expect(p.condition).toBeCloseTo(
+      F.AI_PITCH.START[financialTierOf(ai)] - F.AI_PITCH.DROP[financialTierOf(ai)] * F.TURF.WEAR_MULT[turf], 10);
+    expect(matchPitchCondition(ai, {}, window, "2027-05-20")).toBe(p.condition);
+  });
+
+  test("aiPitchCondition: natural is the old formula", () => {
+    expect(aiPitchCondition("LOW", 1)).toBe(F.AI_PITCH.START.LOW - F.AI_PITCH.DROP.LOW);
+    expect(aiPitchCondition("LOW", 1, "synthetic")).toBeCloseTo(F.AI_PITCH.START.LOW - F.AI_PITCH.DROP.LOW * 0.25, 10);
+  });
+
+  test("human home: the stadium pitch's condition, grass and mowing", () => {
+    const sq = club(30e6);
+    const f = initialFacilities(sq, 1);
+    const custom = { ...f, mowing: "diagonal" as const, items: { ...f.items, stadiumPitch: { ...f.items.stadiumPitch, wear: 0, turf: "hybrid" as const } } };
+    expect(matchPitch(withFacilities(sq, custom), {}, window, "2027-01-01")).toEqual({ condition: 100, turf: "hybrid", mowing: "diagonal" });
   });
 });

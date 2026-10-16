@@ -10,6 +10,8 @@
  *       the date in that season (the window starts on Aug 15).
  *       Groundskeeper none / 3★ / 5★ (`pitchWearMult` 1.6 / 1 / 0.75). Prints, by item, the condition at
  *       the end of each season and the fraction of a season at which it crosses 40% and 15%.
+ *   bun scripts/facilities-wear.ts --turf natural,hybrid,synthetic
+ *       M4 with the stadium pitch laid in each grass type (default natural).
  *   bun scripts/facilities-wear.ts --demand
  *       M5: the wage demand of an average signing (26 years, rating 5) at a club whose training ground
  *       is at 100 / 50 / 25 / 0%, and whether an ambition 16 / 17 / 20 player refuses.
@@ -19,6 +21,7 @@ import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
+import type { TurfType } from "@/types/facilityTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const argOf = (name: string) => {
@@ -53,15 +56,15 @@ function dateOf(years: number): string {
   return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function wearMeasure(): void {
+function wearMeasure(turf: TurfType): void {
   const level = Number(argOf("--level") ?? 6);
   const seasons = Number(argOf("--seasons") ?? 3);
   const plan = yearPlan();
   const homes = plan.filter((d) => d.homeGames > 0).length;
   const sessions = plan.filter((d) => d.session).length;
-  console.log(`Nível ${level}, novo (100%); ${homes} jogos em casa e ${sessions} treinos normais por temporada; ${seasons} temporadas\n`);
+  console.log(`Grama: ${turf} · Nível ${level}, novo (100%); ${homes} jogos em casa e ${sessions} treinos normais por temporada; ${seasons} temporadas\n`);
   for (const [label, mult] of [["sem jardineiro", FACILITIES.GROUNDSKEEPER.NONE], ["jardineiro 3★", 1], ["jardineiro 5★", FACILITIES.GROUNDSKEEPER.CURVE[2]]] as const) {
-    let items = Object.fromEntries(FACILITY_ITEMS.map((id) => [id, { level, wear: 0 }])) as FacilityItems;
+    let items = Object.fromEntries(FACILITY_ITEMS.map((id) => [id, { level, wear: 0, ...(id === "stadiumPitch" ? { turf } : {}) }])) as FacilityItems;
     const cross: Record<string, { w40?: number; c15?: number }> = {};
     const ends: Record<string, number[]> = {};
     for (let s = 0; s < seasons; s++) {
@@ -118,4 +121,4 @@ function demandMeasure(): void {
 }
 
 if (process.argv.includes("--demand")) demandMeasure();
-else wearMeasure();
+else for (const t of (argOf("--turf") ?? "natural").split(",")) wearMeasure(t as TurfType);

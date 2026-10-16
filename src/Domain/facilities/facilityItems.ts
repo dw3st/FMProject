@@ -122,7 +122,8 @@ export function wearDay(items: FacilityItems, d: WearDayInput): { items: Facilit
   for (const id of FACILITY_ITEMS) {
     const it = items[id];
     if (!it) continue;
-    const dw = itemWearToday(id, it.level, d);
+    const turf = id === "stadiumPitch" ? F.TURF.WEAR_MULT[it.turf ?? "natural"] : 1;
+    const dw = itemWearToday(id, it.level, d) * turf;
     if (dw > 0) worn[id] = { ...it, wear: it.wear + dw };
   }
   return crossings(worn);

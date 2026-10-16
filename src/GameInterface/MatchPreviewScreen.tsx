@@ -1,7 +1,9 @@
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
+import type { MatchPitch } from "@/Domain/facilities/pitch";
 import { readJsonBody } from "@/GameInterface/readJsonBody";
 import { RescheduledNote } from "@/GameInterface/Components/RescheduledNote";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
@@ -600,6 +602,8 @@ interface MatchSetupData {
   matchMarking?: { date: string; marks: MarkPair[] } | null;
   /** Condition 0..100 of the pitch the match is played on (`src/Domain/facilities/pitch.ts`). */
   pitchCondition?: number | null;
+  /** Grass and mowing of that pitch (spec 2026-10-16-pitch-types). */
+  pitch?: MatchPitch | null;
   /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
   /** Referee of the match (`referees.md`); null = none appointed. */
@@ -1165,8 +1169,13 @@ export function MatchPreviewScreen() {
           <div className={`grid grid-cols-2 ${INFO_COLS[3 + (expectedCrowd ? 1 : 0) + (pitch !== null ? 1 : 0)]} gap-6`}>
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
             {pitch !== null && (
-              <InfoCell icon={Sprout} label={t("matchPreview.pitch")} value={`${Math.round(pitch)}%`}
-                valueClass={pitch < FACILITIES.WEAR.WARN_BELOW ? "text-destructive" : undefined} />
+              <InfoCell icon={Sprout} label={t("matchPreview.pitch")}
+                value={matchSetup?.pitch ? `${t(`facilities.turf.type.${matchSetup.pitch.turf}`)} · ${Math.round(pitch)}%` : `${Math.round(pitch)}%`}
+                valueClass={pitch < FACILITIES.WEAR.WARN_BELOW ? "text-destructive" : undefined}
+                extra={matchSetup?.pitch && fixture ? (
+                  <PitchSurfaceSvg condition={matchSetup.pitch.condition} turf={matchSetup.pitch.turf} mowing={matchSetup.pitch.mowing}
+                    seed={fixture.id} className="w-28 h-auto rounded border border-border" />
+                ) : undefined} />
             )}
             {expectedCrowd && (
               <InfoCell icon={Users} label={t("matchPreview.expectedCrowd")}
@@ -1389,11 +1398,13 @@ function InfoCell({
   label,
   value,
   valueClass,
+  extra,
 }: {
   icon: typeof MapPin;
   label: string;
   value: string;
   valueClass?: string;
+  extra?: ReactNode;
 }) {
   return (
     <div className="space-y-1">
@@ -1402,6 +1413,7 @@ function InfoCell({
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
       <p className={`text-base font-semibold m-0 tabular-nums ${valueClass ?? "text-foreground"}`}>{value}</p>
+      {extra}
     </div>
   );
 }

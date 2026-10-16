@@ -3,7 +3,7 @@ import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarType
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
-import type { BoardRefusal, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
+import type { BoardRefusal, FacilityItemId, FacilityKind, StandId, TurfType } from "@/types/facilityTypes";
 import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 import type { RegCounts, RegistrationNotice } from "@/types/registrationTypes";
@@ -346,7 +346,7 @@ export interface PlayerInboxMessage extends InboxMessageBase {
  */
 export interface FacilityInboxMessage extends InboxMessageBase {
   category: "facilities";
-  kind: "approved" | "refused" | "completed" | "attendance_record" | "worn" | "condemned" | "repaired";
+  kind: "approved" | "refused" | "completed" | "attendance_record" | "worn" | "condemned" | "repaired" | "turf_changed";
   facility?: FacilityKind;
   stand?: StandId;
   seats?: number;
@@ -365,6 +365,8 @@ export interface FacilityInboxMessage extends InboxMessageBase {
   item?: FacilityItemId;
   /** worn / condemned: condition when crossing; repaired: condition reached. */
   condition?: number;
+  /** turf_changed: the grass laid. */
+  turf?: TurfType;
 }
 
 /**

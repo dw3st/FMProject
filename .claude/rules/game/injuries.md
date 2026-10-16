@@ -344,6 +344,7 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
   (`trainingGroundEffectsOf(squad).injuryDurationMult` = nível × condição: ×1,25 em 0%/interditada; nível
   ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15; neutra na largada). A IA não muda.
 - Medido (M1/M2): ver a tabela de medições em `facilities.md`.
+- **Grama sintética (4.28):** lesões dos dois times × 1,1 nos jogos em casa do clube com grama sintética (motor, quickSim e partida ao vivo; a partida ao vivo antes ignorava a condição do gramado). Ver `facilities.md` → "Tipos de grama e padrão de corte".
 
 ## Inscrição (Etapa 37, 4.15)
 

@@ -2,7 +2,8 @@ import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { pitchSurface, type PitchSurface } from "@/GraficsEngine/pitchSurface";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -37,7 +38,7 @@ import {
   benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, CROWD_JUMP_S, crowdJumpPx, startStretcher, STRETCHER,
   stretcherPose, type StretcherRun,
 } from "@/GraficsEngine/matchExtras";
-import type { StandId } from "@/types/facilityTypes";
+import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
 import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
@@ -142,24 +143,59 @@ function cssColorToPixiHex(css: string): number {
 const DEFAULT_TEAM_A = 0x2d6cdf;
 const DEFAULT_TEAM_B = 0xdf3b2d;
 
-/** Mowing stripes inside the pitch rectangle; the background (margins) stays the dark colour. */
-function drawStripes(g: Graphics, m: PitchMetrics) {
-  const w = m.width / PITCH_STRIPES.COUNT;
-  for (let i = 1; i < PITCH_STRIPES.COUNT; i += 2) {
-    g.rect(m.marginX + i * w, m.marginY, w, m.height).fill(PITCH_STRIPES.LIGHT);
+/** The pitch surface (`pitchSurface.ts`); the run-off around the pitch takes the same base colour. */
+function drawSurface(g: Graphics, rings: Graphics, m: PitchMetrics, s: PitchSurface, mirror: boolean) {
+  const px = (x: number) => m.marginX + mirrorX(x, mirror) * m.scale;
+  const py = (y: number) => m.marginY + mirrorY(y, mirror) * m.scale;
+  // A worn pitch has no bright green frame: the run-off (inside the stand, or the whole canvas) gets the base too.
+  const runOff = m.stand?.inner ?? { x: 0, y: 0, w: 2 * m.marginX + m.width, h: 2 * m.marginY + m.height };
+  g.rect(runOff.x, runOff.y, runOff.w, runOff.h).fill(s.base);
+  for (const sh of s.shapes) {
+    if (sh.kind === "rect") {
+      const x1 = px(sh.x), x2 = px(sh.x + sh.w), y1 = py(sh.y), y2 = py(sh.y + sh.h);
+      g.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)).fill({ color: sh.color, alpha: sh.alpha });
+    } else if (sh.kind === "poly") {
+      const pts: number[] = [];
+      for (let i = 0; i < sh.points.length; i += 2) pts.push(px(sh.points[i]!), py(sh.points[i + 1]!));
+      g.poly(pts).fill({ color: sh.color, alpha: sh.alpha });
+    } else {
+      rings.circle(px(sh.cx), py(sh.cy), sh.r * m.scale).stroke({ width: sh.width * m.scale, color: sh.color, alpha: sh.alpha });
+    }
   }
 }
 
-function drawPitch(g: Graphics, m: PitchMetrics) {
-  const LINE = { width: 2, color: 0xffffff, alpha: 0.9 };
-  const { marginX: x, marginY: y, width, height } = m;
+/** A straight line drawn as dashes (failing paint on a rotten pitch). */
+function dashedLine(g: Graphics, x1: number, y1: number, x2: number, y2: number, style: { width: number; color: number; alpha: number }) {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  const dash = 14, gap = 5;
+  for (let d = 0; d < len; d += dash + gap) {
+    const a = d / len, b = Math.min(1, (d + dash) / len);
+    g.moveTo(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a).lineTo(x1 + (x2 - x1) * b, y1 + (y2 - y1) * b).stroke(style);
+  }
+}
 
-  g.rect(x, y, width, height).stroke(LINE);
+function drawPitch(g: Graphics, m: PitchMetrics, line: { alpha: number; dashed: boolean } = { alpha: 0.9, dashed: false }) {
+  const LINE = { width: 2, color: 0xffffff, alpha: line.alpha };
+  const { marginX: x, marginY: y, width, height } = m;
+  /** Straight line: solid, or dashed on a rotten pitch. */
+  const seg = (x1: number, y1: number, x2: number, y2: number) => {
+    if (line.dashed) dashedLine(g, x1, y1, x2, y2, LINE);
+    else g.moveTo(x1, y1).lineTo(x2, y2).stroke(LINE);
+  };
+  const box = (bx: number, by: number, bw: number, bh: number) => {
+    if (!line.dashed) { g.rect(bx, by, bw, bh).stroke(LINE); return; }
+    seg(bx, by, bx + bw, by);
+    seg(bx + bw, by, bx + bw, by + bh);
+    seg(bx + bw, by + bh, bx, by + bh);
+    seg(bx, by + bh, bx, by);
+  };
+
+  box(x, y, width, height);
 
   const midX    = x + width / 2;
   const centerY = y + height / 2;
 
-  g.moveTo(midX, y).lineTo(midX, y + height).stroke(LINE);
+  seg(midX, y, midX, y + height);
   g.circle(midX, centerY, m.centreCircleRadius).stroke(LINE);
 
   const hw  = m.goalAreaWidth    / 2;
@@ -167,14 +203,14 @@ function drawPitch(g: Graphics, m: PitchMetrics) {
   const rx  = x + width;
 
   // Left boxes + spot
-  g.rect(x, centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth).stroke(LINE);
-  g.rect(x, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth).stroke(LINE);
-  g.circle(x + m.penaltySpotDistance, centerY, 2).fill(0xffffff);
+  box(x, centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth);
+  box(x, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth);
+  g.circle(x + m.penaltySpotDistance, centerY, 2).fill({ color: 0xffffff, alpha: line.alpha });
 
   // Right boxes + spot
-  g.rect(rx - m.goalAreaDepth,    centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth).stroke(LINE);
-  g.rect(rx - m.penaltyAreaDepth, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth).stroke(LINE);
-  g.circle(rx - m.penaltySpotDistance, centerY, 2).fill(0xffffff);
+  box(rx - m.goalAreaDepth,    centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth);
+  box(rx - m.penaltyAreaDepth, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth);
+  g.circle(rx - m.penaltySpotDistance, centerY, 2).fill({ color: 0xffffff, alpha: line.alpha });
 
   // Corner arcs. Each starts with an explicit moveTo to its own start point: a bare `arc()` on
   // a fresh path joined the arc to the previous pen position, which drew a stray diagonal line
@@ -293,6 +329,11 @@ interface Props {
    */
   stadium?: PitchStadium | null;
   /**
+   * The match pitch (spec 2026-10-16-pitch-types): condition, grass, mowing and the seed of the patches.
+   * Absent: crisp stripes, as before. Changes redraw the surface (never per frame).
+   */
+  pitch?: { condition: number; turf: TurfType; mowing: MowingPattern; seed: string } | null;
+  /**
    * Referee, assistants and both managers on the touchline (§3–§4). Read at mount. An object also gives the
    * officials' faces (server URLs, `refereeFaceUrl`); `true` = officials without faces (a disc in the kit).
    */
@@ -361,6 +402,7 @@ export function PixiPitch({
   mirror = false,
   perfRef,
   stadium = null,
+  pitch = null,
   officials = false,
   coaches,
   coachCue = null,
@@ -384,10 +426,13 @@ export function PixiPitch({
   const mirrorRef                = useRef(mirror);
   const perfRefRef               = useRef(perfRef);
   const stadiumRef               = useRef(stadium);
+  const pitchRef                 = useRef(pitch);
   const coachesRef               = useRef(coaches);
   const extrasRef                = useRef(extras);
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
   const redrawCrowdRef           = useRef<(() => void) | null>(null);
+  /** Set by the Pixi setup: redraws the pitch surface and lines from `pitchRef`. */
+  const redrawSurfaceRef         = useRef<(() => void) | null>(null);
   /** Set by the Pixi setup: plays a gesture on a team's manager. */
   const coachCueFnRef            = useRef<((team: TeamId, kind: CoachGestureKind) => void) | null>(null);
   const coachCardFnRef           = useRef<((team: TeamId, card: "yellow" | "red") => void) | null>(null);
@@ -418,6 +463,11 @@ export function PixiPitch({
     stadiumRef.current = stadium;
     redrawCrowdRef.current?.();
   }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Pitch surface: redrawn only when the pitch of the day (or the mirror) changes.
+  useEffect(() => {
+    pitchRef.current = pitch;
+    redrawSurfaceRef.current?.();
+  }, [pitch?.condition, pitch?.turf, pitch?.mowing, pitch?.seed, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -569,14 +619,25 @@ export function PixiPitch({
       /** The scoring side's fans jumping (#129): which fans, since when (effects clock). */
       let crowdJump: { side: "home" | "away"; at: number } | null = null;
 
-      // Mowing stripes (static, drawn once — the pitch remounts on resize)
-      const stripesGraphics = new Graphics();
-      drawStripes(stripesGraphics, m);
-      app.stage.addChild(stripesGraphics);
+      // Pitch surface: mowing pattern and wear (static; redrawn only when the pitch changes)
+      const surfaceGraphics = new Graphics();
+      const ringsGraphics = new Graphics();
+      const ringsMask = new Graphics().rect(m.marginX, m.marginY, m.width, m.height).fill(0xffffff);
+      ringsGraphics.mask = ringsMask;
+      app.stage.addChild(surfaceGraphics, ringsGraphics, ringsMask);
 
-      // Pitch lines
+      // Pitch lines (alpha / dashes follow the surface)
       const pitchGraphics = new Graphics();
-      drawPitch(pitchGraphics, m);
+      const drawSurfaceNow = () => {
+        const s = pitchSurface(pitchRef.current ?? { condition: 100, turf: "natural", mowing: "stripes", seed: "" });
+        surfaceGraphics.clear();
+        ringsGraphics.clear();
+        drawSurface(surfaceGraphics, ringsGraphics, m, s, mirrorRef.current);
+        pitchGraphics.clear();
+        drawPitch(pitchGraphics, m, { alpha: s.lineAlpha, dashed: s.dashedLines });
+      };
+      drawSurfaceNow();
+      redrawSurfaceRef.current = drawSurfaceNow;
       app.stage.addChild(pitchGraphics);
 
       // Yard reference grid (optional — always static, drawn once)
@@ -2142,6 +2203,7 @@ export function PixiPitch({
         unsubAnimCelebrate();
         unsubStretcher();
         redrawCrowdRef.current = null;
+        redrawSurfaceRef.current = null;
         coachCueFnRef.current = null;
         coachCardFnRef.current = null;
         for (const k of ["home", "away"] as const) crowdFans[k]?.sprite.destroy({ texture: true, textureSource: true });

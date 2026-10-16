@@ -15,7 +15,7 @@ import { PERSONALITY } from "@/Domain/personality/personalityConfig";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
   AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityItemId, FacilityKind, FacilityProject,
-  FacilityRequest, StadiumStand, StandId,
+  FacilityRequest, StadiumStand, StandId, TurfType,
 } from "@/types/facilityTypes";
 
 /** Pure club-facilities model (`.claude/rules/game/facilities.md`). No I/O. */
@@ -316,6 +316,8 @@ export interface ProjectQuote {
   to?: number;
   /** Repair that costs ≤ `REPAIR.SMALL_REPAIR_SHARE` of the annual revenue: paid now, no board. */
   small?: boolean;
+  /** Turf works: the grass laid. */
+  turf?: TurfType;
 }
 
 export interface QuoteContext {
@@ -372,6 +374,16 @@ function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: numb
 }
 
 export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: QuoteContext): ProjectQuote | null {
+  if (req.kind === "turf") {
+    const it = f.items.stadiumPitch;
+    // (no `isTurfType` import: turf.ts imports this file)
+    if (typeof req.turf !== "string" || !(req.turf in F.TURF.COST_MULT) || (it.turf ?? "natural") === req.turf) return null;
+    return {
+      kind: "turf", item: "stadiumPitch", turf: req.turf, to: 100,
+      cost: Math.round(itemValue(ctx.revenue, "stadiumPitch", it.level) * F.TURF.COST_MULT[req.turf]),
+      weeks: Math.ceil(F.ITEMS.stadiumPitch.rebuildWeeks * worksSizeFactor(it.level)),
+    };
+  }
   if (req.kind === "repair" || req.kind === "rebuild" || req.kind === "upgrade") return quoteItemProject(f, req, ctx.revenue);
   if (req.kind === "stand") {
     if (!validSeats(req.seats) || !f.stands.some((s) => s.id === req.stand)) return null;
@@ -499,6 +511,7 @@ export function startProject(
     ...(quote.level !== undefined ? { level: quote.level } : {}),
     ...(quote.item ? { item: quote.item } : {}),
     ...(quote.to !== undefined ? { to: quote.to } : {}),
+    ...(quote.turf ? { turf: quote.turf } : {}),
     start: args.date,
     end,
     cost: quote.cost,
@@ -598,6 +611,7 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
     ...(p.level !== undefined ? { level: p.level } : {}),
     ...(p.item ? { item: p.item } : {}),
     ...(p.to !== undefined ? { to: p.to } : {}),
+    ...(p.turf ? { turf: p.turf } : {}),
   }));
   const changed = entries.length > 0 || completed.length > 0;
   return {
@@ -619,8 +633,10 @@ export function applyCompletion(items: ClubFacilities["items"], p: FacilityProje
   if (p.item) {
     const it = items[p.item];
     const level = p.kind === "upgrade" ? Math.min(F.ITEM_MAX_LEVEL, p.level ?? it.level + 1) : it.level;
-    // Repair: the target condition; rebuild / upgrade: 100%. Warnings and the condemnation go.
-    return { ...items, [p.item]: { level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100) } };
+    // The grass stays with the pitch through repairs and rebuilds; a turf works lays the new one.
+    const turf = p.kind === "turf" ? p.turf : it.turf;
+    // Repair: the target condition; rebuild / upgrade / turf: 100%. Warnings and the condemnation go.
+    return { ...items, [p.item]: { level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100), ...(turf ? { turf } : {}) } };
   }
   if (p.level === undefined) return items;
   const group = LEVEL_GROUP[p.kind];

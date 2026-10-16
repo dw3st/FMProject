@@ -249,6 +249,19 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Grass type of the match (variant A sets it); injury risk of both sides: natural x1, hybrid x1, synthetic x1.1">Turf</span>
+        <select
+          value={variant.turf ?? "natural"}
+          onChange={(e) => patch({ turf: e.target.value === "natural" ? undefined : (e.target.value as "hybrid" | "synthetic") })}
+          className="flex-1 bg-white/10 rounded px-1 py-0.5"
+        >
+          <option value="natural">natural</option>
+          <option value="hybrid">hybrid</option>
+          <option value="synthetic">synthetic</option>
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="The manager's Discipline (achievements): this side's fouls and cards x(1 - 0.05 t), t = (v - 10)/10; 0 = no attribute">Mgr disc.</span>
         <input
           type="range"

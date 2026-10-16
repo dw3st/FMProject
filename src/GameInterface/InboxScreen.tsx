@@ -520,6 +520,7 @@ function facilityTexts(
     attendance: (message.attendance ?? 0).toLocaleString(), previous: (message.previous ?? 0).toLocaleString(),
     reason: message.reason ? t(`facilities.reason.${message.reason}`) : "",
     condition: Math.round(message.condition ?? 0), level: message.level ?? "",
+    turf: message.turf ? t(`facilities.turf.type.${message.turf}`).toLowerCase() : "",
   };
   const body = message.kind === "approved" && (message.boardShare ?? 0) > 0
     ? t("facilities.inbox.approvedFunded", vars)

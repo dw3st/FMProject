@@ -167,6 +167,23 @@ export const FACILITIES = {
     DROP: { LOW: 40, MEDIUM: 44, HIGH: 40, ELITE: 30 },
     NEUTRAL: 90,
   },
+  /**
+   * Grass of the stadium pitch (spec 2026-10-16-pitch-types): daily wear of the stadium pitch × WEAR_MULT,
+   * injury risk of both sides in a home game × INJURY_MULT, the turf works cost the pitch's rebuild value ×
+   * COST_MULT; laying synthetic grass costs the fans SYNTHETIC_FANS. AI clubs: a fixed grass by id (AI_SHARE).
+   */
+  TURF: {
+    WEAR_MULT: { natural: 1, hybrid: 0.6, synthetic: 0.25 },
+    INJURY_MULT: { natural: 1, hybrid: 1, synthetic: 1.1 },
+    COST_MULT: { natural: 1, hybrid: 1.5, synthetic: 1 },
+    SYNTHETIC_FANS: -4,
+    AI_SHARE: {
+      LOW: { hybrid: 0, synthetic: 0.1 },
+      MEDIUM: { hybrid: 0.15, synthetic: 0 },
+      HIGH: { hybrid: 0.5, synthetic: 0 },
+      ELITE: { hybrid: 0.5, synthetic: 0 },
+    },
+  },
   /** Signings (`contracts.ts`, `rivals.ts`): appeal below THRESHOLD costs up to DEMAND/PREFERENCE; refusal below REFUSE_BELOW. */
   APPEAL: { THRESHOLD: 50, DEMAND_MAX: 0.1, PREFERENCE_MAX: 0.1, REFUSE_BELOW: 25, YOUTH_MAX_AGE: 21 },
 

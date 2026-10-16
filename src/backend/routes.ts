@@ -73,7 +73,7 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
-import { matchPitchCondition } from "@/Domain/facilities/pitch";
+import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -609,13 +609,14 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       : null;
     const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
     // Pitch of the stadium the match is played in (`src/Domain/facilities/pitch.ts`).
-    let pitchCondition: number | null = null;
+    let pitch: MatchPitch | null = null;
     if (matchFixture && opponentSquad && matchDate) {
       const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
       const homeLeague = (await saveService.getSquadIndex(save.id)).byId(homeSquad.id)?.leagueSlug;
       const window = (save.activeLeagues ?? []).find((l) => l.leagueSlug === homeLeague);
-      pitchCondition = matchPitchCondition(homeSquad, matchFixture, window, matchDate);
+      pitch = matchPitch(homeSquad, matchFixture, window, matchDate);
     }
+    const pitchCondition = pitch?.condition ?? null;
     // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
     const crowd = saveIdParam && matchFixture && opponentSquad
       ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
@@ -646,6 +647,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       registered,
       matchMarking,
       pitchCondition,
+      pitch,
       crowd,
       managers,
       referee,

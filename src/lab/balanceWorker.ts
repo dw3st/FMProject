@@ -43,6 +43,8 @@ import type {
   SquadSpec,
   Variant,
 } from "@/lab/types";
+import { turfInjuryMult } from "@/Domain/facilities/turf";
+import type { TurfType } from "@/types/facilityTypes";
 import { fileURLToPath } from "node:url";
 import { customToFormation } from "@/Domain/formation/zones";
 
@@ -104,7 +106,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -148,6 +150,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.temperament                 += src.temperament;
   dst.managerDiscipline           += src.managerDiscipline;
   dst.pitchCondition              += src.pitchCondition;
+  dst.turfInjuryMult              += src.turfInjuryMult;
   dst.refereeStrictness           += src.refereeStrictness;
   dst.refereeErrors += src.refereeErrors;
   dst.varReviews += src.varReviews;
@@ -227,6 +230,7 @@ let sideTemperament: { A?: number; B?: number } = {};
 let sideMgrDiscipline: { A?: number; B?: number } = {};
 /** Pitch condition of the match (variant A, the home side; set per worker message). Absent = 90. */
 let matchPitch: number | undefined;
+let matchTurf: TurfType | undefined;
 /** Referee rigor of the match (variant A sets it, like the pitch). */
 let matchReferee: number | undefined;
 /** Referee quality (errors) and VAR of the match (variant A, `var.md`). */
@@ -274,6 +278,8 @@ function runOneMatch(
   teamB.managerDiscipline = sideMgrDiscipline.B ?? 10;
   teamA.pitchCondition = matchPitch ?? 90;
   teamB.pitchCondition = matchPitch ?? 90;
+  teamA.turfInjuryMult = turfInjuryMult(matchTurf);
+  teamB.turfInjuryMult = turfInjuryMult(matchTurf);
   teamA.refereeStrictness = matchReferee ?? 0;
   teamB.refereeStrictness = matchReferee ?? 0;
 
@@ -296,6 +302,7 @@ function runOneMatch(
       ...(sideMgrDiscipline.A !== undefined ? { homeManagerDiscipline: sideMgrDiscipline.A } : {}),
       ...(sideMgrDiscipline.B !== undefined ? { awayManagerDiscipline: sideMgrDiscipline.B } : {}),
       ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
+      ...(matchTurf ? { turf: matchTurf } : {}),
       ...(matchReferee !== undefined ? { refereeStrictness: matchReferee } : {}),
       ...(matchRefQuality !== undefined ? { refereeQuality: matchRefQuality, refereeVar: matchVar } : {}),
     });
@@ -357,6 +364,7 @@ function runOneMatch(
     managerDiscipline: sideMgrDiscipline,
     instructions: sideInstructions,
     ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
+    ...(matchTurf ? { turf: matchTurf } : {}),
     ...(matchReferee !== undefined || matchRefQuality !== undefined
       ? { referee: {
           id: "ref_lab", name: "Lab referee", country: "England", strictness: matchReferee ?? 0,
@@ -464,6 +472,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
     sideMgrDiscipline = { A: variantA.managerDiscipline, B: variantB.managerDiscipline };
     matchPitch = variantA.pitchCondition;
+    matchTurf = variantA.turf;
     matchReferee = variantA.refereeStrictness;
     matchRefQuality = variantA.refereeQuality;
     matchVar = variantA.var === true;
