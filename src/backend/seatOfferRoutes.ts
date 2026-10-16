@@ -13,7 +13,7 @@ import { logError } from "@/Logger";
 import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { seasonEndOf } from "@/backend/negotiationWorld";
 import {
-  checkOfferWorld, closeOffersForPlayer, completeSeatLoan, completeSeatTransfer, tellSeat,
+  checkOfferWorld, closeOffersForPlayer, completeSeatLoan, completeSeatTransfer, nudgeSeats, tellSeat, type SeatNudges,
 } from "@/backend/seatOfferWorld";
 import { createSeatOffer, offerExpiry, respondSeatOffer, seatOfferView, type SeatOfferAnswer } from "@/Domain/seatOffers/seatOffers";
 import { SEAT_OFFERS } from "@/Domain/seatOffers/seatOfferConfig";
@@ -194,7 +194,8 @@ async function answerOffer(saveId: string, seatId: string, offerId: string, body
   if (!window.open) return windowClosedResponse(window);
   const check = await checkOfferWorld(saveService, saveId, offer);
   if (!check.ok) {
-    await dropOffer(saveId, offers, offer, "closed", date);
+    // A full squad or the seller's minimums only block the accept (as in the daily expiry): the offer stays.
+    if (check.error !== "squadFull" && check.error !== "squadDepth") await dropOffer(saveId, offers, offer, "closed", date);
     return json({ error: check.error }, check.status);
   }
   if (offer.kind === "transfer") {
@@ -211,17 +212,20 @@ async function answerOffer(saveId: string, seatId: string, offerId: string, body
   const accepted = r.offer;
   const buffer = new BufferingSaveDAL(new FileSystemDAL());
   const unit = new SaveService(buffer);
+  // The socket nudges go only once the unit is written.
+  const nudges: SeatNudges = new Set();
   try {
     if (offer.kind === "transfer") await completeSeatTransfer(unit, saveId, accepted, check, date);
     else await completeSeatLoan(unit, saveId, accepted, check, date);
-    const rest = await closeOffersForPlayer(unit, saveId, offers.filter((x) => x.id !== offer.id), offer.playerId, date);
+    const rest = await closeOffersForPlayer(unit, saveId, offers.filter((x) => x.id !== offer.id), offer.playerId, date, undefined, undefined, nudges);
     await unit.writeSeatOffers(saveId, rest);
-    await tellSeat(unit, saveId, accepted, other, "accept", date);
+    await tellSeat(unit, saveId, accepted, other, "accept", date, undefined, nudges);
     await buffer.flush();
   } catch (err) {
     logError("seatOffers", `save ${saveId}: failed to complete offer ${offer.id}`, err);
     return json({ error: "failed to complete" }, 500);
   }
+  nudgeSeats(saveId, nudges);
   return json({ ok: true, status: "accepted" });
 }
 

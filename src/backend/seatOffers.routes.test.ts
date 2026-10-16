@@ -9,7 +9,9 @@ import { callApi, createMultiWorld } from "@/backend/worlds/worldTestUtils";
 import { contractDemand, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { addDays } from "@/Domain/dates";
-import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import { parentLoanWages } from "@/Domain/negotiation/loans";
+import { clubWage, wageFactorOf } from "@/Domain/finance/wages";
 import { SEAT_OFFERS } from "@/Domain/seatOffers/seatOfferConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { SeatOffer } from "@/types/seatOfferTypes";
@@ -141,6 +143,17 @@ describe("seat offers: routes", () => {
     expect((await saveService.getMarket(id, seatB))!.loans?.some((l) => l.playerId === player.id)).toBe(true);
     expect(await ledgerSum(seatA)).toBe(await balanceOf(clubA));
     expect(await ledgerSum(seatB)).toBe(await balanceOf(clubB));
+
+    // The Monday `wages` line (`computeAdvanceDayMoney`): the borrower pays the agreed half, the lender only the
+    // part that was not agreed (`parentLoanWages`, read from the lender's market) — together, the whole wage.
+    const loan = (await saveService.getMarket(id, seatB))!.loans!.find((l) => l.playerId === player.id)!;
+    const borrowed = (await saveService.getSquadById(id, clubA))!;
+    const there = borrowed.players.find((x) => x.id === player.id)!;
+    const borrowerPart = clubWage(there, wageFactorOf(borrowed));
+    const lenderPart = parentLoanWages((await saveService.getMarket(id, seatB))!.loans, clubB);
+    expect(borrowerPart).toBe(Math.round(loan.wage * 0.5));
+    expect(lenderPart).toBe(Math.round(loan.wage * 0.5));
+    expect(parentLoanWages((await saveService.getMarket(id, seatA))!.loans, clubA)).toBe(0);
   }, 300_000);
 
   test("refusals: alreadyOffered, the player's contract, an AI club or own club (404), a third seat (404)", async () => {
@@ -273,6 +286,56 @@ describe("seat offers: routes", () => {
     } finally {
       await saveService.saveSquadById(id, original);
     }
+  }, 300_000);
+
+  test("squadFull: refused when made; on accept the offer stays (409) and goes through once there is room", async () => {
+    const { player, demand } = await pick(clubB);
+    const body = { kind: "transfer", playerId: player.id, fromSquadId: clubB, fee: 1_000_000, wage: demand, years: 2 };
+    const original = (await saveService.getSquadById(id, clubA))!;
+    const market = await saveService.getMarket(id, seatA);
+    const out = (market?.loans ?? []).filter((l) => l.fromClubId === clubA).length;
+    const filler = original.players.find((p) => !p.loan)!;
+    const extra = Array.from({ length: Math.max(0, HUMAN_MAX_SQUAD - original.players.length - out) }, (_, i) => ({ ...filler, id: `filler-${i}` }));
+    const full = { ...original, players: [...original.players, ...extra] };
+
+    await saveService.saveSquadById(id, full);
+    try {
+      const made = await post(a.session.token, LIST, body);
+      expect(made.status).toBe(409);
+      expect(made.json.error).toBe("squadFull");
+      expect(await saveService.getSeatOffers(id)).toEqual([]);
+    } finally {
+      await saveService.saveSquadById(id, original);
+    }
+
+    const offerId = (await post(a.session.token, LIST, body)).json.offer.id as string;
+    await saveService.saveSquadById(id, full);
+    try {
+      const acc = await post(b.session.token, ONE, { action: "accept" }, offerId);
+      expect(acc.status).toBe(409);
+      expect(acc.json.error).toBe("squadFull");
+      expect((await saveService.getSeatOffers(id)).map((o) => o.id)).toEqual([offerId]);
+    } finally {
+      await saveService.saveSquadById(id, original);
+    }
+    expect((await post(b.session.token, ONE, { action: "accept" }, offerId)).status).toBe(200);
+    expect((await saveService.getSquadById(id, clubA))!.players.some((x) => x.id === player.id)).toBe(true);
+  }, 300_000);
+
+  test("contractRefused: terms the player no longer takes close the offer on accept", async () => {
+    const { player, demand } = await pick(clubB);
+    const offerId = (await post(a.session.token, LIST, {
+      kind: "transfer", playerId: player.id, fromSquadId: clubB, fee: 1_000_000, wage: demand, years: 2,
+    })).json.offer.id as string;
+    // The file now carries a wage far below his demand (as if his demand had risen since the offer).
+    const offers = await saveService.getSeatOffers(id);
+    await saveService.writeSeatOffers(id, offers.map((o) => (o.id === offerId ? { ...o, terms: { ...o.terms, wage: 1 } } : o)));
+    const acc = await post(b.session.token, ONE, { action: "accept" }, offerId);
+    expect(acc.status).toBe(409);
+    expect(acc.json.error).toBe("contractRefused");
+    expect(acc.json.reason).toBe("lowWage");
+    expect(await saveService.getSeatOffers(id)).toEqual([]);
+    expect((await saveService.getSquadById(id, clubB))!.players.some((x) => x.id === player.id)).toBe(true);
   }, 300_000);
 
   test("413 over 8 KB", async () => {
