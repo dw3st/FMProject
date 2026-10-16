@@ -143,11 +143,13 @@ function cssColorToPixiHex(css: string): number {
 const DEFAULT_TEAM_A = 0x2d6cdf;
 const DEFAULT_TEAM_B = 0xdf3b2d;
 
-/** The pitch surface (`pitchSurface.ts`) inside the pitch rectangle; the margins stay the dark colour. */
+/** The pitch surface (`pitchSurface.ts`); the run-off around the pitch takes the same base colour. */
 function drawSurface(g: Graphics, rings: Graphics, m: PitchMetrics, s: PitchSurface, mirror: boolean) {
   const px = (x: number) => m.marginX + mirrorX(x, mirror) * m.scale;
   const py = (y: number) => m.marginY + mirrorY(y, mirror) * m.scale;
-  g.rect(m.marginX, m.marginY, m.width, m.height).fill(s.base);
+  // A worn pitch has no bright green frame: the run-off (inside the stand, or the whole canvas) gets the base too.
+  const runOff = m.stand?.inner ?? { x: 0, y: 0, w: 2 * m.marginX + m.width, h: 2 * m.marginY + m.height };
+  g.rect(runOff.x, runOff.y, runOff.w, runOff.h).fill(s.base);
   for (const sh of s.shapes) {
     if (sh.kind === "rect") {
       const x1 = px(sh.x), x2 = px(sh.x + sh.w), y1 = py(sh.y), y2 = py(sh.y + sh.h);
