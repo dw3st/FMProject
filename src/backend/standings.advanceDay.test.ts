@@ -123,7 +123,10 @@ describe("standings in advanceOneDay", () => {
   test("a sacking on the rollover day puts −5 on the rollover row and opens no passage", async () => {
     const meta = await friendsLeague(true);
     const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
-    await saveService.updateSeat(meta.id, meta.seatId, { board: { ...seat.board!, board: 5 } });
+    // An unreachable target: the season-end review can never lift the board out of the sacking zone.
+    await saveService.updateSeat(meta.id, meta.seatId, {
+      board: { ...seat.board!, board: 5, objective: { ...seat.board!.objective!, target: 0 } },
+    });
     const today = await rollToday(meta.id);
     expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
 
