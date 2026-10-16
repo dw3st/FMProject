@@ -50,6 +50,8 @@ import { mulberry32 } from "@/Domain/rng";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { aiPitchCondition } from "@/Domain/facilities/pitch";
+import { aiTurfOf } from "@/Domain/facilities/turf";
+import type { TurfType } from "@/types/facilityTypes";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 
 const LEAGUES = ["premier_league", "of_championship"];
@@ -139,11 +141,20 @@ const QUICK_LEAGUES = [
 ];
 
 /** Pitch of one match in a mode (`fraction` drawn per match, the same in every mode). */
-function pitchOf(mode: string, home: Squad, fraction: number): number | undefined {
-  if (mode === "none") return undefined;
-  if (mode === "ai") return aiPitchCondition(financialTierOf(home), fraction);
-  return Number(mode);
+function pitchOf(mode: string, home: Squad, fraction: number): { condition?: number; turf?: TurfType } {
+  if (mode === "none") return {};
+  if (mode === "ai") return { condition: aiPitchCondition(financialTierOf(home), fraction) };
+  if (mode === "aiturf") {
+    const turf = aiTurfOf(home.id, financialTierOf(home));
+    return { condition: aiPitchCondition(financialTierOf(home), fraction, turf), turf };
+  }
+  return { condition: Number(mode) };
 }
+
+const pitchOpts = (p: { condition?: number; turf?: TurfType }) => ({
+  ...(p.condition !== undefined ? { pitchCondition: p.condition } : {}),
+  ...(p.turf ? { turf: p.turf } : {}),
+});
 
 interface Fixture { home: Squad; away: Squad; hl: string[]; al: string[]; fraction: number; seed: number }
 
@@ -165,9 +176,10 @@ async function measurePitch(modes: string[]): Promise<void> {
     const fixtures = await fixturesOf(league, MATCHES_PER_LEAGUE, li + 1);
     for (const f of fixtures) {
       for (const m of modes) {
-        const pitch = pitchOf(m, f.home, f.fraction);
+        const p = pitchOf(m, f.home, f.fraction);
+        const pitch = p.condition;
         Math.random = mulberry32(f.seed);
-        const r = simulateMatch(f.home, f.away, formation, formation, f.hl, f.al, pitch === undefined ? {} : { pitchCondition: pitch });
+        const r = simulateMatch(f.home, f.away, formation, formation, f.hl, f.al, pitchOpts(p));
         const e = engine[m]!;
         e.matches++;
         e.injuries += r.injuries.length;
@@ -193,10 +205,10 @@ async function measurePitch(modes: string[]): Promise<void> {
     const fixtures = await fixturesOf(league, MATCHES_PER_LEAGUE * 10, 100 + li);
     for (const [i, f] of fixtures.entries()) {
       for (const m of modes) {
-        const pitch = pitchOf(m, f.home, f.fraction);
+        const p = pitchOf(m, f.home, f.fraction);
         const { recording } = quickSimMatch({
           fixtureId: `pitch-${league}-${i}`, home: f.home, away: f.away, homeLineup: f.hl, awayLineup: f.al,
-          homeRoles: roles, awayRoles: roles, ...(pitch === undefined ? {} : { pitchCondition: pitch }),
+          homeRoles: roles, awayRoles: roles, ...pitchOpts(p),
         }, mulberry32(f.seed));
         quick[m]!.matches++;
         quick[m]!.injuries += recording.injuries?.length ?? 0;
