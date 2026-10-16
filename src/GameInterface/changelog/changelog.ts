@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.26",
+    date: "2026-10-16",
+    items: [
+      {
+        pt: "Jogo contra outro técnico da liga: a prévia completa aparece e o botão Simular joga a partida",
+        en: "Match against another manager in the league: the full preview shows up and the Simulate button plays the match",
+      },
+      {
+        pt: "Propostas de transferência e empréstimo entre técnicos da liga, com contraproposta, pela caixa de entrada",
+        en: "Transfer and loan offers between managers in the league, with counter-offers, through the inbox",
+      },
+    ],
+  },
+  {
     version: "4.25.1",
     date: "2026-10-15",
     items: [
@@ -1602,7 +1616,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Jogos entre amigos ao vivo e transferências entre técnicos da mesma liga", en: "Live matches between friends and transfers between managers in the same league" },
   { pt: "Classificação dos técnicos da liga de amigos", en: "A ranking of the managers in your friends league" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

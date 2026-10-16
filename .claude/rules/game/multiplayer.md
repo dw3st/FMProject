@@ -19,8 +19,8 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
     `offerClosed` no aceite; um rival desse clube (comprador ou vendedor) é descartado no prazo
     (`resolveRivalDeadlines`).
   - Um assento não compra, não pede emprestado nem faz pré-contrato com jogador de outro assento pela regra da IA:
-    `POST /transfers`, `/loans` e `/pre-contracts` dão 404 `notFound` (`isOtherSeatClub`). Humano × humano é a
-    parte 4.
+    `POST /transfers`, `/loans` e `/pre-contracts` dão 404 `notFound` (`isOtherSeatClub`). Entre dois técnicos humanos
+    as propostas vão por `/seat-offers` (parte 4).
 - Cada assento só age sobre o próprio clube. Data, ligas, calendário, notícias, árbitros, histórico, prêmios,
   livres, aposentados e a lista de livres da comissão são do mundo.
 - Dinheiro entre assentos: uma cláusula de venda futura que outro assento tem é paga no extrato dele
@@ -33,8 +33,8 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
   a segunda chamada é um no-op 200 com `applied: false`) e `/import-squads` (403 para um membro).
 - Finanças da liga (`ai-finances`): todo clube humano mostra só popularidade e folha (`isHumanClub`; o do próprio
   assento continua `isPlayerClub`), com o rótulo "Técnico humano".
-- Jogo entre dois assentos: `match-setup` dá 409 `seatOpponent` (sem partida ao vivo); a prévia oferece simular a
-  partida (o avanço do dia joga no motor completo com as duas táticas) ou voltar ao painel.
+- Jogo entre dois assentos: a prévia é a normal e oferece simular a partida (o avanço do dia joga no motor completo
+  com as duas táticas); só a partida ao vivo (`match-setup?live=1`) dá 409 `seatOpponent` (parte 4).
 - Avanço manual (`/advance-day`, `/advance-until`) num mundo em grupo: 409 `groupAdvance` (só o executor avança, parte 3);
   num mundo multi sem `world` (testes), o avanço rápido dá 409 `multiSeat`.
 - Sem migração: saves de antes da parte 1 não têm membros e somem da lista.
@@ -68,7 +68,7 @@ com o formato da meta de antes. `splitSeatPatch` separa um patch em mundo e asse
 - As gravações ao vivo chegam como `Record<seatId, PlayedMatchRecording>`. A resposta é `payload` (mundo) +
   `seats[seatId]` (`payloadForSeat`). A virada do país de um assento limpa só a caixa dele.
 - Dois assentos que se enfrentam: motor completo com a tática de cada um (`computeSeatedMatchLineups`). A partida ao
-  vivo é só contra a IA (humano × humano ao vivo é a parte 4). Na prévia, o técnico adversário é o do outro assento
+  vivo é só contra a IA (humano × humano é simulado). Na prévia, o técnico adversário é o do outro assento
   (`matchManagers`).
 - Folga: cada assento folga nos seus `restDays` (véspera e dia seguinte dos jogos do clube, editáveis). Um clube da
   IA folga na véspera e no dia seguinte dos próprios jogos oficiais (`aiRestingClubs`, `src/Domain/advanceDay/aiRest.ts`).
@@ -345,3 +345,89 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
 - O resumo agregado lista os jogos e as transferências do clube atual do assento (uma troca de clube no meio esconde os do
   clube antigo); o jogo da seleção não entra.
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
+
+## Parte 4: humano × humano
+
+Spec: `docs/superpowers/specs/2026-10-16-multiplayer-h2h-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-h2h.md`.
+Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entre dois técnicos fica de fora.
+
+### Regra
+
+- **Jogo entre dois assentos:** `POST /api/match-setup` devolve a prévia normal com `seatOpponent: true`. O adversário é
+  lido como um clube da IA (formação e XI automático dele, nunca a tática salva do outro técnico). Com `?live=1` segue
+  409 `seatOpponent` (com `matchDay`). A prévia mostra o botão **Simular**; o avanço do dia joga a partida no motor
+  completo com a tática de cada assento. O jogo entra no log do dia dos dois.
+- **Propostas entre técnicos:** um assento propõe a outro um jogador de elenco do clube dele. `SeatOffer`
+  (`src/types/seatOfferTypes.ts`): `kind` `transfer` ou `loan`, partes (vendedor e comprador), `terms`, `turn`,
+  `counters`, `expires`, `history`. Ficam em `saves/{id}/seatOffers.json`, do mundo.
+- **Transferência:** taxa, cláusula de venda futura (0/10/20/30%) e o contrato do jogador (`wage`, `years`) fixados na
+  proposta e validados por `evaluateContractOffer` (400 com a recusa e o `demand`). **Empréstimo:** taxa (pode ser 0),
+  `wageShare` e data de volta (fim da temporada do comprador, nunca além do contrato). `wageShare` nas rotas é inteiro 0..100.
+- **Janela:** só com a janela do comprador aberta (409 `windowClosed`); a proposta vence no fecho dela. O vendedor pode
+  estar fechado.
+- **Negociação:** o comprador propõe; o vendedor aceita, recusa ou contrapropõe (taxa, cláusula ou `wageShare`); o
+  comprador aceita a contraproposta, contrapropõe de volta ou **Retira** (ele não tem "Recusar"). No máximo
+  `MAX_COUNTERS` (3) contrapropostas somando os dois lados (409 `noRounds`); fora da vez, 403 `notYourTurn`. Validade
+  `VALID_DAYS` (5) a partir da proposta ou da contraproposta. No máximo `MAX_OPEN_SENT` (10) abertas por comprador
+  (409 `tooManyOffers`) e uma por jogador e tipo (409 `alreadyOffered`).
+- **Aceite:** reconfere tudo dentro do `withSaveLock`: jogador ainda lá e sem empréstimo (400 `onLoan`), elenco do
+  comprador abaixo de `HUMAN_MAX_SQUAD` (409 `squadFull`), mínimos do vendedor (409 `squadDepth`) e o contrato
+  (409 `contractRefused { reason }`: a recusa do jogador no aceite, como um muito ambicioso). A transferência move a
+  taxa nos dois extratos, o histórico e a cláusula; o empréstimo grava o `loan` nos mercados dos **dois** assentos e
+  volta na data.
+- **Fechamento:** a proposta cai (`closed`) quando o jogador sai do clube ou vira emprestado, ou quando um dos assentos
+  sai do clube ou do mundo (`closeOffersForPlayer`, `closeOffersOfSeat`, chamados por `releaseHumanClub`, `removeSeat` e
+  pelas vendas). Vencimento diário (`expireSeatOffers`, no avanço do dia): por data ou janela fechada; elenco cheio e
+  mínimos só bloqueiam o aceite, a proposta fica.
+- `removeSeat` também tira do mercado do outro assento os empréstimos encerrados com o assento removido (senão ele
+  continuaria pagando a parte do salário até a data antiga).
+- **Caixa:** categoria `transfer`, `kind` `seat_offer` (tópico `actions`, nunca descartado), uma mensagem por evento
+  (`offer`, `counter`, `accept`, `reject`, `withdraw`, `expired`, `closed`) para o outro lado e, em `expired` e
+  `closed`, para os dois. Push `seat_offer { saveId }` pelo socket recarrega as telas.
+- Lobby: as rotas de escrita respondem 409 `lobby` (`worldLobbyGuard`).
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `src/types/seatOfferTypes.ts` | `SeatOffer`, `SeatOfferTerms`, `SeatOfferView`, ações |
+| `src/Domain/seatOffers/seatOfferConfig.ts`, `seatOffers.ts` (+ teste) | Constantes (`SEAT_OFFERS`), criação, vez e contrapropostas, visão por assento |
+| `src/backend/seatOfferWorld.ts` | E/S: `checkOfferWorld`, `completeSeatTransfer`, `completeSeatLoan`, `closeOffersForPlayer`, `closeOffersOfSeat`, `expireSeatOffers`, mensagens |
+| `src/backend/seatOfferRoutes.ts` | Rotas |
+| `src/backend/dal/*`, `SaveService.ts` | `getSeatOffers` / `writeSeatOffers` (bufferizados) |
+| `src/backend/routes.ts` (`match-setup`), `advanceDay.ts`, `seats.ts`, `jobWorld.ts`, `negotiationWorld.ts` | Prévia, vencimento diário, fechamentos, empréstimo nos dois mercados |
+| `src/GameInterface/Negotiation/SeatOfferCard.tsx`, `seatOfferApi.ts`, `seatOfferErrors.ts` | Cartão da proposta, API e textos de erro |
+| `src/GameInterface/Components/PlayerOfferModal.tsx`, `InboxScreen.tsx`, `Negotiation/NegotiationOverview.tsx`, `MatchPreviewScreen.tsx` | Telas |
+
+### Rotas (`requireSeat`; escrita com `withSaveLock`)
+
+| Rota | Faz |
+|---|---|
+| `GET /api/saves/:id/seat-offers` | `{ offers, seatClubs }`: propostas em que o assento é parte (`side`, `myTurn`, `otherManager`) e os clubes, com técnico, dos outros assentos |
+| `POST /api/saves/:id/seat-offers { kind, playerId, fromSquadId, fee, sellOnPct?, wage?, years?, wageShare? }` | Propõe. 404 `notFound` (clube que não é de outro assento, jogador ausente); 409 `noClub` / `windowClosed` / `alreadyOffered` / `tooManyOffers` / `squadFull` / `squadDepth`; 400 `invalidTerms` / `onLoan` / recusa de contrato (com `demand`) |
+| `POST /api/saves/:id/seat-offers/:offerId { action: "accept" \| "reject" \| "counter" \| "withdraw", fee?, sellOnPct?, wageShare? }` | Responde. 404 `notFound`; 403 `notYourTurn`; 409 `offerClosed` / `noRounds` / `contractRefused { reason }` |
+
+### Telas
+
+- **Prévia** do jogo contra outro técnico: a normal, com **Simular** (ou voltar ao painel).
+- **Negociação** (`PlayerOfferModal`): jogador de clube de outro assento abre o fluxo de proposta entre técnicos
+  (taxa, cláusula, contrato; empréstimo com `wageShare`), sem as rodadas da IA.
+- **Caixa de entrada:** `SeatOfferCard` (vendedor: Aceitar, Contrapropor, Recusar; comprador: Aceitar a contraproposta,
+  Contrapropor, Retirar). **Transferências → negociações** (`NegotiationOverview`): as propostas abertas com o mesmo
+  cartão. i18n `seatOffers.*` (en, pt-BR).
+
+### Testes
+
+```
+bun test src/Domain/seatOffers src/backend/dal/seatOffers.dal.test.ts src/backend/seatOffers.routes.test.ts \
+  src/backend/seatOffers.day.test.ts src/backend/seatOffers.loans.test.ts src/backend/seats.review.test.ts \
+  src/i18n/seatOffers.keys.test.ts src/GameInterface/Social
+```
+
+### Limitações (parte 4)
+
+- Sem partida ao vivo entre dois técnicos: sempre simulada, no motor completo.
+- Só jogadores de elenco: base, livres e pré-contrato entre técnicos não existem.
+- Sem rival da IA nem disputa na proposta entre técnicos; a preferência do jogador (`preferenceScore`) não entra, só a
+  recusa de contrato no aceite.
+- Elenco cheio e mínimos do vendedor aparecem só no aceite, não ao propor.
