@@ -473,10 +473,16 @@ Versão **4.27**. A parte 5 foi dividida: esta é a classificação dos técnico
   passagem aberta (desempregado não pontua).
 - **Fechamento no meio da temporada** (troca, demissão, fim de contrato): a parte da meta vale metade (arredondada para
   zero, item `half`); títulos e fases contam inteiros; demissão soma −5. Sem jogos na liga a parte da meta vale 0.
-- **Demissão no próprio dia da virada:** o −5 vai na linha `rollover` e não se abre passagem nova.
+- **Demissão ou fim de contrato no próprio dia da virada:** a passagem aberta pela virada desse dia
+  (`DaySeat.standingOpenedByRollover`) é descartada; a demissão põe o −5 na linha `rollover` do dia, o fim de contrato
+  deixa a linha intacta. Uma passagem aberta antes (inclusive hoje, por troca de clube ou entrada) fecha normalmente,
+  com o motivo e a meta pela metade.
 - **Começo do mundo:** depois do kit, todas as passagens reabrem na data do mundo (`/start`).
-- **Posição** na tabela é compartilhada em empate de total; a ordem é total, parcial, nome.
-- Idempotente: o id da linha é `seatId:clubId:season:closedOn`; um dia refeito não grava de novo.
+- **Posição** na tabela é compartilhada em empate de total (`rankOf`: 1 + quantos têm total maior; a mesma na tabela, no
+  Painel e na mensagem `season_closed`); a ordem é total, parcial, nome.
+- Idempotente: o id da linha é `seatId:clubId:season:closedOn`; um dia refeito não grava de novo. Na virada, uma
+  passagem aberta hoje cuja temporada não é a que fecha (a da temporada nova, gravada por uma tentativa anterior do mesmo
+  dia) não é fechada: continua a passagem aberta.
 
 ### Dados
 
@@ -501,14 +507,17 @@ duplica num dia refeito. O socket `world_members` recarrega as telas.
 ### Rota
 
 `GET /api/worlds/:saveId/standings` (qualquer membro; solo 409 `notMulti`): `{ entries, rows }`, uma entrada por técnico
-(`partial`, `closedTotal`, `total`, `seasons`) ordenada, e as linhas fechadas, mais novas primeiro.
+(`partial`, `closedTotal`, `total`, `seasons`) ordenada, e as linhas fechadas dos membros atuais, mais novas primeiro
+(as de quem saiu ficam no arquivo, fora da resposta).
 
 ### Telas
 
 - `/world` → aba **Classificação** (`World/StandingsTable.tsx`): #, rosto, técnico, apelido, clube, "Temporada atual"
   (parcial), "Fechadas" e "Total"; a linha do próprio técnico destacada; abrir mostra cada temporada com os itens.
+  Com a aba aberta, recarrega com `world_members` e quando um avanço em grupo para (`world_progress` com
+  `running: false`).
 - Painel: linha "Liga de amigos: Nº de N" no `ClubCard`, link para a aba. Caixa: `season_closed`.
-- i18n `world.standings.*` (en, pt-BR).
+- i18n `world.standings.*` (en, pt-BR); a mensagem usa plural (`preview_one/_other`, `body_one/_other`, `count` = pontos).
 
 ### Testes
 
@@ -522,3 +531,9 @@ bun test src/Domain/multiplayer src/backend/dal/seatSeasons.dal.test.ts src/back
 - Começa do zero em cada mundo; sem troféu para o campeão da liga de amigos.
 - A meta é a da diretoria: meta fácil pontua mais pela posição relativa, por desenho.
 - Só liga de amigos; o mundo público é a 5b.
+- **Continental de liga de ano civil:** a campanha continental atravessa a virada de uma liga de ano civil (Libertadores,
+  Europa com ligas que viram em dezembro); ela se divide entre as duas passagens e só a maior fase de cada passagem conta.
+- **Dia refeito com flush parcial** (fase 1 do `flush` não atômica): se o assento foi gravado com a passagem nova mas
+  `seatSeasons.json` não, a linha da temporada fechada se perde; os pontos que o dia refeito somar (copa, continental,
+  prêmios) vão para a passagem nova; a mensagem `season_closed` não sai de novo; e um prêmio mundial (janeiro) já
+  creditado ao registro do técnico não volta a pontuar na passagem.
