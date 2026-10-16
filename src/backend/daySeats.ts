@@ -12,6 +12,7 @@ import type { AwardsInboxMessage, PressInboxMessage } from "@/types/inboxTypes";
 import type { ClubMove } from "@/types/pyramidTypes";
 import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import type { PressState } from "@/types/pressTypes";
+import type { SeatSeasonRow, SeatStanding } from "@/types/standingsTypes";
 import type { DayNewsInput } from "@/types/newsTypes";
 import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import type { GateKind } from "@/Domain/finance/gate";
@@ -102,6 +103,10 @@ export interface DaySeat {
   moraleNews: PlayerNews[];
   pressOut: { state?: PressState; invite?: PressInboxMessage; news: DayNewsInput["press"] };
   achievementsUnlocked: number;
+  /** Working copy of the seat's open standings passage (friends' league only); written to `patch` when it changed. */
+  standing: SeatStanding | undefined;
+  /** The passage closed by today's rollover (for the `season_closed` message). */
+  standingClosed: SeatSeasonRow | null;
   /** Seat fields to write at the end of the day. */
   patch: Partial<SeatState>;
 }
@@ -154,6 +159,8 @@ export function newDaySeat(args: {
     moraleNews: [],
     pressOut: { news: [] },
     achievementsUnlocked: 0,
+    standing: seat.standing,
+    standingClosed: null,
     patch: {},
   };
 }
