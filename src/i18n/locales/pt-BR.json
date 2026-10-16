@@ -5171,6 +5171,47 @@
     },
     "start": { "button": "Começar a liga", "waiting": "Esperando o dono começar" },
     "chat": "Chat da liga",
+    "standings": {
+      "tab": "Classificação",
+      "tabLeague": "Liga",
+      "tabsLabel": "Seções da liga",
+      "title": "Classificação",
+      "hint": "Pontos de cada temporada contra a meta da diretoria. A temporada em andamento conta como parcial.",
+      "current": "Temporada atual",
+      "closed": "Fechadas",
+      "total": "Total",
+      "partial": "parcial",
+      "currentSeason": "Temporada atual",
+      "season": "Temporada {{season}}",
+      "position": "{{position}}º lugar",
+      "positionTarget": "{{position}}º lugar · meta: {{target}}º",
+      "empty": "Ainda não há técnicos.",
+      "noSeasons": "Nenhuma temporada ainda.",
+      "noItems": "Nenhum ponto ainda.",
+      "dashboardLine": "Liga de amigos: {{rank}}º de {{of}}",
+      "reason": {
+        "rollover": "Fim da temporada",
+        "club_change": "Trocou de clube",
+        "sacked": "Demitido",
+        "contract": "Fim do contrato"
+      },
+      "items": {
+        "objective_met": "Meta da diretoria cumprida",
+        "above_target": "Posições acima da meta",
+        "below_target": "Posições abaixo da meta",
+        "league_title": "Título da liga",
+        "promoted": "Acesso",
+        "relegated": "Rebaixamento",
+        "cup": "Campanha na copa",
+        "continental": "Campanha continental",
+        "best_manager": "Melhor técnico da temporada",
+        "world_manager": "Melhor técnico do mundo",
+        "national_title": "Título com a seleção",
+        "national_objective": "Meta da seleção cumprida",
+        "half": "Temporada incompleta (vale metade)",
+        "sacked": "Demissão"
+      }
+    },
     "leave": {
       "button": "Sair da liga",
       "transferFirst": "Passe a liga a outro técnico antes de sair.",
@@ -5199,7 +5240,15 @@
     "inbox": {
       "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
-      "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." }
+      "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "season_closed": {
+        "subject": "Temporada de {{manager}} fechada",
+        "preview_one": "{{points}} ponto · {{rank}}º de {{of}}",
+        "preview_other": "{{points}} pontos · {{rank}}º de {{of}}",
+        "body_one": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} ponto e está em {{rank}}º de {{of}} na classificação da liga.",
+        "body_other": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} pontos e está em {{rank}}º de {{of}} na classificação da liga.",
+        "open": "Ver a classificação"
+      }
     },
     "advance": {
       "running": "Avançando… {{date}} de {{target}}",

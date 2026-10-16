@@ -11,6 +11,7 @@ import { releaseHumanClub, takeOverClub } from "@/backend/jobWorld";
 import { leaveNationalTeam } from "@/backend/nationalWorld";
 import { returnDueLoans } from "@/backend/negotiationWorld";
 import { closeOffersOfSeat, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
+import { newPassage } from "@/backend/standingsWorld";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { getLeagueData } from "@/backend/advanceDay";
@@ -114,6 +115,10 @@ export async function addSeat(
     const finalSeat = await service.updateSeat(saveId, seatId, {
       formation: taken.formation,
       board: taken.board,
+      // Friends' league standings: the passage at the club opens with the board's objective (part 5a).
+      ...(world.world ? {
+        standing: newPassage({ date, clubId: entry.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, board: taken.board }),
+      } : {}),
       managerContract: {
         squadId: entry.squadId,
         wage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),

@@ -739,6 +739,10 @@ function leaguePrizeTexts(
       preview: t(`world.advance.refused.reason.${message.reason}`),
     };
   }
+  if (message.category === "world" && message.kind === "season_closed") {
+    const vars = { manager: message.managerName, club: message.clubName, season: message.season, points: message.points, count: message.points, rank: message.rank, of: message.of };
+    return { subject: t("world.inbox.season_closed.subject", vars), preview: t("world.inbox.season_closed.preview", vars) };
+  }
   if (message.category === "world") {
     const vars = { manager: message.managerName, club: message.clubName };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
@@ -911,7 +915,18 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             {t("world.advance.refused.body", { match: formatInboxDate(message.match), reason: t(`world.advance.refused.reason.${message.reason}`) })}
           </p>
         )}
-        {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && (
+        {message.category === "world" && message.kind === "season_closed" && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-foreground m-0">
+              {t("world.inbox.season_closed.body", {
+                manager: message.managerName, club: message.clubName, season: message.season,
+                points: message.points, count: message.points, rank: message.rank, of: message.of,
+              })}
+            </p>
+            <a href="/world?tab=standings" className="font-semibold text-primary hover:underline w-fit">{t("world.inbox.season_closed.open")}</a>
+          </div>
+        )}
+        {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && message.kind !== "season_closed" && (
           <p className="text-sm text-foreground m-0">
             {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
           </p>

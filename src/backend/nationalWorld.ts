@@ -684,7 +684,7 @@ export async function playNationalDay(args: {
       // A seat's manager won it: the objective is met.
       const championCoach = change.finished && comp.championId ? coachOf(comp.championId) : null;
       if (championCoach && comp.championId) {
-        seatOut(championCoach).coachNews.push({ kind: "result", date, teamId: comp.championId, nation: state.teams[comp.championId]!.nation, competition: comp.slug, met: true });
+        seatOut(championCoach).coachNews.push({ kind: "result", date, teamId: comp.championId, nation: state.teams[comp.championId]!.nation, competition: comp.slug, met: true, title: true });
       }
       if (change.finished) comp = { ...comp, awards: await closeTournament(service, saveId, state, comp, date, index, setPlayer) };
     }

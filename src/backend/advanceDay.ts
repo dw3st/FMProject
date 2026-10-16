@@ -1,4 +1,11 @@
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
+import { appendSeatSeasons, newPassage, positionOf, standingsOn, standingsView } from "@/backend/standingsWorld";
+import { closePassage, rankOf, sumItems, withExtra } from "@/Domain/multiplayer/standings";
+import { continentalEventItem, cupTieItems, nationalNewsItems } from "@/Domain/multiplayer/standingsEvents";
+import { buildSeasonClosedMessage } from "@/Domain/multiplayer/worldMessages";
+import { STANDINGS } from "@/Domain/multiplayer/standingsConfig";
+import type { SeatSeasonRow, StandingItem } from "@/types/standingsTypes";
+import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard } from "@/Domain/boardFans/boardFans";
@@ -13,7 +20,7 @@ import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService, type SeatMeta, type SaveMeta } from "@/backend/SaveService";
-import { metaForSeat } from "@/Domain/seats/seats";
+import { metaForSeat, seatIdOfManager } from "@/Domain/seats/seats";
 import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -248,6 +255,8 @@ export type AdvanceDayOutcome =
       ok: true; payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>>;
       /** Seats whose offers with another seat changed today: nudged by socket once the day is written. */
       seatOfferNudges?: string[];
+      /** A friends' league standings row was closed today: the members' screens reload once the day is written. */
+      standingsChanged?: boolean;
     };
 
 /** One seat's view of a day: the world's payload merged with that seat's part (`payloadForSeat`). */
@@ -287,6 +296,7 @@ export async function runBufferedDay(
     return { ok: false, status: 500, error: "failed to persist day" };
   }
   if (outcome.seatOfferNudges?.length) nudgeSeats(saveId, outcome.seatOfferNudges);
+  if (outcome.standingsChanged) notifyWorld(saveId, { type: "world_members", saveId });
   return outcome;
 }
 
@@ -467,6 +477,13 @@ export async function advanceOneDay(
     });
     // The clubs with a human manager: the AI never acts on these (market, free agents, manager desk).
     const humanClubs = humanClubSet(daySeats);
+    // Friends' league standings (multiplayer part 5a): each seat's open passage (`DaySeat.standing`) gains its
+    // extras through the day; the rows closed today are written once, before the seats.
+    const standingsActive = world.mode === "multi" && !!world.world;
+    const standingRows: SeatSeasonRow[] = [];
+    const standingExtra = (ds: DaySeat | undefined, item: StandingItem): void => {
+      if (standingsActive && ds?.standing) ds.standing = withExtra(ds.standing, item);
+    };
     // Seats whose offers with another seat change today: nudged by socket after the day is written (`runBufferedDay`).
     const seatOfferNudges: SeatNudges = new Set();
 
@@ -835,6 +852,12 @@ export async function advanceOneDay(
         };
       }
     }
+    // The seat manager's national team: objective met (+2), a tournament title (+6 more).
+    for (const ds of daySeats) {
+      for (const news of nationalDay.bySeat[ds.seatId]?.coachNews ?? []) {
+        for (const item of nationalNewsItems(news)) standingExtra(ds, item);
+      }
+    }
     for (const [id, squad] of nationalDay.squads) {
       const e = index.byId(id);
       if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
@@ -1168,6 +1191,11 @@ export async function advanceOneDay(
         if (loserSeat?.board && !["qf", "sf", "final"].includes(stage)) {
           loserSeat.board = applyCompetitionEvent(loserSeat.board, { kind: "early_exit" });
         }
+        const cupStanding = cupTieItems(stage, cSlug);
+        if (cupStanding) {
+          standingExtra(winnerSeat, cupStanding.winner);
+          standingExtra(loserSeat, cupStanding.loser);
+        }
 
         const winnerPrize = cupStagePrize(base, stage);
         const paidToWinner = await awardClubPrize(winnerId, winnerPrize, `${label} · ${stage}`, { competition: cSlug, stage });
@@ -1261,6 +1289,8 @@ export async function advanceOneDay(
             else if (ev.kind === "advanced") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "stage" });
             else if (ev.kind === "eliminated" && ev.stage === "group") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "early_exit" });
           }
+          const contStanding = evSeat ? continentalEventItem(ev, cSlug) : null;
+          if (contStanding) standingExtra(evSeat, contStanding);
           if (ev.kind !== "champion") continue;
           recordTitle(ev.clubId, `continental:${cSlug}`);
           const contMeta = await saveService.getLeagueMeta(saveId, cSlug);
@@ -2097,6 +2127,11 @@ export async function advanceOneDay(
             });
             transition.squadsToSave.forEach((ref, i) => { ref.squad = res.squads[i]!; });
             newsCollector?.leagueAwards.push(res.awards);
+            // A seat's manager named best manager of the league: before its passage closes (board block below).
+            const bestSeatId = seatIdOfManager(res.awards.bestManager?.managerId ?? "");
+            if (bestSeatId) {
+              standingExtra(daySeats.find((d) => d.seatId === bestSeatId), { key: "best_manager", points: STANDINGS.BEST_MANAGER, detail: slug });
+            }
             await managerTracker.apply(res.managers);
             for (const [clubId, msg] of Object.entries(res.messages)) seatOf.get(clubId)?.deferred.awards.push(msg);
           }
@@ -2183,6 +2218,24 @@ export async function advanceOneDay(
               // on the carried-over meters of the new season.
               const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
               if (review.sacked) ds.sackedReason = review.sacked;
+            }
+            // The seat's standings passage closes with the season (still the old objective). A passage of the NEW
+            // season (opened today by an earlier try of this same day whose flush wrote the seat but not the meta)
+            // is not closed: it stays the open passage.
+            const closingSeason = seasonLabel(state.year, state.start, state.end);
+            const reopened = !!ds.standing && ds.standing.from === currentDate
+              && ds.standing.season !== "" && ds.standing.season !== closingSeason;
+            if (standingsActive && reopened) ds.standingOpenedByRollover = true;
+            if (standingsActive && ds.standing && !reopened) {
+              const row = tablePos >= 0 ? table[tablePos]! : null;
+              const position = row && row.mp > 0 ? tablePos + 1 : null;
+              const closed = closePassage(ds.standing, {
+                seatId: ds.seatId, closedOn: currentDate, reason: "rollover", position,
+                leagueTitle: position === 1, move: ds.rollover.move?.kind ?? null,
+              });
+              standingRows.push(closed);
+              ds.standingClosed = closed;
+              ds.standing = undefined;
             }
             if (leaguePrizeAmount > 0) {
               next = applyMoney(next, {
@@ -2483,6 +2536,14 @@ export async function advanceOneDay(
             });
           }
         }
+        // The new season's standings passage (the new objective); a sacking today opens none.
+        if (standingsActive && !ds.sackedReason && ds.clubId && !ds.standing) {
+          ds.standing = newPassage({
+            date: currentDate, clubId: ds.clubId, clubName: ds.meta.clubName,
+            leagueSlug: index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug, board: ds.board,
+          });
+          ds.standingOpenedByRollover = true;
+        }
         const archiveYear = closedYear.get(ds.meta.leagueSlug)!;
         ds.rollover.archiveYear = archiveYear;
         ds.rollover.moves = plan.moves;
@@ -2734,6 +2795,25 @@ export async function advanceOneDay(
             ds.managerEarned += severance;
           }
         }
+        // Standings: the passage closes with the reason (sacked −5, contract end no penalty). A passage opened
+        // today by the rollover is dropped without a row; a sacking on the rollover day adds −5 to that row. A
+        // passage opened earlier (even today, by a club change or a join) closes normally.
+        if (standingsActive) {
+          const sacked = ended.reason !== "contract";
+          if (ds.standing && !ds.standingOpenedByRollover) {
+            standingRows.push(closePassage(ds.standing, {
+              seatId: ds.seatId, closedOn: currentDate, reason: sacked ? "sacked" : "contract",
+              position: await positionOf(saveService, saveId, ds.standing.leagueSlug, ds.standing.clubId),
+            }));
+          } else if (sacked && ds.standingClosed) {
+            const before = ds.standingClosed;
+            const items = [...before.items, { key: "sacked" as const, points: STANDINGS.SACKED }];
+            const after: SeatSeasonRow = { ...before, items, total: sumItems(items) };
+            standingRows[standingRows.indexOf(before)] = after;
+            ds.standingClosed = after;
+          }
+          ds.standing = undefined;
+        }
         // The other seats' "closed" messages are deferred past any `clearInbox` of the day, the nudges past the flush.
         await releaseHumanClub(
           saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate },
@@ -2847,6 +2927,10 @@ export async function advanceOneDay(
       });
       // The world ceremony is news for every seat.
       if (msg) for (const ds of daySeats) ds.deferred.awards.push(msg);
+      const worldSeatId = seatIdOfManager(msg?.world?.manager[0]?.id ?? "");
+      if (worldSeatId) {
+        standingExtra(daySeats.find((d) => d.seatId === worldSeatId), { key: "world_manager", points: STANDINGS.WORLD_MANAGER });
+      }
       if (msg?.world && newsCollector) newsCollector.worldAwards = msg.world;
     }
 
@@ -2974,6 +3058,29 @@ export async function advanceOneDay(
           pressId: keptPress.id, trigger: keptPress.trigger, kind: keptPress.kind, expires: keptPress.expires,
           ...(keptPress.params.opponent ? { opponent: keptPress.params.opponent } : {}),
         }), saveService, ds.seatId);
+      }
+    }
+    // Friends' league standings: each season closed today (rollover) goes to every seat, after any `clearInbox`,
+    // with the manager's place counting today's rows and the seats' working passages. A redone day skips an id
+    // already in the inbox.
+    const closedToday = standingsActive
+      ? daySeats.flatMap((ds) => (ds.standingClosed ? [{ ds, row: ds.standingClosed }] : []))
+      : [];
+    if (closedToday.length > 0) {
+      const view = await standingsView(saveService, saveId, {
+        extraRows: standingRows, passages: new Map(daySeats.map((d) => [d.seatId, d.standing])),
+      });
+      const of = view.entries.length;
+      for (const { ds: owner, row } of closedToday) {
+        const rank = rankOf(view.entries, owner.seatId);
+        const msg = buildSeasonClosedMessage(currentDate, {
+          seatId: owner.seatId, managerName: owner.meta.manager?.name ?? "", clubName: row.clubName,
+          season: row.season, points: row.total, rank: rank > 0 ? rank : of, of,
+        });
+        for (const ds of daySeats) {
+          const inbox = await saveService.getInbox(saveId, ds.seatId);
+          if (!inbox.some((m) => m.id === msg.id)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
+        }
       }
     }
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
@@ -3235,6 +3342,11 @@ export async function advanceOneDay(
 
     // ── Next currentDate: always the next day (no season jump) ─────────────────
     // World and seats written apart (the seats in phase 1 of the flush, the world meta last).
+    // The standings rows closed today (idempotent by id: a replayed day writes nothing new), then each passage.
+    if (standingsActive) {
+      await appendSeatSeasons(saveService, saveId, standingRows);
+      for (const ds of daySeats) if (ds.standing !== ds.meta.standing) ds.patch.standing = ds.standing;
+    }
     for (const ds of daySeats) {
       if (Object.keys(ds.patch).length > 0) await saveService.updateSeat(saveId, ds.seatId, ds.patch);
     }
@@ -3265,6 +3377,7 @@ export async function advanceOneDay(
       payload: { ...dayLog, events: [...dayLog.events, ...transferEvents], newDate: updatedMeta.currentDate },
       seats,
       ...(seatOfferNudges.size > 0 ? { seatOfferNudges: [...seatOfferNudges] } : {}),
+      ...(standingRows.length > 0 ? { standingsChanged: true } : {}),
     };
 }
 
@@ -3346,6 +3459,18 @@ export async function presimulateWorld(
       date: owner.currentDate, kind: "objective", objective: owner.board.objective,
       leagueName: competitionName(owner.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
     }), saveService, ownerSeatId);
+  }
+
+  // Friends' league standings (part 5a): every seat with a club opens its passage now, after the kit (it may move the
+  // date and the board's objective). A member's lobby passage (`addSeat`) is opened again: nothing was played yet.
+  if (await standingsOn(saveService, saveId)) {
+    const date = (await saveService.getMeta(saveId))?.currentDate;
+    for (const { seatId, seat } of date ? await saveService.listSeats(saveId) : []) {
+      if (!seat.clubId || seat.unemployed) continue;
+      await saveService.updateSeat(saveId, seatId, {
+        standing: newPassage({ date: date!, clubId: seat.clubId, clubName: seat.clubName, leagueSlug: seat.leagueSlug, board: seat.board }),
+      });
+    }
   }
 
   await saveService.updateMeta(saveId, { presimulated: true });

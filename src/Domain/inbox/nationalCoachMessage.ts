@@ -11,6 +11,8 @@ export interface NationalCoachNews {
   callUpDate?: string;
   competition?: string;
   met?: boolean;
+  /** A `result` of a tournament the seat's national team won (friends' league standings). */
+  title?: boolean;
 }
 
 const SUBJECT: Record<NationalCoachNews["kind"], (n: string) => string> = {

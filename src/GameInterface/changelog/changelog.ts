@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.27",
+    date: "2026-10-16",
+    items: [
+      {
+        pt: "Classificação dos técnicos na liga de amigos, por temporada, com a temporada atual ao vivo",
+        en: "Managers' ranking in the friends league, by season, with the current season live",
+      },
+    ],
+  },
+  {
     version: "4.26",
     date: "2026-10-16",
     items: [
@@ -1616,6 +1626,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Classificação dos técnicos da liga de amigos", en: "A ranking of the managers in your friends league" },
+  { pt: "Mundo público para jogar com outros técnicos", en: "A public world to play with other managers" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

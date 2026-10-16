@@ -5171,6 +5171,47 @@
     },
     "start": { "button": "Start the league", "waiting": "Waiting for the owner to start" },
     "chat": "League chat",
+    "standings": {
+      "tab": "Standings",
+      "tabLeague": "League",
+      "tabsLabel": "League sections",
+      "title": "Standings",
+      "hint": "Points for each season against the board's target. The current season counts as partial.",
+      "current": "This season",
+      "closed": "Closed",
+      "total": "Total",
+      "partial": "partial",
+      "currentSeason": "This season",
+      "season": "Season {{season}}",
+      "position": "Position {{position}}",
+      "positionTarget": "Position {{position}} · target {{target}}",
+      "empty": "No managers yet.",
+      "noSeasons": "No seasons yet.",
+      "noItems": "No points yet.",
+      "dashboardLine": "Friends' league: {{rank}} of {{of}}",
+      "reason": {
+        "rollover": "End of season",
+        "club_change": "Changed club",
+        "sacked": "Sacked",
+        "contract": "Contract ended"
+      },
+      "items": {
+        "objective_met": "Board target met",
+        "above_target": "Places above the target",
+        "below_target": "Places below the target",
+        "league_title": "League title",
+        "promoted": "Promotion",
+        "relegated": "Relegation",
+        "cup": "Cup run",
+        "continental": "Continental run",
+        "best_manager": "Manager of the season",
+        "world_manager": "World manager of the year",
+        "national_title": "National team title",
+        "national_objective": "National team target met",
+        "half": "Partial season (counts half)",
+        "sacked": "Sacked"
+      }
+    },
     "leave": {
       "button": "Leave the league",
       "transferFirst": "Hand the league to another manager before leaving.",
@@ -5199,7 +5240,15 @@
     "inbox": {
       "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
-      "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." }
+      "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
+      "season_closed": {
+        "subject": "{{manager}}'s season is closed",
+        "preview_one": "{{points}} point · {{rank}} of {{of}}",
+        "preview_other": "{{points}} points · {{rank}} of {{of}}",
+        "body_one": "{{manager}} closed the {{season}} season at {{club}} with {{points}} point and is {{rank}} of {{of}} in the league standings.",
+        "body_other": "{{manager}} closed the {{season}} season at {{club}} with {{points}} points and is {{rank}} of {{of}} in the league standings.",
+        "open": "See the standings"
+      }
     },
     "advance": {
       "running": "Advancing… {{date}} of {{target}}",
