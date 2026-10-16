@@ -343,7 +343,8 @@ export function MatchScreen() {
       return;
     }
 
-    const url = `/api/match-setup?saveId=${encodeURIComponent(session.saveId)}`;
+    // live=1: against another seat the server refuses (multiplayer part 4, simulated only).
+    const url = `/api/match-setup?saveId=${encodeURIComponent(session.saveId)}&live=1`;
 
     fetch(url)
       .then(async (r) => {

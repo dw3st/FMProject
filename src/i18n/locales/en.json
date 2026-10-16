@@ -2307,6 +2307,8 @@
     "cannotLoadMatchSetup": "Cannot load match setup",
     "noMatchToday": "No match today",
     "seatOpponentTitle": "Match against another human manager",
+    "seatSimulate": "Simulate",
+    "seatSimulateNote": "Against another manager the match is simulated with both teams' tactics.",
     "seatOpponentText": "This match can't be watched yet. It will be simulated with both managers' tactics.",
     "simulateMatch": "Simulate match",
     "backToDashboard": "Back to dashboard",

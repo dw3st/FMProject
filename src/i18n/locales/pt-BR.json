@@ -2307,6 +2307,8 @@
     "cannotLoadMatchSetup": "Não foi possível carregar a formação",
     "noMatchToday": "Nenhuma partida hoje",
     "seatOpponentTitle": "Jogo contra outro técnico humano",
+    "seatSimulate": "Simular",
+    "seatSimulateNote": "Contra outro técnico o jogo é simulado com a tática dos dois.",
     "seatOpponentText": "Ainda não dá para assistir a este jogo. Ele será simulado com a tática dos dois técnicos.",
     "simulateMatch": "Simular partida",
     "backToDashboard": "Voltar ao painel",
