@@ -2,6 +2,10 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { appendSeatSeasons, newPassage } from "@/backend/standingsWorld";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { ownSolo } from "@/backend/testing/seatFixtures";
+import { addSeat } from "@/backend/seats";
+import type { WorldSeasonClosedInboxMessage } from "@/types/inboxTypes";
 
 /**
  * Friends' league standings in the day advance (multiplayer part 5a, `.claude/rules/game/multiplayer.md`): an
@@ -36,6 +40,14 @@ describe("standings in advanceOneDay", () => {
 
   test("an ordinary day keeps the passage; the rollover closes a row and opens the new season's", async () => {
     const meta = await friendsLeague(false);
+    // A second member on another Premier League club: both seats roll together and both get both messages.
+    await ownSolo(meta.id, devAutoLogin("standings-day-a@test.local").user.id);
+    const index = await saveService.getSquadIndex(meta.id);
+    const seatB = await addSeat(meta.id, {
+      userId: devAutoLogin("standings-day-b@test.local").user.id,
+      clubId: index.inLeague("premier_league").find((e) => e.squadId !== "33")!.squadId,
+      manager: { name: "Técnico B", nationalityIso: "gb", backgroundId: "former-player" },
+    });
     const before = (await saveService.getSeat(meta.id, meta.seatId))!.standing!;
     const first = await advanceOneDay(saveService, meta.id);
     expect(first.ok).toBe(true);
@@ -55,9 +67,21 @@ describe("standings in advanceOneDay", () => {
     if (out.ok) expect(out.standingsChanged).toBe(true);
 
     const rows = await saveService.getSeatSeasons(meta.id);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ seatId: meta.seatId, clubId: "33", reason: "rollover", closedOn: today, season: before.season });
-    expect(rows[0]!.items.at(-1)).toEqual({ key: "cup", points: 3 });
+    expect(rows).toHaveLength(2);
+    const rowA = rows.find((r) => r.seatId === meta.seatId)!;
+    expect(rowA).toMatchObject({ clubId: "33", reason: "rollover", closedOn: today, season: before.season });
+    expect(rowA.items.at(-1)).toEqual({ key: "cup", points: 3 });
+    expect(rows.find((r) => r.seatId === seatB.seatId)).toMatchObject({ reason: "rollover", closedOn: today });
+
+    // Every seat got one `season_closed` per closed row, with the manager's place of the two.
+    for (const seatId of [meta.seatId, seatB.seatId]) {
+      const closed = (await saveService.getInbox(meta.id, seatId))
+        .filter((m): m is WorldSeasonClosedInboxMessage => m.category === "world" && m.kind === "season_closed");
+      expect(closed).toHaveLength(2);
+      const mine = closed.find((m) => m.id.includes(meta.seatId))!;
+      expect(mine).toMatchObject({ points: rowA.total, season: before.season, of: 2 });
+      expect(new Set(closed.map((m) => m.rank))).toEqual(new Set([1, 2]));
+    }
 
     const seat = (await saveService.getSeat(meta.id, meta.seatId))!;
     expect(seat.standing).toMatchObject({ from: today, clubId: "33", extras: [], season: seat.board!.objective!.season });
@@ -65,7 +89,7 @@ describe("standings in advanceOneDay", () => {
 
     // A replayed day writes the same row id: nothing new.
     await appendSeatSeasons(saveService, meta.id, rows);
-    expect(await saveService.getSeatSeasons(meta.id)).toHaveLength(1);
+    expect(await saveService.getSeatSeasons(meta.id)).toHaveLength(2);
   }, 180_000);
 
   test("a sacking closes the passage with −5 and leaves no passage", async () => {

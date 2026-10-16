@@ -1,7 +1,8 @@
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
-import { appendSeatSeasons, newPassage, positionOf, standingsOn } from "@/backend/standingsWorld";
+import { appendSeatSeasons, newPassage, positionOf, standingsOn, standingsView } from "@/backend/standingsWorld";
 import { closePassage, sumItems, withExtra } from "@/Domain/multiplayer/standings";
 import { continentalEventItem, cupTieItems, nationalNewsItems } from "@/Domain/multiplayer/standingsEvents";
+import { buildSeasonClosedMessage } from "@/Domain/multiplayer/worldMessages";
 import { STANDINGS } from "@/Domain/multiplayer/standingsConfig";
 import type { SeatSeasonRow, StandingItem } from "@/types/standingsTypes";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
@@ -3049,6 +3050,29 @@ export async function advanceOneDay(
           pressId: keptPress.id, trigger: keptPress.trigger, kind: keptPress.kind, expires: keptPress.expires,
           ...(keptPress.params.opponent ? { opponent: keptPress.params.opponent } : {}),
         }), saveService, ds.seatId);
+      }
+    }
+    // Friends' league standings: each season closed today (rollover) goes to every seat, after any `clearInbox`,
+    // with the manager's place counting today's rows and the seats' working passages. A redone day skips an id
+    // already in the inbox.
+    const closedToday = standingsActive
+      ? daySeats.flatMap((ds) => (ds.standingClosed ? [{ ds, row: ds.standingClosed }] : []))
+      : [];
+    if (closedToday.length > 0) {
+      const view = await standingsView(saveService, saveId, {
+        extraRows: standingRows, passages: new Map(daySeats.map((d) => [d.seatId, d.standing])),
+      });
+      const of = view.entries.length;
+      for (const { ds: owner, row } of closedToday) {
+        const rank = view.entries.findIndex((e) => e.seatId === owner.seatId) + 1;
+        const msg = buildSeasonClosedMessage(currentDate, {
+          seatId: owner.seatId, managerName: owner.meta.manager?.name ?? "", clubName: row.clubName,
+          season: row.season, points: row.total, rank: rank > 0 ? rank : of, of,
+        });
+        for (const ds of daySeats) {
+          const inbox = await saveService.getInbox(saveId, ds.seatId);
+          if (!inbox.some((m) => m.id === msg.id)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
+        }
       }
     }
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after

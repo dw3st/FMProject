@@ -9,6 +9,7 @@ import { presimulateWorld } from "@/backend/advanceDay";
 import { addSeat, removeSeat, SeatError } from "@/backend/seats";
 import { announceMemberChange, deleteWorld, worldView } from "@/backend/worlds/worldLifecycle";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
+import { standingsView } from "@/backend/standingsWorld";
 import { scheduleKick } from "@/backend/groupAdvance";
 import {
   addWorldInvite, deleteWorldInvite, hasWorldInvite, listWorldInvitesFor, newWorldCode, pendingInviteCount,
@@ -175,6 +176,17 @@ export const worldRoutes = {
       if (auth instanceof Response) return auth;
       const view = await worldView(saveId, { seatId: auth.seatId, role: auth.role });
       return view ? Response.json(view) : fail("notMulti", 404);
+    },
+  },
+
+  /** Friends' league standings (part 5a): any member; a solo save is 409 `notMulti`. */
+  "/api/worlds/:saveId/standings": {
+    GET: async (req: Req) => {
+      const saveId = req.params.saveId!;
+      const auth = requireSeat(req, saveId);
+      if (auth instanceof Response) return auth;
+      if (!(await multiWorld(saveId))) return fail("notMulti", 409);
+      return Response.json(await standingsView(saveService, saveId));
     },
   },
 

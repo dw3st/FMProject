@@ -1,4 +1,4 @@
-import type { WorldInboxMessage } from "@/types/inboxTypes";
+import type { WorldInboxMessage, WorldSeasonClosedInboxMessage } from "@/types/inboxTypes";
 import type { NewsItem } from "@/types/newsTypes";
 
 /** A manager joined (`joined`), left on his own (`left`) or was removed by the owner (`removed`). */
@@ -26,6 +26,29 @@ export function buildWorldMemberMessage(date: string, c: MemberChange): WorldInb
     preview: c.clubName,
     managerName: c.managerName,
     clubName: c.clubName,
+  };
+}
+
+/** A manager's season closed (friends' league standings): one per closed row, to every seat of the day. */
+export function buildSeasonClosedMessage(date: string, a: {
+  seatId: string; managerName: string; clubName: string; season: string; points: number; rank: number; of: number;
+}): WorldSeasonClosedInboxMessage {
+  const signed = a.points > 0 ? `+${a.points}` : `${a.points}`;
+  return {
+    id: `world-season_closed-${a.seatId}-${a.season}-${date}`,
+    date,
+    createdAt: date,
+    read: false,
+    category: "world",
+    kind: "season_closed",
+    subject: `${a.managerName}'s season closed: ${signed}`,
+    preview: `${a.clubName} · ${a.rank} of ${a.of}`,
+    managerName: a.managerName,
+    clubName: a.clubName,
+    season: a.season,
+    points: a.points,
+    rank: a.rank,
+    of: a.of,
   };
 }
 

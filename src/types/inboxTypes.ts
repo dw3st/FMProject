@@ -484,7 +484,8 @@ export type InboxMessage =
   | AchievementInboxMessage
   | WorldInboxMessage
   | WorldAdvanceInboxMessage
-  | WorldLiveRefusedInboxMessage;
+  | WorldLiveRefusedInboxMessage
+  | WorldSeasonClosedInboxMessage;
 
 /** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
 export interface WorldAdvanceInboxMessage extends InboxMessageBase {
@@ -514,6 +515,21 @@ export interface WorldInboxMessage extends InboxMessageBase {
   kind:        "member_joined" | "member_left" | "member_removed";
   managerName: string;
   clubName:    string;
+}
+
+/** Friends' league standings (part 5a): a manager's season closed; every seat of the day gets it. */
+export interface WorldSeasonClosedInboxMessage extends InboxMessageBase {
+  category:    "world";
+  kind:        "season_closed";
+  managerName: string;
+  clubName:    string;
+  /** Season label of the closed row ("2026-27" / "2027"). */
+  season:      string;
+  /** The row's points. */
+  points:      number;
+  /** His place in the standings after the close, of `of` managers. */
+  rank:        number;
+  of:          number;
 }
 
 /** Players of the human club called up by / back from their national teams (`.claude/rules/game/national-teams.md`). */

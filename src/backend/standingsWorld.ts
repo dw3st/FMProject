@@ -1,9 +1,13 @@
 // Friends' league standings I/O (multiplayer part 5a, `.claude/rules/game/multiplayer.md`): the seat's open
 // passage and the closed rows in `seatSeasons.json`. Pure rules live in `@/Domain/multiplayer/standings`.
 import type { SaveService } from "@/backend/SaveService";
-import { closePassage, withExtra } from "@/Domain/multiplayer/standings";
+import { listSaveMembers } from "@/backend/auth/saveOwnership";
+import { getSocialUser } from "@/backend/social/socialStore";
+import { closePassage, passageItems, rankEntries, sumItems, withExtra } from "@/Domain/multiplayer/standings";
 import type { BoardState } from "@/types/boardTypes";
-import type { PassageEnd, SeatSeasonRow, SeatStanding, StandingItem } from "@/types/standingsTypes";
+import type {
+  PassageEnd, SeatSeasonRow, SeatStanding, StandingItem, StandingsEntry, StandingsView,
+} from "@/types/standingsTypes";
 
 /** A new passage at a club, from the board's objective (target and season). */
 export function newPassage(args: {
@@ -49,6 +53,52 @@ export async function closeSeatPassage(
   await appendSeatSeasons(service, saveId, [row]);
   await service.updateSeat(saveId, seatId, { standing: undefined });
   return row;
+}
+
+/**
+ * The friends' league standings (`GET /api/worlds/:saveId/standings`): one entry per member (closed rows + the
+ * open passage's partial at today's league position), ranked; the closed rows newest first. Inside the day advance,
+ * `extraRows` are the rows closed today (not written yet) and `passages` the seats' working passages.
+ */
+export async function standingsView(
+  service: SaveService, saveId: string,
+  day: { extraRows?: readonly SeatSeasonRow[]; passages?: ReadonlyMap<string, SeatStanding | undefined> } = {},
+): Promise<StandingsView> {
+  const extraRows = day.extraRows ?? [];
+  const stored = await service.getSeatSeasons(saveId);
+  const ids = new Set(stored.map((r) => r.id));
+  const rows = [...stored, ...extraRows.filter((r) => !ids.has(r.id))];
+  const bySeat = new Map(listSaveMembers(saveId).map((m) => [m.seatId, m]));
+  const entries: StandingsEntry[] = [];
+  for (const { seatId, seat } of await service.listSeats(saveId)) {
+    const m = bySeat.get(seatId);
+    if (!m) continue;
+    const closed = rows.filter((r) => r.seatId === seatId);
+    const closedTotal = closed.reduce((n, r) => n + r.total, 0);
+    const s = day.passages?.has(seatId) ? day.passages.get(seatId) : seat.standing;
+    let partial: StandingsEntry["partial"] = null;
+    if (s) {
+      const position = await positionOf(service, saveId, s.leagueSlug, s.clubId);
+      const items = passageItems(s, { position });
+      partial = { total: sumItems(items), items, position, target: s.target };
+    }
+    entries.push({
+      seatId,
+      nickname: getSocialUser(m.userId)?.nickname ?? null,
+      managerName: seat.manager?.name ?? "",
+      face: seat.manager?.face ?? null,
+      nationalityIso: seat.manager?.nationalityIso ?? null,
+      clubId: seat.clubId,
+      clubName: seat.clubName,
+      clubColors: seat.clubColors,
+      partial,
+      closedTotal,
+      total: closedTotal + (partial?.total ?? 0),
+      seasons: closed.length,
+    });
+  }
+  const sorted = [...rows].sort((a, b) => b.closedOn.localeCompare(a.closedOn) || a.id.localeCompare(b.id));
+  return { entries: rankEntries(entries), rows: sorted };
 }
 
 export { withExtra };
