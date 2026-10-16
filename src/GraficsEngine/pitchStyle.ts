@@ -5,6 +5,17 @@
 /** Mowing stripes across the 115-yard length: LIGHT bands over the flat PITCH_COLOR background. */
 export const PITCH_STRIPES = { COUNT: 15, LIGHT: 0x10773a } as const;
 
+/**
+ * Worn-pitch drawing (spec 2026-10-16-pitch-types §3): base colours by band, patches, the synthetic grass.
+ * PITCH_COLOR (the canvas background) stays the pristine base.
+ */
+export const PITCH_WEAR = {
+  BASE_FADED: 0x16652f, BASE_WORN: 0x2c6330, BASE_ROTTEN: 0x4a5a2a,
+  LIGHT_FADED: 0x197238,
+  YELLOW: 0x7f7a3a, DIRT: 0x7e6236, DIRT_DARK: 0x6b4f2a, MUD: 0x5c4124, MUD_DARK: 0x4e3a20, PUDDLE: 0x7a948a,
+  SYNTH_BASE: 0x158a44, SYNTH_LIGHT: 0x1c9a50,
+} as const;
+
 /** Ground shadow under each marker (offsets/size in marker radii). */
 export const MARKER_SHADOW = { DX: 0.25, DY: 0.35, SCALE_Y: 0.8, ALPHA: 0.3 } as const;
 
