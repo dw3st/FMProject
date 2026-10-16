@@ -4,6 +4,7 @@ import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { acceptJobOffer, reputationOf } from "@/backend/jobWorld";
+import { nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { logError } from "@/Logger";
 
 type Req = Request & { params: Record<string, string> };
@@ -59,13 +60,16 @@ export const jobRoutes = {
       const buffer = new BufferingSaveDAL(new FileSystemDAL());
       const service = new SaveService(buffer);
       let next;
+      // Socket nudges of the seats whose offers with this seat close: only once the unit is written.
+      const nudges: SeatNudges = new Set();
       try {
-        next = await acceptJobOffer(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, offer);
+        next = await acceptJobOffer(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, offer, nudges);
         await buffer.flush();
       } catch (err) {
         logError("jobs", `save ${saveId}: failed to accept offer ${offerId}`, err);
         return Response.json({ error: "failed to change club" }, { status: 500 });
       }
+      nudgeSeats(saveId, nudges);
       // The day's service built its own index; the singleton's cache must see the new tactics/meta.
       saveService.dropSquadIndex(saveId);
       return Response.json({ ok: true, status: "accepted", clubId: next.clubId, leagueSlug: next.leagueSlug });

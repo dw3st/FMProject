@@ -10,7 +10,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { releaseHumanClub, takeOverClub } from "@/backend/jobWorld";
 import { leaveNationalTeam } from "@/backend/nationalWorld";
 import { returnDueLoans } from "@/backend/negotiationWorld";
-import { closeOffersOfSeat } from "@/backend/seatOfferWorld";
+import { closeOffersOfSeat, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { getLeagueData } from "@/backend/advanceDay";
@@ -212,7 +212,9 @@ export async function removeSeat(
     }
     // Offers with other seats (multiplayer part 4) close and the other side is told (idempotent with the
     // `releaseHumanClub` below, which closes them too).
-    await closeOffersOfSeat(service, saveId, seatId, date);
+    // Socket nudges of the other side go only after the flush.
+    const nudges: SeatNudges = new Set();
+    await closeOffersOfSeat(service, saveId, seatId, date, undefined, nudges);
 
     // A national team he coaches (Etapa 41b) gets an interim and a vacancy (no "resigned" message); his job offers go
     // and the vacancies they were holding reopen on the offer's date.
@@ -234,7 +236,7 @@ export async function removeSeat(
     }
 
     if (seat.clubId && !seat.unemployed) {
-      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date });
+      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date }, { nudges });
       await service.writeManagers(saveId, sackHumanManager(await service.getManagers(saveId), {
         seatId, date, clubName: seat.clubName, left: "left_world",
       }));
@@ -246,6 +248,7 @@ export async function removeSeat(
     }
     await service.deleteSeat(saveId, seatId);
     await buffer.flush();
+    nudgeSeats(saveId, nudges);
     removeSaveMember(saveId, seatId);
     const removed: RemovedSeat = {
       userId: member?.userId ?? null,

@@ -100,13 +100,21 @@ describe("seat offers: day, club change, leaving", () => {
     expect(await seatOfferMessages(seatA, "offer-live")).toEqual([]);
   }, 600_000);
 
-  test("releaseHumanClub (sacking, club change) closes the seat's offers and tells the other side", async () => {
+  test("releaseHumanClub (sacking, club change) closes the seat's offers and tells the other side through the sink", async () => {
     const date = (await saveService.getMeta(id))!.currentDate!;
     expect((await saveService.getSeatOffers(id)).map((o) => o.id)).toEqual(["offer-live"]);
-    await releaseHumanClub(saveService, id, seatB, { squadId: clubB, date });
+    // The day advance passes a sink (the messages land after its `clearInbox`): nothing is written at once.
+    const sunk: { seatId: string; action?: string; offerId?: string }[] = [];
+    const nudges = new Set<string>();
+    await releaseHumanClub(saveService, id, seatB, { squadId: clubB, date }, {
+      sink: (seatId, args) => { sunk.push({ seatId, action: args.offerAction, offerId: args.offerId }); },
+      nudges,
+    });
     expect(await saveService.getSeatOffers(id)).toEqual([]);
-    const toA = await seatOfferMessages(seatA, "offer-live");
-    expect(toA.map((m) => (m as { offerAction?: string }).offerAction)).toEqual(["closed"]);
+    expect(sunk).toEqual([{ seatId: seatA, action: "closed", offerId: "offer-live" }]);
+    // The socket nudge waits for the caller's flush.
+    expect([...nudges]).toEqual([seatA]);
+    expect(await seatOfferMessages(seatA, "offer-live")).toEqual([]);
   }, 300_000);
 
   test("removeSeat closes the leaving seat's offers and ends its loans with another seat in both markets", async () => {

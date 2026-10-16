@@ -34,6 +34,20 @@ export type SeatOfferMessageArgs = Parameters<typeof buildTransferNegotiationMes
  */
 export type SeatOfferSink = (seatId: string, args: SeatOfferMessageArgs) => void;
 
+/**
+ * Seats to nudge by socket once the unit of work is written: a route or the day that writes through a
+ * `BufferingSaveDAL` collects them and calls `nudgeSeats` after its `flush`. Without one the nudge goes at once.
+ */
+export type SeatNudges = Set<string>;
+
+/** Socket nudge (`seat_offer`) to the user of each seat. */
+export function nudgeSeats(saveId: string, seatIds: Iterable<string>): void {
+  for (const seatId of seatIds) {
+    const m = memberBySeat(saveId, seatId);
+    if (m) notifyUser(m.userId, { type: "seat_offer", saveId });
+  }
+}
+
 /** The message args for one side of the offer, after `action`. */
 export function seatOfferMessageArgs(o: SeatOffer, toSide: SeatOfferSide, action: SeatOfferAction, date: string): SeatOfferMessageArgs {
   const other = toSide === "seller" ? o.buyer : o.seller;
@@ -55,14 +69,14 @@ export function seatOfferMessageArgs(o: SeatOffer, toSide: SeatOfferSide, action
 /** Message to one side of the offer (inbox, or `sink`) + a socket nudge to that seat's user. */
 export async function tellSeat(
   service: SaveService, saveId: string, o: SeatOffer, toSide: SeatOfferSide, action: SeatOfferAction, date: string,
-  sink?: SeatOfferSink,
+  sink?: SeatOfferSink, nudges?: SeatNudges,
 ): Promise<void> {
   const to = toSide === "seller" ? o.seller : o.buyer;
   const args = seatOfferMessageArgs(o, toSide, action, date);
   if (sink) sink(to.seatId, args);
   else await emitInboxMessage(saveId, buildTransferNegotiationMessage(args), service, to.seatId);
-  const m = memberBySeat(saveId, to.seatId);
-  if (m) notifyUser(m.userId, { type: "seat_offer", saveId });
+  if (nudges) nudges.add(to.seatId);
+  else nudgeSeats(saveId, [to.seatId]);
 }
 
 /**
@@ -71,27 +85,27 @@ export async function tellSeat(
  */
 export async function closeOffersForPlayer(
   service: SaveService, saveId: string, offers: SeatOffer[], playerId: string, date: string, keepId?: string,
-  sink?: SeatOfferSink,
+  sink?: SeatOfferSink, nudges?: SeatNudges,
 ): Promise<SeatOffer[]> {
   const left: SeatOffer[] = [];
   for (const o of offers) {
     if (o.playerId !== playerId || o.id === keepId) { left.push(o); continue; }
-    await tellSeat(service, saveId, o, "seller", "closed", date, sink);
-    await tellSeat(service, saveId, o, "buyer", "closed", date, sink);
+    await tellSeat(service, saveId, o, "seller", "closed", date, sink, nudges);
+    await tellSeat(service, saveId, o, "buyer", "closed", date, sink, nudges);
   }
   return left;
 }
 
 /** Closes the offers where `seatId` is a party (club change, sacking, leaving the league); tells the other side. */
 export async function closeOffersOfSeat(
-  service: SaveService, saveId: string, seatId: string, date: string, sink?: SeatOfferSink,
+  service: SaveService, saveId: string, seatId: string, date: string, sink?: SeatOfferSink, nudges?: SeatNudges,
 ): Promise<void> {
   const offers = await service.getSeatOffers(saveId);
   const mine = offers.filter((o) => o.seller.seatId === seatId || o.buyer.seatId === seatId);
   if (mine.length === 0) return;
   for (const o of mine) {
     const otherSide: SeatOfferSide = o.seller.seatId === seatId ? "buyer" : "seller";
-    await tellSeat(service, saveId, o, otherSide, "closed", date, sink);
+    await tellSeat(service, saveId, o, otherSide, "closed", date, sink, nudges);
   }
   const gone = new Set(mine.map((o) => o.id));
   await service.writeSeatOffers(saveId, offers.filter((o) => !gone.has(o.id)));
@@ -240,6 +254,7 @@ export async function completeSeatLoan(
  */
 export async function expireSeatOffers(
   service: SaveService, saveId: string, date: string, buyerWindowOpen: (seatId: string) => boolean, sink?: SeatOfferSink,
+  nudges?: SeatNudges,
 ): Promise<void> {
   const offers = await service.getSeatOffers(saveId);
   if (offers.length === 0) return;
@@ -251,8 +266,8 @@ export async function expireSeatOffers(
       if (world.ok || world.error === "squadFull" || world.error === "squadDepth") { left.push(o); continue; }
     }
     const action: SeatOfferAction = expired ? "expired" : "closed";
-    await tellSeat(service, saveId, o, "seller", action, date, sink);
-    await tellSeat(service, saveId, o, "buyer", action, date, sink);
+    await tellSeat(service, saveId, o, "seller", action, date, sink, nudges);
+    await tellSeat(service, saveId, o, "buyer", action, date, sink, nudges);
   }
   if (left.length !== offers.length) await service.writeSeatOffers(saveId, left);
 }
