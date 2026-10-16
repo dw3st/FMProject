@@ -412,6 +412,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
 
     let opponentSquad: Squad | null = null;
     let matchFixture: Fixture | null = null;
+    let seatOpponent = false;
 
     if (saveIdParam) {
       const currentDate = save.currentDate ?? "";
@@ -466,12 +467,17 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       const oppId = todayFixture.home === myInternalId ? todayFixture.away : todayFixture.home;
       // Against another seat: no live match yet (human × human is part 4, `.claude/rules/game/multiplayer.md`) —
       // the day's advance plays it in the full engine with both seats' tactics.
+      // Multiplayer part 4: the preview is the normal one, the opponent read like an AI club (its own formation and
+      // auto XI, never the other seat's saved tactics); only the live match (`?live=1`) is refused.
       if ((await saveService.humanClubIds(save.id)).has(oppId)) {
-        // matchDay: a group world still records the "Simular" decision for this game.
-        return Response.json(
-          { error: "seatOpponent", matchDay: { date: todayFixture.date, fixtureId: todayFixture.id } },
-          { status: 409 },
-        );
+        if (url.searchParams.get("live") === "1") {
+          // matchDay: a group world still records the "Simular" decision for this game.
+          return Response.json(
+            { error: "seatOpponent", matchDay: { date: todayFixture.date, fixtureId: todayFixture.id } },
+            { status: 409 },
+          );
+        }
+        seatOpponent = true;
       }
       opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {
@@ -642,6 +648,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       referee,
       // The manager serves a touchline ban in this match (`.claude/rules/game/var.md` §4).
       managerBanned: !!save.managerBan && save.managerBan.matches > 0,
+      seatOpponent,
     });
   },
 

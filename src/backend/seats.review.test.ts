@@ -200,20 +200,37 @@ describe("seats: review fixes", () => {
     expect((await until.json()).error).toBe("multiSeat");
   });
 
-  test("8. match-setup of a game between two seats answers 409 seatOpponent", async () => {
+  test("8. match-setup of a game between two seats: the preview, without the other seat's tactics; live is 409", async () => {
     const id = meta.id;
     const world = (await saveService.getMeta(id))!;
     const game = (await saveService.getAllFixturesForLeague(id, "premier_league"))
       .find((f) => !f.played && ((f.home === meta.clubId && f.away === clubD) || (f.home === clubD && f.away === meta.clubId)))!;
     expect(game).toBeDefined();
     await saveService.updateMeta(id, { currentDate: game.date });
+    // Seat D saves a lineup with its 11 last players: the preview must never show it.
+    const squadD = (await saveService.getSquadById(id, clubD))!;
+    const savedD = squadD.players.slice(-11).map((p) => p.id);
+    const base = { tactical_style: "balanced", formation: "4-3-3" } as const;
+    const squadA = (await saveService.getSquadById(id, meta.clubId))!;
+    await saveService.saveTactics(id, { ...base, lineup: squadA.players.slice(0, 11).map((p) => p.id) }, meta.seatId);
+    const tacticsD = (await saveService.getTactics(id, seatD.seatId)) ?? { ...base, lineup: squadD.players.slice(0, 11).map((p) => p.id) };
+    await saveService.saveTactics(id, { ...tacticsD, lineup: savedD }, seatD.seatId);
     try {
-      const res = await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", a.session.token, {});
-      expect(res.status).toBe(409);
-      const body = await res.json();
-      expect(body.error).toBe("seatOpponent");
-      expect(body.matchDay).toEqual({ date: game.date, fixtureId: game.id });
+      for (const token of [a.session.token, d.session.token]) {
+        const res = await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", token, {});
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.seatOpponent).toBe(true);
+        expect(body.matchDay).toEqual({ date: game.date, fixtureId: game.id });
+      }
+      const resA = await (await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", a.session.token, {})).json();
+      expect(resA.oppLineup).not.toEqual(savedD);
+      expect(resA.oppTactics).toBeUndefined();
+      const live = await call("/api/match-setup", `/api/match-setup?saveId=${id}&live=1`, "GET", a.session.token, {});
+      expect(live.status).toBe(409);
+      expect((await live.json()).error).toBe("seatOpponent");
     } finally {
+      await saveService.saveTactics(id, tacticsD, seatD.seatId);
       await saveService.updateMeta(id, { currentDate: world.currentDate });
     }
   });
