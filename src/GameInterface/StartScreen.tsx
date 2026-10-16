@@ -170,15 +170,10 @@ export function StartScreen() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-semibold text-foreground">{save.clubName}</div>
                   {/* The league may truncate; the date always shows in full. */}
-                  <div className="flex min-w-0 text-sm text-muted-foreground">
-                    <span className="truncate">{save.leagueName}</span>
+                  <div className="flex min-w-0 overflow-hidden text-sm text-muted-foreground">
+                    <span className="min-w-[3ch] truncate">{save.leagueName}</span>
                     {save.unemployed && <span className="shrink-0 whitespace-nowrap text-destructive">&nbsp;· {t("startScreen.unemployed")}</span>}
                     <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
-                    {save.mode === "multi" && (
-                      <span className="shrink-0 whitespace-nowrap tabular-nums text-chart-2">
-                        &nbsp;· {t("startScreen.withFriends", { count: save.members ?? 1, max: WORLD.MAX_MEMBERS })}
-                      </span>
-                    )}
                     {save.gameVersion && save.compatible !== false && (
                       <span className="shrink-0 whitespace-nowrap tabular-nums">
                         &nbsp;· {t("startScreen.saveVersion", { version: save.gameVersion })}
@@ -186,7 +181,11 @@ export function StartScreen() {
                     )}
                   </div>
                   {save.mode === "multi" && (
-                    <div className="truncate text-sm text-muted-foreground">
+                    <div className="truncate text-sm text-muted-foreground tabular-nums">
+                      <span className="text-chart-2">
+                        {t("startScreen.withFriends", { count: save.members ?? 1, max: WORLD.MAX_MEMBERS })}
+                      </span>
+                      {" · "}
                       {save.role === "owner" ? t("startScreen.owner") : t("startScreen.member")}
                       {save.world?.phase === "lobby" && <> · {t("startScreen.lobby")}</>}
                     </div>
