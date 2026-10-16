@@ -2,6 +2,7 @@ import type { NewsItem } from "@/types/newsTypes";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { SeatOffer } from "@/types/seatOfferTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -43,6 +44,9 @@ export interface ISaveDAL {
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void>;
+  // Offers between seats (multiplayer part 4)
+  readSeatOffers(saveId: string): Promise<SeatOffer[]>;
+  writeSeatOffers(saveId: string, offers: SeatOffer[]): Promise<void>;
 
   // ── Coaching-staff free pool (`.claude/rules/game/staff.md`) ───────────────
   /** `null` when the save has no pool yet. */
