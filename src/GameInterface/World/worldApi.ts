@@ -1,4 +1,5 @@
 import type { SaveManager } from "@/types/seatTypes";
+import type { StandingsView } from "@/types/standingsTypes";
 import type {
   WorldByCode, WorldDeadline, WorldErrorCode, WorldInviteView, WorldPhase, WorldView,
 } from "@/types/multiplayerTypes";
@@ -58,4 +59,5 @@ export const worldApi = {
   remove: (saveId: string, seatId: string) => call<{ ok: true }>("POST", `/api/worlds/${seg(saveId)}/members/${seg(seatId)}/remove`),
   leave: (saveId: string) => call<{ ok: true; deleted?: true }>("POST", `/api/worlds/${seg(saveId)}/leave`),
   transferOwner: (saveId: string, seatId: string) => call<{ ok: true }>("POST", `/api/worlds/${seg(saveId)}/owner`, { seatId }),
+  standings: (saveId: string) => call<StandingsView>("GET", `/api/worlds/${seg(saveId)}/standings`),
 };

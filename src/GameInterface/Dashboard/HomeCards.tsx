@@ -148,6 +148,7 @@ export function ClubCard({
   leagueName,
   managerName,
   managerRank,
+  friendsRank = null,
   managerFace,
   reputation,
   pendingOffers,
@@ -169,6 +170,8 @@ export function ClubCard({
   leagueName: string;
   managerName: string | null;
   managerRank: number | null;
+  /** Place in the friends' league standings (multiplayer part 5a); null outside a friends' league. */
+  friendsRank?: { rank: number; of: number } | null;
   /** The human manager's face (Etapa 31b): saved avatar and nationality; absent avatar = drawn from the id. */
   /** `id` is the manager's id in the ranking (`seat:<seatId>`), so the drawn face matches it. */
   managerFace?: { id?: string; face?: ManagerFace | null; nationality?: string | null } | null;
@@ -238,6 +241,14 @@ export function ClubCard({
               className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate"
             >
               {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
+            </a>
+          )}
+          {friendsRank && (
+            <a
+              href="/world?tab=standings"
+              className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate tabular-nums"
+            >
+              {t("world.standings.dashboardLine", { rank: friendsRank.rank, of: friendsRank.of })}
             </a>
           )}
           {reputation !== null && (

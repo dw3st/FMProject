@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { Label } from "@/GameInterface/ui/Label";
@@ -19,14 +20,20 @@ import { forgetSession } from "@/GameInterface/gameSession";
 import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
 import { joinLink } from "@/GameInterface/World/worldNav";
 import { InviteFriendsModal } from "@/GameInterface/World/InviteFriendsModal";
+import { StandingsTable } from "@/GameInterface/World/StandingsTable";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { GroupAdvanceBand, MemberAdvanceStatus } from "@/GameInterface/World/GroupAdvanceBand";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import type { WorldDeadline, WorldMemberView, WorldView } from "@/types/multiplayerTypes";
+import type { StandingsView } from "@/types/standingsTypes";
 
 type DeadlineKey = "12" | "24" | "48" | "none";
 const toKey = (d: WorldDeadline): DeadlineKey => (d === null ? "none" : (String(d) as DeadlineKey));
 const fromKey = (k: DeadlineKey): WorldDeadline => (k === "none" ? null : (Number(k) as 12 | 24 | 48));
+
+type WorldTab = "league" | "standings";
+const initialTab = (): WorldTab =>
+  typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "standings" ? "standings" : "league";
 
 type Pending = { kind: "remove" | "owner"; member: WorldMemberView } | { kind: "leave" } | { kind: "code" } | null;
 
@@ -45,6 +52,9 @@ export function WorldScreen() {
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
   const linkRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<WorldTab>(initialTab);
+  const [standings, setStandings] = useState<StandingsView | null>(null);
+  const [standingsError, setStandingsError] = useState<WorldApiError | null>(null);
 
   const load = useCallback(async () => {
     if (!saveId) return;
@@ -55,6 +65,27 @@ export function WorldScreen() {
   }, [saveId]);
 
   useEffect(() => { void load(); }, [load, social.worldVersion]);
+
+  // The standings tab (multiplayer part 5a): only with 2+ managers; reloads with the league's member events.
+  const showTabs = (view?.members.length ?? 0) >= 2;
+  const activeTab: WorldTab = showTabs ? tab : "league";
+  useEffect(() => {
+    if (!saveId || activeTab !== "standings") return;
+    let cancelled = false;
+    void worldApi.standings(saveId).then((r) => {
+      if (cancelled) return;
+      if (r.ok) { setStandings(r.data); setStandingsError(null); } else setStandingsError(r.error);
+    });
+    return () => { cancelled = true; };
+  }, [saveId, activeTab, social.worldVersion]);
+
+  function changeTab(next: WorldTab) {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "standings") url.searchParams.set("tab", "standings");
+    else url.searchParams.delete("tab");
+    window.history.replaceState(null, "", url);
+  }
 
   if (starting) return <PreSeasonLoadingScreen />;
 
@@ -117,8 +148,32 @@ export function WorldScreen() {
       {error && <Notice kind="error">{t(`world.errors.${error}`)}</Notice>}
       {!view && !error && <p className="text-sm text-muted-foreground">{t("common.loading")}</p>}
 
+      {view && showTabs && (
+        <SegmentedTabs<WorldTab>
+          aria-label={t("world.standings.tabsLabel")}
+          active={activeTab}
+          onChange={changeTab}
+          tabs={[
+            { key: "league", label: t("world.standings.tabLeague") },
+            { key: "standings", label: t("world.standings.tab") },
+          ]}
+        />
+      )}
+
+      {view && activeTab === "standings" && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t("world.standings.title")}</SectionTitle>
+          <p className="text-sm text-muted-foreground m-0">{t("world.standings.hint")}</p>
+          {standingsError && <Notice kind="error">{t(`world.errors.${standingsError}`)}</Notice>}
+          {!standings && !standingsError && <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>}
+          {standings && <StandingsTable view={standings} mySeatId={view.mySeatId} />}
+        </section>
+      )}
+
       {view && (
         <>
+          {activeTab === "league" && (
+          <>
           <section className="flex flex-col gap-3">
             <SectionTitle>{t("world.members.title")}</SectionTitle>
             <div className={TABLE_STYLE.shell}>
@@ -266,6 +321,8 @@ export function WorldScreen() {
               <p className="text-sm text-muted-foreground m-0">{t("world.leave.transferFirst")}</p>
             )}
           </section>
+          </>
+          )}
 
           <InviteFriendsModal
             saveId={saveId}

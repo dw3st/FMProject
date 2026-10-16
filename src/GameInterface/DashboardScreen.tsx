@@ -6,6 +6,7 @@ import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { GroupAdvanceBand } from "@/GameInterface/World/GroupAdvanceBand";
+import { worldApi } from "@/GameInterface/World/worldApi";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { fetchNews, topNews } from "@/GameInterface/News/newsApi";
@@ -136,6 +137,22 @@ export function DashboardScreen() {
       .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
+
+  // Friends' league standings line (multiplayer part 5a): the seat's place among the league's managers.
+  const [friendsRank, setFriendsRank] = useState<{ rank: number; of: number } | null>(null);
+  const groupAdvance = !!session?.groupAdvance;
+  const mySeatId = session?.seatId ?? null;
+  useEffect(() => {
+    if (!saveId || !groupAdvance || !mySeatId) { setFriendsRank(null); return; }
+    let cancelled = false;
+    void worldApi.standings(saveId).then((r) => {
+      if (cancelled) return;
+      if (!r.ok || r.data.entries.length < 2) { setFriendsRank(null); return; }
+      const me = r.data.entries.find((e) => e.seatId === mySeatId);
+      setFriendsRank(me ? { rank: 1 + r.data.entries.filter((e) => e.total > me.total).length, of: r.data.entries.length } : null);
+    });
+    return () => { cancelled = true; };
+  }, [saveId, groupAdvance, mySeatId, currentDate]);
 
   // World news (`.claude/rules/game/press.md` → "Notícias"): the big ones of the last days first.
   const [news, setNews] = useState<NewsItem[] | null>(null);
@@ -275,6 +292,7 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
+        friendsRank={friendsRank}
         achievements={achievements}
         managerFace={session.manager ? { id: session.seatId ? seatManagerId(session.seatId) : "", face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
         reputation={jobs?.reputation ?? null}
