@@ -66,9 +66,18 @@ export function WorldScreen() {
 
   useEffect(() => { void load(); }, [load, social.worldVersion]);
 
-  // The standings tab (multiplayer part 5a): only with 2+ managers; reloads with the league's member events.
+  // The standings tab (multiplayer part 5a): only with 2+ managers; reloads with the league's member events and
+  // whenever a group advance stops (the partial follows the table of the new day).
   const showTabs = (view?.members.length ?? 0) >= 2;
   const activeTab: WorldTab = showTabs ? tab : "league";
+  const [advanceVersion, setAdvanceVersion] = useState(0);
+  const { subscribe } = social;
+  useEffect(() => {
+    if (!saveId || activeTab !== "standings") return;
+    return subscribe((event) => {
+      if (event.type === "world_progress" && event.saveId === saveId && !event.running) setAdvanceVersion((v) => v + 1);
+    });
+  }, [saveId, activeTab, subscribe]);
   useEffect(() => {
     if (!saveId || activeTab !== "standings") return;
     let cancelled = false;
@@ -77,7 +86,7 @@ export function WorldScreen() {
       if (r.ok) { setStandings(r.data); setStandingsError(null); } else setStandingsError(r.error);
     });
     return () => { cancelled = true; };
-  }, [saveId, activeTab, social.worldVersion]);
+  }, [saveId, activeTab, social.worldVersion, advanceVersion]);
 
   function changeTab(next: WorldTab) {
     setTab(next);
