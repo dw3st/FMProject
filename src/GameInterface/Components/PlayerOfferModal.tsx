@@ -19,7 +19,7 @@ import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
-import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
+import { SeatOfferCard, type SeatOfferClosed } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { notifySeatOffersChanged, seatOfferApi, useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
 
@@ -76,8 +76,14 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const session = loadSession();
   const saveId = session?.saveId;
   // Multiplayer part 4: a club with a human manager gets an offer between managers instead of the AI's answer.
-  const seatOffers = useSeatOffers(session?.groupAdvance ? saveId : null);
+  const groupWorld = !!session?.groupAdvance;
+  const seatOffers = useSeatOffers(groupWorld ? saveId : null);
+  // Until the list is in, the club may be another seat's: nothing is sent (never the AI flow by mistake).
+  const seatListPending = groupWorld && !seatOffers.data;
+  const seatListFailed = seatListPending && seatOffers.failed;
   const [seatSent, setSeatSent] = useState<string | null>(null);
+  // An offer answered from the card here (accepted, withdrawn…): the result stays on screen.
+  const [seatClosed, setSeatClosed] = useState<SeatOfferClosed | null>(null);
   const [tab, setTab] = useState<Tab>("transfer");
   const [offerFee, setOfferFee] = useState(0);
   const [sellOn, setSellOn] = useState<(typeof SELL_ON_KEYS)[number]>("0");
@@ -140,6 +146,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     setPreference(null);
     setPreDone(false);
     setSeatSent(null);
+    setSeatClosed(null);
     if (playerId) {
       void loadTalk("transfer");
       void loadTalk("loan");
@@ -215,7 +222,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   }
 
   async function submitPreContract() {
-    if (submitting || !activePlayer.squadId || !saveId) return;
+    if (submitting || seatListPending || !activePlayer.squadId || !saveId) return;
     setSubmitting(true);
     setContractError(null);
     setMessage(null);
@@ -243,7 +250,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   }
 
   async function submitOffer(fee: number, pct: number) {
-    if (submitting || !activePlayer.squadId) return;
+    if (submitting || seatListPending || !activePlayer.squadId) return;
     if (isSeat) {
       void submitSeatOffer({ kind: "transfer", fee, sellOnPct: pct, wage, years });
       return;
@@ -302,7 +309,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   }
 
   async function submitLoan(share: number, fee: number) {
-    if (submitting || !activePlayer.squadId) return;
+    if (submitting || seatListPending || !activePlayer.squadId) return;
     if (isSeat) {
       void submitSeatOffer({ kind: "loan", wageShare: share, fee });
       return;
@@ -341,7 +348,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     }
   }
 
-  const done = !!result || loanDone !== null || preDone || seatSent !== null;
+  const done = !!result || loanDone !== null || preDone || seatSent !== null || seatClosed !== null;
 
   return (
     <Modal open onClose={onClose} size="md">
@@ -394,10 +401,26 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               <p className="text-sm text-muted-foreground mt-1 m-0">{t("seatOffers.sentHint")}</p>
               <Button className="mt-5" onClick={onClose}>{t("common.close")}</Button>
             </div>
+          ) : seatClosed !== null ? (
+            <div className="text-center py-4" role="status">
+              <Icon name={seatClosed.accepted ? "check-circle" : "xcircle"} className={`w-12 h-12 mx-auto mb-3 ${seatClosed.accepted ? "text-chart-2" : "text-muted-foreground"}`} />
+              <p className={`text-base font-black m-0 ${seatClosed.accepted ? "text-chart-2" : "text-foreground"}`}>{seatClosed.text}</p>
+              <Button className="mt-5" onClick={onClose}>{t("common.close")}</Button>
+            </div>
           ) : myOpenOffer && saveId ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground m-0">{t("seatOffers.alreadyOpen")}</p>
-              <SeatOfferCard saveId={saveId} offer={myOpenOffer} onChanged={seatOffers.reload} />
+              <SeatOfferCard
+                saveId={saveId}
+                offer={myOpenOffer}
+                onChanged={(closed) => {
+                  if (closed) {
+                    setSeatClosed(closed);
+                    if (closed.accepted) void refresh();
+                  }
+                  seatOffers.reload();
+                }}
+              />
               <div className="flex pt-2">
                 <Button variant="secondary" onClick={onClose}>{t("common.close")}</Button>
               </div>
@@ -419,6 +442,14 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             </div>
           ) : (
             <>
+              {seatListFailed ? (
+                <div className="flex flex-wrap items-center gap-3" role="alert">
+                  <p className="text-sm text-destructive m-0">{t("seatOffers.listFailed")}</p>
+                  <Button variant="secondary" onClick={seatOffers.reload}>{t("seatOffers.retry")}</Button>
+                </div>
+              ) : seatListPending ? (
+                <p className="text-sm text-muted-foreground m-0" role="status">{t("seatOffers.listLoading")}</p>
+              ) : null}
               {isSeat && (
                 <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
               )}
@@ -555,13 +586,13 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
                 <span className="flex-1" />
                 {tab === "precontract" && (
-                  <Button disabled={submitting} onClick={() => void submitPreContract()}>
+                  <Button disabled={submitting || seatListPending} onClick={() => void submitPreContract()}>
                     {submitting ? t("transfers.sending") : t("negotiation.preContract.send")}
                   </Button>
                 )}
                 {tab !== "precontract" && !isSeat && counter && !closedUntil && !windowClosed && (
                   <Button
-                    disabled={submitting}
+                    disabled={submitting || seatListPending}
                     className="tabular-nums"
                     onClick={() => (tab === "transfer"
                       ? void submitOffer(counter.fee, counter.sellOnPct ?? 0)
@@ -574,7 +605,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 )}
                 {tab !== "precontract" && <Button
                   variant={counter && !isSeat ? "secondary" : "primary"}
-                  disabled={submitting || blocked || windowClosed || (tab === "transfer" && !slider.canOffer)}
+                  disabled={submitting || seatListPending || blocked || windowClosed || (tab === "transfer" && !slider.canOffer)}
                   onClick={() => (tab === "transfer" ? void submitOffer(offerFee, Number(sellOn)) : void submitLoan(wageShare, loanFee))}
                 >
                   {submitting ? t("transfers.sending") : tab === "transfer" ? t("transfers.sendOffer") : t("negotiation.requestLoan")}

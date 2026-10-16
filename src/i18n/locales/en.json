@@ -2891,6 +2891,9 @@
     "open": "Open",
     "lastCounter": "No counter-offers left: accept or turn it down.",
     "closed": "This offer is closed.",
+    "listLoading": "Loading the offers with managers…",
+    "listFailed": "Could not load the offers with managers.",
+    "retry": "Try again",
     "done": {
       "accepted": "Deal done.",
       "rejected": "Offer turned down.",

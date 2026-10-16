@@ -13,6 +13,7 @@ const keys = [
     "title", "kind", "transfer", "loan", "sent", "sentHint", "alreadyOpen", "toManager", "withClub", "contract",
     "contractTerms_one", "contractTerms_other", "validUntil", "turn", "yourTurn", "theirTurn", "you", "counters",
     "countersUsed", "accept", "counter", "sendCounter", "reject", "withdraw", "open", "lastCounter", "closed",
+    "listLoading", "listFailed", "retry",
     "done.accepted", "done.rejected", "done.withdrawn", "done.countered",
     ...ACTIONS.map((a) => `last.${a}`),
     ...SEAT_OFFER_ERROR_CODES.map((c) => `errors.${c}`),

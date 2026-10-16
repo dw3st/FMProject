@@ -36,6 +36,8 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const withSeats = sections.includes("seatOffers") && !!loadSession()?.groupAdvance;
   const seatOffers = useSeatOffers(withSeats ? saveId : null);
   const [openOfferId, setOpenOfferId] = useState<string | null>(null);
+  // How the last offer answered here ended (the card goes with it): kept on screen.
+  const [closedNote, setClosedNote] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -53,9 +55,10 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const inn = data.loans.filter((l) => l.toClubId === data.clubId);
   const share = (l: ActiveLoan) => `${Math.round(l.wageShare * 100)}%`;
 
-  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean) => (
+  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => (
     <section key={key} className="space-y-2">
       <SectionTitle>{title}</SectionTitle>
+      {note && <p className="text-sm font-semibold text-foreground m-0" role="status">{note}</p>}
       {empty ? <p className="text-sm text-muted-foreground m-0">{t("negotiation.overview.none")}</p> : body}
     </section>
   );
@@ -92,16 +95,25 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
                   {
                     key: "a", header: "",
                     cell: (o) => (
-                      <Button variant="secondary" flush onClick={() => setOpenOfferId(o.id === openOfferId ? null : o.id)}>
+                      <Button variant="secondary" flush onClick={() => { setClosedNote(null); setOpenOfferId(o.id === openOfferId ? null : o.id); }}>
                         {o.id === openOfferId ? t("common.close") : t("seatOffers.open")}
                       </Button>
                     ),
                   },
                 ]}
               />
-              {open && <SeatOfferCard saveId={saveId} offer={open} onChanged={seatOffers.reload} />}
+              {open && (
+                <SeatOfferCard
+                  saveId={saveId}
+                  offer={open}
+                  onChanged={(closed) => {
+                    if (closed) { setClosedNote(closed.text); setOpenOfferId(null); }
+                    seatOffers.reload();
+                  }}
+                />
+              )}
             </div>
-          ), offers.length === 0);
+          ), offers.length === 0, closedNote);
         }
         if (s === "rivals") {
           const rivals = data.rivals ?? [];

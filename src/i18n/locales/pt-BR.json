@@ -2891,6 +2891,9 @@
     "open": "Abrir",
     "lastCounter": "Sem contrapropostas: aceite ou recuse.",
     "closed": "Esta proposta foi encerrada.",
+    "listLoading": "Carregando as propostas com técnicos…",
+    "listFailed": "Não deu para carregar as propostas com técnicos.",
+    "retry": "Tentar de novo",
     "done": {
       "accepted": "Negócio fechado.",
       "rejected": "Proposta recusada.",

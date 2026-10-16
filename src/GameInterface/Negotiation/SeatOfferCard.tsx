@@ -13,12 +13,21 @@ const SHARE_KEYS = ["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "
 /** Counter-offers allowed in one negotiation (`SEAT_OFFERS.MAX_COUNTERS`). */
 const MAX_COUNTERS = 3;
 
+/** How the offer ended, for the parent to keep on screen once the card is gone. */
+export interface SeatOfferClosed {
+  text: string;
+  accepted: boolean;
+}
+
 /**
  * An offer between two human managers (multiplayer part 4): the terms, whose turn it is and the last move.
  * On the seat's turn: accept, counter (fee and sell-on clause, or wage share and fee on a loan) or reject;
  * the buyer can always withdraw. Same look as the AI bid card (`BidCard`); `offer` null = closed.
+ * `onChanged` gets how it ended when an answer closes the offer (accepted, refused, withdrawn, closed).
  */
-export function SeatOfferCard({ saveId, offer, onChanged }: { saveId: string; offer: SeatOfferView | null; onChanged?: () => void }) {
+export function SeatOfferCard({ saveId, offer, onChanged }: {
+  saveId: string; offer: SeatOfferView | null; onChanged?: (closed?: SeatOfferClosed) => void;
+}) {
   const { t, i18n } = useTranslation();
   const [current, setCurrent] = useState<SeatOfferView | null>(offer);
   const [busy, setBusy] = useState(false);
@@ -56,23 +65,28 @@ export function SeatOfferCard({ saveId, offer, onChanged }: { saveId: string; of
       }
       const r = await seatOfferApi.respond(saveId, o.id, body);
       if (!r.ok) {
-        setError(seatOfferErrorText(t, i18n.language, r));
+        const text = seatOfferErrorText(t, i18n.language, r);
+        setError(text);
         if (r.error === "offerClosed" || r.error === "notFound" || r.error === "contractRefused") {
+          setStatus(text);
           setCurrent(null);
           notifySeatOffersChanged();
-          onChanged?.();
+          onChanged?.({ text, accepted: false });
         }
         return;
       }
       if (r.data.status === "countered" && r.data.offer) {
         setCurrent(r.data.offer);
         setCountering(false);
-      } else {
-        setStatus(t(`seatOffers.done.${r.data.status}`));
-        setCurrent(null);
+        notifySeatOffersChanged();
+        onChanged?.();
+        return;
       }
+      const text = t(`seatOffers.done.${r.data.status}`);
+      setStatus(text);
+      setCurrent(null);
       notifySeatOffersChanged();
-      onChanged?.();
+      onChanged?.({ text, accepted: r.data.status === "accepted" });
     } finally {
       setBusy(false);
     }
