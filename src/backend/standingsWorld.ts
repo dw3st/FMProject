@@ -57,7 +57,7 @@ export async function closeSeatPassage(
 
 /**
  * The friends' league standings (`GET /api/worlds/:saveId/standings`): one entry per member (closed rows + the
- * open passage's partial at today's league position), ranked; the closed rows newest first. Inside the day advance,
+ * open passage's partial at today's league position), ranked; the current members' closed rows newest first. Inside the day advance,
  * `extraRows` are the rows closed today (not written yet) and `passages` the seats' working passages.
  */
 export async function standingsView(
@@ -97,7 +97,8 @@ export async function standingsView(
       seasons: closed.length,
     });
   }
-  const sorted = [...rows].sort((a, b) => b.closedOn.localeCompare(a.closedOn) || a.id.localeCompare(b.id));
+  const members = new Set(entries.map((e) => e.seatId));
+  const sorted = rows.filter((r) => members.has(r.seatId)).sort((a, b) => b.closedOn.localeCompare(a.closedOn) || a.id.localeCompare(b.id));
   return { entries: rankEntries(entries), rows: sorted };
 }
 

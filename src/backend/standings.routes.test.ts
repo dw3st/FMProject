@@ -67,13 +67,15 @@ describe("friends' league standings route", () => {
     await saveService.writeLeagueStandings(meta.id, "premier_league", rest.map((r) => ({ ...r, mp: 1 })));
   };
 
-  test("members see the entries in order with the closed rows; the partial follows the table", async () => {
+  test("members see the entries in order with the members' closed rows; the partial follows the table", async () => {
     const row: SeatSeasonRow = {
       id: `${seatB.seatId}:old`, seatId: seatB.seatId, clubId: "x", clubName: "Old Club", leagueSlug: "premier_league",
       season: "2025-26", from: "2025-08-01", closedOn: "2026-05-20", reason: "rollover", position: 3, target: 5,
       items: [{ key: "objective_met", points: 10 }, { key: "above_target", points: 2 }], total: 12,
     };
-    await appendSeatSeasons(saveService, meta.id, [row]);
+    // A seat that left the league keeps its row on disk, but the view only shows the current members'.
+    const gone: SeatSeasonRow = { ...row, id: "left-seat:old", seatId: "left-seat" };
+    await appendSeatSeasons(saveService, meta.id, [row, gone]);
     await placeClub("33", 18);
 
     for (const login of [a, b]) {
