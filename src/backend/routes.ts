@@ -1,4 +1,5 @@
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
+import { publicSeatSquad } from "@/Domain/seats/publicSquad";
 import { withJsonErrors } from "@/backend/routeErrors";
 import { withLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
 import { fileURLToPath } from "node:url";
@@ -632,7 +633,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       mySquadId: myInternalId,
       fixture: matchFixture,
       matchDay: matchFixture ? { date: matchFixture.date, fixtureId: matchFixture.id } : null,
-      opponentSquad,
+      // Another seat's club: shown like an AI club, without that seat's private data (morale, staff, balance…).
+      opponentSquad: seatOpponent && opponentSquad ? publicSeatSquad(opponentSquad) : opponentSquad,
       myFormation:  resolvedMyFormation,
       oppFormation: oppFormation ?? defaultFormation,
       myLineup:     myTactics.lineup,

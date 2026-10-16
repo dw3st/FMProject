@@ -8,6 +8,7 @@ import { paySellOnReceiver } from "@/backend/FinancialService";
 import { resolveRivalDeadlines } from "@/backend/rivalWorld";
 import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import { emptyMarket } from "@/backend/negotiationWorld";
+import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { SeatContext } from "@/types/seatTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
@@ -226,6 +227,24 @@ describe("seats: review fixes", () => {
       const resA = await (await call("/api/match-setup", `/api/match-setup?saveId=${id}`, "GET", a.session.token, {})).json();
       expect(resA.oppLineup).not.toEqual(savedD);
       expect(resA.oppTactics).toBeUndefined();
+      // The probable XI is the AI rule's (its formation, the automatic XI from the registered players), as `match-setup`
+      // computes it for an AI club.
+      const sqA = (await saveService.getSquadById(id, meta.clubId))!;
+      const sqD = (await saveService.getSquadById(id, clubD))!;
+      const byId = new Map(sqD.players.map((p) => [p.id, p]));
+      const pool = resA.registered
+        ? { ...sqD, players: (resA.registered.opp as string[]).map((pid) => byId.get(pid)!) }
+        : sqD;
+      const formation = aiMatchFormation(sqD, sqA, game.date).formation;
+      expect(resA.oppFormation.id).toBe(formation.id);
+      expect(resA.oppLineup).toEqual(autoLineupForFormationWithFitness(pool, formation, game.date));
+      // Seat D's private club and player data never reach seat A.
+      const opp = resA.opponentSquad as Record<string, unknown> & { finances?: Record<string, unknown>; players: Record<string, unknown>[] };
+      expect(opp.id).toBe(clubD);
+      for (const k of ["moraleClub", "staff", "facilities", "managerAttributes", "styleFamiliarity", "registrations"]) expect(k in opp).toBe(false);
+      expect(opp.finances && "budget" in opp.finances).toBeFalsy();
+      for (const p of opp.players) for (const k of ["morale", "moraleLog", "squadStatus"]) expect(k in p).toBe(false);
+      expect(sqD.moraleClub || sqD.staff || sqD.players.some((p) => p.morale !== undefined)).toBeTruthy();
       const live = await call("/api/match-setup", `/api/match-setup?saveId=${id}&live=1`, "GET", a.session.token, {});
       expect(live.status).toBe(409);
       expect((await live.json()).error).toBe("seatOpponent");
