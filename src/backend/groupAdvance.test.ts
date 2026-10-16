@@ -145,6 +145,20 @@ describe("group advance executor", () => {
     });
   }
 
+  test("the pending day keeps the seat club's training with the effects (the merged summary sums them)", async () => {
+    const id = await world({ a: { readyUntil: "2027-03-11", clubId: "c1" } });
+    const deps = stubDeps(id);
+    const base = deps.runDay;
+    const mine = { kind: "training", squadId: "c1", effects: [{ playerId: "p1", name: "A", fitnessDelta: -2, trainingPoints: 1 }] };
+    const other = { kind: "rest", squadId: "c2", effects: [] };
+    deps.runDay = async (saveId, recs) => {
+      const out = await base(saveId, recs);
+      return out.ok ? { ...out, payload: { ...out.payload, events: [other, mine] } } : out;
+    };
+    await kickWorld(id, deps);
+    expect((await saveService.getPendingSummary(id, "a"))[0]!.club).toEqual([mine as never]);
+  });
+
   test("an error stops and frees the world, and is kept for the clock", async () => {
     const id = await world({ a: { readyUntil: "2027-03-15" } });
     const deps = stubDeps(id, { runDay: async () => ({ ok: false, status: 500, error: "boom" }) });

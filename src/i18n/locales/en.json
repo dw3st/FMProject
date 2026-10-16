@@ -5157,7 +5157,11 @@
         "transfers": "Transfers",
         "transferLine": "{{player}}: {{from}} → {{to}} · {{fee}}",
         "injuries": "Injuries",
-        "injuryLine": "{{player}} · {{severity}}"
+        "injuryLine": "{{player}} · {{severity}}",
+        "trainingDays_one": "{{count}} training day",
+        "trainingDays_other": "{{count}} training days",
+        "restDays_one": "{{count}} rest day",
+        "restDays_other": "{{count}} rest days"
       },
       "result": {
         "pending": "Provisional result: it counts when the league reaches this day."

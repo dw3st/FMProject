@@ -1,5 +1,5 @@
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
-import type { AdvanceDayResponse } from "@/types/dayLogTypes";
+import type { AdvanceDayResponse, RestEvent, TrainingEvent } from "@/types/dayLogTypes";
 
 /** The seat's own game of day `date` already settled (`.claude/rules/game/multiplayer.md`, part 3). */
 export interface MatchDecision {
@@ -32,6 +32,9 @@ export interface LiveRecordingFile {
 }
 
 /** One day the executor ran while the seat was away (`seats/{seatId}/pendingSummary.json`). */
+/** The days of a merged summary and how many of them were training or rest days of the club. */
+export interface SummaryRange { from: string; to: string; days: number; trainingDays?: number; restDays?: number }
+
 export interface PendingDay {
   /** The day that ran. */
   date: string;
@@ -39,6 +42,8 @@ export interface PendingDay {
   newDate: string;
   /** The seat's part of the day (`outcome.seats[seatId]`: seasonEnded, sacked, jobOffers...). */
   seat: Record<string, unknown>;
+  /** The seat club's training or rest of the day, with the per-player effects (the stored day log drops them). */
+  club?: (TrainingEvent | RestEvent)[];
 }
 
 /** What happened to the seat while he was away (shown in the summary; a stop also cleared his "ready until"). */
@@ -53,7 +58,7 @@ export interface SummaryNotices {
 
 /** The pending days as one summary (`GET /api/worlds/:saveId/summary` → `aggregate`). */
 export interface PendingSummaryAggregate {
-  range: { from: string; to: string; days: number };
+  range: SummaryRange;
   /** The days merged into one day log: the club's games and transfers, the last day's training/rest. */
   log: AdvanceDayResponse;
   /** Date of the club's last game in the range (the "full match report" link), or null. */

@@ -18,6 +18,7 @@ import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } 
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
 import type { Fixture } from "@/types/calendarTypes";
+import type { DayEvent, RestEvent, TrainingEvent } from "@/types/dayLogTypes";
 import type { SeatState } from "@/types/seatTypes";
 import type { GroupAdvanceView, MatchDecision, WorldAdvance } from "@/types/groupAdvanceTypes";
 
@@ -240,10 +241,21 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
     }
     const live = await service.getLiveRecording(saveId, s.seatId);
     if (live && live.date <= currentDate) await service.writeLiveRecording(saveId, s.seatId, null);
-    await service.appendPendingDay(saveId, s.seatId, { date: currentDate, newDate, seat: part }, GROUP_ADVANCE.PENDING_SUMMARY_MAX);
+    const club = clubTrainingOf(outcome.payload.events, s.seat.clubId);
+    await service.appendPendingDay(
+      saveId, s.seatId, { date: currentDate, newDate, seat: part, ...(club.length > 0 ? { club } : {}) }, GROUP_ADVANCE.PENDING_SUMMARY_MAX,
+    );
   }
   await updateAdvance(service, saveId, noError(world.advance));
   return { kind: "ran", date: newDate, target: plan.target, waitingFor: [] };
+}
+
+/** The club's training or rest of the day with the per-player effects (kept for the merged summary). */
+function clubTrainingOf(events: unknown, clubId: string | undefined): (TrainingEvent | RestEvent)[] {
+  if (!clubId || !Array.isArray(events)) return [];
+  return (events as DayEvent[]).filter(
+    (e): e is TrainingEvent | RestEvent => (e.kind === "training" || e.kind === "rest") && e.squadId === clubId,
+  );
 }
 
 /** Nicknames of the seats (the manager's name when the user has none). */

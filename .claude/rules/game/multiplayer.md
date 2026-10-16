@@ -302,8 +302,9 @@ Evento de socket: `world_progress`.
   esperando 2" com desmarcar; no dia de jogo **Jogar** (prévia → partida) e **Simular**; durante o avanço "Avançando…
   14/03 de 20/03". `GroupAdvanceBand` no Painel e em `/world` (data, alvo, quem falta, prazo restante, status por membro:
   pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço, o Painel mostra **um** resumo para todos os dias que
-  rodaram (`DaySummaryModal` com `range`: os jogos do clube com resultados e lesões, as transferências do clube, as
-  conquistas somadas, o convite de coletiva e, quando o "Pronto até" voltou por causa delas, as paradas: propostas novas,
+  rodaram (`DaySummaryModal` com `range`: os jogos do clube com resultados e lesões, as transferências do clube, o
+  treino e a folga de todos os dias somados por jogador ("5 dias de treino", "1 dia de folga"; os efeitos ficam em
+  `PendingDay.club`, porque o log gravado do dia não os guarda), as conquistas somadas, o convite de coletiva e, quando o "Pronto até" voltou por causa delas, as paradas: propostas novas,
   demissão, fim da temporada), depois o fim de temporada; a demissão leva a `/fired`.
 - Erro do executor (`GroupAdvanceBand`): o texto do código (`world.advance.errors.dayFailed`) com a hora da próxima
   tentativa; esgotadas as 5, "A liga parou de tentar" e o botão **Tentar de novo** (`POST …/advance/retry`). Gravação do
@@ -342,5 +343,5 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
 - Com o executor rodando, as escritas dos membros (pronto, decisão, gravação, retry) esperam o dia em curso no
   `withSaveLock` (até ~14 s num dia com rodada no motor completo).
 - O resumo agregado lista os jogos e as transferências do clube atual do assento (uma troca de clube no meio esconde os do
-  clube antigo) e o treino/descanso só do último dia; o jogo da seleção não entra.
+  clube antigo); o jogo da seleção não entra.
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.

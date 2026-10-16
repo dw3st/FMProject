@@ -28,7 +28,7 @@ import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRo
 import { DEV_CHANGES_VISIBLE, groupDevelopmentChanges, trainingDevelopmentChanges } from "@/GameInterface/Components/attributeChanges";
 import { Button } from "@/GameInterface/ui/Button";
 import { formatFee } from "@/Domain/money";
-import type { SummaryNotices } from "@/types/groupAdvanceTypes";
+import type { SummaryNotices, SummaryRange } from "@/types/groupAdvanceTypes";
 
 const Minus = iconOf("minus");
 const TrendingDown = iconOf("trend-down");
@@ -48,7 +48,7 @@ interface Props {
   mySquadId: string;
   leagues:   LeagueData[];
   /** Several days merged into one summary (group advance, `.claude/rules/game/multiplayer.md` part 3). */
-  range?: { from: string; to: string; days: number };
+  range?: SummaryRange;
   /** What happened to the manager over those days (offers, sacking, season end, press invite). */
   notices?: SummaryNotices;
   /** Date of the "full match report" link (default: the day's date). */
@@ -125,7 +125,7 @@ function weekdayOf(dateStr: string, lang: string): string {
 }
 
 /** Single badge for the active day type only (no inactive option shown). */
-function DayModeBadge({ mode, t }: { mode: "training" | "rest"; t: (key: string) => string }) {
+function DayModeBadge({ mode, days, t }: { mode: "training" | "rest"; days?: number; t: TFunc }) {
   const isRest = mode === "rest";
   return (
     <div className="flex justify-center">
@@ -136,12 +136,12 @@ function DayModeBadge({ mode, t }: { mode: "training" | "rest"; t: (key: string)
         {isRest ? (
           <>
             <Icon name="rest" className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            {t("daySummary.restDay")}
+            {days !== undefined ? t("world.advance.summary.restDays", { count: days }) : t("daySummary.restDay")}
           </>
         ) : (
           <>
             <Icon name="training" className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            {t("daySummary.trainingDay")}
+            {days !== undefined ? t("world.advance.summary.trainingDays", { count: days }) : t("daySummary.trainingDay")}
           </>
         )}
       </div>
@@ -632,7 +632,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues, range, 
 
           {trainingEvents.length > 0 && (
             <section className="space-y-4">
-              <DayModeBadge mode="training" t={t} />
+              <DayModeBadge mode="training" days={range?.trainingDays} t={t} />
               {trainingEvents.map((e) => (
                 <SquadTrainingRestCard
                   key={`training-${e.squadId}`}
@@ -650,7 +650,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues, range, 
 
           {restEvents.length > 0 && (
             <section className="space-y-4">
-              <DayModeBadge mode="rest" t={t} />
+              <DayModeBadge mode="rest" days={range?.restDays} t={t} />
               {restEvents.map((e) => (
                 <SquadTrainingRestCard
                   key={`rest-${e.squadId}`}
