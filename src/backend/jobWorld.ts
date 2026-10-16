@@ -1,4 +1,5 @@
 import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
+import { closeSeatPassage, newPassage, standingsOn } from "@/backend/standingsWorld";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { getLeagueData, type LeagueDataEntry } from "@/backend/advanceDay";
@@ -452,6 +453,9 @@ export async function acceptJobOffer(
   // D3: leaving mid-contract, the new club compensates the old one (out of the arriving balance).
   // The compensation shown on the offer (what the player saw), never more than the arriving budget.
   const compensation = employedAt ? Math.min(Math.max(0, offer.compensation ?? 0), Math.max(0, offer.budget)) : 0;
+  // Friends' league standings (part 5a): the passage at the old club closes before it turns AI (its table position counts).
+  const standings = await standingsOn(service, saveId);
+  if (employedAt && standings) await closeSeatPassage(service, saveId, seatId, date, "club_change");
   if (employedAt) await releaseHumanClub(service, saveId, seatId, { squadId: employedAt, date, compensation }, { nudges });
 
   const managers = await service.getManagers(saveId);
@@ -518,6 +522,9 @@ export async function acceptJobOffer(
     youthCallUps: undefined,
     youthCallUpsSkipped: undefined,
     style_focus: undefined,
+    ...(standings ? {
+      standing: newPassage({ date, clubId: offer.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, board: taken.board }),
+    } : {}),
   });
   const next = await service.getSeatMeta(saveId, seatId);
   if (!next) throw new Error(`acceptJobOffer: seat ${saveId}/${seatId} not found`);

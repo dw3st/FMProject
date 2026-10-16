@@ -1,4 +1,5 @@
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
+import { newPassage, standingsOn } from "@/backend/standingsWorld";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard } from "@/Domain/boardFans/boardFans";
@@ -3346,6 +3347,18 @@ export async function presimulateWorld(
       date: owner.currentDate, kind: "objective", objective: owner.board.objective,
       leagueName: competitionName(owner.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
     }), saveService, ownerSeatId);
+  }
+
+  // Friends' league standings (part 5a): every seat with a club opens its passage now, after the kit (it may move the
+  // date and the board's objective). A member's lobby passage (`addSeat`) is opened again: nothing was played yet.
+  if (await standingsOn(saveService, saveId)) {
+    const date = (await saveService.getMeta(saveId))?.currentDate;
+    for (const { seatId, seat } of date ? await saveService.listSeats(saveId) : []) {
+      if (!seat.clubId || seat.unemployed) continue;
+      await saveService.updateSeat(saveId, seatId, {
+        standing: newPassage({ date: date!, clubId: seat.clubId, clubName: seat.clubName, leagueSlug: seat.leagueSlug, board: seat.board }),
+      });
+    }
   }
 
   await saveService.updateMeta(saveId, { presimulated: true });
