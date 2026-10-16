@@ -149,6 +149,13 @@ describe("simulateMatch: pitch condition (Etapa 34)", () => {
     ({ id, name: id, colors: ["#000", "#fff"], money: 0, players: [], finances: { broadcasting: income, commercial: 0, total: income, budget: 0, followers: 0 } }) as unknown as Squad;
   const a = sq("a", 1e6);
   const b = sq("b", 300e6);
+  test("synthetic grass × 1.1 on both sides; absent = natural", () => {
+    const plain = matchInjuryMults(a, b, { pitchCondition: 90 });
+    const synth = matchInjuryMults(a, b, { pitchCondition: 90, turf: "synthetic" });
+    expect(synth.A).toBeCloseTo(plain.A * 1.1, 10);
+    expect(synth.B).toBeCloseTo(plain.B * 1.1, 10);
+    expect(matchInjuryMults(a, b, {})).toEqual(matchInjuryMults(a, b, { turf: "natural" }));
+  });
   test("the pitch multiplies both sides' injury risk; a good pitch is neutral", () => {
     expect(matchInjuryMults(a, b, {})).toEqual({ A: staffEffectsOf(a).injuryMult, B: staffEffectsOf(b).injuryMult });
     expect(matchInjuryMults(a, b, { pitchCondition: 90 })).toEqual(matchInjuryMults(a, b, {}));

@@ -33,16 +33,17 @@ export type { Squad } from '@/types/playerTypes';
 import '@/GameEngine/Domain/Statistics';
 import '@/GameEngine/Domain/PlayerRating';
 import { staffEffectsOf } from '@/Domain/staff/staff';
-import { pitchInjuryMult } from '@/Domain/facilities/facilityItems';
+import { pitchInjury } from '@/Domain/facilities/turf';
+import type { TurfType } from '@/types/facilityTypes';
 
 /**
  * Injury multiplier of each side: the fitness coach (`options.injuryMult`, else each squad's staff)
  * × the match pitch (`options.pitchCondition`, absent = 90 → × 1).
  */
 export function matchInjuryMults(
-  squadA: Squad, squadB: Squad, options: Pick<SimulateMatchOptions, 'injuryMult' | 'pitchCondition'>,
+  squadA: Squad, squadB: Squad, options: Pick<SimulateMatchOptions, 'injuryMult' | 'pitchCondition' | 'turf'>,
 ): { A: number; B: number } {
-  const pitch = pitchInjuryMult(options.pitchCondition ?? 90);
+  const pitch = pitchInjury(options.pitchCondition ?? 90, options.turf);
   return {
     A: (options.injuryMult?.A ?? staffEffectsOf(squadA).injuryMult) * pitch,
     B: (options.injuryMult?.B ?? staffEffectsOf(squadB).injuryMult) * pitch,
@@ -93,6 +94,8 @@ export interface SimulateMatchOptions {
    * both sides' injury risk (× 1.6 at 0%). Absent = 90 (neutral).
    */
   pitchCondition?: number;
+  /** Grass of the match pitch (`matchPitch`); synthetic × `TURF.INJURY_MULT` on both sides. Absent = natural. */
+  turf?: TurfType;
   /**
    * Style familiarity (0..100) per side, read ONLY when `tactics` is omitted (the caller applied its
    * own tactics, e.g. the lab): sets each team's execution multiplier (`FamiliarityConfig.ts`).
