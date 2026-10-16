@@ -354,7 +354,10 @@ Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entr
 ### Regra
 
 - **Jogo entre dois assentos:** `POST /api/match-setup` devolve a prévia normal com `seatOpponent: true`. O adversário é
-  lido como um clube da IA (formação e XI automático dele, nunca a tática salva do outro técnico). Com `?live=1` segue
+  lido como um clube da IA (formação e XI automático dele, nunca a tática salva do outro técnico) e o `opponentSquad` vem
+  sem os dados privados do outro assento (`publicSeatSquad`, `src/Domain/seats/publicSquad.ts`: sem moral, conversas e
+  promessas, comissão, instalações, atributos do técnico, familiaridade, inscrições, saldo, nem `morale`/`moraleLog`/
+  `squadStatus` dos jogadores). Com `?live=1` segue
   409 `seatOpponent` (com `matchDay`). A prévia mostra o botão **Simular**; o avanço do dia joga a partida no motor
   completo com a tática de cada assento. O jogo entra no log do dia dos dois.
 - **Propostas entre técnicos:** um assento propõe a outro um jogador de elenco do clube dele. `SeatOffer`
@@ -367,12 +370,14 @@ Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entr
   estar fechado.
 - **Negociação:** o comprador propõe; o vendedor aceita, recusa ou contrapropõe (taxa, cláusula ou `wageShare`); o
   comprador aceita a contraproposta, contrapropõe de volta ou **Retira** (ele não tem "Recusar"). No máximo
-  `MAX_COUNTERS` (3) contrapropostas somando os dois lados (409 `noRounds`); fora da vez, 403 `notYourTurn`. Validade
+  `MAX_COUNTERS` (3) contrapropostas somando os dois lados (409 `noRounds`); fora da vez, 403 `notYourTurn`. Uma
+  contraproposta sem `sellOnPct` mantém a cláusula que estava na mesa. Validade
   `VALID_DAYS` (5) a partir da proposta ou da contraproposta. No máximo `MAX_OPEN_SENT` (10) abertas por comprador
   (409 `tooManyOffers`) e uma por jogador e tipo (409 `alreadyOffered`).
 - **Aceite:** reconfere tudo dentro do `withSaveLock`: jogador ainda lá e sem empréstimo (400 `onLoan`), elenco do
   comprador abaixo de `HUMAN_MAX_SQUAD` (409 `squadFull`), mínimos do vendedor (409 `squadDepth`) e o contrato
-  (409 `contractRefused { reason }`: a recusa do jogador no aceite, como um muito ambicioso). A transferência move a
+  (409 `contractRefused { reason }`: a recusa do jogador no aceite, como um muito ambicioso). `squadFull` e `squadDepth`
+  no aceite só recusam o aceite: a proposta fica (como no vencimento diário); as demais falhas a derrubam. A transferência move a
   taxa nos dois extratos, o histórico e a cláusula; o empréstimo grava o `loan` nos mercados dos **dois** assentos e
   volta na data.
 - **Fechamento:** a proposta cai (`closed`) quando o jogador sai do clube ou vira emprestado, ou quando um dos assentos
@@ -383,7 +388,11 @@ Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entr
   continuaria pagando a parte do salário até a data antiga).
 - **Caixa:** categoria `transfer`, `kind` `seat_offer` (tópico `actions`, nunca descartado), uma mensagem por evento
   (`offer`, `counter`, `accept`, `reject`, `withdraw`, `expired`, `closed`) para o outro lado e, em `expired` e
-  `closed`, para os dois. Push `seat_offer { saveId }` pelo socket recarrega as telas.
+  `closed`, para os dois. Push `seat_offer { saveId }` pelo socket recarrega as telas; quem grava por um
+  `BufferingSaveDAL` (aceite, troca de clube, saída do mundo, avanço do dia) junta os avisos (`SeatNudges`) e só avisa
+  depois do `flush` (`nudgeSeats`; o dia pelo `seatOfferNudges` da resposta, em `runBufferedDay`). No avanço do dia, o
+  `closed` de uma demissão ou de um fim de contrato (`releaseHumanClub` com `sink`) entra nas mensagens adiadas, depois
+  do `clearInbox`.
 - Lobby: as rotas de escrita respondem 409 `lobby` (`worldLobbyGuard`).
 
 ### Arquivos
@@ -411,7 +420,9 @@ Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entr
 
 - **Prévia** do jogo contra outro técnico: a normal, com **Simular** (ou voltar ao painel).
 - **Negociação** (`PlayerOfferModal`): jogador de clube de outro assento abre o fluxo de proposta entre técnicos
-  (taxa, cláusula, contrato; empréstimo com `wageShare`), sem as rodadas da IA.
+  (taxa, cláusula, contrato; empréstimo com `wageShare`), sem as rodadas da IA. Num mundo em grupo nada é enviado até a
+  lista de propostas carregar (falhando, erro e "Tentar de novo", nunca o fluxo da IA). Uma proposta aceita, recusada ou
+  retirada pelo cartão no modal ou nas negociações deixa a mensagem de resultado na tela.
 - **Caixa de entrada:** `SeatOfferCard` (vendedor: Aceitar, Contrapropor, Recusar; comprador: Aceitar a contraproposta,
   Contrapropor, Retirar). **Transferências → negociações** (`NegotiationOverview`): as propostas abertas com o mesmo
   cartão. i18n `seatOffers.*` (en, pt-BR).
