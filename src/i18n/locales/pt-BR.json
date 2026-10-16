@@ -1653,7 +1653,8 @@
         "lost_to_rival": "{{player}} foi para o {{club}}",
         "pre_contract": "Pré-contrato: {{player}}",
         "pre_contract_joined": "{{player}} chegou pelo pré-contrato",
-        "pre_contract_failed": "O pré-contrato caiu: {{player}}"
+        "pre_contract_failed": "O pré-contrato caiu: {{player}}",
+        "seat_offer": "Proposta por {{player}}"
       },
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
@@ -1668,7 +1669,38 @@
         "lost_to_rival": "{{player}} foi para o {{club}} por {{fee}}. Sua negociação acabou.",
         "pre_contract": "{{player}} assinou um pré-contrato ({{wage}} por semana, {{years}} temporadas). Ele deixa o {{club}} no fim da temporada dele.",
         "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
-        "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio)."
+        "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio).",
+        "seat_offer": "Novidade na proposta por {{player}} com o {{club}}."
+      },
+      "seatOffer": {
+        "offer": {
+          "subject": "O {{club}} fez uma proposta por {{player}}",
+          "body": "O {{club}} fez uma proposta por {{player}}. Responda até {{deadline}}."
+        },
+        "counter": {
+          "subject": "Contraproposta do {{club}} por {{player}}",
+          "body": "O {{club}} mandou uma contraproposta por {{player}}. Responda até {{deadline}}."
+        },
+        "accept": {
+          "subject": "Negócio fechado: {{player}}",
+          "body": "O {{club}} aceitou. O negócio de {{player}} está fechado."
+        },
+        "reject": {
+          "subject": "O {{club}} recusou a proposta por {{player}}",
+          "body": "O {{club}} recusou a proposta por {{player}}. A negociação acabou."
+        },
+        "withdraw": {
+          "subject": "O {{club}} retirou a proposta por {{player}}",
+          "body": "O {{club}} retirou a proposta por {{player}}. A negociação acabou."
+        },
+        "expired": {
+          "subject": "Proposta vencida: {{player}}",
+          "body": "Ninguém respondeu a tempo. A proposta por {{player}} com o {{club}} venceu."
+        },
+        "closed": {
+          "subject": "Proposta encerrada: {{player}}",
+          "body": "A negociação com o {{club}} por {{player}} foi encerrada: o negócio não é mais possível."
+        }
       }
     },
     "awards": {
@@ -2820,6 +2852,65 @@
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
       "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
       "poorFacilities": "Ambicioso demais para um CT neste estado: recusa."
+    }
+  },
+  "seatOffers": {
+    "title": "Propostas com técnicos",
+    "kind": "Tipo",
+    "transfer": "Transferência",
+    "loan": "Empréstimo",
+    "sent": "Proposta enviada a {{manager}}",
+    "sentHint": "Ele responde pela caixa de entrada. Você recebe uma mensagem.",
+    "alreadyOpen": "Você já tem uma proposta aberta por esse jogador.",
+    "toManager": "Este clube tem um técnico humano: {{manager}} responde sua proposta.",
+    "withClub": "{{club}} ({{manager}})",
+    "contract": "Contrato",
+    "contractTerms_one": "{{wage}}/semana · {{count}} ano",
+    "contractTerms_other": "{{wage}}/semana · {{count}} anos",
+    "validUntil": "Vale até",
+    "turn": "Vez",
+    "yourTurn": "Sua vez",
+    "theirTurn": "Vez de {{manager}}",
+    "you": "Você",
+    "counters": "Contrapropostas",
+    "countersUsed": "{{used}} de {{total}}",
+    "last": {
+      "offer": "Proposta feita por {{who}} em {{date}}.",
+      "counter": "Contraproposta de {{who}} em {{date}}.",
+      "accept": "Aceita por {{who}} em {{date}}.",
+      "reject": "Recusada por {{who}} em {{date}}.",
+      "withdraw": "Retirada por {{who}} em {{date}}.",
+      "expired": "Venceu em {{date}}.",
+      "closed": "Encerrada em {{date}}."
+    },
+    "accept": "Aceitar",
+    "counter": "Contrapropor",
+    "sendCounter": "Enviar contraproposta",
+    "reject": "Recusar",
+    "withdraw": "Retirar",
+    "open": "Abrir",
+    "lastCounter": "Sem contrapropostas: aceite ou recuse.",
+    "closed": "Esta proposta foi encerrada.",
+    "done": {
+      "accepted": "Negócio fechado.",
+      "rejected": "Proposta recusada.",
+      "withdrawn": "Proposta retirada.",
+      "countered": "Contraproposta enviada."
+    },
+    "errors": {
+      "alreadyOffered": "Você já tem uma proposta aberta por esse jogador.",
+      "tooManyOffers": "Você tem propostas demais abertas. Espere algumas respostas.",
+      "notYourTurn": "Não é a sua vez.",
+      "noRounds": "Sem contrapropostas: aceite ou recuse.",
+      "invalidTerms": "Confira os termos da proposta.",
+      "offerClosed": "Esta proposta foi encerrada.",
+      "contractRefused": "O jogador recusou o contrato.",
+      "squadDepth": "O elenco que vende ficaria curto demais na posição dele.",
+      "squadFull": "O elenco está cheio.",
+      "onLoan": "Ele está emprestado e não pode sair agora.",
+      "windowClosed": "A janela de transferências está fechada.",
+      "notFound": "Jogador ou clube não encontrado.",
+      "noClub": "Você está sem clube."
     }
   },
   "career": {

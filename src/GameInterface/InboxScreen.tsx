@@ -20,6 +20,8 @@ import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { NationalCoachInboxBody, nationalCoachSubject } from "@/GameInterface/National/NationalCoachInboxBody";
 import i18next from "@/i18n/i18n";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
+import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
+import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import { PressInboxBody } from "@/GameInterface/Press/PressInboxBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
@@ -715,7 +717,7 @@ function leaguePrizeTexts(
   }
   if (message.category === "transfer") {
     const vars = transferVars(message);
-    return { subject: t(`inbox.transfer.subject.${message.kind}`, vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
+    return { subject: t(transferTextKey(message, "subject"), vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
   }
   if (message.category === "scouting") {
     const x = scoutingTexts(message, t);
@@ -1139,6 +1141,12 @@ function transferVars(message: Extract<InboxMessage, { category: "transfer" }>) 
   };
 }
 
+/** i18n key of a transfer message's subject or body; an offer between managers has one text per move. */
+function transferTextKey(message: Extract<InboxMessage, { category: "transfer" }>, part: "subject" | "body"): string {
+  if (message.kind === "seat_offer") return `inbox.transfer.seatOffer.${message.offerAction ?? "offer"}.${part}`;
+  return `inbox.transfer.${part}.${message.kind}`;
+}
+
 /** Sackings and hirings of the day in the player's league (`.claude/rules/game/managers.md`). */
 function ManagerNewsBody({ message }: { message: Extract<InboxMessage, { category: "manager_news" }> }) {
   const { t } = useTranslation();
@@ -1159,6 +1167,14 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
   const [bid, setBid] = useState<MarketBid | null | undefined>(undefined);
   const isBid = message.kind === "bid" || message.kind === "loan_bid";
   const saveId = session?.saveId;
+  // An offer between managers (multiplayer part 4): the live card while it is still open.
+  const isSeatOffer = message.kind === "seat_offer" && !!message.offerId;
+  const seatOffers = useSeatOffers(isSeatOffer ? saveId : null);
+  const seatOffer = isSeatOffer ? seatOffers.data?.offers.find((o) => o.id === message.offerId) ?? null : null;
+  // Once shown, the card stays (answered here, or closed by the other manager) so its outcome is readable.
+  const [seatShown, setSeatShown] = useState(false);
+  useEffect(() => { setSeatShown(false); }, [message.offerId]);
+  useEffect(() => { if (seatOffer) setSeatShown(true); }, [seatOffer]);
   useEffect(() => {
     if (!isBid || !saveId) return;
     let alive = true;
@@ -1171,8 +1187,9 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
   const vars = transferVars(message);
   return (
     <div className="space-y-4">
-      <p className="text-sm text-foreground m-0">{t(`inbox.transfer.body.${message.kind}`, vars)}</p>
+      <p className="text-sm text-foreground m-0">{t(transferTextKey(message, "body"), vars)}</p>
       {isBid && saveId && bid !== undefined && <BidCard saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
+      {seatShown && saveId && <SeatOfferCard saveId={saveId} offer={seatOffer} onChanged={() => void refresh()} />}
     </div>
   );
 }

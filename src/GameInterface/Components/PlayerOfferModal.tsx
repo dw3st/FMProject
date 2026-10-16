@@ -19,6 +19,9 @@ import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
+import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
+import { notifySeatOffersChanged, seatOfferApi, useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
+import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
 
 /** Pre-contract window (D2): the target's contract ends within this many days. */
 const PRE_CONTRACT_DAYS = 183;
@@ -70,7 +73,11 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const { t, i18n } = useTranslation();
   const { squad, refresh, currentDate } = useGameSave();
   const budget = squad?.finances?.budget ?? 0;
-  const saveId = loadSession()?.saveId;
+  const session = loadSession();
+  const saveId = session?.saveId;
+  // Multiplayer part 4: a club with a human manager gets an offer between managers instead of the AI's answer.
+  const seatOffers = useSeatOffers(session?.groupAdvance ? saveId : null);
+  const [seatSent, setSeatSent] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("transfer");
   const [offerFee, setOfferFee] = useState(0);
   const [sellOn, setSellOn] = useState<(typeof SELL_ON_KEYS)[number]>("0");
@@ -132,6 +139,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     setRivals([]);
     setPreference(null);
     setPreDone(false);
+    setSeatSent(null);
     if (playerId) {
       void loadTalk("transfer");
       void loadTalk("loan");
@@ -149,20 +157,29 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const closedNow = buyWindow !== null && !buyWindow.open;
   const eligibleNow = !!player?.contractEnd && !!currentDate && !player?.loan
     && player.contractEnd >= currentDate && player.contractEnd <= addDays(currentDate, PRE_CONTRACT_DAYS);
+  const seatClub = player?.squadId ? seatOffers.data?.seatClubs.find((c) => c.clubId === player.squadId) ?? null : null;
   useEffect(() => {
+    if (seatClub) {
+      if (tab === "precontract") setTab("transfer");
+      return;
+    }
     if (closedNow && eligibleNow) setTab("precontract");
-  }, [closedNow, eligibleNow]);
+  }, [closedNow, eligibleNow, seatClub, tab]);
 
   if (!player) return null;
   const activePlayer = player;
   const today = tab === "precontract" ? null : talks[tab];
   const windowClosed = buyWindow !== null && !buyWindow.open;
-  const preContractEligible = !!player.contractEnd && !!currentDate
+  const isSeat = seatClub !== null;
+  const myOpenOffer = isSeat
+    ? (seatOffers.data?.offers ?? []).find((o) => o.playerId === player.id && o.side === "buyer" && o.kind === (tab === "loan" ? "loan" : "transfer")) ?? null
+    : null;
+  const preContractEligible = !isSeat && !!player.contractEnd && !!currentDate
     && player.contractEnd >= currentDate && player.contractEnd <= addDays(currentDate, PRE_CONTRACT_DAYS) && !player.loan;
   const closedUntil = today?.closedUntil ?? null;
   const roundsLeft = today ? Math.max(0, ROUNDS_PER_DAY - today.rounds) : ROUNDS_PER_DAY;
   const counter = today?.counter;
-  const blocked = !!closedUntil || roundsLeft === 0;
+  const blocked = !isSeat && (!!closedUntil || roundsLeft === 0);
   const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" });
 
   function errorText(code: string | undefined): string {
@@ -174,6 +191,27 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (code === "noClub") return t("negotiation.errors.noClub");
     if (code === "notEligible") return t("negotiation.preContract.notEligible");
     return t("negotiation.errors.generic");
+  }
+
+  /** An offer to another human manager (`POST /seat-offers`): sent, then answered from his inbox. */
+  async function submitSeatOffer(body: Record<string, unknown>) {
+    if (submitting || !activePlayer.squadId || !saveId || !seatClub) return;
+    setSubmitting(true);
+    setContractError(null);
+    setMessage(null);
+    try {
+      const r = await seatOfferApi.create(saveId, { playerId: activePlayer.id, fromSquadId: activePlayer.squadId, ...body });
+      if (!r.ok) {
+        const text = seatOfferErrorText(t, i18n.language, r);
+        if (["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(r.error)) setContractError(text);
+        else setMessage(text);
+        return;
+      }
+      setSeatSent(seatClub.managerName || activePlayer.club);
+      notifySeatOffersChanged();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function submitPreContract() {
@@ -206,6 +244,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
 
   async function submitOffer(fee: number, pct: number) {
     if (submitting || !activePlayer.squadId) return;
+    if (isSeat) {
+      void submitSeatOffer({ kind: "transfer", fee, sellOnPct: pct, wage, years });
+      return;
+    }
     const session = loadSession();
     if (!session) return;
     setSubmitting(true);
@@ -261,6 +303,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
 
   async function submitLoan(share: number, fee: number) {
     if (submitting || !activePlayer.squadId) return;
+    if (isSeat) {
+      void submitSeatOffer({ kind: "loan", wageShare: share, fee });
+      return;
+    }
     const session = loadSession();
     if (!session) return;
     setSubmitting(true);
@@ -295,7 +341,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     }
   }
 
-  const done = !!result || loanDone !== null || preDone;
+  const done = !!result || loanDone !== null || preDone || seatSent !== null;
 
   return (
     <Modal open onClose={onClose} size="md">
@@ -341,6 +387,21 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               )}
               <Button className="mt-5" onClick={onClose}>{t("common.close")}</Button>
             </div>
+          ) : seatSent !== null ? (
+            <div className="text-center py-4">
+              <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
+              <p className="text-base font-black text-chart-2 m-0">{t("seatOffers.sent", { manager: seatSent })}</p>
+              <p className="text-sm text-muted-foreground mt-1 m-0">{t("seatOffers.sentHint")}</p>
+              <Button className="mt-5" onClick={onClose}>{t("common.close")}</Button>
+            </div>
+          ) : myOpenOffer && saveId ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground m-0">{t("seatOffers.alreadyOpen")}</p>
+              <SeatOfferCard saveId={saveId} offer={myOpenOffer} onChanged={seatOffers.reload} />
+              <div className="flex pt-2">
+                <Button variant="secondary" onClick={onClose}>{t("common.close")}</Button>
+              </div>
+            </div>
           ) : preDone ? (
             <div className="text-center py-4">
               <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
@@ -358,7 +419,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             </div>
           ) : (
             <>
-              {tab !== "precontract" && (
+              {isSeat && (
+                <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
+              )}
+              {tab !== "precontract" && !isSeat && (
                 <p className="text-sm text-muted-foreground m-0 tabular-nums">
                   {closedUntil
                     ? t("negotiation.closedUntil", { date: fmtDate(closedUntil) })
@@ -484,7 +548,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </>
               )}
 
-              {today && today.history.length > 0 && <NegotiationHistory talk={today} />}
+              {!isSeat && today && today.history.length > 0 && <NegotiationHistory talk={today} />}
               {message && <p className="text-sm text-foreground m-0" role="status">{message}</p>}
 
               <div className="flex flex-wrap gap-3 pt-2">
@@ -495,7 +559,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                     {submitting ? t("transfers.sending") : t("negotiation.preContract.send")}
                   </Button>
                 )}
-                {tab !== "precontract" && counter && !closedUntil && !windowClosed && (
+                {tab !== "precontract" && !isSeat && counter && !closedUntil && !windowClosed && (
                   <Button
                     disabled={submitting}
                     className="tabular-nums"
@@ -509,7 +573,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   </Button>
                 )}
                 {tab !== "precontract" && <Button
-                  variant={counter ? "secondary" : "primary"}
+                  variant={counter && !isSeat ? "secondary" : "primary"}
                   disabled={submitting || blocked || windowClosed || (tab === "transfer" && !slider.canOffer)}
                   onClick={() => (tab === "transfer" ? void submitOffer(offerFee, Number(sellOn)) : void submitLoan(wageShare, loanFee))}
                 >

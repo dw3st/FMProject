@@ -1653,7 +1653,8 @@
         "lost_to_rival": "{{player}} joined {{club}}",
         "pre_contract": "Pre-contract: {{player}}",
         "pre_contract_joined": "{{player}} arrived on his pre-contract",
-        "pre_contract_failed": "Pre-contract fell through: {{player}}"
+        "pre_contract_failed": "Pre-contract fell through: {{player}}",
+        "seat_offer": "Offer for {{player}}"
       },
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
@@ -1668,7 +1669,38 @@
         "lost_to_rival": "{{player}} joined {{club}} for {{fee}}. Your negotiation is over.",
         "pre_contract": "{{player}} signed a pre-contract ({{wage}} a week, {{years}} seasons). He leaves {{club}} at the end of his season.",
         "pre_contract_joined": "{{player}} left {{club}} and joined your squad on his pre-contract.",
-        "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full)."
+        "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full).",
+        "seat_offer": "News on the offer for {{player}} with {{club}}."
+      },
+      "seatOffer": {
+        "offer": {
+          "subject": "{{club}} made an offer for {{player}}",
+          "body": "{{club}} made an offer for {{player}}. Answer before {{deadline}}."
+        },
+        "counter": {
+          "subject": "{{club}} countered for {{player}}",
+          "body": "{{club}} sent a counter-offer for {{player}}. Answer before {{deadline}}."
+        },
+        "accept": {
+          "subject": "Deal done: {{player}}",
+          "body": "{{club}} accepted. The deal for {{player}} is done."
+        },
+        "reject": {
+          "subject": "{{club}} turned down the offer for {{player}}",
+          "body": "{{club}} turned down the offer for {{player}}. The talks are over."
+        },
+        "withdraw": {
+          "subject": "{{club}} withdrew the offer for {{player}}",
+          "body": "{{club}} withdrew the offer for {{player}}. The talks are over."
+        },
+        "expired": {
+          "subject": "Offer expired: {{player}}",
+          "body": "Nobody answered in time. The offer for {{player}} with {{club}} expired."
+        },
+        "closed": {
+          "subject": "Offer closed: {{player}}",
+          "body": "The talks with {{club}} for {{player}} closed: the deal is no longer possible."
+        }
       }
     },
     "awards": {
@@ -2820,6 +2852,65 @@
       "unhappy": "He is furious and will not renew without a renewal promise.",
       "smallerClub": "Too ambitious for a club this size: he refuses.",
       "poorFacilities": "Too ambitious for a training ground in this state: he refuses."
+    }
+  },
+  "seatOffers": {
+    "title": "Offers with managers",
+    "kind": "Type",
+    "transfer": "Transfer",
+    "loan": "Loan",
+    "sent": "Offer sent to {{manager}}",
+    "sentHint": "He answers from his inbox. You will get a message.",
+    "alreadyOpen": "You already have an offer open for this player.",
+    "toManager": "This club has a human manager: {{manager}} answers your offer.",
+    "withClub": "{{club}} ({{manager}})",
+    "contract": "Contract",
+    "contractTerms_one": "{{wage}}/week · {{count}} year",
+    "contractTerms_other": "{{wage}}/week · {{count}} years",
+    "validUntil": "Valid until",
+    "turn": "Turn",
+    "yourTurn": "Your turn",
+    "theirTurn": "{{manager}}'s turn",
+    "you": "You",
+    "counters": "Counter-offers",
+    "countersUsed": "{{used}} of {{total}}",
+    "last": {
+      "offer": "Offer made by {{who}} on {{date}}.",
+      "counter": "Counter-offer by {{who}} on {{date}}.",
+      "accept": "Accepted by {{who}} on {{date}}.",
+      "reject": "Turned down by {{who}} on {{date}}.",
+      "withdraw": "Withdrawn by {{who}} on {{date}}.",
+      "expired": "Expired on {{date}}.",
+      "closed": "Closed on {{date}}."
+    },
+    "accept": "Accept",
+    "counter": "Counter",
+    "sendCounter": "Send counter-offer",
+    "reject": "Turn down",
+    "withdraw": "Withdraw",
+    "open": "Open",
+    "lastCounter": "No counter-offers left: accept or turn it down.",
+    "closed": "This offer is closed.",
+    "done": {
+      "accepted": "Deal done.",
+      "rejected": "Offer turned down.",
+      "withdrawn": "Offer withdrawn.",
+      "countered": "Counter-offer sent."
+    },
+    "errors": {
+      "alreadyOffered": "You already have an offer open for this player.",
+      "tooManyOffers": "You have too many offers open. Wait for some answers.",
+      "notYourTurn": "It is not your turn.",
+      "noRounds": "No counter-offers left: accept or turn it down.",
+      "invalidTerms": "Check the terms of the offer.",
+      "offerClosed": "This offer is closed.",
+      "contractRefused": "The player refused the contract.",
+      "squadDepth": "The selling squad would be too short in his position.",
+      "squadFull": "The squad is full.",
+      "onLoan": "He is on loan and cannot move now.",
+      "windowClosed": "The transfer window is closed.",
+      "notFound": "Player or club not found.",
+      "noClub": "You have no club."
     }
   },
   "career": {
