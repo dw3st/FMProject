@@ -9,7 +9,10 @@ import { callApi, createMultiWorld } from "@/backend/worlds/worldTestUtils";
 import { contractDemand, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { addDays } from "@/Domain/dates";
+import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import { SEAT_OFFERS } from "@/Domain/seatOffers/seatOfferConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
+import type { SeatOffer } from "@/types/seatOfferTypes";
 
 type Login = ReturnType<typeof devAutoLogin>;
 
@@ -212,6 +215,64 @@ describe("seat offers: routes", () => {
     expect(await saveService.getSeatOffers(id)).toEqual([]);
     expect((await saveService.getMarket(id, seatB))!.pendingBids?.some((x) => x.playerId === player.id)).toBe(false);
     expect((await post(c.session.token, ONE, { action: "withdraw" }, fromC.json.offer.id)).status).toBe(404);
+  }, 300_000);
+
+  test("tooManyOffers: the buyer already has 10 open offers", async () => {
+    const { player, demand } = await pick(clubB);
+    const date = (await saveService.getMeta(id))!.currentDate!;
+    const terms = { fee: 1_000_000, sellOnPct: 0, wage: 10_000, years: 2 };
+    const clubName = (cid: string) => saveService.getSquadById(id, cid).then((s) => s!.name);
+    const seller = { seatId: seatB, clubId: clubB, clubName: await clubName(clubB) };
+    const buyer = { seatId: seatA, clubId: clubA, clubName: await clubName(clubA) };
+    const open: SeatOffer[] = Array.from({ length: SEAT_OFFERS.MAX_OPEN_SENT }, (_, i) => ({
+      id: `full-${i}`, kind: "transfer", playerId: `fake-${i}`, playerName: `Fake ${i}`, seller, buyer, date,
+      expires: addDays(date, 3), turn: "seller", counters: 0, terms, history: [{ by: "buyer", action: "offer", date, terms }],
+    }));
+    await saveService.writeSeatOffers(id, open);
+    try {
+      const r = await post(a.session.token, LIST, { kind: "transfer", playerId: player.id, fromSquadId: clubB, fee: 1_000_000, wage: demand, years: 2 });
+      expect(r.status).toBe(409);
+      expect(r.json.error).toBe("tooManyOffers");
+    } finally {
+      await saveService.writeSeatOffers(id, []);
+    }
+  }, 300_000);
+
+  test("windowClosed: the buyer's window is closed", async () => {
+    const { player, demand } = await pick(clubB);
+    const open = (await saveService.getMeta(id))!.currentDate!;
+    const metaA = (await saveService.getSeatMeta(id, seatA))!;
+    const ctx = await loadWindowContext((await saveService.getMeta(id))!, await saveService.getSquadIndex(id), open, [seatWindowRef(metaA)]);
+    let day = open;
+    for (let i = 0; i < 400 && ctx.seat(seatA).on(day).open; i++) day = addDays(day, 1);
+    expect(ctx.seat(seatA).on(day).open).toBe(false);
+    await saveService.updateMeta(id, { currentDate: day });
+    try {
+      const r = await post(a.session.token, LIST, { kind: "transfer", playerId: player.id, fromSquadId: clubB, fee: 1_000_000, wage: demand, years: 2 });
+      expect(r.status).toBe(409);
+      expect(r.json.error).toBe("windowClosed");
+      expect(await saveService.getSeatOffers(id)).toEqual([]);
+    } finally {
+      await saveService.updateMeta(id, { currentDate: open });
+    }
+  }, 300_000);
+
+  test("squadDepth: the sale would leave the seller below a line's minimum", async () => {
+    const original = (await saveService.getSquadById(id, clubB))!;
+    const keepers = original.players.filter((p) => roleOf(p) === "GK" && !p.loan);
+    const kept = new Set(keepers.slice(0, MIN_BY_ROLE.GK).map((p) => p.id));
+    const trimmed = { ...original, players: original.players.filter((p) => roleOf(p) !== "GK" || kept.has(p.id)) };
+    const target = trimmed.players.find((p) => kept.has(p.id))!;
+    expect(squadDepthBlocked(target, trimmed, false)).toBe(true);
+    await saveService.saveSquadById(id, trimmed);
+    try {
+      const r = await post(a.session.token, LIST, { kind: "transfer", playerId: target.id, fromSquadId: clubB, fee: 1_000_000, wage: 100_000, years: 2 });
+      expect(r.status).toBe(409);
+      expect(r.json.error).toBe("squadDepth");
+      expect(await saveService.getSeatOffers(id)).toEqual([]);
+    } finally {
+      await saveService.saveSquadById(id, original);
+    }
   }, 300_000);
 
   test("413 over 8 KB", async () => {
