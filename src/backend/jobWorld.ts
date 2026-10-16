@@ -48,6 +48,7 @@ import {
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 import { expireOffers } from "@/Domain/retirement/retirement";
 import { directorHandlesContracts } from "@/Domain/responsibilities/director";
+import { closeOffersOfSeat } from "@/backend/seatOfferWorld";
 
 /**
  * Job offers and club changes of the human manager — save I/O (`.claude/rules/game/jobs.md`).
@@ -309,6 +310,8 @@ export async function releaseHumanClub(
     || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
     await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] }, seatId);
   }
+  // Offers with other seats (multiplayer part 4) were the old club's: they close, the other side is told.
+  await closeOffersOfSeat(service, saveId, seatId, args.date);
   // Scouting (`.claude/rules/game/scouting.md`): missions and prospects stay with the club, the
   // knowledge and shortlist follow the manager, who keeps knowing his old players.
   await scoutingOnClubLeft(service, saveId, seatId, squad.players.map((p) => p.id), args.date);

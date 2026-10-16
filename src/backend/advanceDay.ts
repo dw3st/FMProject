@@ -99,6 +99,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
+import { expireSeatOffers } from "@/backend/seatOfferWorld";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
@@ -1696,6 +1697,14 @@ export async function advanceOneDay(
         }
         await saveService.saveSeatMarket(saveId, ds.seatId, splitMarket(market).seat);
       }
+
+      // Offers between seats (multiplayer part 4): expired, the buyer's window closed, or the world moved on.
+      // Their messages go out after any `clearInbox` of the day, with the seats' other negotiation news.
+      await expireSeatOffers(
+        saveService, saveId, currentDate,
+        (seatId) => windows.seat(seatId).today.open,
+        (seatId, args) => { daySeats.find((d) => d.seatId === seatId)?.deferred.negotiation.push(args); },
+      );
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
