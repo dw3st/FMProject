@@ -2860,7 +2860,7 @@
     "transfer": "Transferência",
     "loan": "Empréstimo",
     "sent": "Proposta enviada a {{manager}}",
-    "sentHint": "Ele responde pela caixa de entrada. Você recebe uma mensagem.",
+    "sentHint": "A resposta chega pela caixa de entrada. Você recebe uma mensagem.",
     "alreadyOpen": "Você já tem uma proposta aberta por esse jogador.",
     "toManager": "Este clube tem um técnico humano: {{manager}} responde sua proposta.",
     "withClub": "{{club}} ({{manager}})",
