@@ -13,6 +13,7 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
+import { TurfCard } from "@/GameInterface/Facilities/TurfCard";
 import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 
@@ -32,7 +33,7 @@ export function FacilitiesView({
   currentDate: string | null;
 }) {
   const { t, i18n } = useTranslation();
-  const { data, error, request } = useFacilities(saveId, currentDate);
+  const { data, error, request, setMowing } = useFacilities(saveId, currentDate);
   const [selected, setSelected] = useState<StandId | null>(null);
   const [seats, setSeats] = useState<number>(5000);
   const [outcome, setOutcome] = useState<{ kind: FacilityKind; result: RequestOutcome } | null>(null);
@@ -113,6 +114,8 @@ export function FacilitiesView({
           </div>
         </section>
       </div>
+
+      <TurfCard data={data} pending={pending} onAsk={(req) => void ask(req)} onMowing={(m) => void setMowing(m)} />
 
       <AttendanceChart games={seasonGames} leagues={leagues} nf={nf} />
 
