@@ -144,7 +144,7 @@ function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
 }
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
-/** Match light in /test: off, a fixed time (sunset 19:00), or following the clock from a 17:30 kickoff. */
+/** Match light in /test: off, a fixed time (sunset 18:30), or following the clock from a 17:30 kickoff. */
 type LightTimeOption = 'off' | '13:30' | '17:30' | '20:45' | 'match';
 const LIGHT_TIME_OPTIONS: LightTimeOption[] = ['off', '13:30', '17:30', '20:45', 'match'];
 const LIGHT_WEATHER_OPTIONS: (MatchWeather | 'wind_rain')[] = ['sunny', 'cloudy', 'rain', 'wind_rain', 'snow'];
@@ -453,7 +453,7 @@ export function TestScreen() {
   const [lightTime, setLightTime] = useState<LightTimeOption>('off');
   const [lightWeather, setLightWeather] = useState<MatchWeather | 'wind_rain'>('sunny');
   const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
-    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: '19:00', weather: lightWeather,
+    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: '18:30', weather: lightWeather,
     sun: { side: 'top', lean: 0.3 }, seed: 'test',
     ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
   }, [lightTime, lightWeather]);
@@ -1253,7 +1253,7 @@ export function TestScreen() {
               {LIGHT_TIME_OPTIONS.map(v => (
                 <button key={v} onClick={() => setLightTime(v)}
                   className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightTime === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
-                  Time: {v === 'off' ? 'Off' : v === 'match' ? 'By match (17:30, sunset 19:00)' : v}
+                  Time: {v === 'off' ? 'Off' : v === 'match' ? 'By match (17:30, sunset 18:30)' : v}
                 </button>
               ))}
             </div>
