@@ -6,7 +6,9 @@ import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatc
 import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
-import type { DebugOverlays, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import type { DebugOverlays, PitchLighting, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import { minutesOf } from "@/GraficsEngine/matchLighting";
+import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
@@ -142,6 +144,11 @@ function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
 }
 
 /** The state with every player's injury risk × the pitch factor (on top of what the build set). */
+/** Match light in /test: off, a fixed time (sunset 19:00), or following the clock from a 17:30 kickoff. */
+type LightTimeOption = 'off' | '13:30' | '17:30' | '20:45' | 'match';
+const LIGHT_TIME_OPTIONS: LightTimeOption[] = ['off', '13:30', '17:30', '20:45', 'match'];
+const LIGHT_WEATHER_OPTIONS: (MatchWeather | 'wind_rain')[] = ['sunny', 'cloudy', 'rain', 'wind_rain', 'snow'];
+
 function withPitch(state: GameState, pitch: number, turf: TurfType): GameState {
   const m = pitchInjury(pitch, turf);
   if (m === 1) return state;
@@ -442,6 +449,14 @@ export function TestScreen() {
   const [pitch, setPitch] = useState<number>(90);
   const [turf, setTurf] = useState<TurfType>('natural');
   const [mowing, setMowing] = useState<MowingPattern>('stripes');
+  // Match light (spec 2026-10-16-match-lighting): a fixed time, or "match" = kickoff 17:30 following the clock.
+  const [lightTime, setLightTime] = useState<LightTimeOption>('off');
+  const [lightWeather, setLightWeather] = useState<MatchWeather | 'wind_rain'>('sunny');
+  const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
+    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: '19:00', weather: lightWeather,
+    sun: { side: 'top', lean: 0.3 }, seed: 'test',
+    ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
+  }, [lightTime, lightWeather]);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
   // The managers' Discipline (achievements.md): fouls and cards of a side; null = no attribute.
@@ -1234,6 +1249,22 @@ export function TestScreen() {
                 </button>
               ))}
             </div>
+            <div className="flex gap-1 flex-wrap">
+              {LIGHT_TIME_OPTIONS.map(v => (
+                <button key={v} onClick={() => setLightTime(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightTime === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                  Time: {v === 'off' ? 'Off' : v === 'match' ? 'By match (17:30, sunset 19:00)' : v}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {LIGHT_WEATHER_OPTIONS.map(v => (
+                <button key={v} onClick={() => setLightWeather(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightWeather === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                  Weather: {v}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Per-team tactics */}
@@ -1811,6 +1842,7 @@ export function TestScreen() {
               stadium={pitchStadium}
               extras={extrasOn}
               pitch={{ condition: pitch, turf, mowing, seed: 'test' }}
+              lighting={pitchLighting}
               officials={officialsOn && refS !== null ? { refereeFace: refereeFaceUrl(TEST_REFEREE.id, TEST_REFEREE.country, 40) } : officialsOn}
               coaches={TEST_COACHES}
             />

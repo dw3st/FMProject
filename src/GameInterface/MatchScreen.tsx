@@ -46,7 +46,9 @@ import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl"
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
-import type { PitchOfficials, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import type { PitchLighting, PitchOfficials, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import type { MatchWeather } from "@/Domain/matchday/matchConditions";
+import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 
 /**
  * Base (1x) real-time delay before navigating to the result screen after full time. Scaled down
@@ -206,7 +208,10 @@ export function MatchScreen() {
   /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
   /** Stadium of the home side (#149): name under the scoreboard, with the crowd. */
   const [venueName, setVenueName] = useState<string | null>(null);
-  const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null; pitch: SetupPitch | null } | null>(null);
+  const [touchline, setTouchline] = useState<{
+    crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null; pitch: SetupPitch | null;
+    conditions: { kickoff: string; weather: MatchWeather; sunset: string } | null; sunSide: StadiumSun | null;
+  } | null>(null);
   /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
   const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
   // ── Complaint and VAR (`.claude/rules/game/var.md` §4) ──
@@ -377,6 +382,9 @@ export function MatchScreen() {
           referee?: MatchSetupReferee | null;
           /** Grass, mowing and condition of the pitch (spec 2026-10-16-pitch-types). */
           pitch?: SetupPitch | null;
+          /** Kickoff, weather and sunset of the match, and where the sun sets over the stadium (match light). */
+          conditions?: { kickoff: string; weather: MatchWeather; sunset: string } | null;
+          sunSide?: StadiumSun | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;
           /** The user's manager serves a touchline ban in this match (`var.md` §4). */
@@ -547,7 +555,10 @@ export function MatchScreen() {
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
         setVenueName(homeSquad.venue?.name ?? null);
-        setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null });
+        setTouchline({
+          crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,
+          conditions: data.conditions ?? null, sunSide: data.sunSide ?? null,
+        });
         if (data.managerBanned) setManagerOut("banned");
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
@@ -1203,6 +1214,13 @@ export function MatchScreen() {
           : null,
       ].filter(Boolean).join(" · ") || null;
   const setupPitch = touchline?.pitch ?? null;
+  // Match light (time of day, weather): stable object so the pitch only redraws when it really changes.
+  const lightConditions = touchline?.conditions ?? null;
+  const lightSun = touchline?.sunSide ?? null;
+  const matchLightingProp = useMemo<PitchLighting | null>(
+    () => (lightConditions && lightSun && matchFixture ? { ...lightConditions, sun: lightSun, seed: matchFixture.id } : null),
+    [lightConditions, lightSun, matchFixture?.id], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const pitchInfo = setupPitch
     ? t("match.stadium.pitch", { turf: t(`facilities.turf.type.${setupPitch.turf}`), pct: Math.round(setupPitch.condition) })
     : null;
@@ -1433,6 +1451,7 @@ export function MatchScreen() {
                   coachCard={coachCard}
                   extras
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id } : null}
+                  lighting={matchLightingProp}
                 />
                 {notice && (
                   <div
