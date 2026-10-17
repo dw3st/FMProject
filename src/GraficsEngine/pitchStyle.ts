@@ -108,11 +108,17 @@ export const LIGHTING = {
   WARM: { COLOR: 0xffb347, MAX: 0.1 },
   NIGHT: { COLOR: 0x061a33, MAX: 0.38, VIGNETTE: 0.45, FLOOD: 0.22 },
   /**
-   * Stadium shadow (4.29.3, like FM): a large crisp area from the sun's touchline, 30% of the pitch in the afternoon
-   * up to 70% at sunset, cool and see-through (the mowing stays visible). CUT_X yards before the far end the edge
-   * turns toward the touchline (the stand / roof corner), ending at CUT_DEPTH of the depth. LIT warms the sunlit side.
+   * Stadium shadow (4.30, like FM): from the sun's side stand, 30% of the pitch in the afternoon up to 70% at sunset
+   * (× the stand's height, at most MAX_SHARE), and from the end stand the sun leans toward (END_DAY → 1 × its reach),
+   * cool and see-through (the mowing stays visible). Edges fade over SOFT yards. LIT: the sunlit grass, brighter and
+   * yellower. Roof lines and corners come from the stadium (`stadiumSun`).
    */
-  STAND: { MIN_DEPTH: 0.3, MAX_DEPTH: 0.7, ALPHA: 0.4, COLOR: 0x08202a, LEAN: 0.15, CUT_X: 22, CUT_DEPTH: 0.35, LIT: { COLOR: 0xfff0c0, ALPHA: 0.06 } },
+  STAND: {
+    MIN_DEPTH: 0.3, MAX_DEPTH: 0.7, MAX_SHARE: 0.85, ALPHA: 0.42, COLOR: 0x08202a, LEAN: 0.15,
+    END_DAY: 0.35, SOFT: 3, LIT: { COLOR: 0xfff0a0, ALPHA: 0.1 },
+  },
+  /** Covered stadium: the lights always on at least FLOOD, the night outside only NIGHT_SCALE as dark. */
+  COVERED: { FLOOD: 0.6, NIGHT_SCALE: 0.5 },
   /** Player shadows (4.29.3): soft, dark green, close to the body. LEN from the marker centre (1 = its rim). */
   SHADOW_COLOR: 0x021a0a,
   CONTACT_SHADOW: { ALPHA: 0.6, ANGLE: 0.95, OFFSET: 0.42, RX: 0.95, RY: 0.75 },

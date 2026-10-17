@@ -6,6 +6,7 @@ import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, 
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
+import { stadiumShadeGrid } from "@/GraficsEngine/stadiumShadow";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface } from "@/GraficsEngine/pitchSurface";
@@ -242,27 +243,6 @@ function drawLight(
   toPx: (x: number, y: number) => { px: number; py: number }, w: number, h: number,
 ) {
   g.clear();
-  // Stadium shadow (like FM): from the sun's touchline, a crisp straight edge across the pitch that turns toward the
-  // touchline near one end (the stand / roof corner). Cool and see-through; the sunlit rest gets a warm touch.
-  if (l.stand.alpha > 0.005) {
-    const S = LIGHTING.STAND;
-    const d = l.stand.depth * PITCH_WIDTH;
-    const y0 = l.stand.side === "top" ? 0 : PITCH_WIDTH;
-    const s = l.stand.side === "top" ? 1 : -1;
-    const at = (x: number, depth: number) => toPx(x, y0 + s * depth);
-    // The corner cut is at the end the sun leans toward (lean < 0 = the x = 0 end).
-    const cutLeft = l.stand.lean < 0;
-    const x0 = -3, x1 = PITCH_LENGTH + 3;
-    const near = cutLeft ? x0 : x1, far = cutLeft ? x1 : x0;
-    const cutStart = cutLeft ? S.CUT_X : PITCH_LENGTH - S.CUT_X;
-    const edgeFar = d * (1 + Math.abs(l.stand.lean));
-    const shade = [at(far, -3), at(near, -3), at(near, d * S.CUT_DEPTH), at(cutStart, d), at(far, edgeFar)];
-    g.poly(shade.flatMap((p) => [p.px, p.py])).fill({ color: l.stand.color, alpha: l.stand.alpha });
-    if (l.stand.litAlpha > 0.005) {
-      const lit = [at(near, d * S.CUT_DEPTH), at(near, PITCH_WIDTH + 3), at(far, PITCH_WIDTH + 3), at(far, edgeFar), at(cutStart, d)];
-      g.poly(lit.flatMap((p) => [p.px, p.py])).fill({ color: S.LIT.COLOR, alpha: l.stand.litAlpha });
-    }
-  }
   if (l.warm.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.warm.color, alpha: l.warm.alpha });
   if (l.veil.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.veil.color, alpha: l.veil.alpha });
   if (l.dark.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.dark.color, alpha: l.dark.alpha });
@@ -564,7 +544,7 @@ export function PixiPitch({
   useEffect(() => {
     lightingRef.current = lighting;
     lightGenRef.current++;
-  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.side, lighting?.sun.lean, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.stadiumId, lighting?.sun.side, lighting?.sun.lean, lighting?.sun.covered, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -738,9 +718,49 @@ export function PixiPitch({
       app.stage.addChild(pitchGraphics);
 
       // Match light (time of day, weather): above the pitch, its lines and the stand, below the players.
-      // Redrawn only when the match clock moves a minute (or the light inputs / mirror change), never per frame.
+      // Redrawn every 10 game-seconds (or when the light inputs / mirror change), never per frame.
       const lightGraphics = new Graphics();
       lightGraphics.eventMode = 'none';
+      // Stadium shadow (`stadiumShadow.ts`): a yard-per-pixel grid in a canvas texture stretched over the pitch
+      // (linear filtering smooths it), under the veils of the light layer. Redrawn with the light layer.
+      const shadeCanvas = document.createElement('canvas');
+      const shadeCtx = shadeCanvas.getContext('2d');
+      let shadeTexture: Texture | null = null;
+      const shadeSprite = new Sprite();
+      shadeSprite.eventMode = 'none';
+      shadeSprite.visible = false;
+      app.stage.addChild(shadeSprite);
+      const drawShade = (l: Lighting | null, sun: StadiumSun | null) => {
+        if (!l || !sun || !shadeCtx || l.stand.alpha <= 0.005) { shadeSprite.visible = false; return; }
+        const S = LIGHTING.STAND;
+        const grid = stadiumShadeGrid(sun, l.stand.depth * PITCH_WIDTH, l.stand.endDepth, S.LEAN, S.SOFT);
+        if (shadeCanvas.width !== grid.w || shadeCanvas.height !== grid.h) {
+          shadeCanvas.width = grid.w; shadeCanvas.height = grid.h;
+          shadeTexture?.destroy(true);
+          shadeTexture = null;
+        }
+        const img = shadeCtx.createImageData(grid.w, grid.h);
+        const dark = l.stand.color, lit = S.LIT.COLOR;
+        for (let k = 0; k < grid.cells.length; k++) {
+          const v = grid.cells[k]!;
+          // Shade over the shadow, warm light over the sun, mixed across the soft edge.
+          const aShade = l.stand.alpha * v, aLit = l.stand.litAlpha * (1 - v);
+          const a = aShade + aLit;
+          const t = a > 0 ? aShade / a : 0;
+          const o = k * 4;
+          img.data[o]     = Math.round(((lit >> 16) & 255) * (1 - t) + ((dark >> 16) & 255) * t);
+          img.data[o + 1] = Math.round(((lit >> 8) & 255) * (1 - t) + ((dark >> 8) & 255) * t);
+          img.data[o + 2] = Math.round((lit & 255) * (1 - t) + (dark & 255) * t);
+          img.data[o + 3] = Math.round(Math.min(1, a) * 255);
+        }
+        shadeCtx.putImageData(img, 0, 0);
+        if (!shadeTexture) { shadeTexture = Texture.from(shadeCanvas); shadeSprite.texture = shadeTexture; }
+        else shadeTexture.source.update();
+        const p0 = toPixel(grid.x0, grid.y0), p1 = toPixel(grid.x0 + grid.w, grid.y0 + grid.h);
+        shadeSprite.position.set(p0.px, p0.py);
+        shadeSprite.scale.set((p1.px - p0.px) / grid.w, (p1.py - p0.py) / grid.h);
+        shadeSprite.visible = true;
+      };
       app.stage.addChild(lightGraphics);
       let currentLight: Lighting | null = null;
       let lastLightKey = "";
@@ -750,15 +770,17 @@ export function PixiPitch({
       const updateLight = () => {
         const li = lightingRef.current;
         if (!li) {
-          if (currentLight) { lightGraphics.clear(); currentLight = null; lastLightKey = ""; shadowKey = ""; refreshShadows(null); }
+          if (currentLight) { lightGraphics.clear(); drawShade(null, null); currentLight = null; lastLightKey = ""; shadowKey = ""; refreshShadows(null); }
           return;
         }
         const clock = li.clockOverride ?? matchClockMinutes(stateRef.current, minutesOf(li.kickoff));
-        const key = `${Math.floor(clock)}|${mirrorRef.current}|${lightGenRef.current}`;
+        // Every 10 game-seconds: the stadium shadow grows smoothly toward sunset instead of jumping each minute.
+        const key = `${Math.floor(clock * 6)}|${mirrorRef.current}|${lightGenRef.current}`;
         if (key === lastLightKey) return;
         lastLightKey = key;
         const weather = li.weather === "wind_rain" ? "rain" : li.weather;
         currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun });
+        drawShade(currentLight, li.sun);
         drawLight(lightGraphics, currentLight, toPixel, canvasWidth, canvasHeight);
         // Player shadows: only when they actually change (the sun shadow grows slowly toward sunset).
         const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.kind},${s.angle.toFixed(2)},${s.length.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;
@@ -1480,7 +1502,7 @@ export function PixiPitch({
       let particleSeedKey = "";
       const drawParticles = () => {
         const li = lightingRef.current;
-        if (li && (li.weather === "rain" || li.weather === "snow" || li.weather === "wind_rain")) {
+        if (li && !li.sun.covered && (li.weather === "rain" || li.weather === "snow" || li.weather === "wind_rain")) {
           const pk = `${li.weather}|${li.seed}`;
           if (particleSeedKey !== pk) { particles = weatherParticles(li.weather, li.seed); particleSeedKey = pk; }
           particleGraphics.clear();

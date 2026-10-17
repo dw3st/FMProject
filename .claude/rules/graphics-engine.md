@@ -98,10 +98,18 @@ longo do comprimento; desde a 4.29.3 colada ao corpo: 1,35 raio de dia, 1,65 no 
 dos refletores. "Suave" = a mesma forma desenhada 4 vezes, cada uma maior e mais fraca (sem filtro), em verde-escuro
 (`LIGHTING.SHADOW_COLOR`). A sombra dura antiga (`MARKER_SHADOW`) só aparece sem luz. Constantes em `LIGHTING`.
 
-## Sombra do estádio (4.29.3)
+## Sombra do estádio (4.30)
 
-Como no FM (report de tester com a imagem de referência): a partir da linha lateral do sol, uma área grande de borda
-nítida (30% da largura do campo à tarde, 70% no pôr do sol, `LIGHTING.STAND`), em azul-esverdeado escuro translúcido
-(o corte da grama continua visível). A `CUT_X` jardas da ponta para onde o sol se inclina, a borda vira em ângulo até a
-lateral (`CUT_DEPTH` da profundidade: o canto da arquibancada/cobertura). O lado ao sol ganha um toque quente
-(`LIT`). Some com nuvem, chuva e à noite, como antes (`drawLight`, `PixiPitch.tsx`).
+Como no FM (reports de tester com imagens): cada estádio tem um id único (`stadiumIdOf`, `src/Domain/matchday/stadiumSun.ts`:
+`std_<nome>_<cidade>` do `venue`; clubes que dividem o estádio dividem a sombra; sem estádio `std_club_<id>`; campo
+neutro `std_neutral_<jogo>`) e um perfil sorteado desse id (`stadiumSun`; não é a orientação real): lado do sol,
+inclinação, altura da arquibancada (0,75–1,25), contorno da cobertura em degraus (`sideSteps`), recorte nos cantos
+(`cut`: no lado da inclinação, nos dois ou nenhum), sombra da arquibancada do fundo em L (`endShadow`, `endDepth`,
+`endSteps`) e **coberto** (6%: sem sol, sem chuva/neve, luzes sempre acesas, metade da escuridão da noite).
+
+`stadiumShadow.ts` (`stadiumShadeGrid`, puro, com teste): uma grade de 1 jarda (0 = sol, 1 = sombra) com bordas em
+`smoothstep` de `SOFT` jardas; a lateral cobre 30% → 70% da largura até o pôr do sol (× altura, até 85%), a do fundo
+`END_DAY` → 100% do alcance. `PixiPitch` escreve a grade num canvas (sombra azul-esverdeada translúcida; o lado ao sol
+amarelado, `LIT`), estica como sprite sobre o campo (filtro linear suaviza mais; espelho incluído) e redesenha a cada
+10 segundos de jogo com a camada de luz (a sombra cresce sem saltos). `/test`: chips Stadium (cut lean · both · none ·
+covered).

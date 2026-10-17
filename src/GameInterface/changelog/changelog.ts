@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.30",
+    date: "2026-10-17",
+    items: [
+      { pt: "Cada estádio tem a sua sombra: o contorno da cobertura, o canto e, em alguns, a arquibancada do fundo também faz sombra. Estádios cobertos não têm sol nem chuva no gramado.", en: "Every stadium casts its own shadow: the roof line, the corner and, in some, the end stand too. Covered stadiums have no sun or rain on the pitch." },
+      { pt: "A sombra do estádio tem a borda suave e cresce aos poucos até o pôr do sol; o lado ao sol fica mais claro.", en: "The stadium shadow has a soft edge and grows gradually toward sunset; the sunlit side is brighter." },
+    ],
+  },
+  {
     version: "4.29.3",
     date: "2026-10-17",
     items: [
