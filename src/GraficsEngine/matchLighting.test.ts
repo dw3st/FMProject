@@ -28,7 +28,8 @@ describe("matchLighting", () => {
     expect(l.dark.alpha).toBe(0);
     expect(l.flood).toBe(0);
     expect(l.stand.depth).toBeCloseTo(0.08, 5);
-    expect(l.shadows).toHaveLength(1);
+    expect(l.shadows.filter((x) => x.kind === "cast")).toHaveLength(1);
+    expect(l.shadows.filter((x) => x.kind === "contact")).toHaveLength(1);
   });
 
   test("golden hour grows the stand shadow and the warm tint; continuous across the bands", () => {
@@ -46,12 +47,12 @@ describe("matchLighting", () => {
     expect(l.dark.alpha).toBeCloseTo(0.38, 5);
     expect(l.flood).toBe(1);
     expect(l.stand.alpha).toBe(0);
-    expect(l.shadows).toHaveLength(4);
+    expect(l.shadows.filter((x) => x.kind === "cast")).toHaveLength(4);
   });
 
   test("clouds take the sun shadows away and add a veil", () => {
     const l = at(S - 180, "cloudy");
-    expect(l.shadows).toHaveLength(0);
+    expect(l.shadows.filter((x) => x.kind === "cast")).toHaveLength(0);
     expect(l.stand.alpha).toBe(0);
     expect(l.veil.alpha).toBeGreaterThan(0);
   });
@@ -59,6 +60,6 @@ describe("matchLighting", () => {
   test("sun on the top touchline: shadows point down (+y), the stand shadow is the top one", () => {
     const l = at(S - 180);
     expect(l.stand.side).toBe("top");
-    expect(l.shadows[0]!.dy).toBeGreaterThan(0);
+    expect(Math.sin(l.shadows.find((x) => x.kind === "cast")!.angle)).toBeGreaterThan(0);
   });
 });

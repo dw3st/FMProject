@@ -108,8 +108,11 @@ export const LIGHTING = {
   WARM: { COLOR: 0xffb347, MAX: 0.1 },
   NIGHT: { COLOR: 0x061a33, MAX: 0.38, VIGNETTE: 0.45, FLOOD: 0.22 },
   STAND: { MIN_DEPTH: 0.08, MAX_DEPTH: 0.5, ALPHA: 0.3, LEAN: 0.3 },
-  SUN_SHADOW: { ALPHA: 0.35, LEN: 1.8, LEN_GOLDEN: 3.4, WIDTH: 0.6 },
-  FLOOD_SHADOW: { ALPHA: 0.2, LEN: 1.4, WIDTH: 0.5 },
+  /** Player shadows (4.29.2): soft, dark green, short. LEN from the marker centre (1 = its rim). */
+  SHADOW_COLOR: 0x021a0a,
+  CONTACT_SHADOW: { ALPHA: 0.6, ANGLE: 0.95, OFFSET: 0.42, RX: 0.95, RY: 0.75 },
+  SUN_SHADOW: { ALPHA: 0.85, LEN: 2.2, LEN_GOLDEN: 2.9, WIDTH: 0.5, TIP: 0.2, SIDE: 0.5 },
+  FLOOD_SHADOW: { ALPHA: 0.5, LEN: 1.45, WIDTH: 0.32, TIP: 0.16 },
   /** Share of the sun shadows kept by each weather; the rest is a grey veil. */
   SUN_BY_WEATHER: { sunny: 1, clear: 1, hot: 1, wind: 1, cold: 0.5, partlyCloudy: 0.5, cloudy: 0, rain: 0, snow: 0 },
   VEIL: { COLOR: 0x6a7a80, BY_WEATHER: { partlyCloudy: 0.05, cloudy: 0.14, rain: 0.2, snow: 0.12, cold: 0.06 } },

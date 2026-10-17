@@ -4,6 +4,7 @@ import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
+import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
@@ -275,25 +276,17 @@ function drawLight(
 }
 
 /**
- * Light shadows of one marker (the sun's one, or four faint ones under the floodlights): rotated ellipses relative
- * to the marker centre, in marker radii -> px. The drawn pitch is turned 180 degrees with `mirror`, so are the shadows.
+ * Light shadows of one marker: a soft contact shadow, plus the sun's cast one or four faint ones under the floodlights
+ * (`playerShadow.ts`), in marker radii -> px. The drawn pitch is turned 180 degrees with `mirror`, so are the shadows.
  */
 function drawLightShadows(g: Graphics, l: Lighting | null, r: number, mirror: boolean) {
   g.clear();
   if (!l) return;
-  const k = mirror ? -1 : 1;
+  // Soft, tapered, dark green shapes (`playerShadow.ts`), in marker radii → px.
   for (const s of l.shadows) {
-    const rot = s.rotation + (mirror ? Math.PI : 0);
-    const cx = k * s.dx * r, cy = k * s.dy * r;
-    const rx = s.rx * r, ry = s.ry * r;
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    const pts: number[] = [];
-    for (let i = 0; i < 20; i++) {
-      const a = (i / 20) * Math.PI * 2;
-      const ex = Math.cos(a) * rx, ey = Math.sin(a) * ry;
-      pts.push(cx + ex * cos - ey * sin, cy + ex * sin + ey * cos);
+    for (const p of shadowPolygons(s, mirror)) {
+      g.poly(p.points.map((v) => v * r)).fill({ color: LIGHTING.SHADOW_COLOR, alpha: p.alpha });
     }
-    g.poly(pts).fill({ color: 0x000000, alpha: s.alpha });
   }
 }
 
@@ -758,7 +751,7 @@ export function PixiPitch({
         currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun });
         drawLight(lightGraphics, currentLight, toPixel, canvasWidth, canvasHeight);
         // Player shadows: only when they actually change (the sun shadow grows slowly toward sunset).
-        const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.dx.toFixed(2)},${s.dy.toFixed(2)},${s.rx.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;
+        const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.kind},${s.angle.toFixed(2)},${s.length.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;
         if (sk !== shadowKey) { shadowKey = sk; refreshShadows(currentLight); }
       };
 
@@ -1034,7 +1027,10 @@ export function PixiPitch({
           .stroke({ width: 1, color: 0x000000, alpha: 0.4 });
         cardBadge.label = "card";
         cardBadge.visible = false;
-        // Light shadows (time of day): empty without `lighting`; redrawn only when the light changes.
+        // Light shadows (time of day): empty without `lighting`; redrawn only when the light changes. With the
+        // light on they include a soft contact shadow, so the old hard one is hidden.
+        shadow.label = "contactShadow";
+        shadow.visible = !currentLight;
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
@@ -1072,6 +1068,8 @@ export function PixiPitch({
         for (const marker of playerGraphics.values()) {
           const ls = marker.getChildByLabel("lightShadow") as Graphics | null;
           if (ls) drawLightShadows(ls, l, markerR, mirrorRef.current);
+          const contact = marker.getChildByLabel("contactShadow");
+          if (contact) contact.visible = !l;
         }
       };
       updateLight(); // first light before the markers are created (they draw the current shadows)
