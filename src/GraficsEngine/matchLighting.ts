@@ -44,8 +44,20 @@ export function matchClockMinutes(s: ClockState, kickoff: number): number {
   }
 }
 
-/** One player shadow, relative to the marker centre, in marker radii (rotation in radians). */
-export interface ShadowSpec { dx: number; dy: number; rx: number; ry: number; rotation: number; alpha: number }
+/**
+ * One player shadow, in marker radii from the marker centre (`playerShadow.ts` draws it).
+ * - `cast`: from the centre along `angle` (radians, 0 = +x, π/2 = +y), `length` long, half-width `width` at the
+ *   feet tapering to `tip`.
+ * - `contact`: an ellipse under the feet: centre `length` from the marker centre along `angle`, radii `width` × `tip`.
+ */
+export interface ShadowSpec {
+  kind: "cast" | "contact";
+  angle: number;
+  length: number;
+  width: number;
+  tip: number;
+  alpha: number;
+}
 
 export interface Lighting {
   warm: { color: number; alpha: number };
@@ -56,7 +68,7 @@ export interface Lighting {
   vignette: number;
   /** Stand shadow from the sun touchline: depth = fraction of the pitch width (74 yd). */
   stand: { side: "top" | "bottom"; depth: number; lean: number; alpha: number };
-  /** Extra shadows of every player (the small contact shadow under the marker stays as it is). */
+  /** Every player's shadows: a soft contact shadow under the feet, plus the sun's or the floodlights' cast ones. */
   shadows: ShadowSpec[];
 }
 
@@ -72,22 +84,22 @@ export function matchLighting(input: { clock: number; sunset: number; weather: M
   const veilAlpha = (L.VEIL.BY_WEATHER as Record<string, number>)[input.weather] ?? 0;
 
   const dir = input.sun.side === "top" ? 1 : -1; // shadows point away from the sun
-  const shadows: ShadowSpec[] = [];
+  const C = L.CONTACT_SHADOW;
+  const shadows: ShadowSpec[] = [
+    { kind: "contact", angle: C.ANGLE, length: C.OFFSET, width: C.RX, tip: C.RY, alpha: C.ALPHA },
+  ];
   if (sun > 0.01) {
-    const len = L.SUN_SHADOW.LEN + (L.SUN_SHADOW.LEN_GOLDEN - L.SUN_SHADOW.LEN) * golden;
-    const angle = Math.atan2(dir, -input.sun.lean * 0.6);
+    const S = L.SUN_SHADOW;
     shadows.push({
-      dx: Math.cos(angle) * len * 0.5, dy: Math.sin(angle) * len * 0.5,
-      rx: len * 0.5 + 0.5, ry: L.SUN_SHADOW.WIDTH, rotation: angle, alpha: L.SUN_SHADOW.ALPHA * sun,
+      // Never straight down the marker: the sun is always a little to one side (by the stadium's lean).
+      kind: "cast", angle: Math.atan2(dir, (input.sun.lean >= 0 ? -1 : 1) * (S.SIDE + S.SIDE * Math.abs(input.sun.lean))),
+      length: S.LEN + (S.LEN_GOLDEN - S.LEN) * golden, width: S.WIDTH, tip: S.TIP, alpha: S.ALPHA * sun,
     });
   }
   if (flood > 0.01) {
+    const F = L.FLOOD_SHADOW;
     for (const [ax, ay] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
-      const angle = Math.atan2(ay, ax);
-      shadows.push({
-        dx: Math.cos(angle) * L.FLOOD_SHADOW.LEN * 0.5, dy: Math.sin(angle) * L.FLOOD_SHADOW.LEN * 0.5,
-        rx: L.FLOOD_SHADOW.LEN * 0.5 + 0.4, ry: L.FLOOD_SHADOW.WIDTH, rotation: angle, alpha: L.FLOOD_SHADOW.ALPHA * flood,
-      });
+      shadows.push({ kind: "cast", angle: Math.atan2(ay, ax), length: F.LEN, width: F.WIDTH, tip: F.TIP, alpha: F.ALPHA * flood });
     }
   }
   return {

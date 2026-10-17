@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.29.2",
+    date: "2026-10-17",
+    items: [
+      {
+        pt: "Sombras dos jogadores mais naturais: suaves, curtas e afinando na ponta.",
+        en: "More natural player shadows: soft, short and tapering at the tip.",
+      },
+    ],
+  },
+  {
     version: "4.29.1",
     date: "2026-10-17",
     items: [

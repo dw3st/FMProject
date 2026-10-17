@@ -89,3 +89,11 @@ Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: 
 - `/test`: Hora (Off · 13:30 · 17:30 · 20:45 · Por jogo = saída 17:30, pôr do sol 18:30) e Clima (sunny · cloudy · rain · wind_rain · snow).
 - FPS: não medido. A aba automatizada do Chrome limita os quadros (~1,3/s), então o medidor do `/test` não vale lá; a leitura manual numa janela normal está pendente (meta: queda ≤ 5 FPS com Hora 20:45 + chuva contra Hora Off).
 - Limitações: a orientação do estádio é desenhada, não real; a luz não afeta a simulação; sem sombra de jogador nas arquibancadas, sem reflexo em poças.
+
+## Sombras dos jogadores (4.29.2)
+
+`playerShadow.ts` (`shadowPolygons`, puro, com teste): com a luz ligada, cada jogador tem uma sombra de contato suave
+(elipse deslocada para baixo e para o lado) e a sombra projetada do sol (afinando dos pés até a ponta, clareando ao
+longo do comprimento; 2,2 raios de dia, 2,9 no fim da tarde, sempre um pouco de lado) ou, à noite, 4 sombras curtas
+dos refletores. "Suave" = a mesma forma desenhada 4 vezes, cada uma maior e mais fraca (sem filtro), em verde-escuro
+(`LIGHTING.SHADOW_COLOR`). A sombra dura antiga (`MARKER_SHADOW`) só aparece sem luz. Constantes em `LIGHTING`.
