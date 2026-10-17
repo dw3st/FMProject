@@ -98,3 +98,19 @@ export const STADIUM = {
   /** A stand under works (#137): bare base, scaffolding lines and hazard tape along the pitch. */
   WORKS_BASE: 0x3b3a33, WORKS_SCAFFOLD: 0x6b6a5e, WORKS_TAPE: 0xe0a526, WORKS_TAPE_DARK: 0x1b1b18,
 } as const;
+
+/**
+ * Match light by the time of day and the weather (spec 2026-10-16-match-lighting). Minutes are relative to sunset.
+ * Shadow sizes in marker radii; stand shadow depth as a fraction of the pitch width.
+ */
+export const LIGHTING = {
+  GOLDEN_FROM: -90, DUSK_FROM: -30, NIGHT_FROM: 30,
+  WARM: { COLOR: 0xffb347, MAX: 0.1 },
+  NIGHT: { COLOR: 0x061a33, MAX: 0.38, VIGNETTE: 0.45, FLOOD: 0.22 },
+  STAND: { MIN_DEPTH: 0.08, MAX_DEPTH: 0.5, ALPHA: 0.3, LEAN: 0.3 },
+  SUN_SHADOW: { ALPHA: 0.35, LEN: 1.8, LEN_GOLDEN: 3.4, WIDTH: 0.6 },
+  FLOOD_SHADOW: { ALPHA: 0.2, LEN: 1.4, WIDTH: 0.5 },
+  /** Share of the sun shadows kept by each weather; the rest is a grey veil. */
+  SUN_BY_WEATHER: { sunny: 1, clear: 1, hot: 1, wind: 1, cold: 0.5, partlyCloudy: 0.5, cloudy: 0, rain: 0, snow: 0 },
+  VEIL: { COLOR: 0x6a7a80, BY_WEATHER: { partlyCloudy: 0.05, cloudy: 0.14, rain: 0.2, snow: 0.12, cold: 0.06 } },
+} as const;
