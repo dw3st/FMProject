@@ -242,16 +242,26 @@ function drawLight(
   toPx: (x: number, y: number) => { px: number; py: number }, w: number, h: number,
 ) {
   g.clear();
-  // Stand shadow: from the sun's touchline, across the pitch (engine yards -> px, mirror included).
+  // Stadium shadow (like FM): from the sun's touchline, a crisp straight edge across the pitch that turns toward the
+  // touchline near one end (the stand / roof corner). Cool and see-through; the sunlit rest gets a warm touch.
   if (l.stand.alpha > 0.005) {
+    const S = LIGHTING.STAND;
     const d = l.stand.depth * PITCH_WIDTH;
     const y0 = l.stand.side === "top" ? 0 : PITCH_WIDTH;
     const s = l.stand.side === "top" ? 1 : -1;
-    const pts = [
-      toPx(-3, y0 - s * 3), toPx(PITCH_LENGTH + 3, y0 - s * 3),
-      toPx(PITCH_LENGTH + 3, y0 + s * d * (1 + l.stand.lean)), toPx(-3, y0 + s * d * (1 - l.stand.lean)),
-    ];
-    g.poly(pts.flatMap((p) => [p.px, p.py])).fill({ color: 0x000000, alpha: l.stand.alpha });
+    const at = (x: number, depth: number) => toPx(x, y0 + s * depth);
+    // The corner cut is at the end the sun leans toward (lean < 0 = the x = 0 end).
+    const cutLeft = l.stand.lean < 0;
+    const x0 = -3, x1 = PITCH_LENGTH + 3;
+    const near = cutLeft ? x0 : x1, far = cutLeft ? x1 : x0;
+    const cutStart = cutLeft ? S.CUT_X : PITCH_LENGTH - S.CUT_X;
+    const edgeFar = d * (1 + Math.abs(l.stand.lean));
+    const shade = [at(far, -3), at(near, -3), at(near, d * S.CUT_DEPTH), at(cutStart, d), at(far, edgeFar)];
+    g.poly(shade.flatMap((p) => [p.px, p.py])).fill({ color: l.stand.color, alpha: l.stand.alpha });
+    if (l.stand.litAlpha > 0.005) {
+      const lit = [at(near, d * S.CUT_DEPTH), at(near, PITCH_WIDTH + 3), at(far, PITCH_WIDTH + 3), at(far, edgeFar), at(cutStart, d)];
+      g.poly(lit.flatMap((p) => [p.px, p.py])).fill({ color: S.LIT.COLOR, alpha: l.stand.litAlpha });
+    }
   }
   if (l.warm.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.warm.color, alpha: l.warm.alpha });
   if (l.veil.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.veil.color, alpha: l.veil.alpha });

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.29.3",
+    date: "2026-10-17",
+    items: [
+      { pt: "Sombra do estádio na partida como na TV: grande, de borda nítida, crescendo até o fim da tarde, com o lado ao sol mais claro.", en: "Stadium shadow in the match like on TV: large and crisp, growing toward sunset, with the sunlit side brighter." },
+    ],
+    fixes: [
+      { pt: "As sombras dos jogadores ficaram curtas, junto ao corpo.", en: "Player shadows are now short, close to the body." },
+    ],
+  },
+  {
     version: "4.29.2",
     date: "2026-10-17",
     items: [

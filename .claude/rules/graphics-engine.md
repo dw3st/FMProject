@@ -94,6 +94,14 @@ Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: 
 
 `playerShadow.ts` (`shadowPolygons`, puro, com teste): com a luz ligada, cada jogador tem uma sombra de contato suave
 (elipse deslocada para baixo e para o lado) e a sombra projetada do sol (afinando dos pés até a ponta, clareando ao
-longo do comprimento; 2,2 raios de dia, 2,9 no fim da tarde, sempre um pouco de lado) ou, à noite, 4 sombras curtas
+longo do comprimento; desde a 4.29.3 colada ao corpo: 1,35 raio de dia, 1,65 no fim da tarde, sempre um pouco de lado) ou, à noite, 4 sombras curtas
 dos refletores. "Suave" = a mesma forma desenhada 4 vezes, cada uma maior e mais fraca (sem filtro), em verde-escuro
 (`LIGHTING.SHADOW_COLOR`). A sombra dura antiga (`MARKER_SHADOW`) só aparece sem luz. Constantes em `LIGHTING`.
+
+## Sombra do estádio (4.29.3)
+
+Como no FM (report de tester com a imagem de referência): a partir da linha lateral do sol, uma área grande de borda
+nítida (30% da largura do campo à tarde, 70% no pôr do sol, `LIGHTING.STAND`), em azul-esverdeado escuro translúcido
+(o corte da grama continua visível). A `CUT_X` jardas da ponta para onde o sol se inclina, a borda vira em ângulo até a
+lateral (`CUT_DEPTH` da profundidade: o canto da arquibancada/cobertura). O lado ao sol ganha um toque quente
+(`LIT`). Some com nuvem, chuva e à noite, como antes (`drawLight`, `PixiPitch.tsx`).
