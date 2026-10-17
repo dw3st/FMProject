@@ -23,17 +23,17 @@ describe("matchLighting", () => {
   const at = (clock: number, weather: MatchWeather = "sunny") =>
     matchLighting({ clock, sunset: S, weather, sun });
 
-  test("day: no darkness, short stand shadow, one sun shadow", () => {
+  test("day: no darkness, stand shadow over 30% of the pitch, one sun shadow", () => {
     const l = at(S - 180);
     expect(l.dark.alpha).toBe(0);
     expect(l.flood).toBe(0);
-    expect(l.stand.depth).toBeCloseTo(0.08, 5);
+    expect(l.stand.depth).toBeCloseTo(0.3, 5);
     expect(l.shadows.filter((x) => x.kind === "cast")).toHaveLength(1);
     expect(l.shadows.filter((x) => x.kind === "contact")).toHaveLength(1);
   });
 
   test("golden hour grows the stand shadow and the warm tint; continuous across the bands", () => {
-    expect(at(S - 30).stand.depth).toBeCloseTo(0.5, 5);
+    expect(at(S - 30).stand.depth).toBeCloseTo(0.7, 5);
     expect(at(S - 30).warm.alpha).toBeGreaterThan(at(S - 90).warm.alpha);
     for (const edge of [S - 90, S - 30, S + 30]) {
       const a = at(edge - 0.01), b = at(edge + 0.01);

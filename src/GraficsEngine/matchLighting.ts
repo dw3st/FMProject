@@ -67,7 +67,7 @@ export interface Lighting {
   flood: number;
   vignette: number;
   /** Stand shadow from the sun touchline: depth = fraction of the pitch width (74 yd). */
-  stand: { side: "top" | "bottom"; depth: number; lean: number; alpha: number };
+  stand: { side: "top" | "bottom"; depth: number; lean: number; alpha: number; color: number; litAlpha: number };
   /** Every player's shadows: a soft contact shadow under the feet, plus the sun's or the floodlights' cast ones. */
   shadows: ShadowSpec[];
 }
@@ -113,6 +113,8 @@ export function matchLighting(input: { clock: number; sunset: number; weather: M
       depth: L.STAND.MIN_DEPTH + (L.STAND.MAX_DEPTH - L.STAND.MIN_DEPTH) * golden,
       lean: input.sun.lean * L.STAND.LEAN,
       alpha: L.STAND.ALPHA * sun,
+      color: L.STAND.COLOR,
+      litAlpha: L.STAND.LIT.ALPHA * sun,
     },
     shadows,
   };
