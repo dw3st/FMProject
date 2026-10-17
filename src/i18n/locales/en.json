@@ -111,6 +111,7 @@
     "statPlayers": "36k players",
     "statCups": "cups and continental",
     "sourceCode": "Source code",
+    "osmCredit": "Stadiums: © OpenStreetMap contributors",
     "license": "AGPL-3.0",
     "developedBy": "Developed by",
     "footerText": "© 2026 FMProject · based on TouchLines (AGPL-3.0)"

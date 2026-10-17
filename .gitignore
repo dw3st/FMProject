@@ -62,6 +62,7 @@ persistent/
 data_process/espn/headshots/
 data_process/wikidata/photos/
 data_process/wikidata/cache/
+data_process/stadiums/cache/
 data_process/thesportsdb/photos/
 data_process/thesportsdb/cache/
 data_process/transfermarkt/cache/

@@ -117,6 +117,11 @@ export const LIGHTING = {
     MIN_DEPTH: 0.3, MAX_DEPTH: 0.7, MAX_SHARE: 0.85, ALPHA: 0.42, COLOR: 0x08202a, LEAN: 0.15,
     END_DAY: 0.35, SOFT: 3, LIT: { COLOR: 0xfff0a0, ALPHA: 0.1 },
   },
+  /**
+   * Real stadium (4.31): a stand's shadow reaches height ÷ tan(sun elevation), less SETBACK metres (the stand stands
+   * back from the touchline), at most MAX_REACH × the height; the sun fades out below FADE_ELEVATION degrees.
+   */
+  REAL: { SETBACK: 6, MAX_REACH: 12, FADE_ELEVATION: 3 },
   /** Covered stadium: the lights always on at least FLOOD, the night outside only NIGHT_SCALE as dark. */
   COVERED: { FLOOD: 0.6, NIGHT_SCALE: 0.5 },
   /** Player shadows (4.29.3): soft, dark green, close to the body. LEN from the marker centre (1 = its rim). */

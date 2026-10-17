@@ -47,6 +47,8 @@ export function LandingScreen() {
         <span>{t("landing.footerText")}</span>
         <a href={SOURCE_REPO_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.sourceCode")}</a>
         <a href={LICENSE_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.license")}</a>
+        {/* Stadium shapes (4.31) come from OpenStreetMap: ODbL asks for this credit. */}
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" className={LINK}>{t("landing.osmCredit")}</a>
         <span>
           {t("landing.developedBy")}{" "}
           <a href="https://westlab.dev" target="_blank" rel="noopener" className={LINK}>westlab.dev</a>

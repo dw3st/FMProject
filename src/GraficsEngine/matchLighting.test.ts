@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
-import { matchClockMinutes, matchLighting, minutesOf } from "@/GraficsEngine/matchLighting";
+import { matchClockMinutes, matchLighting, minutesOf, realSunGeometry } from "@/GraficsEngine/matchLighting";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 
 const sun: StadiumSun = { stadiumId: "std_t", side: "top", lean: 0, covered: false, height: 1, cut: "lean", cutX: 20, cutDepth: 0.35, sideSteps: [1], endShadow: false, endDepth: 0.2, endSteps: [1] };
@@ -89,5 +89,30 @@ describe("matchLighting", () => {
     expect(day.shadows.filter((x) => x.kind === "cast")).toHaveLength(4);
     const night = matchLighting({ clock: S + 60, sunset: S, weather: "sunny", sun: cov });
     expect(night.dark.alpha).toBeCloseTo(0.38 * 0.5, 5);
+  });
+
+  describe("real stadium (Old Trafford, pitch axis 70.6°)", () => {
+    const real = { id: "std_Q", qid: "Q", name: "Old Trafford", lat: 53.4631, lon: -2.2913, axis: 70.6,
+      heights: { top: 30, bottom: 30, low: 30, high: 30 }, roof: "open" as const, tzStd: 0, dst: "eu" as const };
+    const ot = { ...sun, real };
+    test("winter afternoon: a long shadow; summer midday: a short one", () => {
+      const winter = realSunGeometry(ot, "2027-12-15", 15 * 60);
+      const summer = realSunGeometry(ot, "2027-06-21", 13 * 60);
+      expect(winter.depth).toBeGreaterThan(summer.depth);
+      expect(summer.depth).toBeLessThan(0.2);
+    });
+    test("the sun in the south-west casts the shadow from the stand on that side", () => {
+      // +y (bottom) faces 160.6°: the sun at ~225° is on the bottom side, the shadow runs toward −y from the bottom.
+      const g = realSunGeometry(ot, "2027-12-15", 15 * 60);
+      expect(g.side).toBe("bottom");
+      expect(g.sy).toBeLessThan(0);
+    });
+    test("lighting uses it: the stand profile follows the sun, gone after dark", () => {
+      const day = matchLighting({ clock: 15 * 60, sunset: 15 * 60 + 50, weather: "sunny", sun: ot, date: "2027-12-15" });
+      expect(day.stand.profile.side).toBe("bottom");
+      expect(day.stand.alpha).toBeGreaterThan(0);
+      const night = matchLighting({ clock: 20 * 60, sunset: 15 * 60 + 50, weather: "sunny", sun: ot, date: "2027-12-15" });
+      expect(night.stand.alpha).toBe(0);
+    });
   });
 });

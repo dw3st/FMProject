@@ -75,7 +75,8 @@ import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
-import { stadiumIdOf, stadiumSun, type StadiumSun } from "@/Domain/matchday/stadiumSun";
+import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
+import { matchSun } from "@/backend/stadiumData";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -621,14 +622,16 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
     const pitchCondition = pitch?.condition ?? null;
     // Kickoff, weather and sunset (cosmetic, `matchConditions`) and where the sun sets over the home stadium:
     // the live pitch draws the light of that time (spec 2026-10-16-match-lighting).
-    let conditions: { kickoff: string; weather: MatchWeather; sunset: string } | null = null;
+    let conditions: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null = null;
     let sunSide: StadiumSun | null = null;
     if (matchFixture && opponentSquad) {
       const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
       const c = matchConditions(matchFixture, matchFixture.neutral ? null : homeSquad.country ?? null);
-      conditions = { kickoff: c.kickoff, weather: c.weather, sunset: c.sunset };
-      // Each stadium (unique id from the venue) has its own shadow, or none under a closed roof.
-      sunSide = stadiumSun(stadiumIdOf(homeSquad, matchFixture.neutral ? matchFixture.id : undefined));
+      // Each stadium has its own shadow (a real one in the main leagues: its sun, sunset and roof), none under a
+      // closed roof.
+      const ms = matchSun(homeSquad, matchFixture.neutral ? matchFixture.id : undefined, matchDate, c.weather);
+      conditions = { kickoff: c.kickoff, weather: c.weather, sunset: ms.sunset ?? c.sunset, ...(matchDate ? { date: matchDate } : {}) };
+      sunSide = ms.sun;
     }
     // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
     const crowd = saveIdParam && matchFixture && opponentSquad

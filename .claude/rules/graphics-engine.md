@@ -113,3 +113,29 @@ inclinação, altura da arquibancada (0,75–1,25), contorno da cobertura em deg
 amarelado, `LIT`), estica como sprite sobre o campo (filtro linear suaviza mais; espelho incluído) e redesenha a cada
 10 segundos de jogo com a camada de luz (a sombra cresce sem saltos). `/test`: chips Stadium (cut lean · both · none ·
 covered).
+
+## Estádios reais (4.31)
+
+Nas 10 ligas principais (`LEAGUES` de `scripts/faces/wikidata.ts`) o estádio é real: `bun scripts/fetchStadiums.ts
+[--leagues a,b] [--refresh]` busca no **Wikidata** (CC0) o estádio de cada clube (P115 sem fim; rank preferido, depois
+o início mais recente; coordenadas, capacidade, teto retrátil/fechado pelos rótulos de P31/P527) e no
+**OpenStreetMap** (Overpass, servidor principal e espelhos; ODbL, crédito "© colaboradores do OpenStreetMap" no rodapé
+da landing) o campo (`leisure=pitch`: orientação pelo retângulo de menor área) e o contorno do estádio
+(`leisure=stadium`): a altura de cada arquibancada = 0,5 × a distância do lado do campo até o contorno (nenhuma abaixo
+de 8 m, até 50 m; sem contorno, pela capacidade). Geometria pura em `scripts/stadiums/geometry.ts` (+ teste).
+Respostas em `data_process/stadiums/cache/` (gitignored); só os números derivados vão para
+`src/example_data/stadiums.json` (`squadId → RealStadium`: id `std_<item>`, coordenadas, eixo, alturas, teto, fuso).
+Correções à mão em `data_process/curated/stadiumCorrections.json` (`venue`: o item certo quando o Wikidata não tem a
+mudança de estádio; `roof`; `skip`). Copiar para `src/Data` como o resto do mundo.
+
+- `src/backend/stadiumData.ts` (`matchSun`): o `match-setup` usa o estádio real do mandante (nunca em campo neutro),
+  com o pôr do sol real da data (`conditions.sunset`) e a data (`conditions.date`); teto retrátil fecha com chuva, neve
+  ou frio. Clube sem dado: o perfil sorteado de antes.
+- `src/Domain/matchday/solar.ts` (+ teste): posição do sol (NOAA), pôr do sol, fuso pelo país (padrão + horário de
+  verão UE/EUA; EUA/Canadá pela longitude).
+- `realSunGeometry` (`matchLighting.ts`): a cada redesenho, azimute e elevação do sol → direção da sombra no campo do
+  jogo (+x = eixo do campo, +y = eixo + 90°), lado e inclinação, profundidade de cada arquibancada = altura ÷
+  tg(elevação) − `REAL.SETBACK` (6 m), até `MAX_REACH` × a altura; o sol some abaixo de `FADE_ELEVATION` (3°). A sombra
+  dos jogadores aponta na direção real. Contorno da cobertura e cantos continuam ilustrativos (do id).
+- `/test`: chips Stadium "Old Trafford, Dec 15 / Jun 21" (sol calculado, pôr do sol real) com a Hora.
+

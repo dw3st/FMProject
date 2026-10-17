@@ -30,6 +30,30 @@ export interface StadiumSun {
   endShadow: boolean;
   endDepth: number;
   endSteps: number[];
+  /** A real stadium (4.31): the sun is computed from it instead of `side` / `lean` / the depths. */
+  real?: RealStadium;
+}
+
+/**
+ * A real stadium (4.31, `src/Data/stadiums.json`, `bun scripts/fetchStadiums.ts`: Wikidata + OpenStreetMap):
+ * where it is, which way its pitch runs, how tall each stand is and its roof. With it the sun is computed
+ * (`solar.ts`) instead of drawn from the id.
+ * - `axis`: azimuth (degrees from north) of the pitch's long axis = the game's +x ("high" end); +y (the "bottom"
+ *   touchline) faces axis + 90°.
+ * - `heights`: metres of the stand behind each side (0 = none).
+ * - `tzStd` / `dst`: the local clock (standard UTC offset in hours, daylight-saving rule).
+ */
+export interface RealStadium {
+  id: string;
+  qid: string;
+  name: string;
+  lat: number;
+  lon: number;
+  axis: number;
+  heights: { top: number; bottom: number; low: number; high: number };
+  roof: "open" | "retractable" | "closed";
+  tzStd: number;
+  dst: "eu" | "us" | "none";
 }
 
 /** Share of covered stadiums (closed roof). */
