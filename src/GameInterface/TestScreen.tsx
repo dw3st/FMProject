@@ -9,6 +9,7 @@ import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
 import type { DebugOverlays, PitchLighting, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
 import { minutesOf } from "@/GraficsEngine/matchLighting";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
+import { stadiumSun, type StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
@@ -147,6 +148,17 @@ function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
 /** Match light in /test: off, a fixed time (sunset 18:30), or following the clock from a 17:30 kickoff. */
 type LightTimeOption = 'off' | '13:30' | '17:30' | '20:45' | 'match';
 const LIGHT_TIME_OPTIONS: LightTimeOption[] = ['off', '13:30', '17:30', '20:45', 'match'];
+// Stadium shadow profiles to compare (`stadiumSun`): three ids with a cut at one end, at both ends and none, and a
+// covered stadium.
+const LIGHT_STADIUMS = ['lean', 'both', 'none', 'covered'] as const;
+type LightStadiumOption = typeof LIGHT_STADIUMS[number];
+function testStadium(o: LightStadiumOption): StadiumSun {
+  if (o === 'covered') return { ...stadiumSun('std_test'), covered: true };
+  for (let i = 0; ; i++) {
+    const sun = stadiumSun(`std_test_${i}`);
+    if (sun.cut === o && !sun.covered) return sun;
+  }
+}
 const LIGHT_WEATHER_OPTIONS: (MatchWeather | 'wind_rain')[] = ['sunny', 'cloudy', 'rain', 'wind_rain', 'snow'];
 
 function withPitch(state: GameState, pitch: number, turf: TurfType): GameState {
@@ -452,11 +464,12 @@ export function TestScreen() {
   // Match light (spec 2026-10-16-match-lighting): a fixed time, or "match" = kickoff 17:30 following the clock.
   const [lightTime, setLightTime] = useState<LightTimeOption>('off');
   const [lightWeather, setLightWeather] = useState<MatchWeather | 'wind_rain'>('sunny');
+  const [lightStadium, setLightStadium] = useState<LightStadiumOption>('lean');
   const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
     kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: '18:30', weather: lightWeather,
-    sun: { side: 'top', lean: 0.3 }, seed: 'test',
+    sun: testStadium(lightStadium), seed: 'test',
     ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
-  }, [lightTime, lightWeather]);
+  }, [lightTime, lightWeather, lightStadium]);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
   // The managers' Discipline (achievements.md): fouls and cards of a side; null = no attribute.
@@ -1262,6 +1275,14 @@ export function TestScreen() {
                 <button key={v} onClick={() => setLightWeather(v)}
                   className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightWeather === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
                   Weather: {v}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {LIGHT_STADIUMS.map(v => (
+                <button key={v} onClick={() => setLightStadium(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightStadium === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                  Stadium: {v === 'covered' ? 'covered' : `cut ${v}`}
                 </button>
               ))}
             </div>

@@ -75,7 +75,7 @@ import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
-import { stadiumSunSide, type StadiumSun } from "@/Domain/matchday/stadiumSun";
+import { stadiumIdOf, stadiumSun, type StadiumSun } from "@/Domain/matchday/stadiumSun";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -627,7 +627,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
       const c = matchConditions(matchFixture, matchFixture.neutral ? null : homeSquad.country ?? null);
       conditions = { kickoff: c.kickoff, weather: c.weather, sunset: c.sunset };
-      sunSide = stadiumSunSide(matchFixture.neutral ? matchFixture.id : homeSquad.id);
+      // Each stadium (unique id from the venue) has its own shadow, or none under a closed roof.
+      sunSide = stadiumSun(stadiumIdOf(homeSquad, matchFixture.neutral ? matchFixture.id : undefined));
     }
     // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
     const crowd = saveIdParam && matchFixture && opponentSquad

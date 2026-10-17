@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import { matchClockMinutes, matchLighting, minutesOf } from "@/GraficsEngine/matchLighting";
+import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 
-const sun = { side: "top" as const, lean: 0 };
+const sun: StadiumSun = { stadiumId: "std_t", side: "top", lean: 0, covered: false, height: 1, cut: "lean", cutX: 20, cutDepth: 0.35, sideSteps: [1], endShadow: false, endDepth: 0.2, endSteps: [1] };
 
 describe("matchClockMinutes", () => {
   const base = { extraTimeFirst: 120, extraTimeSecond: 180, etStoppageFirst: 60 };
@@ -57,9 +58,36 @@ describe("matchLighting", () => {
     expect(l.veil.alpha).toBeGreaterThan(0);
   });
 
-  test("sun on the top touchline: shadows point down (+y), the stand shadow is the top one", () => {
+  test("sun on the top touchline: shadows point down (+y)", () => {
     const l = at(S - 180);
-    expect(l.stand.side).toBe("top");
     expect(Math.sin(l.shadows.find((x) => x.kind === "cast")!.angle)).toBeGreaterThan(0);
+  });
+
+  test("end stand: grows toward sunset, none without it", () => {
+    const end = { ...sun, endShadow: true };
+    const day = matchLighting({ clock: S - 180, sunset: S, weather: "sunny", sun: end }).stand.endDepth;
+    const dusk = matchLighting({ clock: S - 30, sunset: S, weather: "sunny", sun: end }).stand.endDepth;
+    expect(dusk).toBeCloseTo(0.2 * 115, 5);
+    expect(day).toBeCloseTo(0.2 * 115 * 0.35, 5);
+    expect(at(S - 30).stand.endDepth).toBe(0);
+  });
+
+  test("taller stands cast a longer shadow, capped", () => {
+    const tall = matchLighting({ clock: S - 30, sunset: S, weather: "sunny", sun: { ...sun, height: 1.25 } });
+    expect(tall.stand.depth).toBeCloseTo(0.85, 5);
+    const low = matchLighting({ clock: S - 180, sunset: S, weather: "sunny", sun: { ...sun, height: 0.8 } });
+    expect(low.stand.depth).toBeCloseTo(0.24, 5);
+  });
+
+  test("covered stadium: no sun, no weather, lights on, half the night", () => {
+    const cov = { ...sun, covered: true };
+    const day = matchLighting({ clock: S - 180, sunset: S, weather: "rain", sun: cov });
+    expect(day.covered).toBe(true);
+    expect(day.stand.alpha).toBe(0);
+    expect(day.veil.alpha).toBe(0);
+    expect(day.warm.alpha).toBe(0);
+    expect(day.shadows.filter((x) => x.kind === "cast")).toHaveLength(4);
+    const night = matchLighting({ clock: S + 60, sunset: S, weather: "sunny", sun: cov });
+    expect(night.dark.alpha).toBeCloseTo(0.38 * 0.5, 5);
   });
 });
