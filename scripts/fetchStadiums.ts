@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LEAGUES, curlText, sleep, sparql } from "@/../scripts/faces/wikidata";
-import { heightFromDepth, minAreaRect, polygonArea, standDepths, toLocal, type Pt } from "@/../scripts/stadiums/geometry";
+import { heightFromCapacity, heightFromDepth, minAreaRect, standHeight, polygonArea, standDepths, toLocal, type PitchRect, type Pt } from "@/../scripts/stadiums/geometry";
 import type { RealStadium } from "@/Domain/matchday/stadiumSun";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -54,7 +54,7 @@ const clubQids: Record<string, { qid: string }> = JSON.parse(readFileSync(join(R
  * `data_process/curated/stadiumCorrections.json`: `{ "<squadId>": { name: "<just for reading>", venue?: "<Wikidata
  * item of the right ground>", roof?, skip? } }`. `venue` replaces the club's P115 (a move Wikidata does not have yet).
  */
-const corrections: Record<string, { name?: string; venue?: string; roof?: RealStadium["roof"]; skip?: boolean }> = existsSync(CORRECTIONS)
+const corrections: Record<string, { name?: string; venue?: string; lat?: number; lon?: number; roof?: RealStadium["roof"]; skip?: boolean }> = existsSync(CORRECTIONS)
   ? JSON.parse(readFileSync(CORRECTIONS, "utf8")) : {};
 
 // 1) Home grounds on Wikidata (current P115 statements: no end date; preferred rank first).
@@ -81,7 +81,9 @@ for (let i = 0; i < values.length; i += 80) {
   await sleep(1500);
 }
 // Corrected grounds: their own coordinates, capacity and type, keyed by the club's item like the rest.
-const fixed = withQid.filter(({ squad }) => corrections[squad.id]?.venue);
+// (A club without its own Wikidata item is keyed by its squad id.)
+const clubKey = (id: string) => clubQids[id]?.qid ?? `squad:${id}`;
+const fixed = squads.filter(({ squad }) => corrections[squad.id]?.venue);
 if (fixed.length) {
   const vids = [...new Set(fixed.map(({ squad }) => corrections[squad.id]!.venue!))];
   const rows = await sparql(`SELECT ?venue ?venueLabel ?coord ?cap ?type ?typeLabel WHERE {
@@ -92,7 +94,7 @@ if (fixed.length) {
   for (const { squad } of fixed) {
     const v = corrections[squad.id]!.venue!;
     const mine = rows.filter((r: any) => r.venue.value.endsWith(`/${v}`)).map((r: any) => ({ ...r, rank: { value: "PreferredRank" } }));
-    if (mine.length) rowsByClub.set(clubQids[squad.id]!.qid, mine);
+    if (mine.length) rowsByClub.set(clubKey(squad.id), mine);
     else console.warn(`  correction ${squad.id}: ${v} has no coordinates`);
   }
 }
@@ -142,10 +144,10 @@ let noShape = 0;
 for (const { squad, league } of squads) {
   const fix = corrections[squad.id];
   if (fix?.skip) continue;
-  const qid = clubQids[squad.id]?.qid;
-  const v = qid ? venueOf.get(qid) : undefined;
-  if (!v) { console.warn(`  ${league} ${squad.name}: no home ground on Wikidata`); continue; }
-  const data = await overpass(v.venue, v.lat, v.lon);
+  const found = venueOf.get(clubKey(squad.id));
+  if (!found) { console.warn(`  ${league} ${squad.name}: no home ground on Wikidata`); continue; }
+  const v = fix?.lat !== undefined && fix.lon !== undefined ? { ...found, lat: fix.lat, lon: fix.lon } : found;
+  const data = await overpass(fix?.lat !== undefined ? `${v.venue}_fix` : v.venue, v.lat, v.lon);
   const toL = toLocal(v.lat, v.lon);
   const polys = (e: any): Pt[][] => e.type === "way"
     ? [e.geometry.map((g: any) => toL(g.lat, g.lon))]
@@ -156,18 +158,23 @@ for (const { squad, league } of squads) {
   const pitches = data.elements
     .filter((e: any) => e.type === "way" && e.tags?.leisure === "pitch" && /soccer|football/.test(e.tags?.sport ?? "soccer"))
     .map((e: any) => polys(e)[0]!)
-    .filter((p: Pt[]) => { const a = polygonArea(p); return a > 5500 && a < 12500; });
+    .filter((p: Pt[]) => { const a = polygonArea(p); return a > 4800 && a < 12500; });
   const ref = outline.length ? centroid(outline.flat()) : { x: 0, y: 0 };
   pitches.sort((a: Pt[], b: Pt[]) => d2(centroid(a), ref) - d2(centroid(b), ref));
-  if (!pitches.length) { noShape++; console.warn(`  ${league} ${squad.name} (${v.label}): no pitch on OSM`); continue; }
-  const pitch = minAreaRect(pitches[0]!);
+  // No football-sized pitch mapped (a gridiron, or none): a 105 × 68 m pitch at the outline's centre, along it.
+  let pitch: PitchRect;
+  if (pitches.length) pitch = minAreaRect(pitches[0]!);
+  else if (outline.length) {
+    const r = minAreaRect(outline.flat());
+    pitch = { center: r.center, axis: r.axis, length: 105, width: 68 };
+    console.warn(`  ${league} ${squad.name} (${v.label}): no pitch on OSM, along the stadium outline`);
+  } else { noShape++; console.warn(`  ${league} ${squad.name} (${v.label}): no pitch nor outline on OSM`); continue; }
   const depths = standDepths(pitch, outline);
   const capacity = v.cap ?? squad.venue?.capacity ?? 20000;
-  // No outline: every side gets the stand a stadium of that capacity would have.
-  const guess = Math.round(Math.min(40, 8 + capacity / 2500));
-  // An outline drawn tight around the pitch (no stand reaching 10 m) says nothing about the stands: guess too.
+  // No outline, or one drawn tight around the pitch (no stand reaching 10 m): every side gets the stand a stadium of
+  // that capacity would have. Otherwise each side from its depth (`standHeight`).
   const tight = Math.max(...(["top", "bottom", "low", "high"] as const).map((k) => heightFromDepth(depths[k]))) < 10;
-  const h = (side: keyof typeof depths) => outline.length && !tight ? heightFromDepth(depths[side]) : guess;
+  const h = (side: keyof typeof depths) => outline.length && !tight ? standHeight(depths[side], capacity) : heightFromCapacity(capacity);
   const tz = tzOf(squad.country ?? "", v.lon);
   out[squad.id] = {
     id: `std_${v.venue}`, qid: v.venue, name: v.label, lat: round(v.lat, 5), lon: round(v.lon, 5), axis: round(pitch.axis, 1),

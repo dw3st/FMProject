@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dirOf, heightFromDepth, minAreaRect, rayHit, sideAzimuth, standDepths, type Pt } from "@/../scripts/stadiums/geometry";
+import { dirOf, heightFromCapacity, heightFromDepth, standHeight, minAreaRect, rayHit, sideAzimuth, standDepths, type Pt } from "@/../scripts/stadiums/geometry";
 
 const rect = (cx: number, cy: number, az: number, l: number, w: number): Pt[] => {
   const u = dirOf(az), v = { x: -u.y, y: u.x };
@@ -54,5 +54,15 @@ describe("rayHit and heights", () => {
     expect(heightFromDepth(5)).toBe(0);
     expect(heightFromDepth(40)).toBe(20);
     expect(heightFromDepth(200)).toBe(50);
+  });
+});
+
+describe("standHeight", () => {
+  test("from the depth, capped by the capacity, the capacity's when unread", () => {
+    expect(heightFromCapacity(60000)).toBe(32);
+    expect(standHeight(40, 60000)).toBe(20);
+    expect(standHeight(120, 22000)).toBe(Math.round(heightFromCapacity(22000) * 1.35));
+    expect(standHeight(null, 22000)).toBe(heightFromCapacity(22000));
+    expect(standHeight(5, 60000)).toBe(0);
   });
 });

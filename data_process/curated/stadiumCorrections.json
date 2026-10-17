@@ -1,6 +1,43 @@
 {
- "55": { "name": "Brentford (Gtech Community Stadium, Wikidata still lists Griffin Park)", "venue": "Q4961609" },
- "541": { "name": "Real Madrid (Bernabéu: retractable roof)", "roof": "retractable" },
- "of_nl_ajax": { "name": "Ajax (Johan Cruijff ArenA: retractable roof)", "roof": "retractable" },
- "es_133": { "name": "Schalke (Veltins-Arena: retractable roof)", "roof": "retractable" }
+ "55": {
+  "name": "Brentford (Gtech Community Stadium, Wikidata still lists Griffin Park)",
+  "venue": "Q4961609"
+ },
+ "541": {
+  "name": "Real Madrid (Bernabéu: retractable roof)",
+  "roof": "retractable"
+ },
+ "of_nl_ajax": {
+  "name": "Ajax (Johan Cruijff ArenA: retractable roof)",
+  "roof": "retractable"
+ },
+ "es_133": {
+  "name": "Schalke (Veltins-Arena: retractable roof)",
+  "roof": "retractable"
+ },
+ "es_21613": {
+  "name": "Alverca (Complexo Desportivo do FC Alverca)",
+  "venue": "Q136001729"
+ },
+ "of_pt_casa_pia": {
+  "name": "Casa Pia (Estádio Pina Manique)",
+  "venue": "Q116113161"
+ },
+ "of_ar_barracas_central": {
+  "name": "Barracas Central (Estadio Claudio Chiqui Tapia)",
+  "venue": "Q16564609"
+ },
+ "of_pt_arouca": {
+  "name": "Arouca (Wikidata's point is ~2 km off the ground)",
+  "lat": 40.93288,
+  "lon": -8.25035
+ },
+ "of_us_atlanta_united_fc": {
+  "name": "Atlanta United (Mercedes-Benz Stadium: retractable roof)",
+  "roof": "retractable"
+ },
+ "of_us_vancouver_whitecaps": {
+  "name": "Vancouver Whitecaps (BC Place: retractable roof)",
+  "roof": "retractable"
+ }
 }
