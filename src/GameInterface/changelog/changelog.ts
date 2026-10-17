@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.31",
+    date: "2026-10-17",
+    items: [
+      { pt: "Estádios reais nas principais ligas: a sombra segue a posição de verdade do sol sobre cada estádio, pela orientação do campo, a altura das arquibancadas, a data e o horário do jogo. No inverno à tarde ela cobre quase o campo; no verão ao meio-dia fica curta.", en: "Real stadiums in the main leagues: the shadow follows the sun's true position over each ground, from the pitch's orientation, the stands' height, the date and the kickoff time. On a winter afternoon it covers most of the pitch; at a summer midday it is short." },
+      { pt: "O pôr do sol de cada jogo nessas ligas é o real, e estádios com teto retrátil o fecham com chuva, neve ou frio.", en: "Each match's sunset in those leagues is the real one, and stadiums with a retractable roof close it in rain, snow or the cold." },
+    ],
+  },
+  {
     version: "4.30",
     date: "2026-10-17",
     items: [

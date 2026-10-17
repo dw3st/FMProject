@@ -1,0 +1,3487 @@
+{
+ "33": {
+  "id": "std_Q83457",
+  "qid": "Q83457",
+  "name": "Old Trafford",
+  "lat": 53.46306,
+  "lon": -2.29139,
+  "axis": 70.6,
+  "heights": {
+   "top": 36,
+   "bottom": 28,
+   "low": 34,
+   "high": 36
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "34": {
+  "id": "std_Q191774",
+  "qid": "Q191774",
+  "name": "St James’ Park",
+  "lat": 54.97556,
+  "lon": -1.62167,
+  "axis": 150.2,
+  "heights": {
+   "top": 15,
+   "bottom": 33,
+   "low": 36,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "35": {
+  "id": "std_Q619094",
+  "qid": "Q619094",
+  "name": "Dean Court",
+  "lat": 50.73528,
+  "lon": -1.83833,
+  "axis": 142.1,
+  "heights": {
+   "top": 9,
+   "bottom": 16,
+   "low": 9,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "36": {
+  "id": "std_Q318043",
+  "qid": "Q318043",
+  "name": "Craven Cottage",
+  "lat": 51.475,
+  "lon": -0.22167,
+  "axis": 156.2,
+  "heights": {
+   "top": 14,
+   "bottom": 20,
+   "low": 24,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "40": {
+  "id": "std_Q45671",
+  "qid": "Q45671",
+  "name": "Anfield",
+  "lat": 53.43083,
+  "lon": -2.96083,
+  "axis": 39.7,
+  "heights": {
+   "top": 36,
+   "bottom": 19,
+   "low": 29,
+   "high": 33
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "42": {
+  "id": "std_Q163995",
+  "qid": "Q163995",
+  "name": "Emirates Stadium",
+  "lat": 51.555,
+  "lon": -0.10833,
+  "axis": 1.1,
+  "heights": {
+   "top": 29,
+   "bottom": 28,
+   "low": 31,
+   "high": 31
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "45": {
+  "id": "std_Q29347805",
+  "qid": "Q29347805",
+  "name": "Hill Dickinson Stadium",
+  "lat": 53.425,
+  "lon": -3.00278,
+  "axis": 177.1,
+  "heights": {
+   "top": 35,
+   "bottom": 37,
+   "low": 21,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "47": {
+  "id": "std_Q55074091",
+  "qid": "Q55074091",
+  "name": "Tottenham Hotspur Stadium",
+  "lat": 51.60444,
+  "lon": -0.06639,
+  "axis": 176.4,
+  "heights": {
+   "top": 33,
+   "bottom": 35,
+   "low": 31,
+   "high": 37
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "49": {
+  "id": "std_Q171458",
+  "qid": "Q171458",
+  "name": "Stamford Bridge",
+  "lat": 51.48167,
+  "lon": -0.19111,
+  "axis": 144.2,
+  "heights": {
+   "top": 22,
+   "bottom": 32,
+   "low": 15,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "50": {
+  "id": "std_Q48159",
+  "qid": "Q48159",
+  "name": "Etihad Stadium",
+  "lat": 53.48306,
+  "lon": -2.20028,
+  "axis": 169.9,
+  "heights": {
+   "top": 31,
+   "bottom": 32,
+   "low": 33,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "51": {
+  "id": "std_Q619409",
+  "qid": "Q619409",
+  "name": "Brighton Community Stadium",
+  "lat": 50.86182,
+  "lon": -0.08328,
+  "axis": 120.5,
+  "heights": {
+   "top": 26,
+   "bottom": 30,
+   "low": 29,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "52": {
+  "id": "std_Q1066373",
+  "qid": "Q1066373",
+  "name": "Selhurst Park",
+  "lat": 51.39833,
+  "lon": -0.08556,
+  "axis": 142.4,
+  "heights": {
+   "top": 25,
+   "bottom": 20,
+   "low": 15,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "55": {
+  "id": "std_Q4961609",
+  "qid": "Q4961609",
+  "name": "Brentford Community Stadium",
+  "lat": 51.49083,
+  "lon": -0.2887,
+  "axis": 58.4,
+  "heights": {
+   "top": 11,
+   "bottom": 23,
+   "low": 16,
+   "high": 15
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "63": {
+  "id": "std_Q619505",
+  "qid": "Q619505",
+  "name": "Elland Road",
+  "lat": 53.77778,
+  "lon": -1.57222,
+  "axis": 151,
+  "heights": {
+   "top": 36,
+   "bottom": 35,
+   "low": 22,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "65": {
+  "id": "std_Q593446",
+  "qid": "Q593446",
+  "name": "City Ground",
+  "lat": 52.94,
+  "lon": -1.13278,
+  "axis": 113.5,
+  "heights": {
+   "top": 21,
+   "bottom": 28,
+   "low": 18,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "66": {
+  "id": "std_Q175339",
+  "qid": "Q175339",
+  "name": "Villa Park",
+  "lat": 52.50917,
+  "lon": -1.88472,
+  "axis": 144.9,
+  "heights": {
+   "top": 18,
+   "bottom": 32,
+   "low": 22,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "77": {
+  "id": "std_Q387213",
+  "qid": "Q387213",
+  "name": "Stade Raymond Kopa",
+  "lat": 47.45905,
+  "lon": -0.53163,
+  "axis": 112.6,
+  "heights": {
+   "top": 19,
+   "bottom": 15,
+   "low": 20,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "79": {
+  "id": "std_Q1410402",
+  "qid": "Q1410402",
+  "name": "Pierre Mauroy Stadium",
+  "lat": 50.61196,
+  "lon": 3.13063,
+  "axis": 166.2,
+  "heights": {
+   "top": 30,
+   "bottom": 31,
+   "low": 25,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "80": {
+  "id": "std_Q8507",
+  "qid": "Q8507",
+  "name": "Parc Olympique Lyonnais",
+  "lat": 45.76522,
+  "lon": 4.98213,
+  "axis": 178.4,
+  "heights": {
+   "top": 45,
+   "bottom": 43,
+   "low": 50,
+   "high": 45
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "81": {
+  "id": "std_Q202150",
+  "qid": "Q202150",
+  "name": "Stade Vélodrome",
+  "lat": 43.26924,
+  "lon": 5.39491,
+  "axis": 157.8,
+  "heights": {
+   "top": 45,
+   "bottom": 45,
+   "low": 38,
+   "high": 38
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "84": {
+  "id": "std_Q127372",
+  "qid": "Q127372",
+  "name": "Allianz Riviera",
+  "lat": 43.70513,
+  "lon": 7.19262,
+  "axis": 170.1,
+  "heights": {
+   "top": 28,
+   "bottom": 28,
+   "low": 26,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "85": {
+  "id": "std_Q193431",
+  "qid": "Q193431",
+  "name": "Parc des Princes",
+  "lat": 48.84145,
+  "lon": 2.25305,
+  "axis": 35.1,
+  "heights": {
+   "top": 44,
+   "bottom": 31,
+   "low": 43,
+   "high": 39
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "91": {
+  "id": "std_Q318851",
+  "qid": "Q318851",
+  "name": "Stade Louis II",
+  "lat": 43.72778,
+  "lon": 7.41556,
+  "axis": 44.8,
+  "heights": {
+   "top": 24,
+   "bottom": 22,
+   "low": 28,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "94": {
+  "id": "std_Q1121760",
+  "qid": "Q1121760",
+  "name": "Roazhon Park",
+  "lat": 48.10743,
+  "lon": -1.71282,
+  "axis": 69.4,
+  "heights": {
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "95": {
+  "id": "std_Q374883",
+  "qid": "Q374883",
+  "name": "Stade de la Meinau",
+  "lat": 48.55942,
+  "lon": 7.75738,
+  "axis": 163.6,
+  "heights": {
+   "top": 18,
+   "bottom": 18,
+   "low": 18,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "96": {
+  "id": "std_Q738044",
+  "qid": "Q738044",
+  "name": "Stadium Municipal",
+  "lat": 43.5833,
+  "lon": 1.43406,
+  "axis": 112.3,
+  "heights": {
+   "top": 25,
+   "bottom": 24,
+   "low": 26,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "97": {
+  "id": "std_Q39189",
+  "qid": "Q39189",
+  "name": "Stade du Moustoir",
+  "lat": 47.74869,
+  "lon": -3.36929,
+  "axis": 120,
+  "heights": {
+   "top": 23,
+   "bottom": 18,
+   "low": 30,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "106": {
+  "id": "std_Q1432517",
+  "qid": "Q1432517",
+  "name": "Stade Francis-Le Blé",
+  "lat": 48.40293,
+  "lon": -4.46148,
+  "axis": 176.1,
+  "heights": {
+   "top": 26,
+   "bottom": 18,
+   "low": 11,
+   "high": 11
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "108": {
+  "id": "std_Q1347183",
+  "qid": "Q1347183",
+  "name": "Stade de l'Abbé-Deschamps",
+  "lat": 47.78672,
+  "lon": 3.58871,
+  "axis": 47.9,
+  "heights": {
+   "top": 15,
+   "bottom": 8,
+   "low": 14,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "111": {
+  "id": "std_Q219462",
+  "qid": "Q219462",
+  "name": "Stade Océane",
+  "lat": 49.4988,
+  "lon": 0.1697,
+  "axis": 178.4,
+  "heights": {
+   "top": 26,
+   "bottom": 44,
+   "low": 26,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "114": {
+  "id": "std_Q541391",
+  "qid": "Q541391",
+  "name": "Stade Charléty",
+  "lat": 48.81716,
+  "lon": 2.34511,
+  "axis": 10.4,
+  "heights": {
+   "top": 45,
+   "bottom": 27,
+   "low": 0,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "116": {
+  "id": "std_Q854122",
+  "qid": "Q854122",
+  "name": "Stade Bollaert-Delelis",
+  "lat": 50.4329,
+  "lon": 2.81491,
+  "axis": 81.2,
+  "heights": {
+   "top": 27,
+   "bottom": 22,
+   "low": 31,
+   "high": 32
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "118": {
+  "id": "std_Q6499360",
+  "qid": "Q6499360",
+  "name": "Arena Fonte Nova",
+  "lat": -12.97882,
+  "lon": -38.50425,
+  "axis": 178.8,
+  "heights": {
+   "top": 27,
+   "bottom": 27,
+   "low": 27,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "119": {
+  "id": "std_Q1050224",
+  "qid": "Q1050224",
+  "name": "Estádio Beira-Rio",
+  "lat": -30.06561,
+  "lon": -51.23609,
+  "axis": 37.7,
+  "heights": {
+   "top": 28,
+   "bottom": 28,
+   "low": 28,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "120": {
+  "id": "std_Q10277365",
+  "qid": "Q10277365",
+  "name": "Estádio Nilton Santos",
+  "lat": -10.28206,
+  "lon": -48.33054,
+  "axis": 29.6,
+  "heights": {
+   "top": 39,
+   "bottom": 29,
+   "low": 37,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "121": {
+  "id": "std_Q4788902",
+  "qid": "Q4788902",
+  "name": "Allianz Parque",
+  "lat": -23.52756,
+  "lon": -46.67842,
+  "axis": 157.5,
+  "heights": {
+   "top": 27,
+   "bottom": 31,
+   "low": 35,
+   "high": 23
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "124": {
+  "id": "std_Q155174",
+  "qid": "Q155174",
+  "name": "Maracanã Stadium",
+  "lat": -22.91222,
+  "lon": -43.23028,
+  "axis": 30.9,
+  "heights": {
+   "top": 40,
+   "bottom": 40,
+   "low": 40,
+   "high": 40
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "126": {
+  "id": "std_Q821761",
+  "qid": "Q821761",
+  "name": "Estádio do Morumbi",
+  "lat": -23.60012,
+  "lon": -46.72016,
+  "axis": 172.8,
+  "heights": {
+   "top": 37,
+   "bottom": 39,
+   "low": 42,
+   "high": 39
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "127": {
+  "id": "std_Q155174",
+  "qid": "Q155174",
+  "name": "Maracanã Stadium",
+  "lat": -22.91222,
+  "lon": -43.23028,
+  "axis": 30.9,
+  "heights": {
+   "top": 40,
+   "bottom": 40,
+   "low": 40,
+   "high": 40
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "128": {
+  "id": "std_Q741755",
+  "qid": "Q741755",
+  "name": "Estádio Urbano Caldeira",
+  "lat": -23.95111,
+  "lon": -46.33889,
+  "axis": 32.6,
+  "heights": {
+   "top": 16,
+   "bottom": 8,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "130": {
+  "id": "std_Q655753",
+  "qid": "Q655753",
+  "name": "Arena do Grêmio",
+  "lat": -29.97344,
+  "lon": -51.1944,
+  "axis": 15.8,
+  "heights": {
+   "top": 50,
+   "bottom": 50,
+   "low": 47,
+   "high": 46
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "131": {
+  "id": "std_Q1362236",
+  "qid": "Q1362236",
+  "name": "Neo Química Arena",
+  "lat": -23.54556,
+  "lon": -46.474,
+  "axis": 0.5,
+  "heights": {
+   "top": 50,
+   "bottom": 47,
+   "low": 27,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "132": {
+  "id": "std_Q14928349",
+  "qid": "Q14928349",
+  "name": "Arena Condá",
+  "lat": -27.1041,
+  "lon": -52.607,
+  "axis": 166.1,
+  "heights": {
+   "top": 21,
+   "bottom": 22,
+   "low": 22,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "133": {
+  "id": "std_Q721419",
+  "qid": "Q721419",
+  "name": "Estádio São Januário",
+  "lat": -22.89092,
+  "lon": -43.22825,
+  "axis": 168.2,
+  "heights": {
+   "top": 5,
+   "bottom": 7,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "134": {
+  "id": "std_Q606803",
+  "qid": "Q606803",
+  "name": "Arena da Baixada",
+  "lat": -25.44833,
+  "lon": -49.27694,
+  "axis": 66.8,
+  "heights": {
+   "top": 21,
+   "bottom": 22,
+   "low": 25,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "135": {
+  "id": "std_Q910370",
+  "qid": "Q910370",
+  "name": "Mineirão",
+  "lat": -19.86583,
+  "lon": -43.97083,
+  "axis": 8.6,
+  "heights": {
+   "top": 38,
+   "bottom": 38,
+   "low": 43,
+   "high": 40
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "136": {
+  "id": "std_Q176157",
+  "qid": "Q176157",
+  "name": "Barradão",
+  "lat": -12.91793,
+  "lon": -38.42812,
+  "axis": 158.1,
+  "heights": {
+   "top": 21,
+   "bottom": 24,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "147": {
+  "id": "std_Q1327235",
+  "qid": "Q1327235",
+  "name": "Estádio Couto Pereira",
+  "lat": -25.42111,
+  "lon": -49.2595,
+  "axis": 129.4,
+  "heights": {
+   "top": 18,
+   "bottom": 31,
+   "low": 29,
+   "high": 37
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "157": {
+  "id": "std_Q127429",
+  "qid": "Q127429",
+  "name": "Allianz Arena",
+  "lat": 48.21878,
+  "lon": 11.62475,
+  "axis": 164.8,
+  "heights": {
+   "top": 39,
+   "bottom": 40,
+   "low": 39,
+   "high": 39
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "160": {
+  "id": "std_Q311458",
+  "qid": "Q311458",
+  "name": "Dreisamstadion",
+  "lat": 47.98889,
+  "lon": 7.89306,
+  "axis": 106.4,
+  "heights": {
+   "top": 5,
+   "bottom": 6,
+   "low": 15,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "162": {
+  "id": "std_Q154475",
+  "qid": "Q154475",
+  "name": "Weserstadion",
+  "lat": 53.06639,
+  "lon": 8.8375,
+  "axis": 107.1,
+  "heights": {
+   "top": 30,
+   "bottom": 22,
+   "low": 33,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "163": {
+  "id": "std_Q154074",
+  "qid": "Q154074",
+  "name": "ista-Borussia-Park",
+  "lat": 51.17458,
+  "lon": 6.38546,
+  "axis": 29.6,
+  "heights": {
+   "top": 27,
+   "bottom": 27,
+   "low": 26,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "164": {
+  "id": "std_Q392494",
+  "qid": "Q392494",
+  "name": "Mewa Arena",
+  "lat": 49.98417,
+  "lon": 8.22417,
+  "axis": 63.5,
+  "heights": {
+   "top": 33,
+   "bottom": 21,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "165": {
+  "id": "std_Q150928",
+  "qid": "Q150928",
+  "name": "Westfalenstadion",
+  "lat": 51.4925,
+  "lon": 7.45167,
+  "axis": 172,
+  "heights": {
+   "top": 31,
+   "bottom": 31,
+   "low": 32,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "167": {
+  "id": "std_Q129870",
+  "qid": "Q129870",
+  "name": "SNP Arena",
+  "lat": 49.239,
+  "lon": 8.88828,
+  "axis": 30,
+  "heights": {
+   "top": 24,
+   "bottom": 24,
+   "low": 21,
+   "high": 22
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "168": {
+  "id": "std_Q156630",
+  "qid": "Q156630",
+  "name": "BayArena",
+  "lat": 51.03826,
+  "lon": 7.00221,
+  "axis": 166.8,
+  "heights": {
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "169": {
+  "id": "std_Q157273",
+  "qid": "Q157273",
+  "name": "Waldstadion",
+  "lat": 50.06861,
+  "lon": 8.64528,
+  "axis": 127.1,
+  "heights": {
+   "top": 34,
+   "bottom": 33,
+   "low": 34,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "170": {
+  "id": "std_Q167418",
+  "qid": "Q167418",
+  "name": "WWK Arena",
+  "lat": 48.32332,
+  "lon": 10.88593,
+  "axis": 177.9,
+  "heights": {
+   "top": 19,
+   "bottom": 24,
+   "low": 20,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "172": {
+  "id": "std_Q152349",
+  "qid": "Q152349",
+  "name": "MHPArena",
+  "lat": 48.79222,
+  "lon": 9.23194,
+  "axis": 129.1,
+  "heights": {
+   "top": 39,
+   "bottom": 38,
+   "low": 44,
+   "high": 44
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "173": {
+  "id": "std_Q210466",
+  "qid": "Q210466",
+  "name": "Red Bull Arena",
+  "lat": 51.34583,
+  "lon": 12.34806,
+  "axis": 161.2,
+  "heights": {
+   "top": 32,
+   "bottom": 34,
+   "low": 30,
+   "high": 38
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "175": {
+  "id": "std_Q150933",
+  "qid": "Q150933",
+  "name": "Volksparkstadion",
+  "lat": 53.58694,
+  "lon": 9.89861,
+  "axis": 7.8,
+  "heights": {
+   "top": 31,
+   "bottom": 35,
+   "low": 31,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "182": {
+  "id": "std_Q749172",
+  "qid": "Q749172",
+  "name": "Stadion An der Alten Försterei",
+  "lat": 52.45722,
+  "lon": 13.56806,
+  "axis": 151.4,
+  "heights": {
+   "top": 29,
+   "bottom": 50,
+   "low": 20,
+   "high": 33
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "192": {
+  "id": "std_Q151893",
+  "qid": "Q151893",
+  "name": "RheinEnergie Stadion",
+  "lat": 50.93361,
+  "lon": 6.875,
+  "axis": 7.2,
+  "heights": {
+   "top": 27,
+   "bottom": 26,
+   "low": 26,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "487": {
+  "id": "std_Q159884",
+  "qid": "Q159884",
+  "name": "Stadio Olimpico",
+  "lat": 41.93389,
+  "lon": 12.45472,
+  "axis": 165.6,
+  "heights": {
+   "top": 50,
+   "bottom": 0,
+   "low": 0,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "488": {
+  "id": "std_Q1887221",
+  "qid": "Q1887221",
+  "name": "Mapei Stadium - Città del Tricolore",
+  "lat": 44.71472,
+  "lon": 10.64972,
+  "axis": 166.8,
+  "heights": {
+   "top": 23,
+   "bottom": 20,
+   "low": 20,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "489": {
+  "id": "std_Q133566",
+  "qid": "Q133566",
+  "name": "Giuseppe Meazza Stadium",
+  "lat": 45.47806,
+  "lon": 9.12389,
+  "axis": 21.3,
+  "heights": {
+   "top": 11,
+   "bottom": 11,
+   "low": 8,
+   "high": 7
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "490": {
+  "id": "std_Q30880646",
+  "qid": "Q30880646",
+  "name": "Unipol Domus",
+  "lat": 39.19969,
+  "lon": 9.13742,
+  "axis": 173,
+  "heights": {
+   "top": 19,
+   "bottom": 22,
+   "low": 41,
+   "high": 39
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "492": {
+  "id": "std_Q82709",
+  "qid": "Q82709",
+  "name": "Stadio Diego Armando Maradona",
+  "lat": 40.82797,
+  "lon": 14.19301,
+  "axis": 168.3,
+  "heights": {
+   "top": 36,
+   "bottom": 41,
+   "low": 46,
+   "high": 45
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "494": {
+  "id": "std_Q640031",
+  "qid": "Q640031",
+  "name": "Stadio Friuli",
+  "lat": 46.0816,
+  "lon": 13.20014,
+  "axis": 163.1,
+  "heights": {
+   "top": 44,
+   "bottom": 50,
+   "low": 47,
+   "high": 50
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "495": {
+  "id": "std_Q271568",
+  "qid": "Q271568",
+  "name": "Stadio Luigi Ferraris",
+  "lat": 44.41643,
+  "lon": 8.95243,
+  "axis": 141.2,
+  "heights": {
+   "top": 14,
+   "bottom": 14,
+   "low": 23,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "496": {
+  "id": "std_Q62149",
+  "qid": "Q62149",
+  "name": "Juventus Stadium",
+  "lat": 45.10959,
+  "lon": 7.64125,
+  "axis": 163.4,
+  "heights": {
+   "top": 25,
+   "bottom": 25,
+   "low": 25,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "497": {
+  "id": "std_Q159884",
+  "qid": "Q159884",
+  "name": "Stadio Olimpico",
+  "lat": 41.93389,
+  "lon": 12.45472,
+  "axis": 165.6,
+  "heights": {
+   "top": 50,
+   "bottom": 0,
+   "low": 0,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "499": {
+  "id": "std_Q780526",
+  "qid": "Q780526",
+  "name": "Stadio Atleti Azzurri d'Italia",
+  "lat": 45.70889,
+  "lon": 9.68083,
+  "axis": 31.2,
+  "heights": {
+   "top": 13,
+   "bottom": 14,
+   "low": 22,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "500": {
+  "id": "std_Q757182",
+  "qid": "Q757182",
+  "name": "Stadio Renato Dall'Ara",
+  "lat": 44.4922,
+  "lon": 11.3098,
+  "axis": 173.8,
+  "heights": {
+   "top": 22,
+   "bottom": 23,
+   "low": 36,
+   "high": 37
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "502": {
+  "id": "std_Q270474",
+  "qid": "Q270474",
+  "name": "Stadio Artemio Franchi",
+  "lat": 43.78082,
+  "lon": 11.28226,
+  "axis": 38,
+  "heights": {
+   "top": 20,
+   "bottom": 18,
+   "low": 41,
+   "high": 41
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "503": {
+  "id": "std_Q214629",
+  "qid": "Q214629",
+  "name": "Stadio Olimpico Grande Torino",
+  "lat": 45.04167,
+  "lon": 7.65,
+  "axis": 178.6,
+  "heights": {
+   "top": 22,
+   "bottom": 22,
+   "low": 33,
+   "high": 32
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "505": {
+  "id": "std_Q133566",
+  "qid": "Q133566",
+  "name": "Giuseppe Meazza Stadium",
+  "lat": 45.47806,
+  "lon": 9.12389,
+  "axis": 21.3,
+  "heights": {
+   "top": 11,
+   "bottom": 11,
+   "low": 8,
+   "high": 7
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "523": {
+  "id": "std_Q610546",
+  "qid": "Q610546",
+  "name": "Stadio Ennio Tardini",
+  "lat": 44.79492,
+  "lon": 10.33844,
+  "axis": 31.6,
+  "heights": {
+   "top": 50,
+   "bottom": 27,
+   "low": 35,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "529": {
+  "id": "std_Q159848",
+  "qid": "Q159848",
+  "name": "Camp Nou",
+  "lat": 41.38083,
+  "lon": 2.12278,
+  "axis": 158.1,
+  "heights": {
+   "top": 23,
+   "bottom": 24,
+   "low": 25,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "530": {
+  "id": "std_Q1369687",
+  "qid": "Q1369687",
+  "name": "Metropolitano Stadium",
+  "lat": 40.43611,
+  "lon": -3.59944,
+  "axis": 170.7,
+  "heights": {
+   "top": 43,
+   "bottom": 50,
+   "low": 45,
+   "high": 44
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "531": {
+  "id": "std_Q182864",
+  "qid": "Q182864",
+  "name": "San Mamés Stadium",
+  "lat": 43.26421,
+  "lon": -2.94937,
+  "axis": 125.2,
+  "heights": {
+   "top": 27,
+   "bottom": 27,
+   "low": 29,
+   "high": 29
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "532": {
+  "id": "std_Q202762",
+  "qid": "Q202762",
+  "name": "Mestalla Stadium",
+  "lat": 39.47472,
+  "lon": -0.35833,
+  "axis": 11.4,
+  "heights": {
+   "top": 19,
+   "bottom": 27,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "533": {
+  "id": "std_Q741157",
+  "qid": "Q741157",
+  "name": "Estadio de la Cerámica",
+  "lat": 39.94417,
+  "lon": -0.10361,
+  "axis": 47.4,
+  "heights": {
+   "top": 11,
+   "bottom": 9,
+   "low": 15,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "536": {
+  "id": "std_Q275429",
+  "qid": "Q275429",
+  "name": "Ramón Sánchez Pizjuán Stadium",
+  "lat": 37.38388,
+  "lon": -5.97047,
+  "axis": 5.5,
+  "heights": {
+   "top": 27,
+   "bottom": 22,
+   "low": 22,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "538": {
+  "id": "std_Q1326578",
+  "qid": "Q1326578",
+  "name": "Abanca Balaídos Stadium",
+  "lat": 42.21186,
+  "lon": -8.74033,
+  "axis": 67.3,
+  "heights": {
+   "top": 20,
+   "bottom": 30,
+   "low": 28,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "539": {
+  "id": "std_Q1122715",
+  "qid": "Q1122715",
+  "name": "Estadi Ciutat de València",
+  "lat": 39.49472,
+  "lon": -0.36417,
+  "axis": 15.3,
+  "heights": {
+   "top": 22,
+   "bottom": 20,
+   "low": 18,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "540": {
+  "id": "std_Q473223",
+  "qid": "Q473223",
+  "name": "RCDE Stadium",
+  "lat": 41.34786,
+  "lon": 2.07567,
+  "axis": 9.5,
+  "heights": {
+   "top": 24,
+   "bottom": 24,
+   "low": 24,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "541": {
+  "id": "std_Q164027",
+  "qid": "Q164027",
+  "name": "Bernabéu",
+  "lat": 40.45306,
+  "lon": -3.68835,
+  "axis": 4.2,
+  "heights": {
+   "top": 36,
+   "bottom": 47,
+   "low": 28,
+   "high": 29
+  },
+  "roof": "retractable",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "542": {
+  "id": "std_Q1369390",
+  "qid": "Q1369390",
+  "name": "Mendizorrotza Stadium",
+  "lat": 42.83711,
+  "lon": -2.68804,
+  "axis": 98.2,
+  "heights": {
+   "top": 13,
+   "bottom": 15,
+   "low": 14,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "543": {
+  "id": "std_Q126844",
+  "qid": "Q126844",
+  "name": "Estadio Benito Villamarín",
+  "lat": 37.3564,
+  "lon": -5.98161,
+  "axis": 153.3,
+  "heights": {
+   "top": 32,
+   "bottom": 32,
+   "low": 32,
+   "high": 32
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "546": {
+  "id": "std_Q929109",
+  "qid": "Q929109",
+  "name": "Estadio Coliseum",
+  "lat": 40.32556,
+  "lon": -3.71472,
+  "axis": 172.4,
+  "heights": {
+   "top": 28,
+   "bottom": 27,
+   "low": 25,
+   "high": 23
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "548": {
+  "id": "std_Q917845",
+  "qid": "Q917845",
+  "name": "Anoeta Stadium",
+  "lat": 43.30138,
+  "lon": -1.97362,
+  "axis": 143.7,
+  "heights": {
+   "top": 38,
+   "bottom": 41,
+   "low": 34,
+   "high": 33
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "727": {
+  "id": "std_Q735783",
+  "qid": "Q735783",
+  "name": "El Sadar Stadium",
+  "lat": 42.79667,
+  "lon": -1.63694,
+  "axis": 118,
+  "heights": {
+   "top": 15,
+   "bottom": 17,
+   "low": 16,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "728": {
+  "id": "std_Q983806",
+  "qid": "Q983806",
+  "name": "Campo de Fútbol de Vallecas",
+  "lat": 40.39194,
+  "lon": -3.65896,
+  "axis": 124.3,
+  "heights": {
+   "top": 18,
+   "bottom": 19,
+   "low": 9,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "746": {
+  "id": "std_Q31969",
+  "qid": "Q31969",
+  "name": "Stadium of Light",
+  "lat": 54.91443,
+  "lon": -1.38817,
+  "axis": 151.9,
+  "heights": {
+   "top": 23,
+   "bottom": 35,
+   "low": 25,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "794": {
+  "id": "std_Q5402133",
+  "qid": "Q5402133",
+  "name": "Estádio Nabi Abi Chedid",
+  "lat": -22.96541,
+  "lon": -46.53694,
+  "axis": 137.4,
+  "heights": {
+   "top": 5,
+   "bottom": 10,
+   "low": 39,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "797": {
+  "id": "std_Q953600",
+  "qid": "Q953600",
+  "name": "Estadio Manuel Martínez Valero",
+  "lat": 38.26694,
+  "lon": -0.66333,
+  "axis": 175.5,
+  "heights": {
+   "top": 18,
+   "bottom": 19,
+   "low": 21,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "867": {
+  "id": "std_Q684727",
+  "qid": "Q684727",
+  "name": "Stadio Via del Mare",
+  "lat": 40.36528,
+  "lon": 18.20889,
+  "axis": 159.8,
+  "heights": {
+   "top": 21,
+   "bottom": 21,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "895": {
+  "id": "std_Q115372",
+  "qid": "Q115372",
+  "name": "Stadio Giuseppe Sinigaglia",
+  "lat": 45.81389,
+  "lon": 9.07222,
+  "axis": 79.9,
+  "heights": {
+   "top": 13,
+   "bottom": 20,
+   "low": 24,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "1062": {
+  "id": "std_Q97177489",
+  "qid": "Q97177489",
+  "name": "Arena MRV",
+  "lat": -19.93056,
+  "lon": -44.01611,
+  "axis": 33.3,
+  "heights": {
+   "top": 30,
+   "bottom": 30,
+   "low": 30,
+   "high": 30
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "1198": {
+  "id": "std_Q4841281",
+  "qid": "Q4841281",
+  "name": "Baenão",
+  "lat": -1.445,
+  "lon": -48.46583,
+  "axis": 33.3,
+  "heights": {
+   "top": 6,
+   "bottom": 11,
+   "low": 6,
+   "high": 6
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "7848": {
+  "id": "std_Q10277233",
+  "qid": "Q10277233",
+  "name": "Estádio Municipal José Maria de Campos Maia",
+  "lat": -20.82239,
+  "lon": -49.50642,
+  "axis": 2.3,
+  "heights": {
+   "top": 14,
+   "bottom": 14,
+   "low": 14,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "es_133": {
+  "id": "std_Q150961",
+  "qid": "Q150961",
+  "name": "Arena AufSchalke",
+  "lat": 51.5545,
+  "lon": 7.06759,
+  "axis": 41.9,
+  "heights": {
+   "top": 33,
+   "bottom": 33,
+   "low": 33,
+   "high": 33
+  },
+  "roof": "retractable",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_143": {
+  "id": "std_Q1569222",
+  "qid": "Q1569222",
+  "name": "Fortuna Sittard Stadion",
+  "lat": 50.99194,
+  "lon": 5.84361,
+  "axis": 131.1,
+  "heights": {
+   "top": 9,
+   "bottom": 17,
+   "low": 17,
+   "high": 8
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_151": {
+  "id": "std_Q668094",
+  "qid": "Q668094",
+  "name": "Sparta Stadion Het Kasteel",
+  "lat": 51.91944,
+  "lon": 4.43333,
+  "axis": 60.3,
+  "heights": {
+   "top": 19,
+   "bottom": 12,
+   "low": 12,
+   "high": 12
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_170": {
+  "id": "std_Q2001732",
+  "qid": "Q2001732",
+  "name": "Stade de l'Aube",
+  "lat": 48.30616,
+  "lon": 4.0982,
+  "axis": 11.3,
+  "heights": {
+   "top": 16,
+   "bottom": 16,
+   "low": 16,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_388": {
+  "id": "std_Q842077",
+  "qid": "Q842077",
+  "name": "Coventry Building Society Arena",
+  "lat": 52.44806,
+  "lon": -1.49556,
+  "axis": 25.8,
+  "heights": {
+   "top": 18,
+   "bottom": 28,
+   "low": 20,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "es_2697": {
+  "id": "std_Q1862372",
+  "qid": "Q1862372",
+  "name": "stade Marie-Marvingt",
+  "lat": 47.95958,
+  "lon": 0.22129,
+  "axis": 163.5,
+  "heights": {
+   "top": 22,
+   "bottom": 21,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_3307": {
+  "id": "std_Q567402",
+  "qid": "Q567402",
+  "name": "Home Deluxe Arena",
+  "lat": 51.73139,
+  "lon": 8.71083,
+  "axis": 178.5,
+  "heights": {
+   "top": 10,
+   "bottom": 16,
+   "low": 11,
+   "high": 11
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_3472": {
+  "id": "std_Q1370765",
+  "qid": "Q1370765",
+  "name": "Estádio da Madeira",
+  "lat": 32.67063,
+  "lon": -16.88352,
+  "axis": 174.5,
+  "heights": {
+   "top": 10,
+   "bottom": 10,
+   "low": 0,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "es_3696": {
+  "id": "std_Q256588",
+  "qid": "Q256588",
+  "name": "Parque de Jogos Comendador Joaquim de Almeida Freitas",
+  "lat": 41.37809,
+  "lon": -8.35476,
+  "axis": 56,
+  "heights": {
+   "top": 10,
+   "bottom": 10,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "es_3706": {
+  "id": "std_Q777926",
+  "qid": "Q777926",
+  "name": "De Adelaarshorst",
+  "lat": 52.26028,
+  "lon": 6.1725,
+  "axis": 135.2,
+  "heights": {
+   "top": 11,
+   "bottom": 15,
+   "low": 11,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_3735": {
+  "id": "std_Q1851894",
+  "qid": "Q1851894",
+  "name": "BUKO Stadion",
+  "lat": 52.455,
+  "lon": 4.635,
+  "axis": 162.7,
+  "heights": {
+   "top": 16,
+   "bottom": 14,
+   "low": 14,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_10388": {
+  "id": "std_Q474858",
+  "qid": "Q474858",
+  "name": "Waldstadion an der Kaiserlinde",
+  "lat": 49.3186,
+  "lon": 7.12167,
+  "axis": 131.1,
+  "heights": {
+   "top": 19,
+   "bottom": 18,
+   "low": 21,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "es_21607": {
+  "id": "std_Q1369675",
+  "qid": "Q1369675",
+  "name": "Estádio do Fontelo",
+  "lat": 40.65944,
+  "lon": -7.90083,
+  "axis": 32.4,
+  "heights": {
+   "top": 11,
+   "bottom": 17,
+   "low": 23,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "es_21610": {
+  "id": "std_Q3059095",
+  "qid": "Q3059095",
+  "name": "Estádio José Gomes",
+  "lat": 38.75204,
+  "lon": -9.22797,
+  "axis": 157.8,
+  "heights": {
+   "top": 10,
+   "bottom": 12,
+   "low": 13,
+   "high": 5
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_ar_aldosivi": {
+  "id": "std_Q1369282",
+  "qid": "Q1369282",
+  "name": "José María Minella Stadium",
+  "lat": -38.01794,
+  "lon": -57.58233,
+  "axis": 178.5,
+  "heights": {
+   "top": 24,
+   "bottom": 37,
+   "low": 26,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_argentinos_juniors": {
+  "id": "std_Q1369186",
+  "qid": "Q1369186",
+  "name": "Diego Armando Maradona Stadium",
+  "lat": -34.60603,
+  "lon": -58.47258,
+  "axis": 148.1,
+  "heights": {
+   "top": 18,
+   "bottom": 18,
+   "low": 18,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_atletico_tucuman": {
+  "id": "std_Q1369432",
+  "qid": "Q1369432",
+  "name": "Estadio Monumental José Fierro",
+  "lat": -26.81278,
+  "lon": -65.19917,
+  "axis": 11.6,
+  "heights": {
+   "top": 20,
+   "bottom": 10,
+   "low": 10,
+   "high": 11
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_banfield": {
+  "id": "std_Q599468",
+  "qid": "Q599468",
+  "name": "Estadio Florencio Sola",
+  "lat": -34.75085,
+  "lon": -58.38754,
+  "axis": 8.7,
+  "heights": {
+   "top": 14,
+   "bottom": 11,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_belgrano": {
+  "id": "std_Q1369290",
+  "qid": "Q1369290",
+  "name": "Julio Cesar Villagra Stadium",
+  "lat": -31.4035,
+  "lon": -64.20627,
+  "axis": 20,
+  "heights": {
+   "top": 14,
+   "bottom": 17,
+   "low": 16,
+   "high": 15
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_boca_juniors": {
+  "id": "std_Q499855",
+  "qid": "Q499855",
+  "name": "La Bombonera",
+  "lat": -34.63565,
+  "lon": -58.36465,
+  "axis": 153.4,
+  "heights": {
+   "top": 6,
+   "bottom": 23,
+   "low": 22,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_central_cordoba_sde": {
+  "id": "std_Q5847753",
+  "qid": "Q5847753",
+  "name": "Alfredo Terrera Stadium",
+  "lat": -27.79383,
+  "lon": -64.26422,
+  "axis": 140.5,
+  "heights": {
+   "top": 0,
+   "bottom": 12,
+   "low": 6,
+   "high": 6
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_defensa_y_justicia": {
+  "id": "std_Q5400433",
+  "qid": "Q5400433",
+  "name": "Norberto Tomaghello Stadium",
+  "lat": -34.82175,
+  "lon": -58.28651,
+  "axis": 148.5,
+  "heights": {
+   "top": 8,
+   "bottom": 5,
+   "low": 8,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_estudiantes": {
+  "id": "std_Q678824",
+  "qid": "Q678824",
+  "name": "Estadio Jorge Luis Hirschi",
+  "lat": -34.912,
+  "lon": -57.9389,
+  "axis": 132.3,
+  "heights": {
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_estudiantes_de_rio_cuarto": {
+  "id": "std_Q5847863",
+  "qid": "Q5847863",
+  "name": "City of Río Cuarto Stadium",
+  "lat": -33.1153,
+  "lon": -64.3478,
+  "axis": 15.3,
+  "heights": {
+   "top": 13,
+   "bottom": 13,
+   "low": 13,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_gimnasia_la_plata": {
+  "id": "std_Q1194137",
+  "qid": "Q1194137",
+  "name": "Juan Carmelo Zerillo Stadium",
+  "lat": -34.91001,
+  "lon": -57.93246,
+  "axis": 89.4,
+  "heights": {
+   "top": 13,
+   "bottom": 15,
+   "low": 11,
+   "high": 11
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_gimnasia_y_esgrima_de_mendoza": {
+  "id": "std_Q5392228",
+  "qid": "Q5392228",
+  "name": "Víctor Legrotaglie Stadium",
+  "lat": -32.88425,
+  "lon": -68.86356,
+  "axis": 12.2,
+  "heights": {
+   "top": 13,
+   "bottom": 13,
+   "low": 13,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_huracan": {
+  "id": "std_Q280141",
+  "qid": "Q280141",
+  "name": "Estadio Tomás Adolfo Ducó",
+  "lat": -34.64349,
+  "lon": -58.39651,
+  "axis": 62.8,
+  "heights": {
+   "top": 8,
+   "bottom": 10,
+   "low": 5,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_independiente": {
+  "id": "std_Q1192458",
+  "qid": "Q1192458",
+  "name": "Libertadores de América Stadium",
+  "lat": -34.67027,
+  "lon": -58.37097,
+  "axis": 133,
+  "heights": {
+   "top": 20,
+   "bottom": 26,
+   "low": 23,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_independiente_rivadavia": {
+  "id": "std_Q5400104",
+  "qid": "Q5400104",
+  "name": "autista Tragantini Stadium",
+  "lat": -32.89079,
+  "lon": -68.86278,
+  "axis": 9.4,
+  "heights": {
+   "top": 15,
+   "bottom": 8,
+   "low": 8,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_instituto": {
+  "id": "std_Q3495828",
+  "qid": "Q3495828",
+  "name": "Juan Domingo Perón Stadium",
+  "lat": -31.3837,
+  "lon": -64.1803,
+  "axis": 180,
+  "heights": {
+   "top": 10,
+   "bottom": 16,
+   "low": 16,
+   "high": 12
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_lanus": {
+  "id": "std_Q533015",
+  "qid": "Q533015",
+  "name": "Estadio Ciudad de Lanús Néstor Díaz Pérez",
+  "lat": -34.71767,
+  "lon": -58.38381,
+  "axis": 41.2,
+  "heights": {
+   "top": 30,
+   "bottom": 19,
+   "low": 21,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_newells_old_boys": {
+  "id": "std_Q1369357",
+  "qid": "Q1369357",
+  "name": "Marcelo Bielsa Stadium",
+  "lat": -32.95606,
+  "lon": -60.66144,
+  "axis": 178.3,
+  "heights": {
+   "top": 25,
+   "bottom": 20,
+   "low": 13,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_platense": {
+  "id": "std_Q1159010",
+  "qid": "Q1159010",
+  "name": "City of Vicente López Stadium",
+  "lat": -34.54018,
+  "lon": -58.48159,
+  "axis": 149.3,
+  "heights": {
+   "top": 15,
+   "bottom": 15,
+   "low": 11,
+   "high": 7
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_racing_club": {
+  "id": "std_Q1196031",
+  "qid": "Q1196031",
+  "name": "El Cilindro",
+  "lat": -34.6675,
+  "lon": -58.36861,
+  "axis": 133,
+  "heights": {
+   "top": 20,
+   "bottom": 26,
+   "low": 23,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_riestra": {
+  "id": "std_Q18682950",
+  "qid": "Q18682950",
+  "name": "Guillermo Laza stadium",
+  "lat": -34.65333,
+  "lon": -58.44361,
+  "axis": 135.6,
+  "heights": {
+   "top": 13,
+   "bottom": 13,
+   "low": 13,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_river_plate": {
+  "id": "std_Q276354",
+  "qid": "Q276354",
+  "name": "Monumental Stadium, Buenos Aires",
+  "lat": -34.54528,
+  "lon": -58.44972,
+  "axis": 10.4,
+  "heights": {
+   "top": 40,
+   "bottom": 40,
+   "low": 40,
+   "high": 40
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_rosario_central": {
+  "id": "std_Q713597",
+  "qid": "Q713597",
+  "name": "Gigante de Arroyito Stadium",
+  "lat": -32.914,
+  "lon": -60.67457,
+  "axis": 178.2,
+  "heights": {
+   "top": 24,
+   "bottom": 16,
+   "low": 14,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_san_lorenzo": {
+  "id": "std_Q1192472",
+  "qid": "Q1192472",
+  "name": "Estadio Pedro Bidegain",
+  "lat": -34.65206,
+  "lon": -58.44012,
+  "axis": 87.1,
+  "heights": {
+   "top": 28,
+   "bottom": 28,
+   "low": 28,
+   "high": 28
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_sarmiento": {
+  "id": "std_Q5400194",
+  "qid": "Q5400194",
+  "name": "Eva Perón Stadium",
+  "lat": -34.58536,
+  "lon": -60.92928,
+  "axis": 135.6,
+  "heights": {
+   "top": 17,
+   "bottom": 20,
+   "low": 13,
+   "high": 15
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_talleres": {
+  "id": "std_Q1062157",
+  "qid": "Q1062157",
+  "name": "Mario Alberto Kempes Stadium",
+  "lat": -31.36896,
+  "lon": -64.24624,
+  "axis": 21.1,
+  "heights": {
+   "top": 46,
+   "bottom": 45,
+   "low": 41,
+   "high": 44
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_tigre": {
+  "id": "std_Q1067384",
+  "qid": "Q1067384",
+  "name": "Estadio José Dellagiovanna",
+  "lat": -34.44933,
+  "lon": -58.54222,
+  "axis": 60.6,
+  "heights": {
+   "top": 13,
+   "bottom": 7,
+   "low": 21,
+   "high": 11
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_union_de_santa_fe": {
+  "id": "std_Q1369026",
+  "qid": "Q1369026",
+  "name": "Estadio 15 de Abril",
+  "lat": -31.63185,
+  "lon": -60.71587,
+  "axis": 100.8,
+  "heights": {
+   "top": 12,
+   "bottom": 17,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_velez_sarsfield": {
+  "id": "std_Q1196603",
+  "qid": "Q1196603",
+  "name": "José Amalfitani Stadium",
+  "lat": -34.63538,
+  "lon": -58.52071,
+  "axis": 81.6,
+  "heights": {
+   "top": 30,
+   "bottom": 30,
+   "low": 15,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_es_deportivo": {
+  "id": "std_Q22130",
+  "qid": "Q22130",
+  "name": "Estadio Municipal de Abanca Riazor",
+  "lat": 43.36867,
+  "lon": -8.41737,
+  "axis": 77.1,
+  "heights": {
+   "top": 13,
+   "bottom": 16,
+   "low": 17,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_es_malaga": {
+  "id": "std_Q695879",
+  "qid": "Q695879",
+  "name": "La Rosaleda Stadium",
+  "lat": 36.73409,
+  "lon": -4.42642,
+  "axis": 3.7,
+  "heights": {
+   "top": 16,
+   "bottom": 15,
+   "low": 27,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_es_racing_santander": {
+  "id": "std_Q195391",
+  "qid": "Q195391",
+  "name": "Campos de Sport de El Sardinero",
+  "lat": 43.47639,
+  "lon": -3.79333,
+  "axis": 158.3,
+  "heights": {
+   "top": 0,
+   "bottom": 50,
+   "low": 0,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_gb_hull_city": {
+  "id": "std_Q630160",
+  "qid": "Q630160",
+  "name": "MKM Stadium",
+  "lat": 53.74611,
+  "lon": -0.36778,
+  "axis": 139.4,
+  "heights": {
+   "top": 25,
+   "bottom": 30,
+   "low": 21,
+   "high": 22
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_gb_ipswich_town": {
+  "id": "std_Q619558",
+  "qid": "Q619558",
+  "name": "Portman Road",
+  "lat": 52.055,
+  "lon": 1.14528,
+  "axis": 171.7,
+  "heights": {
+   "top": 13,
+   "bottom": 13,
+   "low": 14,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_it_frosinone": {
+  "id": "std_Q29655396",
+  "qid": "Q29655396",
+  "name": "Benito Stirpe Stadium",
+  "lat": 41.63426,
+  "lon": 13.32187,
+  "axis": 37.7,
+  "heights": {
+   "top": 23,
+   "bottom": 10,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_it_monza": {
+  "id": "std_Q1851616",
+  "qid": "Q1851616",
+  "name": "Stadio Brianteo",
+  "lat": 45.58278,
+  "lon": 9.30806,
+  "axis": 6.9,
+  "heights": {
+   "top": 41,
+   "bottom": 26,
+   "low": 27,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_it_venezia": {
+  "id": "std_Q588926",
+  "qid": "Q588926",
+  "name": "Stadio Pierluigi Penzo",
+  "lat": 45.42776,
+  "lon": 12.36373,
+  "axis": 171.8,
+  "heights": {
+   "top": 8,
+   "bottom": 7,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_ado_den_haag": {
+  "id": "std_Q720978",
+  "qid": "Q720978",
+  "name": "WerkTalent Stadion",
+  "lat": 52.06278,
+  "lon": 4.38306,
+  "axis": 175.7,
+  "heights": {
+   "top": 13,
+   "bottom": 21,
+   "low": 11,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_ajax": {
+  "id": "std_Q207109",
+  "qid": "Q207109",
+  "name": "Johan Cruyff Arena",
+  "lat": 52.31417,
+  "lon": 4.94194,
+  "axis": 150.9,
+  "heights": {
+   "top": 30,
+   "bottom": 30,
+   "low": 30,
+   "high": 30
+  },
+  "roof": "retractable",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_az": {
+  "id": "std_Q291590",
+  "qid": "Q291590",
+  "name": "AFAS Stadion",
+  "lat": 52.6125,
+  "lon": 4.74167,
+  "axis": 134.6,
+  "heights": {
+   "top": 23,
+   "bottom": 23,
+   "low": 23,
+   "high": 19
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_cambuur": {
+  "id": "std_Q1028392",
+  "qid": "Q1028392",
+  "name": "Cambuur Stadion",
+  "lat": 53.20528,
+  "lon": 5.81472,
+  "axis": 176.4,
+  "heights": {
+   "top": 12,
+   "bottom": 12,
+   "low": 12,
+   "high": 12
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_excelsior": {
+  "id": "std_Q2298643",
+  "qid": "Q2298643",
+  "name": "Stadion Woudestein",
+  "lat": 51.91694,
+  "lon": 4.52056,
+  "axis": 22.2,
+  "heights": {
+   "top": 13,
+   "bottom": 9,
+   "low": 8,
+   "high": 8
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_fc_groningen": {
+  "id": "std_Q1374804",
+  "qid": "Q1374804",
+  "name": "Euroborg",
+  "lat": 53.20611,
+  "lon": 6.59139,
+  "axis": 0.8,
+  "heights": {
+   "top": 40,
+   "bottom": 26,
+   "low": 24,
+   "high": 23
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_fc_twente": {
+  "id": "std_Q727389",
+  "qid": "Q727389",
+  "name": "De Grolsch Veste",
+  "lat": 52.23667,
+  "lon": 6.8375,
+  "axis": 135.6,
+  "heights": {
+   "top": 19,
+   "bottom": 22,
+   "low": 22,
+   "high": 24
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_fc_utrecht": {
+  "id": "std_Q1675996",
+  "qid": "Q1675996",
+  "name": "Stadion Galgenwaard",
+  "lat": 52.07833,
+  "lon": 5.14583,
+  "axis": 111.9,
+  "heights": {
+   "top": 24,
+   "bottom": 43,
+   "low": 26,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_feyenoord": {
+  "id": "std_Q330298",
+  "qid": "Q330298",
+  "name": "De Kuip",
+  "lat": 51.89389,
+  "lon": 4.52325,
+  "axis": 152.2,
+  "heights": {
+   "top": 27,
+   "bottom": 24,
+   "low": 25,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_nec": {
+  "id": "std_Q720983",
+  "qid": "Q720983",
+  "name": "Stadion de Goffert",
+  "lat": 51.8225,
+  "lon": 5.83667,
+  "axis": 133.8,
+  "heights": {
+   "top": 22,
+   "bottom": 25,
+   "low": 31,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_pec_zwolle": {
+  "id": "std_Q1141104",
+  "qid": "Q1141104",
+  "name": "MAC³PARK stadion",
+  "lat": 52.51729,
+  "lon": 6.12191,
+  "axis": 168.5,
+  "heights": {
+   "top": 13,
+   "bottom": 13,
+   "low": 13,
+   "high": 13
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_psv": {
+  "id": "std_Q500972",
+  "qid": "Q500972",
+  "name": "Philips Stadion",
+  "lat": 51.4417,
+  "lon": 5.4674,
+  "axis": 127,
+  "heights": {
+   "top": 19,
+   "bottom": 25,
+   "low": 26,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_sc_heerenveen": {
+  "id": "std_Q318125",
+  "qid": "Q318125",
+  "name": "Abe Lenstra Stadion",
+  "lat": 52.95861,
+  "lon": 5.93611,
+  "axis": 144.4,
+  "heights": {
+   "top": 22,
+   "bottom": 19,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_nl_willem_ii": {
+  "id": "std_Q1408176",
+  "qid": "Q1408176",
+  "name": "Koning Willem II Stadion",
+  "lat": 51.54278,
+  "lon": 5.06694,
+  "axis": 174.3,
+  "heights": {
+   "top": 14,
+   "bottom": 14,
+   "low": 14,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 1,
+  "dst": "eu"
+ },
+ "of_pt_benfica": {
+  "id": "std_Q7875112",
+  "qid": "Q7875112",
+  "name": "Estádio da Luz",
+  "lat": 38.75278,
+  "lon": -9.18472,
+  "axis": 164.2,
+  "heights": {
+   "top": 34,
+   "bottom": 33,
+   "low": 35,
+   "high": 34
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_braga": {
+  "id": "std_Q849239",
+  "qid": "Q849239",
+  "name": "Estádio Municipal de Braga",
+  "lat": 41.5624,
+  "lon": -8.4308,
+  "axis": 130.3,
+  "heights": {
+   "top": 37,
+   "bottom": 37,
+   "low": 0,
+   "high": 0
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_estoril": {
+  "id": "std_Q1370647",
+  "qid": "Q1370647",
+  "name": "Estádio António Coimbra da Mota",
+  "lat": 38.716,
+  "lon": -9.406,
+  "axis": 170.2,
+  "heights": {
+   "top": 11,
+   "bottom": 13,
+   "low": 13,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_famalicao": {
+  "id": "std_Q1293399",
+  "qid": "Q1293399",
+  "name": "Estádio Municipal 22 de Junho",
+  "lat": 41.40128,
+  "lon": -8.52242,
+  "axis": 166.5,
+  "heights": {
+   "top": 14,
+   "bottom": 17,
+   "low": 16,
+   "high": 14
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_gil_vicente": {
+  "id": "std_Q1167583",
+  "qid": "Q1167583",
+  "name": "Estádio Cidade de Barcelos",
+  "lat": 41.55111,
+  "lon": -8.62278,
+  "axis": 172.4,
+  "heights": {
+   "top": 12,
+   "bottom": 15,
+   "low": 11,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_maritimo": {
+  "id": "std_Q1272724",
+  "qid": "Q1272724",
+  "name": "Estádio do Marítimo",
+  "lat": 32.64556,
+  "lon": -16.92833,
+  "axis": 4.7,
+  "heights": {
+   "top": 22,
+   "bottom": 19,
+   "low": 19,
+   "high": 15
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_porto": {
+  "id": "std_Q271454",
+  "qid": "Q271454",
+  "name": "Estádio do Dragão",
+  "lat": 41.16176,
+  "lon": -8.58393,
+  "axis": 179.7,
+  "heights": {
+   "top": 50,
+   "bottom": 50,
+   "low": 44,
+   "high": 41
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_rio_ave": {
+  "id": "std_Q550041",
+  "qid": "Q550041",
+  "name": "Estádio do Rio Ave FC",
+  "lat": 41.36276,
+  "lon": -8.74019,
+  "axis": 177.8,
+  "heights": {
+   "top": 19,
+   "bottom": 20,
+   "low": 31,
+   "high": 31
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_santa_clara": {
+  "id": "std_Q3514858",
+  "qid": "Q3514858",
+  "name": "Estádio de São Miguel",
+  "lat": 37.76371,
+  "lon": -25.62259,
+  "axis": 7.4,
+  "heights": {
+   "top": 15,
+   "bottom": 18,
+   "low": 24,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_sporting_cp": {
+  "id": "std_Q287359",
+  "qid": "Q287359",
+  "name": "Estádio José Alvalade",
+  "lat": 38.76119,
+  "lon": -9.16078,
+  "axis": 0.5,
+  "heights": {
+   "top": 34,
+   "bottom": 36,
+   "low": 28,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_vitoria_guimaraes": {
+  "id": "std_Q1057274",
+  "qid": "Q1057274",
+  "name": "Estádio D. Afonso Henriques",
+  "lat": 41.44583,
+  "lon": -8.30097,
+  "axis": 171.1,
+  "heights": {
+   "top": 26,
+   "bottom": 31,
+   "low": 24,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_us_austin_fc": {
+  "id": "std_Q56278477",
+  "qid": "Q56278477",
+  "name": "Q2 Stadium",
+  "lat": 30.38821,
+  "lon": -97.71984,
+  "axis": 159.1,
+  "heights": {
+   "top": 16,
+   "bottom": 16,
+   "low": 16,
+   "high": 16
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_cf_montreal": {
+  "id": "std_Q2093647",
+  "qid": "Q2093647",
+  "name": "Saputo Stadium",
+  "lat": 45.56306,
+  "lon": -73.5525,
+  "axis": 168.8,
+  "heights": {
+   "top": 22,
+   "bottom": 21,
+   "low": 22,
+   "high": 22
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_charlotte_football_club": {
+  "id": "std_Q806673",
+  "qid": "Q806673",
+  "name": "Bank of America Stadium",
+  "lat": 35.22583,
+  "lon": -80.85278,
+  "axis": 139.9,
+  "heights": {
+   "top": 43,
+   "bottom": 43,
+   "low": 38,
+   "high": 44
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_colorado_rapids": {
+  "id": "std_Q1210268",
+  "qid": "Q1210268",
+  "name": "Dick's Sporting Goods Park",
+  "lat": 39.80556,
+  "lon": -104.89194,
+  "axis": 0.5,
+  "heights": {
+   "top": 40,
+   "bottom": 31,
+   "low": 35,
+   "high": 49
+  },
+  "roof": "open",
+  "tzStd": -7,
+  "dst": "us"
+ },
+ "of_us_columbus_crew": {
+  "id": "std_Q65045869",
+  "qid": "Q65045869",
+  "name": "ScottsMiracle-Gro Field",
+  "lat": 39.96846,
+  "lon": -83.01709,
+  "axis": 171.9,
+  "heights": {
+   "top": 21,
+   "bottom": 21,
+   "low": 22,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_dc_united": {
+  "id": "std_Q5203387",
+  "qid": "Q5203387",
+  "name": "Audi Field",
+  "lat": 38.8685,
+  "lon": -77.01293,
+  "axis": 179.9,
+  "heights": {
+   "top": 33,
+   "bottom": 11,
+   "low": 17,
+   "high": 29
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_fc_cincinnati": {
+  "id": "std_Q54465634",
+  "qid": "Q54465634",
+  "name": "TQL Stadium",
+  "lat": 39.11139,
+  "lon": -84.52222,
+  "axis": 169.2,
+  "heights": {
+   "top": 45,
+   "bottom": 37,
+   "low": 24,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_fc_dallas": {
+  "id": "std_Q1140457",
+  "qid": "Q1140457",
+  "name": "Toyota Stadium",
+  "lat": 33.15446,
+  "lon": -96.83516,
+  "axis": 173.8,
+  "heights": {
+   "top": 14,
+   "bottom": 28,
+   "low": 12,
+   "high": 31
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_houston_dynamo": {
+  "id": "std_Q176460",
+  "qid": "Q176460",
+  "name": "Shell Energy Stadium",
+  "lat": 29.7522,
+  "lon": -95.3524,
+  "axis": 34.6,
+  "heights": {
+   "top": 17,
+   "bottom": 17,
+   "low": 17,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_inter_miami_cf": {
+  "id": "std_Q65240568",
+  "qid": "Q65240568",
+  "name": "Chase Stadium",
+  "lat": 26.19306,
+  "lon": -80.16111,
+  "axis": 178.6,
+  "heights": {
+   "top": 31,
+   "bottom": 31,
+   "low": 24,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_la_galaxy": {
+  "id": "std_Q200684",
+  "qid": "Q200684",
+  "name": "Dignity Health Sports Park",
+  "lat": 33.86444,
+  "lon": -118.26111,
+  "axis": 179.9,
+  "heights": {
+   "top": 29,
+   "bottom": 30,
+   "low": 44,
+   "high": 40
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_los_angeles_football_club": {
+  "id": "std_Q22096111",
+  "qid": "Q22096111",
+  "name": "BMO Stadium",
+  "lat": 34.013,
+  "lon": -118.285,
+  "axis": 179.7,
+  "heights": {
+   "top": 17,
+   "bottom": 17,
+   "low": 17,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_minnesota_united_fc": {
+  "id": "std_Q22096631",
+  "qid": "Q22096631",
+  "name": "Allianz Field",
+  "lat": 44.9528,
+  "lon": -93.1651,
+  "axis": 179.9,
+  "heights": {
+   "top": 23,
+   "bottom": 23,
+   "low": 21,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_nashville_sc": {
+  "id": "std_Q47528203",
+  "qid": "Q47528203",
+  "name": "Geodis Park",
+  "lat": 36.13096,
+  "lon": -86.76769,
+  "axis": 163.7,
+  "heights": {
+   "top": 27,
+   "bottom": 26,
+   "low": 27,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_new_england_revolution": {
+  "id": "std_Q373355",
+  "qid": "Q373355",
+  "name": "Gillette Stadium",
+  "lat": 42.09094,
+  "lon": -71.26434,
+  "axis": 162.4,
+  "heights": {
+   "top": 36,
+   "bottom": 36,
+   "low": 36,
+   "high": 36
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_new_york_city": {
+  "id": "std_Q753529",
+  "qid": "Q753529",
+  "name": "Yankee Stadium",
+  "lat": 40.82957,
+  "lon": -73.92639,
+  "axis": 59.7,
+  "heights": {
+   "top": 0,
+   "bottom": 0,
+   "low": 0,
+   "high": 50
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_new_york_red_bulls": {
+  "id": "std_Q761682",
+  "qid": "Q761682",
+  "name": "Sports Illustrated Stadium",
+  "lat": 40.73667,
+  "lon": -74.15028,
+  "axis": 177.1,
+  "heights": {
+   "top": 26,
+   "bottom": 22,
+   "low": 25,
+   "high": 25
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_orlando_city": {
+  "id": "std_Q16846942",
+  "qid": "Q16846942",
+  "name": "Inter&Co Stadium",
+  "lat": 28.54106,
+  "lon": -81.38904,
+  "axis": 179.2,
+  "heights": {
+   "top": 18,
+   "bottom": 18,
+   "low": 18,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_philadelphia_union": {
+  "id": "std_Q1637843",
+  "qid": "Q1637843",
+  "name": "Subaru Park",
+  "lat": 39.83222,
+  "lon": -75.37889,
+  "axis": 171.2,
+  "heights": {
+   "top": 27,
+   "bottom": 22,
+   "low": 23,
+   "high": 21
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_portland_timbers": {
+  "id": "std_Q262291",
+  "qid": "Q262291",
+  "name": "Providence Park",
+  "lat": 45.52139,
+  "lon": -122.69167,
+  "axis": 20.8,
+  "heights": {
+   "top": 25,
+   "bottom": 24,
+   "low": 15,
+   "high": 26
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_real_salt_lake": {
+  "id": "std_Q1514798",
+  "qid": "Q1514798",
+  "name": "America First Field",
+  "lat": 40.5829,
+  "lon": -111.893,
+  "axis": 0,
+  "heights": {
+   "top": 27,
+   "bottom": 33,
+   "low": 19,
+   "high": 27
+  },
+  "roof": "open",
+  "tzStd": -7,
+  "dst": "us"
+ },
+ "of_us_san_diego_football_club": {
+  "id": "std_Q100272042",
+  "qid": "Q100272042",
+  "name": "Snapdragon Stadium",
+  "lat": 32.78444,
+  "lon": -117.12283,
+  "axis": 6.4,
+  "heights": {
+   "top": 29,
+   "bottom": 29,
+   "low": 18,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_san_jose_earthquakes": {
+  "id": "std_Q3046470",
+  "qid": "Q3046470",
+  "name": "PayPal Park",
+  "lat": 37.35139,
+  "lon": -121.925,
+  "axis": 32.2,
+  "heights": {
+   "top": 30,
+   "bottom": 20,
+   "low": 19,
+   "high": 32
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_seattle_sounders": {
+  "id": "std_Q612736",
+  "qid": "Q612736",
+  "name": "Lumen Field",
+  "lat": 47.59528,
+  "lon": -122.33167,
+  "axis": 0,
+  "heights": {
+   "top": 35,
+   "bottom": 35,
+   "low": 35,
+   "high": 35
+  },
+  "roof": "open",
+  "tzStd": -8,
+  "dst": "us"
+ },
+ "of_us_sporting_kansas_city": {
+  "id": "std_Q1787141",
+  "qid": "Q1787141",
+  "name": "Sporting Park",
+  "lat": 39.1218,
+  "lon": -94.8237,
+  "axis": 52.7,
+  "heights": {
+   "top": 24,
+   "bottom": 19,
+   "low": 17,
+   "high": 6
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_st_louis_city_sc": {
+  "id": "std_Q30591730",
+  "qid": "Q30591730",
+  "name": "Energizer Park",
+  "lat": 38.63105,
+  "lon": -90.21092,
+  "axis": 14.8,
+  "heights": {
+   "top": 21,
+   "bottom": 23,
+   "low": 17,
+   "high": 18
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
+ "of_us_toronto_fc": {
+  "id": "std_Q796351",
+  "qid": "Q796351",
+  "name": "BMO Field",
+  "lat": 43.63278,
+  "lon": -79.41861,
+  "axis": 159.6,
+  "heights": {
+   "top": 34,
+   "bottom": 28,
+   "low": 7,
+   "high": 17
+  },
+  "roof": "open",
+  "tzStd": -5,
+  "dst": "us"
+ }
+}

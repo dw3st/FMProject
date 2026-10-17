@@ -210,7 +210,7 @@ export function MatchScreen() {
   const [venueName, setVenueName] = useState<string | null>(null);
   const [touchline, setTouchline] = useState<{
     crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null; pitch: SetupPitch | null;
-    conditions: { kickoff: string; weather: MatchWeather; sunset: string } | null; sunSide: StadiumSun | null;
+    conditions: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null; sunSide: StadiumSun | null;
   } | null>(null);
   /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
   const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
@@ -383,7 +383,7 @@ export function MatchScreen() {
           /** Grass, mowing and condition of the pitch (spec 2026-10-16-pitch-types). */
           pitch?: SetupPitch | null;
           /** Kickoff, weather and sunset of the match, and where the sun sets over the stadium (match light). */
-          conditions?: { kickoff: string; weather: MatchWeather; sunset: string } | null;
+          conditions?: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null;
           sunSide?: StadiumSun | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;

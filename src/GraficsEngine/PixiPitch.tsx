@@ -287,6 +287,8 @@ export interface PitchLighting {
   sunset: string;
   weather: MatchWeather | "wind_rain";
   sun: StadiumSun;
+  /** Match date ("YYYY-MM-DD"): a real stadium's sun is computed for it. */
+  date?: string;
   /** Seed of the rain / snow particles. */
   seed: string;
   /** Minutes since midnight: fixes the time instead of following the match clock (/test). */
@@ -544,7 +546,7 @@ export function PixiPitch({
   useEffect(() => {
     lightingRef.current = lighting;
     lightGenRef.current++;
-  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.stadiumId, lighting?.sun.side, lighting?.sun.lean, lighting?.sun.covered, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.stadiumId, lighting?.sun.side, lighting?.sun.lean, lighting?.sun.covered, lighting?.date, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -779,8 +781,8 @@ export function PixiPitch({
         if (key === lastLightKey) return;
         lastLightKey = key;
         const weather = li.weather === "wind_rain" ? "rain" : li.weather;
-        currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun });
-        drawShade(currentLight, li.sun);
+        currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun, date: li.date });
+        drawShade(currentLight, currentLight.stand.profile);
         drawLight(lightGraphics, currentLight, toPixel, canvasWidth, canvasHeight);
         // Player shadows: only when they actually change (the sun shadow grows slowly toward sunset).
         const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.kind},${s.angle.toFixed(2)},${s.length.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;

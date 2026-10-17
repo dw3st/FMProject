@@ -111,6 +111,7 @@
     "statPlayers": "36 mil jogadores",
     "statCups": "copas e continentais",
     "sourceCode": "Código-fonte",
+    "osmCredit": "Estádios: © colaboradores do OpenStreetMap",
     "license": "AGPL-3.0",
     "developedBy": "Desenvolvido por",
     "footerText": "© 2026 FMProject · baseado em TouchLines (AGPL-3.0)"

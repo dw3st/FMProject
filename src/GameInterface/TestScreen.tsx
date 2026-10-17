@@ -9,7 +9,8 @@ import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
 import type { DebugOverlays, PitchLighting, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
 import { minutesOf } from "@/GraficsEngine/matchLighting";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
-import { stadiumSun, type StadiumSun } from "@/Domain/matchday/stadiumSun";
+import { stadiumSun, type RealStadium, type StadiumSun } from "@/Domain/matchday/stadiumSun";
+import { hhmm, sunsetUtcMinutes, utcOffsetMinutes } from "@/Domain/matchday/solar";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
@@ -150,10 +151,22 @@ type LightTimeOption = 'off' | '13:30' | '17:30' | '20:45' | 'match';
 const LIGHT_TIME_OPTIONS: LightTimeOption[] = ['off', '13:30', '17:30', '20:45', 'match'];
 // Stadium shadow profiles to compare (`stadiumSun`): three ids with a cut at one end, at both ends and none, and a
 // covered stadium.
-const LIGHT_STADIUMS = ['lean', 'both', 'none', 'covered'] as const;
+const LIGHT_STADIUMS = ['lean', 'both', 'none', 'covered', 'real-dec', 'real-jun'] as const;
 type LightStadiumOption = typeof LIGHT_STADIUMS[number];
+// A real stadium (Old Trafford, numbers as `fetchStadiums.ts` writes them): the sun computed for the date.
+const TEST_REAL: RealStadium = {
+  id: 'std_Q18484', qid: 'Q18484', name: 'Old Trafford', lat: 53.4631, lon: -2.2913, axis: 70.6,
+  heights: { top: 36, bottom: 28, low: 34, high: 36 }, roof: 'open', tzStd: 0, dst: 'eu',
+};
+const TEST_REAL_DATE: Partial<Record<LightStadiumOption, string>> = { 'real-dec': '2027-12-15', 'real-jun': '2027-06-21' };
+function testSunset(o: LightStadiumOption): string {
+  const date = TEST_REAL_DATE[o];
+  if (!date) return '18:30';
+  return hhmm(sunsetUtcMinutes(TEST_REAL.lat, TEST_REAL.lon, date)! + utcOffsetMinutes(TEST_REAL.tzStd, TEST_REAL.dst, date));
+}
 function testStadium(o: LightStadiumOption): StadiumSun {
   if (o === 'covered') return { ...stadiumSun('std_test'), covered: true };
+  if (o === 'real-dec' || o === 'real-jun') return { ...stadiumSun(TEST_REAL.id), real: TEST_REAL };
   for (let i = 0; ; i++) {
     const sun = stadiumSun(`std_test_${i}`);
     if (sun.cut === o && !sun.covered) return sun;
@@ -466,8 +479,8 @@ export function TestScreen() {
   const [lightWeather, setLightWeather] = useState<MatchWeather | 'wind_rain'>('sunny');
   const [lightStadium, setLightStadium] = useState<LightStadiumOption>('lean');
   const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
-    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: '18:30', weather: lightWeather,
-    sun: testStadium(lightStadium), seed: 'test',
+    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: testSunset(lightStadium), weather: lightWeather,
+    sun: testStadium(lightStadium), seed: 'test', date: TEST_REAL_DATE[lightStadium],
     ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
   }, [lightTime, lightWeather, lightStadium]);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
@@ -1282,7 +1295,7 @@ export function TestScreen() {
               {LIGHT_STADIUMS.map(v => (
                 <button key={v} onClick={() => setLightStadium(v)}
                   className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightStadium === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
-                  Stadium: {v === 'covered' ? 'covered' : `cut ${v}`}
+                  Stadium: {v === 'covered' ? 'covered' : v === 'real-dec' ? 'Old Trafford, Dec 15' : v === 'real-jun' ? 'Old Trafford, Jun 21' : `cut ${v}`}
                 </button>
               ))}
             </div>
