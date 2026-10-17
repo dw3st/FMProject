@@ -1127,6 +1127,15 @@ export function MatchScreen() {
     ];
   }, [teamAMeta, teamBMeta, crestIds]);
 
+  // Match light (time of day, weather): stable object so the pitch only redraws when it really changes.
+  // Before the early returns below: a hook after them breaks the screen ("Rendered more hooks").
+  const lightConditions = touchline?.conditions ?? null;
+  const lightSun = touchline?.sunSide ?? null;
+  const matchLightingProp = useMemo<PitchLighting | null>(
+    () => (lightConditions && lightSun && matchFixture ? { ...lightConditions, sun: lightSun, seed: matchFixture.id } : null),
+    [lightConditions, lightSun, matchFixture?.id], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   if (loadError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -1214,13 +1223,6 @@ export function MatchScreen() {
           : null,
       ].filter(Boolean).join(" · ") || null;
   const setupPitch = touchline?.pitch ?? null;
-  // Match light (time of day, weather): stable object so the pitch only redraws when it really changes.
-  const lightConditions = touchline?.conditions ?? null;
-  const lightSun = touchline?.sunSide ?? null;
-  const matchLightingProp = useMemo<PitchLighting | null>(
-    () => (lightConditions && lightSun && matchFixture ? { ...lightConditions, sun: lightSun, seed: matchFixture.id } : null),
-    [lightConditions, lightSun, matchFixture?.id], // eslint-disable-line react-hooks/exhaustive-deps
-  );
   const pitchInfo = setupPitch
     ? t("match.stadium.pitch", { turf: t(`facilities.turf.type.${setupPitch.turf}`), pct: Math.round(setupPitch.condition) })
     : null;
