@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.29",
+    date: "2026-10-16",
+    items: [
+      {
+        pt: "A luz da partida segue o horário: sol e sombras à tarde, fim de tarde alaranjado e refletores à noite.",
+        en: "The match light follows the time of day: sun and shadows in the afternoon, a golden late afternoon and floodlights at night.",
+      },
+      {
+        pt: "Chuva e neve caem sobre o campo, e o tempo nublado deixa a luz cinzenta.",
+        en: "Rain and snow fall over the pitch, and cloudy weather greys the light.",
+      },
+    ],
+  },
+  {
     version: "4.28",
     date: "2026-10-16",
     items: [

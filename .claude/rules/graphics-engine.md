@@ -76,3 +76,16 @@ obra. Vêm do `match-setup` (`crowd.decor`) só nos jogos em casa do clube do jo
 ## Superfície do gramado (4.28)
 
 `pitchSurface.ts`: faixas por condição (≥ 70 nítido, 70–40 desbotado, 40–15 gasto, < 15 terra e lama), formas em jardas, sintética nunca remenda; linhas tracejadas num gramado podre. Prop `pitch` do `PixiPitch` (tipo, corte, condição): desenhada uma vez em Graphics estático e refeita só quando o gramado muda. `PitchSurfaceSvg` desenha o mesmo na prévia e no Clube. Ver `.claude/rules/game/facilities.md`.
+
+## Luz e sombra (4.29)
+
+Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: nada entra no `GameState`, no motor, no quickSim nem no `/lab`.
+
+- `src/Domain/matchday/matchConditions.ts`: `MatchConditions.sunset` ("HH:MM", o `SUNSET` da estação e do clima; nenhum sorteio novo). `src/Domain/matchday/stadiumSun.ts`: `stadiumSunSide(id)` → `{ side: "top"|"bottom", lean −1..1 }` pelo id do clube (campo neutro: id do jogo).
+- `matchLighting.ts`: `matchClockMinutes(state, kickoff)` = saída de bola + tempo jogado + 15 min de intervalo + acréscimos (prorrogação com intervalo de 5 min); `matchLighting({ clock, sunset, weather, sun })` devolve véus quente / cinza / escuro, refletores 0..1, vinheta, sombra da arquibancada (profundidade de 8% a 50% da largura do campo nos 90 min antes do pôr do sol) e sombras dos jogadores (uma sombra de sol para longe do sol, 3,4 raios do marcador na hora dourada; 4 sombras fracas de refletor em X à noite). Faixas relativas ao pôr do sol: dourada a partir de −90 min, crepúsculo −30..+30 (o sol some, os refletores acendem), noite depois de +30. Clima: nublado / chuva / neve tiram as sombras de sol (parcialmente nublado / frio mantêm metade) e somam um véu cinza. Constantes `LIGHTING` em `pitchStyle.ts`.
+- `weatherParticles.ts`: chuva 150 gotas, neve 100 flocos, em frações do canvas, no relógio de efeitos (parado na pausa; nada desenhado com a aba escondida); `wind_rain` (mais inclinada) só pelo `/test`.
+- Prop `lighting` (`PitchLighting`) do `PixiPitch`: camada de luz acima do gramado, linhas e arquibancada e abaixo dos jogadores, refeita só quando o relógio da partida anda um minuto ou as entradas / o espelho mudam; sombra de luz por marcador (`lightShadow`) refeita só quando a especificação da sombra muda, espelhada com o campo; partículas num traço / preenchimento só, acima dos jogadores. Sem a prop nada muda.
+- `POST /api/match-setup` devolve `conditions: { kickoff, weather, sunset } | null` e `sunSide`; o jogo de seleção não tem luz. O `MatchScreen` passa `lighting` (semente = id do jogo).
+- `/test`: Hora (Off · 13:30 · 17:30 · 20:45 · Por jogo = saída 17:30, pôr do sol 18:30) e Clima (sunny · cloudy · rain · wind_rain · snow).
+- FPS: não medido. A aba automatizada do Chrome limita os quadros (~1,3/s), então o medidor do `/test` não vale lá; a leitura manual numa janela normal está pendente (meta: queda ≤ 5 FPS com Hora 20:45 + chuva contra Hora Off).
+- Limitações: a orientação do estádio é desenhada, não real; a luz não afeta a simulação; sem sombra de jogador nas arquibancadas, sem reflexo em poças.
