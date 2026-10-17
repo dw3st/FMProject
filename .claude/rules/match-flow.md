@@ -483,3 +483,7 @@ same referee (`MatchEvent.referee`, never taken from the client's recording).
   the button closes); open state and position per viewer in `localStorage` (`fm.match.feedWindow`, `feedWindow.ts`,
   clamped to the viewport). While open the panel keeps one line and the heat map gets the room.
 - Heat map: two `SegmentedTabs` (my team / opponent; last 10' / whole match), each with its two options side by side.
+
+# Luz da partida (4.29)
+
+`POST /api/match-setup` devolve `conditions` (`kickoff`, `weather`, `sunset`) e `sunSide`; o `MatchScreen` os passa ao `PixiPitch` como `lighting`. Só desenho. Ver `.claude/rules/graphics-engine.md` → "Luz e sombra".

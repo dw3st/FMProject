@@ -1,6 +1,6 @@
 /**
- * Cosmetic match-day details for the dashboard's "Next match" card: kickoff time and weather.
- * Neither exists in the simulation — they are derived deterministically from the fixture (same
+ * Cosmetic match-day details for the dashboard's "Next match" card and the light of the live match
+ * (kickoff time, weather, sunset). None exists in the simulation — they are derived deterministically from the fixture (same
  * fixture, same answer) and have no effect on any match. Pure, no I/O.
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
@@ -88,6 +88,8 @@ export interface MatchConditions {
   weather: MatchWeather;
   /** Kickoff at or after sunset (`SUNSET`): the screens show night icons (moon). */
   night: boolean;
+  /** Local sunset "HH:MM" of that day (`SUNSET` by season or climate); `night` = kickoff >= sunset. */
+  sunset: string;
 }
 
 /**
@@ -109,5 +111,5 @@ export function matchConditions(
   const key = climate === "tropical" || climate === "arid" ? climate : seasonOf(month, climate);
   const drawn = pickWeighted(WEATHER[key], rng());
   const night = kickoff >= SUNSET[key];
-  return { kickoff, weather: night ? (NIGHT_WEATHER[drawn] ?? drawn) : drawn, night };
+  return { kickoff, weather: night ? (NIGHT_WEATHER[drawn] ?? drawn) : drawn, night, sunset: SUNSET[key] };
 }

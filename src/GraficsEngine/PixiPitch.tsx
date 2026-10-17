@@ -2,7 +2,11 @@ import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
+import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
+import type { MatchWeather } from "@/Domain/matchday/matchConditions";
+import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface } from "@/GraficsEngine/pitchSurface";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
@@ -231,6 +235,81 @@ function drawPitch(g: Graphics, m: PitchMetrics, line: { alpha: number; dashed: 
   g.rect(rx, goalYTop, m.goalNetDepth, goalHeight).stroke(NET);
 }
 
+/** The light layer: stand shadow, warm and grey veils, night darkness, vignette and floodlight glow. */
+function drawLight(
+  g: Graphics, l: Lighting,
+  toPx: (x: number, y: number) => { px: number; py: number }, w: number, h: number,
+) {
+  g.clear();
+  // Stand shadow: from the sun's touchline, across the pitch (engine yards -> px, mirror included).
+  if (l.stand.alpha > 0.005) {
+    const d = l.stand.depth * PITCH_WIDTH;
+    const y0 = l.stand.side === "top" ? 0 : PITCH_WIDTH;
+    const s = l.stand.side === "top" ? 1 : -1;
+    const pts = [
+      toPx(-3, y0 - s * 3), toPx(PITCH_LENGTH + 3, y0 - s * 3),
+      toPx(PITCH_LENGTH + 3, y0 + s * d * (1 + l.stand.lean)), toPx(-3, y0 + s * d * (1 - l.stand.lean)),
+    ];
+    g.poly(pts.flatMap((p) => [p.px, p.py])).fill({ color: 0x000000, alpha: l.stand.alpha });
+  }
+  if (l.warm.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.warm.color, alpha: l.warm.alpha });
+  if (l.veil.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.veil.color, alpha: l.veil.alpha });
+  if (l.dark.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.dark.color, alpha: l.dark.alpha });
+  // Vignette: darker bands toward the canvas edges (inside strokes, fading inward).
+  if (l.vignette > 0.005) {
+    const steps = 6;
+    const band = Math.min(w, h) * 0.08;
+    for (let i = 0; i < steps; i++) {
+      const inset = i * band;
+      g.rect(inset, inset, w - 2 * inset, h - 2 * inset)
+        .stroke({ width: band, color: 0x000000, alpha: (l.vignette / steps) * (1 - i / steps), alignment: 1 });
+    }
+  }
+  // Floodlight glow in the four corners.
+  if (l.flood > 0.005) {
+    const r = Math.max(w, h) * 0.45;
+    for (const [cx, cy] of [[0, 0], [w, 0], [0, h], [w, h]] as const) {
+      for (let i = 1; i <= 5; i++) g.circle(cx, cy, (r * i) / 5).fill({ color: 0xffffff, alpha: (LIGHTING.NIGHT.FLOOD * l.flood) / 5 });
+    }
+  }
+}
+
+/**
+ * Light shadows of one marker (the sun's one, or four faint ones under the floodlights): rotated ellipses relative
+ * to the marker centre, in marker radii -> px. The drawn pitch is turned 180 degrees with `mirror`, so are the shadows.
+ */
+function drawLightShadows(g: Graphics, l: Lighting | null, r: number, mirror: boolean) {
+  g.clear();
+  if (!l) return;
+  const k = mirror ? -1 : 1;
+  for (const s of l.shadows) {
+    const rot = s.rotation + (mirror ? Math.PI : 0);
+    const cx = k * s.dx * r, cy = k * s.dy * r;
+    const rx = s.rx * r, ry = s.ry * r;
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const pts: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 2;
+      const ex = Math.cos(a) * rx, ey = Math.sin(a) * ry;
+      pts.push(cx + ex * cos - ey * sin, cy + ex * sin + ey * cos);
+    }
+    g.poly(pts).fill({ color: 0x000000, alpha: s.alpha });
+  }
+}
+
+/** Light of the match (spec 2026-10-16-match-lighting). */
+export interface PitchLighting {
+  /** Kickoff and sunset, "HH:MM". */
+  kickoff: string;
+  sunset: string;
+  weather: MatchWeather | "wind_rain";
+  sun: StadiumSun;
+  /** Seed of the rain / snow particles. */
+  seed: string;
+  /** Minutes since midnight: fixes the time instead of following the match clock (/test). */
+  clockOverride?: number;
+}
+
 export interface DebugOverlays {
   passLanes:              boolean;
   xG:                    boolean;
@@ -334,6 +413,12 @@ interface Props {
    */
   pitch?: { condition: number; turf: TurfType; mowing: MowingPattern; seed: string } | null;
   /**
+   * Light of the match (spec 2026-10-16-match-lighting): kickoff and sunset, weather, where the sun sets over the
+   * stadium, the seed of the particles. Light layer redrawn when the match clock moves a minute; player shadows
+   * redrawn when the light changes; rain / snow on the effects clock. Absent / null: nothing new is drawn.
+   */
+  lighting?: PitchLighting | null;
+  /**
    * Referee, assistants and both managers on the touchline (§3–§4). Read at mount. An object also gives the
    * officials' faces (server URLs, `refereeFaceUrl`); `true` = officials without faces (a disc in the kit).
    */
@@ -403,6 +488,7 @@ export function PixiPitch({
   perfRef,
   stadium = null,
   pitch = null,
+  lighting = null,
   officials = false,
   coaches,
   coachCue = null,
@@ -427,6 +513,9 @@ export function PixiPitch({
   const perfRefRef               = useRef(perfRef);
   const stadiumRef               = useRef(stadium);
   const pitchRef                 = useRef(pitch);
+  const lightingRef              = useRef(lighting);
+  /** Bumped when the light inputs change: forces the light layer and the shadows to redraw. */
+  const lightGenRef              = useRef(0);
   const coachesRef               = useRef(coaches);
   const extrasRef                = useRef(extras);
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
@@ -468,6 +557,11 @@ export function PixiPitch({
     pitchRef.current = pitch;
     redrawSurfaceRef.current?.();
   }, [pitch?.condition, pitch?.turf, pitch?.mowing, pitch?.seed, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Match light: read by the ticker; a change of its inputs forces one redraw (the mirror is in the redraw key).
+  useEffect(() => {
+    lightingRef.current = lighting;
+    lightGenRef.current++;
+  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.side, lighting?.sun.lean, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -639,6 +733,34 @@ export function PixiPitch({
       drawSurfaceNow();
       redrawSurfaceRef.current = drawSurfaceNow;
       app.stage.addChild(pitchGraphics);
+
+      // Match light (time of day, weather): above the pitch, its lines and the stand, below the players.
+      // Redrawn only when the match clock moves a minute (or the light inputs / mirror change), never per frame.
+      const lightGraphics = new Graphics();
+      lightGraphics.eventMode = 'none';
+      app.stage.addChild(lightGraphics);
+      let currentLight: Lighting | null = null;
+      let lastLightKey = "";
+      let shadowKey = "";
+      /** Set once the markers exist: redraws every marker's light shadows. */
+      let refreshShadows: (l: Lighting | null) => void = () => {};
+      const updateLight = () => {
+        const li = lightingRef.current;
+        if (!li) {
+          if (currentLight) { lightGraphics.clear(); currentLight = null; lastLightKey = ""; shadowKey = ""; refreshShadows(null); }
+          return;
+        }
+        const clock = li.clockOverride ?? matchClockMinutes(stateRef.current, minutesOf(li.kickoff));
+        const key = `${Math.floor(clock)}|${mirrorRef.current}|${lightGenRef.current}`;
+        if (key === lastLightKey) return;
+        lastLightKey = key;
+        const weather = li.weather === "wind_rain" ? "rain" : li.weather;
+        currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun });
+        drawLight(lightGraphics, currentLight, toPixel, canvasWidth, canvasHeight);
+        // Player shadows: only when they actually change (the sun shadow grows slowly toward sunset).
+        const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.dx.toFixed(2)},${s.dy.toFixed(2)},${s.rx.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;
+        if (sk !== shadowKey) { shadowKey = sk; refreshShadows(currentLight); }
+      };
 
       // Yard reference grid (optional — always static, drawn once)
       if (showYardRefs) {
@@ -871,7 +993,7 @@ export function PixiPitch({
         face.label = 'face';
         face.anchor.set(0.5);
         face.width = face.height = (markerR - 1) * 2;
-        marker.addChildAt(face, 2); // above shadow + disc, below the ring
+        marker.addChildAt(face, 3); // above the light shadows, shadow + disc, below the ring
         marker.label = url;
       }
 
@@ -912,7 +1034,11 @@ export function PixiPitch({
           .stroke({ width: 1, color: 0x000000, alpha: 0.4 });
         cardBadge.label = "card";
         cardBadge.visible = false;
-        marker.addChild(shadow, disc, ring, cardBadge);
+        // Light shadows (time of day): empty without `lighting`; redrawn only when the light changes.
+        const lightShadow = new Graphics();
+        lightShadow.label = "lightShadow";
+        drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
+        marker.addChild(lightShadow, shadow, disc, ring, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -941,6 +1067,14 @@ export function PixiPitch({
       refreshFacesRef.current = () => {
         for (const player of stateRef.current.players) applyFace(player);
       };
+
+      refreshShadows = (l) => {
+        for (const marker of playerGraphics.values()) {
+          const ls = marker.getChildByLabel("lightShadow") as Graphics | null;
+          if (ls) drawLightShadows(ls, l, markerR, mirrorRef.current);
+        }
+      };
+      updateLight(); // first light before the markers are created (they draw the current shadows)
 
       // Track which ids currently have sprites so we can reconcile after substitutions
       let trackedPlayerIds = new Set(stateRef.current.players.map(p => p.id));
@@ -1329,6 +1463,44 @@ export function PixiPitch({
       // Alpha is set per-cell during rendering so the underlying game stays visible.
       // eventMode='none' is critical: the heatmap is a pure visual layer — it must
       // never intercept clicks, otherwise the user can't click on cells / players underneath.
+      // Rain / snow over the players (match light), on the effects clock: frozen while paused, never drawn with the
+      // tab hidden (no frames). Below the debug heatmap.
+      const particleGraphics = new Graphics();
+      particleGraphics.eventMode = 'none';
+      app.stage.addChild(particleGraphics);
+      let particles: Particle[] = [];
+      let particleSeedKey = "";
+      const drawParticles = () => {
+        const li = lightingRef.current;
+        if (li && (li.weather === "rain" || li.weather === "snow" || li.weather === "wind_rain")) {
+          const pk = `${li.weather}|${li.seed}`;
+          if (particleSeedKey !== pk) { particles = weatherParticles(li.weather, li.seed); particleSeedKey = pk; }
+          particleGraphics.clear();
+          let drops = false;
+          let flakes = false;
+          for (const p of particles) {
+            if (p.kind !== "drop") continue;
+            const q = particleAt(p, effectNow);
+            const x = q.x * canvasWidth, y = q.y * canvasHeight;
+            const len = p.size * canvasHeight;
+            particleGraphics.moveTo(x, y).lineTo(x - (p.vx / p.vy) * len, y - len);
+            drops = true;
+          }
+          if (drops) particleGraphics.stroke({ width: 1, color: 0xcfe3ef, alpha: 0.35 });
+          for (const p of particles) {
+            if (p.kind !== "flake") continue;
+            const q = particleAt(p, effectNow);
+            particleGraphics.circle(q.x * canvasWidth, q.y * canvasHeight, p.size);
+            flakes = true;
+          }
+          if (flakes) particleGraphics.fill({ color: 0xffffff, alpha: 0.8 });
+        } else if (particleSeedKey !== "") {
+          particles = [];
+          particleSeedKey = "";
+          particleGraphics.clear();
+        }
+      };
+
       const crowdHeatmapGfx = new Graphics();
       crowdHeatmapGfx.eventMode = 'none';
       app.stage.addChild(crowdHeatmapGfx);
@@ -1922,6 +2094,8 @@ export function PixiPitch({
 
         // ── Pitch effects + trail (real-time clock, frozen while paused) ──
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
+        drawParticles();
+        updateLight();
         drawOfficials(drawnB, [...drawnPos.values()]);
         drawBenches();
         drawStretchers();

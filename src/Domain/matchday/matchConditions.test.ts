@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { climateOf, matchConditions } from "@/Domain/matchday/matchConditions";
+import { SUNSET, climateOf, matchConditions } from "@/Domain/matchday/matchConditions";
 
 const fx = (date: string, home = "33", away = "40") => ({ date, home, away });
 
@@ -85,5 +85,16 @@ describe("matchConditions", () => {
     expect(climateOf("Colombia")).toBe("tropical");
     expect(climateOf("Egypt")).toBe("arid");
     expect(climateOf(undefined)).toBe("north");
+  });
+});
+
+describe("matchConditions sunset", () => {
+  test("sunset is the season's (north summer, south winter), and night follows it", () => {
+    const july = matchConditions({ date: "2027-07-10", home: "a", away: "b" }, "England");
+    expect(july.sunset).toBe(SUNSET.summer);
+    expect(july.night).toBe(july.kickoff >= july.sunset);
+    const julySouth = matchConditions({ date: "2027-07-10", home: "a", away: "b" }, "Brazil");
+    expect(julySouth.sunset).toBe(SUNSET.winter);
+    expect(matchConditions({ date: "2027-07-10", home: "a", away: "b" }, "Kenya").sunset).toBe(SUNSET.tropical);
   });
 });
