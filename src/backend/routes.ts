@@ -74,6 +74,8 @@ import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
+import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
+import { stadiumSunSide, type StadiumSun } from "@/Domain/matchday/stadiumSun";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -617,6 +619,16 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       pitch = matchPitch(homeSquad, matchFixture, window, matchDate);
     }
     const pitchCondition = pitch?.condition ?? null;
+    // Kickoff, weather and sunset (cosmetic, `matchConditions`) and where the sun sets over the home stadium:
+    // the live pitch draws the light of that time (spec 2026-10-16-match-lighting).
+    let conditions: { kickoff: string; weather: MatchWeather; sunset: string } | null = null;
+    let sunSide: StadiumSun | null = null;
+    if (matchFixture && opponentSquad) {
+      const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
+      const c = matchConditions(matchFixture, matchFixture.neutral ? null : homeSquad.country ?? null);
+      conditions = { kickoff: c.kickoff, weather: c.weather, sunset: c.sunset };
+      sunSide = stadiumSunSide(matchFixture.neutral ? matchFixture.id : homeSquad.id);
+    }
     // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
     const crowd = saveIdParam && matchFixture && opponentSquad
       ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
@@ -648,6 +660,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       matchMarking,
       pitchCondition,
       pitch,
+      conditions,
+      sunSide,
       crowd,
       managers,
       referee,

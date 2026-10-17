@@ -138,7 +138,9 @@ describe("/api/match-setup crowd and managers", () => {
       headers: { cookie: `fs_session=${session.token}` },
     }));
     expect(res.status).toBe(200);
-    const body = await res.json() as { fixture: { id: string; date: string }; matchDay: { date: string; fixtureId: string } | null; crowd: { known: boolean; attendance: number; capacity: number; importance: number }; managers: { mine: { id: string }; opponent: { id: string } | null } };
+    const body = await res.json() as { conditions: { kickoff: string; sunset: string }; sunSide: { side: string }; fixture: { id: string; date: string }; matchDay: { date: string; fixtureId: string } | null; crowd: { known: boolean; attendance: number; capacity: number; importance: number }; managers: { mine: { id: string }; opponent: { id: string } | null } };
+    expect(body.conditions).toMatchObject({ kickoff: expect.stringMatching(/^\d\d:\d\d$/), sunset: expect.stringMatching(/^\d\d:\d\d$/) });
+    expect(["top", "bottom"]).toContain(body.sunSide.side);
     expect(body.crowd.known).toBe(true);
     expect(body.matchDay).toEqual({ date: body.fixture.date, fixtureId: body.fixture.id });
     expect(body.crowd.attendance).toBeGreaterThan(0);
