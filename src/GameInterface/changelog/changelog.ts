@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.29.1",
+    date: "2026-10-17",
+    items: [
+      {
+        pt: "A partida ao vivo voltou a abrir (ficava com a tela preta na 4.29).",
+        en: "The live match opens again (it went black in 4.29).",
+      },
+    ],
+  },
+  {
     version: "4.29",
     date: "2026-10-16",
     items: [
