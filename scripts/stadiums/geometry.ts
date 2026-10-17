@@ -125,3 +125,17 @@ export function heightFromDepth(depth: number | null): number {
   if (depth === null || depth < 8) return 0;
   return Math.round(Math.min(50, 0.5 * depth));
 }
+
+/** Height (m) a stadium of this capacity would have on every side: 8 m + 1 m per 2 500 seats, up to 40. */
+export const heightFromCapacity = (capacity: number): number => Math.round(Math.min(40, 8 + capacity / 2500));
+
+/**
+ * One stand's height: from its depth beyond the pitch, at most `CAP_FACTOR` × the capacity's height (an outline that
+ * takes in a plaza or a car park); a side the rays never reach (an incomplete outline) gets the capacity's height.
+ */
+export const CAP_FACTOR = 1.35;
+export function standHeight(depth: number | null, capacity: number): number {
+  const byCapacity = heightFromCapacity(capacity);
+  if (depth === null) return byCapacity;
+  return Math.min(heightFromDepth(depth), Math.round(byCapacity * CAP_FACTOR));
+}

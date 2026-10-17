@@ -178,8 +178,8 @@
   "axis": 120.5,
   "heights": {
    "top": 26,
-   "bottom": 30,
-   "low": 29,
+   "bottom": 28,
+   "low": 28,
    "high": 27
   },
   "roof": "open",
@@ -212,7 +212,7 @@
   "axis": 58.4,
   "heights": {
    "top": 11,
-   "bottom": 23,
+   "bottom": 22,
    "low": 16,
    "high": 15
   },
@@ -228,8 +228,8 @@
   "lon": -1.57222,
   "axis": 151,
   "heights": {
-   "top": 36,
-   "bottom": 35,
+   "top": 31,
+   "bottom": 31,
    "low": 22,
    "high": 18
   },
@@ -246,7 +246,7 @@
   "axis": 113.5,
   "heights": {
    "top": 21,
-   "bottom": 28,
+   "bottom": 27,
    "low": 18,
    "high": 18
   },
@@ -313,10 +313,10 @@
   "lon": 4.98213,
   "axis": 178.4,
   "heights": {
-   "top": 45,
+   "top": 43,
    "bottom": 43,
-   "low": 50,
-   "high": 45
+   "low": 43,
+   "high": 43
   },
   "roof": "open",
   "tzStd": 1,
@@ -364,10 +364,10 @@
   "lon": 2.25305,
   "axis": 35.1,
   "heights": {
-   "top": 44,
+   "top": 36,
    "bottom": 31,
-   "low": 43,
-   "high": 39
+   "low": 36,
+   "high": 36
   },
   "roof": "open",
   "tzStd": 1,
@@ -381,10 +381,10 @@
   "lon": 7.41556,
   "axis": 44.8,
   "heights": {
-   "top": 24,
-   "bottom": 22,
-   "low": 28,
-   "high": 28
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": 1,
@@ -449,9 +449,9 @@
   "lon": -3.36929,
   "axis": 120,
   "heights": {
-   "top": 23,
+   "top": 22,
    "bottom": 18,
-   "low": 30,
+   "low": 22,
    "high": 16
   },
   "roof": "open",
@@ -466,7 +466,7 @@
   "lon": -4.46148,
   "axis": 176.1,
   "heights": {
-   "top": 26,
+   "top": 19,
    "bottom": 18,
    "low": 11,
    "high": 11
@@ -501,7 +501,7 @@
   "axis": 178.4,
   "heights": {
    "top": 26,
-   "bottom": 44,
+   "bottom": 28,
    "low": 26,
    "high": 27
   },
@@ -517,10 +517,10 @@
   "lon": 2.34511,
   "axis": 10.4,
   "heights": {
-   "top": 45,
-   "bottom": 27,
-   "low": 0,
-   "high": 28
+   "top": 22,
+   "bottom": 22,
+   "low": 16,
+   "high": 22
   },
   "roof": "open",
   "tzStd": 1,
@@ -537,7 +537,7 @@
    "top": 27,
    "bottom": 22,
    "low": 31,
-   "high": 32
+   "high": 31
   },
   "roof": "open",
   "tzStd": 1,
@@ -585,9 +585,9 @@
   "lon": -48.33054,
   "axis": 29.6,
   "heights": {
-   "top": 39,
+   "top": 36,
    "bottom": 29,
-   "low": 37,
+   "low": 36,
    "high": 34
   },
   "roof": "open",
@@ -604,7 +604,7 @@
   "heights": {
    "top": 27,
    "bottom": 31,
-   "low": 35,
+   "low": 34,
    "high": 23
   },
   "roof": "open",
@@ -687,10 +687,10 @@
   "lon": -51.1944,
   "axis": 15.8,
   "heights": {
-   "top": 50,
-   "bottom": 50,
-   "low": 47,
-   "high": 46
+   "top": 43,
+   "bottom": 43,
+   "low": 43,
+   "high": 43
   },
   "roof": "open",
   "tzStd": -3,
@@ -704,8 +704,8 @@
   "lon": -46.474,
   "axis": 0.5,
   "heights": {
-   "top": 50,
-   "bottom": 47,
+   "top": 36,
+   "bottom": 36,
    "low": 27,
    "high": 28
   },
@@ -807,9 +807,9 @@
   "axis": 129.4,
   "heights": {
    "top": 18,
-   "bottom": 31,
+   "bottom": 30,
    "low": 29,
-   "high": 37
+   "high": 30
   },
   "roof": "open",
   "tzStd": -3,
@@ -891,7 +891,7 @@
   "lon": 8.22417,
   "axis": 63.5,
   "heights": {
-   "top": 33,
+   "top": 30,
    "bottom": 21,
    "low": 21,
    "high": 21
@@ -995,8 +995,8 @@
   "heights": {
    "top": 39,
    "bottom": 38,
-   "low": 44,
-   "high": 44
+   "low": 43,
+   "high": 43
   },
   "roof": "open",
   "tzStd": 1,
@@ -1013,7 +1013,7 @@
    "top": 32,
    "bottom": 34,
    "low": 30,
-   "high": 38
+   "high": 34
   },
   "roof": "open",
   "tzStd": 1,
@@ -1044,10 +1044,10 @@
   "lon": 13.56806,
   "axis": 151.4,
   "heights": {
-   "top": 29,
-   "bottom": 50,
+   "top": 23,
+   "bottom": 23,
    "low": 20,
-   "high": 33
+   "high": 23
   },
   "roof": "open",
   "tzStd": 1,
@@ -1078,10 +1078,10 @@
   "lon": 12.45472,
   "axis": 165.6,
   "heights": {
-   "top": 50,
-   "bottom": 0,
-   "low": 0,
-   "high": 0
+   "top": 49,
+   "bottom": 36,
+   "low": 36,
+   "high": 36
   },
   "roof": "open",
   "tzStd": 1,
@@ -1130,9 +1130,9 @@
   "axis": 173,
   "heights": {
    "top": 19,
-   "bottom": 22,
-   "low": 41,
-   "high": 39
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": 1,
@@ -1148,8 +1148,8 @@
   "heights": {
    "top": 36,
    "bottom": 41,
-   "low": 46,
-   "high": 45
+   "low": 41,
+   "high": 41
   },
   "roof": "open",
   "tzStd": 1,
@@ -1163,10 +1163,10 @@
   "lon": 13.20014,
   "axis": 163.1,
   "heights": {
-   "top": 44,
-   "bottom": 50,
-   "low": 47,
-   "high": 50
+   "top": 24,
+   "bottom": 24,
+   "low": 24,
+   "high": 24
   },
   "roof": "open",
   "tzStd": 1,
@@ -1214,10 +1214,10 @@
   "lon": 12.45472,
   "axis": 165.6,
   "heights": {
-   "top": 50,
-   "bottom": 0,
-   "low": 0,
-   "high": 0
+   "top": 49,
+   "bottom": 36,
+   "low": 36,
+   "high": 36
   },
   "roof": "open",
   "tzStd": 1,
@@ -1250,8 +1250,8 @@
   "heights": {
    "top": 22,
    "bottom": 23,
-   "low": 36,
-   "high": 37
+   "low": 31,
+   "high": 31
   },
   "roof": "open",
   "tzStd": 1,
@@ -1267,8 +1267,8 @@
   "heights": {
    "top": 20,
    "bottom": 18,
-   "low": 41,
-   "high": 41
+   "low": 34,
+   "high": 34
   },
   "roof": "open",
   "tzStd": 1,
@@ -1284,8 +1284,8 @@
   "heights": {
    "top": 22,
    "bottom": 22,
-   "low": 33,
-   "high": 32
+   "low": 26,
+   "high": 26
   },
   "roof": "open",
   "tzStd": 1,
@@ -1316,10 +1316,10 @@
   "lon": 10.33844,
   "axis": 31.6,
   "heights": {
-   "top": 50,
-   "bottom": 27,
-   "low": 35,
-   "high": 35
+   "top": 23,
+   "bottom": 23,
+   "low": 23,
+   "high": 23
   },
   "roof": "open",
   "tzStd": 1,
@@ -1351,7 +1351,7 @@
   "axis": 170.7,
   "heights": {
    "top": 43,
-   "bottom": 50,
+   "bottom": 49,
    "low": 45,
    "high": 44
   },
@@ -1436,9 +1436,9 @@
   "axis": 67.3,
   "heights": {
    "top": 20,
-   "bottom": 30,
-   "low": 28,
-   "high": 28
+   "bottom": 24,
+   "low": 24,
+   "high": 24
   },
   "roof": "open",
   "tzStd": 1,
@@ -1537,10 +1537,10 @@
   "lon": -3.71472,
   "axis": 172.4,
   "heights": {
-   "top": 28,
-   "bottom": 27,
-   "low": 25,
-   "high": 23
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": 1,
@@ -1554,10 +1554,10 @@
   "lon": -1.97362,
   "axis": 143.7,
   "heights": {
-   "top": 38,
-   "bottom": 41,
-   "low": 34,
-   "high": 33
+   "top": 32,
+   "bottom": 32,
+   "low": 32,
+   "high": 32
   },
   "roof": "open",
   "tzStd": 1,
@@ -1624,7 +1624,7 @@
   "heights": {
    "top": 5,
    "bottom": 10,
-   "low": 39,
+   "low": 22,
    "high": 17
   },
   "roof": "open",
@@ -1674,9 +1674,9 @@
   "axis": 79.9,
   "heights": {
    "top": 13,
-   "bottom": 20,
-   "low": 24,
-   "high": 21
+   "bottom": 18,
+   "low": 18,
+   "high": 18
   },
   "roof": "open",
   "tzStd": 1,
@@ -1775,7 +1775,7 @@
   "lon": 4.43333,
   "axis": 60.3,
   "heights": {
-   "top": 19,
+   "top": 16,
    "bottom": 12,
    "low": 12,
    "high": 12
@@ -1862,8 +1862,8 @@
   "heights": {
    "top": 10,
    "bottom": 10,
-   "low": 0,
-   "high": 0
+   "low": 10,
+   "high": 10
   },
   "roof": "open",
   "tzStd": 0,
@@ -1911,7 +1911,7 @@
   "lon": 4.635,
   "axis": 162.7,
   "heights": {
-   "top": 16,
+   "top": 14,
    "bottom": 14,
    "low": 14,
    "high": 14
@@ -1928,9 +1928,9 @@
   "lon": 7.12167,
   "axis": 131.1,
   "heights": {
-   "top": 19,
-   "bottom": 18,
-   "low": 21,
+   "top": 16,
+   "bottom": 16,
+   "low": 16,
    "high": 10
   },
   "roof": "open",
@@ -1946,9 +1946,9 @@
   "axis": 32.4,
   "heights": {
    "top": 11,
-   "bottom": 17,
-   "low": 23,
-   "high": 24
+   "bottom": 15,
+   "low": 15,
+   "high": 15
   },
   "roof": "open",
   "tzStd": 0,
@@ -1966,6 +1966,23 @@
    "bottom": 12,
    "low": 13,
    "high": 5
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "es_21613": {
+  "id": "std_Q136001729",
+  "qid": "Q136001729",
+  "name": "Complexo Desportivo do FC Alverca",
+  "lat": 38.89881,
+  "lon": -9.03676,
+  "axis": 179.2,
+  "heights": {
+   "top": 12,
+   "bottom": 20,
+   "low": 19,
+   "high": 20
   },
   "roof": "open",
   "tzStd": 0,
@@ -2034,6 +2051,23 @@
    "bottom": 11,
    "low": 10,
    "high": 10
+  },
+  "roof": "open",
+  "tzStd": -3,
+  "dst": "none"
+ },
+ "of_ar_barracas_central": {
+  "id": "std_Q16564609",
+  "qid": "Q16564609",
+  "name": "Claudio Chiqui Tapia Stadium",
+  "lat": -34.64689,
+  "lon": -58.39628,
+  "axis": 62.8,
+  "heights": {
+   "top": 8,
+   "bottom": 10,
+   "low": 5,
+   "high": 0
   },
   "roof": "open",
   "tzStd": -3,
@@ -2404,10 +2438,10 @@
   "lon": -64.24624,
   "axis": 21.1,
   "heights": {
-   "top": 46,
-   "bottom": 45,
+   "top": 43,
+   "bottom": 43,
    "low": 41,
-   "high": 44
+   "high": 43
   },
   "roof": "open",
   "tzStd": -3,
@@ -2492,7 +2526,7 @@
    "top": 16,
    "bottom": 15,
    "low": 27,
-   "high": 0
+   "high": 20
   },
   "roof": "open",
   "tzStd": 1,
@@ -2506,10 +2540,10 @@
   "lon": -3.79333,
   "axis": 158.3,
   "heights": {
-   "top": 0,
-   "bottom": 50,
-   "low": 0,
-   "high": 0
+   "top": 8,
+   "bottom": 11,
+   "low": 8,
+   "high": 8
   },
   "roof": "open",
   "tzStd": 1,
@@ -2523,8 +2557,8 @@
   "lon": -0.36778,
   "axis": 139.4,
   "heights": {
-   "top": 25,
-   "bottom": 30,
+   "top": 24,
+   "bottom": 24,
    "low": 21,
    "high": 22
   },
@@ -2557,7 +2591,7 @@
   "lon": 13.32187,
   "axis": 37.7,
   "heights": {
-   "top": 23,
+   "top": 19,
    "bottom": 10,
    "low": 10,
    "high": 10
@@ -2574,10 +2608,10 @@
   "lon": 9.30806,
   "axis": 6.9,
   "heights": {
-   "top": 41,
-   "bottom": 26,
-   "low": 27,
-   "high": 27
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": 1,
@@ -2593,8 +2627,8 @@
   "heights": {
    "top": 8,
    "bottom": 7,
-   "low": 21,
-   "high": 21
+   "low": 16,
+   "high": 16
   },
   "roof": "open",
   "tzStd": 1,
@@ -2609,7 +2643,7 @@
   "axis": 175.7,
   "heights": {
    "top": 13,
-   "bottom": 21,
+   "bottom": 19,
    "low": 11,
    "high": 14
   },
@@ -2642,9 +2676,9 @@
   "lon": 4.74167,
   "axis": 134.6,
   "heights": {
-   "top": 23,
-   "bottom": 23,
-   "low": 23,
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
    "high": 19
   },
   "roof": "open",
@@ -2676,7 +2710,7 @@
   "lon": 4.52056,
   "axis": 22.2,
   "heights": {
-   "top": 13,
+   "top": 12,
    "bottom": 9,
    "low": 8,
    "high": 8
@@ -2693,9 +2727,9 @@
   "lon": 6.59139,
   "axis": 0.8,
   "heights": {
-   "top": 40,
-   "bottom": 26,
-   "low": 24,
+   "top": 23,
+   "bottom": 23,
+   "low": 23,
    "high": 23
   },
   "roof": "open",
@@ -2728,9 +2762,9 @@
   "axis": 111.9,
   "heights": {
    "top": 24,
-   "bottom": 43,
-   "low": 26,
-   "high": 25
+   "bottom": 24,
+   "low": 24,
+   "high": 24
   },
   "roof": "open",
   "tzStd": 1,
@@ -2761,10 +2795,10 @@
   "lon": 5.83667,
   "axis": 133.8,
   "heights": {
-   "top": 22,
-   "bottom": 25,
-   "low": 31,
-   "high": 34
+   "top": 18,
+   "bottom": 18,
+   "low": 18,
+   "high": 18
   },
   "roof": "open",
   "tzStd": 1,
@@ -2838,6 +2872,23 @@
   "tzStd": 1,
   "dst": "eu"
  },
+ "of_pt_arouca": {
+  "id": "std_Q1370706",
+  "qid": "Q1370706",
+  "name": "Estádio Municipal de Arouca",
+  "lat": 40.93288,
+  "lon": -8.25035,
+  "axis": 46.9,
+  "heights": {
+   "top": 10,
+   "bottom": 10,
+   "low": 10,
+   "high": 10
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
  "of_pt_benfica": {
   "id": "std_Q7875112",
   "qid": "Q7875112",
@@ -2863,10 +2914,27 @@
   "lon": -8.4308,
   "axis": 130.3,
   "heights": {
-   "top": 37,
-   "bottom": 37,
+   "top": 27,
+   "bottom": 27,
    "low": 0,
-   "high": 0
+   "high": 20
+  },
+  "roof": "open",
+  "tzStd": 0,
+  "dst": "eu"
+ },
+ "of_pt_casa_pia": {
+  "id": "std_Q116113161",
+  "qid": "Q116113161",
+  "name": "Estádio Pina Manique",
+  "lat": 38.73752,
+  "lon": -9.20383,
+  "axis": 176.5,
+  "heights": {
+   "top": 0,
+   "bottom": 0,
+   "low": 12,
+   "high": 12
   },
   "roof": "open",
   "tzStd": 0,
@@ -2883,7 +2951,7 @@
    "top": 11,
    "bottom": 13,
    "low": 13,
-   "high": 16
+   "high": 14
   },
   "roof": "open",
   "tzStd": 0,
@@ -2898,8 +2966,8 @@
   "axis": 166.5,
   "heights": {
    "top": 14,
-   "bottom": 17,
-   "low": 16,
+   "bottom": 14,
+   "low": 14,
    "high": 14
   },
   "roof": "open",
@@ -2931,9 +2999,9 @@
   "lon": -16.92833,
   "axis": 4.7,
   "heights": {
-   "top": 22,
-   "bottom": 19,
-   "low": 19,
+   "top": 16,
+   "bottom": 16,
+   "low": 16,
    "high": 15
   },
   "roof": "open",
@@ -2948,10 +3016,10 @@
   "lon": -8.58393,
   "axis": 179.7,
   "heights": {
-   "top": 50,
-   "bottom": 50,
-   "low": 44,
-   "high": 41
+   "top": 38,
+   "bottom": 38,
+   "low": 38,
+   "high": 38
   },
   "roof": "open",
   "tzStd": 0,
@@ -2965,10 +3033,10 @@
   "lon": -8.74019,
   "axis": 177.8,
   "heights": {
-   "top": 19,
-   "bottom": 20,
-   "low": 31,
-   "high": 31
+   "top": 14,
+   "bottom": 14,
+   "low": 14,
+   "high": 14
   },
   "roof": "open",
   "tzStd": 0,
@@ -2984,8 +3052,8 @@
   "heights": {
    "top": 15,
    "bottom": 18,
-   "low": 24,
-   "high": 26
+   "low": 18,
+   "high": 18
   },
   "roof": "open",
   "tzStd": 0,
@@ -3017,13 +3085,30 @@
   "axis": 171.1,
   "heights": {
    "top": 26,
-   "bottom": 31,
+   "bottom": 27,
    "low": 24,
    "high": 21
   },
   "roof": "open",
   "tzStd": 0,
   "dst": "eu"
+ },
+ "of_us_atlanta_united_fc": {
+  "id": "std_Q7007552",
+  "qid": "Q7007552",
+  "name": "Mercedes-Benz Stadium",
+  "lat": 33.75528,
+  "lon": -84.40083,
+  "axis": 68.6,
+  "heights": {
+   "top": 47,
+   "bottom": 47,
+   "low": 47,
+   "high": 48
+  },
+  "roof": "retractable",
+  "tzStd": -6,
+  "dst": "us"
  },
  "of_us_austin_fc": {
   "id": "std_Q56278477",
@@ -3076,6 +3161,23 @@
   "tzStd": -5,
   "dst": "us"
  },
+ "of_us_chicago_fire": {
+  "id": "std_Q1132413",
+  "qid": "Q1132413",
+  "name": "Soldier Field",
+  "lat": 41.8625,
+  "lon": -87.61667,
+  "axis": 175.8,
+  "heights": {
+   "top": 40,
+   "bottom": 39,
+   "low": 45,
+   "high": 45
+  },
+  "roof": "open",
+  "tzStd": -6,
+  "dst": "us"
+ },
  "of_us_colorado_rapids": {
   "id": "std_Q1210268",
   "qid": "Q1210268",
@@ -3084,10 +3186,10 @@
   "lon": -104.89194,
   "axis": 0.5,
   "heights": {
-   "top": 40,
-   "bottom": 31,
-   "low": 35,
-   "high": 49
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": -7,
@@ -3104,7 +3206,7 @@
    "top": 21,
    "bottom": 21,
    "low": 22,
-   "high": 26
+   "high": 22
   },
   "roof": "open",
   "tzStd": -6,
@@ -3118,10 +3220,10 @@
   "lon": -77.01293,
   "axis": 179.9,
   "heights": {
-   "top": 33,
+   "top": 24,
    "bottom": 11,
    "low": 17,
-   "high": 29
+   "high": 24
   },
   "roof": "open",
   "tzStd": -5,
@@ -3135,10 +3237,10 @@
   "lon": -84.52222,
   "axis": 169.2,
   "heights": {
-   "top": 45,
-   "bottom": 37,
+   "top": 24,
+   "bottom": 24,
    "low": 24,
-   "high": 27
+   "high": 24
   },
   "roof": "open",
   "tzStd": -6,
@@ -3153,9 +3255,9 @@
   "axis": 173.8,
   "heights": {
    "top": 14,
-   "bottom": 28,
+   "bottom": 22,
    "low": 12,
-   "high": 31
+   "high": 22
   },
   "roof": "open",
   "tzStd": -6,
@@ -3186,10 +3288,10 @@
   "lon": -80.16111,
   "axis": 178.6,
   "heights": {
-   "top": 31,
-   "bottom": 31,
-   "low": 24,
-   "high": 26
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": -5,
@@ -3203,10 +3305,10 @@
   "lon": -118.26111,
   "axis": 179.9,
   "heights": {
-   "top": 29,
-   "bottom": 30,
-   "low": 44,
-   "high": 40
+   "top": 27,
+   "bottom": 27,
+   "low": 27,
+   "high": 27
   },
   "roof": "open",
   "tzStd": -8,
@@ -3237,8 +3339,8 @@
   "lon": -93.1651,
   "axis": 179.9,
   "heights": {
-   "top": 23,
-   "bottom": 23,
+   "top": 22,
+   "bottom": 22,
    "low": 21,
    "high": 21
   },
@@ -3254,10 +3356,10 @@
   "lon": -86.76769,
   "axis": 163.7,
   "heights": {
-   "top": 27,
-   "bottom": 26,
-   "low": 27,
-   "high": 35
+   "top": 23,
+   "bottom": 23,
+   "low": 23,
+   "high": 23
   },
   "roof": "open",
   "tzStd": -6,
@@ -3288,10 +3390,10 @@
   "lon": -73.92639,
   "axis": 59.7,
   "heights": {
-   "top": 0,
-   "bottom": 0,
-   "low": 0,
-   "high": 50
+   "top": 28,
+   "bottom": 28,
+   "low": 28,
+   "high": 38
   },
   "roof": "open",
   "tzStd": -5,
@@ -3305,10 +3407,10 @@
   "lon": -74.15028,
   "axis": 177.1,
   "heights": {
-   "top": 26,
+   "top": 24,
    "bottom": 22,
-   "low": 25,
-   "high": 25
+   "low": 24,
+   "high": 24
   },
   "roof": "open",
   "tzStd": -5,
@@ -3339,10 +3441,10 @@
   "lon": -75.37889,
   "axis": 171.2,
   "heights": {
-   "top": 27,
-   "bottom": 22,
-   "low": 23,
-   "high": 21
+   "top": 20,
+   "bottom": 20,
+   "low": 20,
+   "high": 20
   },
   "roof": "open",
   "tzStd": -5,
@@ -3356,10 +3458,10 @@
   "lon": -122.69167,
   "axis": 20.8,
   "heights": {
-   "top": 25,
+   "top": 24,
    "bottom": 24,
    "low": 15,
-   "high": 26
+   "high": 24
   },
   "roof": "open",
   "tzStd": -8,
@@ -3373,10 +3475,10 @@
   "lon": -111.893,
   "axis": 0,
   "heights": {
-   "top": 27,
-   "bottom": 33,
+   "top": 22,
+   "bottom": 22,
    "low": 19,
-   "high": 27
+   "high": 22
   },
   "roof": "open",
   "tzStd": -7,
@@ -3390,8 +3492,8 @@
   "lon": -117.12283,
   "axis": 6.4,
   "heights": {
-   "top": 29,
-   "bottom": 29,
+   "top": 23,
+   "bottom": 23,
    "low": 18,
    "high": 18
   },
@@ -3407,10 +3509,10 @@
   "lon": -121.925,
   "axis": 32.2,
   "heights": {
-   "top": 30,
+   "top": 20,
    "bottom": 20,
    "low": 19,
-   "high": 32
+   "high": 20
   },
   "roof": "open",
   "tzStd": -8,
@@ -3475,13 +3577,30 @@
   "lon": -79.41861,
   "axis": 159.6,
   "heights": {
-   "top": 34,
-   "bottom": 28,
+   "top": 23,
+   "bottom": 23,
    "low": 7,
    "high": 17
   },
   "roof": "open",
   "tzStd": -5,
+  "dst": "us"
+ },
+ "of_us_vancouver_whitecaps": {
+  "id": "std_Q612227",
+  "qid": "Q612227",
+  "name": "BC Place",
+  "lat": 49.27667,
+  "lon": -123.11194,
+  "axis": 53.7,
+  "heights": {
+   "top": 36,
+   "bottom": 36,
+   "low": 30,
+   "high": 30
+  },
+  "roof": "retractable",
+  "tzStd": -8,
   "dst": "us"
  }
 }

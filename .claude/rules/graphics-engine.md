@@ -122,11 +122,16 @@ o início mais recente; coordenadas, capacidade, teto retrátil/fechado pelos r�
 **OpenStreetMap** (Overpass, servidor principal e espelhos; ODbL, crédito "© colaboradores do OpenStreetMap" no rodapé
 da landing) o campo (`leisure=pitch`: orientação pelo retângulo de menor área) e o contorno do estádio
 (`leisure=stadium`): a altura de cada arquibancada = 0,5 × a distância do lado do campo até o contorno (nenhuma abaixo
-de 8 m, até 50 m; sem contorno, pela capacidade). Geometria pura em `scripts/stadiums/geometry.ts` (+ teste).
+de 8 m), limitada a 1,35 × a altura pela capacidade (8 m + 1 m por 2 500 lugares, até 40; um contorno que pega
+esplanada ou estacionamento); lado que o raio não alcança (contorno incompleto), contorno colado ao campo ou estádio
+sem contorno: a altura pela capacidade (`standHeight`, `heightFromCapacity`). Campo de futebol a partir de 4 800 m²;
+sem campo no mapa (campo de futebol americano), um de 105 × 68 m no centro do contorno, na direção dele. Geometria pura em `scripts/stadiums/geometry.ts` (+ teste).
 Respostas em `data_process/stadiums/cache/` (gitignored); só os números derivados vão para
 `src/example_data/stadiums.json` (`squadId → RealStadium`: id `std_<item>`, coordenadas, eixo, alturas, teto, fuso).
 Correções à mão em `data_process/curated/stadiumCorrections.json` (`venue`: o item certo quando o Wikidata não tem a
-mudança de estádio; `roof`; `skip`). Copiar para `src/Data` como o resto do mundo.
+mudança de estádio ou o clube não tem item; `lat`/`lon`: o ponto do Wikidata longe do estádio; `roof`; `skip`). 4.31.1:
+os 212 clubes das 10 ligas com estádio real (Brentford, Alverca, Casa Pia e Barracas Central pelo `venue`, Arouca pelas
+coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Veltins-Arena, Mercedes-Benz Stadium, BC Place). Copiar para `src/Data` como o resto do mundo.
 
 - `src/backend/stadiumData.ts` (`matchSun`): o `match-setup` usa o estádio real do mandante (nunca em campo neutro),
   com o pôr do sol real da data (`conditions.sunset`) e a data (`conditions.date`); teto retrátil fecha com chuva, neve

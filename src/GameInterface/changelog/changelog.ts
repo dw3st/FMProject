@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.31.1",
+    date: "2026-10-17",
+    items: [
+      { pt: "Todos os clubes das principais ligas agora têm o estádio real, e a altura das arquibancadas ficou mais realista em estádios que pareciam altos demais.", en: "Every club in the main leagues now has its real stadium, and the stands' height is more realistic in grounds that looked too tall." },
+      { pt: "A partida ao vivo não acumula mais memória da sombra do estádio de um jogo para outro.", en: "The live match no longer keeps the stadium shadow's memory from one match to the next." },
+    ],
+  },
+  {
     version: "4.31",
     date: "2026-10-17",
     items: [

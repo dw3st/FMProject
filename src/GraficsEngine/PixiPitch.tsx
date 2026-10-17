@@ -2413,6 +2413,9 @@ export function PixiPitch({
         coachCueFnRef.current = null;
         coachCardFnRef.current = null;
         for (const k of ["home", "away"] as const) crowdFans[k]?.sprite.destroy({ texture: true, textureSource: true });
+        // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.
+        shadeTexture?.destroy(true);
+        shadeTexture = null;
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };
