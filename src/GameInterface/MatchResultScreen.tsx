@@ -23,6 +23,7 @@ import {
 } from "@/GameInterface/matchTeamColors";
 import { addOneDay } from "@/Domain/dates";
 import { Icon, iconOf } from "@/GameInterface/Icons";
+import { weatherEffectKey } from "@/Domain/matchday/matchWeatherEffect";
 import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Flag } from "@/GameInterface/Components/Flag";
@@ -832,6 +833,14 @@ export function MatchResultScreen() {
               </span>
             ) : "—"} />
           </div>
+          {matchEvent.weather && (() => {
+            const key = weatherEffectKey({
+              weather: matchEvent.weather,
+              covered: matchEvent.weatherCovered === true,
+              effective: matchEvent.weatherEffective ?? matchEvent.weather,
+            });
+            return key ? <p className="mt-3 text-sm text-muted-foreground">{t(key)}</p> : null;
+          })()}
           {/* VAR checks of the match (`var.md`): how many, how many calls changed. */}
           {matchEvent.var && matchEvent.var.reviews > 0 && (
             <p className="text-sm text-muted-foreground m-0 mt-3">

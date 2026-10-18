@@ -262,6 +262,27 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Weather of the match (variant A sets it)">Weather</span>
+        <select
+          value={variant.weather ?? "none"}
+          onChange={(e) => patch({ weather: e.target.value === "none" ? undefined : (e.target.value as NonNullable<Variant["weather"]>) })}
+          className="flex-1 bg-white/10 rounded px-1 py-0.5"
+        >
+          <option value="none">none</option>
+          <option value="sunny">sunny</option>
+          <option value="clear">clear</option>
+          <option value="partlyCloudy">partlyCloudy</option>
+          <option value="cloudy">cloudy</option>
+          <option value="rain">rain</option>
+          <option value="wind">wind</option>
+          <option value="wind_rain">wind_rain</option>
+          <option value="snow">snow</option>
+          <option value="hot">hot</option>
+          <option value="cold">cold</option>
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="The manager's Discipline (achievements): this side's fouls and cards x(1 - 0.05 t), t = (v - 10)/10; 0 = no attribute">Mgr disc.</span>
         <input
           type="range"

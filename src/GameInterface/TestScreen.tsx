@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
 import type { DebugOverlays, PitchLighting, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
 import { minutesOf } from "@/GraficsEngine/matchLighting";
-import type { MatchWeather } from "@/Domain/matchday/matchConditions";
+import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
 import { stadiumSun, type RealStadium, type StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { hhmm, sunsetUtcMinutes, utcOffsetMinutes } from "@/Domain/matchday/solar";
 import { Chip } from "@/GameInterface/ui/Chip";
@@ -140,6 +140,12 @@ function withTestReferee(state: GameState, s: number | null): GameState {
 /** Managers' Discipline attribute per side (achievements): fouls and cards × (1 − 5% t); null = none. */
 type MgrDiscipline = { A: number | null; B: number | null };
 const MGR_DISCIPLINE_OPTIONS: (number | null)[] = [null, 1, 5, 10, 15, 20];
+/** The state with the /test weather (`weather.md`): 'off' keeps the scenario's own (none by default). */
+function withTestWeather(state: GameState, w: 'off' | EngineWeather): GameState {
+  if (w === 'off') return state;
+  return { ...state, weather: w };
+}
+
 function withManagerDiscipline(state: GameState, d: MgrDiscipline): GameState {
   if (d.A === null && d.B === null) return state;
   return { ...state, managerDiscipline: { ...(d.A !== null ? { A: d.A } : {}), ...(d.B !== null ? { B: d.B } : {}) } };
@@ -172,7 +178,7 @@ function testStadium(o: LightStadiumOption): StadiumSun {
     if (sun.cut === o && !sun.covered) return sun;
   }
 }
-const LIGHT_WEATHER_OPTIONS: (MatchWeather | 'wind_rain')[] = ['sunny', 'cloudy', 'rain', 'wind_rain', 'snow'];
+const LIGHT_WEATHER_OPTIONS: ('off' | EngineWeather)[] = ['off', 'sunny', 'cloudy', 'rain', 'wind', 'wind_rain', 'snow', 'hot', 'cold'];
 
 function withPitch(state: GameState, pitch: number, turf: TurfType): GameState {
   const m = pitchInjury(pitch, turf);
@@ -476,10 +482,10 @@ export function TestScreen() {
   const [mowing, setMowing] = useState<MowingPattern>('stripes');
   // Match light (spec 2026-10-16-match-lighting): a fixed time, or "match" = kickoff 17:30 following the clock.
   const [lightTime, setLightTime] = useState<LightTimeOption>('off');
-  const [lightWeather, setLightWeather] = useState<MatchWeather | 'wind_rain'>('sunny');
+  const [lightWeather, setLightWeather] = useState<'off' | EngineWeather>('off');
   const [lightStadium, setLightStadium] = useState<LightStadiumOption>('lean');
   const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
-    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: testSunset(lightStadium), weather: lightWeather,
+    kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: testSunset(lightStadium), weather: lightWeather === 'off' ? 'sunny' : lightWeather,
     sun: testStadium(lightStadium), seed: 'test', date: TEST_REAL_DATE[lightStadium],
     ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
   }, [lightTime, lightWeather, lightStadium]);
@@ -720,7 +726,7 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
+    let state: GameState = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
@@ -732,7 +738,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc, lightWeather]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -740,7 +746,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
+    const state = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
@@ -761,12 +767,12 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc);
+    const state = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc, lightWeather]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1287,7 +1293,7 @@ export function TestScreen() {
               {LIGHT_WEATHER_OPTIONS.map(v => (
                 <button key={v} onClick={() => setLightWeather(v)}
                   className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightWeather === v ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
-                  Weather: {v}
+                  Weather (engine + light): {v}
                 </button>
               ))}
             </div>
@@ -1807,7 +1813,7 @@ export function TestScreen() {
           <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
         </div>
       )}
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} turf={turf} refereeStrictness={refS ?? undefined} managerDiscipline={{ home: mgrDisc.A ?? undefined, away: mgrDisc.B ?? undefined }} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} turf={turf} refereeStrictness={refS ?? undefined} weather={lightWeather === 'off' ? undefined : lightWeather} managerDiscipline={{ home: mgrDisc.A ?? undefined, away: mgrDisc.B ?? undefined }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel

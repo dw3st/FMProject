@@ -9,6 +9,7 @@ import { matchVarStats, toMatchTeamStats } from "@/Domain/advanceDay/matchTeamSt
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import type { TurfType } from "@/types/facilityTypes";
+import type { WeatherOfMatch } from "@/Domain/matchday/matchWeatherEffect";
 import type { Fixture } from "@/types/calendarTypes";
 import type {
   MatchEvent,
@@ -508,6 +509,8 @@ export interface EngineMatchSim {
   turf?: TurfType;
   /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
   referee?: EngineReferee;
+  /** Weather of the match (`matchWeatherOf`): the effective one plays, the drawn one goes to the log. */
+  weather?: WeatherOfMatch;
   /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
   pools?: { home?: Set<string>; away?: Set<string> };
 }
@@ -543,6 +546,7 @@ function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: 
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.turf ? { turf: sim.turf } : {}),
       ...(sim.referee ? { referee: sim.referee } : {}),
+      ...(sim.weather ? { weather: sim.weather.effective } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
       // The human manager's Discipline (`.claude/rules/game/achievements.md`): only his club stores it.
       ...(homeSquad.managerAttributes || awaySquad.managerAttributes
@@ -822,7 +826,7 @@ export function buildMatchEvent(
   };
 
   const withPitch = withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee);
-  return { event: withPitch, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
+  return { event: withWeatherLog(withPitch, sim.weather), updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
@@ -855,6 +859,8 @@ export function buildQuickMatchEvent(
     turf?: TurfType;
     /** Referee of the day's appointments (`referees.md`): his rigor plays, his name goes to the log. */
     referee?: EngineReferee;
+    /** Weather of the match (`matchWeatherOf`): the effective one plays, the drawn one goes to the log. */
+    weather?: WeatherOfMatch;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -872,6 +878,7 @@ export function buildQuickMatchEvent(
       aggregate: fixture.aggregate,
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.turf ? { turf: sim.turf } : {}),
+      ...(sim.weather ? { weather: sim.weather.effective } : {}),
       ...(sim.referee ? { refereeStrictness: sim.referee.strictness } : {}),
       ...(typeof sim.referee?.quality === "number" ? { refereeQuality: sim.referee.quality, refereeVar: sim.referee.var === true } : {}),
       ...(homeSquad.managerAttributes ? { homeManagerDiscipline: homeSquad.managerAttributes.discipline } : {}),
@@ -883,7 +890,19 @@ export function buildQuickMatchEvent(
   // `fullMinutesForInjured` doc comment) — skip the synthetic sub-out the engine path needs.
   const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng, true);
   const event = compactMatchEvent(r.event);
-  return { ...r, event: withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee) };
+  return { ...r, event: withWeatherLog(withRefereeLog(sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event, sim.referee), sim.weather) };
+}
+
+/** The weather of the match goes to the day log (`weather.md`). */
+export function withWeatherLog(event: MatchEvent, weather: WeatherOfMatch | undefined): MatchEvent {
+  if (!weather) return event;
+  const differs = weather.weather !== weather.effective;
+  return {
+    ...event,
+    weather: weather.weather,
+    ...(differs ? { weatherEffective: weather.effective } : {}),
+    ...(differs && weather.covered ? { weatherCovered: true as const } : {}),
+  };
 }
 
 /** The referee's name goes to the day log (never his rigor). */

@@ -136,7 +136,8 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
-import { withRefereeLog } from "@/Domain/advanceDay/matches";
+import { withRefereeLog, withWeatherLog } from "@/Domain/advanceDay/matches";
+import { matchWeatherOf } from "@/backend/stadiumData";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
 import { advanceCallUps, callUpEligibleIds } from "@/Domain/youthComps/callUps";
 import { competitionName } from "@/Domain/world/labels";
@@ -703,7 +704,7 @@ export async function advanceOneDay(
               return { ok: false, status: 400, error: "unregistered player in recording" };
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording);
-            r.event = withRefereeLog(r.event, await refereeOf(fixture));
+            r.event = withWeatherLog(withRefereeLog(r.event, await refereeOf(fixture)), matchWeatherOf(fixture, homeSquad));
             dayEvents.push(r.event);
             const complained = recording.complaintMorale === true;
             const backed = (sq: Squad) => (complained && sq.id === recSeat.clubId ? afterManagerComplaint(sq) : sq);
@@ -757,9 +758,11 @@ export async function advanceOneDay(
             const pitchCondition = pitch.condition;
             const turf = pitch.turf;
             const referee = await refereeOf(fixture);
+            // Weather of the match (`.claude/rules/game/weather.md`): a closed roof plays it neutral.
+            const weather = matchWeatherOf(fixture, homeSquad);
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee })
-              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee });
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather })
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
             registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).

@@ -165,6 +165,12 @@ export interface MatchEvent {
   compact?: true;
   /** Condition 0..100 of the pitch the match was played on (`matchPitchCondition`). Absent: not tracked. */
   pitchCondition?: number;
+  /** Weather drawn for the match (`matchConditions`, `.claude/rules/game/weather.md`). Absent: none (youth, national). */
+  weather?: import("@/Domain/matchday/matchConditions").MatchWeather;
+  /** Weather the match played with, when it differs from `weather` (roof or neutral venue). Absent = `weather`. */
+  weatherEffective?: import("@/Domain/matchday/matchConditions").MatchWeather;
+  /** true when a roof kept that weather out (the match played neutral). */
+  weatherCovered?: true;
   /** The referee of the match, from the day's appointments (`.claude/rules/game/referees.md`). Absent: none. */
   referee?: import("@/types/refereeTypes").MatchReferee;
   /** Referee errors and VAR checks of the match (`.claude/rules/game/var.md`). Absent: no referee. */

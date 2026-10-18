@@ -1,3 +1,4 @@
+import { weatherEffectKey } from "@/Domain/matchday/matchWeatherEffect";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
 import type { MatchPitch } from "@/Domain/facilities/pitch";
@@ -604,6 +605,7 @@ interface MatchSetupData {
   pitchCondition?: number | null;
   /** Grass and mowing of that pitch (spec 2026-10-16-pitch-types). */
   pitch?: MatchPitch | null;
+  weatherEffect?: import("@/Domain/matchday/matchWeatherEffect").WeatherOfMatch | null;
   /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
   /** Referee of the match (`referees.md`); null = none appointed. */
@@ -1185,6 +1187,9 @@ export function MatchPreviewScreen() {
               value={conditions ? t(weatherLabelKey(conditions.weather)) : "—"} />
             <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value={conditions?.kickoff ?? "—"} />
           </div>
+          {matchSetup?.weatherEffect && weatherEffectKey(matchSetup.weatherEffect) && (
+            <p className="mt-3 text-sm text-muted-foreground">{t(weatherEffectKey(matchSetup.weatherEffect)!)}</p>
+          )}
           {referee && (
             <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-2">
               <div className="flex items-center gap-1.5 text-muted-foreground">

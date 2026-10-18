@@ -4,6 +4,7 @@ import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
+import { weatherEffectOf } from '@/GameEngine/Configs/WeatherConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
 import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
@@ -567,8 +568,8 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
 // `Domain/injury/injury.ts`; this file owns reading player condition and executing the outcome
 // (forced substitution, or "play on with 10" when none is available).
 
-function injuryFactorsOf(p: GamePlayer): InjuryFactors {
-  return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr, staffMult: p.injuryMult ?? 1 };
+function injuryFactorsOf(p: GamePlayer, weatherMult = 1): InjuryFactors {
+  return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr, staffMult: (p.injuryMult ?? 1) * weatherMult };
 }
 
 /**
@@ -885,7 +886,7 @@ function rollInMatchInjuries(state: GameState, dt: number): GameState {
   for (const player of state.players) {
     // Guard against a player removed earlier THIS tick by a prior roll.
     if (!s.players.some(p => p.id === player.id)) continue;
-    const prob = injuryRatePerMinute(injuryFactorsOf(player)) * gameMinutes;
+    const prob = injuryRatePerMinute(injuryFactorsOf(player, weatherEffectOf(state.weather).injury)) * gameMinutes;
     if (Math.random() < prob) {
       s = forceInjurySubstitution(s, player, matchMinute(s), rollSeverity());
     }
@@ -903,7 +904,7 @@ function rollContactInjuries(state: GameState, ids: [number, number], minute: nu
   for (const id of ids) {
     const player = s.players.find(p => p.id === id);
     if (!player) continue; // already left the pitch this tick
-    if (Math.random() < contactInjuryChance(injuryFactorsOf(player))) {
+    if (Math.random() < contactInjuryChance(injuryFactorsOf(player, weatherEffectOf(state.weather).injury))) {
       s = forceInjurySubstitution(s, player, minute, rollSeverity());
     }
   }
@@ -2743,7 +2744,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   let { x, y, vx, vy } = lb;
   const speed = Math.hypot(vx, vy);
   if (speed > 0) {
-    const newSpeed = Math.max(0, speed - cfg.LOOSE_BALL_DECELERATION * dt);
+    const newSpeed = Math.max(0, speed - cfg.LOOSE_BALL_DECELERATION * weatherEffectOf(s.weather).looseDecel * dt);
     const factor   = newSpeed / speed;
     vx *= factor;
     vy *= factor;
@@ -3079,7 +3080,7 @@ export function startAerialBall(
   const C = AERIAL_CONFIG;
   const holder = state.players.find(p => p.id === state.ballHolderId)!;
   const maxErr = kind === 'cross' ? C.CROSS_MAX_ERROR : C.LONG_BALL_MAX_ERROR;
-  const sigma = (1 - holder.runtimeStats.withBall.passingSkill) * maxErr / 2;
+  const sigma = (1 - holder.runtimeStats.withBall.passingSkill) * maxErr / 2 * weatherEffectOf(state.weather).aerialError;
   const [z0, z1] = gaussianPair(rng);
   const toX = Math.max(1, Math.min(PITCH_LENGTH - 1, target.x + z0 * sigma));
   const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, target.y + z1 * sigma));
@@ -3140,9 +3141,9 @@ export function startAerialBall(
 }
 
 /** Chance of controlling a high ball at first touch (else it drops loose): base + first touch. */
-function highBallControlChance(p: GamePlayer): number {
+function highBallControlChance(p: GamePlayer, weatherMult = 1): number {
   const C = AERIAL_CONFIG;
-  return Math.max(0, Math.min(1, C.CONTROL_BASE + C.CONTROL_TOUCH * p.runtimeStats.withBall.firstTouch));
+  return Math.max(0, Math.min(1, (C.CONTROL_BASE + C.CONTROL_TOUCH * p.runtimeStats.withBall.firstTouch) * weatherMult));
 }
 
 /** A header at goal by `headerId` (`aerial.md`): own xG (× HEADER_XG_MULT), aim from heading. */
@@ -3208,7 +3209,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
     const comes = keeperComesFor(dGk, isInSmallBox(point.x, point.y, gkGoalX), dGk < nearestOther);
     if (comes) {
-      const chance = gkClaimChance(gk, attackers.length);
+      const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim);
       const claimed = rng() < chance;
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance });
       debugLog('aerial', `${gk.name} comes for it — ${claimed ? 'claims' : 'punches'} (${(chance * 100).toFixed(0)}%)`, { playerId: gk.id, data: { chance } });
@@ -3285,7 +3286,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const len = pass.distance > 0.001 ? pass.distance : 1;
     const dirX = passer ? (point.x - passer.x) / len : 0;
     const dirY = passer ? (point.y - passer.y) / len : 0;
-    const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED;
+    const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
     debugLog('aerial', `High ball lands untouched at (${point.x.toFixed(1)}, ${point.y.toFixed(1)})`, { playerId: pass.fromId });
     return done({
       ...s,
@@ -3310,7 +3311,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
    */
   const dropLoose = (st: GameState, p: GamePlayer): GameState => {
     const a = rng() * 2 * Math.PI;
-    const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED;
+    const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
     const attacking = p.team === passerTeam;
     debugLog('aerial', `${p.name} fails to control it — loose ball`, { playerId: p.id });
     if (!attacking) resolved(p.id, false, 'loose');
@@ -3384,7 +3385,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         },
       });
     }
-    if (rng() >= highBallControlChance(w)) return done(dropLoose(s, w));
+    if (rng() >= highBallControlChance(w, weatherEffectOf(s.weather).control)) return done(dropLoose(s, w));
     resolved(w.id, true, 'control');
     return done({
       ...s,
@@ -3407,7 +3408,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     }
     return done(clearanceBall(s, winner, point, uniform(rng, C.CLEARANCE_DIST_MIN, C.CLEARANCE_DIST_MAX), rng));
   }
-  if (rng() >= highBallControlChance(winner)) return done(dropLoose(s, winner));
+  if (rng() >= highBallControlChance(winner, weatherEffectOf(s.weather).control)) return done(dropLoose(s, winner));
   resolved(winner.id, false, 'control');
   const prevHolderId = s.ballHolderId;
   return done(onPossessionTransfer({
@@ -3767,6 +3768,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   s = { ...s, decisions: newDecisions, players: playersWithMemory };
 
   if (shouldDrainStamina(s)) {
+    const weatherDrain = weatherEffectOf(s.weather).drain;
     s = {
       ...s,
       players: s.players.map(p => {
@@ -3775,7 +3777,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
         const energy = consumeEnergy(
-          pl.energy, pl.stamina, action, dt * TIME_SCALE, (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action),
+          pl.energy, pl.stamina, action, dt * TIME_SCALE, (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
         );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
@@ -3995,7 +3997,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const shooter     = s.players.find(p => p.id === shooterId)!;
       const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
 
-      const { isGoal, inPosts, goalChance } = resolveShot(shooter, defendingGK, s.shot);
+      const { isGoal, inPosts, goalChance } = resolveShot(shooter, defendingGK, s.shot, weatherEffectOf(s.weather).longShot);
       gameBus.emit('shotResolved', { player: shooter.id, xg: s.shot.xg, goalChance, isGoal, inPosts, fromX: s.shot.fromX, fromY: s.shot.fromY, toX: s.shot.toX, toY: s.shot.toY });
 
       if (inPosts && isGoal) {
@@ -4258,7 +4260,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       );
       const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
-      const step = (wb.carrySpeed + accelBurst) * recoveryMult * dt;
+      const step = (wb.carrySpeed + accelBurst) * recoveryMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.
       const newX = Math.max(0, Math.min(PITCH_LENGTH, carrier.x + holderDecision.dx * step));
@@ -4282,7 +4284,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (dist > DRIBBLE_RESOLUTION_RANGE) {
           // Approach phase: drive toward the defender with ball at feet
           const recoveryMult = attacker.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
-          const step = Math.min(attacker.runtimeStats.withBall.carrySpeed * recoveryMult * dt, dist);
+          const step = Math.min(attacker.runtimeStats.withBall.carrySpeed * recoveryMult * dt * weatherEffectOf(s.weather).carrySpeed, dist);
           const newX = Math.max(0, Math.min(PITCH_LENGTH, attacker.x + (ddx / dist) * step));
           const newY = Math.max(0, Math.min(PITCH_WIDTH,  attacker.y + (ddy / dist) * step));
           const updatedAttacker = { ...attacker, x: newX, y: newY, targetPosition: { x: defender.x, y: defender.y } };
@@ -4432,7 +4434,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const dx = landingX - (passer?.x ?? landingX);
       const dy = landingY - (passer?.y ?? landingY);
       const len = Math.hypot(dx, dy);
-      const initSpeed = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED;
+      const initSpeed = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
       const vx = len > 0.001 ? (dx / len) * initSpeed : 0;
       const vy = len > 0.001 ? (dy / len) * initSpeed : 0;
 

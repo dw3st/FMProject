@@ -6,6 +6,7 @@ import type { GameState, GamePlayer } from "@/GameEngine/types";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { moraleExecutionMult } from "@/Domain/morale/morale";
 import { temperamentFoulMult, temperamentYellowMult } from "@/Domain/personality/personality";
+import { isNeutralWeather, weatherEffectOf } from "@/GameEngine/Configs/WeatherConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { defensiveHole, outfieldNearBall } from "@/GameEngine/Domain/BallCluster";
 import { getBallPos } from "@/GameEngine/Domain/gameState";
@@ -88,6 +89,11 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Energy &amp; Fatigue
           {pitch && <span className="ml-2 normal-case tabular-nums">· pitch {pitch.condition}% · injury x{pitch.injuryMult.toFixed(2)}</span>}
+          {gameState.weather && !isNeutralWeather(gameState.weather) && (
+            <span className="ml-2 normal-case tabular-nums">
+              · {gameState.weather} {Object.entries(weatherEffectOf(gameState.weather)).filter(([, v]) => v !== 1).map(([k, v]) => `${k} x${v.toFixed(2)}`).join(" · ")}
+            </span>
+          )}
           {gameState.referee && (
             <span className="ml-2 normal-case tabular-nums">
               · ref s {gameState.referee.strictness} · foul x{refereeFoulMult(gameState.referee.strictness).toFixed(2)} · yellow x{refereeYellowMult(gameState.referee.strictness).toFixed(2)}

@@ -34,6 +34,7 @@ import { refereeFoulMult, refereeRedMult, refereeYellowMult } from "@/Domain/ref
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { qualityMult } from "@/GameEngine/Domain/Var";
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
 import type { MatchVarStats } from "@/types/dayLogTypes";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
@@ -125,6 +126,26 @@ export interface QuickSimInput {
    * football. Absent / 1 = no change (club games never pass it).
    */
   goalScale?: number;
+  /** Effective weather of the match (`.claude/rules/game/weather.md`): `QUICK_SIM_CONFIG.WEATHER`. Absent = none. */
+  weather?: EngineWeather;
+}
+
+const NO_WEATHER = { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 };
+/** QuickSim factors of a weather; `wind_rain` = product of wind and rain. */
+function quickWeather(w: QuickSimInput["weather"]): typeof NO_WEATHER {
+  if (!w) return NO_WEATHER;
+  if (w === "wind_rain") {
+    const a = C.WEATHER.wind ?? NO_WEATHER;
+    const b = C.WEATHER.rain ?? NO_WEATHER;
+    return {
+      xg: a.xg * b.xg,
+      crossCompletion: a.crossCompletion * b.crossCompletion,
+      longBallCompletion: a.longBallCompletion * b.longBallCompletion,
+      energyDrain: a.energyDrain * b.energyDrain,
+      injury: a.injury * b.injury,
+    };
+  }
+  return C.WEATHER[w] ?? NO_WEATHER;
 }
 
 /**
@@ -680,6 +701,7 @@ function rollAerial(
   stats: Record<string, MatchPlayerStats>,
   ratingDelta: Record<string, number>,
   rng: Rng,
+  wx: typeof NO_WEATHER,
 ): SideAerial {
   const out: SideAerial = {
     crosses: 0, crossesCompleted: 0, aerialDuels: duels, aerialDuelsWon: won,
@@ -687,9 +709,9 @@ function rollAerial(
   };
   if (xi.length === 0) return out;
   out.crosses = samplePoisson(C.CROSSES_PER_SIDE, rng);
-  out.crossesCompleted = binomial(out.crosses, C.CROSS_COMPLETION, rng);
+  out.crossesCompleted = binomial(out.crosses, C.CROSS_COMPLETION * wx.crossCompletion, rng);
   out.longBalls = samplePoisson(C.LONG_BALLS_PER_SIDE, rng);
-  out.longBallsCompleted = binomial(out.longBalls, C.LONG_BALL_COMPLETION, rng);
+  out.longBallsCompleted = binomial(out.longBalls, C.LONG_BALL_COMPLETION * wx.longBallCompletion, rng);
 
   const duelWeight = (x: XIPlayer) => C.AERIAL_DUEL_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
   for (let i = 0; i < won; i++) {
@@ -834,8 +856,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const home = withMorale(withFamiliarity(strengthOf(homeXI), input.homeFamiliarity), input.homeMorale);
   const away = withMorale(withFamiliarity(strengthOf(awayXI), input.awayFamiliarity), input.awayMorale);
   const scale = input.goalScale ?? 1;
-  const xgHome = expectedGoals(home, away, !input.neutral) * scale;
-  const xgAway = expectedGoals(away, home, false) * scale;
+  const wx = quickWeather(input.weather);
+  const xgHome = expectedGoals(home, away, !input.neutral) * scale * wx.xg;
+  const xgAway = expectedGoals(away, home, false) * scale * wx.xg;
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
   // mean-1 lognormal factors). The full engine's results are more lopsided than two
   // independent Poisson draws around xG. `breakdown` keeps the pre-dominance xG.
@@ -880,8 +903,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   // Match pitch (Etapa 34): × both sides' injury risk below 40%; 90 / absent = × 1, same draws.
   const pitchMult = pitchInjury(input.pitchCondition ?? 90, input.turf);
   const injuries = [
-    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult * pitchMult),
-    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult * pitchMult),
+    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult * pitchMult * wx.injury),
+    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult * pitchMult * wx.injury),
   ].sort((a, b) => a.matchMinute - b.matchMinute);
 
   // Discipline last, so every earlier rng draw (goals, events, injuries) is unchanged by it.
@@ -898,8 +921,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const aH = aerialStrength(homeXI);
   const aA = aerialStrength(awayXI);
   const homeDuelsWon = binomial(duels, aH / (aH + aA), rng);
-  const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng);
-  const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
+  const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng, wx);
+  const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng, wx);
   // Set pieces last (`set-pieces-play.md`), so every earlier rng draw is unchanged by them.
   const homeHeadersToDirect = { value: 0 };
   const awayHeadersToDirect = { value: 0 };
@@ -927,7 +950,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
       C.ENERGY_DRAIN_BY_LINE[groupOf(x)] *
       (1.2 - 0.4 * (stat(p, "stamina") / 10)) *
       drainMultiplier(startLoad(p)) *
-      extraTimeMult;
+      extraTimeMult *
+      wx.energyDrain;
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
 

@@ -725,6 +725,12 @@ export interface GameState {
    * club has one): fouls and cards of that team × (1 − 5% t). Absent / 10 = neutral.
    */
   managerDiscipline?: Partial<Record<TeamId, number>>;
+  /**
+   * Effective weather of the match (`.claude/rules/game/weather.md`, `WeatherConfig.ts`): multipliers on high-ball
+   * control, the loose ball, aerial error, keeper claims, long shots, carry speed, energy drain and injuries.
+   * Absent / neutral = no change.
+   */
+  weather?: import('@/GameEngine/Configs/WeatherConfig').EngineWeather;
   /** `/test`: this referee error fires on its next opportunity (then clears). */
   forcedRefError?: import('@/GameEngine/Domain/Var').RefereeErrorKind | null;
   /** Referee errors of the match, in order (summary, recording). */

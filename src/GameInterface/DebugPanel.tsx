@@ -26,6 +26,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   aerial:       "text-teal-300",
   setPiece:     "text-lime-300",
   var:          "text-orange-300",
+  weather:      "text-sky-300",
 };
 
 type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall' | 'cross' | 'longBall';

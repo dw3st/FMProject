@@ -384,6 +384,7 @@ export function MatchScreen() {
           pitch?: SetupPitch | null;
           /** Kickoff, weather and sunset of the match, and where the sun sets over the stadium (match light). */
           conditions?: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null;
+          weatherEffect?: import("@/Domain/matchday/matchWeatherEffect").WeatherOfMatch | null;
           sunSide?: StadiumSun | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;
@@ -475,6 +476,8 @@ export function MatchScreen() {
             },
           ),
           knockout: data.fixture.knockout === true,
+          // Weather that plays (`.claude/rules/game/weather.md`): a closed roof plays it neutral.
+          ...(data.weatherEffect ? { weather: data.weatherEffect.effective } : {}),
           ...(data.referee ? { referee: {
             id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness,
             // Errors and VAR (`var.md`): the quality the day advance uses too.

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { matchSun } from "@/backend/stadiumData";
+import { matchSun, matchWeatherOf } from "@/backend/stadiumData";
+import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { stadiumIdOf } from "@/Domain/matchday/stadiumSun";
 
 const OT = { id: "33", venue: { name: "Old Trafford", city: "Manchester" } };
@@ -19,5 +20,24 @@ describe("matchSun", () => {
     if (!r.sun.real) return; // no stadiums.json in this checkout
     expect(r.sun.stadiumId).toBe(r.sun.real.id);
     expect(r.sunset).toMatch(/^15:[3-5]\d$/);
+  });
+});
+
+const wFixture = { id: "f1", date: "2027-01-10", home: "33", away: "34", competition: "premier_league" };
+const wHome = { id: "33", country: "England", venue: { name: "Old Trafford", city: "Manchester" } };
+
+describe("matchWeatherOf", () => {
+  test("same weather as the preview (matchConditions)", () => {
+    const w = matchWeatherOf(wFixture, wHome);
+    expect(w.weather).toBe(matchConditions(wFixture, "England").weather);
+  });
+  test("deterministic", () => {
+    expect(matchWeatherOf(wFixture, wHome)).toEqual(matchWeatherOf(wFixture, wHome));
+  });
+  test("neutral venue: no effect", () => {
+    const w = matchWeatherOf({ ...wFixture, neutral: true }, wHome);
+    expect(w.effective).toBe("sunny");
+    expect(w.covered).toBe(false);
+    expect(w.weather).toBe(matchConditions(wFixture, null).weather);
   });
 });

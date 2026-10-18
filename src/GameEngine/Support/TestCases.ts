@@ -505,6 +505,25 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'rain-cross',
+    name:        '11v11 — Rain',
+    description: 'The match in the rain (`.claude/rules/game/weather.md`): high-ball control x0.92, the loose ball skids further (deceleration x0.7), keeper claims x0.9. Watch crosses and loose balls; the Energy panel header lists the active multipliers. The Weather selector overrides it.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      return { ...createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433), weather: 'rain' };
+    },
+  },
+  {
+    id:          'heat-stamina',
+    name:        '11v11 — Heat',
+    description: 'The match in the heat (`.claude/rules/game/weather.md`): energy drain x1.08 for both teams. Open the Energy panel and compare the fall of energy with 11v11 classic.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      return { ...createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433), weather: 'hot' };
+    },
+  },
+
+  {
     id:          'morale-gap',
     name:        '11v11 — Morale gap',
     description: 'Team A players at morale 100 (very happy, attributes x1.020), Team B at 20 (furious, x0.986) from the roster itself — the per-player path of a real match (`.claude/rules/game/morale.md`). Keep the Morale selectors on "Roster" and open the Energy panel to see the multiplier of each side.',

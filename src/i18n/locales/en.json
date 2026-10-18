@@ -1,4 +1,12 @@
 {
+  "weatherEffect": {
+    "rain": "Rain: slippery ball, harder to control",
+    "snow": "Snow: heavy ball, slower game",
+    "wind": "Wind: inaccurate high balls",
+    "hot": "Heat: stamina drops faster",
+    "cold": "Cold: higher risk of muscle injury",
+    "covered": "Covered stadium: the weather does not affect the game"
+  },
   "attributeNames": {
     "passing": "Passing",
     "vision": "Vision",
