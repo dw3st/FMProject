@@ -67,6 +67,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Mgr discipline",    key: "avgManagerDiscipline" },
     { stat: "Pitch",             key: "avgPitchCondition" },
     { stat: "Turf injury ×",     key: "avgTurfInjuryMult" },
+    { stat: "Weather",           key: "weatherShare" },
     { stat: "Referee",           key: "avgRefereeStrictness" },
     { stat: "Referee errors",    key: "avgRefereeErrors" },
     { stat: "VAR checks",        key: "avgVarReviews" },
