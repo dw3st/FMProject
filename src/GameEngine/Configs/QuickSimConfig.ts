@@ -231,11 +231,12 @@ export const QUICK_SIM_CONFIG = {
    * completion rates; energyDrain the drain of every player; injury both sides' injury risk. Absent = 1.
    */
   WEATHER: {
-    rain:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 },
-    snow:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 },
-    wind:  { xg: 1, crossCompletion: 0.85, longBallCompletion: 0.9, energyDrain: 1, injury: 1 },
-    hot:   { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1.08, injury: 1 },
-    cold:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1.1 },
+    // Engine ratios vs neutral, both leagues, 800 matches each (weather.md → "Medições"); within noise → 1.
+    rain:  { xg: 0.98, crossCompletion: 1.08, longBallCompletion: 0.876, energyDrain: 1, injury: 1 },
+    snow:  { xg: 1.069, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 },
+    wind:  { xg: 0.98, crossCompletion: 0.913, longBallCompletion: 0.911, energyDrain: 1, injury: 1 },
+    hot:   { xg: 1.067, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1.023, injury: 1 },
+    cold:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1.097 },
   } as Record<string, { xg: number; crossCompletion: number; longBallCompletion: number; energyDrain: number; injury: number }>,
 
   /**

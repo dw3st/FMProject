@@ -41,8 +41,8 @@ export const NEUTRAL_WEATHER: Readonly<WeatherEffect> = Object.freeze({
  */
 export const WEATHER_EFFECTS: Partial<Record<MatchWeather, Partial<WeatherEffect>>> = {
   rain: { control: 0.92, looseDecel: 0.7, gkClaim: 0.9 },
-  snow: { looseDecel: 1.4, looseSpeed: 0.8, carrySpeed: 0.95, control: 0.94 },
-  wind: { aerialError: 1.3, longShot: 0.95 },
+  snow: { looseDecel: 1.2, looseSpeed: 0.9, carrySpeed: 0.95, control: 0.94 },
+  wind: { aerialError: 3, longShot: 0.95 },
   hot: { drain: 1.08 },
   cold: { injury: 1.1 },
 };
