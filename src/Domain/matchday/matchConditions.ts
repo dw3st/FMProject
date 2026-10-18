@@ -68,8 +68,83 @@ const NIGHT_WEATHER: Partial<Record<MatchWeather, MatchWeather>> = {
 const WEEKEND_KICKOFFS = ["13:30", "15:00", "16:00", "17:30", "18:30", "20:00"];
 const WEEKDAY_KICKOFFS = ["19:00", "19:45", "20:00", "20:45", "21:30"];
 
-function pick<T>(items: readonly T[], r: number): T {
-  return items[Math.min(items.length - 1, Math.floor(r * items.length))]!;
+type Slots = [string, number][];
+/**
+ * Typical local kickoffs per country (4.32): Saturday, Sunday (and Friday / Monday) and midweek, weighted by how
+ * often each slot is used. Not the real fixture list: the usual times of each league, so a real stadium's sun falls
+ * where it would. Countries not listed use the generic slots above.
+ */
+const COUNTRY_KICKOFFS: Record<string, { sat: Slots; sun: Slots; mid: Slots }> = {
+  England: {
+    sat: [["12:30", 2], ["15:00", 5], ["17:30", 2], ["20:00", 1]],
+    sun: [["14:00", 3], ["16:30", 3]],
+    mid: [["19:30", 3], ["19:45", 2], ["20:00", 3]],
+  },
+  Spain: {
+    sat: [["14:00", 1], ["16:15", 2], ["18:30", 2], ["21:00", 3]],
+    sun: [["14:00", 1], ["16:15", 2], ["18:30", 2], ["21:00", 3]],
+    mid: [["19:00", 1], ["21:00", 3], ["21:30", 1]],
+  },
+  Italy: {
+    sat: [["15:00", 2], ["18:00", 2], ["20:45", 3]],
+    sun: [["12:30", 1], ["15:00", 3], ["18:00", 2], ["20:45", 3]],
+    mid: [["18:30", 1], ["20:45", 3]],
+  },
+  Germany: {
+    sat: [["15:30", 5], ["18:30", 2]],
+    sun: [["15:30", 2], ["17:30", 2], ["19:30", 1]],
+    mid: [["18:30", 1], ["20:30", 3]],
+  },
+  France: {
+    sat: [["17:00", 2], ["19:00", 2], ["21:00", 2]],
+    sun: [["13:00", 1], ["15:00", 2], ["17:15", 2], ["20:45", 2]],
+    mid: [["19:00", 1], ["21:00", 3]],
+  },
+  Portugal: {
+    sat: [["15:30", 1], ["18:00", 2], ["20:30", 2]],
+    sun: [["15:30", 2], ["18:00", 2], ["20:30", 2]],
+    mid: [["19:00", 1], ["20:15", 2], ["21:15", 2]],
+  },
+  Netherlands: {
+    sat: [["16:30", 1], ["18:45", 2], ["20:00", 2], ["21:00", 1]],
+    sun: [["12:15", 2], ["14:30", 3], ["16:45", 2], ["20:00", 1]],
+    mid: [["18:45", 1], ["20:00", 2], ["21:00", 2]],
+  },
+  Brazil: {
+    sat: [["16:00", 2], ["18:30", 2], ["21:00", 2]],
+    sun: [["11:00", 1], ["16:00", 3], ["18:30", 2], ["20:30", 1]],
+    mid: [["19:00", 1], ["19:30", 2], ["21:30", 3]],
+  },
+  Argentina: {
+    sat: [["15:00", 1], ["17:00", 2], ["19:15", 2], ["21:30", 2]],
+    sun: [["15:00", 1], ["17:00", 2], ["19:15", 2], ["21:30", 2]],
+    mid: [["19:00", 2], ["21:15", 2]],
+  },
+  USA: {
+    sat: [["16:00", 1], ["19:30", 5], ["20:30", 1]],
+    sun: [["14:00", 1], ["18:00", 1], ["19:00", 1]],
+    mid: [["19:30", 3], ["20:00", 1]],
+  },
+};
+
+/** European continental nights: 18:45 / 21:00 CET, an hour earlier in England and Portugal. */
+const EUROPE_NIGHT: Slots = [["18:45", 1], ["21:00", 3]];
+const EUROPE_NIGHT_WET: Slots = [["17:45", 1], ["20:00", 3]];
+const SOUTH_AMERICA_NIGHT: Slots = [["19:00", 1], ["21:30", 3]];
+
+/** The weighted slots a fixture draws its kickoff from. */
+export function kickoffSlots(date: string, country: string | null | undefined, competition?: string): Slots {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+  if (competition === "ucl" || competition === "uel") {
+    return country === "England" || country === "Portugal" ? EUROPE_NIGHT_WET : EUROPE_NIGHT;
+  }
+  if (competition === "lib" || competition === "sud") return SOUTH_AMERICA_NIGHT;
+  const table = country ? COUNTRY_KICKOFFS[country] : undefined;
+  if (!table) return (day === 0 || day === 6 ? WEEKEND_KICKOFFS : WEEKDAY_KICKOFFS).map((k) => [k, 1]);
+  if (day === 6) return table.sat;
+  if (day === 0) return table.sun;
+  // Friday and Monday nights take the midweek slots.
+  return table.mid;
 }
 
 function pickWeighted<T>(items: readonly [T, number][], r: number): T {
@@ -94,18 +169,17 @@ export interface MatchConditions {
 
 /**
  * Kickoff time and weather for a fixture. Same `{ date, home, away }` → same answer.
- * Weekends draw from afternoon/evening slots, weekdays from evening slots; the weather follows the
+ * The kickoff follows the home country's usual slots (`kickoffSlots`; generic weekend / weekday slots elsewhere,
+ * continental nights by competition); the weather follows the
  * month and the home country's climate (winter in July in the south, no winter in the tropics).
  * After sunset sun and heat become a clear sky; the draw itself is the same as by day.
  */
 export function matchConditions(
-  fixture: { date: string; home: string; away: string },
+  fixture: { date: string; home: string; away: string; competition?: string },
   homeCountry?: string | null,
 ): MatchConditions {
   const rng = mulberry32(seedFrom(`${fixture.date}:${fixture.home}:${fixture.away}:conditions`));
-  const day = new Date(`${fixture.date}T00:00:00Z`).getUTCDay();
-  const weekend = day === 0 || day === 6;
-  const kickoff = pick(weekend ? WEEKEND_KICKOFFS : WEEKDAY_KICKOFFS, rng());
+  const kickoff = pickWeighted(kickoffSlots(fixture.date, homeCountry, fixture.competition), rng());
   const climate = climateOf(homeCountry);
   const month = Number(fixture.date.slice(5, 7));
   const key = climate === "tropical" || climate === "arid" ? climate : seasonOf(month, climate);

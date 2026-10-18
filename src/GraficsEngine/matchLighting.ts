@@ -134,7 +134,11 @@ export function matchLighting(input: { clock: number; sunset: number; weather: M
       // Never straight down the marker: the sun is always a little to one side (by the stadium's lean).
       kind: "cast", angle: real ? Math.atan2(real.sy, real.sx)
         : Math.atan2(dir, (input.sun.lean >= 0 ? -1 : 1) * (S.SIDE + S.SIDE * Math.abs(input.sun.lean))),
-      length: S.LEN + (S.LEN_GOLDEN - S.LEN) * golden, width: S.WIDTH, tip: S.TIP, alpha: S.ALPHA * sun,
+      // A real stadium: longer as the sun gets low (never the old "giraffe"); otherwise by the golden hour.
+      length: real
+        ? S.LEN + (S.LEN_LOW - S.LEN) * clamp01((L.REAL.LOW_FROM - real.elevation) / (L.REAL.LOW_FROM - L.REAL.LOW_TO))
+        : S.LEN + (S.LEN_GOLDEN - S.LEN) * golden,
+      width: S.WIDTH, tip: S.TIP, alpha: S.ALPHA * sun,
     });
   }
   if (flood > 0.01) {

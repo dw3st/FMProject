@@ -8,14 +8,28 @@ describe("matchConditions", () => {
     expect(matchConditions(fx("2027-03-13"), "England")).toEqual(matchConditions(fx("2027-03-13"), "England"));
   });
 
-  test("weekend and weekday kickoff slots", () => {
-    for (let i = 0; i < 40; i++) {
-      // 2027-03-13 is a Saturday, 2027-03-16 a Tuesday.
-      const sat = matchConditions(fx("2027-03-13", `h${i}`), "England").kickoff;
-      const tue = matchConditions(fx("2027-03-16", `h${i}`), "England").kickoff;
-      expect(["13:30", "15:00", "16:00", "17:30", "18:30", "20:00"]).toContain(sat);
-      expect(["19:00", "19:45", "20:00", "20:45", "21:30"]).toContain(tue);
-    }
+  test("kickoffs follow the league's usual slots", () => {
+    const at = (date: string, country: string | null, competition?: string) =>
+      new Set(Array.from({ length: 200 }, (_, i) => matchConditions({ ...fx(date, `h${i}`), competition }, country).kickoff));
+    // 2027-03-13 is a Saturday, 2027-03-14 a Sunday, 2027-03-16 a Tuesday.
+    expect([...at("2027-03-13", "England")].every((k) => ["12:30", "15:00", "17:30", "20:00"].includes(k))).toBe(true);
+    expect(at("2027-03-13", "England").has("15:00")).toBe(true);
+    expect([...at("2027-03-14", "Germany")].every((k) => ["15:30", "17:30", "19:30"].includes(k))).toBe(true);
+    expect([...at("2027-03-16", "Spain")].every((k) => ["19:00", "21:00", "21:30"].includes(k))).toBe(true);
+    // Continental nights, an hour earlier in England.
+    expect([...at("2027-03-16", "England", "ucl")].every((k) => ["17:45", "20:00"].includes(k))).toBe(true);
+    expect([...at("2027-03-16", "Italy", "ucl")].every((k) => ["18:45", "21:00"].includes(k))).toBe(true);
+    expect([...at("2027-03-16", "Brazil", "lib")].every((k) => ["19:00", "21:30"].includes(k))).toBe(true);
+    // A country without its own table: the generic slots.
+    expect([...at("2027-03-13", "Kenya")].every((k) => ["13:30", "15:00", "16:00", "17:30", "18:30", "20:00"].includes(k))).toBe(true);
+    expect([...at("2027-03-16", null)].every((k) => ["19:00", "19:45", "20:00", "20:45", "21:30"].includes(k))).toBe(true);
+  });
+
+  test("the usual slot is the most common one (England Saturday: 15:00)", () => {
+    const sat = Array.from({ length: 1000 }, (_, i) => matchConditions(fx("2027-03-13", `h${i}`), "England").kickoff);
+    const n = (k: string) => sat.filter((x) => x === k).length;
+    expect(n("15:00")).toBeGreaterThan(n("12:30"));
+    expect(n("15:00")).toBeGreaterThan(n("20:00"));
   });
 
   test("the weather follows the month and the hemisphere", () => {

@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.31.2",
+    date: "2026-10-17",
+    items: [
+      { pt: "Os jogos começam nos horários típicos de cada liga (sábado às 15:00 na Inglaterra, 15:30 na Alemanha, noites de Champions às 21:00), então o sol e a sombra batem com o horário de verdade.", en: "Matches kick off at each league's usual times (Saturday 3 pm in England, 3:30 pm in Germany, Champions League nights at 9 pm), so the sun and the shadows match the real hour." },
+      { pt: "Com o sol baixo, a sombra dos jogadores fica um pouco mais comprida.", en: "With a low sun, the players' shadows get a little longer." },
+    ],
+  },
+  {
     version: "4.31.1",
     date: "2026-10-17",
     items: [

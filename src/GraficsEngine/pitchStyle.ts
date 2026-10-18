@@ -119,15 +119,16 @@ export const LIGHTING = {
   },
   /**
    * Real stadium (4.31): a stand's shadow reaches height ÷ tan(sun elevation), less SETBACK metres (the stand stands
-   * back from the touchline), at most MAX_REACH × the height; the sun fades out below FADE_ELEVATION degrees.
+   * back from the touchline), at most MAX_REACH × the height; the sun fades out below FADE_ELEVATION degrees. The
+   * players' sun shadow grows from LEN (sun at LOW_FROM° or higher) to SUN_SHADOW.LEN_LOW (LOW_TO° or lower).
    */
-  REAL: { SETBACK: 6, MAX_REACH: 12, FADE_ELEVATION: 3 },
+  REAL: { SETBACK: 6, MAX_REACH: 12, FADE_ELEVATION: 3, LOW_FROM: 35, LOW_TO: 8 },
   /** Covered stadium: the lights always on at least FLOOD, the night outside only NIGHT_SCALE as dark. */
   COVERED: { FLOOD: 0.6, NIGHT_SCALE: 0.5 },
   /** Player shadows (4.29.3): soft, dark green, close to the body. LEN from the marker centre (1 = its rim). */
   SHADOW_COLOR: 0x021a0a,
   CONTACT_SHADOW: { ALPHA: 0.6, ANGLE: 0.95, OFFSET: 0.42, RX: 0.95, RY: 0.75 },
-  SUN_SHADOW: { ALPHA: 0.8, LEN: 1.35, LEN_GOLDEN: 1.65, WIDTH: 0.5, TIP: 0.2, SIDE: 0.5 },
+  SUN_SHADOW: { ALPHA: 0.8, LEN: 1.35, LEN_GOLDEN: 1.65, LEN_LOW: 1.9, WIDTH: 0.5, TIP: 0.2, SIDE: 0.5 },
   FLOOD_SHADOW: { ALPHA: 0.45, LEN: 1.15, WIDTH: 0.3, TIP: 0.16 },
   /** Share of the sun shadows kept by each weather; the rest is a grey veil. */
   SUN_BY_WEATHER: { sunny: 1, clear: 1, hot: 1, wind: 1, cold: 0.5, partlyCloudy: 0.5, cloudy: 0, rain: 0, snow: 0 },
