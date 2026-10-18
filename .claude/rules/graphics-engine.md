@@ -144,3 +144,13 @@ coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Velti
   dos jogadores aponta na direção real. Contorno da cobertura e cantos continuam ilustrativos (do id).
 - `/test`: chips Stadium "Old Trafford, Dec 15 / Jun 21" (sol calculado, pôr do sol real) com a Hora.
 
+### Horários e sombra dos jogadores (4.31.2)
+
+- `matchConditions` sorteia o horário pelos horários típicos do país do mandante (`kickoffSlots`: sábado, domingo e
+  meio de semana para Inglaterra, Espanha, Itália, Alemanha, França, Portugal, Holanda, Brasil, Argentina e EUA, com
+  peso pela frequência; sexta e segunda usam os de meio de semana), noites continentais pela competição (UCL/UEL
+  18:45 / 21:00, uma hora antes na Inglaterra e em Portugal; Libertadores/Sul-Americana 19:00 / 21:30); os demais
+  países com os horários genéricos de antes. Um sorteio só, então o clima de cada jogo não mudou.
+- Estádio real: a sombra de sol dos jogadores cresce de `SUN_SHADOW.LEN` (sol a `REAL.LOW_FROM` = 35° ou mais) até
+  `LEN_LOW` (1,9 raio, sol a `REAL.LOW_TO` = 8° ou menos).
+

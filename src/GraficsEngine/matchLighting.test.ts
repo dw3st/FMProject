@@ -107,6 +107,15 @@ describe("matchLighting", () => {
       expect(g.side).toBe("bottom");
       expect(g.sy).toBeLessThan(0);
     });
+    test("players' sun shadow: longer with a low sun, never past LEN_LOW", () => {
+      const cast = (date: string, clock: number) =>
+        matchLighting({ clock, sunset: 22 * 60, weather: "sunny", sun: ot, date }).shadows.find((x) => x.kind === "cast")!.length;
+      const summerNoon = cast("2027-06-21", 13 * 60);
+      const winterAfternoon = cast("2027-12-15", 14 * 60 + 30);
+      expect(summerNoon).toBeCloseTo(1.35, 5);
+      expect(winterAfternoon).toBeGreaterThan(1.6);
+      expect(winterAfternoon).toBeLessThanOrEqual(1.9);
+    });
     test("lighting uses it: the stand profile follows the sun, gone after dark", () => {
       const day = matchLighting({ clock: 15 * 60, sunset: 15 * 60 + 50, weather: "sunny", sun: ot, date: "2027-12-15" });
       expect(day.stand.profile.side).toBe("bottom");

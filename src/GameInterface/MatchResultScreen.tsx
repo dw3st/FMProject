@@ -546,7 +546,7 @@ export function MatchResultScreen() {
   );
   const neutral = !!fixture?.neutral;
   const conditions = matchConditions(
-    { date: resolvedDate, home: matchEvent.home, away: matchEvent.away },
+    { date: resolvedDate, home: matchEvent.home, away: matchEvent.away, competition: matchEvent.competition },
     neutral ? null : homeSquad?.country ?? null,
   );
   const venue = neutral
