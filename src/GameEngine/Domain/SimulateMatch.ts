@@ -25,6 +25,8 @@ import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
 import type { PlayerStats as MatchPlayerStats, TeamStats } from '@/GameEngine/Domain/Statistics';
 import type { Squad } from '@/types/playerTypes';
+import { debugLog } from '@/GameEngine/Support/DebugLog';
+import { weatherEffectOf } from '@/GameEngine/Configs/WeatherConfig';
 
 // Re-export Squad for consumers
 export type { Squad } from '@/types/playerTypes';
@@ -128,6 +130,8 @@ export interface SimulateMatchOptions {
   referee?: import('@/types/refereeTypes').EngineReferee;
   /** Managers' Discipline attribute 1..20 per side (`.claude/rules/game/achievements.md`). Absent = neutral. */
   managerDiscipline?: { A?: number; B?: number };
+  /** Effective weather of the match (`.claude/rules/game/weather.md`). Absent = neutral. */
+  weather?: import('@/GameEngine/Configs/WeatherConfig').EngineWeather;
 }
 
 /** Player instructions of one side (`player-instructions.md`). */
@@ -241,12 +245,15 @@ export function simulateMatch(
     knockout:              options.knockout === true,
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
     ...(options.referee ? { referee: options.referee } : {}),
+    ...(options.weather ? { weather: options.weather } : {}),
     ...(options.managerDiscipline && (options.managerDiscipline.A !== undefined || options.managerDiscipline.B !== undefined)
       ? { managerDiscipline: { ...options.managerDiscipline } } : {}),
     ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
       ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
       : {}),
   };
+
+  if (options.weather) debugLog('weather', `Weather: ${options.weather}`, { data: { ...weatherEffectOf(options.weather) } });
 
   // Player instructions (manager's slots) and man-marking — the AI never sets either.
   for (const team of ['A', 'B'] as const) {

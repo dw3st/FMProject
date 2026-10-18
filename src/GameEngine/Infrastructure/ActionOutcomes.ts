@@ -15,6 +15,7 @@ import type { GamePlayer } from '@/GameEngine/types';
 import { tackleAngleModifier } from '@/GameEngine/Domain/PositionalAwareness';
 import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
+import { LONG_SHOT_DISTANCE } from '@/GameEngine/Configs/WeatherConfig';
 import {
   PITCH_LENGTH,
   GOAL_Y_MIN,
@@ -280,6 +281,7 @@ export function resolveShot(
   shooter: GamePlayer,
   gk: GamePlayer | null,
   shot: import('@/GameEngine/types').ShotState,
+  longShotMult = 1,
 ): ShotResult {
   const inPosts = shot.toY >= GOAL_Y_MIN && shot.toY <= GOAL_Y_MAX;
   if (!inPosts) return { isGoal: false, goalChance: 0, inPosts };
@@ -288,7 +290,10 @@ export function resolveShot(
   const gkEffect      = gk
     ? computeGKEffect(gk, Math.hypot(shooter.x - shot.toX, shooter.y - shot.toY), { x: shooter.x, y: shooter.y })
     : 1.0;
-  const goalChance = clamp(shot.xg * shooterEffect * gkEffect, 0, 1);
+  // Weather (wind): shots from beyond LONG_SHOT_DISTANCE lose a little accuracy.
+  const fromGoalLine = Math.abs(shot.toX - shot.fromX);
+  const weather = !shot.header && fromGoalLine > LONG_SHOT_DISTANCE ? longShotMult : 1;
+  const goalChance = clamp(shot.xg * shooterEffect * gkEffect * weather, 0, 1);
   return { isGoal: Math.random() < goalChance, goalChance, inPosts };
 }
 
@@ -415,11 +420,11 @@ export function resolveAerialDuel(
  * Chance that a goalkeeper coming for a high ball catches it (otherwise he punches it):
  * base + positioning + reflex, minus a crowd term per attacker within AERIAL_RADIUS.
  */
-export function gkClaimChance(gk: GamePlayer, attackersNear: number): number {
+export function gkClaimChance(gk: GamePlayer, attackersNear: number, weatherMult = 1): number {
   const C = AERIAL_CONFIG;
   const { gkPositioning, gkReflex } = gk.runtimeStats.withoutBall;
   return clamp(
-    C.GK_CLAIM_BASE + gkPositioning * C.GK_CLAIM_POSITIONING + gkReflex * C.GK_CLAIM_REFLEX - attackersNear * C.GK_CLAIM_CROWD,
+    (C.GK_CLAIM_BASE + gkPositioning * C.GK_CLAIM_POSITIONING + gkReflex * C.GK_CLAIM_REFLEX - attackersNear * C.GK_CLAIM_CROWD) * weatherMult,
     0, 1,
   );
 }

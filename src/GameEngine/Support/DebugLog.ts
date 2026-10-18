@@ -27,7 +27,8 @@ export type DebugCategory =
   | 'instruction'   // player instructions applied / changed, man-marking pairs
   | 'aerial'        // crosses, long balls, aerial duels, keeper claims, headers
   | 'setPiece'      // corners, direct free kicks and the wall, set-piece deliveries
-  | 'var';          // referee errors, VAR checks, manager complaints
+  | 'var'           // referee errors, VAR checks, manager complaints
+  | 'weather';      // weather of the match (`weather.md`)
 
 export interface DebugEntry {
   id:        number;
