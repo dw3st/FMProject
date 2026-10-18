@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.31.3",
+    date: "2026-10-17",
+    items: [
+      { pt: "A sombra dos jogadores ficou redonda e logo embaixo de cada um.", en: "Player shadows are now round and right under each player." },
+    ],
+  },
+  {
     version: "4.31.2",
     date: "2026-10-17",
     items: [

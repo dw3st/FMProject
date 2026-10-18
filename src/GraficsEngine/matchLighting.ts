@@ -126,25 +126,25 @@ export function matchLighting(input: { clock: number; sunset: number; weather: M
   const profile: StadiumSun = real ? { ...input.sun, side: real.side, lean: real.lean, endShadow: real.endDepth > 0 } : input.sun;
   const C = L.CONTACT_SHADOW;
   const shadows: ShadowSpec[] = [
-    { kind: "contact", angle: C.ANGLE, length: C.OFFSET, width: C.RX, tip: C.RY, alpha: C.ALPHA },
+    { kind: "contact", angle: C.ANGLE, length: C.OFFSET, width: C.RX, tip: C.RY, alpha: C.ALPHA * (1 - 0.7 * Math.min(1, sun + flood)) },
   ];
   if (sun > 0.01) {
     const S = L.SUN_SHADOW;
+    const low = real ? clamp01((L.REAL.LOW_FROM - real.elevation) / (L.REAL.LOW_FROM - L.REAL.LOW_TO)) : golden;
     shadows.push({
       // Never straight down the marker: the sun is always a little to one side (by the stadium's lean).
       kind: "cast", angle: real ? Math.atan2(real.sy, real.sx)
         : Math.atan2(dir, (input.sun.lean >= 0 ? -1 : 1) * (S.SIDE + S.SIDE * Math.abs(input.sun.lean))),
-      // A real stadium: longer as the sun gets low (never the old "giraffe"); otherwise by the golden hour.
-      length: real
-        ? S.LEN + (S.LEN_LOW - S.LEN) * clamp01((L.REAL.LOW_FROM - real.elevation) / (L.REAL.LOW_FROM - L.REAL.LOW_TO))
-        : S.LEN + (S.LEN_GOLDEN - S.LEN) * golden,
-      width: S.WIDTH, tip: S.TIP, alpha: S.ALPHA * sun,
+      // A round oval under the player, a little longer and farther out as the sun gets low (a real stadium: its
+      // elevation; otherwise the golden hour).
+      length: S.LEN + ((real ? S.LEN_LOW : S.LEN_GOLDEN) - S.LEN) * low,
+      width: S.WIDTH + (S.WIDTH_LOW - S.WIDTH) * low, tip: S.TIP, alpha: S.ALPHA * sun,
     });
   }
   if (flood > 0.01) {
     const F = L.FLOOD_SHADOW;
     for (const [ax, ay] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
-      shadows.push({ kind: "cast", angle: Math.atan2(ay, ax), length: F.LEN, width: F.WIDTH, tip: F.TIP, alpha: F.ALPHA * flood });
+      shadows.push({ kind: "cast", angle: Math.atan2(ay, ax), length: F.LEN, width: F.WIDTH, tip: F.TIP, alpha: F.ALPHA * flood / 2 });
     }
   }
   const depth = real ? real.depth : Math.min(L.STAND.MAX_SHARE, (L.STAND.MIN_DEPTH + (L.STAND.MAX_DEPTH - L.STAND.MIN_DEPTH) * golden) * input.sun.height);

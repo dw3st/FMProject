@@ -125,11 +125,14 @@ export const LIGHTING = {
   REAL: { SETBACK: 6, MAX_REACH: 12, FADE_ELEVATION: 3, LOW_FROM: 35, LOW_TO: 8 },
   /** Covered stadium: the lights always on at least FLOOD, the night outside only NIGHT_SCALE as dark. */
   COVERED: { FLOOD: 0.6, NIGHT_SCALE: 0.5 },
-  /** Player shadows (4.29.3): soft, dark green, close to the body. LEN from the marker centre (1 = its rim). */
+  /**
+   * Player shadows (4.31.3): soft, dark green, round and under the player. LEN = how far the oval's centre sits from
+   * the marker centre toward the shadow's direction (1 = the rim), WIDTH / TIP its radii along / across it.
+   */
   SHADOW_COLOR: 0x021a0a,
   CONTACT_SHADOW: { ALPHA: 0.6, ANGLE: 0.95, OFFSET: 0.42, RX: 0.95, RY: 0.75 },
-  SUN_SHADOW: { ALPHA: 0.8, LEN: 1.35, LEN_GOLDEN: 1.65, LEN_LOW: 1.9, WIDTH: 0.5, TIP: 0.2, SIDE: 0.5 },
-  FLOOD_SHADOW: { ALPHA: 0.45, LEN: 1.15, WIDTH: 0.3, TIP: 0.16 },
+  SUN_SHADOW: { ALPHA: 0.75, LEN: 0.35, LEN_GOLDEN: 0.5, LEN_LOW: 0.55, WIDTH: 1.05, WIDTH_LOW: 1.25, TIP: 0.85, SIDE: 0.5 },
+  FLOOD_SHADOW: { ALPHA: 0.35, LEN: 0.3, WIDTH: 0.95, TIP: 0.8 },
   /** Share of the sun shadows kept by each weather; the rest is a grey veil. */
   SUN_BY_WEATHER: { sunny: 1, clear: 1, hot: 1, wind: 1, cold: 0.5, partlyCloudy: 0.5, cloudy: 0, rain: 0, snow: 0 },
   VEIL: { COLOR: 0x6a7a80, BY_WEATHER: { partlyCloudy: 0.05, cloudy: 0.14, rain: 0.2, snow: 0.12, cold: 0.06 } },
