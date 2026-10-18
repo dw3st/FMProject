@@ -36,7 +36,7 @@ describe("weather in the quickSim", () => {
   test("neutral weather draws the identical match", () => {
     for (let i = 0; i < 50; i++) {
       const a = quickSimMatch(base(i), mulberry32(i));
-      const b = quickSimMatch({ ...base(i), weather: "cloudy" as never }, mulberry32(i));
+      const b = quickSimMatch({ ...base(i), weather: "cloudy" }, mulberry32(i));
       expect(b.recording).toEqual(a.recording);
     }
   });
