@@ -41,6 +41,9 @@ Toda etapa concluída do roadmap entra no changelog do jogo ("Novidades") antes 
 - **Árbitros e VAR (4.17–4.18):** quadro por país com rigor e qualidade, escala por jogo; o juiz erra de vez em quando e o VAR corrige a maioria nas competições principais; o técnico do jogador pode reclamar (cartão e suspensão). Ver `.claude/rules/game/referees.md` e `var.md`.
 - **Partida:** motor tick a tick com táticas por estilo, mentalidade ao vivo, 1×/2×/4×, roda com a
   aba em segundo plano. Ligas não seguidas usam o quickSim.
+- **Clima na partida (4.32):** chuva, neve, vento, calor e frio mexem sutilmente no motor e no quickSim
+  (estádio coberto protege; campo neutro joga neutro); linha do efeito na prévia e no resultado. Ver
+  `.claude/rules/game/weather.md`.
 - **Fôlego e carga:** cada jogador recupera dia a dia (idade/carga/stamina), acumula carga
   (minutos-equivalentes com decaimento) num calendário apertado, e a energia de início de partida é
   comprimida em torno de uma referência (`matchStartEnergy`) para suavizar a diferença entre dois
@@ -293,6 +296,7 @@ etapas ou quando a área correspondente for revisitada.
 |---|---|---|
 | 1 | ~~Taxa de dia adjacente da América do Sul (Libertadores/Sul-Americana × liga do mesmo clube, ~13%)~~ **Resolvido na 4.16:** o jogo da liga em conflito (mesmo dia ou dias seguidos) é remarcado para o meio de semana livre mais próximo; numa temporada medida, 37 clubes / 63 pares em dias seguidos → 4 / 4 (só copa × continental, que não se movem) | `.claude/rules/game/rescheduling.md` |
 | 2 | ~~Ligas europeias de ano civil com choque de data com UCL/UEL só logado~~ **Resolvido na 4.16:** só a partida da liga do clube é remarcada (nunca a rodada inteira), na virada e nos sorteios; Europa numa temporada medida: 169 clubes em dias seguidos → 0, nenhum no mesmo dia | `.claude/rules/game/rescheduling.md` |
+| 3 | Clima (4.32): gols do mundo em −2,9% (meta ±3%, no limite; alavanca: `looseDecel` da chuva 0,7 → 0,8); campo neutro mostra o clima sorteado sem linha de efeito (decidir se avisa "o clima não afeta"); logs de lance com `weatherMult` no `/test` (previstos na spec, não feitos); smoke da seção "Clima" ainda não rodado | `.claude/rules/game/weather.md` |
 
 ---
 
