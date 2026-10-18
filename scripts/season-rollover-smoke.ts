@@ -28,6 +28,7 @@
  *       (--italy = --player-league serie_a)
  */
 import { fileURLToPath } from "node:url";
+import { matchConditions } from "@/Domain/matchday/matchConditions";
 import { readdir } from "fs/promises";
 import { matchesPerRoundByCountry } from "@/backend/refereeWorld";
 import { ageOn, poolSizeFor } from "@/Domain/referees/pool";
@@ -562,6 +563,12 @@ try {
     scoreMismatch: [] as string[], banDate: "", banSetup: null as boolean | null, banServed: null as boolean | null,
   };
 
+  // ── Clima (see "Clima" section below, `.claude/rules/game/weather.md`) ──
+  const weatherTrack = {
+    matches: 0, missing: [] as string[], youthWithWeather: 0, sampled: 0, mismatch: [] as string[],
+    byWeather: {} as Record<string, number>,
+  };
+
   // ── Prêmios (see "Prêmios" section below, `.claude/rules/game/awards.md`) ──
   const { AWARDS } = await import("@/Domain/awards/awardsConfig");
   const { awardKindsByPlayer } = await import("@/Domain/awards/awardEffects");
@@ -1061,6 +1068,7 @@ try {
     {
       const log = await plain().getDayLog(saveId, date);
       for (const ym of log?.youthMatches ?? []) {
+        if ((ym as { weather?: unknown }).weather) weatherTrack.youthWithWeather++;
         if (!ym.score) { youthTrack.cancelled++; continue; }
         youthTrack.games++;
         for (const id of [...ym.players.home, ...ym.players.away]) youthTrack.appsLogged.set(id, (youthTrack.appsLogged.get(id) ?? 0) + 1);
@@ -1354,6 +1362,25 @@ try {
           if (!event.compact && event.var && event.var.overturned > 0 && !event.decider) {
             const goals = Object.values(event.playerStats).reduce((a, s) => a + (s.goals ?? 0), 0);
             if (goals !== event.score.home + event.score.away) varTrack.scoreMismatch.push(`${date} ${event.fixtureId}`);
+          }
+        }
+        // Clima: every first-team match has the drawn weather; a sample matches `matchConditions` again.
+        if (!isYouthCompSlug(event.competition)) {
+          weatherTrack.matches++;
+          if (!event.weather) weatherTrack.missing.push(`${date} ${event.competition}:${event.fixtureId}`);
+          else {
+            weatherTrack.byWeather[event.weather] = (weatherTrack.byWeather[event.weather] ?? 0) + 1;
+            if (weatherTrack.sampled < 50) {
+              weatherTrack.sampled++;
+              const homeSq = await plain().getSquadById(saveId, event.home);
+              const fx = { date, home: event.home, away: event.away, competition: event.competition };
+              const own = matchConditions(fx, homeSq?.country ?? null).weather;
+              // a neutral venue (final) keeps the weather drawn with no home country
+              const neutral = matchConditions(fx, null).weather;
+              if (event.weather !== own && event.weather !== neutral) {
+                weatherTrack.mismatch.push(`${date} ${event.competition}:${event.fixtureId} ${event.weather} vs ${own}`);
+              }
+            }
           }
         }
         totalMatchesLogged++;
@@ -2204,6 +2231,19 @@ try {
   check(suspendedXIViolations === 0,
     `disciplina: no suspended player appeared in a played XI (${suspendedXIViolations} of ${suspendedXIChecks} violated)`);
   check(suspensionsServedObserved > 0, `disciplina: at least one suspension served during the run (${suspensionsServedObserved} observed)`);
+
+  // ── Clima ────────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/weather.md`: every first-team match carries its weather, youth games none, a sample
+  // equals the deterministic `matchConditions` draw.
+  console.log("\n── Clima ──");
+  {
+    console.log(`  ${weatherTrack.matches} first-team matches by weather: ${JSON.stringify(weatherTrack.byWeather)}`);
+    check(weatherTrack.matches > 0 && weatherTrack.missing.length === 0,
+      `clima: every first-team match has a weather (${weatherTrack.missing.length} missing, e.g. ${weatherTrack.missing.slice(0, 3).join(", ")})`);
+    check(weatherTrack.youthWithWeather === 0, `clima: no youth game has a weather (${weatherTrack.youthWithWeather})`);
+    check(weatherTrack.mismatch.length === 0,
+      `clima: the weather of ${weatherTrack.sampled} sampled matches equals matchConditions (${weatherTrack.mismatch.slice(0, 3).join(", ")})`);
+  }
 
   // ── VAR ──────────────────────────────────────────────────────────────────
   // See `.claude/rules/game/var.md`: errors and reviews only with a referee, reviews only in fixtures with VAR, no
