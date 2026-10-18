@@ -4,7 +4,7 @@ import { NEUTRAL_WEATHER, weatherEffectOf, WEATHER_EFFECTS } from "@/GameEngine/
 describe("weatherEffectOf", () => {
   test("absent and neutral weathers are all 1", () => {
     for (const w of [undefined, null, "sunny", "clear", "partlyCloudy", "cloudy"] as const) {
-      expect(weatherEffectOf(w as any)).toEqual(NEUTRAL_WEATHER);
+      expect(weatherEffectOf(w)).toEqual(NEUTRAL_WEATHER);
     }
     for (const v of Object.values(NEUTRAL_WEATHER)) expect(v).toBe(1);
   });
