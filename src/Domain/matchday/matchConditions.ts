@@ -1,7 +1,7 @@
 /**
  * Cosmetic match-day details for the dashboard's "Next match" card and the light of the live match
- * (kickoff time, weather, sunset). None exists in the simulation — they are derived deterministically from the fixture (same
- * fixture, same answer) and have no effect on any match. Pure, no I/O.
+ * (kickoff time, weather, sunset). Derived deterministically from the fixture (same fixture, same answer). The weather plays
+ * since 4.32 (`.claude/rules/game/weather.md`); kickoff and sunset stay cosmetic. Pure, no I/O.
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
 

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.32",
+    date: "2026-10-18",
+    items: [
+      {
+        pt: "O clima agora influencia as partidas: chuva deixa a bola escorregadia, neve pesa o jogo, vento atrapalha as bolas altas, o calor cansa mais e o frio aumenta o risco de lesão. A prévia avisa o efeito; estádios cobertos protegem da chuva, da neve e do vento.",
+        en: "Weather now affects matches: rain makes the ball slippery, snow slows the game, wind spoils high balls, heat tires players faster and cold raises the injury risk. The preview tells you the effect; covered stadiums keep out rain, snow and wind.",
+      },
+    ],
+  },
+  {
     version: "4.31.4",
     date: "2026-10-18",
     items: [

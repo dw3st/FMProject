@@ -79,6 +79,8 @@ obra. Vêm do `match-setup` (`crowd.decor`) só nos jogos em casa do clube do jo
 
 ## Luz e sombra (4.29)
 
+Desde a 4.32 o clima também afeta a partida, ver `.claude/rules/game/weather.md`.
+
 Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: nada entra no `GameState`, no motor, no quickSim nem no `/lab`.
 
 - `src/Domain/matchday/matchConditions.ts`: `MatchConditions.sunset` ("HH:MM", o `SUNSET` da estação e do clima; nenhum sorteio novo). `src/Domain/matchday/stadiumSun.ts`: `stadiumSunSide(id)` → `{ side: "top"|"bottom", lean −1..1 }` pelo id do clube (campo neutro: id do jogo).
