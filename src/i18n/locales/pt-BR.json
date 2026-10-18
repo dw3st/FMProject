@@ -1,4 +1,12 @@
 {
+  "weatherEffect": {
+    "rain": "Chuva: bola escorregadia, domínio mais difícil",
+    "snow": "Neve: bola pesada, jogo mais lento",
+    "wind": "Vento: bolas altas imprecisas",
+    "hot": "Calor: o fôlego cai mais rápido",
+    "cold": "Frio: mais risco de lesão muscular",
+    "covered": "Estádio coberto: o clima não afeta o jogo"
+  },
   "attributeNames": {
     "passing": "Passe",
     "vision": "Visão",
