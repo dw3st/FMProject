@@ -18,9 +18,9 @@ function loadSquad(file: string): Squad {
 const A = loadSquad("33.json");
 const B = loadSquad("34.json");
 
-function run(weather?: EngineWeather) {
+function run(weather?: EngineWeather, seed = 7) {
   const orig = Math.random;
-  Math.random = mulberry32(7);
+  Math.random = mulberry32(seed);
   try {
     return simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], weather ? { weather } : {});
   } finally {
@@ -41,9 +41,26 @@ describe("weather in the engine", () => {
   });
 
   test("heat drains more energy", () => {
-    const base = run();
-    const hot = run("hot");
-    expect(hot.teamStats.A.avgEndEnergy).toBeLessThan(base.teamStats.A.avgEndEnergy);
+    // Mean energy on the pitch after 400 ticks (first half, before any substitution): the drain itself. The end-of-match
+    // average is not a fair metric (heat brings more fatigue substitutions, fresh legs lift it).
+    const energyAt = (weather?: EngineWeather) => {
+      const orig = Math.random;
+      Math.random = mulberry32(7);
+      let ticks = 0;
+      let mean = 0;
+      try {
+        simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], {
+          ...(weather ? { weather } : {}),
+          onTick: (s) => {
+            if (++ticks === 400) mean = s.players.reduce((t, p) => t + p.energy, 0) / s.players.length;
+          },
+        });
+      } finally {
+        Math.random = orig;
+      }
+      return mean;
+    };
+    expect(energyAt("hot")).toBeLessThan(energyAt());
   });
 
   test("gkClaimChance takes the weather multiplier", () => {

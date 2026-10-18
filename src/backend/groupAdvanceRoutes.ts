@@ -7,7 +7,8 @@ import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedM
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import { isGroupWorld, laterDate, resolveReadyUntil } from "@/Domain/groupAdvance/groupAdvance";
-import { buildMatchEventFromRecording } from "@/Domain/advanceDay/matches";
+import { buildMatchEventFromRecording, withWeatherLog } from "@/Domain/advanceDay/matches";
+import { matchWeatherOf } from "@/backend/stadiumData";
 import { aggregatePendingDays } from "@/Domain/groupAdvance/pendingSummary";
 import type { DayLog } from "@/types/dayLogTypes";
 import type { PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
@@ -136,7 +137,9 @@ export const groupAdvanceRoutes = {
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, file.date);
       const home = fixture ? await saveService.getSquadById(saveId, fixture.home) : null;
       const away = fixture ? await saveService.getSquadById(saveId, fixture.away) : null;
-      const event = fixture && home && away ? buildMatchEventFromRecording(fixture, home, away, file.recording).event : null;
+      const event = fixture && home && away
+        ? withWeatherLog(buildMatchEventFromRecording(fixture, home, away, file.recording).event, matchWeatherOf(fixture, home))
+        : null;
       return Response.json({ date: file.date, fixtureId: file.fixtureId, event });
     }
     if (req.method !== "POST") return methodNotAllowed();

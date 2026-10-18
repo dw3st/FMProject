@@ -37,7 +37,8 @@ describe("weather in the quickSim", () => {
     for (let i = 0; i < 50; i++) {
       const a = quickSimMatch(base(i), mulberry32(i));
       const b = quickSimMatch({ ...base(i), weather: "cloudy" }, mulberry32(i));
-      expect(b.recording).toEqual(a.recording);
+      // durationMs is wall-clock time, not part of the draw.
+      expect({ ...b.recording, durationMs: 0 }).toEqual({ ...a.recording, durationMs: 0 });
     }
   });
   test("heat leaves less energy, cold more injuries (paired)", () => {
