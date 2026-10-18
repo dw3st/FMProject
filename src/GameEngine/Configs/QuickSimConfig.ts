@@ -226,6 +226,19 @@ export const QUICK_SIM_CONFIG = {
   ENERGY_DRAIN_BY_LINE: { GK: 35.7, DEF: 45.8, MID: 43.8, FWD: 47.7 } as Record<LineGroup, number>,
 
   /**
+   * Weather of the match (`.claude/rules/game/weather.md`): factors measured on the full engine
+   * (`scripts/weather-measure.ts`). xg multiplies both sides; the completions multiply the cross / long-ball
+   * completion rates; energyDrain the drain of every player; injury both sides' injury risk. Absent = 1.
+   */
+  WEATHER: {
+    rain:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 },
+    snow:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1 },
+    wind:  { xg: 1, crossCompletion: 0.85, longBallCompletion: 0.9, energyDrain: 1, injury: 1 },
+    hot:   { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1.08, injury: 1 },
+    cold:  { xg: 1, crossCompletion: 1, longBallCompletion: 1, energyDrain: 1, injury: 1.1 },
+  } as Record<string, { xg: number; crossCompletion: number; longBallCompletion: number; energyDrain: number; injury: number }>,
+
+  /**
    * Discipline (Etapa 12, `.claude/rules/game/discipline.md`): fouls, cards, penalties and offsides
    * per side, Poisson around the full engine's per-match means (`.claude/rules/game-engine/fouls.md`:
    * PL 11.3 fouls / 2.89 yellows / 0.15 reds / 0.24 penalties / 1.05 offsides per match, two teams).
