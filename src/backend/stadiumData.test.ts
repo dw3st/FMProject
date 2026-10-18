@@ -38,5 +38,6 @@ describe("matchWeatherOf", () => {
     const w = matchWeatherOf({ ...wFixture, neutral: true }, wHome);
     expect(w.effective).toBe("sunny");
     expect(w.covered).toBe(false);
+    expect(w.weather).toBe(matchConditions(wFixture, null).weather);
   });
 });

@@ -896,7 +896,13 @@ export function buildQuickMatchEvent(
 /** The weather of the match goes to the day log (`weather.md`). */
 export function withWeatherLog(event: MatchEvent, weather: WeatherOfMatch | undefined): MatchEvent {
   if (!weather) return event;
-  return { ...event, weather: weather.weather, ...(weather.covered && weather.weather !== weather.effective ? { weatherCovered: true as const } : {}) };
+  const differs = weather.weather !== weather.effective;
+  return {
+    ...event,
+    weather: weather.weather,
+    ...(differs ? { weatherEffective: weather.effective } : {}),
+    ...(differs && weather.covered ? { weatherCovered: true as const } : {}),
+  };
 }
 
 /** The referee's name goes to the day log (never his rigor). */

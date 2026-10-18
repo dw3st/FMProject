@@ -45,7 +45,8 @@ export function matchWeatherOf(
   fixture: { id: string; date: string; home: string; away: string; competition?: string; neutral?: boolean },
   home: { id: string; country?: string | null; venue?: { name?: string; city?: string } | null },
 ): WeatherOfMatch {
-  if (fixture.neutral) return { weather: "sunny", covered: false, effective: "sunny" };
+  // A neutral venue keeps the drawn weather (the preview shows it) but plays without its effect.
+  if (fixture.neutral) return { weather: matchConditions(fixture, null).weather, covered: false, effective: "sunny" };
   const c = matchConditions(fixture, home.country ?? null);
   const { sun } = matchSun(home, undefined, fixture.date, c.weather);
   return { weather: c.weather, covered: sun.covered, effective: effectiveWeather(c.weather, sun.covered) };
