@@ -154,3 +154,11 @@ coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Velti
 - Estádio real: a sombra de sol dos jogadores cresce de `SUN_SHADOW.LEN` (sol a `REAL.LOW_FROM` = 35° ou mais) até
   `LEN_LOW` (1,9 raio, sol a `REAL.LOW_TO` = 8° ou menos).
 
+### Sombra redonda dos jogadores (4.31.3)
+
+A pedido do usuário a sombra de sol (e a dos refletores) deixou de ser uma faixa afinando: é um oval suave logo
+embaixo do jogador (`castPolygons`, `playerShadow.ts`), com o centro a `SUN_SHADOW.LEN` raio do centro do marcador na
+direção oposta à luz, raios `WIDTH` ao longo e `TIP` através; com o sol baixo vai até `LEN_LOW` / `WIDTH_LOW` (0,55 /
+1,25). À noite, 4 ovais fracos dos refletores. A sombra de contato some aos poucos quando há sol ou refletor
+(já fica tudo embaixo).
+
