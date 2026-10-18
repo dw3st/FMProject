@@ -162,3 +162,11 @@ direção oposta à luz, raios `WIDTH` ao longo e `TIP` através; com o sol baix
 1,25). À noite, 4 ovais fracos dos refletores. A sombra de contato some aos poucos quando há sol ou refletor
 (já fica tudo embaixo).
 
+### Vinheta e brilho dos refletores (4.31.4)
+
+Report de tester (todas as partidas noturnas com "arcos" claros nos cantos): o brilho era 5 círculos sobrepostos e a
+vinheta 6 faixas, que viravam degraus visíveis numa tela grande. Agora são degradês radiais assados uma vez em texturas
+de canvas 256 × 256 (`LIGHTING.GRADIENTS`), esticados: a vinheta sobre o canvas inteiro, o brilho como um sprite em cada
+canto (raio `GLOW_RADIUS` × o lado maior). `updateLight` só muda a opacidade (`drawGradients`); texturas liberadas na
+desmontagem.
+

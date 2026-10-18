@@ -123,6 +123,15 @@ export const LIGHTING = {
    * players' sun shadow grows from LEN (sun at LOW_FROM° or higher) to SUN_SHADOW.LEN_LOW (LOW_TO° or lower).
    */
   REAL: { SETBACK: 6, MAX_REACH: 12, FADE_ELEVATION: 3, LOW_FROM: 35, LOW_TO: 8 },
+  /**
+   * Vignette and floodlight glow (4.31.4): radial gradient stops [position 0..1, alpha] baked into textures; the
+   * glow reaches GLOW_RADIUS × the canvas's longer side from each corner. STRENGTH scales the night's values.
+   */
+  GRADIENTS: {
+    VIGNETTE: [[0, 0], [0.55, 0], [0.8, 0.35], [1, 1]] as [number, number][],
+    GLOW: [[0, 1], [0.25, 0.7], [0.55, 0.3], [0.8, 0.08], [1, 0]] as [number, number][],
+    VIGNETTE_STRENGTH: 0.7, GLOW_RADIUS: 0.5, GLOW_STRENGTH: 1,
+  },
   /** Covered stadium: the lights always on at least FLOOD, the night outside only NIGHT_SCALE as dark. */
   COVERED: { FLOOD: 0.6, NIGHT_SCALE: 0.5 },
   /**

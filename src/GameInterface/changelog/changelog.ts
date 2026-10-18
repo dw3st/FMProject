@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.31.4",
+    date: "2026-10-18",
+    items: [
+      { pt: "Nos jogos à noite, o brilho dos refletores nos cantos do campo é um degradê suave, sem os arcos marcados.", en: "In night matches, the floodlight glow in the pitch's corners is a smooth fade, without the visible arcs." },
+    ],
+  },
+  {
     version: "4.31.3",
     date: "2026-10-17",
     items: [

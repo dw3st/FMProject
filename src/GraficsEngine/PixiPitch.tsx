@@ -246,23 +246,7 @@ function drawLight(
   if (l.warm.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.warm.color, alpha: l.warm.alpha });
   if (l.veil.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.veil.color, alpha: l.veil.alpha });
   if (l.dark.alpha > 0.005) g.rect(0, 0, w, h).fill({ color: l.dark.color, alpha: l.dark.alpha });
-  // Vignette: darker bands toward the canvas edges (inside strokes, fading inward).
-  if (l.vignette > 0.005) {
-    const steps = 6;
-    const band = Math.min(w, h) * 0.08;
-    for (let i = 0; i < steps; i++) {
-      const inset = i * band;
-      g.rect(inset, inset, w - 2 * inset, h - 2 * inset)
-        .stroke({ width: band, color: 0x000000, alpha: (l.vignette / steps) * (1 - i / steps), alignment: 1 });
-    }
-  }
-  // Floodlight glow in the four corners.
-  if (l.flood > 0.005) {
-    const r = Math.max(w, h) * 0.45;
-    for (const [cx, cy] of [[0, 0], [w, 0], [0, h], [w, h]] as const) {
-      for (let i = 1; i <= 5; i++) g.circle(cx, cy, (r * i) / 5).fill({ color: 0xffffff, alpha: (LIGHTING.NIGHT.FLOOD * l.flood) / 5 });
-    }
-  }
+  // Vignette and floodlight glow: smooth gradient sprites (`lightGradients`), set by `updateLight`.
 }
 
 /**
@@ -764,6 +748,48 @@ export function PixiPitch({
         shadeSprite.visible = true;
       };
       app.stage.addChild(lightGraphics);
+      // Vignette and floodlight glow (4.31.4): radial gradients baked once into small canvas textures and stretched,
+      // so they fade smoothly (drawn as stacked circles / strokes they showed as bands on a large screen).
+      const gradientTexture = (stops: [number, number][], rgb: string): Texture => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 256;
+        const ctx = c.getContext('2d')!;
+        const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+        for (const [at, alpha] of stops) grad.addColorStop(at, `rgba(${rgb},${alpha})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        return Texture.from(c);
+      };
+      const G = LIGHTING.GRADIENTS;
+      const vignetteTexture = gradientTexture(G.VIGNETTE, '0,0,0');
+      const glowTexture = gradientTexture(G.GLOW, '255,255,255');
+      const vignetteSprite = new Sprite(vignetteTexture);
+      vignetteSprite.eventMode = 'none';
+      vignetteSprite.visible = false;
+      // The texture's circle (radius 128) reaches the canvas corners: the edges darken, the middle stays clear.
+      vignetteSprite.anchor.set(0.5);
+      vignetteSprite.position.set(canvasWidth / 2, canvasHeight / 2);
+      vignetteSprite.width = canvasWidth * Math.SQRT2;
+      vignetteSprite.height = canvasHeight * Math.SQRT2;
+      app.stage.addChild(vignetteSprite);
+      const glowRadius = Math.max(canvasWidth, canvasHeight) * G.GLOW_RADIUS;
+      const glowSprites = ([[0, 0], [canvasWidth, 0], [0, canvasHeight], [canvasWidth, canvasHeight]] as const).map(([x, y]) => {
+        const sp = new Sprite(glowTexture);
+        sp.eventMode = 'none';
+        sp.visible = false;
+        sp.anchor.set(0.5);
+        sp.position.set(x, y);
+        sp.width = sp.height = glowRadius * 2;
+        app.stage.addChild(sp);
+        return sp;
+      });
+      const drawGradients = (l: Lighting | null) => {
+        const v = l ? l.vignette * G.VIGNETTE_STRENGTH : 0;
+        vignetteSprite.visible = v > 0.005;
+        vignetteSprite.alpha = v;
+        const f = l ? LIGHTING.NIGHT.FLOOD * l.flood * G.GLOW_STRENGTH : 0;
+        for (const sp of glowSprites) { sp.visible = f > 0.005; sp.alpha = f; }
+      };
       let currentLight: Lighting | null = null;
       let lastLightKey = "";
       let shadowKey = "";
@@ -772,7 +798,7 @@ export function PixiPitch({
       const updateLight = () => {
         const li = lightingRef.current;
         if (!li) {
-          if (currentLight) { lightGraphics.clear(); drawShade(null, null); currentLight = null; lastLightKey = ""; shadowKey = ""; refreshShadows(null); }
+          if (currentLight) { lightGraphics.clear(); drawShade(null, null); drawGradients(null); currentLight = null; lastLightKey = ""; shadowKey = ""; refreshShadows(null); }
           return;
         }
         const clock = li.clockOverride ?? matchClockMinutes(stateRef.current, minutesOf(li.kickoff));
@@ -784,6 +810,7 @@ export function PixiPitch({
         currentLight = matchLighting({ clock, sunset: minutesOf(li.sunset), weather, sun: li.sun, date: li.date });
         drawShade(currentLight, currentLight.stand.profile);
         drawLight(lightGraphics, currentLight, toPixel, canvasWidth, canvasHeight);
+        drawGradients(currentLight);
         // Player shadows: only when they actually change (the sun shadow grows slowly toward sunset).
         const sk = `${mirrorRef.current}|${currentLight.shadows.map((s) => `${s.kind},${s.angle.toFixed(2)},${s.length.toFixed(2)},${s.alpha.toFixed(3)}`).join(";")}`;
         if (sk !== shadowKey) { shadowKey = sk; refreshShadows(currentLight); }
@@ -2416,6 +2443,8 @@ export function PixiPitch({
         // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.
         shadeTexture?.destroy(true);
         shadeTexture = null;
+        vignetteTexture.destroy(true);
+        glowTexture.destroy(true);
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };
