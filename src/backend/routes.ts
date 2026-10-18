@@ -76,7 +76,8 @@ import { groupTable } from "@/Domain/continental/groupTable";
 import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
-import { matchSun } from "@/backend/stadiumData";
+import { matchSun, matchWeatherOf } from "@/backend/stadiumData";
+import type { WeatherOfMatch } from "@/Domain/matchday/matchWeatherEffect";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -624,6 +625,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
     // the live pitch draws the light of that time (spec 2026-10-16-match-lighting).
     let conditions: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null = null;
     let sunSide: StadiumSun | null = null;
+    // Weather that plays (`.claude/rules/game/weather.md`): the same `matchWeatherOf` the day advance uses.
+    let weatherEffect: WeatherOfMatch | null = null;
     if (matchFixture && opponentSquad) {
       const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
       const c = matchConditions(matchFixture, matchFixture.neutral ? null : homeSquad.country ?? null);
@@ -632,6 +635,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       const ms = matchSun(homeSquad, matchFixture.neutral ? matchFixture.id : undefined, matchDate, c.weather);
       conditions = { kickoff: c.kickoff, weather: c.weather, sunset: ms.sunset ?? c.sunset, ...(matchDate ? { date: matchDate } : {}) };
       sunSide = ms.sun;
+      weatherEffect = matchWeatherOf(matchFixture, homeSquad);
     }
     // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
     const crowd = saveIdParam && matchFixture && opponentSquad
@@ -665,6 +669,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       pitchCondition,
       pitch,
       conditions,
+      weatherEffect,
       sunSide,
       crowd,
       managers,
