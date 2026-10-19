@@ -34,6 +34,7 @@ import {
 } from "@/backend/social/socialStore";
 import { cleanMessageBody, rateLimit, type RateRule } from "@/Domain/social/message";
 import { dmRoomId, worldRoomId, worldRoomParam } from "@/Domain/social/rooms";
+import { validateNickname } from "@/Domain/social/nickname";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import type { ChatMessageView, FriendsResponse, SocialErrorCode, SocialMe } from "@/types/socialTypes";
 
@@ -115,7 +116,9 @@ function myNickname(userId: string): string | null {
 function meView(userId: string): SocialMe {
   const friendCode = ensureFriendCode(userId);
   const u = getSocialUser(userId)!;
-  return { nickname: u.nickname, friendCode };
+  // A nickname a later rule made invalid (shaped like a friend code) shows as unset: the panel asks for a new one.
+  const nickname = u.nickname !== null && validateNickname(u.nickname) === null ? u.nickname : null;
+  return { nickname, friendCode };
 }
 
 /** Someone `me` may send a request to; null when unknown, oneself or blocked either way (all answer 404). */

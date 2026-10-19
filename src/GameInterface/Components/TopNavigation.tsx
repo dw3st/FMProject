@@ -74,29 +74,45 @@ function formatTopBarDate(date: string, lang: string): string {
  * (#138: back from the match the bar stayed in icons with plenty of room). When the labelled row
  * only fits with tighter gaps it keeps the labels with those gaps (#139: in Portuguese, with the
  * tester's report button, the row was ~60px short at the full frame and fell back to icons).
+ * Nothing is decided before the bar is `settled` (the save loaded, so the day block has its real
+ * width, and the fonts arrived): until then the tabs keep the mode of the previous page, kept per
+ * tab in `sessionStorage`, so every page load does not flash labels and then shrink.
  */
-function useCompactTabs(tabCount: number) {
+const TABS_MODE_KEY = "fm.topnav.tabsMode";
+
+function storedTabsMode(): TabsMode {
+  try {
+    const v = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(TABS_MODE_KEY) : null;
+    return v === "tight" || v === "icons" ? v : "labels";
+  } catch {
+    return "labels";
+  }
+}
+
+function useCompactTabs(tabCount: number, settled: boolean) {
   const outerRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<TabsMode>("labels");
+  const [mode, setMode] = useState<TabsMode>(storedTabsMode);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
     const measure = measureRef.current;
-    if (!outer || !measure) return;
+    if (!outer || !measure || !settled) return;
     let alive = true;
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
     const check = () => {
-      if (!alive) return;
+      if (!alive || fonts?.status === "loading") return;
       const tightSaving =
         Math.max(0, tabCount - 1) * (TAB_GAP - TAB_GAP_TIGHT) + tabCount * (ICON_GAP - ICON_GAP_TIGHT);
       const next = compactTabsFor(measure.offsetWidth, outer.clientWidth, tightSaving);
-      if (next !== null) setMode(next);
+      if (next === null) return;
+      setMode(next);
+      try { sessionStorage.setItem(TABS_MODE_KEY, next); } catch { /* storage off: no memory */ }
     };
     check();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
     ro?.observe(outer);
     ro?.observe(measure);
-    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
     void fonts?.ready.then(check);
     fonts?.addEventListener("loadingdone", check);
     const onVisible = () => { if (!document.hidden) check(); };
@@ -111,7 +127,7 @@ function useCompactTabs(tabCount: number) {
       window.removeEventListener("pageshow", check);
       window.removeEventListener("resize", check);
     };
-  }, [tabCount]);
+  }, [tabCount, settled]);
 
   return { outerRef, measureRef, mode };
 }
@@ -138,7 +154,9 @@ export function TopNavigation({
   const currentUser = useCurrentUser();
   const isTester = !!currentUser?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
-  const { outerRef, measureRef, mode } = useCompactTabs(navItems.length);
+  // The day block has its real width once the save is in (or there is no save to wait for).
+  const settled = !session || !!currentDate || unemployed;
+  const { outerRef, measureRef, mode } = useCompactTabs(navItems.length, settled);
   const compact = mode === "icons";
 
   const todayFixture = currentDate && mySquadId

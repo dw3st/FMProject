@@ -6,8 +6,10 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 ## Regra
 
 - Apelido único (3–20, `[A-Za-z0-9_.-]`, sem diferenciar maiúsculas, sem `admin`/`fmproject`/`westlab`/moderador e
-  afins), escolhido na primeira abertura de Amigos e **fixo** depois disso: fica atrelado à conta (e-mail) para sempre,
-  sem troca (`nickname_changed_at` guarda a data da escolha). Código de amigo `FM-XXXX-XXXX` (base32 sem
+  afins, nem começar com `fm-`, o formato do código de amigo — um apelido igual a um código aparecia no chat como se fosse
+  o código), escolhido na primeira abertura de Amigos e **fixo** depois disso: fica atrelado à conta (e-mail) para sempre,
+  sem troca (`nickname_changed_at` guarda a data da escolha). Um apelido gravado que uma regra nova tornou inválido
+  aparece como ausente no `/me` e pode ser trocado uma vez por um válido. Código de amigo `FM-XXXX-XXXX` (base32 sem
   0/1/I/O), gerado na primeira chamada de `GET /api/social/me`.
 - Amizade só por pedido aceito (apelido ou código); pedido cruzado vira amizade na hora. Máximo 200 amigos e 50
   pedidos enviados pendentes.

@@ -40,7 +40,7 @@ export function OptionChips<K extends string>({
           title={o.title}
           disabled={disabled || o.disabled}
           onClick={() => onChange(o.key)}
-          className={columns ? "w-full h-full min-w-0" : ""}
+          className={columns ? "w-full h-full min-w-0 !justify-start" : ""}
         >
           {o.label}
         </Chip>

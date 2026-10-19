@@ -86,7 +86,8 @@ export type SetNicknameResult =
 
 /**
  * Sets the nickname once: after the first choice it is tied to the account for good (`nicknameLocked`). The same
- * name again is a no-op.
+ * name again is a no-op. A stored nickname that a later rule made invalid (e.g. one shaped like a friend code) can be
+ * replaced once by a valid one.
  */
 export function setNickname(userId: string, raw: string, now: number): SetNicknameResult {
   if (validateNickname(raw)) return { ok: false, error: "invalidNickname" };
@@ -94,13 +95,14 @@ export function setNickname(userId: string, raw: string, now: number): SetNickna
   const user = getSocialUser(userId);
   if (!user) throw new Error(`unknown user ${userId}`);
   if (user.nickname === nickname) return { ok: true, nickname };
-  if (user.nickname !== null) return { ok: false, error: "nicknameLocked" };
+  const previous = user.nickname;
+  if (previous !== null && validateNickname(previous) === null) return { ok: false, error: "nicknameLocked" };
   const owner = findUserByNickname(nickname);
   if (owner && owner.id !== userId) return { ok: false, error: "nicknameTaken" };
   try {
     const r = db
-      .prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ? AND nickname IS NULL")
-      .run(nickname, now, userId);
+      .prepare("UPDATE users SET nickname = ?, nickname_changed_at = ? WHERE id = ? AND nickname IS ?")
+      .run(nickname, now, userId, previous);
     if (r.changes === 0) return { ok: false, error: "nicknameLocked" }; // set by a concurrent request
   } catch {
     return { ok: false, error: "nicknameTaken" }; // lost a race on the unique index

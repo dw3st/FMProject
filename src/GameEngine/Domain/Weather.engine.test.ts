@@ -42,10 +42,13 @@ describe("weather in the engine", () => {
 
   test("heat drains more energy", () => {
     // Mean energy on the pitch after 400 ticks (first half, before any substitution): the drain itself. The end-of-match
-    // average is not a fair metric (heat brings more fatigue substitutions, fresh legs lift it).
-    const energyAt = (weather?: EngineWeather) => {
+    // average is not a fair metric (heat brings more fatigue substitutions, fresh legs lift it). Averaged over a few
+    // seeds: one seed alone flips when module state left by earlier test files moves the play (full-suite order).
+    const energyAt = (weather?: EngineWeather) =>
+      [3, 7, 11, 19].reduce((t, seed) => t + energyAtSeed(seed, weather), 0) / 4;
+    const energyAtSeed = (seed: number, weather?: EngineWeather) => {
       const orig = Math.random;
-      Math.random = mulberry32(7);
+      Math.random = mulberry32(seed);
       let ticks = 0;
       let mean = 0;
       try {

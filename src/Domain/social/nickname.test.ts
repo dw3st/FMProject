@@ -18,7 +18,7 @@ describe("validateNickname", () => {
     for (const n of ["ab c", "joão", "a@b", "<b>hi</b>"]) expect(validateNickname(n)).toBe("chars");
   });
   test("rejects reserved words in any case, also inside the name", () => {
-    for (const n of ["admin", "ADMIN", "SuperAdmin", "fmproject", "FM_westlab", "Moderator", "root", "Suporte"]) {
+    for (const n of ["admin", "ADMIN", "SuperAdmin", "fmproject", "FM_westlab", "Moderator", "root", "Suporte", "FM-W83P-TXY7", "fm-dave"]) {
       expect(validateNickname(n)).toBe("reserved");
     }
   });

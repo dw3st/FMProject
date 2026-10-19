@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.32.1",
+    date: "2026-10-19",
+    items: [
+      {
+        pt: "Nacionalidades do novo técnico alinhadas à esquerda.",
+        en: "New manager nationalities are now left-aligned.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A barra superior não muda mais de tamanho ao abrir cada tela.",
+        en: "The top bar no longer resizes when each screen opens.",
+      },
+      {
+        pt: "O apelido não pode mais parecer um código de amigo (FM-...); quem tinha um assim escolhe outro ao abrir Amigos.",
+        en: "Nicknames can no longer look like a friend code (FM-...); anyone with one picks a new one when opening Friends.",
+      },
+    ],
+  },
+  {
     version: "4.32",
     date: "2026-10-18",
     items: [

@@ -9,6 +9,7 @@ import {
   setNickname,
 } from "@/backend/social/socialStore";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
+import { db } from "@/backend/db";
 
 describe("nickname", () => {
   test("is unique ignoring case", () => {
@@ -22,6 +23,15 @@ describe("nickname", () => {
     const u = makeUser();
     expect(setNickname(u.id, "ab", Date.now())).toEqual({ ok: false, error: "invalidNickname" });
     expect(setNickname(u.id, "theAdmin", Date.now())).toEqual({ ok: false, error: "invalidNickname" });
+    expect(setNickname(u.id, "FM-W83P-TXY7", Date.now())).toEqual({ ok: false, error: "invalidNickname" });
+  });
+
+  test("a stored nickname shaped like a friend code can be replaced once", () => {
+    const u = makeUser();
+    db.prepare("UPDATE users SET nickname = ? WHERE id = ?").run(`FM-${uniqueNick().slice(0, 8)}`, u.id);
+    const next = uniqueNick();
+    expect(setNickname(u.id, next, Date.now())).toEqual({ ok: true, nickname: next });
+    expect(setNickname(u.id, uniqueNick(), Date.now())).toEqual({ ok: false, error: "nicknameLocked" });
   });
 
   test("the nickname is set once and then locked; the same name is a no-op", () => {

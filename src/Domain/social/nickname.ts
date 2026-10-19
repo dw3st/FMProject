@@ -5,6 +5,8 @@ const NICKNAME_RE = /^[A-Za-z0-9_.-]+$/;
 const RESERVED_EXACT = ["mod", "root", "system", "sistema", "support", "suporte", "staff", "null", "undefined"];
 /** Names that may not appear anywhere inside a nickname. */
 const RESERVED_PARTS = ["admin", "fmproject", "westlab", "moderator", "moderador"];
+/** Prefix of friend codes (`FM-XXXX-XXXX`): a nickname that looks like a code reads as one in the chat. */
+const RESERVED_PREFIX = "fm-";
 
 export type NicknameError = "length" | "chars" | "reserved";
 
@@ -22,7 +24,9 @@ export function validateNickname(raw: string): NicknameError | null {
   if (n.length < SOCIAL.NICKNAME_MIN || n.length > SOCIAL.NICKNAME_MAX) return "length";
   if (!NICKNAME_RE.test(n)) return "chars";
   const k = n.toLowerCase();
-  if (RESERVED_EXACT.includes(k) || RESERVED_PARTS.some((p) => k.includes(p))) return "reserved";
+  if (RESERVED_EXACT.includes(k) || RESERVED_PARTS.some((p) => k.includes(p)) || k.startsWith(RESERVED_PREFIX)) {
+    return "reserved";
+  }
   return null;
 }
 
