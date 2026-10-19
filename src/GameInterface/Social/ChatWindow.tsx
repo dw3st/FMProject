@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import { Icon } from "@/GameInterface/Icons";
+import { TauntLine } from "@/GameInterface/Social/TauntLine";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
 import type { FriendStatus, SocialErrorCode } from "@/types/socialTypes";
@@ -124,7 +125,7 @@ export function ChatWindow({ room }: { room: string }) {
               <div key={m.id} className={`flex flex-col max-w-[85%] ${m.mine ? "self-end items-end" : "self-start items-start"}`}>
                 <div className={`rounded-md px-3 py-1.5 text-sm whitespace-pre-wrap break-words ${m.mine ? "bg-primary/15 text-foreground" : "bg-secondary/40 text-foreground"}`}>
                   {room.startsWith("world:") && !m.mine && <span className="block font-semibold">{m.from}</span>}
-                  {m.body}
+                  {m.taunt ? <TauntLine taunt={m.taunt} /> : m.body}
                 </div>
                 <span className="text-sm text-muted-foreground tabular-nums">{time(m.at)}</span>
               </div>
