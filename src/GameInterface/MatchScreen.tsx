@@ -94,6 +94,9 @@ import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
+import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
+import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
+import type { LivePhase } from "@/types/rivalsTypes";
 import {
   clearPendingRecording,
   isTerminalGroupError,
@@ -320,6 +323,16 @@ export function MatchScreen() {
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matchEndFinalizeRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
+  // Rivals (multiplayer part 6): in a friends' league the friends' live scores show above the pitch, and this
+  // match's score goes to them (`live_score`). Never in solo, never in a national team's game.
+  const liveTarget = useMemo(() => {
+    const s = loadSession();
+    return s?.groupAdvance && s.saveId && s.seatId ? { saveId: s.saveId, seatId: s.seatId } : null;
+  }, []);
+  const liveRivals = useLiveRivals(liveTarget);
+  const sendLiveRef = useRef(liveRivals.send);
+  sendLiveRef.current = liveRivals.send;
+  const liveFixtureRef = useRef<string | null>(null);
   const matchContextRef = useRef<{
     fixture: Fixture;
     mySquadId: string;
@@ -557,6 +570,7 @@ export function MatchScreen() {
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
+        liveFixtureRef.current = liveTarget && !data.national ? (data.matchDay?.fixtureId ?? data.fixture.id) : null;
         setVenueName(homeSquad.venue?.name ?? null);
         setTouchline({
           crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,
@@ -634,6 +648,28 @@ export function MatchScreen() {
       setGoalFlash(data);
       goalTimerRef.current = setTimeout(() => setGoalFlash(null), 2800);
     });
+  }, []);
+
+  useEffect(() => {
+    const send = (phase: LivePhase, minute: number, score: { A: number; B: number }, scorer?: string) => {
+      const fixtureId = liveFixtureRef.current;
+      if (!fixtureId) return;
+      sendLiveRef.current({
+        fixtureId, phase, minute: Math.max(0, Math.min(130, minute)),
+        score: { for: score.A, against: score.B }, ...(scorer ? { scorer } : {}),
+      });
+    };
+    const now = () => gameStateRef.current;
+    const offs = [
+      gameBus.on("matchStart", () => send("start", 0, now()?.score ?? { A: 0, B: 0 })),
+      gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
+      gameBus.on("halfTime", (e) => send("half", 45, e.score)),
+      gameBus.on("matchEnd", (e) => {
+        const s = now();
+        send("end", s ? matchMinute(s) : 90, e.score);
+      }),
+    ];
+    return () => offs.forEach((off) => off());
   }, []);
 
   const showNotice = useCallback((text: string, tone: "danger" | "warn" | "info") => {
@@ -1395,6 +1431,8 @@ export function MatchScreen() {
           </div>
         </div>
       </header>
+
+      {liveTarget && <LiveRivalsStrip saveId={liveTarget.saveId} live={liveRivals.live} highlight={liveRivals.highlight} />}
 
       {/* Main Match View */}
       <main className="flex-1 flex justify-center overflow-hidden min-h-0">
