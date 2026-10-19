@@ -9,6 +9,9 @@ import { memberOf } from "@/backend/auth/saveOwnership";
 import { canWrite, resolveRoom, roomParamFor, roomRecipients } from "@/backend/social/roomAccess";
 import { friendIds, getSocialUser, isBlocked, isWorldMember, type ChatMessageRow } from "@/backend/social/socialStore";
 import { isSaveIdShape } from "@/Domain/social/rooms";
+import { acceptLiveScore } from "@/backend/rivals/liveScores";
+import { parseLiveFrame } from "@/Domain/rivals/liveScore";
+import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes";
 
 export interface WsData {
@@ -38,6 +41,7 @@ const MINUTE_MS = 60_000;
 interface SocketLimits {
   hello: number[];
   ping: number[];
+  live: number[];
   typing: Map<string, number>;
 }
 
@@ -47,7 +51,7 @@ const limits = new WeakMap<SocialSocket, SocketLimits>();
 function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolean {
   let l = limits.get(ws);
   if (!l) {
-    l = { hello: [], ping: [], typing: new Map() };
+    l = { hello: [], ping: [], live: [], typing: new Map() };
     limits.set(ws, l);
   }
   if (event.type === "typing") {
@@ -57,14 +61,15 @@ function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolea
     l.typing.set(event.room, now);
     return true;
   }
-  const max = event.type === "hello" ? HELLO_PER_MINUTE : PING_PER_MINUTE;
-  const recent = l[event.type].filter((t) => now - t < MINUTE_MS);
+  const key = event.type === "live_score" ? "live" : event.type;
+  const max = key === "hello" ? HELLO_PER_MINUTE : key === "live" ? RIVALS.LIVE_PER_MINUTE : PING_PER_MINUTE;
+  const recent = l[key].filter((t) => now - t < MINUTE_MS);
   if (recent.length >= max) {
-    l[event.type] = recent;
+    l[key] = recent;
     return false;
   }
   recent.push(now);
-  l[event.type] = recent;
+  l[key] = recent;
   return true;
 }
 const sockets = new Map<string, Set<SocialSocket>>();
@@ -207,6 +212,10 @@ function parseClientEvent(raw: unknown): ClientEvent | null {
     return { type: "hello", saveId: typeof e.saveId === "string" ? e.saveId : null, hidden: e.hidden === true };
   }
   if (e.type === "typing" && typeof e.room === "string") return { type: "typing", room: e.room };
+  if (e.type === "live_score") {
+    const frame = parseLiveFrame(e);
+    return frame ? { type: "live_score", ...frame } : null;
+  }
   return null;
 }
 
@@ -228,6 +237,12 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
   const { userId } = ws.data;
   if (event.type === "typing") {
     relayTyping(userId, event.room);
+    return;
+  }
+  if (event.type === "live_score") {
+    // Rivals (part 6): a friend's live score. Never a pong, never presence; a refused frame is silent.
+    const { type: _type, ...frame } = event;
+    await acceptLiveScore(userId, frame, notifyUser);
     return;
   }
   if (event.type === "hello") {

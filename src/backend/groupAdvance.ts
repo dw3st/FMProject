@@ -8,6 +8,7 @@ import { getSocialUser } from "@/backend/social/socialStore";
 import { notifyUser } from "@/backend/social/realtime";
 import { listWorldCodeIds } from "@/backend/worlds/worldStore";
 import { recordDayResults } from "@/backend/rivals/rivalsWorld";
+import { clearLiveForDay } from "@/backend/rivals/liveScores";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import {
@@ -250,6 +251,7 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
   }
   // Rivals (part 6): the human clubs' games of the day go to the feed; the members get them after the step.
   const results = await recordDayResults(service, saveId, currentDate, outcome.payload.events, seats);
+  clearLiveForDay(saveId, currentDate, deps.notify);
   await updateAdvance(service, saveId, noError(world.advance));
   return { kind: "ran", date: newDate, target: plan.target, waitingFor: [], results };
 }

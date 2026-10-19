@@ -22,7 +22,7 @@ describe("rivals world", () => {
     addSaveMember(id, ua.id, "a", "owner");
     const seats = (await saveService.listSeats(id)).map(({ seatId, seat }) => ({ seatId, seat }));
     const first = await recordDayResults(saveService, id, "2027-03-10", day, seats);
-    expect(first.map((r) => [r.seatId, r.nickname, r.score.for])).toEqual([["a", ua.nickname, 2], ["b", "Manager b", 0]]);
+    expect(first.map((r) => [r.seatId, r.nickname, r.score.for])).toEqual([["a", ua.nickname!, 2], ["b", "Manager b", 0]]);
     const again = await recordDayResults(saveService, id, "2027-03-10", day, seats);
     expect(again).toHaveLength(2);
     expect(await saveService.getRivalsFeed(id)).toHaveLength(2);

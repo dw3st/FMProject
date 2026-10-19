@@ -48,4 +48,33 @@ describe("group advance: rivals results", () => {
     expect(ev.results.map((r) => [r.seatId, r.score.for, r.score.against])).toEqual([["a", 0, 3], ["b", 3, 0]]);
     expect((await saveService.getRivalsFeed(id)).map((r) => r.seatId).sort()).toEqual(["a", "b"]);
   });
+
+  test("the day running clears the live scores of that day", async () => {
+    const { acceptLiveScore, liveScoresOf, setLiveResolver, resetLiveScores } = await import("@/backend/rivals/liveScores");
+    const id = await fakeWorld({ seatIds: ["a", "b"], date: D, seats: { a: { readyUntil: "2027-03-11" }, b: { readyUntil: "2027-03-11" } } });
+    created.push(id);
+    const ua = makeUser(uniqueNick());
+    const ub = makeUser(uniqueNick());
+    addSaveMember(id, ua.id, "a", "owner");
+    addSaveMember(id, ub.id, "b", "member");
+    setLiveResolver(async () => ({
+      base: { seatId: "a", nickname: "a", clubId: "club-a", clubName: "A", opponentId: "x", opponentName: "X", home: true, fixtureId: "f1", date: D },
+      scorers: [],
+    }));
+    await acceptLiveScore(ua.id, { saveId: id, fixtureId: "f1", phase: "start", minute: 0, score: { for: 0, against: 0 } }, () => {});
+    expect(liveScoresOf(id)).toHaveLength(1);
+    const notified: ServerEvent[] = [];
+    await kickWorld(id, {
+      service: saveService, now: () => Date.now(), notify: (_u, e) => notified.push(e),
+      matchDates: async () => [], matchOn: async () => null,
+      runDay: async (saveId) => {
+        const date = (await saveService.getMeta(saveId))!.currentDate!;
+        await saveService.updateMeta(saveId, { currentDate: addDays(date, 1) });
+        return { ok: true, seats: {}, payload: { newDate: addDays(date, 1) } };
+      },
+    });
+    expect(liveScoresOf(id)).toEqual([]);
+    expect(notified).toContainEqual({ type: "friend_live", saveId: id, seatId: "a", live: null });
+    resetLiveScores();
+  });
 });
