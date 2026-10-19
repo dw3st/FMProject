@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.34",
+    date: "2026-10-19",
+    items: [
+      {
+        pt: "Liga de amigos: o resultado de cada jogo dos amigos aparece no canto da tela assim que o dia roda.",
+        en: "Friends' league: each of your friends' results shows in the corner as soon as the day is played.",
+      },
+      {
+        pt: "Nova aba Rivais na liga: posição, forma, último resultado e próximo jogo de cada amigo, e a aba Resultados com todos os jogos.",
+        en: "New Rivals tab in the league: each friend's position, form, last result and next game, plus a Results tab with every game.",
+      },
+      {
+        pt: "Placar ao vivo dos amigos que estão jogando, inclusive numa faixa acima do campo durante a sua partida.",
+        en: "Live scores of friends who are playing, including a strip above the pitch during your own match.",
+      },
+      {
+        pt: "Resenha: reaja aos jogos dos amigos com um ícone ou uma frase pronta, que vai para o chat da liga.",
+        en: "Banter: react to your friends' games with an icon or a ready line, posted to the league chat.",
+      },
+    ],
+  },
+  {
     version: "4.33",
     date: "2026-10-19",
     items: [
