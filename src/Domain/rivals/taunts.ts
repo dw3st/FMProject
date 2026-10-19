@@ -15,7 +15,7 @@ const ids = (group: TauntGroup): string[] => [1, 2, 3, 4].map((n) => `${group}_$
 
 export const TAUNTS: Record<TauntGroup, readonly string[]> = Object.fromEntries(
   TAUNT_GROUPS.map((g) => [g, ids(g)]),
-) as Record<TauntGroup, readonly string[]>;
+) as unknown as Record<TauntGroup, readonly string[]>;
 
 export const ALL_TAUNT_IDS: readonly string[] = TAUNT_GROUPS.flatMap((g) => TAUNTS[g]);
 
