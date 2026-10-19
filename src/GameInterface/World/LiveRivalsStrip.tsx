@@ -38,7 +38,7 @@ export function LiveRivalsStrip({ saveId, live, highlight }: {
                 <ClubLogo logoUrl={squadLogoUrl(l.clubId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                 <span className="font-semibold">{l.nickname}</span>
                 <span>· {l.score.for}–{l.score.against}</span>
-                <span className="text-muted-foreground">· {l.status === "live" ? t("rivals.liveMinute", { minute: l.minute }) : t(`rivals.${l.status}Line`, { score: `${l.score.for}–${l.score.against}` })}</span>
+                <span className="text-muted-foreground">· {l.status === "live" ? t("rivals.liveMinute", { minute: l.minute }) : t(`rivals.${l.status}Status`)}</span>
                 {lit && l.lastGoal?.scorer && <span>· {t("rivals.scorer", { name: l.lastGoal.scorer })}</span>}
               </button>
               {open === l.seatId && (
