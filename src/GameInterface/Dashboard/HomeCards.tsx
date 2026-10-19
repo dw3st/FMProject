@@ -10,6 +10,9 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData, StandingRow } from "@/types/playerTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import { NewsRow } from "@/GameInterface/News/NewsList";
+import { RivalForm } from "@/GameInterface/World/RivalForm";
+import { liveText } from "@/GameInterface/World/liveText";
+import type { RivalRow } from "@/types/rivalsTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
 import { objectiveText } from "@/GameInterface/boardText";
@@ -908,6 +911,34 @@ export function NewsCard({ items, leagues }: { items: NewsItem[] | null; leagues
       ) : (
         <ul className="list-none m-0 p-0 flex flex-col divide-y divide-border/50">
           {items.map((n) => <NewsRow key={n.id} item={n} leagues={leagues} withLine={false} />)}
+        </ul>
+      )}
+    </HomeCard>
+  );
+}
+
+// ── Rivals (multiplayer part 6) ──────────────────────────────────────────────
+
+/** One line per friend: nickname, league place, form, and the live score while he plays. */
+export function RivalsCard({ rows }: { rows: RivalRow[] }) {
+  const { t } = useTranslation();
+  const friends = rows.filter((r) => !r.me);
+  return (
+    <HomeCard title={t("rivals.card.title")} href="/world?tab=rivals" linkLabel={t("rivals.card.link")}>
+      {friends.length === 0 ? (
+        <p className="text-sm text-muted-foreground m-0">{t("rivals.noRivals")}</p>
+      ) : (
+        <ul className="m-0 p-0 list-none flex flex-col gap-2">
+          {friends.map((r) => (
+            <li key={r.seatId} className="flex items-center gap-3 min-h-8">
+              <span className="font-semibold text-foreground truncate flex-1 min-w-0">{r.nickname ?? r.managerName}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}
+              </span>
+              <RivalForm form={r.form} />
+              {r.live && <span className="text-sm tabular-nums text-primary">{liveText(t, r.live)}</span>}
+            </li>
+          ))}
         </ul>
       )}
     </HomeCard>
