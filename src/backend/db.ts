@@ -121,6 +121,8 @@ export function migrateSocialSchema(database: Database): void {
       PRIMARY KEY (user_id, room)
     );
   `);
+  // Rivals (multiplayer part 6): a taunt's ids and score as JSON (`{ taunt }`); null for a plain message.
+  addColumnIfMissing(database, "chat_messages", "meta", "TEXT");
   migrateSaveMembersSchema(database);
 }
 

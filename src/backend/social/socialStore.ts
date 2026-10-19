@@ -11,7 +11,9 @@ import {
   normalizeNickname,
   validateNickname,
 } from "@/Domain/social/nickname";
-import type { Relation } from "@/types/socialTypes";
+import { parseTauntMeta } from "@/Domain/rivals/taunts";
+import type { TauntMeta } from "@/types/rivalsTypes";
+import type { ChatMessageView, Relation } from "@/types/socialTypes";
 
 export interface SocialUser {
   id: string;
@@ -326,14 +328,17 @@ export interface ChatMessageRow {
   fromNickname: string | null;
   body: string;
   createdAt: number;
+  /** JSON `{ taunt }` of a rivals taunt (multiplayer part 6); null for a plain message. */
+  meta: string | null;
 }
 
 const BLOCKED_SENDER_SQL = "NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id = ? AND b.blocked_id = m.from_user)";
 
-export function insertMessage(room: string, fromUser: string, body: string, now: number): ChatMessageRow {
+export function insertMessage(room: string, fromUser: string, body: string, now: number, taunt?: TauntMeta): ChatMessageRow {
+  const meta = taunt ? JSON.stringify({ taunt }) : null;
   const info = db
-    .prepare("INSERT INTO chat_messages (room, from_user, body, created_at) VALUES (?, ?, ?, ?)")
-    .run(room, fromUser, body, now);
+    .prepare("INSERT INTO chat_messages (room, from_user, body, created_at, meta) VALUES (?, ?, ?, ?, ?)")
+    .run(room, fromUser, body, now, meta);
   return {
     id: Number(info.lastInsertRowid),
     room,
@@ -341,6 +346,7 @@ export function insertMessage(room: string, fromUser: string, body: string, now:
     fromNickname: getSocialUser(fromUser)?.nickname ?? null,
     body,
     createdAt: now,
+    meta,
   };
 }
 
@@ -353,13 +359,29 @@ export function listMessages(
   const before = opts.before ?? null;
   const rows = db
     .prepare(
-      `SELECT m.id, m.room, m.from_user AS fromUser, u.nickname AS fromNickname, m.body, m.created_at AS createdAt
+      `SELECT m.id, m.room, m.from_user AS fromUser, u.nickname AS fromNickname, m.body, m.created_at AS createdAt, m.meta
        FROM chat_messages m LEFT JOIN users u ON u.id = m.from_user
        WHERE m.room = ? AND (? IS NULL OR m.id < ?) AND ${BLOCKED_SENDER_SQL}
        ORDER BY m.id DESC LIMIT ?`,
     )
     .all(room, before, before, viewerId, opts.limit) as ChatMessageRow[];
   return rows.reverse();
+}
+
+/** A stored message as `viewerId` sees it (a taunt carries its meta; `body` is the English fallback). */
+export function chatMessageView(row: ChatMessageRow, viewerId: string): ChatMessageView {
+  let taunt: TauntMeta | null = null;
+  if (row.meta) {
+    try {
+      taunt = parseTauntMeta((JSON.parse(row.meta) as { taunt?: unknown } | null)?.taunt);
+    } catch {
+      taunt = null;
+    }
+  }
+  return {
+    id: row.id, from: row.fromNickname ?? "", mine: row.fromUser === viewerId, body: row.body, at: row.createdAt,
+    ...(taunt ? { taunt } : {}),
+  };
 }
 
 /** Marks read up to `lastReadId` (clamped to the room's newest id; never moves back). Returns the stored id. */

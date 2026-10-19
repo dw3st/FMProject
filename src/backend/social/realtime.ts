@@ -7,7 +7,7 @@ import { isPresent, onlineCount, recordPresence } from "@/backend/presence";
 import { saveService } from "@/backend/SaveService";
 import { memberOf } from "@/backend/auth/saveOwnership";
 import { canWrite, resolveRoom, roomParamFor, roomRecipients } from "@/backend/social/roomAccess";
-import { friendIds, getSocialUser, isBlocked, isWorldMember, type ChatMessageRow } from "@/backend/social/socialStore";
+import { chatMessageView, friendIds, getSocialUser, isBlocked, isWorldMember, type ChatMessageRow } from "@/backend/social/socialStore";
 import { isSaveIdShape } from "@/Domain/social/rooms";
 import { acceptLiveScore } from "@/backend/rivals/liveScores";
 import { parseLiveFrame } from "@/Domain/rivals/liveScore";
@@ -192,7 +192,7 @@ export function deliverMessage(row: ChatMessageRow): void {
     notifyUser(userId, {
       type: "message",
       room,
-      message: { id: row.id, from: row.fromNickname ?? "", mine: userId === row.fromUser, body: row.body, at: row.createdAt },
+      message: chatMessageView(row, userId),
     });
   }
 }
