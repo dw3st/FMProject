@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { joinCodeFromPath, joinLink, worldRedirect } from "@/GameInterface/World/worldNav";
+import { joinCodeFromPath, joinLink, worldRedirect, worldTabOf } from "@/GameInterface/World/worldNav";
 
 describe("world navigation", () => {
   test("in the lobby every game screen goes to /world", () => {
@@ -27,5 +27,15 @@ describe("world navigation", () => {
     expect(joinCodeFromPath("/join/%E0")).toBe("");
     expect(joinCodeFromPath("/join/%")).toBe("");
     expect(joinLink("https://fm.example", "23456789AB")).toBe("https://fm.example/join/23456789AB");
+  });
+});
+
+describe("worldTabOf", () => {
+  test("reads the tab from the query", () => {
+    expect(worldTabOf("?tab=standings")).toBe("standings");
+    expect(worldTabOf("?tab=rivals")).toBe("rivals");
+    expect(worldTabOf("?tab=results")).toBe("results");
+    expect(worldTabOf("?tab=nope")).toBe("league");
+    expect(worldTabOf("")).toBe("league");
   });
 });

@@ -31,3 +31,11 @@ export function joinLink(origin: string, code: string): string {
 export function isDashboardPath(pathname: string): boolean {
   return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
+
+export type WorldTab = "league" | "standings" | "rivals" | "results";
+
+/** The `/world` tab from `location.search`. */
+export function worldTabOf(search: string): WorldTab {
+  const tab = new URLSearchParams(search).get("tab");
+  return tab === "standings" || tab === "rivals" || tab === "results" ? tab : "league";
+}

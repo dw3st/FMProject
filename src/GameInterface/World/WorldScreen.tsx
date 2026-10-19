@@ -18,7 +18,11 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { forgetSession } from "@/GameInterface/gameSession";
 import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
-import { joinLink } from "@/GameInterface/World/worldNav";
+import { joinLink, worldTabOf, type WorldTab } from "@/GameInterface/World/worldNav";
+import { RivalsTable } from "@/GameInterface/World/RivalsTable";
+import { ResultsFeed } from "@/GameInterface/World/ResultsFeed";
+import { rivalsApi } from "@/GameInterface/World/rivalsApi";
+import type { RivalsView } from "@/types/rivalsTypes";
 import { InviteFriendsModal } from "@/GameInterface/World/InviteFriendsModal";
 import { StandingsTable } from "@/GameInterface/World/StandingsTable";
 import { seatManagerId } from "@/Domain/seats/seats";
@@ -31,9 +35,7 @@ type DeadlineKey = "12" | "24" | "48" | "none";
 const toKey = (d: WorldDeadline): DeadlineKey => (d === null ? "none" : (String(d) as DeadlineKey));
 const fromKey = (k: DeadlineKey): WorldDeadline => (k === "none" ? null : (Number(k) as 12 | 24 | 48));
 
-type WorldTab = "league" | "standings";
-const initialTab = (): WorldTab =>
-  typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "standings" ? "standings" : "league";
+const initialTab = (): WorldTab => (typeof window !== "undefined" ? worldTabOf(window.location.search) : "league");
 
 type Pending = { kind: "remove" | "owner"; member: WorldMemberView } | { kind: "leave" } | { kind: "code" } | null;
 
@@ -55,6 +57,9 @@ export function WorldScreen() {
   const [tab, setTab] = useState<WorldTab>(initialTab);
   const [standings, setStandings] = useState<StandingsView | null>(null);
   const [standingsError, setStandingsError] = useState<WorldApiError | null>(null);
+  const [rivals, setRivals] = useState<RivalsView | null>(null);
+  const [rivalsError, setRivalsError] = useState<WorldApiError | null>(null);
+  const [resultsSeat, setResultsSeat] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!saveId) return;
@@ -69,7 +74,9 @@ export function WorldScreen() {
   // The standings tab (multiplayer part 5a): only with 2+ managers; reloads with the league's member events and
   // whenever a group advance stops (the partial follows the table of the new day).
   const showTabs = (view?.members.length ?? 0) >= 2;
-  const activeTab: WorldTab = showTabs ? tab : "league";
+  // Rivals and results (multiplayer part 6) only once the league runs.
+  const rivalsTabs = view?.phase !== "lobby";
+  const activeTab: WorldTab = !showTabs || (!rivalsTabs && (tab === "rivals" || tab === "results")) ? "league" : tab;
   const [advanceVersion, setAdvanceVersion] = useState(0);
   const { subscribe } = social;
   useEffect(() => {
@@ -88,11 +95,22 @@ export function WorldScreen() {
     return () => { cancelled = true; };
   }, [saveId, activeTab, social.worldVersion, advanceVersion]);
 
+  // Rivals (multiplayer part 6): reload with the league's results, live scores and member events.
+  useEffect(() => {
+    if (!saveId || (activeTab !== "rivals" && activeTab !== "results")) return;
+    let cancelled = false;
+    void rivalsApi.rivals(saveId).then((r) => {
+      if (cancelled) return;
+      if (r.ok) { setRivals(r.data); setRivalsError(null); } else setRivalsError(r.error);
+    });
+    return () => { cancelled = true; };
+  }, [saveId, activeTab, social.worldVersion, social.rivalsVersion]);
+
   function changeTab(next: WorldTab) {
     setTab(next);
     const url = new URL(window.location.href);
-    if (next === "standings") url.searchParams.set("tab", "standings");
-    else url.searchParams.delete("tab");
+    if (next === "league") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
     window.history.replaceState(null, "", url);
   }
 
@@ -165,6 +183,9 @@ export function WorldScreen() {
           tabs={[
             { key: "league", label: t("world.standings.tabLeague") },
             { key: "standings", label: t("world.standings.tab") },
+            ...(rivalsTabs
+              ? [{ key: "rivals" as const, label: t("rivals.tabRivals") }, { key: "results" as const, label: t("rivals.tabResults") }]
+              : []),
           ]}
         />
       )}
@@ -176,6 +197,35 @@ export function WorldScreen() {
           {standingsError && <Notice kind="error">{t(`world.errors.${standingsError}`)}</Notice>}
           {!standings && !standingsError && <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>}
           {standings && <StandingsTable view={standings} mySeatId={view.mySeatId} />}
+        </section>
+      )}
+
+      {view && activeTab === "rivals" && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t("rivals.rivalsTitle")}</SectionTitle>
+          <p className="text-sm text-muted-foreground m-0">{t("rivals.rivalsHint")}</p>
+          {rivalsError && <Notice kind="error">{t(`world.errors.${rivalsError}`)}</Notice>}
+          {!rivals && !rivalsError && <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>}
+          {rivals && (
+            <RivalsTable
+              rows={rivals.rows}
+              onSelect={(seatId) => { setResultsSeat(seatId); changeTab("results"); }}
+            />
+          )}
+        </section>
+      )}
+
+      {view && activeTab === "results" && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t("rivals.resultsTitle")}</SectionTitle>
+          <ResultsFeed
+            saveId={saveId}
+            mySeatId={view.mySeatId}
+            rows={rivals?.rows ?? []}
+            seat={resultsSeat}
+            onSeat={setResultsSeat}
+            version={social.rivalsVersion}
+          />
         </section>
       )}
 
