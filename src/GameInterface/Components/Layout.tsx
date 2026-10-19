@@ -1,3 +1,4 @@
+import { ChatPopups } from "@/GameInterface/Social/ChatPopups";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { TopNavigation } from "@/GameInterface/Components/TopNavigation";
@@ -92,6 +93,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         <FriendsPanel />
         <ChatDock />
+        <ChatPopups />
 
         <Modal
           open={isInboxOpen}

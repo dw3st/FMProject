@@ -1,10 +1,17 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { identifyUser, resetAnalytics } from "@/analytics";
 import { loginUrlFor } from "@/GameInterface/authRedirect";
+import { NicknameSetupScreen } from "@/GameInterface/NicknameSetupScreen";
 
 type GateState = "loading" | "authed" | "redirecting";
 
-export interface CurrentUser { id: string; email: string; isTester?: boolean }
+export interface CurrentUser {
+  id: string;
+  email: string;
+  isTester?: boolean;
+  /** Chosen on the first sign-in; null = not chosen yet (the gate shows `NicknameSetupScreen`). */
+  nickname?: string | null;
+}
 
 const CurrentUserContext = createContext<CurrentUser | null>(null);
 
@@ -29,12 +36,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
       .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {
-          setState("authed");
+          // The user first, then "authed": the nickname check must see it on the first authed render.
           const fetchedUser = (await res.json().catch(() => null)) as CurrentUser | null;
-          if (fetchedUser?.id && !cancelled) {
+          if (cancelled) return;
+          if (fetchedUser?.id) {
             setUser(fetchedUser);
             void identifyUser(fetchedUser);
           }
+          setState("authed");
         } else {
           setState("redirecting");
           window.location.replace(loginUrlFor(window.location.pathname, window.location.search));
@@ -49,6 +58,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (state !== "authed") return null;
+  // A server without the field (older build) never blocks: only an explicit null asks for the nickname.
+  if (user && user.nickname === null) {
+    return <NicknameSetupScreen onDone={(nickname) => setUser({ ...user, nickname })} />;
+  }
   return <CurrentUserContext.Provider value={user}>{children}</CurrentUserContext.Provider>;
 }
 

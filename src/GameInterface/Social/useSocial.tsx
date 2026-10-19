@@ -17,9 +17,11 @@ import {
   applyPresence,
   mergeMessages,
   parseServerEvent,
+  pushPopup,
   reconnectAction,
   reconnectDelay,
   totalUnread,
+  type ChatPopup,
   unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
@@ -36,6 +38,9 @@ import type {
 
 /** Close code the server uses when the session logged out: never reconnect. */
 const LOGOUT_CLOSE_CODE = 4001;
+/** New-message popups: at most this many at once, each for this long. */
+const MAX_POPUPS = 3;
+const POPUP_MS = 7000;
 const EMPTY_LISTS: FriendsResponse = { friends: [], incoming: [], outgoing: [], worlds: [] };
 
 export interface TypingInfo {
@@ -73,6 +78,9 @@ export interface SocialContextValue {
   declineWorldInvite: (saveId: string) => Promise<void>;
   /** Bumped on `world_members` of the open world: the world screen reloads. */
   worldVersion: number;
+  /** New messages of rooms not on screen, newest first (`ChatPopups`); they go away on their own. */
+  popups: ChatPopup[];
+  dismissPopup: (room: string) => void;
   /** Every parsed server event, for screens with their own socket needs (group advance). Returns the unsubscribe. */
   subscribe: (fn: (event: ServerEvent) => void) => () => void;
 }
@@ -114,6 +122,8 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   const [connected, setConnected] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [dock, setDock] = useState<DockChat[]>(readDock);
+  const [popups, setPopups] = useState<ChatPopup[]>([]);
+  const popupTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // The socket opens only once `/api/social/me` answered: the lab's /simulate page reuses the Layout on a server
   // without the social routes, and there it must not retry a socket forever.
   const [available, setAvailable] = useState(false);
@@ -176,6 +186,26 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     void socialApi.read(room, last.id);
   }, []);
 
+  const dismissPopup = useCallback((room: string) => {
+    clearTimeout(popupTimers.current[room]);
+    delete popupTimers.current[room];
+    setPopups((prev) => prev.filter((p) => p.room !== room));
+  }, []);
+
+  const showPopup = useCallback(
+    (popup: ChatPopup) => {
+      setPopups((prev) => pushPopup(prev, popup, MAX_POPUPS));
+      clearTimeout(popupTimers.current[popup.room]);
+      popupTimers.current[popup.room] = setTimeout(() => dismissPopup(popup.room), POPUP_MS);
+    },
+    [dismissPopup],
+  );
+
+  useEffect(() => {
+    const timers = popupTimers.current;
+    return () => Object.values(timers).forEach(clearTimeout);
+  }, []);
+
   const handleEvent = useCallback(
     (event: ServerEvent) => {
       switch (event.type) {
@@ -195,6 +225,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
             void socialApi.read(event.room, event.message.id);
           } else {
             setUnread((prev) => ({ ...prev, [event.room]: (prev[event.room] ?? 0) + 1 }));
+            showPopup({ room: event.room, messageId: event.message.id, from: event.message.from, body: event.message.body });
           }
           break;
         }
@@ -234,7 +265,7 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
           break;
       }
     },
-    [refreshFriends, refreshWorldInvites, saveId],
+    [refreshFriends, refreshWorldInvites, saveId, showPopup],
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
@@ -373,10 +404,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
       loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion, subscribe,
+      popups, dismissPopup,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
       hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
-      declineWorldInvite, worldVersion, subscribe],
+      declineWorldInvite, worldVersion, subscribe, popups, dismissPopup],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

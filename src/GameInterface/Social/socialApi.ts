@@ -44,7 +44,6 @@ export const socialApi = {
   setNickname: (nickname: string) => call<SocialMe>("PUT", "/api/social/nickname", { nickname }),
   search: (q: string) => call<{ results: SearchResult[] }>("GET", `/api/social/search?q=${seg(q)}`),
   requestByNickname: (nickname: string) => call<RequestAnswer>("POST", "/api/social/requests", { nickname }),
-  requestByCode: (code: string) => call<RequestAnswer>("POST", "/api/social/requests", { code }),
   accept: (nickname: string) => call<RequestAnswer>("POST", `/api/social/requests/${seg(nickname)}/accept`),
   decline: (nickname: string) => call<{ ok: true }>("POST", `/api/social/requests/${seg(nickname)}/decline`),
   cancel: (nickname: string) => call<{ ok: true }>("DELETE", `/api/social/requests/${seg(nickname)}`),

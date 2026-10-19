@@ -89,6 +89,12 @@ export type SetNicknameResult =
  * name again is a no-op. A stored nickname that a later rule made invalid (e.g. one shaped like a friend code) can be
  * replaced once by a valid one.
  */
+/** The account's nickname, or null when unset or made invalid by a later rule (the screens then ask for one). */
+export function validNicknameOf(userId: string): string | null {
+  const nickname = getSocialUser(userId)?.nickname ?? null;
+  return nickname !== null && validateNickname(nickname) === null ? nickname : null;
+}
+
 export function setNickname(userId: string, raw: string, now: number): SetNicknameResult {
   if (validateNickname(raw)) return { ok: false, error: "invalidNickname" };
   const nickname = normalizeNickname(raw);

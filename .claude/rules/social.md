@@ -7,7 +7,7 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
 
 - Apelido único (3–20, `[A-Za-z0-9_.-]`, sem diferenciar maiúsculas, sem `admin`/`fmproject`/`westlab`/moderador e
   afins, nem começar com `fm-`, o formato do código de amigo — um apelido igual a um código aparecia no chat como se fosse
-  o código), escolhido na primeira abertura de Amigos e **fixo** depois disso: fica atrelado à conta (e-mail) para sempre,
+  o código), escolhido no primeiro acesso (o `AuthGate` mostra `NicknameSetupScreen` enquanto `/api/auth/me` tem `nickname: null`) e **fixo** depois disso: fica atrelado à conta (e-mail) para sempre,
   sem troca (`nickname_changed_at` guarda a data da escolha). Um apelido gravado que uma regra nova tornou inválido
   aparece como ausente no `/me` e pode ser trocado uma vez por um válido. Código de amigo `FM-XXXX-XXXX` (base32 sem
   0/1/I/O), gerado na primeira chamada de `GET /api/social/me`.
@@ -82,6 +82,9 @@ nem abre.
 
 ## Telas
 
+- Mensagem nova de uma sala que não está aberta na tela: aviso no canto inferior esquerdo (`ChatPopups`, um por sala, até 3,
+  some em 7 s; clicar abre a conversa).
+- O painel mostra só o apelido ("Você: …"); amigos se adicionam pela busca de apelido. O código de amigo continua na API.
 - Barra inferior: "Amigos · N" (amigos online) com o selo de não lidas + pedidos; abre o painel (340px, até 60% da
   altura, acima da barra, à direita; Escape fecha). O rótulo do botão diz as não lidas ("Amigos: 3 online, 2 não
   lidas"); abrir o painel põe o foco no primeiro controle, fechar devolve ao botão.

@@ -147,3 +147,16 @@ export function createEventHub<T>() {
     },
   };
 }
+
+/** A new-message popup: one per room, with the newest message of it. */
+export interface ChatPopup {
+  room: string;
+  messageId: number;
+  from: string;
+  body: string;
+}
+
+/** Popups to show: the room's previous popup is replaced, the newest goes on top, at most `max`. */
+export function pushPopup(list: readonly ChatPopup[], popup: ChatPopup, max: number): ChatPopup[] {
+  return [popup, ...list.filter((p) => p.room !== popup.room)].slice(0, max);
+}

@@ -41,29 +41,32 @@ describe("weather in the engine", () => {
   });
 
   test("heat drains more energy", () => {
-    // Mean energy on the pitch after 400 ticks (first half, before any substitution): the drain itself. The end-of-match
-    // average is not a fair metric (heat brings more fatigue substitutions, fresh legs lift it). Averaged over a few
-    // seeds: one seed alone flips when module state left by earlier test files moves the play (full-suite order).
-    const energyAt = (weather?: EngineWeather) =>
-      [3, 7, 11, 19].reduce((t, seed) => t + energyAtSeed(seed, weather), 0) / 4;
-    const energyAtSeed = (seed: number, weather?: EngineWeather) => {
+    // Energy spent in the first 20 ticks, same seed: too little drain to move any fatigue recompute, so both runs
+    // play the same moves and only the drain differs. A later tick let module state left by earlier test files
+    // (full-suite order) move the play and flip the comparison.
+    const spentAt20 = (weather?: EngineWeather) => {
       const orig = Math.random;
-      Math.random = mulberry32(seed);
+      Math.random = mulberry32(7);
       let ticks = 0;
-      let mean = 0;
+      let start = 0;
+      let spent = 0;
       try {
         simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], {
           ...(weather ? { weather } : {}),
           onTick: (s) => {
-            if (++ticks === 400) mean = s.players.reduce((t, p) => t + p.energy, 0) / s.players.length;
+            const total = s.players.reduce((t, p) => t + p.energy, 0);
+            if (++ticks === 1) start = total;
+            if (ticks === 20) spent = start - total;
           },
         });
       } finally {
         Math.random = orig;
       }
-      return mean;
+      return spent;
     };
-    expect(energyAt("hot")).toBeLessThan(energyAt());
+    const base = spentAt20();
+    expect(base).toBeGreaterThan(0);
+    expect(spentAt20("hot")).toBeGreaterThan(base);
   });
 
   test("gkClaimChance takes the weather multiplier", () => {

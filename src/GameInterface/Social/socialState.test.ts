@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  pushPopup,
   createEventHub,
   applyPresence,
   groupFriends,
@@ -121,5 +122,17 @@ describe("createEventHub", () => {
     hub.emit(2);
     console.error = orig;
     expect(got).toEqual([1]);
+  });
+});
+
+describe("pushPopup", () => {
+  const p = (room: string, messageId: number) => ({ room, messageId, from: "x", body: "hi" });
+  test("newest first, one per room, at most max", () => {
+    let list = pushPopup([], p("dm:a", 1), 3);
+    list = pushPopup(list, p("dm:b", 2), 3);
+    list = pushPopup(list, p("dm:a", 3), 3);
+    expect(list.map((x) => x.messageId)).toEqual([3, 2]);
+    list = pushPopup(pushPopup(list, p("dm:c", 4), 3), p("dm:d", 5), 3);
+    expect(list.map((x) => x.room)).toEqual(["dm:d", "dm:c", "dm:a"]);
   });
 });
