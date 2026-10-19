@@ -63,7 +63,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [redirectTo]);
 
   return (
-    <SocialProvider saveId={session?.saveId ?? null}>
+    <SocialProvider saveId={session?.saveId ?? null} seatId={session?.seatId ?? null}>
       <GroupAdvanceProvider leagues={leagues} mySquadId={mySquadId}>
       <div className="h-screen overflow-hidden bg-background">
         <TopNavigation

@@ -13,7 +13,7 @@ export type WorldResult<T> = { ok: true; data: T } | { ok: false; status: number
 const KNOWN: ReadonlySet<string> = new Set<WorldErrorCode>([
   "notFound", "full", "alreadyMember", "clubTaken", "invalidManager", "invalidClub", "invalidBody", "ownerOnly",
   "transferFirst", "alreadyStarted", "notMulti", "inviteLimit", "noNickname", "useLeave", "notMember", "tooLarge",
-  "ownerLimit", "generic", "lobby",
+  "ownerLimit", "generic", "lobby", "self", "invalidTaunt", "rateLimited",
 ]);
 
 /** A server error that is not a world code becomes `generic`; a bare 404 of a world route means he is not a member. */
@@ -61,3 +61,6 @@ export const worldApi = {
   transferOwner: (saveId: string, seatId: string) => call<{ ok: true }>("POST", `/api/worlds/${seg(saveId)}/owner`, { seatId }),
   standings: (saveId: string) => call<StandingsView>("GET", `/api/worlds/${seg(saveId)}/standings`),
 };
+
+/** The shared fetch wrapper, for the rivals calls (`rivalsApi.ts`). */
+export const worldCall = call;

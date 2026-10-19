@@ -1,4 +1,8 @@
+import { isLiveScoreView } from "@/Domain/rivals/liveScore";
+import { isSeatResult } from "@/Domain/rivals/results";
+import { parseTauntMeta } from "@/Domain/rivals/taunts";
 import { dmRoomParam } from "@/Domain/social/rooms";
+import type { LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
 import type { ChatMessageView, FriendStatus, FriendView, FriendsResponse, ServerEvent } from "@/types/socialTypes";
 
 export interface FriendGroups {
@@ -66,7 +70,11 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
     case "message": {
       const m = e.message as Record<string, unknown> | undefined;
       if (!str(e.room) || !m || typeof m.id !== "number" || !str(m.from) || typeof m.mine !== "boolean" || !str(m.body) || typeof m.at !== "number") return null;
-      return { type: "message", room: e.room, message: { id: m.id, from: m.from, mine: m.mine, body: m.body, at: m.at } };
+      const taunt = parseTauntMeta(m.taunt);
+      return {
+        type: "message", room: e.room,
+        message: { id: m.id, from: m.from, mine: m.mine, body: m.body, at: m.at, ...(taunt ? { taunt } : {}) },
+      };
     }
     case "presence":
       if (!str(e.nickname) || !str(e.status) || !STATUSES.has(e.status) || !(e.club === null || str(e.club))) return null;
@@ -99,6 +107,17 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
       return {
         type: "world_progress", saveId: e.saveId, date: e.date, target: e.target as string | null,
         running: e.running, waitingFor: e.waitingFor as string[], ...(str(e.error) ? { error: e.error } : {}),
+      };
+    }
+    case "world_results":
+      if (!str(e.saveId) || !Array.isArray(e.results)) return null;
+      return { type: "world_results", saveId: e.saveId, results: (e.results as unknown[]).filter(isSeatResult) };
+    case "friend_live": {
+      if (!str(e.saveId) || !str(e.seatId)) return null;
+      if (e.live !== null && !isLiveScoreView(e.live)) return null;
+      return {
+        type: "friend_live", saveId: e.saveId, seatId: e.seatId, live: e.live as LiveScoreView | null,
+        ...(e.goal === true ? { goal: true as const } : {}),
       };
     }
     default:
@@ -154,9 +173,20 @@ export interface ChatPopup {
   messageId: number;
   from: string;
   body: string;
+  taunt?: TauntMeta;
 }
 
 /** Popups to show: the room's previous popup is replaced, the newest goes on top, at most `max`. */
 export function pushPopup(list: readonly ChatPopup[], popup: ChatPopup, max: number): ChatPopup[] {
   return [popup, ...list.filter((p) => p.room !== popup.room)].slice(0, max);
+}
+
+/** A friend's result or live goal in the corner (rivals, multiplayer part 6). */
+export type RivalPopup =
+  | { key: string; kind: "result"; result: SeatResult }
+  | { key: string; kind: "goal"; live: LiveScoreView };
+
+/** Newest on top, one per key, at most `max` (the rest only in the feed). */
+export function pushRivalPopup(list: readonly RivalPopup[], popup: RivalPopup, max: number): RivalPopup[] {
+  return [popup, ...list.filter((p) => p.key !== popup.key)].slice(0, max);
 }
