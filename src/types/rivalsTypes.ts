@@ -1,0 +1,121 @@
+// Rivals in a friends' league (multiplayer part 6). Nicknames only: never an e-mail or a user id.
+import type { ManagerFace } from "@/Domain/faces/managerFace";
+
+export type ResultSituation =
+  | "win" | "draw" | "loss"
+  | "big_win" | "big_loss" | "home_loss" | "away_win"
+  | "comeback_win" | "blown_lead" | "late_equalizer" | "late_winner"
+  | "shootout_win" | "shootout_loss";
+
+export type LiveSituation = "live_goal_for" | "live_goal_against";
+export type TauntGroup = ResultSituation | LiveSituation;
+
+export interface SeatResultGoal {
+  minute: number;
+  side: "for" | "against";
+  scorer: string;
+}
+
+/** One game of a human club (one per side when two seats meet). Score from the club's side. */
+export interface SeatResult {
+  /** `<date>:<competition>:<fixtureId>:<seatId>`. */
+  id: string;
+  date: string;
+  seatId: string;
+  nickname: string;
+  clubId: string;
+  clubName: string;
+  opponentId: string;
+  opponentName: string;
+  home: boolean;
+  competition: string;
+  score: { for: number; against: number };
+  decider?: { penalties: { for: number; against: number } };
+  goals: SeatResultGoal[];
+  situations: ResultSituation[];
+}
+
+export type LivePhase = "start" | "goal" | "half" | "end";
+export type LiveStatus = "live" | "half" | "ended" | "stale";
+
+/** `live_score` from the browser of who plays (score from his club's side). */
+export interface LiveScoreFrame {
+  saveId: string;
+  fixtureId: string;
+  phase: LivePhase;
+  minute: number;
+  score: { for: number; against: number };
+  scorer?: string;
+}
+
+/** The fixed part of a live game (who, against whom, which fixture). */
+export interface LiveBase {
+  seatId: string;
+  nickname: string;
+  clubId: string;
+  clubName: string;
+  opponentId: string;
+  opponentName: string;
+  home: boolean;
+  fixtureId: string;
+  date: string;
+}
+
+export interface LiveScoreView extends LiveBase {
+  status: LiveStatus;
+  minute: number;
+  score: { for: number; against: number };
+  lastGoal: { minute: number; side: "for" | "against"; scorer: string | null } | null;
+  events: number;
+  updatedAt: number;
+}
+
+export type ReactionId = "applause" | "fire" | "laugh" | "sorry";
+export type TauntKind = "reaction" | "phrase";
+export type TauntTarget = { result: string } | { live: string };
+
+/** Stored in `chat_messages.meta` as `{ taunt }`: ids and the real score only. */
+export interface TauntMeta {
+  kind: TauntKind;
+  id: string;
+  /** Nickname of the friend taunted. */
+  target: string;
+  clubId: string;
+  clubName: string;
+  opponentName: string;
+  home: boolean;
+  score: { for: number; against: number };
+  live?: true;
+  minute?: number;
+}
+
+export interface RivalNextMatch {
+  date: string;
+  opponentId: string;
+  opponentName: string;
+  home: boolean;
+  competition: string;
+}
+
+export interface RivalRow {
+  seatId: string;
+  nickname: string | null;
+  managerName: string;
+  face: ManagerFace | null;
+  nationalityIso: string | null;
+  clubId: string;
+  clubName: string;
+  clubColors: [string, string];
+  leagueSlug: string;
+  leaguePosition: number | null;
+  form: ("W" | "D" | "L")[];
+  last: SeatResult | null;
+  next: RivalNextMatch | null;
+  friendsRank: number;
+  friendsTotal: number;
+  live: LiveScoreView | null;
+  me: boolean;
+}
+
+export interface RivalsView { rows: RivalRow[] }
+export interface ResultsPage { results: SeatResult[]; hasMore: boolean }
