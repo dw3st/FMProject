@@ -65,6 +65,7 @@ export const DEBUG_FILES = [
  */
 export const ENTRY_TITLE_FILES = [
   "src/GameInterface/NewGameWizard.tsx",
+  "src/GameInterface/NicknameSetupScreen.tsx",
   "src/GameInterface/PreSeasonLoadingScreen.tsx",
   "src/GameInterface/ScreenSizeGate.tsx",
   "src/GameInterface/SettingsScreen.tsx",

@@ -1,3 +1,4 @@
+import { validNicknameOf } from "@/backend/social/socialStore";
 import {
   requestLoginCode,
   verifyLoginCode,
@@ -117,6 +118,8 @@ export const authRoutes = {
       id: auth.userId,
       email: auth.email,
       isTester: isTesterEmail(auth.email),
+      // Chosen on the first sign-in (`NicknameSetup`); null = not chosen yet, the gate asks for it.
+      nickname: validNicknameOf(auth.userId),
     });
   },
 

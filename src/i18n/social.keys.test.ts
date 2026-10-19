@@ -13,12 +13,12 @@ const get = (o: unknown, path: string): unknown =>
   path.split(".").reduce<unknown>((x, k) => (x as Record<string, unknown> | undefined)?.[k], o);
 
 const keys = [
-  "button", "buttonShort", "unreadBadge", "panelTitle", "close", "loading", "yourCode", "copy", "copied",
+  "button", "buttonShort", "unreadBadge", "panelTitle", "close", "loading", "you",
   "nicknameFinal", "tabs.friends", "tabs.requests", "tabs.add", "groups.playing", "groups.online",
   "groups.offline", "groups.worlds", "status.playing", "status.online", "status.offline", "noFriends", "actions",
   "unfriend", "block", "confirmUnfriend", "confirmBlock", "requests.incoming", "requests.outgoing", "requests.none",
   "requests.accept", "requests.decline", "requests.cancel", "add.searchLabel", "add.searchHint", "add.noResults",
-  "add.add", "add.sent", "add.friend", "add.accept", "add.codeLabel", "add.sendCode", "add.requested",
+  "add.add", "add.sent", "add.friend", "add.accept", "add.requested",
   "add.befriended", "add.blocked", "add.noBlocked", "add.unblock", "nickname.title", "nickname.hint",
   "nickname.label", "nickname.save", "chat.minimize", "chat.close", "chat.loadMore", "chat.empty",
   "chat.placeholder", "chat.send", "chat.counter", "chat.typing", "chat.readOnly", "chat.unavailable", "chat.world",

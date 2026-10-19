@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { authRoutes } from "@/backend/auth/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
+import { setNickname } from "@/backend/social/socialStore";
 
 // RUNTIME_DATA_DIR is isolated for the whole test run by bunfig.toml's `[test] preload`
 // (scripts/testPreload.ts) — see the comment at the top of reports.test.ts / devLogin.test.ts.
@@ -49,5 +50,14 @@ describe("GET /api/auth/me", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { isTester: boolean };
     expect(body.isTester).toBe(false);
+  });
+
+  test("nickname: null until chosen, then the nickname", async () => {
+    const { user, session } = devAutoLogin("me-route-nick@example.com");
+    const before = (await (await handler()(reqWithCookie(session.token))).json()) as { nickname: string | null };
+    expect(before.nickname).toBeNull();
+    setNickname(user.id, "meRouteNick", Date.now());
+    const after = (await (await handler()(reqWithCookie(session.token))).json()) as { nickname: string | null };
+    expect(after.nickname).toBe("meRouteNick");
   });
 });

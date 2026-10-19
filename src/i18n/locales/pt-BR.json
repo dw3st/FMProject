@@ -629,6 +629,7 @@
     "players": "Jogadores"
   },
   "social": {
+    "popup": { "open": "Abrir conversa: {{name}}", "dismiss": "Fechar aviso" },
     "button": "Amigos: {{count}} online",
     "buttonUnread": "Amigos: {{count}} online, {{unread}} não lidas",
     "buttonShort": "Amigos · {{count}}",
@@ -636,14 +637,12 @@
     "panelTitle": "Amigos",
     "close": "Fechar",
     "loading": "Carregando…",
-    "yourCode": "Seu código",
-    "copy": "Copiar",
-    "copied": "Copiado",
+    "you": "Você:",
     "nicknameFinal": "O apelido não pode ser mudado depois.",
     "tabs": { "friends": "Amigos", "requests": "Pedidos", "add": "Adicionar" },
     "groups": { "playing": "Jogando", "online": "Online", "offline": "Offline", "worlds": "Mundos" },
     "status": { "playing": "Jogando · {{club}}", "online": "Online", "offline": "Offline" },
-    "noFriends": "Nenhum amigo ainda. Adicione pelo apelido ou pelo código.",
+    "noFriends": "Nenhum amigo ainda. Adicione pelo apelido na aba Adicionar.",
     "actions": "Ações",
     "unfriend": "Desfazer amizade",
     "block": "Bloquear",
@@ -665,8 +664,6 @@
       "sent": "Pedido enviado",
       "friend": "Amigo",
       "accept": "Aceitar",
-      "codeLabel": "Código de amigo",
-      "sendCode": "Adicionar",
       "requested": "Pedido enviado para {{nickname}}.",
       "befriended": "Agora você e {{nickname}} são amigos.",
       "blocked": "Bloqueados",
@@ -677,7 +674,8 @@
       "title": "Escolha seu apelido",
       "hint": "3 a 20 caracteres: letras, números, _ . -. Os outros técnicos acham você por ele.",
       "label": "Apelido",
-      "save": "Salvar"
+      "save": "Salvar",
+      "setupLead": "Seus amigos acham você por ele no jogo e no chat."
     },
     "chat": {
       "minimize": "Minimizar",
@@ -1854,6 +1852,7 @@
     }
   },
   "leagues": {
+    "humanManager": "Técnico humano: {{nickname}}",
     "finances": {
       "tab": "Finanças",
       "loading": "Carregando finanças dos clubes…",

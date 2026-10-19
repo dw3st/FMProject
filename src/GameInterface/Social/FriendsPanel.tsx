@@ -98,29 +98,12 @@ export function FriendsPanel() {
 function IdentityRow() {
   const { t } = useTranslation();
   const { me } = useSocial();
-  const [copied, setCopied] = useState(false);
   if (!me?.nickname) return null;
-  const copy = () => {
-    void navigator.clipboard
-      ?.writeText(me.friendCode)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      })
-      .catch(() => {});
-  };
+  // Only the nickname: friends find each other by it (the friend code stays an API detail).
   return (
-    <div className="px-4 pt-3 flex flex-col gap-1">
+    <div className="px-4 pt-3 flex items-baseline gap-2 min-w-0">
+      <span className="text-sm text-muted-foreground shrink-0">{t("social.you")}</span>
       <span className="font-semibold text-foreground truncate">{me.nickname}</span>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-muted-foreground">
-          {t("social.yourCode")} <span className="font-semibold text-foreground tabular-nums">{me.friendCode}</span>
-        </span>
-        <Button variant="secondary" flush onClick={copy}>
-          <Icon name={copied ? "check" : "copy"} size={16} />
-          {copied ? t("social.copied") : t("social.copy")}
-        </Button>
-      </div>
     </div>
   );
 }
@@ -375,7 +358,6 @@ function AddTab() {
   const s = useSocial();
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[] | null>(null);
-  const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [blocked, setBlocked] = useState<string[] | null>(null);
 
@@ -420,16 +402,6 @@ function AddTab() {
     await s.refreshFriends();
   }
 
-  async function addByCode(e: FormEvent) {
-    e.preventDefault();
-    const r = await socialApi.requestByCode(code);
-    report(r);
-    if (r.ok) {
-      setCode("");
-      await s.refreshFriends();
-    }
-  }
-
   async function unblock(nickname: string) {
     const r = await socialApi.unblock(nickname);
     if (r.ok) setBlocked((prev) => prev?.filter((n) => n !== nickname) ?? null);
@@ -469,22 +441,6 @@ function AddTab() {
             ))}
           </ul>
         ))}
-      <form onSubmit={(e) => void addByCode(e)} className="flex items-end gap-3">
-        <TextField
-          id="social-code"
-          variant="box"
-          className="flex-1"
-          label={t("social.add.codeLabel")}
-          placeholder="FM-XXXX-XXXX"
-          value={code}
-          maxLength={14}
-          autoComplete="off"
-          onChange={(e) => setCode(e.target.value)}
-        />
-        <Button type="submit" disabled={code.trim().length < 8}>
-          {t("social.add.sendCode")}
-        </Button>
-      </form>
       {feedback && (
         <p role="status" className={`text-sm ${feedback.ok ? "text-chart-2" : "text-destructive"}`}>
           {feedback.text}

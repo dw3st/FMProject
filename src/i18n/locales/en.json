@@ -629,6 +629,7 @@
     "players": "Players"
   },
   "social": {
+    "popup": { "open": "Open chat: {{name}}", "dismiss": "Dismiss" },
     "button": "Friends: {{count}} online",
     "buttonUnread": "Friends: {{count}} online, {{unread}} unread",
     "buttonShort": "Friends · {{count}}",
@@ -636,14 +637,12 @@
     "panelTitle": "Friends",
     "close": "Close",
     "loading": "Loading…",
-    "yourCode": "Your code",
-    "copy": "Copy",
-    "copied": "Copied",
+    "you": "You:",
     "nicknameFinal": "Your nickname can't be changed later.",
     "tabs": { "friends": "Friends", "requests": "Requests", "add": "Add" },
     "groups": { "playing": "Playing", "online": "Online", "offline": "Offline", "worlds": "Worlds" },
     "status": { "playing": "Playing · {{club}}", "online": "Online", "offline": "Offline" },
-    "noFriends": "No friends yet. Add someone by nickname or code.",
+    "noFriends": "No friends yet. Add someone by nickname in the Add tab.",
     "actions": "Actions",
     "unfriend": "Remove friend",
     "block": "Block",
@@ -665,8 +664,6 @@
       "sent": "Request sent",
       "friend": "Friend",
       "accept": "Accept",
-      "codeLabel": "Friend code",
-      "sendCode": "Add",
       "requested": "Request sent to {{nickname}}.",
       "befriended": "You and {{nickname}} are now friends.",
       "blocked": "Blocked",
@@ -677,7 +674,8 @@
       "title": "Choose your nickname",
       "hint": "3 to 20 characters: letters, digits, _ . -. Other managers find you by it.",
       "label": "Nickname",
-      "save": "Save"
+      "save": "Save",
+      "setupLead": "Your friends find you by it in the game and in the chat."
     },
     "chat": {
       "minimize": "Minimize",
@@ -1854,6 +1852,7 @@
     }
   },
   "leagues": {
+    "humanManager": "Human manager: {{nickname}}",
     "finances": {
       "tab": "Finances",
       "loading": "Loading club finances…",

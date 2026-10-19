@@ -1,3 +1,4 @@
+import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
 import i18next from "@/i18n/i18n";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { RescheduledNote, shortDateLabel } from "@/GameInterface/Components/RescheduledNote";
@@ -71,10 +72,15 @@ function StandingsTable({
   standings,
   zones,
   onClickSquad,
+  myClubId,
+  humanClubs,
 }: {
   standings: StandingRow[];
   zones: LeagueZone[];
   onClickSquad: (row: StandingRow) => void;
+  myClubId: string;
+  /** Friends' league: clubs run by another human → their nickname (badge next to the name). */
+  humanClubs: Map<string, string>;
 }) {
   const { t } = useTranslation();
   return (
@@ -97,18 +103,20 @@ function StandingsTable({
         {standings.map((row, idx) => {
           const rank = idx + 1;
           const zone = getZone(rank, standings.length, zones);
+          const mine = row.squadId === myClubId;
+          const human = mine ? undefined : humanClubs.get(row.squadId);
 
           return (
             <div
               key={row.squadId}
               onClick={() => onClickSquad(row)}
-              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} border-l-4 ${
+              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} ${mine ? TABLE_STYLE.rowHighlight : ""} border-l-4 ${
                 zone ? ZONE_BORDER[zone.color] : "border-l-transparent"
               }`}
             >
               <div className={TABLE_STYLE.rank}>{rank}</div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <ClubLogo
                   logoUrl={squadLogoUrl(row.squadId)}
                   primaryColor={row.colors[0]}
@@ -116,7 +124,8 @@ function StandingsTable({
                   className={TABLE_STYLE.crest}
                   imgClassName="w-full h-full object-contain"
                 />
-                <span className={TABLE_STYLE.name}>{row.name}</span>
+                <span className={`truncate ${mine ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{row.name}</span>
+                {human && <HumanBadge nickname={human} />}
               </div>
 
               <div className="text-center text-muted-foreground">{row.mp}</div>
@@ -146,6 +155,20 @@ function StandingsTable({
         })}
       </div>
     </div>
+  );
+}
+
+/** Club run by another human of the friends' league: their nickname, in the "users" colour of the world icon. */
+function HumanBadge({ nickname }: { nickname: string }) {
+  const { t } = useTranslation();
+  return (
+    <span
+      className="inline-flex items-center gap-1 shrink-0 max-w-[140px] rounded border border-chart-2/40 bg-chart-2/10 px-2 py-0.5 text-sm font-semibold text-chart-2"
+      title={t("leagues.humanManager", { nickname })}
+    >
+      <Icon name="users" size={16} className="shrink-0" />
+      <span className="truncate">{nickname}</span>
+    </span>
   );
 }
 
@@ -509,6 +532,7 @@ function MatchStatsModal({
 export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const { t, i18n } = useTranslation();
   const { session, currentDate, mergeSession, fixtures } = useGameSave();
+  const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [activeSlug, setActiveSlug] = useState(
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
@@ -878,6 +902,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                     standings={standings}
                     zones={active?.zones ?? []}
                     onClickSquad={handleClickSquad}
+                    myClubId={session?.clubId ?? ""}
+                    humanClubs={humanClubs}
                   />
                 )}
 

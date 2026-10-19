@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.33",
+    date: "2026-10-19",
+    items: [
+      {
+        pt: "No primeiro acesso você escolhe seu apelido: ele fica preso à conta e é como os amigos te acham e te veem no chat.",
+        en: "On your first sign-in you pick your nickname: it stays with your account and is how friends find and see you in the chat.",
+      },
+      {
+        pt: "Amigos mais simples: só o seu apelido, e você adiciona amigos buscando o apelido deles.",
+        en: "Simpler Friends: just your nickname, and you add friends by searching for theirs.",
+      },
+      {
+        pt: "Aviso no canto da tela quando chega mensagem de um amigo ou da liga; clique para abrir a conversa.",
+        en: "A popup in the corner when a friend or your league sends a message; click it to open the chat.",
+      },
+      {
+        pt: "Liga de amigos: na classificação, seu clube fica destacado e os clubes dos outros técnicos têm o apelido deles.",
+        en: "Friends' league: in the standings your club is highlighted and the other managers' clubs show their nickname.",
+      },
+    ],
+  },
+  {
     version: "4.32.1",
     date: "2026-10-19",
     items: [

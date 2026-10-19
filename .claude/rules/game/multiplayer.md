@@ -199,6 +199,8 @@ Eventos de socket (`ServerEvent`, `src/types/socialTypes.ts`): `world_invite`, `
 
 ### Telas
 
+- Ligas → Classificação: o clube do assento destacado e um selo com o apelido nos clubes dos outros membros
+  (`useHumanClubs` → `humanClubsOf`, de `GET /api/worlds/:saveId`).
 - Novo jogo: passo "Sozinho / Com amigos". `/join/:code`: card da liga e o assistente no modo entrar. i18n `world.*`.
 - `/world` ("SUA **LIGA**"): membros (rosto, técnico, apelido, clube, papel; o dono passa a posse e tira), convite
   (link, copiar, trocar código, convidar amigos), prazo (`OptionChips`), Começar / "Esperando o dono começar", "Chat da
