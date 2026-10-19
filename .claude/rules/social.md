@@ -30,6 +30,8 @@ Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `d
   ping do socket ou pelo `POST /api/presence/ping`), `offline`. Só amigos recebem. Abrir o socket não marca presença:
   só o `ping` e o `hello` de uma aba visível (`hello { hidden: true }` não marca). Fechar o socket que mostrava um
   clube espera 15 s (carência) antes de publicar: um recarregar não faz o status piscar.
+- `chat_messages.meta` (JSON, migração só aditiva): uma resenha guarda `{ taunt }` (ids e placar real) e
+  `ChatMessageView.taunt`; o `body` é o fallback em inglês. Nenhum texto livre além do próprio chat.
 - Nenhuma resposta nem evento carrega e-mail ou id de usuário.
 
 ## Arquivos
@@ -73,6 +75,11 @@ com a página visível; responde `pong { online }`, a contagem da barra), `typin
 ignorados, e por socket no máximo 5 `hello` e 10 `ping` por minuto e 1 `typing` a cada 2 s por sala (o excesso é
 ignorado). O logout fecha os sockets daquela sessão (`closeSessionSockets`, código 4001; o cliente não reconecta). O
 envio de mensagem é sempre HTTP; sem socket a tela continua funcionando e busca o histórico ao abrir.
+
+Rivais (multiplayer parte 6): cliente → servidor `live_score` (só num mundo em grupo, 30 por minuto por socket,
+inválido = ignorado); servidor → cliente `world_results { saveId, results }` e
+`friend_live { saveId, seatId, live, goal? }`. A partida ao vivo abre um socket próprio (`useLiveRivals`), sem o
+`SocialProvider`. Ver `.claude/rules/game/multiplayer.md` → "Parte 6: rivais".
 
 Cliente: reconecta com espera crescente (1, 2, 5, 10, 30 s). Antes de cada tentativa pergunta `/api/social/me`: 401
 (sessão encerrada) ou 404 (servidor sem as rotas sociais) param de vez, e 5 tentativas seguidas que nunca abriram
