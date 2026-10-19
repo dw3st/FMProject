@@ -1,3 +1,4 @@
+import { rivalsRoutes } from "@/backend/rivals/rivalsRoutes";
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { publicSeatSquad } from "@/Domain/seats/publicSquad";
 import { withJsonErrors } from "@/backend/routeErrors";
@@ -137,6 +138,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...socialRoutes,
   ...worldRoutes,
   ...groupAdvanceRoutes,
+  ...rivalsRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when
   // POSTHOG_KEY is set — the project key is a public client token.

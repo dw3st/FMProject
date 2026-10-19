@@ -539,3 +539,70 @@ bun test src/Domain/multiplayer src/backend/dal/seatSeasons.dal.test.ts src/back
   `seatSeasons.json` não, a linha da temporada fechada se perde; os pontos que o dia refeito somar (copa, continental,
   prêmios) vão para a passagem nova; a mensagem `season_closed` não sai de novo; e um prêmio mundial (janeiro) já
   creditado ao registro do técnico não volta a pontuar na passagem.
+
+## Parte 6: rivais
+
+Spec: `docs/superpowers/specs/2026-10-19-multiplayer-rivals-design.md`. Plano: `docs/superpowers/plans/2026-10-19-multiplayer-rivals.md`.
+Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. Sem efeito de partida (`/test`, `/lab`: nada).
+
+### Regra
+
+- **Resultados do dia:** depois de cada dia que o executor roda (`stepWorld`, dentro do lock, depois do `flush` do dia),
+  `recordDayResults` (`src/backend/rivals/rivalsWorld.ts`) monta os jogos dos clubes humanos a partir de
+  `outcome.payload.events` (`buildSeatResults`, `src/Domain/rivals/results.ts`) e grava em `saves/{id}/rivalsFeed.json`
+  (`SeatResult[]`, mais novos primeiro, até `RIVALS.FEED_MAX` 300, id `<data>:<competição>:<fixtureId>:<seatId>`, um id
+  repetido não duplica). Um jogo entre dois assentos vira dois resultados. Todo membro recebe
+  `world_results { saveId, results }`.
+- **Situações** (`resultSituations`): `win`/`draw`/`loss` sempre; `big_win`/`big_loss` (saldo ≥ 3), `home_loss`,
+  `away_win`, `comeback_win`, `blown_lead`, `late_equalizer` / `late_winner` (88' ou depois, pelos minutos dos gols),
+  `shootout_win`/`shootout_loss` (empate decidido nos pênaltis).
+- **Placar ao vivo:** o `MatchScreen` de um mundo em grupo manda `live_score { saveId, fixtureId, phase, minute, score:
+  { for, against }, scorer? }` (`start`, `goal`, `half`, `end`; nada em jogo de seleção) por um socket próprio
+  (`useLiveRivals`). O servidor (`src/backend/rivals/liveScores.ts`, em memória) aceita só de um membro, para o jogo não
+  jogado do clube do assento na data do mundo; o placar só cresce (um gol soma, o resto não muda), o minuto não volta,
+  0..130, até 40 eventos por jogo, 30 frames por minuto por socket; o autor só fica se for nome de um dos dois elencos.
+  Frame recusado: silêncio. Repasse `friend_live { saveId, seatId, live, goal? }` aos outros membros; `end` fica 10 min,
+  15 min sem evento = interrompido, 30 min = some (varredura de 30 s junto da presença); o dia rodado tira os jogos
+  daquele dia (`clearLiveForDay`). Provisório: o oficial é o resultado do dia.
+- **Resenha:** `POST /api/worlds/:saveId/taunts { target: { result } | { live: seatId }, kind, id }` (membro; 409
+  `lobby` / `notMulti` / `noNickname`, 404 alvo inexistente, 400 `self` / `invalidTaunt` / `invalidBody`, 429
+  `rateLimited` com o limite do chat). 4 reações (`applause`, `fire`, `laugh`, `sorry`) e frases do catálogo
+  (`src/Domain/rivals/taunts.ts`, 4 por situação e por gol ao vivo, `rivals.taunts.<id>`); a frase tem que ser de uma
+  situação do alvo. Vira mensagem da sala `world:<saveId>` com `chat_messages.meta = { taunt }` (ids e o placar real)
+  e um `body` em inglês; nenhum texto livre.
+
+### Rotas (`src/backend/rivals/rivalsRoutes.ts`, membro; solo 409 `notMulti`)
+
+| Rota | Faz |
+|---|---|
+| `GET /api/worlds/:saveId/rivals` | `{ rows: RivalRow[] }`: apelido, rosto, clube, posição na liga, forma (5 do feed), último resultado, próximo jogo, posição e pontos na liga de amigos, placar ao vivo |
+| `GET /api/worlds/:saveId/results?seat=&offset=&limit=` | Feed paginado (limite 1..50, 400 fora) |
+| `GET /api/worlds/:saveId/live` | `{ live: LiveScoreView[] }` |
+| `POST /api/worlds/:saveId/taunts` | Resenha (acima) |
+
+### Telas
+
+- `/world`: abas **Rivais** (`RivalsTable`, clicar abre os resultados do amigo) e **Resultados** (`ResultsFeed`, por
+  dia, filtro por amigo, ações de resenha); `?tab=rivals|results`.
+- Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos.
+- Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
+  e gol ao vivo, com as ações; 8 s, no máximo 3.
+- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo; gol do amigo destaca 4 s com o autor; clique abre as ações
+  sem pausar.
+- Chat: `TauntLine` (escudo 20px, placar, ícone ou frase em itálico no idioma de quem lê). i18n `rivals.*`.
+
+### Testes
+
+```
+bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.test.ts src/backend/groupAdvance.rivals.test.ts \
+  src/backend/social src/backend/db.social.test.ts src/GameInterface/Social src/GameInterface/World src/i18n/rivals.keys.test.ts
+```
+
+### Limitações (parte 6)
+
+- Placar ao vivo depende do navegador de quem joga: aba fechada vira "interrompido" até o dia rodar.
+- O placar ao vivo é do cliente (só validado por coerência); um gol anulado pelo VAR derruba o placar e os frames
+  seguintes são recusados até o placar passar do guardado.
+- Estado ao vivo em memória (um processo só).
+- O feed é gravado pelo executor logo depois do `flush` do dia, fora do buffer do dia: uma falha entre o `flush` e a
+  gravação perde os resultados daquele dia no feed (o dia não roda de novo).

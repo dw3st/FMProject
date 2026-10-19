@@ -56,3 +56,11 @@ test("a 4.24 save_members (no created_at) gets the column; nothing is dropped", 
     d.prepare("INSERT INTO save_members (save_id, user_id, seat_id, role, created_at) VALUES ('w', 'u3', 's2', 'member', 6)").run(),
   ).toThrow();
 });
+
+test("chat_messages gets a meta column (additive, twice is fine)", () => {
+  const d = oldDatabase();
+  migrateSocialSchema(d);
+  migrateSocialSchema(d);
+  const cols = (d.prepare("PRAGMA table_info(chat_messages)").all() as { name: string }[]).map((c) => c.name);
+  expect(cols).toContain("meta");
+});

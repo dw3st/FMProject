@@ -7,6 +7,9 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { GroupAdvanceBand } from "@/GameInterface/World/GroupAdvanceBand";
 import { worldApi } from "@/GameInterface/World/worldApi";
+import { rivalsApi } from "@/GameInterface/World/rivalsApi";
+import { useSocial } from "@/GameInterface/Social/useSocial";
+import type { RivalRow } from "@/types/rivalsTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { fetchNews, topNews } from "@/GameInterface/News/newsApi";
@@ -38,6 +41,7 @@ import {
   LeagueMiniTable,
   NewsCard,
   NextMatchCard,
+  RivalsCard,
   WeekFinancesCard,
   WorksCard,
   recentlyCompleted,
@@ -154,6 +158,16 @@ export function DashboardScreen() {
     });
     return () => { cancelled = true; };
   }, [saveId, groupAdvance, mySeatId, currentDate]);
+
+  // Rivals card (multiplayer part 6): only in a friends' league; reloads with results and live scores.
+  const social = useSocial();
+  const [rivals, setRivals] = useState<RivalRow[] | null>(null);
+  useEffect(() => {
+    if (!saveId || !groupAdvance) { setRivals(null); return; }
+    let cancelled = false;
+    void rivalsApi.rivals(saveId).then((r) => { if (!cancelled) setRivals(r.ok ? r.data.rows : null); });
+    return () => { cancelled = true; };
+  }, [saveId, groupAdvance, currentDate, social.rivalsVersion]);
 
   // World news (`.claude/rules/game/press.md` → "Notícias"): the big ones of the last days first.
   const [news, setNews] = useState<NewsItem[] | null>(null);
@@ -330,6 +344,8 @@ export function DashboardScreen() {
           loading={standings === null}
         />
       </div>
+
+      {rivals && rivals.length >= 2 && <RivalsCard rows={rivals} />}
 
       <WeekCard
         fixtures={fixtures}

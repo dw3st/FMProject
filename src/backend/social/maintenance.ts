@@ -1,5 +1,6 @@
 import { logError } from "@/Logger";
-import { sweepStatuses } from "@/backend/social/realtime";
+import { notifyUser, sweepStatuses } from "@/backend/social/realtime";
+import { sweepLiveScores } from "@/backend/rivals/liveScores";
 import { purgeOldMessages } from "@/backend/social/socialStore";
 
 const PURGE_EVERY_MS = 24 * 60 * 60 * 1000;
@@ -16,7 +17,11 @@ export function startSocialMaintenance(): () => void {
   };
   purge();
   const purgeTimer = setInterval(purge, PURGE_EVERY_MS);
-  const sweepTimer = setInterval(() => sweepStatuses(Date.now()), SWEEP_EVERY_MS);
+  const sweepTimer = setInterval(() => {
+    const now = Date.now();
+    sweepStatuses(now);
+    sweepLiveScores(now, notifyUser);
+  }, SWEEP_EVERY_MS);
   return () => {
     clearInterval(purgeTimer);
     clearInterval(sweepTimer);

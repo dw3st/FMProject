@@ -112,6 +112,9 @@ import {
   MessagesSquare,
   Ban,
   Ellipsis,
+  ThumbsUp,
+  HeartCrack,
+  Radio,
 } from "lucide-react";
 import { useId, type SVGProps } from "react";
 
@@ -247,6 +250,11 @@ export type IconName =
   | "talk"
   | "lock"
   | "users"
+  | "react-applause"
+  | "react-fire"
+  | "react-laugh"
+  | "react-sorry"
+  | "radio"
   | "ban"
   | "more"
 ;
@@ -382,6 +390,11 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "face-furious": Angry,
   "talk": MessagesSquare,
   "users": Users,
+  "react-applause": ThumbsUp,
+  "react-fire":     Flame,
+  "react-laugh":    Laugh,
+  "react-sorry":    HeartCrack,
+  "radio":          Radio,
   "ban": Ban,
   "more": Ellipsis,
 };

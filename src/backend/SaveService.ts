@@ -18,6 +18,7 @@ import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { SeatOffer } from "@/types/seatOfferTypes";
 import type { SeatSeasonRow } from "@/types/standingsTypes";
+import type { SeatResult } from "@/types/rivalsTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import { normalizeAchievements } from "@/Domain/achievements/progress";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
@@ -297,6 +298,14 @@ export class SaveService {
 
   writeSeatSeasons(saveId: string, rows: SeatSeasonRow[]): Promise<void> {
     return this.dal.writeSeatSeasons(saveId, rows);
+  }
+
+  getRivalsFeed(saveId: string): Promise<SeatResult[]> {
+    return this.dal.readRivalsFeed(saveId);
+  }
+
+  writeRivalsFeed(saveId: string, results: SeatResult[]): Promise<void> {
+    return this.dal.writeRivalsFeed(saveId, results);
   }
 
   // ── Coaching-staff pool (`.claude/rules/game/staff.md`) ─────────────────────

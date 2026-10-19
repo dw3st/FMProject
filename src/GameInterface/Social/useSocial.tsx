@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import { forgetSession } from "@/GameInterface/gameSession";
 import { socialApi } from "@/GameInterface/Social/socialApi";
@@ -18,10 +19,12 @@ import {
   mergeMessages,
   parseServerEvent,
   pushPopup,
+  pushRivalPopup,
   reconnectAction,
   reconnectDelay,
   totalUnread,
   type ChatPopup,
+  type RivalPopup,
   unreadAfterRead,
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
@@ -81,6 +84,11 @@ export interface SocialContextValue {
   /** New messages of rooms not on screen, newest first (`ChatPopups`); they go away on their own. */
   popups: ChatPopup[];
   dismissPopup: (room: string) => void;
+  /** Bumped on `world_results` / `friend_live` of the open world: rivals screens reload (multiplayer part 6). */
+  rivalsVersion: number;
+  /** Friends' results and live goals in the corner. */
+  rivalPopups: RivalPopup[];
+  dismissRivalPopup: (key: string) => void;
   /** Every parsed server event, for screens with their own socket needs (group advance). Returns the unsubscribe. */
   subscribe: (fn: (event: ServerEvent) => void) => () => void;
 }
@@ -110,7 +118,9 @@ function writeDock(dock: DockChat[]): void {
 }
 
 /** Friends, chat windows and the socket of one game page (`.claude/rules/social.md`). */
-export function SocialProvider({ saveId, children }: { saveId: string | null; children: ReactNode }) {
+export function SocialProvider({
+  saveId, seatId = null, children,
+}: { saveId: string | null; seatId?: string | null; children: ReactNode }) {
   const [me, setMe] = useState<SocialMe | null>(null);
   const [lists, setLists] = useState<FriendsResponse>(EMPTY_LISTS);
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -124,6 +134,9 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
   const [dock, setDock] = useState<DockChat[]>(readDock);
   const [popups, setPopups] = useState<ChatPopup[]>([]);
   const popupTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [rivalsVersion, setRivalsVersion] = useState(0);
+  const [rivalPopups, setRivalPopups] = useState<RivalPopup[]>([]);
+  const rivalTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // The socket opens only once `/api/social/me` answered: the lab's /simulate page reuses the Layout on a server
   // without the social routes, and there it must not retry a socket forever.
   const [available, setAvailable] = useState(false);
@@ -201,9 +214,25 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
     [dismissPopup],
   );
 
+  const dismissRivalPopup = useCallback((key: string) => {
+    clearTimeout(rivalTimers.current[key]);
+    delete rivalTimers.current[key];
+    setRivalPopups((prev) => prev.filter((p) => p.key !== key));
+  }, []);
+
+  const showRivalPopup = useCallback((popup: RivalPopup) => {
+    setRivalPopups((prev) => pushRivalPopup(prev, popup, RIVALS.POPUP_MAX));
+    clearTimeout(rivalTimers.current[popup.key]);
+    rivalTimers.current[popup.key] = setTimeout(() => dismissRivalPopup(popup.key), RIVALS.POPUP_MS);
+  }, [dismissRivalPopup]);
+
   useEffect(() => {
     const timers = popupTimers.current;
-    return () => Object.values(timers).forEach(clearTimeout);
+    const rt = rivalTimers.current;
+    return () => {
+      Object.values(timers).forEach(clearTimeout);
+      Object.values(rt).forEach(clearTimeout);
+    };
   }, []);
 
   const handleEvent = useCallback(
@@ -225,7 +254,10 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
             void socialApi.read(event.room, event.message.id);
           } else {
             setUnread((prev) => ({ ...prev, [event.room]: (prev[event.room] ?? 0) + 1 }));
-            showPopup({ room: event.room, messageId: event.message.id, from: event.message.from, body: event.message.body });
+            showPopup({
+              room: event.room, messageId: event.message.id, from: event.message.from, body: event.message.body,
+              taunt: event.message.taunt,
+            });
           }
           break;
         }
@@ -253,7 +285,10 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
           void refreshWorldInvites();
           break;
         case "world_members":
-          if (event.saveId === saveId) setWorldVersion((v) => v + 1);
+          if (event.saveId === saveId) {
+            setWorldVersion((v) => v + 1);
+            setRivalsVersion((v) => v + 1);
+          }
           break;
         case "world_started":
           if (event.saveId === saveId && window.location.pathname === "/world") window.location.replace("/dashboard");
@@ -263,9 +298,24 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
           forgetSession(event.saveId);
           if (event.saveId === saveId) window.location.replace("/start");
           break;
+        case "world_results":
+          if (event.saveId !== saveId) break;
+          setRivalsVersion((v) => v + 1);
+          for (const r of event.results.filter((x) => x.seatId !== seatId).slice(0, RIVALS.POPUP_MAX)) {
+            showRivalPopup({ key: `result:${r.id}`, kind: "result", result: r });
+          }
+          break;
+        case "friend_live":
+          if (event.saveId !== saveId) break;
+          setRivalsVersion((v) => v + 1);
+          if (event.goal && event.live && event.seatId !== seatId) {
+            const l = event.live;
+            showRivalPopup({ key: `goal:${l.seatId}:${l.score.for}-${l.score.against}`, kind: "goal", live: l });
+          }
+          break;
       }
     },
-    [refreshFriends, refreshWorldInvites, saveId, showPopup],
+    [refreshFriends, refreshWorldInvites, saveId, seatId, showPopup, showRivalPopup],
   );
   const handleRef = useRef(handleEvent);
   handleRef.current = handleEvent;
@@ -404,11 +454,11 @@ export function SocialProvider({ saveId, children }: { saveId: string | null; ch
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
       loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion, subscribe,
-      popups, dismissPopup,
+      popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
       hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
-      declineWorldInvite, worldVersion, subscribe, popups, dismissPopup],
+      declineWorldInvite, worldVersion, subscribe, popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

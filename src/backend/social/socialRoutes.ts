@@ -32,6 +32,7 @@ import {
   worldsOf,
   type ChatMessageRow,
   type NamedUser,
+  chatMessageView,
 } from "@/backend/social/socialStore";
 import { cleanMessageBody, rateLimit, type RateRule } from "@/Domain/social/message";
 import { dmRoomId, worldRoomId, worldRoomParam } from "@/Domain/social/rooms";
@@ -61,6 +62,11 @@ function allow(table: Map<string, number[]>, userId: string, now: number, rule?:
   const limited = rateLimit(table.get(userId) ?? [], now, rule);
   table.set(userId, limited.stamps);
   return limited.allowed;
+}
+
+/** The chat's message rate (10 per 10 s per user), shared with the rivals' taunts. */
+export function allowChatSend(userId: string, now: number): boolean {
+  return allow(sendStamps, userId, now);
 }
 
 function fail(error: SocialErrorCode, status: number, extra?: Record<string, unknown>): Response {
@@ -135,7 +141,7 @@ function requestTarget(me: string, body: Record<string, unknown>): NamedUser | n
 }
 
 function messageView(row: ChatMessageRow, viewer: string): ChatMessageView {
-  return { id: row.id, from: row.fromNickname ?? "", mine: row.fromUser === viewer, body: row.body, at: row.createdAt };
+  return chatMessageView(row, viewer);
 }
 
 async function friendsResponse(userId: string, now: number): Promise<FriendsResponse> {

@@ -77,4 +77,4 @@ export interface WorldInviteView {
 export type WorldErrorCode =
   | "notFound" | "full" | "alreadyMember" | "clubTaken" | "invalidManager" | "invalidClub" | "invalidBody"
   | "ownerOnly" | "transferFirst" | "alreadyStarted" | "notMulti" | "inviteLimit" | "noNickname" | "useLeave"
-  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby";
+  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby" | "self" | "invalidTaunt" | "rateLimited";

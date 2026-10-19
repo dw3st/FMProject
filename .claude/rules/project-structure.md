@@ -30,6 +30,7 @@ FMProject/
 │   ├── backend/            # Server: routes, SaveService + DAL (dal/), advanceDay, auth/, *World I/O
 │   │                       #   daySeats.ts (one DaySeat per human seat in the day), seats.ts (addSeat, removeSeat)
 │   │                       #   worlds/ (friends' league: lobby/running, invite codes, join/leave routes)
+│   │                       #   rivals/ (friends' results feed, live scores, taunts)
 │   ├── types/              # Shared data types (players, calendar, inbox, tactics, …)
 │   ├── lab/                # /lab, /test, /simulate, /matrix, /promo (separate server: lab/server.ts)
 │   ├── mcp/                # fmproject-engine MCP server (queries over debug snapshots)
@@ -97,6 +98,9 @@ for paths no route matched) and hands the socket to `handleSocialUpgrade` (`src/
 session cookie at the upgrade; the payloads are typed in `src/types/socialTypes.ts` (`ClientEvent`, `ServerEvent`) and
 carry nicknames, never user ids. Writes stay HTTP; the socket only delivers. Connections live in memory per process.
 A new push feature adds a `ServerEvent` member there instead of opening another socket. See `.claude/rules/social.md`.
+Multiplayer part 6 (rivals) adds `live_score` (client → server) and `world_results` / `friend_live` (server → client);
+the live match opens its own socket (`src/GameInterface/World/useLiveRivals.ts`). Live scores live in memory
+(`src/backend/rivals/liveScores.ts`).
 
 ## Save version (#155, 4.22)
 `SaveMeta.gameVersion` is written by `createSave` from `GAME_VERSION` (`@/Domain/saveVersion`, read

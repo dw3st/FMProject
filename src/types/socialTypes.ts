@@ -1,5 +1,6 @@
 // Shapes shared by the social routes, the socket and the screens. Nothing here carries an e-mail or a
 // user id: the client only ever sees nicknames (`.claude/rules/social.md`).
+import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
 
 export type FriendStatus = "online" | "offline" | "playing";
 
@@ -52,6 +53,8 @@ export interface ChatMessageView {
   mine: boolean;
   body: string;
   at: number;
+  /** A taunt from the rivals (multiplayer part 6): the screens render it, `body` is the English fallback. */
+  taunt?: TauntMeta;
 }
 
 export interface MessagesResponse {
@@ -63,7 +66,8 @@ export interface MessagesResponse {
 export type ClientEvent =
   | { type: "hello"; saveId: string | null; hidden?: boolean }
   | { type: "ping" }
-  | { type: "typing"; room: string };
+  | { type: "typing"; room: string }
+  | ({ type: "live_score" } & LiveScoreFrame);
 
 export type ServerEvent =
   | { type: "message"; room: string; message: ChatMessageView }
@@ -93,7 +97,10 @@ export type ServerEvent =
     waitingFor: string[];
     /** The executor's failure: a fixed code (`dayFailed`), never the error text. */
     error?: string;
-  };
+  }
+  // Multiplayer part 6 (rivals): the human clubs' games of the day, and a friend's live score.
+  | { type: "world_results"; saveId: string; results: SeatResult[] }
+  | { type: "friend_live"; saveId: string; seatId: string; live: LiveScoreView | null; goal?: true };
 
 export type SocialErrorCode =
   | "invalidNickname"
