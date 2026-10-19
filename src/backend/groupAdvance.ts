@@ -7,6 +7,7 @@ import { listSaveMembers } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
 import { notifyUser } from "@/backend/social/realtime";
 import { listWorldCodeIds } from "@/backend/worlds/worldStore";
+import { recordDayResults } from "@/backend/rivals/rivalsWorld";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import {
@@ -20,6 +21,7 @@ import type { ServerEvent } from "@/types/socialTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { DayEvent, RestEvent, TrainingEvent } from "@/types/dayLogTypes";
 import type { SeatState } from "@/types/seatTypes";
+import type { SeatResult } from "@/types/rivalsTypes";
 import type { GroupAdvanceView, MatchDecision, WorldAdvance } from "@/types/groupAdvanceTypes";
 
 /** What the executor needs (tests swap `runDay` and the calendar readers). */
@@ -172,7 +174,7 @@ async function refuseRecordings(service: SaveService, saveId: string, date: stri
 }
 
 type Step =
-  | { kind: "ran" | "stopped" | "idle"; date: string | null; target: string | null; waitingFor: string[] }
+  | { kind: "ran" | "stopped" | "idle"; date: string | null; target: string | null; waitingFor: string[]; results?: SeatResult[] }
   | { kind: "error"; date: string | null; target: string | null; waitingFor: string[]; error: string };
 
 /** One step under the save lock: compute the target, then run one day or stop. */
@@ -246,8 +248,10 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
       saveId, s.seatId, { date: currentDate, newDate, seat: part, ...(club.length > 0 ? { club } : {}) }, GROUP_ADVANCE.PENDING_SUMMARY_MAX,
     );
   }
+  // Rivals (part 6): the human clubs' games of the day go to the feed; the members get them after the step.
+  const results = await recordDayResults(service, saveId, currentDate, outcome.payload.events, seats);
   await updateAdvance(service, saveId, noError(world.advance));
-  return { kind: "ran", date: newDate, target: plan.target, waitingFor: [] };
+  return { kind: "ran", date: newDate, target: plan.target, waitingFor: [], results };
 }
 
 /** The club's training or rest of the day with the per-player effects (kept for the merged summary). */
@@ -284,6 +288,12 @@ async function broadcast(
       ...(ev.error ? { error: ev.error } : {}),
     });
   }
+}
+
+/** `world_results` to every member (each sees all results, the screens filter their own). */
+function broadcastResults(saveId: string, deps: GroupAdvanceDeps, results: readonly SeatResult[]): void {
+  if (results.length === 0) return;
+  for (const m of listSaveMembers(saveId)) deps.notify(m.userId, { type: "world_results", saveId, results: [...results] });
 }
 
 /** A step that threw outside the day (a calendar read, a seat file): recorded like a failed day, under the lock. */
@@ -339,6 +349,7 @@ async function advanceGroup(saveId: string, deps: GroupAdvanceDeps): Promise<Gro
     result.date = step.date;
     result.target = step.target;
     await broadcast(saveId, deps, { date: step.date, target: step.target, running: true, waitingFor: [] });
+    broadcastResults(saveId, deps, step.results ?? []);
   }
   return finish(await haltAtCap(saveId, deps, max));
 }

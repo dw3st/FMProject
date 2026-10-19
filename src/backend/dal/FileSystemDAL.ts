@@ -7,6 +7,7 @@ import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { SeatOffer } from "@/types/seatOfferTypes";
 import type { SeatSeasonRow } from "@/types/standingsTypes";
+import type { SeatResult } from "@/types/rivalsTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { AchievementsState } from "@/types/achievementTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -39,6 +40,7 @@ function seasonArchivePath(saveId: string, year: number) {
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
 function seatOffersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/seatOffers.json`; }
 function seatSeasonsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/seatSeasons.json`; }
+function rivalsFeedPath(saveId: string) { return `${SAVES_DIR}/${saveId}/rivalsFeed.json`; }
 function staffPoolPath(saveId: string) { return `${SAVES_DIR}/${saveId}/staffPool.json`; }
 function refereesDir(saveId: string) { return `${SAVES_DIR}/${saveId}/referees`; }
 /** Archive keys are `<country>-<season>`; anything outside this shape never reaches a path. */
@@ -208,6 +210,18 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeatSeasons(saveId: string, rows: SeatSeasonRow[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(seatSeasonsPath(saveId), JSON.stringify(rows));
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readRivalsFeed(saveId: string): Promise<SeatResult[]> {
+    const file = Bun.file(rivalsFeedPath(saveId));
+    if (!(await file.exists())) return [];
+    return file.json() as Promise<SeatResult[]>;
+  }
+
+  async writeRivalsFeed(saveId: string, results: SeatResult[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(rivalsFeedPath(saveId), JSON.stringify(results));
     bumpSaveDataVersion(saveId);
   }
 
