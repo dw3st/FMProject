@@ -21,5 +21,7 @@ const ACTIVE = new Set<MatchWeather>(["rain", "snow", "wind", "hot", "cold"]);
 /** i18n key of the one-line effect text (preview, result); null = nothing to say. */
 export function weatherEffectKey(w: WeatherOfMatch): string | null {
   if (w.covered && ROOF_STOPS.has(w.weather)) return "weatherEffect.covered";
-  return ACTIVE.has(w.effective) ? `weatherEffect.${w.effective}` : null;
+  if (ACTIVE.has(w.effective)) return `weatherEffect.${w.effective}`;
+  // A drawn weather with an effect that the match plays without, not because of a roof: a neutral venue.
+  return ACTIVE.has(w.weather) ? "weatherEffect.neutral" : null;
 }

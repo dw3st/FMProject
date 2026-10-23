@@ -8,6 +8,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { GroupAdvanceBand } from "@/GameInterface/World/GroupAdvanceBand";
 import { worldApi } from "@/GameInterface/World/worldApi";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
+import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import type { RivalRow } from "@/types/rivalsTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -74,6 +75,7 @@ export function DashboardScreen() {
     inboxMessages, unreadInboxCount,
   } = useGameSave();
   const windowsData = useTransferWindows();
+  const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [standings, setStandings] = useState<StandingRow[] | null>(null);
@@ -342,6 +344,7 @@ export function DashboardScreen() {
           rows={standingsWindow(standingRows, mySquadId)}
           myId={mySquadId}
           loading={standings === null}
+          humanClubs={humanClubs}
         />
       </div>
 

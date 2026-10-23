@@ -572,6 +572,14 @@ export function MatchScreen() {
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
         liveFixtureRef.current = liveTarget && !data.national ? (data.matchDay?.fixtureId ?? data.fixture.id) : null;
+        // Resumed after a reload: `matchStart` never fires again, so tell the friends where the game is (a `start`
+        // frame rebuilds the live entry even when the server dropped it meanwhile).
+        if (snap && liveFixtureRef.current && state.matchPhase !== "matchEnd" && state.matchPhase !== "preMatch") {
+          sendLiveRef.current({
+            fixtureId: liveFixtureRef.current, phase: state.matchPhase === "halfTime" ? "half" : "start", minute: Math.max(0, Math.min(130, matchMinute(state))),
+            score: { for: state.score.A, against: state.score.B },
+          });
+        }
         setVenueName(homeSquad.venue?.name ?? null);
         setTouchline({
           crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,

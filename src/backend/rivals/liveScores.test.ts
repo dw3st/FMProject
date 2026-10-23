@@ -51,6 +51,19 @@ describe("live scores", () => {
     expect(sent).toHaveLength(1);
   });
 
+  test("a resumed match (start at the current minute and score) rebuilds a dropped game", async () => {
+    const { sent, notify } = setup();
+    await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "goal", minute: 20, score: { for: 1, against: 0 } }, notify, 0);
+    sweepLiveScores(RIVALS.LIVE_DROP_MS + 1, notify);
+    expect(liveScoresOf(saveId, RIVALS.LIVE_DROP_MS + 1)).toEqual([]);
+    // Before the fix only the next goal brought it back: a clock frame alone is refused on a dropped game.
+    expect(await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "minute", minute: 60, score: { for: 1, against: 0 } }, notify, RIVALS.LIVE_DROP_MS + 2)).toBe(false);
+    expect(await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "start", minute: 60, score: { for: 1, against: 0 } }, notify, RIVALS.LIVE_DROP_MS + 2)).toBe(true);
+    expect(liveScoresOf(saveId, RIVALS.LIVE_DROP_MS + 3)[0]).toMatchObject({ status: "live", minute: 60, score: { for: 1, against: 0 } });
+    expect(await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "minute", minute: 65, score: { for: 1, against: 0 } }, notify, RIVALS.LIVE_DROP_MS + 4)).toBe(true);
+    expect(sent.at(-1)!.userId).toBe(b.id);
+  });
+
   test("the day running clears the game; the sweep marks stale then drops", async () => {
     const { sent, notify } = setup();
     await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "start", minute: 0, score: { for: 0, against: 0 } }, notify, 0);

@@ -135,6 +135,6 @@ describe("world rooms", () => {
     expect((await post(c.token, room, "oi")).status).toBe(403);
     const list = await callSocial("GET", "/api/social/friends", b.token);
     // The league is named by its owner's nickname, never by a club.
-    expect(list.json.worlds).toEqual([{ room, saveId, owner: a.nickname, unread: 1 }]);
+    expect(list.json.worlds).toEqual([{ room, saveId, owner: a.nickname, myClub: "", unread: 1 }]);
   });
 });

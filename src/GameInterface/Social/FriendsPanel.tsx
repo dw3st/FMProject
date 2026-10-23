@@ -4,7 +4,7 @@ import { dmRoomParam } from "@/Domain/social/rooms";
 import { Icon } from "@/GameInterface/Icons";
 import { FRIENDS_BUTTON_ID } from "@/GameInterface/Social/FriendsButton";
 import { socialApi, type ApiResult, type RequestAnswer } from "@/GameInterface/Social/socialApi";
-import { groupFriends } from "@/GameInterface/Social/socialState";
+import { groupFriends, worldRoomLabel } from "@/GameInterface/Social/socialState";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -178,7 +178,7 @@ function FriendsTab() {
                 className="flex items-center gap-3 rounded-md px-2 py-2 text-left cursor-pointer border-0 bg-transparent hover:bg-secondary/30"
               >
                 <Icon name="globe" size={16} className="text-muted-foreground" />
-                <span className="font-semibold text-foreground truncate">{w.owner ? t("world.leagueOf", { owner: w.owner }) : t("social.chat.world")}</span>
+                <span className="font-semibold text-foreground truncate">{worldRoomLabel(w.room, s.lists.worlds, (owner) => t("world.leagueOf", { owner })) ?? t("social.chat.world")}</span>
                 {unread > 0 && <span className={`ml-auto ${BADGE}`}>{unread}</span>}
               </button>
             );

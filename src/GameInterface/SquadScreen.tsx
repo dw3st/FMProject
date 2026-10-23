@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
+import { HumanBadge } from "@/GameInterface/World/HumanBadge";
+import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
 import type { Squad } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -33,6 +35,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
+  const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
 
   const fetchSquadForRoute = useCallback(() => {
     if (!session) return;
@@ -104,7 +107,10 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         <ScreenTitle
           accent={squad.name}
           trailing={
-            <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
+            <div className="flex items-center gap-3">
+              {squad.id !== mySquadId && humanClubs.get(squad.id) && <HumanBadge nickname={humanClubs.get(squad.id)!} />}
+              <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
+            </div>
           }
         >
           <span className="inline-flex items-center gap-3">

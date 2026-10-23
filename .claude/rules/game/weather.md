@@ -29,7 +29,8 @@ o pôr do sol, só desenho) continua em `src/Domain/matchday/matchConditions.ts`
 
 ## Telas
 
-- Prévia e resultado: linha do efeito do clima quando ativo (`weatherEffect.*` em i18n).
+- Prévia e resultado: linha do efeito do clima quando ativo (`weatherEffect.*` em i18n); em campo neutro com um clima
+  sorteado que teria efeito, "o clima não afeta o jogo" (`weatherEffect.neutral`, 4.34.2).
 - `/test`: seletor **Weather** (motor + luz), cabeçalho do `EnergyPanel` com os multiplicadores, cenários `rain-cross` e
   `heat-stamina`, categoria de debug `weather`.
 - `/lab`: `Variant.weather` (variante A vale para o jogo); `TeamRawStats.weatherActive` → `weatherShare` na linha do `PairDetail`.

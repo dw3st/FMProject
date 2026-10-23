@@ -22,4 +22,9 @@ describe("weatherEffectKey", () => {
     expect(weatherEffectKey({ weather: "cloudy", covered: false, effective: "cloudy" })).toBeNull();
     expect(weatherEffectKey({ weather: "hot", covered: false, effective: "hot" })).toBe("weatherEffect.hot");
   });
+  test("a neutral venue (drawn weather with an effect, played neutral, no roof) says the weather does not count", () => {
+    expect(weatherEffectKey({ weather: "rain", covered: false, effective: "sunny" })).toBe("weatherEffect.neutral");
+    expect(weatherEffectKey({ weather: "hot", covered: false, effective: "sunny" })).toBe("weatherEffect.neutral");
+    expect(weatherEffectKey({ weather: "cloudy", covered: false, effective: "sunny" })).toBeNull();
+  });
 });

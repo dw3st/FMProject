@@ -11,7 +11,9 @@ const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primar
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
 const ICON_ONLY = "flex items-center justify-center w-9 h-9 rounded-md border border-border bg-card text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 const MENU_ITEM = "w-full text-left h-10 px-3 rounded text-sm font-semibold text-foreground hover:bg-secondary/40 cursor-pointer bg-transparent border-0";
-const LABEL_TRUNC = "max-w-[200px] truncate";
+// Every state fits the top bar's fixed 184px slot (`TopNavigation`): status texts truncate, the full text is in `title`.
+const LABEL_TRUNC = "max-w-[140px] truncate";
+const RUNNING_TRUNC = "max-w-[184px] truncate";
 const MENU_ID = "ready-until-panel";
 
 /** The day block's action in a group world (`.claude/rules/game/multiplayer.md`, part 3). */
@@ -67,7 +69,8 @@ export function ReadyControl() {
   }, [open, close, place]);
 
   const errorText = error ? t(`world.advance.errors.${error}`, { defaultValue: t("world.advance.errors.generic") }) : null;
-  const errorLine = errorText && <span className="text-sm text-destructive whitespace-nowrap max-w-[220px] truncate" role="alert" title={errorText}>{errorText}</span>;
+  // Shrinks first in the top bar's fixed slot: the action buttons keep their width.
+  const errorLine = errorText && <span className="min-w-0 text-sm text-destructive whitespace-nowrap max-w-[220px] truncate" role="alert" title={errorText}>{errorText}</span>;
 
   const { branch, canPlay } = readyBranch(view);
   const unmarkButton = (
@@ -97,10 +100,11 @@ export function ReadyControl() {
 
   if (branch === "running") {
     const text = t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) });
+    const short = t("world.advance.runningShort", { date: fmt(view.currentDate), target: fmt(view.target) });
     return (
-      <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${LABEL_TRUNC}`} role="status" title={text}>
+      <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={text} aria-label={text}>
         <Icon name="clock" size={16} className="shrink-0" />
-        <span className="truncate">{text}</span>
+        <span className="truncate" aria-hidden="true">{short}</span>
       </span>
     );
   }
@@ -129,7 +133,7 @@ export function ReadyControl() {
             {t("world.advance.play")}
           </button>
         )}
-        {readyBranch(view).marked && unmarkButton}
+        {/* No "not ready" here: an undecided match day already holds the world (it comes back once decided). */}
       </div>
     );
   }
@@ -142,7 +146,6 @@ export function ReadyControl() {
         {errorLine}
         <span className={`text-sm font-semibold whitespace-nowrap tabular-nums ${LABEL_TRUNC}`} title={waiting ? `${text} · ${waiting}` : text}>
           {text}
-          {waiting && <span className="hidden xl:inline text-muted-foreground"> · {waiting}</span>}
         </span>
         {unmarkButton}
       </div>

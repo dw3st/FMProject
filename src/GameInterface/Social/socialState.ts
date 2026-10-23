@@ -3,7 +3,7 @@ import { isSeatResult } from "@/Domain/rivals/results";
 import { parseTauntMeta } from "@/Domain/rivals/taunts";
 import { dmRoomParam } from "@/Domain/social/rooms";
 import type { LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
-import type { ChatMessageView, FriendStatus, FriendView, FriendsResponse, ServerEvent } from "@/types/socialTypes";
+import type { ChatMessageView, FriendStatus, FriendView, FriendsResponse, ServerEvent, WorldRoomView } from "@/types/socialTypes";
 
 export interface FriendGroups {
   playing: FriendView[];
@@ -31,6 +31,20 @@ export function mergeMessages(prev: readonly ChatMessageView[], incoming: readon
   for (const m of prev) byId.set(m.id, m);
   for (const m of incoming) byId.set(m.id, m);
   return [...byId.values()].sort((a, b) => a.id - b.id);
+}
+
+/**
+ * How a friends' league is named on screen: "<owner>'s league" (`leagueOf`), plus the viewer's own club when another
+ * league of his has the same owner (otherwise the two rows would read the same). Null when the owner is unknown.
+ */
+export function worldRoomLabel(
+  room: string, worlds: readonly WorldRoomView[], leagueOf: (owner: string) => string,
+): string | null {
+  const w = worlds.find((x) => x.room === room);
+  if (!w?.owner) return null;
+  const base = leagueOf(w.owner);
+  const twin = worlds.some((x) => x.room !== room && x.owner === w.owner);
+  return twin && w.myClub ? `${base} · ${w.myClub}` : base;
 }
 
 /** Unread count per room as the client names it (only rooms with something unread). */
