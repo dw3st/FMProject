@@ -163,6 +163,13 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
   nome do save (o clube do dono): painel Amigos, título da janela de chat e dos avisos, `/world`, entrada pelo código.
   O servidor manda só o apelido (`worldOwnerName`, `worldLifecycle.ts`: apelido do dono, senão o nome do técnico dele)
   em `WorldView.owner`, `WorldRoomView.owner` e `WorldByCode.owner`; o convite e o `world_invite` não levam nome.
+  Duas ligas do mesmo dono no painel Amigos e no chat ganham o clube do próprio técnico ao lado ("Liga de Emy ·
+  Arsenal", `worldRoomLabel`, `WorldRoomView.myClub`, 4.34.2).
+- **Clubes de outros técnicos (4.34.2):** o selo com o apelido (`World/HumanBadge.tsx`, `useHumanClubs`) aparece na
+  Classificação e nos Jogos de Ligas, na tabela do Painel e no cabeçalho do elenco do clube.
+- **Barra superior:** o controle "Pronto até…" fica numa faixa fixa de 184px (`TopNavigation`); cada estado cabe nela
+  (textos cortados com o completo no `title`, "Avançando" curto `world.advance.runningShort`, sem "não estou pronto"
+  num dia de jogo sem decisão), para a largura das abas não mudar enquanto o mundo anda (report de tester).
 - Entrada e saída viram mensagem na caixa dos outros assentos (categoria `world`, tópico `competitions`) e notícia
   `world_member` (importância 3); as telas recarregam com `world_members`. Um anúncio que falha só é registrado
   (`logError`), nunca desfaz a operação.
@@ -606,7 +613,9 @@ bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.tes
 
 ### Limitações (parte 6)
 
-- Placar ao vivo depende do navegador de quem joga: aba fechada vira "interrompido" até o dia rodar.
+- Placar ao vivo depende do navegador de quem joga: aba fechada vira "interrompido" até o dia rodar. Recarregar a
+  página manda um `start` (ou `half` no intervalo) com o minuto e o placar atuais (4.34.2), que reconstrói o jogo no
+  servidor mesmo se ele já o tinha descartado.
 - O placar ao vivo é do cliente (só validado por coerência); um gol anulado pelo VAR derruba o placar e os frames
   seguintes são recusados até o placar passar do guardado.
 - Estado ao vivo em memória (um processo só).

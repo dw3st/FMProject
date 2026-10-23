@@ -5,7 +5,8 @@
     "wind": "Wind: inaccurate high balls",
     "hot": "Heat: stamina drops faster",
     "cold": "Cold: higher risk of muscle injury",
-    "covered": "Covered stadium: the weather does not affect the game"
+    "covered": "Covered stadium: the weather does not affect the game",
+    "neutral": "Neutral venue: the weather does not affect the match"
   },
   "attributeNames": {
     "passing": "Passing",
@@ -5274,6 +5275,7 @@
     },
     "advance": {
       "running": "Advancing… {{date}} of {{target}}",
+      "runningShort": "{{date}} → {{target}}",
       "simulate": "Simulate",
       "play": "Play",
       "readyButton": "Ready until…",

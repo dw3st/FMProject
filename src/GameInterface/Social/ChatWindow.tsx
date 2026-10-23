@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SOCIAL } from "@/Domain/social/socialConfig";
 import { Icon } from "@/GameInterface/Icons";
 import { TauntLine } from "@/GameInterface/Social/TauntLine";
+import { worldRoomLabel } from "@/GameInterface/Social/socialState";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
 import type { FriendStatus, SocialErrorCode } from "@/types/socialTypes";
@@ -20,8 +21,7 @@ export function useRoomTitle(room: string): string {
   const { t } = useTranslation();
   const { lists } = useSocial();
   if (room.startsWith("dm:")) return room.slice(3);
-  const owner = lists.worlds.find((w) => w.room === room)?.owner;
-  return owner ? t("world.leagueOf", { owner }) : t("social.chat.world");
+  return worldRoomLabel(room, lists.worlds, (owner) => t("world.leagueOf", { owner })) ?? t("social.chat.world");
 }
 
 export function ChatWindow({ room }: { room: string }) {

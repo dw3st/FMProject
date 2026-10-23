@@ -5,7 +5,8 @@
     "wind": "Vento: bolas altas imprecisas",
     "hot": "Calor: o fôlego cai mais rápido",
     "cold": "Frio: mais risco de lesão muscular",
-    "covered": "Estádio coberto: o clima não afeta o jogo"
+    "covered": "Estádio coberto: o clima não afeta o jogo",
+    "neutral": "Campo neutro: o clima não afeta o jogo"
   },
   "attributeNames": {
     "passing": "Passe",
@@ -5274,6 +5275,7 @@
     },
     "advance": {
       "running": "Avançando… {{date}} de {{target}}",
+      "runningShort": "{{date}} → {{target}}",
       "simulate": "Simular",
       "play": "Jogar",
       "readyButton": "Pronto até…",

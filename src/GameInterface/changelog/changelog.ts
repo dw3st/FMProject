@@ -25,6 +25,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.34.2",
+    date: "2026-10-23",
+    items: [
+      {
+        pt: "Liga de amigos: o selo com o apelido do outro técnico aparece também nos Jogos da liga, na tabela do Painel e no elenco do clube dele.",
+        en: "Friends' league: the other manager's nickname badge also shows in the league Fixtures, the Dashboard table and his club's squad.",
+      },
+      {
+        pt: "A barra superior não muda mais de tamanho enquanto a liga de amigos avança.",
+        en: "The top bar no longer changes size while the friends' league advances.",
+      },
+      {
+        pt: "Recarregar a página no meio da partida não tira mais o seu placar ao vivo da tela dos amigos.",
+        en: "Reloading the page mid-match no longer hides your live score from your friends.",
+      },
+      {
+        pt: "Duas ligas do mesmo dono mostram o seu clube ao lado do nome para não se confundirem.",
+        en: "Two leagues with the same owner show your club next to the name so they don't get mixed up.",
+      },
+      {
+        pt: "Jogo em campo neutro avisa que o clima não afeta a partida.",
+        en: "A neutral venue match says the weather does not affect the game.",
+      },
+    ],
+  },
+  {
     version: "4.34.1",
     date: "2026-10-23",
     items: [

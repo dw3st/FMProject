@@ -1,4 +1,5 @@
 import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
+import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import i18next from "@/i18n/i18n";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { RescheduledNote, shortDateLabel } from "@/GameInterface/Components/RescheduledNote";
@@ -158,33 +159,25 @@ function StandingsTable({
   );
 }
 
-/** Club run by another human of the friends' league: their nickname, in the "users" colour of the world icon. */
-function HumanBadge({ nickname }: { nickname: string }) {
-  const { t } = useTranslation();
-  return (
-    <span
-      className="inline-flex items-center gap-1 shrink-0 max-w-[140px] rounded border border-chart-2/40 bg-chart-2/10 px-2 py-0.5 text-sm font-semibold text-chart-2"
-      title={t("leagues.humanManager", { nickname })}
-    >
-      <Icon name="users" size={16} className="shrink-0" />
-      <span className="truncate">{nickname}</span>
-    </span>
-  );
-}
-
 function FixturesPanel({
   fixtures,
   activeLeagueSlug,
   standings,
   currentDate,
   onClickFixture,
+  myClubId,
+  humanClubs,
 }: {
   fixtures: Fixture[];
   activeLeagueSlug: string;
   standings: StandingRow[];
   currentDate: string;
   onClickFixture: (fixture: Fixture) => void;
+  myClubId: string;
+  /** Friends' league: clubs run by another human → their nickname (badge next to the name). */
+  humanClubs: Map<string, string>;
 }) {
+  const humanOf = (squadId: string) => (squadId === myClubId ? undefined : humanClubs.get(squadId));
   const { t, i18n } = useTranslation();
   const leagueFixtures = fixtures.filter(f => f.competition === activeLeagueSlug);
   const maxRound = leagueFixtures.reduce((m, f) => Math.max(m, f.round), 0);
@@ -270,8 +263,9 @@ function FixturesPanel({
               }`}
             >
               {/* Home */}
-              <div className="flex items-center gap-3 justify-end">
-                <span className="font-semibold text-foreground text-sm">{teamName(f.home)}</span>
+              <div className="flex items-center gap-3 justify-end min-w-0">
+                {humanOf(f.home) && <HumanBadge nickname={humanOf(f.home)!} />}
+                <span className={`font-semibold text-sm truncate ${f.home === myClubId ? "text-primary" : "text-foreground"}`}>{teamName(f.home)}</span>
                 <ClubLogo
                   logoUrl={squadLogoUrl(f.home)}
                   primaryColor={teamColors(f.home)[0]}
@@ -293,7 +287,7 @@ function FixturesPanel({
               </div>
 
               {/* Away */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <ClubLogo
                   logoUrl={squadLogoUrl(f.away)}
                   primaryColor={teamColors(f.away)[0]}
@@ -301,7 +295,8 @@ function FixturesPanel({
                   className="w-8 h-8 rounded-full shrink-0"
                   imgClassName="w-full h-full object-contain"
                 />
-                <span className="font-semibold text-foreground text-sm">{teamName(f.away)}</span>
+                <span className={`font-semibold text-sm truncate ${f.away === myClubId ? "text-primary" : "text-foreground"}`}>{teamName(f.away)}</span>
+                {humanOf(f.away) && <HumanBadge nickname={humanOf(f.away)!} />}
               </div>
               {f.rescheduledFrom && (
                 <p className="col-span-3 text-center m-0 mt-1 text-sm text-muted-foreground">
@@ -978,6 +973,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 standings={standings}
                 currentDate={currentDate}
                 onClickFixture={handleClickFixture}
+                myClubId={session?.clubId ?? ""}
+                humanClubs={humanClubs}
               />
             )}
           </>

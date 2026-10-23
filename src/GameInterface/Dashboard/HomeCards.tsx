@@ -4,6 +4,7 @@
  */
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
+import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
@@ -474,11 +475,14 @@ export function LeagueMiniTable({
   rows,
   myId,
   loading,
+  humanClubs,
 }: {
   title: string;
   rows: { rank: number; row: StandingRow }[];
   myId: string;
   loading: boolean;
+  /** Friends' league: clubs run by another human → their nickname (badge next to the name). */
+  humanClubs?: Map<string, string>;
 }) {
   const { t } = useTranslation();
   const grid = "grid grid-cols-[32px_1fr_40px_44px_48px] gap-2 px-4";
@@ -514,6 +518,7 @@ export function LeagueMiniTable({
                       imgClassName="w-full h-full object-contain"
                     />
                     <span className={`${mine ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name} truncate`}>{row.name}</span>
+                    {!mine && humanClubs?.get(row.squadId) && <HumanBadge nickname={humanClubs.get(row.squadId)!} />}
                   </div>
                   <div className={TABLE_STYLE.number}>{row.mp}</div>
                   <div className={TABLE_STYLE.number}>{row.gd > 0 ? `+${row.gd}` : row.gd}</div>

@@ -12,7 +12,20 @@ import {
   totalUnread,
   unreadAfterRead,
   unreadFromLists,
+  worldRoomLabel,
 } from "@/GameInterface/Social/socialState";
+
+test("worldRoomLabel: the owner's league, with the viewer's club only when the owner has another one", () => {
+  const leagueOf = (o: string) => `Liga de ${o}`;
+  const one = [{ room: "world:a", saveId: "a", owner: "Emy", myClub: "Arsenal", unread: 0 }];
+  expect(worldRoomLabel("world:a", one, leagueOf)).toBe("Liga de Emy");
+  const twins = [...one, { room: "world:b", saveId: "b", owner: "Emy", myClub: "Manchester United", unread: 0 },
+    { room: "world:c", saveId: "c", owner: "Bia", myClub: "Vasco", unread: 0 }];
+  expect(worldRoomLabel("world:a", twins, leagueOf)).toBe("Liga de Emy · Arsenal");
+  expect(worldRoomLabel("world:b", twins, leagueOf)).toBe("Liga de Emy · Manchester United");
+  expect(worldRoomLabel("world:c", twins, leagueOf)).toBe("Liga de Bia");
+  expect(worldRoomLabel("world:zz", twins, leagueOf)).toBeNull();
+});
 import type { FriendView } from "@/types/socialTypes";
 
 const f = (nickname: string, status: FriendView["status"], club: string | null = null): FriendView =>
@@ -36,7 +49,7 @@ test("unread from the lists and the total", () => {
     friends: [{ ...f("Ana", "online"), unread: 2 }, f("Bia", "offline")],
     incoming: [],
     outgoing: [],
-    worlds: [{ room: "world:x", saveId: "x", owner: "Ana", unread: 1 }],
+    worlds: [{ room: "world:x", saveId: "x", owner: "Ana", myClub: "Vasco", unread: 1 }],
   });
   expect(unread).toEqual({ "dm:Ana": 2, "world:x": 1 });
   expect(totalUnread(unread)).toBe(3);

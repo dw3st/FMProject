@@ -32,6 +32,8 @@ export interface WorldRoomView {
   saveId: string;
   /** Owner's nickname: the client shows "Emy's league", never the owner's club. */
   owner: string;
+  /** The viewer's club in that world: tells apart two leagues of the same owner. */
+  myClub: string;
   unread: number;
 }
 
