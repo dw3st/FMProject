@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.34.1",
+    date: "2026-10-23",
+    items: [
+      {
+        pt: "Liga de amigos: a liga aparece como \"Liga de <apelido do dono>\" em Amigos, no chat e no convite, em vez do clube do dono.",
+        en: "Friends' league: the league shows as \"<owner's nickname>'s league\" in Friends, in the chat and in the invite, instead of the owner's club.",
+      },
+      {
+        pt: "Jogar a primeira partida sem ter salvo a tática não manda mais para a Formação: o time entra com a escalação automática.",
+        en: "Playing your first match without saving tactics no longer sends you to Formation: the team starts with the automatic lineup.",
+      },
+      {
+        pt: "O placar ao vivo dos amigos mostra o minuto do jogo andando, não só o minuto do último gol.",
+        en: "Your friends' live scores show the match clock moving, not just the minute of the last goal.",
+      },
+      {
+        pt: "O resultado provisório da partida ao vivo mostra o árbitro, e as substituições aparecem com o título certo.",
+        en: "The provisional result of a live match shows the referee, and substitutions have the right heading.",
+      },
+    ],
+  },
+  {
     version: "4.34",
     date: "2026-10-19",
     items: [

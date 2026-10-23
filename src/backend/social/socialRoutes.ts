@@ -1,7 +1,7 @@
 // HTTP routes of friends and chat (`.claude/rules/social.md`). Every route needs a session. Responses carry
 // nicknames only: never an e-mail or a user id.
 import { requireAuth } from "@/backend/auth/middleware";
-import { saveService } from "@/backend/SaveService";
+import { worldOwnerName } from "@/backend/worlds/worldLifecycle";
 import { canRead, canWrite, resolveRoom } from "@/backend/social/roomAccess";
 import { deliverMessage, notifyFriendUpdate, notifyUser, statusOf } from "@/backend/social/realtime";
 import {
@@ -157,11 +157,10 @@ async function friendsResponse(userId: string, now: number): Promise<FriendsResp
   });
   const worlds = await Promise.all(
     worldsOf(userId).map(async (saveId) => {
-      const meta = await saveService.getMeta(saveId).catch(() => null);
       return {
         room: worldRoomParam(saveId),
         saveId,
-        name: meta?.name ?? "",
+        owner: await worldOwnerName(saveId).catch(() => ""),
         unread: unreadCount(userId, worldRoomId(saveId)),
       };
     }),

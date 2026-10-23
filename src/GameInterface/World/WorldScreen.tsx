@@ -165,7 +165,7 @@ export function WorldScreen() {
     <ScreenContainer>
       <ScreenTitle
         accent={t("screenTitles.world.accent")}
-        subtitle={view ? `${view.name} · ${t(`world.status.${view.phase}`)} · ${t("world.members.count", { count: view.members.length, max: view.max })}` : undefined}
+        subtitle={view ? `${t("world.leagueOf", { owner: view.owner })} ·${t(`world.status.${view.phase}`)} · ${t("world.members.count", { count: view.members.length, max: view.max })}` : undefined}
       >
         {t("screenTitles.world.main")}
       </ScreenTitle>

@@ -747,7 +747,7 @@ function decideBallHolder(
   if (isDebugEnabled()) {
     if (gate) {
       debugLog('decision', `${player.name} one-on-one (xG ${(sh.shootBreakdown?.xg ?? 0).toFixed(2)}): only clearly better targets → ${best.type}`,
-        { pass: ps.score, throughBall: tb.score, cross: cr.score, shoot: sh.score, carry: ca.score });
+        { playerId: player.id, data: { pass: ps.score, throughBall: tb.score, cross: cr.score, shoot: sh.score, carry: ca.score } });
     }
     // Defaults guarantee every breakdown is present in the event payload, even when
     // an action returns 0 because of a hard cull (e.g. dribble bias too low, no teammates).

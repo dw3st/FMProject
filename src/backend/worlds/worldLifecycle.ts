@@ -19,6 +19,19 @@ export async function createWorldState(saveId: string, userId: string, service: 
   return world;
 }
 
+/**
+ * Who the league belongs to, as every screen names it ("Emy's league"): the owner's nickname, else his manager's
+ * name. Never the save name (that is the owner's club).
+ */
+export async function worldOwnerName(saveId: string, service: SaveService = defaultService): Promise<string> {
+  const owner = listSaveMembers(saveId).find((m) => m.role === "owner");
+  if (!owner) return "";
+  const nickname = getSocialUser(owner.userId)?.nickname;
+  if (nickname) return nickname;
+  const seat = await service.getSeat(saveId, owner.seatId).catch(() => null);
+  return seat?.manager?.name ?? "";
+}
+
 /** The world's screen (`GET /api/worlds/:saveId`); null for a solo save. */
 export async function worldView(
   saveId: string, me: { seatId: string; role: MemberRole }, service: SaveService = defaultService,
@@ -46,7 +59,7 @@ export async function worldView(
     });
   }
   return {
-    saveId, name: meta.name, phase: meta.world.phase, inviteCode: meta.world.inviteCode,
+    saveId, owner: await worldOwnerName(saveId, service), phase: meta.world.phase, inviteCode: meta.world.inviteCode,
     deadlineHours: meta.world.deadlineHours, max: WORLD.MAX_MEMBERS, currentDate: meta.currentDate ?? null,
     myRole: me.role, mySeatId: me.seatId, members,
   };

@@ -93,7 +93,8 @@ per match (`SaveMeta.matchMarking`, `POST /api/saves/:id/match-marking`). The AI
 
 API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`. The file is written on the
 first `PUT`; until then the save's `formation`/`tactical_style` (`SaveMeta`) and an empty lineup
-stand in.
+stand in, and the lineup is filled automatically — the live match too (`match-setup` never refuses a
+missing or short saved lineup since 4.34.1; it used to send the manager to Formation first).
 
 ---
 

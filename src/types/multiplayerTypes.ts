@@ -38,7 +38,8 @@ export interface WorldMemberView {
 /** `GET /api/worlds/:saveId`. */
 export interface WorldView {
   saveId: string;
-  name: string;
+  /** Owner's nickname (or his manager's name): the league is shown as "Emy's league", never by a club. */
+  owner: string;
   phase: WorldPhase;
   inviteCode: string;
   deadlineHours: WorldDeadline;
@@ -52,7 +53,6 @@ export interface WorldView {
 /** `GET /api/worlds/by-code/:code`. */
 export interface WorldByCode {
   saveId: string;
-  name: string;
   /** The owner's league (the entry screen shows it). */
   leagueSlug: string;
   leagueName: string;
@@ -68,8 +68,7 @@ export interface WorldByCode {
 /** An invite through the friends list (`GET /api/worlds/invites`, socket `world_invite`). */
 export interface WorldInviteView {
   saveId: string;
-  name: string;
-  /** Owner's nickname. */
+  /** Owner's nickname (the league is his). */
   from: string;
   code: string;
 }

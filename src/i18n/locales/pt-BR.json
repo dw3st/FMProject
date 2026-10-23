@@ -1000,7 +1000,6 @@
       "injured": "Lesionado",
       "subbedOff": "Substituído"
     },
-    "lastMinuteSubs": "Substituições de Última Hora",
     "shots": "Finalizações",
     "tackles": "Desarmes",
     "interceptions": "Interceptações",
@@ -2354,9 +2353,6 @@
     "simulateMatch": "Simular partida",
     "backToDashboard": "Voltar ao painel",
     "redirectingToDashboard": "Redirecionando para o painel…",
-    "noTacticsTitle": "Táticas ainda não definidas",
-    "noTacticsSubtitle": "Levando você para Formação e Táticas para escolher sua escalação…",
-    "goToTacticsNow": "Definir agora",
     "editTactics": "Editar Táticas",
     "sendAssistant": "Enviar assistente",
     "startGame": "Iniciar jogo",
@@ -2402,6 +2398,7 @@
     "weather": "Tempo",
     "date": "Data",
     "officials": "Árbitros",
+    "substitutions": "Substituições",
     "yellowCards": "Cartões amarelos",
     "redCards": "Cartões vermelhos",
     "cards": "Cartões",
@@ -5152,6 +5149,7 @@
     }
   },
   "world": {
+    "leagueOf": "Liga de {{owner}}",
     "status": { "lobby": "Sala de espera", "running": "Em andamento" },
     "members": {
       "title": "Técnicos",
@@ -5257,7 +5255,7 @@
     },
     "invites": {
       "title": "Convites para ligas",
-      "from": "{{from}} convida você para {{name}}",
+      "from": "{{from}} convida você para a liga",
       "accept": "Aceitar",
       "decline": "Recusar"
     },

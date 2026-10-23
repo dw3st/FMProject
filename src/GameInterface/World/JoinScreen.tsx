@@ -41,7 +41,7 @@ export function JoinScreen() {
         <NewGameWizard
           join={{
             code,
-            worldName: stage.world.name,
+            worldName: t("world.leagueOf", { owner: stage.world.owner }),
             takenClubs: stage.world.takenClubs,
             leagueSlug: stage.world.leagueSlug,
             leagueName: stage.world.leagueName,
@@ -85,7 +85,7 @@ export function JoinScreen() {
           {stage.kind === "info" && (
             <>
               <div className="rounded-md border border-border bg-card p-4">
-                <p className="font-display font-black uppercase text-xl leading-none m-0">{stage.world.name}</p>
+                <p className="font-display font-black uppercase text-xl leading-none m-0">{t("world.leagueOf", { owner: stage.world.owner })}</p>
                 <p className="text-sm text-muted-foreground mt-2 mb-0">{t("world.join.owner", { name: stage.world.owner })}</p>
                 {stage.world.leagueName && (
                   <p className="text-sm text-muted-foreground m-0">{t("world.join.league", { league: stage.world.leagueName })}</p>

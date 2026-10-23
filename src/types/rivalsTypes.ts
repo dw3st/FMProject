@@ -35,7 +35,8 @@ export interface SeatResult {
   situations: ResultSituation[];
 }
 
-export type LivePhase = "start" | "goal" | "half" | "end";
+/** `minute`: the clock moved on (every `RIVALS.LIVE_MINUTE_STEP` minutes of play), the score unchanged. */
+export type LivePhase = "start" | "goal" | "half" | "minute" | "end";
 export type LiveStatus = "live" | "half" | "ended" | "stale";
 
 /** `live_score` from the browser of who plays (score from his club's side). */

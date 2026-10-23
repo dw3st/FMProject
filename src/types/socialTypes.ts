@@ -30,7 +30,8 @@ export interface WorldRoomView {
   /** Room as the client names it: `world:<saveId>`. */
   room: string;
   saveId: string;
-  name: string;
+  /** Owner's nickname: the client shows "Emy's league", never the owner's club. */
+  owner: string;
   unread: number;
 }
 
@@ -78,7 +79,7 @@ export type ServerEvent =
   | { type: "typing"; room: string; from: string }
   | { type: "pong"; online: number }
   // Multiplayer part 2 (`.claude/rules/game/multiplayer.md`): only members of the world (or the invited user).
-  | { type: "world_invite"; saveId: string; name: string; from: string; code: string }
+  | { type: "world_invite"; saveId: string; from: string; code: string }
   | { type: "world_started"; saveId: string }
   | { type: "world_removed"; saveId: string }
   | { type: "world_deleted"; saveId: string }

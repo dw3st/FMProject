@@ -8,8 +8,10 @@ export const RIVALS = {
   BIG_MARGIN: 3,
   /** A goal at this minute or later is "late". */
   LATE_MINUTE: 88,
-  /** At most this many live events per game (the rest are ignored). */
+  /** At most this many live events per game (the rest are ignored); `minute` frames do not count. */
   LIVE_MAX_EVENTS: 40,
+  /** The live match sends a `minute` frame every this many minutes of play, so the friends' clock keeps moving. */
+  LIVE_MINUTE_STEP: 5,
   LIVE_MAX_MINUTE: 130,
   LIVE_MAX_GOALS: 30,
   /** `live_score` frames per socket per minute. */

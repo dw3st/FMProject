@@ -9,6 +9,7 @@ import { addDays } from "@/Domain/dates";
 import { isGroupWorld, laterDate, resolveReadyUntil } from "@/Domain/groupAdvance/groupAdvance";
 import { buildMatchEventFromRecording, withWeatherLog } from "@/Domain/advanceDay/matches";
 import { matchWeatherOf } from "@/backend/stadiumData";
+import { officialsFor } from "@/backend/refereeWorld";
 import { aggregatePendingDays } from "@/Domain/groupAdvance/pendingSummary";
 import type { DayLog } from "@/types/dayLogTypes";
 import type { PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
@@ -137,9 +138,14 @@ export const groupAdvanceRoutes = {
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, file.date);
       const home = fixture ? await saveService.getSquadById(saveId, fixture.home) : null;
       const away = fixture ? await saveService.getSquadById(saveId, fixture.away) : null;
-      const event = fixture && home && away
+      const base = fixture && home && away
         ? withWeatherLog(buildMatchEventFromRecording(fixture, home, away, file.recording).event, matchWeatherOf(fixture, home))
         : null;
+      // The referee of the day's appointment (the one the day will log): the recording never carries him.
+      const officials = base && fixture ? await officialsFor(saveService, saveId, file.date, fixture).catch(() => null) : null;
+      const event = base && officials
+        ? { ...base, referee: { id: officials.referee.id, name: officials.referee.name, country: officials.referee.country } }
+        : base;
       return Response.json({ date: file.date, fixtureId: file.fixtureId, event });
     }
     if (req.method !== "POST") return methodNotAllowed();
