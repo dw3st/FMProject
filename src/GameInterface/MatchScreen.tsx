@@ -97,6 +97,7 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
 import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
 import type { LivePhase } from "@/types/rivalsTypes";
+import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import {
   clearPendingRecording,
   isTerminalGroupError,
@@ -660,8 +661,18 @@ export function MatchScreen() {
       });
     };
     const now = () => gameStateRef.current;
+    // The clock for the friends: a `minute` frame every LIVE_MINUTE_STEP minutes of play (checked each second).
+    let lastMinute = 0;
+    const clock = setInterval(() => {
+      const s = now();
+      if (!s || !isLivePhase(s.matchPhase)) return;
+      const m = matchMinute(s);
+      if (m - lastMinute < RIVALS.LIVE_MINUTE_STEP) return;
+      lastMinute = m;
+      send("minute", m, s.score);
+    }, 1000);
     const offs = [
-      gameBus.on("matchStart", () => send("start", 0, now()?.score ?? { A: 0, B: 0 })),
+      gameBus.on("matchStart", () => { lastMinute = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
       gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
       gameBus.on("halfTime", (e) => send("half", 45, e.score)),
       gameBus.on("matchEnd", (e) => {
@@ -669,7 +680,7 @@ export function MatchScreen() {
         send("end", s ? matchMinute(s) : 90, e.score);
       }),
     ];
-    return () => offs.forEach((off) => off());
+    return () => { clearInterval(clock); offs.forEach((off) => off()); };
   }, []);
 
   const showNotice = useCallback((text: string, tone: "danger" | "warn" | "info") => {

@@ -57,6 +57,27 @@ describe("applyLiveFrame", () => {
     const other = applyLiveFrame(s, frame({ fixtureId: "f2" }), { ...BASE, fixtureId: "f2" }, SCORERS, 2)!;
     expect(other).toMatchObject({ fixtureId: "f2", score: { for: 0, against: 0 }, events: 1 });
   });
+  test("a minute frame moves the clock, keeps the score and does not count as an event", () => {
+    const s = applyLiveFrame(null, frame({ phase: "goal", minute: 12, score: { for: 1, against: 0 } }), BASE, SCORERS, 1)!;
+    const m = applyLiveFrame(s, frame({ phase: "minute", minute: 20, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)!;
+    expect(m).toMatchObject({ status: "live", minute: 20, score: { for: 1, against: 0 }, events: s.events, updatedAt: 2 });
+    expect(m.lastGoal).toEqual(s.lastGoal);
+    // After half-time the clock frame puts the game back to live.
+    const h = applyLiveFrame(m, frame({ phase: "half", minute: 45, score: { for: 1, against: 0 } }), BASE, SCORERS, 3)!;
+    expect(applyLiveFrame(h, frame({ phase: "minute", minute: 50, score: { for: 1, against: 0 } }), BASE, SCORERS, 4)!.status).toBe("live");
+  });
+  test("a minute frame must move the clock and never changes the score", () => {
+    const s = applyLiveFrame(null, frame({ phase: "goal", minute: 12, score: { for: 1, against: 0 } }), BASE, SCORERS, 1)!;
+    expect(applyLiveFrame(s, frame({ phase: "minute", minute: 12, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
+    expect(applyLiveFrame(s, frame({ phase: "minute", minute: 20, score: { for: 2, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
+    expect(applyLiveFrame(null, frame({ phase: "minute", minute: 20 }), BASE, SCORERS, 2)).toBeNull();
+    expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "minute", minute: 20, score: { for: 0, against: 0 } })?.phase).toBe("minute");
+  });
+  test("minute frames still go through once the event cap is reached", () => {
+    let s = applyLiveFrame(null, frame({}), BASE, SCORERS, 1)!;
+    for (let i = 1; i < RIVALS.LIVE_MAX_EVENTS; i++) s = applyLiveFrame(s, frame({ phase: "start", minute: 0 }), BASE, SCORERS, 1)!;
+    expect(applyLiveFrame(s, frame({ phase: "minute", minute: 5 }), BASE, SCORERS, 2)?.minute).toBe(5);
+  });
   test("at most LIVE_MAX_EVENTS events", () => {
     let s = applyLiveFrame(null, frame({}), BASE, SCORERS, 1)!;
     for (let i = 1; i < RIVALS.LIVE_MAX_EVENTS; i++) s = applyLiveFrame(s, frame({ phase: "start", minute: 0 }), BASE, SCORERS, 1)!;

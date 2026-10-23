@@ -80,7 +80,6 @@ export const worldRoutes = {
       const ownerSeat = owner ? await saveService.getSeat(saveId, owner.seatId) : null;
       const body: WorldByCode = {
         saveId,
-        name: meta.name,
         leagueSlug: ownerSeat?.leagueSlug ?? "",
         leagueName: ownerSeat?.leagueName ?? "",
         owner: (owner && getSocialUser(owner.userId)?.nickname) || ownerSeat?.manager?.name || meta.name,
@@ -154,7 +153,7 @@ export const worldRoutes = {
           deleteWorldInvite(inv.saveId, auth.userId);
           continue;
         }
-        invites.push({ saveId: inv.saveId, name: meta.name, from: from!, code: code! });
+        invites.push({ saveId: inv.saveId, from: from!, code: code! });
       }
       return Response.json({ invites });
     },
@@ -256,7 +255,7 @@ export const worldRoutes = {
         if (!pending && pendingInviteCount(saveId) >= WORLD.MAX_PENDING_INVITES) return fail("inviteLimit", 409);
         addWorldInvite(saveId, target.id, auth.userId, Date.now());
         // A pending invite is only refreshed: no second event.
-        if (!pending) notifyUser(target.id, { type: "world_invite", saveId, name: meta.name, from, code: meta.world.inviteCode });
+        if (!pending) notifyUser(target.id, { type: "world_invite", saveId, from, code: meta.world.inviteCode });
         return Response.json({ ok: true });
       });
     },

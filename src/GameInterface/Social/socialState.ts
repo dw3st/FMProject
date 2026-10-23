@@ -90,8 +90,8 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
     case "pong":
       return typeof e.online === "number" ? { type: "pong", online: e.online } : null;
     case "world_invite":
-      return str(e.saveId) && str(e.name) && str(e.from) && str(e.code)
-        ? { type: "world_invite", saveId: e.saveId, name: e.name, from: e.from, code: e.code }
+      return str(e.saveId) && str(e.from) && str(e.code)
+        ? { type: "world_invite", saveId: e.saveId, from: e.from, code: e.code }
         : null;
     case "world_started":
     case "world_removed":

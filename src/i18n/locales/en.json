@@ -1000,7 +1000,6 @@
       "injured": "Injured",
       "subbedOff": "Subbed off"
     },
-    "lastMinuteSubs": "Last-Minute Subs",
     "shots": "Shots",
     "tackles": "Tackles",
     "interceptions": "Interceptions",
@@ -2354,9 +2353,6 @@
     "simulateMatch": "Simulate match",
     "backToDashboard": "Back to dashboard",
     "redirectingToDashboard": "Redirecting to dashboard…",
-    "noTacticsTitle": "No tactics set up yet",
-    "noTacticsSubtitle": "Taking you to Formation & Tactics to pick your lineup…",
-    "goToTacticsNow": "Set up now",
     "editTactics": "Edit Tactics",
     "sendAssistant": "Send assistant",
     "startGame": "Start game",
@@ -2402,6 +2398,7 @@
     "weather": "Weather",
     "date": "Date",
     "officials": "Officials",
+    "substitutions": "Substitutions",
     "yellowCards": "Yellow cards",
     "redCards": "Red cards",
     "cards": "Cards",
@@ -5152,6 +5149,7 @@
     }
   },
   "world": {
+    "leagueOf": "{{owner}}'s league",
     "status": { "lobby": "Waiting room", "running": "In progress" },
     "members": {
       "title": "Managers",
@@ -5257,7 +5255,7 @@
     },
     "invites": {
       "title": "League invites",
-      "from": "{{from}} invites you to {{name}}",
+      "from": "{{from}} invites you to the league",
       "accept": "Accept",
       "decline": "Decline"
     },

@@ -760,7 +760,7 @@ export function MatchResultScreen() {
             <div className="flex items-center gap-2 mb-3">
               <Icon name="arrow-right-left" className="w-3.5 h-3.5 text-muted-foreground" />
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
-                {t("match.lastMinuteSubs")}
+                {t("matchResult.substitutions")}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">

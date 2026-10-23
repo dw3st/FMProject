@@ -178,7 +178,7 @@ function FriendsTab() {
                 className="flex items-center gap-3 rounded-md px-2 py-2 text-left cursor-pointer border-0 bg-transparent hover:bg-secondary/30"
               >
                 <Icon name="globe" size={16} className="text-muted-foreground" />
-                <span className="font-semibold text-foreground truncate">{w.name || t("social.chat.world")}</span>
+                <span className="font-semibold text-foreground truncate">{w.owner ? t("world.leagueOf", { owner: w.owner }) : t("social.chat.world")}</span>
                 {unread > 0 && <span className={`ml-auto ${BADGE}`}>{unread}</span>}
               </button>
             );
@@ -305,7 +305,7 @@ function RequestsTab() {
           </p>
           {s.worldInvites.map((inv) => (
             <div key={inv.saveId} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-foreground truncate">{t("world.invites.from", { from: inv.from, name: inv.name })}</span>
+              <span className="text-sm text-foreground truncate">{t("world.invites.from", { from: inv.from })}</span>
               <div className="flex items-center gap-3">
                 <Button onClick={() => { window.location.href = `/join/${inv.code}`; }}>{t("world.invites.accept")}</Button>
                 <Button variant="secondary" flush onClick={() => void s.declineWorldInvite(inv.saveId)}>

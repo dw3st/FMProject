@@ -15,12 +15,13 @@ const DOT: Record<FriendStatus, string> = {
   offline: "bg-muted-foreground/50",
 };
 
-/** Title of a room as the screens show it: the friend's nickname or the world's name. */
+/** Title of a room as the screens show it: the friend's nickname or "<owner>'s league". */
 export function useRoomTitle(room: string): string {
   const { t } = useTranslation();
   const { lists } = useSocial();
   if (room.startsWith("dm:")) return room.slice(3);
-  return lists.worlds.find((w) => w.room === room)?.name || t("social.chat.world");
+  const owner = lists.worlds.find((w) => w.room === room)?.owner;
+  return owner ? t("world.leagueOf", { owner }) : t("social.chat.world");
 }
 
 export function ChatWindow({ room }: { room: string }) {

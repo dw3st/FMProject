@@ -36,7 +36,7 @@ test("unread from the lists and the total", () => {
     friends: [{ ...f("Ana", "online"), unread: 2 }, f("Bia", "offline")],
     incoming: [],
     outgoing: [],
-    worlds: [{ room: "world:x", saveId: "x", name: "Mundo", unread: 1 }],
+    worlds: [{ room: "world:x", saveId: "x", owner: "Ana", unread: 1 }],
   });
   expect(unread).toEqual({ "dm:Ana": 2, "world:x": 1 });
   expect(totalUnread(unread)).toBe(3);
@@ -53,8 +53,8 @@ describe("parseServerEvent", () => {
     expect(parseServerEvent(JSON.stringify({ type: "friend_update" }))).toEqual({ type: "friend_update" });
   });
   test("world events", () => {
-    expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s", name: "Liga", from: "ana", code: "23456789AB" })))
-      .toEqual({ type: "world_invite", saveId: "s", name: "Liga", from: "ana", code: "23456789AB" });
+    expect(parseServerEvent(JSON.stringify({ type: "world_invite", saveId: "s", from: "ana", code: "23456789AB" })))
+      .toEqual({ type: "world_invite", saveId: "s", from: "ana", code: "23456789AB" });
     for (const type of ["world_started", "world_removed", "world_deleted", "world_members"] as const) {
       expect(parseServerEvent(JSON.stringify({ type, saveId: "s" }))).toEqual({ type, saveId: "s" });
       expect(parseServerEvent(JSON.stringify({ type }))).toBeNull();

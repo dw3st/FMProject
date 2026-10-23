@@ -159,6 +159,10 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
   recebe `world_removed`. `SeatError("ownerOrLast")` para o dono ou o último assento.
 - **Posse:** `POST /api/worlds/:saveId/owner` troca os papéis. O dono só sai depois de passar a posse (409
   `transferFirst`); sozinho, sair apaga o mundo (`deleteWorld`, os outros recebem `world_deleted`).
+- **Nome da liga (4.34.1):** toda tela mostra a liga como "Liga de <apelido do dono>" (`world.leagueOf`), nunca o
+  nome do save (o clube do dono): painel Amigos, título da janela de chat e dos avisos, `/world`, entrada pelo código.
+  O servidor manda só o apelido (`worldOwnerName`, `worldLifecycle.ts`: apelido do dono, senão o nome do técnico dele)
+  em `WorldView.owner`, `WorldRoomView.owner` e `WorldByCode.owner`; o convite e o `world_invite` não levam nome.
 - Entrada e saída viram mensagem na caixa dos outros assentos (categoria `world`, tópico `competitions`) e notícia
   `world_member` (importância 3); as telas recarregam com `world_members`. Um anúncio que falha só é registrado
   (`logError`), nunca desfaz a operação.
@@ -291,7 +295,7 @@ em `world.phase === "running"`. O solo não muda.
 | `POST /api/worlds/:saveId/ready { until }` | Marca (ou `null` desmarca) e dá kick |
 | `POST …/match-decision { date, fixtureId, mode: "simulate" }` | Decide o jogo do dia |
 | `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
-| `GET …/live-recording` | Resultado provisório (404 sem gravação do dia) |
+| `GET …/live-recording` | Resultado provisório (404 sem gravação do dia), com o árbitro da escala do dia (`officialsFor`) |
 | `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
 | `POST …/advance/retry` | "Tentar de novo", só depois de o relógio desistir: zera `errorTries` e dá kick (409 `noError` sem erro, 409 `notGaveUp` enquanto o relógio ainda tenta) |
 | `GET/DELETE …/summary` | Resumo pendente do assento: `{ days, aggregate }` (`aggregate` = os dias num resumo só, `PendingSummaryAggregate`; os logs lidos em lotes de 6) |
@@ -557,7 +561,9 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
   `away_win`, `comeback_win`, `blown_lead`, `late_equalizer` / `late_winner` (88' ou depois, pelos minutos dos gols),
   `shootout_win`/`shootout_loss` (empate decidido nos pênaltis).
 - **Placar ao vivo:** o `MatchScreen` de um mundo em grupo manda `live_score { saveId, fixtureId, phase, minute, score:
-  { for, against }, scorer? }` (`start`, `goal`, `half`, `end`; nada em jogo de seleção) por um socket próprio
+  { for, against }, scorer? }` (`start`, `goal`, `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
+  `minute` a cada `RIVALS.LIVE_MINUTE_STEP` (5) minutos de jogo, conferido a cada segundo: precisa adiantar o minuto,
+  não muda o placar, volta o status a `live` depois do intervalo e não conta no limite de 40 eventos) por um socket próprio
   (`useLiveRivals`). O servidor (`src/backend/rivals/liveScores.ts`, em memória) aceita só de um membro, para o jogo não
   jogado do clube do assento na data do mundo; o placar só cresce (um gol soma, o resto não muda), o minuto não volta,
   0..130, até 40 eventos por jogo, 30 frames por minuto por socket; o autor só fica se for nome de um dos dois elencos.

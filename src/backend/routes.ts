@@ -500,29 +500,13 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
 
     const tacticsRaw = await saveService.getTactics(save.id, save.seatId);
 
-    let myTactics: TacticsSave;
-    if (saveIdParam) {
-      if (!tacticsRaw) {
-        return Response.json({ error: "tactics not found for this save" }, { status: 404 });
-      }
-      if (!tacticsRaw.lineup || tacticsRaw.lineup.length !== 11) {
-        return Response.json(
-          {
-            error:
-              "starting lineup must have 11 players — open Formation & Tactics and click Save",
-          },
-          { status: 400 },
-        );
-      }
-      myTactics = tacticsRaw;
-    } else {
-      const myFormationIdFallback = tacticsRaw?.formation ?? save.formation ?? "4-3-3";
-      myTactics = tacticsRaw ?? {
-        formation:      myFormationIdFallback,
-        tactical_style: save.tactical_style ?? DEFAULT_TACTICAL_STYLE,
-        lineup:         [],
-      };
-    }
+    // A manager who never saved the formation screen plays the save's formation with the automatic XI (filled below,
+    // like a simulated day), instead of being sent to Formation before his first live match.
+    let myTactics: TacticsSave = tacticsRaw ?? {
+      formation:      save.formation ?? "4-3-3",
+      tactical_style: save.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+      lineup:         [],
+    };
 
     const myFormationId = myTactics.formation;
 

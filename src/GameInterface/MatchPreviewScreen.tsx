@@ -634,7 +634,6 @@ export function MatchPreviewScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [noMatchDay, setNoMatchDay] = useState(false);
-  const [needsTactics, setNeedsTactics] = useState(false);
   const [matchSetupError, setMatchSetupError] = useState<string | null>(null);
   /** Today's opponent is another seat's club (`match-setup` → 409 `seatOpponent`). */
   const [seatOpponent, setSeatOpponent] = useState(false);
@@ -664,7 +663,6 @@ export function MatchPreviewScreen() {
     setLoading(true);
     setMatchSetupError(null);
     setNoMatchDay(false);
-    setNeedsTactics(false);
 
     void (async () => {
       try {
@@ -740,20 +738,7 @@ export function MatchPreviewScreen() {
         }
       } catch (e) {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : String(e);
-          // No tactics saved, or an incomplete lineup → guide the manager to
-          // Formation & Tactics. Show a brief message, then auto-redirect.
-          if (
-            msg.includes("starting lineup must have 11") ||
-            msg.toLowerCase().includes("tactics not found")
-          ) {
-            setNeedsTactics(true);
-            redirectTimer = setTimeout(() => {
-              window.location.href = "/formation";
-            }, 3000);
-            return;
-          }
-          setMatchSetupError(msg);
+          setMatchSetupError(e instanceof Error ? e.message : String(e));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -919,24 +904,6 @@ export function MatchPreviewScreen() {
     );
   }
 
-  if (needsTactics) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="text-center space-y-4 max-w-md">
-          <Icon name="settings" className="w-10 h-10 text-primary mx-auto" />
-          <p className="text-foreground font-bold text-lg m-0">{t("matchPreview.noTacticsTitle")}</p>
-          <p className="text-muted-foreground text-sm m-0">{t("matchPreview.noTacticsSubtitle")}</p>
-          <a
-            href="/formation"
-            className="inline-flex items-center gap-2 mt-1 px-6 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline"
-          >
-            {t("matchPreview.goToTacticsNow")}
-            <Icon name="chevron-right" className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   // ── Derived data ──────────────────────────────────────────────────────────
 

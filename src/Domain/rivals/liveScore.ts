@@ -2,7 +2,7 @@
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { LiveBase, LivePhase, LiveScoreFrame, LiveScoreView, LiveStatus } from "@/types/rivalsTypes";
 
-const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "half", "end"]);
+const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "half", "minute", "end"]);
 const SAVE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const isInt = (v: unknown, min: number, max: number): v is number =>
@@ -33,16 +33,19 @@ export function parseLiveFrame(e: Record<string, unknown>): LiveScoreFrame | nul
 
 /**
  * The next state of a live game, or null when the frame does not fit: the score only grows (a goal adds, nothing else
- * changes it), the minute never goes back, a finished game takes nothing more, at most `LIVE_MAX_EVENTS` events.
- * Another fixture starts over. The scorer stays only when he is one of `scorers` (no free text).
+ * changes it), the minute never goes back, a finished game takes nothing more, at most `LIVE_MAX_EVENTS` events
+ * (a `minute` frame must move the clock forward and does not count). Another fixture starts over. The scorer stays
+ * only when he is one of `scorers` (no free text).
  */
 export function applyLiveFrame(
   prevIn: LiveScoreView | null, frame: LiveScoreFrame, base: LiveBase, scorers: ReadonlySet<string>, now: number,
 ): LiveScoreView | null {
   const prev = prevIn && prevIn.fixtureId === frame.fixtureId ? prevIn : null;
+  const tick = frame.phase === "minute";
+  if (tick && (!prev || frame.minute <= prev.minute)) return null;
   if (prev) {
     if (prev.status === "ended") return null;
-    if (prev.events >= RIVALS.LIVE_MAX_EVENTS) return null;
+    if (!tick && prev.events >= RIVALS.LIVE_MAX_EVENTS) return null;
     if (frame.score.for < prev.score.for || frame.score.against < prev.score.against) return null;
     if (frame.minute < prev.minute) return null;
   }
@@ -63,7 +66,7 @@ export function applyLiveFrame(
     minute: frame.minute,
     score: { for: frame.score.for, against: frame.score.against },
     lastGoal,
-    events: (prev?.events ?? 0) + 1,
+    events: (prev?.events ?? 0) + (tick ? 0 : 1),
     updatedAt: now,
   };
 }
