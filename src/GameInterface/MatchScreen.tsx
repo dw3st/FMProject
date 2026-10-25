@@ -682,6 +682,7 @@ export function MatchScreen() {
     const offs = [
       gameBus.on("matchStart", () => { lastMinute = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
       gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
+      gameBus.on("goalDisallowed", (e) => send("disallowed", e.minute, e.score)),
       gameBus.on("halfTime", (e) => send("half", 45, e.score)),
       gameBus.on("matchEnd", (e) => {
         const s = now();

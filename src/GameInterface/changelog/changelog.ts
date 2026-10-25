@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.34.3",
+    date: "2026-10-24",
+    items: [
+      {
+        pt: "Chuva: a bola molhada escorrega um pouco menos, e os jogos com chuva têm quase o mesmo número de gols dos outros.",
+        en: "Rain: the wet ball skids a little less, and rainy games now have almost as many goals as the others.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Liga de amigos: um gol anulado pelo VAR não trava mais o placar ao vivo do amigo.",
+        en: "Friends' league: a goal ruled out by VAR no longer freezes your friend's live score.",
+      },
+      {
+        pt: "Liga de amigos: os resultados dos amigos não se perdem mais quando um dia falha e é refeito.",
+        en: "Friends' league: friends' results are no longer lost when a day fails and runs again.",
+      },
+    ],
+  },
+  {
     version: "4.34.2",
     date: "2026-10-23",
     items: [

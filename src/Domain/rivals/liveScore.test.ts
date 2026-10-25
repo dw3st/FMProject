@@ -48,6 +48,22 @@ describe("applyLiveFrame", () => {
     expect(applyLiveFrame(s, frame({ phase: "goal", minute: 6, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
     expect(applyLiveFrame(s, frame({ phase: "half", minute: 45, score: { for: 2, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
   });
+  test("a goal the VAR disallows takes exactly one back, and the next goal counts again", () => {
+    const g = applyLiveFrame(null, frame({ phase: "goal", minute: 20, score: { for: 1, against: 0 }, scorer: "Silva" }), BASE, SCORERS, 1)!;
+    const d = applyLiveFrame(g, frame({ phase: "disallowed", minute: 21, score: { for: 0, against: 0 } }), BASE, SCORERS, 2)!;
+    expect(d).toMatchObject({ status: "live", score: { for: 0, against: 0 }, lastGoal: null });
+    // Before the fix the score was frozen at 1–0 and every frame after it refused, until the score passed 1.
+    expect(applyLiveFrame(d, frame({ phase: "minute", minute: 25, score: { for: 0, against: 0 } }), BASE, SCORERS, 3)).not.toBeNull();
+    expect(applyLiveFrame(d, frame({ phase: "goal", minute: 30, score: { for: 0, against: 1 } }), BASE, SCORERS, 3)!.score)
+      .toEqual({ for: 0, against: 1 });
+    // Exactly one goal back, on one side; never without a game or on a 0–0.
+    expect(applyLiveFrame(g, frame({ phase: "disallowed", minute: 21, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
+    const two = applyLiveFrame(g, frame({ phase: "goal", minute: 22, score: { for: 2, against: 1 } }), BASE, SCORERS, 2)!;
+    expect(applyLiveFrame(two, frame({ phase: "disallowed", minute: 23, score: { for: 1, against: 0 } }), BASE, SCORERS, 3)).toBeNull();
+    expect(applyLiveFrame(null, frame({ phase: "disallowed", minute: 5, score: { for: 0, against: 0 } }), BASE, SCORERS, 1)).toBeNull();
+    expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "disallowed", minute: 21, score: { for: 0, against: 0 } })?.phase)
+      .toBe("disallowed");
+  });
   test("the minute never goes back", () => {
     const s = applyLiveFrame(null, frame({ phase: "goal", minute: 40, score: { for: 1, against: 0 } }), BASE, SCORERS, 1)!;
     expect(applyLiveFrame(s, frame({ phase: "half", minute: 30, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)).toBeNull();

@@ -40,7 +40,7 @@ export const NEUTRAL_WEATHER: Readonly<WeatherEffect> = Object.freeze({
  * measurement script patches it in process (`WEATHER_OVERRIDES`). Weathers not listed are neutral.
  */
 export const WEATHER_EFFECTS: Partial<Record<MatchWeather, Partial<WeatherEffect>>> = {
-  rain: { control: 0.92, looseDecel: 0.7, gkClaim: 0.9 },
+  rain: { control: 0.92, looseDecel: 0.8, gkClaim: 0.9 },
   snow: { looseDecel: 1.2, looseSpeed: 0.9, carrySpeed: 0.95, control: 0.94 },
   wind: { aerialError: 3, longShot: 0.95 },
   hot: { drain: 1.08 },

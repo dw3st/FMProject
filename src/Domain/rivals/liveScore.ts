@@ -2,7 +2,7 @@
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { LiveBase, LivePhase, LiveScoreFrame, LiveScoreView, LiveStatus } from "@/types/rivalsTypes";
 
-const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "half", "minute", "end"]);
+const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "disallowed", "half", "minute", "end"]);
 const SAVE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const isInt = (v: unknown, min: number, max: number): v is number =>
@@ -32,8 +32,8 @@ export function parseLiveFrame(e: Record<string, unknown>): LiveScoreFrame | nul
 }
 
 /**
- * The next state of a live game, or null when the frame does not fit: the score only grows (a goal adds, nothing else
- * changes it), the minute never goes back, a finished game takes nothing more, at most `LIVE_MAX_EVENTS` events
+ * The next state of a live game, or null when the frame does not fit: a goal adds one or more, a disallowed goal (VAR)
+ * takes exactly one back from one side, nothing else changes the score; the minute never goes back, a finished game takes nothing more, at most `LIVE_MAX_EVENTS` events
  * (a `minute` frame must move the clock forward and does not count). Another fixture starts over. The scorer stays
  * only when he is one of `scorers` (no free text).
  */
@@ -42,23 +42,27 @@ export function applyLiveFrame(
 ): LiveScoreView | null {
   const prev = prevIn && prevIn.fixtureId === frame.fixtureId ? prevIn : null;
   const tick = frame.phase === "minute";
+  const disallowed = frame.phase === "disallowed";
   if (tick && (!prev || frame.minute <= prev.minute)) return null;
+  if (disallowed && !prev) return null;
   if (prev) {
     if (prev.status === "ended") return null;
     if (!tick && prev.events >= RIVALS.LIVE_MAX_EVENTS) return null;
-    if (frame.score.for < prev.score.for || frame.score.against < prev.score.against) return null;
     if (frame.minute < prev.minute) return null;
+    const fewer = Number(frame.score.for < prev.score.for) + Number(frame.score.against < prev.score.against);
+    if (disallowed ? fewer !== 1 : fewer > 0) return null;
   }
   const before = prev?.score ?? { for: 0, against: 0 };
   const added = frame.score.for + frame.score.against - (before.for + before.against);
-  if (frame.phase === "goal" ? added < 1 : prev !== null && added !== 0) return null;
+  if (frame.phase === "goal" ? added < 1 : disallowed ? added !== -1 : prev !== null && added !== 0) return null;
   const lastGoal = frame.phase === "goal"
     ? {
       minute: frame.minute,
       side: frame.score.for > before.for ? ("for" as const) : ("against" as const),
       scorer: frame.scorer && scorers.has(frame.scorer) ? frame.scorer : null,
     }
-    : prev?.lastGoal ?? null;
+    // The goal the VAR took back was the last one: no last goal to show any more.
+    : disallowed ? null : prev?.lastGoal ?? null;
   const status: LiveStatus = frame.phase === "end" ? "ended" : frame.phase === "half" ? "half" : "live";
   return {
     ...base,
