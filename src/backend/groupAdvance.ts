@@ -25,10 +25,17 @@ import type { SeatState } from "@/types/seatTypes";
 import type { SeatResult } from "@/types/rivalsTypes";
 import type { GroupAdvanceView, MatchDecision, WorldAdvance } from "@/types/groupAdvanceTypes";
 
+/** Writes that belong to the day, run on the day's buffered service before it is flushed. */
+export type DayBeforeFlush = (dayService: SaveService, outcome: AdvanceDayOutcome) => Promise<void>;
+
 /** What the executor needs (tests swap `runDay` and the calendar readers). */
 export interface GroupAdvanceDeps {
   service: SaveService;
-  runDay(saveId: string, recordings: Record<string, PlayedMatchRecording>): Promise<AdvanceDayOutcome>;
+  /**
+   * Runs one day. `beforeFlush` gets the day's own service before it is written: what it writes lands with the day
+   * or not at all.
+   */
+  runDay(saveId: string, recordings: Record<string, PlayedMatchRecording>, beforeFlush?: DayBeforeFlush): Promise<AdvanceDayOutcome>;
   notify(userId: string, event: ServerEvent): void;
   now(): number;
   /** Dates (ascending) of the seat's unplayed official games, club and national, from `from` up to `until`. */
@@ -55,7 +62,7 @@ export async function seatMatchOn(service: SaveService, saveId: string, seatId: 
 
 export const defaultGroupDeps: GroupAdvanceDeps = {
   service: defaultService,
-  runDay: (saveId, recordings) => runBufferedDay(saveId, recordings),
+  runDay: (saveId, recordings, beforeFlush) => runBufferedDay(saveId, recordings, {}, beforeFlush),
   notify: notifyUser,
   now: () => Date.now(),
   matchDates: (service, saveId, seatId, from, until) => seatMatchDates(service, saveId, seatId, from, until),
@@ -151,9 +158,11 @@ async function liveRecordingsFor(service: SaveService, saveId: string, date: str
 }
 
 /** `runDay` with a throw turned into a failed outcome (the executor's error path handles both). */
-async function safeRunDay(deps: GroupAdvanceDeps, saveId: string, recordings: Record<string, PlayedMatchRecording>): Promise<AdvanceDayOutcome> {
+async function safeRunDay(
+  deps: GroupAdvanceDeps, saveId: string, recordings: Record<string, PlayedMatchRecording>, beforeFlush: DayBeforeFlush,
+): Promise<AdvanceDayOutcome> {
   try {
-    return await deps.runDay(saveId, recordings);
+    return await deps.runDay(saveId, recordings, beforeFlush);
   } catch (e) {
     return { ok: false, status: 500, error: e instanceof Error ? e.message : String(e) };
   }
@@ -215,11 +224,17 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
 
   await updateAdvance(service, saveId, { running: true, waitingSince: null, target: plan.target });
   const recordings = await liveRecordingsFor(service, saveId, currentDate, seats);
-  let outcome = await safeRunDay(deps, saveId, recordings);
+  // Rivals (part 6): the human clubs' games of the day go to the feed inside the day's own write (a failure there
+  // fails the day, which runs again: the feed is idempotent by id). The members get them after the step.
+  let results: SeatResult[] = [];
+  const recordFeed: DayBeforeFlush = async (day, out) => {
+    results = out.ok ? await recordDayResults(day, saveId, currentDate, out.payload.events, seats) : [];
+  };
+  let outcome = await safeRunDay(deps, saveId, recordings, recordFeed);
   if (!outcome.ok && outcome.status === 400 && Object.keys(recordings).length > 0) {
     // A refused live recording must not lock the world: the game is simulated instead.
     await refuseRecordings(service, saveId, currentDate, Object.keys(recordings), outcome.error);
-    outcome = await safeRunDay(deps, saveId, {});
+    outcome = await safeRunDay(deps, saveId, {}, recordFeed);
   }
   if (!outcome.ok) {
     // The text stays in the log; the meta and the members only see the fixed code.
@@ -249,8 +264,6 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
       saveId, s.seatId, { date: currentDate, newDate, seat: part, ...(club.length > 0 ? { club } : {}) }, GROUP_ADVANCE.PENDING_SUMMARY_MAX,
     );
   }
-  // Rivals (part 6): the human clubs' games of the day go to the feed; the members get them after the step.
-  const results = await recordDayResults(service, saveId, currentDate, outcome.payload.events, seats);
   clearLiveForDay(saveId, currentDate, deps.notify);
   await updateAdvance(service, saveId, noError(world.advance));
   return { kind: "ran", date: newDate, target: plan.target, waitingFor: [], results };

@@ -35,8 +35,11 @@ export interface SeatResult {
   situations: ResultSituation[];
 }
 
-/** `minute`: the clock moved on (every `RIVALS.LIVE_MINUTE_STEP` minutes of play), the score unchanged. */
-export type LivePhase = "start" | "goal" | "half" | "minute" | "end";
+/**
+ * `minute`: the clock moved on (every `RIVALS.LIVE_MINUTE_STEP` minutes of play), the score unchanged.
+ * `disallowed`: the VAR took a goal back (the score drops by one on one side).
+ */
+export type LivePhase = "start" | "goal" | "disallowed" | "half" | "minute" | "end";
 export type LiveStatus = "live" | "half" | "ended" | "stale";
 
 /** `live_score` from the browser of who plays (score from his club's side). */

@@ -5,6 +5,7 @@ import { simulateMatch, DEFAULT_FORMATION } from "@/GameEngine/Domain/SimulateMa
 import { mulberry32 } from "@/Domain/rng";
 import { gkClaimChance } from "@/GameEngine/Infrastructure/ActionOutcomes";
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
+import { onDebugLog, setDebugMode, type DebugEntry } from "@/GameEngine/Support/DebugLog";
 import { emptySeasonLog, type Squad } from "@/types/playerTypes";
 
 /** Weather in the engine (`.claude/rules/game/weather.md`): absent / neutral changes nothing. */
@@ -73,4 +74,29 @@ describe("weather in the engine", () => {
     const gk = { runtimeStats: { withoutBall: { gkPositioning: 0.6, gkReflex: 0.6 } } } as never;
     expect(gkClaimChance(gk, 1, 0.9)).toBeCloseTo(gkClaimChance(gk, 1) * 0.9, 10);
   });
+
+  test("/test logs each lance the weather changed, with weatherMult; neutral weather logs none", () => {
+    const linesOf = (weather?: EngineWeather) => {
+      const seen = new Map<number, DebugEntry>();
+      setDebugMode(true);
+      const off = onDebugLog((log) => { for (const e of log) if (e.category === "weather") seen.set(e.id, e); });
+      try {
+        run(weather, 3);
+      } finally {
+        off();
+        setDebugMode(false);
+      }
+      return [...seen.values()];
+    };
+    const rain = linesOf("rain");
+    const levers = new Set(rain.map((e) => e.data?.lever));
+    expect(levers.has("control")).toBe(true);
+    expect(levers.has("looseDecel")).toBe(true);
+    for (const e of rain.filter((x) => x.data?.lever)) {
+      expect(e.data?.weatherMult).not.toBe(1);
+      expect(e.message).toContain("×");
+    }
+    // Only the match-start line (the weather name) for a neutral weather: no lance changed.
+    expect(linesOf("sunny").filter((e) => e.data?.lever)).toEqual([]);
+  }, 60_000);
 });

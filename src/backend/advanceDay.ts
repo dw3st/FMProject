@@ -284,12 +284,25 @@ export async function runBufferedDay(
   saveId: string,
   recordings: Record<string, PlayedMatchRecording> = {},
   options: AdvanceOneDayOptions = {},
+  /**
+   * Writes of the caller that belong to the same day (the rivals feed of a group world): run on the day's buffered
+   * service before the flush, so they land with the day or not at all (the meta goes last). A throw fails the day.
+   */
+  beforeFlush?: (dayService: SaveService, outcome: AdvanceDayOutcome) => Promise<void>,
 ): Promise<AdvanceDayOutcome> {
   // Each squad is read at most once and written once.
   const buffer = new BufferingSaveDAL(new FileSystemDAL());
   const dayService = new SaveService(buffer);
   const outcome = await advanceOneDay(dayService, saveId, recordings, options);
   if (!outcome.ok) return outcome;
+  if (beforeFlush) {
+    try {
+      await beforeFlush(dayService, outcome);
+    } catch (err) {
+      logError("advance-day", `failed to prepare the day's writes for save ${saveId}`, err);
+      return { ok: false, status: 500, error: "failed to persist day" };
+    }
+  }
   try {
     await buffer.flush();
   } catch (err) {

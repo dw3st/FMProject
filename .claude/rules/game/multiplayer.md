@@ -558,7 +558,9 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 
 ### Regra
 
-- **Resultados do dia:** depois de cada dia que o executor roda (`stepWorld`, dentro do lock, depois do `flush` do dia),
+- **Resultados do dia:** em cada dia que o executor roda (`stepWorld`, dentro do lock), `recordDayResults` grava no
+  serviço bufferizado do próprio dia, antes do `flush` (`runBufferedDay(..., beforeFlush)`, 4.34.3): o feed entra junto
+  com o dia ou nada entra (uma falha ali falha o dia, que roda de novo; o feed é idempotente pelo id).
   `recordDayResults` (`src/backend/rivals/rivalsWorld.ts`) monta os jogos dos clubes humanos a partir de
   `outcome.payload.events` (`buildSeatResults`, `src/Domain/rivals/results.ts`) e grava em `saves/{id}/rivalsFeed.json`
   (`SeatResult[]`, mais novos primeiro, até `RIVALS.FEED_MAX` 300, id `<data>:<competição>:<fixtureId>:<seatId>`, um id
@@ -568,11 +570,12 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
   `away_win`, `comeback_win`, `blown_lead`, `late_equalizer` / `late_winner` (88' ou depois, pelos minutos dos gols),
   `shootout_win`/`shootout_loss` (empate decidido nos pênaltis).
 - **Placar ao vivo:** o `MatchScreen` de um mundo em grupo manda `live_score { saveId, fixtureId, phase, minute, score:
-  { for, against }, scorer? }` (`start`, `goal`, `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
+  { for, against }, scorer? }` (`start`, `goal`, `disallowed`, `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
   `minute` a cada `RIVALS.LIVE_MINUTE_STEP` (5) minutos de jogo, conferido a cada segundo: precisa adiantar o minuto,
   não muda o placar, volta o status a `live` depois do intervalo e não conta no limite de 40 eventos) por um socket próprio
   (`useLiveRivals`). O servidor (`src/backend/rivals/liveScores.ts`, em memória) aceita só de um membro, para o jogo não
-  jogado do clube do assento na data do mundo; o placar só cresce (um gol soma, o resto não muda), o minuto não volta,
+  jogado do clube do assento na data do mundo; um gol soma, um gol anulado pelo VAR (`disallowed`, 4.34.3, do evento
+  `goalDisallowed`) tira exatamente um de um lado e apaga o último gol, o resto não muda o placar; o minuto não volta,
   0..130, até 40 eventos por jogo, 30 frames por minuto por socket; o autor só fica se for nome de um dos dois elencos.
   Frame recusado: silêncio. Repasse `friend_live { saveId, seatId, live, goal? }` aos outros membros; `end` fica 10 min,
   15 min sem evento = interrompido, 30 min = some (varredura de 30 s junto da presença); o dia rodado tira os jogos
@@ -616,8 +619,5 @@ bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.tes
 - Placar ao vivo depende do navegador de quem joga: aba fechada vira "interrompido" até o dia rodar. Recarregar a
   página manda um `start` (ou `half` no intervalo) com o minuto e o placar atuais (4.34.2), que reconstrói o jogo no
   servidor mesmo se ele já o tinha descartado.
-- O placar ao vivo é do cliente (só validado por coerência); um gol anulado pelo VAR derruba o placar e os frames
-  seguintes são recusados até o placar passar do guardado.
+- O placar ao vivo é do cliente (só validado por coerência).
 - Estado ao vivo em memória (um processo só).
-- O feed é gravado pelo executor logo depois do `flush` do dia, fora do buffer do dia: uma falha entre o `flush` e a
-  gravação perde os resultados daquele dia no feed (o dia não roda de novo).

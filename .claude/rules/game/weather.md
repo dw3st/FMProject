@@ -32,7 +32,9 @@ o pôr do sol, só desenho) continua em `src/Domain/matchday/matchConditions.ts`
 - Prévia e resultado: linha do efeito do clima quando ativo (`weatherEffect.*` em i18n); em campo neutro com um clima
   sorteado que teria efeito, "o clima não afeta o jogo" (`weatherEffect.neutral`, 4.34.2).
 - `/test`: seletor **Weather** (motor + luz), cabeçalho do `EnergyPanel` com os multiplicadores, cenários `rain-cross` e
-  `heat-stamina`, categoria de debug `weather`.
+  `heat-stamina`, categoria de debug `weather` (4.34.3: uma linha por lance afetado — erro do lançamento, saída do goleiro,
+  bola alta que cai solta, domínio de bola alta, chute de longe, bola em profundidade — com a alavanca e o `weatherMult`;
+  só com o debug ligado e clima ativo, nenhum sorteio novo).
 - `/lab`: `Variant.weather` (variante A vale para o jogo); `TeamRawStats.weatherActive` → `weatherShare` na linha do `PairDetail`.
 
 ## Medições
@@ -44,7 +46,7 @@ o pôr do sol, só desenho) continua em `src/Domain/matchday/matchConditions.ts`
 
 | Clima | `WEATHER_EFFECTS` (motor) | `QUICK_SIM_CONFIG.WEATHER` |
 |---|---|---|
-| `rain` | control 0,92 · looseDecel 0,7 · gkClaim 0,9 | xg 0,98 · cruzamento 1,08 · lançamento 0,876 |
+| `rain` | control 0,92 · looseDecel 0,8 · gkClaim 0,9 | xg 0,98 · cruzamento 1,08 · lançamento 0,876 |
 | `snow` | looseDecel 1,2 · looseSpeed 0,9 · carrySpeed 0,95 · control 0,94 | xg 1,069 |
 | `wind` | aerialError 3 · longShot 0,95 | xg 0,98 · cruzamento 0,913 · lançamento 0,911 |
 | `hot` | drain 1,08 | xg 1,067 · energyDrain 1,023 |
@@ -77,10 +79,19 @@ escorrega (−20% de bolas soltas ganhas, −12% de lançamentos certos, −8% d
 | of_championship | 275 | 131 | 87 | 29 | 13 | 665 | 1,667 × 1,725 (×0,967 ±0,017) | ×0,966 ±0,009 |
 | as duas | | | | | | | ×0,971 | ×0,969 |
 
-Gols −2,9% (meta ±3%, no limite) e chutes −3,1% (meta ±5%). Nos jogos neutros o resultado é idêntico (5/5 conferidos).
-O mundo dá menos gols do que a soma das razões por clima sugere (~−0,4%): a chuva provavelmente tira mais que o
-×0,98 medido (ruído ±3,2%). Se precisar, a alavanca é o looseDecel da chuva (0,7 → 0,8). O quickSim não muda o
-volume do mundo neutro.
+Medição de 2026-10-18 com a chuva em looseDecel 0,7: gols −2,9% (meta ±3%, no limite), chutes −3,1%. Nos jogos
+neutros o resultado é idêntico (5/5 conferidos).
+
+**4.34.3: chuva em looseDecel 0,8** (a bola molhada escorrega um pouco menos), mesma medição pareada, 1200 jogos por liga:
+
+| Liga | gols | chutes |
+|---|---|---|
+| premier_league | 2,217 × 2,255 (×0,983 ±0,014) | ×0,975 ±0,008 |
+| of_championship | 1,732 × 1,756 (×0,986 ±0,017) | ×0,983 ±0,009 |
+| as duas | ×0,985 | ×0,978 |
+
+Gols −1,5% e chutes −2,2% no mundo, dentro das metas com folga. A tabela "Motor por clima" acima é da medição com 0,7
+(a linha da chuva não foi refeita sozinha); o quickSim não mudou (o volume do mundo neutro não muda).
 
 ### quickSim (Premier League, 4000 jogos pareados por clima)
 

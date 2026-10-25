@@ -4,7 +4,7 @@ import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
-import { weatherEffectOf } from '@/GameEngine/Configs/WeatherConfig';
+import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameEngine/Configs/WeatherConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
 import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
@@ -123,6 +123,18 @@ const HALF_DURATION = 2700;
  * derive "how much of the pause is left" from the same total the engine drains against,
  * instead of duplicating the constant.
  */
+
+/**
+ * `/test` debug line for a lance the weather changed (`weather.md`): the lever and its multiplier (`weatherMult`).
+ * Nothing when the lever is 1 or debug is off. The per-tick levers (drain, carry speed, injury risk) are not logged.
+ */
+function logWeather(state: GameState, lever: keyof WeatherEffect, message: string, playerId?: number): void {
+  if (!isDebugEnabled()) return;
+  const weatherMult = weatherEffectOf(state.weather)[lever];
+  if (weatherMult === 1) return;
+  debugLog('weather', `${message} — ${lever} ×${weatherMult}`, { playerId, data: { weather: state.weather, lever, weatherMult } });
+}
+
 export const PRESENTATION_DURATION = 4;
 
 /** Game-seconds per extra-time half (15 min). */
@@ -3081,6 +3093,7 @@ export function startAerialBall(
   const holder = state.players.find(p => p.id === state.ballHolderId)!;
   const maxErr = kind === 'cross' ? C.CROSS_MAX_ERROR : C.LONG_BALL_MAX_ERROR;
   const sigma = (1 - holder.runtimeStats.withBall.passingSkill) * maxErr / 2 * weatherEffectOf(state.weather).aerialError;
+  logWeather(state, 'aerialError', `${holder.name}'s ${kind === 'cross' ? 'cross' : 'long ball'} lands less precisely (σ ${sigma.toFixed(1)} yd)`, holder.id);
   const [z0, z1] = gaussianPair(rng);
   const toX = Math.max(1, Math.min(PITCH_LENGTH - 1, target.x + z0 * sigma));
   const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, target.y + z1 * sigma));
@@ -3210,6 +3223,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const comes = keeperComesFor(dGk, isInSmallBox(point.x, point.y, gkGoalX), dGk < nearestOther);
     if (comes) {
       const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim);
+      logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance });
       debugLog('aerial', `${gk.name} comes for it — ${claimed ? 'claims' : 'punches'} (${(chance * 100).toFixed(0)}%)`, { playerId: gk.id, data: { chance } });
@@ -3288,6 +3302,8 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const dirY = passer ? (point.y - passer.y) / len : 0;
     const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
     debugLog('aerial', `High ball lands untouched at (${point.x.toFixed(1)}, ${point.y.toFixed(1)})`, { playerId: pass.fromId });
+    logWeather(s, 'looseSpeed', 'Loose ball off the high ball', pass.fromId);
+    logWeather(s, 'looseDecel', 'Loose ball off the high ball', pass.fromId);
     return done({
       ...s,
       looseBall: {
@@ -3385,6 +3401,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         },
       });
     }
+    logWeather(s, 'control', `${w.name} controls a high ball`, w.id);
     if (rng() >= highBallControlChance(w, weatherEffectOf(s.weather).control)) return done(dropLoose(s, w));
     resolved(w.id, true, 'control');
     return done({
@@ -3408,6 +3425,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     }
     return done(clearanceBall(s, winner, point, uniform(rng, C.CLEARANCE_DIST_MIN, C.CLEARANCE_DIST_MAX), rng));
   }
+  logWeather(s, 'control', `${winner.name} controls a high ball`, winner.id);
   if (rng() >= highBallControlChance(winner, weatherEffectOf(s.weather).control)) return done(dropLoose(s, winner));
   resolved(winner.id, false, 'control');
   const prevHolderId = s.ballHolderId;
@@ -3998,6 +4016,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
 
       const { isGoal, inPosts, goalChance } = resolveShot(shooter, defendingGK, s.shot, weatherEffectOf(s.weather).longShot);
+      if (!s.shot.header && Math.abs(s.shot.toX - s.shot.fromX) > LONG_SHOT_DISTANCE) {
+        logWeather(s, 'longShot', `${shooter.name}'s long shot (${(goalChance * 100).toFixed(0)}%)`, shooter.id);
+      }
       gameBus.emit('shotResolved', { player: shooter.id, xg: s.shot.xg, goalChance, isGoal, inPosts, fromX: s.shot.fromX, fromY: s.shot.fromY, toX: s.shot.toX, toY: s.shot.toY });
 
       if (inPosts && isGoal) {
@@ -4435,6 +4456,8 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const dy = landingY - (passer?.y ?? landingY);
       const len = Math.hypot(dx, dy);
       const initSpeed = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
+      logWeather(s, 'looseSpeed', 'Through ball runs loose', passer?.id);
+      logWeather(s, 'looseDecel', 'Through ball runs loose', passer?.id);
       const vx = len > 0.001 ? (dx / len) * initSpeed : 0;
       const vy = len > 0.001 ? (dy / len) * initSpeed : 0;
 
