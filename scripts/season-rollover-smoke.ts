@@ -73,7 +73,7 @@ const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig")
 const { leaguePrize } = await import("@/Domain/finance/prizes");
 const { autoLineupDefaultFormation, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
-const { isSuspended } = await import("@/Domain/discipline/discipline");
+const { isSuspended, isUnavailable } = await import("@/Domain/discipline/discipline");
 const { Player } = await import("@/Domain/Player");
 const { variantFitsRole: ROLE_VARIANT_FITS } = await import("@/GameEngine/Configs/RoleVariantConfig");
 const { followersAfterMood, stadiumFillRate } = await import("@/Domain/boardFans/boardFans");
@@ -689,7 +689,7 @@ try {
     games: 0, cancelled: 0, humanPlayersSeen: new Set<string>(), pastUnplayed: [] as string[],
     /** Youth games of each real player in the day logs since the career began (any club). */
     appsLogged: new Map<string, number>(),
-    callUp: null as null | { playerId: string; fixtureId: string; date: string; status: number; played?: boolean; cleared?: boolean },
+    callUp: null as null | { playerId: string; fixtureId: string; date: string; status: number; played?: boolean; cleared?: boolean; skippedUnavailable?: boolean },
     playerCountrySlugs: [] as string[], startYear: new Map<string, number>(), rolledOn: new Map<string, string>(),
   };
   console.log("\n── Torneios de base (criação) ──");
@@ -1090,7 +1090,13 @@ try {
       if (cu && cu.date === date && cu.played === undefined) {
         const game = (log?.youthMatches ?? []).find((m) => m.fixtureId === cu.fixtureId);
         cu.played = !!game?.score && [...game.players.home, ...game.players.away].includes(cu.playerId);
-        cu.cleared = !(await soloMeta(saveId, plain()))!.youthCallUps?.u21?.length;
+        const msY = (await soloMeta(saveId, plain()))!;
+        cu.cleared = !msY.youthCallUps?.u21?.length;
+        // Injured or suspended between the call-up and the game (a first-team game in between): he
+        // stays out, is reported as skipped and the "next game" call-up still ends with the game.
+        const pY = (await plain().getSquadById(saveId, playerSquadId))?.players.find((x) => x.id === cu.playerId);
+        cu.skippedUnavailable = !cu.played && !!pY && isUnavailable(pY, date)
+          && !!msY.youthCallUpsSkipped?.u21?.players.includes(cu.playerId);
       }
     }
     // Instalações vivas: the human club's items wear (0..100, never up except on a delivery day);
@@ -1254,20 +1260,15 @@ try {
       const sq = await plain().getSquadById(saveId, playerSquadId);
       const mt = await soloMeta(saveId, plain());
       const row = sq?.facilities?.attendance.find((r) => r.date === date && isCupSlug(r.competition));
-      const ls = mt?.activeLeagues?.find((l) => l.leagueSlug === mt.leagueSlug);
-      if (sq?.facilities && row && mt?.clubId === playerSquadId && ls && mt.board) {
-        const { demandOf, seasonFraction } = await import("@/Domain/facilities/facilities");
+      if (sq?.facilities && row && mt?.clubId === playerSquadId) {
+        // The demand is computed with the fans right after the game; the board moves again later in the day
+        // (press, daily review), so the row keeps the multiplier the day used.
         const { matchImportanceMult } = await import("@/Domain/facilities/matchImportance");
         const { isDerby } = await import("@/Domain/boardFans/boardFans");
-        const { leagueTierOf } = await import("@/backend/facilityWorld");
-        const base = demandOf(sq.facilities, {
-          date, followers: sq.finances?.followers ?? 0, tier: await leagueTierOf(mt.leagueSlug), fans: mt.board.fans,
-          fraction: seasonFraction(date, ls.start, ls.end),
-        });
         const opp = await plain().getSquadById(saveId, row.opponentId);
         const derby = isDerby({ myCity: sq.venue?.city ?? "", opponentCity: opp?.venue?.city ?? "", opponentIsLeader: false });
         cupImportance.push({
-          date, ratio: base > 0 ? row.demand / base : 0, expected: matchImportanceMult({ derby, competition: "cup", knockout: true }),
+          date, ratio: row.importance ?? 1, expected: matchImportanceMult({ derby, competition: "cup", knockout: true }),
         });
       }
     }
@@ -2484,10 +2485,8 @@ try {
     check(aiRoll.ok,
       `instalações vivas: ${aiRoll.pairs} AI club(s) of a rolled league (${wearTrack.aiPitchNext} new-season first home games) start the new season on a better pitch than they ended the old one (${aiRoll.bad.slice(0, 3).join("; ")})`);
     check(wearTrack.demandFacilities > 1, `instalações vivas: the demand route with the training ground at 20% has facilities ×${wearTrack.demandFacilities} > 1`);
-    // Big matches (Etapa 38): a home cup knockout tie draws ×1.15 the demand it would have had as an
-    // ordinary game the same day (×1.2 more for a same-city derby, capped at ×1.3). Measured against the
-    // same day's inputs: a nearby league game is not comparable (the fans move it ±15% in a few weeks,
-    // and it can be a derby itself).
+    // Big matches (Etapa 38): a home cup knockout tie draws ×1.15 the demand of an ordinary game the same day
+    // (×1.2 more for a same-city derby, capped at ×1.3), the multiplier kept on the attendance row.
     const cupBad = cupImportance.filter((c) => Math.abs(c.ratio - c.expected) > 0.01);
     if (cupImportance.length === 0) console.log("  (instalações: no home cup tie in the run — big-match demand not checked)");
     else check(cupBad.length === 0,
@@ -2694,8 +2693,8 @@ try {
     }
     check(badTables.length === 0, `base (torneios): the player's country tables are coherent (${badTables.join("; ") || "ok"})`);
     const cu = youthTrack.callUp;
-    check(!!cu && cu.status === 200 && cu.played === true && cu.cleared === true,
-      `base (torneios): a call-up through the route plays the next under-21 game and is cleared (${cu ? `${cu.status} ${cu.date} played=${cu.played} cleared=${cu.cleared}` : "never set"})`);
+    check(!!cu && cu.status === 200 && (cu.played === true || cu.skippedUnavailable === true) && cu.cleared === true,
+      `base (torneios): a call-up through the route plays the next under-21 game (or, unavailable on the day, is reported skipped) and is cleared (${cu ? `${cu.status} ${cu.date} played=${cu.played} skippedUnavailable=${cu.skippedUnavailable ?? false} cleared=${cu.cleared}` : "never set"})`);
     for (const slug of youthTrack.playerCountrySlugs) {
       const rolled = youthTrack.rolledOn.get(slug);
       const ym = await plain().getLeagueMeta(saveId, slug);
@@ -3551,7 +3550,21 @@ try {
       const cu = st.lastCallUps?.[team.id];
       if (cu && cu.from === view.callUp.date) {
         const real = cu.players.filter((p) => !p.generated).map((p) => p.id).sort();
-        check(JSON.stringify(real) === JSON.stringify([...chosen].sort()), "técnico de seleção: the call-up is the one he chose");
+        // The call-up drops on the day whoever is no longer callable (no club, or injured for the first game):
+        // every real one called up was chosen, and every chosen one left out is no longer callable.
+        const realSet = new Set(real);
+        const idxN = await plain().getSquadIndex(saveId);
+        const leftOut: string[] = [];
+        for (const id of chosen.filter((x) => !realSet.has(x))) {
+          let callable = false;
+          for (const e of idxN.leagues().flatMap((l) => idxN.inLeague(l))) {
+            const pN = (await plain().getSquadById(saveId, e.squadId))?.players.find((x) => x.id === id);
+            if (pN) { callable = !(pN.injury && pN.injury.returnDate > view.callUp.date); break; }
+          }
+          if (callable) leftOut.push(id);
+        }
+        check(real.every((id) => chosen.includes(id)) && leftOut.length === 0,
+          `técnico de seleção: the call-up is the one he chose, less who is no longer callable (${real.length} of ${chosen.length}; left out while callable: ${leftOut.join(", ") || "none"})`);
         check(cu.players.length === 23, "técnico de seleção: 23 called up (the generated complete his choice)");
       } else {
         console.log(`  (no call-up of ${team.nation} on ${view.callUp.date}: no game in the window)`);
