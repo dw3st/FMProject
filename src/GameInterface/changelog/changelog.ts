@@ -32,6 +32,10 @@ export const changelog: ChangelogEntry[] = [
         pt: "Partida: os técnicos à beira do campo agora parecem pessoas vistas de cima.",
         en: "Match: the managers on the touchline now look like people seen from above.",
       },
+      {
+        pt: "Amigos: o painel e as janelas de conversa ficaram maiores.",
+        en: "Friends: the panel and the chat windows are bigger.",
+      },
     ],
   },
   {

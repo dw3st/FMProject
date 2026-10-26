@@ -90,7 +90,7 @@ export function ChatWindow({ room }: { room: string }) {
         e.stopPropagation(); // the friends panel also closes on Escape: only this window closes
         s.closeChat(room);
       }}
-      className="pointer-events-auto w-[300px] h-[420px] flex flex-col rounded-md border border-border bg-card"
+      className="pointer-events-auto w-[330px] h-[540px] max-h-[75vh] flex flex-col rounded-md border border-border bg-card"
     >
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         {friend && <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${DOT[friend.status]}`} aria-hidden="true" />}
