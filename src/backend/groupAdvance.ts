@@ -464,6 +464,8 @@ export async function groupAdvanceView(
     errorTries: advance?.error ? advance.errorTries ?? 0 : 0,
     nextRetryAt: errorRetryAt(advance),
     gaveUp: errorGaveUp(advance),
+    kind: meta.world.kind ?? "friends",
+    nextSlotAt: null,
     members: seats.map((s, i) => ({
       seatId: s.seatId,
       nickname: nicknameOf(s.seatId),

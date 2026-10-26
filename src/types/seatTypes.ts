@@ -40,6 +40,10 @@ export interface YouthCallUpsSkipped {
  * everything that was the player's in the save meta. The world (date, leagues, calendar) stays in `SaveMeta`.
  */
 export interface SeatState {
+  /** Public world: ISO of the last time the manager opened the world (written at most hourly). */
+  lastSeenAt?: string;
+  /** Public world: ISO of the inactivity warning (5 days). */
+  inactiveWarnedAt?: string;
   clubId:     string;
   clubName:   string;
   clubColors: [string, string];
@@ -92,7 +96,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
-  "readyUntil", "matchDecision", "standing",
+  "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;

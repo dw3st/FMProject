@@ -5390,6 +5390,7 @@
       "notMember": "This manager is not in the league.",
       "tooLarge": "The request is too large.",
       "ownerLimit": "That manager already owns 5 leagues.",
+      "publicWorld": "Not available in the public world.",
       "lobby": "The league has not started yet.",
       "generic": "Something went wrong. Try again.",
       "self": "You can't wind yourself up.",

@@ -5390,6 +5390,7 @@
       "notMember": "Este técnico não está na liga.",
       "tooLarge": "O pedido é grande demais.",
       "ownerLimit": "Esse técnico já é dono de 5 ligas.",
+      "publicWorld": "Indisponível no mundo público.",
       "lobby": "A liga ainda não começou.",
       "generic": "Algo deu errado. Tente de novo.",
       "self": "Não dá para provocar a si mesmo.",

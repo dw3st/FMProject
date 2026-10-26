@@ -62,6 +62,7 @@ export async function worldView(
     saveId, owner: await worldOwnerName(saveId, service), phase: meta.world.phase, inviteCode: meta.world.inviteCode,
     deadlineHours: meta.world.deadlineHours, max: WORLD.MAX_MEMBERS, currentDate: meta.currentDate ?? null,
     myRole: me.role, mySeatId: me.seatId, members,
+    kind: meta.world.kind ?? "friends", nextSlotAt: null,
   };
 }
 
