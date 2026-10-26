@@ -28,7 +28,7 @@ Descartado: um serviço separado para o mundo público (duplicaria o executor e 
 
 | Onde | O quê |
 |---|---|
-| `WorldState.kind?: "friends" \| "public"` | ausente = `friends`. No público: `inviteCode` vazio (sem convite), `deadlineHours: null`, `createdBy: "server"` |
+| `WorldState.kind?: "friends" \| "public"` | ausente = `friends`. No público: `inviteCode` interno (só para o relógio achar o mundo em `world_codes`; as rotas de convite e de código recusam o público), `deadlineHours: null`, `createdBy: "server"` |
 | `WorldState.edition?: { version, startedOn }` | só no público: a versão do jogo (`GAME_VERSION`) e a data real de criação |
 | `WorldAdvance.lastSlot?: string` | ISO do último horário executado (idempotência do relógio) |
 | `SeatState.lastSeenAt?: string` | ISO da última vez que o técnico abriu o mundo; `inactiveWarnedAt?` o aviso do 5º dia |
