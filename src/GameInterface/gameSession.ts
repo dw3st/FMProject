@@ -31,6 +31,8 @@ export interface GameSession {
   followedLeagues?: string[];
   /** Multiplayer part 3: the world advances by the group (no Continuar, no fast-forward). */
   groupAdvance?: boolean;
+  /** Multiplayer part 5b: the official public world (fixed slots, no owner). */
+  publicWorld?: boolean;
 }
 
 export function sessionFromSave(save: Record<string, unknown>): GameSession {
@@ -56,6 +58,7 @@ export function sessionFromSave(save: Record<string, unknown>): GameSession {
       (save.training_intensity as TrainingIntensity | undefined) ?? DEFAULT_TRAINING_INTENSITY,
     followedLeagues: save.followedLeagues as string[] | undefined,
     groupAdvance: save.mode === "multi" && !!save.world,
+    publicWorld: (save.world as { kind?: string } | undefined)?.kind === "public",
   };
 }
 

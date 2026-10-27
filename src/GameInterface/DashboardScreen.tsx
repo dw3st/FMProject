@@ -310,6 +310,7 @@ export function DashboardScreen() {
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
         friendsRank={friendsRank}
+        publicWorld={!!session?.publicWorld}
         achievements={achievements}
         managerFace={session.manager ? { id: session.seatId ? seatManagerId(session.seatId) : "", face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
         reputation={jobs?.reputation ?? null}

@@ -5246,6 +5246,7 @@
       "noSeasons": "Nenhuma temporada ainda.",
       "noItems": "Nenhum ponto ainda.",
       "dashboardLine": "Liga de amigos: {{rank}}º de {{of}}",
+      "dashboardLinePublic": "Mundo público: {{rank}}º de {{of}}",
       "reason": {
         "rollover": "Fim da temporada",
         "club_change": "Trocou de clube",
