@@ -30,7 +30,7 @@ export const changelog: ChangelogEntry[] = [
     items: [
       {
         pt: "Jogo ao vivo entre dois amigos: quando o seu clube enfrenta o de outro técnico, os dois jogam a mesma partida ao mesmo tempo, cada um no comando do próprio time.",
-        en: "Live match between two friends: when your club meets another manager's club, you both play the same match at the same time, each one in charge of his own team.",
+        en: "Live match between two friends: when your club meets another manager's club, you both play the same match at the same time, each one in charge of their own team.",
       },
       {
         pt: "Sala do jogo: entre na sala e o seu amigo recebe o convite; a partida começa quando os dois clicam em Começar. Quem preferir pode simular o jogo.",
@@ -38,11 +38,11 @@ export const changelog: ChangelogEntry[] = [
       },
       {
         pt: "Cada técnico tem 3 pausas de até 30 segundos por partida para mexer no time.",
-        en: "Each manager has 3 pauses of up to 30 seconds per match to change his team.",
+        en: "Each manager has 3 pauses of up to 30 seconds per match to change their team.",
       },
       {
         pt: "Se um dos dois cair, o auxiliar assume o time até ele voltar.",
-        en: "If one of you drops out, the assistant takes over the team until he is back.",
+        en: "If one of you drops out, the assistant takes over the team until they are back.",
       },
     ],
   },
