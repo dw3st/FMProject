@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.35.2",
+    date: "2026-10-27",
+    items: [
+      {
+        pt: "Na partida ao vivo, o botão Amigos fica na barra de controles, ao lado de Substituições.",
+        en: "On the live match, the Friends button sits in the control bar, next to Substitutions.",
+      },
+    ],
+  },
+  {
     version: "4.35.1",
     date: "2026-10-27",
     items: [

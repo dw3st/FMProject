@@ -95,6 +95,7 @@ import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInte
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
+import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
 import type { LivePhase } from "@/types/rivalsTypes";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
@@ -1411,6 +1412,7 @@ export function MatchScreen() {
               {t("match.subs", { remaining: gameState.subsRemainingA })}
             </button>
             )}
+            <FriendsButton variant="toolbar" />
             {DEV_TOOLS && (
             <button
               onClick={() => setShowStats((s) => !s)}
