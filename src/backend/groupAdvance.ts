@@ -104,7 +104,7 @@ async function loadGroupSeats(deps: GroupAdvanceDeps, saveId: string, currentDat
   return out;
 }
 
-const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries"] as const;
+const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries", "lastSlot", "slotTarget"] as const;
 
 function sameAdvance(a: WorldAdvance, b: WorldAdvance): boolean {
   return ADVANCE_KEYS.every((k) => (a[k] ?? null) === (b[k] ?? null));
@@ -200,6 +200,17 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
   let waitingSince = world.advance?.waitingSince ?? null;
   let seats = await loadGroupSeats(deps, saveId, currentDate);
   let plan = computeGroupTarget(currentDate, seats.map((s) => s.input));
+
+  if (world.kind === "public") {
+    // Public world (part 5b): the slot clock set the target; nothing holds the world (no "ready", no deadline).
+    // Undecided seat games are simulated (no live recording); a recording sent for the day is still used.
+    const target = world.advance?.slotTarget ?? currentDate;
+    if (target <= currentDate) {
+      await updateAdvance(service, saveId, { running: false, waitingSince: null, target, slotTarget: null, ...noError(world.advance) });
+      return { kind: "stopped", date: currentDate, target, waitingFor: [] };
+    }
+    plan = { target, waitingFor: [], matchWaiting: [] };
+  }
 
   if (plan.target <= currentDate && deadlinePassed(waitingSince, world.deadlineHours, deps.now())) {
     await applyAssistant(deps, saveId, currentDate, seats, plan);
@@ -511,7 +522,7 @@ function isRunningWorld(meta: SaveMeta | null): boolean {
 
 /**
  * One tick of the deadline clock: kicks every world whose deadline passed, or whose failed run is due a retry
- * (`errorRetryDue`). Returns the kicked ids.
+ * (`errorRetryDue`); the public world takes its due slot instead (`publicSlotTick`). Returns the kicked ids.
  */
 export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps): Promise<string[]> {
   const kicked: string[] = [];
@@ -520,6 +531,12 @@ export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps):
     const meta = await deps.service.getMeta(saveId);
     if (!meta) { knownWorlds.delete(saveId); continue; }
     if (!isRunningWorld(meta)) continue;
+    if (meta.world!.kind === "public") {
+      // Fixed slots (part 5b): no deadline, and a failed day waits for the next slot instead of retrying.
+      const { publicSlotTick } = await import("@/backend/worlds/publicWorld");
+      if (await publicSlotTick(saveId, deps)) kicked.push(saveId);
+      continue;
+    }
     const adv = meta.world!.advance;
     const due = adv?.error
       ? errorRetryDue(adv, deps.now())
@@ -542,7 +559,8 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
       if (runningWorlds.has(saveId)) return false;
       const meta = await deps.service.getMeta(saveId);
       if (meta?.world?.advance?.running) await updateAdvance(deps.service, saveId, { running: false });
-      return isRunningWorld(meta);
+      // The public world only moves at its slots: the clock kicks it, a resume does not.
+      return isRunningWorld(meta) && meta!.world!.kind !== "public";
     }).catch((e) => {
       logError("world", `save ${saveId}: resume failed`, e);
       return false;
@@ -553,9 +571,16 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
 
 let clock: ReturnType<typeof setInterval> | null = null;
 
-/** Deadline clock (`GROUP_ADVANCE.CLOCK_MS`) plus the resume of the worlds. Called once at server start. */
+/**
+ * Deadline clock (`GROUP_ADVANCE.CLOCK_MS`) plus the resume of the worlds. Called once at server start; also creates
+ * the public world of this version (part 5b) in the background and hands it to the clock.
+ */
 export function startWorldClock(): void {
   if (clock) return;
+  void import("@/backend/worlds/publicWorld")
+    .then(({ ensurePublicWorld }) => ensurePublicWorld())
+    .then((id) => rememberWorld(id))
+    .catch((e) => logError("world", "public world failed", e));
   void resumeWorlds().catch((e) => logError("world", "failed to resume the worlds", e));
   clock = setInterval(() => {
     void worldClockTick().catch((e) => logError("world", "deadline clock failed", e));
