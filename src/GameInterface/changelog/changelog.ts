@@ -29,16 +29,20 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-10-27",
     items: [
       {
-        pt: "Mundo pÃºblico: qualquer tÃ©cnico pode entrar num clube das 10 principais ligas e jogar junto com os outros.",
+        pt: "Mundo público: qualquer técnico pode entrar num clube das 10 principais ligas e jogar junto com os outros.",
         en: "Public world: any manager can join a club from the 10 main leagues and play alongside the others.",
       },
       {
-        pt: "O mundo pÃºblico avanÃ§a quatro vezes por dia (9h, 13h, 18h e 22h, horÃ¡rio de BrasÃ­lia); no dia do seu jogo, jogue ao vivo ou simule.",
-        en: "The public world moves on four times a day (9am, 1pm, 6pm and 10pm, BrasÃ­lia time); on your match day, play live or simulate.",
+        pt: "O mundo público avança quatro vezes por dia (9h, 13h, 18h e 22h, horário de Brasília); no dia do seu jogo, jogue ao vivo ou simule.",
+        en: "The public world moves on four times a day (9am, 1pm, 6pm and 10pm, Brasília time); on your match day, play live or simulate.",
       },
       {
-        pt: "Hall da fama: cada ediÃ§Ã£o do mundo pÃºblico guarda os melhores tÃ©cnicos.",
+        pt: "Hall da fama: cada edição do mundo público guarda os melhores técnicos.",
         en: "Hall of fame: each edition of the public world keeps its best managers.",
+      },
+      {
+        pt: "Painel de amigos maior.",
+        en: "Bigger friends panel.",
       },
     ],
   },
