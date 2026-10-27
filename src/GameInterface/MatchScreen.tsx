@@ -1,18 +1,16 @@
-import { pitchInjury } from "@/Domain/facilities/turf";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { MatchPitch as SetupPitch } from "@/Domain/facilities/pitch";
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import { shirtName } from "@/Domain/shirtName";
 import { readJsonBody } from "@/GameInterface/readJsonBody";
-import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
-import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { applyLiveSideConfigs, buildLiveMatchState, eligibleLivePlayers } from "@/Domain/match/liveMatchSetup";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
@@ -35,11 +33,7 @@ import type { TacticsSave, TacticalStyle, Mentality, SlotInstruction } from "@/t
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
-import { isUnavailable } from "@/Domain/discipline/discipline";
 import { staffEffectsOf } from "@/Domain/staff/staff";
-import { getFormationSlots } from "@/types/formationSlots";
-import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
@@ -65,8 +59,6 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 const MATCH_END_TO_RESULT_MS = 3500;
 /** 1x / 2x / 4x — live match speed group (spec §4). */
 const GAME_SPEEDS = [1, 2, 4] as const;
-import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
-import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import { TeamPanel, type DepartedPlayer } from "@/GameInterface/TeamPanel";
@@ -453,11 +445,6 @@ export function MatchScreen() {
         aiTacticsRef.current = teamB;
         mentalityRef.current = teamA.mentality;
         setMentality(teamA.mentality);
-        applyTeamTacticsConfig("A", teamA.style, teamA.mentality, teamA.axesOverride, teamA.familiarity);
-        applyTeamAttackConfig("A", teamA.style, teamA.mentality, teamA.axesOverride, teamA.familiarity);
-        applyTeamTacticsConfig("B", teamB.style, teamB.mentality, teamB.axesOverride, teamB.familiarity);
-        applyTeamAttackConfig("B", teamB.style, teamB.mentality, teamB.axesOverride, teamB.familiarity);
-
         // Exclude injured players from the whole candidate pool — starters AND bench (an injured
         // player must never be available as a substitute either). `data.myLineup` is already
         // injury-aware (`/api/match-setup` → `resolveUserLineup`), but the full squad list itself
@@ -466,59 +453,58 @@ export function MatchScreen() {
         // over the per-match foreign limit) is out of the pool too, starters and bench.
         const matchDate = data.fixture.date;
         const mineOk = data.registered ? new Set(data.registered.mine) : null;
-        const oppOk = data.registered ? new Set(data.registered.opp) : null;
-        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate) && (!mineOk || mineOk.has(p.id)));
-        const opponentPlayers = (data.opponentSquad?.players ?? data.mySquad.players).filter(
-          (p) => !isUnavailable(p, matchDate) && (!oppOk || !data.opponentSquad || oppOk.has(p.id)),
-        );
+        const oppOk = data.registered && data.opponentSquad ? new Set(data.registered.opp) : null;
+        const myEligiblePlayers = eligibleLivePlayers(data.mySquad.players, matchDate, mineOk);
+        const opponentPlayers = eligibleLivePlayers(data.opponentSquad?.players ?? data.mySquad.players, matchDate, oppOk);
         // Morale (`.claude/rules/game/morale.md`): every player at his own stored value — the AI side
         // stores none (neutral). No team override from another screen may leak into a real match.
-        setTeamMoraleOverride("A", undefined);
-        setTeamMoraleOverride("B", data.opponentSquad ? undefined : MORALE.NEUTRAL);
-        const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
-        const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);
-        const pitchMult = pitchInjury(data.pitch?.condition ?? 90, data.pitch?.turf);
-        const fresh: GameState | null = snap ? null : {
-          ...createMatchState(
-            myEligiblePlayers,
-            data.myFormation,
-            opponentPlayers,
-            data.oppFormation,
-            data.myLineup,
-            oppLineup,
-            {
-              A: staffEffectsOf(data.mySquad).injuryMult * pitchMult,
-              ...(data.opponentSquad ? { B: staffEffectsOf(data.opponentSquad).injuryMult * pitchMult } : {}),
-            },
-          ),
-          knockout: data.fixture.knockout === true,
-          // Weather that plays (`.claude/rules/game/weather.md`): a closed roof plays it neutral.
-          ...(data.weatherEffect ? { weather: data.weatherEffect.effective } : {}),
-          ...(data.referee ? { referee: {
-            id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness,
-            // Errors and VAR (`var.md`): the quality the day advance uses too.
-            ...(typeof data.referee.quality === "number" ? { quality: data.referee.quality } : {}),
-            ...(data.referee.var ? { var: true } : {}),
-          } } : {}),
-          // #140: the user picks the replacement of an injured player (the AI side stays automatic). A banned
-          // manager watches from the stands: his assistant makes every change by the AI rule (`var.md` §4).
-          ...(data.managerBanned ? { autoSubs: { A: true as const } } : { manualInjurySubs: { A: true as const } }),
-          ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
-          // The manager's Discipline (`.claude/rules/game/achievements.md`): fewer fouls and cards for his side.
-          ...(data.mySquad.managerAttributes ? { managerDiscipline: { A: data.mySquad.managerAttributes.discipline } } : {}),
-          ...(data.fixture.aggregate
-            ? { aggregate: data.fixture.home === data.mySquadId
-                  ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }
-                  : { A: data.fixture.aggregate.away, B: data.fixture.aggregate.home } }
-            : {}),
-        };
-        // Player instructions of the user's side: the saved slot instructions and this match's
-        // man-marking (`.claude/rules/game/player-instructions.md`). The AI side never has any.
-        const state: GameState = snap ? snap.state : setManMarksBySlot(
-          applyTeamInstructions(fresh!, "A", tactics.slotInstructions),
-          "A",
-          (data.matchMarking?.marks ?? []).map((m) => ({ slot: m.slot, targetRosterId: m.targetId })),
-        );
+        const oppMorale = data.opponentSquad ? "own" as const : "neutral" as const;
+        // Fresh match: the shared builder (`src/Domain/match/liveMatchSetup.ts`, also the H2H worker's). The user is
+        // side A; player instructions and man-marking only for his side (the AI side never has any).
+        // A resumed match keeps its state; only the per-team engine configs are re-applied.
+        if (snap) applyLiveSideConfigs({ A: { tactics: teamA, morale: "own" }, B: { tactics: teamB, morale: oppMorale } });
+        const state: GameState = snap
+          ? snap.state
+          : buildLiveMatchState({
+              A: {
+                players: myEligiblePlayers,
+                formation: data.myFormation,
+                lineup: data.myLineup,
+                tactics: teamA,
+                staffInjuryMult: staffEffectsOf(data.mySquad).injuryMult,
+                morale: "own",
+                human: true,
+                slotInstructions: tactics.slotInstructions,
+                marks: (data.matchMarking?.marks ?? []).map((m) => ({ slot: m.slot, targetRosterId: m.targetId })),
+                setPieceTakers: tactics.setPieceTakers,
+                managerBanned: data.managerBanned === true,
+                ...(data.mySquad.managerAttributes ? { managerDiscipline: data.mySquad.managerAttributes.discipline } : {}),
+              },
+              B: {
+                players: opponentPlayers,
+                formation: data.oppFormation,
+                tactics: teamB,
+                ...(data.opponentSquad ? { staffInjuryMult: staffEffectsOf(data.opponentSquad).injuryMult } : {}),
+                morale: oppMorale,
+                human: false,
+              },
+              date: matchDate,
+              knockout: data.fixture.knockout === true,
+              ...(data.fixture.aggregate
+                ? { aggregate: data.fixture.home === data.mySquadId
+                      ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }
+                      : { A: data.fixture.aggregate.away, B: data.fixture.aggregate.home } }
+                : {}),
+              ...(data.pitch ? { pitch: { condition: data.pitch.condition, turf: data.pitch.turf } } : {}),
+              // Weather that plays (`.claude/rules/game/weather.md`): a closed roof plays it neutral.
+              ...(data.weatherEffect ? { weather: data.weatherEffect.effective } : {}),
+              ...(data.referee ? { referee: {
+                id: data.referee.id, name: data.referee.name, country: data.referee.country, strictness: data.referee.strictness,
+                // Errors and VAR (`var.md`): the quality the day advance uses too.
+                ...(typeof data.referee.quality === "number" ? { quality: data.referee.quality } : {}),
+                ...(data.referee.var ? { var: true } : {}),
+              } } : {}),
+            });
         if (snap) {
           importStatsState(snap.stats);
           importRatings(snap.ratings);
