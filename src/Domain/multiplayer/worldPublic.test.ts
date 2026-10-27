@@ -8,3 +8,12 @@ test("createdBy is stripped from the world; a meta without world is untouched", 
   const solo: { id: string; world?: undefined } = { id: "s" };
   expect(publicWorldMeta(solo)).toBe(solo);
 });
+
+test("a public world also drops its internal invite code", () => {
+  const out = publicWorldMeta({
+    id: "s",
+    world: { phase: "running" as const, inviteCode: "SECRETCODE", deadlineHours: null, createdBy: "server", kind: "public" as const },
+  });
+  expect(out.world).toEqual({ phase: "running", deadlineHours: null, kind: "public" });
+  expect(JSON.stringify(out)).not.toContain("SECRETCODE");
+});

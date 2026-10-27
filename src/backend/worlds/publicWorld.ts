@@ -5,12 +5,12 @@ import { announceMemberChange, deleteWorld } from "@/backend/worlds/worldLifecyc
 import { seenAt } from "@/backend/worlds/publicSeen";
 import { removeSeat } from "@/backend/seats";
 import { notifyUser } from "@/backend/social/realtime";
-import { newWorldCode, setWorldCode } from "@/backend/worlds/worldStore";
+import { listWorldCodeIds, newWorldCode, setWorldCode } from "@/backend/worlds/worldStore";
 import { closeOpenEditions, editionOf, listEditions, openEdition, saveEditionStandings } from "@/backend/worlds/publicStore";
 import { standingsView } from "@/backend/standingsWorld";
 import { defaultGroupDeps, isWorldAdvancing, kickWorld, type GroupAdvanceDeps } from "@/backend/groupAdvance";
 import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
-import { dueSlot, inactivityAction, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
+import { dueSlot, inactivityAction, isPublicWorld, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
 import { buildInactiveWarningMessage } from "@/Domain/inbox/worldAdvanceMessage";
 import { rankOf } from "@/Domain/multiplayer/standings";
 import { addDays } from "@/Domain/dates";
@@ -18,24 +18,59 @@ import { GAME_VERSION } from "@/Domain/saveVersion";
 import { logError } from "@/Logger";
 import type { WorldState } from "@/types/multiplayerTypes";
 
-export interface PublicDeps { version?: string; now?: () => number; service?: SaveService }
+export interface PublicDeps {
+  version?: string;
+  now?: () => number;
+  service?: SaveService;
+  /** Delete every other public world save (default true); tests that share a process pass false. */
+  sweep?: boolean;
+}
 
 /** The current public world's save id (the open edition of this version), or null. */
 export function publicWorldId(version: string = GAME_VERSION): string | null {
   return editionOf(version)?.saveId ?? null;
 }
 
+/** One creation at a time per version: concurrent calls share it. */
+const inFlight = new Map<string, Promise<string>>();
+
 /**
  * Server start: the public world of this version, created if missing (`.claude/rules/game/multiplayer.md`, part 5b).
- * Older editions are closed in the hall of fame and their saves deleted.
+ * Older editions are closed in the hall of fame and their saves deleted; an edition whose save is missing or never
+ * finished its presimulation is recreated, and any other public world save (an orphan of a crash) is deleted.
  */
-export async function ensurePublicWorld(deps: PublicDeps = {}): Promise<string> {
+export function ensurePublicWorld(deps: PublicDeps = {}): Promise<string> {
   const version = deps.version ?? GAME_VERSION;
-  const service = deps.service ?? defaultService;
-  const nowIso = new Date((deps.now ?? Date.now)()).toISOString();
-  const existing = editionOf(version);
-  if (existing && (await service.getMeta(existing.saveId))) return existing.saveId;
+  const running = inFlight.get(version);
+  if (running) return running;
+  const p = ensureOnce(version, deps).finally(() => inFlight.delete(version));
+  inFlight.set(version, p);
+  return p;
+}
 
+async function ensureOnce(version: string, deps: PublicDeps): Promise<string> {
+  const service = deps.service ?? defaultService;
+  const nowMs = (deps.now ?? Date.now)();
+  const nowIso = new Date(nowMs).toISOString();
+  const saveId = (await currentEdition(version, service)) ?? (await createPublicWorld(version, service, nowMs, nowIso));
+  if (deps.sweep !== false) await sweepPublicWorlds(saveId, service);
+  return saveId;
+}
+
+/** The edition's save when it is complete; a broken one (save missing or not presimulated) is deleted. */
+async function currentEdition(version: string, service: SaveService): Promise<string | null> {
+  const existing = editionOf(version);
+  if (!existing) return null;
+  const meta = await service.getMeta(existing.saveId);
+  if (meta?.presimulated) return existing.saveId;
+  if (meta) {
+    logError("world", `public world ${existing.saveId}: unfinished edition, recreating`);
+    await deleteWorld(existing.saveId, "server", service).catch((e) => logError("world", `public world ${existing.saveId}: delete failed`, e));
+  }
+  return null;
+}
+
+async function createPublicWorld(version: string, service: SaveService, nowMs: number, nowIso: string): Promise<string> {
   for (const old of listEditions()) {
     if (old.version === version) continue;
     if (await service.getMeta(old.saveId)) {
@@ -46,17 +81,31 @@ export async function ensurePublicWorld(deps: PublicDeps = {}): Promise<string> 
 
   const meta = await service.createSave({ worldOnly: true, leagueSlug: PUBLIC_WORLD.START_LEAGUE });
   const saveId = meta.id;
+  // Tracked at once: a crash before the presimulation ends leaves an edition the next start recreates.
+  openEdition(version, saveId, nowIso);
   // The code only lets the deadline clock find the world (`listWorldCodeIds`); the join routes refuse it.
   const code = newWorldCode();
   setWorldCode(saveId, code);
   const world: WorldState = {
     phase: "running", inviteCode: code, deadlineHours: null, createdBy: "server",
     kind: "public", edition: { version, startedOn: nowIso },
+    // The slot already passed is taken: a new world first steps at the next slot.
+    advance: { running: false, waitingSince: null, target: null, lastSlot: dueSlot(nowMs, null) },
   };
   await service.updateMeta(saveId, { mode: "multi", world });
   await withSaveLock(saveId, () => presimulateWorld(saveId, null));
-  openEdition(version, saveId, nowIso);
   return saveId;
+}
+
+/** Deletes every public world save but `keep` (orphans of a crash, leftovers of old versions). */
+async function sweepPublicWorlds(keep: string, service: SaveService): Promise<void> {
+  for (const id of listWorldCodeIds()) {
+    if (id === keep) continue;
+    const meta = await service.getMeta(id).catch(() => null);
+    if (!meta || !isPublicWorld(meta)) continue;
+    logError("world", `public world ${id}: not the current edition, deleted`);
+    await deleteWorld(id, "server", service).catch((e) => logError("world", `public world ${id}: delete failed`, e));
+  }
 }
 
 /** How far ahead (game days) a step looks for its target. */

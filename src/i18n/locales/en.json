@@ -143,7 +143,7 @@
     "unemployed": "No club",
     "withFriends": "With friends · {{count}}/{{max}}",
     "publicWorld": "Public world · {{count}}/{{max}}",
-    "publicNext": "Next step at {{time}}",
+    "publicNext": "Next step at {{time}} (Brasília)",
     "publicJoin": "Join",
     "publicFull": "Full",
     "owner": "Owner",
@@ -5166,7 +5166,8 @@
     "public": {
       "name": "Public world",
       "title": "Schedule",
-      "nextStep": "Next step at {{time}}",
+      "nextStep": "Next step at {{time}} (Brasília)",
+      "nextStepShort": "Next step at {{time}}",
       "nextStepLabel": "Next step",
       "hint": "One step at 09:00, 13:00, 18:00 and 22:00 (Brasília time). A game you have not played or decided is simulated."
     },

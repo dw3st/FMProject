@@ -71,7 +71,7 @@ export function Layout({ children }: { children: ReactNode }) {
           onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
-          dayAction={!lobby && session?.groupAdvance ? <ReadyControl /> : undefined}
+          dayAction={!lobby && session?.groupAdvance ? <ReadyControl publicWorld={save?.world?.kind === "public"} /> : undefined}
         />
 
         <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">

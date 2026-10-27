@@ -254,6 +254,8 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
     await updateAdvance(service, saveId, {
       running: false, waitingSince: null, target: plan.target,
       error: DAY_FAILED, errorAt: nowIso, errorTries: (world.advance?.errorTries ?? 0) + 1,
+      // Public world: the step ends here; the next slot sets a new target (a member action never resumes it).
+      ...(world.kind === "public" ? { slotTarget: null } : {}),
     });
     return { kind: "error", date: currentDate, target: plan.target, waitingFor: [], error: DAY_FAILED };
   }
@@ -333,6 +335,7 @@ async function recordCrash(saveId: string, deps: GroupAdvanceDeps, e: unknown): 
     await updateAdvance(deps.service, saveId, {
       running: false, waitingSince: null,
       error, errorAt: new Date(deps.now()).toISOString(), errorTries: (meta?.world?.advance?.errorTries ?? 0) + 1,
+      ...(meta?.world?.kind === "public" ? { slotTarget: null } : {}),
     });
     return { ...failed, date: meta?.currentDate ?? null, target: meta?.world?.advance?.target ?? null };
   }).catch(() => failed);
@@ -484,8 +487,9 @@ export async function groupAdvanceView(
     waitingFor: waiting.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
     error: advance?.error ?? null,
     errorTries: advance?.error ? advance.errorTries ?? 0 : 0,
-    nextRetryAt: errorRetryAt(advance),
-    gaveUp: errorGaveUp(advance),
+    // Public world: a failed day waits for the next slot (no retry clock, no "gave up").
+    nextRetryAt: pub ? null : errorRetryAt(advance),
+    gaveUp: pub ? false : errorGaveUp(advance),
     kind: meta.world.kind ?? "friends",
     nextSlotAt: pub ? nextSlotAt(Date.now()) : null,
     members: seats.map((s, i) => ({
@@ -573,9 +577,13 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
     const kick = await withSaveLock(saveId, async () => {
       if (runningWorlds.has(saveId)) return false;
       const meta = await deps.service.getMeta(saveId);
-      if (meta?.world?.advance?.running) await updateAdvance(deps.service, saveId, { running: false });
+      const pub = meta?.world?.kind === "public";
+      // A public step cut by the restart is dropped with its target: the next slot starts a new one.
+      if (meta?.world?.advance?.running || (pub && meta?.world?.advance?.slotTarget)) {
+        await updateAdvance(deps.service, saveId, pub ? { running: false, slotTarget: null } : { running: false });
+      }
       // The public world only moves at its slots: the clock kicks it, a resume does not.
-      return isRunningWorld(meta) && meta!.world!.kind !== "public";
+      return isRunningWorld(meta) && !pub;
     }).catch((e) => {
       logError("world", `save ${saveId}: resume failed`, e);
       return false;

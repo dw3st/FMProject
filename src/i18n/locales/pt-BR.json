@@ -143,7 +143,7 @@
     "unemployed": "Sem clube",
     "withFriends": "Com amigos · {{count}}/{{max}}",
     "publicWorld": "Mundo público · {{count}}/{{max}}",
-    "publicNext": "Próximo passo às {{time}}",
+    "publicNext": "Próximo passo às {{time}} (Brasília)",
     "publicJoin": "Entrar",
     "publicFull": "Lotado",
     "owner": "Dono",
@@ -5166,7 +5166,8 @@
     "public": {
       "name": "Mundo público",
       "title": "Horários",
-      "nextStep": "Próximo passo às {{time}}",
+      "nextStep": "Próximo passo às {{time}} (Brasília)",
+      "nextStepShort": "Próximo passo às {{time}}",
       "nextStepLabel": "Próximo passo",
       "hint": "Um passo às 09:00, 13:00, 18:00 e 22:00 (horário de Brasília). Jogo que você não jogou nem decidiu é simulado."
     },

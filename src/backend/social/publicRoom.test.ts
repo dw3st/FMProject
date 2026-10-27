@@ -15,7 +15,7 @@ let saveId = "";
 beforeAll(async () => {
   setKickScheduler(() => {});
   db.prepare("DELETE FROM public_editions").run();
-  saveId = await ensurePublicWorld({ version: GAME_VERSION });
+  saveId = await ensurePublicWorld({ version: GAME_VERSION, sweep: false });
 }, 600_000);
 
 afterAll(async () => {

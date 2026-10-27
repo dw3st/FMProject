@@ -23,7 +23,7 @@ describe("public world routes (part 5b)", () => {
     setKickScheduler(() => {});
     db.prepare("DELETE FROM public_editions").run();
     // The routes look up the edition of the running version.
-    saveId = await ensurePublicWorld({ version: GAME_VERSION });
+    saveId = await ensurePublicWorld({ version: GAME_VERSION, now: () => Date.parse("2026-10-26T12:00:00.000Z"), sweep: false });
     const index = await saveService.getSquadIndex(saveId);
     premier = index.inLeague("premier_league").map((e) => e.squadId);
     championship = index.inLeague("of_championship")[0]!.squadId;
@@ -115,7 +115,8 @@ describe("public world routes (part 5b)", () => {
     expect(adv.json).toMatchObject({ kind: "public", deadlineAt: null });
     expect(Number.isNaN(Date.parse(adv.json.nextSlotAt))).toBe(false);
 
-    expect(await publicSlotTick(saveId, defaultGroupDeps)).toBe(true);
+    // Created at 12:00 UTC: the 16:00 UTC slot is due.
+    expect(await publicSlotTick(saveId, { ...defaultGroupDeps, now: () => Date.parse("2026-10-26T16:30:00.000Z") })).toBe(true);
     await waitWorld(saveId);
     const open = listEditions().find((e) => e.version === GAME_VERSION)!;
     expect(open.standings.map((e) => e.nickname)).toContain(c.nickname);

@@ -22,7 +22,7 @@ const version = `measure-${Date.now()}`;
 let saveId: string | null = null;
 try {
   setKickScheduler(null);
-  saveId = await ensurePublicWorld({ version });
+  saveId = await ensurePublicWorld({ version, now: () => Date.parse("2026-10-26T12:00:00Z"), sweep: false });
   const index = await saveService.getSquadIndex(saveId);
   for (const [i, slug] of PUBLIC_WORLD.LEAGUES.entries()) {
     const club = index.inLeague(slug)[0];

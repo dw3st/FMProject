@@ -17,7 +17,7 @@ let clubB = "";
 beforeAll(async () => {
   setKickScheduler(() => {});
   db.prepare("DELETE FROM public_editions").run();
-  saveId = await ensurePublicWorld({ version: GAME_VERSION });
+  saveId = await ensurePublicWorld({ version: GAME_VERSION, sweep: false });
   const premier = (await saveService.getSquadIndex(saveId)).inLeague("premier_league").map((e) => e.squadId);
   const join = async (clubId: string) => {
     const res = await callApi("POST", "/api/worlds/public/join", makeUser(uniqueNick("pi")).token, { body: { clubId, manager: TEST_MANAGER } });

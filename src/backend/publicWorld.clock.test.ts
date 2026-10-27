@@ -7,7 +7,7 @@ let saveId = "";
 afterAll(async () => { if (saveId) await saveService.deleteSave(saveId).catch(() => {}); });
 
 test("a due slot runs the world to the next round day, once", async () => {
-  saveId = await ensurePublicWorld({ version: "9.9.0" });
+  saveId = await ensurePublicWorld({ version: "9.9.0", now: () => Date.parse("2026-10-26T12:00:00.000Z"), sweep: false });
   const start = (await saveService.getMeta(saveId))!.currentDate!;
   let now = Date.parse("2026-10-26T16:30:00.000Z");
   const deps: GroupAdvanceDeps = { ...defaultGroupDeps, now: () => now };
