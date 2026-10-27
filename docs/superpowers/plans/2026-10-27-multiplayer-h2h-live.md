@@ -8,7 +8,7 @@
 
 **Tech Stack:** Bun + TS, Bun Worker, WebSocket (`src/backend/social/realtime.ts`), React 19, Pixi.js. Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Regras: `.claude/rules/game/multiplayer.md`, `.claude/rules/match-flow.md`, `.claude/rules/graphics-engine.md`, `.claude/rules/social.md`, `.claude/rules/ui-standard.md`.
 
-Convenções do repo: imports sempre `@/…`; textos em `src/i18n/locales/{en,pt-BR}.json` (curtos, sem emoji); testes com `bun test <paths>`; nunca a suíte inteira por tarefa; commits por pathspec com `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; sem migração de save.
+Convenções do repo: imports sempre `@/…`; textos em `src/i18n/locales/{en,pt-BR}.json` (curtos, sem emoji); testes com `bun test <paths>`; nunca a suíte inteira por tarefa; commits por pathspec com `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. **O mundo de amigos do usuário em produção (`784a09d3…`) tem que continuar funcionando depois do deploy:** campos novos de save só opcionais, nada de mudar o formato existente nem subir `MIN_COMPATIBLE_SAVE_VERSION`.
 
 ---
 
