@@ -22,6 +22,8 @@ export const groupAdvanceApi = {
     call<{ readyUntil: string | null }>(`${base(saveId)}/ready`, { method: "POST", body: JSON.stringify({ until }) }),
   simulate: (saveId: string, date: string, fixtureId: string) =>
     call<{ ok: true }>(`${base(saveId)}/match-decision`, { method: "POST", body: JSON.stringify({ date, fixtureId, mode: "simulate" }) }),
+  undoSimulate: (saveId: string, date: string, fixtureId: string) =>
+    call<{ ok: true }>(`${base(saveId)}/match-decision`, { method: "POST", body: JSON.stringify({ date, fixtureId, mode: "undo" }) }),
   liveRecording: (saveId: string, date: string, fixtureId: string, recording: PlayedMatchRecording) =>
     call<{ ok: true }>(`${base(saveId)}/live-recording`, { method: "POST", body: JSON.stringify({ date, fixtureId, recording }) }),
   pendingLive: (saveId: string) =>

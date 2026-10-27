@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.35.3",
+    date: "2026-10-27",
+    items: [
+      {
+        pt: "Mundo público: quando todos os técnicos ativos ficam prontos, o mundo avança na hora, sem esperar o próximo horário.",
+        en: "Public world: once every active manager is ready, the world moves on at once, without waiting for the next time slot.",
+      },
+      {
+        pt: "Na partida, os avisos dos amigos aparecem abaixo da faixa Ao vivo, sobre o campo, e o Ao vivo pisca em vermelho.",
+        en: "On the match, friends' notices show under the Live strip, over the pitch, and Live blinks red.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A aba de uma conversa minimizada ficou maior.",
+        en: "A minimized chat tab is bigger.",
+      },
+      {
+        pt: "Escudo do Athletic Club corrigido.",
+        en: "Athletic Club crest fixed.",
+      },
+      {
+        pt: "No mundo com amigos, Simular explica o que faz, e um jogo marcado para simular pode ser desfeito enquanto o dia não roda.",
+        en: "In a group world, Simulate explains what it does, and a match set to be simulated can be undone until the day runs.",
+      },
+    ],
+  },
+  {
     version: "4.35.2",
     date: "2026-10-27",
     items: [

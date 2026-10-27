@@ -97,6 +97,7 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
+import { MATCH_POPUPS_ID } from "@/GameInterface/Social/ChatPopups";
 import type { LivePhase } from "@/types/rivalsTypes";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import {
@@ -1455,6 +1456,10 @@ export function MatchScreen() {
       </header>
 
       {liveTarget && <LiveRivalsStrip saveId={liveTarget.saveId} live={liveRivals.live} highlight={liveRivals.highlight} />}
+      {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
+      <div className="relative z-50">
+        <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />
+      </div>
 
       {/* Main Match View */}
       <main className="flex-1 flex justify-center overflow-hidden min-h-0">

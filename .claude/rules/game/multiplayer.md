@@ -300,7 +300,7 @@ em `world.phase === "running"`. O solo não muda.
 | Rota | Faz |
 |---|---|
 | `POST /api/worlds/:saveId/ready { until }` | Marca (ou `null` desmarca) e dá kick |
-| `POST …/match-decision { date, fixtureId, mode: "simulate" }` | Decide o jogo do dia |
+| `POST …/match-decision { date, fixtureId, mode: "simulate" \| "undo" }` | Decide o jogo do dia; `undo` (4.35.3) desfaz um "Simular" do dia que ainda não rodou (sai o "Pronto até" D+1 que ele pôs; 409 `noDecision` sem nada a desfazer). A barra mostra "Jogo será simulado" com o botão de desfazer, e o Simular explica no `title` |
 | `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
 | `GET …/live-recording` | Resultado provisório (404 sem gravação do dia), com o árbitro da escala do dia (`officialsFor`) |
 | `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
@@ -603,7 +603,7 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 - Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos.
 - Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
   e gol ao vivo, com as ações; 8 s, no máximo 3.
-- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo; gol do amigo destaca 4 s com o autor; clique abre as ações
+- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 4.35.3); os avisos (`ChatPopups`) vão para o ponto `MATCH_POPUPS_ID` logo abaixo dela, centralizados sobre o topo do campo, em vez do canto; gol do amigo destaca 4 s com o autor; clique abre as ações
   sem pausar.
 - Chat: `TauntLine` (escudo 20px, placar, ícone ou frase em itálico no idioma de quem lê). i18n `rivals.*`.
 
@@ -640,7 +640,14 @@ Spec: `docs/superpowers/specs/2026-10-26-multiplayer-public-world-design.md`. Pl
 - **Ritmo:** quatro horários por dia, de Brasília (`PUBLIC_WORLD.SLOTS`: 09:00, 13:00, 18:00, 22:00, fixo UTC−3). Um horário
   vencido e mais novo que `advance.lastSlot` dá **um** passo (vários perdidos = um). O passo (`publicStepTarget`) joga o dia
   parado e segue até o próximo dia com jogo de algum assento (sem assento: a próxima rodada das 10 ligas); jogo sem decisão
-  é simulado pelo assistente. "Pronto até", prazo e paradas não seguram o mundo.
+  é simulado pelo assistente. Prazo e paradas não seguram o mundo.
+- **Passo antecipado (4.35.3):** entre os horários, o mesmo passo começa na hora quando todo assento **ativo** (abriu o
+  mundo nas últimas `ACTIVE_HOURS` 24 h: `lastSeenAt` ou a memória do processo) com clube está pronto até o alvo do passo
+  (`earlyStepDue`: a regra da liga de amigos, "Pronto até" ≥ alvo e o jogo de hoje decidido), há pelo menos um assento
+  assim e o último passo começou há `EARLY_STEP_GAP_MIN` (20) minutos ou mais (`advance.lastStepAt`, gravado por todo
+  passo). Os horários não mudam (não marcam `lastSlot`). Checado no relógio (60 s) e nas rotas de pronto / decisão
+  (`scheduleKick` → `publicSlotTick`). A tela usa o "Pronto até" normal; o próximo horário fica no `title` e na faixa;
+  "esperando" lista os ativos que não estão prontos.
 - **Inatividade:** `lastSeenAt` (no máximo uma escrita por hora) vem do `hello` do socket e das rotas do assento. Aos 5 dias
   sem abrir, aviso na caixa (`inactive_warning`, uma vez); aos 7, `removeSeat` (clube volta à IA) e `world_removed`.
 - **Social:** a sala `world:<saveId>` do público só aceita resenha (texto livre: 403 `publicRoom`). DM, presença, rivais,

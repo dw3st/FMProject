@@ -21,7 +21,8 @@ export function LiveRivalsStrip({ saveId, live, highlight }: {
   return (
     <div className="shrink-0 border-b border-border bg-card/60 px-4 py-1.5" aria-label={t("rivals.stripLabel")} role="region">
       <ul className="m-0 p-0 list-none max-w-7xl mx-auto flex flex-wrap items-center gap-x-4 gap-y-1">
-        <li className="flex items-center gap-1.5 text-muted-foreground">
+        <li className="flex items-center gap-1.5 text-destructive">
+          <span className="w-2.5 h-2.5 rounded-full bg-destructive motion-safe:animate-pulse" aria-hidden="true" />
           <Icon name="radio" size={16} />
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px]">{t("rivals.liveBadge")}</span>
         </li>

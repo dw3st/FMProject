@@ -104,7 +104,7 @@ export const groupAdvanceRoutes = {
     if (ctx instanceof Response) return ctx;
     const body = await jsonBody(req);
     if (body instanceof Response) return body;
-    if (body.mode !== "simulate" || typeof body.date !== "string" || typeof body.fixtureId !== "string") {
+    if ((body.mode !== "simulate" && body.mode !== "undo") || typeof body.date !== "string" || typeof body.fixtureId !== "string") {
       return Response.json({ error: "invalidDecision" }, { status: 400 });
     }
     const { saveId, auth } = ctx;
@@ -112,6 +112,20 @@ export const groupAdvanceRoutes = {
     const fixtureId = body.fixtureId;
     const res = await withSaveLock(saveId, async () => {
       if ((await saveService.getMeta(saveId))!.currentDate !== date) return Response.json({ error: "dayClosed" }, { status: 409 });
+      if (body.mode === "undo") {
+        // Undo "Simulate" while the day has not run: the game is to decide again (Play comes back). The "ready until"
+        // the decision set (D+1) goes too; a later one the manager chose stays.
+        const seat = await saveService.getSeat(saveId, auth.seatId);
+        const d = seat?.matchDecision;
+        if (!d || d.date !== date || d.fixtureId !== fixtureId || d.mode !== "simulate") {
+          return Response.json({ error: "noDecision" }, { status: 409 });
+        }
+        await saveService.updateSeat(saveId, auth.seatId, {
+          matchDecision: undefined,
+          ...(seat!.readyUntil === addDays(date, 1) ? { readyUntil: null } : {}),
+        });
+        return Response.json({ ok: true });
+      }
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, date);
       if (!fixture || fixture.id !== fixtureId) return Response.json({ error: "notYourMatch" }, { status: 400 });
       const seat = await saveService.getSeat(saveId, auth.seatId);

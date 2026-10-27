@@ -17,4 +17,8 @@ export const PUBLIC_WORLD = {
   /** Seats' "last seen" is written at most once per this many real minutes. */
   SEEN_WRITE_MIN: 60,
   HALL_TOP: 10,
+  /** Early step: every active seat ready runs the next step at once, at most once per this many real minutes. */
+  EARLY_STEP_GAP_MIN: 20,
+  /** A seat counts in "everyone is ready" only when it opened the world in the last this many real hours. */
+  ACTIVE_HOURS: 24,
 } as const;

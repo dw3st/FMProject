@@ -10,7 +10,7 @@ import { closeOpenEditions, editionOf, listEditions, openEdition, saveEditionSta
 import { standingsView } from "@/backend/standingsWorld";
 import { defaultGroupDeps, isWorldAdvancing, kickWorld, type GroupAdvanceDeps } from "@/backend/groupAdvance";
 import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
-import { dueSlot, inactivityAction, isPublicWorld, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
+import { dueSlot, earlyStepDue, inactivityAction, isActiveSeat, isPublicWorld, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
 import { buildInactiveWarningMessage } from "@/Domain/inbox/worldAdvanceMessage";
 import { rankOf } from "@/Domain/multiplayer/standings";
 import { addDays } from "@/Domain/dates";
@@ -124,26 +124,53 @@ async function worldRoundDays(service: SaveService, saveId: string, from: string
 /**
  * One clock tick for the public world (part 5b): a due slot sets the step's target (`publicStepTarget`: the next
  * seat game day, else the next round day of the 10 leagues) and kicks the executor, which runs the days up to it.
- * Several missed slots are one step. Returns whether a step started.
+ * Several missed slots are one step. Between slots, the same step starts early when every active seat is ready up
+ * to that target (`earlyStepDue`, 20 minutes apart). Also called by the members' ready / decision routes.
+ * Returns whether a step started.
  */
 export async function publicSlotTick(saveId: string, deps: GroupAdvanceDeps = defaultGroupDeps): Promise<boolean> {
   if (isWorldAdvancing(saveId)) return false;
   const started = await withSaveLock(saveId, async () => {
     const meta = await deps.service.getMeta(saveId);
     if (!meta?.currentDate || meta.world?.kind !== "public" || meta.world.phase !== "running") return false;
-    const slot = dueSlot(deps.now(), meta.world.advance?.lastSlot ?? null);
-    if (!slot) return false;
+    const prev = meta.world.advance ?? { running: false, waitingSince: null, target: null };
+    if (prev.running || prev.slotTarget) return false;
+    const nowMs = deps.now();
+    const slot = dueSlot(nowMs, prev.lastSlot ?? null);
     const horizon = addDays(meta.currentDate, STEP_HORIZON_DAYS);
+    const seats = await deps.service.listSeats(saveId);
     const seatDays = new Set<string>();
-    for (const { seatId, seat } of await deps.service.listSeats(saveId)) {
+    const games = new Map<string, string[]>();
+    for (const { seatId, seat } of seats) {
       if (!seat.clubId || seat.unemployed) continue;
-      for (const d of await deps.matchDates(deps.service, saveId, seatId, meta.currentDate, horizon)) seatDays.add(d);
+      const dates = await deps.matchDates(deps.service, saveId, seatId, meta.currentDate, horizon);
+      games.set(seatId, dates);
+      for (const d of dates) seatDays.add(d);
     }
     const target = publicStepTarget(
       meta.currentDate, [...seatDays].sort(), await worldRoundDays(deps.service, saveId, meta.currentDate, horizon), horizon,
     );
-    const prev = meta.world.advance ?? { running: false, waitingSince: null, target: null };
-    await deps.service.updateMeta(saveId, { world: { ...meta.world, advance: { ...prev, lastSlot: slot, slotTarget: target } } });
+    if (!slot) {
+      const active = seats.filter(({ seatId, seat }) => {
+        const stored = seat.lastSeenAt ? Date.parse(seat.lastSeenAt) : null;
+        const mem = seenAt(saveId, seatId) ?? null;
+        return isActiveSeat(Math.max(stored ?? 0, mem ?? 0) || null, nowMs);
+      });
+      const inputs = active.map(({ seatId, seat }) => ({
+        seatId,
+        readyUntil: seat.readyUntil ?? null,
+        matchDates: games.get(seatId) ?? [],
+        decisionDate: seat.matchDecision?.date ?? null,
+        unemployed: !games.has(seatId),
+      }));
+      if (!earlyStepDue(meta.currentDate, target, inputs, prev.lastStepAt ?? null, nowMs)) return false;
+    }
+    await deps.service.updateMeta(saveId, {
+      world: {
+        ...meta.world,
+        advance: { ...prev, ...(slot ? { lastSlot: slot } : {}), slotTarget: target, lastStepAt: new Date(nowMs).toISOString() },
+      },
+    });
     return true;
   });
   if (started) void kickWorld(saveId, deps).catch((e) => logError("world", `public world ${saveId}: step crashed`, e));

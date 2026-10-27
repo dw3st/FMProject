@@ -26,6 +26,8 @@ export interface WorldAdvance {
   lastSlot?: string | null;
   /** Public world: the date the current step runs to (exclusive); set by the clock, read by the executor. */
   slotTarget?: string | null;
+  /** Public world: real-time ISO of the last step that began (slot or early); early steps keep 20 minutes from it. */
+  lastStepAt?: string | null;
 }
 
 /** `seats/{seatId}/liveRecording.json`: the seat's live match of `date`, kept until the executor runs that day. */
