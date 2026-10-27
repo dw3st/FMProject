@@ -8,8 +8,15 @@ export const FRIENDS_BUTTON_ID = "social-friends-button";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 
-/** "Amigos · 3" in the status bar (friends online), with a badge of unread messages and pending requests. */
-export function FriendsButton() {
+/** Match toolbar look (`MatchScreen` header), next to "Substituições". */
+const TOOLBAR =
+  "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer whitespace-nowrap tabular-nums";
+
+/**
+ * "Amigos · 3" (friends online) with a badge of unread messages and pending requests: in the status
+ * bar, or as a button of the live match toolbar (`variant="toolbar"`).
+ */
+export function FriendsButton({ variant = "bar" }: { variant?: "bar" | "toolbar" }) {
   const { t } = useTranslation();
   const s = useSocial();
   const count = onlineFriendCount(s.lists.friends);
@@ -23,9 +30,13 @@ export function FriendsButton() {
       aria-expanded={s.panelOpen}
       aria-label={label}
       title={label}
-      className={`${ITEM} h-10 px-1 border-0 bg-transparent cursor-pointer hover:text-foreground whitespace-nowrap ${s.panelOpen ? "text-foreground" : ""}`}
+      className={
+        variant === "toolbar"
+          ? `${TOOLBAR} ${s.panelOpen ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"}`
+          : `${ITEM} h-10 px-1 border-0 bg-transparent cursor-pointer hover:text-foreground whitespace-nowrap ${s.panelOpen ? "text-foreground" : ""}`
+      }
     >
-      <Icon name="users" size={18} />
+      <Icon name="users" size={variant === "toolbar" ? 16 : 18} />
       {t("social.buttonShort", { count })}
       {badge > 0 && (
         <span
