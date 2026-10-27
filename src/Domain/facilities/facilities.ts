@@ -680,6 +680,7 @@ export function facilitiesMatchday(
     const r = recordAttendance(cur, {
       date, competition: g.competition, opponentId: g.opponentId,
       attendance: Math.round(a.attendance), capacity: a.capacity, demand: Math.round(a.demand),
+      ...(g.importance !== undefined && g.importance !== 1 ? { importance: g.importance } : {}),
     });
     cur = r.facilities;
     if (r.recordBroken) recordBroken = { ...r.recordBroken, competition: g.competition, opponentId: g.opponentId };

@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.34.4",
+    date: "2026-10-26",
+    items: [
+      {
+        pt: "Partida: os técnicos à beira do campo agora parecem pessoas vistas de cima.",
+        en: "Match: the managers on the touchline now look like people seen from above.",
+      },
+      {
+        pt: "Amigos: o painel e as janelas de conversa ficaram maiores.",
+        en: "Friends: the panel and the chat windows are bigger.",
+      },
+    ],
+  },
+  {
     version: "4.34.3",
     date: "2026-10-24",
     items: [

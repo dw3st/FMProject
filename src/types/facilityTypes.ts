@@ -92,6 +92,8 @@ export interface AttendanceRow {
   capacity: number;
   /** Estimated demand that day (may exceed the capacity). */
   demand: number;
+  /** Big-match multiplier of the demand (derby, cup or continental knockout); absent = an ordinary game. */
+  importance?: number;
 }
 
 export interface ClubFacilities {
