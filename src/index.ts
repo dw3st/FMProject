@@ -25,6 +25,7 @@ import financesPage from "./pages/finances/index.html";
 import clubPage from "./pages/club/index.html";
 import statsPage from "./pages/stats/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
+import matchRoomPage from "./pages/match-room/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
 import staffPage from "./pages/staff/index.html";
@@ -55,6 +56,7 @@ const server = serve({
     "/tactics": comingSoonPage,
     "/formation": formationPage,
     "/match-preview": matchPreviewPage,
+    "/match-room": matchRoomPage,
     "/match-result": matchResultPage,
     "/development": developmentPage,
     "/finances": financesPage,

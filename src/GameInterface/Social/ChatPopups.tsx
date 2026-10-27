@@ -10,6 +10,7 @@ import { TauntLine } from "@/GameInterface/Social/TauntLine";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import type { ChatPopup, RivalPopup } from "@/GameInterface/Social/socialState";
 import { TauntActions } from "@/GameInterface/World/TauntActions";
+import { H2HInvitePopup } from "@/GameInterface/H2H/H2HInvitePopup";
 
 function PopupCard({ popup }: { popup: ChatPopup }) {
   const { t } = useTranslation();
@@ -97,11 +98,13 @@ export function ChatPopups() {
   const s = useSocial();
   // The live match (`MATCH_POPUPS_ID`) shows them under the friends' live strip, over the top of the pitch, instead of
   // over the team list in the corner.
-  if (s.popups.length === 0 && s.rivalPopups.length === 0) return null;
+  const invite = s.h2hPopup && !!s.h2hInvite;
+  if (s.popups.length === 0 && s.rivalPopups.length === 0 && !invite) return null;
   // Read at render: popups arrive after the match screen has mounted its spot (it may still be loading at first).
   const anchor = document.getElementById(MATCH_POPUPS_ID);
   const cards = (
     <>
+      {invite && <H2HInvitePopup />}
       {s.rivalPopups.map((p) => (
         <RivalPopupCard key={p.key} popup={p} />
       ))}

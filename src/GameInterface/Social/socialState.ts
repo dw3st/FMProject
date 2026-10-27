@@ -4,6 +4,9 @@ import { parseTauntMeta } from "@/Domain/rivals/taunts";
 import { dmRoomParam } from "@/Domain/social/rooms";
 import type { LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
 import type { ChatMessageView, FriendStatus, FriendView, FriendsResponse, ServerEvent, WorldRoomView } from "@/types/socialTypes";
+import type { H2HCloseReason } from "@/types/h2hTypes";
+
+const H2H_CLOSE_REASONS: ReadonlySet<string> = new Set<H2HCloseReason>(["simulated", "left", "lost", "failed"]);
 
 export interface FriendGroups {
   playing: FriendView[];
@@ -135,6 +138,15 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
         ...(e.goal === true ? { goal: true as const } : {}),
       };
     }
+    // Live match between two managers (part 7): the invite pops up in the corner; a closed room drops it.
+    case "h2h_invite":
+      return str(e.saveId) && str(e.fixtureId) && str(e.from)
+        ? { type: "h2h_invite", saveId: e.saveId, fixtureId: e.fixtureId, from: e.from }
+        : null;
+    case "h2h_closed":
+      return str(e.saveId) && str(e.fixtureId) && H2H_CLOSE_REASONS.has(e.reason as string)
+        ? { type: "h2h_closed", saveId: e.saveId, fixtureId: e.fixtureId, reason: e.reason as H2HCloseReason }
+        : null;
     default:
       return null;
   }

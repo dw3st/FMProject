@@ -39,6 +39,7 @@ import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
+import { inviteFor, readH2HInvite } from "@/GameInterface/H2H/h2hInvite";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -994,6 +995,9 @@ export function MatchPreviewScreen() {
   const homeGround = !fixture || fixture.neutral ? null : isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const conditions = fixture ? matchConditions(fixture, homeGround?.country ?? null) : null;
   const national = !!matchSetup?.national;
+  // Against another manager in a group world the club's game can be played live in the match room (part 7).
+  const liveVsSeat = !!session.groupAdvance && !national;
+  const seatInvite = liveVsSeat ? inviteFor(readH2HInvite(), session.saveId, matchSetup?.matchDay?.fixtureId ?? fixture?.id) : null;
   const myName = national && matchSetup ? nationalityDisplayName(matchSetup.mySquad.name, i18n.language, t) : session.clubName;
   const venue = fixture?.neutral
     ? t("cups.neutral")
@@ -1329,7 +1333,21 @@ export function MatchPreviewScreen() {
           {t("matchPreview.lastMinuteSubs")}
         </Button>
 
-        {seatOpponent ? (
+        {seatOpponent && liveVsSeat ? (
+          <>
+            <p className="text-sm text-muted-foreground m-0 basis-full text-center">
+              {seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")}
+            </p>
+            <Button variant="secondary" onClick={() => void handleSendAssistant()} disabled={commencing}>
+              {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
+              {!commencing && <Icon name="chevron-right" size={16} />}
+            </Button>
+            <Button variant="primary" onClick={() => { window.location.href = "/match-room"; }} disabled={commencing}>
+              {seatInvite ? t("h2h.invite.join") : t("h2h.preview.playLive")}
+              <Icon name="play" size={16} />
+            </Button>
+          </>
+        ) : seatOpponent ? (
           <>
             <p className="text-sm text-muted-foreground m-0 basis-full text-center">{t("matchPreview.seatSimulateNote")}</p>
             <Button variant="primary" onClick={() => void handleSendAssistant()} disabled={commencing}>

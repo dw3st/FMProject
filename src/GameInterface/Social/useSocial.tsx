@@ -29,6 +29,7 @@ import {
   unreadFromLists,
 } from "@/GameInterface/Social/socialState";
 import { worldApi } from "@/GameInterface/World/worldApi";
+import { readH2HInvite, writeH2HInvite, type H2HInvite } from "@/GameInterface/H2H/h2hInvite";
 import type { WorldInviteView } from "@/types/multiplayerTypes";
 import type {
   ChatMessageView,
@@ -89,6 +90,11 @@ export interface SocialContextValue {
   /** Friends' results and live goals in the corner. */
   rivalPopups: RivalPopup[];
   dismissRivalPopup: (key: string) => void;
+  /** The other manager waiting in the match room for today's game (multiplayer part 7), kept per tab. */
+  h2hInvite: H2HInvite | null;
+  /** The invite's card in the corner is showing. */
+  h2hPopup: boolean;
+  dismissH2HPopup: () => void;
   /** Every parsed server event, for screens with their own socket needs (group advance). Returns the unsubscribe. */
   subscribe: (fn: (event: ServerEvent) => void) => () => void;
 }
@@ -137,6 +143,14 @@ export function SocialProvider({
   const [rivalsVersion, setRivalsVersion] = useState(0);
   const [rivalPopups, setRivalPopups] = useState<RivalPopup[]>([]);
   const rivalTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [h2hInvite, setH2HInvite] = useState<H2HInvite | null>(() => {
+    const stored = readH2HInvite();
+    return stored && stored.saveId === saveId ? stored : null;
+  });
+  const h2hInviteRef = useRef(h2hInvite);
+  h2hInviteRef.current = h2hInvite;
+  const [h2hPopup, setH2HPopup] = useState(false);
+  const dismissH2HPopup = useCallback(() => setH2HPopup(false), []);
   // The socket opens only once `/api/social/me` answered: the lab's /simulate page reuses the Layout on a server
   // without the social routes, and there it must not retry a socket forever.
   const [available, setAvailable] = useState(false);
@@ -305,6 +319,23 @@ export function SocialProvider({
             showRivalPopup({ key: `result:${r.id}`, kind: "result", result: r });
           }
           break;
+        case "h2h_invite": {
+          if (event.saveId !== saveId) break;
+          const invite = { saveId: event.saveId, fixtureId: event.fixtureId, from: event.from };
+          writeH2HInvite(invite);
+          setH2HInvite(invite);
+          // The room screen already shows who is there.
+          if (window.location.pathname !== "/match-room") setH2HPopup(true);
+          break;
+        }
+        case "h2h_closed": {
+          const cur = h2hInviteRef.current;
+          if (!cur || cur.saveId !== event.saveId || cur.fixtureId !== event.fixtureId) break;
+          writeH2HInvite(null);
+          setH2HInvite(null);
+          setH2HPopup(false);
+          break;
+        }
         case "friend_live":
           if (event.saveId !== saveId) break;
           setRivalsVersion((v) => v + 1);
@@ -454,11 +485,12 @@ export function SocialProvider({
       me, setMe, lists, refreshFriends, unread, totalUnread: totalUnread(unread), online, connected,
       panelOpen, setPanelOpen, dock, openChat, closeChat, toggleChat, messages, hasMore, roomErrors, typing,
       loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites, declineWorldInvite, worldVersion, subscribe,
-      popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup,
+      popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup, h2hInvite, h2hPopup, dismissH2HPopup,
     }),
     [me, lists, refreshFriends, unread, online, connected, panelOpen, dock, openChat, closeChat, toggleChat, messages,
       hasMore, roomErrors, typing, loadMessages, send, markRoomRead, sendTyping, worldInvites, refreshWorldInvites,
-      declineWorldInvite, worldVersion, subscribe, popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup],
+      declineWorldInvite, worldVersion, subscribe, popups, dismissPopup, rivalsVersion, rivalPopups, dismissRivalPopup,
+      h2hInvite, h2hPopup, dismissH2HPopup],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

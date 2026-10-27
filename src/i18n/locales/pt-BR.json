@@ -3019,6 +3019,7 @@
       "main": "Prévia da",
       "accent": "Partida"
     },
+    "matchRoom": { "main": "Sala do", "accent": "Jogo" },
     "matchResult": {
       "main": "Resultado da",
       "accent": "Partida"
@@ -5300,6 +5301,8 @@
       "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "h2h_invite": { "subject": "{{manager}} está te esperando para o jogo", "body": "{{manager}} ({{club}}) abriu a sala do jogo ao vivo. Entre para jogar contra ele." },
+      "h2h_lost": { "subject": "Seu jogo ao vivo foi perdido", "body": "O servidor reiniciou durante o jogo contra {{club}}. Nada foi gravado: decida o jogo de novo." },
       "inactive_warning": {
         "subject": "Você não abre o mundo público há 5 dias",
         "body": "Você não abre o mundo público há 5 dias. Em mais 2 dias o seu clube volta para a IA."
@@ -5553,6 +5556,21 @@
     "resume": "Retomar",
     "opponentAway": "{{name}} saiu · auxiliar no comando",
     "waiting": "Esperando a partida começar",
+    "room": {
+      "you": "você",
+      "subtitle": "A partida começa quando os dois técnicos clicam em Começar.",
+      "status": { "away": "Fora", "in": "Na sala", "ready": "Pronto" },
+      "line": { "away": "Esperando {{name}} entrar", "in": "{{name}} está na sala", "ready": "{{name}} está pronto" },
+      "starting": "A partida vai começar",
+      "tactics": "Formação e táticas",
+      "simulate": "Simular",
+      "start": "Começar",
+      "ready": "Pronto",
+      "noMatch": "Hoje não há jogo ao vivo contra outro técnico."
+    },
+    "invite": { "popup": "{{name}} está te esperando para o jogo ao vivo", "join": "Entrar" },
+    "preview": { "playLive": "Jogar ao vivo", "note": "Jogue ao vivo com o outro técnico ou simule com a tática dos dois.", "waiting": "{{name}} está te esperando na sala" },
+    "bar": { "live": "Ao vivo" },
     "closed": {
       "simulated": "O jogo foi simulado",
       "left": "O outro técnico saiu da sala",

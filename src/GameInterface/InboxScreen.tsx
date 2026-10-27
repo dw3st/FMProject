@@ -938,6 +938,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
           </p>
         )}
+        {message.category === "world" && message.kind === "h2h_invite" && <H2HInviteJoin match={message.match} />}
         {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
         {message.category === "national" && <NationalInboxBody message={message} />}
         {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
@@ -1506,6 +1507,18 @@ function TransferBody({
         <DetailRow label={t("transfers.fee")} value={formatFee(fee)} accent />
       </div>
     </div>
+  );
+}
+
+/** "Join" on a live-match invite (multiplayer part 7) while the game is still today's. */
+function H2HInviteJoin({ match }: { match: string }) {
+  const { t } = useTranslation();
+  const { currentDate } = useGameSave();
+  if (match !== currentDate) return null;
+  return (
+    <Button className="w-fit" onClick={() => { window.location.href = "/match-room"; }}>
+      {t("h2h.invite.join")}
+    </Button>
   );
 }
 

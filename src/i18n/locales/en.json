@@ -3019,6 +3019,7 @@
       "main": "Match",
       "accent": "Preview"
     },
+    "matchRoom": { "main": "Match", "accent": "Room" },
     "matchResult": {
       "main": "Match",
       "accent": "Result"
@@ -5300,6 +5301,8 @@
       "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
+      "h2h_invite": { "subject": "{{manager}} is waiting for you for the match", "body": "{{manager}} ({{club}}) opened the live match room. Join to play against him." },
+      "h2h_lost": { "subject": "Your live match was lost", "body": "The server restarted during the match against {{club}}. Nothing was recorded: decide the match again." },
       "inactive_warning": {
         "subject": "You have not opened the public world for 5 days",
         "body": "You have not opened the public world for 5 days. In 2 more days your club goes back to the AI."
@@ -5553,6 +5556,21 @@
     "resume": "Resume",
     "opponentAway": "{{name}} left · assistant in charge",
     "waiting": "Waiting for the match to start",
+    "room": {
+      "you": "you",
+      "subtitle": "The match starts when both managers click Start.",
+      "status": { "away": "Away", "in": "In the room", "ready": "Ready" },
+      "line": { "away": "Waiting for {{name}} to join", "in": "{{name}} is in the room", "ready": "{{name}} is ready" },
+      "starting": "The match is starting",
+      "tactics": "Formation and tactics",
+      "simulate": "Simulate",
+      "start": "Start",
+      "ready": "Ready",
+      "noMatch": "There is no live match against another manager today."
+    },
+    "invite": { "popup": "{{name}} is waiting for you for the live match", "join": "Join" },
+    "preview": { "playLive": "Play live", "note": "Play it live with the other manager or simulate it with both tactics.", "waiting": "{{name}} is waiting for you in the room" },
+    "bar": { "live": "Live" },
     "closed": {
       "simulated": "The match was simulated",
       "left": "The other manager left the room",

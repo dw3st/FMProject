@@ -8,6 +8,7 @@ import { addDays, isRealIsoDate } from "@/Domain/dates";
 import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
 import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
+import { useSocial } from "@/GameInterface/Social/useSocial";
 
 const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
@@ -25,6 +26,7 @@ const MENU_ID = "ready-until-panel";
 export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } = {}) {
   const { t, i18n } = useTranslation();
   const { view, busy, error, markReady, simulateToday, undoSimulate } = useGroupAdvance();
+  const { h2hInvite } = useSocial();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState("");
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -165,6 +167,25 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
             {t("world.advance.play")}
           </button>
         )}
+        {/* Against another manager (part 7): the preview offers the live match; with him in the room, straight in. */}
+        {today.humanOpponent && (() => {
+          // The social provider keeps only this world's invite.
+          const invite = h2hInvite && h2hInvite.fixtureId === today.fixtureId ? h2hInvite : null;
+          const hint = invite ? t("h2h.invite.popup", { name: invite.from }) : t("h2h.preview.playLive");
+          return (
+            <button
+              type="button"
+              className={PRIMARY}
+              onClick={() => { window.location.href = invite ? "/match-room" : "/match-preview"; }}
+              disabled={busy}
+              title={hint}
+              aria-label={hint}
+            >
+              <Icon name="play" size={16} />
+              {invite ? t("h2h.invite.join") : t("h2h.bar.live")}
+            </button>
+          );
+        })()}
         {/* No "not ready" here: an undecided match day already holds the world (it comes back once decided). */}
       </div>
     );
