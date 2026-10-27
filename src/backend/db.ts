@@ -146,6 +146,14 @@ export function migrateWorldSchema(database: Database): void {
       PRIMARY KEY (save_id, user_id)
     );
     CREATE INDEX IF NOT EXISTS idx_world_invites_user ON world_invites(user_id);
+
+    CREATE TABLE IF NOT EXISTS public_editions (
+      version        TEXT PRIMARY KEY,
+      save_id        TEXT NOT NULL,
+      started_at     TEXT NOT NULL,
+      ended_at       TEXT,
+      standings_json TEXT NOT NULL DEFAULT '[]'
+    );
   `);
 }
 
