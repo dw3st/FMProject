@@ -24,6 +24,7 @@ import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
+import { remoteDrawnBall, remotePositions, withFramePositions, type RemoteFeed } from "@/GraficsEngine/remoteInterp";
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
@@ -406,6 +407,12 @@ interface Props {
    * the net shaking, the scoring side's fans jumping and the scorer's celebration. Read every frame.
    */
   extras?: boolean;
+  /**
+   * Remote mode (multiplayer part 7): the server runs the match. The pitch never simulates; it draws the state it
+   * gets through `matchStateSync` (adopted as is) and blends the players and the ball between the last two position
+   * frames of `frames` (`remoteInterp.ts`). Read at mount. Absent = the pitch runs the match itself, as always.
+   */
+  remote?: RemoteFeed | null;
 }
 
 export interface PitchOfficials {
@@ -463,6 +470,7 @@ export function PixiPitch({
   coachCue = null,
   coachCard = null,
   extras = false,
+  remote = null,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -913,6 +921,8 @@ export function PixiPitch({
       // Naively replacing `stateRef.current` with a stale echo would re-run ticks
       // whose events (goals, tackles, …) Statistics already counted once.
       const unsubMatchStateSync = gameBus.on("matchStateSync", (s) => {
+        // Remote: the server's state is the truth (adopted below, with the set-piece walk).
+        if (remote) return;
         stateRef.current = reconcileMatchStateSync(stateRef.current, normalizeGameState(s));
       });
 
@@ -951,7 +961,28 @@ export function PixiPitch({
       const framesVisible = () =>
         !(typeof document !== 'undefined' && document.hidden) && app.ticker.started;
 
+      // Remote mode: every state from the server is adopted as is; a restart that repositions the teams starts the
+      // set-piece walk, like a simulated step would. Positions keep following the frames (`drawFrame`).
+      const unsubRemoteState = remote
+        ? gameBus.on("matchStateSync", (s) => {
+            const before = stateRef.current;
+            const incoming: import('@/GameEngine/types').GameState = { ...s, pendingSubsA: s.pendingSubsA ?? [], pendingSubsB: s.pendingSubsB ?? [] };
+            const last = remote.frames.current.last;
+            const next = last ? withFramePositions(incoming, last) : incoming;
+            if (!framesVisible()) {
+              transition = null;
+              setPieceStartPending = false;
+            } else if (isSetPieceStart(before, next)) {
+              setPieceStartPending = true;
+            }
+            stateRef.current = next;
+          })
+        : null;
+      let remoteSeenSeq = -1;
+
       const pumpSimulation = () => {
+        // Remote mode: the server simulates; nothing to pump here.
+        if (remote) return;
         const elapsedRealSeconds = pump(pausedRef.current);
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
@@ -1616,13 +1647,30 @@ export function PixiPitch({
 
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
         // so alpha (and the drawing) stays frozen.
+        let drawnPos: Map<number, Pos>;
+        let drawnB: DrawnBall;
+        if (remote) {
+          // Remote: the state follows the newest frame (officials, clicks, overlays read it); the drawing blends the
+          // last two frames by real time.
+          const frames = remote.frames.current;
+          if (frames.last && frames.seq !== remoteSeenSeq) {
+            remoteSeenSeq = frames.seq;
+            stateRef.current = withFramePositions(stateRef.current, frames.last);
+          }
+          const st = stateRef.current;
+          const rp = remotePositions(frames, defaultNow(), remote.stepMs, TELEPORT_YDS);
+          drawnPos = rp ? rp.players : drawnPlayerPositions(st, st, 1, TELEPORT_YDS);
+          drawnB = rp ? remoteDrawnBall(st, rp.ball) : drawnBall(st, st, 1, TELEPORT_YDS);
+        } else {
+          const drawState = stateRef.current;
+          // A state swapped in from outside the pump that moved something (/test command) ends a transition.
+          if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
+          renderPair = syncRenderPair(renderPair, drawState);
+          const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
+          drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+          drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        }
         const drawState = stateRef.current;
-        // A state swapped in from outside the pump that moved something (/test command) ends a transition.
-        if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
-        renderPair = syncRenderPair(renderPair, drawState);
-        const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
-        let drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
-        let drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
         transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);
         if (setPieceStartPending) {
           setPieceStartPending = false;
@@ -2301,6 +2349,7 @@ export function PixiPitch({
 
       // ── Test command handler (mutates stateRef directly for debug tools) ──
       const unsubTestCmd = gameBus.on('testCommand', cmd => {
+        if (remote) return; // a server-run match is never edited from the page
         if (cmd.type === 'movePlayer') {
           stateRef.current = {
             ...stateRef.current,
@@ -2403,6 +2452,7 @@ export function PixiPitch({
       // the new weights even while paused (pumpSimulation is a no-op while paused —
       // see above — so nothing else would otherwise re-run tickState here).
       const unsubTactics = gameBus.on('tacticsChanged', () => {
+        if (remote) return; // the server re-ticks its own match
         const { state: next } = tickState(stateRef.current, 0);
         stateRef.current = next;
         gameBus.emit('stateChanged', stateRef.current);
@@ -2415,6 +2465,7 @@ export function PixiPitch({
         faceTextures.clear();
         simClock.destroy();
         unsubMatchStateSync();
+        unsubRemoteState?.();
         unsubTestCmd();
         unsubTactics();
         unsubTbScores();
