@@ -487,7 +487,8 @@ export type InboxMessage =
   | WorldInboxMessage
   | WorldAdvanceInboxMessage
   | WorldLiveRefusedInboxMessage
-  | WorldSeasonClosedInboxMessage;
+  | WorldSeasonClosedInboxMessage
+  | WorldInactiveInboxMessage;
 
 /** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
 export interface WorldAdvanceInboxMessage extends InboxMessageBase {
@@ -509,6 +510,14 @@ export interface WorldLiveRefusedInboxMessage extends InboxMessageBase {
   /** The game's date. */
   match:    string;
   reason:   LiveRefusedReason;
+}
+
+/** Public world (part 5b): 5 days without opening the world; 2 more and the club goes back to the AI. */
+export interface WorldInactiveInboxMessage extends InboxMessageBase {
+  category: "world";
+  kind:     "inactive_warning";
+  /** Real ISO day the seat will be removed. */
+  removeOn: string;
 }
 
 /** A manager joined or left the world of friends (multiplayer part 2). */

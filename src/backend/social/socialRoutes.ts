@@ -39,6 +39,7 @@ import {
 import { cleanMessageBody, rateLimit, type RateRule } from "@/Domain/social/message";
 import { dmRoomId, worldRoomId, worldRoomParam } from "@/Domain/social/rooms";
 import { SOCIAL } from "@/Domain/social/socialConfig";
+import { isPublicWorld } from "@/Domain/multiplayer/publicWorld";
 import type { ChatMessageView, FriendsResponse, SocialErrorCode, SocialMe } from "@/types/socialTypes";
 
 type ParamReq = Request & { params?: Record<string, string> };
@@ -161,8 +162,10 @@ async function friendsResponse(userId: string, now: number): Promise<FriendsResp
     worldsOf(userId).map(async (saveId) => {
       const seatId = memberOf(saveId, userId)?.seatId;
       const seat = seatId ? await saveService.getSeat(saveId, seatId).catch(() => null) : null;
+      const meta = await saveService.getMeta(saveId).catch(() => null);
       return {
         room: worldRoomParam(saveId),
+        ...(meta && isPublicWorld(meta) ? { public: true } : {}),
         saveId,
         owner: await worldOwnerName(saveId).catch(() => ""),
         myClub: seat?.clubName ?? "",
@@ -323,6 +326,8 @@ export const socialRoutes = {
       if (!myNickname(userId)) return fail("noNickname", 409);
       const room = resolveRoom(userId, param(req, "room"));
       if (!room || !canWrite(userId, room)) return fail("noAccess", 403);
+      // The public world's room has no free text: reactions and phrases go through the taunts route.
+      if (room.kind === "world" && isPublicWorld((await saveService.getMeta(room.saveId)) ?? {})) return fail("publicRoom", 403);
       const json = await readJson(req);
       const body = cleanMessageBody(json?.body);
       if (!body) return fail("invalidBody", 400);

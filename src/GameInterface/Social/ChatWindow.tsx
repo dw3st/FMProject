@@ -21,7 +21,7 @@ export function useRoomTitle(room: string): string {
   const { t } = useTranslation();
   const { lists } = useSocial();
   if (room.startsWith("dm:")) return room.slice(3);
-  return worldRoomLabel(room, lists.worlds, (owner) => t("world.leagueOf", { owner })) ?? t("social.chat.world");
+  return worldRoomLabel(room, lists.worlds, (owner) => t("world.leagueOf", { owner }), t("world.public.name")) ?? t("social.chat.world");
 }
 
 export function ChatWindow({ room }: { room: string }) {
@@ -38,7 +38,8 @@ export function ChatWindow({ room }: { room: string }) {
   const { loadMessages, markRoomRead } = s;
 
   const friend = room.startsWith("dm:") ? s.lists.friends.find((f) => f.nickname === room.slice(3)) : undefined;
-  const canWrite = room.startsWith("world:") || friend !== undefined;
+  const publicRoom = s.lists.worlds.some((w) => w.room === room && w.public);
+  const canWrite = !publicRoom && (room.startsWith("world:") || friend !== undefined);
   const typing = s.typing[room];
   const showTyping = typing !== undefined && now - typing.at < SOCIAL.TYPING_SHOW_MS;
 
@@ -170,7 +171,7 @@ export function ChatWindow({ room }: { room: string }) {
             )}
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("social.chat.readOnly")}</p>
+          <p className="text-sm text-muted-foreground">{t(publicRoom ? "social.publicRoom" : "social.chat.readOnly")}</p>
         )}
       </div>
     </section>

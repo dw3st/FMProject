@@ -25,6 +25,8 @@ test("worldRoomLabel: the owner's league, with the viewer's club only when the o
   expect(worldRoomLabel("world:b", twins, leagueOf)).toBe("Liga de Emy · Manchester United");
   expect(worldRoomLabel("world:c", twins, leagueOf)).toBe("Liga de Bia");
   expect(worldRoomLabel("world:zz", twins, leagueOf)).toBeNull();
+  const pub = [{ room: "world:p", saveId: "p", owner: "", myClub: "Ajax", unread: 0, public: true }];
+  expect(worldRoomLabel("world:p", pub, leagueOf, "Mundo público")).toBe("Mundo público");
 });
 import type { FriendView } from "@/types/socialTypes";
 

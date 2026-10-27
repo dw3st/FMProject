@@ -142,6 +142,10 @@
     "whatsNew": "What's new",
     "unemployed": "No club",
     "withFriends": "With friends · {{count}}/{{max}}",
+    "publicWorld": "Public world · {{count}}/{{max}}",
+    "publicNext": "Next step at {{time}} (Brasília)",
+    "publicJoin": "Join",
+    "publicFull": "Full",
     "owner": "Owner",
     "member": "Member",
     "lobby": "In the waiting room",
@@ -286,6 +290,8 @@
       "soloDetail": "Your career, at your pace.",
       "multi": "With friends",
       "multiDetail": "Up to {{max}} managers in the same world.",
+      "public": "Public world",
+      "publicDetail": "Up to {{max}} managers. The world moves on at 09:00, 13:00, 18:00 and 22:00 (Brasília).",
       "next": "Continue"
     },
     "managerSubtitle": "Who will take charge of the club.",
@@ -630,6 +636,7 @@
     "players": "Players"
   },
   "social": {
+    "publicRoom": "Reactions only in this world",
     "popup": { "open": "Open chat: {{name}}", "dismiss": "Dismiss" },
     "button": "Friends: {{count}} online",
     "buttonUnread": "Friends: {{count}} online, {{unread}} unread",
@@ -704,6 +711,7 @@
       "limit": "Friend or request limit reached.",
       "invalidBody": "Invalid message.",
       "noAccess": "You can't write in this chat.",
+      "publicRoom": "The public world's chat takes reactions only.",
       "rateLimited": "Too many attempts in a row. Wait a little and try again.",
       "tooLarge": "Too much text.",
       "unauthorized": "Session expired. Sign in again.",
@@ -3033,6 +3041,10 @@
       "main": "WORLD",
       "accent": "NEWS"
     },
+    "publicWorld": {
+      "main": "PUBLIC",
+      "accent": "WORLD"
+    },
     "world": {
       "main": "YOUR",
       "accent": "LEAGUE"
@@ -5151,6 +5163,28 @@
   },
   "world": {
     "leagueOf": "{{owner}}'s league",
+    "public": {
+      "name": "Public world",
+      "title": "Schedule",
+      "nextStep": "Next step at {{time}} (Brasília)",
+      "nextStepShort": "Next step at {{time}}",
+      "nextStepLabel": "Next step",
+      "hint": "One step at 09:00, 13:00, 18:00 and 22:00 (Brasília time). A game you have not played or decided is simulated."
+    },
+    "hall": {
+      "tab": "Hall of fame",
+      "title": "Hall of fame",
+      "hint": "The top 10 of each edition. A new edition starts with every game update.",
+      "empty": "No edition yet.",
+      "noScores": "No points in this edition.",
+      "version": "Version {{version}}",
+      "period": "{{from}} to {{to}}",
+      "current": "Since {{from}}, still running",
+      "nickname": "Nickname",
+      "club": "Club",
+      "points": "Points",
+      "noNickname": "No nickname"
+    },
     "status": { "lobby": "Waiting room", "running": "In progress" },
     "members": {
       "title": "Managers",
@@ -5212,6 +5246,7 @@
       "noSeasons": "No seasons yet.",
       "noItems": "No points yet.",
       "dashboardLine": "Friends' league: {{rank}} of {{of}}",
+      "dashboardLinePublic": "Public world: {{rank}} of {{of}}",
       "reason": {
         "rollover": "End of season",
         "club_change": "Changed club",
@@ -5264,6 +5299,10 @@
       "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
+      "inactive_warning": {
+        "subject": "You have not opened the public world for 5 days",
+        "body": "You have not opened the public world for 5 days. In 2 more days your club goes back to the AI."
+      },
       "season_closed": {
         "subject": "{{manager}}'s season is closed",
         "preview_one": "{{points}} point · {{rank}} of {{of}}",
@@ -5390,6 +5429,7 @@
       "notMember": "This manager is not in the league.",
       "tooLarge": "The request is too large.",
       "ownerLimit": "That manager already owns 5 leagues.",
+      "publicWorld": "Not available in the public world.",
       "lobby": "The league has not started yet.",
       "generic": "Something went wrong. Try again.",
       "self": "You can't wind yourself up.",

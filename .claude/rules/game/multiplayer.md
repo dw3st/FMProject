@@ -7,7 +7,7 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
 
 - Um save é um **mundo** com N técnicos humanos (**assentos**). O solo é um mundo com um assento (`mode: "solo"`).
   `addSeat` (`src/backend/seats.ts`: testes, scripts e `POST /api/worlds/join`) acrescenta assentos (`mode: "multi"`). Convites e a tela
-  do mundo: seção "Parte 2: liga de amigos".
+  do mundo: seção "Parte 2: liga de amigos"; mundo público: "Parte 5b".
 - Um técnico humano por clube. Um usuário tem no máximo um assento por mundo (`save_members`). Aceitar a proposta de
   um clube que já tem assento dá 409 `offerClosed`; quando um assento assume um clube (`takeOverClub`: troca de
   emprego ou `addSeat`), as propostas desse clube saem dos outros assentos.
@@ -621,3 +621,88 @@ bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.tes
   servidor mesmo se ele já o tinha descartado.
 - O placar ao vivo é do cliente (só validado por coerência).
 - Estado ao vivo em memória (um processo só).
+
+## Parte 5b: mundo público
+
+Spec: `docs/superpowers/specs/2026-10-26-multiplayer-public-world-design.md`. Plano:
+`docs/superpowers/plans/2026-10-26-multiplayer-public-world.md`. Versão **4.35**. É o mesmo mundo `multi` com
+`world.kind === "public"`: sem dono, sem convite, ritmo por relógio.
+
+### Regra
+
+- **Criação:** o servidor, na subida (`ensurePublicWorld`, chamado por `startWorldClock`): um mundo por versão do jogo
+  (`world.edition = { version, startedOn }`), sem clube humano, já `running` (kit pré-simulado). Uma edição de outra versão é
+  apagada e fica no **hall da fama** (`public_editions`, top 10 atualizado a cada passo). O mundo zera a cada deploy.
+- **Entrar:** qualquer usuário com apelido, num clube livre das 10 ligas principais (`PUBLIC_WORLD.LEAGUES`), até 40
+  assentos, um por usuário. Todo assento é `member`; as rotas de dono (`invite-code`, `settings`, `invites`, `start`,
+  `members/:id/remove`, `owner`) e o convite respondem 409 `publicWorld`. Sair vale para todos, inclusive o último (o mundo
+  continua com zero assentos).
+- **Ritmo:** quatro horários por dia, de Brasília (`PUBLIC_WORLD.SLOTS`: 09:00, 13:00, 18:00, 22:00, fixo UTC−3). Um horário
+  vencido e mais novo que `advance.lastSlot` dá **um** passo (vários perdidos = um). O passo (`publicStepTarget`) joga o dia
+  parado e segue até o próximo dia com jogo de algum assento (sem assento: a próxima rodada das 10 ligas); jogo sem decisão
+  é simulado pelo assistente. "Pronto até", prazo e paradas não seguram o mundo.
+- **Inatividade:** `lastSeenAt` (no máximo uma escrita por hora) vem do `hello` do socket e das rotas do assento. Aos 5 dias
+  sem abrir, aviso na caixa (`inactive_warning`, uma vez); aos 7, `removeSeat` (clube volta à IA) e `world_removed`.
+- **Social:** a sala `world:<saveId>` do público só aceita resenha (texto livre: 403 `publicRoom`). DM, presença, rivais,
+  placar ao vivo e classificação como na liga de amigos.
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `src/Domain/multiplayer/publicWorldConfig.ts`, `publicWorld.ts` (+ teste) | `PUBLIC_WORLD`; `dueSlot`, `publicStepTarget`, `inactivityAction` |
+| `src/backend/worlds/publicWorld.ts` | `ensurePublicWorld`, `publicSlotTick`, `updateHall`, `flushSeen`, `inactivityPass` |
+| `src/backend/worlds/publicStore.ts`, `publicSeen.ts` | `public_editions` (hall da fama), "visto por último" |
+| `src/backend/groupAdvance.ts`, `advanceDay.ts` | O executor segue o alvo do passo; o dia roda sem assento |
+| `src/backend/worlds/worldRoutes.ts` | Rotas públicas; rotas de dono recusam o público |
+| `src/GameInterface/World/*` (`HallOfFame`, `publicTime`, `WorldScreen`, `GroupAdvanceBand`, `ReadyControl`), `NewGameWizard.tsx`, `StartScreen.tsx` | Telas |
+| `scripts/public-world-measure.ts` | Medição |
+
+### Rotas
+
+| Rota | Faz |
+|---|---|
+| `GET /api/worlds/public` | `{ saveId, members, max, joined, takenClubs, nextSlotAt, edition }` |
+| `POST /api/worlds/public/join { clubId, manager, sackingEnabled }` | 201; 409 `noNickname` / `clubTaken` / `full` / `alreadyMember`, 400 `invalidClub` |
+| `GET /api/worlds/public/hall` | Edições anteriores (versão, período, top 10) |
+
+### Telas
+
+- Novo jogo: opção "Mundo público" (o assistente no modo entrar, só as 10 ligas e os clubes livres); tela inicial: card
+  "Mundo público · N/40" (entrar ou continuar).
+- `/world` no público: membros sem botões de dono, "Próximo passo às 18:00" no lugar do prazo, classificação, rivais,
+  resultados e a aba **Hall da fama**; sem convite nem "Começar"; no dia de jogo só Jogar / Simular.
+
+### Medição (`bun scripts/public-world-measure.ts`, 2026-10-26)
+
+10 assentos (um clube de cada liga), 6 passos em horários seguidos (13:30, 18:30, 22:30, 09:30, 13:30, 18:30), Windows,
+mundo inteiro; RSS na largada 350 MB.
+
+| Passo | Tempo | Dias | Memória (RSS) |
+|---|---|---|---|
+| 1 | 25,6 s | 1 | 413 MB |
+| 2 | 31,2 s | 5 | 506 MB |
+| 3 | 8,6 s | 1 | 434 MB |
+| 4 | 24,0 s | 1 | 546 MB |
+| 5 | 31,4 s | 5 | 713 MB |
+| 6 | 8,9 s | 1 | 549 MB |
+
+Um dia com jogo de assento no motor completo custa ~25 s com 10 ligas; um dia sem rodada ~1,5–2 s (os passos de 5 dias
+somam ~31 s). A memória oscila entre 410 e 710 MB, sem crescer de passo a passo.
+
+### Testes
+
+```
+bun test src/Domain/multiplayer src/backend/publicWorld.create.test.ts src/backend/publicWorld.days.test.ts \
+  src/backend/publicWorld.clock.test.ts src/backend/publicWorld.inactivity.test.ts src/backend/worlds \
+  src/backend/social/publicRoom.test.ts src/GameInterface/World src/i18n/publicWorld.keys.test.ts
+```
+
+### Limitações (parte 5b)
+
+- Um processo só por servidor (relógio, sockets, locks em memória).
+- Quem dorme ou trabalha perde a decisão de alguns jogos (o assistente simula).
+- O mundo zera a cada deploy; só o hall da fama sobrevive.
+- O horário é o de Brasília para todos.
+- A lista de clubes do novo jogo usa os dados iniciais das 10 ligas: um clube rebaixado no mundo ainda aparece (e a entrada recusa com `invalidClub`), e um promovido a uma delas não aparece.
+- O passo não tem dia na tela: "09:00" pode ser amanhã.

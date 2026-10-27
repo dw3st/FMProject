@@ -485,7 +485,7 @@ export async function advanceOneDay(
 
     // The seats of the world (`.claude/rules/game/multiplayer.md`): every step of the day loops over them.
     const daySeats = await loadDaySeats(saveService, saveId, world, index);
-    if (daySeats.length === 0) return { ok: false, status: 400, error: "save has no seat" };
+    // No seat (the public world) is "no human club": every loop below is empty and the AI plays the whole world.
     // The world as no seat sees it (AI-only flows that need a meta: the date of an AI fee, a clause paid to AI).
     const noSeat: SeatMeta = metaForSeat(world, "", {
       clubId: "", clubName: "", clubColors: ["#000000", "#ffffff"], leagueSlug: "", leagueName: "",
@@ -3411,7 +3411,7 @@ export async function advanceOneDay(
  * The caller holds the save lock (`.claude/rules/game/multiplayer.md`).
  */
 export async function presimulateWorld(
-  saveId: string, ownerSeatId: string,
+  saveId: string, ownerSeatId: string | null,
 ): Promise<{ applied: boolean; kit?: string; reason?: string }> {
   if ((await saveService.getMeta(saveId))?.presimulated) return { applied: false, reason: "already presimulated" };
   // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
@@ -3476,14 +3476,14 @@ export async function presimulateWorld(
       logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
     }
   }
-  // The owner's first board objective (members get theirs from `addSeat`).
-  const owner = await saveService.getSeatMeta(saveId, ownerSeatId);
+  // The owner's first board objective (members get theirs from `addSeat`); the public world has no owner.
+  const owner = ownerSeatId ? await saveService.getSeatMeta(saveId, ownerSeatId) : null;
   if (owner?.currentDate && owner.board?.objective) {
     const catalog = await getLeagueData();
     await emitInboxMessage(saveId, buildBoardMessage({
       date: owner.currentDate, kind: "objective", objective: owner.board.objective,
       leagueName: competitionName(owner.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
-    }), saveService, ownerSeatId);
+    }), saveService, ownerSeatId!);
   }
 
   // Friends' league standings (part 5a): every seat with a club opens its passage now, after the kit (it may move the

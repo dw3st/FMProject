@@ -10,7 +10,7 @@ const ERRORS: Record<WorldErrorCode | "generic", true> = {
   notFound: true, full: true, alreadyMember: true, clubTaken: true, invalidManager: true, invalidClub: true,
   invalidBody: true, ownerOnly: true, transferFirst: true, alreadyStarted: true, notMulti: true, inviteLimit: true,
   noNickname: true, useLeave: true, notMember: true, tooLarge: true, generic: true, ownerLimit: true, lobby: true,
-  self: true, invalidTaunt: true, rateLimited: true,
+  self: true, invalidTaunt: true, rateLimited: true, publicWorld: true,
 };
 
 const keys = [

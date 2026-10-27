@@ -57,7 +57,7 @@ export function FriendsPanel() {
       ref={panelRef}
       role="dialog"
       aria-label={t("social.panelTitle")}
-      className="fixed bottom-14 right-6 z-40 w-[370px] max-h-[75vh] flex flex-col rounded-md border border-border bg-card"
+      className="fixed bottom-14 right-6 z-40 w-[440px] h-[640px] max-h-[85vh] flex flex-col rounded-md border border-border bg-card"
     >
       <header className="flex items-center justify-between gap-2 px-4 pt-3">
         <h2 className="font-display font-black uppercase text-xl leading-none">{t("social.panelTitle")}</h2>
@@ -178,7 +178,7 @@ function FriendsTab() {
                 className="flex items-center gap-3 rounded-md px-2 py-2 text-left cursor-pointer border-0 bg-transparent hover:bg-secondary/30"
               >
                 <Icon name="globe" size={16} className="text-muted-foreground" />
-                <span className="font-semibold text-foreground truncate">{worldRoomLabel(w.room, s.lists.worlds, (owner) => t("world.leagueOf", { owner })) ?? t("social.chat.world")}</span>
+                <span className="font-semibold text-foreground truncate">{worldRoomLabel(w.room, s.lists.worlds, (owner) => t("world.leagueOf", { owner }), t("world.public.name")) ?? t("social.chat.world")}</span>
                 {unread > 0 && <span className={`ml-auto ${BADGE}`}>{unread}</span>}
               </button>
             );

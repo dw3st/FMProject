@@ -6,6 +6,8 @@ import { formatGameDate } from "@/GameInterface/formatDate";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { addDays, isRealIsoDate } from "@/Domain/dates";
 import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
+import { brasiliaTime } from "@/GameInterface/World/publicTime";
+import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 
 const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
@@ -16,8 +18,11 @@ const LABEL_TRUNC = "max-w-[140px] truncate";
 const RUNNING_TRUNC = "max-w-[184px] truncate";
 const MENU_ID = "ready-until-panel";
 
-/** The day block's action in a group world (`.claude/rules/game/multiplayer.md`, part 3). */
-export function ReadyControl() {
+/**
+ * The day block's action in a group world (`.claude/rules/game/multiplayer.md`, part 3). `publicWorld` (from the save)
+ * shows the next step's time while the advance view is still loading.
+ */
+export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } = {}) {
   const { t, i18n } = useTranslation();
   const { view, busy, error, markReady, simulateToday } = useGroupAdvance();
   const [open, setOpen] = useState(false);
@@ -86,7 +91,8 @@ export function ReadyControl() {
     </button>
   );
 
-  if (!view || branch === "disabled") {
+  const isPublic = view ? view.kind === "public" : publicWorld;
+  if (!isPublic && (!view || branch === "disabled")) {
     return (
       <div className="flex items-center gap-2">
         {errorLine}
@@ -98,7 +104,7 @@ export function ReadyControl() {
     );
   }
 
-  if (branch === "running") {
+  if (view && branch === "running") {
     const text = t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) });
     const short = t("world.advance.runningShort", { date: fmt(view.currentDate), target: fmt(view.target) });
     return (
@@ -108,6 +114,23 @@ export function ReadyControl() {
       </span>
     );
   }
+
+  // The public world (part 5b) steps on its own clock: no "Ready until", only the time of the next step (Brasília;
+  // the short text fits the slot, the full one is in `title`).
+  if (isPublic && !(branch === "match" && view?.me.matchToday)) {
+    const time = brasiliaTime(view?.nextSlotAt ?? nextSlotAt(Date.now()), i18n.language);
+    const text = t("world.public.nextStep", { time });
+    return (
+      <div className="flex items-center gap-2">
+        {errorLine}
+        <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={text} aria-label={text}>
+          <Icon name="clock" size={16} className="shrink-0" />
+          <span className="truncate" aria-hidden="true">{t("world.public.nextStepShort", { time })}</span>
+        </span>
+      </div>
+    );
+  }
+  if (!view) return null;
 
   const minDate = addDays(view.currentDate, 1);
   const dateValid = isRealIsoDate(date) && date >= minDate;

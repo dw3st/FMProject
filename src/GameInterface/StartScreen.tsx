@@ -12,6 +12,8 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
 import { worldApi } from "@/GameInterface/World/worldApi";
 import { WORLD } from "@/Domain/multiplayer/worldConfig";
+import { brasiliaTime } from "@/GameInterface/World/publicTime";
+import type { PublicWorldInfo } from "@/types/multiplayerTypes";
 import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
@@ -35,7 +37,7 @@ interface SaveEntry {
   compatible?: boolean;
   role?: "owner" | "member";
   mode?: "solo" | "multi";
-  world?: { phase: "lobby" | "running" };
+  world?: { phase: "lobby" | "running"; kind?: "friends" | "public" };
   /** Members of a world of friends (`GET /api/saves`). */
   members?: number;
 }
@@ -55,6 +57,7 @@ export function StartScreen() {
   const [leaveError, setLeaveError] = useState<string | null>(null);
   const pendingLeaveSave = saves.find((s) => s.id === pendingLeaveId) ?? null;
   const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
+  const [publicWorld, setPublicWorld] = useState<PublicWorldInfo | null>(null);
 
   function openChangelog() {
     setIsChangelogOpen(true);
@@ -69,7 +72,17 @@ export function StartScreen() {
       .then((r) => r.json())
       .then((data: SaveEntry[]) => setSaves(data))
       .catch(() => {});
+    void worldApi.publicInfo().then((r) => {
+      if (r.ok) setPublicWorld(r.data);
+    });
   }, []);
+
+  /** "Continue" in the public world block: the save of the list (it may ask about the version first). */
+  function continuePublic(info: PublicWorldInfo) {
+    const save = saves.find((s) => s.id === info.saveId);
+    if (save) requestLoad(save);
+    else void handleLoad(info.saveId);
+  }
 
   async function handleLoad(id: string) {
     setLoadingId(id);
@@ -149,6 +162,33 @@ export function StartScreen() {
           <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
+        {publicWorld && (
+          <div className="mt-6 flex items-center gap-3 rounded-md border border-border px-4 py-3">
+            <Icon name="globe" size={16} className="shrink-0 text-chart-2" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-base font-semibold text-foreground tabular-nums">
+                {t("startScreen.publicWorld", { count: publicWorld.members, max: publicWorld.max })}
+              </div>
+              <div className="truncate text-sm text-muted-foreground tabular-nums">
+                {t("startScreen.publicNext", { time: brasiliaTime(publicWorld.nextSlotAt, i18n.language) })}
+              </div>
+            </div>
+            {publicWorld.joined ? (
+              <Button className="px-4 shrink-0" onClick={() => continuePublic(publicWorld)} disabled={loadingId !== null}>
+                {t("startScreen.continue")}
+              </Button>
+            ) : (
+              <Button
+                className="px-4 shrink-0"
+                onClick={() => { window.location.href = "/new-game?mode=public"; }}
+                disabled={publicWorld.members >= publicWorld.max}
+              >
+                {publicWorld.members >= publicWorld.max ? t("startScreen.publicFull") : t("startScreen.publicJoin")}
+              </Button>
+            )}
+          </div>
+        )}
+
         <SectionTitle className="mt-8 mb-3">{t("startScreen.savedGames")}</SectionTitle>
         {leaveError && (
           <p role="alert" className="mb-3 text-sm text-destructive">
@@ -180,7 +220,10 @@ export function StartScreen() {
                       </span>
                     )}
                   </div>
-                  {save.mode === "multi" && (
+                  {save.mode === "multi" && save.world?.kind === "public" && (
+                    <div className="truncate text-sm text-chart-2">{t("world.public.name")}</div>
+                  )}
+                  {save.mode === "multi" && save.world?.kind !== "public" && (
                     <div className="truncate text-sm text-muted-foreground tabular-nums">
                       <span className="text-chart-2">
                         {t("startScreen.withFriends", { count: save.members ?? 1, max: WORLD.MAX_MEMBERS })}

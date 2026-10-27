@@ -22,6 +22,10 @@ export interface WorldAdvance {
   errorAt?: string | null;
   /** Failed runs in a row (the clock gives up after `GROUP_ADVANCE.MAX_ERROR_RETRIES`). */
   errorTries?: number;
+  /** Public world: ISO of the last slot the clock took. */
+  lastSlot?: string | null;
+  /** Public world: the date the current step runs to (exclusive); set by the clock, read by the executor. */
+  slotTarget?: string | null;
 }
 
 /** `seats/{seatId}/liveRecording.json`: the seat's live match of `date`, kept until the executor runs that day. */
@@ -97,6 +101,8 @@ export interface GroupAdvanceView {
   /** The clock gave up (`MAX_ERROR_RETRIES`): only "Try again" (`POST .../advance/retry`) runs it. */
   gaveUp: boolean;
   members: GroupMemberView[];
+  kind: "friends" | "public";
+  nextSlotAt: string | null;
   me: {
     readyUntil: string | null;
     /** The seat's game today, still to decide or decided. */

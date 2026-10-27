@@ -16,6 +16,7 @@ import {
   memberStatus, seatStops, type GroupPlan, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 import { DAY_FAILED, GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
+import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -104,7 +105,7 @@ async function loadGroupSeats(deps: GroupAdvanceDeps, saveId: string, currentDat
   return out;
 }
 
-const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries"] as const;
+const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries", "lastSlot", "slotTarget"] as const;
 
 function sameAdvance(a: WorldAdvance, b: WorldAdvance): boolean {
   return ADVANCE_KEYS.every((k) => (a[k] ?? null) === (b[k] ?? null));
@@ -201,6 +202,17 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
   let seats = await loadGroupSeats(deps, saveId, currentDate);
   let plan = computeGroupTarget(currentDate, seats.map((s) => s.input));
 
+  if (world.kind === "public") {
+    // Public world (part 5b): the slot clock set the target; nothing holds the world (no "ready", no deadline).
+    // Undecided seat games are simulated (no live recording); a recording sent for the day is still used.
+    const target = world.advance?.slotTarget ?? currentDate;
+    if (target <= currentDate) {
+      await updateAdvance(service, saveId, { running: false, waitingSince: null, target, slotTarget: null, ...noError(world.advance) });
+      return { kind: "stopped", date: currentDate, target, waitingFor: [] };
+    }
+    plan = { target, waitingFor: [], matchWaiting: [] };
+  }
+
   if (plan.target <= currentDate && deadlinePassed(waitingSince, world.deadlineHours, deps.now())) {
     await applyAssistant(deps, saveId, currentDate, seats, plan);
     seats = await loadGroupSeats(deps, saveId, currentDate);
@@ -242,6 +254,8 @@ async function stepWorld(saveId: string, deps: GroupAdvanceDeps): Promise<Step> 
     await updateAdvance(service, saveId, {
       running: false, waitingSince: null, target: plan.target,
       error: DAY_FAILED, errorAt: nowIso, errorTries: (world.advance?.errorTries ?? 0) + 1,
+      // Public world: the step ends here; the next slot sets a new target (a member action never resumes it).
+      ...(world.kind === "public" ? { slotTarget: null } : {}),
     });
     return { kind: "error", date: currentDate, target: plan.target, waitingFor: [], error: DAY_FAILED };
   }
@@ -321,6 +335,7 @@ async function recordCrash(saveId: string, deps: GroupAdvanceDeps, e: unknown): 
     await updateAdvance(deps.service, saveId, {
       running: false, waitingSince: null,
       error, errorAt: new Date(deps.now()).toISOString(), errorTries: (meta?.world?.advance?.errorTries ?? 0) + 1,
+      ...(meta?.world?.kind === "public" ? { slotTarget: null } : {}),
     });
     return { ...failed, date: meta?.currentDate ?? null, target: meta?.world?.advance?.target ?? null };
   }).catch(() => failed);
@@ -344,6 +359,11 @@ async function advanceGroup(saveId: string, deps: GroupAdvanceDeps): Promise<Gro
     result.target = step.target;
     result.waitingFor = step.waitingFor;
     if (step.kind === "error") result.error = step.error;
+    if (result.days > 0 && (await deps.service.getMeta(saveId))?.world?.kind === "public") {
+      // Dynamic: publicWorld imports this module.
+      const { updateHall } = await import("@/backend/worlds/publicWorld");
+      await updateHall(saveId, deps.service).catch((e) => logError("world", `public world ${saveId}: hall update failed`, e));
+    }
     if (step.kind !== "idle") {
       await broadcast(saveId, deps, {
         date: step.date, target: step.target, running: false, waitingFor: step.waitingFor,
@@ -452,18 +472,26 @@ export async function groupAdvanceView(
     const m = members.find((x) => x.seatId === sid);
     return m ? getSocialUser(m.userId)?.nickname ?? null : null;
   };
+  // The public world (part 5b) steps at fixed slots: no deadline; it only "waits" on today's undecided games.
+  const pub = meta.world.kind === "public";
+  const waiting = pub
+    ? seats.filter((s) => s.input.matchDates.includes(currentDate) && s.input.decisionDate !== currentDate).map((s) => s.seatId)
+    : plan.waitingFor;
   return {
     currentDate,
-    target: advance?.running ? advance.target : plan.target,
+    target: pub ? advance?.slotTarget ?? currentDate : advance?.running ? advance.target : plan.target,
     running: !!advance?.running || isWorldAdvancing(saveId),
     deadlineHours: meta.world.deadlineHours,
     // Nobody late = no deadline to show (the world is not waiting on anyone).
-    deadlineAt: plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
-    waitingFor: plan.waitingFor.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
+    deadlineAt: !pub && plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
+    waitingFor: waiting.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
     error: advance?.error ?? null,
     errorTries: advance?.error ? advance.errorTries ?? 0 : 0,
-    nextRetryAt: errorRetryAt(advance),
-    gaveUp: errorGaveUp(advance),
+    // Public world: a failed day waits for the next slot (no retry clock, no "gave up").
+    nextRetryAt: pub ? null : errorRetryAt(advance),
+    gaveUp: pub ? false : errorGaveUp(advance),
+    kind: meta.world.kind ?? "friends",
+    nextSlotAt: pub ? nextSlotAt(Date.now()) : null,
     members: seats.map((s, i) => ({
       seatId: s.seatId,
       nickname: nicknameOf(s.seatId),
@@ -509,7 +537,7 @@ function isRunningWorld(meta: SaveMeta | null): boolean {
 
 /**
  * One tick of the deadline clock: kicks every world whose deadline passed, or whose failed run is due a retry
- * (`errorRetryDue`). Returns the kicked ids.
+ * (`errorRetryDue`); the public world takes its due slot instead (`publicSlotTick`). Returns the kicked ids.
  */
 export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps): Promise<string[]> {
   const kicked: string[] = [];
@@ -518,6 +546,16 @@ export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps):
     const meta = await deps.service.getMeta(saveId);
     if (!meta) { knownWorlds.delete(saveId); continue; }
     if (!isRunningWorld(meta)) continue;
+    if (meta.world!.kind === "public") {
+      // Fixed slots (part 5b): no deadline, and a failed day waits for the next slot instead of retrying.
+      const { flushSeen, inactivityPass, publicSlotTick } = await import("@/backend/worlds/publicWorld");
+      // "Last seen" is written at most hourly; a week away removes the seat before the slot runs.
+      await flushSeen(saveId, deps.now(), deps.service)
+        .then(() => inactivityPass(saveId, deps.now(), deps.service))
+        .catch((e) => logError("world", `save ${saveId}: inactivity pass failed`, e));
+      if (await publicSlotTick(saveId, deps)) kicked.push(saveId);
+      continue;
+    }
     const adv = meta.world!.advance;
     const due = adv?.error
       ? errorRetryDue(adv, deps.now())
@@ -539,8 +577,13 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
     const kick = await withSaveLock(saveId, async () => {
       if (runningWorlds.has(saveId)) return false;
       const meta = await deps.service.getMeta(saveId);
-      if (meta?.world?.advance?.running) await updateAdvance(deps.service, saveId, { running: false });
-      return isRunningWorld(meta);
+      const pub = meta?.world?.kind === "public";
+      // A public step cut by the restart is dropped with its target: the next slot starts a new one.
+      if (meta?.world?.advance?.running || (pub && meta?.world?.advance?.slotTarget)) {
+        await updateAdvance(deps.service, saveId, pub ? { running: false, slotTarget: null } : { running: false });
+      }
+      // The public world only moves at its slots: the clock kicks it, a resume does not.
+      return isRunningWorld(meta) && !pub;
     }).catch((e) => {
       logError("world", `save ${saveId}: resume failed`, e);
       return false;
@@ -551,9 +594,16 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
 
 let clock: ReturnType<typeof setInterval> | null = null;
 
-/** Deadline clock (`GROUP_ADVANCE.CLOCK_MS`) plus the resume of the worlds. Called once at server start. */
+/**
+ * Deadline clock (`GROUP_ADVANCE.CLOCK_MS`) plus the resume of the worlds. Called once at server start; also creates
+ * the public world of this version (part 5b) in the background and hands it to the clock.
+ */
 export function startWorldClock(): void {
   if (clock) return;
+  void import("@/backend/worlds/publicWorld")
+    .then(({ ensurePublicWorld }) => ensurePublicWorld())
+    .then((id) => rememberWorld(id))
+    .catch((e) => logError("world", "public world failed", e));
   void resumeWorlds().catch((e) => logError("world", "failed to resume the worlds", e));
   clock = setInterval(() => {
     void worldClockTick().catch((e) => logError("world", "deadline clock failed", e));

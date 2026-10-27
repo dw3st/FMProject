@@ -142,6 +142,10 @@
     "whatsNew": "Novidades",
     "unemployed": "Sem clube",
     "withFriends": "Com amigos · {{count}}/{{max}}",
+    "publicWorld": "Mundo público · {{count}}/{{max}}",
+    "publicNext": "Próximo passo às {{time}} (Brasília)",
+    "publicJoin": "Entrar",
+    "publicFull": "Lotado",
     "owner": "Dono",
     "member": "Membro",
     "lobby": "Na sala de espera",
@@ -286,6 +290,8 @@
       "soloDetail": "Sua carreira, no seu ritmo.",
       "multi": "Com amigos",
       "multiDetail": "Até {{max}} técnicos no mesmo mundo.",
+      "public": "Mundo público",
+      "publicDetail": "Até {{max}} técnicos. O mundo avança às 09:00, 13:00, 18:00 e 22:00 (Brasília).",
       "next": "Continuar"
     },
     "managerSubtitle": "Quem vai assumir o clube.",
@@ -630,6 +636,7 @@
     "players": "Jogadores"
   },
   "social": {
+    "publicRoom": "Só reações neste mundo",
     "popup": { "open": "Abrir conversa: {{name}}", "dismiss": "Fechar aviso" },
     "button": "Amigos: {{count}} online",
     "buttonUnread": "Amigos: {{count}} online, {{unread}} não lidas",
@@ -704,6 +711,7 @@
       "limit": "Limite de amigos ou de pedidos atingido.",
       "invalidBody": "Mensagem inválida.",
       "noAccess": "Você não pode escrever nesta conversa.",
+      "publicRoom": "O chat do mundo público aceita só reações.",
       "rateLimited": "Muitas tentativas seguidas. Espere um pouco e tente de novo.",
       "tooLarge": "Texto grande demais.",
       "unauthorized": "Sessão expirada. Entre de novo.",
@@ -3033,6 +3041,10 @@
       "main": "NOTÍCIAS DO",
       "accent": "MUNDO"
     },
+    "publicWorld": {
+      "main": "MUNDO",
+      "accent": "PÚBLICO"
+    },
     "world": {
       "main": "SUA",
       "accent": "LIGA"
@@ -5151,6 +5163,28 @@
   },
   "world": {
     "leagueOf": "Liga de {{owner}}",
+    "public": {
+      "name": "Mundo público",
+      "title": "Horários",
+      "nextStep": "Próximo passo às {{time}} (Brasília)",
+      "nextStepShort": "Próximo passo às {{time}}",
+      "nextStepLabel": "Próximo passo",
+      "hint": "Um passo às 09:00, 13:00, 18:00 e 22:00 (horário de Brasília). Jogo que você não jogou nem decidiu é simulado."
+    },
+    "hall": {
+      "tab": "Hall da fama",
+      "title": "Hall da fama",
+      "hint": "Os 10 primeiros de cada edição. Uma edição nova começa a cada atualização do jogo.",
+      "empty": "Nenhuma edição ainda.",
+      "noScores": "Sem pontos nesta edição.",
+      "version": "Versão {{version}}",
+      "period": "{{from}} a {{to}}",
+      "current": "Desde {{from}}, em andamento",
+      "nickname": "Apelido",
+      "club": "Clube",
+      "points": "Pontos",
+      "noNickname": "Sem apelido"
+    },
     "status": { "lobby": "Sala de espera", "running": "Em andamento" },
     "members": {
       "title": "Técnicos",
@@ -5212,6 +5246,7 @@
       "noSeasons": "Nenhuma temporada ainda.",
       "noItems": "Nenhum ponto ainda.",
       "dashboardLine": "Liga de amigos: {{rank}}º de {{of}}",
+      "dashboardLinePublic": "Mundo público: {{rank}}º de {{of}}",
       "reason": {
         "rollover": "Fim da temporada",
         "club_change": "Trocou de clube",
@@ -5264,6 +5299,10 @@
       "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "inactive_warning": {
+        "subject": "Você não abre o mundo público há 5 dias",
+        "body": "Você não abre o mundo público há 5 dias. Em mais 2 dias o seu clube volta para a IA."
+      },
       "season_closed": {
         "subject": "Temporada de {{manager}} fechada",
         "preview_one": "{{points}} ponto · {{rank}}º de {{of}}",
@@ -5390,6 +5429,7 @@
       "notMember": "Este técnico não está na liga.",
       "tooLarge": "O pedido é grande demais.",
       "ownerLimit": "Esse técnico já é dono de 5 ligas.",
+      "publicWorld": "Indisponível no mundo público.",
       "lobby": "A liga ainda não começou.",
       "generic": "Algo deu errado. Tente de novo.",
       "self": "Não dá para provocar a si mesmo.",

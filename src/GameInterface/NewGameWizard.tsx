@@ -5,6 +5,7 @@ import type { CountryEntry } from "@/types/worldTypes";
 import { createGameSave, loadGameSave } from "@/GameInterface/gameSession";
 import { worldApi } from "@/GameInterface/World/worldApi";
 import { WORLD } from "@/Domain/multiplayer/worldConfig";
+import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -100,31 +101,64 @@ const NO_AUTOFILL = {
 const isManagerValid = (m: ManagerData) =>
   m.name.trim().length >= 2 && !!m.background && !!m.nationality;
 
-/** Joining a world of friends (`/join/:code`): the same wizard, without the mode step, human clubs disabled. */
+/**
+ * Joining a world (`/join/:code` for a league of friends, or the public world from the mode step): the same wizard,
+ * without the mode step, human clubs disabled.
+ */
 export interface JoinContext {
+  /** Absent (or "friends") = a league of friends joined by its invite code; "public" = the server's world. */
+  kind?: "friends" | "public";
   code: string;
   worldName: string;
   takenClubs: string[];
   leagueSlug?: string;
   leagueName?: string;
+  /** Only these leagues (and their countries) are offered (the public world). */
+  allowedLeagues?: readonly string[];
   /** Called after a 409 clubTaken: the page rereads the world and passes the new `takenClubs`. */
   onClubTaken?: () => void;
 }
 
-export function NewGameWizard({ join }: { join?: JoinContext }) {
+/** `/new-game?mode=public` opens the wizard with the public world picked. */
+function initialPlayMode(): "solo" | "multi" | "public" {
+  if (typeof window === "undefined") return "solo";
+  return new URLSearchParams(window.location.search).get("mode") === "public" ? "public" : "solo";
+}
+
+export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
   const { t, i18n } = useTranslation();
+  /** Set when the public world is picked in the mode step (and the manager has no seat there yet). */
+  const [publicJoin, setPublicJoin] = useState<JoinContext | null>(null);
+  const join = friendsJoin ?? publicJoin ?? undefined;
+  const [modeError, setModeError] = useState<string | null>(null);
+  const [modeBusy, setModeBusy] = useState(false);
   const [manager, setManager] = useState<ManagerData>(() => ({
     name: "", background: null, nationality: null, sackingEnabled: true, face: { seed: randomFaceSeed() },
   }));
   const [step, setStep] = useState<"mode" | "manager" | "club">(join ? "manager" : "mode");
-  /** Solo career or a world of friends (multiplayer part 2). */
-  const [playMode, setPlayMode] = useState<"solo" | "multi">("solo");
+  /** Solo career, a world of friends (multiplayer part 2) or the public world (part 5b). */
+  const [playMode, setPlayMode] = useState<"solo" | "multi" | "public">(initialPlayMode);
   const taken = useMemo(() => new Set(join?.takenClubs ?? []), [join?.takenClubs]);
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryEntry | null>(null);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [selectedLeagueSlug, setSelectedLeagueSlug] = useState<string>("");
+  const allowedLeagues = join?.allowedLeagues;
+  const allowedLeagueSet = useMemo(() => (allowedLeagues ? new Set(allowedLeagues) : null), [allowedLeagues]);
+  const offeredLeagues = useMemo(
+    () => (allowedLeagueSet ? leagues.filter((l) => allowedLeagueSet.has(l.slug)) : leagues),
+    [allowedLeagueSet, leagues],
+  );
+  const allowedCountries = useMemo(
+    () => (allowedLeagueSet ? new Set(offeredLeagues.map((l) => l.country)) : null),
+    [allowedLeagueSet, offeredLeagues],
+  );
+  const listCountries = allowedCountries ? countries.filter((c) => allowedCountries.has(c.name)) : countries;
+  const mapCountries = useMemo(
+    () => (allowedCountries ? countries.map((c) => ({ ...c, playable: c.playable && allowedCountries.has(c.name) })) : countries),
+    [allowedCountries],
+  );
   const [selectedTeam, setSelectedTeam] = useState<LeagueTeam | null>(null);
   const [profiles, setProfiles] = useState<Record<string, ClubProfile>>({});
   const [starting, setStarting] = useState(false);
@@ -145,9 +179,9 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
   useEffect(() => {
     setSelectedTeam(null);
     if (selectedCountry) {
-      setSelectedLeagueSlug(leaguesOfCountry(leagues, selectedCountry.name)[0]?.slug ?? "");
+      setSelectedLeagueSlug(leaguesOfCountry(offeredLeagues, selectedCountry.name)[0]?.slug ?? "");
     }
-  }, [selectedCountry, leagues]);
+  }, [selectedCountry, offeredLeagues]);
 
   // Joining: start on the world's league (applied once; the picker stays free afterwards).
   const joinLeagueSlug = join?.leagueSlug;
@@ -171,7 +205,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
   }, [pendingJoinLeague, selectedCountry, joinLeagueSlug]);
 
   const displayName = (c: CountryEntry) => countryDisplayName(c, i18n.language, t);
-  const filteredCountries = countries.filter((c) => {
+  const filteredCountries = listCountries.filter((c) => {
     const continentName = t(`newGame.continents.${continentI18nKey(c.continent ?? "Other")}`, {
       defaultValue: c.continent ?? "Other",
     });
@@ -179,7 +213,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
   });
   const groups = groupCountriesByContinent(filteredCountries, displayName);
 
-  const countryLeagues = selectedCountry ? leaguesOfCountry(leagues, selectedCountry.name) : [];
+  const countryLeagues = selectedCountry ? leaguesOfCountry(offeredLeagues, selectedCountry.name) : [];
   const activeLeague = countryLeagues.find((l) => l.slug === selectedLeagueSlug);
   const teams = activeLeague?.standings ?? [];
   const managerValid = isManagerValid(manager);
@@ -234,8 +268,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
     setStarting(true);
     setStartError(null);
     if (join) {
-      const r = await worldApi.join({
-        code: join.code,
+      const body = {
         clubId: selectedTeam.squadId,
         manager: {
           name: manager.name.trim(),
@@ -244,7 +277,8 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
           face: manager.face,
         },
         sackingEnabled: manager.sackingEnabled,
-      });
+      };
+      const r = join.kind === "public" ? await worldApi.joinPublic(body) : await worldApi.join({ code: join.code, ...body });
       if (!r.ok) {
         setStarting(false);
         setStartError(t(`world.errors.${r.error}`));
@@ -284,7 +318,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
           face:           manager.face,
         },
         sackingEnabled: manager.sackingEnabled,
-        mode: playMode,
+        mode: playMode === "multi" ? "multi" : "solo",
       });
 
       capture("career_started", {
@@ -317,6 +351,46 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
     }
   }
 
+  /** Leaves the mode step; the public world first asks whether the manager already has a seat there. */
+  async function continueFromMode() {
+    if (playMode !== "public") {
+      setStep("manager");
+      return;
+    }
+    setModeBusy(true);
+    setModeError(null);
+    const r = await worldApi.publicInfo();
+    if (!r.ok) {
+      setModeBusy(false);
+      setModeError(t(`world.errors.${r.error}`));
+      return;
+    }
+    if (r.data.joined) {
+      try {
+        await loadGameSave(r.data.saveId);
+        window.location.href = "/dashboard";
+      } catch {
+        setModeBusy(false);
+        setModeError(t("world.errors.generic"));
+      }
+      return;
+    }
+    setModeBusy(false);
+    setPublicJoin({
+      kind: "public",
+      code: "",
+      worldName: t("world.public.name"),
+      takenClubs: r.data.takenClubs,
+      allowedLeagues: PUBLIC_WORLD.LEAGUES,
+      onClubTaken: () => {
+        void worldApi.publicInfo().then((again) => {
+          if (again.ok) setPublicJoin((cur) => (cur ? { ...cur, takenClubs: again.data.takenClubs } : cur));
+        });
+      },
+    });
+    setStep("manager");
+  }
+
   if (preparing) return <PreSeasonLoadingScreen />;
 
   if (step === "mode") {
@@ -326,7 +400,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
           <div className="flex min-h-full flex-col">
             <div className="m-auto w-full max-w-[720px] p-6 md:p-8">
               <ScreenTitle subtitle={t("newGame.mode.subtitle")}>{t("newGame.mode.title")}</ScreenTitle>
-              <div className="grid gap-3 mt-8 sm:grid-cols-2">
+              <div className="grid gap-3 mt-8 sm:grid-cols-3">
                 <ChoiceCard
                   title={t("newGame.mode.solo")}
                   description={t("newGame.mode.soloDetail")}
@@ -339,12 +413,19 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
                   selected={playMode === "multi"}
                   onSelect={() => setPlayMode("multi")}
                 />
+                <ChoiceCard
+                  title={t("newGame.mode.public")}
+                  description={t("newGame.mode.publicDetail", { max: PUBLIC_WORLD.MAX_MEMBERS })}
+                  selected={playMode === "public"}
+                  onSelect={() => setPlayMode("public")}
+                />
               </div>
+              {modeError && <p role="alert" className="text-sm text-destructive mt-4">{modeError}</p>}
               <div className="flex items-center gap-2 mt-8">
                 <Button variant="secondary" className="px-3" onClick={() => { window.location.href = "/start"; }}>
                   {t("newGame.back")}
                 </Button>
-                <Button className="flex-1" onClick={() => setStep("manager")}>{t("newGame.mode.next")}</Button>
+                <Button className="flex-1" disabled={modeBusy} onClick={() => void continueFromMode()}>{t("newGame.mode.next")}</Button>
               </div>
             </div>
           </div>
@@ -363,8 +444,11 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
               <ManagerForm
                 initial={manager}
                 onCancel={() => {
-                  if (join) window.location.href = `/join/${join.code}`;
-                  else setStep("mode");
+                  if (friendsJoin) window.location.href = `/join/${friendsJoin.code}`;
+                  else {
+                    setPublicJoin(null);
+                    setStep("mode");
+                  }
                 }}
                 onSubmit={(m) => {
                   setManager(m);
@@ -468,7 +552,7 @@ export function NewGameWizard({ join }: { join?: JoinContext }) {
               <p className="text-sm text-muted-foreground mt-6 xl:hidden">{t("newGame.selectTerritoryDetail")}</p>
               <div className="hidden xl:block mt-6">
                 <WorldMap
-                  countries={countries}
+                  countries={mapCountries}
                   selectedSlug={null}
                   displayName={displayName}
                   onSelect={setSelectedCountry}

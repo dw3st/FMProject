@@ -4,6 +4,7 @@ import { formatGameDate } from "@/GameInterface/formatDate";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { deadlineLeft } from "@/GameInterface/World/groupAdvanceText";
 import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
+import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import { Button } from "@/GameInterface/ui/Button";
 import type { GroupMemberView } from "@/types/groupAdvanceTypes";
 
@@ -26,6 +27,7 @@ export function GroupAdvanceBand() {
   if (!enabled || !view) return null;
   const fmt = (d: string | null) => (d ? formatGameDate(d, i18n.language, "dayMonth") : "—");
   const left = deadlineLeft(view.deadlineAt, now);
+  const isPublic = view.kind === "public";
 
   let state: string;
   if (view.running) state = t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) });
@@ -38,12 +40,19 @@ export function GroupAdvanceBand() {
         <div className={LABEL}>{t("world.advance.band.date")}</div>
         <div className="font-display font-bold tabular-nums text-xl">{fmt(view.currentDate)}</div>
       </div>
-      <div>
-        <div className={LABEL}>{t("world.advance.band.target")}</div>
-        <div className="font-display font-bold tabular-nums text-xl">{fmt(view.target)}</div>
-      </div>
+      {isPublic ? (
+        <div>
+          <div className={LABEL}>{t("world.public.nextStepLabel")}</div>
+          <div className="font-display font-bold tabular-nums text-xl">{brasiliaTime(view.nextSlotAt, i18n.language) || "—"}</div>
+        </div>
+      ) : (
+        <div>
+          <div className={LABEL}>{t("world.advance.band.target")}</div>
+          <div className="font-display font-bold tabular-nums text-xl">{fmt(view.target)}</div>
+        </div>
+      )}
       <p className="text-sm m-0 flex-1 min-w-[200px]" role="status">{state}</p>
-      {!view.running && view.waitingFor.length > 0 && (
+      {!isPublic && !view.running && view.waitingFor.length > 0 && (
         <p className="text-sm text-muted-foreground m-0 tabular-nums">
           {view.deadlineHours === null
             ? t("world.advance.band.noDeadline")

@@ -38,9 +38,10 @@ export function mergeMessages(prev: readonly ChatMessageView[], incoming: readon
  * league of his has the same owner (otherwise the two rows would read the same). Null when the owner is unknown.
  */
 export function worldRoomLabel(
-  room: string, worlds: readonly WorldRoomView[], leagueOf: (owner: string) => string,
+  room: string, worlds: readonly WorldRoomView[], leagueOf: (owner: string) => string, publicLabel?: string,
 ): string | null {
   const w = worlds.find((x) => x.room === room);
+  if (w?.public && publicLabel) return publicLabel;
   if (!w?.owner) return null;
   const base = leagueOf(w.owner);
   const twin = worlds.some((x) => x.room !== room && x.owner === w.owner);

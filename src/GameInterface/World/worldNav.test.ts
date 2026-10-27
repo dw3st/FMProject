@@ -35,6 +35,7 @@ describe("worldTabOf", () => {
     expect(worldTabOf("?tab=standings")).toBe("standings");
     expect(worldTabOf("?tab=rivals")).toBe("rivals");
     expect(worldTabOf("?tab=results")).toBe("results");
+    expect(worldTabOf("?tab=hall")).toBe("hall");
     expect(worldTabOf("?tab=nope")).toBe("league");
     expect(worldTabOf("")).toBe("league");
   });

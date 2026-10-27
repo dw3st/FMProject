@@ -943,19 +943,24 @@ export class SaveService {
 
   // ── Create save ────────────────────────────────────────────────────────────
 
-  async createSave(body: {
-    leagueSlug: string;
-    leagueName: string;
-    clubId:     string;
-    clubName:   string;
-    clubColors: [string, string];
-    formation?:      string;
-    tactical_style?: TacticalStyle;
-    database?: SaveDatabase;
-    manager?:  SaveManager;
-    /** The board may sack the manager (`.claude/rules/game/board-fans.md`); default true. */
-    sackingEnabled?: boolean;
-  }): Promise<SeatMeta> {
+  async createSave(body:
+    // A world with no human club and no seat (the public world); `leagueSlug` only picks the start date.
+    | { worldOnly: true; leagueSlug: string }
+    | {
+      worldOnly?: false;
+      leagueSlug: string;
+      leagueName: string;
+      clubId:     string;
+      clubName:   string;
+      clubColors: [string, string];
+      formation?:      string;
+      tactical_style?: TacticalStyle;
+      database?: SaveDatabase;
+      manager?:  SaveManager;
+      /** The board may sack the manager (`.claude/rules/game/board-fans.md`); default true. */
+      sackingEnabled?: boolean;
+    }): Promise<SeatMeta> {
+    const human = body.worldOnly ? null : body;
     const id  = randomUUID();
     const now = new Date().toISOString();
 
@@ -1023,38 +1028,38 @@ export class SaveService {
       console.error("Failed to generate league calendars:", e);
     }
 
-    const seatId = randomUUID();
+    const seatId = human ? randomUUID() : "";
     const world: SaveMeta = {
       id,
-      name:        body.clubName ?? "Unnamed Save",
+      name:        human ? (human.clubName ?? "Unnamed Save") : "Public world",
       createdAt:   now,
       updatedAt:   now,
       gameVersion: GAME_VERSION,
-      database:    body.database,
+      database:    human?.database,
       mode:        "solo",
-      seats:       [seatId],
+      seats:       human ? [seatId] : [],
       currentDate: playerLeagueStart,
       activeLeagues,
     };
-    const seat: SeatState = {
-      clubId:     body.clubId,
-      clubName:   body.clubName,
-      clubColors: body.clubColors,
-      leagueSlug: body.leagueSlug,
-      leagueName: body.leagueName,
-      manager:    body.manager,
-      formation:      body.formation      ?? "4-3-3",
-      tactical_style: body.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+    const seat: SeatState = human ? {
+      clubId:     human.clubId,
+      clubName:   human.clubName,
+      clubColors: human.clubColors,
+      leagueSlug: human.leagueSlug,
+      leagueName: human.leagueName,
+      manager:    human.manager,
+      formation:      human.formation      ?? "4-3-3",
+      tactical_style: human.tactical_style ?? DEFAULT_TACTICAL_STYLE,
       ...(playerLeagueStart ? { careerStart: playerLeagueStart } : {}),
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
-      sackingEnabled: body.sackingEnabled !== false,
+      sackingEnabled: human.sackingEnabled !== false,
       restDays: playerLeagueRestDays,
-    };
+    } : ({} as SeatState);
     // The merged view the rest of createSave (and its caller) reads: same shape as before seats.
-    const meta: SeatMeta = metaForSeat(world, seatId, seat);
+    const meta: SeatMeta = human ? metaForSeat(world, seatId, seat) : ({ ...world, seatId: "" } as SeatMeta);
     await this.dal.writeMeta(world);
-    await this.dal.writeSeat(id, seatId, seat);
+    if (human) await this.dal.writeSeat(id, seatId, seat);
 
     // Copy all squads from global Data/squads/ into the save-local directory
     const squadsRootSrc = `${DATA_DIR}/squads`;
@@ -1080,7 +1085,7 @@ export class SaveService {
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
         const clubSlug = p.replace(".json", "");
 
-        const isPlayerClub = league === body.leagueSlug && clubSlug === body.clubId;
+        const isPlayerClub = !!human && league === body.leagueSlug && clubSlug === human.clubId;
         if (isPlayerClub) playerSquadId = raw.id;
         const srcFin = raw.finances;
         // The player's club always starts at 0 — the initial balance is the ledger's own
@@ -1146,7 +1151,7 @@ export class SaveService {
 
     // Board and fans (`.claude/rules/game/board-fans.md`): 60/60 and the first season objective,
     // from the squads of the player's league (membership = the folder they were copied into).
-    if (playerSquadId) {
+    if (human && playerSquadId) {
       try {
         const { getLeagueData } = await import("@/backend/advanceDay");
         const { objectiveFromSquads } = await import("@/backend/boardWorld");
@@ -1193,7 +1198,7 @@ export class SaveService {
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
     // replacing the imported coach of his club. Start kits never touch this file.
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
-      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, seatId, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
+      ? { squadId: playerSquadId, name: human?.manager?.name?.trim() || human?.clubName || "", seatId, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
       : null, playerLeagueStart));
 
     // National teams (`.claude/rules/game/national-teams.md`): every nation of the world, its Elo and AI coach,
@@ -1210,7 +1215,7 @@ export class SaveService {
 
     // The human manager's first contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"):
     // two seasons at the wage of a starting reputation.
-    if (playerSquadId) {
+    if (human && playerSquadId) {
       try {
         const { managerWeeklyWage, contractUntil, MANAGER_CONTRACT } = await import("@/Domain/managers/managerContract");
         const { managerReputation } = await import("@/Domain/jobs/jobs");
@@ -1302,7 +1307,7 @@ export class SaveService {
         const { getLeagueData } = await import("@/backend/advanceDay");
         const { rescheduleFixtureConflicts, syncPlayerRestDays } = await import("@/backend/reschedulingWorld");
         const r = await rescheduleFixtureConflicts({ service: this, saveId: id, minDate: meta.currentDate, catalog: await getLeagueData() });
-        await syncPlayerRestDays(this, id, meta.seatId, r.moves);
+        if (human) await syncPlayerRestDays(this, id, meta.seatId, r.moves);
       } catch (e) {
         logError("calendar", `save ${id}: failed to reschedule clashing league games`, e);
       }

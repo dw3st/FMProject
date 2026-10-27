@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
+import { buildAutoAdvancedMessage, buildInactiveWarningMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import { inboxTopicOf } from "@/Domain/inbox/inboxTopics";
 
 describe("buildAutoAdvancedMessage", () => {
@@ -29,5 +29,15 @@ describe("buildLiveRefusedMessage", () => {
     expect(liveRefusedReason("knockout recording without a winner")).toBe("knockout");
     expect(liveRefusedReason("a match between two seats has no live recording")).toBe("two_seats");
     expect(liveRefusedReason("anything else")).toBe("other");
+  });
+});
+
+describe("buildInactiveWarningMessage", () => {
+  test("world / inactive_warning with the removal day, never dropped", () => {
+    const m = buildInactiveWarningMessage({ date: "2027-03-10", removeOn: "2026-11-02" });
+    expect(m.category).toBe("world");
+    expect(m.kind).toBe("inactive_warning");
+    expect(m.removeOn).toBe("2026-11-02");
+    expect(inboxTopicOf(m)).toBe("actions");
   });
 });

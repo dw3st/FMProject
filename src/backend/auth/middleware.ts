@@ -1,6 +1,7 @@
 import { readSessionCookie } from "@/backend/auth/cookie";
 import { getSessionByToken } from "@/backend/auth/AuthService";
 import { memberOf } from "@/backend/auth/saveOwnership";
+import { markSeen } from "@/backend/worlds/publicSeen";
 import type { MemberRole } from "@/types/seatTypes";
 
 export interface AuthContext { userId: string; email: string }
@@ -34,5 +35,7 @@ export function requireSeat(req: Request, saveId: string): SeatAuth | Response {
   if (auth instanceof Response) return auth;
   const member = memberOf(saveId, auth.userId);
   if (!member) return Response.json({ error: "save not found" }, { status: 404 });
+  // The public world removes a seat after a week away (part 5b); a Map.set for any world.
+  markSeen(saveId, member.seatId);
   return { ...auth, seatId: member.seatId, role: member.role };
 }

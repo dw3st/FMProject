@@ -18,6 +18,10 @@ export interface WorldState {
   createdBy: string;
   /** Group advance (part 3). Absent until the first stop. */
   advance?: WorldAdvance;
+  /** Absent = a world of friends. `public` = the server's world (part 5b): no owner, fixed slots. */
+  kind?: "friends" | "public";
+  /** Public world only: the game version it was created for and the real day it started. */
+  edition?: { version: string; startedOn: string };
 }
 
 export interface WorldMemberView {
@@ -48,6 +52,9 @@ export interface WorldView {
   myRole: MemberRole;
   mySeatId: string;
   members: WorldMemberView[];
+  kind: "friends" | "public";
+  /** Public world: ISO of the next step. */
+  nextSlotAt: string | null;
 }
 
 /** `GET /api/worlds/by-code/:code`. */
@@ -76,4 +83,26 @@ export interface WorldInviteView {
 export type WorldErrorCode =
   | "notFound" | "full" | "alreadyMember" | "clubTaken" | "invalidManager" | "invalidClub" | "invalidBody"
   | "ownerOnly" | "transferFirst" | "alreadyStarted" | "notMulti" | "inviteLimit" | "noNickname" | "useLeave"
-  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby" | "self" | "invalidTaunt" | "rateLimited";
+  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby" | "self" | "invalidTaunt" | "rateLimited" | "publicWorld";
+
+/** `GET /api/worlds/public`: the public world for the lobby screens. */
+export interface PublicWorldInfo {
+  saveId: string;
+  members: number;
+  max: number;
+  /** ISO of the next step. */
+  nextSlotAt: string;
+  takenClubs: string[];
+  edition: { version: string; startedOn: string };
+  /** The caller already has a seat there. */
+  joined: boolean;
+  currentDate: string | null;
+}
+
+/** One finished or current edition of the public world (hall of fame). */
+export interface PublicEditionView {
+  version: string;
+  startedAt: string;
+  endedAt: string | null;
+  standings: { rank: number; nickname: string | null; clubName: string; total: number; seasons: number }[];
+}

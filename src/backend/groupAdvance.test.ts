@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
-import { kickWorld, resumeWorlds, waitWorld, worldClockTick, type GroupAdvanceDeps } from "@/backend/groupAdvance";
+import { groupAdvanceView, kickWorld, rememberWorld, resumeWorlds, waitWorld, worldClockTick, type GroupAdvanceDeps } from "@/backend/groupAdvance";
 import { fakeWorld } from "@/backend/testing/worldFixtures";
 import { addSaveMember, deleteSaveMembers } from "@/backend/auth/saveOwnership";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
@@ -409,5 +409,40 @@ describe("group advance executor", () => {
   test("a world in the lobby never advances", async () => {
     const id = await world({ a: { readyUntil: "2027-03-13" } }, { phase: "lobby" });
     expect((await kickWorld(id, stubDeps(id))).days).toBe(0);
+  });
+});
+
+describe("public world executor (part 5b)", () => {
+  const pub = (advance: Record<string, unknown>) => world({ a: {} }, { kind: "public", deadlineHours: null, advance });
+
+  test("no slot target: a kick (a member action) runs no day", async () => {
+    const id = await pub({ running: false, waitingSince: null, target: null, slotTarget: null });
+    const deps = stubDeps(id);
+    expect((await kickWorld(id, deps)).days).toBe(0);
+    expect(deps.days).toEqual([]);
+    expect((await saveService.getMeta(id))!.currentDate).toBe(D);
+  });
+
+  test("a failed day drops the slot target: a later kick does not resume the step, and the view has no retry", async () => {
+    const id = await pub({ running: false, waitingSince: null, target: null, slotTarget: "2027-03-12" });
+    const failing = stubDeps(id, { runDay: async () => ({ ok: false, status: 500, error: "boom" }) });
+    expect((await kickWorld(id, failing)).error).toBe("dayFailed");
+    const adv = (await saveService.getMeta(id))!.world!.advance!;
+    expect(adv).toMatchObject({ running: false, error: "dayFailed", slotTarget: null });
+    const view = (await groupAdvanceView(saveService, id, "a", NOW, failing))!;
+    expect(view).toMatchObject({ error: "dayFailed", nextRetryAt: null, gaveUp: false });
+    const ok = stubDeps(id);
+    expect((await kickWorld(id, ok)).days).toBe(0);
+    expect((await saveService.getMeta(id))!.currentDate).toBe(D);
+  });
+
+  test("a resume frees a step cut by the restart and drops its target", async () => {
+    const id = await pub({ running: true, waitingSince: null, target: "2027-03-12", slotTarget: "2027-03-12" });
+    rememberWorld(id);
+    const deps = stubDeps(id);
+    await resumeWorlds(deps);
+    await waitWorld(id);
+    expect((await saveService.getMeta(id))!.world!.advance).toMatchObject({ running: false, slotTarget: null });
+    expect((await kickWorld(id, deps)).days).toBe(0);
   });
 });
