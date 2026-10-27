@@ -5,6 +5,8 @@ import { notifyUser } from "@/backend/social/realtime";
 import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { deleteWorldCode, deleteWorldInvites, newWorldCode, setWorldCode } from "@/backend/worlds/worldStore";
 import { WORLD } from "@/Domain/multiplayer/worldConfig";
+import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
+import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import { buildWorldMemberMessage, worldMemberNews, type MemberChange } from "@/Domain/multiplayer/worldMessages";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import type { MemberRole } from "@/types/seatTypes";
@@ -58,11 +60,15 @@ export async function worldView(
       unemployed: !!seat.unemployed,
     });
   }
+  // The public world (part 5b) has no owner, and its internal code only feeds the clock.
+  const pub = meta.world.kind === "public";
   return {
-    saveId, owner: await worldOwnerName(saveId, service), phase: meta.world.phase, inviteCode: meta.world.inviteCode,
-    deadlineHours: meta.world.deadlineHours, max: WORLD.MAX_MEMBERS, currentDate: meta.currentDate ?? null,
+    saveId, owner: pub ? "" : await worldOwnerName(saveId, service), phase: meta.world.phase,
+    inviteCode: pub ? "" : meta.world.inviteCode,
+    deadlineHours: meta.world.deadlineHours, max: pub ? PUBLIC_WORLD.MAX_MEMBERS : WORLD.MAX_MEMBERS,
+    currentDate: meta.currentDate ?? null,
     myRole: me.role, mySeatId: me.seatId, members,
-    kind: meta.world.kind ?? "friends", nextSlotAt: null,
+    kind: meta.world.kind ?? "friends", nextSlotAt: pub ? nextSlotAt(Date.now()) : null,
   };
 }
 

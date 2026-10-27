@@ -16,6 +16,7 @@ import {
   memberStatus, seatStops, type GroupPlan, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 import { DAY_FAILED, GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
+import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -355,6 +356,11 @@ async function advanceGroup(saveId: string, deps: GroupAdvanceDeps): Promise<Gro
     result.target = step.target;
     result.waitingFor = step.waitingFor;
     if (step.kind === "error") result.error = step.error;
+    if (result.days > 0 && (await deps.service.getMeta(saveId))?.world?.kind === "public") {
+      // Dynamic: publicWorld imports this module.
+      const { updateHall } = await import("@/backend/worlds/publicWorld");
+      await updateHall(saveId, deps.service).catch((e) => logError("world", `public world ${saveId}: hall update failed`, e));
+    }
     if (step.kind !== "idle") {
       await broadcast(saveId, deps, {
         date: step.date, target: step.target, running: false, waitingFor: step.waitingFor,
@@ -463,20 +469,25 @@ export async function groupAdvanceView(
     const m = members.find((x) => x.seatId === sid);
     return m ? getSocialUser(m.userId)?.nickname ?? null : null;
   };
+  // The public world (part 5b) steps at fixed slots: no deadline; it only "waits" on today's undecided games.
+  const pub = meta.world.kind === "public";
+  const waiting = pub
+    ? seats.filter((s) => s.input.matchDates.includes(currentDate) && s.input.decisionDate !== currentDate).map((s) => s.seatId)
+    : plan.waitingFor;
   return {
     currentDate,
-    target: advance?.running ? advance.target : plan.target,
+    target: pub ? advance?.slotTarget ?? currentDate : advance?.running ? advance.target : plan.target,
     running: !!advance?.running || isWorldAdvancing(saveId),
     deadlineHours: meta.world.deadlineHours,
     // Nobody late = no deadline to show (the world is not waiting on anyone).
-    deadlineAt: plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
-    waitingFor: plan.waitingFor.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
+    deadlineAt: !pub && plan.waitingFor.length > 0 ? deadlineAt(advance?.waitingSince ?? null, meta.world.deadlineHours) : null,
+    waitingFor: waiting.map((id) => names[seats.findIndex((s) => s.seatId === id)]!),
     error: advance?.error ?? null,
     errorTries: advance?.error ? advance.errorTries ?? 0 : 0,
     nextRetryAt: errorRetryAt(advance),
     gaveUp: errorGaveUp(advance),
     kind: meta.world.kind ?? "friends",
-    nextSlotAt: null,
+    nextSlotAt: pub ? nextSlotAt(Date.now()) : null,
     members: seats.map((s, i) => ({
       seatId: s.seatId,
       nickname: nicknameOf(s.seatId),

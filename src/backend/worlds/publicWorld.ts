@@ -3,10 +3,12 @@ import { presimulateWorld } from "@/backend/advanceDay";
 import { withSaveLock } from "@/backend/saveLock";
 import { deleteWorld } from "@/backend/worlds/worldLifecycle";
 import { newWorldCode, setWorldCode } from "@/backend/worlds/worldStore";
-import { closeOpenEditions, editionOf, listEditions, openEdition } from "@/backend/worlds/publicStore";
+import { closeOpenEditions, editionOf, listEditions, openEdition, saveEditionStandings } from "@/backend/worlds/publicStore";
+import { standingsView } from "@/backend/standingsWorld";
 import { defaultGroupDeps, isWorldAdvancing, kickWorld, type GroupAdvanceDeps } from "@/backend/groupAdvance";
 import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
 import { dueSlot, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
+import { rankOf } from "@/Domain/multiplayer/standings";
 import { addDays } from "@/Domain/dates";
 import { GAME_VERSION } from "@/Domain/saveVersion";
 import { logError } from "@/Logger";
@@ -93,4 +95,15 @@ export async function publicSlotTick(saveId: string, deps: GroupAdvanceDeps = de
   });
   if (started) void kickWorld(saveId, deps).catch((e) => logError("world", `public world ${saveId}: step crashed`, e));
   return started;
+}
+
+/** The open edition's top of the standings (hall of fame), after each step; ties share a rank (`rankOf`). */
+export async function updateHall(saveId: string, service: SaveService = defaultService): Promise<void> {
+  const meta = await service.getMeta(saveId);
+  const version = meta?.world?.edition?.version;
+  if (!version) return;
+  const { entries } = await standingsView(service, saveId);
+  saveEditionStandings(version, entries.slice(0, PUBLIC_WORLD.HALL_TOP).map((e) => ({
+    rank: rankOf(entries, e.seatId), nickname: e.nickname, clubName: e.clubName, total: e.total, seasons: e.seasons,
+  })));
 }

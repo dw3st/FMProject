@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { db } from "@/backend/db";
 import { saveService } from "@/backend/SaveService";
-import { setKickScheduler } from "@/backend/groupAdvance";
+import { defaultGroupDeps, setKickScheduler, waitWorld } from "@/backend/groupAdvance";
 import { resetRealtime } from "@/backend/social/realtime";
 import { makeUser, uniqueNick, type TestUser } from "@/backend/social/socialTestUtils";
-import { ensurePublicWorld } from "@/backend/worlds/publicWorld";
+import { ensurePublicWorld, publicSlotTick } from "@/backend/worlds/publicWorld";
+import { listEditions } from "@/backend/worlds/publicStore";
 import { worldCodeOf } from "@/backend/worlds/worldStore";
 import { callApi, TEST_MANAGER } from "@/backend/worlds/worldTestUtils";
 import { GAME_VERSION } from "@/Domain/saveVersion";
@@ -100,4 +101,24 @@ describe("public world routes (part 5b)", () => {
     expect(res.json.editions[0]).toMatchObject({ version: GAME_VERSION, standings: [], endedAt: null });
     expect(res.json.editions[0].saveId).toBeUndefined();
   });
+
+  test("views: the world and the group advance say public; a step fills the hall", async () => {
+    const c = makeUser(uniqueNick("pd"));
+    expect((await join(c, premier[3]!)).status).toBe(201);
+    const p = { saveId };
+    const view = await callApi("GET", "/api/worlds/:saveId", c.token, { params: p });
+    expect(view.status).toBe(200);
+    expect(view.json).toMatchObject({ kind: "public", max: 40, owner: "", inviteCode: "", myRole: "member" });
+    expect(Number.isNaN(Date.parse(view.json.nextSlotAt))).toBe(false);
+    const adv = await callApi("GET", "/api/worlds/:saveId/advance", c.token, { params: p });
+    expect(adv.status).toBe(200);
+    expect(adv.json).toMatchObject({ kind: "public", deadlineAt: null });
+    expect(Number.isNaN(Date.parse(adv.json.nextSlotAt))).toBe(false);
+
+    expect(await publicSlotTick(saveId, defaultGroupDeps)).toBe(true);
+    await waitWorld(saveId);
+    const open = listEditions().find((e) => e.version === GAME_VERSION)!;
+    expect(open.standings.map((e) => e.nickname)).toContain(c.nickname);
+    expect(open.standings[0]!.rank).toBe(1);
+  }, 900_000);
 });
