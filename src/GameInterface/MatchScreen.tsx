@@ -9,7 +9,11 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
+import { PauseBar } from "@/GameInterface/H2H/PauseBar";
+import { otherSide } from "@/GameInterface/H2H/h2hState";
+import type { H2HCommand } from "@/types/h2hTypes";
 import { applyLiveSideConfigs, buildLiveMatchState, eligibleLivePlayers } from "@/Domain/match/liveMatchSetup";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
@@ -183,7 +187,22 @@ export function MatchScreen() {
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
   /** Fixture being played (competition heading under the scoreboard, #81). */
   const [matchFixture, setMatchFixture] = useState<Fixture | null>(null);
-  const matchHeadingText = useMatchHeading(useMemo(() => loadSession()?.saveId, []), matchFixture, crestIds?.a);
+  /** The user's club (the heading's "home/away" and the result). */
+  const [myClubId, setMyClubId] = useState<string | undefined>();
+  const matchHeadingText = useMatchHeading(useMemo(() => loadSession()?.saveId, []), matchFixture, myClubId);
+  /**
+   * Live match between two managers (multiplayer part 7, `/match?h2h=1`): the server runs the match, the page draws
+   * it and sends commands. Engine team A is the home side there; `mySide` is the user's (always A in a solo match).
+   */
+  const h2hMode = useMemo(() => new URLSearchParams(window.location.search).get("h2h") === "1", []);
+  const h2hModeRef = useRef(h2hMode);
+  const [h2hTarget, setH2HTarget] = useState<{ saveId: string; fixtureId: string } | null>(null);
+  const h2h = useH2HSocket(h2hTarget);
+  const [mySide, setMySide] = useState<TeamId>("A");
+  const mySideRef = useRef<TeamId>("A");
+  /** When the last server state arrived (local ms): the clock runs on from it between two states. */
+  const h2hStateAtRef = useRef(0);
+  const [clockNow, setClockNow] = useState(0);
   /** Both match squads (starters + bench) for the faces on the pitch (#61). */
   const [faceRoster, setFaceRoster] = useState<Record<TeamId, {
     players: { id: string; nationality?: string | null }[];
@@ -360,7 +379,7 @@ export function MatchScreen() {
     }
 
     // live=1: against another seat the server refuses (multiplayer part 4, simulated only).
-    const url = `/api/match-setup?saveId=${encodeURIComponent(session.saveId)}&live=1`;
+    const url = `/api/match-setup?saveId=${encodeURIComponent(session.saveId)}&live=1${h2hModeRef.current ? "&h2h=1" : ""}`;
 
     fetch(url)
       .then(async (r) => {
@@ -401,9 +420,46 @@ export function MatchScreen() {
           /** His national team's game (Etapa 41b): the teams are nations. */
           national?: { teamId: string; competition: string } | null;
           matchDay?: { date: string; fixtureId: string } | null;
+          /** Against another seat with `h2h=1`: the server runs this match (multiplayer part 7). */
+          h2h?: boolean;
         };
       })
       .then((data) => {
+        if (h2hModeRef.current) {
+          // Live match between two managers: no local state; the server sends it once the page joined.
+          const opp = data.opponentSquad;
+          if (!data.h2h || !opp || !data.fixture) throw new Error(t("h2h.closed.failed"));
+          const side: TeamId = data.fixture.home === data.mySquadId ? "A" : "B";
+          mySideRef.current = side;
+          setMySide(side);
+          setPanelTeam(side);
+          const mine: TeamMeta = { name: data.save.clubName, primaryColor: data.save.clubColors[0], secondaryColor: data.save.clubColors[1] };
+          const theirs: TeamMeta = { name: opp.name, primaryColor: opp.colors[0], secondaryColor: opp.colors[1] };
+          setTeamAMeta(side === "A" ? mine : theirs);
+          setTeamBMeta(side === "A" ? theirs : mine);
+          setCrestIds({ a: data.fixture.home, b: data.fixture.away });
+          setMyClubId(data.mySquadId);
+          setMatchFixture(data.fixture);
+          const homeSquad = side === "A" ? data.mySquad : opp;
+          setVenueName(homeSquad.venue?.name ?? null);
+          setTouchline({
+            crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,
+            conditions: data.conditions ?? null, sunSide: data.sunSide ?? null,
+          });
+          if (data.managerBanned) setManagerOut("banned");
+          const mineRoster = { players: data.mySquad.players, clubColors: data.save.clubColors };
+          const oppRoster = { players: opp.players, clubColors: opp.colors };
+          setFaceRoster(side === "A" ? { A: mineRoster, B: oppRoster } : { A: oppRoster, B: mineRoster });
+          const style = data.myTactics?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
+          myTacticalStyleRef.current = style;
+          myAxesOverrideRef.current = data.myTactics?.axesOverride;
+          savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride };
+          setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride });
+          initRatings([]);
+          initStats([]);
+          setH2HTarget({ saveId: session.saveId, fixtureId: data.matchDay?.fixtureId ?? data.fixture.id });
+          return;
+        }
         if (!data.myTactics) {
           throw new Error("my club: missing myTactics in match setup response");
         }
@@ -558,6 +614,7 @@ export function MatchScreen() {
           });
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
+        setMyClubId(data.mySquadId);
         setMatchFixture(data.fixture);
         liveFixtureRef.current = liveTarget && !data.national ? (data.matchDay?.fixtureId ?? data.fixture.id) : null;
         // Resumed after a reload: `matchStart` never fires again, so tell the friends where the game is (a `start`
@@ -616,6 +673,52 @@ export function MatchScreen() {
       uiThrottleRef.current = null;
     };
   }, []);
+
+  // H2H: every server state is the screen's state (and the pitch's, through `matchStateSync`); the per-frame
+  // accumulators (possession, heat map, players seen) sample it.
+  useEffect(() => {
+    const next = h2h.state;
+    if (!h2hModeRef.current || !next) return;
+    h2hStateAtRef.current = performance.now();
+    gameStateRef.current = next;
+    accumulatePossession(possessionRef.current, next);
+    if (heatmapRef.current) samplePossessionHeatmap(heatmapRef.current, next);
+    for (const p of next.players) knownPlayersRef.current.set(p.id, p);
+    deliveredStateRef.current = next;
+    setGameState(next);
+  }, [h2h.state]);
+
+  // H2H: the room says which side is the user's (the fixture already did; the room wins).
+  useEffect(() => {
+    if (!h2h.mySide || h2h.mySide === mySideRef.current) return;
+    mySideRef.current = h2h.mySide;
+    setMySide(h2h.mySide);
+    setPanelTeam(h2h.mySide);
+  }, [h2h.mySide]);
+
+  // H2H: the clock runs on between two states (they come every second).
+  useEffect(() => {
+    if (!h2hMode) return;
+    const id = setInterval(() => setClockNow(performance.now()), 250);
+    return () => clearInterval(id);
+  }, [h2hMode]);
+
+  // H2H: full time is recorded by the server; both pages go to the provisional result.
+  useEffect(() => {
+    if (!h2h.done) return;
+    const date = h2h.room?.date ?? matchFixture?.date;
+    const id = setTimeout(() => {
+      window.location.href = date ? `/match-result?date=${encodeURIComponent(date)}&pending=1` : "/match-result?pending=1";
+    }, MATCH_END_TO_RESULT_MS);
+    return () => clearTimeout(id);
+  }, [h2h.done]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // H2H: the room closed (simulated, the other left, the server lost it): back to the dashboard.
+  useEffect(() => {
+    if (!h2h.closed) return;
+    const id = setTimeout(() => { window.location.href = "/dashboard"; }, 3000);
+    return () => clearTimeout(id);
+  }, [h2h.closed]);
 
   // Pausing hands the latest state over at once: the substitution panel and the instructions edit it.
   useEffect(() => {
@@ -710,7 +813,13 @@ export function MatchScreen() {
       // #140: an injured player of the user's side left with no replacement: pause and open the
       // substitutions, with the injured player and the suggested bench player marked.
       gameBus.on("injuryNeedsSub", (e) => {
-        if (e.team !== "A") return;
+        if (e.team !== mySideRef.current) return;
+        if (h2hModeRef.current) {
+          // The server runs the match: the panel opens, the match does not stop (pauses are counted).
+          showSubPanelRef.current = true;
+          setShowSubPanel(true);
+          return;
+        }
         panelPauseRef.current = openPanelPause(panelPauseRef.current, showSubPanelRef.current, pausedRef.current);
         showSubPanelRef.current = true;
         setPaused(true);
@@ -761,7 +870,8 @@ export function MatchScreen() {
   // opens the button for COMPLAINT_WINDOW real seconds; never with the manager off the touchline or no referee.
   useEffect(() => {
     const open = () => {
-      if (!gameStateRef.current?.referee) return;
+      // Not in a live match between two managers (no complaint there).
+      if (h2hModeRef.current || !gameStateRef.current?.referee) return;
       complaintSeqRef.current++;
       setComplaint({ seq: complaintSeqRef.current, until: Date.now() + VAR_CONFIG.COMPLAINT_WINDOW * 1000 });
     };
@@ -880,7 +990,8 @@ export function MatchScreen() {
       setMatchEndProgress(0);
       matchEndAnimRef.current = requestAnimationFrame(tickProgress);
 
-      if (matchEndFinalizeRef.current) return;
+      // H2H: the server records the match; `h2h_done` takes the page to the result.
+      if (h2hModeRef.current || matchEndFinalizeRef.current) return;
       matchEndFinalizeRef.current = true;
 
       const session = loadSession();
@@ -1027,12 +1138,18 @@ export function MatchScreen() {
     setDebugMode(DEV_TOOLS && debug);
   }, [debug]);
 
+  /** H2H: a change on the user's side goes to the server (the page never edits that match). */
+  function sendH2H(cmd: H2HCommand) {
+    h2h.send(cmd);
+  }
+
   function handleMentalityChange(next: Mentality) {
     setMentality(next);
     mentalityRef.current = next;
-    applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
+    if (h2hMode) sendH2H({ kind: "mentality", mentality: next });
+    else applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
     const kind = next === "attacking" ? "attack" : next === "defensive" ? "defend" : "balanced";
-    setCoachCue((prev) => ({ team: "A", kind, seq: (prev?.seq ?? 0) + 1 }));
+    setCoachCue((prev) => ({ team: mySideRef.current, kind, seq: (prev?.seq ?? 0) + 1 }));
   }
 
   /** Live style / axes of team A (Etapa 35): the engine config only — never `PUT /tactics`. */
@@ -1040,7 +1157,8 @@ export function MatchScreen() {
     myTacticalStyleRef.current = next.style;
     myAxesOverrideRef.current = next.axesOverride;
     setLiveTactics(next);
-    applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
+    if (h2hMode) sendH2H({ kind: "tactics", style: next.style, ...(next.axesOverride ? { axesOverride: next.axesOverride } : {}) });
+    else applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
   }
 
   function handleLiveAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
@@ -1050,11 +1168,17 @@ export function MatchScreen() {
   // #136: reporting a problem pauses the match so the text is not lost when the match ends. Closing
   // the report never resumes on its own (the tester resumes with Play when ready).
   function handleOpenReport() {
-    setPaused(true);
+    if (!h2hMode) setPaused(true);
     setReportOpen(true);
   }
 
   function handleOpenSubPanel() {
+    if (h2hMode) {
+      // The match keeps going (a pause is the pause button's, counted).
+      showSubPanelRef.current = true;
+      setShowSubPanel(true);
+      return;
+    }
     panelPauseRef.current = openPanelPause(panelPauseRef.current, showSubPanelRef.current, pausedRef.current);
     showSubPanelRef.current = true;
     setPaused(true);
@@ -1063,6 +1187,11 @@ export function MatchScreen() {
 
   // A match the user paused by hand (e.g. at a goal) stays paused when the panel closes (tester report).
   function handleCloseSubPanel() {
+    if (h2hMode) {
+      showSubPanelRef.current = false;
+      setShowSubPanel(false);
+      return;
+    }
     const resume = panelPauseRef.current;
     panelPauseRef.current = NO_PANEL_PAUSE;
     showSubPanelRef.current = false;
@@ -1071,6 +1200,7 @@ export function MatchScreen() {
   }
 
   function handleQueueSub(sub: PendingSub) {
+    if (h2hMode) { sendH2H({ kind: "sub", outId: sub.outId, inId: sub.inId }); return; }
     setGameState((prev) => {
       if (!prev) return prev;
       return {
@@ -1082,25 +1212,31 @@ export function MatchScreen() {
 
   /** Two starters swap positions (#115): no substitution used, only this match. */
   function handleSwapPositions(aId: number, bId: number) {
+    if (h2hMode) { sendH2H({ kind: "swap", aId, bId }); return; }
     setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
   }
 
   /** #140: bench player `inId` takes the slot an injured player left (uses a substitution). */
   function handleFillVacancy(injuredId: number, inId: number) {
+    // H2H: the server's queue fills the injury vacancy of that player.
+    if (h2hMode) { sendH2H({ kind: "sub", outId: injuredId, inId }); return; }
     setGameState((prev) => (prev ? fillInjuryVacancy(prev, "A", injuredId, inId) : prev));
   }
 
   /** Live instruction change (player instructions): only this match, never saved. */
   function handleInstruction(slot: number, instruction: SlotInstruction | null) {
+    if (h2hMode) { sendH2H({ kind: "instruction", slot, instruction }); return; }
     setGameState((prev) => (prev ? applyPlayerInstruction(prev, "A", slot, instruction) : prev));
   }
 
   /** Live man-marking (targets are opponents on the pitch, engine ids). */
   function handleManMarks(marks: { markerSlot: number; targetId: number }[]) {
+    if (h2hMode) { sendH2H({ kind: "marks", marks }); return; }
     setGameState((prev) => (prev ? setManMarks(prev, "A", marks) : prev));
   }
 
   function handleChangeFormation(formationId: string) {
+    if (h2hMode) { sendH2H({ kind: "formation", formation: formationId }); return; }
     setGameState((prev) => {
       if (!prev) return prev;
       const newFormation = formationForSimId(formationId);
@@ -1161,11 +1297,17 @@ export function MatchScreen() {
       return [kit, ...club.filter((c) => c.toLowerCase() !== kit.toLowerCase())];
     };
     const mgr = touchline?.managers;
-    return {
-      A: { color: matchKitColors.teamA, ...(mgr ? { faceUrl: managerFaceUrl(mgr.mine, colorsOf("A", matchKitColors.teamA)) } : {}) },
-      B: { color: matchKitColors.teamB, ...(mgr?.opponent ? { faceUrl: managerFaceUrl(mgr.opponent, colorsOf("B", matchKitColors.teamB)) } : {}) },
+    const kit = (tm: TeamId) => (tm === "A" ? matchKitColors.teamA : matchKitColors.teamB);
+    // The user's manager stands on his own side (always A in a solo match).
+    const face = (tm: TeamId) => {
+      const who = tm === mySide ? mgr?.mine : mgr?.opponent;
+      return who ? { faceUrl: managerFaceUrl(who, colorsOf(tm, kit(tm))) } : {};
     };
-  }, [touchline, faceRoster, matchKitColors]);
+    return {
+      A: { color: kit("A"), ...face("A") },
+      B: { color: kit("B"), ...face("B") },
+    };
+  }, [touchline, faceRoster, matchKitColors, mySide]);
 
   // Referee and assistants on the pitch with their faces (`referees.md`); no appointment = faceless officials.
   const officials = useMemo<boolean | PitchOfficials>(() => {
@@ -1207,13 +1349,28 @@ export function MatchScreen() {
   if (!gameState) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="text-muted-foreground text-sm animate-pulse">{t("common.loadingMatch")}</span>
+        <span className={`text-sm ${h2h.closed ? "text-foreground" : "text-muted-foreground animate-pulse"}`}>
+          {h2h.closed ? t(`h2h.closed.${h2h.closed}`) : t(h2hTarget ? "h2h.waiting" : "common.loadingMatch")}
+        </span>
       </div>
     );
   }
 
-  // Home side on the left when the user plays away (#98); the engine keeps the user as team A.
+  // Home side on the left when engine team A plays away (#98): a solo match keeps the user as team A; a live match
+  // between two managers has the home side as A, so it never flips.
   const awayView = isAwayView(matchFixture, crestIds?.a);
+  const effectivePaused = h2hMode ? !!h2h.pause : paused;
+  const otherH2HSide = otherSide(mySide);
+  const sideName = (tm: TeamId) =>
+    h2h.room?.sides[tm].nickname ?? h2h.room?.sides[tm].clubName ?? (tm === "A" ? teamAWithCrest?.name : teamBWithCrest?.name) ?? tm;
+  const opponentAway = h2hMode && h2h.room?.phase === "live" && !h2h.room.sides[otherH2HSide].connected;
+  const myPausesLeft = h2h.pausesLeft?.[mySide] ?? h2h.room?.sides[mySide].pausesLeft ?? 0;
+  // H2H clock: the last state's time, run on by the real time since it arrived (at most 1.5 s, frozen in a pause).
+  const shownMatchTime = h2hMode && isLivePhase(gameState.matchPhase) && !h2h.pause
+    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * TIME_SCALE
+    : gameState.matchTime ?? 0;
+  const mySubsRemaining = mySide === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
+  const myPendingSubs = (mySide === "A" ? gameState.pendingSubsA : gameState.pendingSubsB).length;
   const sides = displaySides(awayView);
   const shownTeams = toDisplayPair({ A: teamAWithCrest, B: teamBWithCrest }, awayView);
   const shownKits = toDisplayPair({ A: matchKitColors.teamA, B: matchKitColors.teamB }, awayView);
@@ -1318,7 +1475,7 @@ export function MatchScreen() {
           <ScoreBar
             scoreA={shownScore.A}
             scoreB={shownScore.B}
-            matchTime={gameState.matchTime ?? 0}
+            matchTime={shownMatchTime}
             matchPhase={gameState.matchPhase ?? "preMatch"}
             teamA={shownTeams.A}
             teamB={shownTeams.B}
@@ -1354,22 +1511,37 @@ export function MatchScreen() {
           )}
 
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <button
-              onClick={() => {
-                panelPauseRef.current = manualToggle();
-                setPaused((p) => !p);
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
-            >
-              {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
-              {paused ? t("match.play") : t("match.pause")}
-            </button>
-            <SegmentedTabs
-              compact
-              tabs={GAME_SPEEDS.map((s) => ({ key: String(s), label: <span className="tabular-nums">{s}×</span> }))}
-              active={String(gameSpeed)}
-              onChange={(k) => setGameSpeed(Number(k) as typeof gameSpeed)}
-            />
+            {h2hMode ? (
+              // Live match between two managers: fixed speed, a few pauses each (the bar below shows a pause).
+              <button
+                type="button"
+                onClick={() => h2h.requestPause()}
+                disabled={!!h2h.pause || myPausesLeft <= 0 || !isLivePhase(gameState.matchPhase)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Icon name="pause" className="w-4 h-4" />
+                <span className="tabular-nums">{t("h2h.pausesLeft", { count: myPausesLeft })}</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    panelPauseRef.current = manualToggle();
+                    setPaused((p) => !p);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
+                >
+                  {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
+                  {paused ? t("match.play") : t("match.pause")}
+                </button>
+                <SegmentedTabs
+                  compact
+                  tabs={GAME_SPEEDS.map((s) => ({ key: String(s), label: <span className="tabular-nums">{s}×</span> }))}
+                  active={String(gameSpeed)}
+                  onChange={(k) => setGameSpeed(Number(k) as typeof gameSpeed)}
+                />
+              </>
+            )}
             {managerOut ? (
               <span className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm">
                 <Icon name="alert" className="w-4 h-4" />
@@ -1383,7 +1555,7 @@ export function MatchScreen() {
                 onChange={handleMentalityChange}
               />
             )}
-            {complaint && !managerOut && (
+            {complaint && !managerOut && !h2hMode && (
               <button
                 type="button"
                 onClick={handleComplain}
@@ -1397,15 +1569,15 @@ export function MatchScreen() {
             <button
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
-                gameState.pendingSubsA.length > 0
+                myPendingSubs > 0
                   ? "bg-chart-4/20 text-chart-4 border-chart-4/50"
-                  : gameState.subsRemainingA > 0
+                  : mySubsRemaining > 0
                   ? "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
                   : "bg-secondary/30 border-border/50 text-muted-foreground cursor-not-allowed"
               }`}
             >
               <Icon name="arrow-right-left" className="w-4 h-4" />
-              {t("match.subs", { remaining: gameState.subsRemainingA })}
+              {t("match.subs", { remaining: mySubsRemaining })}
             </button>
             )}
             <FriendsButton variant="toolbar" />
@@ -1433,7 +1605,7 @@ export function MatchScreen() {
                 {t("nav.report")}
               </button>
             )}
-            {DEV_TOOLS && (
+            {DEV_TOOLS && !h2hMode && (
             <button
               onClick={() => setDebug((d) => !d)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
@@ -1449,6 +1621,21 @@ export function MatchScreen() {
           </div>
         </div>
       </header>
+
+      {h2hMode && h2h.pause && (
+        <PauseBar pause={h2h.pause} mySide={mySide} names={{ A: sideName("A"), B: sideName("B") }} onResume={() => h2h.resume()} />
+      )}
+      {opponentAway && (
+        <div role="status" className="flex items-center justify-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 text-sm font-semibold text-foreground">
+          <Icon name="alert" size={16} className="text-chart-4" />
+          {t("h2h.opponentAway", { name: sideName(otherH2HSide) })}
+        </div>
+      )}
+      {h2hMode && h2h.closed && (
+        <div role="status" className="flex items-center justify-center px-4 py-2 border-b border-border bg-destructive/10 text-sm font-semibold text-foreground">
+          {t(`h2h.closed.${h2h.closed}`)}
+        </div>
+      )}
 
       {liveTarget && <LiveRivalsStrip saveId={liveTarget.saveId} live={liveRivals.live} highlight={liveRivals.highlight} />}
       {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
@@ -1500,7 +1687,9 @@ export function MatchScreen() {
                   key={`${pitchSize.w}x${pitchSize.h}${stadium ? "s" : ""}${touchline?.referee ? "r" : ""}`}
                   canvasWidth={pitchSize.w}
                   canvasHeight={pitchSize.h}
-                  paused={paused}
+                  paused={effectivePaused}
+                  keepTickerAlive={h2hMode}
+                  remote={h2hMode ? h2h.feed : null}
                   effectLabels={effectLabels}
                   debugMode={DEV_TOOLS && debug}
                   mirror={awayView}
@@ -1565,7 +1754,7 @@ export function MatchScreen() {
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}
           feed={feed}
-          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} />}
+          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} />}
           referee={touchline?.referee ?? null}
         />
       </main>
@@ -1573,7 +1762,7 @@ export function MatchScreen() {
       {showSubPanel && (
         <SubstitutionPanel
           gameState={gameState}
-          playerTeam="A"
+          playerTeam={mySide}
           ratings={ratings}
           onQueueSub={handleQueueSub}
           onSwapPositions={handleSwapPositions}

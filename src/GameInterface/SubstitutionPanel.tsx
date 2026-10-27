@@ -1,7 +1,7 @@
 import { shirtName } from "@/Domain/shirtName";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { GameState, PendingSub } from "@/GameEngine/types";
+import type { GameState, PendingSub, TeamId } from "@/GameEngine/types";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
@@ -19,7 +19,7 @@ import type { ComponentProps } from "react";
 
 export interface SubstitutionPanelProps {
   gameState: GameState;
-  playerTeam: "A";
+  playerTeam: TeamId;
   /** Live match ratings (0–10) keyed by engine player id — from PlayerRating. */
   ratings?: Record<number, number>;
   onQueueSub: (sub: PendingSub) => void;

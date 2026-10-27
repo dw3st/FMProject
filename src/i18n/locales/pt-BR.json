@@ -5546,5 +5546,18 @@
       "loss_3": "Semana que vem tem mais.",
       "loss_4": "Lutou. Mais ou menos."
     }
+  },
+  "h2h": {
+    "pausesLeft": "Pausar · {{count}}",
+    "pausedBy": "{{name}} pausou · {{time}}",
+    "resume": "Retomar",
+    "opponentAway": "{{name}} saiu · auxiliar no comando",
+    "waiting": "Esperando a partida começar",
+    "closed": {
+      "simulated": "O jogo foi simulado",
+      "left": "O outro técnico saiu da sala",
+      "lost": "A partida se perdeu (servidor reiniciado)",
+      "failed": "A partida não pôde continuar"
+    }
   }
 }

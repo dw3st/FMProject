@@ -5546,5 +5546,18 @@
       "loss_3": "There's always next week.",
       "loss_4": "Fought. Sort of."
     }
+  },
+  "h2h": {
+    "pausesLeft": "Pause · {{count}}",
+    "pausedBy": "{{name}} paused · {{time}}",
+    "resume": "Resume",
+    "opponentAway": "{{name}} left · assistant in charge",
+    "waiting": "Waiting for the match to start",
+    "closed": {
+      "simulated": "The match was simulated",
+      "left": "The other manager left the room",
+      "lost": "The match was lost (server restarted)",
+      "failed": "The match could not go on"
+    }
   }
 }

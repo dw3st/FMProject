@@ -109,7 +109,7 @@ const REAL_HALF_DURATION = 150;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Game-seconds per real-second: 45 game-minutes / REAL_HALF_DURATION. */
-const TIME_SCALE = 2700 / REAL_HALF_DURATION;
+export const TIME_SCALE = 2700 / REAL_HALF_DURATION;
 /** Yards off-ball targets keep from the touchlines (#37). */
 const OFF_BALL_TOUCHLINE_MARGIN = 2.5;
 /** Minimum yards an off-ball target keeps from a teammate's position (#37). */

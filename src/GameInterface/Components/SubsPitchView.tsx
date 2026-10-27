@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { shirtName } from "@/Domain/shirtName";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
-import type { GamePlayer, GameState, PendingSub } from "@/GameEngine/types";
+import type { GamePlayer, GameState, PendingSub, TeamId } from "@/GameEngine/types";
 import { gamePlayerNaturalRole, getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
@@ -60,7 +60,7 @@ function EnergyBar({ energy }: { energy: number }) {
 
 export interface SubsPitchViewProps {
   gameState: GameState;
-  playerTeam: "A";
+  playerTeam: TeamId;
   ratings?: Record<number, number>;
   onQueueSub: (sub: PendingSub) => void;
   /** Two starters swap positions (no substitution used). */
