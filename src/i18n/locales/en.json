@@ -686,6 +686,7 @@
       "setupLead": "Your friends find you by it in the game and in the chat."
     },
     "chat": {
+      "emoji": "Emojis",
       "minimize": "Minimize",
       "close": "Close",
       "loadMore": "Load more",
@@ -5316,6 +5317,10 @@
       "running": "Advancing… {{date}} of {{target}}",
       "runningShort": "{{date}} → {{target}}",
       "simulate": "Simulate",
+      "simulateHint": "Simulate: the match is decided without you watching, when the day runs",
+      "simulated": "Match will be simulated",
+      "simulatedHint": "Your match today will be simulated when the day runs.",
+      "undoSimulate": "Undo: play it yourself",
       "play": "Play",
       "readyButton": "Ready until…",
       "readyTomorrow": "Tomorrow",
@@ -5378,6 +5383,7 @@
         "generic": "Could not save. Try again.",
         "invalidDate": "Pick a date between tomorrow and about a year from now.",
         "dayClosed": "That day has already been played.",
+        "noDecision": "There is no simulated match to undo.",
         "notYourMatch": "That is not your match today.",
         "seatOpponent": "Against another manager the match is simulated.",
         "noWinner": "A knockout match needs a winner.",
@@ -5446,6 +5452,15 @@
     "col": { "rank": "#", "position": "League", "form": "Form", "last": "Last", "next": "Next", "live": "Now" },
     "positionValue": "#{{position}}",
     "nextValue": "{{date}} · {{opponent}}",
+    "moments": {
+      "title": "Latest moments",
+      "none": "Nothing yet.",
+      "goal": "{{team}} goal",
+      "disallowed": "{{team}} goal ruled out by VAR",
+      "red": "{{team}} player sent off",
+      "half": "Half-time",
+      "end": "Full time"
+    },
     "liveBadge": "live",
     "liveLine": "live · {{score}} · {{minute}}'",
     "halfLine": "half-time · {{score}}",

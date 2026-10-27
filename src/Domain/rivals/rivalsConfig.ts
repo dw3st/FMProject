@@ -10,6 +10,8 @@ export const RIVALS = {
   LATE_MINUTE: 88,
   /** At most this many live events per game (the rest are ignored); `minute` frames do not count. */
   LIVE_MAX_EVENTS: 40,
+  /** Moments kept per live game for the friend's popup. */
+  LIVE_MOMENTS_MAX: 12,
   /** The live match sends a `minute` frame every this many minutes of play, so the friends' clock keeps moving. */
   LIVE_MINUTE_STEP: 5,
   LIVE_MAX_MINUTE: 130,

@@ -13,10 +13,11 @@ import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
 import {
   assistantPatches, computeGroupTarget, deadlineAt, deadlinePassed, errorGaveUp, errorRetryAt, errorRetryDue, isGroupWorld, laterDate,
-  memberStatus, seatStops, type GroupPlan, type GroupSeatInput,
+  memberStatus, seatLimit, seatStops, type GroupPlan, type GroupSeatInput,
 } from "@/Domain/groupAdvance/groupAdvance";
 import { DAY_FAILED, GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
-import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
+import { isActiveSeat, nextSlotAt } from "@/Domain/multiplayer/publicWorld";
+import { seenAt } from "@/backend/worlds/publicSeen";
 import { buildAutoAdvancedMessage, buildLiveRefusedMessage, liveRefusedReason } from "@/Domain/inbox/worldAdvanceMessage";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -105,7 +106,13 @@ async function loadGroupSeats(deps: GroupAdvanceDeps, saveId: string, currentDat
   return out;
 }
 
-const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries", "lastSlot", "slotTarget"] as const;
+/** A public-world seat's last request (ms): the newer of the stored "last seen" and this process's memory. */
+function publicLastSeen(saveId: string, seatId: string, seat: SeatState): number | null {
+  const stored = seat.lastSeenAt ? Date.parse(seat.lastSeenAt) : 0;
+  return Math.max(stored, seenAt(saveId, seatId) ?? 0) || null;
+}
+
+const ADVANCE_KEYS = ["running", "waitingSince", "target", "error", "errorAt", "errorTries", "lastSlot", "slotTarget", "lastStepAt"] as const;
 
 function sameAdvance(a: WorldAdvance, b: WorldAdvance): boolean {
   return ADVANCE_KEYS.every((k) => (a[k] ?? null) === (b[k] ?? null));
@@ -440,7 +447,15 @@ export function kickWorld(saveId: string, deps: GroupAdvanceDeps = defaultGroupD
 }
 
 const defaultScheduler = (saveId: string) => {
-  void kickWorld(saveId).catch((e) => logError("world", `save ${saveId}: group advance crashed`, e));
+  void (async () => {
+    // Public world (part 5b): a member action only matters for the early step (everyone ready); the slots do the rest.
+    if ((await defaultGroupDeps.service.getMeta(saveId))?.world?.kind === "public") {
+      const { publicSlotTick } = await import("@/backend/worlds/publicWorld");
+      await publicSlotTick(saveId);
+      return;
+    }
+    await kickWorld(saveId);
+  })().catch((e) => logError("world", `save ${saveId}: group advance crashed`, e));
 };
 let scheduler: (saveId: string) => void = defaultScheduler;
 
@@ -474,8 +489,10 @@ export async function groupAdvanceView(
   };
   // The public world (part 5b) steps at fixed slots: no deadline; it only "waits" on today's undecided games.
   const pub = meta.world.kind === "public";
+  // Public world: the active seats (opened in the last 24 h) not ready yet hold the early step (`earlyStepDue`).
   const waiting = pub
-    ? seats.filter((s) => s.input.matchDates.includes(currentDate) && s.input.decisionDate !== currentDate).map((s) => s.seatId)
+    ? seats.filter((s) => isActiveSeat(publicLastSeen(saveId, s.seatId, s.seat), Date.now())
+      && seatLimit(s.input, currentDate).limit <= currentDate).map((s) => s.seatId)
     : plan.waitingFor;
   return {
     currentDate,

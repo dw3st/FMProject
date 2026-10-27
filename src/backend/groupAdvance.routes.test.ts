@@ -223,6 +223,17 @@ describe("group advance routes: the seat has a game today", () => {
     expect((await api("POST", "match-decision", { date: D, fixtureId: "other", mode: "simulate" })).json.error).toBe("notYourMatch");
   });
 
+  test("match-decision undo: clears a simulate decision of today and its D+1 ready; nothing to undo is 409", async () => {
+    await saveService.updateSeat(id, "a", { readyUntil: null, matchDecision: undefined });
+    expect((await api("POST", "match-decision", { date: D, fixtureId: "fx1", mode: "undo" })).json.error).toBe("noDecision");
+    expect((await api("POST", "match-decision", { date: D, fixtureId: "fx1", mode: "simulate" })).status).toBe(200);
+    const res = await api("POST", "match-decision", { date: D, fixtureId: "fx1", mode: "undo" });
+    expect(res.status).toBe(200);
+    const seat = (await saveService.getSeat(id, "a"))!;
+    expect(seat.matchDecision ?? null).toBeNull();
+    expect(seat.readyUntil ?? null).toBeNull();
+  });
+
   test("live-recording: stores the file and the live decision, kicks; GET builds the event", async () => {
     const res = await api("POST", "live-recording", { date: D, fixtureId: "fx1", recording: rec() });
     expect(res.status).toBe(200);

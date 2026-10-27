@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { dueSlot, inactivityAction, isPublicLeague, isPublicWorld, nextSlotAt, publicStepTarget, slotAt } from "@/Domain/multiplayer/publicWorld";
+import { dueSlot, earlyStepDue, inactivityAction, isActiveSeat, isPublicLeague, isPublicWorld, nextSlotAt, publicStepTarget, slotAt } from "@/Domain/multiplayer/publicWorld";
+
+import type { GroupSeatInput } from "@/Domain/groupAdvance/groupAdvance";
 
 const ms = (iso: string) => Date.parse(iso);
 
@@ -67,4 +69,32 @@ test("isPublicLeague / isPublicWorld", () => {
   expect(isPublicWorld({ mode: "multi", world: { kind: "public" } })).toBe(true);
   expect(isPublicWorld({ mode: "multi", world: {} })).toBe(false);
   expect(isPublicWorld({ mode: "solo" })).toBe(false);
+});
+
+describe("early step", () => {
+  const seat = (o: Partial<GroupSeatInput> = {}): GroupSeatInput =>
+    ({ seatId: "s1", readyUntil: "2026-08-20", matchDates: ["2026-08-20"], decisionDate: null, unemployed: false, ...o });
+  const now = ms("2026-10-26T17:00:00.000Z");
+  test("every active seat ready to the target: due", () => {
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat(), seat({ seatId: "s2" })], null, now)).toBe(true);
+  });
+  test("one seat not ready, or today's game undecided: not due", () => {
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat(), seat({ seatId: "s2", readyUntil: "2026-08-17" })], null, now)).toBe(false);
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat({ matchDates: ["2026-08-16", "2026-08-20"] })], null, now)).toBe(false);
+    expect(earlyStepDue("2026-08-16", "2026-08-20",
+      [seat({ matchDates: ["2026-08-16", "2026-08-20"], decisionDate: "2026-08-16" })], null, now)).toBe(true);
+  });
+  test("20 minutes between steps", () => {
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat()], "2026-10-26T16:45:00.000Z", now)).toBe(false);
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat()], "2026-10-26T16:40:00.000Z", now)).toBe(true);
+  });
+  test("no active seat with a club: not due", () => {
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [], null, now)).toBe(false);
+    expect(earlyStepDue("2026-08-16", "2026-08-20", [seat({ unemployed: true, matchDates: [] })], null, now)).toBe(false);
+  });
+  test("active = opened in the last 24 hours", () => {
+    expect(isActiveSeat(now - 23 * 3_600_000, now)).toBe(true);
+    expect(isActiveSeat(now - 25 * 3_600_000, now)).toBe(false);
+    expect(isActiveSeat(null, now)).toBe(false);
+  });
 });

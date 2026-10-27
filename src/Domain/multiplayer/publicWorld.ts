@@ -1,5 +1,6 @@
 import { addDays } from "@/Domain/dates";
 import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
+import { seatLimit, type GroupSeatInput } from "@/Domain/groupAdvance/groupAdvance";
 
 const DAY_MS = 86_400_000;
 
@@ -45,6 +46,25 @@ export function publicStepTarget(
   return seatGameDays.find((d) => d > currentDate)
     ?? worldRoundDays.find((d) => d > currentDate)
     ?? (horizon && horizon > currentDate ? horizon : addDays(currentDate, 1));
+}
+
+/** Whether a seat counts for an early step: opened the world in the last `ACTIVE_HOURS` (ms of the last request). */
+export function isActiveSeat(lastSeenMs: number | null, nowMs: number): boolean {
+  return lastSeenMs != null && nowMs - lastSeenMs < PUBLIC_WORLD.ACTIVE_HOURS * 3_600_000;
+}
+
+/**
+ * Early step: the step to `target` starts before the next slot when every active seat with a club is ready up to it
+ * (the same rule as the friends' league: "ready until" reaches `target` and today's game is decided), at least one
+ * such seat exists, and the last step began `EARLY_STEP_GAP_MIN` minutes ago or more.
+ */
+export function earlyStepDue(
+  currentDate: string, target: string, activeSeats: readonly GroupSeatInput[], lastStepAt: string | null, nowMs: number,
+): boolean {
+  if (target <= currentDate) return false;
+  if (lastStepAt && nowMs - Date.parse(lastStepAt) < PUBLIC_WORLD.EARLY_STEP_GAP_MIN * 60_000) return false;
+  const seats = activeSeats.filter((s) => !s.unemployed);
+  return seats.length > 0 && seats.every((s) => seatLimit(s, currentDate).limit >= target);
 }
 
 export type InactivityAction = "none" | "warn" | "remove";

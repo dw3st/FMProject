@@ -118,7 +118,7 @@ Navegador: `DEV_AUTO_LOGIN=1 bun run dev`; aba 1 `http://localhost:3000/api/auth
 ## Limitações
 
 - Um processo só (sockets e presença em memória); o mundo público vai precisar de um barramento entre processos.
-- Sem sala pública, denúncia ou moderação; sem anexos, emojis especiais ou edição.
+- Sem sala pública, denúncia ou moderação; sem anexos ou edição. Emojis (4.35.3): botão ao lado do contador abre uma grade fixa (`CHAT_EMOJIS`, `Social/EmojiPicker.tsx`) que insere no cursor; o servidor já aceita qualquer texto Unicode.
 - A sala do mundo lê `save_members` (um membro por assento do mundo, multiplayer). A sala do mundo público só aceita resenha: texto livre dá 403 `publicRoom`.
 - Um participante de DM lê o histórico mesmo depois de a amizade acabar (só não escreve), salvo com bloqueio.
 - Os limites (mensagens, pedidos, buscas, socket) ficam em memória: reiniciar o servidor zera.

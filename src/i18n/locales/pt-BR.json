@@ -686,6 +686,7 @@
       "setupLead": "Seus amigos acham você por ele no jogo e no chat."
     },
     "chat": {
+      "emoji": "Emojis",
       "minimize": "Minimizar",
       "close": "Fechar",
       "loadMore": "Carregar mais",
@@ -5316,6 +5317,10 @@
       "running": "Avançando… {{date}} de {{target}}",
       "runningShort": "{{date}} → {{target}}",
       "simulate": "Simular",
+      "simulateHint": "Simular: o jogo é decidido sem você assistir, quando o dia rodar",
+      "simulated": "Jogo será simulado",
+      "simulatedHint": "Seu jogo de hoje será simulado quando o dia rodar.",
+      "undoSimulate": "Desfazer: voltar a poder jogar",
       "play": "Jogar",
       "readyButton": "Pronto até…",
       "readyTomorrow": "Amanhã",
@@ -5378,6 +5383,7 @@
         "generic": "Não foi possível salvar. Tente de novo.",
         "invalidDate": "Escolha uma data entre amanhã e cerca de um ano.",
         "dayClosed": "Esse dia já foi jogado.",
+        "noDecision": "Não há jogo simulado para desfazer.",
         "notYourMatch": "Esse não é o seu jogo de hoje.",
         "seatOpponent": "Contra outro técnico o jogo é simulado.",
         "noWinner": "Jogo de mata-mata precisa de vencedor.",
@@ -5446,6 +5452,15 @@
     "col": { "rank": "#", "position": "Liga", "form": "Forma", "last": "Último", "next": "Próximo", "live": "Agora" },
     "positionValue": "{{position}}º",
     "nextValue": "{{date}} · {{opponent}}",
+    "moments": {
+      "title": "Últimos lances",
+      "none": "Nenhum lance ainda.",
+      "goal": "Gol do {{team}}",
+      "disallowed": "Gol do {{team}} anulado pelo VAR",
+      "red": "Expulsão no {{team}}",
+      "half": "Intervalo",
+      "end": "Fim de jogo"
+    },
     "liveBadge": "ao vivo",
     "liveLine": "ao vivo · {{score}} · {{minute}}'",
     "halfLine": "intervalo · {{score}}",

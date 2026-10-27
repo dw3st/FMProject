@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Icon } from "@/GameInterface/Icons";
 import { ChatWindow, useRoomTitle } from "@/GameInterface/Social/ChatWindow";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 
@@ -16,9 +17,10 @@ function MinimizedTab({ room }: { room: string }) {
       onClick={() => s.toggleChat(room)}
       aria-label={t("social.chat.minimizedTab", { name: title })}
       title={title}
-      className="h-10 max-w-[180px] px-3 flex items-center gap-2 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:border-primary/40"
+      className="h-12 min-w-[200px] max-w-[280px] px-4 flex items-center gap-2.5 rounded-md border border-border bg-card text-base font-semibold text-foreground cursor-pointer hover:border-primary/40"
     >
-      <span className="truncate">{title}</span>
+      <Icon name="message-square" size={18} className="shrink-0 text-primary" />
+      <span className="truncate flex-1 text-left">{title}</span>
       {unread > 0 && <span className={BADGE}>{unread}</span>}
     </button>
   );
