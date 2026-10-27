@@ -85,7 +85,7 @@ export async function publicSlotTick(saveId: string, deps: GroupAdvanceDeps = de
       for (const d of await deps.matchDates(deps.service, saveId, seatId, meta.currentDate, horizon)) seatDays.add(d);
     }
     const target = publicStepTarget(
-      meta.currentDate, [...seatDays].sort(), await worldRoundDays(deps.service, saveId, meta.currentDate, horizon),
+      meta.currentDate, [...seatDays].sort(), await worldRoundDays(deps.service, saveId, meta.currentDate, horizon), horizon,
     );
     const prev = meta.world.advance ?? { running: false, waitingSince: null, target: null };
     await deps.service.updateMeta(saveId, { world: { ...meta.world, advance: { ...prev, lastSlot: slot, slotTarget: target } } });

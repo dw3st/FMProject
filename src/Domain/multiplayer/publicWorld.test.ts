@@ -38,8 +38,9 @@ describe("publicStepTarget", () => {
   test("no seat games: the next world league round day after today", () => {
     expect(publicStepTarget("2026-09-10", [], ["2026-09-10", "2026-09-13"])).toBe("2026-09-13");
   });
-  test("nothing ahead: one day", () => {
+  test("nothing ahead: one day, or the horizon when given", () => {
     expect(publicStepTarget("2026-09-10", [], [])).toBe("2026-09-11");
+    expect(publicStepTarget("2026-09-10", [], [], "2026-11-09")).toBe("2026-11-09");
   });
 });
 

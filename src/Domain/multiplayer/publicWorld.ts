@@ -36,12 +36,15 @@ export function nextSlotAt(nowMs: number): string {
 
 /**
  * Where one step stops: the first seat game day after `currentDate` (the parked day is played); without seat games,
- * the first round day of the world's leagues after it; nothing ahead = one day. Dates ascending.
+ * the first round day of the world's leagues after it; nothing ahead = `horizon` when given (a break with no game
+ * goes by in one step), else one day. Dates ascending.
  */
-export function publicStepTarget(currentDate: string, seatGameDays: readonly string[], worldRoundDays: readonly string[]): string {
+export function publicStepTarget(
+  currentDate: string, seatGameDays: readonly string[], worldRoundDays: readonly string[], horizon?: string,
+): string {
   return seatGameDays.find((d) => d > currentDate)
     ?? worldRoundDays.find((d) => d > currentDate)
-    ?? addDays(currentDate, 1);
+    ?? (horizon && horizon > currentDate ? horizon : addDays(currentDate, 1));
 }
 
 export type InactivityAction = "none" | "warn" | "remove";
