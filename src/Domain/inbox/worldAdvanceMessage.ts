@@ -1,4 +1,4 @@
-import type { LiveRefusedReason, WorldAdvanceInboxMessage, WorldInactiveInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
+import type { LiveRefusedReason, WorldH2HInboxMessage, WorldAdvanceInboxMessage, WorldInactiveInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
 
 /** Inbox `world` / `auto_advanced` (the screen translates `world.advance.inbox.*`; the subject is the fallback). */
 export function buildAutoAdvancedMessage(a: { date: string; until: string; simulated: string | null }): WorldAdvanceInboxMessage {
@@ -52,5 +52,28 @@ export function buildInactiveWarningMessage(a: { date: string; removeOn: string 
     subject: "You have not opened the public world for 5 days",
     preview: `Removed on ${a.removeOn}`,
     removeOn: a.removeOn,
+  };
+}
+
+/**
+ * Inbox `world` / `h2h_invite` and `h2h_lost` (live match between two managers, part 7; the screen translates
+ * `world.inbox.h2h_*`, the subject is the fallback). One per room: the id holds the fixture.
+ */
+export function buildH2HMessage(a: {
+  kind: "h2h_invite" | "h2h_lost"; date: string; fixtureId: string; managerName: string; clubName: string;
+}): WorldH2HInboxMessage {
+  return {
+    id: `world-${a.kind}-${a.date}-${a.fixtureId}`,
+    date: a.date,
+    createdAt: a.date,
+    read: false,
+    category: "world",
+    kind: a.kind,
+    subject: a.kind === "h2h_invite" ? `${a.managerName} is waiting for you in the match room` : "Your live match was lost",
+    preview: a.clubName,
+    managerName: a.managerName,
+    clubName: a.clubName,
+    match: a.date,
+    fixtureId: a.fixtureId,
   };
 }

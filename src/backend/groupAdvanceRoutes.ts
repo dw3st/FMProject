@@ -2,7 +2,8 @@ import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { requireSeat, type SeatAuth } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { seatNextMatchDate } from "@/backend/advanceUntil";
-import { groupAdvanceView, resetAdvanceError, scheduleKick, seatMatchOn } from "@/backend/groupAdvance";
+import { groupAdvanceView, resetAdvanceError, scheduleKick, seatMatchOn, seatVsSeat } from "@/backend/groupAdvance";
+import { simulateSeatGame } from "@/backend/h2h/h2hRooms";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { logError } from "@/Logger";
 import { addDays } from "@/Domain/dates";
@@ -134,6 +135,8 @@ export const groupAdvanceRoutes = {
         matchDecision: { date, fixtureId, mode: "simulate" },
         readyUntil: laterDate(seat?.readyUntil, addDays(date, 1)),
       });
+      // Against another seat (part 7): simulated for both; their match room (if any) closes.
+      if (await seatVsSeat(saveService, saveId, fixture)) await simulateSeatGame(saveService, saveId, date, fixture);
       return Response.json({ ok: true });
     });
     if (res.ok) scheduleKick(saveId);
@@ -146,8 +149,16 @@ export const groupAdvanceRoutes = {
     const { saveId, auth } = ctx;
     if (req.method === "GET") {
       // The provisional result of the seat's live match, until the executor runs that day.
-      const file = await saveService.getLiveRecording(saveId, auth.seatId);
+      let file = await saveService.getLiveRecording(saveId, auth.seatId);
       const current = (await saveService.getMeta(saveId))!.currentDate;
+      // The away seat of a live match between two managers (part 7): the result is kept by the home seat.
+      const decision = (await saveService.getSeat(saveId, auth.seatId))?.matchDecision;
+      if (!file && decision?.mode === "live" && decision.date === current) {
+        const fx = await seatMatchOn(saveService, saveId, auth.seatId, decision.date);
+        const homeSeat = fx && fx.id === decision.fixtureId ? await saveService.seatOfClub(saveId, fx.home) : null;
+        const homeFile = homeSeat && homeSeat !== auth.seatId ? await saveService.getLiveRecording(saveId, homeSeat) : null;
+        if (homeFile && homeFile.fixtureId === decision.fixtureId && homeFile.date === decision.date) file = homeFile;
+      }
       if (!file || file.date < current!) return Response.json({ error: "not found" }, { status: 404 });
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, file.date);
       const home = fixture ? await saveService.getSquadById(saveId, fixture.home) : null;

@@ -22,6 +22,19 @@ export interface WorldState {
   kind?: "friends" | "public";
   /** Public world only: the game version it was created for and the real day it started. */
   edition?: { version: string; startedOn: string };
+  /**
+   * Live matches between two managers running on the server now (part 7): a restart marker. Absent = none; the
+   * server clears it on start and tells both seats (`h2h_lost`).
+   */
+  h2hLive?: H2HLiveEntry[];
+}
+
+/** `WorldState.h2hLive`: one live match between two seats. */
+export interface H2HLiveEntry {
+  fixtureId: string;
+  date: string;
+  /** Home seat first. */
+  seats: [string, string];
 }
 
 export interface WorldMemberView {

@@ -146,21 +146,43 @@ async function applyAssistant(deps: GroupAdvanceDeps, saveId: string, currentDat
       matchDecision = { date: p.decisionDate, fixtureId: fixture?.id ?? "", mode: "simulate" };
     }
     await deps.service.updateSeat(saveId, p.seatId, { readyUntil: p.readyUntil, ...(matchDecision ? { matchDecision } : {}) });
+    if (matchDecision && matchDecision.fixtureId) {
+      // A game against another seat (part 7): simulated for both, and their match room (if any) closes.
+      const fixture = await deps.matchOn(deps.service, saveId, p.seatId, p.decisionDate!);
+      if (fixture && (await seatVsSeat(deps.service, saveId, fixture))) {
+        const { simulateSeatGame } = await import("@/backend/h2h/h2hRooms");
+        await simulateSeatGame(deps.service, saveId, p.decisionDate!, fixture);
+      }
+    }
     await deps.service.appendInbox(
       saveId, buildAutoAdvancedMessage({ date: currentDate, until: p.readyUntil, simulated: matchDecision?.date ?? null }), p.seatId,
     );
   }
 }
 
-/** Live recordings of `date` kept by the seats that chose to play it live. */
+/** Both clubs of the game have a seat (a game between two managers). */
+export async function seatVsSeat(service: SaveService, saveId: string, fixture: Fixture): Promise<boolean> {
+  const humans = await service.humanClubIds(saveId);
+  return humans.has(fixture.home) && humans.has(fixture.away);
+}
+
+/**
+ * Live recordings of `date` kept by the seats that chose to play it live. A live match between two managers
+ * (part 7) leaves one recording, the home seat's: the away seat's `live` decision rides on it.
+ */
 async function liveRecordingsFor(service: SaveService, saveId: string, date: string, seats: GroupSeat[]) {
   const out: Record<string, PlayedMatchRecording> = {};
+  const missing: { seatId: string; fixtureId: string }[] = [];
   for (const s of seats) {
     const d = s.seat.matchDecision;
     if (d?.mode !== "live" || d.date !== date) continue;
     const file = await service.getLiveRecording(saveId, s.seatId);
     if (file && file.date === date && file.fixtureId === d.fixtureId) out[s.seatId] = file.recording;
-    else logError("world", `save ${saveId}: seat ${s.seatId} chose to play ${date} live but sent no recording; it is simulated`);
+    else missing.push({ seatId: s.seatId, fixtureId: d.fixtureId });
+  }
+  for (const m of missing) {
+    if (Object.values(out).some((r) => r.fixtureId === m.fixtureId)) continue;
+    logError("world", `save ${saveId}: seat ${m.seatId} chose to play ${date} live but sent no recording; it is simulated`);
   }
   return out;
 }
@@ -183,7 +205,18 @@ async function safeRunDay(
 async function refuseRecordings(service: SaveService, saveId: string, date: string, seatIds: string[], error: string) {
   logError("world", `save ${saveId}: live recordings of ${date} refused (${error}); simulating them`);
   const reason = liveRefusedReason(error);
+  // The away seat of a live match between two managers rides on the home seat's recording: refused with it.
+  const fixtures = new Set<string>();
   for (const seatId of seatIds) {
+    const d = (await service.getSeat(saveId, seatId))?.matchDecision;
+    if (d?.date === date) fixtures.add(d.fixtureId);
+  }
+  const all = new Set(seatIds);
+  for (const { seatId, seat } of await service.listSeats(saveId)) {
+    const d = seat.matchDecision;
+    if (d?.mode === "live" && d.date === date && fixtures.has(d.fixtureId)) all.add(seatId);
+  }
+  for (const seatId of all) {
     await service.writeLiveRecording(saveId, seatId, null);
     const d = (await service.getSeat(saveId, seatId))?.matchDecision;
     if (d?.date === date) await service.updateSeat(saveId, seatId, { matchDecision: { ...d, mode: "simulate" } });
@@ -598,6 +631,11 @@ export async function resumeWorlds(deps: GroupAdvanceDeps = defaultGroupDeps): P
       // A public step cut by the restart is dropped with its target: the next slot starts a new one.
       if (meta?.world?.advance?.running || (pub && meta?.world?.advance?.slotTarget)) {
         await updateAdvance(deps.service, saveId, pub ? { running: false, slotTarget: null } : { running: false });
+      }
+      // Live matches between two managers cut by the restart (part 7): lost, both seats are told.
+      if (meta?.world?.h2hLive?.length) {
+        const { clearLostH2H } = await import("@/backend/h2h/h2hRooms");
+        await clearLostH2H(deps.service, saveId);
       }
       // The public world only moves at its slots: the clock kicks it, a resume does not.
       return isRunningWorld(meta) && !pub;

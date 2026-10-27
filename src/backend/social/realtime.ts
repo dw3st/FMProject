@@ -12,6 +12,9 @@ import { isSaveIdShape } from "@/Domain/social/rooms";
 import { acceptLiveScore } from "@/backend/rivals/liveScores";
 import { parseLiveFrame } from "@/Domain/rivals/liveScore";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
+import { H2H } from "@/Domain/h2h/h2hConfig";
+import { parseH2HCommand } from "@/Domain/h2h/h2hRules";
+import { handleH2HEvent, h2hSocketClosed } from "@/backend/h2h/h2hRooms";
 import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes";
 
 export interface WsData {
@@ -32,6 +35,8 @@ export interface SocialSocket {
 }
 
 const MAX_CLIENT_FRAME = 2048;
+/** Live match commands (part 7) may be larger than the social events, never above `H2H.MAX_FRAME_BYTES`. */
+const H2H_CONTROL_PER_MINUTE = 30;
 /** Per socket: at most this many `hello` / `ping` per minute and one `typing` per room every 2 s (excess ignored). */
 const HELLO_PER_MINUTE = 5;
 const PING_PER_MINUTE = 10;
@@ -42,6 +47,9 @@ interface SocketLimits {
   hello: number[];
   ping: number[];
   live: number[];
+  /** `h2h_cmd` (per `H2H.CMD_WINDOW_MS`) and the other `h2h_*` events (per minute). */
+  h2hCmd: number[];
+  h2h: number[];
   typing: Map<string, number>;
 }
 
@@ -51,7 +59,7 @@ const limits = new WeakMap<SocialSocket, SocketLimits>();
 function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolean {
   let l = limits.get(ws);
   if (!l) {
-    l = { hello: [], ping: [], live: [], typing: new Map() };
+    l = { hello: [], ping: [], live: [], h2hCmd: [], h2h: [], typing: new Map() };
     limits.set(ws, l);
   }
   if (event.type === "typing") {
@@ -61,9 +69,14 @@ function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolea
     l.typing.set(event.room, now);
     return true;
   }
-  const key = event.type === "live_score" ? "live" : event.type;
-  const max = key === "hello" ? HELLO_PER_MINUTE : key === "live" ? RIVALS.LIVE_PER_MINUTE : PING_PER_MINUTE;
-  const recent = l[key].filter((t) => now - t < MINUTE_MS);
+  const key = event.type === "live_score" ? "live"
+    : event.type === "h2h_cmd" ? "h2hCmd"
+      : event.type.startsWith("h2h_") ? "h2h"
+        : event.type as "hello" | "ping";
+  const max = key === "hello" ? HELLO_PER_MINUTE : key === "live" ? RIVALS.LIVE_PER_MINUTE
+    : key === "h2hCmd" ? H2H.CMD_MAX : key === "h2h" ? H2H_CONTROL_PER_MINUTE : PING_PER_MINUTE;
+  const window = key === "h2hCmd" ? H2H.CMD_WINDOW_MS : MINUTE_MS;
+  const recent = l[key].filter((t) => now - t < window);
   if (recent.length >= max) {
     l[key] = recent;
     return false;
@@ -198,7 +211,7 @@ export function deliverMessage(row: ChatMessageRow): void {
 }
 
 function parseClientEvent(raw: unknown): ClientEvent | null {
-  if (typeof raw !== "string" || raw.length > MAX_CLIENT_FRAME) return null;
+  if (typeof raw !== "string" || raw.length > H2H.MAX_FRAME_BYTES) return null;
   let v: unknown;
   try {
     v = JSON.parse(raw);
@@ -207,6 +220,9 @@ function parseClientEvent(raw: unknown): ClientEvent | null {
   }
   if (!v || typeof v !== "object") return null;
   const e = v as Record<string, unknown>;
+  if (typeof e.type === "string" && e.type.startsWith("h2h_")) return parseH2HEvent(e);
+  // Social events stay small.
+  if (raw.length > MAX_CLIENT_FRAME) return null;
   if (e.type === "ping") return { type: "ping" };
   if (e.type === "hello") {
     return { type: "hello", saveId: typeof e.saveId === "string" ? e.saveId : null, hidden: e.hidden === true };
@@ -217,6 +233,37 @@ function parseClientEvent(raw: unknown): ClientEvent | null {
     return frame ? { type: "live_score", ...frame } : null;
   }
   return null;
+}
+
+type H2HClientEvent = Extract<ClientEvent, { type: `h2h_${string}` }>;
+function isH2HEvent(e: ClientEvent): e is H2HClientEvent {
+  return e.type.startsWith("h2h_");
+}
+
+const SAVE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const FIXTURE_ID_MAX = 128;
+
+/** Live match between two managers (part 7): strict shapes, extra keys refused. */
+function parseH2HEvent(e: Record<string, unknown>): ClientEvent | null {
+  const only = (...keys: string[]) => Object.keys(e).every((k) => k === "type" || keys.includes(k));
+  switch (e.type) {
+    case "h2h_join":
+      if (!only("saveId", "fixtureId") || typeof e.saveId !== "string" || !SAVE_ID_RE.test(e.saveId)) return null;
+      if (typeof e.fixtureId !== "string" || e.fixtureId.length === 0 || e.fixtureId.length > FIXTURE_ID_MAX) return null;
+      return { type: "h2h_join", saveId: e.saveId, fixtureId: e.fixtureId };
+    case "h2h_cmd": {
+      if (!only("cmd")) return null;
+      const cmd = parseH2HCommand(e.cmd);
+      return cmd ? { type: "h2h_cmd", cmd } : null;
+    }
+    case "h2h_ready":
+    case "h2h_pause":
+    case "h2h_resume":
+    case "h2h_leave":
+      return only() ? { type: e.type } : null;
+    default:
+      return null;
+  }
 }
 
 function relayTyping(userId: string, rawRoom: string): void {
@@ -237,6 +284,10 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
   const { userId } = ws.data;
   if (event.type === "typing") {
     relayTyping(userId, event.room);
+    return;
+  }
+  if (isH2HEvent(event)) {
+    await handleH2HEvent(ws, event);
     return;
   }
   if (event.type === "live_score") {
@@ -273,6 +324,7 @@ export function onSocketOpen(ws: SocialSocket): void {
 
 export function onSocketClose(ws: SocialSocket): void {
   const { userId, clubName } = ws.data;
+  h2hSocketClosed(ws);
   const set = sockets.get(userId);
   if (set) {
     set.delete(ws);
@@ -326,7 +378,7 @@ export function handleSocialUpgrade(
 /** `websocket` of `Bun.serve` (`src/index.ts`). */
 export const socialWebSocket = {
   data: {} as WsData,
-  maxPayloadLength: 4096,
+  maxPayloadLength: H2H.MAX_FRAME_BYTES,
   idleTimeout: 120,
   sendPings: true,
   open(ws: ServerWebSocket<WsData>) {

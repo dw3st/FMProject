@@ -701,10 +701,15 @@ export async function advanceOneDay(
               ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
             });
           }
-          // A seat's live recording of this fixture (only against the AI; human x human live is part 4).
+          // A seat's live recording of this fixture. Between two seats only the server's (part 7): the home seat's
+          // recording, with both seats' `live` decision for this game; any other is refused.
           const recSeat = [homeSeat, awaySeat].find((ds) => ds && pending.get(ds.seatId)?.fixtureId === fixture.id);
           const recording = recSeat ? pending.get(recSeat.seatId)! : null;
-          if (recording && homeSeat && awaySeat) {
+          const liveFor = (ds: DaySeat) => {
+            const d = ds.meta.matchDecision;
+            return d?.mode === "live" && d.date === currentDate && d.fixtureId === fixture.id;
+          };
+          if (recording && homeSeat && awaySeat && !(recSeat === homeSeat && liveFor(homeSeat) && liveFor(awaySeat))) {
             return { ok: false, status: 400, error: "a match between two seats has no live recording" };
           }
 

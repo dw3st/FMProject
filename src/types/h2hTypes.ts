@@ -1,4 +1,4 @@
-import type { GameState, MatchPhase } from "@/GameEngine/types";
+import type { GamePlayer, GameState, MatchPhase } from "@/GameEngine/types";
 import type { LiveMatchInput } from "@/Domain/match/liveMatchSetup";
 import type { Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
 import type { StatsSnapshot, TeamStats, GoalLogEntry } from "@/GameEngine/Domain/Statistics";
@@ -78,3 +78,38 @@ export interface H2HStatsPayload {
   teams: { A: TeamStats; B: TeamStats };
   goals: GoalLogEntry[];
 }
+
+// ── Socket (main process → browsers) ─────────────────────────────────────────
+
+/**
+ * A player as the browsers get him: the engine-only fields are left out (`fit`, `baseStats`, `decisionMemory`,
+ * `engine`, `bounds`, `fatigueBaselineEnergy`) and the numbers rounded. `runtimeStats` stays (the bench rating).
+ */
+export type H2HWirePlayer = Omit<GamePlayer, "fit" | "baseStats" | "decisionMemory" | "engine" | "bounds" | "fatigueBaselineEnergy">;
+
+/**
+ * The match state as the browsers get it (`h2h_state`). `benchA` / `benchB` are absent when unchanged since the
+ * last state this socket got (a join or a rejoin always gets them); `throughBallCellsCache` is never sent.
+ */
+export type H2HWireState = Omit<GameState, "players" | "benchA" | "benchB" | "throughBallCellsCache"> & {
+  players: H2HWirePlayer[];
+  benchA?: H2HWirePlayer[];
+  benchB?: H2HWirePlayer[];
+};
+
+/**
+ * Statistics for the browsers (`h2h_state`): `teams`, `goals` and `ratings` every time; `snapshot` (the whole store,
+ * ~20 KB) only every few seconds, after an event and on a join (absent = keep the last one).
+ */
+export interface H2HWireStats {
+  teams: { A: TeamStats; B: TeamStats };
+  goals: GoalLogEntry[];
+  ratings: [number, number][];
+  snapshot?: StatsSnapshot;
+}
+
+/** Why a room closed (`h2h_closed`). */
+export type H2HCloseReason = "simulated" | "left" | "lost" | "failed";
+
+/** Position frame relayed to the browsers (`h2h_frame`). */
+export type H2HFrame = Omit<Extract<WorkerOut, { type: "frame" }>, "type">;

@@ -488,7 +488,8 @@ export type InboxMessage =
   | WorldAdvanceInboxMessage
   | WorldLiveRefusedInboxMessage
   | WorldSeasonClosedInboxMessage
-  | WorldInactiveInboxMessage;
+  | WorldInactiveInboxMessage
+  | WorldH2HInboxMessage;
 
 /** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
 export interface WorldAdvanceInboxMessage extends InboxMessageBase {
@@ -526,6 +527,21 @@ export interface WorldInboxMessage extends InboxMessageBase {
   kind:        "member_joined" | "member_left" | "member_removed";
   managerName: string;
   clubName:    string;
+}
+
+/**
+ * Live match between two managers (multiplayer part 7): `h2h_invite` = the other manager opened the match room;
+ * `h2h_lost` = the server restarted during the live match (nothing was recorded, the game is to decide again).
+ * `managerName` / `clubName` are the other manager and his club.
+ */
+export interface WorldH2HInboxMessage extends InboxMessageBase {
+  category:    "world";
+  kind:        "h2h_invite" | "h2h_lost";
+  managerName: string;
+  clubName:    string;
+  /** The game's date and fixture. */
+  match:       string;
+  fixtureId:   string;
 }
 
 /** Friends' league standings (part 5a): a manager's season closed; every seat of the day gets it. */

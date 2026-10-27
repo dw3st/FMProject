@@ -1,6 +1,7 @@
 // Shapes shared by the social routes, the socket and the screens. Nothing here carries an e-mail or a
 // user id: the client only ever sees nicknames (`.claude/rules/social.md`).
 import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
+import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
 
 export type FriendStatus = "online" | "offline" | "playing";
 
@@ -72,7 +73,14 @@ export type ClientEvent =
   | { type: "hello"; saveId: string | null; hidden?: boolean }
   | { type: "ping" }
   | { type: "typing"; room: string }
-  | ({ type: "live_score" } & LiveScoreFrame);
+  | ({ type: "live_score" } & LiveScoreFrame)
+  // Multiplayer part 7 (live match between two managers): the room of today's game against another seat.
+  | { type: "h2h_join"; saveId: string; fixtureId: string }
+  | { type: "h2h_ready" }
+  | { type: "h2h_cmd"; cmd: H2HCommand }
+  | { type: "h2h_pause" }
+  | { type: "h2h_resume" }
+  | { type: "h2h_leave" };
 
 export type ServerEvent =
   | { type: "message"; room: string; message: ChatMessageView }
@@ -105,7 +113,16 @@ export type ServerEvent =
   }
   // Multiplayer part 6 (rivals): the human clubs' games of the day, and a friend's live score.
   | { type: "world_results"; saveId: string; results: SeatResult[] }
-  | { type: "friend_live"; saveId: string; seatId: string; live: LiveScoreView | null; goal?: true };
+  | { type: "friend_live"; saveId: string; seatId: string; live: LiveScoreView | null; goal?: true }
+  // Multiplayer part 7 (live match between two managers). The room to both seats; the match to the room's sockets.
+  | { type: "h2h_room"; room: H2HRoomView; mySide: H2HSide }
+  | { type: "h2h_invite"; saveId: string; fixtureId: string; from: string }
+  | ({ type: "h2h_frame"; saveId: string; fixtureId: string } & H2HFrame)
+  | { type: "h2h_state"; saveId: string; fixtureId: string; state: H2HWireState; stats: H2HWireStats }
+  | { type: "h2h_event"; saveId: string; fixtureId: string; name: string; payload: unknown }
+  | { type: "h2h_paused"; saveId: string; fixtureId: string; by: H2HSide | null; until: number | null; left: Record<H2HSide, number> }
+  | { type: "h2h_closed"; saveId: string; fixtureId: string; reason: H2HCloseReason }
+  | { type: "h2h_done"; saveId: string; fixtureId: string };
 
 export type SocialErrorCode =
   | "invalidNickname"

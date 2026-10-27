@@ -15,6 +15,17 @@ export type LiveResolver = (saveId: string, userId: string, fixtureId: string) =
 interface Entry { view: LiveScoreView; scorers: Set<string> }
 
 const worlds = new Map<string, Map<string, Entry>>();
+/**
+ * `saveId:fixtureId` of the live matches between two managers the server runs (part 7): it sends their score itself
+ * (`pushServerLiveScore`), so a browser's `live_score` frame for them is ignored.
+ */
+const serverOwned = new Set<string>();
+
+/** The server runs this fixture's live score from now on (`true`), or no longer (`false`). */
+export function setServerOwnedLive(saveId: string, fixtureId: string, owned: boolean): void {
+  if (owned) serverOwned.add(`${saveId}:${fixtureId}`);
+  else serverOwned.delete(`${saveId}:${fixtureId}`);
+}
 
 const defaultResolver: LiveResolver = async (saveId, userId, fixtureId) => {
   const member = memberOf(saveId, userId);
@@ -50,6 +61,7 @@ export function setLiveResolver(fn: LiveResolver | null): void {
 /** Tests only. */
 export function resetLiveScores(): void {
   worlds.clear();
+  serverOwned.clear();
   resolver = defaultResolver;
 }
 
@@ -67,6 +79,7 @@ function tellOthers(saveId: string, seatId: string, live: LiveScoreView | null, 
 export async function acceptLiveScore(userId: string, frame: LiveScoreFrame, notify: LiveNotify, now = Date.now()): Promise<boolean> {
   const member = memberOf(frame.saveId, userId);
   if (!member) return false;
+  if (serverOwned.has(`${frame.saveId}:${frame.fixtureId}`)) return false;
   const seats = worlds.get(frame.saveId) ?? new Map<string, Entry>();
   const cur = seats.get(member.seatId);
   const fresh = cur && liveStatusAt(cur.view, now) !== "gone" && cur.view.fixtureId === frame.fixtureId ? cur : null;
@@ -86,6 +99,24 @@ export async function acceptLiveScore(userId: string, frame: LiveScoreFrame, not
   seats.set(member.seatId, { view: next, scorers });
   worlds.set(frame.saveId, seats);
   tellOthers(frame.saveId, member.seatId, next, notify, userId, frame.phase === "goal");
+  return true;
+}
+
+/**
+ * A frame of a seat's live game sent by the server itself (a live match between two managers, part 7): the same
+ * coherence rules as a browser's frame, no browser socket. True when it was taken (and repeated to the members).
+ */
+export function pushServerLiveScore(
+  base: LiveBase, scorers: ReadonlySet<string>, frame: LiveScoreFrame, notify: LiveNotify, now = Date.now(),
+): boolean {
+  const seats = worlds.get(frame.saveId) ?? new Map<string, Entry>();
+  const cur = seats.get(base.seatId);
+  const fresh = cur && liveStatusAt(cur.view, now) !== "gone" && cur.view.fixtureId === frame.fixtureId ? cur : null;
+  const next = applyLiveFrame(fresh?.view ?? null, frame, base, scorers, now);
+  if (!next) return false;
+  seats.set(base.seatId, { view: next, scorers: new Set(scorers) });
+  worlds.set(frame.saveId, seats);
+  tellOthers(frame.saveId, base.seatId, next, notify, undefined, frame.phase === "goal");
   return true;
 }
 
