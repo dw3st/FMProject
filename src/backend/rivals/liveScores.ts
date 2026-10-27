@@ -65,9 +65,12 @@ export function resetLiveScores(): void {
   resolver = defaultResolver;
 }
 
-function tellOthers(saveId: string, seatId: string, live: LiveScoreView | null, notify: LiveNotify, except?: string, goal?: boolean): void {
+function tellOthers(
+  saveId: string, seatId: string, live: LiveScoreView | null, notify: LiveNotify, except?: string, goal?: boolean,
+  skipSeats?: ReadonlySet<string>,
+): void {
   for (const m of listSaveMembers(saveId)) {
-    if (m.userId === except || m.seatId === seatId) continue;
+    if (m.userId === except || m.seatId === seatId || skipSeats?.has(m.seatId)) continue;
     notify(m.userId, { type: "friend_live", saveId, seatId, live, ...(goal ? { goal: true as const } : {}) });
   }
 }
@@ -108,6 +111,7 @@ export async function acceptLiveScore(userId: string, frame: LiveScoreFrame, not
  */
 export function pushServerLiveScore(
   base: LiveBase, scorers: ReadonlySet<string>, frame: LiveScoreFrame, notify: LiveNotify, now = Date.now(),
+  skipSeats?: ReadonlySet<string>,
 ): boolean {
   const seats = worlds.get(frame.saveId) ?? new Map<string, Entry>();
   const cur = seats.get(base.seatId);
@@ -116,7 +120,8 @@ export function pushServerLiveScore(
   if (!next) return false;
   seats.set(base.seatId, { view: next, scorers: new Set(scorers) });
   worlds.set(frame.saveId, seats);
-  tellOthers(frame.saveId, base.seatId, next, notify, undefined, frame.phase === "goal");
+  // The two managers of the match are in it: they never get it as a friend's game (`skipSeats`).
+  tellOthers(frame.saveId, base.seatId, next, notify, undefined, frame.phase === "goal", skipSeats);
   return true;
 }
 

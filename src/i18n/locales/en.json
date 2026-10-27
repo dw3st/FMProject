@@ -5301,7 +5301,7 @@
       "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
-      "h2h_invite": { "subject": "{{manager}} is waiting for you for the match", "body": "{{manager}} ({{club}}) opened the live match room. Join to play against him." },
+      "h2h_invite": { "subject": "{{manager}} is waiting for you for the match", "body": "{{manager}} ({{club}}) opened the live match room. Join the room to play." },
       "h2h_lost": { "subject": "Your live match was lost", "body": "The server restarted during the match against {{club}}. Nothing was recorded: decide the match again." },
       "inactive_warning": {
         "subject": "You have not opened the public world for 5 days",

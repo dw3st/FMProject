@@ -5301,7 +5301,7 @@
       "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
-      "h2h_invite": { "subject": "{{manager}} está te esperando para o jogo", "body": "{{manager}} ({{club}}) abriu a sala do jogo ao vivo. Entre para jogar contra ele." },
+      "h2h_invite": { "subject": "{{manager}} está te esperando para o jogo", "body": "{{manager}} ({{club}}) abriu a sala do jogo ao vivo. Entre na sala para jogar." },
       "h2h_lost": { "subject": "Seu jogo ao vivo foi perdido", "body": "O servidor reiniciou durante o jogo contra {{club}}. Nada foi gravado: decida o jogo de novo." },
       "inactive_warning": {
         "subject": "Você não abre o mundo público há 5 dias",

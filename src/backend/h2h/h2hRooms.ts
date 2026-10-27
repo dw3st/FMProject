@@ -257,7 +257,7 @@ function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: numbe
       score: { for: mine, against: theirs },
       ...(extra?.scorer ? { scorer: extra.scorer } : {}),
       ...(phase === "red" && extra?.team ? { side: extra.team === side ? ("for" as const) : ("against" as const) } : {}),
-    }, notify);
+    }, notify, undefined, new Set([rec.room.sides.A.seatId, rec.room.sides.B.seatId]));
   }
 }
 
@@ -406,6 +406,22 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
   if (!rec.inviteSent && rec.room.phase === "lobby" && rec.room.sides[other].status === "away") {
     rec.inviteSent = true;
     await invite(rec, side, other);
+  }
+}
+
+/**
+ * A tab of `userId` said hello in `saveId`: every open lobby of that world where the other manager waits for him gets
+ * its pop-up again (the first one only reached the tabs online when the room opened). No inbox message.
+ */
+export function resendH2HInvites(userId: string, saveId: string): void {
+  for (const rec of rooms.values()) {
+    if (rec.room.saveId !== saveId || rec.room.phase !== "lobby") continue;
+    for (const to of ["A", "B"] as const) {
+      const from: H2HSide = to === "A" ? "B" : "A";
+      if (rec.users[to] !== userId || rec.room.sides[to].status !== "away" || rec.room.sides[from].status === "away") continue;
+      const fromSide = rec.room.sides[from];
+      notify(userId, { type: "h2h_invite", saveId, fixtureId: rec.room.fixtureId, from: fromSide.nickname ?? fromSide.clubName });
+    }
   }
 }
 

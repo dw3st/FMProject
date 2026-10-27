@@ -1637,7 +1637,14 @@ export function MatchScreen() {
         </div>
       )}
 
-      {liveTarget && <LiveRivalsStrip saveId={liveTarget.saveId} live={liveRivals.live} highlight={liveRivals.highlight} />}
+      {/* The match being played here (vs another manager) is never shown as a friend's game. */}
+      {liveTarget && (
+        <LiveRivalsStrip
+          saveId={liveTarget.saveId}
+          live={liveRivals.live.filter((l) => l.fixtureId !== matchFixture?.id)}
+          highlight={liveRivals.highlight}
+        />
+      )}
       {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
       <div className="relative z-50">
         <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />

@@ -14,7 +14,7 @@ import { parseLiveFrame } from "@/Domain/rivals/liveScore";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import { parseH2HCommand } from "@/Domain/h2h/h2hRules";
-import { handleH2HEvent, h2hSocketClosed } from "@/backend/h2h/h2hRooms";
+import { handleH2HEvent, h2hSocketClosed, resendH2HInvites } from "@/backend/h2h/h2hRooms";
 import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes";
 
 export interface WsData {
@@ -302,6 +302,8 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
     if (event.saveId && isSaveIdShape(event.saveId) && isWorldMember(userId, event.saveId)) {
       ws.data.saveId = event.saveId;
       ws.data.clubName = await clubNameOf(event.saveId, userId);
+      // A live match room between two managers (part 7) waiting for him: the invite comes back on this tab.
+      resendH2HInvites(userId, event.saveId);
     }
   }
   const now = Date.now();

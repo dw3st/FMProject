@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { addSaveMember } from "@/backend/auth/saveOwnership";
 import {
-  acceptLiveScore, clearLiveForDay, liveScoresOf, resetLiveScores, setLiveResolver, sweepLiveScores,
+  acceptLiveScore, clearLiveForDay, liveScoresOf, pushServerLiveScore, resetLiveScores, setLiveResolver, sweepLiveScores,
 } from "@/backend/rivals/liveScores";
 import { makeUser, uniqueNick } from "@/backend/social/socialTestUtils";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
@@ -30,6 +30,17 @@ function setup() {
 afterEach(() => resetLiveScores());
 
 describe("live scores", () => {
+  test("a server frame of a match between two seats never reaches those two seats (part 7)", () => {
+    const { sent, notify } = setup();
+    const base = { seatId: "a", nickname: a.nickname!, clubId: "c1", clubName: "Vasco", opponentId: "c2", opponentName: "Bahia",
+      home: true, fixtureId: "f9", date: "2027-03-10" };
+    expect(pushServerLiveScore(base, new Set(), { saveId, fixtureId: "f9", phase: "start", minute: 0, score: { for: 0, against: 0 } },
+      notify, 1, new Set(["a", "b"]))).toBe(true);
+    expect(sent).toHaveLength(0);
+    pushServerLiveScore(base, new Set(), { saveId, fixtureId: "f9", phase: "goal", minute: 5, score: { for: 1, against: 0 } }, notify, 2);
+    expect(sent.map((s) => s.userId)).toEqual([b.id]);
+  });
+
   test("a member's frame goes to the other members, with goal on a goal", async () => {
     const { sent, notify } = setup();
     expect(await acceptLiveScore(a.id, { saveId, fixtureId: "f1", phase: "start", minute: 0, score: { for: 0, against: 0 } }, notify, 1)).toBe(true);
