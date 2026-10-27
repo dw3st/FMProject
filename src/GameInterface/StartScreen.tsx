@@ -163,7 +163,7 @@ export function StartScreen() {
         )}
 
         {publicWorld && (
-          <div className="mt-6 flex items-center gap-3 rounded-md border border-border px-4 py-3">
+          <div className="mt-6 flex items-center gap-3 rounded-md border border-border bg-card py-3 pl-4">
             <Icon name="globe" size={16} className="shrink-0 text-chart-2" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-base font-semibold text-foreground tabular-nums">
@@ -174,18 +174,20 @@ export function StartScreen() {
               </div>
             </div>
             {publicWorld.joined ? (
-              <Button className="px-4 shrink-0" onClick={() => continuePublic(publicWorld)} disabled={loadingId !== null}>
+              <Button className="w-24 shrink-0 px-0" onClick={() => continuePublic(publicWorld)} disabled={loadingId !== null}>
                 {t("startScreen.continue")}
               </Button>
             ) : (
               <Button
-                className="px-4 shrink-0"
+                className="w-24 shrink-0 px-0"
                 onClick={() => { window.location.href = "/new-game?mode=public"; }}
                 disabled={publicWorld.members >= publicWorld.max}
               >
                 {publicWorld.members >= publicWorld.max ? t("startScreen.publicFull") : t("startScreen.publicJoin")}
               </Button>
             )}
+            {/* Same width as the delete / leave button of a saved game, so the blue buttons line up. */}
+            <span aria-hidden className="w-10 shrink-0" />
           </div>
         )}
 
@@ -198,7 +200,7 @@ export function StartScreen() {
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
-          <ul className="m-0 list-none border-b border-border p-0">
+          <ul className="m-0 list-none border-b border-border bg-background p-0">
             {saves.map((save) => (
               <li key={save.id} className="flex items-center gap-3 border-t border-border py-3">
                 <ClubLogo
@@ -244,7 +246,7 @@ export function StartScreen() {
                     </div>
                   )}
                 </div>
-                <Button className="px-4 shrink-0" onClick={() => requestLoad(save)} disabled={loadingId !== null}>
+                <Button className="w-24 shrink-0 px-0" onClick={() => requestLoad(save)} disabled={loadingId !== null}>
                   {t("startScreen.continue")}
                 </Button>
                 {save.role === "member" ? (

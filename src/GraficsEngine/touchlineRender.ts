@@ -93,26 +93,16 @@ export interface CoachSprite {
 }
 
 /**
- * A manager seen from above: dark suit shoulders, the head (club-colour disc, the face once loaded)
- * and two arms redrawn per gesture.
+ * A manager seen from above: only his head (club-colour disc, the face once loaded). The suit
+ * shoulders and arms were dropped (tester report 2026-10-27); `arms` stays empty.
  */
 export function makeCoach(playerR: number, color: number): CoachSprite {
-  const headR = playerR * 0.62;
+  const headR = playerR * 0.85;
   const root = new Container();
-  // Shoulders: an oval wider than the head, the head in the middle (a wide slab under the head read
-  // as a carpet, tester report 2026-10-26).
-  const shoulderRx = playerR * 1.05, shoulderRy = playerR * 0.5;
-  root.addChild(shadowOf(playerR * 0.95));
+  root.addChild(shadowOf(headR));
   const arms = new Graphics();
   root.addChild(arms);
-  root.addChild(
-    new Graphics()
-      .ellipse(0, 0, shoulderRx, shoulderRy)
-      .fill(OFFICIAL_LOOK.SUIT)
-      .stroke({ width: 1, color: 0x000000, alpha: 0.5 }),
-  );
   const head = new Container();
-  head.y = -playerR * 0.1;
   head.addChild(new Graphics().circle(0, 0, headR).fill(color).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 }));
   root.addChild(head);
   // A card over his head after a complaint (`.claude/rules/game/var.md` §4), like the referee's.
@@ -120,23 +110,7 @@ export function makeCoach(playerR: number, color: number): CoachSprite {
   return { root, head, arms, headR };
 }
 
-/**
- * Arms from the shoulders: at rest they hang down along the suit; each angle swings the arm out
- * (π = straight up). `facing` = drawn direction of the team's attack (the "attack" gesture points that way).
- */
-export function drawCoachArms(s: CoachSprite, playerR: number, pose: CoachPose, facing: 1 | -1): void {
-  const g = s.arms;
-  g.clear();
-  const shoulderX = playerR * 0.92, shoulderY = playerR * 0.05, len = playerR * 0.7;
-  // `side` −1 = left shoulder, +1 = right; the arm swings out from the body by `a`.
-  const arm = (side: -1 | 1, a: number) => {
-    const dx = side * Math.sin(a) * len;
-    const dy = Math.cos(a) * len;
-    g.moveTo(side * shoulderX, shoulderY).lineTo(side * shoulderX + dx, shoulderY + dy)
-      .stroke({ width: 3, color: OFFICIAL_LOOK.SUIT, cap: "round" });
-    g.circle(side * shoulderX + dx, shoulderY + dy, 1.6).fill(0xe3b48f);
-  };
-  // `armR` (the pointing arm of "attack") is the one on the side the team attacks.
-  arm(-facing as -1 | 1, pose.armL);
-  arm(facing, pose.armR);
+/** The manager is drawn as a head only: no arms, the gesture shows nothing. */
+export function drawCoachArms(s: CoachSprite, _playerR: number, _pose: CoachPose, _facing: 1 | -1): void {
+  s.arms.clear();
 }

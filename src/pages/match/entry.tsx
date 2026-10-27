@@ -1,4 +1,13 @@
 import { createPage } from "@/createPage";
 import { MatchScreen } from "@/GameInterface/MatchScreen";
+import { MatchSocial } from "@/GameInterface/Social/MatchSocial";
 
-createPage(MatchScreen);
+function MatchPage() {
+  return (
+    <MatchSocial>
+      <MatchScreen />
+    </MatchSocial>
+  );
+}
+
+createPage(MatchPage);
