@@ -178,7 +178,7 @@ function FriendsTab() {
                 className="flex items-center gap-3 rounded-md px-2 py-2 text-left cursor-pointer border-0 bg-transparent hover:bg-secondary/30"
               >
                 <Icon name="globe" size={16} className="text-muted-foreground" />
-                <span className="font-semibold text-foreground truncate">{worldRoomLabel(w.room, s.lists.worlds, (owner) => t("world.leagueOf", { owner })) ?? t("social.chat.world")}</span>
+                <span className="font-semibold text-foreground truncate">{worldRoomLabel(w.room, s.lists.worlds, (owner) => t("world.leagueOf", { owner }), t("world.public.name")) ?? t("social.chat.world")}</span>
                 {unread > 0 && <span className={`ml-auto ${BADGE}`}>{unread}</span>}
               </button>
             );

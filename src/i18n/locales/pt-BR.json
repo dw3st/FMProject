@@ -142,6 +142,10 @@
     "whatsNew": "Novidades",
     "unemployed": "Sem clube",
     "withFriends": "Com amigos · {{count}}/{{max}}",
+    "publicWorld": "Mundo público · {{count}}/{{max}}",
+    "publicNext": "Próximo passo às {{time}}",
+    "publicJoin": "Entrar",
+    "publicFull": "Lotado",
     "owner": "Dono",
     "member": "Membro",
     "lobby": "Na sala de espera",
@@ -286,6 +290,8 @@
       "soloDetail": "Sua carreira, no seu ritmo.",
       "multi": "Com amigos",
       "multiDetail": "Até {{max}} técnicos no mesmo mundo.",
+      "public": "Mundo público",
+      "publicDetail": "Até {{max}} técnicos. O mundo avança às 09:00, 13:00, 18:00 e 22:00 (Brasília).",
       "next": "Continuar"
     },
     "managerSubtitle": "Quem vai assumir o clube.",
@@ -630,6 +636,7 @@
     "players": "Jogadores"
   },
   "social": {
+    "publicRoom": "Só reações neste mundo",
     "popup": { "open": "Abrir conversa: {{name}}", "dismiss": "Fechar aviso" },
     "button": "Amigos: {{count}} online",
     "buttonUnread": "Amigos: {{count}} online, {{unread}} não lidas",
@@ -3034,6 +3041,10 @@
       "main": "NOTÍCIAS DO",
       "accent": "MUNDO"
     },
+    "publicWorld": {
+      "main": "MUNDO",
+      "accent": "PÚBLICO"
+    },
     "world": {
       "main": "SUA",
       "accent": "LIGA"
@@ -5152,6 +5163,27 @@
   },
   "world": {
     "leagueOf": "Liga de {{owner}}",
+    "public": {
+      "name": "Mundo público",
+      "title": "Horários",
+      "nextStep": "Próximo passo às {{time}}",
+      "nextStepLabel": "Próximo passo",
+      "hint": "Um passo às 09:00, 13:00, 18:00 e 22:00 (horário de Brasília). Jogo que você não jogou nem decidiu é simulado."
+    },
+    "hall": {
+      "tab": "Hall da fama",
+      "title": "Hall da fama",
+      "hint": "Os 10 primeiros de cada edição. Uma edição nova começa a cada atualização do jogo.",
+      "empty": "Nenhuma edição ainda.",
+      "noScores": "Sem pontos nesta edição.",
+      "version": "Versão {{version}}",
+      "period": "{{from}} a {{to}}",
+      "current": "Desde {{from}}, em andamento",
+      "nickname": "Apelido",
+      "club": "Clube",
+      "points": "Pontos",
+      "noNickname": "Sem apelido"
+    },
     "status": { "lobby": "Sala de espera", "running": "Em andamento" },
     "members": {
       "title": "Técnicos",

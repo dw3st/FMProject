@@ -162,8 +162,10 @@ async function friendsResponse(userId: string, now: number): Promise<FriendsResp
     worldsOf(userId).map(async (saveId) => {
       const seatId = memberOf(saveId, userId)?.seatId;
       const seat = seatId ? await saveService.getSeat(saveId, seatId).catch(() => null) : null;
+      const meta = await saveService.getMeta(saveId).catch(() => null);
       return {
         room: worldRoomParam(saveId),
+        ...(meta && isPublicWorld(meta) ? { public: true } : {}),
         saveId,
         owner: await worldOwnerName(saveId).catch(() => ""),
         myClub: seat?.clubName ?? "",

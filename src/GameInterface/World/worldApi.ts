@@ -1,7 +1,7 @@
 import type { SaveManager } from "@/types/seatTypes";
 import type { StandingsView } from "@/types/standingsTypes";
 import type {
-  WorldByCode, WorldDeadline, WorldErrorCode, WorldInviteView, WorldPhase, WorldView,
+  PublicEditionView, PublicWorldInfo, WorldByCode, WorldDeadline, WorldErrorCode, WorldInviteView, WorldPhase, WorldView,
 } from "@/types/multiplayerTypes";
 
 /** `byCode` also tells the league of the world (backend adds it; optional for older servers). */
@@ -13,7 +13,7 @@ export type WorldResult<T> = { ok: true; data: T } | { ok: false; status: number
 const KNOWN: ReadonlySet<string> = new Set<WorldErrorCode>([
   "notFound", "full", "alreadyMember", "clubTaken", "invalidManager", "invalidClub", "invalidBody", "ownerOnly",
   "transferFirst", "alreadyStarted", "notMulti", "inviteLimit", "noNickname", "useLeave", "notMember", "tooLarge",
-  "ownerLimit", "generic", "lobby", "self", "invalidTaunt", "rateLimited",
+  "ownerLimit", "generic", "lobby", "self", "invalidTaunt", "rateLimited", "publicWorld",
 ]);
 
 /** A server error that is not a world code becomes `generic`; a bare 404 of a world route means he is not a member. */
@@ -59,6 +59,10 @@ export const worldApi = {
   remove: (saveId: string, seatId: string) => call<{ ok: true }>("POST", `/api/worlds/${seg(saveId)}/members/${seg(seatId)}/remove`),
   leave: (saveId: string) => call<{ ok: true; deleted?: true }>("POST", `/api/worlds/${seg(saveId)}/leave`),
   transferOwner: (saveId: string, seatId: string) => call<{ ok: true }>("POST", `/api/worlds/${seg(saveId)}/owner`, { seatId }),
+  publicInfo: () => call<PublicWorldInfo>("GET", "/api/worlds/public"),
+  joinPublic: (body: { clubId: string; manager: SaveManager; sackingEnabled: boolean }) =>
+    call<{ saveId: string; seatId: string; phase: WorldPhase }>("POST", "/api/worlds/public/join", body),
+  publicHall: () => call<{ editions: PublicEditionView[] }>("GET", "/api/worlds/public/hall"),
   standings: (saveId: string) => call<StandingsView>("GET", `/api/worlds/${seg(saveId)}/standings`),
 };
 

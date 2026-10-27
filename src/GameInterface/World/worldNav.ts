@@ -32,10 +32,10 @@ export function isDashboardPath(pathname: string): boolean {
   return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
 
-export type WorldTab = "league" | "standings" | "rivals" | "results";
+export type WorldTab = "league" | "standings" | "rivals" | "results" | "hall";
 
 /** The `/world` tab from `location.search`. */
 export function worldTabOf(search: string): WorldTab {
   const tab = new URLSearchParams(search).get("tab");
-  return tab === "standings" || tab === "rivals" || tab === "results" ? tab : "league";
+  return tab === "standings" || tab === "rivals" || tab === "results" || tab === "hall" ? tab : "league";
 }

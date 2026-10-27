@@ -35,6 +35,8 @@ export interface WorldRoomView {
   /** The viewer's club in that world: tells apart two leagues of the same owner. */
   myClub: string;
   unread: number;
+  /** The server's public world (multiplayer part 5b): no free text, only reactions. */
+  public?: boolean;
 }
 
 export interface FriendsResponse {

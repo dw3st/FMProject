@@ -6,6 +6,7 @@ import { formatGameDate } from "@/GameInterface/formatDate";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { addDays, isRealIsoDate } from "@/Domain/dates";
 import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
+import { brasiliaTime } from "@/GameInterface/World/publicTime";
 
 const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
@@ -134,6 +135,20 @@ export function ReadyControl() {
           </button>
         )}
         {/* No "not ready" here: an undecided match day already holds the world (it comes back once decided). */}
+      </div>
+    );
+  }
+
+  // The public world (part 5b) steps on its own clock: no "Ready until", only the time of the next step.
+  if (view.kind === "public") {
+    const text = t("world.public.nextStep", { time: brasiliaTime(view.nextSlotAt, i18n.language) });
+    return (
+      <div className="flex items-center gap-2">
+        {errorLine}
+        <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={text}>
+          <Icon name="clock" size={16} className="shrink-0" />
+          <span className="truncate">{text}</span>
+        </span>
       </div>
     );
   }

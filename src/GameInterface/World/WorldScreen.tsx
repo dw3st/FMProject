@@ -25,6 +25,8 @@ import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { RivalsView } from "@/types/rivalsTypes";
 import { InviteFriendsModal } from "@/GameInterface/World/InviteFriendsModal";
 import { StandingsTable } from "@/GameInterface/World/StandingsTable";
+import { HallOfFame } from "@/GameInterface/World/HallOfFame";
+import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { GroupAdvanceBand, MemberAdvanceStatus } from "@/GameInterface/World/GroupAdvanceBand";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
@@ -39,9 +41,12 @@ const initialTab = (): WorldTab => (typeof window !== "undefined" ? worldTabOf(w
 
 type Pending = { kind: "remove" | "owner"; member: WorldMemberView } | { kind: "leave" } | { kind: "code" } | null;
 
-/** "YOUR LEAGUE": members, invite, deadline, start, leave (`.claude/rules/game/multiplayer.md`, part 2). */
+/**
+ * "YOUR LEAGUE": members, invite, deadline, start, leave (`.claude/rules/game/multiplayer.md`, part 2). The public
+ * world (part 5b) shows read-only members, the next step and its hall of fame instead.
+ */
 export function WorldScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session } = useGameSave();
   const social = useSocial();
   const saveId = session?.saveId ?? "";
@@ -73,10 +78,12 @@ export function WorldScreen() {
 
   // The standings tab (multiplayer part 5a): only with 2+ managers; reloads with the league's member events and
   // whenever a group advance stops (the partial follows the table of the new day).
-  const showTabs = (view?.members.length ?? 0) >= 2;
+  const isPublic = view?.kind === "public";
+  const showTabs = isPublic || (view?.members.length ?? 0) >= 2;
   // Rivals and results (multiplayer part 6) only once the league runs.
   const rivalsTabs = view?.phase !== "lobby";
-  const activeTab: WorldTab = !showTabs || (!rivalsTabs && (tab === "rivals" || tab === "results")) ? "league" : tab;
+  const activeTab: WorldTab =
+    !showTabs || (!rivalsTabs && (tab === "rivals" || tab === "results")) || (!isPublic && tab === "hall") ? "league" : tab;
   const [advanceVersion, setAdvanceVersion] = useState(0);
   const { subscribe } = social;
   useEffect(() => {
@@ -163,12 +170,21 @@ export function WorldScreen() {
 
   return (
     <ScreenContainer>
-      <ScreenTitle
-        accent={t("screenTitles.world.accent")}
-        subtitle={view ? `${t("world.leagueOf", { owner: view.owner })} ·${t(`world.status.${view.phase}`)} · ${t("world.members.count", { count: view.members.length, max: view.max })}` : undefined}
-      >
-        {t("screenTitles.world.main")}
-      </ScreenTitle>
+      {isPublic ? (
+        <ScreenTitle
+          accent={t("screenTitles.publicWorld.accent")}
+          subtitle={view ? t("world.members.count", { count: view.members.length, max: view.max }) : undefined}
+        >
+          {t("screenTitles.publicWorld.main")}
+        </ScreenTitle>
+      ) : (
+        <ScreenTitle
+          accent={t("screenTitles.world.accent")}
+          subtitle={view ? `${t("world.leagueOf", { owner: view.owner })} ·${t(`world.status.${view.phase}`)} · ${t("world.members.count", { count: view.members.length, max: view.max })}` : undefined}
+        >
+          {t("screenTitles.world.main")}
+        </ScreenTitle>
+      )}
 
       {view?.phase !== "lobby" && <GroupAdvanceBand />}
 
@@ -186,6 +202,7 @@ export function WorldScreen() {
             ...(rivalsTabs
               ? [{ key: "rivals" as const, label: t("rivals.tabRivals") }, { key: "results" as const, label: t("rivals.tabResults") }]
               : []),
+            ...(isPublic ? [{ key: "hall" as const, label: t("world.hall.tab") }] : []),
           ]}
         />
       )}
@@ -215,6 +232,8 @@ export function WorldScreen() {
         </section>
       )}
 
+      {view && activeTab === "hall" && <HallOfFame />}
+
       {view && activeTab === "results" && (
         <section className="flex flex-col gap-3">
           <SectionTitle>{t("rivals.resultsTitle")}</SectionTitle>
@@ -241,9 +260,9 @@ export function WorldScreen() {
                   <tr>
                     <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.manager")}</th>
                     <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.club")}</th>
-                    <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.role")}</th>
+                    {!isPublic && <th className={`${TABLE_CELL.head} text-left`}>{t("world.members.role")}</th>}
                     {view.phase !== "lobby" && <th className={`${TABLE_CELL.head} text-left`}>{t("world.advance.status.column")}</th>}
-                    {owner && <th className={TABLE_CELL.head} aria-label={t("world.members.actions")} />}
+                    {owner && !isPublic && <th className={TABLE_CELL.head} aria-label={t("world.members.actions")} />}
                   </tr>
                 </thead>
                 <tbody className={TABLE_STYLE.body}>
@@ -277,13 +296,15 @@ export function WorldScreen() {
                             </div>
                           )}
                         </td>
-                        <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>
-                          {m.role === "owner" ? t("world.members.owner") : t("world.members.member")}
-                        </td>
+                        {!isPublic && (
+                          <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>
+                            {m.role === "owner" ? t("world.members.owner") : t("world.members.member")}
+                          </td>
+                        )}
                         {view.phase !== "lobby" && (
                           <td className={TABLE_CELL.body}><MemberAdvanceStatus seatId={m.seatId} /></td>
                         )}
-                        {owner && (
+                        {owner && !isPublic && (
                           <td className={`${TABLE_CELL.body} text-right`}>
                             {!me && (
                               <div className="flex items-center justify-end gap-3">
@@ -301,6 +322,18 @@ export function WorldScreen() {
             </div>
           </section>
 
+          {isPublic && (
+            <section className="flex flex-col gap-3">
+              <SectionTitle>{t("world.public.title")}</SectionTitle>
+              <p className="text-sm text-foreground m-0 tabular-nums">
+                {t("world.public.nextStep", { time: brasiliaTime(view.nextSlotAt, i18n.language) })}
+              </p>
+              <p className="text-sm text-muted-foreground m-0">{t("world.public.hint")}</p>
+            </section>
+          )}
+
+          {!isPublic && (
+          <>
           <section className="flex flex-col gap-3">
             <SectionTitle>{t("world.invite.title")}</SectionTitle>
             <Label htmlFor="world-invite-link">{t("world.invite.link")}</Label>
@@ -353,6 +386,8 @@ export function WorldScreen() {
               </p>
             )}
           </section>
+          </>
+          )}
 
           <section className="flex flex-wrap items-center gap-3">
             {view.phase === "lobby" && owner && (
@@ -361,7 +396,7 @@ export function WorldScreen() {
             {view.phase === "lobby" && !owner && (
               <p className="text-sm text-muted-foreground m-0">{t("world.start.waiting")}</p>
             )}
-            {view.members.length >= 2 && (
+            {(isPublic || view.members.length >= 2) && (
               <Button variant="secondary" onClick={() => social.openChat(`world:${saveId}`)}>
                 <Icon name="message-square" size={16} />
                 {t("world.chat")}
@@ -383,12 +418,14 @@ export function WorldScreen() {
           </>
           )}
 
-          <InviteFriendsModal
-            saveId={saveId}
-            open={inviteOpen}
-            onClose={() => setInviteOpen(false)}
-            members={view.members.map((m) => m.nickname).filter((n): n is string => !!n)}
-          />
+          {!isPublic && (
+            <InviteFriendsModal
+              saveId={saveId}
+              open={inviteOpen}
+              onClose={() => setInviteOpen(false)}
+              members={view.members.map((m) => m.nickname).filter((n): n is string => !!n)}
+            />
+          )}
           <ConfirmDialog
             open={pending !== null}
             title={
