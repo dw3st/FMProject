@@ -1,6 +1,7 @@
 import type { GameState, MatchPhase } from "@/GameEngine/types";
 import type { LiveMatchInput } from "@/Domain/match/liveMatchSetup";
 import type { Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
+import type { StatsSnapshot, TeamStats, GoalLogEntry } from "@/GameEngine/Domain/Statistics";
 
 /** Engine side of a live match between two managers: A = home. */
 export type H2HSide = "A" | "B";
@@ -62,6 +63,18 @@ export type WorkerOut =
       phase: MatchPhase;
       score: { A: number; B: number };
     }
-  | { type: "state"; state: GameState }
+  | { type: "state"; state: GameState; stats: H2HStatsPayload }
   | { type: "event"; name: string; payload: unknown }
-  | { type: "done"; state: GameState; stats: unknown };
+  | { type: "done"; state: GameState; stats: H2HStatsPayload };
+
+/**
+ * The worker's statistics and ratings as plain data. `snapshot` + `ratings` restore the stores exactly
+ * (`importStatsState` / `importRatings`), which is all `buildPlayedMatchRecording` reads; `teams` and `goals` are
+ * the same numbers ready to show.
+ */
+export interface H2HStatsPayload {
+  snapshot: StatsSnapshot;
+  ratings: [number, number][];
+  teams: { A: TeamStats; B: TeamStats };
+  goals: GoalLogEntry[];
+}
