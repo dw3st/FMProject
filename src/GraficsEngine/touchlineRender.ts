@@ -93,26 +93,26 @@ export interface CoachSprite {
 }
 
 /**
- * A manager seen from above: dark suit with a collar in the club colour, the head (club-colour disc,
- * the face once loaded) and two arms redrawn per gesture.
+ * A manager seen from above: dark suit shoulders, the head (club-colour disc, the face once loaded)
+ * and two arms redrawn per gesture.
  */
 export function makeCoach(playerR: number, color: number): CoachSprite {
   const headR = playerR * 0.62;
   const root = new Container();
-  const bodyW = playerR * 1.9, bodyH = playerR * 1.05;
+  // Shoulders: an oval wider than the head, the head in the middle (a wide slab under the head read
+  // as a carpet, tester report 2026-10-26).
+  const shoulderRx = playerR * 1.05, shoulderRy = playerR * 0.5;
   root.addChild(shadowOf(playerR * 0.95));
   const arms = new Graphics();
   root.addChild(arms);
   root.addChild(
     new Graphics()
-      .roundRect(-bodyW / 2, -bodyH * 0.2, bodyW, bodyH, bodyH * 0.35)
+      .ellipse(0, 0, shoulderRx, shoulderRy)
       .fill(OFFICIAL_LOOK.SUIT)
-      .stroke({ width: 1, color: 0x000000, alpha: 0.5 })
-      .roundRect(-bodyW * 0.18, -bodyH * 0.2, bodyW * 0.36, bodyH * 0.32, 2)
-      .fill(color),
+      .stroke({ width: 1, color: 0x000000, alpha: 0.5 }),
   );
   const head = new Container();
-  head.y = -bodyH * 0.35;
+  head.y = -playerR * 0.1;
   head.addChild(new Graphics().circle(0, 0, headR).fill(color).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 }));
   root.addChild(head);
   // A card over his head after a complaint (`.claude/rules/game/var.md` §4), like the referee's.
@@ -127,7 +127,7 @@ export function makeCoach(playerR: number, color: number): CoachSprite {
 export function drawCoachArms(s: CoachSprite, playerR: number, pose: CoachPose, facing: 1 | -1): void {
   const g = s.arms;
   g.clear();
-  const shoulderX = playerR * 0.85, shoulderY = -playerR * 0.05, len = playerR * 1.15;
+  const shoulderX = playerR * 0.92, shoulderY = playerR * 0.05, len = playerR * 0.7;
   // `side` −1 = left shoulder, +1 = right; the arm swings out from the body by `a`.
   const arm = (side: -1 | 1, a: number) => {
     const dx = side * Math.sin(a) * len;

@@ -92,7 +92,7 @@ nem abre.
 - Mensagem nova de uma sala que não está aberta na tela: aviso no canto inferior esquerdo (`ChatPopups`, um por sala, até 3,
   some em 7 s; clicar abre a conversa).
 - O painel mostra só o apelido ("Você: …"); amigos se adicionam pela busca de apelido. O código de amigo continua na API.
-- Barra inferior: "Amigos · N" (amigos online) com o selo de não lidas + pedidos; abre o painel (340px, até 60% da
+- Barra inferior: "Amigos · N" (amigos online) com o selo de não lidas + pedidos; abre o painel (370px, até 75% da
   altura, acima da barra, à direita; Escape fecha). O rótulo do botão diz as não lidas ("Amigos: 3 online, 2 não
   lidas"); abrir o painel põe o foco no primeiro controle, fechar devolve ao botão.
 - Painel: apelido e código (copiar), abas Amigos (Jogando / Online / Offline / Mundos, menu da linha

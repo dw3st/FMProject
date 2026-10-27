@@ -31,7 +31,7 @@ export function ChatDock() {
   const open = s.dock.filter((c) => !c.minimized);
   const minimized = s.dock.filter((c) => c.minimized);
   return (
-    <div className={`fixed bottom-14 ${s.panelOpen ? "right-[376px]" : "right-6"} z-40 flex items-end gap-3 pointer-events-none`}>
+    <div className={`fixed bottom-14 ${s.panelOpen ? "right-[406px]" : "right-6"} z-40 flex items-end gap-3 pointer-events-none`}>
       {minimized.length > 0 && (
         <div className="pointer-events-auto flex flex-col gap-1">
           {minimized.map((c) => (
