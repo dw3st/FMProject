@@ -395,7 +395,12 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       if (!save) return Response.json({ error: "no save found" }, { status: 404 });
     }
 
-    const r = await matchSetupFor(save, { live: url.searchParams.get("live") === "1", legacy: !saveIdParam });
+    const r = await matchSetupFor(save, {
+      live: url.searchParams.get("live") === "1",
+      // The live match between two managers (part 7): its page asks with `h2h=1`.
+      h2h: url.searchParams.get("h2h") === "1",
+      legacy: !saveIdParam,
+    });
     return Response.json(r.body, { status: r.ok ? 200 : r.status });
   },
 

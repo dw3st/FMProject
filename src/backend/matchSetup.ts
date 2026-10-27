@@ -39,7 +39,10 @@ export type MatchSetupResult =
 
 /**
  * The match-setup of one seat for today's game (`POST /api/match-setup`).
- * - `live`: the live match (vs another seat: refused with 409 `seatOpponent`; `h2h` will allow it, not used yet).
+ * - `live`: the live match (vs another seat: refused with 409 `seatOpponent`, unless `h2h`).
+ * - `h2h`: the live match between two managers (multiplayer part 7): against another seat `live` answers 200 with
+ *   `h2h: true`. Each seat's own side (lineup, tactics, instructions, marking, registration) comes from its own call;
+ *   the opponent stays shown like an AI club (`publicSeatSquad`), never with the other seat's private data.
  * - `legacy`: the route was called without `saveId` (latest world, first opponent of the league, no fixture, crowd,
  *   registration or referee).
  */
@@ -108,7 +111,7 @@ export async function matchSetupFor(
     // with both seats' tactics. The preview is the normal one, the opponent read like an AI club (its own formation and
     // auto XI, never the other seat's saved tactics); only the live match (`?live=1`) is refused.
     if ((await saveService.humanClubIds(save.id)).has(oppId)) {
-      if (opts.live) {
+      if (opts.live && !opts.h2h) {
         // matchDay: a group world still records the "Simular" decision for this game.
         return { ok: false, status: 409, body: { error: "seatOpponent", matchDay: { date: todayFixture.date, fixtureId: todayFixture.id } } };
       }
@@ -290,5 +293,6 @@ export async function matchSetupFor(
     // The manager serves a touchline ban in this match (`.claude/rules/game/var.md` §4).
     managerBanned: !!save.managerBan && save.managerBan.matches > 0,
     seatOpponent,
+    h2h: seatOpponent && opts.live && !!opts.h2h,
   } };
 }
