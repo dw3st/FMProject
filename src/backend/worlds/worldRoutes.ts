@@ -11,6 +11,8 @@ import { announceMemberChange, deleteWorld, worldView } from "@/backend/worlds/w
 import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { standingsView } from "@/backend/standingsWorld";
 import { scheduleKick } from "@/backend/groupAdvance";
+import { publicWorldId } from "@/backend/worlds/publicWorld";
+import { listEditions } from "@/backend/worlds/publicStore";
 import {
   addWorldInvite, deleteWorldInvite, hasWorldInvite, listWorldInvitesFor, newWorldCode, pendingInviteCount,
   setWorldCode, worldCodeOf, worldIdByCode,
@@ -19,8 +21,10 @@ import { WORLD, isWorldDeadline } from "@/Domain/multiplayer/worldConfig";
 import { normalizeWorldCode } from "@/Domain/multiplayer/worldCode";
 import { parseSeatManager } from "@/Domain/multiplayer/seatManager";
 import { isValidSeatId } from "@/Domain/seats/seats";
+import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
+import { isPublicLeague, isPublicWorld, nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { WorldByCode, WorldErrorCode, WorldInviteView } from "@/types/multiplayerTypes";
+import type { PublicWorldInfo, WorldByCode, WorldErrorCode, WorldInviteView } from "@/types/multiplayerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -55,6 +59,12 @@ export async function multiWorld(saveId: string): Promise<(SaveMeta & { world: N
   return meta?.mode === "multi" && meta.world ? (meta as SaveMeta & { world: NonNullable<SaveMeta["world"]> }) : null;
 }
 
+/** Owner actions do not exist in the public world (part 5b). */
+async function refusePublic(saveId: string): Promise<Response | null> {
+  const meta = await saveService.getMeta(saveId);
+  return meta && isPublicWorld(meta) ? fail("publicWorld", 409) : null;
+}
+
 /** The world behind an invite code (any case, with spaces or dashes). */
 function worldOfCode(raw: unknown): string | null {
   const code = typeof raw === "string" && raw.length <= 64 ? normalizeWorldCode(raw) : null;
@@ -67,13 +77,80 @@ function stillOwner(saveId: string, userId: string): boolean {
 }
 
 export const worldRoutes = {
+  /** The public world for the lobby screens (part 5b). */
+  "/api/worlds/public": {
+    GET: async (req: Req) => {
+      const auth = requireAuth(req);
+      if (auth instanceof Response) return auth;
+      const saveId = publicWorldId();
+      const meta = saveId ? await saveService.getMeta(saveId) : null;
+      if (!saveId || !meta?.world?.edition) return fail("notFound", 404);
+      const info: PublicWorldInfo = {
+        saveId, members: meta.seats.length, max: PUBLIC_WORLD.MAX_MEMBERS,
+        nextSlotAt: nextSlotAt(Date.now()), takenClubs: [...(await saveService.humanClubIds(saveId))],
+        edition: meta.world.edition, joined: !!memberOf(saveId, auth.userId), currentDate: meta.currentDate ?? null,
+      };
+      return Response.json(info);
+    },
+  },
+
+  /** A seat in the public world: a club of the 10 main leagues, a nickname, no invite. */
+  "/api/worlds/public/join": {
+    POST: async (req: Req) => {
+      const auth = requireAuth(req);
+      if (auth instanceof Response) return auth;
+      if (!getSocialUser(auth.userId)?.nickname) return fail("noNickname", 409);
+      const body = await readBody(req);
+      if (body instanceof Response) return body;
+      const saveId = publicWorldId();
+      if (!saveId) return fail("notFound", 404);
+      const manager = parseSeatManager(body.manager);
+      if (!manager) return fail("invalidManager", 400);
+      if (typeof body.clubId !== "string" || !body.clubId || body.clubId.length > MAX_CLUB_ID) return fail("invalidClub", 400);
+      if (body.sackingEnabled !== undefined && typeof body.sackingEnabled !== "boolean") return fail("invalidBody", 400);
+      const entry = (await saveService.getSquadIndex(saveId)).byId(body.clubId);
+      if (!entry || !isPublicLeague(entry.leagueSlug)) return fail("invalidClub", 400);
+      try {
+        const { seatId } = await addSeat(saveId, {
+          userId: auth.userId, clubId: body.clubId, manager, role: "member",
+          sackingEnabled: body.sackingEnabled !== false, maxSeats: PUBLIC_WORLD.MAX_MEMBERS,
+          onLocked: async ({ seatId: id, seat }) => {
+            await saveService.updateSeat(saveId, id, { lastSeenAt: new Date().toISOString() });
+            await announceMemberChange(saveId, {
+              seatId: id, event: "joined", managerName: manager.name,
+              clubId: seat.clubId, clubName: seat.clubName, leagueSlug: seat.leagueSlug,
+            });
+          },
+        });
+        return Response.json({ saveId, seatId, phase: "running" }, { status: 201 });
+      } catch (e) {
+        if (!(e instanceof SeatError)) throw e;
+        if (e.code === "alreadyMember") return fail("alreadyMember", 409, { saveId });
+        if (e.code === "full") return fail("full", 409);
+        if (e.code === "clubTaken") return fail("clubTaken", 409);
+        if (e.code === "clubNotFound") return fail("invalidClub", 400);
+        return fail("notFound", 404);
+      }
+    },
+  },
+
+  /** Hall of fame: every edition, newest first, with its top managers. */
+  "/api/worlds/public/hall": {
+    GET: (req: Req) => {
+      const auth = requireAuth(req);
+      if (auth instanceof Response) return auth;
+      return Response.json({ editions: listEditions().map(({ saveId: _s, ...e }) => e) });
+    },
+  },
+
   "/api/worlds/by-code/:code": {
     GET: async (req: Req) => {
       const auth = requireAuth(req);
       if (auth instanceof Response) return auth;
       const saveId = worldOfCode(req.params.code ?? "");
       const meta = saveId ? await multiWorld(saveId) : null;
-      if (!saveId || !meta) return fail("notFound", 404);
+      // The public world's code only feeds the clock: it is joined through `/api/worlds/public/join`.
+      if (!saveId || !meta || isPublicWorld(meta)) return fail("notFound", 404);
       if (memberOf(saveId, auth.userId)) return fail("alreadyMember", 409, { saveId });
       if (meta.seats.length >= WORLD.MAX_MEMBERS) return fail("full", 409);
       const owner = listSaveMembers(saveId).find((m) => m.role === "owner");
@@ -99,7 +176,8 @@ export const worldRoutes = {
       const body = await readBody(req);
       if (body instanceof Response) return body;
       const saveId = worldOfCode(body.code);
-      if (!saveId || !(await multiWorld(saveId))) return fail("notFound", 404);
+      const target = saveId ? await multiWorld(saveId) : null;
+      if (!saveId || !target || isPublicWorld(target)) return fail("notFound", 404);
       const manager = parseSeatManager(body.manager);
       if (!manager) return fail("invalidManager", 400);
       if (typeof body.clubId !== "string" || !body.clubId || body.clubId.length > MAX_CLUB_ID) return fail("invalidClub", 400);
@@ -194,6 +272,8 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       return withSaveLock(saveId, async () => {
         if (!stillOwner(saveId, auth.userId)) return fail("ownerOnly", 403);
@@ -212,6 +292,8 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       const body = await readBody(req);
       if (body instanceof Response) return body;
@@ -235,6 +317,8 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       const from = getSocialUser(auth.userId)?.nickname;
       if (!from) return fail("noNickname", 409);
@@ -266,6 +350,8 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       const res = await withSaveLock(saveId, async () => {
         if (!stillOwner(saveId, auth.userId)) return fail("ownerOnly", 403);
@@ -297,6 +383,8 @@ export const worldRoutes = {
       const seatId = req.params.seatId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       if (!(await multiWorld(saveId))) return fail("notMulti", 404);
       if (seatId === auth.seatId) return fail("useLeave", 400);
@@ -335,8 +423,10 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
-      if (!(await multiWorld(saveId))) return fail("notMulti", 404);
-      if (auth.role === "owner") {
+      const meta = await multiWorld(saveId);
+      if (!meta) return fail("notMulti", 404);
+      // The public world has no owner: leaving only removes the seat, never the world.
+      if (auth.role === "owner" && !isPublicWorld(meta)) {
         // The owner passes the ownership first; alone, leaving deletes the world. Both checks and the delete share
         // one lock, so a join cannot slip in between (it would then see the world gone, or this would see it).
         const done = await withSaveLock(saveId, async () => {
@@ -372,6 +462,8 @@ export const worldRoutes = {
       const saveId = req.params.saveId!;
       const auth = requireSeat(req, saveId);
       if (auth instanceof Response) return auth;
+      const pub = await refusePublic(saveId);
+      if (pub) return pub;
       if (auth.role !== "owner") return fail("ownerOnly", 403);
       const body = await readBody(req);
       if (body instanceof Response) return body;
