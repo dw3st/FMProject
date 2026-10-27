@@ -544,7 +544,11 @@ export async function worldClockTick(deps: GroupAdvanceDeps = defaultGroupDeps):
     if (!isRunningWorld(meta)) continue;
     if (meta.world!.kind === "public") {
       // Fixed slots (part 5b): no deadline, and a failed day waits for the next slot instead of retrying.
-      const { publicSlotTick } = await import("@/backend/worlds/publicWorld");
+      const { flushSeen, inactivityPass, publicSlotTick } = await import("@/backend/worlds/publicWorld");
+      // "Last seen" is written at most hourly; a week away removes the seat before the slot runs.
+      await flushSeen(saveId, deps.now(), deps.service)
+        .then(() => inactivityPass(saveId, deps.now(), deps.service))
+        .catch((e) => logError("world", `save ${saveId}: inactivity pass failed`, e));
       if (await publicSlotTick(saveId, deps)) kicked.push(saveId);
       continue;
     }

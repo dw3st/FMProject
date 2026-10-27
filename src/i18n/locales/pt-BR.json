@@ -5264,6 +5264,10 @@
       "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
       "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
       "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
+      "inactive_warning": {
+        "subject": "Você não abre o mundo público há 5 dias",
+        "body": "Você não abre o mundo público há 5 dias. Em mais 2 dias o seu clube volta para a IA."
+      },
       "season_closed": {
         "subject": "Temporada de {{manager}} fechada",
         "preview_one": "{{points}} ponto · {{rank}}º de {{of}}",

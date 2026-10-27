@@ -5264,6 +5264,10 @@
       "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
       "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
       "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
+      "inactive_warning": {
+        "subject": "You have not opened the public world for 5 days",
+        "body": "You have not opened the public world for 5 days. In 2 more days your club goes back to the AI."
+      },
       "season_closed": {
         "subject": "{{manager}}'s season is closed",
         "preview_one": "{{points}} point · {{rank}} of {{of}}",

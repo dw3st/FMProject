@@ -1,13 +1,17 @@
 import { saveService as defaultService, type SaveService } from "@/backend/SaveService";
 import { presimulateWorld } from "@/backend/advanceDay";
 import { withSaveLock } from "@/backend/saveLock";
-import { deleteWorld } from "@/backend/worlds/worldLifecycle";
+import { announceMemberChange, deleteWorld } from "@/backend/worlds/worldLifecycle";
+import { seenAt } from "@/backend/worlds/publicSeen";
+import { removeSeat } from "@/backend/seats";
+import { notifyUser } from "@/backend/social/realtime";
 import { newWorldCode, setWorldCode } from "@/backend/worlds/worldStore";
 import { closeOpenEditions, editionOf, listEditions, openEdition, saveEditionStandings } from "@/backend/worlds/publicStore";
 import { standingsView } from "@/backend/standingsWorld";
 import { defaultGroupDeps, isWorldAdvancing, kickWorld, type GroupAdvanceDeps } from "@/backend/groupAdvance";
 import { PUBLIC_WORLD } from "@/Domain/multiplayer/publicWorldConfig";
-import { dueSlot, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
+import { dueSlot, inactivityAction, publicStepTarget } from "@/Domain/multiplayer/publicWorld";
+import { buildInactiveWarningMessage } from "@/Domain/inbox/worldAdvanceMessage";
 import { rankOf } from "@/Domain/multiplayer/standings";
 import { addDays } from "@/Domain/dates";
 import { GAME_VERSION } from "@/Domain/saveVersion";
@@ -106,4 +110,45 @@ export async function updateHall(saveId: string, service: SaveService = defaultS
   saveEditionStandings(version, entries.slice(0, PUBLIC_WORLD.HALL_TOP).map((e) => ({
     rank: rankOf(entries, e.seatId), nickname: e.nickname, clubName: e.clubName, total: e.total, seasons: e.seasons,
   })));
+}
+
+/** Writes "last seen" of the public world's seats when it moved by an hour or more (`SEEN_WRITE_MIN`). */
+export async function flushSeen(saveId: string, nowMs: number, service: SaveService = defaultService): Promise<void> {
+  await withSaveLock(saveId, async () => {
+    for (const { seatId, seat } of await service.listSeats(saveId)) {
+      const t = seenAt(saveId, seatId);
+      if (!t || t > nowMs) continue;
+      const prev = seat.lastSeenAt ? Date.parse(seat.lastSeenAt) : 0;
+      if (t - prev < PUBLIC_WORLD.SEEN_WRITE_MIN * 60_000) continue;
+      await service.updateSeat(saveId, seatId, { lastSeenAt: new Date(t).toISOString() });
+    }
+  });
+}
+
+/** Warns a seat away for `WARN_DAYS`, removes it at `INACTIVE_DAYS` (`removeSeat`: the club back to the AI). */
+export async function inactivityPass(saveId: string, nowMs: number, service: SaveService = defaultService): Promise<void> {
+  const date = (await service.getMeta(saveId))?.currentDate;
+  if (!date) return;
+  for (const { seatId, seat } of await service.listSeats(saveId)) {
+    const action = inactivityAction(seat.lastSeenAt ?? null, seat.inactiveWarnedAt ?? null, nowMs);
+    if (action === "warn") {
+      const removeOn = new Date(Date.parse(seat.lastSeenAt!) + PUBLIC_WORLD.INACTIVE_DAYS * 86_400_000).toISOString().slice(0, 10);
+      await withSaveLock(saveId, async () => {
+        await service.appendInbox(saveId, buildInactiveWarningMessage({ date, removeOn }), seatId);
+        await service.updateSeat(saveId, seatId, { inactiveWarnedAt: new Date(nowMs).toISOString() });
+      });
+    } else if (action === "remove") {
+      // `removeSeat` takes the save lock itself.
+      await removeSeat(saveId, seatId, {
+        onLocked: async (removed) => {
+          // He is no longer in save_members: tell him directly.
+          if (removed.userId) notifyUser(removed.userId, { type: "world_removed", saveId });
+          await announceMemberChange(saveId, {
+            seatId, event: "removed", managerName: removed.managerName, clubId: removed.clubId,
+            clubName: removed.clubName, leagueSlug: removed.leagueSlug,
+          }, service);
+        },
+      }).catch((e) => logError("world", `public world ${saveId}: inactive seat ${seatId} not removed`, e));
+    }
+  }
 }

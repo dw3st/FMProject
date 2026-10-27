@@ -1,4 +1,4 @@
-import type { LiveRefusedReason, WorldAdvanceInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
+import type { LiveRefusedReason, WorldAdvanceInboxMessage, WorldInactiveInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
 
 /** Inbox `world` / `auto_advanced` (the screen translates `world.advance.inbox.*`; the subject is the fallback). */
 export function buildAutoAdvancedMessage(a: { date: string; until: string; simulated: string | null }): WorldAdvanceInboxMessage {
@@ -37,5 +37,20 @@ export function buildLiveRefusedMessage(a: { date: string; reason: LiveRefusedRe
     preview: a.reason,
     match: a.date,
     reason: a.reason,
+  };
+}
+
+/** Inbox `world` / `inactive_warning` (public world, part 5b; the screen translates `world.inbox.inactive_warning.*`). */
+export function buildInactiveWarningMessage(a: { date: string; removeOn: string }): WorldInactiveInboxMessage {
+  return {
+    id: `world-inactive-${a.date}-${a.removeOn}`,
+    date: a.date,
+    createdAt: a.date,
+    read: false,
+    category: "world",
+    kind: "inactive_warning",
+    subject: "You have not opened the public world for 5 days",
+    preview: `Removed on ${a.removeOn}`,
+    removeOn: a.removeOn,
   };
 }

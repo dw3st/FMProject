@@ -68,6 +68,8 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "world:auto_advanced": "actions",
   // His live match was refused and simulated instead.
   "world:live_refused": "actions",
+  // Public world: a week away removes the seat, so the warning is never dropped.
+  "world:inactive_warning": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",
