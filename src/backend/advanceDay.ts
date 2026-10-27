@@ -3411,7 +3411,7 @@ export async function advanceOneDay(
  * The caller holds the save lock (`.claude/rules/game/multiplayer.md`).
  */
 export async function presimulateWorld(
-  saveId: string, ownerSeatId: string,
+  saveId: string, ownerSeatId: string | null,
 ): Promise<{ applied: boolean; kit?: string; reason?: string }> {
   if ((await saveService.getMeta(saveId))?.presimulated) return { applied: false, reason: "already presimulated" };
   // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
@@ -3476,14 +3476,14 @@ export async function presimulateWorld(
       logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
     }
   }
-  // The owner's first board objective (members get theirs from `addSeat`).
-  const owner = await saveService.getSeatMeta(saveId, ownerSeatId);
+  // The owner's first board objective (members get theirs from `addSeat`); the public world has no owner.
+  const owner = ownerSeatId ? await saveService.getSeatMeta(saveId, ownerSeatId) : null;
   if (owner?.currentDate && owner.board?.objective) {
     const catalog = await getLeagueData();
     await emitInboxMessage(saveId, buildBoardMessage({
       date: owner.currentDate, kind: "objective", objective: owner.board.objective,
       leagueName: competitionName(owner.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
-    }), saveService, ownerSeatId);
+    }), saveService, ownerSeatId!);
   }
 
   // Friends' league standings (part 5a): every seat with a club opens its passage now, after the kit (it may move the
