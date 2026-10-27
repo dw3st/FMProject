@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { resultLetter, scoreLineOf } from "@/Domain/rivals/results";
 import { liveGroups } from "@/Domain/rivals/taunts";
@@ -94,15 +95,33 @@ function RivalPopupCard({ popup }: { popup: RivalPopup }) {
  */
 export function ChatPopups() {
   const s = useSocial();
+  // The live match (`MATCH_POPUPS_ID`) shows them under the friends' live strip, over the top of the pitch, instead of
+  // over the team list in the corner.
   if (s.popups.length === 0 && s.rivalPopups.length === 0) return null;
-  return (
-    <div role="status" aria-live="polite" className="fixed bottom-14 left-6 z-50 flex flex-col gap-2 pointer-events-none">
+  // Read at render: popups arrive after the match screen has mounted its spot (it may still be loading at first).
+  const anchor = document.getElementById(MATCH_POPUPS_ID);
+  const cards = (
+    <>
       {s.rivalPopups.map((p) => (
         <RivalPopupCard key={p.key} popup={p} />
       ))}
       {s.popups.map((p) => (
         <PopupCard key={p.room} popup={p} />
       ))}
+    </>
+  );
+  if (anchor) {
+    return createPortal(
+      <div role="status" aria-live="polite" className="flex flex-col items-center gap-2">{cards}</div>,
+      anchor,
+    );
+  }
+  return (
+    <div role="status" aria-live="polite" className="fixed bottom-14 left-6 z-50 flex flex-col gap-2 pointer-events-none">
+      {cards}
     </div>
   );
 }
+
+/** Id of the live match's spot for the popups (under the friends' live strip). */
+export const MATCH_POPUPS_ID = "match-popups";

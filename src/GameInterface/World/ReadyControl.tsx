@@ -24,7 +24,7 @@ const MENU_ID = "ready-until-panel";
  */
 export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } = {}) {
   const { t, i18n } = useTranslation();
-  const { view, busy, error, markReady, simulateToday } = useGroupAdvance();
+  const { view, busy, error, markReady, simulateToday, undoSimulate } = useGroupAdvance();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState("");
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -115,15 +115,17 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
     );
   }
 
-  // The public world (part 5b) steps on its own clock: no "Ready until", only the time of the next step (Brasília;
-  // the short text fits the slot, the full one is in `title`).
-  if (isPublic && !(branch === "match" && view?.me.matchToday)) {
-    const time = brasiliaTime(view?.nextSlotAt ?? nextSlotAt(Date.now()), i18n.language);
-    const text = t("world.public.nextStep", { time });
+  // The public world (part 5b): before the view loads, the time of the next fixed step (Brasília). Once loaded it uses
+  // "Ready until" like a friends' league: everyone active ready = the next step starts early; the slots still step.
+  const nextStepText = isPublic
+    ? t("world.public.nextStep", { time: brasiliaTime(view?.nextSlotAt ?? nextSlotAt(Date.now()), i18n.language) })
+    : "";
+  if (isPublic && !view) {
+    const time = brasiliaTime(nextSlotAt(Date.now()), i18n.language);
     return (
       <div className="flex items-center gap-2">
         {errorLine}
-        <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={text} aria-label={text}>
+        <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={nextStepText} aria-label={nextStepText}>
           <Icon name="clock" size={16} className="shrink-0" />
           <span className="truncate" aria-hidden="true">{t("world.public.nextStepShort", { time })}</span>
         </span>
@@ -147,7 +149,14 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
     return (
       <div className="flex items-center gap-2">
         {errorLine}
-        <button type="button" className={SECONDARY} onClick={() => void simulateToday()} disabled={busy}>
+        <button
+          type="button"
+          className={SECONDARY}
+          onClick={() => void simulateToday()}
+          disabled={busy}
+          title={t("world.advance.simulateHint")}
+          aria-label={t("world.advance.simulateHint")}
+        >
           {t("world.advance.simulate")}
         </button>
         {canPlay && (
@@ -161,9 +170,34 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
     );
   }
 
+  // Today's game set to "Simulate" and the day not run yet: say so, with an undo that brings Play back.
+  const decided = view.me.decision;
+  if (today && decided?.mode === "simulate" && decided.date === view.currentDate) {
+    const text = t("world.advance.simulated");
+    return (
+      <div className="flex items-center gap-2">
+        {errorLine}
+        <span className={`text-sm font-semibold whitespace-nowrap ${LABEL_TRUNC}`} title={t("world.advance.simulatedHint")}>{text}</span>
+        <button
+          type="button"
+          className={ICON_ONLY}
+          onClick={() => void undoSimulate()}
+          disabled={busy}
+          title={t("world.advance.undoSimulate")}
+          aria-label={t("world.advance.undoSimulate")}
+        >
+          <Icon name="rotate-ccw" size={16} />
+        </button>
+      </div>
+    );
+  }
+
   if (branch === "ready" && view.me.readyUntil) {
     const text = t("world.advance.readyUntil", { date: fmt(view.me.readyUntil) });
-    const waiting = view.waitingFor.length > 0 ? t("world.advance.waiting", { count: view.waitingFor.length }) : "";
+    const waiting = [
+      view.waitingFor.length > 0 ? t("world.advance.waiting", { count: view.waitingFor.length }) : "",
+      nextStepText,
+    ].filter(Boolean).join(" · ");
     return (
       <div className="flex items-center gap-2">
         {errorLine}

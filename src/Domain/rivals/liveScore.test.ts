@@ -119,3 +119,33 @@ describe("liveStatusAt", () => {
     expect(isLiveScoreView({ seatId: "a" })).toBe(false);
   });
 });
+
+describe("live moments", () => {
+  test("goals, VAR, red cards, half and end become moments; the score never moves on a red", () => {
+    let s = applyLiveFrame(null, frame({}), BASE, SCORERS, 1)!;
+    expect(s.moments).toEqual([]);
+    s = applyLiveFrame(s, frame({ phase: "goal", minute: 12, score: { for: 1, against: 0 }, scorer: "Silva" }), BASE, SCORERS, 2)!;
+    s = applyLiveFrame(s, frame({ phase: "red", minute: 20, score: { for: 1, against: 0 }, scorer: "Silva", side: "against" }), BASE, SCORERS, 3)!;
+    s = applyLiveFrame(s, frame({ phase: "disallowed", minute: 25, score: { for: 0, against: 0 } }), BASE, SCORERS, 4)!;
+    s = applyLiveFrame(s, frame({ phase: "half", minute: 45, score: { for: 0, against: 0 } }), BASE, SCORERS, 5)!;
+    expect(s.moments).toEqual([
+      { minute: 12, kind: "goal", side: "for", player: "Silva" },
+      { minute: 20, kind: "red", side: "against", player: "Silva" },
+      { minute: 25, kind: "disallowed", side: "for" },
+      { minute: 45, kind: "half" },
+    ]);
+    expect(applyLiveFrame(s, frame({ phase: "red", minute: 50, score: { for: 1, against: 0 }, side: "for" }), BASE, SCORERS, 6)).toBeNull();
+    expect(applyLiveFrame(s, frame({ phase: "red", minute: 50, score: { for: 0, against: 0 } }), BASE, SCORERS, 6)).toBeNull();
+    const r = applyLiveFrame(s, frame({ phase: "red", minute: 50, score: { for: 0, against: 0 }, side: "for", scorer: "Nobody" }), BASE, SCORERS, 6)!;
+    expect(r.moments.at(-1)).toEqual({ minute: 50, kind: "red", side: "for", player: null });
+  });
+  test("a red frame needs a side; at most LIVE_MOMENTS_MAX moments are kept", () => {
+    expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "red", minute: 5, score: { for: 0, against: 0 } })).toBeNull();
+    let s = applyLiveFrame(null, frame({}), BASE, SCORERS, 1)!;
+    for (let i = 1; i <= RIVALS.LIVE_MOMENTS_MAX + 3; i++) {
+      s = applyLiveFrame(s, frame({ phase: "goal", minute: i, score: { for: i, against: 0 } }), BASE, SCORERS, i + 1)!;
+    }
+    expect(s.moments.length).toBe(RIVALS.LIVE_MOMENTS_MAX);
+    expect(s.moments.at(-1)!.minute).toBe(RIVALS.LIVE_MOMENTS_MAX + 3);
+  });
+});

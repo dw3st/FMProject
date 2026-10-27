@@ -21,6 +21,7 @@ export interface GroupAdvanceContextValue {
   /** `until`: "tomorrow", "next_match", a date, or null (not ready). */
   markReady: (until: string | null) => Promise<void>;
   simulateToday: () => Promise<void>;
+  undoSimulate: () => Promise<void>;
   /** "Try again" after the executor gave up on a failed day. */
   retryAdvance: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -28,7 +29,7 @@ export interface GroupAdvanceContextValue {
 
 const OFF: GroupAdvanceContextValue = {
   enabled: false, view: null, busy: false, error: null,
-  markReady: async () => {}, simulateToday: async () => {}, retryAdvance: async () => {}, refresh: async () => {},
+  markReady: async () => {}, simulateToday: async () => {}, undoSimulate: async () => {}, retryAdvance: async () => {}, refresh: async () => {},
 };
 
 const GroupAdvanceContext = createContext<GroupAdvanceContextValue>(OFF);
@@ -141,6 +142,17 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(false);
   }, [saveId, view, refresh]);
 
+  const undoSimulate = useCallback(async () => {
+    const d = view?.me.decision;
+    if (!view || !d || d.mode !== "simulate" || d.date !== view.currentDate) return;
+    setBusy(true);
+    setError(null);
+    const r = await groupAdvanceApi.undoSimulate(saveId, d.date, d.fixtureId);
+    if (!r.ok) setError(r.error);
+    await refresh();
+    setBusy(false);
+  }, [saveId, view, refresh]);
+
   const retryAdvance = useCallback(async () => {
     setBusy(true);
     setError(null);
@@ -174,7 +186,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   };
 
   const value: GroupAdvanceContextValue = enabled
-    ? { enabled, view, busy, error, markReady, simulateToday, retryAdvance, refresh }
+    ? { enabled, view, busy, error, markReady, simulateToday, undoSimulate, retryAdvance, refresh }
     : OFF;
 
   return (

@@ -4,6 +4,7 @@ import { SOCIAL } from "@/Domain/social/socialConfig";
 import { Icon } from "@/GameInterface/Icons";
 import { TauntLine } from "@/GameInterface/Social/TauntLine";
 import { worldRoomLabel } from "@/GameInterface/Social/socialState";
+import { EmojiPicker } from "@/GameInterface/Social/EmojiPicker";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
 import type { FriendStatus, SocialErrorCode } from "@/types/socialTypes";
@@ -35,6 +36,7 @@ export function ChatWindow({ room }: { room: string }) {
   const [sending, setSending] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { loadMessages, markRoomRead } = s;
 
   const friend = room.startsWith("dm:") ? s.lists.friends.find((f) => f.nickname === room.slice(3)) : undefined;
@@ -78,6 +80,18 @@ export function ChatWindow({ room }: { room: string }) {
       e.preventDefault();
       void submit();
     }
+  }
+
+  /** Puts the emoji where the cursor is (or at the end) and gives the focus back to the box. */
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    setText(text.slice(0, start) + emoji + text.slice(end));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
   }
 
   const length = [...text].length;
@@ -144,6 +158,7 @@ export function ChatWindow({ room }: { room: string }) {
         {canWrite ? (
           <>
             <textarea
+              ref={inputRef}
               aria-label={t("social.chat.placeholder")}
               placeholder={t("social.chat.placeholder")}
               rows={2}
@@ -156,9 +171,12 @@ export function ChatWindow({ room }: { room: string }) {
               className="w-full resize-none rounded border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
             <div className="flex items-center justify-between gap-2">
-              <span className={`text-sm tabular-nums ${length > SOCIAL.MESSAGE_MAX ? "text-destructive" : "text-muted-foreground"}`}>
-                {t("social.chat.counter", { count: length, max: SOCIAL.MESSAGE_MAX })}
-              </span>
+              <div className="flex items-center gap-1">
+                <EmojiPicker onPick={insertEmoji} disabled={sending} />
+                <span className={`text-sm tabular-nums ${length > SOCIAL.MESSAGE_MAX ? "text-destructive" : "text-muted-foreground"}`}>
+                  {t("social.chat.counter", { count: length, max: SOCIAL.MESSAGE_MAX })}
+                </span>
+              </div>
               <Button onClick={() => void submit()} disabled={sending || !text.trim() || length > SOCIAL.MESSAGE_MAX}>
                 <Icon name="send" size={16} />
                 {t("social.chat.send")}

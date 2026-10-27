@@ -1,8 +1,8 @@
 // A friend's live score (multiplayer part 6): checked for coherence only, the official result is the day's. Pure.
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
-import type { LiveBase, LivePhase, LiveScoreFrame, LiveScoreView, LiveStatus } from "@/types/rivalsTypes";
+import type { LiveBase, LiveMoment, LivePhase, LiveScoreFrame, LiveScoreView, LiveStatus } from "@/types/rivalsTypes";
 
-const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "disallowed", "half", "minute", "end"]);
+const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "disallowed", "red", "half", "minute", "end"]);
 const SAVE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const isInt = (v: unknown, min: number, max: number): v is number =>
@@ -25,9 +25,11 @@ export function parseLiveFrame(e: Record<string, unknown>): LiveScoreFrame | nul
   if (!s || typeof s !== "object") return null;
   if (!isInt(s.for, 0, RIVALS.LIVE_MAX_GOALS) || !isInt(s.against, 0, RIVALS.LIVE_MAX_GOALS)) return null;
   const scorer = cleanScorer(e.scorer);
+  const side = e.side === "for" || e.side === "against" ? e.side : null;
+  if (e.phase === "red" && !side) return null;
   return {
     saveId: e.saveId, fixtureId: e.fixtureId, phase: e.phase as LivePhase, minute: e.minute,
-    score: { for: s.for, against: s.against }, ...(scorer ? { scorer } : {}),
+    score: { for: s.for, against: s.against }, ...(scorer ? { scorer } : {}), ...(side ? { side } : {}),
   };
 }
 
@@ -43,8 +45,10 @@ export function applyLiveFrame(
   const prev = prevIn && prevIn.fixtureId === frame.fixtureId ? prevIn : null;
   const tick = frame.phase === "minute";
   const disallowed = frame.phase === "disallowed";
+  const red = frame.phase === "red";
   if (tick && (!prev || frame.minute <= prev.minute)) return null;
-  if (disallowed && !prev) return null;
+  if ((disallowed || red) && !prev) return null;
+  if (red && !frame.side) return null;
   if (prev) {
     if (prev.status === "ended") return null;
     if (!tick && prev.events >= RIVALS.LIVE_MAX_EVENTS) return null;
@@ -64,12 +68,24 @@ export function applyLiveFrame(
     // The goal the VAR took back was the last one: no last goal to show any more.
     : disallowed ? null : prev?.lastGoal ?? null;
   const status: LiveStatus = frame.phase === "end" ? "ended" : frame.phase === "half" ? "half" : "live";
+  const named = (n: string | undefined) => (n && scorers.has(n) ? n : null);
+  const moment: LiveMoment | null = frame.phase === "goal"
+    ? { minute: frame.minute, kind: "goal", side: lastGoal!.side, player: lastGoal!.scorer }
+    : disallowed
+      ? { minute: frame.minute, kind: "disallowed", side: frame.score.for < before.for ? "for" : "against" }
+      : red
+        ? { minute: frame.minute, kind: "red", side: frame.side, player: named(frame.scorer) }
+        : frame.phase === "half" || frame.phase === "end"
+          ? { minute: frame.minute, kind: frame.phase }
+          : null;
+  const moments = [...(prev?.moments ?? []), ...(moment ? [moment] : [])].slice(-RIVALS.LIVE_MOMENTS_MAX);
   return {
     ...base,
     status,
     minute: frame.minute,
     score: { for: frame.score.for, against: frame.score.against },
     lastGoal,
+    moments,
     events: (prev?.events ?? 0) + (tick ? 0 : 1),
     updatedAt: now,
   };

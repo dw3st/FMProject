@@ -97,6 +97,7 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
+import { MATCH_POPUPS_ID } from "@/GameInterface/Social/ChatPopups";
 import type { LivePhase } from "@/types/rivalsTypes";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import {
@@ -684,6 +685,15 @@ export function MatchScreen() {
       gameBus.on("matchStart", () => { lastMinute = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
       gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
       gameBus.on("goalDisallowed", (e) => send("disallowed", e.minute, e.score)),
+      gameBus.on("card", (e) => {
+        const s = now();
+        const fixtureId = liveFixtureRef.current;
+        if (e.card !== "red" || !s || !fixtureId) return;
+        sendLiveRef.current({
+          fixtureId, phase: "red", minute: Math.max(0, Math.min(130, e.minute)),
+          score: { for: s.score.A, against: s.score.B }, scorer: e.playerName, side: e.team === "A" ? "for" : "against",
+        });
+      }),
       gameBus.on("halfTime", (e) => send("half", 45, e.score)),
       gameBus.on("matchEnd", (e) => {
         const s = now();
@@ -1455,6 +1465,10 @@ export function MatchScreen() {
       </header>
 
       {liveTarget && <LiveRivalsStrip saveId={liveTarget.saveId} live={liveRivals.live} highlight={liveRivals.highlight} />}
+      {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
+      <div className="relative z-50">
+        <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />
+      </div>
 
       {/* Main Match View */}
       <main className="flex-1 flex justify-center overflow-hidden min-h-0">
