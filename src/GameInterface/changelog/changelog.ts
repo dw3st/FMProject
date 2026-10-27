@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.35.4",
+    date: "2026-10-27",
+    items: [
+      {
+        pt: "Escudos para mais 449 clubes que ainda apareciam com o brasão de cores.",
+        en: "Crests for 449 more clubs that still showed the colour badge.",
+      },
+    ],
+  },
+  {
     version: "4.35.3",
     date: "2026-10-27",
     items: [
