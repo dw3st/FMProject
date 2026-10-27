@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyEspn, type World } from "@/../scripts/espn/apply";
 import { recalibratedOverall } from "@/../scripts/espn/estimate";
-import { ESPN_LOGO_DIR, buildLogoIndex } from "@/../scripts/espn/logos";
+import { ESPN_LOGO_DIR, TSDB_LOGO_DIR, buildLogoIndex } from "@/../scripts/espn/logos";
 import type { EspnSnapshot, LeagueMapEntry } from "@/../scripts/espn/types";
 import { formatSchedules } from "@/../scripts/openfootball/leagues";
 import { MIN_BY_ROLE, MIN_SQUAD } from "@/../scripts/openfootball/roster";
@@ -114,7 +114,7 @@ writeJson(join(DATA, "pyramids.json"), out.pyramids, 2);
 const nativeFiles = new Set<string>();
 for (const dirent of readdirSync(LOGOS, { withFileTypes: true }).filter((d) => d.isDirectory())) {
   const d = dirent.name;
-  if (d === ESPN_LOGO_DIR) continue;
+  if (d === ESPN_LOGO_DIR || d === TSDB_LOGO_DIR) continue;
   for (const f of readdirSync(join(LOGOS, d))) nativeFiles.add(`${d}/${f.replace(/\.(svg|png)$/i, "")}`);
 }
 const missingLogos = [...espnLogoOf.entries()].filter(([, file]) => !existsSync(join(ESPN, "logos", file)));
@@ -126,6 +126,8 @@ const index = buildLogoIndex(
   allSquads.map((s) => ({ id: s.id, slug: s.slug, nativeLeague: nativeLeagueOf.get(s.id) ?? null })),
   nativeFiles,
   new Set([...espnLogoOf.keys()].filter((id) => existsSync(join(ESPN, "logos", espnLogoOf.get(id)!)))),
+  // TheSportsDB crests (scripts/fetchTheSportsDBBadges.ts) stay on disk across regenerations.
+  existsSync(join(LOGOS, TSDB_LOGO_DIR)) ? new Set(readdirSync(join(LOGOS, TSDB_LOGO_DIR)).filter((f) => f.endsWith(".png")).map((f) => f.slice(0, -4))) : new Set(),
 );
 rmSync(join(LOGOS, ESPN_LOGO_DIR), { recursive: true, force: true });
 mkdirSync(join(LOGOS, ESPN_LOGO_DIR), { recursive: true });
