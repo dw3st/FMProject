@@ -36,6 +36,14 @@ export const changelog: ChangelogEntry[] = [
         pt: "Na partida, os avisos dos amigos aparecem abaixo da faixa Ao vivo, sobre o campo, e o Ao vivo pisca em vermelho.",
         en: "On the match, friends' notices show under the Live strip, over the pitch, and Live blinks red.",
       },
+      {
+        pt: "Clicar no amigo na faixa Ao vivo mostra o placar e os últimos lances do jogo dele: gols, expulsões, VAR, intervalo e fim.",
+        en: "Clicking a friend on the Live strip shows the score and the latest moments of his match: goals, red cards, VAR, half-time and full time.",
+      },
+      {
+        pt: "Emojis no chat com amigos.",
+        en: "Emojis in the chat with friends.",
+      },
     ],
     fixes: [
       {

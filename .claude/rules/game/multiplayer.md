@@ -570,7 +570,7 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
   `away_win`, `comeback_win`, `blown_lead`, `late_equalizer` / `late_winner` (88' ou depois, pelos minutos dos gols),
   `shootout_win`/`shootout_loss` (empate decidido nos pênaltis).
 - **Placar ao vivo:** o `MatchScreen` de um mundo em grupo manda `live_score { saveId, fixtureId, phase, minute, score:
-  { for, against }, scorer? }` (`start`, `goal`, `disallowed`, `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
+  { for, against }, scorer?, side? }` (`start`, `goal`, `disallowed`, `red` (4.35.3, com `side` e o expulso em `scorer`), `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
   `minute` a cada `RIVALS.LIVE_MINUTE_STEP` (5) minutos de jogo, conferido a cada segundo: precisa adiantar o minuto,
   não muda o placar, volta o status a `live` depois do intervalo e não conta no limite de 40 eventos) por um socket próprio
   (`useLiveRivals`). O servidor (`src/backend/rivals/liveScores.ts`, em memória) aceita só de um membro, para o jogo não
@@ -603,6 +603,7 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 - Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos.
 - Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
   e gol ao vivo, com as ações; 8 s, no máximo 3.
+- **Últimos lances (4.35.3):** `LiveScoreView.moments` guarda os últimos `RIVALS.LIVE_MOMENTS_MAX` (12) lances (gol com autor, gol anulado, expulsão, intervalo, fim); clicar no amigo na faixa abre o popup `LiveMoments` (placar + lances, mais novos primeiro) com a resenha embaixo.
 - Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 4.35.3); os avisos (`ChatPopups`) vão para o ponto `MATCH_POPUPS_ID` logo abaixo dela, centralizados sobre o topo do campo, em vez do canto; gol do amigo destaca 4 s com o autor; clique abre as ações
   sem pausar.
 - Chat: `TauntLine` (escudo 20px, placar, ícone ou frase em itálico no idioma de quem lê). i18n `rivals.*`.

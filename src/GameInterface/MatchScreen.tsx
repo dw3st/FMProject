@@ -685,6 +685,15 @@ export function MatchScreen() {
       gameBus.on("matchStart", () => { lastMinute = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
       gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
       gameBus.on("goalDisallowed", (e) => send("disallowed", e.minute, e.score)),
+      gameBus.on("card", (e) => {
+        const s = now();
+        const fixtureId = liveFixtureRef.current;
+        if (e.card !== "red" || !s || !fixtureId) return;
+        sendLiveRef.current({
+          fixtureId, phase: "red", minute: Math.max(0, Math.min(130, e.minute)),
+          score: { for: s.score.A, against: s.score.B }, scorer: e.playerName, side: e.team === "A" ? "for" : "against",
+        });
+      }),
       gameBus.on("halfTime", (e) => send("half", 45, e.score)),
       gameBus.on("matchEnd", (e) => {
         const s = now();

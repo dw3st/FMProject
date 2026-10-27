@@ -686,6 +686,7 @@
       "setupLead": "Your friends find you by it in the game and in the chat."
     },
     "chat": {
+      "emoji": "Emojis",
       "minimize": "Minimize",
       "close": "Close",
       "loadMore": "Load more",
@@ -5451,6 +5452,15 @@
     "col": { "rank": "#", "position": "League", "form": "Form", "last": "Last", "next": "Next", "live": "Now" },
     "positionValue": "#{{position}}",
     "nextValue": "{{date}} · {{opponent}}",
+    "moments": {
+      "title": "Latest moments",
+      "none": "Nothing yet.",
+      "goal": "{{team}} goal",
+      "disallowed": "{{team}} goal ruled out by VAR",
+      "red": "{{team}} player sent off",
+      "half": "Half-time",
+      "end": "Full time"
+    },
     "liveBadge": "live",
     "liveLine": "live · {{score}} · {{minute}}'",
     "halfLine": "half-time · {{score}}",
