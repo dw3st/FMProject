@@ -103,7 +103,7 @@ nem abre.
   falhar, "Tentar de novo"; Escape fecha a janela com o foco. Ao recarregar os amigos, as DMs com quem não é mais
   amigo (desfez a amizade) fecham. Estado por aba no `sessionStorage`
   (`fm.social.chats.v1`); o socket reconecta a cada tela.
-- A partida ao vivo não tem a barra: o selo aparece ao voltar.
+- A partida ao vivo não tem a barra: o botão "Amigos" fica no canto inferior direito (`MatchSocial`, `src/pages/match/entry.tsx`) e abre o mesmo painel e as janelas de chat.
 
 ## Testes
 

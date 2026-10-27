@@ -138,6 +138,8 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
   const [step, setStep] = useState<"mode" | "manager" | "club">(join ? "manager" : "mode");
   /** Solo career, a world of friends (multiplayer part 2) or the public world (part 5b). */
   const [playMode, setPlayMode] = useState<"solo" | "multi" | "public">(initialPlayMode);
+  /** Came from "Join" on the start screen: the public world is already chosen, so the mode step is skipped. */
+  const [fromPublicLink] = useState(() => !friendsJoin && initialPlayMode() === "public");
   const taken = useMemo(() => new Set(join?.takenClubs ?? []), [join?.takenClubs]);
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
@@ -391,7 +393,17 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
     setStep("manager");
   }
 
+  useEffect(() => {
+    if (fromPublicLink) void continueFromMode();
+    // Once, on mount: the link already picked the public world.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (preparing) return <PreSeasonLoadingScreen />;
+
+  if (step === "mode" && fromPublicLink && !modeError) {
+    return <WizardFrame backdrop><div className="flex-1" /></WizardFrame>;
+  }
 
   if (step === "mode") {
     return (
@@ -445,6 +457,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
                 initial={manager}
                 onCancel={() => {
                   if (friendsJoin) window.location.href = `/join/${friendsJoin.code}`;
+                  else if (fromPublicLink) window.location.href = "/start";
                   else {
                     setPublicJoin(null);
                     setStep("mode");

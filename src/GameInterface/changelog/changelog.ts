@@ -25,6 +25,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.35.1",
+    date: "2026-10-27",
+    items: [
+      {
+        pt: "Amigos e chat também durante a partida ao vivo.",
+        en: "Friends and chat during the live match too.",
+      },
+      {
+        pt: "Na lateral do campo, o técnico aparece só pela cabeça.",
+        en: "On the touchline, the manager is shown as a head only.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Entrar no mundo público pela tela inicial não pergunta mais como você quer jogar.",
+        en: "Joining the public world from the start screen no longer asks how you want to play.",
+      },
+      {
+        pt: "Botões da tela inicial alinhados.",
+        en: "Start screen buttons lined up.",
+      },
+    ],
+  },
+  {
     version: "4.35",
     date: "2026-10-27",
     items: [
