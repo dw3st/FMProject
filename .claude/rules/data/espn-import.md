@@ -9,6 +9,7 @@ Spec: `docs/superpowers/specs/2026-09-25-espn-roster-import-design.md`.
 | `data_process/native/` | Fonte dos 8 elencos nativos e das entradas nativas de `leagueData`, `leagueSchedules` e `countries`. **Edite aqui**, nunca em `src/example_data` |
 | `data_process/espn/snapshot.json` | Snapshot da API pública da ESPN (clubes, elencos, técnicos). Gerado por `fetchEspn.ts` |
 | `data_process/espn/logos/` | Escudos de 128 px por id de clube da ESPN |
+| `data_process/thesportsdb/badgeMatches.json` | Clubes sem escudo nativo nem da ESPN casados com um time do TheSportsDB (ids e nomes, sem imagem); as imagens ficam em `src/example_data/logos/tsdb/` |
 | `data_process/espn/leagueMap.json` | Nosso slug ↔ código de liga da ESPN (34 ligas hoje) |
 | `data_process/espn/clubOverrides.json` | `espnTeamId → squadId` quando o nome não casa sozinho |
 | `data_process/espn/playerOverrides.json` | `espnAthleteId → playerId` |
@@ -24,11 +25,13 @@ cp src/example_data/roles.json src/Data/roles.json   # os dois importadores recu
 bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native + data_process/openfootball
 rm -rf src/Data/squads src/Data/logos/espn          # ver "Sincronizar sem lixo" abaixo
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
-bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
+bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos (nativo > ESPN > logos/tsdb)
 bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
 bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 bun scripts/applyClubNameCorrections.ts  # nomes de exibição dos clubes (acentos, sem sufixos) — ver abaixo
 bun scripts/applyCoaches.ts            # técnico atual (Wikidata + correções manuais) — ver "Técnicos"
+# opcional, rede: escudos do TheSportsDB para clubes que seguem sem escudo (ver "Escudos no front")
+# bun scripts/fetchTheSportsDBBadges.ts && bun scripts/applyTsdbBadges.ts
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -79,7 +82,7 @@ logos, depois `default`, depois a primeira disponível. Grava `snapshot.json` e 
 | `lineup` | Composição nova de cada liga coberta pela ESPN; quem sai de uma liga coberta sem aparecer em outra desce para o nível não coberto mais alto do país (o grupo com menos clubes, depois por slug) ou sai do mundo se não houver nível abaixo |
 | `aging` | (#6) o declínio é atenuado para o topo do papel: `fator = clamp(1 − (pctl − 0,9) × 5, 0,5, 1)` sobre o percentil de overall do papel no mundo pré-envelhecimento (`topDeclineFactor`); só o declínio, nunca o crescimento. Envelhece até 2 anos (`MAX_YEARS`) por curva de idade: delta médio por atributo por ano (16-21 +0,6 ... 35+ −0,6), repartido pelos `attrWeights` do melhor papel específico do jogador, com teto suave no crescimento (`1 − (v/10)²`) e o declínio pesando `speed`/`acceleration`/`stamina` em dobro. Um jogador casado cujo gap de idade ESPN−mundo é 3 envelhece os 3 anos (`playerAge`), mas o drift de atributos fica limitado a `MAX_YEARS = 2` — de propósito, para não extrapolar a curva além do calibrado |
 | `estimate` | Jogador novo (sem par no mundo): base = mediana da linha (clube próprio se tiver ≥5 jogadores casados no total e ≥3 na linha, senão liga, senão mundo; clube novo sem base própria leva `NEW_CLUB_SHIFT = −0,3`), mais ajuste de idade e ruído determinístico. `fillSquad` completa mínimos por papel e `MIN_SQUAD` com jovens 17–19; `trimSquad` corta em `MAX_SQUAD = 30` pela nota final (ver "Corte do elenco" em "Recalibração pelo valor de mercado") |
-| `logos` | `buildLogoIndex`: `squadId → "pasta/stem"`, escudo nativo (`logos/{ligaNativa}/{slug\|id}`) vence o da ESPN (`logos/espn/{id}.png`); sem nenhum dos dois, o clube fica fora do índice |
+| `logos` | `buildLogoIndex`: `squadId → "pasta/stem"`, escudo nativo (`logos/{ligaNativa}/{slug\|id}`) vence o da ESPN (`logos/espn/{id}.png`), que vence o do TheSportsDB (`logos/tsdb/{id}.png`, arquivos que o `importEspn` nunca apaga); sem nenhum, o clube fica fora do índice |
 | `apply` | `applyEspn`: junta tudo (clubes, dedupe de atletas duplicados, jogadores, composição, tamanhos de elenco, metadados de clube novo), reconstrói pirâmide e zonas, ajusta o calendário e avança a temporada (+2 anos, `bumpSeason`) |
 
 ## Casamento de clubes (`matchClubs.ts`)
@@ -406,6 +409,30 @@ espalhada pelo código do importador.
 `/api/logos/{pasta}/{stem}`. Clube fora do índice devolve `undefined` e a UI nem tenta a requisição —
 cai direto no brasão de cores do `ClubLogo`. A função só recebe o `squadId`; os antigos parâmetros
 `leagueSlug`/`clubSlug` foram removidos da assinatura e de todos os call sites.
+
+**Terceira fonte: TheSportsDB (2026-10-27).** Clubes sem escudo nativo nem da ESPN (quase todos os `of_*`) levam o
+escudo do TheSportsDB (licença incerta; uso aprovado pelo usuário):
+
+- `bun scripts/fetchTheSportsDBBadges.ts [--limit N] [--no-download]`: para cada clube fora do `logoIndex.json`,
+  `searchteams.php?t=` com o nome, o `shortName`, o nome completo do id `of_*` e o nome sem tokens de clube (chave grátis `123`,
+  curl sequencial com pausa de 6,5 s, o limite da chave grátis; um 429 espera um minuto). Casamento puro em `scripts/thesportsdb/badgeMatch.ts`
+  (com teste): futebol, time masculino principal (sem II/B/sub-xx/feminino), país = país da liga do clube
+  (`leagueData`, com grafias alternativas) e um único
+  candidato. A busca da chave grátis devolve só um time (o "melhor"), então o nome decide: um nome dele (o
+  principal ou um alternativo) precisa ter exatamente os mesmos tokens significativos que um nosso (o nome, o
+  `shortName` ou o nome completo no id `of_*` — "Racing" é `of_ar_racing_de_cordoba`, então um "Racing Club" não
+  serve; anos ficam: "Levski 2020" não é "Levski"); um time casado com dois clubes nossos cai dos dois.
+  Baixa o escudo de 200 px (`/small`) em `src/example_data/logos/tsdb/<squadId>.png` e grava
+  `data_process/thesportsdb/badgeMatches.json` (casados e pulados, com o motivo). Respostas em
+  `data_process/thesportsdb/cache/` (gitignored).
+- `bun scripts/applyTsdbBadges.ts`: acrescenta `tsdb/<id>` ao `logoIndex.json` existente sem rodar a cadeia (nunca
+  troca uma entrada nativa/ESPN). O `importEspn` também lê `logos/tsdb/` (`buildLogoIndex`, terceira fonte), então
+  uma regeração mantém esses escudos. Copiar `logoIndex.json` e `logos/tsdb/` para `src/Data/`.
+- Rodada de 2026-10-27: 641 clubes sem escudo, **449 casados** (90 com nome diferente do nosso, revisados à mão:
+  "FC Basel" → "Basel", "Bukhara" → "Buxoro"…), 192 pulados (sobretudo nome mais curto ou mais longo no
+  TheSportsDB, ex. "Ordabasy" × "Ordabasy Shymkent", reservas como "Rubin 2", clubes de Liechtenstein na liga suíça).
+  Cobertura de escudos: 632 → **1081 de 1273** clubes. +16 MB (449 PNG de 200 px). Uma primeira versão com regra
+  frouxa (nomes contidos um no outro) casava 529 com erros como "Levski" → Levski Lom e "HJK" → HJK Kantsu.
 
 ## Limites
 

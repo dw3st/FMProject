@@ -1,0 +1,5693 @@
+{
+ "note": "Crests of clubs with no native/ESPN crest, from TheSportsDB (thesportsdb.com). Images in src/example_data/logos/tsdb/.",
+ "matched": [
+  {
+   "squadId": "137",
+   "name": "Figueirense",
+   "league": "brazil_serie_c",
+   "country": "Brazil",
+   "idTeam": "134462",
+   "tsdbName": "Figueirense",
+   "tsdbCountry": "Brazil"
+  },
+  {
+   "squadId": "149",
+   "name": "Paysandu",
+   "league": "brazil_serie_c",
+   "country": "Brazil",
+   "idTeam": "135671",
+   "tsdbName": "Paysandu",
+   "tsdbCountry": "Brazil"
+  },
+  {
+   "squadId": "7779",
+   "name": "Ituano",
+   "league": "brazil_serie_c",
+   "country": "Brazil",
+   "idTeam": "140108",
+   "tsdbName": "Ituano",
+   "tsdbCountry": "Brazil"
+  },
+  {
+   "squadId": "of_ae_al_ain",
+   "name": "Al Ain",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137832",
+   "tsdbName": "Al Ain",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_dhafra",
+   "name": "Al Dhafra",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137834",
+   "tsdbName": "Al Dhafra",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_fujairah",
+   "name": "Al Fujairah",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137840",
+   "tsdbName": "Al Fujairah",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_jazira",
+   "name": "Al Jazira",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137830",
+   "tsdbName": "Al Jazira",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_nasr",
+   "name": "Al Nasr",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137831",
+   "tsdbName": "Al Nasr",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_wahda",
+   "name": "Al Wahda",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137836",
+   "tsdbName": "Al Wahda",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_al_wasl",
+   "name": "Al Wasl",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137835",
+   "tsdbName": "Al Wasl",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_baniyas",
+   "name": "Baniyas",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137839",
+   "tsdbName": "Baniyas",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_emirates_club",
+   "name": "Emirates Club",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "142319",
+   "tsdbName": "Emirates Club",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_ae_sharjah",
+   "name": "Sharjah",
+   "league": "of_uae_pro_league",
+   "country": "United Arab Emirates",
+   "idTeam": "137829",
+   "tsdbName": "Sharjah",
+   "tsdbCountry": "United Arab Emirates"
+  },
+  {
+   "squadId": "of_al_bylis",
+   "name": "Bylis",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "137802",
+   "tsdbName": "Bylis",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_dinamo_city",
+   "name": "Dinamo City",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "140666",
+   "tsdbName": "Dinamo City",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_flamurtari",
+   "name": "Flamurtari",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "134104",
+   "tsdbName": "Flamurtari Vlorë",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_partizani_tirana",
+   "name": "Partizani Tirana",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "137799",
+   "tsdbName": "Partizani Tirana",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_teuta_durres",
+   "name": "Teuta Durrës",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "134055",
+   "tsdbName": "Teuta Durrës",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_tirana",
+   "name": "Tirana",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "134037",
+   "tsdbName": "Tirana",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_al_vllaznia_shkoder",
+   "name": "Vllaznia Shkodër",
+   "league": "of_albanian_superleague",
+   "country": "Albania",
+   "idTeam": "137800",
+   "tsdbName": "Vllaznia Shkodër",
+   "tsdbCountry": "Albania"
+  },
+  {
+   "squadId": "of_am_alashkert",
+   "name": "Alashkert",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "135672",
+   "tsdbName": "Alashkert",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_am_bkma",
+   "name": "BKMA",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "140688",
+   "tsdbName": "BKMA",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_am_gandzasar",
+   "name": "Gandzasar",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "137898",
+   "tsdbName": "Gandzasar",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_am_noah",
+   "name": "Noah",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "137895",
+   "tsdbName": "Noah",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_am_urartu",
+   "name": "Urartu",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "137897",
+   "tsdbName": "Urartu",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_am_van",
+   "name": "Van",
+   "league": "of_armenian_premier_league",
+   "country": "Armenia",
+   "idTeam": "140092",
+   "tsdbName": "Van",
+   "tsdbCountry": "Armenia"
+  },
+  {
+   "squadId": "of_ar_all_boys",
+   "name": "All Boys",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "137781",
+   "tsdbName": "All Boys",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_almagro",
+   "name": "Almagro",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "137787",
+   "tsdbName": "Almagro",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_almirante_brown",
+   "name": "Almirante Brown",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "141011",
+   "tsdbName": "Almirante Brown",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_arsenal_de_sarandi",
+   "name": "Arsenal",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "135152",
+   "tsdbName": "Arsenal de Sarandí",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_atlanta",
+   "name": "Atlanta",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "137776",
+   "tsdbName": "Atlanta",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_chacarita_juniors",
+   "name": "Chacarita Juniors",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "135899",
+   "tsdbName": "Chacarita Juniors",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_colegiales",
+   "name": "Colegiales",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "143095",
+   "tsdbName": "Colegiales",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_defensores_de_belgrano",
+   "name": "Defensores",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "137779",
+   "tsdbName": "Defensores de Belgrano",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_estudiantes_de_buenos_aires",
+   "name": "Estudiantes",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "137767",
+   "tsdbName": "Estudiantes de Buenos Aires",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_ferro_carril_oeste",
+   "name": "Ferro Carril Oeste",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "137774",
+   "tsdbName": "Ferro Carril Oeste",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_gimnasia_y_esgrima_de_jujuy",
+   "name": "Gimnasia y Esgrima",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "137783",
+   "tsdbName": "Gimnasia y Esgrima de Jujuy",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_gimnasia_y_tiro_de_salta",
+   "name": "Gimnasia y Tiro",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "144738",
+   "tsdbName": "Gimnasia y Tiro",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_godoy_cruz",
+   "name": "Godoy Cruz",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "135162",
+   "tsdbName": "Godoy Cruz",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_los_andes",
+   "name": "Los Andes",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "143087",
+   "tsdbName": "Los Andes",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_maipu",
+   "name": "Maipú",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "141013",
+   "tsdbName": "Deportivo Maipú",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_nueva_chicago",
+   "name": "Nueva Chicago",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "135167",
+   "tsdbName": "Nueva Chicago",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_quilmes",
+   "name": "Quilmes",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "135169",
+   "tsdbName": "Quilmes",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_racing_de_cordoba",
+   "name": "Racing",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "144739",
+   "tsdbName": "Racing de Córdoba",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_san_martin_de_tucuman",
+   "name": "San Martín",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "136197",
+   "tsdbName": "San Martín de Tucumán",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_san_martin_san_juan",
+   "name": "San Martín SJ",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "135174",
+   "tsdbName": "San Martín de San Juan",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_san_miguel",
+   "name": "San Miguel",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "143096",
+   "tsdbName": "San Miguel",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_san_telmo",
+   "name": "San Telmo",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "141014",
+   "tsdbName": "San Telmo",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_talleres_de_remedios_de_escalada",
+   "name": "Talleres",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "142478",
+   "tsdbName": "Talleres de Remedios de Escalada",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_temperley",
+   "name": "Temperley",
+   "league": "of_argentine_second_division_group_b",
+   "country": "Argentina",
+   "idTeam": "135176",
+   "tsdbName": "Temperley",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_ar_tristan_suarez",
+   "name": "Tristán Suárez",
+   "league": "of_argentine_second_division_group_a",
+   "country": "Argentina",
+   "idTeam": "141015",
+   "tsdbName": "Tristán Suárez",
+   "tsdbCountry": "Argentina"
+  },
+  {
+   "squadId": "of_bg_beroe",
+   "name": "Beroe",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "134351",
+   "tsdbName": "Beroe",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_botev_plovdiv",
+   "name": "Botev Plovdiv",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "134343",
+   "tsdbName": "Botev Plovdiv",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_botev_vratsa",
+   "name": "Botev Vratsa",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "137920",
+   "tsdbName": "Botev Vratsa",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_cherno_more",
+   "name": "Cherno More",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "137915",
+   "tsdbName": "Cherno More",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_cska_1948",
+   "name": "CSKA 1948",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "140107",
+   "tsdbName": "CSKA 1948",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_cska_sofia",
+   "name": "CSKA Sofia",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "134088",
+   "tsdbName": "CSKA Sofia",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_lokomotiv_1929_sofia",
+   "name": "Lokomotiv Sofia",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "140769",
+   "tsdbName": "Lokomotiv Sofia",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_lokomotiv_plovdiv",
+   "name": "Lokomotiv Plovdiv",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "134092",
+   "tsdbName": "Lokomotiv Plovdiv",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_bg_slavia_sofia",
+   "name": "Slavia Sofia",
+   "league": "of_bulgarian_first_league",
+   "country": "Bulgaria",
+   "idTeam": "137914",
+   "tsdbName": "Slavia Sofia",
+   "tsdbCountry": "Bulgaria"
+  },
+  {
+   "squadId": "of_by_arsenal_dzerzhinsk",
+   "name": "Arsenal Dzerzhinsk",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "139691",
+   "tsdbName": "Arsenal Dzerzhinsk",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_baranovichi",
+   "name": "Baranovichi",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "141320",
+   "tsdbName": "Baranovichi",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_bate_borisov",
+   "name": "BATE",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "133946",
+   "tsdbName": "BATE Borisov",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_bumprom_gomel",
+   "name": "Bumprom Gomel",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "142514",
+   "tsdbName": "Bumprom Gomel",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_dnepr_mogilev",
+   "name": "Dnepr Mogilev",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "139043",
+   "tsdbName": "Dnepr Mogilev",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_gomel",
+   "name": "Gomel",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "134020",
+   "tsdbName": "Gomel",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_lida",
+   "name": "Lida",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "139684",
+   "tsdbName": "Lida",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_minsk",
+   "name": "Minsk",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "134393",
+   "tsdbName": "Minsk",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_molodechno",
+   "name": "Molodechno",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "142511",
+   "tsdbName": "Molodechno",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_niva_dolbizno",
+   "name": "Niva",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "146241",
+   "tsdbName": "Niva Dolbizno",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_orsha",
+   "name": "Orsha",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "139687",
+   "tsdbName": "Orsha",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_osipovichi",
+   "name": "Osipovichi",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "139790",
+   "tsdbName": "Osipovichi",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_ostrovets",
+   "name": "Ostrovets",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "142524",
+   "tsdbName": "Ostrovets",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_slavia_mozyr",
+   "name": "Slavia Mozyr",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "137907",
+   "tsdbName": "Slavia Mozyr",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_slutsk",
+   "name": "Slutsk",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "137908",
+   "tsdbName": "Slutsk",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_smorgon",
+   "name": "Smorgon",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "139688",
+   "tsdbName": "Smorgon",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_vitebsk",
+   "name": "Vitebsk",
+   "league": "of_belarusian_highest_league",
+   "country": "Belarus",
+   "idTeam": "137911",
+   "tsdbName": "Vitebsk",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_by_volna_pinsk",
+   "name": "Volna Pinsk",
+   "league": "of_belarusian_first_league",
+   "country": "Belarus",
+   "idTeam": "139690",
+   "tsdbName": "Volna Pinsk",
+   "tsdbCountry": "Belarus"
+  },
+  {
+   "squadId": "of_ch_fc_basel",
+   "name": "FC Basel",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "133957",
+   "tsdbName": "Basel",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_fc_lugano",
+   "name": "FC Lugano",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "136037",
+   "tsdbName": "Lugano",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_fc_luzern",
+   "name": "FC Luzern",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "134123",
+   "tsdbName": "Luzern",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_fc_sion",
+   "name": "FC Sion",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "135947",
+   "tsdbName": "Sion",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_fc_thun",
+   "name": "FC Thun",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "134394",
+   "tsdbName": "Thun",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_fc_zurich",
+   "name": "FC Zürich",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "134396",
+   "tsdbName": "Zürich",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_grasshopper",
+   "name": "Grasshopper",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "134391",
+   "tsdbName": "Grasshoppers",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_ch_young_boys",
+   "name": "Young Boys",
+   "league": "of_swiss_super_league",
+   "country": "Switzerland",
+   "idTeam": "134001",
+   "tsdbName": "Young Boys",
+   "tsdbCountry": "Switzerland"
+  },
+  {
+   "squadId": "of_cm_aigle_royal_de_la_menoua",
+   "name": "Aigle Royal de la Menoua",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "153214",
+   "tsdbName": "Aigle Royal",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_canon_yaounde",
+   "name": "Canon Yaounde",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "157542",
+   "tsdbName": "Canon Yaoundé",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_dynamo_douala",
+   "name": "Dynamo Douala",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "154898",
+   "tsdbName": "Dynamo Douala",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_gazelle_garoua",
+   "name": "Gazelle Garoua",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "157543",
+   "tsdbName": "Gazelle de Garoua",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_panthere_du_nde",
+   "name": "Panthere du Nde",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "156581",
+   "tsdbName": "Panthère du Ndé",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_pwd_bamenda",
+   "name": "PWD Bamenda",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "140648",
+   "tsdbName": "PWD Bamenda",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_stade_renard_de_melong",
+   "name": "Stade Renard de Melong",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "157544",
+   "tsdbName": "Stade Renard de Melong",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_cm_unisport_bafang",
+   "name": "Unisport Bafang",
+   "league": "of_cameroonian_elite_one",
+   "country": "Cameroon",
+   "idTeam": "157545",
+   "tsdbName": "Unisport du Haut-Nkam",
+   "tsdbCountry": "Cameroon"
+  },
+  {
+   "squadId": "of_co_barranquilla",
+   "name": "Barranquilla",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "141060",
+   "tsdbName": "Barranquilla",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_bogota",
+   "name": "Bogotá",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "141062",
+   "tsdbName": "Bogotá",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_deportes_quindio",
+   "name": "Deportes Quindío",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "141064",
+   "tsdbName": "Deportes Quindío",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_envigado",
+   "name": "Envigado",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "137612",
+   "tsdbName": "Envigado",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_real_cartagena",
+   "name": "Real Cartagena",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "141069",
+   "tsdbName": "Real Cartagena",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_real_santander",
+   "name": "Real Santander",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "141070",
+   "tsdbName": "Real Santander",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_co_union_magdalena",
+   "name": "Unión Magdalena",
+   "league": "of_colombian_second_division",
+   "country": "Colombia",
+   "idTeam": "139042",
+   "tsdbName": "Unión Magdalena",
+   "tsdbCountry": "Colombia"
+  },
+  {
+   "squadId": "of_cy_ael_limassol",
+   "name": "AEL",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "137922",
+   "tsdbName": "AEL Limassol",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_apollon_limassol",
+   "name": "Apollon",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "134407",
+   "tsdbName": "Apollon Limassol",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_aris_limassol",
+   "name": "Aris",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "141094",
+   "tsdbName": "Aris Limassol",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_doxa_katokopias",
+   "name": "Doxa",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "137923",
+   "tsdbName": "Doxa Katokopias",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_ermis_aradippou",
+   "name": "Ermis",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "134628",
+   "tsdbName": "Ermis Aradippou",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_nea_salamis",
+   "name": "Nea Salamis",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "137926",
+   "tsdbName": "Nea Salamis Famagusta",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cy_pafos",
+   "name": "Pafos",
+   "league": "of_cypriot_first_division",
+   "country": "Cyprus",
+   "idTeam": "137928",
+   "tsdbName": "Pafos",
+   "tsdbCountry": "Cyprus"
+  },
+  {
+   "squadId": "of_cz_banik_ostrava",
+   "name": "Banik Ostrava",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136684",
+   "tsdbName": "Baník Ostrava",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_bohemians_1905",
+   "name": "Bohemians 1905",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136681",
+   "tsdbName": "Bohemians 1905",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_brno",
+   "name": "Zbrojovka Brno",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "140094",
+   "tsdbName": "Zbrojovka Brno",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_dukla_prague",
+   "name": "Dukla Prague",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136682",
+   "tsdbName": "Dukla Praha",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_jablonec",
+   "name": "Jablonec",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "134395",
+   "tsdbName": "Jablonec",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_mlada_boleslav",
+   "name": "Mlada Boleslav",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "134000",
+   "tsdbName": "Mladá Boleslav",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_pribram",
+   "name": "Pribram",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136678",
+   "tsdbName": "Příbram",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_sigma_olomouc",
+   "name": "Sigma Olomouc",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136677",
+   "tsdbName": "Sigma Olomouc",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_slavia_prague",
+   "name": "Slavia Prague",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136036",
+   "tsdbName": "Slavia Prague",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_slovacko",
+   "name": "Slovacko",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136685",
+   "tsdbName": "Slovácko",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_slovan_liberec",
+   "name": "Slovan Liberec",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "133954",
+   "tsdbName": "Slovan Liberec",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_sparta_prague",
+   "name": "Sparta Prague",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "134007",
+   "tsdbName": "Sparta Prague",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_teplice",
+   "name": "Teplice",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "136680",
+   "tsdbName": "Teplice",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_viktoria_plzen",
+   "name": "Viktoria Plzen",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "134015",
+   "tsdbName": "Viktoria Plzeň",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_cz_zlin",
+   "name": "Zlin",
+   "league": "of_czech_first_league",
+   "country": "Czech Republic",
+   "idTeam": "137810",
+   "tsdbName": "Zlín",
+   "tsdbCountry": "Czechia"
+  },
+  {
+   "squadId": "of_dz_aso_chlef",
+   "name": "ASO Chlef",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139276",
+   "tsdbName": "ASO Chlef",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_cr_belouizdad",
+   "name": "CR Belouizdad",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139278",
+   "tsdbName": "CR Belouizdad",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_cs_constantine",
+   "name": "CS Constantine",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139282",
+   "tsdbName": "CS Constantine",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_es_ben_aknoun",
+   "name": "ES Ben Aknoun",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "147483",
+   "tsdbName": "ES Ben Aknoun",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_es_mostaganem",
+   "name": "ES Mostaganem",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "149024",
+   "tsdbName": "ES Mostaganem",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_es_setif",
+   "name": "ES Setif",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139104",
+   "tsdbName": "ES Sétif",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_js_kabylie",
+   "name": "JS Kabylie",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139092",
+   "tsdbName": "JS Kabylie",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_js_saoura",
+   "name": "JS Saoura",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139320",
+   "tsdbName": "JS Saoura",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_mb_rouissat",
+   "name": "MB Rouissat",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "152714",
+   "tsdbName": "MB Rouissat",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_mc_alger",
+   "name": "MC Alger",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139283",
+   "tsdbName": "MC Alger",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_mc_oran",
+   "name": "MC Oran",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139279",
+   "tsdbName": "MC Oran",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_olympique_akbou",
+   "name": "Olympique Akbou",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "149025",
+   "tsdbName": "Olympique Akbou",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_paradou",
+   "name": "Paradou",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139273",
+   "tsdbName": "Paradou AC",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_dz_usm_alger",
+   "name": "USM Alger",
+   "league": "of_algerian_league_1",
+   "country": "Algeria",
+   "idTeam": "139096",
+   "tsdbName": "USM Alger",
+   "tsdbCountry": "Algeria"
+  },
+  {
+   "squadId": "of_eg_al_ahly",
+   "name": "Al Ahly",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "138995",
+   "tsdbName": "Al Ahly",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_aswan",
+   "name": "Aswan",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139847",
+   "tsdbName": "Aswan SC",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_el_dakhleya",
+   "name": "El Dakhleya",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "147117",
+   "tsdbName": "El Dakhleya",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_enppi",
+   "name": "ENPPI",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139841",
+   "tsdbName": "ENPPI",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_ghazl_el_mahalla",
+   "name": "Ghazl El Mahalla",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "140794",
+   "tsdbName": "Ghazl El Mahalla",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_haras_el_hodoud",
+   "name": "Haras El Hodoud",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139846",
+   "tsdbName": "Haras El Hodoud",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_ismaily",
+   "name": "Ismaily",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139843",
+   "tsdbName": "Ismaily",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_petrojet",
+   "name": "Petrojet",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "149410",
+   "tsdbName": "Petrojet",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_smouha",
+   "name": "Smouha",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139840",
+   "tsdbName": "Smouha",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_wadi_degla",
+   "name": "Wadi Degla",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "139850",
+   "tsdbName": "Wadi Degla",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_eg_zamalek",
+   "name": "Zamalek",
+   "league": "of_egyptian_premier_league",
+   "country": "Egypt",
+   "idTeam": "138997",
+   "tsdbName": "Zamalek",
+   "tsdbCountry": "Egypt"
+  },
+  {
+   "squadId": "of_fi_fc_lahti",
+   "name": "FC Lahti",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "136686",
+   "tsdbName": "Lahti",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_ff_jaro",
+   "name": "FF Jaro",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "140374",
+   "tsdbName": "Jaro",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_hifk",
+   "name": "HIFK",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "137876",
+   "tsdbName": "HIFK",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_ifk_mariehamn",
+   "name": "IFK Mariehamn",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "134337",
+   "tsdbName": "IFK Mariehamn",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_ilves",
+   "name": "Ilves",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "136687",
+   "tsdbName": "Ilves",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_inter_turku",
+   "name": "Inter Turku",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "134086",
+   "tsdbName": "Inter Turku",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_kotp",
+   "name": "KTP",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "140516",
+   "tsdbName": "KTP",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_kups",
+   "name": "KuPS",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "134018",
+   "tsdbName": "KuPS",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_rops",
+   "name": "RoPS",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "134606",
+   "tsdbName": "RoPS",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_seinajoki",
+   "name": "SJK",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "135673",
+   "tsdbName": "SJK Seinajoki",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fi_vps",
+   "name": "VPS",
+   "league": "of_veikkausliiga",
+   "country": "Finland",
+   "idTeam": "137878",
+   "tsdbName": "VPS",
+   "tsdbCountry": "Finland"
+  },
+  {
+   "squadId": "of_fj_labasa",
+   "name": "Labasa",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141038",
+   "tsdbName": "Labasa",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_lautoka",
+   "name": "Lautoka",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141039",
+   "tsdbName": "Lautoka",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_nadi",
+   "name": "Nadi",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141040",
+   "tsdbName": "Nadi",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_nadroga",
+   "name": "Nadroga",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141041",
+   "tsdbName": "Nadroga",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_nasinu",
+   "name": "Nasinu",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "145091",
+   "tsdbName": "Nasinu",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_navua",
+   "name": "Navua",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141042",
+   "tsdbName": "Navua",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_rewa",
+   "name": "Rewa",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141043",
+   "tsdbName": "Rewa",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_suva",
+   "name": "Suva",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "141044",
+   "tsdbName": "Suva",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_fj_tailevu_naitasiri",
+   "name": "Tailevu Naitasiri",
+   "league": "of_fijian_premier_league",
+   "country": "Fiji",
+   "idTeam": "145092",
+   "tsdbName": "Tailevu Naitasiri",
+   "tsdbCountry": "Fiji"
+  },
+  {
+   "squadId": "of_ge_chikhura",
+   "name": "Chikhura",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "134319",
+   "tsdbName": "Chikhura",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_dila_gori",
+   "name": "Dila",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "133995",
+   "tsdbName": "Dila Gori",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_dinamo_batumi",
+   "name": "Dinamo Batumi",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "138043",
+   "tsdbName": "Dinamo Batumi",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_dinamo_tbilisi",
+   "name": "Dinamo Tbilisi",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "134385",
+   "tsdbName": "Dinamo Tbilisi",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_guria",
+   "name": "Guria",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "148391",
+   "tsdbName": "Guria Lanchkhuti",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_samtredia",
+   "name": "Samtredia",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "138047",
+   "tsdbName": "Samtredia",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_sioni",
+   "name": "Sioni",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "139054",
+   "tsdbName": "Sioni",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_ge_torpedo_kutaisi",
+   "name": "Torpedo Kutaisi",
+   "league": "of_georgian_erovnuli_liga",
+   "country": "Georgia",
+   "idTeam": "134042",
+   "tsdbName": "Torpedo Kutaisi",
+   "tsdbCountry": "Georgia"
+  },
+  {
+   "squadId": "of_gh_aduana_stars",
+   "name": "Aduana Stars",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141190",
+   "tsdbName": "Aduana Stars",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_asante_kotoko",
+   "name": "Asante Kotoko",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "137741",
+   "tsdbName": "Asante Kotoko",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_bechem_united",
+   "name": "Bechem United",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141192",
+   "tsdbName": "Bechem United",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_berekum_chelsea",
+   "name": "Berekum Chelsea",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141193",
+   "tsdbName": "Berekum Chelsea",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_great_olympics",
+   "name": "Great Olympics",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141198",
+   "tsdbName": "Great Olympics",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_heart_of_lions",
+   "name": "Heart of Lions",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "147674",
+   "tsdbName": "Heart of Lions",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_hearts_of_oak",
+   "name": "Hearts of Oak",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141199",
+   "tsdbName": "Hearts of Oak",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_gh_medeama",
+   "name": "Medeama",
+   "league": "of_ghanaian_premier_league",
+   "country": "Ghana",
+   "idTeam": "141205",
+   "tsdbName": "Medeama",
+   "tsdbCountry": "Ghana"
+  },
+  {
+   "squadId": "of_hr_cibalia",
+   "name": "Cibalia",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "141074",
+   "tsdbName": "Cibalia",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_dinamo_zagreb",
+   "name": "Dinamo Zagreb",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "133961",
+   "tsdbName": "Dinamo Zagreb",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_dugopolje",
+   "name": "Dugopolje",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "141078",
+   "tsdbName": "Dugopolje",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_gorica",
+   "name": "HNK Gorica",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "137794",
+   "tsdbName": "HNK Gorica",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_hajduk_split",
+   "name": "Hajduk Split",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "134019",
+   "tsdbName": "Hajduk Split",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_hrvatski_dragovoljac",
+   "name": "Hrvatski Dragovoljac",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "140105",
+   "tsdbName": "Hrvatski Dragovoljac",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_istra_1961",
+   "name": "Istra 1961",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "137797",
+   "tsdbName": "Istra 1961",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_lokomotiva_zagreb",
+   "name": "Lokomotiva Zagreb",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "137795",
+   "tsdbName": "Lokomotiva Zagreb",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_lucko",
+   "name": "Lucko",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "144015",
+   "tsdbName": "Lučko",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_osijek",
+   "name": "NK Osijek",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "134041",
+   "tsdbName": "Osijek",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_rijeka",
+   "name": "HNK Rijeka",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "134399",
+   "tsdbName": "Rijeka",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_rudes",
+   "name": "Rudes",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "141086",
+   "tsdbName": "Rudeš",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_sesvete",
+   "name": "Sesvete",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "141087",
+   "tsdbName": "Sesvete",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_sibenik",
+   "name": "Sibenik",
+   "league": "of_croatian_second_league",
+   "country": "Croatia",
+   "idTeam": "140123",
+   "tsdbName": "Šibenik",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_slaven_belupo",
+   "name": "Slaven Belupo",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "133989",
+   "tsdbName": "Slaven Belupo Koprivnica",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hr_varazdin",
+   "name": "NK Varazdin",
+   "league": "of_croatian_first_league",
+   "country": "Croatia",
+   "idTeam": "137798",
+   "tsdbName": "Varaždin",
+   "tsdbCountry": "Croatia"
+  },
+  {
+   "squadId": "of_hu_bekescsaba",
+   "name": "Bekescsaba",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "141216",
+   "tsdbName": "Békéscsaba",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_debrecen",
+   "name": "Debrecen",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "133945",
+   "tsdbName": "Debrecen",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_diosgyor",
+   "name": "Diosgyor",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "134611",
+   "tsdbName": "Diósgyőr",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_fehervar",
+   "name": "Fehervar",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "134003",
+   "tsdbName": "Fehérvár",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_ferencvaros",
+   "name": "Ferencvaros",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "134620",
+   "tsdbName": "Ferencváros",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_honved",
+   "name": "Honved",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "134070",
+   "tsdbName": "Budapest Honvéd",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_mtk_budapest",
+   "name": "MTK Budapest",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "134028",
+   "tsdbName": "MTK Budapest",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_puskas_akademia",
+   "name": "Puskas Akademia",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "138182",
+   "tsdbName": "Puskás Akadémia",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_ujpest",
+   "name": "Ujpest",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "138183",
+   "tsdbName": "Újpest",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_hu_vasas",
+   "name": "Vasas",
+   "league": "of_hungarian_nb_i",
+   "country": "Hungary",
+   "idTeam": "141231",
+   "tsdbName": "Vasas",
+   "tsdbCountry": "Hungary"
+  },
+  {
+   "squadId": "of_id_arema",
+   "name": "Arema",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "139352",
+   "tsdbName": "Arema",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_id_bali_united",
+   "name": "Bali United",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "139353",
+   "tsdbName": "Bali United",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_id_madura_united",
+   "name": "Madura United",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "139347",
+   "tsdbName": "Madura United",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_id_persib",
+   "name": "Persib",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "139356",
+   "tsdbName": "Persib Bandung",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_id_psbs_biak",
+   "name": "PSBS Biak",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "150102",
+   "tsdbName": "PSBS Biak",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_id_semen_padang",
+   "name": "Semen Padang",
+   "league": "of_indonesian_super_league",
+   "country": "Indonesia",
+   "idTeam": "150103",
+   "tsdbName": "Semen Padang",
+   "tsdbCountry": "Indonesia"
+  },
+  {
+   "squadId": "of_il_beitar_jerusalem",
+   "name": "Beitar Jerusalem",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "135992",
+   "tsdbName": "Beitar Jerusalem",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_bnei_sakhnin",
+   "name": "Bnei Sakhnin",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "135994",
+   "tsdbName": "Bnei Sakhnin",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_bnei_yehuda",
+   "name": "Bnei Yehuda",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "134009",
+   "tsdbName": "Bnei Yehuda",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_hapoel_acre",
+   "name": "Hapoel Acre",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "136025",
+   "tsdbName": "Hapoel Akko",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_hapoel_haifa",
+   "name": "Hapoel Haifa",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "135995",
+   "tsdbName": "Hapoel Haifa",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_hapoel_kfar_saba",
+   "name": "Hapoel Kfar Saba",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "135996",
+   "tsdbName": "Hapoel Kfar Saba",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_maccabi_haifa",
+   "name": "Maccabi Haifa",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "134400",
+   "tsdbName": "Maccabi Haifa",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_maccabi_netanya",
+   "name": "Maccabi Netanya",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "134087",
+   "tsdbName": "Maccabi Netanya",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_maccabi_petach_tikva",
+   "name": "Maccabi Petach Tikva",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "135998",
+   "tsdbName": "Maccabi Petah Tikva",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_il_maccabi_tel_aviv",
+   "name": "Maccabi Tel Aviv",
+   "league": "of_israeli_premier_league",
+   "country": "Israel",
+   "idTeam": "134315",
+   "tsdbName": "Maccabi Tel Aviv",
+   "tsdbCountry": "Israel"
+  },
+  {
+   "squadId": "of_ir_esteghlal",
+   "name": "Esteghlal",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139012",
+   "tsdbName": "Esteghlal",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_esteghlal_khuzestan",
+   "name": "Esteghlal Khuzestan",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139184",
+   "tsdbName": "Esteghlal Khuzestan",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_malavan",
+   "name": "Malavan",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139183",
+   "tsdbName": "Malavan",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_persepolis",
+   "name": "Persepolis",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139013",
+   "tsdbName": "Persepolis",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_saipa",
+   "name": "Saipa",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139160",
+   "tsdbName": "Saipa",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_sepahan",
+   "name": "Sepahan",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139014",
+   "tsdbName": "Sepahan",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_tractor",
+   "name": "Tractor",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139162",
+   "tsdbName": "Tractor",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_ir_zob_ahan",
+   "name": "Zob Ahan",
+   "league": "of_persian_gulf_pro_league",
+   "country": "Iran",
+   "idTeam": "139159",
+   "tsdbName": "Zob Ahan",
+   "tsdbCountry": "Iran"
+  },
+  {
+   "squadId": "of_is_breidablik",
+   "name": "Breidablik",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "134347",
+   "tsdbName": "Breiðablik",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_fh_hafnarfjordur",
+   "name": "FH",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "134081",
+   "tsdbName": "FH Hafnarfjordur",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_fjolnir",
+   "name": "Fjolnir",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "139969",
+   "tsdbName": "Fjölnir",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_fylkir",
+   "name": "Fylkir",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "137968",
+   "tsdbName": "Fylkir",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_ia_akranes",
+   "name": "IA",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "137972",
+   "tsdbName": "ÍA Akranes",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_ibv_vestmannaeyjar",
+   "name": "IBV",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "136128",
+   "tsdbName": "ÍBV Vestmannaeyjar",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_keflavik",
+   "name": "Keflavik",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "140781",
+   "tsdbName": "Keflavík",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_kr_reykjavik",
+   "name": "KR",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "133968",
+   "tsdbName": "KR Reykjavík",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_stjarnan",
+   "name": "Stjarnan",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "134621",
+   "tsdbName": "Stjarnan",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_valur",
+   "name": "Valur",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "137973",
+   "tsdbName": "Valur",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_is_vikingur_reykjavik",
+   "name": "Vikingur",
+   "league": "of_icelandic_urvalsdeild",
+   "country": "Iceland",
+   "idTeam": "137974",
+   "tsdbName": "Víkingur Reykjavík",
+   "tsdbCountry": "Iceland"
+  },
+  {
+   "squadId": "of_it_albinoleffe",
+   "name": "AlbinoLeffe",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "134785",
+   "tsdbName": "AlbinoLeffe",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_alcione_milano",
+   "name": "Alcione Milano",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "143905",
+   "tsdbName": "Alcione Milano",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_arzignano",
+   "name": "Arzignano",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "137256",
+   "tsdbName": "Arzignano Valchiampo",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_audace_cerignola",
+   "name": "Audace Cerignola",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "143032",
+   "tsdbName": "Audace Cerignola",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_bari",
+   "name": "Bari",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133688",
+   "tsdbName": "Bari",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_bra",
+   "name": "Bra",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "142920",
+   "tsdbName": "Bra",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_campobasso",
+   "name": "Campobasso",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "143005",
+   "tsdbName": "Campobasso",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_carpi",
+   "name": "Carpi",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "143906",
+   "tsdbName": "Carpi",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_casarano",
+   "name": "Casarano",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "140300",
+   "tsdbName": "Casarano",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_casertana",
+   "name": "Casertana",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "134680",
+   "tsdbName": "Casertana",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_catania",
+   "name": "Catania",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "133671",
+   "tsdbName": "Catania",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_cavese",
+   "name": "Cavese",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "137258",
+   "tsdbName": "Cavese",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_cittadella",
+   "name": "Cittadella",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "133692",
+   "tsdbName": "Cittadella",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_cosenza",
+   "name": "Cosenza",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "134253",
+   "tsdbName": "Cosenza",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_crotone",
+   "name": "Crotone",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "133693",
+   "tsdbName": "Crotone",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_dolomiti_bellunesi",
+   "name": "Dolomiti Bellunesi",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "143901",
+   "tsdbName": "Dolomiti Bellunesi",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_foggia",
+   "name": "Foggia",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "134682",
+   "tsdbName": "Foggia",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_forli",
+   "name": "Forlì",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "134671",
+   "tsdbName": "Forlì",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_giana_erminio",
+   "name": "Giana Erminio",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "134651",
+   "tsdbName": "Giana Erminio",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_giugliano",
+   "name": "Giugliano",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "143046",
+   "tsdbName": "Giugliano",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_gubbio",
+   "name": "Gubbio",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133698",
+   "tsdbName": "Gubbio",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_guidonia_montecelio",
+   "name": "Guidonia Montecelio",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "142983",
+   "tsdbName": "Guidonia Montecelio",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_latina",
+   "name": "Latina",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "134404",
+   "tsdbName": "Latina",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_lecco",
+   "name": "Lecco",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "137116",
+   "tsdbName": "Lecco",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_livorno",
+   "name": "Livorno",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133694",
+   "tsdbName": "Livorno",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_lumezzane",
+   "name": "Lumezzane",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "134652",
+   "tsdbName": "Lumezzane",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_monopoli",
+   "name": "Monopoli",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "135956",
+   "tsdbName": "Monopoli",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_novara",
+   "name": "Novara",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "133673",
+   "tsdbName": "Novara",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_ospitaletto",
+   "name": "Ospitaletto",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "149237",
+   "tsdbName": "Ospitaletto",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pergolettese",
+   "name": "Pergolettese",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "137118",
+   "tsdbName": "Pergolettese",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_perugia",
+   "name": "Perugia",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "134233",
+   "tsdbName": "Perugia",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pescara",
+   "name": "Pescara",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133685",
+   "tsdbName": "Pescara",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pianese",
+   "name": "Pianese",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "137117",
+   "tsdbName": "Pianese",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_picerno",
+   "name": "Picerno",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "137451",
+   "tsdbName": "Picerno",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pineto",
+   "name": "Pineto",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "140303",
+   "tsdbName": "Pineto",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pontedera",
+   "name": "Pontedera",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "134675",
+   "tsdbName": "Pontedera",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_potenza",
+   "name": "Potenza",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "137257",
+   "tsdbName": "Potenza",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pro_patria",
+   "name": "Pro Patria",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "134658",
+   "tsdbName": "Pro Patria",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_pro_vercelli",
+   "name": "Pro Vercelli",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "133972",
+   "tsdbName": "Pro Vercelli",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_ravenna",
+   "name": "Ravenna",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133880",
+   "tsdbName": "Ravenna",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_reggiana",
+   "name": "Reggiana",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "137121",
+   "tsdbName": "Reggiana",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_renate",
+   "name": "Renate",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "134653",
+   "tsdbName": "Renate",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_salernitana",
+   "name": "Salernitana",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "133846",
+   "tsdbName": "Salernitana",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_sambenedettese",
+   "name": "Sambenedettese",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "135736",
+   "tsdbName": "Sambenedettese",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_siracusa",
+   "name": "Siracusa",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "135732",
+   "tsdbName": "Siracusa",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_spezia",
+   "name": "Spezia",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "133879",
+   "tsdbName": "Spezia",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_torres",
+   "name": "Torres",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "134656",
+   "tsdbName": "Torres",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_trapani",
+   "name": "Trapani",
+   "league": "of_italian_serie_c_c",
+   "country": "Italy",
+   "idTeam": "144191",
+   "tsdbName": "Trapani",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_triestina",
+   "name": "Triestina",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "133821",
+   "tsdbName": "Triestina",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_union_brescia",
+   "name": "Union Brescia",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "152839",
+   "tsdbName": "Union Brescia",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_virtus_verona",
+   "name": "Virtus Verona",
+   "league": "of_italian_serie_c_a",
+   "country": "Italy",
+   "idTeam": "137254",
+   "tsdbName": "Virtus Verona",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_it_vis_pesaro",
+   "name": "Vis Pesaro",
+   "league": "of_italian_serie_c_b",
+   "country": "Italy",
+   "idTeam": "137253",
+   "tsdbName": "Vis Pesaro",
+   "tsdbCountry": "Italy"
+  },
+  {
+   "squadId": "of_ke_afc_leopards",
+   "name": "AFC Leopards",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139256",
+   "tsdbName": "AFC Leopards",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_aps_bomet",
+   "name": "APS Bomet",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "146876",
+   "tsdbName": "APS Bomet",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_bandari",
+   "name": "Bandari",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139248",
+   "tsdbName": "Bandari",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_bidco_united",
+   "name": "Bidco United",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "141168",
+   "tsdbName": "Bidco United",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_gor_mahia",
+   "name": "Gor Mahia",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139253",
+   "tsdbName": "Gor Mahia",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_kakamega_homeboyz",
+   "name": "Kakamega Homeboyz",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139255",
+   "tsdbName": "Kakamega Homeboyz",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_kariobangi_sharks",
+   "name": "Kariobangi Sharks",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139241",
+   "tsdbName": "Kariobangi Sharks",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_kcb",
+   "name": "KCB",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139250",
+   "tsdbName": "KCB",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_kenya_police",
+   "name": "Kenya Police",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "144127",
+   "tsdbName": "Kenya Police",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_mara_sugar",
+   "name": "Mara Sugar",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "149284",
+   "tsdbName": "Mara Sugar",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_mathare_united",
+   "name": "Mathare United",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139247",
+   "tsdbName": "Mathare United",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_nairobi_united",
+   "name": "Nairobi United",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "153217",
+   "tsdbName": "Nairobi United",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_posta_rangers",
+   "name": "Posta Rangers",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139252",
+   "tsdbName": "Posta Rangers",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_shabana",
+   "name": "Shabana",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "147553",
+   "tsdbName": "Shabana",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_sofapaka",
+   "name": "Sofapaka",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139251",
+   "tsdbName": "Sofapaka",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_tusker",
+   "name": "Tusker",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139254",
+   "tsdbName": "Tusker",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_ke_ulinzi_stars",
+   "name": "Ulinzi Stars",
+   "league": "of_kenyan_premier_division",
+   "country": "Kenya",
+   "idTeam": "139246",
+   "tsdbName": "Ulinzi Stars",
+   "tsdbCountry": "Kenya"
+  },
+  {
+   "squadId": "of_kz_aktobe",
+   "name": "Aktobe",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "140520",
+   "tsdbName": "Aktobe",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_kz_astana",
+   "name": "Astana",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "134342",
+   "tsdbName": "Astana",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_kz_atyrau",
+   "name": "Atyrau",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "140521",
+   "tsdbName": "Atyrau",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_kz_kairat",
+   "name": "Kairat",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "134602",
+   "tsdbName": "Kairat Almaty",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_kz_taraz",
+   "name": "Taraz",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "138041",
+   "tsdbName": "Taraz",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_kz_tobol",
+   "name": "Tobol",
+   "league": "of_kazakhstan_premier_league",
+   "country": "Kazakhstan",
+   "idTeam": "138042",
+   "tsdbName": "Tobol",
+   "tsdbCountry": "Kazakhstan"
+  },
+  {
+   "squadId": "of_mt_birkirkara",
+   "name": "Birkirkara",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "134035",
+   "tsdbName": "Birkirkara",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_floriana",
+   "name": "Floriana",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "134039",
+   "tsdbName": "Floriana",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_gzira_united",
+   "name": "Gzira United",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "138134",
+   "tsdbName": "Gżira United",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_hamrun_spartans",
+   "name": "Hamrun Spartans",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "138133",
+   "tsdbName": "Ħamrun Spartans",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_hibernians",
+   "name": "Hibernians",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "138132",
+   "tsdbName": "Hibernians",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_marsaxlokk",
+   "name": "Marsaxlokk",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "146569",
+   "tsdbName": "Marsaxlokk",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_mosta",
+   "name": "Mosta",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "138131",
+   "tsdbName": "Mosta",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_naxxar_lions",
+   "name": "Naxxar Lions",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "147446",
+   "tsdbName": "Naxxar Lions",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_sliema_wanderers",
+   "name": "Sliema Wanderers",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "134795",
+   "tsdbName": "Sliema Wanderers",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_tarxien_rainbows",
+   "name": "Tarxien Rainbows",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "138128",
+   "tsdbName": "Tarxien Rainbows",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_valletta",
+   "name": "Valletta",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "134791",
+   "tsdbName": "Valletta",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_mt_zabbar_st_patrick",
+   "name": "Zabbar St. Patrick",
+   "league": "of_maltese_premier_league",
+   "country": "Malta",
+   "idTeam": "148677",
+   "tsdbName": "Żabbar St Patrick",
+   "tsdbCountry": "Malta"
+  },
+  {
+   "squadId": "of_ng_abia_warriors",
+   "name": "Abia Warriors",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139908",
+   "tsdbName": "Abia Warriors",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_barau",
+   "name": "Barau",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "152961",
+   "tsdbName": "Barau",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_bayelsa_united",
+   "name": "Bayelsa United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "143559",
+   "tsdbName": "Bayelsa United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_bendel_insurance",
+   "name": "Bendel Insurance",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "147118",
+   "tsdbName": "Bendel Insurance",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_el_kanemi_warriors",
+   "name": "El-Kanemi Warriors",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "147120",
+   "tsdbName": "El-Kanemi Warriors",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_enyimba",
+   "name": "Enyimba",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139746",
+   "tsdbName": "Enyimba",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_ikorodu_city",
+   "name": "Ikorodu City",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "149049",
+   "tsdbName": "Ikorodu City",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_kano_pillars",
+   "name": "Kano Pillars",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139751",
+   "tsdbName": "Kano Pillars",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_katsina_united",
+   "name": "Katsina United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139915",
+   "tsdbName": "Katsina United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_kun_khalifat",
+   "name": "Kun Khalifat",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "152962",
+   "tsdbName": "Kun Khalifat",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_kwara_united",
+   "name": "Kwara United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139921",
+   "tsdbName": "Kwara United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_nasarawa_united",
+   "name": "Nasarawa United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139907",
+   "tsdbName": "Nasarawa United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_niger_tornadoes",
+   "name": "Niger Tornadoes",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "144672",
+   "tsdbName": "Niger Tornadoes",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_plateau_united",
+   "name": "Plateau United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139910",
+   "tsdbName": "Plateau United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_rangers_international",
+   "name": "Rangers International",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139911",
+   "tsdbName": "Rangers International",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_remo_stars",
+   "name": "Remo Stars",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "144673",
+   "tsdbName": "Remo Stars",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_rivers_united",
+   "name": "Rivers United",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139914",
+   "tsdbName": "Rivers United",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_shooting_stars",
+   "name": "Shooting Stars",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "144674",
+   "tsdbName": "Shooting Stars",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_warri_wolves",
+   "name": "Warri Wolves",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139919",
+   "tsdbName": "Warri Wolves",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_ng_wikki_tourists",
+   "name": "Wikki Tourists",
+   "league": "of_nigerian_premier_league",
+   "country": "Nigeria",
+   "idTeam": "139916",
+   "tsdbName": "Wikki Tourists",
+   "tsdbCountry": "Nigeria"
+  },
+  {
+   "squadId": "of_pl_cracovia",
+   "name": "Cracovia",
+   "league": "of_ekstraklasa",
+   "country": "Poland",
+   "idTeam": "135294",
+   "tsdbName": "Cracovia",
+   "tsdbCountry": "Poland"
+  },
+  {
+   "squadId": "of_pl_gornik_leczna",
+   "name": "Gornik Leczna",
+   "league": "of_ekstraklasa",
+   "country": "Poland",
+   "idTeam": "135295",
+   "tsdbName": "Górnik Łęczna",
+   "tsdbCountry": "Poland"
+  },
+  {
+   "squadId": "of_pl_gornik_zabrze",
+   "name": "Gornik Zabrze",
+   "league": "of_ekstraklasa",
+   "country": "Poland",
+   "idTeam": "135296",
+   "tsdbName": "Górnik Zabrze",
+   "tsdbCountry": "Poland"
+  },
+  {
+   "squadId": "of_pl_wisla_krakow",
+   "name": "Wisla Krakow",
+   "league": "of_ekstraklasa",
+   "country": "Poland",
+   "idTeam": "135303",
+   "tsdbName": "Wisła Kraków",
+   "tsdbCountry": "Poland"
+  },
+  {
+   "squadId": "of_rs_crvena_zvezda",
+   "name": "Crvena Zvezda",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "133987",
+   "tsdbName": "Crvena Zvezda",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_cukaricki",
+   "name": "Cukaricki",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "134617",
+   "tsdbName": "Čukarički",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_mladost_lucani",
+   "name": "Mladost Lucani",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "137860",
+   "tsdbName": "Mladost Lučani",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_novi_pazar",
+   "name": "Novi Pazar",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "140069",
+   "tsdbName": "Novi Pazar",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_ofk_beograd",
+   "name": "OFK Beograd",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "140232",
+   "tsdbName": "OFK Beograd",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_radnicki_1923",
+   "name": "Radnicki 1923",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "141776",
+   "tsdbName": "Radnički 1923",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_radnicki_nis",
+   "name": "Radnicki Nis",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "137858",
+   "tsdbName": "Radnički Niš",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_radnik_surdulica",
+   "name": "Radnik Surdulica",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "137864",
+   "tsdbName": "Radnik Surdulica",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_spartak_subotica",
+   "name": "Spartak Subotica",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "137859",
+   "tsdbName": "Spartak Subotica",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_vojvodina",
+   "name": "Vojvodina",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "134022",
+   "tsdbName": "Vojvodina",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_rs_zeleznicar_pancevo",
+   "name": "Zeleznicar Pancevo",
+   "league": "of_serbian_superleague",
+   "country": "Serbia",
+   "idTeam": "141839",
+   "tsdbName": "Železničar Pančevo",
+   "tsdbCountry": "Serbia"
+  },
+  {
+   "squadId": "of_ru_amkar_perm",
+   "name": "Amkar",
+   "league": "of_russian_second_division_b_group_4",
+   "country": "Russia",
+   "idTeam": "134437",
+   "tsdbName": "Amkar Perm",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_arsenal_tula",
+   "name": "Arsenal Tula",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "134553",
+   "tsdbName": "Arsenal Tula",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_avangard_kursk",
+   "name": "Avangard",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "138145",
+   "tsdbName": "Avangard Kursk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_chelyabinsk",
+   "name": "Chelyabinsk",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "143102",
+   "tsdbName": "Chelyabinsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_chertanovo_moscow",
+   "name": "Chertanovo",
+   "league": "of_russian_second_division_b_group_2",
+   "country": "Russia",
+   "idTeam": "138148",
+   "tsdbName": "Chertanovo Moscow",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_dinamo_bryansk",
+   "name": "Dinamo Bryansk",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "140019",
+   "tsdbName": "Dynamo Bryansk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_dinamo_vologda",
+   "name": "Dinamo Vologda",
+   "league": "of_russian_second_division_b_group_2",
+   "country": "Russia",
+   "idTeam": "146517",
+   "tsdbName": "Dinamo Vologda",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_fc_kaluga",
+   "name": "Kaluga",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "143107",
+   "tsdbName": "Kaluga",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_fc_murom",
+   "name": "Murom",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "143115",
+   "tsdbName": "Murom",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_fc_ryazan",
+   "name": "Ryazan",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "143119",
+   "tsdbName": "Ryazan",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_fc_tver",
+   "name": "Tver",
+   "league": "of_russian_second_division_b_group_2",
+   "country": "Russia",
+   "idTeam": "143134",
+   "tsdbName": "Tver",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_irtysh_omsk",
+   "name": "Irtysh",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "140084",
+   "tsdbName": "Irtysh Omsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_kamaz",
+   "name": "KAMAZ",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "141797",
+   "tsdbName": "KAMAZ Naberezhnye Chelny",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_khimik_dzerzhinsk",
+   "name": "Khimik",
+   "league": "of_russian_second_division_b_group_4",
+   "country": "Russia",
+   "idTeam": "143139",
+   "tsdbName": "Khimik Dzerzhinsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_kosmos_dolgoprudny",
+   "name": "Kosmos",
+   "league": "of_russian_second_division_b_group_2",
+   "country": "Russia",
+   "idTeam": "146525",
+   "tsdbName": "Kosmos Dolgoprudny",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_metallurg_lipetsk",
+   "name": "Metallurg",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "141798",
+   "tsdbName": "Metallurg Lipetsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_nosta_novotroitsk",
+   "name": "Nosta",
+   "league": "of_russian_second_division_b_group_4",
+   "country": "Russia",
+   "idTeam": "143116",
+   "tsdbName": "Nosta Novotroitsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_pfc_kuban_krasnodar",
+   "name": "Kuban",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "134441",
+   "tsdbName": "Kuban Krasnodar",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_salyut_belgorod",
+   "name": "Salyut",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "143121",
+   "tsdbName": "Salyut Belgorod",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_ska_khabarovsk",
+   "name": "SKA Khabarovsk",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "135909",
+   "tsdbName": "SKA-Khabarovsk",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_sochi",
+   "name": "Sochi",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "136859",
+   "tsdbName": "Sochi",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_spartak_kostroma",
+   "name": "Spartak Kostroma",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "146520",
+   "tsdbName": "Spartak Kostroma",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_spartak_tambov",
+   "name": "Spartak Tambov",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "146524",
+   "tsdbName": "Spartak Tambov",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_strogino_moscow",
+   "name": "Strogino",
+   "league": "of_russian_second_division_b_group_3",
+   "country": "Russia",
+   "idTeam": "143122",
+   "tsdbName": "Strogino Moscow",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_torpedo_miass",
+   "name": "Torpedo Miass",
+   "league": "of_russian_second_division_a_silver",
+   "country": "Russia",
+   "idTeam": "143145",
+   "tsdbName": "Torpedo Miass",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_torpedo_moscow",
+   "name": "Torpedo Moscow",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "134554",
+   "tsdbName": "Torpedo Moscow",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_torpedo_vladimir",
+   "name": "Torpedo Vladimir",
+   "league": "of_russian_second_division_b_group_2",
+   "country": "Russia",
+   "idTeam": "143123",
+   "tsdbName": "Torpedo Vladimir",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_tyumen",
+   "name": "Tyumen",
+   "league": "of_russian_second_division_a_gold",
+   "country": "Russia",
+   "idTeam": "143099",
+   "tsdbName": "Tyumen",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_ufa",
+   "name": "Ufa",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "134556",
+   "tsdbName": "Ufa",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_ru_ural",
+   "name": "Ural",
+   "league": "of_russian_first_division",
+   "country": "Russia",
+   "idTeam": "134439",
+   "tsdbName": "Ural Yekaterinburg",
+   "tsdbCountry": "Russia"
+  },
+  {
+   "squadId": "of_sa_al_raed",
+   "name": "Al-Ra'ed",
+   "league": "of_saudi_first_division",
+   "country": "Saudi Arabia",
+   "idTeam": "136016",
+   "tsdbName": "Al-Raed",
+   "tsdbCountry": "Saudi Arabia"
+  },
+  {
+   "squadId": "of_sa_al_taee",
+   "name": "Al-Ta'ee",
+   "league": "of_saudi_first_division",
+   "country": "Saudi Arabia",
+   "idTeam": "143173",
+   "tsdbName": "Al-Tai",
+   "tsdbCountry": "Saudi Arabia"
+  },
+  {
+   "squadId": "of_sa_damac",
+   "name": "Damac",
+   "league": "of_saudi_first_division",
+   "country": "Saudi Arabia",
+   "idTeam": "137852",
+   "tsdbName": "Damac",
+   "tsdbCountry": "Saudi Arabia"
+  },
+  {
+   "squadId": "of_sa_hajer",
+   "name": "Hajer",
+   "league": "of_saudi_first_division",
+   "country": "Saudi Arabia",
+   "idTeam": "156330",
+   "tsdbName": "Hajer",
+   "tsdbCountry": "Saudi Arabia"
+  },
+  {
+   "squadId": "of_sa_ohod",
+   "name": "Ohod",
+   "league": "of_saudi_first_division",
+   "country": "Saudi Arabia",
+   "idTeam": "150646",
+   "tsdbName": "Ohod",
+   "tsdbCountry": "Saudi Arabia"
+  },
+  {
+   "squadId": "of_si_koper",
+   "name": "Koper",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "134604",
+   "tsdbName": "Koper",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nd_gorica",
+   "name": "ND Gorica",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "134619",
+   "tsdbName": "Gorica",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nk_celje",
+   "name": "NK Celje",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "134318",
+   "tsdbName": "Celje",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nk_krka",
+   "name": "NK Krka",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "143604",
+   "tsdbName": "Krka",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nk_krsko",
+   "name": "NK Krsko",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "146620",
+   "tsdbName": "Krško",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nk_maribor",
+   "name": "NK Maribor",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "133948",
+   "tsdbName": "Maribor",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_nk_zavrc",
+   "name": "NK Zavrc",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "151461",
+   "tsdbName": "Zavrč",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_olimpija_ljubljana",
+   "name": "Olimpija Ljubljana",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "134033",
+   "tsdbName": "Olimpija Ljubljana",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_si_rudar_velenje",
+   "name": "Rudar Velenje",
+   "league": "of_slovenian_prva_liga",
+   "country": "Slovenia",
+   "idTeam": "138218",
+   "tsdbName": "Rudar Velenje",
+   "tsdbCountry": "Slovenia"
+  },
+  {
+   "squadId": "of_sk_ruzomberok",
+   "name": "MFK Ruzomberok",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "137871",
+   "tsdbName": "Ružomberok",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_skalica",
+   "name": "MFK Skalica",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "146400",
+   "tsdbName": "Skalica",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_slovan_bratislava",
+   "name": "Slovan Bratislava",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "134090",
+   "tsdbName": "Slovan Bratislava",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_spartak_myjava",
+   "name": "Spartak Myjava",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "146634",
+   "tsdbName": "Spartak Myjava",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_spartak_trnava",
+   "name": "Spartak Trnava",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "134004",
+   "tsdbName": "Spartak Trnava",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_trencin",
+   "name": "AS Trencin",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "134353",
+   "tsdbName": "Trenčín",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_sk_zilina",
+   "name": "MSK Zilina",
+   "league": "of_slovak_super_liga",
+   "country": "Slovakia",
+   "idTeam": "133975",
+   "tsdbName": "Žilina",
+   "tsdbCountry": "Slovakia"
+  },
+  {
+   "squadId": "of_ua_chernihiv",
+   "name": "Chernihiv",
+   "league": "of_ukrainian_first_league",
+   "country": "Ukraine",
+   "idTeam": "146858",
+   "tsdbName": "Chernihiv",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_dynamo_kyiv",
+   "name": "Dynamo Kyiv",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "133944",
+   "tsdbName": "Dynamo Kyiv",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_kudrivka",
+   "name": "Kudrivka",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "149227",
+   "tsdbName": "Kudrivka",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_lnz_cherkasy",
+   "name": "LNZ",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "146860",
+   "tsdbName": "LNZ Cherkasy",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_metalurh_zaporizhzhia",
+   "name": "Metalurh Zaporizhzhia",
+   "league": "of_ukrainian_first_league",
+   "country": "Ukraine",
+   "idTeam": "134429",
+   "tsdbName": "Metalurh Zaporizhzhia",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_obolon_kyiv",
+   "name": "Obolon",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "138447",
+   "tsdbName": "Obolon Kyiv",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_oleksandriya",
+   "name": "Oleksandriya",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "135483",
+   "tsdbName": "Oleksandriya",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_poltava",
+   "name": "Poltava",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "146861",
+   "tsdbName": "Poltava",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_rukh_lviv",
+   "name": "Rukh",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "138449",
+   "tsdbName": "Rukh Lviv",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_ua_veres_rivne",
+   "name": "Veres",
+   "league": "of_ukrainian_premier_league",
+   "country": "Ukraine",
+   "idTeam": "135911",
+   "tsdbName": "Veres Rivne",
+   "tsdbCountry": "Ukraine"
+  },
+  {
+   "squadId": "of_uy_artigas",
+   "name": "Artigas",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "150568",
+   "tsdbName": "Artigas",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_atenas",
+   "name": "Atenas",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135362",
+   "tsdbName": "Atenas",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_cerrito",
+   "name": "Cerrito",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "141374",
+   "tsdbName": "Cerrito",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_fenix",
+   "name": "Fénix",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135367",
+   "tsdbName": "Fénix",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_la_luz",
+   "name": "La Luz",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "145845",
+   "tsdbName": "La Luz",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_miramar_misiones",
+   "name": "Miramar Misiones",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "145844",
+   "tsdbName": "Miramar Misiones",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_plaza_colonia",
+   "name": "Plaza Colonia",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "136053",
+   "tsdbName": "Plaza Colonia",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_rampla_juniors",
+   "name": "Rampla Juniors",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135371",
+   "tsdbName": "Rampla Juniors",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_rentistas",
+   "name": "Rentistas",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135372",
+   "tsdbName": "Rentistas",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_river_plate_montevideo",
+   "name": "River Plate",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135373",
+   "tsdbName": "River Plate Montevideo",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_tacuarembo",
+   "name": "Tacuarembó",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "135376",
+   "tsdbName": "Tacuarembó",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uy_uruguay_montevideo",
+   "name": "Uruguay Montevideo",
+   "league": "of_uruguayan_second_division",
+   "country": "Uruguay",
+   "idTeam": "141808",
+   "tsdbName": "Uruguay Montevideo",
+   "tsdbCountry": "Uruguay"
+  },
+  {
+   "squadId": "of_uz_andijon",
+   "name": "Andijon",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139376",
+   "tsdbName": "Andijon",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_bukhara",
+   "name": "Bukhara",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139380",
+   "tsdbName": "Buxoro",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_bunyodkor",
+   "name": "Bunyodkor",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139386",
+   "tsdbName": "Bunyodkor",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_kokand_1912",
+   "name": "Kokand 1912",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139384",
+   "tsdbName": "Kokand-1912",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_lokomotiv_tashkent",
+   "name": "Lokomotiv",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139387",
+   "tsdbName": "Lokomotiv Tashkent",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_nasaf",
+   "name": "Nasaf",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139378",
+   "tsdbName": "Nasaf",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_olmaliq",
+   "name": "AGMK",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139379",
+   "tsdbName": "AGMK",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_pakhtakor",
+   "name": "Pakhtakor",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139020",
+   "tsdbName": "Pakhtakor",
+   "tsdbCountry": "Uzbekistan"
+  },
+  {
+   "squadId": "of_uz_sogdiana",
+   "name": "Sogdiana",
+   "league": "of_uzbek_super_league",
+   "country": "Uzbekistan",
+   "idTeam": "139385",
+   "tsdbName": "Sogdiana Jizzakh",
+   "tsdbCountry": "Uzbekistan"
+  }
+ ],
+ "skipped": [
+  {
+   "squadId": "1197",
+   "name": "Botafogo-PB",
+   "league": "brazil_serie_c",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "es_132335",
+   "name": "Amed SFK",
+   "league": "of_turkish_super_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ae_dibba",
+   "name": "Dibba",
+   "league": "of_uae_pro_league",
+   "reason": "none",
+   "candidates": [
+    "148717:Dibba Al-Hisn"
+   ]
+  },
+  {
+   "squadId": "of_al_egnatia_rrogozhine",
+   "name": "Egnatia Rrogozhinë",
+   "league": "of_albanian_superleague",
+   "reason": "none",
+   "candidates": [
+    "140667:Egnatia"
+   ]
+  },
+  {
+   "squadId": "of_am_ararat",
+   "name": "Ararat",
+   "league": "of_armenian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "137893:Ararat Yerevan"
+   ]
+  },
+  {
+   "squadId": "of_am_ararat_armenia",
+   "name": "Ararat-Armenia",
+   "league": "of_armenian_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_am_pyunik",
+   "name": "Pyunik",
+   "league": "of_armenian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "140691:Pyunik Academy"
+   ]
+  },
+  {
+   "squadId": "of_am_shirak",
+   "name": "Shirak",
+   "league": "of_armenian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "137894:Shirak Gyumri"
+   ]
+  },
+  {
+   "squadId": "of_ar_agropecuario_argentino_de_carlos_casares",
+   "name": "Agropecuario Argentino",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "137769:Agropecuario"
+   ]
+  },
+  {
+   "squadId": "of_ar_alvarado_de_mar_del_plata",
+   "name": "Alvarado",
+   "league": "of_argentine_second_division_group_a",
+   "reason": "none",
+   "candidates": [
+    "137768:Alvarado"
+   ]
+  },
+  {
+   "squadId": "of_ar_central_norte_de_salta",
+   "name": "Central Norte",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "142489:Central Norte"
+   ]
+  },
+  {
+   "squadId": "of_ar_chaco_for_ever",
+   "name": "Chaco For Ever",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ar_colon_de_santa_fe",
+   "name": "Colón",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "135157:Colón"
+   ]
+  },
+  {
+   "squadId": "of_ar_defensores_unidos_de_zarate",
+   "name": "Defensores Unidos",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "143089:Defensores Unidos"
+   ]
+  },
+  {
+   "squadId": "of_ar_guemes_de_santiago_del_estero",
+   "name": "Güemes",
+   "league": "of_argentine_second_division_group_a",
+   "reason": "none",
+   "candidates": [
+    "141012:Güemes"
+   ]
+  },
+  {
+   "squadId": "of_ar_madryn",
+   "name": "Madryn",
+   "league": "of_argentine_second_division_group_a",
+   "reason": "none",
+   "candidates": [
+    "137770:Guillermo Brown"
+   ]
+  },
+  {
+   "squadId": "of_ar_mitre_de_santiago_del_estero",
+   "name": "Mitre",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "137766:Mitre"
+   ]
+  },
+  {
+   "squadId": "of_ar_moron",
+   "name": "Morón",
+   "league": "of_argentine_second_division_group_b",
+   "reason": "none",
+   "candidates": [
+    "156755:Morön BK Women"
+   ]
+  },
+  {
+   "squadId": "of_ar_patronato_de_la_juventud_catolica",
+   "name": "Patronato",
+   "league": "of_argentine_second_division_group_a",
+   "reason": "none",
+   "candidates": [
+    "135682:Patronato"
+   ]
+  },
+  {
+   "squadId": "of_bg_arda_1924",
+   "name": "Arda",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "137916:Arda Kardzhali"
+   ]
+  },
+  {
+   "squadId": "of_bg_dobrudzha_1919",
+   "name": "Dobrudzha",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "140765:Dobrudzha Dobrich"
+   ]
+  },
+  {
+   "squadId": "of_bg_levski",
+   "name": "Levski",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "142829:Levski Lom"
+   ]
+  },
+  {
+   "squadId": "of_bg_ludogorets",
+   "name": "Ludogorets",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "133981:Ludogorets Razgrad"
+   ]
+  },
+  {
+   "squadId": "of_bg_montana_1921",
+   "name": "Montana",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "137046:Montana"
+   ]
+  },
+  {
+   "squadId": "of_bg_septemvri",
+   "name": "Septemvri",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "140036:Septemvri Sofia"
+   ]
+  },
+  {
+   "squadId": "of_bg_spartak_1918",
+   "name": "Spartak 1918",
+   "league": "of_bulgarian_first_league",
+   "reason": "none",
+   "candidates": [
+    "142832:Spartak Varna"
+   ]
+  },
+  {
+   "squadId": "of_by_belshina",
+   "name": "Belshina",
+   "league": "of_belarusian_first_league",
+   "reason": "none",
+   "candidates": [
+    "137900:Belshina Bobruisk"
+   ]
+  },
+  {
+   "squadId": "of_by_dinamo_brest",
+   "name": "Dinamo Brest",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_by_dinamo_minsk",
+   "name": "Dinamo Minsk",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": [
+    "140887:Dinamo Minsk"
+   ]
+  },
+  {
+   "squadId": "of_by_isloch",
+   "name": "Isloch",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": [
+    "137905:Isloch Minsk Raion"
+   ]
+  },
+  {
+   "squadId": "of_by_naftan",
+   "name": "Naftan",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": [
+    "134094:Naftan Novopolotsk"
+   ]
+  },
+  {
+   "squadId": "of_by_neman",
+   "name": "Neman",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": [
+    "146219:Neman Mosty"
+   ]
+  },
+  {
+   "squadId": "of_by_slonim",
+   "name": "Slonim",
+   "league": "of_belarusian_first_league",
+   "reason": "none",
+   "candidates": [
+    "146245:Slonim City"
+   ]
+  },
+  {
+   "squadId": "of_by_torpedo_belaz",
+   "name": "Torpedo-BelAZ",
+   "league": "of_belarusian_highest_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_by_uni_x_labs",
+   "name": "Uni-X Labs",
+   "league": "of_belarusian_first_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ch_fc_st_gallen",
+   "name": "FC St. Gallen",
+   "league": "of_swiss_super_league",
+   "reason": "none",
+   "candidates": [
+    "146546:Brühl"
+   ]
+  },
+  {
+   "squadId": "of_ch_fc_vaduz",
+   "name": "FC Vaduz",
+   "league": "of_swiss_super_league",
+   "reason": "none",
+   "candidates": [
+    "134320:Vaduz"
+   ]
+  },
+  {
+   "squadId": "of_cm_aigle_royal_de_moungo",
+   "name": "Aigle Royal de Moungo",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": [
+    "157540:Aigle Royal du Moungo"
+   ]
+  },
+  {
+   "squadId": "of_cm_colombe_du_dja_et_lobo",
+   "name": "Colombe du Dja et Lobo",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": [
+    "153208:Colombe Sportive"
+   ]
+  },
+  {
+   "squadId": "of_cm_cotonsport_garoua",
+   "name": "Cotonsport Garoua",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cm_fauve_azur_elite",
+   "name": "Fauve Azur Elite",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cm_fortuna_mfou",
+   "name": "Fortuna Mfou",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cm_victoria_united",
+   "name": "Victoria United",
+   "league": "of_cameroonian_elite_one",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_co_depor",
+   "name": "Depor",
+   "league": "of_colombian_second_division",
+   "reason": "none",
+   "candidates": [
+    "148530:Deportes Rengo"
+   ]
+  },
+  {
+   "squadId": "of_co_leones",
+   "name": "Leones",
+   "league": "of_colombian_second_division",
+   "reason": "none",
+   "candidates": [
+    "148158:Leones"
+   ]
+  },
+  {
+   "squadId": "of_co_patriotas",
+   "name": "Patriotas",
+   "league": "of_colombian_second_division",
+   "reason": "none",
+   "candidates": [
+    "137619:Patriotas Boyacá"
+   ]
+  },
+  {
+   "squadId": "of_co_tigres_co",
+   "name": "Tigres",
+   "league": "of_colombian_second_division",
+   "reason": "none",
+   "candidates": [
+    "141071:Tigres FC"
+   ]
+  },
+  {
+   "squadId": "of_cy_ae_kition",
+   "name": "AE Kition",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": [
+    "153437:AEK Larnaca Youth"
+   ]
+  },
+  {
+   "squadId": "of_cy_agia_napa",
+   "name": "Agia Napa",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cy_anorthosis",
+   "name": "Anorthosis",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": [
+    "144922:Anorthosis"
+   ]
+  },
+  {
+   "squadId": "of_cy_apoel",
+   "name": "APOEL",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": [
+    "144573:APOEL B.C."
+   ]
+  },
+  {
+   "squadId": "of_cy_enp_paralimniou",
+   "name": "Paralimni",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": [
+    "156607:Apollon Paralimniou"
+   ]
+  },
+  {
+   "squadId": "of_cy_ethnikos_achnas",
+   "name": "Ethnikos Achnas",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cy_omonoia",
+   "name": "Omonoia",
+   "league": "of_cypriot_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_cz_jihlava",
+   "name": "Jihlava",
+   "league": "of_czech_first_league",
+   "reason": "none",
+   "candidates": [
+    "144103:Jihlava"
+   ]
+  },
+  {
+   "squadId": "of_dz_mc_el_bayadh",
+   "name": "MC El Bayadh",
+   "league": "of_algerian_league_1",
+   "reason": "none",
+   "candidates": [
+    "146557:El Bayadh"
+   ]
+  },
+  {
+   "squadId": "of_dz_usm_khenchela",
+   "name": "USM Khenchela",
+   "league": "of_algerian_league_1",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_eg_al_gaish",
+   "name": "Al Gaish",
+   "league": "of_egyptian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "139848:Tala'ea El Gaish"
+   ]
+  },
+  {
+   "squadId": "of_eg_arab_contractors",
+   "name": "Arab Contractors",
+   "league": "of_egyptian_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_eg_el_masry",
+   "name": "El Masry",
+   "league": "of_egyptian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "139844:Al Masry"
+   ]
+  },
+  {
+   "squadId": "of_eg_ittihad_alexandria",
+   "name": "Ittihad",
+   "league": "of_egyptian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "137837:Ittihad Kalba",
+    "139839:Al Ittihad Alexandria"
+   ]
+  },
+  {
+   "squadId": "of_eg_military_production",
+   "name": "Military Production",
+   "league": "of_egyptian_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_fi_hjk",
+   "name": "HJK",
+   "league": "of_veikkausliiga",
+   "reason": "none",
+   "candidates": [
+    "150851:HJK Kantsu"
+   ]
+  },
+  {
+   "squadId": "of_fj_ba",
+   "name": "Ba",
+   "league": "of_fijian_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ge_lokomotivi",
+   "name": "Lokomotivi",
+   "league": "of_georgian_erovnuli_liga",
+   "reason": "none",
+   "candidates": [
+    "138044:Locomotive Tbilisi"
+   ]
+  },
+  {
+   "squadId": "of_ge_merani",
+   "name": "Merani",
+   "league": "of_georgian_erovnuli_liga",
+   "reason": "none",
+   "candidates": [
+    "138045:Merani Tbilisi"
+   ]
+  },
+  {
+   "squadId": "of_ge_shukura",
+   "name": "Shukura",
+   "league": "of_georgian_erovnuli_liga",
+   "reason": "none",
+   "candidates": [
+    "140522:Shukura Kobuleti"
+   ]
+  },
+  {
+   "squadId": "of_hr_imotski",
+   "name": "Imotski",
+   "league": "of_croatian_second_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_hr_segesta",
+   "name": "Segesta",
+   "league": "of_croatian_second_league",
+   "reason": "none",
+   "candidates": [
+    "155951:Segesta Sisak"
+   ]
+  },
+  {
+   "squadId": "of_hr_vukovar_1991",
+   "name": "HNK Vukovar 1991",
+   "league": "of_croatian_first_league",
+   "reason": "none",
+   "candidates": [
+    "146467:Vukovar"
+   ]
+  },
+  {
+   "squadId": "of_hu_paksi",
+   "name": "Paksi",
+   "league": "of_hungarian_nb_i",
+   "reason": "none",
+   "candidates": [
+    "138185:Paks"
+   ]
+  },
+  {
+   "squadId": "of_id_bhayangkara_presisi",
+   "name": "Bhayangkara Presisi",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139350:Bhayangkara Presisi Lampung"
+   ]
+  },
+  {
+   "squadId": "of_id_borneo",
+   "name": "Borneo",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139354:Borneo Samarinda"
+   ]
+  },
+  {
+   "squadId": "of_id_dewa_united",
+   "name": "Dewa United",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "156864:Dewa United Banten"
+   ]
+  },
+  {
+   "squadId": "of_id_maluku_utara_united",
+   "name": "Maluku Utara United",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_id_persebaya",
+   "name": "Persebaya",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139348:Persebaya Surabaya"
+   ]
+  },
+  {
+   "squadId": "of_id_persija",
+   "name": "Persija",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139357:Persija Jakarta"
+   ]
+  },
+  {
+   "squadId": "of_id_persijap",
+   "name": "Persijap",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "152569:Persijap Jepara"
+   ]
+  },
+  {
+   "squadId": "of_id_persik",
+   "name": "Persik",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139349:Persik Kediri"
+   ]
+  },
+  {
+   "squadId": "of_id_persis",
+   "name": "Persis",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "146513:Persis Solo"
+   ]
+  },
+  {
+   "squadId": "of_id_persita",
+   "name": "Persita",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139359:Persita Tangerang"
+   ]
+  },
+  {
+   "squadId": "of_id_psim",
+   "name": "PSIM",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "152568:PSIM Yogyakarta"
+   ]
+  },
+  {
+   "squadId": "of_id_psm",
+   "name": "PSM",
+   "league": "of_indonesian_super_league",
+   "reason": "none",
+   "candidates": [
+    "139361:PSM Makassar"
+   ]
+  },
+  {
+   "squadId": "of_il_hapoel_beer_sheva",
+   "name": "Hapoel Beer Sheva",
+   "league": "of_israeli_premier_league",
+   "reason": "none",
+   "candidates": [
+    "136334:Hapoel Beer Sheva BC"
+   ]
+  },
+  {
+   "squadId": "of_il_hapoel_kiryat_shmona",
+   "name": "Hapoel Kiryat Shmona",
+   "league": "of_israeli_premier_league",
+   "reason": "none",
+   "candidates": [
+    "133950:Hapoel Ironi Kiryat Shmona"
+   ]
+  },
+  {
+   "squadId": "of_il_hapoel_raanana",
+   "name": "Hapoel Raanana",
+   "league": "of_israeli_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_il_hapoel_tel_aviv",
+   "name": "Hapoel Tel Aviv",
+   "league": "of_israeli_premier_league",
+   "reason": "none",
+   "candidates": [
+    "136059:Hapoel Tel Aviv BC"
+   ]
+  },
+  {
+   "squadId": "of_ir_esteghlal_ahvaz",
+   "name": "Esteghlal Ahvaz",
+   "league": "of_persian_gulf_pro_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ir_foolad",
+   "name": "Foolad",
+   "league": "of_persian_gulf_pro_league",
+   "reason": "none",
+   "candidates": [
+    "139165:Foolad Khuzestan"
+   ]
+  },
+  {
+   "squadId": "of_is_leiknir",
+   "name": "Leiknir",
+   "league": "of_icelandic_urvalsdeild",
+   "reason": "none",
+   "candidates": [
+    "140783:Leiknir Reykjavík"
+   ]
+  },
+  {
+   "squadId": "of_it_altamura",
+   "name": "Altamura",
+   "league": "of_italian_serie_c_c",
+   "reason": "none",
+   "candidates": [
+    "143039:Team Altamura"
+   ]
+  },
+  {
+   "squadId": "of_it_sorrento",
+   "name": "Sorrento",
+   "league": "of_italian_serie_c_c",
+   "reason": "none",
+   "candidates": [
+    "141673:Sorrento"
+   ]
+  },
+  {
+   "squadId": "of_it_ternana",
+   "name": "Ternana",
+   "league": "of_italian_serie_c_b",
+   "reason": "none",
+   "candidates": [
+    "152929:Ternana Women"
+   ]
+  },
+  {
+   "squadId": "of_it_trento",
+   "name": "Trento",
+   "league": "of_italian_serie_c_a",
+   "reason": "none",
+   "candidates": [
+    "135382:Trento"
+   ]
+  },
+  {
+   "squadId": "of_ke_muranga_seal",
+   "name": "Muranga Seal",
+   "league": "of_kenyan_premier_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_kz_okzhetpes",
+   "name": "Okzhetpes",
+   "league": "of_kazakhstan_premier_league",
+   "reason": "none",
+   "candidates": [
+    "143694:Okzhetpes Women"
+   ]
+  },
+  {
+   "squadId": "of_kz_ordabasy",
+   "name": "Ordabasy",
+   "league": "of_kazakhstan_premier_league",
+   "reason": "none",
+   "candidates": [
+    "134077:Ordabasy Shymkent"
+   ]
+  },
+  {
+   "squadId": "of_kz_shakhter_karaganda",
+   "name": "Shakhter",
+   "league": "of_kazakhstan_premier_league",
+   "reason": "none",
+   "candidates": [
+    "133974:Shakhter Karagandy"
+   ]
+  },
+  {
+   "squadId": "of_kz_zhetysu",
+   "name": "Zhetysu",
+   "league": "of_kazakhstan_premier_league",
+   "reason": "none",
+   "candidates": [
+    "134052:Jetysu Taldykorgan"
+   ]
+  },
+  {
+   "squadId": "of_pl_jagiellonia",
+   "name": "Jagiellonia",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135297:Jagiellonia Białystok"
+   ]
+  },
+  {
+   "squadId": "of_pl_korona",
+   "name": "Korona",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135298:Korona Kielce"
+   ]
+  },
+  {
+   "squadId": "of_pl_lech",
+   "name": "Lech",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "134010:Lech Poznań"
+   ]
+  },
+  {
+   "squadId": "of_pl_lechia",
+   "name": "Lechia",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135299:Lechia Gdańsk"
+   ]
+  },
+  {
+   "squadId": "of_pl_legia",
+   "name": "Legia",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "152614:Legião"
+   ]
+  },
+  {
+   "squadId": "of_pl_piast",
+   "name": "Piast",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135300:Piast Gliwice"
+   ]
+  },
+  {
+   "squadId": "of_pl_podbeskidzie",
+   "name": "Podbeskidzie",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135301:Podbeskidzie Bielsko-Biała"
+   ]
+  },
+  {
+   "squadId": "of_pl_pogon",
+   "name": "Pogon",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "148483:Pogoń Siedlce"
+   ]
+  },
+  {
+   "squadId": "of_pl_ruch",
+   "name": "Ruch",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "134016:Ruch Chorzów"
+   ]
+  },
+  {
+   "squadId": "of_pl_slask",
+   "name": "Slask",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "133952:Śląsk Wrocław"
+   ]
+  },
+  {
+   "squadId": "of_pl_zaglebie",
+   "name": "Zaglebie",
+   "league": "of_ekstraklasa",
+   "reason": "none",
+   "candidates": [
+    "135496:Zagłębie Lubin"
+   ]
+  },
+  {
+   "squadId": "of_rs_imt",
+   "name": "IMT",
+   "league": "of_serbian_superleague",
+   "reason": "none",
+   "candidates": [
+    "141832:IMT Novi Beograd"
+   ]
+  },
+  {
+   "squadId": "of_rs_javor_matis",
+   "name": "Javor-Matis",
+   "league": "of_serbian_superleague",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_rs_napredak",
+   "name": "Napredak",
+   "league": "of_serbian_superleague",
+   "reason": "none",
+   "candidates": [
+    "137861:Napredak Kruševac"
+   ]
+  },
+  {
+   "squadId": "of_rs_partizan",
+   "name": "Partizan",
+   "league": "of_serbian_superleague",
+   "reason": "none",
+   "candidates": [
+    "140673:Partizani B"
+   ]
+  },
+  {
+   "squadId": "of_rs_tsc",
+   "name": "TSC",
+   "league": "of_serbian_superleague",
+   "reason": "none",
+   "candidates": [
+    "137856:TSC Bačka Topola"
+   ]
+  },
+  {
+   "squadId": "of_ru_alania",
+   "name": "Alania",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "140021:Alania Vladikavkaz"
+   ]
+  },
+  {
+   "squadId": "of_ru_arsenal_tula_2",
+   "name": "Arsenal Tula 2",
+   "league": "of_russian_second_division_b_group_3",
+   "reason": "none",
+   "candidates": [
+    "134553:Arsenal Tula"
+   ]
+  },
+  {
+   "squadId": "of_ru_baltika_2_kaliningrad",
+   "name": "Baltika 2",
+   "league": "of_russian_second_division_b_group_2",
+   "reason": "none",
+   "candidates": [
+    "138146:Baltika Kaliningrad"
+   ]
+  },
+  {
+   "squadId": "of_ru_chaika",
+   "name": "Chaika",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ru_chernomorets",
+   "name": "Chernomorets",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "147431:Chernomorets Balchik"
+   ]
+  },
+  {
+   "squadId": "of_ru_dinamo_2_moscow",
+   "name": "Dinamo Moscow 2",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "133985:Dynamo Moscow"
+   ]
+  },
+  {
+   "squadId": "of_ru_dinamo_barnaul",
+   "name": "Dinamo Barnaul",
+   "league": "of_russian_second_division_b_group_4",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ru_dinamo_kirov",
+   "name": "Dinamo Kirov",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ru_dinamo_st_petersburg",
+   "name": "Dinamo St Petersburg",
+   "league": "of_russian_second_division_b_group_3",
+   "reason": "none",
+   "candidates": [
+    "140907:Dinamo St. Petersburg"
+   ]
+  },
+  {
+   "squadId": "of_ru_dinamo_vladivostok",
+   "name": "Dinamo Vladivostok",
+   "league": "of_russian_second_division_a_silver",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ru_fc_orenburg_2",
+   "name": "Orenburg 2",
+   "league": "of_russian_second_division_b_group_4",
+   "reason": "none",
+   "candidates": [
+    "135661:Orenburg"
+   ]
+  },
+  {
+   "squadId": "of_ru_leningradets",
+   "name": "Leningradets",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "143111:Leningradets Leningrad Oblast"
+   ]
+  },
+  {
+   "squadId": "of_ru_mashuk_kmv",
+   "name": "Mashuk",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "143114:Mashuk-KMV Pyatigorsk"
+   ]
+  },
+  {
+   "squadId": "of_ru_neftekhimik",
+   "name": "Neftekhimik",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "140895:Neftekhimik Nizhnekamsk"
+   ]
+  },
+  {
+   "squadId": "of_ru_pari_nn",
+   "name": "Pari Nizhniy Novgorod",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "149502:Pari NN-2 Nizhny Novgorod"
+   ]
+  },
+  {
+   "squadId": "of_ru_rodina_2_moscow",
+   "name": "Rodina 2",
+   "league": "of_russian_second_division_a_silver",
+   "reason": "none",
+   "candidates": [
+    "143118:Rodina Moscow"
+   ]
+  },
+  {
+   "squadId": "of_ru_rotor",
+   "name": "Rotor",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "138155:Rotor Volgograd"
+   ]
+  },
+  {
+   "squadId": "of_ru_rubin_2_kazan",
+   "name": "Rubin 2",
+   "league": "of_russian_second_division_b_group_4",
+   "reason": "none",
+   "candidates": [
+    "134127:Rubin Kazan"
+   ]
+  },
+  {
+   "squadId": "of_ru_saturn_ramenskoe",
+   "name": "Saturn",
+   "league": "of_russian_second_division_b_group_2",
+   "reason": "none",
+   "candidates": [
+    "140017:Saturn Ramenskoye"
+   ]
+  },
+  {
+   "squadId": "of_ru_shinnik",
+   "name": "Shinnik",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "143322:Shinnik Bobruisk"
+   ]
+  },
+  {
+   "squadId": "of_ru_sibir_novosibirsk",
+   "name": "Sibir",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "140898:Sibir Novosibirsk"
+   ]
+  },
+  {
+   "squadId": "of_ru_sokol",
+   "name": "Sokol",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "149500:Sokol Kazan"
+   ]
+  },
+  {
+   "squadId": "of_ru_spartak_moscow_2",
+   "name": "Spartak Moscow 2",
+   "league": "of_russian_second_division_b_group_2",
+   "reason": "none",
+   "candidates": [
+    "134097:Spartak Moscow"
+   ]
+  },
+  {
+   "squadId": "of_ru_textilschik_ivanovo",
+   "name": "Textilschik",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ru_ural_2_ekaterinburg",
+   "name": "Ural 2",
+   "league": "of_russian_second_division_b_group_4",
+   "reason": "none",
+   "candidates": [
+    "134439:Ural Yekaterinburg",
+    "148261:Uralmash Ekaterinburg"
+   ]
+  },
+  {
+   "squadId": "of_ru_veles",
+   "name": "Veles",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "146267:Veles 2020"
+   ]
+  },
+  {
+   "squadId": "of_ru_volga",
+   "name": "Volga",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "134436:Volga Nyzhnyi"
+   ]
+  },
+  {
+   "squadId": "of_ru_volgar",
+   "name": "Volgar",
+   "league": "of_russian_second_division_a_gold",
+   "reason": "none",
+   "candidates": [
+    "140086:Volgar Astrakhan"
+   ]
+  },
+  {
+   "squadId": "of_ru_volna_nizhegorodskaya_oblast",
+   "name": "Volna",
+   "league": "of_russian_second_division_b_group_4",
+   "reason": "none",
+   "candidates": [
+    "139690:Volna Pinsk"
+   ]
+  },
+  {
+   "squadId": "of_ru_yenisey",
+   "name": "Yenisey",
+   "league": "of_russian_first_division",
+   "reason": "none",
+   "candidates": [
+    "136255:Yenisey Krasnoyarsk"
+   ]
+  },
+  {
+   "squadId": "of_ru_zenit_2_st_petersburg",
+   "name": "Zenit 2",
+   "league": "of_russian_second_division_b_group_2",
+   "reason": "none",
+   "candidates": [
+    "143125:Izhevsk",
+    "136638:Zenit St Petersburg"
+   ]
+  },
+  {
+   "squadId": "of_ru_znamya_truda_orekhovo_zuevo",
+   "name": "Znamya Truda",
+   "league": "of_russian_second_division_b_group_3",
+   "reason": "none",
+   "candidates": [
+    "143126:Znamya Truda Orekhovo-Zuyevo"
+   ]
+  },
+  {
+   "squadId": "of_ru_zvezda_st_petersburg",
+   "name": "Zvezda",
+   "league": "of_russian_second_division_b_group_2",
+   "reason": "none",
+   "candidates": [
+    "143466:Zvezda-VDV Dmitrov",
+    "143128:Zvezda Saint Petersburg"
+   ]
+  },
+  {
+   "squadId": "of_sa_al_batin",
+   "name": "Al-Batin",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_faisaly",
+   "name": "Al-Faisaly",
+   "league": "of_saudi_professional_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_jeel",
+   "name": "Al-Jeel",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_nahda",
+   "name": "Al-Nahda",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_njoom",
+   "name": "Al-Njoom",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_orobah",
+   "name": "Al-Orobah",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_saudi_al_watani",
+   "name": "Al-Saudi Al-Watani",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_shoulla",
+   "name": "Al-Shoulla",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_al_wehda",
+   "name": "Al-Wehda",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sa_najran",
+   "name": "Najran",
+   "league": "of_saudi_first_division",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_sk_dac_dunajska_streda",
+   "name": "DAC Dunajska Streda",
+   "league": "of_slovak_super_liga",
+   "reason": "none",
+   "candidates": [
+    "137869:DAC 1904 Dunajská Streda"
+   ]
+  },
+  {
+   "squadId": "of_sk_michalovce",
+   "name": "MFK Michalovce",
+   "league": "of_slovak_super_liga",
+   "reason": "none",
+   "candidates": [
+    "137874:Zemplín Michalovce",
+    "140967:Michalovce"
+   ]
+  },
+  {
+   "squadId": "of_sk_podbrezova",
+   "name": "Podbrezova",
+   "league": "of_slovak_super_liga",
+   "reason": "none",
+   "candidates": [
+    "143920:Železiarne Podbrezová"
+   ]
+  },
+  {
+   "squadId": "of_sk_zlate_moravce",
+   "name": "Zlate Moravce",
+   "league": "of_slovak_super_liga",
+   "reason": "none",
+   "candidates": [
+    "137873:ViOn Zlaté Moravce"
+   ]
+  },
+  {
+   "squadId": "of_ua_ahrobiznes",
+   "name": "Ahrobiznes",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "138438:Ahrobiznes Volochysk"
+   ]
+  },
+  {
+   "squadId": "of_ua_bukovyna",
+   "name": "Bukovyna",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "146855:Bukovyna Chernivtsi"
+   ]
+  },
+  {
+   "squadId": "of_ua_chornomorets",
+   "name": "Chornomorets",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "134392:Chornomorets Odesa"
+   ]
+  },
+  {
+   "squadId": "of_ua_epicentr",
+   "name": "Epicentr",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "156475:Epicentr-Podolyany"
+   ]
+  },
+  {
+   "squadId": "of_ua_feniks",
+   "name": "Feniks",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "146859:FSC Mariupol"
+   ]
+  },
+  {
+   "squadId": "of_ua_inhulets",
+   "name": "Inhulets",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "138443:Inhulets Petrove"
+   ]
+  },
+  {
+   "squadId": "of_ua_karpaty",
+   "name": "Karpaty",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "134426:Karpaty Lviv"
+   ]
+  },
+  {
+   "squadId": "of_ua_kolos",
+   "name": "Kolos",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "135631:Kolossos BC"
+   ]
+  },
+  {
+   "squadId": "of_ua_kryvbas",
+   "name": "Kryvbas",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "144094:Kryvbas"
+   ]
+  },
+  {
+   "squadId": "of_ua_livyi_bereh",
+   "name": "Livyi Bereh",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "147624:Livyi Bereh Kyiv"
+   ]
+  },
+  {
+   "squadId": "of_ua_metalist",
+   "name": "Metalist",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "142825:Metalist Kharkiv"
+   ]
+  },
+  {
+   "squadId": "of_ua_metalist_1925",
+   "name": "Metalist",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "142825:Metalist Kharkiv"
+   ]
+  },
+  {
+   "squadId": "of_ua_nyva",
+   "name": "Nyva",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "147625:Nyva Buzova"
+   ]
+  },
+  {
+   "squadId": "of_ua_podillia",
+   "name": "Podillia",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ua_polissia",
+   "name": "Polissia",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ua_probiy",
+   "name": "Probiy",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "152563:Probiy Horodenka"
+   ]
+  },
+  {
+   "squadId": "of_ua_prykarpattia",
+   "name": "Prykarpattia",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "138448:Prykarpattia-Blaho"
+   ]
+  },
+  {
+   "squadId": "of_ua_shakhtar",
+   "name": "Shakhtar",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "134126:Shakhtar Donetsk"
+   ]
+  },
+  {
+   "squadId": "of_ua_ucsa",
+   "name": "UCSA",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "149226:UCSA Tarasivka"
+   ]
+  },
+  {
+   "squadId": "of_ua_victoriia_sumy",
+   "name": "Victoriia Sumy",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_ua_vorskla",
+   "name": "Vorskla",
+   "league": "of_ukrainian_first_league",
+   "reason": "none",
+   "candidates": [
+    "134428:Vorskla Poltava"
+   ]
+  },
+  {
+   "squadId": "of_ua_zorya",
+   "name": "Zorya",
+   "league": "of_ukrainian_premier_league",
+   "reason": "none",
+   "candidates": [
+    "134422:Zorya Luhansk"
+   ]
+  },
+  {
+   "squadId": "of_uy_colon",
+   "name": "Colón",
+   "league": "of_uruguayan_second_division",
+   "reason": "none",
+   "candidates": [
+    "135157:Colón"
+   ]
+  },
+  {
+   "squadId": "of_uy_oriental",
+   "name": "Oriental",
+   "league": "of_uruguayan_second_division",
+   "reason": "none",
+   "candidates": [
+    "143714:Oriental Dragon"
+   ]
+  },
+  {
+   "squadId": "of_uz_mashal",
+   "name": "Mashal",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": []
+  },
+  {
+   "squadId": "of_uz_metallurg",
+   "name": "Metallurg",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": [
+    "155980:Metallurg Asha"
+   ]
+  },
+  {
+   "squadId": "of_uz_navbahor",
+   "name": "Navbahor",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": [
+    "139383:Navbahor Namangan"
+   ]
+  },
+  {
+   "squadId": "of_uz_neftchi",
+   "name": "Neftchi",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": [
+    "133949:Neftchi"
+   ]
+  },
+  {
+   "squadId": "of_uz_qizilqum",
+   "name": "Qizilqum",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": [
+    "139375:Qizilqum Zarafshon"
+   ]
+  },
+  {
+   "squadId": "of_uz_shortan",
+   "name": "Shortan",
+   "league": "of_uzbek_super_league",
+   "reason": "none",
+   "candidates": []
+  }
+ ]
+}

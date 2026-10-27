@@ -27,8 +27,10 @@ Chave i18n primeiro (`newGame.countries.{slug}.name`), depois `Intl.DisplayNames
 ## Escudos
 
 `squadLogoUrl(squadId)` consulta `logoIndex.json` (gerado pelo `importEspn`, helper puro em
-`src/Domain/world/logos.ts`): `squadId → "{pasta}/{stem}"`, com o SVG/PNG nativo primeiro e o escudo
-da ESPN (`logos/espn/{squadId}.png`) depois. Clube fora do índice não gera requisição.
+`src/Domain/world/logos.ts`): `squadId → "{pasta}/{stem}"`, com o SVG/PNG nativo primeiro, o escudo
+da ESPN (`logos/espn/{squadId}.png`) depois e, por último, o do TheSportsDB (`logos/tsdb/{squadId}.png`,
+`scripts/fetchTheSportsDBBadges.ts` + `applyTsdbBadges.ts`). Clube fora do índice não gera requisição.
+Cobertura (2026-10-27): 1081 de 1273 clubes (nativo/ESPN 632, TheSportsDB 449); o resto usa o brasão gerado.
 
 `squadLogoUrl` devolve `undefined` para clube sem escudo, então a UI nem tenta a requisição. O
 `ClubLogo` guarda em memória (`failedLogoUrls`) as URLs que já deram 404, para não pedir de novo a
