@@ -704,6 +704,7 @@
       "limit": "Limite de amigos ou de pedidos atingido.",
       "invalidBody": "Mensagem inválida.",
       "noAccess": "Você não pode escrever nesta conversa.",
+      "publicRoom": "O chat do mundo público aceita só reações.",
       "rateLimited": "Muitas tentativas seguidas. Espere um pouco e tente de novo.",
       "tooLarge": "Texto grande demais.",
       "unauthorized": "Sessão expirada. Entre de novo.",

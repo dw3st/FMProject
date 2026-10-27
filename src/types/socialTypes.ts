@@ -116,6 +116,8 @@ export type SocialErrorCode =
   | "limit"
   | "invalidBody"
   | "noAccess"
+  /** The public world's room takes reactions and phrases only (part 5b). */
+  | "publicRoom"
   | "rateLimited"
   | "tooLarge"
   | "unauthorized"

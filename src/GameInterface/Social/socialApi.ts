@@ -16,7 +16,7 @@ export interface RequestAnswer {
 
 const KNOWN_ERRORS: ReadonlySet<string> = new Set<SocialErrorCode>([
   "invalidNickname", "nicknameTaken", "nicknameLocked", "noNickname", "invalidQuery", "notFound", "alreadyFriends",
-  "limit", "invalidBody", "noAccess", "rateLimited", "tooLarge", "unauthorized", "network",
+  "limit", "invalidBody", "noAccess", "publicRoom", "rateLimited", "tooLarge", "unauthorized", "network",
 ]);
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<ApiResult<T>> {
