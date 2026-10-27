@@ -22,6 +22,7 @@ import { managerReputation, sackHumanManager } from "@/Domain/jobs/jobs";
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { contractUntil, managerWeeklyWage, MANAGER_CONTRACT } from "@/Domain/managers/managerContract";
+import { isPublicWorld } from "@/Domain/multiplayer/publicWorld";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { buildBoardMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
@@ -181,7 +182,8 @@ export async function removeSeat(
     if (!world?.currentDate || !world.seats.includes(seatId)) throw new SeatError("notFound", `removeSeat: seat ${seatId} not in save ${saveId}`);
     const member = memberBySeat(saveId, seatId);
     // The owner hands the world over first (`transferOwnership`); the last seat deletes the world instead.
-    if (member?.role === "owner" || world.seats.length <= 1) throw new SeatError("ownerOrLast", `removeSeat: seat ${seatId} is the owner or the last seat`);
+    const lastSeatKeepsWorld = isPublicWorld(world);
+    if (member?.role === "owner" || (world.seats.length <= 1 && !lastSeatKeepsWorld)) throw new SeatError("ownerOrLast", `removeSeat: seat ${seatId} is the owner or the last seat`);
     const seat = await service.getSeat(saveId, seatId);
     if (!seat) {
       // Broken world (the id is in `seats` but the folder is gone): just drop the id and the member row.
