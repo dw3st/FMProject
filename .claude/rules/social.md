@@ -122,3 +122,12 @@ Navegador: `DEV_AUTO_LOGIN=1 bun run dev`; aba 1 `http://localhost:3000/api/auth
 - A sala do mundo lê `save_members` (um membro por assento do mundo, multiplayer). A sala do mundo público só aceita resenha: texto livre dá 403 `publicRoom`.
 - Um participante de DM lê o histórico mesmo depois de a amizade acabar (só não escreve), salvo com bloqueio.
 - Os limites (mensagens, pedidos, buscas, socket) ficam em memória: reiniciar o servidor zera.
+
+## Partida ao vivo entre dois técnicos (multiplayer parte 7, 4.36)
+
+Cliente → servidor: `h2h_join { saveId, fixtureId }`, `h2h_ready`, `h2h_cmd { cmd }`, `h2h_pause`, `h2h_resume`,
+`h2h_leave`. Servidor → cliente: `h2h_room { room, mySide }`, `h2h_invite { saveId, fixtureId, from }` (também
+reenviado a cada `hello` enquanto a sala espera, `resendH2HInvites`), `h2h_frame`, `h2h_state`, `h2h_event`,
+`h2h_paused`, `h2h_closed { reason }`, `h2h_done`. Os frames do cliente podem ter até 8 KB (`H2H.MAX_FRAME_BYTES`, o
+`maxPayloadLength` do socket; maiores são ignorados); por socket `h2h_cmd` 20 a cada 10 s e os outros `h2h_*` 30 por
+minuto. Entrada recusada é silenciosa. Ver `.claude/rules/game/multiplayer.md` → "Parte 7".

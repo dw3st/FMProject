@@ -34,7 +34,8 @@ Spec: `docs/superpowers/specs/2026-10-14-multiplayer-design.md` (visão geral e 
 - Finanças da liga (`ai-finances`): todo clube humano mostra só popularidade e folha (`isHumanClub`; o do próprio
   assento continua `isPlayerClub`), com o rótulo "Técnico humano".
 - Jogo entre dois assentos: a prévia é a normal e oferece simular a partida (o avanço do dia joga no motor completo
-  com as duas táticas); só a partida ao vivo (`match-setup?live=1`) dá 409 `seatOpponent` (parte 4).
+  com as duas táticas) ou jogar ao vivo contra o outro técnico (parte 7: `match-setup?live=1&h2h=1` responde 200; sem
+  `h2h=1` a partida ao vivo continua 409 `seatOpponent`). Simular por um dos assentos decide o jogo dos dois.
 - Avanço manual (`/advance-day`, `/advance-until`) num mundo em grupo: 409 `groupAdvance` (só o executor avança, parte 3);
   num mundo multi sem `world` (testes), o avanço rápido dá 409 `multiSeat`.
 - Sem migração: saves de antes da parte 1 não têm membros e somem da lista.
@@ -121,11 +122,11 @@ assento (409) e limpeza das propostas dos outros, cláusula paga no extrato do o
 - `withSaveLock` é local ao processo: um servidor só por mundo.
 - Ids de mensagem podem se repetir entre assentos (ex. a lista da Champions de dois clubes humanos): cada caixa é um
   arquivo, então não colidem.
-- Sem humano × humano ao vivo nem classificação (partes 4–5).
+- Humano × humano ao vivo: parte 7; classificação: parte 5a.
 - O smoke de temporada não tem modo de dois assentos.
 - A cláusula paga a outro assento entra no extrato dele sem mensagem na caixa (a mensagem `sell_on` só vai para o
   assento que fez a operação).
-- Um jogo entre dois assentos não tem prévia (o `match-setup` recusa): só "simular partida" ou voltar ao painel.
+- Um jogo entre dois assentos tem a prévia normal (parte 4) com Simular e Jogar ao vivo (parte 7).
 
 ## Parte 2: liga de amigos
 
@@ -362,7 +363,7 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
 ## Parte 4: humano × humano
 
 Spec: `docs/superpowers/specs/2026-10-16-multiplayer-h2h-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-h2h.md`.
-Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entre dois técnicos fica de fora.
+Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entre dois técnicos é a parte 7.
 
 ### Regra
 
@@ -370,9 +371,10 @@ Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entr
   lido como um clube da IA (formação e XI automático dele, nunca a tática salva do outro técnico) e o `opponentSquad` vem
   sem os dados privados do outro assento (`publicSeatSquad`, `src/Domain/seats/publicSquad.ts`: sem moral, conversas e
   promessas, comissão, instalações, atributos do técnico, familiaridade, inscrições, saldo, nem `morale`/`moraleLog`/
-  `squadStatus` dos jogadores). Com `?live=1` segue
-  409 `seatOpponent` (com `matchDay`). A prévia mostra o botão **Simular**; o avanço do dia joga a partida no motor
-  completo com a tática de cada assento. O jogo entra no log do dia dos dois.
+  `squadStatus` dos jogadores). Com `?live=1` (sem `h2h=1`) segue 409 `seatOpponent` (com `matchDay`); com
+  `?live=1&h2h=1` responde 200 com `h2h: true` (parte 7). A prévia mostra **Simular** e **Jogar ao vivo**; simulando,
+  o avanço do dia joga a partida no motor completo com a tática de cada assento, e a decisão de um assento vale para os
+  dois (`simulateSeatGame`, que também fecha a sala da parte 7). O jogo entra no log do dia dos dois.
 - **Propostas entre técnicos:** um assento propõe a outro um jogador de elenco do clube dele. `SeatOffer`
   (`src/types/seatOfferTypes.ts`): `kind` `transfer` ou `loan`, partes (vendedor e comprador), `terms`, `turn`,
   `counters`, `expires`, `history`. Ficam em `saves/{id}/seatOffers.json`, do mundo.
@@ -450,7 +452,7 @@ bun test src/Domain/seatOffers src/backend/dal/seatOffers.dal.test.ts src/backen
 
 ### Limitações (parte 4)
 
-- Sem partida ao vivo entre dois técnicos: sempre simulada, no motor completo.
+- Partida ao vivo entre dois técnicos: parte 7 (só o jogo de clube; o de seleção continua simulado).
 - Só jogadores de elenco: base, livres e pré-contrato entre técnicos não existem.
 - Sem rival da IA nem disputa na proposta entre técnicos; a preferência do jogador (`preferenceScore`) não entra, só a
   recusa de contrato no aceite.
@@ -714,3 +716,133 @@ bun test src/Domain/multiplayer src/backend/publicWorld.create.test.ts src/backe
 - O horário é o de Brasília para todos.
 - A lista de clubes do novo jogo usa os dados iniciais das 10 ligas: um clube rebaixado no mundo ainda aparece (e a entrada recusa com `invalidClub`), e um promovido a uma delas não aparece.
 - O passo não tem dia na tela: "09:00" pode ser amanhã.
+
+## Parte 7: humano × humano ao vivo
+
+Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
+`docs/superpowers/plans/2026-10-27-multiplayer-h2h-live.md`. Versão **4.36**. Vale em qualquer mundo em grupo
+(`mode: "multi"` com `world` em `running`); só o jogo de clube (o de seleção entre dois técnicos continua simulado).
+
+### Regra
+
+- **Prévia:** o jogo do clube contra outro assento oferece **Jogar ao vivo** e **Simular**.
+  `POST /api/match-setup?live=1&h2h=1` responde 200 com `h2h: true` (sem `h2h=1` segue 409 `seatOpponent`); cada
+  assento monta o próprio lado com a própria chamada (`matchSetupFor(saveId, seatId, { live, h2h })`,
+  `src/backend/matchSetup.ts`: XI, tática, instruções, marcação, inscrição).
+- **Sala** (`/match-room`, "SALA DO **JOGO**"): em memória por `saveId:fixtureId` (`h2hRooms.ts`); estados `away`
+  (fora), `in` (na sala), `ready` (pronto). Quem entra avisa o outro: `h2h_invite` pelo socket (aviso no canto com
+  **Entrar**), mensagem `world` / `h2h_invite` na caixa e o "Pronto até" dele vira **Entrar no jogo**. O convite volta a
+  cada `hello` do socket enquanto a sala espera (`resendH2HInvites`), então quem abre o jogo depois também o recebe.
+  Até a largada cada um pode mudar a tática salva (a sala lê a tática de cada assento na largada). Os dois saindo antes
+  de começar fecham a sala.
+- **Simular** (sala, prévia, barra ou o assistente do prazo do grupo), por qualquer um: `matchDecision` simulate nos
+  dois assentos (`simulateSeatGame`), a sala fecha e o outro recebe `h2h_closed { reason: "simulated" }`. A sala não
+  tem prazo próprio: vale o do grupo.
+- **Partida:** começa quando os dois estão `ready`. Um Bun Worker por partida (`h2hWorker.ts` → `createH2HMatch`,
+  `h2hMatch.ts`) isola os globais do motor (`gameBus`, configs de tática por time, `Statistics`, `PlayerRating`) e roda
+  `advanceSim` a cada `H2H.TICK_MS` (50 ms) com o tempo real × 1, a partir do estado montado pela mesma
+  `buildLiveMatchState` da partida sozinha (`src/Domain/match/liveMatchSetup.ts`). Manda `frame` (posições, bola,
+  relógio, a cada `FRAME_MS` 100 ms), `state` (o `GameState` a cada `STATE_MS` 1 s e depois de cada lance), `event`
+  (lances do `gameBus` que a tela usa, `H2H_FORWARDED_EVENTS`) e `done`.
+- **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada), troca de
+  posição, tática ao vivo, mentalidade, formação, instrução de vaga e marcação individual. Sem velocidade (fixa 1×).
+- **Pausas:** `H2H.PAUSES` (3) por técnico, de até `PAUSE_SECONDS` (30) s; durante a pausa os dois mexem no time; só
+  quem pausou retoma antes do fim (`h2hRules.ts`: `canPause`, `canResume`, `pauseExpired`).
+- **Queda:** sem socket de um técnico, a sala liga o auxiliar daquele lado (`autoSubs`, trocas da IA; as vagas de lesão
+  em espera são preenchidas); ao voltar ele recebe o estado completo (bancos e estatísticas inteiras) e o auxiliar
+  desliga, salvo técnico suspenso (fica sempre no auxiliar).
+- **Fim:** a gravação sai de `buildPlayedMatchRecording` (agora em `src/Domain/advanceDay/`, a mesma da partida ao vivo)
+  e é gravada como `liveRecording` do assento **mandante**, com `matchDecision` live nos dois. O dia aceita a gravação
+  de um jogo entre dois assentos só nesse caso (senão 400); recusada, os dois viram simulação. O visitante lê o
+  resultado provisório pela gravação do mandante (`GET …/live-recording`). Os dois vão para `/match-result?pending=1`.
+- **Rivais:** os outros membros recebem o placar pelos `friend_live` de sempre, emitidos pelo servidor em nome dos dois
+  assentos (`pushServerLiveScore(..., skipSeats)`: os dois técnicos da partida nunca a recebem como jogo de amigo;
+  `setServerOwnedLive` faz o servidor ignorar os `live_score` dos navegadores dessa partida). A faixa de rivais da
+  partida ao vivo também tira o próprio jogo.
+- **Servidor reiniciado:** `world.h2hLive` (`H2HLiveEntry[]`) marca as partidas em andamento; na subida
+  (`resumeWorlds` → `clearLostH2H`) as salas somem, os dois assentos voltam a ter o jogo sem decisão e recebem
+  `world` / `h2h_lost`.
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `src/types/h2hTypes.ts` | Sala, comandos, mensagens do worker, estado e estatísticas do fio |
+| `src/Domain/h2h/h2hConfig.ts` | Constantes (`H2H`) |
+| `src/Domain/h2h/h2hRules.ts` (+ teste) | Puro: sala (entrar, pronto, sair, fechar), pausas, `parseH2HCommand` |
+| `src/Domain/match/liveMatchSetup.ts` (+ teste) | `buildLiveMatchState`: o estado inicial da partida ao vivo (solo e servidor) |
+| `src/Domain/advanceDay/buildPlayedMatchRecording.ts` | A gravação da partida ao vivo (cliente e servidor) |
+| `src/backend/matchSetup.ts` (+ teste) | `matchSetupFor` (a rota `match-setup` e a sala) |
+| `src/backend/h2h/h2hMatch.ts` (+ teste) | A partida como objeto puro (tick, comandos, pausa, auxiliar) |
+| `src/backend/h2h/h2hWorker.ts` | O Bun Worker em volta dela |
+| `src/backend/h2h/h2hRooms.ts` (+ teste) | Salas, sockets, encaminhamento, pausas, gravação, `simulateSeatGame`, `clearLostH2H`, `resendH2HInvites` |
+| `src/backend/rivals/liveScores.ts` | `pushServerLiveScore`, `setServerOwnedLive` |
+| `src/GraficsEngine/remoteInterp.ts` (+ teste), `PixiPitch.tsx` (`remote`) | Desenho de uma partida que o servidor roda |
+| `src/GameInterface/H2H/*` | `MatchRoomScreen`, `H2HInvitePopup`, `PauseBar`, `useH2HSocket`, `h2hState`, `h2hInvite` |
+| `src/GameInterface/MatchScreen.tsx` | `?h2h=1`: `mySide`, sem simulação local, comandos pelo socket |
+| `scripts/h2h-measure.ts`, `scripts/h2h-dev-world.ts` | Medição; mundo de dois assentos para testar no navegador |
+
+### Socket (`/api/ws`)
+
+| Sentido | Evento |
+|---|---|
+| Cliente → servidor | `h2h_join { saveId, fixtureId }`, `h2h_ready`, `h2h_cmd { cmd }`, `h2h_pause`, `h2h_resume`, `h2h_leave` |
+| Servidor → cliente | `h2h_room { room, mySide }` e `h2h_invite { saveId, fixtureId, from }` (aos técnicos); `h2h_frame`, `h2h_state { state, stats }`, `h2h_event { name, payload }` (aos sockets da sala); `h2h_paused { by, until, left }`, `h2h_closed { reason }`, `h2h_done` |
+
+- Estado do fio (`wireState`, `wirePlayer`): sem os campos só do motor (`fit`, `baseStats`, `decisionMemory`, `engine`,
+  `bounds`, `fatigueBaselineEnergy`, `throughBallCellsCache`), números arredondados; os bancos só quando mudam; as
+  estatísticas inteiras (`snapshot`) a cada 3 s, numa entrada e numa volta.
+- Limites por socket: `h2h_cmd` 20 a cada 10 s, os outros `h2h_*` 30 por minuto; frames acima de 8 KB ignorados
+  (`H2H.MAX_FRAME_BYTES`, também o `maxPayloadLength` do socket). Entrada recusada é silenciosa.
+
+### Telas
+
+- Prévia contra outro técnico: **Jogar ao vivo** / **Simular**; com o outro na sala, "Fabio está te esperando na sala".
+- Sala: escudos, técnicos e estados, atalho para Formação e táticas, **Começar** (vira "Pronto"), **Simular**, linha
+  de estado ("Esperando Fabio entrar", "Fabio está pronto").
+- Aviso no canto e caixa de entrada para o outro; barra de cima com **Entrar no jogo**.
+- Partida: sem botões de velocidade; **Pausar · 2**; faixa "Fabio pausou · 0:24" com **Retomar** para quem pausou;
+  selo "Fabio saiu · auxiliar no comando"; o campo continua com a casa à esquerda (virado quando ele é o visitante).
+- Resultado: a tela de sempre, para os dois. i18n `h2h.*`, `screenTitles.matchRoom`, `inbox.world.h2h_invite/h2h_lost`.
+
+### Medições (`bun scripts/h2h-measure.ts 30 100`, 2026-10-27)
+
+Windows, Manchester United × Newcastle (Premier, 4-3-3, estilo equilibrado), RSS do processo antes de qualquer partida
+48 MB. CPU = `process.cpuUsage` (o processo inteiro, os workers incluídos) sobre o tempo de parede.
+
+| Partidas ao mesmo tempo (1×, 30 s) | CPU (de um núcleo) | RSS | Bytes/s por navegador |
+|---|---|---|---|
+| 1 | 6,1% | 92 MB (pico 97) | 38,1 KB/s |
+| 3 | 19,3% | 164 MB | 39,2–39,6 KB/s |
+
+Por navegador, em 30 s: 329 `h2h_frame` (média 898 B, ~9 KB/s), 32 `h2h_state` (média 30,7 KB, ~29 KB/s: o estado de
+1 s, os bancos só quando mudam e o `snapshot` das estatísticas a cada 3 s) e 6 `h2h_event` (~180 B). Os bytes contam o
+mesmo `wireState` das salas; o `frame` vai sem arredondar as posições.
+
+Gols por jogo (100 partidas cada, mesmos XIs; o worker com os dois lados no auxiliar, tempo real × 6000):
+
+| Caminho | Gols | Chutes |
+|---|---|---|
+| Worker (`createH2HMatch`) | 3,38 ± 0,17 | 9,03 |
+| `simulateMatch` | 2,65 ± 0,15 | 6,87 |
+
+**+27,5% de gols (0,73, 3,2 erros-padrão) e +31% de chutes:** não é ruído. O worker roda o mesmo caminho da partida ao
+vivo no navegador (`advanceSim`, passo de 1/60 s real ≈ 0,21 s de jogo), e o `simulateMatch` passa de 0,2 s real
+(≈ 2,6 s de jogo) por tick; a diferença deve ser entre a partida ao vivo e a simulada (a partida sozinha usa o mesmo passo; não medida à parte), não
+desta parte. Fica registrada (o quickSim é calibrado contra o `simulateMatch`); não corrigida aqui.
+
+### Testes
+
+```
+bun test src/Domain/h2h src/Domain/match/liveMatchSetup.test.ts src/backend/h2h src/backend/matchSetup.test.ts \
+  src/backend/rivals/liveScores.test.ts src/GraficsEngine/remoteInterp.test.ts src/GameInterface/H2H \
+  src/i18n/h2h.keys.test.ts
+```
+
+### Limitações (parte 7)
+
+- Um processo só: salas e workers em memória; servidor reiniciado = partida perdida (pode ser decidida de novo).
+- Sem espectadores, sem velocidade 2×/4×, sem seleção ao vivo entre dois técnicos.
+- Um frame de atraso no desenho (interpolação entre os dois últimos frames); um frame atrasado congela no último.
+- A sala não tem prazo próprio: com o prazo do grupo vencido, o assistente simula e a sala fecha.
+- A partida ao vivo entre dois técnicos (e, pelo mesmo passo, provavelmente a sozinha) faz ~27% mais gols que a simulada com os mesmos times (ver Medições).

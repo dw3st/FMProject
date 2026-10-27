@@ -487,3 +487,15 @@ same referee (`MatchEvent.referee`, never taken from the client's recording).
 # Luz da partida (4.29)
 
 `POST /api/match-setup` devolve `conditions` (`kickoff`, `weather`, `sunset`) e `sunSide`; o `MatchScreen` os passa ao `PixiPitch` como `lighting`. Só desenho. Ver `.claude/rules/graphics-engine.md` → "Luz e sombra".
+
+# Live match between two managers (multiplayer part 7, 4.36)
+
+A live match against another seat (`/match?h2h=1`) is run by the server, not the browser: one Bun Worker per match
+(`src/backend/h2h/h2hWorker.ts` → `createH2HMatch`) steps `advanceSim` every 50 ms at a fixed 1× (the same phase
+machine, clock and presentation countdowns as above; no speed buttons) from the same `buildLiveMatchState` the solo
+match uses. `MatchScreen` takes `mySide` from the room (`A` = home, `B` = away): the team list, the substitution and
+tactics panels, the mentality and the manual injury subs act on that side and are sent as `h2h_cmd`; the pitch is
+still drawn home on the left (turned when he is away). The `h2h_event`s are re-emitted on the local `gameBus`, so the
+summary, notices, heat map and stats work unchanged. Each manager has 3 pauses of up to 30 s; only who paused resumes
+early. A manager without a socket is replaced by the assistant (`autoSubs`) until he is back. At full time both go to
+`/match-result?pending=1`. See `.claude/rules/game/multiplayer.md` → "Parte 7".

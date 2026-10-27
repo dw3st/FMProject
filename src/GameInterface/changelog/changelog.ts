@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.36",
+    date: "2026-10-27",
+    items: [
+      {
+        pt: "Jogo ao vivo entre dois amigos: quando o seu clube enfrenta o de outro técnico, os dois jogam a mesma partida ao mesmo tempo, cada um no comando do próprio time.",
+        en: "Live match between two friends: when your club meets another manager's club, you both play the same match at the same time, each one in charge of his own team.",
+      },
+      {
+        pt: "Sala do jogo: entre na sala e o seu amigo recebe o convite; a partida começa quando os dois clicam em Começar. Quem preferir pode simular o jogo.",
+        en: "Match room: step into the room and your friend gets the invite; the match starts when both click Start. Either of you can simulate the game instead.",
+      },
+      {
+        pt: "Cada técnico tem 3 pausas de até 30 segundos por partida para mexer no time.",
+        en: "Each manager has 3 pauses of up to 30 seconds per match to change his team.",
+      },
+      {
+        pt: "Se um dos dois cair, o auxiliar assume o time até ele voltar.",
+        en: "If one of you drops out, the assistant takes over the team until he is back.",
+      },
+    ],
+  },
+  {
     version: "4.35.4",
     date: "2026-10-27",
     items: [
@@ -2002,6 +2024,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Mundo público para jogar com outros técnicos", en: "A public world to play with other managers" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

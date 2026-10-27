@@ -172,3 +172,11 @@ de canvas 256 × 256 (`LIGHTING.GRADIENTS`), esticados: a vinheta sobre o canvas
 canto (raio `GLOW_RADIUS` × o lado maior). `updateLight` só muda a opacidade (`drawGradients`); texturas liberadas na
 desmontagem.
 
+
+## Remote mode (multiplayer part 7, 4.36)
+
+`PixiPitch` prop `remote` (`RemoteFeed`, read at mount): the pitch never calls `advanceSim`; it draws the latest
+`GameState` from the server and the positions of the last two `h2h_frame`s blended by the real time since the newest
+one (`remoteInterp.ts`: `remotePositions`, `remoteDrawnBall`, `withFramePositions`; step = `H2H.FRAME_MS`, 100 ms),
+limited to 1, so a late frame freezes on the last one instead of extrapolating. One frame of delay buys a smooth
+drawing whatever the network jitter. Drawing only; absent = the pitch runs the match itself, as always.

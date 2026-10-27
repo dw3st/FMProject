@@ -101,6 +101,10 @@ A new push feature adds a `ServerEvent` member there instead of opening another 
 Multiplayer part 6 (rivals) adds `live_score` (client → server) and `world_results` / `friend_live` (server → client);
 the live match opens its own socket (`src/GameInterface/World/useLiveRivals.ts`). Live scores live in memory
 (`src/backend/rivals/liveScores.ts`).
+Multiplayer part 7 (live match between two managers) adds the `h2h_*` events (`src/types/h2hTypes.ts`). The match runs
+in the server: `src/backend/h2h/h2hRooms.ts` keeps the rooms in memory and spawns one Bun Worker per match
+(`src/backend/h2h/h2hWorker.ts`, isolating the engine globals), relaying its frames, states and events to the two
+managers' sockets. Its commands (`h2h_cmd`, pauses) are the one write that goes over the socket.
 
 ## Save version (#155, 4.22)
 `SaveMeta.gameVersion` is written by `createSave` from `GAME_VERSION` (`@/Domain/saveVersion`, read
