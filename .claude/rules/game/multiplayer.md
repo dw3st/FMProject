@@ -704,3 +704,5 @@ bun test src/Domain/multiplayer src/backend/publicWorld.create.test.ts src/backe
 - Quem dorme ou trabalha perde a decisão de alguns jogos (o assistente simula).
 - O mundo zera a cada deploy; só o hall da fama sobrevive.
 - O horário é o de Brasília para todos.
+- A lista de clubes do novo jogo usa os dados iniciais das 10 ligas: um clube rebaixado no mundo ainda aparece (e a entrada recusa com `invalidClub`), e um promovido a uma delas não aparece.
+- O passo não tem dia na tela: "09:00" pode ser amanhã.
