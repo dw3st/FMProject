@@ -89,9 +89,12 @@ export function legendOptions(retired: readonly RetiredPlayer[], saveId: string,
   return shuffle(top, mulberry32(seedFrom(seed))).slice(0, A.LEGEND_OPTIONS).map((r) => r.id);
 }
 
-/** A legend of the retired list: world class at retirement, not a free agent (`.claude/rules/game/retirement.md`). */
+/**
+ * A legend of the retired list (`.claude/rules/game/retirement.md`): not a free agent, and world class or a level at
+ * retirement of `LEGEND_MIN_LEVEL` or more.
+ */
 export function isLegend(r: RetiredPlayer): boolean {
-  return r.wasWorldClass && !r.freeAgent;
+  return !r.freeAgent && (r.wasWorldClass || retiredLevel(r) >= RETIREMENT.LEGEND_MIN_LEVEL);
 }
 
 /** Still out of the game: never brought back as a reborn or a legend, by anyone. */

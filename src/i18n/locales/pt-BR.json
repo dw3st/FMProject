@@ -2822,7 +2822,7 @@
       "legends": "Lendas",
       "emptyLegends": "Nenhuma lenda se aposentou ainda.",
       "legend": {
-        "about": "Lendas são os jogadores que se aposentaram entre os 50 melhores do mundo. Uma por temporada pode voltar para a sua base com 17 anos, pagando a compensação.",
+        "about": "Lendas são os jogadores que se aposentaram com nota 45 ou mais. Uma por temporada pode voltar para a sua base com 17 anos, pagando a compensação.",
         "status": "Situação",
         "hire": "Trazer para a base · {{fee}}",
         "confirm": "Confirmar · {{fee}}",

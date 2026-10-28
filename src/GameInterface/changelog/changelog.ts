@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.8",
+    date: "2026-10-28",
+    items: [
+      { pt: "Lendas: entram na lista os jogadores que se aposentam com nota 45 ou mais (antes a lista ficava vazia).", en: "Legends: the list now takes players who retire with a rating of 45 or more (it used to stay empty)." },
+    ],
+  },
+  {
     version: "4.38.7",
     date: "2026-10-28",
     items: [

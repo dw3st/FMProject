@@ -24,5 +24,10 @@ export const RETIREMENT = {
    * Bringing a retired legend back for money (tester report): one per season per manager, fee by his level at
    * retirement, `FEE_MIN + FEE_PER_LEVEL × (level − FEE_PIVOT)` within [FEE_MIN, FEE_MAX], on the €0.1M grid.
    */
-  LEGEND_HIRE: { FEE_MIN: 2_000_000, FEE_MAX: 10_000_000, FEE_PER_LEVEL: 4_000_000, FEE_PIVOT: 5.5 },
+  LEGEND_HIRE: { FEE_MIN: 2_000_000, FEE_MAX: 10_000_000, FEE_PER_LEVEL: 4_000_000, FEE_PIVOT: 4.5 },
+  /**
+   * A legend of the retired list: level at retirement at least this (45 on the screen), or world class. Nobody
+   * retires in the world's top 50 (they decline from 34), so world class alone left the list empty.
+   */
+  LEGEND_MIN_LEVEL: 4.5,
 } as const;
