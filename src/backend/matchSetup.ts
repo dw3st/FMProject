@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { publicSeatSquad } from "@/Domain/seats/publicSquad";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
+import { matchIsBig } from "@/backend/matchImportance";
 import { matchSetupReferee } from "@/backend/refereeRoutes";
 import { matchRegistration, registrationDayCtx } from "@/backend/registrationWorld";
 import { seatWindowRef } from "@/backend/marketWindowWorld";
@@ -254,9 +255,14 @@ export async function matchSetupFor(
     weatherEffect = matchWeatherOf(matchFixture, homeSquad);
   }
   // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
-  const crowd = !legacy && matchFixture && opponentSquad
+  const baseCrowd = !legacy && matchFixture && opponentSquad
     ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
     : null;
+  // Big game (flares and fireworks on the pitch, drawing only).
+  const crowd = baseCrowd && matchFixture && opponentSquad
+    && await matchIsBig(saveService, save.id, matchFixture, mySquad, opponentSquad)
+    ? { ...baseCrowd, bigMatch: true as const }
+    : baseCrowd;
   const managers = !legacy && opponentSquad
     ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id), await saveService.listSeats(save.id))
     : null;

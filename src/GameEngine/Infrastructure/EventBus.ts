@@ -349,6 +349,8 @@ export interface GameEvents {
      * Referee / VAR fields of the running match (`var.md`): a complaint's bias, the assistant's subs (manager sent
      * off), `/test`'s forced error and referee. Merged into the pitch's state as given.
      */
+    /** /test: fire the stadium's flares and fireworks now (a big game's kickoff burst). */
+    | { type: 'celebrate' }
     | { type: 'varPatch'; patch: Partial<Pick<import('@/GameEngine/types').GameState, 'refereeBias' | 'autoSubs' | 'forcedRefError' | 'referee'>> };
 
   /**

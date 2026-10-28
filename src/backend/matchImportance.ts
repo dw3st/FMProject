@@ -3,6 +3,7 @@ import { isDerby } from "@/Domain/boardFans/boardFans";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { matchImportanceMult, type ImportanceCompetition } from "@/Domain/facilities/matchImportance";
+import { isBigMatch } from "@/Domain/matchday/bigMatch";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 
@@ -53,4 +54,18 @@ export async function homeMatchImportance(
     knockout: fixture.knockout === true,
   });
   return { derby, mult };
+}
+
+/**
+ * A big game for the stadium atmosphere (flares, fireworks; drawing only, 4.39): any continental game, a national cup
+ * tie from the quarter-finals, or a derby of the same city. Any venue, home or away.
+ */
+export async function matchIsBig(service: SaveService, saveId: string, fixture: Fixture, a: Squad, b: Squad): Promise<boolean> {
+  let cupStage: string | null = null;
+  if (isCupSlug(fixture.competition)) {
+    const meta = await service.getLeagueMeta(saveId, fixture.competition);
+    cupStage = meta?.cup?.stages.find((s) => s.round === fixture.round)?.name ?? null;
+  }
+  const derby = isDerby({ myCity: a.venue?.city ?? "", opponentCity: b.venue?.city ?? "", opponentIsLeader: false });
+  return isBigMatch({ continental: isContinentalSlug(fixture.competition), cupStage, derby });
 }

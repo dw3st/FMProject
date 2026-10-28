@@ -1291,6 +1291,7 @@ export function MatchScreen() {
       ...(crowd?.works ? { works: crowd.works } : {}),
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),
+      ...(crowd?.bigMatch ? { bigMatch: true } : {}),
     };
   }, [matchFixture, crestIds, touchline]);
 

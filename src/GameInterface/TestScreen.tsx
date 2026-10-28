@@ -534,11 +534,13 @@ export function TestScreen() {
   const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
   const [neutralVenue, setNeutralVenue] = useState(false);
   const [standWorks, setStandWorks] = useState(false);
+  /** Big game (4.39): flares with smoke, fireworks at night; "Celebrate" fires them now. */
+  const [bigMatch, setBigMatch] = useState(false);
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
-      ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}) }
+      ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}) }
       : null),
-    [stadiumOn, crowdFill, neutralVenue, standWorks],
+    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1652,6 +1654,8 @@ export function TestScreen() {
             <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
             <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
             <Chip selected={standWorks} onClick={() => setStandWorks(v => !v)} title="North stand under works (#137)">Works</Chip>
+            <Chip selected={bigMatch} onClick={() => setBigMatch(v => !v)} title="Big game: flares and smoke, fireworks at night (kickoff and home goals)">Big game</Chip>
+            {bigMatch && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
           </>
         )}
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}

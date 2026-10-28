@@ -180,3 +180,15 @@ desmontagem.
 one (`remoteInterp.ts`: `remotePositions`, `remoteDrawnBall`, `withFramePositions`; step = `H2H.FRAME_MS`, 200 ms, one frame per sim step),
 limited to 1, so a late frame freezes on the last one instead of extrapolating. One frame of delay buys a smooth
 drawing whatever the network jitter. Drawing only; absent = the pitch runs the match itself, as always.
+
+## Atmosfera do estádio (4.38.1)
+
+`stadiumAtmosphere.ts` (puro, com teste): torres de iluminação nos quatro cantos da arquibancada (`towerSpots`, painel
+virado para o centro; acesas quando `flood ≥ LIGHTS_ON`; o brilho dos cantos sai dos painéis; sem torres com teto
+fechado), celulares na torcida à noite (`phoneLights`: 3% dos lugares ocupados, o dobro por `GOAL_BOOST_S` num gol do
+mandante; redesenhados a cada `REDRAW_S`) e, num jogo grande (`PitchStadium.bigMatch`), sinalizadores com fumaça na
+torcida da casa e fogos à noite (`flareSmoke`, `fireworks`, calculados do tempo) na entrada em campo (`matchStart`) e
+nos gols do mandante. Jogo grande (`isBigMatch`, `src/Domain/matchday/bigMatch.ts`): continental, copa a partir das
+quartas, clássico da mesma cidade; o `match-setup` devolve `crowd.bigMatch` (`matchIsBig`, `matchImportance.ts`).
+Torres e celulares numa camada com máscara da arquibancada; a fumaça sob os jogadores; os fogos por cima. Só desenho,
+no relógio de efeitos (nada com a aba escondida ou pausado). `/test`: chips Big game e Celebrate (com Stadium).

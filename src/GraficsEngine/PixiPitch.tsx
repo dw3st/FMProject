@@ -42,7 +42,11 @@ import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pit
 import { drawDecor, drawFans, drawStandBase, drawStandEdges, fansBounds, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import { crowdSeats, seatCellPx, worksSides } from "@/GraficsEngine/crowd";
+import { crowdSeats, seatCellPx, standSideRects, worksSides } from "@/GraficsEngine/crowd";
+import {
+  ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
+  type CelebrationBurst, type PhoneLight,
+} from "@/GraficsEngine/stadiumAtmosphere";
 import {
   benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, CROWD_JUMP_S, crowdJumpPx, startStretcher, STRETCHER,
   stretcherPose, type StretcherRun,
@@ -437,6 +441,8 @@ export interface PitchStadium {
   works?: StandId[];
   /** The manager's decorations in the home end (achievements), human club's home games only. */
   decor?: StadiumDecor;
+  /** A big game: flares with smoke (and fireworks at night) at kickoff and at every home goal. */
+  bigMatch?: boolean;
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -529,6 +535,8 @@ export function PixiPitch({
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
   useEffect(() => { coachesRef.current = coaches; }, [coaches]);
   useEffect(() => { extrasRef.current = extras; }, [extras]);
+  // Stadium flags read at event time (big game): the ref follows every prop change.
+  useEffect(() => { stadiumRef.current = stadium; }, [stadium]);
   // Crowd texture: re-baked only when what it shows changes (never per frame).
   useEffect(() => {
     stadiumRef.current = stadium;
@@ -630,6 +638,8 @@ export function PixiPitch({
       /** Height (px) of a fans' jump: under half a seat. */
       let crowdJumpAmp = 0;
       let crowdDecor: Graphics | null = null;
+      /** Phone light candidates of the filled seats (stadium atmosphere), set by every bake. */
+      let phones: PhoneLight[] = [];
       const bakeCrowd = () => {
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
@@ -656,6 +666,7 @@ export function PixiPitch({
           works,
         });
         crowdJumpAmp = Math.max(1.5, seatCellPx(m.stand) * 0.45);
+        phones = phoneLights(seats, st.seed);
         for (const k of ["home", "away"] as const) {
           const mine = seats.filter((seat) => seat.team === k);
           const box = fansBounds(m.stand, mine);
@@ -796,6 +807,14 @@ export function PixiPitch({
         app.stage.addChild(sp);
         return sp;
       });
+      // With the stadium, the glow comes from the floodlight towers in the corners (none under a closed roof).
+      const towersOn = !!m.stand && !lightingRef.current?.sun.covered;
+      if (m.stand && towersOn) {
+        towerSpots(m.stand).forEach((t, i) => {
+          const p = towerPanel(t);
+          glowSprites[i]!.position.set(p.x, p.y);
+        });
+      }
       const drawGradients = (l: Lighting | null) => {
         const v = l ? l.vignette * G.VIGNETTE_STRENGTH : 0;
         vignetteSprite.visible = v > 0.005;
@@ -1558,6 +1577,119 @@ export function PixiPitch({
       // Alpha is set per-cell during rendering so the underlying game stays visible.
       // eventMode='none' is critical: the heatmap is a pure visual layer — it must
       // never intercept clicks, otherwise the user can't click on cells / players underneath.
+      // ── Stadium atmosphere (4.39): floodlight towers, phone lights at night, flares and fireworks in a big game ──
+      // Masked to the stand band (never over the pitch), above the light veils so the lights shine. Drawing only.
+      const atmosphere = new Container();
+      atmosphere.eventMode = 'none';
+      const towerG = new Graphics();
+      const phoneG = new Graphics();
+      const smokeG = new Graphics();
+      const sparkG = new Graphics();
+      atmosphere.addChild(towerG, phoneG);
+      // Smoke drifts under the players and may spill over the touchline; fireworks burst over everything, briefly.
+      const smokeLayer = new Container();
+      smokeLayer.eventMode = 'none';
+      smokeLayer.addChild(smokeG);
+      app.stage.addChildAt(smokeLayer, app.stage.getChildIndex(world));
+      sparkG.eventMode = 'none';
+      let atmosphereMask: Graphics | null = null;
+      if (m.stand) {
+        atmosphereMask = new Graphics();
+        for (const r of standSideRects(m.stand)) atmosphereMask.rect(r.x, r.y, r.w, r.h);
+        atmosphereMask.fill(0xffffff);
+        atmosphere.mask = atmosphereMask;
+        app.stage.addChild(atmosphereMask);
+      }
+      app.stage.addChild(atmosphere, sparkG);
+      const towers = m.stand && towersOn ? towerSpots(m.stand) : [];
+      let towersLitKey = "";
+      let phonesDrawnAt = -Infinity;
+      let phoneBoostAt: number | null = null;
+      let bursts: CelebrationBurst[] = [];
+      const lightsOn = () => (currentLight?.flood ?? 0) >= ATMOSPHERE.LIGHTS_ON;
+      const drawTowers = () => {
+        const lit = lightsOn();
+        const key = `${towers.length}|${lit}`;
+        if (key === towersLitKey) return;
+        towersLitKey = key;
+        towerG.clear();
+        const T = ATMOSPHERE.TOWER;
+        for (const t of towers) {
+          const p = towerPanel(t);
+          towerG.moveTo(t.x, t.y).lineTo(p.x, p.y).stroke({ width: Math.max(1.5, t.size * 0.08), color: T.MAST_COLOR });
+          const w = t.size * T.PANEL_W, h = t.size * T.PANEL_H;
+          // The panel lies across the line to the pitch centre.
+          const ux = -Math.sin(t.angle), uy = Math.cos(t.angle);
+          const fx = Math.cos(t.angle) * h / 2, fy = Math.sin(t.angle) * h / 2;
+          towerG.poly([
+            p.x - ux * w / 2 - fx, p.y - uy * w / 2 - fy,
+            p.x + ux * w / 2 - fx, p.y + uy * w / 2 - fy,
+            p.x + ux * w / 2 + fx, p.y + uy * w / 2 + fy,
+            p.x - ux * w / 2 + fx, p.y - uy * w / 2 + fy,
+          ]).fill({ color: lit ? T.PANEL_ON : T.PANEL_OFF, alpha: lit ? 1 : 0.85 });
+        }
+      };
+      const drawPhones = () => {
+        const on = lightsOn() && phones.length > 0 && !!stadiumRef.current;
+        if (!on) {
+          if (phonesDrawnAt !== -Infinity) { phoneG.clear(); phonesDrawnAt = -Infinity; }
+          return;
+        }
+        if (effectNow - phonesDrawnAt < ATMOSPHERE.PHONES.REDRAW_S && effectNow >= phonesDrawnAt) return;
+        phonesDrawnAt = effectNow;
+        const boosted = phoneBoostAt !== null && effectNow - phoneBoostAt < ATMOSPHERE.PHONES.GOAL_BOOST_S;
+        if (!boosted) phoneBoostAt = null;
+        phoneG.clear();
+        const r = m.stand ? Math.max(0.8, seatCellPx(m.stand) * 0.22) : 1;
+        for (const p of phones) {
+          const a = phoneAlpha(p, effectNow, boosted);
+          if (a <= 0) continue;
+          phoneG.circle(p.x, p.y, r).fill({ color: ATMOSPHERE.PHONES.COLOR, alpha: a });
+        }
+      };
+      const drawBursts = () => {
+        if (bursts.length === 0) return;
+        bursts = bursts.filter((b) => effectNow - b.at <= burstLength(b));
+        smokeG.clear();
+        sparkG.clear();
+        for (const b of bursts) {
+          const { glows, puffs } = flareSmoke(b, effectNow);
+          for (const q of puffs) smokeG.circle(q.x, q.y, q.r).fill({ color: q.color, alpha: q.alpha });
+          for (const g of glows) {
+            sparkG.circle(g.x, g.y, g.r * 2.2).fill({ color: ATMOSPHERE.FLARES.GLOW, alpha: g.alpha * 0.25 });
+            sparkG.circle(g.x, g.y, g.r).fill({ color: 0xffe6c7, alpha: g.alpha });
+          }
+          for (const k of fireworks(b, effectNow)) sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
+        }
+      };
+      const startBurst = () => {
+        const st = stadiumRef.current;
+        if (!m.stand || !st?.bigMatch || !framesShown()) return;
+        const homeLeft = (st.homeTeam === "A") !== mirrorRef.current;
+        const sides = standSideRects(m.stand);
+        const end = sides.find((r) => r.side === (homeLeft ? "left" : "right"))!;
+        bursts = [...bursts, {
+          at: effectNow, seed: `${st.seed}:${bursts.length}`, end,
+          sky: sides.filter((r) => r.side === "top" || r.side === "bottom"),
+          color: st.homeTeam === "A" ? fillA : fillB, night: lightsOn(),
+        }];
+      };
+      const unsubBurstStart = gameBus.on("matchStart", () => startBurst());
+      const unsubBurstTest = gameBus.on("testCommand", (cmd) => { if (cmd.type === "celebrate") startBurst(); });
+      const unsubBurstGoal = gameBus.on("goalScored", (e) => {
+        const st = stadiumRef.current;
+        if (!st || !framesShown()) return;
+        if (e.team === st.homeTeam || st.neutral) {
+          phoneBoostAt = effectNow;
+          startBurst();
+        }
+      });
+      const drawAtmosphere = () => {
+        drawTowers();
+        drawPhones();
+        drawBursts();
+      };
+
       // Rain / snow over the players (match light), on the effects clock: frozen while paused, never drawn with the
       // tab hidden (no frames). Below the debug heatmap.
       const particleGraphics = new Graphics();
@@ -2232,6 +2364,7 @@ export function PixiPitch({
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
         drawParticles();
         updateLight();
+        drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);
         drawBenches();
         drawStretchers();
@@ -2510,6 +2643,9 @@ export function PixiPitch({
         unsubCardFx();
         unsubOffsideFx();
         unsubCrowdGoal();
+        unsubBurstStart();
+        unsubBurstTest();
+        unsubBurstGoal();
         unsubAnimShot();
         unsubAnimHeader();
         unsubAnimSave();

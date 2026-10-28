@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.1",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Torres de iluminação nos cantos do estádio: apagadas de dia, acesas no fim de tarde e à noite.",
+        en: "Floodlight towers in the stadium corners: off by day, on at dusk and at night.",
+      },
+      {
+        pt: "Em jogo noturno, a torcida acende os celulares, e muito mais gente acende num gol do time da casa.",
+        en: "At night games the crowd lights up their phones, and many more do at a home goal.",
+      },
+      {
+        pt: "Jogo grande (continental, copa a partir das quartas, clássico): sinalizadores com fumaça na torcida da casa na entrada em campo e nos gols, e fogos à noite.",
+        en: "Big games (continental, cup from the quarter-finals, derby): flares and smoke in the home end at kickoff and at every home goal, and fireworks at night.",
+      },
+    ],
+  },
+  {
     version: "4.38",
     date: "2026-10-28",
     items: [

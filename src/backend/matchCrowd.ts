@@ -28,6 +28,8 @@ export interface MatchCrowd {
   works?: StandId[];
   /** The manager's stadium decorations (achievements), home games of the human club only. */
   decor?: StadiumDecor;
+  /** A big game (continental, cup from the quarter-finals, derby): flares and fireworks on the pitch. */
+  bigMatch?: true;
 }
 
 /** The decorations to draw at home (only those chosen and unlocked; absent when none). */
