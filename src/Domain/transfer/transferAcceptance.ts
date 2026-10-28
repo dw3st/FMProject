@@ -75,15 +75,13 @@ export function evaluateTransferOffer(
  */
 export function squadDepthBlocked(player: RosterPlayer, fromSquad: Squad, humanSeller: boolean): boolean {
   if (fromSquad.players.length <= 14) return true;
-  const posCount = fromSquad.players.filter((p) =>
-    p.positions.some((pos) => player.positions.includes(pos)),
-  ).length;
-  if (posCount <= 1) return true;
-  if (!humanSeller) {
-    const role = roleOf(player);
-    const inRole = fromSquad.players.filter((p) => roleOf(p) === role).length;
-    if (inRole - 1 < MIN_BY_ROLE[role]) return true;
-  }
+  // Same line (GK/DEF/MID/FWD), not the raw `positions` text: academy, reborn and generated players carry a detailed
+  // code ("RW") while most of the world carries the line ("Forward"), so a raw match left them alone at their
+  // "position" and never for sale (report: "Elenco insuficiente para liberar o jogador").
+  const role = roleOf(player);
+  const inRole = fromSquad.players.filter((p) => roleOf(p) === role).length;
+  if (inRole <= 1) return true;
+  if (!humanSeller && inRole - 1 < MIN_BY_ROLE[role]) return true;
   return false;
 }
 

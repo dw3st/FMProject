@@ -67,10 +67,11 @@ export function generateSellList(
       if (bandPlayers.length <= minDepth) continue;
 
       // Protection: only viable option for their detailed position
-      const detailPos = player.positions[0] ?? "CM";
-      const sameDetailedPos = squad.players.filter(
-        (p) => p.id !== player.id && (p.positions[0] ?? "CM") === detailPos,
-      );
+      // The natural position when known (most of the world carries only its line in `positions`), so an academy
+      // player's detailed code ("RW") meets the others' natural positions instead of always standing alone.
+      const detailOf = (p: typeof player) => p.naturalPosition ?? p.positions[0] ?? "CM";
+      const detailPos = detailOf(player);
+      const sameDetailedPos = squad.players.filter((p) => p.id !== player.id && detailOf(p) === detailPos);
       if (sameDetailedPos.length === 0) continue;
 
       // Evaluate sell criteria and accumulate priority score

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.5",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Jogadores vindos da base (e outros com a posição exata no cadastro) recusavam qualquer proposta com \"Elenco insuficiente para liberar o jogador\" mesmo em elencos cheios. Agora o clube vende normalmente.",
+        en: "Academy players (and others listed with an exact position) refused every bid with \"Squad depth is insufficient\" even in full squads. Their clubs now sell them normally.",
+      },
+    ],
+  },
+  {
     version: "4.38.4",
     date: "2026-10-28",
     items: [
