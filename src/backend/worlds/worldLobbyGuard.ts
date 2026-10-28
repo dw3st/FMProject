@@ -30,6 +30,7 @@ export const LOBBY_GUARDED_PATHS = [
   "/api/saves/:saveId/achievements/shop/created",
   "/api/saves/:saveId/achievements/shop/legend/draw",
   "/api/saves/:saveId/achievements/shop/legend",
+  "/api/saves/:saveId/legends/:retiredId/hire",
 ] as const;
 
 /** 409 `{ error: "lobby" }` when the world has not started, else null. */

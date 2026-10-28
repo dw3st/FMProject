@@ -124,6 +124,8 @@ export interface AchievementsState {
     created?: string; legend?: string;
     createdSeason?: string; legendSeason?: string;
     createdCount?: number; legendCount?: number;
+    /** Season (`league:year`) of the last legend brought back for money (one per season). */
+    legendMoneySeason?: string;
   };
   /** Shop purchases, oldest first (the history on the shop tab). */
   purchases?: ShopPurchase[];

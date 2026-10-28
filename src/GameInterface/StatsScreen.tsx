@@ -22,6 +22,9 @@ import { AwardsView } from "@/GameInterface/Awards/AwardsView";
 import { RefereesTab } from "@/GameInterface/Referees/RefereesTab";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { Icon } from "@/GameInterface/Icons";
+import { Button } from "@/GameInterface/ui/Button";
+import { Notice } from "@/GameInterface/ui/Notice";
+import { formatEuros } from "@/Domain/money";
 import { useFavoriteCompetitions } from "@/GameInterface/useFavoriteCompetitions";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
@@ -155,13 +158,28 @@ function TeamTable({ stars }: { stars: Stars }) {
   );
 }
 
-type RetiredRow = RetiredPlayer & { clubName: string | null };
+type RetiredRow = RetiredPlayer & {
+  clubName: string | null;
+  /** A legend (world class at retirement): the fee to bring him back, or who already did. */
+  legend: {
+    fee: number | null;
+    back: { via: "points" | "money" | "reborn"; mine: boolean; manager: string | null; on: string | null } | null;
+  } | null;
+};
+type RetiredFilter = "mine" | "legends" | "all";
 
 const RETIRED_PAGE = 50;
 
 function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[] }) {
-  const { t } = useTranslation();
-  const [mine, setMine] = useState(true);
+  const { t, i18n } = useTranslation();
+  const [filter, setFilter] = useState<RetiredFilter>("mine");
+  const mine = filter === "mine";
+  const legends = filter === "legends";
+  const [hiredThisSeason, setHiredThisSeason] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [hiring, setHiring] = useState(false);
+  const [hireMsg, setHireMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
+  const [reload, setReload] = useState(0);
   const [rows, setRows] = useState<RetiredRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -172,9 +190,9 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const generation = useRef(0);
 
   const fetchPage = (offset: number) =>
-    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}`)
+    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}${legends ? "&legends=1" : ""}`)
       .then((r) => (r.ok
-        ? (r.json() as Promise<{ total: number; items: RetiredRow[] }>)
+        ? (r.json() as Promise<{ total: number; items: RetiredRow[]; legendHire: { thisSeason: boolean } }>)
         : Promise.reject(new Error(String(r.status)))));
 
   useEffect(() => {
@@ -186,11 +204,26 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
     setLoadingMore(false);
     setMoreFailed(false);
     fetchPage(0)
-      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); } })
+      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setHiredThisSeason(d.legendHire.thisSeason); } })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveId, mine]);
+  }, [saveId, filter, reload]);
+
+  const hire = async (r: RetiredRow) => {
+    setHiring(true);
+    setHireMsg(null);
+    const res = await fetch(`/api/saves/${saveId}/legends/${encodeURIComponent(r.id)}/hire`, { method: "POST" }).catch(() => null);
+    const body = (await res?.json().catch(() => null)) as { error?: string } | null;
+    setHiring(false);
+    setConfirming(null);
+    if (res?.ok) {
+      setHireMsg({ kind: "info", text: t("statsScreen.retired.legend.hired", { name: r.name }) });
+      setReload((n) => n + 1);
+    } else {
+      setHireMsg({ kind: "error", text: t(`statsScreen.retired.legend.errors.${body?.error ?? "generic"}`, { defaultValue: t("statsScreen.retired.legend.errors.generic") }) });
+    }
+  };
 
   const loadMore = () => {
     if (!rows || loadingMore) return;
@@ -208,21 +241,49 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
       className="mb-3"
       options={[
         { key: "mine", label: t("statsScreen.retired.mine") },
+        { key: "legends", label: t("statsScreen.retired.legends") },
         { key: "all", label: t("statsScreen.retired.all") },
       ]}
-      value={mine ? "mine" : "all"}
-      onChange={(k) => setMine(k === "mine")}
+      value={filter}
+      onChange={(k) => { setFilter(k); setHireMsg(null); setConfirming(null); }}
     />
   );
+
+  const legendCell = (r: RetiredRow) => {
+    if (!r.legend) return null;
+    const back = r.legend.back;
+    if (back) {
+      const who = back.mine ? t("statsScreen.retired.legend.byYou") : back.manager ?? t("statsScreen.retired.legend.byOther");
+      return (
+        <span className="text-sm text-muted-foreground">
+          {t(`statsScreen.retired.legend.back.${back.via}`, { who })}
+          {back.on && <span className="tabular-nums"> · {new Date(`${back.on}T00:00:00`).toLocaleDateString(i18n.language)}</span>}
+        </span>
+      );
+    }
+    if (r.legend.fee === null) return null;
+    const fee = formatEuros(r.legend.fee);
+    if (hiredThisSeason) return <span className="text-sm text-muted-foreground">{t("statsScreen.retired.legend.oncePerSeason")}</span>;
+    return confirming === r.id ? (
+      <span className="flex items-center gap-3">
+        <Button disabled={hiring} onClick={() => void hire(r)}>{t("statsScreen.retired.legend.confirm", { fee })}</Button>
+        <Button variant="secondary" disabled={hiring} onClick={() => setConfirming(null)}>{t("common.cancel")}</Button>
+      </span>
+    ) : (
+      <Button variant="secondary" onClick={() => setConfirming(r.id)}>{t("statsScreen.retired.legend.hire", { fee })}</Button>
+    );
+  };
 
   if (error) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p></>;
   if (!rows) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p></>;
   if (rows.length === 0) {
-    return <>{filters}<p className="text-sm text-muted-foreground">{t(mine ? "statsScreen.retired.emptyMine" : "statsScreen.retired.empty")}</p></>;
+    return <>{filters}<p className="text-sm text-muted-foreground">{t(mine ? "statsScreen.retired.emptyMine" : legends ? "statsScreen.retired.emptyLegends" : "statsScreen.retired.empty")}</p></>;
   }
   return (
-    <div className="max-w-4xl">
+    <div className={legends ? "max-w-6xl" : "max-w-4xl"}>
       {filters}
+      {legends && <p className="text-sm text-muted-foreground mt-0 mb-3">{t("statsScreen.retired.legend.about")}</p>}
+      {hireMsg && <div className="mb-3"><Notice kind={hireMsg.kind}>{hireMsg.text}</Notice></div>}
       <StatsTable
         head={<>
           <StatsHead />
@@ -231,6 +292,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
           <StatsHead>{t("statsScreen.retired.lastClub")}</StatsHead>
           <StatsHead align="center">{t("career.apps")}</StatsHead>
           <StatsHead align="center">{t("career.goals")}</StatsHead>
+          {legends && <StatsHead>{t("statsScreen.retired.legend.status")}</StatsHead>}
           <StatsHead />
         </>}
       >
@@ -247,6 +309,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
               <ClubCell>{r.clubName ?? "-"}</ClubCell>
               <NumberCell>{apps}</NumberCell>
               <NumberCell>{goals}</NumberCell>
+              {legends && <StatsCell>{legendCell(r)}</StatsCell>}
               <StatsCell align="right">
                 <button
                   type="button"
@@ -259,7 +322,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
               </StatsCell>
             </StatsRow>,
             isOpen && (
-              <StatsDetailRow key={`${r.id}-career`} colSpan={7}>
+              <StatsDetailRow key={`${r.id}-career`} colSpan={legends ? 8 : 7}>
                 <CareerTable rows={hist} leagues={leagues} />
               </StatsDetailRow>
             ),

@@ -2604,7 +2604,8 @@
       "facilityRepair": "Reforma: {{item}}",
       "facilityRebuild": "Reconstrução: {{item}}",
       "facilityUpgrade": "Melhoria: {{item}}",
-      "boardFundingItem": "Verba da diretoria: {{item}}"
+      "boardFundingItem": "Verba da diretoria: {{item}}",
+      "legendHire": "Lenda de volta à base: {{player}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -2817,7 +2818,33 @@
       "mine": "Do meu clube",
       "all": "Todos",
       "emptyMine": "Nenhum jogador do seu clube se aposentou ainda.",
-      "loadMore": "Carregar mais"
+      "loadMore": "Carregar mais",
+      "legends": "Lendas",
+      "emptyLegends": "Nenhuma lenda se aposentou ainda.",
+      "legend": {
+        "about": "Lendas são os jogadores que se aposentaram entre os 50 melhores do mundo. Uma por temporada pode voltar para a sua base com 17 anos, pagando a compensação.",
+        "status": "Situação",
+        "hire": "Trazer para a base · {{fee}}",
+        "confirm": "Confirmar · {{fee}}",
+        "hired": "{{name}} voltou para a sua base com 17 anos.",
+        "oncePerSeason": "Uma por temporada: você já trouxe uma nesta",
+        "byYou": "você",
+        "byOther": "outro técnico",
+        "back": {
+          "points": "Voltou com {{who}} (pontos)",
+          "money": "Voltou com {{who}}",
+          "reborn": "Voltou como renascido"
+        },
+        "errors": {
+          "generic": "Não deu para trazer agora.",
+          "noMoney": "Saldo insuficiente para a compensação.",
+          "youthFull": "A base está cheia (18).",
+          "alreadyBought": "Você já trouxe uma lenda nesta temporada.",
+          "offerClosed": "Essa lenda já voltou.",
+          "noClub": "Você precisa de um clube.",
+          "lobby": "A liga ainda não começou."
+        }
+      }
     },
     "managers": {
       "tab": "Técnicos",

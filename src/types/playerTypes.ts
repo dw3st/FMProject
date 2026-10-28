@@ -459,6 +459,9 @@ export interface RetiredPlayer {
   rebornSeatId?: string;
   /** The seat that brought him back as a legend (achievements shop): never offered again, to anyone. */
   legendBy?: string;
+  /** Day he came back as a legend, and how: the points shop or the money hire of the retired list. */
+  legendOn?: string;
+  legendVia?: "points" | "money";
   /** Career history at retirement. */
   history?: PlayerHistoryRow[];
   /** National-team career at retirement (`national-teams.md`). */

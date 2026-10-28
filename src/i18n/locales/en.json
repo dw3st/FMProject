@@ -2604,7 +2604,8 @@
       "facilityRepair": "Repair: {{item}}",
       "facilityRebuild": "Rebuild: {{item}}",
       "facilityUpgrade": "Upgrade: {{item}}",
-      "boardFundingItem": "Board funding: {{item}}"
+      "boardFundingItem": "Board funding: {{item}}",
+      "legendHire": "Legend back to the academy: {{player}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -2817,7 +2818,33 @@
       "mine": "My club",
       "all": "All",
       "emptyMine": "No player of your club has retired yet.",
-      "loadMore": "Load more"
+      "loadMore": "Load more",
+      "legends": "Legends",
+      "emptyLegends": "No legend has retired yet.",
+      "legend": {
+        "about": "Legends are players who retired among the 50 best in the world. One per season can come back to your academy at 17, for a compensation fee.",
+        "status": "Status",
+        "hire": "Bring to the academy · {{fee}}",
+        "confirm": "Confirm · {{fee}}",
+        "hired": "{{name}} is back in your academy at 17.",
+        "oncePerSeason": "One per season: you already brought one",
+        "byYou": "you",
+        "byOther": "another manager",
+        "back": {
+          "points": "Back with {{who}} (points)",
+          "money": "Back with {{who}}",
+          "reborn": "Back as a reborn"
+        },
+        "errors": {
+          "generic": "Couldn't bring him back now.",
+          "noMoney": "Not enough money for the fee.",
+          "youthFull": "The academy is full (18).",
+          "alreadyBought": "You already brought a legend back this season.",
+          "offerClosed": "This legend is already back.",
+          "noClub": "You need a club.",
+          "lobby": "The league hasn't started yet."
+        }
+      }
     },
     "managers": {
       "tab": "Managers",

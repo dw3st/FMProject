@@ -3,6 +3,7 @@ import { renewalContract } from "@/Domain/contracts/contracts";
 import { clamp } from "@/Domain/math";
 import { weightedScore } from "@/Domain/playerRating";
 import { generateReborn } from "@/Domain/retirement/retirement";
+import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
 import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 import { getMainRole } from "@/Domain/roles";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
@@ -70,7 +71,7 @@ export function createdPlayer(args: {
 }
 
 /** Level of a retired player at retirement (his best position's weighted score). */
-function retiredLevel(r: RetiredPlayer): number {
+export function retiredLevel(r: RetiredPlayer): number {
   return weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM");
 }
 
@@ -86,6 +87,23 @@ export function legendOptions(retired: readonly RetiredPlayer[], saveId: string,
   const top = ranked.slice(0, Math.max(A.LEGEND_OPTIONS, 12));
   const seed = seatId ? `legend:${saveId}:${seatId}:${date}` : `legend:${saveId}:${date}`;
   return shuffle(top, mulberry32(seedFrom(seed))).slice(0, A.LEGEND_OPTIONS).map((r) => r.id);
+}
+
+/** A legend of the retired list: world class at retirement, not a free agent (`.claude/rules/game/retirement.md`). */
+export function isLegend(r: RetiredPlayer): boolean {
+  return r.wasWorldClass && !r.freeAgent;
+}
+
+/** Still out of the game: never brought back as a reborn or a legend, by anyone. */
+export function legendAvailable(r: RetiredPlayer): boolean {
+  return isLegend(r) && r.rebornOffer !== "accepted" && !r.legendBy;
+}
+
+/** Money to bring a legend back to the academy (no points): by his level at retirement, €0.1M grid. */
+export function legendHireFee(r: RetiredPlayer): number {
+  const c = RETIREMENT.LEGEND_HIRE;
+  const raw = c.FEE_MIN + c.FEE_PER_LEVEL * (retiredLevel(r) - c.FEE_PIVOT);
+  return Math.round(Math.min(c.FEE_MAX, Math.max(c.FEE_MIN, raw)) / 100_000) * 100_000;
 }
 
 /** The legend back as a 17-year-old (the reborn rule), with its own id. */

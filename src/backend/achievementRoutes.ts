@@ -19,7 +19,7 @@ import type { RetiredPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
-async function humanClub(saveId: string, seatId: string): Promise<{ squad: Squad; leagueSlug: string; clubSlug: string } | null> {
+export async function humanClub(saveId: string, seatId: string): Promise<{ squad: Squad; leagueSlug: string; clubSlug: string } | null> {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta?.clubId) return null;
   const ref = await saveService.resolveSquadId(saveId, meta.clubId);
@@ -29,7 +29,7 @@ async function humanClub(saveId: string, seatId: string): Promise<{ squad: Squad
 }
 
 /** Next season end of the human league (the academy contract), as the reborn route does. */
-async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; end: string; date: string; season: string }> {
+export async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; end: string; date: string; season: string }> {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   const state = (meta?.activeLeagues ?? []).find((l) => l.leagueSlug === meta?.leagueSlug);
   const date = meta?.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -240,7 +240,7 @@ export const achievementRoutes = {
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
       // Marked in the world's list: never a legend again, and a pending reborn offer for him closes.
       await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
-        ? { ...r, legendBy: auth.seatId, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
+        ? { ...r, legendBy: auth.seatId, legendOn: season.date, legendVia: "points" as const, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
         : r)));
       const next: AchievementsState = { ...recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId }), legendOptions: undefined };
       await saveService.writeAchievements(saveId, next, auth.seatId);

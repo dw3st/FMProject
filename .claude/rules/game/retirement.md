@@ -79,3 +79,15 @@ O renascido herda a personalidade do original (`personalityOf` usa `reborn.fromI
 ## Assentos (Etapa 43)
 
 A oferta de renascido é do assento do clube (`rebornSeatId`). Ver `.claude/rules/game/multiplayer.md`.
+
+## Lendas da lista de aposentados (4.38.7)
+
+Report de tester. Estatísticas → Aposentados tem o filtro "Lendas" (`?legends=1`, `isLegend`: classe mundial ao se
+aposentar, não livre), com a situação de cada uma: quem a trouxe de volta, como (pontos, dinheiro, renascido) e quando
+(`RetiredPlayer.legendOn` / `legendVia`). Uma lenda livre (`legendAvailable`) pode voltar para a base com 17 anos pela
+regra do renascido (`legendPlayer`, id `legend_<id>_<ano>`) pagando em **dinheiro**, sem pontos:
+`POST /api/saves/:id/legends/:retiredId/hire`, compensação `legendHireFee` (€2M + €4M × (nível − 5,5), entre €2M e
+€10M, `RETIREMENT.LEGEND_HIRE`) no extrato (`transfer_out`, `ref.stage = "legend"`). Uma por temporada por técnico
+(`AchievementsState.bought.legendMoneySeason`), separada da loja de pontos; cada lenda volta uma vez no mundo. 409
+`noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`; guarda de lobby. Teste:
+`src/backend/legendHire.routes.test.ts`.

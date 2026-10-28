@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.7",
+    date: "2026-10-28",
+    items: [
+      { pt: "Estatísticas → Aposentados: novo filtro Lendas, com quem já voltou e por quem.", en: "Stats → Retired: new Legends filter, showing who is back and with whom." },
+      { pt: "Uma lenda por temporada pode voltar para a sua base com 17 anos pagando uma compensação em dinheiro, sem gastar pontos.", en: "One legend per season can come back to your academy at 17 for a cash fee, without spending points." },
+    ],
+  },
+  {
     version: "4.38.6",
     date: "2026-10-28",
     items: [

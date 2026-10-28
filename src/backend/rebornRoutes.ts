@@ -1,6 +1,9 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { humanClub, nextSeasonEndOf } from "@/backend/achievementRoutes";
+import { recordMoney } from "@/backend/FinancialService";
+import { isLegend, legendAvailable, legendHireFee, legendPlayer } from "@/Domain/achievements/shop";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -37,12 +40,63 @@ export const rebornRoutes = {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
+    if (q.get("legends") === "1") retired = retired.filter(isLegend);
     const index = await saveService.getSquadIndex(saveId);
-    const items = retired.slice(offset, offset + limit).map(({ statsAtRetirement: _, ...r }) => ({
-      ...r,
-      clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null,
-    }));
-    return Response.json({ total: retired.length, items });
+    const managers = retired.some((r) => r.legendBy) ? await saveService.getManagers(saveId) : [];
+    const managerName = (seatId: string) => managers.find((m) => m.seatId === seatId)?.name ?? null;
+    const items = retired.slice(offset, offset + limit).map((full) => {
+      const { statsAtRetirement: _, ...r } = full;
+      // A legend of the list: who brought him back, or the fee to bring him back (tester report).
+      const legend = isLegend(full) ? {
+        fee: legendAvailable(full) ? legendHireFee(full) : null,
+        back: full.legendBy
+          ? { via: full.legendVia ?? "points", mine: full.legendBy === auth.seatId, manager: managerName(full.legendBy), on: full.legendOn ?? null }
+          : full.rebornOffer === "accepted"
+            ? { via: "reborn" as const, mine: full.rebornSeatId === auth.seatId, manager: null, on: null }
+            : null,
+      } : null;
+      return { ...r, clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null, legend };
+    });
+    const { season } = await nextSeasonEndOf(saveId, auth.seatId);
+    const thisSeason = (await saveService.getAchievements(saveId, auth.seatId)).bought.legendMoneySeason === season;
+    return Response.json({ total: retired.length, items, legendHire: { thisSeason } });
+  },
+
+  /**
+   * `POST` - brings a retired legend back to the academy for money, no points (tester report): one per season per
+   * manager, each legend once in the world. 409 `noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`.
+   */
+  "/api/saves/:saveId/legends/:retiredId/hire": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const retiredId = req.params.retiredId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    return withSaveLock(saveId, async () => {
+      const club = await humanClub(saveId, auth.seatId);
+      if (!club) return Response.json({ error: "noClub" }, { status: 409 });
+      const season = await nextSeasonEndOf(saveId, auth.seatId);
+      const achievements = await saveService.getAchievements(saveId, auth.seatId);
+      if (achievements.bought.legendMoneySeason === season.season) return Response.json({ error: "alreadyBought" }, { status: 409 });
+      const all = await saveService.getRetired(saveId);
+      const rec = all.find((r) => r.id === retiredId);
+      if (!rec || !legendAvailable(rec)) return Response.json({ error: "offerClosed" }, { status: 409 });
+      if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return Response.json({ error: "youthFull" }, { status: 400 });
+      const fee = legendHireFee(rec);
+      if ((club.squad.finances?.budget ?? 0) < fee) return Response.json({ error: "noMoney", fee }, { status: 409 });
+      const player = legendPlayer({ retired: rec, squad: club.squad, year: season.year, nextSeasonEnd: season.end });
+      await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
+      const ledgerSeason = (await saveService.getLeagueMeta(saveId, club.leagueSlug))?.year ?? season.year;
+      await recordMoney(saveService, saveId, ledgerSeason, { leagueSlug: club.leagueSlug, clubSlug: club.clubSlug }, {
+        date: season.date, kind: "transfer_out", amount: -fee, label: `Legend back to the academy: ${rec.name}`,
+        ref: { stage: "legend", playerName: rec.name, playerId: player.id },
+      }, auth.seatId);
+      await saveService.writeRetired(saveId, all.map((r) => (r.id === retiredId
+        ? { ...r, legendBy: auth.seatId, legendOn: season.date, legendVia: "money" as const, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
+        : r)));
+      await saveService.writeAchievements(saveId, { ...achievements, bought: { ...achievements.bought, legendMoneySeason: season.season } }, auth.seatId);
+      return Response.json({ ok: true, player, fee });
+    });
   },
 
   /** `GET` - the offers still pending. */

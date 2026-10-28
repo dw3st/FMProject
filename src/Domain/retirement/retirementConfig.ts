@@ -20,4 +20,9 @@ export const RETIREMENT = {
   /** Reborn grows faster (DP multiplier) until this age. */
   REBORN_DP_MULT: 1.3,
   REBORN_UNTIL_AGE: 23,
+  /**
+   * Bringing a retired legend back for money (tester report): one per season per manager, fee by his level at
+   * retirement, `FEE_MIN + FEE_PER_LEVEL × (level − FEE_PIVOT)` within [FEE_MIN, FEE_MAX], on the €0.1M grid.
+   */
+  LEGEND_HIRE: { FEE_MIN: 2_000_000, FEE_MAX: 10_000_000, FEE_PER_LEVEL: 4_000_000, FEE_PIVOT: 5.5 },
 } as const;
