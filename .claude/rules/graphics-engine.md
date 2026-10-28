@@ -192,3 +192,10 @@ nos gols do mandante. Jogo grande (`isBigMatch`, `src/Domain/matchday/bigMatch.t
 quartas, clássico da mesma cidade; o `match-setup` devolve `crowd.bigMatch` (`matchIsBig`, `matchImportance.ts`).
 Torres e celulares numa camada com máscara da arquibancada; a fumaça sob os jogadores; os fogos por cima. Só desenho,
 no relógio de efeitos (nada com a aba escondida ou pausado). `/test`: chips Big game e Celebrate (com Stadium).
+
+### Fogos no estilo 16 bits (4.38.9)
+
+`fireworks` (`stadiumAtmosphere.ts`): cada fogo sobe como um bloco com rastro (`RISE_S`), estoura com um clarão
+(`FLASH_S`) e abre em dois anéis de faíscas quadradas (`OUTER` 16, `INNER` 8) de cores da `PALETTE` (às vezes a do
+clube), que caem (`GRAVITY`) e piscam alternadas a partir de `BLINK_FROM` da vida. `Spark.square` desenha um bloco
+(`rect`) no `PixiPitch`.

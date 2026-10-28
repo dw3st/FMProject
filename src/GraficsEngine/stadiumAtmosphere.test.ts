@@ -66,4 +66,16 @@ describe("stadium atmosphere", () => {
     expect(fireworks(burst(), 10.5).length).toBeGreaterThan(0);
     expect(fireworks(burst(), 10 + burstLength(burst()) + 0.1)).toEqual([]);
   });
+
+  test("fireworks: a rocket with a trail, then two rings of square sparks that blink out", () => {
+    const W = ATMOSPHERE.FIREWORKS;
+    const rocket = fireworks(burst(), 10 + W.RISE_S * 0.5);
+    expect(rocket).toHaveLength(W.TRAIL);
+    expect(rocket.every((k) => k.square)).toBe(true);
+    // The first shell has burst (the next ones are still climbing or bursting over it).
+    expect(fireworks(burst(), 10 + W.RISE_S + 0.05).length).toBeGreaterThanOrEqual(W.OUTER + W.INNER);
+    // The last shell alone, late in its life: some sparks blink off.
+    const lastStart = 10 + (W.SHELLS - 1) * W.EVERY_S + W.RISE_S;
+    expect(fireworks(burst(), lastStart + W.LIFE_S * 0.95).length).toBeLessThan(W.OUTER + W.INNER);
+  });
 });

@@ -1659,7 +1659,10 @@ export function PixiPitch({
             sparkG.circle(g.x, g.y, g.r * 2.2).fill({ color: ATMOSPHERE.FLARES.GLOW, alpha: g.alpha * 0.25 });
             sparkG.circle(g.x, g.y, g.r).fill({ color: 0xffe6c7, alpha: g.alpha });
           }
-          for (const k of fireworks(b, effectNow)) sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
+          for (const k of fireworks(b, effectNow)) {
+            if (k.square) sparkG.rect(k.x - k.r, k.y - k.r, k.r * 2, k.r * 2).fill({ color: k.color, alpha: k.alpha });
+            else sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
+          }
         }
       };
       const startBurst = () => {

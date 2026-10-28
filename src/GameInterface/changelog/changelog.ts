@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.9",
+    date: "2026-10-28",
+    items: [
+      { pt: "Fogos de artifício novos nos jogos grandes à noite: o foguete sobe com rastro, estoura com um clarão e abre em anéis de faíscas coloridas que piscam antes de sumir.", en: "New fireworks in big night games: the rocket climbs with a trail, bursts with a flash and opens into rings of coloured sparks that blink out." },
+    ],
+  },
+  {
     version: "4.38.8",
     date: "2026-10-28",
     items: [

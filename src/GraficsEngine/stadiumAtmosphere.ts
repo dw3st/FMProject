@@ -16,8 +16,16 @@ export const ATMOSPHERE = {
   PHONES: { SHARE: 0.03, GOAL_BOOST_S: 6, REDRAW_S: 0.2, COLOR: 0xf4f7ff },
   /** Flares: per burst, how many in the home end, how long they burn, the smoke puffs each one leaves. */
   FLARES: { COUNT: 5, BURN_S: 7, PUFF_EVERY_S: 0.35, PUFF_LIFE_S: 5, PUFF_ALPHA: 0.32, GLOW: 0xff5a36 },
-  /** Fireworks (night only): shells per burst, the time between them, sparks per shell, how long a spark lives. */
-  FIREWORKS: { SHELLS: 6, EVERY_S: 0.4, SPARKS: 22, LIFE_S: 1.3, GOLD: 0xffd166, WHITE: 0xffffff },
+  /**
+   * Fireworks (night only), in the 16-bit platformer style: a rocket climbs with a short trail (RISE_S), a white flash,
+   * then two rings of square sparks in two colours (OUTER / INNER per shell) that spread, fall a little and blink out
+   * (BLINK_FROM of the life). Shells per burst and the time between them; LIFE_S after the burst.
+   */
+  FIREWORKS: {
+    SHELLS: 7, EVERY_S: 0.35, RISE_S: 0.45, RISE_FRAC: 2.4, TRAIL: 4, OUTER: 16, INNER: 8, LIFE_S: 1.4,
+    FLASH_S: 0.12, BLINK_FROM: 0.55, GRAVITY: 0.45, PIXEL: 0.07,
+    PALETTE: [0xff4d4d, 0xffd166, 0x5ad1ff, 0x7cff6b, 0xff7ad9, 0xffffff],
+  },
 } as const;
 
 export interface TowerSpot {
@@ -92,12 +100,14 @@ export interface CelebrationBurst {
 
 export interface SmokePuff { x: number; y: number; r: number; alpha: number; color: number }
 export interface FlareGlow { x: number; y: number; r: number; alpha: number }
-export interface Spark { x: number; y: number; r: number; alpha: number; color: number }
+/** One spark: `r` is the half size; `square` draws a pixel block (the fireworks), otherwise a round glow. */
+export interface Spark { x: number; y: number; r: number; alpha: number; color: number; square?: boolean }
 
 /** Whole length of a burst, seconds (after this nothing of it is drawn). */
 export function burstLength(b: CelebrationBurst): number {
   const flares = ATMOSPHERE.FLARES.BURN_S + ATMOSPHERE.FLARES.PUFF_LIFE_S;
-  const fireworks = b.night ? ATMOSPHERE.FIREWORKS.EVERY_S * ATMOSPHERE.FIREWORKS.SHELLS + ATMOSPHERE.FIREWORKS.LIFE_S : 0;
+  const W = ATMOSPHERE.FIREWORKS;
+  const fireworks = b.night ? W.EVERY_S * W.SHELLS + W.RISE_S + W.LIFE_S : 0;
   return Math.max(flares, fireworks);
 }
 
@@ -147,7 +157,10 @@ export function flareSmoke(b: CelebrationBurst, now: number): { glows: FlareGlow
   return { glows, puffs };
 }
 
-/** Fireworks over the stands at `now` (none by day). Pure. */
+/**
+ * Fireworks over the stands at `now` (none by day), 16-bit platformer style: a rocket with a trail, a flash, then two
+ * rings of square sparks that spread, drop and blink out. Pure; the same burst always draws the same shells.
+ */
 export function fireworks(b: CelebrationBurst, now: number): Spark[] {
   if (!b.night || b.sky.length === 0) return [];
   const W = ATMOSPHERE.FIREWORKS;
@@ -158,23 +171,49 @@ export function fireworks(b: CelebrationBurst, now: number): Spark[] {
     const cx = area.x + area.w * (0.1 + 0.8 * rng());
     const cy = area.y + area.h * (0.1 + 0.8 * rng());
     const radius = Math.max(22, Math.min(area.w, area.h) * (1.6 + rng() * 0.8));
-    const pick = rng();
-    const color = pick < 0.4 ? b.color : pick < 0.7 ? W.GOLD : W.WHITE;
+    const outer = rng() < 0.35 ? b.color : W.PALETTE[Math.floor(rng() * W.PALETTE.length)]!;
+    const inner = W.PALETTE[Math.floor(rng() * W.PALETTE.length)]!;
+    const px = Math.max(1.5, radius * W.PIXEL);
     const age = now - b.at - s * W.EVERY_S;
-    if (age < 0 || age > W.LIFE_S) continue;
-    const life = age / W.LIFE_S;
-    const spread = radius * (1 - (1 - life) ** 2);
-    const drop = radius * 0.35 * life * life;
-    for (let k = 0; k < W.SPARKS; k++) {
-      const a = (k / W.SPARKS) * Math.PI * 2;
-      out.push({
-        x: cx + Math.cos(a) * spread,
-        y: cy + Math.sin(a) * spread + drop,
-        r: Math.max(1.6, radius * 0.065 * (1 - life * 0.5)),
-        alpha: 1 - life,
-        color,
-      });
+    if (age < 0 || age > W.RISE_S + W.LIFE_S) continue;
+
+    if (age < W.RISE_S) {
+      // The rocket climbs from below the burst point, eased, with a trail of fading blocks.
+      const rise = radius * W.RISE_FRAC;
+      const at = (t: number) => cy + rise * (1 - (1 - (1 - t) ** 2));
+      const t = age / W.RISE_S;
+      for (let k = 0; k < W.TRAIL; k++) {
+        const tk = Math.max(0, t - k * 0.06);
+        out.push({ x: cx, y: at(tk), r: px * (k === 0 ? 0.9 : 0.6), alpha: k === 0 ? 1 : 0.7 - k * 0.15, color: k === 0 ? 0xffffff : 0xffd166, square: true });
+      }
+      continue;
     }
+
+    const a = age - W.RISE_S;
+    const life = a / W.LIFE_S;
+    if (a < W.FLASH_S) {
+      out.push({ x: cx, y: cy, r: radius * 0.35 * (1 - a / W.FLASH_S), alpha: 0.85 * (1 - a / W.FLASH_S), color: 0xffffff });
+    }
+    // Blinking near the end: each spark goes off on alternate frames of a 16 Hz clock.
+    const blinkTick = Math.floor(a * 16);
+    const ring = (count: number, scale: number, color: number, phase: number) => {
+      const spread = radius * scale * (1 - (1 - life) ** 3);
+      const drop = radius * W.GRAVITY * life * life;
+      for (let k = 0; k < count; k++) {
+        if (life > W.BLINK_FROM && (blinkTick + k) % 2 === 0) continue;
+        const ang = (k / count) * Math.PI * 2 + phase;
+        out.push({
+          x: Math.round(cx + Math.cos(ang) * spread),
+          y: Math.round(cy + Math.sin(ang) * spread + drop),
+          r: px * (1 - life * 0.35),
+          alpha: life > W.BLINK_FROM ? 1 - (life - W.BLINK_FROM) / (1 - W.BLINK_FROM) * 0.6 : 1,
+          color,
+          square: true,
+        });
+      }
+    };
+    ring(W.OUTER, 1, outer, 0);
+    ring(W.INNER, 0.55, inner, Math.PI / W.INNER);
   }
   return out;
 }
