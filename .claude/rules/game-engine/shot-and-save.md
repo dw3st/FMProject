@@ -305,7 +305,7 @@ band, save chance by area, corner and weakness. AI kick/dive by weights; an aver
   While `pendingPenalty` is set everything holds (clock included). `applyPenaltyOutcome(state, outcome)` answers it
   (shootout kick, early end and sudden death by `shootoutDecided`; a match penalty ends as an automatic one).
   Event `penaltyPending`. Without `penaltyInteractive` nothing changes (simulated matches, quickSim, `/lab`).
-- Screen: `GameInterface/Penalty/PenaltyScreen.tsx` (SVG), `PenaltyOverlay.tsx` (solo: the other side is the AI and
+- Screen: `GameInterface/Penalty/PenaltyScreen.tsx` (aim, power, choice) drawing `PenaltyPitch.tsx` (4.38.2: crowd in both kits, grass in perspective, a net mesh that bulges, posts with depth, the keeper's face, sway and three-beat dive, the run-up, the ball's curve and ground shadow, rebound on a save or the post, shake and confetti on a goal, floodlights and phones at night; geometry pure in `penaltyScene.ts`), the animation from one requestAnimationFrame loop writing attributes, `PenaltyOverlay.tsx` (solo: the other side is the AI and
   the kick resolves in the browser; between two managers the server resolves it). Choice in the match preview and the
   match room (`PenaltyModeChips`, `localStorage` `fm.match.penaltyMode`).
 - `/test`: toggle "Penalties 2D A" and scenario `shootout-2d`.

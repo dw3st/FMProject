@@ -1467,6 +1467,9 @@ export function MatchScreen() {
           // Between two managers the server resolves the kick and moves the match on.
           onOutcome={(o) => { if (!h2hMode) setGameState((prev) => (prev ? applyPenaltyOutcome(prev, o) : prev)); }}
           choose={h2hMode ? h2h.choosePenalty : undefined}
+          {...(faceUrls ? { faceUrls } : {})}
+          lighting={matchLightingProp}
+          seed={matchFixture?.id ?? "penalty"}
         />
       )}
       <GoalOverlay

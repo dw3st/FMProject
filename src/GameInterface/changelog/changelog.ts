@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.2",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Pênalti em 2D com visual novo: torcida atrás do gol nas cores dos dois times, gramado em perspectiva, rede que estufa no gol e traves com volume.",
+        en: "2D penalties look new: the crowd behind the goal in both clubs' colours, grass in perspective, a net that bulges on a goal and posts with depth.",
+      },
+      {
+        pt: "No pênalti, o goleiro balança antes da cobrança e pula de verdade, com o rosto dele; a bola faz a curva com sombra no chão, espirra na defesa e volta da trave.",
+        en: "In penalties the keeper sways before the kick and really dives, with his own face; the ball curves with its shadow on the grass, spills from a save and bounces off the post.",
+      },
+      {
+        pt: "Pênalti à noite com refletores e celulares na torcida, e o gol com a tela tremendo e confete.",
+        en: "Night penalties with floodlights and phones in the crowd, and goals with a screen shake and confetti.",
+      },
+    ],
+  },
+  {
     version: "4.38.1",
     date: "2026-10-28",
     items: [

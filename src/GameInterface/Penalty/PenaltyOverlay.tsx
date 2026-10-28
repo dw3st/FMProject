@@ -1,13 +1,16 @@
 import { aiDive, aiKick, resolveKick, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { PenaltyScreen } from "@/GameInterface/Penalty/PenaltyScreen";
+import { matchClockMinutes, matchLighting, minutesOf } from "@/GraficsEngine/matchLighting";
+import { ATMOSPHERE } from "@/GraficsEngine/stadiumAtmosphere";
+import type { PitchLighting } from "@/GraficsEngine/PixiPitch";
 
 /**
  * The 2D penalty screen over a live match when `state.pendingPenalty` is for a team the manager controls
  * (`state.penaltyInteractive`). Solo: the other side is the AI and the kick resolves in the browser; `choose`
  * replaces that (the server, in a live match between two managers).
  */
-export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose }: {
+export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose, faceUrls, lighting, seed }: {
   state: GameState;
   mySide: TeamId;
   kits: { A: string; B: string };
@@ -15,6 +18,11 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose }
   names: { left: { team: TeamId; name: string }; right: { team: TeamId; name: string } };
   onOutcome: (o: PenaltyOutcome) => void;
   choose?: (choice: { kick: KickInput } | { dive: GoalArea }) => Promise<KickOutcome>;
+  /** Faces by team and roster id (the match's own). */
+  faceUrls?: { A: Record<string, string>; B: Record<string, string> };
+  /** The match's light: at night the penalty screen shows floodlights and phones. */
+  lighting?: PitchLighting | null;
+  seed?: string;
 }) {
   const pending = state.pendingPenalty ?? null;
   if (!pending || !(state.penaltyInteractive ?? []).includes(mySide)) return null;
@@ -31,6 +39,15 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose }
     accuracy: taker.runtimeStats.withBall.shootAccuracy,
     keeper: keeper ? { reflex: keeper.runtimeStats.withoutBall.gkReflex, diving: keeper.runtimeStats.withoutBall.gkDiving } : null,
   };
+  const keeperTeam: TeamId = pending.team === "A" ? "B" : "A";
+  const keeperFace = keeper ? faceUrls?.[keeperTeam]?.[keeper.rosterId] : undefined;
+  const night = !!lighting && matchLighting({
+    clock: lighting.clockOverride ?? matchClockMinutes(state, minutesOf(lighting.kickoff)),
+    sunset: minutesOf(lighting.sunset),
+    weather: lighting.weather === "wind_rain" ? "rain" : lighting.weather,
+    sun: lighting.sun,
+    ...(lighting.date ? { date: lighting.date } : {}),
+  }).flood >= ATMOSPHERE.LIGHTS_ON;
   const local = async (choice: { kick: KickInput } | { dive: GoalArea }) => ("kick" in choice
     ? resolveKick(choice.kick, aiDive(Math.random), players, Math.random)
     : resolveKick(aiKick(Math.random), choice.dive, players, Math.random));
@@ -47,6 +64,9 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose }
         : null}
       choose={choose ?? local}
       onDone={(o) => onOutcome({ scored: o.scored, result: o.result, chance: o.chance })}
+      {...(keeperFace ? { keeperFace } : {})}
+      night={night}
+      seed={seed ?? "penalty"}
     />
   );
 }

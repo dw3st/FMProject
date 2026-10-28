@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  GOAL_AREAS, PENALTY_2D, areaCentre, powerAt, type GoalArea, type KickInput, type KickOutcome,
-} from "@/Domain/penalty/penaltyKick";
+import { PENALTY_2D, powerAt, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import { clamp } from "@/Domain/math";
 import { shirtName } from "@/Domain/shirtName";
+import { PenaltyPitch } from "@/GameInterface/Penalty/PenaltyPitch";
+import { SCENE, pxToGoal, shotDuration } from "@/GameInterface/Penalty/penaltyScene";
 
 /**
  * A penalty in 2D (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`), seen from behind the taker.
@@ -24,13 +24,16 @@ export interface PenaltyScreenProps {
   shootout: { homeName: string; awayName: string; home: (boolean | null)[]; away: (boolean | null)[] } | null;
   choose: (choice: { kick: KickInput } | { dive: GoalArea }) => Promise<KickOutcome>;
   onDone: (outcome: KickOutcome) => void;
+  /** Keeper's face (server SVG). */
+  keeperFace?: string;
+  /** The match is played at night: floodlights and phones in the crowd. */
+  night?: boolean;
+  /** Seed of the crowd (the same game, the same fans). */
+  seed?: string;
 }
 
-// Goal drawn in a 400 × 240 box: the mouth from x 60 to 340, the bar at y 56, the line at y 150.
-const GX = 200, HALF_W = 140, LINE_Y = 150, GOAL_H = 94;
-const toPx = (p: { x: number; y: number }) => ({ x: GX + p.x * HALF_W, y: LINE_Y - p.y * GOAL_H });
-const fromPx = (x: number, y: number) => ({ x: (x - GX) / HALF_W, y: (LINE_Y - y) / GOAL_H });
-const BALL_START = { x: GX, y: 214 };
+/** After the kick leaves: the result shows when the ball arrives, the screen closes a while later. */
+const RESULT_HOLD_MS = 1700;
 
 type Phase = "aim" | "power" | "dive" | "flight" | "result";
 
@@ -47,11 +50,13 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
   const startRef = useRef(0);
   const busy = useRef(false);
 
+  const powerRef = useRef(0);
   const finish = useCallback((o: KickOutcome) => {
     setOutcome(o);
     setPhase("flight");
-    window.setTimeout(() => setPhase("result"), 750);
-    window.setTimeout(() => onDone(o), 2300);
+    const arrive = SCENE.RUNUP_MS + shotDuration(powerRef.current) + 60;
+    window.setTimeout(() => setPhase("result"), arrive);
+    window.setTimeout(() => onDone(o), arrive + RESULT_HOLD_MS);
   }, [onDone]);
 
   const send = useCallback((choice: { kick: KickInput } | { dive: GoalArea }) => {
@@ -88,6 +93,7 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
   const release = useCallback(() => {
     const p = powerAt((performance.now() - startRef.current) / 1000);
     setPower(p);
+    powerRef.current = p;
     send({ kick: { aim, power: p } });
   }, [aim, send]);
 
@@ -127,9 +133,9 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
     const svg = svgRef.current;
     if (!svg) return null;
     const r = svg.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * 400;
-    const y = ((e.clientY - r.top) / r.height) * 240;
-    return fromPx(x, y);
+    const x = ((e.clientX - r.left) / r.width) * SCENE.W;
+    const y = ((e.clientY - r.top) / r.height) * SCENE.H;
+    return pxToGoal(x, y);
   };
   const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (phase !== "aim") return;
@@ -144,14 +150,6 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
     } else if (phase === "power") release();
   };
 
-  // Keeper: in the middle until the ball flies, then at the dive area.
-  const diveTo = outcome && phase !== "aim" && phase !== "power" && phase !== "dive" ? areaCentre(outcome.dive) : { x: 0, y: 0.32 };
-  const keeperPx = toPx(diveTo);
-  const tilt = outcome && phase !== "dive" ? (diveTo.x < -0.2 ? -55 : diveTo.x > 0.2 ? 55 : 0) : 0;
-  const ballPx = phase === "flight" || phase === "result"
-    ? toPx({ x: clamp(outcome!.ball.x, -1.6, 1.6), y: clamp(outcome!.ball.y, 0, 1.5) })
-    : BALL_START;
-  const aimPx = toPx(aim);
   const green = PENALTY_2D.POWER_GREEN;
 
   const title = role === "kick"
@@ -173,74 +171,26 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
         </div>
         {props.shootout && <ShootoutDots {...props.shootout} />}
 
-        <svg
-          ref={svgRef}
-          viewBox="0 0 400 240"
-          className={`w-full rounded-md bg-[#0d3b1e] ${phase === "aim" || phase === "power" ? "cursor-crosshair" : ""}`}
-          onMouseMove={onMove}
+        <PenaltyPitch
+          phase={phase}
+          role={role}
+          aim={aim}
+          area={area}
+          outcome={outcome}
+          power={power}
+          takerColor={props.takerColor}
+          keeperColor={props.keeperColor}
+          {...(props.keeperFace ? { keeperFace: props.keeperFace } : {})}
+          night={!!props.night}
+          seed={props.seed ?? "penalty"}
+          resultLabel={phase === "result" && outcome ? t(`penalty2d.result.${outcome.result}`) : null}
+          resultClass={outcome && outcome.scored === (role === "kick") ? "text-white" : "text-destructive"}
+          svgRef={svgRef}
+          onMove={onMove}
           onClick={onClick}
-          aria-hidden="true"
-        >
-          {/* Pitch, box line, penalty spot */}
-          <rect x="0" y={LINE_Y} width="400" height="90" fill="#155b2e" />
-          <line x1="0" y1={LINE_Y} x2="400" y2={LINE_Y} stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.5" />
-          <circle cx={BALL_START.x} cy={BALL_START.y + 6} r="2.5" fill="#ffffff" fillOpacity="0.8" />
-          {/* Net */}
-          <rect x={GX - HALF_W} y={LINE_Y - GOAL_H} width={HALF_W * 2} height={GOAL_H} fill="#ffffff" fillOpacity="0.06" />
-          {Array.from({ length: 15 }, (_, i) => (
-            <line key={`v${i}`} x1={GX - HALF_W + (i + 1) * (HALF_W / 8)} y1={LINE_Y - GOAL_H} x2={GX - HALF_W + (i + 1) * (HALF_W / 8)} y2={LINE_Y} stroke="#ffffff" strokeOpacity="0.12" />
-          ))}
-          {Array.from({ length: 5 }, (_, i) => (
-            <line key={`h${i}`} x1={GX - HALF_W} y1={LINE_Y - GOAL_H + (i + 1) * (GOAL_H / 6)} x2={GX + HALF_W} y2={LINE_Y - GOAL_H + (i + 1) * (GOAL_H / 6)} stroke="#ffffff" strokeOpacity="0.12" />
-          ))}
-          {/* Dive areas (the manager saving) */}
-          {phase === "dive" && GOAL_AREAS.map((a) => {
-            const c = toPx(areaCentre(a));
-            const on = a === area;
-            return (
-              <rect
-                key={a}
-                x={c.x - HALF_W / 3 + 2} y={c.y - GOAL_H / 4 + 2} width={(HALF_W * 2) / 3 - 4} height={GOAL_H / 2 - 4} rx="4"
-                fill={on ? "#facc15" : "#ffffff"} fillOpacity={on ? 0.35 : 0.08}
-                stroke={on ? "#facc15" : "#ffffff"} strokeOpacity={on ? 0.9 : 0.25}
-                className="cursor-pointer"
-                onMouseEnter={() => setArea(a)}
-                onClick={(e) => { e.stopPropagation(); send({ dive: a }); }}
-              />
-            );
-          })}
-          {/* Posts and bar */}
-          <path d={`M${GX - HALF_W},${LINE_Y} V${LINE_Y - GOAL_H} H${GX + HALF_W} V${LINE_Y}`} fill="none" stroke="#ffffff" strokeWidth="5" strokeLinejoin="round" />
-          {/* Keeper */}
-          <g style={{ transform: `translate(${keeperPx.x}px, ${keeperPx.y}px) rotate(${tilt}deg)`, transition: "transform 0.45s ease-out" }}>
-            <rect x="-9" y="-6" width="18" height="34" rx="6" fill={props.keeperColor} stroke="#000" strokeOpacity="0.4" />
-            <circle cx="0" cy="-13" r="8" fill="#e6c4a0" stroke="#000" strokeOpacity="0.4" />
-            <rect x="-24" y="-4" width="15" height="6" rx="3" fill={props.keeperColor} />
-            <rect x="9" y="-4" width="15" height="6" rx="3" fill={props.keeperColor} />
-          </g>
-          {/* Aim mark */}
-          {(phase === "aim" || phase === "power") && (
-            <g style={{ transform: `translate(${aimPx.x}px, ${aimPx.y}px)` }}>
-              <circle r="9" fill="none" stroke="#facc15" strokeWidth="2" />
-              <line x1="-13" y1="0" x2="13" y2="0" stroke="#facc15" strokeWidth="1.5" />
-              <line x1="0" y1="-13" x2="0" y2="13" stroke="#facc15" strokeWidth="1.5" />
-            </g>
-          )}
-          {/* Taker (back view) */}
-          {phase !== "flight" && phase !== "result" && (
-            <g style={{ transform: `translate(${BALL_START.x - 26}px, ${BALL_START.y - 18}px)` }}>
-              <rect x="-8" y="0" width="16" height="26" rx="5" fill={props.takerColor} stroke="#000" strokeOpacity="0.4" />
-              <circle cx="0" cy="-6" r="7" fill="#3b2a1d" />
-            </g>
-          )}
-          {/* Ball */}
-          <circle
-            r={phase === "flight" || phase === "result" ? 5 : 7}
-            fill="#ffffff" stroke="#111" strokeWidth="1"
-            style={{ transform: `translate(${ballPx.x}px, ${ballPx.y}px)`, transition: "transform 0.6s cubic-bezier(.2,.7,.3,1)" }}
-            cx="0" cy="0"
-          />
-        </svg>
+          onAreaHover={setArea}
+          onAreaPick={(a) => send({ dive: a })}
+        />
 
         {/* Power bar */}
         {role === "kick" && (

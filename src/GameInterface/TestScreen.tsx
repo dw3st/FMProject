@@ -1887,6 +1887,8 @@ export function TestScreen() {
               kits={{ A: '#2d6cdf', B: '#df3b2d' }}
               names={{ left: { team: 'A', name: 'Team A' }, right: { team: 'B', name: 'Team B' } }}
               onOutcome={(outcome) => gameBus.emit('testCommand', { type: 'penaltyOutcome', outcome })}
+              lighting={pitchLighting}
+              seed="test"
             />
           )}
           {activeState && pitchSize ? (
