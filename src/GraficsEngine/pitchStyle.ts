@@ -121,6 +121,8 @@ export const STADIUM = {
   BENCH_RUNOFF_YDS: 4.7,
   AR_LANE_YDS: 1.8,
   SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4,
+  /** The players' tunnel (tester report): mid bottom stand, TUNNEL_FRAC of the inner width, no fans in it. */
+  TUNNEL_FRAC: 0.045, TUNNEL_FLOOR: 0x0b0f14, TUNNEL_WALL: 0x4a5664,
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,
   STAND_COLOR: 0x1f2a36, CONCRETE: 0x2c3946, ROOF_EDGE: 0x445566,
   GOAL_PULSE_S: 0.6,

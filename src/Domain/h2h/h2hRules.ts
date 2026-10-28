@@ -180,6 +180,9 @@ export function parseH2HCommand(raw: unknown): H2HCommand | null {
     case "sub":
       if (!hasOnly(raw, ["kind", "outId", "inId"]) || !isId(raw.outId) || !isId(raw.inId) || raw.outId === raw.inId) return null;
       return { kind: "sub", outId: raw.outId, inId: raw.inId };
+    case "unsub":
+      if (!hasOnly(raw, ["kind", "outId"]) || !isId(raw.outId)) return null;
+      return { kind: "unsub", outId: raw.outId };
     case "swap":
       if (!hasOnly(raw, ["kind", "aId", "bId"]) || !isId(raw.aId) || !isId(raw.bId) || raw.aId === raw.bId) return null;
       return { kind: "swap", aId: raw.aId, bId: raw.bId };

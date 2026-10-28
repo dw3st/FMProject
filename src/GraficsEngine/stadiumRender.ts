@@ -4,7 +4,7 @@
  */
 import type { Graphics } from "pixi.js";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
-import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect } from "@/GraficsEngine/crowd";
+import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect, standTunnel } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 import type { DecorRect } from "@/GraficsEngine/stadiumDecor";
 
@@ -30,6 +30,14 @@ export function drawStandBase(g: Graphics, stand: StandGeometry, worksSides?: Cr
   g.rect(outer.x, inner.y, inner.x - outer.x, inner.h).fill(STADIUM.STAND_COLOR);
   g.rect(innerR, inner.y, outer.x + outer.w - innerR, inner.h).fill(STADIUM.STAND_COLOR);
   for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill(STADIUM.CONCRETE);
+  // The players' tunnel: a dark floor between two light walls, a little light at the mouth.
+  const t = standTunnel(stand);
+  if (t) {
+    const wall = Math.max(1.5, t.w * 0.12);
+    g.rect(t.x, t.y, t.w, t.h).fill(STADIUM.TUNNEL_FLOOR);
+    g.rect(t.x, t.y, wall, t.h).fill(STADIUM.TUNNEL_WALL).rect(t.x + t.w - wall, t.y, wall, t.h).fill(STADIUM.TUNNEL_WALL);
+    g.rect(t.x + wall, t.y, t.w - wall * 2, Math.min(t.h, wall * 2)).fill({ color: 0xffffff, alpha: 0.12 });
+  }
   const works = new Set<string>(worksSides ?? []);
   for (const r of standSideRects(stand)) if (works.has(r.side)) drawWorks(g, r, seatCellPx(stand));
 }

@@ -23,6 +23,8 @@ export interface SubstitutionPanelProps {
   /** Live match ratings (0–10) keyed by engine player id — from PlayerRating. */
   ratings?: Record<number, number>;
   onQueueSub: (sub: PendingSub) => void;
+  /** Takes a queued substitution back (by the player going off); absent hides the undo buttons. */
+  onUnqueueSub?: (outId: number) => void;
   /** Two starters swap positions on the pitch (no substitution used, #115). */
   onSwapPositions?: (aId: number, bId: number) => void;
   /** A bench player takes the slot an injured player left (#140, manual injury substitutions). */
@@ -47,6 +49,7 @@ export function SubstitutionPanel({
   playerTeam,
   ratings,
   onQueueSub,
+  onUnqueueSub,
   onSwapPositions,
   onFillVacancy,
   onChangeFormation,
@@ -144,6 +147,35 @@ export function SubstitutionPanel({
               canSub={subsRemaining > 0}
               onFill={onFillVacancy}
             />
+          )}
+          {activeTab === "subs" && pendingQueue.length > 0 && (
+            <div className="px-4 py-2 border-b border-border flex flex-col gap-1.5 shrink-0">
+              <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+                {t("substitutionPanel.queuedTitle")}
+              </div>
+              <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
+                {pendingQueue.map((s) => {
+                  const out = onPitch.find((p) => p.id === s.outId);
+                  const inn = bench.find((p) => p.id === s.inId);
+                  return (
+                    <li key={s.outId} className="flex items-center gap-2 rounded-md border border-border bg-secondary/20 pl-3 pr-1 py-1 text-sm">
+                      <span className="text-destructive">{out ? shirtName(out.name) : "?"}</span>
+                      <Icon name="arrow-right-left" className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-primary">{inn ? shirtName(inn.name) : "?"}</span>
+                      {onUnqueueSub && (
+                        <button
+                          type="button"
+                          onClick={() => onUnqueueSub(s.outId)}
+                          className="h-8 px-2 rounded text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          {t("substitutionPanel.undo")}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
           {activeTab === "subs" && (
             <SubsPitchView

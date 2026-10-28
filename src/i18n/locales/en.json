@@ -2446,6 +2446,8 @@
     "benchAvg": "Bench avg",
     "remaining": "{{remaining}}/5 remaining",
     "pending": "{{count}} pending",
+    "queuedTitle": "Queued changes (made at the next stoppage)",
+    "undo": "Undo",
     "playerSwap": "Player swap",
     "injuredLabel": "Injured",
     "pickReplacement": "pick a replacement:",

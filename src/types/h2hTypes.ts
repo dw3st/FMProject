@@ -35,6 +35,8 @@ export interface H2HRoomView {
 /** A manager's command on his own side (engine player ids, `GamePlayer.id`). */
 export type H2HCommand =
   | { kind: "sub"; outId: number; inId: number }
+  /** Takes a queued substitution back before it happens (by the player going off). */
+  | { kind: "unsub"; outId: number }
   | { kind: "swap"; aId: number; bId: number }
   | { kind: "mentality"; mentality: Mentality }
   | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes> }

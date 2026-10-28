@@ -5,7 +5,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
-import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown } from "@/GraficsEngine/benchView";
+import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, PHOTOGRAPHERS } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
@@ -45,7 +45,7 @@ import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pit
 import { drawDecor, drawStandBase, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import { crowdSeats, seatCellPx, standSideRects, worksSides } from "@/GraficsEngine/crowd";
+import { crowdSeats, seatCellPx, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
   ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
   type CelebrationBurst, type PhoneLight,
@@ -1677,6 +1677,14 @@ export function PixiPitch({
       const drawBenches = (ballPx: { x: number; y: number }) => {
         const st = stateRef.current;
         benchGfx.clear();
+        // The players' path from the tunnel to the touchline: a dark mat with light edges (with the stadium).
+        const tunnel = m.stand ? standTunnel(m.stand) : null;
+        if (tunnel) {
+          const top = m.marginY + m.height;
+          const h = tunnel.y - top;
+          benchGfx.rect(tunnel.x, top, tunnel.w, h).fill({ color: 0x232c37, alpha: 0.7 });
+          benchGfx.rect(tunnel.x, top, 1, h).fill({ color: 0xdcecf7, alpha: 0.5 }).rect(tunnel.x + tunnel.w - 1, top, 1, h).fill({ color: 0xdcecf7, alpha: 0.5 });
+        }
         if (!(officialsOn && extrasRef.current)) return;
         const touchY = m.marginY + m.height;
         const laneEnd = touchY + STADIUM.AR_LANE_YDS * m.scale;
@@ -1714,6 +1722,54 @@ export function PixiPitch({
             if (hair !== undefined) benchGfx.circle(hx - pose.lookX * u * 0.3, y, u * 0.48).fill(hair);
           });
           benchGfx.rect(box.x - 3, box.y, box.w + 6, Math.max(1, u * 0.28)).fill({ color: 0xdcecf7, alpha: 0.55 });
+        }
+      };
+      /**
+       * Photographers behind both goal lines (tester report): small, seen from above like the benches, a camera toward
+       * the pitch; a flash now and then and a burst of flashes when a shot goes toward their goal.
+       */
+      const photoGfx = new Graphics();
+      photoGfx.zIndex = -0.69;
+      photoGfx.eventMode = 'none';
+      world.addChild(photoGfx);
+      const photoBurst: Record<"left" | "right", number> = { left: -99, right: -99 };
+      const unsubPhotoShot = gameBus.on("shot", (e) => {
+        const p = playerPos(e.player);
+        if (!p) return;
+        const gx = toPixel(engineGoalX(p.attackDir), PITCH_WIDTH / 2).px;
+        photoBurst[gx < m.marginX + m.width / 2 ? "left" : "right"] = effectNow;
+      });
+      const drawPhotographers = () => {
+        photoGfx.clear();
+        if (!(officialsOn && extrasRef.current && m.stand)) return;
+        const u = markerR * 0.4; // the same unit as the benches
+        const midY = m.marginY + m.height / 2;
+        for (const side of ["left", "right"] as const) {
+          const out = side === "left" ? -1 : 1;
+          const lineX = side === "left" ? m.marginX : m.marginX + m.width;
+          const x = lineX + out * (m.goalNetDepth + u * 0.6);
+          PHOTOGRAPHERS.forEach((ph, i) => {
+            const y = midY + ph.dy * m.scale;
+            const look = benchLook(`photo:${side}:${i}`);
+            // Shadow, body (dark jacket, a bib), the camera toward the pitch, the head.
+            photoGfx.ellipse(x + u * 0.15, y + u * 0.3, u * 1.05, u * 0.7).fill({ color: 0x000000, alpha: 0.3 });
+            photoGfx.ellipse(x, y, u * 0.62, u).fill(0x2b3846);
+            photoGfx.ellipse(x, y, u * 0.4, u * 0.7).fill(0xf2a33a);
+            photoGfx.rect(x - out * u * 1.5, y - u * 0.35, u * 0.9, u * 0.7).fill(0x15191f);
+            photoGfx.circle(x - out * u * 1.6, y, u * 0.28).fill(0x3d4a59);
+            photoGfx.circle(x + out * u * 0.15, y, u * 0.5).fill(BENCH_SKIN[look.skin]!);
+            const hair = BENCH_HAIR[look.hair];
+            if (hair !== undefined) photoGfx.circle(x + out * u * 0.3, y, u * 0.44).fill(hair);
+            // Flash: a short white burst; many in a row right after a shot toward this goal.
+            const burst = effectNow - photoBurst[side];
+            const period = burst >= 0 && burst < 2.2 ? 0.35 : 3.5 + (i % 3);
+            const ph0 = (effectNow + look.phase * 2) % period;
+            if (ph0 < 0.09 && (burst < 2.2 || (Math.floor((effectNow + look.phase * 2) / period) + i) % 2 === 0)) {
+              const a = 1 - ph0 / 0.09;
+              photoGfx.circle(x - out * u * 1.7, y, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
+              photoGfx.circle(x - out * u * 1.7, y, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
+            }
+          });
         }
       };
       const coachWalkHalf = m.width * COACH_WALK_FRAC;
@@ -2601,6 +2657,7 @@ export function PixiPitch({
         drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);
         { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); }
+        drawPhotographers();
         drawStretchers();
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
@@ -2930,6 +2987,7 @@ export function PixiPitch({
         unsubArFlag();
         unsubCoachGoal();
         unsubBenchGoal();
+        unsubPhotoShot();
         unsubAnimCelebrate();
         unsubStretcher();
         redrawCrowdRef.current = null;

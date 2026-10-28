@@ -83,6 +83,9 @@ export function benchLayout(n: number, cx: number, w: number, top: number, botto
   return { box: { x: cx - w / 2, y, w, h }, fig, seats };
 }
 
+/** Photographers behind each goal line: yards from the pitch's centre line along the end line (outside the posts). */
+export const PHOTOGRAPHERS = [{ dy: -24 }, { dy: -16 }, { dy: -8 }, { dy: 8 }, { dy: 15 }, { dy: 23 }] as const;
+
 /** Pose of a substitute at `now`: head offset (radii) toward the ball, how far up (0 sitting, 1 standing), arms up. */
 export interface BenchPose { lookX: number; lookY: number; up: number; arms: number; bob: number }
 

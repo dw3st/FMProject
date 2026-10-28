@@ -744,7 +744,7 @@ Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
   `buildLiveMatchState` da partida sozinha (`src/Domain/match/liveMatchSetup.ts`). Manda `frame` (posições, bola,
   relógio, um por passo de 0,2 s, `FRAME_MS` 200 ms), `state` (o `GameState` a cada `STATE_MS` 1 s e depois de cada lance), `event`
   (lances do `gameBus` que a tela usa, `H2H_FORWARDED_EVENTS`) e `done`.
-- **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada), troca de
+- **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada; `unsub` a tira da fila antes, 4.38.20), troca de
   posição, tática ao vivo, mentalidade, formação, instrução de vaga e marcação individual. Sem velocidade (fixa 1×).
 - **Pausas:** `H2H.PAUSES` (3) por técnico, de até `PAUSE_SECONDS` (30) s; durante a pausa os dois mexem no time; só
   quem pausou retoma antes do fim (`h2hRules.ts`: `canPause`, `canResume`, `pauseExpired`).

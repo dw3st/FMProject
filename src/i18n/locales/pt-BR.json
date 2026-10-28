@@ -2446,6 +2446,8 @@
     "benchAvg": "Média banco",
     "remaining": "{{remaining}}/5 restantes",
     "pending": "{{count}} pendentes",
+    "queuedTitle": "Trocas na fila (entram na próxima parada)",
+    "undo": "Desfazer",
     "playerSwap": "Troca de jogador",
     "injuredLabel": "Lesionado",
     "pickReplacement": "escolha quem entra:",

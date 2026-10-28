@@ -242,3 +242,7 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   mantêm a profundidade.
 - 4.38.19: campo a 0,85 (opção A do mock), sem os dois anéis da 4.38.18; os bandeirões da torcida saíram (`standBanners`
   removido); ficam as bandeirinhas na mão com o escudo.
+- 4.38.20 (reports): túnel dos jogadores no meio da arquibancada de baixo (`standTunnel`, `STADIUM.TUNNEL_FRAC`, sem torcida,
+  piso escuro entre paredes claras) e o caminho até a linha lateral (`benchGfx`); fotógrafos atrás dos dois gols
+  (`PHOTOGRAPHERS`, mesma unidade do banco, câmera para o campo), flash de vez em quando e uma rajada depois de um chute
+  para aquele gol. Padrão dos desenhos novos: vistos de cima, unidade = 0,4 do raio do jogador.

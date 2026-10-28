@@ -1214,6 +1214,12 @@ export function MatchScreen() {
     });
   }
 
+  /** Takes back a queued substitution before the next stoppage (tester report). */
+  function handleUnqueueSub(outId: number) {
+    if (h2hMode) { sendH2H({ kind: "unsub", outId }); return; }
+    setGameState((prev) => (prev ? { ...prev, pendingSubsA: prev.pendingSubsA.filter((s) => s.outId !== outId) } : prev));
+  }
+
   /** Two starters swap positions (#115): no substitution used, only this match. */
   function handleSwapPositions(aId: number, bId: number) {
     if (h2hMode) { sendH2H({ kind: "swap", aId, bId }); return; }
@@ -1806,6 +1812,7 @@ export function MatchScreen() {
           playerTeam={mySide}
           ratings={ratings}
           onQueueSub={handleQueueSub}
+          onUnqueueSub={handleUnqueueSub}
           onSwapPositions={handleSwapPositions}
           onFillVacancy={handleFillVacancy}
           onChangeFormation={handleChangeFormation}

@@ -79,12 +79,22 @@ export function standSideRects(s: StandGeometry): SideRect[] {
   ];
 }
 
+/** The players' tunnel: the middle of the bottom stand, from the run-off to the canvas edge (no seats in it). */
+export function standTunnel(s: StandGeometry): { x: number; y: number; w: number; h: number } | null {
+  const innerB = s.inner.y + s.inner.h;
+  const h = s.outer.y + s.outer.h - innerB;
+  if (h <= 0) return null;
+  const w = Math.max(6, s.inner.w * STADIUM.TUNNEL_FRAC);
+  return { x: s.inner.x + s.inner.w / 2 - w / 2, y: innerB, w, h };
+}
+
 /** Cell index `k` (0 = next to the pitch) is a concrete walkway every CONCRETE_EVERY seat rows. */
 const isConcrete = (k: number) => k % (STADIUM.CONCRETE_EVERY + 1) === STADIUM.CONCRETE_EVERY;
 
 function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concrete: ConcreteRow[] } {
   const seats: SeatCell[] = [];
   const concrete: ConcreteRow[] = [];
+  const tunnel = standTunnel(stand);
   for (const r of standSideRects(stand)) {
     const horizontal = r.side === "top" || r.side === "bottom";
     const depth = horizontal ? r.h : r.w;
@@ -117,6 +127,7 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
       const rowFrac = seatRows > 1 ? row / (seatRows - 1) : 0;
       for (let c = 0; c < cols; c++) {
         const p = toXY(k, c);
+        if (r.side === "bottom" && tunnel && p.x > tunnel.x - cell * 0.5 && p.x < tunnel.x + tunnel.w + cell * 0.5) continue;
         seats.push({ x: p.x, y: p.y, side: r.side, row, col: c, rowFrac });
       }
       row++;

@@ -190,6 +190,12 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
         case "sub":
           queueSub(side, cmd.outId, cmd.inId);
           break;
+        case "unsub": {
+          const key = side === "A" ? "pendingSubsA" : "pendingSubsB";
+          state = { ...state, [key]: state[key].filter((q) => q.outId !== cmd.outId) };
+          stateDue = true;
+          break;
+        }
         case "swap":
           state = swapPlayerPositions(state, side, cmd.aId, cmd.bId);
           break;

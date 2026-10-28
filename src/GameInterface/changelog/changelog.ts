@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.20",
+    date: "2026-10-28",
+    items: [
+      { pt: "Substituições na fila podem ser desfeitas antes da próxima parada.", en: "Queued substitutions can be undone before the next stoppage." },
+      { pt: "Túnel dos jogadores no meio da arquibancada de baixo, com o caminho até o campo.", en: "The players' tunnel in the middle of the bottom stand, with the path to the pitch." },
+      { pt: "Fotógrafos atrás dos gols, com flashes nos chutes.", en: "Photographers behind the goals, with flashes on shots." },
+    ],
+  },
+  {
     version: "4.38.19",
     date: "2026-10-28",
     items: [

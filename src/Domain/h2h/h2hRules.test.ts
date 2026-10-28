@@ -153,6 +153,8 @@ describe("roomView", () => {
 describe("parseH2HCommand", () => {
   test("valid commands", () => {
     expect(parseH2HCommand({ kind: "sub", outId: 3, inId: 14 })).toEqual({ kind: "sub", outId: 3, inId: 14 });
+    expect(parseH2HCommand({ kind: "unsub", outId: 3 })).toEqual({ kind: "unsub", outId: 3 });
+    expect(parseH2HCommand({ kind: "unsub", outId: 3, inId: 4 })).toBeNull();
     expect(parseH2HCommand({ kind: "swap", aId: 3, bId: 4 })).toEqual({ kind: "swap", aId: 3, bId: 4 });
     expect(parseH2HCommand({ kind: "mentality", mentality: "attacking" })).toEqual({ kind: "mentality", mentality: "attacking" });
     expect(parseH2HCommand({ kind: "tactics", style: "high_press" })).toEqual({ kind: "tactics", style: "high_press" });
