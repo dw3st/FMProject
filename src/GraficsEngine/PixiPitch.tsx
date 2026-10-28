@@ -2,9 +2,10 @@ import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { crowdTiles, CROWD_MOTION, tileLift } from "@/GraficsEngine/crowdMotion";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -187,8 +188,11 @@ function dashedLine(g: Graphics, x1: number, y1: number, x2: number, y2: number,
   }
 }
 
-function drawPitch(g: Graphics, m: PitchMetrics, line: { alpha: number; dashed: boolean } = { alpha: 0.9, dashed: false }) {
-  const LINE = { width: 2, color: 0xffffff, alpha: line.alpha };
+function drawPitch(
+  g: Graphics, m: PitchMetrics,
+  line: { alpha: number; dashed: boolean; width?: number; goals?: boolean } = { alpha: 0.9, dashed: false },
+) {
+  const LINE = { width: line.width ?? MATCH_LOOK.LINE_W, color: 0xf5f8f0, alpha: line.alpha };
   const { marginX: x, marginY: y, width, height } = m;
   /** Straight line: solid, or dashed on a rotten pitch. */
   const seg = (x1: number, y1: number, x2: number, y2: number) => {
@@ -219,6 +223,7 @@ function drawPitch(g: Graphics, m: PitchMetrics, line: { alpha: number; dashed: 
   box(x, centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth);
   box(x, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth);
   g.circle(x + m.penaltySpotDistance, centerY, 2).fill({ color: 0xffffff, alpha: line.alpha });
+  g.circle(midX, centerY, 2).fill({ color: 0xffffff, alpha: line.alpha });
 
   // Right boxes + spot
   box(rx - m.goalAreaDepth,    centerY - hw,  m.goalAreaDepth,    m.goalAreaWidth);
@@ -234,14 +239,35 @@ function drawPitch(g: Graphics, m: PitchMetrics, line: { alpha: number; dashed: 
   g.moveTo(rx - r, y + height).arc(rx, y + height, r, Math.PI, 3 * Math.PI / 2).stroke(LINE);
   g.moveTo(x, y + height - r).arc(x, y + height, r, 3 * Math.PI / 2, 2 * Math.PI).stroke(LINE);
 
-  // Goal nets
-  const goalYTop    = y + GOAL_Y_MIN * m.scale;
-  const goalYBot    = y + GOAL_Y_MAX * m.scale;
-  const goalHeight  = goalYBot - goalYTop;
-  const NET = { width: 2, color: 0xffffff, alpha: 0.7 };
-
-  g.rect(x - m.goalNetDepth, goalYTop, m.goalNetDepth, goalHeight).stroke(NET);
-  g.rect(rx, goalYTop, m.goalNetDepth, goalHeight).stroke(NET);
+  if (line.goals === false) return;
+  // Goals (4.39): a net mesh with depth, the back bar's shadow, white posts with round caps.
+  const goalYTop = y + GOAL_Y_MIN * m.scale;
+  const goalYBot = y + GOAL_Y_MAX * m.scale;
+  const L = MATCH_LOOK.GOAL;
+  for (const gx of [x, rx]) {
+    const depth = m.goalNetDepth * (gx === x ? -1 : 1);
+    const back = gx + depth;
+    g.rect(Math.min(gx, back), goalYTop, Math.abs(depth), goalYBot - goalYTop).fill({ color: 0xffffff, alpha: L.NET_FILL });
+    for (let i = 1; i < L.MESH_ROWS; i++) {
+      const yy = goalYTop + (goalYBot - goalYTop) * i / L.MESH_ROWS;
+      g.moveTo(gx, yy).lineTo(back, yy).stroke({ width: 0.8, color: 0xffffff, alpha: L.MESH_ALPHA });
+    }
+    for (let i = 1; i < L.MESH_COLS; i++) {
+      const xx = gx + depth * i / L.MESH_COLS;
+      g.moveTo(xx, goalYTop).lineTo(xx, goalYBot).stroke({ width: 0.8, color: 0xffffff, alpha: L.MESH_ALPHA });
+    }
+    g.moveTo(back, goalYTop + 2).lineTo(back, goalYBot + 2).stroke({ width: 4, color: 0x000000, alpha: 0.3 });
+    g.moveTo(gx, goalYTop).lineTo(back, goalYTop).lineTo(back, goalYBot).lineTo(gx, goalYBot)
+      .stroke({ width: L.POST_W, color: 0xffffff, alpha: 1, cap: "round", join: "round" });
+    g.circle(gx, goalYTop, L.POST_W * 0.9).fill(0xffffff);
+    g.circle(gx, goalYBot, L.POST_W * 0.9).fill(0xffffff);
+  }
+  // Corner flags.
+  const F = MATCH_LOOK.FLAG;
+  for (const [fx, fy] of [[x, y], [rx, y], [x, y + height], [rx, y + height]] as const) {
+    g.moveTo(fx, fy).lineTo(fx, fy - F.POLE).stroke({ width: 1.5, color: 0xe9e9e9 });
+    g.moveTo(fx, fy - F.POLE).lineTo(fx + F.W, fy - F.POLE + F.H / 2).lineTo(fx, fy - F.POLE + F.H).fill(F.COLOR);
+  }
 }
 
 /** The light layer: stand shadow, warm and grey veils, night darkness, vignette and floodlight glow. */
@@ -634,7 +660,9 @@ export function PixiPitch({
       crowdLayer.eventMode = 'none';
       app.stage.addChildAt(crowdLayer, 0);
       let crowdBase: Graphics | null = null;
-      const crowdFans: Record<"home" | "away", { sprite: Sprite; baseY: number } | null> = { home: null, away: null };
+      /** Each side's fans, baked in tiles that move on their own (`crowdMotion.ts`). */
+      type FanTile = { sprite: Sprite; baseY: number; cx: number; cy: number; phase: number };
+      const crowdFans: Record<"home" | "away", FanTile[]> = { home: [], away: [] };
       /** Height (px) of a fans' jump: under half a seat. */
       let crowdJumpAmp = 0;
       let crowdDecor: Graphics | null = null;
@@ -644,8 +672,8 @@ export function PixiPitch({
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
         for (const k of ["home", "away"] as const) {
-          const f = crowdFans[k];
-          if (f) { f.sprite.destroy({ texture: true, textureSource: true }); crowdFans[k] = null; }
+          for (const f of crowdFans[k]) f.sprite.destroy({ texture: true, textureSource: true });
+          crowdFans[k] = [];
         }
         crowdBase?.destroy();
         // The home club is drawn on the left when it is team A and the pitch is not mirrored (or B, mirrored).
@@ -667,24 +695,27 @@ export function PixiPitch({
         });
         crowdJumpAmp = Math.max(1.5, seatCellPx(m.stand) * 0.45);
         phones = phoneLights(seats, st.seed);
+        const tilePx = seatCellPx(m.stand) * CROWD_MOTION.TILE_SEATS;
         for (const k of ["home", "away"] as const) {
           const mine = seats.filter((seat) => seat.team === k);
-          const box = fansBounds(m.stand, mine);
-          if (!box) continue;
-          const g = new Graphics();
-          drawFans(g, m.stand, mine);
-          const texture = app.renderer.generateTexture({
-            target: g,
-            resolution: app.renderer.resolution,
-            frame: new Rectangle(box.x, box.y, box.w, box.h),
-          });
-          g.destroy();
-          const sprite = new Sprite(texture);
-          sprite.eventMode = 'none';
-          sprite.x = box.x;
-          sprite.y = box.y;
-          crowdLayer.addChild(sprite);
-          crowdFans[k] = { sprite, baseY: box.y };
+          for (const tile of crowdTiles(mine, tilePx, `${st.seed}:${k}`)) {
+            const box = fansBounds(m.stand!, tile.seats);
+            if (!box) continue;
+            const g = new Graphics();
+            drawFans(g, m.stand!, tile.seats);
+            const texture = app.renderer.generateTexture({
+              target: g,
+              resolution: app.renderer.resolution,
+              frame: new Rectangle(box.x, box.y, box.w, box.h),
+            });
+            g.destroy();
+            const sprite = new Sprite(texture);
+            sprite.eventMode = 'none';
+            sprite.x = box.x;
+            sprite.y = box.y;
+            crowdLayer.addChild(sprite);
+            crowdFans[k].push({ sprite, baseY: box.y, cx: tile.cx, cy: tile.cy, phase: tile.phase });
+          }
         }
         // The manager's decorations (achievements): over the home end, unless it is under works.
         crowdDecor?.destroy();
@@ -713,7 +744,44 @@ export function PixiPitch({
       ringsGraphics.mask = ringsMask;
       app.stage.addChild(surfaceGraphics, ringsGraphics, ringsMask);
 
-      // Pitch lines (alpha / dashes follow the surface)
+      // Grass grain and a soft centre light over the mowing (4.39): one tiling noise texture and one radial
+      // gradient, baked once, under the lines.
+      const grainCanvas = document.createElement('canvas');
+      grainCanvas.width = grainCanvas.height = MATCH_LOOK.GRAIN.SIZE;
+      const grainCtx = grainCanvas.getContext('2d');
+      if (grainCtx) {
+        const img = grainCtx.createImageData(grainCanvas.width, grainCanvas.height);
+        for (let k = 0; k < img.data.length; k += 4) {
+          const v = Math.random();
+          const light = v > 0.5;
+          img.data[k] = light ? 220 : 0; img.data[k + 1] = light ? 255 : 20; img.data[k + 2] = light ? 200 : 0;
+          img.data[k + 3] = Math.round(Math.abs(v - 0.5) * 2 * MATCH_LOOK.GRAIN.ALPHA * 255);
+        }
+        grainCtx.putImageData(img, 0, 0);
+      }
+      const grainTexture = new Texture({ source: new CanvasSource({ resource: grainCanvas, transparent: true }) });
+      const grain = new TilingSprite({ texture: grainTexture, width: m.width, height: m.height });
+      grain.x = m.marginX; grain.y = m.marginY;
+      grain.eventMode = 'none';
+      const centreCanvas = document.createElement('canvas');
+      centreCanvas.width = centreCanvas.height = 256;
+      const centreCtx = centreCanvas.getContext('2d');
+      if (centreCtx) {
+        const grd = centreCtx.createRadialGradient(128, 128, 10, 128, 128, 128);
+        grd.addColorStop(0, `rgba(255,255,220,${MATCH_LOOK.CENTRE_LIGHT})`);
+        grd.addColorStop(0.6, 'rgba(255,255,220,0)');
+        grd.addColorStop(1, `rgba(0,0,0,${MATCH_LOOK.EDGE_DARK})`);
+        centreCtx.fillStyle = grd;
+        centreCtx.fillRect(0, 0, 256, 256);
+      }
+      const centreTexture = new Texture({ source: new CanvasSource({ resource: centreCanvas, transparent: true }) });
+      const centreLight = new Sprite(centreTexture);
+      centreLight.x = m.marginX; centreLight.y = m.marginY;
+      centreLight.width = m.width; centreLight.height = m.height;
+      centreLight.eventMode = 'none';
+      app.stage.addChild(grain, centreLight);
+
+      // Pitch lines (alpha / dashes follow the surface): a soft chalk glow under a crisp line.
       const pitchGraphics = new Graphics();
       const drawSurfaceNow = () => {
         const s = pitchSurface(pitchRef.current ?? { condition: 100, turf: "natural", mowing: "stripes", seed: "" });
@@ -721,6 +789,7 @@ export function PixiPitch({
         ringsGraphics.clear();
         drawSurface(surfaceGraphics, ringsGraphics, m, s, mirrorRef.current);
         pitchGraphics.clear();
+        drawPitch(pitchGraphics, m, { alpha: s.lineAlpha * MATCH_LOOK.LINE_GLOW_ALPHA, dashed: s.dashedLines, width: MATCH_LOOK.LINE_GLOW_W, goals: false });
         drawPitch(pitchGraphics, m, { alpha: s.lineAlpha, dashed: s.dashedLines });
       };
       drawSurfaceNow();
@@ -922,6 +991,8 @@ export function PixiPitch({
       app.stage.addChild(world);
 
       // Ground glow under the ball holder and the stamina bars (redrawn every frame)
+      /** Smoothed drawn speed of each marker (px per frame), for the heading chevron. */
+      const markerVel = new Map<number, { x: number; y: number; vx: number; vy: number }>();
       const holderGlowGfx = new Graphics();
       holderGlowGfx.zIndex = -1;
       world.addChild(holderGlowGfx);
@@ -1071,6 +1142,8 @@ export function PixiPitch({
       const faceSize = faceRasterSize(markerR - 1, app.renderer.resolution);
       const playerGraphics = new Map<number, Container>();
       const playerLabels   = new Map<number, Text>();
+      /** Name pill behind each label (4.39): redrawn only when the name changes. */
+      const playerPills    = new Map<number, { g: Graphics; text: string }>();
       /** Pixi textures of the faces, per URL: owned by this app, destroyed on unmount. */
       const faceTextures = new Map<string, Texture>();
       let facesDisposed = false;
@@ -1126,6 +1199,15 @@ export function PixiPitch({
         });
       }
 
+      /** A dark rounded pill behind the name with a strip of the team colour (local coordinates: label anchor). */
+      function drawPill(g: Graphics, label: Text, color: number): void {
+        const P = MATCH_LOOK.PILL;
+        const w = label.width + P.PAD_X * 2, h = label.height + P.PAD_Y * 2;
+        g.clear()
+          .roundRect(-w / 2, -h + P.PAD_Y, w, h, h / 2).fill({ color: 0x070b14, alpha: P.ALPHA })
+          .roundRect(-w / 2, -h + P.PAD_Y, P.STRIP, h, h / 2).fill({ color, alpha: 0.95 });
+      }
+
       /** Create a marker + label for a player and register them in the maps. */
       function addPlayerSprite(player: PitchPlayer): void {
         const color = player.team === "A" ? fillA : fillB;
@@ -1137,10 +1219,19 @@ export function PixiPitch({
         const ring = new Graphics()
           .circle(0, 0, markerR - MARKER_RING_W / 2 + 0.5).stroke({ width: MARKER_RING_W, color })
           .circle(0, 0, markerR + 0.5).stroke(player.team === "A" ? outlineA : outlineB);
+        // Card: a small tilted card at the marker's top-right.
+        const cw = markerR * CARD_BADGE.W, ch = markerR * CARD_BADGE.H;
         const cardBadge = new Graphics()
-          .roundRect(markerR * CARD_BADGE.X, markerR * CARD_BADGE.Y, markerR * CARD_BADGE.W, markerR * CARD_BADGE.H, 2)
+          .roundRect(-cw / 2, -ch / 2, cw, ch, 2)
           .fill(CARD_BADGE.YELLOW)
           .stroke({ width: 1, color: 0x000000, alpha: 0.4 });
+        cardBadge.x = markerR * CARD_BADGE.X + cw / 2;
+        cardBadge.y = markerR * CARD_BADGE.Y + ch / 2;
+        cardBadge.rotation = 0.2;
+        // Volume (4.39): a light crescent at the top, a darker rim at the bottom, over the face.
+        const gloss = new Graphics()
+          .ellipse(-markerR * 0.22, -markerR * 0.48, markerR * 0.52, markerR * 0.26).fill({ color: 0xffffff, alpha: MATCH_LOOK.GLOSS })
+          .arc(0, 0, markerR - 1.5, Math.PI * 0.15, Math.PI * 0.85).stroke({ width: 2, color: 0x000000, alpha: MATCH_LOOK.RIM });
         cardBadge.label = "card";
         cardBadge.visible = false;
         // Light shadows (time of day): empty without `lighting`; redrawn only when the light changes. With the
@@ -1150,7 +1241,7 @@ export function PixiPitch({
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
-        marker.addChild(lightShadow, shadow, disc, ring, cardBadge);
+        marker.addChild(lightShadow, shadow, disc, ring, gloss, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -1160,10 +1251,14 @@ export function PixiPitch({
         const label = new Text({ text: shirtName(player.name), style: labelStyle });
         label.anchor.set(0.5, 1);
         label.x = px;
-        label.y = py - (markerR + 3);
+        label.y = py - (markerR + MATCH_LOOK.PILL.LIFT);
         label.zIndex = 5; // names above every marker, below the ball
-        world.addChild(label);
+        const pill = new Graphics();
+        pill.zIndex = 4.9;
+        drawPill(pill, label, color);
+        world.addChild(pill, label);
         playerLabels.set(player.id, label);
+        playerPills.set(player.id, { g: pill, text: label.text });
 
         applyFace(player);
       }
@@ -1174,6 +1269,8 @@ export function PixiPitch({
         if (g) { world.removeChild(g); g.destroy({ children: true }); playerGraphics.delete(id); }
         const lbl = playerLabels.get(id);
         if (lbl) { world.removeChild(lbl); lbl.destroy(); playerLabels.delete(id); }
+        const pl = playerPills.get(id);
+        if (pl) { world.removeChild(pl.g); pl.g.destroy(); playerPills.delete(id); }
       }
 
       refreshFacesRef.current = () => {
@@ -1847,7 +1944,6 @@ export function PixiPitch({
         const booked = bookedPlayerIds(stateRef.current.cards);
         holderGlowGfx.clear();
         fatigueGfx.clear();
-        const barW = markerR * FATIGUE_BAR.W;
         // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
         const st0 = stateRef.current;
         const glowId = st0.pass || st0.shot || st0.looseBall ? null : st0.ballHolderId;
@@ -1890,23 +1986,58 @@ export function PixiPitch({
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
           if (player.id === glowId) {
+            // A gold ring pulsing on the ground under the ball holder.
+            const H = MATCH_LOOK.HOLDER;
+            const pulse = Math.sin(effectNow * H.HZ * Math.PI * 2);
+            const rr = markerR * (H.R + H.PULSE * pulse);
             holderGlowGfx
-              .ellipse(px, py + markerR * 0.2, markerR * HOLDER_GLOW.RX, markerR * HOLDER_GLOW.RY)
-              .fill({ color: 0xffffff, alpha: HOLDER_GLOW.ALPHA });
+              .ellipse(px, py + markerR * 0.15, markerR * HOLDER_GLOW.RX, markerR * HOLDER_GLOW.RY)
+              .fill({ color: 0xffffff, alpha: HOLDER_GLOW.ALPHA * 0.5 })
+              .ellipse(px, py + 1, rr, rr * 0.85)
+              .stroke({ width: 2, color: H.COLOR, alpha: H.ALPHA + 0.2 * pulse });
           }
-          const barX = px - barW / 2;
-          const barY = py + markerR + FATIGUE_BAR.GAP;
-          fatigueGfx
-            .roundRect(barX, barY, barW, FATIGUE_BAR.H, 2)
-            .fill({ color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
+          // Stamina as a thin arc round the marker, from the bottom-left clockwise.
+          const A = MATCH_LOOK.STAMINA_ARC;
+          const ar = markerR + A.GAP;
+          const a0 = Math.PI * 0.75, span = Math.PI * 1.5;
+          fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
+            .arc(px, py, ar, a0, a0 + span).stroke({ width: A.W, color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
           const fill = fatigueFill(player.energy);
           if (fill > 0) {
-            fatigueGfx.roundRect(barX, barY, barW * fill, FATIGUE_BAR.H, 2).fill(fatigueColor(player.energy));
+            fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
+              .arc(px, py, ar, a0, a0 + span * fill).stroke({ width: A.W, color: fatigueColor(player.energy), cap: "round" });
+          }
+          // Heading chevron: where the drawn marker is going (smoothed), only when it really moves.
+          const prevV = markerVel.get(player.id);
+          const C = MATCH_LOOK.CHEVRON;
+          if (prevV) {
+            const dx = px - prevV.x, dy = py - prevV.y;
+            const jump = Math.hypot(dx, dy) > markerR * 2;
+            prevV.vx = jump ? 0 : prevV.vx * (1 - C.SMOOTH) + dx * C.SMOOTH;
+            prevV.vy = jump ? 0 : prevV.vy * (1 - C.SMOOTH) + dy * C.SMOOTH;
+            prevV.x = px; prevV.y = py;
+            const sp = Math.hypot(prevV.vx, prevV.vy);
+            if (sp > C.MIN_PX) {
+              const a = Math.atan2(prevV.vy, prevV.vx);
+              const cxp = px + Math.cos(a) * (markerR + C.DIST), cyp = py + Math.sin(a) * (markerR + C.DIST);
+              fatigueGfx.moveTo(cxp + Math.cos(a) * C.SIZE, cyp + Math.sin(a) * C.SIZE)
+                .lineTo(cxp + Math.cos(a + 2.4) * C.SIZE * 0.9, cyp + Math.sin(a + 2.4) * C.SIZE * 0.9)
+                .lineTo(cxp + Math.cos(a - 2.4) * C.SIZE * 0.9, cyp + Math.sin(a - 2.4) * C.SIZE * 0.9)
+                .fill({ color: 0xffffff, alpha: Math.min(1, C.ALPHA * sp / (C.MIN_PX * 3)) });
+            }
+          } else {
+            markerVel.set(player.id, { x: px, y: py, vx: 0, vy: 0 });
           }
           if (label) {
             { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
-            label.y = py - (markerR + 3);
+            label.y = py - (markerR + MATCH_LOOK.PILL.LIFT);
+            const pill = playerPills.get(player.id);
+            if (pill) {
+              if (pill.text !== label.text) { drawPill(pill.g, label, player.team === "A" ? fillA : fillB); pill.text = label.text; }
+              pill.g.x = label.x;
+              pill.g.y = label.y;
+            }
           }
         }
 
@@ -2373,11 +2504,17 @@ export function PixiPitch({
         drawStretchers();
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
-        if (crowdFans.home) crowdFans.home.sprite.alpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
+        const homeAlpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
         if (crowdJump && effectNow - crowdJump.at >= CROWD_JUMP_S) crowdJump = null;
+        // The stand sways and the wave goes round (with extras); the scoring side jumps.
+        const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };
+        const moving = extrasRef.current;
         for (const k of ["home", "away"] as const) {
-          const f = crowdFans[k];
-          if (f) f.sprite.y = f.baseY + (crowdJump?.side === k ? crowdJumpPx(effectNow - crowdJump.at, crowdJumpAmp) : 0);
+          const jump = crowdJump?.side === k ? crowdJumpPx(effectNow - crowdJump.at, crowdJumpAmp) : 0;
+          for (const f of crowdFans[k]) {
+            if (k === "home") f.sprite.alpha = homeAlpha;
+            f.sprite.y = f.baseY + jump - (moving ? tileLift(f, effectNow, centre, crowdJumpAmp) : 0);
+          }
         }
         const st = stateRef.current;
         pendingGoalShot = null; // a goal shot only pairs with a goalScored of the same tick
@@ -2663,7 +2800,9 @@ export function PixiPitch({
         redrawSurfaceRef.current = null;
         coachCueFnRef.current = null;
         coachCardFnRef.current = null;
-        for (const k of ["home", "away"] as const) crowdFans[k]?.sprite.destroy({ texture: true, textureSource: true });
+        for (const k of ["home", "away"] as const) for (const f of crowdFans[k]) f.sprite.destroy({ texture: true, textureSource: true });
+        grainTexture.destroy(true);
+        centreTexture.destroy(true);
         // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.
         shadeTexture?.destroy(true);
         shadeTexture = null;

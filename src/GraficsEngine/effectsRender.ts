@@ -32,7 +32,9 @@ export function drawTrail(g: Graphics, points: readonly TrailPoint[], now: numbe
     const alpha = TRAIL.ALPHA * Math.max(0, 1 - age / TRAIL.SECONDS) * (i / points.length);
     if (alpha <= 0) continue;
     const pa = ctx.toPixel(a.x, a.y), pb = ctx.toPixel(b.x, b.y);
-    g.moveTo(pa.px, pa.py).lineTo(pb.px, pb.py).stroke({ width: TRAIL.WIDTH, color: 0xffffff, alpha, cap: "round" });
+    // Tapered (4.39): thin at the tail, full width at the ball.
+    const width = 1 + (TRAIL.WIDTH - 1) * (i / points.length);
+    g.moveTo(pa.px, pa.py).lineTo(pb.px, pb.py).stroke({ width, color: 0xffffff, alpha, cap: "round" });
   }
 }
 

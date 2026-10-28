@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.10",
+    date: "2026-10-28",
+    items: [
+      { pt: "Visual da partida refinado: gramado com textura, linhas de cal mais finas, gols com rede e bandeirinhas de escanteio.", en: "Refined match look: textured grass, finer chalk lines, goals with nets and corner flags." },
+      { pt: "Jogadores com volume, nome numa etiqueta com a cor do time, fôlego num arco em volta do jogador e uma seta mostrando para onde ele corre.", en: "Players with depth, the name on a tag in the team colour, stamina as an arc round the player and an arrow showing where he runs." },
+      { pt: "Anel dourado pulsando sob quem está com a bola e rastro da bola mais suave.", en: "A pulsing gold ring under the ball holder and a smoother ball trail." },
+      { pt: "Torcida animada: a arquibancada balança e a ola dá a volta no estádio.", en: "Animated crowd: the stands sway and the Mexican wave goes round the stadium." },
+    ],
+  },
+  {
     version: "4.38.9",
     date: "2026-10-28",
     items: [

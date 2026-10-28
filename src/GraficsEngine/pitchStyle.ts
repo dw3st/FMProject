@@ -16,6 +16,24 @@ export const PITCH_WEAR = {
   SYNTH_BASE: 0x158a44, SYNTH_LIGHT: 0x1c9a50,
 } as const;
 
+/**
+ * Match look 4.39 (mock approved 2026-10-28): chalk lines with a soft glow, goals with a net mesh, corner flags,
+ * grass grain and a soft centre light, marker volume, name pills, a stamina arc, a heading chevron and a pulsing ring
+ * under the ball holder. Sizes in px unless noted ("marker radii" for HOLDER).
+ */
+export const MATCH_LOOK = {
+  LINE_W: 1.8, LINE_GLOW_W: 5, LINE_GLOW_ALPHA: 0.16,
+  GOAL: { POST_W: 3, MESH_ROWS: 6, MESH_COLS: 4, MESH_ALPHA: 0.3, NET_FILL: 0.06 },
+  FLAG: { POLE: 11, W: 7, H: 6, COLOR: 0xf2c230 },
+  GRAIN: { SIZE: 128, ALPHA: 0.07 },
+  CENTRE_LIGHT: 0.07, EDGE_DARK: 0.22,
+  GLOSS: 0.2, RIM: 0.22,
+  PILL: { PAD_X: 5, PAD_Y: 1, STRIP: 3, ALPHA: 0.62, LIFT: 5 },
+  STAMINA_ARC: { GAP: 3.5, W: 3 },
+  CHEVRON: { DIST: 6, SIZE: 4, MIN_PX: 0.35, SMOOTH: 0.15, ALPHA: 0.85 },
+  HOLDER: { R: 1.55, PULSE: 0.18, HZ: 1, COLOR: 0xffec96, ALPHA: 0.55 },
+} as const;
+
 /** Ground shadow under each marker (offsets/size in marker radii). */
 export const MARKER_SHADOW = { DX: 0.25, DY: 0.35, SCALE_Y: 0.8, ALPHA: 0.3 } as const;
 

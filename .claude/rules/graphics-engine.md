@@ -199,3 +199,19 @@ no relógio de efeitos (nada com a aba escondida ou pausado). `/test`: chips Big
 (`FLASH_S`) e abre em dois anéis de faíscas quadradas (`OUTER` 16, `INNER` 8) de cores da `PALETTE` (às vezes a do
 clube), que caem (`GRAVITY`) e piscam alternadas a partir de `BLINK_FROM` da vida. `Spark.square` desenha um bloco
 (`rect`) no `PixiPitch`.
+
+## Visual da partida refinado (4.38.10)
+
+Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
+- **Linhas:** `drawPitch` com um passe largo e fraco (brilho de cal, `LINE_GLOW_*`) sob a linha fina (`LINE_W`); marca do
+  centro; gols com malha, fundo da rede, sombra da trave de trás e postes com ponta redonda (`GOAL`); bandeirinhas (`FLAG`).
+- **Gramado:** textura de grãos (`TilingSprite` de um ruído 128 px, `GRAIN`) e um degradê radial (centro claro, bordas
+  escuras), assados uma vez, sob as linhas.
+- **Jogadores:** brilho em meia-lua e borda escura embaixo sobre o rosto (`GLOSS`, `RIM`); cartão inclinado; nome numa
+  pílula escura com faixa da cor do time (`PILL`, redesenhada só quando o nome muda); fôlego num arco em volta
+  (`STAMINA_ARC`, no lugar da barra); seta de direção pela velocidade desenhada suavizada (`CHEVRON`, some parado ou num
+  salto); anel dourado pulsando sob o portador (`HOLDER`).
+- **Rastro da bola:** afinando da cauda para a bola (`drawTrail`).
+- **Torcida animada** (`crowdMotion.ts`, com teste): os torcedores de cada lado são assados em blocos de
+  `TILE_SEATS` × `TILE_SEATS` lugares (`crowdTiles`); com `extras`, cada bloco balança na sua fase e a ola dá a volta a
+  cada `WAVE_EVERY_S` (`tileLift`); o pulo do gol continua por lado. Só desenho, no relógio de efeitos.
