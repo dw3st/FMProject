@@ -36,7 +36,8 @@ import { importRatings } from "@/GameEngine/Domain/PlayerRating";
 import { isLivePhase, matchMinute } from "@/GameEngine/Domain/gameState";
 import { DEFAULT_MENTALITY, type TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
-import type { Formation, GamePlayer, GameState } from "@/GameEngine/types";
+import type { Formation, GamePlayer, GameState, PendingPenalty } from "@/GameEngine/types";
+import { aiDive, aiKick, resolveKick, type GoalArea, type KickInput, type PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { Squad } from "@/types/playerTypes";
 import type { H2HLiveEntry } from "@/types/multiplayerTypes";
 import type { LiveBase, LivePhase } from "@/types/rivalsTypes";
@@ -114,12 +115,30 @@ interface Rec {
   live: { bases: Record<H2HSide, LiveBase>; scorers: Set<string>; lastMinute: number } | null;
   /** Engine id → name (scorers), from the latest state. */
   names: Map<number, string>;
+  /** Each manager kicks and saves his penalties in 2D (chosen in the preview, sent with `h2h_ready`). */
+  penalty2d: Record<H2HSide, boolean>;
+  /** The penalty waiting for both choices (2D): the assistant fills a side that is automatic or too slow. */
+  penalty: PenaltyRound | null;
+}
+
+interface PenaltyRound {
+  pending: PendingPenalty;
+  kick: KickInput | null;
+  dive: GoalArea | null;
+  timer: ReturnType<typeof setTimeout> | null;
+  resolved: boolean;
 }
 
 const rooms = new Map<string, Rec>();
 const socketRoom = new WeakMap<SocialSocket, string>();
 
 const roomKey = (saveId: string, fixtureId: string) => `${saveId}:${fixtureId}`;
+
+/** Tests only: a side's 2D penalty choice, as `h2h_ready` would set it in the lobby. */
+export function setH2HPenalty2d(saveId: string, fixtureId: string, side: H2HSide, on: boolean): void {
+  const rec = rooms.get(roomKey(saveId, fixtureId));
+  if (rec) rec.penalty2d = { ...rec.penalty2d, [side]: on };
+}
 
 /** Tests only. */
 export function resetH2HRooms(): void {
@@ -182,6 +201,7 @@ function toUsers(rec: Rec, event: ServerEvent): void {
 }
 
 function dropRoom(rec: Rec): void {
+  clearPenalty(rec);
   rec.engine?.terminate();
   rec.engine = null;
   if (rec.pauseTimer) clearTimeout(rec.pauseTimer);
@@ -270,6 +290,7 @@ function onEvent(rec: Rec, name: string, payload: unknown): void {
   if (name === "goalScored") liveFrame(rec, "goal", minute, score, { scorer: rec.names.get(p.scorerId as number) });
   else if (name === "goalDisallowed") liveFrame(rec, "disallowed", minute, score);
   else if (name === "halfTime") liveFrame(rec, "half", 45, score);
+  else if (name === "penaltyPending") startPenaltyRound(rec, payload as PendingPenalty);
   else if (name === "card" && p.card === "red") {
     liveFrame(rec, "red", minute, rec.lastState?.score ?? { A: 0, B: 0 }, { scorer: p.playerName as string, team: p.team as H2HSide });
   }
@@ -379,6 +400,8 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
         lastSnapshotAt: 0,
         live: null,
         names: new Map(),
+        penalty2d: { A: false, B: false },
+        penalty: null,
       };
       rooms.set(key, rec);
     }
@@ -464,10 +487,11 @@ function leaveSocket(ws: SocialSocket): void {
   broadcastRoom(rec);
 }
 
-function ready(ws: SocialSocket): void {
+function ready(ws: SocialSocket, penalty2d: boolean): void {
   const rec = recOf(ws);
   const side = rec && sideOfSocket(rec, ws);
   if (!rec || !side || rec.starting) return;
+  if (rec.room.phase === "lobby") rec.penalty2d = { ...rec.penalty2d, [side]: penalty2d };
   const change = setReady(rec.room, side);
   if (change.start) {
     // Kept in the lobby until the match is built (a failure closes the room).
@@ -542,7 +566,8 @@ export async function handleH2HEvent(
 ): Promise<void> {
   switch (event.type) {
     case "h2h_join": await join(ws, event.saveId, event.fixtureId); break;
-    case "h2h_ready": ready(ws); break;
+    case "h2h_ready": ready(ws, event.penalty2d === true); break;
+    case "h2h_penalty": penaltyChoice(ws, event.choice); break;
     case "h2h_cmd": command(ws, event.cmd); break;
     case "h2h_pause": pause(ws); break;
     case "h2h_resume": resume(ws); break;
@@ -636,6 +661,7 @@ async function startMatch(rec: Rec): Promise<void> {
     return;
   }
   const input = h2hMatchInput(home, away);
+  for (const side of SIDES) if (rec.penalty2d[side]) input[side].penalty2d = true;
   const ok = await withSaveLock(saveId, async () => {
     const world = await service.getMeta(saveId);
     if (!world?.world || world.currentDate !== rec.room.date) return false;
@@ -699,6 +725,76 @@ export async function removeH2HLiveEntry(svc: SaveService, saveId: string, fixtu
   await svc.updateMeta(saveId, { world: rest.length > 0 ? { ...world, h2hLive: rest } : world });
 }
 
+// ── 2D penalties ─────────────────────────────────────────────────────────────
+
+/** A manager who answers his own penalties: chose 2D, is in the room and not banned. */
+function choosesPenalty(rec: Rec, side: H2HSide): boolean {
+  return rec.penalty2d[side] && !rec.banned[side] && [...rec.sockets.values()].includes(side);
+}
+
+function clearPenalty(rec: Rec): void {
+  if (rec.penalty?.timer) clearTimeout(rec.penalty.timer);
+  rec.penalty = null;
+}
+
+function startPenaltyRound(rec: Rec, pending: PendingPenalty): void {
+  clearPenalty(rec);
+  const keeperSide: H2HSide = pending.team === "A" ? "B" : "A";
+  const round: PenaltyRound = {
+    pending,
+    kick: choosesPenalty(rec, pending.team) ? null : aiKick(Math.random),
+    dive: choosesPenalty(rec, keeperSide) ? null : aiDive(Math.random),
+    timer: null,
+    resolved: false,
+  };
+  rec.penalty = round;
+  round.timer = setTimeout(() => {
+    if (rec.penalty !== round || round.resolved) return;
+    round.kick ??= aiKick(Math.random);
+    round.dive ??= aiDive(Math.random);
+    resolvePenaltyRound(rec);
+  }, H2H.PENALTY_CHOICE_S * 1000);
+  if (round.kick && round.dive) resolvePenaltyRound(rec);
+}
+
+function penaltyChoice(ws: SocialSocket, choice: PenaltyChoice): void {
+  const rec = recOf(ws);
+  const side = rec && sideOfSocket(rec, ws);
+  const round = rec?.penalty;
+  if (!rec || !side || !round || round.resolved || rec.room.phase !== "live") return;
+  if ("kick" in choice) {
+    if (side !== round.pending.team || round.kick) return;
+    round.kick = choice.kick;
+  } else {
+    if (side === round.pending.team || round.dive) return;
+    round.dive = choice.dive;
+  }
+  if (round.kick && round.dive) resolvePenaltyRound(rec);
+}
+
+/** Both choices in: the kick is resolved here, both screens get the result, the match moves on after the animation. */
+function resolvePenaltyRound(rec: Rec): void {
+  const round = rec.penalty;
+  if (!round || round.resolved || !round.kick || !round.dive) return;
+  round.resolved = true;
+  if (round.timer) clearTimeout(round.timer);
+  round.timer = null;
+  const players = rec.lastState?.players ?? [];
+  const taker = players.find((p) => p.id === round.pending.takerId);
+  const keeper = round.pending.keeperId === null ? null : players.find((p) => p.id === round.pending.keeperId) ?? null;
+  const outcome = resolveKick(round.kick, round.dive, {
+    accuracy: taker?.runtimeStats.withBall.shootAccuracy ?? 0.5,
+    keeper: round.pending.keeperId === null ? null
+      : { reflex: keeper?.runtimeStats.withoutBall.gkReflex ?? 0.5, diving: keeper?.runtimeStats.withoutBall.gkDiving ?? 0.5 },
+  }, Math.random);
+  toSockets(rec, { type: "h2h_penalty_result", saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, outcome });
+  round.timer = setTimeout(() => {
+    if (rec.penalty !== round || rooms.get(rec.key) !== rec) return;
+    rec.penalty = null;
+    rec.engine?.post({ type: "penalty", outcome: { scored: outcome.scored, result: outcome.result, chance: outcome.chance } });
+  }, H2H.PENALTY_APPLY_MS);
+}
+
 /** Closes the room in memory and tells both managers (no save write). */
 function closeWith(rec: Rec, reason: H2HCloseReason): void {
   if (rooms.get(rec.key) !== rec) return;
@@ -726,6 +822,7 @@ async function finishMatch(rec: Rec, state: GameState, stats: H2HStatsPayload): 
   rec.room = finishRoom(rec.room);
   rec.engine?.terminate();
   rec.engine = null;
+  clearPenalty(rec);
   if (rec.pauseTimer) clearTimeout(rec.pauseTimer);
   rec.pauseTimer = null;
   liveFrame(rec, "end", matchMinute(state), state.score);

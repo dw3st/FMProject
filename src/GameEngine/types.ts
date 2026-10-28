@@ -90,6 +90,27 @@ export interface ShootoutState {
   winner: TeamId;
   /** How many kicks have been presented. */
   shown: number;
+  /**
+   * Interactive shootout (2D penalties): kicks are not resolved up front; each waits for `GameState.pendingPenalty`
+   * to be answered. `finalScore`/`winner` are set once `done`.
+   */
+  live?: { order: { A: number[]; B: number[] }; taken: { A: number; B: number }; next: TeamId; done: boolean };
+}
+
+/** A penalty waiting for the 2D screen (or the server, between two managers): who kicks, who saves. */
+export interface PendingPenalty {
+  kind: "shootout" | "match";
+  team: TeamId;
+  takerId: number;
+  keeperId: number | null;
+}
+
+/** The answer to a `PendingPenalty` (`Domain/penalty/penaltyKick.ts` → `resolveKick`). */
+export interface PenaltyOutcome {
+  scored: boolean;
+  result: "goal" | "saved" | "miss" | "post";
+  /** Chance of a goal before the dive was known. */
+  chance: number;
 }
 
 /** How a knockout match was decided after regulation (engine sides). */
@@ -687,6 +708,10 @@ export interface GameState {
   etStoppageSecond?: number;
   /** Penalty shootout in progress / finished. */
   shootout?: ShootoutState | null;
+  /** Teams whose penalties are kicked and saved in 2D by their manager (absent = automatic). */
+  penaltyInteractive?: TeamId[];
+  /** A penalty waiting for its 2D answer: the match holds until `applyPenaltyOutcome`. */
+  pendingPenalty?: PendingPenalty | null;
   /** Real-seconds remaining in a presentation freeze (preMatch / halfTime). */
   presentationCountdown: number;
   /** Seconds the current possessing team has held the ball continuously. Resets on possession change. */

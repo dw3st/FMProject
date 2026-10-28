@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Pênaltis em 2D: você mira e solta a força para bater, e escolhe o canto para defender. Vale na disputa e nos pênaltis durante o jogo.",
+        en: "2D penalties: aim and release the power bar to kick, pick a corner to save. Works in shootouts and in penalties during the match.",
+      },
+      {
+        pt: "Na prévia da partida e na sala do jogo entre amigos, escolha entre bater os pênaltis você mesmo ou deixar no automático.",
+        en: "In the match preview and in the friends' match room, choose to take the penalties yourself or leave them automatic.",
+      },
+      {
+        pt: "Contra um amigo ao vivo, cada um bate e defende os pênaltis do próprio time.",
+        en: "In a live match against a friend, each manager kicks and saves his own team's penalties.",
+      },
+    ],
+  },
+  {
     version: "4.37.3",
     date: "2026-10-28",
     items: [
@@ -2178,5 +2196,4 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Assistir ao jogo ao vivo de um amigo", en: "Watch a friend's live match" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
-  { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

@@ -27,7 +27,7 @@ export function mergeWireState(prev: GameState | null, wire: H2HWireState): Game
 export type H2HServerEvent = Extract<ServerEvent, { type: `h2h_${string}` }>;
 
 const H2H_TYPES = new Set([
-  "h2h_room", "h2h_frame", "h2h_state", "h2h_event", "h2h_paused", "h2h_closed", "h2h_done",
+  "h2h_room", "h2h_frame", "h2h_state", "h2h_event", "h2h_paused", "h2h_closed", "h2h_done", "h2h_penalty_result",
 ]);
 
 /**
@@ -61,6 +61,10 @@ export function parseH2HEvent(raw: unknown, saveId: string, fixtureId: string): 
         : null;
     case "h2h_event":
       return typeof e.name === "string" ? (v as H2HServerEvent) : null;
+    case "h2h_penalty_result":
+      return e.outcome && typeof e.outcome === "object" && typeof (e.outcome as { scored?: unknown }).scored === "boolean"
+        ? (v as H2HServerEvent)
+        : null;
     default:
       return v as H2HServerEvent;
   }

@@ -843,3 +843,12 @@ bun test src/Domain/h2h src/Domain/match/liveMatchSetup.test.ts src/backend/h2h 
 - Sem espectadores, sem velocidade 2×/4×, sem seleção ao vivo entre dois técnicos.
 - Um frame de atraso no desenho (interpolação entre os dois últimos frames); um frame atrasado congela no último.
 - A sala não tem prazo próprio: com o prazo do grupo vencido, o assistente simula e a sala fecha.
+
+### Pênaltis em 2D (4.38)
+
+Cada técnico escolhe na prévia ou na sala ("Pênaltis: Bater eu mesmo / Automático"); `h2h_ready { penalty2d? }` leva a
+escolha. O worker emite `penaltyPending`; o servidor (`h2hRooms.ts`, `PenaltyRound`) espera `h2h_penalty { choice }`
+de quem bate (só chute) e de quem defende (só pulo); lado automático, desconectado ou suspenso recebe a escolha da IA, e
+a IA completa depois de `H2H.PENALTY_CHOICE_S` (20 s). Com as duas, `resolveKick` no servidor, `h2h_penalty_result`
+para os dois e, `H2H.PENALTY_APPLY_MS` (2,4 s) depois, o worker aplica (`{ type: "penalty", outcome }`). Teste:
+`h2hRooms.test.ts` ("2D penalties").

@@ -1,5 +1,6 @@
 // Shapes shared by the social routes, the socket and the screens. Nothing here carries an e-mail or a
 // user id: the client only ever sees nicknames (`.claude/rules/social.md`).
+import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
 import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
 
@@ -76,11 +77,12 @@ export type ClientEvent =
   | ({ type: "live_score" } & LiveScoreFrame)
   // Multiplayer part 7 (live match between two managers): the room of today's game against another seat.
   | { type: "h2h_join"; saveId: string; fixtureId: string }
-  | { type: "h2h_ready" }
+  | { type: "h2h_ready"; penalty2d?: boolean }
   | { type: "h2h_cmd"; cmd: H2HCommand }
   | { type: "h2h_pause" }
   | { type: "h2h_resume" }
-  | { type: "h2h_leave" };
+  | { type: "h2h_leave" }
+  | { type: "h2h_penalty"; choice: PenaltyChoice };
 
 export type ServerEvent =
   | { type: "message"; room: string; message: ChatMessageView }
@@ -122,7 +124,8 @@ export type ServerEvent =
   | { type: "h2h_event"; saveId: string; fixtureId: string; name: string; payload: unknown }
   | { type: "h2h_paused"; saveId: string; fixtureId: string; by: H2HSide | null; until: number | null; left: Record<H2HSide, number> }
   | { type: "h2h_closed"; saveId: string; fixtureId: string; reason: H2HCloseReason }
-  | { type: "h2h_done"; saveId: string; fixtureId: string };
+  | { type: "h2h_done"; saveId: string; fixtureId: string }
+  | { type: "h2h_penalty_result"; saveId: string; fixtureId: string; outcome: KickOutcome };
 
 export type SocialErrorCode =
   | "invalidNickname"

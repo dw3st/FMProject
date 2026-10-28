@@ -21,7 +21,7 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -2414,6 +2414,11 @@ export function PixiPitch({
         } else if (cmd.type === 'swapPositions') {
           stateRef.current = swapPlayerPositions(stateRef.current, cmd.team, cmd.aId, cmd.bId);
           gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the new slots
+        } else if (cmd.type === 'setPenaltyInteractive') {
+          stateRef.current = { ...stateRef.current, penaltyInteractive: cmd.teams.length > 0 ? cmd.teams : undefined };
+        } else if (cmd.type === 'penaltyOutcome') {
+          stateRef.current = applyPenaltyOutcome(stateRef.current, cmd.outcome);
+          gameBus.emit('stateChanged', stateRef.current);
         } else if (cmd.type === 'setManualInjurySubs') {
           const s = stateRef.current;
           const manual = { ...s.manualInjurySubs };

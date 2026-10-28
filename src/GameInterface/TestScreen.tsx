@@ -22,6 +22,7 @@ import { createPossessionHeatmap, samplePossessionHeatmap, type PossessionHeatma
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
 import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { Icon } from "@/GameInterface/Icons";
+import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
 import { evaluatePoint, DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig, EvaluationResult } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import { attackingTeam } from "@/GameEngine/Infrastructure/CrowdGrid";
@@ -606,6 +607,8 @@ export function TestScreen() {
   const [showSubs, setShowSubs] = useState(false);
   // #140: team A picks the replacement of an injured player (as the live match does).
   const [manualInjA, setManualInjA] = useState(false);
+  // 2D penalties for team A (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`).
+  const [pen2dA, setPen2dA] = useState(false);
   const liveStateRef = useRef<GameState | null>(null);
   const [livePlayer, setLivePlayer] = useState<GamePlayer | null>(null);
   const lastDefensiveScoresRef = useRef<Record<number, unknown>>({});
@@ -838,6 +841,13 @@ export function TestScreen() {
   useEffect(() => {
     gameBus.emit('testCommand', { type: 'setManualInjurySubs', team: 'A', on: manualInjA });
   }, [manualInjA, liveBallHolder]);
+  // Sent only once the button was used: the shootout-2d scenario starts interactive on its own.
+  const pen2dTouched = useRef(false);
+  useEffect(() => {
+    if (!pen2dA && !pen2dTouched.current) return;
+    pen2dTouched.current = true;
+    gameBus.emit('testCommand', { type: 'setPenaltyInteractive', teams: pen2dA ? ['A'] : [] });
+  }, [pen2dA, liveBallHolder]);
   useEffect(() => gameBus.on('injuryNeedsSub', e => {
     if (e.team !== 'A') return;
     setPaused(true);
@@ -1615,6 +1625,12 @@ export function TestScreen() {
             <Icon name="heart-pulse" size={14} />Manual injury subs
           </button>
         )}
+        <button onClick={() => setPen2dA(v => !v)} title="Team A kicks and saves its penalties in 2D"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
+            pen2dA ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
+          }`}>
+          <Icon name="target" size={14} />Penalties 2D A
+        </button>
         <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/30 p-0.5">
           {SPEEDS.map(s => (
             <button key={s.value} onClick={() => setSpeed(s.value)}
@@ -1860,6 +1876,15 @@ export function TestScreen() {
           ref={pitchHostRef}
           className="flex-1 flex items-center justify-center min-w-0 min-h-0 overflow-hidden"
         >
+          {liveGameState && (
+            <PenaltyOverlay
+              state={liveGameState}
+              mySide="A"
+              kits={{ A: '#2d6cdf', B: '#df3b2d' }}
+              names={{ left: { team: 'A', name: 'Team A' }, right: { team: 'B', name: 'Team B' } }}
+              onOutcome={(outcome) => gameBus.emit('testCommand', { type: 'penaltyOutcome', outcome })}
+            />
+          )}
           {activeState && pitchSize ? (
             <PixiPitch
               key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}

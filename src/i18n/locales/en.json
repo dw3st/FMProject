@@ -5600,5 +5600,23 @@
       "lost": "The match was lost (server restarted)",
       "failed": "The match could not go on"
     }
+  },
+  "penalty2d": {
+    "modeLabel": "Penalties",
+    "modeManual": "Take them myself",
+    "modeAuto": "Automatic",
+    "kickTitle": "{{name}} to take",
+    "saveTitle": "Save it: {{name}} to take",
+    "keeper": "Keeper: {{name}}",
+    "power": "Power",
+    "hintAim": "Click in the goal to aim (or arrows and Enter).",
+    "hintPower": "Click again to shoot (or space). In the green zone the shot is firm.",
+    "hintDive": "Pick where the keeper dives ({{s}} s).",
+    "result": {
+      "goal": "Goal",
+      "saved": "Saved",
+      "miss": "Wide",
+      "post": "Off the woodwork"
+    }
   }
 }

@@ -12,7 +12,9 @@ canto ao defender; peso equilibrado entre os atributos e a habilidade do técnic
   (`localStorage` `fm.match.penaltyMode`, leitura e escrita em try/catch; sem armazenamento = Automático). A partida
   inteira segue a escolha feita na prévia.
 - Automático = o comportamento de hoje (sorteio na hora, `penaltyChance`).
-- Jogos simulados, quickSim, `/lab` e a partida ao vivo entre dois técnicos: sempre automático, nada muda.
+- Jogos simulados, quickSim e `/lab`: sempre automático, nada muda.
+- Partida ao vivo entre dois técnicos (pedido do usuário durante a implementação): cada técnico escolhe na prévia ou na
+  sala; o servidor resolve cada cobrança com a escolha dos dois (seção 7).
 
 ## 2. Tela (`GameInterface/Penalty/PenaltyScreen.tsx`, Pixi não; SVG + CSS)
 
@@ -59,7 +61,15 @@ canto ao defender; peso equilibrado entre os atributos e a habilidade do técnic
 - Motor: disputa interativa pausa e retoma, fim antecipado, morte súbita; pênalti no jogo espera a jogada.
 - Tela: abre e fecha, teclado.
 
+## 7. Entre dois técnicos
+
+- `h2h_ready { penalty2d? }` guarda a escolha de cada lado; o jogo nasce com `penaltyInteractive` dos lados manuais.
+- O evento `penaltyPending` sai do worker; o servidor abre uma rodada: lado automático, desconectado ou suspenso recebe
+  a escolha da IA na hora; cada técnico manda `h2h_penalty { choice }` (quem bate só chuta, quem defende só pula).
+  Sem resposta em `PENALTY_CHOICE_S` (20 s), a IA completa.
+- Com as duas escolhas, `resolveKick` roda no servidor, os dois recebem `h2h_penalty_result` (a tela anima) e,
+  `PENALTY_APPLY_MS` (2,4 s) depois, o worker aplica o resultado (`applyPenaltyOutcome`).
+
 ## Limitações
 
-- Partida entre dois amigos ao vivo continua automática (fica para depois).
 - A disputa interativa não tem "paradinha" nem cavadinha.

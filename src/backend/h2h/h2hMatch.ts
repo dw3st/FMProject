@@ -12,7 +12,7 @@
  */
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import {
-  applyPlayerInstruction, changeFormation, fillInjuryVacancy, getBallPos, matchMinute, setManMarks,
+  applyPenaltyOutcome, applyPlayerInstruction, changeFormation, fillInjuryVacancy, getBallPos, matchMinute, setManMarks,
   swapPlayerPositions, tickState,
 } from "@/GameEngine/Domain/gameState";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
@@ -20,7 +20,7 @@ import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { exportStatsState, getGoalLog, getTeamStats, initStats } from "@/GameEngine/Domain/Statistics";
 import { exportRatings, initRatings } from "@/GameEngine/Domain/PlayerRating";
 import { effectiveInstruction } from "@/GameEngine/Configs/RoleVariantConfig";
-import type { GameState, TeamId } from "@/GameEngine/types";
+import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { buildLiveMatchState, type LiveMatchInput, type LiveSideTactics } from "@/Domain/match/liveMatchSetup";
 import { applyLiveTactics } from "@/Domain/tactics/liveTactics";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
@@ -33,7 +33,7 @@ export const H2H_FORWARDED_EVENTS = [
   "goalScored", "goalDisallowed", "card", "foul", "freeKickAwarded", "cornerAwarded", "penaltyAwarded",
   "penaltyResolved", "offsideCalled", "injury", "injuryNeedsSub", "playerSubstituted", "positionsSwapped",
   "varCheck", "varReview", "refereeError", "halfTime", "extraTimeStart", "penaltyKick", "shootoutEnd",
-  "matchStart", "matchEnd", "kickOff", "shot", "shotResolved", "header", "teamIntentChanged",
+  "matchStart", "matchEnd", "kickOff", "shot", "shotResolved", "header", "teamIntentChanged", "penaltyPending",
 ] as const satisfies readonly (keyof GameEvents)[];
 
 /** Forwarded events that do not need an immediate full state (the next frame / periodic state covers them). */
@@ -48,6 +48,8 @@ export interface H2HMatch {
   command(side: H2HSide, cmd: H2HCommand): WorkerOut[];
   setPaused(paused: boolean): WorkerOut[];
   setAuto(side: H2HSide, on: boolean): WorkerOut[];
+  /** Answers the pending 2D penalty (the server resolved both managers' choices). */
+  penalty(outcome: PenaltyOutcome): WorkerOut[];
   /** Real-time multiplier (tests only; 1 in play). */
   setSpeed(factor: number): void;
   /** Unsubscribes from the gameBus. */
@@ -250,6 +252,14 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
         }
       }
       stateDue = true;
+      return flush();
+    },
+
+    penalty(outcome: PenaltyOutcome): WorkerOut[] {
+      if (done || !state.pendingPenalty) return [];
+      state = applyPenaltyOutcome(state, outcome);
+      stateDue = true;
+      finishIfOver();
       return flush();
     },
 

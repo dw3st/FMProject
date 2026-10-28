@@ -50,9 +50,21 @@ export function penaltyChance<Id>(accuracy: number, keeper: PenaltyKeeper<Id> | 
 }
 
 /** Outfield players by accuracy (desc, stable), goalkeepers last. */
-function kickOrder<Id>(takers: PenaltyTaker<Id>[]): PenaltyTaker<Id>[] {
+export function kickOrder<Id>(takers: PenaltyTaker<Id>[]): PenaltyTaker<Id>[] {
   const outfield = takers.filter((t) => !t.isGK).sort((a, b) => b.accuracy - a.accuracy);
   return [...outfield, ...takers.filter((t) => t.isGK)];
+}
+
+/**
+ * After a kick of an interactive shootout: decided in the regulation rounds as soon as one side can no longer catch
+ * up; in sudden death when both have taken as many and one is ahead (the rule of `resolvePenaltyShootout`).
+ */
+export function shootoutDecided(score: { A: number; B: number }, taken: { A: number; B: number }): boolean {
+  if (taken.A <= C.ROUNDS && taken.B <= C.ROUNDS) {
+    if (score.A + (C.ROUNDS - taken.A) < score.B || score.B + (C.ROUNDS - taken.B) < score.A) return true;
+    if (taken.A < C.ROUNDS || taken.B < C.ROUNDS) return false;
+  }
+  return taken.A === taken.B && score.A !== score.B;
 }
 
 export function resolvePenaltyShootout<Id>(

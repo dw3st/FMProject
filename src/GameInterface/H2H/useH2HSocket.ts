@@ -8,6 +8,7 @@ import { EMPTY_REMOTE_FRAMES, pushRemoteFrame, toRemoteFrame, type RemoteFeed, t
 import { reconnectDelay } from "@/GameInterface/Social/socialState";
 import { mergeWireState, parseH2HEvent } from "@/GameInterface/H2H/h2hState";
 import type { ClientEvent } from "@/types/socialTypes";
+import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { H2HCloseReason, H2HCommand, H2HRoomView, H2HSide } from "@/types/h2hTypes";
 
 const LOGOUT_CLOSE_CODE = 4001;
@@ -32,8 +33,11 @@ export interface H2HSocket {
   send: (cmd: H2HCommand) => void;
   requestPause: () => void;
   resume: () => void;
-  ready: () => void;
+  /** Start: `penalty2d` = this manager kicks and saves his penalties (2D). */
+  ready: (penalty2d: boolean) => void;
   leave: () => void;
+  /** Sends this manager's kick or dive; resolves with the server's result of that penalty. */
+  choosePenalty: (choice: PenaltyChoice) => Promise<KickOutcome>;
 }
 
 /**
@@ -54,6 +58,7 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
   const feedRef = useRef<RemoteFeed>({ frames: framesRef, stepMs: H2H.FRAME_MS });
   const stateRef = useRef<GameState | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const penaltyWaitersRef = useRef<((o: KickOutcome) => void)[]>([]);
   const saveId = target?.saveId ?? null;
   const fixtureId = target?.fixtureId ?? null;
 
@@ -108,6 +113,12 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
           case "h2h_done":
             setDone(true);
             break;
+          case "h2h_penalty_result": {
+            const waiting = penaltyWaitersRef.current;
+            penaltyWaitersRef.current = [];
+            for (const resolve of waiting) resolve(ev.outcome);
+            break;
+          }
         }
       };
       ws.onclose = (e) => {
@@ -136,11 +147,15 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
   const send = useCallback((cmd: H2HCommand) => sendEvent({ type: "h2h_cmd", cmd }), [sendEvent]);
   const requestPause = useCallback(() => sendEvent({ type: "h2h_pause" }), [sendEvent]);
   const resume = useCallback(() => sendEvent({ type: "h2h_resume" }), [sendEvent]);
-  const ready = useCallback(() => sendEvent({ type: "h2h_ready" }), [sendEvent]);
+  const ready = useCallback((penalty2d: boolean) => sendEvent(penalty2d ? { type: "h2h_ready", penalty2d: true } : { type: "h2h_ready" }), [sendEvent]);
+  const choosePenalty = useCallback((choice: PenaltyChoice) => new Promise<KickOutcome>((resolve) => {
+    penaltyWaitersRef.current.push(resolve);
+    sendEvent({ type: "h2h_penalty", choice });
+  }), [sendEvent]);
   const leave = useCallback(() => sendEvent({ type: "h2h_leave" }), [sendEvent]);
 
   return {
     room, mySide, state, feed: feedRef.current, pause, pausesLeft, closed, done,
-    send, requestPause, resume, ready, leave,
+    send, requestPause, resume, ready, leave, choosePenalty,
   };
 }

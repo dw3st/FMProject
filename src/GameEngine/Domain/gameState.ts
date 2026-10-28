@@ -1,5 +1,5 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -12,7 +12,7 @@ import {
   pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
 } from '@/GameEngine/Domain/SetPieces';
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
-import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
+import { kickOrder, resolvePenaltyShootout, penaltyChance, shootoutDecided, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
@@ -1513,11 +1513,61 @@ function resolveInMatchPenalty(state: GameState, rng: () => number = Math.random
   const sp = state.setPiece!;
   const taker = state.players.find(p => p.id === sp.takerId) ?? state.players.find(p => p.id === state.ballHolderId)!;
   const gk = state.players.find(p => p.team !== taker.team && p.role === 'GK') ?? null;
+  if (state.penaltyInteractive?.length) {
+    // 2D penalties: the match holds until the screen (or the server) answers (`applyPenaltyOutcome`).
+    const pending = { kind: 'match' as const, team: taker.team, takerId: taker.id, keeperId: gk?.id ?? null };
+    gameBus.emit('penaltyPending', pending);
+    return { state: { ...state, pendingPenalty: pending }, passCompleted: false, tackled: false, goalScored: null };
+  }
   const chance = penaltyChance(
     taker.runtimeStats.withBall.shootAccuracy,
     gk ? { id: gk.id, reflex: gk.runtimeStats.withoutBall.gkReflex, diving: gk.runtimeStats.withoutBall.gkDiving } : null,
   );
-  const scored = rng() < chance;
+  return finishInMatchPenalty(state, taker, gk, rng() < chance, chance);
+}
+
+/**
+ * Answers the pending penalty (2D screen in the browser, or the server between two managers): a shootout kick
+ * is added and the shootout moves on; a match penalty ends as an automatic one would. No pending penalty: unchanged.
+ */
+export function applyPenaltyOutcome(state: GameState, outcome: PenaltyOutcome): GameState {
+  const pending = state.pendingPenalty;
+  if (!pending) return state;
+  const taker = state.players.find(p => p.id === pending.takerId) ?? null;
+  debugLog('foul', `2D penalty (${pending.kind}) by ${taker?.name ?? pending.takerId}: ${outcome.result} (chance ${(outcome.chance * 100).toFixed(0)}%)`, {
+    playerId: pending.takerId, data: { ...outcome },
+  });
+  if (pending.kind === 'match') {
+    if (!taker) return { ...state, pendingPenalty: null };
+    const gk = pending.keeperId === null ? null : state.players.find(p => p.id === pending.keeperId) ?? null;
+    return finishInMatchPenalty({ ...state, pendingPenalty: null }, taker, gk, outcome.scored, outcome.chance).state;
+  }
+  const so = state.shootout;
+  if (!so?.live) return { ...state, pendingPenalty: null };
+  const team = pending.team;
+  const score = { ...so.score, [team]: so.score[team] + (outcome.scored ? 1 : 0) };
+  const taken = { ...so.live.taken, [team]: so.live.taken[team] + 1 };
+  gameBus.emit('penaltyKick', {
+    team, takerId: pending.takerId, keeperId: pending.keeperId, scored: outcome.scored, chance: outcome.chance, score, result: outcome.result,
+  });
+  const done = shootoutDecided(score, taken);
+  return {
+    ...state,
+    pendingPenalty: null,
+    presentationCountdown: PENALTY_KICK_INTERVAL,
+    shootout: {
+      ...so,
+      kicks: [...so.kicks, { team, takerId: pending.takerId, keeperId: pending.keeperId, scored: outcome.scored, chance: outcome.chance }],
+      score,
+      shown: so.shown + 1,
+      ...(done ? { finalScore: score, winner: score.A > score.B ? 'A' as const : 'B' as const } : {}),
+      live: { ...so.live, taken, next: team === 'A' ? 'B' : 'A', done },
+    },
+  };
+}
+
+/** The end of a penalty in the match, once its outcome is known (automatic or 2D). */
+function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlayer | null, scored: boolean, chance: number): TickResult {
   gameBus.emit('shot', { player: taker.id, xg: chance });
   gameBus.emit('penaltyResolved', { team: taker.team, takerId: taker.id, keeperId: gk?.id ?? null, scored, chance });
   debugLog('foul', `Penalty by ${taker.name}: ${scored ? 'GOAL' : 'saved/missed'} (chance ${(chance * 100).toFixed(0)}%)`, {
@@ -2139,6 +2189,21 @@ function penaltySide(state: GameState, team: TeamId): PenaltySide<number> {
 }
 
 function startPenalties(state: GameState): GameState {
+  if (state.penaltyInteractive?.length) {
+    // 2D penalties: no kick is resolved up front; each one waits for its answer (`applyPenaltyOutcome`).
+    const a = penaltySide(state, 'A');
+    const b = penaltySide(state, 'B');
+    return {
+      ...state,
+      matchPhase: 'penalties',
+      presentationCountdown: PENALTY_KICK_INTERVAL,
+      pass: null, shot: null, looseBall: null, setPiece: null, pendingPenalty: null,
+      shootout: {
+        kicks: [], score: { A: 0, B: 0 }, finalScore: { A: 0, B: 0 }, winner: 'A', shown: 0,
+        live: { order: { A: kickOrder(a.takers).map(t => t.id), B: kickOrder(b.takers).map(t => t.id) }, taken: { A: 0, B: 0 }, next: 'A', done: false },
+      },
+    };
+  }
   const r = resolvePenaltyShootout(penaltySide(state, 'A'), penaltySide(state, 'B'), Math.random);
   return {
     ...state,
@@ -3594,6 +3659,20 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   if (state.matchPhase === 'penalties') {
     const so = state.shootout;
     if (!so) return noop(finishMatch(state));
+    if (so.live) {
+      // Interactive shootout: hold while a kick waits for its 2D answer.
+      if (state.pendingPenalty) return noop(state);
+      const left = state.presentationCountdown - dt;
+      if (left > 0) return noop({ ...state, presentationCountdown: left });
+      if (so.live.done) return noop(finishMatch({ ...state, presentationCountdown: 0 }));
+      const team = so.live.next;
+      const list = so.live.order[team];
+      const takerId = list.length > 0 ? list[so.live.taken[team] % list.length]! : -1;
+      const gk = state.players.find(p => p.team !== team && p.role === 'GK') ?? null;
+      const pending = { kind: 'shootout' as const, team, takerId, keeperId: gk?.id ?? null };
+      gameBus.emit('penaltyPending', pending);
+      return noop({ ...state, presentationCountdown: 0, pendingPenalty: pending });
+    }
     const countdown = state.presentationCountdown - dt;
     if (countdown > 0) return noop({ ...state, presentationCountdown: countdown });
     if (so.shown >= so.kicks.length) return noop(finishMatch({ ...state, presentationCountdown: 0 }));
@@ -3613,6 +3692,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   if (state.matchPhase === 'matchEnd') {
     return noop(state); // frozen — no further simulation
   }
+
+  // A penalty waiting for its 2D answer (`pendingPenalty`): everything holds, the clock included.
+  if (state.pendingPenalty) return noop(state);
 
   // ── VAR check (`var.md`): play frozen for real seconds, no game time; the decision is applied at the end.
   if (state.varReview) {

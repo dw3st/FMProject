@@ -9,6 +9,8 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { Button } from "@/GameInterface/ui/Button";
+import { PenaltyModeChips } from "@/GameInterface/Penalty/PenaltyModeChips";
+import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import type { H2HSide, H2HSideView } from "@/types/h2hTypes";
@@ -155,6 +157,7 @@ export function MatchRoomScreen() {
       </div>
       <p className="text-sm text-foreground m-0" role="status" aria-live="polite">{statusLine}</p>
       {error && <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(error))}</p>}
+      <PenaltyModeChips disabled={imReady || !lobby} />
       <div className="flex flex-wrap items-center gap-4">
         <Button variant="secondary" onClick={() => { window.location.href = "/formation"; }}>
           <Icon name="settings" size={16} />
@@ -163,7 +166,7 @@ export function MatchRoomScreen() {
         <Button variant="secondary" onClick={() => void simulate()} disabled={busy || !lobby}>
           {t("h2h.room.simulate")}
         </Button>
-        <Button onClick={h2h.ready} disabled={imReady || busy || !lobby}>
+        <Button onClick={() => h2h.ready(loadPenaltyMode() === "manual")} disabled={imReady || busy || !lobby}>
           {imReady ? t("h2h.room.ready") : t("h2h.room.start")}
           {!imReady && <Icon name="play" size={16} />}
         </Button>

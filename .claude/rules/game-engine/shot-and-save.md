@@ -291,3 +291,21 @@ forfeit/coin-flip kick) — the engine's `/test` debug panel shows it per kick.
 
 O arco e a qualidade de posição agora vêm de `Domain/Keeper.ts` (arco mais adiantado com a bola longe, saída no 1 contra
 1 sem punição na qualidade). Ver `.claude/rules/game-engine/keeper.md`.
+
+## 9. 2D penalties (4.38)
+
+Spec: `docs/superpowers/specs/2026-10-28-penalty-2d-design.md`. Pure model in `src/Domain/penalty/penaltyKick.ts`
+(`PENALTY_2D`): the taker aims at a point of the goal (x in [-1, 1], y in [0, 1]) and releases a power bar; the keeper
+dives to one of six areas. Spread `AIM_SPREAD × (1.2 − finishing)`, lift above the green zone (`POWER_LIFT`), woodwork
+band, save chance by area, corner and weakness. AI kick/dive by weights; an average taker converts ~75%
+(`bun scripts/penalty-2d-measure.ts`).
+
+- Engine: `GameState.penaltyInteractive` (teams that answer their penalties). With it, `startPenalties` builds
+  `shootout.live` (order, taken, next) and each kick becomes `pendingPenalty`; `resolveInMatchPenalty` also waits.
+  While `pendingPenalty` is set everything holds (clock included). `applyPenaltyOutcome(state, outcome)` answers it
+  (shootout kick, early end and sudden death by `shootoutDecided`; a match penalty ends as an automatic one).
+  Event `penaltyPending`. Without `penaltyInteractive` nothing changes (simulated matches, quickSim, `/lab`).
+- Screen: `GameInterface/Penalty/PenaltyScreen.tsx` (SVG), `PenaltyOverlay.tsx` (solo: the other side is the AI and
+  the kick resolves in the browser; between two managers the server resolves it). Choice in the match preview and the
+  match room (`PenaltyModeChips`, `localStorage` `fm.match.penaltyMode`).
+- `/test`: toggle "Penalties 2D A" and scenario `shootout-2d`.

@@ -5600,5 +5600,23 @@
       "lost": "A partida se perdeu (servidor reiniciado)",
       "failed": "A partida não pôde continuar"
     }
+  },
+  "penalty2d": {
+    "modeLabel": "Pênaltis",
+    "modeManual": "Bater eu mesmo",
+    "modeAuto": "Automático",
+    "kickTitle": "Cobrança de {{name}}",
+    "saveTitle": "Defenda: {{name}} vai bater",
+    "keeper": "Goleiro: {{name}}",
+    "power": "Força",
+    "hintAim": "Clique no gol para mirar (ou use as setas e Enter).",
+    "hintPower": "Clique de novo para chutar (ou espaço). Na faixa verde, o chute sai firme.",
+    "hintDive": "Escolha para onde o goleiro pula ({{s}} s).",
+    "result": {
+      "goal": "Gol",
+      "saved": "Defendeu",
+      "miss": "Fora",
+      "post": "Na trave"
+    }
   }
 }

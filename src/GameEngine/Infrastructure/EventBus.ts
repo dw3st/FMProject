@@ -340,6 +340,9 @@ export interface GameEvents {
     | { type: 'swapPositions'; team: import('@/GameEngine/types').TeamId; aId: number; bId: number }
     /** Manual injury substitutions (`/test`, #140): the team picks the replacement of an injured player. */
     | { type: 'setManualInjurySubs'; team: import('@/GameEngine/types').TeamId; on: boolean }
+    /** /test: 2D penalties for these teams (empty = automatic), and the answer to the pending one. */
+    | { type: 'setPenaltyInteractive'; teams: import('@/GameEngine/types').TeamId[] }
+    | { type: 'penaltyOutcome'; outcome: import('@/GameEngine/types').PenaltyOutcome }
     /** Substitution panel (`/test`, #140): a bench player fills an injury vacancy (`fillInjuryVacancy`). */
     | { type: 'fillVacancy'; team: import('@/GameEngine/types').TeamId; injuredId: number; inId: number }
     /**
@@ -412,7 +415,9 @@ export interface GameEvents {
   /** Knockout match level after 90': extra time begins after a short break. */
   extraTimeStart: { score: { A: number; B: number } };
   /** One presented kick of a penalty shootout; `score` includes this kick. */
-  penaltyKick: { team: TeamId; takerId: number; keeperId: number | null; scored: boolean; chance: number; score: { A: number; B: number } };
+  penaltyKick: { team: TeamId; takerId: number; keeperId: number | null; scored: boolean; chance: number; score: { A: number; B: number }; result?: "goal" | "saved" | "miss" | "post" };
+  /** A penalty waits for its 2D answer (`GameState.pendingPenalty`). */
+  penaltyPending: { kind: "shootout" | "match"; team: TeamId; takerId: number; keeperId: number | null };
   /** Emitted once, right before `matchEnd`, when a shootout decided the match. */
   shootoutEnd: { winner: TeamId; score: { A: number; B: number } };
 

@@ -3,7 +3,7 @@
  * the engine globals (gameBus, tactic configs, Statistics, PlayerRating). All the logic is in `h2hMatch.ts`;
  * this file only wires messages and the real-time loop (`H2H.TICK_MS`).
  *
- * In : `WorkerIn` (init, cmd, pause, resume, auto, speed).
+ * In : `WorkerIn` (init, cmd, pause, resume, auto, speed, penalty).
  * Out: `WorkerOut` (frame, state, event, done). The worker stops its loop after `done`.
  */
 import { createH2HMatch, type H2HMatch } from "@/backend/h2h/h2hMatch";
@@ -58,6 +58,7 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
     case "cmd": post(match.command(msg.side, msg.cmd)); break;
     case "pause": post(match.setPaused(true)); break;
     case "resume": post(match.setPaused(false)); break;
+    case "penalty": post(match.penalty(msg.outcome)); break;
     case "auto": post(match.setAuto(msg.side, msg.on)); break;
   }
 };

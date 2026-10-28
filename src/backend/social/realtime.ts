@@ -1,5 +1,6 @@
 // Friends and chat in real time (`.claude/rules/social.md`). In memory, per process: the open sockets of each
 // user, and the last status sent to friends. Sending a message is HTTP; the socket only delivers.
+import { parsePenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { ServerWebSocket } from "bun";
 import { readSessionCookie } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
@@ -257,6 +258,13 @@ function parseH2HEvent(e: Record<string, unknown>): ClientEvent | null {
       return cmd ? { type: "h2h_cmd", cmd } : null;
     }
     case "h2h_ready":
+      if (!only("penalty2d") || (e.penalty2d !== undefined && typeof e.penalty2d !== "boolean")) return null;
+      return e.penalty2d === true ? { type: "h2h_ready", penalty2d: true } : { type: "h2h_ready" };
+    case "h2h_penalty": {
+      if (!only("choice")) return null;
+      const choice = parsePenaltyChoice(e.choice);
+      return choice ? { type: "h2h_penalty", choice } : null;
+    }
     case "h2h_pause":
     case "h2h_resume":
     case "h2h_leave":

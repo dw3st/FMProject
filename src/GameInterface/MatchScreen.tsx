@@ -9,7 +9,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { applyPenaltyOutcome, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
 import { otherSide } from "@/GameInterface/H2H/h2hState";
@@ -119,6 +119,8 @@ import {
 import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
 import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
 import type { TacticalAxes } from "@/types/tacticsTypes";
+import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
+import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -534,6 +536,8 @@ export function MatchScreen() {
                 marks: (data.matchMarking?.marks ?? []).map((m) => ({ slot: m.slot, targetRosterId: m.targetId })),
                 setPieceTakers: tactics.setPieceTakers,
                 managerBanned: data.managerBanned === true,
+                // Chosen in the preview: kick and save the penalties in 2D.
+                penalty2d: loadPenaltyMode() === "manual",
                 ...(data.mySquad.managerAttributes ? { managerDiscipline: data.mySquad.managerAttributes.discipline } : {}),
               },
               B: {
@@ -1449,6 +1453,21 @@ export function MatchScreen() {
 
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
+      {/* 2D penalty (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`): the manager kicks or saves. */}
+      {gameState && (
+        <PenaltyOverlay
+          state={gameState}
+          mySide={mySide}
+          kits={{ A: matchKitColors.teamA, B: matchKitColors.teamB }}
+          names={{
+            left: { team: displaySides(awayView).left, name: shownTeams.A?.name ?? "" },
+            right: { team: displaySides(awayView).right, name: shownTeams.B?.name ?? "" },
+          }}
+          // Between two managers the server resolves the kick and moves the match on.
+          onOutcome={(o) => { if (!h2hMode) setGameState((prev) => (prev ? applyPenaltyOutcome(prev, o) : prev)); }}
+          choose={h2hMode ? h2h.choosePenalty : undefined}
+        />
+      )}
       <GoalOverlay
         scoringTeam={goalFlash ? displayTeam(goalFlash.team, awayView) : null}
         score={toDisplayPair(goalFlash?.score ?? score, awayView)}

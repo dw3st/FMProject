@@ -51,6 +51,8 @@ export interface LiveSideInput {
   managerBanned?: boolean;
   /** The manager's Discipline attribute (`achievements.md`). */
   managerDiscipline?: number;
+  /** The manager kicks and saves his penalties in 2D (`GameState.penaltyInteractive`); absent = automatic. */
+  penalty2d?: boolean;
 }
 
 export interface LiveMatchInput {
@@ -129,6 +131,7 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     ...(some(setPieceTakers) ? { setPieceTakers } : {}),
     ...(some(managerDiscipline) ? { managerDiscipline } : {}),
     ...(input.aggregate ? { aggregate: input.aggregate } : {}),
+    ...(SIDES.some((t) => input[t].penalty2d) ? { penaltyInteractive: SIDES.filter((t) => input[t].penalty2d) } : {}),
   };
   // Player instructions of each human side: the saved slot instructions and this match's man-marking.
   for (const team of SIDES) {

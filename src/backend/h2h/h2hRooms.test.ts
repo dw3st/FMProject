@@ -11,7 +11,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { createH2HMatch, type H2HMatch } from "@/backend/h2h/h2hMatch";
 import {
   clearLostH2H, h2hRoomOf, handleH2HEvent, h2hSocketClosed, resetH2HRooms, setH2HClock, setH2HNotifier, setH2HSpawner,
-  tickH2HPause, wireState,
+  setH2HPenalty2d, tickH2HPause, wireState,
 } from "@/backend/h2h/h2hRooms";
 import { handleClientEvent, type SocialSocket } from "@/backend/social/realtime";
 import { addDays } from "@/Domain/dates";
@@ -87,7 +87,8 @@ describe("h2h rooms (live match between two managers)", () => {
             const out = m.type === "cmd" ? e.match.command(m.side, m.cmd)
               : m.type === "pause" ? e.match.setPaused(true)
                 : m.type === "resume" ? e.match.setPaused(false)
-                  : m.type === "auto" ? e.match.setAuto(m.side, m.on) : [];
+                  : m.type === "auto" ? e.match.setAuto(m.side, m.on)
+                    : m.type === "penalty" ? e.match.penalty(m.outcome) : [];
             for (const o of out) onMessage(o);
           }
         },
@@ -198,6 +199,29 @@ describe("h2h rooms (live match between two managers)", () => {
     const cmds = engine!.posted.slice(before).filter((m) => m.type === "cmd");
     expect(cmds).toEqual([{ type: "cmd", side: "B", cmd: { kind: "mentality", mentality: "attacking" } }]);
   });
+
+  test("2D penalties: each side answers its own role, the assistant fills an automatic side", async () => {
+    const takerId = engine!.match!.state.players.find((p) => p.team === "A" && p.role !== "GK")!.id;
+    const keeperId = engine!.match!.state.players.find((p) => p.team === "B" && p.role === "GK")!.id;
+    const pending = { kind: "match", team: "A", takerId, keeperId };
+    const results = () => sockA.sent.filter((e) => e.type === "h2h_penalty_result").length;
+    // Both automatic: resolved at once by the assistant, applied after the animation.
+    const before = results();
+    engine!.deliver({ type: "event", name: "penaltyPending", payload: pending });
+    expect(results()).toBe(before + 1);
+    expect(sockB.sent.filter((e) => e.type === "h2h_penalty_result").length).toBeGreaterThan(0);
+    await until(() => engine!.posted.some((m) => m.type === "penalty"), H2H.PENALTY_APPLY_MS + 2000);
+    // A kicks in 2D: B's dive is the assistant's, a wrong-role choice is ignored, A's kick resolves it.
+    setH2HPenalty2d(saveId, match.id, "A", true);
+    engine!.deliver({ type: "event", name: "penaltyPending", payload: pending });
+    const mid = results();
+    await handleClientEvent(sockB, JSON.stringify({ type: "h2h_penalty", choice: { kick: { aim: { x: 0.5, y: 0.3 }, power: 0.7 } } }));
+    await handleClientEvent(sockA, JSON.stringify({ type: "h2h_penalty", choice: { dive: "low-left" } }));
+    expect(results()).toBe(mid);
+    await handleClientEvent(sockA, JSON.stringify({ type: "h2h_penalty", choice: { kick: { aim: { x: 0.6, y: 0.3 }, power: 0.7 } } }));
+    expect(results()).toBe(mid + 1);
+    setH2HPenalty2d(saveId, match.id, "A", false);
+  }, 30_000);
 
   test("pauses: three per manager, only who paused resumes early, a pause runs out", async () => {
     await handleH2HEvent(sockA, { type: "h2h_pause" });

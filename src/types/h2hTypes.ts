@@ -1,4 +1,4 @@
-import type { GamePlayer, GameState, MatchPhase } from "@/GameEngine/types";
+import type { GamePlayer, GameState, MatchPhase, PenaltyOutcome } from "@/GameEngine/types";
 import type { LiveMatchInput } from "@/Domain/match/liveMatchSetup";
 import type { Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
 import type { StatsSnapshot, TeamStats, GoalLogEntry } from "@/GameEngine/Domain/Statistics";
@@ -49,7 +49,8 @@ export type WorkerIn =
   | { type: "pause" }
   | { type: "resume" }
   | { type: "auto"; side: H2HSide; on: boolean }
-  | { type: "speed"; factor: number };
+  | { type: "speed"; factor: number }
+  | { type: "penalty"; outcome: PenaltyOutcome };
 
 /** Match worker → main process. */
 export type WorkerOut =

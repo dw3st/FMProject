@@ -40,6 +40,7 @@ import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 import { inviteFor, readH2HInvite } from "@/GameInterface/H2H/h2hInvite";
+import { PenaltyModeChips } from "@/GameInterface/Penalty/PenaltyModeChips";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -1322,6 +1323,10 @@ export function MatchPreviewScreen() {
           <a href="/dashboard" className="text-primary font-bold text-sm no-underline hover:underline">{t("common.backToDashboard")}</a>
         </div>
       )}
+      {/* 2D penalties: kick and save them, or automatic (kept for the next matches). */}
+      <div className="flex shrink-0 justify-center">
+        <PenaltyModeChips />
+      </div>
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
         <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
           <Icon name="settings" size={16} />

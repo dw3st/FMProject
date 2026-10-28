@@ -16,7 +16,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, forceInjurySubstitution, maybeFoul, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -207,6 +207,24 @@ export const TEST_SCENARIOS: TestScenario[] = [
         score:      { A: 1, B: 1 },
         presentationCountdown: 0,
       };
+    },
+  },
+
+  {
+    id:          'shootout-2d',
+    name:        'Shootout — 2D penalties',
+    description: 'Level after extra time: the shootout starts at once, team A kicking and saving in 2D.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      return endCurrentPeriod({
+        ...createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433),
+        knockout:   true,
+        matchPhase: 'extraTimeSecond',
+        matchTime:  900,
+        score:      { A: 2, B: 2 },
+        presentationCountdown: 0,
+        penaltyInteractive: ['A'],
+      });
     },
   },
 
