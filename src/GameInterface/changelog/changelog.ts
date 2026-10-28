@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.22",
+    date: "2026-10-28",
+    items: [
+      { pt: "Mais de 100 patrocinadores fictícios nas placas de LED: marcas de camisa, lojas, comidas e empresas.", en: "Over 100 made-up sponsors on the LED boards: kit brands, shops, food and companies." },
+    ],
+    fixes: [
+      { pt: "A bola fica nos pés de quem a conduz, não mais em cima do rosto.", en: "The ball sits at the holder's feet, no longer over the face." },
+      { pt: "Os fotógrafos ficam só atrás dos gols, fora da faixa do bandeirinha.", en: "Photographers stay behind the goals, off the assistant's lane." },
+    ],
+  },
+  {
     version: "4.38.21",
     date: "2026-10-28",
     items: [

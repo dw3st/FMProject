@@ -8,6 +8,7 @@ describe("LED ads", () => {
     const a = Array.from({ length: 20 }, (_, k) => ledAdFor("m1", 0, k).text).join();
     const b = Array.from({ length: 20 }, (_, k) => ledAdFor("m1", 1, k).text).join();
     expect(a).not.toBe(b);
-    expect(new Set(Array.from({ length: 60 }, (_, k) => ledAdFor("m2", 0, k).text)).size).toBeGreaterThan(LED_ADS.length / 2);
+    expect(new Set(Array.from({ length: 60 }, (_, k) => ledAdFor("m2", 0, k).text)).size).toBeGreaterThan(30);
+    expect(LED_ADS.length).toBeGreaterThanOrEqual(100);
   });
 });

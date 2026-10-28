@@ -261,3 +261,9 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   embaixo do campo; os cartões saíram do aviso de cima.
 - Fotógrafos sorteados por jogo (`photographerSpots`): 8 a 13, atrás dos gols (fora das traves) e junto da linha de cima.
 - Bandeirinha de escanteio aponta para dentro; textura e vinheta do gramado mais leves (`GRAIN` 0,045, `EDGE_DARK` 0,1).
+
+## Patrocinadores, bola e fotógrafos (4.38.22)
+
+- `ledAds.ts`: 109 patrocinadores inventados (camisas, lojas, comida, empresas, mídia, futebol), nunca marca real; cor de cada um por índice nos 15 pares. `pitchStyle.ts` reexporta `LED_ADS`.
+- A bola com dono é desenhada nos pés do portador (borda do marcador, na direção em que ele anda ou ataca), nunca no centro do rosto (report).
+- Fotógrafos só atrás dos dois gols (`photographerSpots`: lados esquerdo e direito), nunca entre o bandeirinha e a torcida (report).

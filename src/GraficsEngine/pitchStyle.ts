@@ -1,3 +1,4 @@
+import { LED_ADS } from "@/GraficsEngine/ledAds";
 /**
  * Visual constants of the live-match pitch (spec 2026-10-06-match-pitch-visual-design.md).
  * Distances in "marker radii" are multiplied by the marker radius (px); heights are in yards.
@@ -115,20 +116,6 @@ export const LED = {
   SWITCH_S: 9, FLIP_S: 0.3, FLIP_STAGGER_S: 0.03, GOAL_S: 10,
 } as const;
 
-/** Made-up sponsors (never real brands): the text and the panel colours. */
-export const LED_ADS: readonly { text: string; bg: number; fg: number }[] = [
-  { text: "FMPROJECT", bg: 0x0f172a, fg: 0x4ade80 },
-  { text: "WESTLAB.DEV", bg: 0xffffff, fg: 0x111827 },
-  { text: "BOLA CERTA", bg: 0xf2c230, fg: 0x111827 },
-  { text: "PRANCHETA", bg: 0x1d4ed8, fg: 0xffffff },
-  { text: "CHUTEIRA 10", bg: 0xdc2626, fg: 0xffffff },
-  { text: "APITO", bg: 0x111827, fg: 0xf97316 },
-  { text: "VESTIÁRIO", bg: 0x065f46, fg: 0xffffff },
-  { text: "CAMISA 9", bg: 0x7c3aed, fg: 0xffffff },
-  { text: "GRAMADO+", bg: 0x16a34a, fg: 0xffffff },
-  { text: "TORCIDA TV", bg: 0xf97316, fg: 0x111827 },
-];
-
 /** The ad of a panel in a flip cycle: random per match, cycle and panel, never the same as the panel before it. */
 export function ledAdFor(seed: string, cycle: number, panel: number): { text: string; bg: number; fg: number } {
   const pick = (k: number) => {
@@ -212,3 +199,5 @@ export const LIGHTING = {
   SUN_BY_WEATHER: { sunny: 1, clear: 1, hot: 1, wind: 1, cold: 0.5, partlyCloudy: 0.5, cloudy: 0, rain: 0, snow: 0 },
   VEIL: { COLOR: 0x6a7a80, BY_WEATHER: { partlyCloudy: 0.05, cloudy: 0.14, rain: 0.2, snow: 0.12, cold: 0.06 } },
 } as const;
+
+export { LED_ADS };

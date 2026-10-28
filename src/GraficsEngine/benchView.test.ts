@@ -66,8 +66,8 @@ describe("photographers", () => {
     expect(a).not.toEqual(b);
     for (const s of [...a, ...b]) {
       expect(a.length).toBeGreaterThanOrEqual(8);
-      if (s.side !== "top") expect(Math.abs(s.along)).toBeGreaterThanOrEqual(6);
-      else expect(Math.abs(s.along)).toBeLessThanOrEqual(50);
+      expect(Math.abs(s.along)).toBeGreaterThanOrEqual(6);
+      expect(Math.abs(s.along)).toBeLessThanOrEqual(32);
     }
   });
 });

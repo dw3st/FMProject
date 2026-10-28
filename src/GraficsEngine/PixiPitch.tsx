@@ -1832,17 +1832,17 @@ export function PixiPitch({
         photoGfx.clear();
         if (!(officialsOn && extrasRef.current && m.stand)) return;
         const u = markerR * 0.4; // the same unit as the benches
-        const midY = m.marginY + m.height / 2, midX = m.marginX + m.width / 2;
+        const midY = m.marginY + m.height / 2;
         photoSpots.forEach((ph, i) => {
             const side = ph.side;
             // `out` points away from the pitch; the camera looks the other way.
-            const out = side === "left" ? -1 : side === "right" ? 1 : 0;
+            const out = side === "left" ? -1 : 1;
             const lineX = side === "left" ? m.marginX : m.marginX + m.width;
-            const x = side === "top" ? midX + ph.along * m.scale : lineX + out * (m.goalNetDepth + u * 0.6);
-            const y = side === "top" ? m.marginY - STADIUM.RUNOFF_YDS * m.scale * 0.55 : midY + ph.along * m.scale;
-            const burstSide = side === "top" ? (x < midX ? "left" : "right") : side;
+            const x = lineX + out * (m.goalNetDepth + u * 0.6);
+            const y = midY + ph.along * m.scale;
+            const burstSide = side;
             const look = benchLook(`photo:${side}:${i}`);
-            const cx = side === "top" ? 0 : -out, cy = side === "top" ? 1 : 0;
+            const cx = -out, cy = 0;
             // Shadow, body (dark jacket, a bib), the camera toward the pitch (cx, cy), the head.
             photoGfx.ellipse(x + u * 0.15, y + u * 0.3, u * 1.05, u * 0.7).fill({ color: 0x000000, alpha: 0.3 });
             photoGfx.ellipse(x, y, cy ? u : u * 0.62, cy ? u * 0.62 : u).fill(0x2b3846);
@@ -2827,7 +2827,21 @@ export function PixiPitch({
 
         // Ball: game coords → pixels; a raised ball is drawn higher and bigger, its shadow stays below.
         const ballPos = drawnB;
-        const { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
+        let { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
+        // A held ball sits at the holder's feet, just in front of the marker (never over the face, tester report):
+        // toward where he runs, or toward the goal he attacks when he stands still.
+        {
+          const stB = stateRef.current;
+          const holder = stB.pass || stB.shot || stB.looseBall ? null : stB.players.find((p) => p.id === stB.ballHolderId);
+          const hg = holder ? playerGraphics.get(holder.id) : undefined;
+          if (holder && hg) {
+            const v = markerVel.get(holder.id);
+            const sp = v ? Math.hypot(v.vx, v.vy) : 0;
+            const dx = sp > 0.15 ? v!.vx / sp : holder.attackDir * xSign(), dy = sp > 0.15 ? v!.vy / sp : 0;
+            const reach = markerR + ballR * 0.9;
+            bx = hg.x + dx * reach; by = hg.y + dy * reach;
+          }
+        }
         const h = drawnB.h;
         seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
         prevBallPx = { x: bx, y: by };
