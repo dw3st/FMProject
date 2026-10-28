@@ -44,6 +44,16 @@ export const changelog: ChangelogEntry[] = [
         pt: "Se um dos dois cair, o auxiliar assume o time até ele voltar.",
         en: "If one of you drops out, the assistant takes over the team until they are back.",
       },
+      {
+        pt: "Tela inicial com amigos e convites: o painel de amigos já aparece ao entrar, e os convites para ligas ficam junto dos jogos salvos, prontos para aceitar.",
+        en: "Start screen with friends and invites: the friends panel is there as soon as you sign in, and league invites sit next to your saved games, ready to accept.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A partida ao vivo marcava mais gols e tinha mais chutes que a simulada com os mesmos times; agora as duas jogam igual.",
+        en: "The live match had more goals and shots than the simulated one with the same teams; now both play the same.",
+      },
     ],
   },
   {
@@ -2024,5 +2034,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Assistir ao jogo ao vivo de um amigo", en: "Watch a friend's live match" },
+  { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
   { pt: "Pênaltis vistos de perto", en: "Penalties up close" },
 ];

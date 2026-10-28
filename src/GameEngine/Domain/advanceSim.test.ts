@@ -59,20 +59,23 @@ describe("advanceSim", () => {
     expect(result.stoppedBy).toBeUndefined();
   });
 
-  test("feeding that carry back in with another 0.01s runs exactly one whole step", () => {
+  test("feeding that carry back in with another 0.6 step runs exactly one whole step", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
-    const first = advanceSim(state, 0.01, 0, SIM_STEP, tick);
-    const second = advanceSim(first.state, 0.01, first.carry, SIM_STEP, tick);
+    const first = advanceSim(state, 0.6 * SIM_STEP, 0, SIM_STEP, tick);
+    const second = advanceSim(first.state, 0.6 * SIM_STEP, first.carry, SIM_STEP, tick);
 
-    // total = 0.01 (carry) + 0.01 = 0.02 → one whole 1/60s step, dt is
-    // exactly SIM_STEP (never a partial step), remainder ≈ 0.02 - 1/60 ≈ 0.0033.
+    // total = 1.2 steps → one whole step, dt is exactly SIM_STEP (never a partial step), remainder 0.2 step.
+    expect(first.steps).toBe(0);
     expect(calls).toHaveLength(1);
     expect(calls[0]).toBeCloseTo(SIM_STEP, 12);
-    expect(second.carry).toBeCloseTo(0.02 - SIM_STEP, 10);
-    expect(second.carry).toBeCloseTo(0.0033, 3);
+    expect(second.carry).toBeCloseTo(0.2 * SIM_STEP, 10);
     expect(second.stoppedBy).toBeUndefined();
+  });
+
+  test("the live step is simulateMatch's 0.2 s step", () => {
+    expect(SIM_STEP).toBe(0.2);
   });
 
   test("never runs a partial step: every tick call gets dt === step exactly", () => {

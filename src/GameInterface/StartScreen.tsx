@@ -19,6 +19,8 @@ import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { useSocial } from "@/GameInterface/Social/useSocial";
+import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 
 interface SaveEntry {
   id: string;
@@ -58,6 +60,7 @@ export function StartScreen() {
   const pendingLeaveSave = saves.find((s) => s.id === pendingLeaveId) ?? null;
   const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
   const [publicWorld, setPublicWorld] = useState<PublicWorldInfo | null>(null);
+  const social = useSocial();
 
   function openChangelog() {
     setIsChangelogOpen(true);
@@ -191,6 +194,41 @@ export function StartScreen() {
           </div>
         )}
 
+        {social.worldInvites.length > 0 && (
+          <>
+            <SectionTitle className="mt-8 mb-3">{t("world.invites.title")}</SectionTitle>
+            <ul className="m-0 list-none border-b border-border bg-background p-0">
+              {social.worldInvites.map((inv) => (
+                <li key={inv.saveId} className="flex items-center gap-3 border-t border-border py-3">
+                  <Icon name="users" size={16} className="shrink-0 text-chart-2" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold text-foreground">
+                      {t("world.leagueOf", { owner: inv.from })}
+                    </div>
+                    <div className="truncate text-sm text-muted-foreground">{t("startScreen.inviteHint")}</div>
+                  </div>
+                  <Button
+                    className="w-24 shrink-0 px-0"
+                    onClick={() => { window.location.href = `/join/${inv.code}`; }}
+                    disabled={loadingId !== null}
+                  >
+                    {t("world.invites.accept")}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => void social.declineWorldInvite(inv.saveId)}
+                    aria-label={t("world.invites.decline")}
+                    title={t("world.invites.decline")}
+                    className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-destructive"
+                  >
+                    <Icon name="close" size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
         <SectionTitle className="mt-8 mb-3">{t("startScreen.savedGames")}</SectionTitle>
         {leaveError && (
           <p role="alert" className="mb-3 text-sm text-destructive">
@@ -290,6 +328,7 @@ export function StartScreen() {
           {t("startScreen.settings")}
         </button>
         <LanguageSwitch />
+        <FriendsButton />
         <div className="flex items-center gap-3">
           <button
             type="button"

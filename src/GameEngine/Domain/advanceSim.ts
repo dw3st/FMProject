@@ -8,8 +8,8 @@
  * visible) or once per simClock Worker pulse (while hidden) to turn
  * "N real seconds elapsed × gameSpeed" into game-time progress.
  *
- * `advanceSim` runs `tickState` in WHOLE fixed steps of `step` game-seconds
- * (default 1/60s) — never a partial step — so gameplay feel stays identical
+ * `advanceSim` runs `tickState` in WHOLE fixed steps of `step` seconds
+ * (default `SIM_STEP`, 0.2 s) — never a partial step — so gameplay feel stays identical
  * regardless of how often or how irregularly the caller pumps. A naive
  * "feed whatever elapsed time is left" approach would call `tickState` with
  * a different `dt` on every pump (e.g. a slightly-late frame), which is
@@ -45,10 +45,15 @@
  */
 
 import type { GameState } from "@/GameEngine/types";
-import { tickState, type TickResult } from "@/GameEngine/Domain/gameState";
+import { tickState, DECISION_REF_DT, type TickResult } from "@/GameEngine/Domain/gameState";
 
-/** Fixed step size, in game-seconds. */
-export const SIM_STEP = 1 / 60;
+/**
+ * Fixed step size: the same 0.2 s step `simulateMatch` uses. The engine's logic (decision cadence, range checks,
+ * duels) was calibrated sampled every 0.2 s; at 1/60 s the live match had ~13% more goals and 15% more shots
+ * (front tackles halved: the holder picked the dribble before the defender reached tackle range). The drawing
+ * interpolates between steps (`renderInterp.ts`).
+ */
+export const SIM_STEP = DECISION_REF_DT;
 
 type AdvanceSimStopReason = "goal" | "phase";
 

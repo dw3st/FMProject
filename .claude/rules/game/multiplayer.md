@@ -742,7 +742,7 @@ Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
   `h2hMatch.ts`) isola os globais do motor (`gameBus`, configs de tática por time, `Statistics`, `PlayerRating`) e roda
   `advanceSim` a cada `H2H.TICK_MS` (50 ms) com o tempo real × 1, a partir do estado montado pela mesma
   `buildLiveMatchState` da partida sozinha (`src/Domain/match/liveMatchSetup.ts`). Manda `frame` (posições, bola,
-  relógio, a cada `FRAME_MS` 100 ms), `state` (o `GameState` a cada `STATE_MS` 1 s e depois de cada lance), `event`
+  relógio, um por passo de 0,2 s, `FRAME_MS` 200 ms), `state` (o `GameState` a cada `STATE_MS` 1 s e depois de cada lance), `event`
   (lances do `gameBus` que a tela usa, `H2H_FORWARDED_EVENTS`) e `done`.
 - **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada), troca de
   posição, tática ao vivo, mentalidade, formação, instrução de vaga e marcação individual. Sem velocidade (fixa 1×).
@@ -805,31 +805,29 @@ Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
   selo "Fabio saiu · auxiliar no comando"; o campo continua com a casa à esquerda (virado quando ele é o visitante).
 - Resultado: a tela de sempre, para os dois. i18n `h2h.*`, `screenTitles.matchRoom`, `inbox.world.h2h_invite/h2h_lost`.
 
-### Medições (`bun scripts/h2h-measure.ts 30 100`, 2026-10-27)
+### Medições (`bun scripts/h2h-measure.ts 30 150`, 2026-10-27, passo de 0,2 s)
 
 Windows, Manchester United × Newcastle (Premier, 4-3-3, estilo equilibrado), RSS do processo antes de qualquer partida
-48 MB. CPU = `process.cpuUsage` (o processo inteiro, os workers incluídos) sobre o tempo de parede.
+60 MB. CPU = `process.cpuUsage` (o processo inteiro, os workers incluídos) sobre o tempo de parede.
 
 | Partidas ao mesmo tempo (1×, 30 s) | CPU (de um núcleo) | RSS | Bytes/s por navegador |
 |---|---|---|---|
-| 1 | 6,1% | 92 MB (pico 97) | 38,1 KB/s |
-| 3 | 19,3% | 164 MB | 39,2–39,6 KB/s |
+| 1 | 0,8% (6,1% com o passo de 1/60 s) | 88 MB | 36,0 KB/s |
+| 3 | 5,8% (19,3%) | 137 MB | 34,9–35,0 KB/s |
 
-Por navegador, em 30 s: 329 `h2h_frame` (média 898 B, ~9 KB/s), 32 `h2h_state` (média 30,7 KB, ~29 KB/s: o estado de
-1 s, os bancos só quando mudam e o `snapshot` das estatísticas a cada 3 s) e 6 `h2h_event` (~180 B). Os bytes contam o
-mesmo `wireState` das salas; o `frame` vai sem arredondar as posições.
+Por navegador, em 30 s: 164 `h2h_frame` (um por passo, média 941 B, ~5 KB/s), 34 `h2h_state` (média 30,9 KB, ~29 KB/s:
+o estado de 1 s, os bancos só quando mudam e o `snapshot` das estatísticas a cada 3 s) e 12 `h2h_event` (~170 B).
 
-Gols por jogo (100 partidas cada, mesmos XIs; o worker com os dois lados no auxiliar, tempo real × 6000):
+Gols por jogo (150 partidas cada, mesmos XIs; o worker com os dois lados no auxiliar, tempo real × 6000):
 
 | Caminho | Gols | Chutes |
 |---|---|---|
-| Worker (`createH2HMatch`) | 3,38 ± 0,17 | 9,03 |
-| `simulateMatch` | 2,65 ± 0,15 | 6,87 |
+| Worker (`createH2HMatch`) | 2,80 ± 0,13 | 6,76 |
+| `simulateMatch` | 2,92 ± 0,12 | 6,81 |
 
-**+27,5% de gols (0,73, 3,2 erros-padrão) e +31% de chutes:** não é ruído. O worker roda o mesmo caminho da partida ao
-vivo no navegador (`advanceSim`, passo de 1/60 s real ≈ 0,21 s de jogo), e o `simulateMatch` passa de 0,2 s real
-(≈ 2,6 s de jogo) por tick; a diferença deve ser entre a partida ao vivo e a simulada (a partida sozinha usa o mesmo passo; não medida à parte), não
-desta parte. Fica registrada (o quickSim é calibrado contra o `simulateMatch`); não corrigida aqui.
+Diferença −4% (0,12 gol, erro-padrão 0,17): ruído. Com o passo de 1/60 s (até a 4.35) o worker fazia 3,38 contra
+2,65 (+27,5% numa rodada de 100; ~+13% somando 640 jogos) e +31% de chutes: ver `.claude/rules/match-flow.md` →
+"Live match step (4.36)".
 
 ### Testes
 
@@ -845,4 +843,3 @@ bun test src/Domain/h2h src/Domain/match/liveMatchSetup.test.ts src/backend/h2h 
 - Sem espectadores, sem velocidade 2×/4×, sem seleção ao vivo entre dois técnicos.
 - Um frame de atraso no desenho (interpolação entre os dois últimos frames); um frame atrasado congela no último.
 - A sala não tem prazo próprio: com o prazo do grupo vencido, o assistente simula e a sala fecha.
-- A partida ao vivo entre dois técnicos (e, pelo mesmo passo, provavelmente a sozinha) faz ~27% mais gols que a simulada com os mesmos times (ver Medições).

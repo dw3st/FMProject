@@ -134,6 +134,7 @@
     "newGame": "New Game",
     "settings": "Settings",
     "savedGames": "Saved games",
+    "inviteHint": "Pick your club to join",
     "noSavedGames": "No saved games found.",
     "deleteConfirmTitle": "Delete save?",
     "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",

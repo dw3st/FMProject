@@ -3457,6 +3457,16 @@ export type TickResult = {
  *
  * During a pass or shot in flight, only ball advancement runs (no pressing/tackling).
  */
+/**
+ * Real-seconds per "tick" that the tick-counted timers were tuned for (`COMMIT_TICKS`, `justReceivedTicks`, the
+ * through-ball cell cache): `simulateMatch`'s 0.2 s step, which every calibration (goals, quickSim, formations) used.
+ * Those counters go down by `dt / DECISION_REF_DT` per call, so they last the same real time at any step: exactly 1
+ * per tick at 0.2 s (the simulation is unchanged), 1/12 per tick at the live match's 1/60 s (`advanceSim`). Before,
+ * they went down by 1 per tick: at 1/60 every commitment and the post-reception burst lasted 12 times less, and the
+ * live match had ~20–30% more shots and goals than the calibrated simulation.
+ */
+export const DECISION_REF_DT = 0.2;
+
 export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickResult {
   const noop = (s: GameState): TickResult =>
     ({ state: s, passCompleted: false, tackled: false, goalScored: null });
@@ -3573,7 +3583,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         updates.recoveryTime = Math.max(0, p.recoveryTime - dt);
         if (updates.recoveryTime === 0 && p.recoverySpeed !== undefined) updates.recoverySpeed = undefined;
       }
-      if (p.justReceivedTicks > 0) updates.justReceivedTicks = p.justReceivedTicks - 1;
+      if (p.justReceivedTicks > 0) updates.justReceivedTicks = Math.max(0, p.justReceivedTicks - dt / DECISION_REF_DT);
       return Object.keys(updates).length > 0 ? { ...p, ...updates } : p;
     }),
   };
@@ -3671,12 +3681,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const fresh      = sameHolder && cache!.ticksSinceRefresh < TB_CACHE_REFRESH_TICKS;
     if (fresh) {
       tbCachedCells = cache!.cells;
-      nextTbCache   = { ...cache!, ticksSinceRefresh: cache!.ticksSinceRefresh + 1 };
+      nextTbCache   = { ...cache!, ticksSinceRefresh: cache!.ticksSinceRefresh + dt / DECISION_REF_DT };
     } else {
       tbCachedCells = enumerateCandidateCells(holder, s.players, crowdGrid, offsideLine);
       nextTbCache   = {
         holderId:          s.ballHolderId,
-        ticksSinceRefresh: 1,
+        ticksSinceRefresh: dt / DECISION_REF_DT,
         cells:             tbCachedCells,
       };
     }
@@ -3763,7 +3773,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // Ball holder is always re-evaluated (carries, shoots, passes change quickly).
     if (!isBallHolder && !pathChanged && mem.commitTicks > 0 && mem.decision !== null) {
       newDecisions[p.id] = mem.decision;
-      updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - 1 };
+      updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
       continue;
     }
 

@@ -134,6 +134,7 @@
     "newGame": "Novo Jogo",
     "settings": "Configurações",
     "savedGames": "Jogos salvos",
+    "inviteHint": "Escolha seu clube para entrar",
     "noSavedGames": "Nenhum jogo salvo encontrado.",
     "deleteConfirmTitle": "Excluir save?",
     "deleteConfirmBody": "Isso vai excluir permanentemente \"{{clubName}}\" ({{leagueName}}). Essa ação não pode ser desfeita.",

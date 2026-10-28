@@ -61,6 +61,7 @@ export function remotePositions(
   now: number,
   step: number,
   maxStep: number,
+  ballMaxStep: number = maxStep,
 ): { players: Map<number, Pos>; ball: Pos } | null {
   const last = frames.last;
   if (!last) return null;
@@ -72,7 +73,7 @@ export function remotePositions(
     const was = prev.players.get(id);
     players.set(id, was ? lerpPos(was, cur, alpha, maxStep) : { x: cur.x, y: cur.y });
   }
-  return { players, ball: lerpPos(prev.ball, last.ball, alpha, maxStep) };
+  return { players, ball: lerpPos(prev.ball, last.ball, alpha, ballMaxStep) };
 }
 
 /** How far from the flight line (yards) a drawn ball may be and still be on that flight. */

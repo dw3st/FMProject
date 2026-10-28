@@ -2,7 +2,7 @@ import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -1658,9 +1658,9 @@ export function PixiPitch({
             stateRef.current = withFramePositions(stateRef.current, frames.last);
           }
           const st = stateRef.current;
-          const rp = remotePositions(frames, defaultNow(), remote.stepMs, TELEPORT_YDS);
+          const rp = remotePositions(frames, defaultNow(), remote.stepMs, TELEPORT_YDS, BALL_TELEPORT_YDS);
           drawnPos = rp ? rp.players : drawnPlayerPositions(st, st, 1, TELEPORT_YDS);
-          drawnB = rp ? remoteDrawnBall(st, rp.ball) : drawnBall(st, st, 1, TELEPORT_YDS);
+          drawnB = rp ? remoteDrawnBall(st, rp.ball) : drawnBall(st, st, 1, BALL_TELEPORT_YDS);
         } else {
           const drawState = stateRef.current;
           // A state swapped in from outside the pump that moved something (/test command) ends a transition.
@@ -1668,7 +1668,7 @@ export function PixiPitch({
           renderPair = syncRenderPair(renderPair, drawState);
           const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
           drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
-          drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+          drawnB = drawnBall(renderPair.prev, drawState, alpha, BALL_TELEPORT_YDS);
         }
         const drawState = stateRef.current;
         transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);

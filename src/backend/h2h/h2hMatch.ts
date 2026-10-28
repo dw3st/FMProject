@@ -129,17 +129,21 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     state = tickState(state, 0).state;
   };
 
-  const advance = (gameSeconds: number) => {
+  /** Advances the match; returns how many sim steps ran (a frame goes out after each batch that moved). */
+  const advance = (gameSeconds: number): number => {
+    let ran = 0;
     let budget = carry + gameSeconds;
     carry = 0;
     // A goal or a phase change stops `advanceSim` early; keep going with what is left of the budget.
     while (budget > 0 && state.matchPhase !== "matchEnd") {
       const r = advanceSim(state, budget, 0);
       state = r.state;
+      ran += r.steps;
       if (!r.stoppedBy) { carry = r.carry; break; }
       budget -= r.steps * SIM_STEP;
       if (r.steps === 0) break;
     }
+    return ran;
   };
 
   const queueSub = (side: TeamId, outId: number, inId: number) => {
@@ -164,13 +168,14 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     tick(realMs: number): WorkerOut[] {
       if (done) return flush();
       clockMs += realMs;
-      if (!paused) advance((realMs / 1000) * speed);
+      const ran = paused ? 0 : advance((realMs / 1000) * speed);
       finishIfOver();
       if (done) return flush();
+      // Positions only change on a sim step: one frame per step that ran, never a duplicate in between.
       sinceFrame += realMs;
       sinceState += realMs;
-      if (sinceFrame >= H2H.FRAME_MS) {
-        sinceFrame %= H2H.FRAME_MS;
+      if (ran > 0 || sinceFrame >= H2H.STATE_MS) {
+        sinceFrame = 0;
         outbox.push(frame());
       }
       if (sinceState >= H2H.STATE_MS) stateDue = true;

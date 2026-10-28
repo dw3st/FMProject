@@ -499,3 +499,15 @@ still drawn home on the left (turned when he is away). The `h2h_event`s are re-e
 summary, notices, heat map and stats work unchanged. Each manager has 3 pauses of up to 30 s; only who paused resumes
 early. A manager without a socket is replaced by the assistant (`autoSubs`) until he is back. At full time both go to
 `/match-result?pending=1`. See `.claude/rules/game/multiplayer.md` → "Parte 7".
+
+# Live match step (4.36)
+
+The live match (`PixiPitch` → `advanceSim`) and the H2H worker run `tickState` in whole steps of `SIM_STEP` = 0.2 real
+seconds, the same step as `simulateMatch` (`DECISION_REF_DT`); the drawing interpolates between the last two steps
+(`renderInterp.ts`). Until 4.35 the live step was 1/60 s, and the engine's logic, calibrated sampled every 0.2 s,
+behaved differently: ~13% more goals and ~15% more shots than the simulated match with the same teams. Main
+mechanism: the holder re-decided 12 times as often and picked the dribble against the front defender before he reached
+tackle range (the dribble target is left out of the tackle check), so front tackles halved and the remaining ones came
+from behind with almost no chance. Tick-counted timers (`COMMIT_TICKS`, `justReceivedTicks`, the through-ball cache)
+also count time now (`dt / DECISION_REF_DT`), identical at 0.2 s. Measured with `scripts/step-goals.ts`,
+`scripts/step-diag.ts` (every event and stat by step) and `scripts/step-duels.ts` (tackles and dribbles by angle).

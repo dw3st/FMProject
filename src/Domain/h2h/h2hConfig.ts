@@ -6,8 +6,8 @@ export const H2H = {
   PAUSE_SECONDS: 30,
   /** Worker simulation step (real ms). */
   TICK_MS: 50,
-  /** Position frames to the browsers (real ms). */
-  FRAME_MS: 100,
+  /** Position frames to the browsers: one per sim step (`SIM_STEP`, 200 real ms). */
+  FRAME_MS: 200,
   /** Full state to the browsers (real ms), plus after every event. */
   STATE_MS: 1000,
   /** Command rate limit window (ms) and commands per window per socket. */

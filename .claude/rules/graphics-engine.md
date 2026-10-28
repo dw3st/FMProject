@@ -30,7 +30,7 @@ alwaysApply: false
 - `ballHeight.ts` — illustrative ball height for high balls and shots (raised ball + ground shadow)
 - `pitchEffects.ts` — pure effect queue (shot, goal, foul, card, offside) and ball trail, on a real-time clock frozen while paused
 - `effectsRender.ts` — Pixi drawing of the effects and the trail
-- `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions
+- `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions. The step is `SIM_STEP` = 0.2 real s (4.36, the same step as `simulateMatch`), so the drawing at 60 FPS always runs one step behind the engine. A jump bigger than `TELEPORT_YDS` (4, players; they move at most ~1.5 yd per step) or `BALL_TELEPORT_YDS` (30, ball; passes ~9 yd, shots up to ~27 yd per step) is drawn at once
 - `ballSpin.ts` — pure seam-spin angle of the ball (distance rolled / radius; none paused or on a jump)
 - `GameInterface/uiStateThrottle.ts` — throttles React state echoes of the match so a fast simulation does not re-render every step
 - `pitchMirror.ts` — `mirrorX` / `mirrorY`: the live match draws the pitch turned 180° (x and y; a reflection on x alone would draw every left winger on his team's right, #142) when the user (engine team A) plays away (#98, `PixiPitch` `mirror` prop), so the home side attacks the way it is listed. Drawing only: `toPixel` and the click inverse go through it; nothing derived from yards may assume "x = 0 is drawn on the left" (the goal-net bulge reads the drawn side). The `GameState` never changes
@@ -177,6 +177,6 @@ desmontagem.
 
 `PixiPitch` prop `remote` (`RemoteFeed`, read at mount): the pitch never calls `advanceSim`; it draws the latest
 `GameState` from the server and the positions of the last two `h2h_frame`s blended by the real time since the newest
-one (`remoteInterp.ts`: `remotePositions`, `remoteDrawnBall`, `withFramePositions`; step = `H2H.FRAME_MS`, 100 ms),
+one (`remoteInterp.ts`: `remotePositions`, `remoteDrawnBall`, `withFramePositions`; step = `H2H.FRAME_MS`, 200 ms, one frame per sim step),
 limited to 1, so a late frame freezes on the last one instead of extrapolating. One frame of delay buys a smooth
 drawing whatever the network jitter. Drawing only; absent = the pitch runs the match itself, as always.

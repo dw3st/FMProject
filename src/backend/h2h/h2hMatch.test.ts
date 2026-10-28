@@ -72,12 +72,12 @@ describe("createH2HMatch", () => {
     expect(() => structuredClone(out)).not.toThrow();
   }, 60_000);
 
-  test("frames every 100 ms and a state every second at 1x", () => {
+  test("a frame per sim step (200 ms) and a state every second at 1x", () => {
     match = createH2HMatch(input());
     const out: WorkerOut[] = [];
     for (let i = 0; i < 20; i++) out.push(...match.tick(50)); // 1 s, still in the pre-match presentation
     expect(match.state.matchPhase).toBe("preMatch");
-    expect(ofType(out, "frame")).toHaveLength(10);
+    expect(ofType(out, "frame")).toHaveLength(5);
     expect(ofType(out, "state")).toHaveLength(1);
     expect(ofType(out, "frame").at(-1)!.players.length).toBe(22);
   });
