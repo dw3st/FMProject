@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.15",
+    date: "2026-10-28",
+    items: [
+      { pt: "Pênalti: a mira corre sozinha pelo gol e você acerta o momento do chute junto com a força.", en: "Penalties: the aim moves across the goal on its own and you time the kick together with the power." },
+      { pt: "Bandeirões da torcida numa cor só, a principal do clube, com o escudo.", en: "Fans' banners in one colour, the club's main one, with the crest." },
+      { pt: "Banco de reservas refeito no estilo da torcida, fora do gramado.", en: "Bench redrawn in the crowd's style, off the pitch." },
+    ],
+  },
+  {
     version: "4.38.14",
     date: "2026-10-28",
     items: [

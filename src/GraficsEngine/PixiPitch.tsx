@@ -5,7 +5,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { bannerOffset, CROWD_MOTION, fanLooks, fanPose, handFlagAngle, standBanners, type StandBanner } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
-import { benchKits, benchLook, benchPose, benchRows, benchShown } from "@/GraficsEngine/benchView";
+import { benchKits, benchLayout, benchLook, benchPose, benchShown } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
@@ -1673,63 +1673,75 @@ export function PixiPitch({
       /** Last goal per team (effects clock), for the bench celebration. */
       let benchGoal: { team: TeamId; at: number } | null = null;
       const unsubBenchGoal = gameBus.on("goalScored", (e) => { benchGoal = { team: e.team, at: effectNow }; });
+      /** The substitutes, drawn like the crowd: one atlas of figures, sprites tinted in the kit. */
+      const benchAtlas = buildCrowdAtlas(0xffffff, 0xffffff);
+      const benchSource = new CanvasSource({ resource: benchAtlas.canvas, transparent: true });
+      const benchFrames = bindAtlas(benchAtlas, benchSource);
+      const benchPeople = new Container();
+      benchPeople.zIndex = -0.69;
+      benchPeople.eventMode = 'none';
+      world.addChild(benchPeople);
+      type BenchFigure = { body: Sprite; head: Sprite };
+      const benchPool: BenchFigure[] = [];
+      const benchFigure = (i: number): BenchFigure => {
+        while (benchPool.length <= i) {
+          const body = new Sprite(benchFrames.body[0]);
+          const head = new Sprite(benchFrames.heads[0]!);
+          for (const sp of [body, head]) sp.anchor.set(0.5, FIGURE_FRAME.FOOT_Y / FIGURE_FRAME.SIZE);
+          benchPeople.addChild(body, head);
+          benchPool.push({ body, head });
+        }
+        return benchPool[i]!;
+      };
       /**
-       * The benches (4.38.14): a dugout seen from above with the substitutes as people (`benchView.ts`), looking at the
-       * ball, fidgeting, up with the arms raised when their team scores; keepers in their own colours. Every frame.
+       * The benches (4.38.16): a dugout just off the pitch (never over the touchline) with the substitutes as crowd-style
+       * figures in the kit, fidgeting, up now and then, arms raised when their team scores; keepers in their own colours.
        */
       const drawBenches = (ballPx: { x: number; y: number }) => {
         const st = stateRef.current;
         benchGfx.clear();
-        if (!(officialsOn && extrasRef.current)) return;
-        for (const side of ["left", "right"] as const) {
-          const team = teamOfDrawnSide(side);
-          const b = benchRect(coachSpot[side], side, m, markerR);
-          const all = team === "A" ? st.benchA : st.benchB;
-          const bench = benchShown(all.map((p) => p.role)).map((i) => all[i]!);
-          const perRow = Math.max(1, Math.ceil(bench.length / 2));
-          const r = Math.min(markerR * 0.7, b.w / (2.3 * perRow));
-          const toPitch: 1 | -1 = b.y + b.h / 2 > m.marginY + m.height / 2 ? -1 : 1;
-          const cy = b.y + b.h / 2;
-          // Dugout: floor, the bench along the back, side walls and the acrylic roof with a light front edge.
-          const pad = r * 0.7;
-          const dw = b.w + pad * 2, dh = r * 4.2 + pad;
-          const dx = b.x - pad, dy = cy - dh / 2;
-          benchGfx.roundRect(dx, dy, dw, dh, 4).fill({ color: 0x141b24, alpha: 0.92 });
-          const backY = toPitch === -1 ? dy + dh - r * 0.55 : dy + r * 0.1;
-          benchGfx.rect(dx + 2, backY, dw - 4, r * 0.45).fill({ color: 0x2c3a4a });
-          benchGfx.rect(dx, dy, 2, dh).fill(0x3a4756).rect(dx + dw - 2, dy, 2, dh).fill(0x3a4756);
-          benchGfx.roundRect(dx, dy, dw, dh, 4).fill({ color: 0xbfd8ea, alpha: 0.07 });
-          const frontY = toPitch === -1 ? dy : dy + dh;
-          benchGfx.moveTo(dx + 2, frontY).lineTo(dx + dw - 2, frontY).stroke({ width: 1.5, color: 0xdcecf7, alpha: 0.55 });
-          const kit = team === "A" ? fillA : fillB;
-          const kits = benchKits(bench.map((p) => p.role), kit);
-          const goalAge = benchGoal && benchGoal.team === team ? effectNow - benchGoal.at : null;
-          benchRows(bench.length, b.x + b.w / 2, cy, b.w, r, toPitch).forEach((seat, i) => {
-            const p = bench[i]!;
-            const look = benchLook(String(p.rosterId ?? p.id));
-            const pose = benchPose(look.phase, effectNow, ballPx.x - seat.x, toPitch, goalAge);
-            const grow = 1 + 0.18 * pose.up;
-            const sx = seat.x, sy = seat.y + toPitch * pose.up * r * 0.45 + pose.bob * r;
-            // Shadow, then the arms (raised: two hands beside the head), the shoulders, the head (hair on top, the face
-            // toward where he looks).
-            benchGfx.ellipse(sx + r * 0.15, sy + r * 0.25, r * 1.05 * grow, r * 0.7 * grow).fill({ color: 0x000000, alpha: 0.3 });
-            if (pose.arms > 0.05) {
-              const ay = sy + toPitch * r * (0.35 + 0.55 * pose.arms);
-              for (const k of [-1, 1]) {
-                benchGfx.moveTo(sx + k * r * 0.75, sy).lineTo(sx + k * r * 0.9, ay).stroke({ width: r * 0.32, color: kits[i]!, cap: "round" });
-                benchGfx.circle(sx + k * r * 0.9, ay, r * 0.2).fill(look.skin);
+        let used = 0;
+        if (officialsOn && extrasRef.current) {
+          const touchY = m.marginY + m.height;
+          const bottom = m.stand ? m.stand.outer.y + m.stand.outer.h - 1 : canvasHeight - 1;
+          for (const side of ["left", "right"] as const) {
+            const team = teamOfDrawnSide(side);
+            const b = benchRect(coachSpot[side], side, m, markerR);
+            const all = team === "A" ? st.benchA : st.benchB;
+            const bench = benchShown(all.map((p) => p.role)).map((i) => all[i]!);
+            const L = benchLayout(bench.length, b.x + b.w / 2, b.w, touchY, bottom, 2, markerR * 1.9);
+            const box = L.box;
+            // Dugout: dark floor, a bench along the back, side walls, the acrylic roof edge toward the pitch.
+            benchGfx.roundRect(box.x - 3, box.y, box.w + 6, box.h, 3).fill({ color: 0x141b24, alpha: 0.9 });
+            benchGfx.rect(box.x, box.y + box.h * 0.66, box.w, box.h * 0.12).fill({ color: 0x2c3a4a });
+            benchGfx.rect(box.x - 3, box.y, 2, box.h).fill(0x3a4756).rect(box.x + box.w + 1, box.y, 2, box.h).fill(0x3a4756);
+            benchGfx.moveTo(box.x - 3, box.y + 0.75).lineTo(box.x + box.w + 3, box.y + 0.75).stroke({ width: 1.5, color: 0xdcecf7, alpha: 0.6 });
+            const kit = team === "A" ? fillA : fillB;
+            const kits = benchKits(bench.map((p) => p.role), kit);
+            const goalAge = benchGoal && benchGoal.team === team ? effectNow - benchGoal.at : null;
+            const scale = L.fig / FIGURE_FRAME.SCALE;
+            // Front row (higher on screen) last, so it stands in front of the back row.
+            const order = L.seats.map((_, i) => i).sort((a, c) => L.seats[c]!.y - L.seats[a]!.y);
+            for (const i of order) {
+              const seat = L.seats[i]!;
+              const p = bench[i]!;
+              const look = benchLook(String(p.rosterId ?? p.id));
+              const pose = benchPose(look.phase, effectNow, ballPx.x - seat.x, -1, goalAge);
+              const f = benchFigure(used++);
+              const y = seat.y - pose.up * L.fig * 0.22 + pose.bob * L.fig * 0.4;
+              const up = pose.arms > 0.4 ? 1 : 0;
+              f.body.texture = benchFrames.body[up];
+              f.body.tint = kits[i]!;
+              f.head.texture = benchFrames.heads[headFrame(look.skin, look.hair)]!;
+              for (const sp of [f.body, f.head]) {
+                sp.visible = true;
+                sp.scale.set(scale);
+                sp.position.set(seat.x + pose.lookX * L.fig * 0.1, y);
               }
             }
-            benchGfx.ellipse(sx, sy, r * 1.0 * grow, r * 0.62 * grow).fill(kits[i]!).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
-            const hx = sx + pose.lookX * r, hy = sy + pose.lookY * r;
-            if (look.hair !== null) {
-              benchGfx.circle(hx, hy, r * 0.46 * grow).fill(look.skin);
-              benchGfx.circle(hx - pose.lookX * r * 0.35, hy - pose.lookY * r * 0.35, r * 0.4 * grow).fill(look.hair);
-            } else {
-              benchGfx.circle(hx, hy, r * 0.44 * grow).fill(look.skin);
-            }
-          });
+          }
         }
+        for (let i = used; i < benchPool.length; i++) { benchPool[i]!.body.visible = false; benchPool[i]!.head.visible = false; }
       };
       const coachWalkHalf = m.width * COACH_WALK_FRAC;
 
@@ -2675,12 +2687,9 @@ export function PixiPitch({
             for (let i = 0; i < B.STRIPS; i++) {
               const o0 = bannerOffset(b, i, effectNow), o1 = bannerOffset(b, i + 1, effectNow);
               const x0 = b.x + i * strip, x1 = x0 + strip + 0.5;
-              // The club's main colour, a thin line of the second colour along the edges.
+              // One colour only: the club's main colour (the crest goes in the middle).
               flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
                 .fill({ color: flagColor, alpha: 0.97 });
-              const e = b.h * 0.1;
-              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + e + o1).lineTo(x0, b.y + e + o0).fill({ color: flagColor2 });
-              flagGfx.moveTo(x0, b.y + b.h - e + o0).lineTo(x1, b.y + b.h - e + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0).fill({ color: flagColor2 });
               // Folds: a soft shade on the strips going down.
               if (o1 > o0) flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
                 .fill({ color: 0x000000, alpha: Math.min(0.18, (o1 - o0) / Math.max(1, b.h) * 2) });
@@ -2977,6 +2986,7 @@ export function PixiPitch({
         unsubArFlag();
         unsubCoachGoal();
         unsubBenchGoal();
+        benchSource.destroy();
         unsubAnimCelebrate();
         unsubStretcher();
         redrawCrowdRef.current = null;

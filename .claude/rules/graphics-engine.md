@@ -226,11 +226,12 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 
 ## Banco de reservas e bandeiras do clube (4.38.14)
 
-- `benchView.ts` (puro, com teste): o banco mostra até 9 reservas (`benchShown`: até dois goleiros, depois os outros na
+- `benchView.ts` (puro, com teste; desde a 4.38.15 no estilo da torcida: as mesmas figuras do atlas `buildCrowdAtlas`, sprites tingidos no uniforme, num banco sempre abaixo da linha lateral, `benchLayout`): o banco mostra até 9 reservas (`benchShown`: até dois goleiros, depois os outros na
   ordem do elenco) em duas fileiras (`benchRows`) dentro de um banco visto de cima (piso, encosto, paredes, cobertura).
   Cada reserva é uma pessoa (ombros na cor do uniforme, cabeça com cabelo, `benchLook` pelo id) que olha a bola, se
   mexe e às vezes levanta (`benchPose`), e levanta com os braços para cima num gol do time. Goleiros com cores próprias
   (`benchKits`, uma cor por goleiro, nunca perto do uniforme). Redesenhado todo quadro com `extras` e Officials.
 - Bandeiras: `PitchStadium.homeColors` (as duas cores do mandante) e `homeCrest` (URL do escudo, `squadLogoUrl`). As
   bandeirinhas e os bandeirões ficam na cor principal com o escudo no meio (`loadCrestCanvas`, sprites na `crestLayer`
-  que seguem o pano); o bandeirão tem uma faixa fina da segunda cor nas bordas; cachecóis e bonés nas duas cores.
+  que seguem o pano), uma cor só; cachecóis e bonés nas duas cores.
+- Pênalti 2D (4.38.15): a mira corre sozinha pelo gol (`aimAt`, períodos de 2,3 s e 1,7 s, fora de passo com a barra de força de 1,4 s); um clique (ou espaço) chuta com a mira e a força daquele instante.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { benchKits, benchLook, benchPose, benchRows, benchShown, BENCH_VIEW } from "@/GraficsEngine/benchView";
+import { benchKits, benchLook, benchPose, benchLayout, benchRows, benchShown, BENCH_VIEW } from "@/GraficsEngine/benchView";
 
 describe("bench view", () => {
   test("keepers wear their own colours, two keepers two colours, never close to the kit", () => {
@@ -43,5 +43,17 @@ describe("bench layout", () => {
     expect(seats.length).toBe(9);
     expect(seats.filter((s) => s.y > 50).length).toBe(5); // pitch above: back row below
     expect(seats.filter((s) => s.y < 50).length).toBe(4);
+  });
+});
+
+describe("bench off the pitch", () => {
+  test("the dugout starts below the touchline and every figure stands inside it", () => {
+    const L = benchLayout(9, 300, 120, 700, 740, 2, 20);
+    expect(L.box.y).toBeGreaterThan(700);
+    for (const s of L.seats) {
+      expect(s.y - L.fig * 0.9).toBeGreaterThan(700 - L.fig);
+      expect(s.y).toBeLessThanOrEqual(740);
+      expect(Math.abs(s.x - 300)).toBeLessThanOrEqual(60);
+    }
   });
 });

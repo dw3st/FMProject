@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aiDive, aiKick, areaOf, ballPoint, parsePenaltyChoice, powerAt, resolveKick, saveChance } from "@/Domain/penalty/penaltyKick";
+import { aimAt, aiDive, aiKick, areaOf, ballPoint, parsePenaltyChoice, powerAt, resolveKick, saveChance } from "@/Domain/penalty/penaltyKick";
 import { mulberry32 } from "@/Domain/rng";
 
 const avgKeeper = { reflex: 0.5, diving: 0.5 };
@@ -68,5 +68,17 @@ describe("parsePenaltyChoice (socket)", () => {
     expect(parsePenaltyChoice({ kick: { aim: { x: 0, y: 0.4 }, power: 0.5, extra: 1 } })).toBeNull();
     expect(parsePenaltyChoice({ dive: "low-mid", kick: {} })).toBeNull();
     expect(parsePenaltyChoice(null)).toBeNull();
+  });
+});
+
+describe("moving aim", () => {
+  test("stays inside the goal and moves on its own", () => {
+    const pts = Array.from({ length: 200 }, (_, i) => aimAt(i * 0.05));
+    for (const p of pts) {
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(1);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeLessThanOrEqual(1);
+    }
+    expect(new Set(pts.map((p) => p.x.toFixed(2))).size).toBeGreaterThan(15);
   });
 });

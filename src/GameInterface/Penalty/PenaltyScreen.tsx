@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PENALTY_2D, powerAt, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
+import { aimAt, PENALTY_2D, powerAt, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import { clamp } from "@/Domain/math";
 import { shirtName } from "@/Domain/shirtName";
 import { PenaltyPitch } from "@/GameInterface/Penalty/PenaltyPitch";
@@ -8,7 +8,7 @@ import { SCENE, pxToGoal, shotDuration } from "@/GameInterface/Penalty/penaltySc
 
 /**
  * A penalty in 2D (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`), seen from behind the taker.
- * `role` "kick": the manager aims (click or arrows + Enter) and releases the power bar (click or space).
+ * `role` "kick": the aim sweeps the goal on its own and the power bar runs; one click (or space) shoots at that aim and power.
  * `role` "save": he picks one of six areas before the clock runs out (click or arrows + Enter).
  * `choose` turns his choice into the outcome: resolved in the browser (solo) or by the server (two managers).
  */
@@ -40,7 +40,7 @@ type Phase = "aim" | "power" | "dive" | "flight" | "result";
 export function PenaltyScreen(props: PenaltyScreenProps) {
   const { t } = useTranslation();
   const { role, choose, onDone } = props;
-  const [phase, setPhase] = useState<Phase>(role === "kick" ? "aim" : "dive");
+  const [phase, setPhase] = useState<Phase>(role === "kick" ? "power" : "dive");
   const [aim, setAim] = useState<{ x: number; y: number }>({ x: 0, y: 0.35 });
   const [power, setPower] = useState(0);
   const [area, setArea] = useState<GoalArea>("low-mid");
@@ -65,13 +65,15 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
     void choose(choice).then(finish);
   }, [choose, finish]);
 
-  // Power bar: a triangle wave while the manager holds the shot.
+  // Power bar (a triangle wave) and the aim (sweeping the goal) run together until the click.
   useEffect(() => {
     if (phase !== "power") return;
     startRef.current = performance.now();
     let raf = 0;
     const step = () => {
-      setPower(powerAt((performance.now() - startRef.current) / 1000));
+      const s = (performance.now() - startRef.current) / 1000;
+      setPower(powerAt(s));
+      setAim(aimAt(s));
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -91,11 +93,14 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
   }, [phase, send]);
 
   const release = useCallback(() => {
-    const p = powerAt((performance.now() - startRef.current) / 1000);
+    const s = (performance.now() - startRef.current) / 1000;
+    const p = powerAt(s);
+    const a = aimAt(s);
     setPower(p);
+    setAim(a);
     powerRef.current = p;
-    send({ kick: { aim, power: p } });
-  }, [aim, send]);
+    send({ kick: { aim: a, power: p } });
+  }, [send]);
 
   // Keyboard: arrows move the aim / the area, Enter confirms, space releases the power bar.
   useEffect(() => {

@@ -1,10 +1,10 @@
 /**
- * The substitutes' bench (4.38.14, tester report: "looks like a blister pack"): a dugout seen from above, the
- * substitutes sitting in it as people (shoulders in the kit, a head with hair), looking toward the ball, fidgeting,
- * and jumping up with the arms raised when their team scores. Goalkeepers wear their own colours (two keepers, two
- * colours). Pure; drawn by `PixiPitch` with the extras.
+ * The substitutes' bench (4.38.14-16, tester reports): a dugout just off the pitch with the substitutes drawn like the
+ * crowd (the same small figures, in the kit), fidgeting, now and then up, and jumping with the arms raised when their
+ * team scores. Goalkeepers wear their own colours (two keepers, two colours). Pure; drawn by `PixiPitch` with the extras.
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { CROWD_MOTION } from "@/GraficsEngine/crowdMotion";
 
 export const BENCH_VIEW = {
   /** Keeper kit colours, in order; a colour too close to the outfield kit is skipped. */
@@ -42,9 +42,6 @@ export function benchRows(n: number, cx: number, cy: number, w: number, r: numbe
   return out;
 }
 
-const HAIR = [0x1b1410, 0x3a2616, 0x6b4423, 0xa8742f, 0xd8c08a, 0x2b2b2b];
-const SKIN = [0xf1c9a5, 0xe0ac83, 0xc68b5e, 0x9b6a42, 0x6f4527, 0x4a2c17];
-
 function dist(a: number, b: number): number {
   const dr = ((a >> 16) & 255) - ((b >> 16) & 255), dg = ((a >> 8) & 255) - ((b >> 8) & 255), db = (a & 255) - (b & 255);
   return Math.sqrt(dr * dr + dg * dg + db * db);
@@ -57,12 +54,36 @@ export function benchKits(roles: readonly string[], kit: number): number[] {
   return roles.map((r) => (r === "GK" ? keeperKits[k++ % Math.max(1, keeperKits.length)] ?? BENCH_VIEW.KEEPER_KITS[0] : kit));
 }
 
-/** Skin and hair of a substitute, stable per player. */
-export function benchLook(id: string): { skin: number; hair: number | null; phase: number } {
+/** Skin and hair of a substitute (indexes of the crowd atlas: hair HAIRS = bald), stable per player. */
+export function benchLook(id: string): { skin: number; hair: number; phase: number } {
   const r = mulberry32(seedFrom(`bench:${id}`));
-  const skin = SKIN[Math.floor(r() * SKIN.length)]!;
-  const hair = r() < 0.12 ? null : HAIR[Math.floor(r() * HAIR.length)]!;
+  const skin = Math.floor(r() * CROWD_MOTION.SKINS);
+  const hair = r() < 0.12 ? CROWD_MOTION.HAIRS : Math.floor(r() * CROWD_MOTION.HAIRS);
   return { skin, hair, phase: r() * Math.PI * 2 };
+}
+
+/**
+ * The dugout of one bench, always off the pitch: from `gap` px below the bottom touchline down to `bottom` (the canvas
+ * edge), `w` wide centred on `cx`. Crowd-style figures (height `fig`, feet at the seat) in two rows: the first half on
+ * the back row (the lower one), the rest in front.
+ */
+export function benchLayout(n: number, cx: number, w: number, touchY: number, bottom: number, gap: number, maxFig: number): {
+  box: { x: number; y: number; w: number; h: number }; fig: number; seats: { x: number; y: number }[];
+} {
+  const y = touchY + gap;
+  const h = Math.max(4, bottom - y);
+  const back = Math.ceil(n / 2);
+  const fig = Math.max(3, Math.min(maxFig, h / 1.55, w / Math.max(1, back) / 0.72));
+  const step = w / Math.max(1, back);
+  const seats: { x: number; y: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const row = i < back ? 1 : 0;
+    const k = row === 1 ? i : i - back;
+    const inRow = row === 1 ? back : n - back;
+    const x = cx + (k - (inRow - 1) / 2) * step;
+    seats.push({ x, y: y + (row === 1 ? h * 0.97 : h * 0.62) });
+  }
+  return { box: { x: cx - w / 2, y, w, h }, fig, seats };
 }
 
 /** Pose of a substitute at `now`: head offset (radii) toward the ball, how far up (0 sitting, 1 standing), arms up. */

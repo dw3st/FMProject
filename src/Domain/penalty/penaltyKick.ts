@@ -25,6 +25,9 @@ export const PENALTY_2D = {
   MAX_SAVE: 0.95,
   /** Power bar: seconds for a full up-and-down cycle. */
   POWER_CYCLE_S: 1.4,
+  /** Moving aim (4.38.14): seconds per sweep across the goal and up/down, out of step with the power bar. */
+  AIM_CYCLE_X_S: 2.3,
+  AIM_CYCLE_Y_S: 1.7,
   /** Seconds the human keeper has to pick an area. */
   DIVE_WINDOW_S: 4,
   /** AI choices: where the AI shoots and where the AI keeper dives (weights per area). */
@@ -170,6 +173,17 @@ export function parsePenaltyChoice(v: unknown): PenaltyChoice | null {
   if (!aim || typeof aim !== "object" || Object.keys(aim).some((x) => x !== "x" && x !== "y")) return null;
   if (!num(aim.x, -1.5, 1.5) || !num(aim.y, 0, 1.5) || !num(k.power, 0, 1)) return null;
   return { kick: { aim: { x: aim.x as number, y: aim.y as number }, power: k.power as number } };
+}
+
+/**
+ * The aim at `t` seconds: it sweeps the goal on its own (wide to the posts, low to just under the bar), so the taker only
+ * times one click against the aim and the power bar together.
+ */
+export function aimAt(t: number): { x: number; y: number } {
+  return {
+    x: Math.sin((2 * Math.PI * t) / PENALTY_2D.AIM_CYCLE_X_S) * 0.95,
+    y: 0.45 + 0.45 * Math.sin((2 * Math.PI * t) / PENALTY_2D.AIM_CYCLE_Y_S + 1),
+  };
 }
 
 /** Power bar value at `t` seconds after it started (a triangle wave 0 → 1 → 0). */
