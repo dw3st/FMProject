@@ -108,7 +108,8 @@ export const BALL_TELEPORT_YDS = 30;
 
 /** Stadium band around the pitch (spec 2026-10-08-match-visual-design.md). */
 export const STADIUM = {
-  PITCH_SHRINK: 0.9,
+  /** 0.78 since 4.38.18 (mock option B): room for a two-tier stand on every side. */
+  PITCH_SHRINK: 0.78,
   /** Run-off between the touchline and the stand (officials, technical areas). */
   RUNOFF_YDS: 1.5,
   /** Behind the goals: past the net. */
@@ -120,6 +121,8 @@ export const STADIUM = {
   BENCH_RUNOFF_YDS: 4.7,
   AR_LANE_YDS: 1.8,
   SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4,
+  /** Two tiers: a walkway of RING_ROWS cells halfway back in a stand of at least RING_MIN_ROWS cells. */
+  RING_ROWS: 2, RING_MIN_ROWS: 9, RING_COLOR: 0x3a4654,
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,
   STAND_COLOR: 0x1f2a36, CONCRETE: 0x2c3946, ROOF_EDGE: 0x445566,
   GOAL_PULSE_S: 0.6,

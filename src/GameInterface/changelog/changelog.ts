@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.18",
+    date: "2026-10-28",
+    items: [
+      { pt: "Estádio maior em volta do campo: a arquibancada tem dois anéis e a torcida aparece nos quatro lados, inclusive atrás do banco.", en: "A bigger stadium around the pitch: the stand has two tiers and the crowd shows on all four sides, behind the bench too." },
+    ],
+  },
+  {
     version: "4.38.17",
     date: "2026-10-28",
     items: [
