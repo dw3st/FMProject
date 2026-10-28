@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.23",
+    date: "2026-10-28",
+    items: [
+      { pt: "Some o risco cinza que cruzava o rosto dos jogadores na partida.", en: "The grey line across the players' faces in the match is gone." },
+    ],
+    fixes: [
+      { pt: "O rastro de um passe longo ou chute começa depois do jogador, não mais em cima dele.", en: "The trail of a long pass or shot starts past the player, no longer over him." },
+    ],
+  },
+  {
     version: "4.38.22",
     date: "2026-10-28",
     items: [

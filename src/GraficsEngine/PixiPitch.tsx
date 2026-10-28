@@ -1347,6 +1347,8 @@ export function PixiPitch({
         // Volume (4.39): a light crescent at the top, a darker rim at the bottom, over the face.
         const gloss = new Graphics()
           .ellipse(-markerR * 0.22, -markerR * 0.48, markerR * 0.52, markerR * 0.26).fill({ color: 0xffffff, alpha: MATCH_LOOK.GLOSS })
+          // After a fill Pixi keeps the last point, so an arc without a moveTo starts with a line across the face (report).
+          .moveTo(Math.cos(Math.PI * 0.15) * (markerR - 1.5), Math.sin(Math.PI * 0.15) * (markerR - 1.5))
           .arc(0, 0, markerR - 1.5, Math.PI * 0.15, Math.PI * 0.85).stroke({ width: 2, color: 0x000000, alpha: MATCH_LOOK.RIM });
         cardBadge.label = "card";
         cardBadge.visible = false;
@@ -2914,12 +2916,20 @@ export function PixiPitch({
           }
         }
         const st = stateRef.current;
+        // The trail starts once the ball has left the kicker's marker: drawn from his centre it crossed his face (report).
+        const overKicker = (sk: typeof st) => {
+          const kid = sk.shot ? sk.shot.shooterId : sk.pass?.fromId;
+          const kg = kid !== undefined ? playerGraphics.get(kid) : undefined;
+          if (!kg) return false;
+          const { px, py } = toPixel(ballPos.x, ballPos.y);
+          return Math.hypot(px - kg.x, py - kg.y) < markerR + ballR;
+        };
         pendingGoalShot = null; // a goal shot only pairs with a goalScored of the same tick
         // The trail follows the DRAWN ball: elevation in yards = h * LIFT (px = h * scale * LIFT).
         trail = liveTrail(
           pushTrail(
             trail,
-            !pausedRef.current && shouldTrail(st) ? { x: ballPos.x, y: ballPos.y - h * BALL.LIFT_PX_PER_YD } : null,
+            !pausedRef.current && shouldTrail(st) && !overKicker(st) ? { x: ballPos.x, y: ballPos.y - h * BALL.LIFT_PX_PER_YD } : null,
             effectNow,
           ),
           effectNow,
