@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.11",
+    date: "2026-10-28",
+    items: [
+      { pt: "Partida: o fôlego aparece só nos seus jogadores.", en: "Match: stamina shows only on your players." },
+      { pt: "Torcida mais animada: os setores pulam juntos no ritmo do canto, a ola passa mais vezes e bandeiras grandes tremulam nas arquibancadas da casa.", en: "Livelier crowd: sections jump together to the chant, the wave comes round more often and big flags wave over the home stands." },
+    ],
+  },
+  {
     version: "4.38.10",
     date: "2026-10-28",
     items: [

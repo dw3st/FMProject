@@ -212,6 +212,11 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   (`STAMINA_ARC`, no lugar da barra); seta de direção pela velocidade desenhada suavizada (`CHEVRON`, some parado ou num
   salto); anel dourado pulsando sob o portador (`HOLDER`).
 - **Rastro da bola:** afinando da cauda para a bola (`drawTrail`).
-- **Torcida animada** (`crowdMotion.ts`, com teste): os torcedores de cada lado são assados em blocos de
-  `TILE_SEATS` × `TILE_SEATS` lugares (`crowdTiles`); com `extras`, cada bloco balança na sua fase e a ola dá a volta a
-  cada `WAVE_EVERY_S` (`tileLift`); o pulo do gol continua por lado. Só desenho, no relógio de efeitos.
+- **Torcida animada** (`crowdMotion.ts`, com teste; mais viva na 4.38.11, estilo Winning Eleven): os torcedores de cada
+  lado são assados em blocos de `TILE_SEATS` × `TILE_SEATS` lugares (`crowdTiles`); os blocos de um setor
+  (`SECTION_TILES`) pulam juntos, cada setor na sua fase (`BOUNCE`, `BOUNCE_HZ`); a ola dá a volta a cada
+  `WAVE_EVERY_S` (`tileLift`); bandeiras grandes listradas na cor da casa tremulam nas arquibancadas laterais e no fundo
+  da casa (`standFlags`, `flagWave`, nunca no fundo visitante nem em obra nem em campo neutro). Tudo com `extras`; o pulo
+  do gol continua por lado. Só desenho, no relógio de efeitos.
+- **Fôlego só do seu time:** prop `staminaTeams` (ausente = os dois, como no `/test`); a partida ao vivo passa
+  `[mySide]`.

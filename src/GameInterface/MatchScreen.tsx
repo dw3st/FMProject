@@ -1735,6 +1735,7 @@ export function MatchScreen() {
                   coachCue={coachCue}
                   coachCard={coachCard}
                   extras
+                  staminaTeams={[mySide]}
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id } : null}
                   lighting={matchLightingProp}
                 />

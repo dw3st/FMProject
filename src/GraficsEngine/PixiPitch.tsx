@@ -3,7 +3,7 @@ import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
-import { crowdTiles, CROWD_MOTION, tileLift } from "@/GraficsEngine/crowdMotion";
+import { crowdTiles, CROWD_MOTION, flagWave, standFlags, tileLift, type StandFlag } from "@/GraficsEngine/crowdMotion";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
@@ -442,6 +442,8 @@ interface Props {
    * the net shaking, the scoring side's fans jumping and the scorer's celebration. Read every frame.
    */
   extras?: boolean;
+  /** Teams whose players show the stamina arc (absent = both; the live match passes only the user's side). */
+  staminaTeams?: TeamId[];
   /**
    * Remote mode (multiplayer part 7): the server runs the match. The pitch never simulates; it draws the state it
    * gets through `matchStateSync` (adopted as is) and blends the players and the ball between the last two position
@@ -507,6 +509,7 @@ export function PixiPitch({
   coachCue = null,
   coachCard = null,
   extras = false,
+  staminaTeams,
   remote = null,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
@@ -532,6 +535,8 @@ export function PixiPitch({
   const lightGenRef              = useRef(0);
   const coachesRef               = useRef(coaches);
   const extrasRef                = useRef(extras);
+  const staminaTeamsRef          = useRef(staminaTeams);
+  staminaTeamsRef.current = staminaTeams;
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
   const redrawCrowdRef           = useRef<(() => void) | null>(null);
   /** Set by the Pixi setup: redraws the pitch surface and lines from `pitchRef`. */
@@ -666,6 +671,11 @@ export function PixiPitch({
       /** Height (px) of a fans' jump: under half a seat. */
       let crowdJumpAmp = 0;
       let crowdDecor: Graphics | null = null;
+      /** Waving flags over the home stands (crowd motion), set by every bake; drawn every frame with extras. */
+      let standFlagSpots: StandFlag[] = [];
+      let flagColor = fillA;
+      const flagGfx = new Graphics();
+      flagGfx.eventMode = 'none';
       /** Phone light candidates of the filled seats (stadium atmosphere), set by every bake. */
       let phones: PhoneLight[] = [];
       const bakeCrowd = () => {
@@ -694,6 +704,8 @@ export function PixiPitch({
           works,
         });
         crowdJumpAmp = Math.max(1.5, seatCellPx(m.stand) * 0.45);
+        flagColor = st.homeTeam === "A" ? fillA : fillB;
+        standFlagSpots = st.neutral ? [] : standFlags(standSideRects(m.stand), homeLeft ? "left" : "right", st.seed, works);
         phones = phoneLights(seats, st.seed);
         const tilePx = seatCellPx(m.stand) * CROWD_MOTION.TILE_SEATS;
         for (const k of ["home", "away"] as const) {
@@ -717,6 +729,7 @@ export function PixiPitch({
             crowdFans[k].push({ sprite, baseY: box.y, cx: tile.cx, cy: tile.cy, phase: tile.phase });
           }
         }
+        crowdLayer.addChild(flagGfx); // flags over the fans
         // The manager's decorations (achievements): over the home end, unless it is under works.
         crowdDecor?.destroy();
         crowdDecor = null;
@@ -1996,14 +2009,15 @@ export function PixiPitch({
               .ellipse(px, py + 1, rr, rr * 0.85)
               .stroke({ width: 2, color: H.COLOR, alpha: H.ALPHA + 0.2 * pulse });
           }
-          // Stamina as a thin arc round the marker, from the bottom-left clockwise.
+          // Stamina as a thin arc round the marker, from the bottom-left clockwise (only the user's players live).
           const A = MATCH_LOOK.STAMINA_ARC;
+          const showStamina = !staminaTeamsRef.current || staminaTeamsRef.current.includes(player.team);
           const ar = markerR + A.GAP;
           const a0 = Math.PI * 0.75, span = Math.PI * 1.5;
-          fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
+          if (showStamina) fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
             .arc(px, py, ar, a0, a0 + span).stroke({ width: A.W, color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
           const fill = fatigueFill(player.energy);
-          if (fill > 0) {
+          if (showStamina && fill > 0) {
             fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
               .arc(px, py, ar, a0, a0 + span * fill).stroke({ width: A.W, color: fatigueColor(player.energy), cap: "round" });
           }
@@ -2509,6 +2523,24 @@ export function PixiPitch({
         // The stand sways and the wave goes round (with extras); the scoring side jumps.
         const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };
         const moving = extrasRef.current;
+        flagGfx.clear();
+        if (moving && m.stand && standFlagSpots.length > 0) {
+          const F = CROWD_MOTION.FLAGS;
+          const cell = seatCellPx(m.stand);
+          const fw = cell * F.W, fh = cell * F.H, pole = cell * F.POLE, strip = fw / F.STRIPS;
+          for (const f of standFlagSpots) {
+            const top = f.y - pole;
+            flagGfx.moveTo(f.x, f.y).lineTo(f.x, top - fh * 0.2).stroke({ width: 1.2, color: 0xd9d9d9 });
+            for (let k = 0; k < F.STRIPS; k++) {
+              const y0 = top + flagWave(f, k, effectNow, fh * 0.35);
+              const y1 = top + flagWave(f, k + 1, effectNow, fh * 0.35);
+              const x0 = f.x + k * strip;
+              const color = Math.floor(k / 2) % 2 === 0 ? flagColor : 0xffffff;
+              flagGfx.moveTo(x0, y0).lineTo(x0 + strip + 0.5, y1).lineTo(x0 + strip + 0.5, y1 + fh).lineTo(x0, y0 + fh)
+                .fill({ color, alpha: 0.95 });
+            }
+          }
+        }
         for (const k of ["home", "away"] as const) {
           const jump = crowdJump?.side === k ? crowdJumpPx(effectNow - crowdJump.at, crowdJumpAmp) : 0;
           for (const f of crowdFans[k]) {
