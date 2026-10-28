@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { logoUrlFromIndex } from "@/Domain/world/logos";
+import { LOGO_VERSION, logoUrlFromIndex } from "@/Domain/world/logos";
 
 test("logoUrlFromIndex", () => {
   const idx = { "33": "premier_league/manchester_united", es_1: "espn/es_1" };
-  expect(logoUrlFromIndex(idx, "33")).toBe("/api/logos/premier_league/manchester_united");
-  expect(logoUrlFromIndex(idx, "es_1")).toBe("/api/logos/espn/es_1");
+  expect(logoUrlFromIndex(idx, "33")).toBe(`/api/logos/premier_league/manchester_united?v=${LOGO_VERSION}`);
+  expect(logoUrlFromIndex(idx, "es_1")).toBe(`/api/logos/espn/es_1?v=${LOGO_VERSION}`);
   expect(logoUrlFromIndex(idx, "nope")).toBeUndefined();
 });
 

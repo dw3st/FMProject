@@ -94,6 +94,12 @@ export interface PlayerStats {
   longBalls:                number;
   /** Long balls whose first contact was won by the passing team. */
   longBallsCompleted:       number;
+  /** Keeper came off his line: sweeper chase, 1v1 rush, wide high ball (`Keeper.ts`). */
+  keeperSorties:            number;
+  /** Loose balls won by the keeper outside his box. */
+  keeperSweeps:             number;
+  /** Balls won by the keeper at a holder's feet. */
+  keeperSmothers:           number;
   // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
   /** Corners won by the team, credited to the taker. */
   corners:                  number;
@@ -189,6 +195,9 @@ function emptyStats(): PlayerStats {
     headerGoals:              0,
     longBalls:                0,
     longBallsCompleted:       0,
+    keeperSorties:            0,
+    keeperSweeps:             0,
+    keeperSmothers:           0,
     corners:                  0,
     freeKicks:                0,
     directFreeKickShots:      0,
@@ -420,6 +429,11 @@ gameBus.on('aerialDuel', e => {
 });
 gameBus.on('header', e => { get(e.player).headers++; notify(); });
 
+// ── Active keeper stats ───────────────────────────────────────────────────────
+gameBus.on('keeperSortie',  e => { get(e.keeperId).keeperSorties++; notify(); });
+gameBus.on('keeperSweep',   e => { get(e.keeperId).keeperSweeps++; notify(); });
+gameBus.on('keeperSmother', e => { get(e.keeperId).keeperSmothers++; notify(); });
+
 // ── Set-piece stats ───────────────────────────────────────────────────────────
 gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
 gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });
@@ -505,6 +519,9 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.headerGoals              += stats.headerGoals;
     result.longBalls                += stats.longBalls;
     result.longBallsCompleted       += stats.longBallsCompleted;
+    result.keeperSorties            += stats.keeperSorties;
+    result.keeperSweeps             += stats.keeperSweeps;
+    result.keeperSmothers           += stats.keeperSmothers;
     result.corners                  += stats.corners;
     result.freeKicks                += stats.freeKicks;
     result.directFreeKickShots      += stats.directFreeKickShots;

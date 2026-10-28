@@ -6,7 +6,7 @@ import {
   feeForSaleScore,
   saleContext,
   saleDecisionScore,
-  squadDepthBlocked,
+  humanBuyBlocked,
   type TransferAcceptReason,
   type TransferRejectReason,
 } from "@/Domain/transfer/transferAcceptance";
@@ -62,7 +62,7 @@ export function respondToOffer(args: {
 }): OfferResponse {
   const { player, seller, fee } = args;
   const neg = attributeReduce(args.negotiation);
-  if (squadDepthBlocked(player, seller, false)) return { kind: "reject", reason: "squadDepth" };
+  if (humanBuyBlocked(player, seller)) return { kind: "reject", reason: "squadDepth" };
   const ctx = saleContext(player, seller, args.sellPriority, args.buyer ? { buyer: args.buyer } : {});
   const mult = 1 + sellOnValueFraction(args.sellOnPct ?? 0, player.age);
   const effective = (fee * mult) / neg;

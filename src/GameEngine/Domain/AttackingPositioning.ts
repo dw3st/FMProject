@@ -12,6 +12,8 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { keeperAttackingTarget } from '@/GameEngine/Domain/Keeper';
+import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import type { GamePlayer, Formation } from '@/GameEngine/types';
 import { slotBasePosition } from '@/GameEngine/FormationSlots';
 import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS, getTeamAttackWidth } from '@/GameEngine/Configs/AttackConfig';
@@ -57,6 +59,8 @@ export function computeAttackingPosition(
   offsideLine: number | null,
   possessionTime: number = 0,
 ): { x: number; y: number } {
+  // The keeper steps up with the play instead of holding his slot (`Keeper.ts`).
+  if (player.role === 'GK' && KEEPER_CONFIG.ATTACK_ENABLED) return keeperAttackingTarget(player, ballPos);
   const { ballSupportScale, bounds } = player;
 
   const base    = attackingAnchor(slotBasePosition(player, formation, 'attacking'), player, ballPos);

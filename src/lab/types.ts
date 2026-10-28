@@ -270,6 +270,10 @@ export interface TeamRawStats {
   headerGoals: number;
   longBalls: number;
   longBallsCompleted: number;
+  /** Active keeper (`Keeper.ts`), summed across games. */
+  keeperSorties: number;
+  keeperSweeps: number;
+  keeperSmothers: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   freeKicks: number;
@@ -427,6 +431,10 @@ export interface PerMatchView {
   avgAerialDuelsWon: number;
   avgHeaderGoals: number;
   avgLongBalls: number;
+  /** Active keeper per match (`Keeper.ts`). */
+  avgKeeperSorties: number;
+  avgKeeperSweeps: number;
+  avgKeeperSmothers: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgFreeKicks: number;
@@ -542,6 +550,10 @@ export interface VariantSummary {
   avgAerialDuelsWon: number;
   avgHeaderGoals: number;
   avgLongBalls: number;
+  /** Active keeper per match (`Keeper.ts`). */
+  avgKeeperSorties: number;
+  avgKeeperSweeps: number;
+  avgKeeperSmothers: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgFreeKicks: number;

@@ -14,6 +14,8 @@
 import type { GamePlayer } from '@/GameEngine/types';
 import { tackleAngleModifier } from '@/GameEngine/Domain/PositionalAwareness';
 import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
+import { keeperPositionDeviation, smotherBase } from '@/GameEngine/Domain/Keeper';
+import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE } from '@/GameEngine/Configs/WeatherConfig';
 import {
@@ -131,12 +133,8 @@ const GK_EFFECT_MIN      = 0.55;
 const GK_EFFECT_MAX      = 0.9;
 
 // ── GK semicircle positioning ─────────────────────────────────────────────────
-/** Minimum yards off the goal line (always slightly advanced). */
-export const GK_MIN_COME_OUT           = 0.5;
-/** Maximum yards off the goal line (attacker inside the box). */
-export const GK_MAX_COME_OUT           = 6.0;
-/** Attacker distance at which the GK is fully extended; retreats linearly beyond. */
-export const GK_COME_OUT_DIST          = 20;
+// The arc constants live in `Domain/Keeper.ts` (active keeper); re-exported for older callers.
+export { GK_MIN_COME_OUT, GK_MAX_COME_OUT, GK_COME_OUT_DIST } from '@/GameEngine/Domain/Keeper';
 /** Positional deviation (yards) at which position quality reaches 0. */
 const GK_MAX_POSITION_DEVIATION = 8.0;
 
@@ -213,28 +211,14 @@ export function computeHeaderEffect(header: GamePlayer): number {
 
 /**
  * How well the GK is positioned on the ideal angle-bisector arc (0=poor, 1=perfect).
- * The optimal position sits on the line from the goal centre toward the ball,
- * at a come-out distance that scales with attacker proximity.
+ * Any point of the bisector between the arc and, within the rush range, the 1v1 rush point counts as right
+ * (`keeperPositionDeviation`): coming out is never punished.
  */
 export function computeGKPositionQuality(
   gk: GamePlayer,
   ballPos: { x: number; y: number },
 ): number {
-  const goalX       = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
-  const goalCenterY = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
-
-  const dx   = ballPos.x - goalX;
-  const dy   = ballPos.y - goalCenterY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist < 0.01) return 1.0;
-
-  const comeOut = GK_MIN_COME_OUT
-    + (GK_MAX_COME_OUT - GK_MIN_COME_OUT) * Math.max(0, 1 - dist / GK_COME_OUT_DIST);
-
-  const optX = goalX + (dx / dist) * comeOut;
-  const optY = goalCenterY + (dy / dist) * comeOut;
-
-  const deviation = Math.hypot(gk.x - optX, gk.y - optY);
+  const deviation = keeperPositionDeviation(gk, ballPos);
   return Math.max(0, 1 - deviation / GK_MAX_POSITION_DEVIATION);
 }
 
@@ -264,7 +248,7 @@ export function computeGKEffect(
     + (gkReflex * closeWeight + gkDiving * farWeight) * 0.5;
 
   // gkSkill 0..1 → gkEffect 1.0..0.55  (max GK reduces goalChance by 45%)
-  return clamp(1 - gkSkill * 0.45, GK_EFFECT_MIN, GK_EFFECT_MAX);
+  return clamp(1 - gkSkill * KEEPER_CONFIG.SAVE_SCALE, GK_EFFECT_MIN, GK_EFFECT_MAX);
 }
 
 export interface ShotResult {
@@ -474,7 +458,8 @@ export function gkClaimChance(gk: GamePlayer, attackersNear: number, weatherMult
 export const TACKLE_SUCCESS_SCALE = 0.97;
 
 export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0): TackleResult {
-  const base     = tackler.runtimeStats.withoutBall.tackleChance;
+  // A keeper smothers the ball at the holder's feet: his own base chance, not the outfield tackle (`Keeper.ts`).
+  const base     = tackler.role === 'GK' ? smotherBase(tackler) : tackler.runtimeStats.withoutBall.tackleChance;
   const rawAngle = tackleAngleModifier(tackler, holder);
 
   // Strength advantage: −1 (hugely weaker defender) → 0 (equal) → +1 (hugely stronger)

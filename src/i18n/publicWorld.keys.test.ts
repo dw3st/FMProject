@@ -6,7 +6,7 @@ const KEYS = [
   "newGame.mode.public", "newGame.mode.publicDetail",
   "startScreen.publicWorld", "startScreen.publicNext", "startScreen.publicJoin", "startScreen.publicFull",
   "world.public.name", "world.public.title", "world.public.nextStep", "world.public.nextStepLabel", "world.public.hint",
-  "world.hall.tab", "world.hall.title", "world.hall.hint", "world.hall.empty", "world.hall.noScores", "world.hall.version",
+  "world.hall.tab", "world.hall.title", "world.hall.hint", "world.hall.empty", "world.hall.noScores",
   "world.hall.period", "world.hall.current", "world.hall.nickname", "world.hall.club", "world.hall.points",
   "world.hall.noNickname", "world.errors.publicWorld", "world.errors.noNickname", "social.publicRoom",
   "social.errors.publicRoom", "screenTitles.publicWorld.main", "screenTitles.publicWorld.accent",

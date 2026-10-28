@@ -275,3 +275,8 @@ Press commit: `press: 8` ticks — prevents the presser abandoning pursuit each 
 ## Race losers of a contested ball (#145)
 
 The tick a through / high / loose ball is collected, the chasers of the side that lost the race stop chasing and are beaten for 0.7 s (no decision, no tackle, 5% speed) before they rejoin the shape; before, they kept sprinting to the old landing point next to the new holder, bunching 3–4 players on the ball. Numbers and the ball-cluster metric: `through-ball.md` → "Chase ends with the ball".
+
+## Goleiro ativo (4.37)
+
+`computeGKSemicirclePosition` saiu: o goleiro usa `keeperDefendingTarget` (`Domain/Keeper.ts`: arco, saída no 1 contra 1) e,
+com o próprio time com a bola, `keeperAttackingTarget`. Ver `.claude/rules/game-engine/keeper.md`.

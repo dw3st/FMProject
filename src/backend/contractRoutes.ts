@@ -1,7 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { renewalWithinLimits, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
@@ -62,6 +62,9 @@ export const contractRoutes = {
       if (!out && player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+      // Renewed recently: not again before the cooldown ends.
+      const availableOn = renewalAvailableOn(player.contract, date);
+      if (availableOn) return Response.json({ error: "recentlyRenewed", availableOn }, { status: 409 });
       const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
       // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
       if (!out && refusesRenewal(squad, player)) {
@@ -79,7 +82,7 @@ export const contractRoutes = {
       if (!renewalWithinLimits(player, date, seasonEnd, years)) {
         return Response.json({ error: "tooManyYears", demand: check.demand }, { status: 400 });
       }
-      const contract = { until: addYearsIso(player.contract?.until ?? seasonEnd, years), wage };
+      const contract = { until: addYearsIso(player.contract?.until ?? seasonEnd, years), wage, renewedOn: date };
       if (out) {
         await saveService.saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === playerId ? { ...p, contract } : p)) });
         await saveService.saveMarket(saveId, { ...market!, loans: (market!.loans ?? []).map((l) => (l === out ? { ...l, wage } : l)) }, auth.seatId);
@@ -143,9 +146,11 @@ export const contractRoutes = {
     const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation });
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
     // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
-    let parts: Record<string, number | boolean> = {};
+    let parts: Record<string, number | boolean | string> = {};
     if (renewal) {
-      parts = { ambition: b.ambition, loyalty: b.loyalty };
+      const renewableOn = renewalAvailableOn(player.contract, date);
+      parts = { ambition: b.ambition, loyalty: b.loyalty, ...(player.contract ? { currentWage: player.contract.wage } : {}) };
+      if (renewableOn) parts.renewableOn = renewableOn;
     } else {
       // Poor facilities of our club (a signing only): the club's own condition, always known.
       parts = { facilities: b.facilities };

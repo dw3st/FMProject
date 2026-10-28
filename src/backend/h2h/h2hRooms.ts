@@ -206,6 +206,7 @@ export function wirePlayer(p: GamePlayer): H2HWirePlayer {
   const { fit: _f, baseStats: _b, decisionMemory: _d, engine: _e, bounds: _bo, fatigueBaselineEnergy: _fb, ...rest } = p;
   return {
     ...rest,
+    ...(p.fit ? { fit: { aptitudes: p.fit.aptitudes } } : {}),
     x: r2(p.x),
     y: r2(p.y),
     energy: r2(p.energy),

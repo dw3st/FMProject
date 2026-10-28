@@ -38,11 +38,22 @@ export function averageRating(players: GamePlayer[], ratings?: Record<number, nu
   return Math.round((sum / players.length) * 10) / 10;
 }
 
-/** Marker centre on the pitch (percent), kept inside the pitch so edge slots stay readable. */
-function markerPos(slot: { x: number; y: number } | undefined): { left: string; top: string } {
-  const x = slot ? (slot.x / 115) * 100 : 50;
-  const y = slot ? (slot.y / 74) * 100 : 50;
-  return { left: `${Math.min(92, Math.max(8, x))}%`, top: `${Math.min(88, Math.max(12, y))}%` };
+type SlotXY = { x: number; y: number };
+
+/**
+ * Marker centres on the mini pitch (percent) for every slot of the formation. The depth is the middle of the attacking
+ * and defending slot, stretched from the keeper to the deepest forward over 8..92%: with the attacking slots alone the
+ * centre-backs and the holding midfielders sat 8 yards apart and their cards covered each other (report).
+ */
+export function pitchSlotPositions(attacking: readonly SlotXY[], defending: readonly SlotXY[]): { left: string; top: string }[] {
+  const mid = attacking.map((a, i) => (a.x + (defending[i]?.x ?? a.x)) / 2);
+  const lo = Math.min(...mid);
+  const hi = Math.max(...mid);
+  return attacking.map((a, i) => {
+    const x = hi - lo < 1 ? 50 : 8 + ((mid[i]! - lo) / (hi - lo)) * 84;
+    const y = (a.y / 74) * 100;
+    return { left: `${x}%`, top: `${Math.min(88, Math.max(12, y))}%` };
+  });
 }
 
 function EnergyBar({ energy }: { energy: number }) {
@@ -82,6 +93,8 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const bench = playerTeam === "A" ? gameState.benchA : gameState.benchB;
   const formation = playerTeam === "A" ? gameState.formationA : gameState.formationB;
   const onPitch = gameState.players.filter((p) => p.team === playerTeam).sort((a, b) => a.slotIndex - b.slotIndex);
+  const slotPos = useMemo(() => pitchSlotPositions(formation.attacking, formation.defending), [formation]);
+  const vacantSlots = (gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex);
 
   const queuedOutIds = new Set(pendingQueue.map((s) => s.outId));
   const queuedInIds = new Set(pendingQueue.map((s) => s.inId));
@@ -183,8 +196,19 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
         <div className="md:flex-1 min-w-0 flex md:items-center justify-center">
           <div className="relative w-full md:max-w-[calc((80vh-19rem)*1.55)] aspect-[115/74] rounded-md overflow-hidden border border-border">
             <PitchMarkingsSvg />
+            {/* An injured player's empty slot (#140): a dashed card until the manager picks the replacement. */}
+            {vacantSlots.map((slot) => (
+              <div
+                key={`vacant-${slot}`}
+                className="absolute -translate-x-1/2 -translate-y-1/2 w-28 px-1.5 py-1 rounded-md border border-dashed border-destructive/70 bg-card/60 text-sm text-destructive flex items-center gap-1"
+                style={slotPos[slot] ?? { left: "50%", top: "50%" }}
+              >
+                <span className="font-display font-bold leading-none">{t(`roles.detailedAbbr.${formation.attacking[slot]?.role ?? ""}`, { defaultValue: formation.attacking[slot]?.role ?? "" })}</span>
+                <span className="truncate">{t("substitutionPanel.vacant")}</span>
+              </div>
+            ))}
             {onPitch.map((p) => {
-              const pos = markerPos(formation.attacking[p.slotIndex]);
+              const pos = slotPos[p.slotIndex] ?? { left: "50%", top: "50%" };
               const isOut = queuedOutIds.has(p.id);
               const isSelected = selection?.kind === "starter" && selection.id === p.id;
               const over = drag?.over === `slot:${p.id}`;

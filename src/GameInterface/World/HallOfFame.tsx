@@ -7,6 +7,14 @@ import { formatGameDate } from "@/GameInterface/formatDate";
 import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
 import type { PublicEditionView } from "@/types/multiplayerTypes";
 
+/**
+ * Editions to list: the running one, and finished ones where somebody scored (a deploy shortly after another leaves
+ * empty editions behind). Titled by their dates, never the game version (report).
+ */
+export function shown(editions: PublicEditionView[]): PublicEditionView[] {
+  return editions.filter(e => !e.endedAt || e.standings.some(s => s.total !== 0));
+}
+
 /** The public world's hall of fame (multiplayer part 5b): the top 10 of every edition, newest first. */
 export function HallOfFame() {
   const { t, i18n } = useTranslation();
@@ -34,11 +42,10 @@ export function HallOfFame() {
       {error && <Notice kind="error">{t(`world.errors.${error}`)}</Notice>}
       {!editions && !error && <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>}
       {editions && editions.length === 0 && <p className="text-sm text-muted-foreground m-0">{t("world.hall.empty")}</p>}
-      {editions?.map((e) => (
+      {editions && shown(editions).map((e) => (
         <div key={`${e.version}-${e.startedAt}`} className="flex flex-col gap-2">
           <div className="flex flex-wrap items-baseline gap-x-3">
-            <span className="font-display font-black uppercase text-base tabular-nums">{t("world.hall.version", { version: e.version })}</span>
-            <span className="text-sm text-muted-foreground tabular-nums">{period(e)}</span>
+            <span className="font-display font-black uppercase text-base tabular-nums">{period(e)}</span>
           </div>
           {e.standings.length === 0 ? (
             <p className="text-sm text-muted-foreground m-0">{t("world.hall.noScores")}</p>

@@ -87,6 +87,15 @@ export function squadDepthBlocked(player: RosterPlayer, fromSquad: Squad, humanS
   return false;
 }
 
+/**
+ * An AI seller facing a human buyer: only the squad of 15+ and another player at the position. Below a role minimum it
+ * still sells and signs a replacement the same day (`replaceAfterSale`; report: most clubs sit at the role minimums,
+ * so a human could not buy their goalkeepers or a Leverkusen midfielder).
+ */
+export function humanBuyBlocked(player: RosterPlayer, seller: Squad): boolean {
+  return squadDepthBlocked(player, seller, true);
+}
+
 /** Seller pressure of the human club for a player with a transfer request (an AI LOW-tier seller). */
 const REQUESTED_SALE_PRESSURE = 1.0;
 

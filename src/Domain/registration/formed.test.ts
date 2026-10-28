@@ -40,7 +40,9 @@ describe("formed", () => {
     expect(isFormed(p({ nationality: "France" }), R.premier_league!, "England", "c1", ctx)).toBe(false);
   });
   test("foreign by rule", () => {
-    expect(isForeign(p({ nationality: "Brazil" }), R.la_liga!, "Spain")).toBe(false); // ibero
+    expect(isForeign(p({ nationality: "Brazil", age: 26 }), R.la_liga!, "Spain")).toBe(false); // ibero, passport age
+    expect(isForeign(p({ nationality: "Brazil", age: 20 }), R.la_liga!, "Spain")).toBe(true); // too young for the passport (Endrick)
+    expect(isForeign(p({ nationality: "England", age: 23 }), R.la_liga!, "Spain")).toBe(true); // non-EU since Brexit
     expect(isForeign(p({ nationality: "Japan" }), R.la_liga!, "Spain")).toBe(true);
     expect(isForeign(p({ nationality: "France" }), R.la_liga!, "Spain")).toBe(false); // EU
     expect(isForeign(p({ nationality: "Senegal" }), R.ligue_1!, "France")).toBe(false); // acp

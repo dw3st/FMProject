@@ -39,7 +39,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 
 - **Estrangeiro** (`isForeign`): nação (normalizada) fora dos domésticos (`país + rule.domestic + DOMESTIC_EXTRA`:
   Inglaterra + País de Gales; EUA + Canadá). `nonEU` (La Liga, Ligue 1): também fora da UE/EEE e das isenções — La Liga
-  isenta `ibero` (CONMEBOL + México/América Central/Caribe hispânico, a dupla nacionalidade espanhola) e `acp` (Cotonou);
+  isenta `ibero` (CONMEBOL + México/América Central/Caribe hispânico, a dupla nacionalidade espanhola, só a partir de 23 anos desde a 4.37: `IBERO_PASSPORT_MIN_AGE` aproxima o passaporte por residência; o Endrick, 20, ocupa vaga) e `acp` (Cotonou);
   Ligue 1 só `acp`. Nacionalidade ausente = doméstico. Regra com `greenCard` (só a MLS): quem tem green card é
   doméstico (ver "Green card (MLS)").
 - **Formado no clube** (`clubTrained`): id `youth_<clube>_…` / `es_youth_<clube>_…`, `RosterPlayer.academyOf` (prospecto
@@ -54,7 +54,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 | Competição | Regra do jogo |
 |---|---|
 | Premier League (pirâmide inglesa) | 25, sub-21 livres, mínimo de 8 formados |
-| La Liga (Espanha) | 25, sub-21 formados livres, 8 formados, até 3 extracomunitários (`ibero` e `acp` isentos) |
+| La Liga (Espanha) | 25, sub-21 formados livres, 8 formados, até 3 extracomunitários (`ibero` isento a partir de 23 anos, `acp` isento) |
 | Serie A (Itália) | 25, sub-21 livres, 8 formados |
 | Bundesliga (Alemanha) | 30, 8 formados (sem os 12 alemães) |
 | Ligue 1 (França) | 30, até 4 extracomunitários (`acp` isento) |

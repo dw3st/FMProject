@@ -46,6 +46,9 @@ const COLS: Col[] = [
   { label: "AD",   titleKey: "stats.headers.AD",    value: (s) => s.aerialDuelsWon },
   { label: "HG",   titleKey: "stats.headers.HG",    value: (s) => s.headerGoals },
   { label: "LB",   titleKey: "stats.headers.LB",    value: (s) => s.longBalls },
+  { label: "KS",   titleKey: "stats.headers.KS",    value: (s) => s.keeperSorties },
+  { label: "KW",   titleKey: "stats.headers.KW",    value: (s) => s.keeperSweeps },
+  { label: "KM",   titleKey: "stats.headers.KM",    value: (s) => s.keeperSmothers },
   { label: "CK",   titleKey: "stats.headers.CK",    value: (s) => s.corners },
   {
     label: "DFK",

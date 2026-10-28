@@ -1,3 +1,5 @@
+import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
+import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
@@ -294,6 +296,8 @@ export interface DebugOverlays {
   setPieces:             boolean;
   /** Player instructions: the role-variant tag under each player, man-marking pairs (dashed line + ring on the target). */
   instructions:          boolean;
+  /** Active keeper (`Keeper.ts`): sweeper zone, wide high-ball zone, 1v1 rush range and his current target. */
+  keeper:                boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -307,6 +311,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   aerial:                false,
   setPieces:             true,
   instructions:          true,
+  keeper:                false,
 };
 
 interface Props {
@@ -1921,6 +1926,30 @@ export function PixiPitch({
           }
 
           // ── Interception corridors — rings around each defending player ──
+          // ── Active keeper — zones and target (`Keeper.ts`) ──
+          if (ovl.keeper) {
+            for (const gk of stateRef.current.players) {
+              if (gk.role !== 'GK') continue;
+              const goalX = keeperGoalX(gk);
+              const dir = gk.attackDir;
+              const rect = (d0: number, d1: number, half: number, color: number, alpha: number) => {
+                const pts = [
+                  toPixel(goalX + dir * d0, GOAL_CENTRE_Y - half), toPixel(goalX + dir * d1, GOAL_CENTRE_Y - half),
+                  toPixel(goalX + dir * d1, GOAL_CENTRE_Y + half), toPixel(goalX + dir * d0, GOAL_CENTRE_Y + half),
+                ];
+                passLinesGfx.poly(pts.flatMap(q => [q.px, q.py])).stroke({ width: 1, color, alpha });
+              };
+              rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
+              rect(6, KEEPER_CONFIG.HIGH_CLAIM_DEPTH, KEEPER_CONFIG.HIGH_CLAIM_HALF_WIDTH, 0x5eead4, 0.5);
+              const c = toPixel(goalX, GOAL_CENTRE_Y);
+              passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
+              const { px: gx, py: gy } = toPixel(gk.x, gk.y);
+              const { px: tx, py: ty } = toPixel(gk.targetPosition.x, gk.targetPosition.y);
+              passLinesGfx.moveTo(gx, gy).lineTo(tx, ty).stroke({ width: 2, color: 0xbef264, alpha: 0.9 });
+              passLinesGfx.circle(tx, ty, 3).fill({ color: 0xbef264, alpha: 0.9 });
+            }
+          }
+
           if (ovl.interceptionCorridors && ballHolder) {
             for (const player of stateRef.current.players) {
               if (player.team === ballHolder.team) continue;

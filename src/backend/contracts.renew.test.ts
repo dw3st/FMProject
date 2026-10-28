@@ -46,5 +46,11 @@ describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!.players.find((p) => p.id === player.id)!;
     expect(after.contract!.wage).toBe(demand);
     expect(after.contract!.until > player.contract!.until).toBe(true);
+    expect(after.contract!.renewedOn).toBe(meta.currentDate);
+
+    // Renewed today: a second renewal waits for the cooldown (report).
+    const again = await call(demand, 1);
+    expect(again.status).toBe(409);
+    expect(await again.json()).toMatchObject({ error: "recentlyRenewed" });
   }, 60_000);
 });

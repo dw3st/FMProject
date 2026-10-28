@@ -253,6 +253,66 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'keeper-sweeper',
+    name:        'Keeper — sweeper on a ball over the top',
+    description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CM',   60, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   80, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   81, 31, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   81, 43, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  104, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'keeper-one-on-one',
+    name:        'Keeper — rushing out in a 1v1',
+    description: 'Striker through on goal 22 yd out, the CB beaten behind him. The keeper comes off his line to ~13 yd and tries to smother the ball at his feet (`Keeper.ts`).',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   93, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   86, 39, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'keeper-attacking',
+    name:        'Keeper — up with the play',
+    description: 'Team B holds the ball in the attacking half; their keeper steps up between the penalty spot and the edge of his box, and drops back as the ball comes back (`Keeper.ts`).',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'B', 'CM',   35, 37, MIDFIELDER),
+        makePlayer('Reyes',    'B', 'ST',   25, 30, STRIKER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+        makePlayer('Silva',    'A', 'CB',   20, 37, DEFENDER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'keeper-high-ball',
+    name:        'Keeper — coming for a cross to the penalty spot',
+    description: 'Winger crosses toward the penalty spot with one attacker arriving late; the keeper comes off his line for it beyond the small box (`Keeper.ts`). Harder to catch the further out it drops; a miss drops loose in the box.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW',   92, 8, WINGER),
+        makePlayer('Santos',   'A', 'ST',   96, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   99, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  111, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          '2v1',
     name:        '2v1 — Attackers vs Defender',
     description: 'ST with ball + a wide winger vs one CB. Tests pass lane selection and combination play.',

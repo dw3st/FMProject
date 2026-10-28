@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { loadSession } from "@/GameInterface/gameSession";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import {
   ContractTermsFields, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
@@ -27,7 +28,7 @@ interface Props {
 
 /** Renewal of an own player, or signing of a free agent: wage + years against the player's demand. */
 export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const session = loadSession();
   const refusalText = useRefusalText();
   const demandInfo = useContractDemandInfo(session?.saveId, player?.id ?? null, mode === "renew" ? player?.squadId : undefined);
@@ -97,7 +98,9 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
-              {mode === "renew" && demandInfo?.refuses ? (
+              {mode === "renew" && demandInfo?.renewableOn ? (
+                <p className="text-sm text-chart-4 m-0">{t("contracts.recentlyRenewed", { date: formatGameDate(demandInfo.renewableOn, i18n.language) })}</p>
+              ) : mode === "renew" && demandInfo?.refuses ? (
                 <p className="text-sm text-destructive m-0">{t("morale.contract.refuses")}</p>
               ) : mode === "renew" && (demandInfo?.moraleDemandMult ?? 1) > 1 ? (
                 <p className="text-sm text-chart-4 m-0">
@@ -116,7 +119,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
                 <button
                   type="button"
                   onClick={submit}
-                  disabled={submitting || demand === null}
+                  disabled={submitting || demand === null || (mode === "renew" && !!demandInfo?.renewableOn)}
                   className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
                 >
                   {submitting ? t("transfers.sending") : mode === "renew" ? t("contracts.renew") : t("contracts.sign")}

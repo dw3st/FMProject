@@ -17,6 +17,15 @@ export const TAUNTS: Record<TauntGroup, readonly string[]> = Object.fromEntries(
   TAUNT_GROUPS.map((g) => [g, ids(g)]),
 ) as unknown as Record<TauntGroup, readonly string[]>;
 
+const CHEER: ReadonlySet<TauntGroup> = new Set<TauntGroup>(["live_goal_for", "big_win", "comeback_win", "late_winner", "shootout_win", "away_win", "win"]);
+const TEASE: ReadonlySet<TauntGroup> = new Set<TauntGroup>(["live_goal_against", "big_loss", "blown_lead", "shootout_loss", "home_loss", "loss"]);
+
+/** Tone of a phrase id (`<group>_<n>`): cheering the friend, teasing him, or neutral (draws). */
+export function tauntTone(id: string): "cheer" | "tease" | "neutral" {
+  const group = id.replace(/_\d+$/, "") as TauntGroup;
+  return CHEER.has(group) ? "cheer" : TEASE.has(group) ? "tease" : "neutral";
+}
+
 export const ALL_TAUNT_IDS: readonly string[] = TAUNT_GROUPS.flatMap((g) => TAUNTS[g]);
 
 /** English fallback of a reaction in the stored `body`. */

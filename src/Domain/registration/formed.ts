@@ -1,6 +1,6 @@
 import type { PlayerHistoryRow, RosterPlayer } from "@/types/playerTypes";
 import type { RegistrationRule } from "@/types/registrationTypes";
-import { DOMESTIC_EXTRA, FORMED_MAX_AGE, FORMED_SEASONS, GREEN_CARD } from "@/Domain/registration/registrationConfig";
+import { DOMESTIC_EXTRA, FORMED_MAX_AGE, FORMED_SEASONS, GREEN_CARD, IBERO_PASSPORT_MIN_AGE } from "@/Domain/registration/registrationConfig";
 import { seasonsAtClub } from "@/Domain/personality/personality";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { inGroup, normalizeNation } from "@/Domain/registration/nations";
@@ -98,7 +98,7 @@ export function foreignByNation(p: RosterPlayer, rule: RegistrationRule, country
   if (domesticNations(rule, country).includes(n)) return false;
   if (rule.foreign === "nonEU") {
     if (inGroup(n, "EU")) return false;
-    if ((rule.exempt ?? []).some((g) => inGroup(n, g))) return false;
+    if ((rule.exempt ?? []).some((g) => inGroup(n, g) && (g !== "ibero" || p.age >= IBERO_PASSPORT_MIN_AGE))) return false;
   }
   return true;
 }

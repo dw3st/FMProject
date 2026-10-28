@@ -988,6 +988,9 @@
       "CR": "Cruzamentos",
       "AD": "Disputas Aéreas Vencidas",
       "HG": "Gols de Cabeça",
+      "KS": "Saídas do goleiro",
+      "KW": "Bolas afastadas pelo goleiro",
+      "KM": "Abafadas do goleiro",
       "LB": "Lançamentos Longos",
       "CK": "Escanteios",
       "DFK": "Faltas Diretas (gols)",
@@ -2443,6 +2446,7 @@
     "pickBenchOrSwap": "Escolha um reserva para entrar, ou outro titular para trocar de posição.",
     "pickSwap": "Sem substituições restantes: escolha outro titular para trocar de posição.",
     "playingAs": "Jogando de {{role}}",
+    "vacant": "Vaga · lesão",
     "pickStarter": "Escolha o titular que sai.",
     "booked": "Amarelo",
     "injured": "Lesionado"
@@ -2861,6 +2865,9 @@
     "currentUntil": "contrato até {{year}}",
     "renewed": "Contrato renovado.",
     "signed": "Jogador contratado.",
+    "currentWage": "Salário atual: {{wage}}/sem",
+    "wageChange": "{{pct}}% sobre o atual",
+    "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
     "refusal": {
       "lowWage": "O salário é baixo demais para esse jogador.",
       "tooManyYears": "O jogador não assina tantos anos na idade dele.",
@@ -2868,7 +2875,8 @@
       "squadFull": "Seu elenco está cheio (36 jogadores).",
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
       "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
-      "poorFacilities": "Ambicioso demais para um CT neste estado: recusa."
+      "poorFacilities": "Ambicioso demais para um CT neste estado: recusa.",
+      "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}."
     }
   },
   "seatOffers": {
@@ -5180,9 +5188,8 @@
       "hint": "Os 10 primeiros de cada edição. Uma edição nova começa a cada atualização do jogo.",
       "empty": "Nenhuma edição ainda.",
       "noScores": "Sem pontos nesta edição.",
-      "version": "Versão {{version}}",
       "period": "{{from}} a {{to}}",
-      "current": "Desde {{from}}, em andamento",
+      "current": "Em andamento desde {{from}}",
       "nickname": "Apelido",
       "club": "Clube",
       "points": "Pontos",
@@ -5476,6 +5483,10 @@
     "staleStatus": "interrompido",
     "goalPopup": "{{nickname}} · gol · {{score}} · {{minute}}'",
     "scorer": "gol de {{name}}",
+    "goalShort": "gol",
+    "nextShort": "próx.",
+    "friendsBadge": "Amigos",
+    "noNext": "sem jogo marcado",
     "pens": "pên. {{for}}–{{against}}",
     "filterLabel": "Amigo",
     "filterAll": "Todos",
@@ -5485,7 +5496,7 @@
     "card": { "title": "Rivais", "link": "Ver rivais" },
     "stripLabel": "Amigos jogando agora",
     "actionsLabel": "Resenha",
-    "phrases": "Frase",
+    "phrases": "Frases",
     "sent": "Enviado",
     "reactions": { "applause": "Palmas", "fire": "Fogo", "laugh": "Risada", "sorry": "Lamento" },
     "taunts": {

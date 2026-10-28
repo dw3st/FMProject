@@ -988,6 +988,9 @@
       "CR": "Crosses",
       "AD": "Aerial Duels Won",
       "HG": "Header Goals",
+      "KS": "Keeper sorties",
+      "KW": "Keeper sweeps",
+      "KM": "Keeper smothers",
       "LB": "Long Balls",
       "CK": "Corners",
       "DFK": "Direct Free Kicks (goals)",
@@ -2443,6 +2446,7 @@
     "pickBenchOrSwap": "Pick a substitute to bring on, or another starter to swap positions.",
     "pickSwap": "No substitutions left: pick another starter to swap positions.",
     "playingAs": "Playing as {{role}}",
+    "vacant": "Empty · injury",
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
     "injured": "Injured"
@@ -2861,6 +2865,9 @@
     "currentUntil": "contract until {{year}}",
     "renewed": "Contract renewed.",
     "signed": "Player signed.",
+    "currentWage": "Current wage: {{wage}}/wk",
+    "wageChange": "{{pct}}% on the current",
+    "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
     "refusal": {
       "lowWage": "The wage is too low for this player.",
       "tooManyYears": "The player will not sign that many years at his age.",
@@ -2868,7 +2875,8 @@
       "squadFull": "Your squad is full (36 players).",
       "unhappy": "He is furious and will not renew without a renewal promise.",
       "smallerClub": "Too ambitious for a club this size: he refuses.",
-      "poorFacilities": "Too ambitious for a training ground in this state: he refuses."
+      "poorFacilities": "Too ambitious for a training ground in this state: he refuses.",
+      "recentlyRenewed": "Renewed recently: no new renewal before {{date}}."
     }
   },
   "seatOffers": {
@@ -5180,9 +5188,8 @@
       "hint": "The top 10 of each edition. A new edition starts with every game update.",
       "empty": "No edition yet.",
       "noScores": "No points in this edition.",
-      "version": "Version {{version}}",
       "period": "{{from}} to {{to}}",
-      "current": "Since {{from}}, still running",
+      "current": "Running since {{from}}",
       "nickname": "Nickname",
       "club": "Club",
       "points": "Points",
@@ -5476,6 +5483,10 @@
     "staleStatus": "interrupted",
     "goalPopup": "{{nickname}} · goal · {{score}} · {{minute}}'",
     "scorer": "goal by {{name}}",
+    "goalShort": "goal",
+    "nextShort": "next",
+    "friendsBadge": "Friends",
+    "noNext": "no match scheduled",
     "pens": "pens {{for}}–{{against}}",
     "filterLabel": "Friend",
     "filterAll": "Everyone",
@@ -5485,7 +5496,7 @@
     "card": { "title": "Rivals", "link": "See rivals" },
     "stripLabel": "Friends playing now",
     "actionsLabel": "Banter",
-    "phrases": "Line",
+    "phrases": "Phrases",
     "sent": "Sent",
     "reactions": { "applause": "Applause", "fire": "On fire", "laugh": "Laugh", "sorry": "Commiserations" },
     "taunts": {

@@ -1,5 +1,7 @@
 /** Contract constants (`docs/superpowers/specs/2026-09-30-contracts-design.md`). */
 export const CONTRACT_CONFIG = {
+  /** Days after a renewal before the same player can be renewed again (report: renewing over and over). */
+  RENEW_COOLDOWN_DAYS: 180,
   /** Initial contract length (years) by age: [min, max] inclusive. */
   INITIAL_YEARS: { young: [3, 5], prime: [2, 4], veteran: [1, 2] } as const,
   YOUNG_MAX_AGE: 23,

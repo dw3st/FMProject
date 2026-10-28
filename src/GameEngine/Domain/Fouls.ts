@@ -45,6 +45,8 @@ export interface FoulContext {
    * only); absent / 10 = neutral. Foul chance × (1 − 5% × t).
    */
   discipline?: number;
+  /** Foul chance multiplier of a goalkeeper's challenge (`KEEPER_CONFIG.SMOTHER_FOUL_MULT`); absent = 1. */
+  keeperMult?: number;
 }
 
 /** Probability that a resolved tackle / loose-ball duel is a foul. */
@@ -63,7 +65,8 @@ export function foulChance(ctx: FoulContext): number {
   const temper   = temperamentFoulMult(ctx.temperament ?? 0);
   const referee  = refereeFoulMult(ctx.strictness);
   const manager  = attributeReduce(ctx.discipline);
-  return clamp(base * angle * aggr * skill * tired * yellow * won * box * temper * referee * manager, 0, C.MAX_CHANCE);
+  const keeper   = ctx.keeperMult ?? 1;
+  return clamp(base * angle * aggr * skill * tired * yellow * won * box * temper * referee * manager * keeper, 0, C.MAX_CHANCE);
 }
 
 export interface CardContext {

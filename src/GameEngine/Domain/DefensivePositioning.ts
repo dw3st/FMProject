@@ -34,7 +34,7 @@ import {
 import { getPressingStyleOverride } from '@/GameEngine/Configs/IntentConfig';
 import { sampleCellSumExcluding, type CrowdGrid, type GridMatrix } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
-import { GK_MIN_COME_OUT, GK_MAX_COME_OUT, GK_COME_OUT_DIST } from '@/GameEngine/Infrastructure/ActionOutcomes';
+import { keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
 import type { PressingStyle } from '@/types/tacticsTypes';
 
 const PITCH_CENTER_Y = 37;
@@ -1232,47 +1232,6 @@ export function evaluateDefensiveDecision(
   }
 }
 
-// ── GK angle-bisector positioning ─────────────────────────────────────────────
-
-/**
- * Returns the GK's optimal position on the angle-bisector arc.
- *
- * The GK moves along the line from the goal centre toward the ball,
- * stepping off the line by a come-out distance that scales with how
- * close the attacker is (closer → further out, narrowing the angle).
- */
-function computeGKSemicirclePosition(
-  gk: GamePlayer,
-  ballPos: { x: number; y: number },
-): { x: number; y: number } {
-  const goalX       = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
-  const goalCenterY = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
-
-  const dx   = ballPos.x - goalX;
-  const dy   = ballPos.y - goalCenterY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-
-  const comeOut = GK_MIN_COME_OUT
-    + (GK_MAX_COME_OUT - GK_MIN_COME_OUT) * Math.max(0, 1 - dist / GK_COME_OUT_DIST);
-
-  let rawX: number;
-  let rawY: number;
-
-  if (dist > 0.01) {
-    rawX = goalX + (dx / dist) * comeOut;
-    rawY = goalCenterY + (dy / dist) * comeOut;
-  } else {
-    rawX = goalX + gk.attackDir * comeOut;
-    rawY = goalCenterY;
-  }
-
-  const { bounds } = gk;
-  return {
-    x: Math.max(bounds.minX, Math.min(bounds.maxX, rawX)),
-    y: Math.max(bounds.minY, Math.min(bounds.maxY, rawY)),
-  };
-}
-
 // ── Main exported function ─────────────────────────────────────────────────────
 
 export function computeDefensivePosition(
@@ -1288,9 +1247,11 @@ export function computeDefensivePosition(
   const cfg      = getDefenseConfig(player.team);
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
 
-  // GK: angle-bisector semicircle positioning — replaces the outfield pipeline
+  // GK: the arc, or a rush at a holder through on goal — replaces the outfield pipeline (`Keeper.ts`)
   if (player.role === 'GK') {
-    return computeGKSemicirclePosition(player, ballPos);
+    const holder = allPlayers.find(p => p.id === ballHolderId && p.team !== player.team) ?? null;
+    const t = keeperDefendingTarget(player, ballPos, holder, allPlayers);
+    return { x: t.x, y: t.y };
   }
 
   // Tackle path: keep shape anchor (tackle movement handled by gameState)

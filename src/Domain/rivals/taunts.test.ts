@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   ALL_TAUNT_IDS, REACTIONS, TAUNT_GROUPS, TAUNTS, isReaction, isTauntFor, liveGroups, parseTauntMeta,
-  tauntFallbackBody, tauntMeta, tauntsFor,
+  tauntFallbackBody, tauntMeta, tauntTone, tauntsFor,
 } from "@/Domain/rivals/taunts";
 import type { LiveScoreView, SeatResult } from "@/types/rivalsTypes";
 
@@ -58,4 +58,10 @@ describe("taunt meta", () => {
     expect(parseTauntMeta({ kind: "phrase", id: "x" })).toBeNull();
     expect(parseTauntMeta({ kind: "shout", id: "x", target: "a", clubId: "c", clubName: "C", opponentName: "O", home: true, score: { for: 1, against: 0 } })).toBeNull();
   });
+});
+
+test("phrase tone: cheering a win, teasing a loss, neutral on a draw", () => {
+  expect(tauntTone("big_win_2")).toBe("cheer");
+  expect(tauntTone("blown_lead_1")).toBe("tease");
+  expect(tauntTone("draw_3")).toBe("neutral");
 });

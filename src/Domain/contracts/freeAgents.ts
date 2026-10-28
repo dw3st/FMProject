@@ -24,7 +24,7 @@ function unit(key: string): number {
   return seedFrom(key) / 4294967296;
 }
 
-function countByRole(players: RosterPlayer[]): Record<MainRole, number> {
+export function countByRole(players: RosterPlayer[]): Record<MainRole, number> {
   const c: Record<MainRole, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
   for (const p of players) c[roleOf(p)]++;
   return c;
@@ -83,13 +83,15 @@ export function refillSquad(args: {
   nextSeasonEnd: string;
   isHuman: boolean;
   tagPrefix: string;
+  /** Only the role minimums, not the AI's minimum squad total (`replaceAfterSale`). */
+  onlyMinimums?: boolean;
 }): RefillResult {
   const { pool, nextSeasonEnd, isHuman, tagPrefix } = args;
   let squad = args.squad;
   const signed: RosterPlayer[] = [];
   const youth: RosterPlayer[] = [];
   const taken = new Set<string>();
-  const minTotal = isHuman ? 0 : C.MIN_SQUAD_AI;
+  const minTotal = isHuman || args.onlyMinimums ? 0 : C.MIN_SQUAD_AI;
 
   for (let guard = 0; guard < MAX_SQUAD + 8; guard++) {
     const counts = countByRole(squad.players);
@@ -228,4 +230,16 @@ export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
   // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
   // Morale is the human club's only (`.claude/rules/game/morale.md`).
   return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined, awardBoost: undefined }, since: date };
+}
+
+/**
+ * After a sale to a human club (`humanBuyBlocked`): an AI seller left below a role minimum signs a replacement the
+ * same day, the best free agent of the role that fits its wage bill, else a youngster. Null when nothing is missing.
+ */
+export function replaceAfterSale(seller: Squad, pool: FreeAgent[], seasonEnd: string, tag: string): RefillResult | null {
+  const counts = countByRole(seller.players);
+  if (!ROLES.some((r) => counts[r] < MIN_BY_ROLE[r])) return null;
+  // Only the missing roles: never top the squad up to the AI's usual total here.
+  const r = refillSquad({ squad: seller, pool, nextSeasonEnd: seasonEnd, isHuman: false, tagPrefix: tag, onlyMinimums: true });
+  return r.squad === seller ? null : r;
 }

@@ -279,3 +279,8 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
 | Gap | Description | Priority |
 |---|---|---|
 | Foul system | No foul risk on tackle attempts (tackles from behind should risk a foul) | Future |
+
+## Abafada do goleiro (4.37)
+
+O desarme de um goleiro usa `smotherBase` (posicionamento e reflexo) e faz falta pela metade. Ver
+`.claude/rules/game-engine/keeper.md`.

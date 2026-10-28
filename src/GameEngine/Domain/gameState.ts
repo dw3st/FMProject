@@ -39,6 +39,8 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
+import { depthFrom, isWideClaimZone, keeperComesWide, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
@@ -1414,8 +1416,10 @@ export function foulCheck(
   const chance = foulChance({
     kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness, discipline,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
-    tackling:   offender.runtimeStats.withoutBall.tackling,
+    // A keeper's challenge reads his positioning as technique and fouls less (`Keeper.ts`).
+    tackling:   offender.role === 'GK' ? offender.runtimeStats.withoutBall.gkPositioning : offender.runtimeStats.withoutBall.tackling,
     energy:     offender.energy,
+    keeperMult: offender.role === 'GK' ? KEEPER_CONFIG.SMOTHER_FOUL_MULT : undefined,
   });
   const minute = matchMinute(state);
   const spot = { x: fouled.x, y: fouled.y };
@@ -2295,6 +2299,16 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
  * applies heavier acceleration / top-end boosts than press to model an all-out
  * sprint. Mirrors the formula in ThroughBallCells.effectiveSprintSpeed.
  */
+/** Distance to (x, y) of the nearest outfield player other than `exceptId` (either team). */
+function nearestOutfieldTo(players: readonly GamePlayer[], exceptId: number, x: number, y: number): number {
+  let best = Infinity;
+  for (const q of players) {
+    if (q.id === exceptId || q.role === 'GK') continue;
+    best = Math.min(best, Math.hypot(q.x - x, q.y - y));
+  }
+  return best;
+}
+
 function chaseSprintSpeed(p: GamePlayer): number {
   const wb = p.runtimeStats.withoutBall;
   return (
@@ -2365,6 +2379,15 @@ function commitLooseBallChasers(
   if (!passerTeam) return state;
 
   type Cand = { id: number; team: TeamId; eta: number; role: PlayerRole };
+  const etaOf = (p: GamePlayer) => {
+    const speed = chaseSprintSpeed(p);
+    return speed > 0.01 ? Math.hypot(p.x - toX, p.y - toY) / speed : Infinity;
+  };
+  // Fastest attacker to the point (the passer's side): the sweeper keeper must beat him (`Keeper.ts`).
+  const bestAttackerEta = state.players
+    .filter(p => p.team === passerTeam && p.id !== passerId && p.role !== 'GK' && !isPlayerInRecovery(p))
+    .reduce((m, p) => Math.min(m, etaOf(p)), Infinity);
+  const sweepers = new Set<number>();
   const collect = (team: TeamId, isAttacking: boolean): Cand[] => {
     const out: Cand[] = [];
     for (const p of state.players) {
@@ -2377,13 +2400,20 @@ function commitLooseBallChasers(
       // Sweeper-keeper: only chase if the cell is in our own box
       if (p.role === 'GK') {
         const ownGoalX = p.attackDir === 1 ? 0 : PITCH_LENGTH;
-        const inReach = opts.keeperSmallBoxOnly ? isInSmallBox(toX, toY, ownGoalX) : isInGoalScoreArea(toX, toY, ownGoalX);
+        // High balls: his small box, or the wide claim zone up to the penalty spot. Ground balls: his box, or
+        // further up as a sweeper when he wins the race to it (`Keeper.ts`).
+        let inReach = opts.keeperSmallBoxOnly
+          ? isInSmallBox(toX, toY, ownGoalX) || (!isAttacking && keeperComesWide(
+              Math.hypot(p.x - toX, p.y - toY), isWideClaimZone(toX, toY, ownGoalX), nearestOutfieldTo(state.players, p.id, toX, toY)))
+          : isInGoalScoreArea(toX, toY, ownGoalX);
+        if (!inReach && !opts.keeperSmallBoxOnly && !isAttacking && sweeperChases(p, toX, toY, etaOf(p), bestAttackerEta)) {
+          inReach = true;
+          sweepers.add(p.id);
+        }
         weight = inReach ? 1.0 : 0;
       }
       if (weight < THROUGH_BALL_CONFIG.ROLE_CHASE_THRESHOLD) continue;
-      const dist = Math.hypot(p.x - toX, p.y - toY);
-      const speed = chaseSprintSpeed(p);
-      const eta = speed > 0.01 ? dist / speed : Infinity;
+      const eta = etaOf(p);
       out.push({ id: p.id, team, eta, role: p.role });
     }
     out.sort((a, b) => a.eta - b.eta);
@@ -2402,6 +2432,14 @@ function commitLooseBallChasers(
   };
 
   const chasers = [...pickTop(teamA), ...pickTop(teamB)];
+  for (const c of chasers) {
+    if (!sweepers.has(c.id)) continue;
+    const already = state.players.find(p => p.id === c.id)?.decisionMemory?.decision?.type === 'chase_loose_ball';
+    if (!already) {
+      gameBus.emit('keeperSortie', { keeperId: c.id, kind: 'sweep' });
+      debugLog('keeper', `Keeper ${c.id} sweeps out to (${toX.toFixed(0)}, ${toY.toFixed(0)})`, { playerId: c.id });
+    }
+  }
   // Anyone still chasing an earlier ball (chained clearances / punches) who is not re-selected
   // drops the chase — otherwise the pinned decision drags him across the pitch.
   const stale = state.players.filter(p =>
@@ -2445,7 +2483,7 @@ function commitLooseBallChasers(
  * nearest player picks it up. Phase 5 will replace this with a sprint race +
  * loose-ball duel.
  */
-function startThroughBall(
+export function startThroughBall(
   state:    GameState,
   decision: { cellX: number; cellY: number; intendedRunnerId: number | null },
 ): GameState {
@@ -2972,6 +3010,11 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   debugLog(isTB ? 'throughBall' : 'aerial', `Loose ball won by defender ${winner.name}`, {
     playerId: winner.id, data: { fromId: lb.fromPasserId },
   });
+  // Sweeper keeper: a loose ball won outside his box is played with his feet (`Keeper.ts`).
+  if (winner.role === 'GK' && !isInGoalScoreArea(lb.x, lb.y, winner.attackDir === 1 ? 0 : PITCH_LENGTH)) {
+    gameBus.emit('keeperSweep', { keeperId: winner.id });
+    debugLog('keeper', `${winner.name} sweeps the ball up outside his box`, { playerId: winner.id });
+  }
   const prevHolderId = s.ballHolderId;
   return finishLooseBall({
     state: onPossessionTransfer(
@@ -3053,6 +3096,29 @@ function clearanceBall(
 }
 
 const uniform = (rng: () => number, lo: number, hi: number) => lo + rng() * (hi - lo);
+
+/**
+ * A keeper who came for a high ball and failed to hold it (`Keeper.ts`): the ball drops loose at the point,
+ * his team's touch (a `clearance`), slow and in a random direction.
+ */
+function dropLooseAt(s: GameState, gk: GamePlayer, point: { x: number; y: number }): GameState {
+  const a = Math.random() * 2 * Math.PI;
+  const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * 0.5 * weatherEffectOf(s.weather).looseSpeed;
+  const prevHolderId = s.ballHolderId;
+  return onPossessionTransfer({
+    ...s,
+    ballHolderId: gk.id,
+    looseBall: {
+      x: point.x, y: point.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+      startTime: s.matchTime,
+      fromPasserId: gk.id,
+      fromTeamLastTouch: gk.team,
+      intendedRunnerId: null,
+      receiverOffside: false,
+      source: 'clearance',
+    },
+  }, prevHolderId);
+}
 
 /** Offside free kick for the team defending against `offender` at `at` (aerial path). */
 function aerialOffsideFreeKick(s: GameState, offender: GamePlayer, at: { x: number; y: number }, lineX?: number): GameState {
@@ -3220,9 +3286,17 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const gkGoalX = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
     const dGk = dist(gk);
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
-    const comes = keeperComesFor(dGk, isInSmallBox(point.x, point.y, gkGoalX), dGk < nearestOther);
-    if (comes) {
-      const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim);
+    const inSmall = isInSmallBox(point.x, point.y, gkGoalX);
+    const comesNear = keeperComesFor(dGk, inSmall, dGk < nearestOther);
+    // Beyond the small box, up to the penalty spot: harder to catch, a miss drops loose (`Keeper.ts`).
+    const wide = !comesNear && !inSmall && keeperComesWide(dGk, isWideClaimZone(point.x, point.y, gkGoalX), nearestOther);
+    if (comesNear || wide) {
+      const depth = depthFrom(gkGoalX, point.x);
+      if (wide) {
+        gameBus.emit('keeperSortie', { keeperId: gk.id, kind: 'high' });
+        debugLog('keeper', `${gk.name} comes off his line for a high ball ${depth.toFixed(0)} yds out`, { playerId: gk.id });
+      }
+      const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (wide ? wideClaimFactor(depth) : 1);
       logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance });
@@ -3241,6 +3315,12 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
           lastPasserId: null,
           setPiece: { type: 'goal_kick', takerId: gk.id, countdown: 1 },
         }, prevHolderId));
+      }
+      if (wide && rng() < KEEPER_CONFIG.HIGH_FLAP_SHARE) {
+        // He gets a hand to it but drops it: the ball sits loose in the box.
+        resolved(gk.id, false, 'loose');
+        debugLog('keeper', `${gk.name} flaps at it — loose in the box`, { playerId: gk.id });
+        return done(dropLooseAt(s, gk, point));
       }
       resolved(gk.id, false, 'punch');
       return done(clearanceBall(s, gk, point, uniform(rng, C.PUNCH_DIST_MIN, C.PUNCH_DIST_MAX), rng));
@@ -4173,6 +4253,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         pressingLoad = Math.min(1, pressingLoad); // cap at 1
 
         const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad);
+        if (tacklerNow.role === 'GK') {
+          gameBus.emit('keeperSortie', { keeperId: tacklerNow.id, kind: 'rush' });
+          debugLog('keeper', `${tacklerNow.name} rushes out at ${updatedHolder.name} (${(chance * 100).toFixed(0)}%)`, { playerId: tacklerNow.id });
+        }
         // Foul check (`.claude/rules/game-engine/fouls.md`): a foul overturns the challenge — the
         // holder's team gets a free kick / penalty even when the tackle itself won the ball.
         const fc = foulCheck(s, tacklerNow, updatedHolder, 'tackle', success);
@@ -4183,6 +4267,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           s = rollContactInjuries(fouled, [tackler.id, updatedHolder.id], matchMinute(fouled));
           return { state: s, passCompleted: false, tackled: false, goalScored: null };
         }
+        if (success && tacklerNow.role === 'GK') gameBus.emit('keeperSmother', { keeperId: tacklerNow.id });
         if (success) {
           // Won near the byline, wide of the posts: the ball goes behind for a corner sometimes.
           const hGoalX = updatedHolder.attackDir === 1 ? PITCH_LENGTH : 0;

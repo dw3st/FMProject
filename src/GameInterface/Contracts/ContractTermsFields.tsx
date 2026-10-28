@@ -21,6 +21,10 @@ export interface ContractDemandInfo {
   refusesPoorFacilities?: boolean;
   /** The manager's Negotiation attribute (`achievements.md`), a multiplier; absent = neutral. */
   negotiation?: number;
+  /** Renewal: his wage today, to compare with the asking wage. */
+  currentWage?: number;
+  /** Renewal: renewed recently, again only from this date. */
+  renewableOn?: string;
 }
 
 /** The personality lines explaining a demand ("Loyal to the club: −7%"). */
@@ -73,7 +77,7 @@ export function useContractDemandInfo(saveId: string | undefined, playerId: stri
 export function useRefusalText() {
   const { t } = useTranslation();
   return (error: string): string => {
-    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities"];
+    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };
 }
@@ -98,6 +102,15 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
           ? t("contracts.loadingDemand")
           : <>{t("contracts.asking")}: <span className="text-primary font-semibold tabular-nums">{formatWageFull(demand)}</span> {t("contracts.perWeek")}</>}
       </p>
+      {demand !== null && info?.currentWage !== undefined && info.currentWage > 0 && (
+        <p className="text-sm text-muted-foreground m-0 tabular-nums">
+          {t("contracts.currentWage", { wage: formatWageFull(info.currentWage) })}
+          {" · "}
+          <span className={demand > info.currentWage ? "text-chart-4" : "text-primary"}>
+            {t("contracts.wageChange", { pct: `${demand >= info.currentWage ? "+" : "−"}${Math.abs(Math.round((demand / info.currentWage - 1) * 100))}` })}
+          </span>
+        </p>
+      )}
       <PersonalityDemandLines info={info} />
       <div className="flex items-center gap-3">
         <label className="flex-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">

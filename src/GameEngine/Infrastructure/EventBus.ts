@@ -70,6 +70,12 @@ export interface GameEvents {
   aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
   gkClaim: { keeperId: number; claimed: boolean; chance: number };
+  /** Active keeper (`Keeper.ts`): he comes off his line — sweeper chase, 1v1 rush, wide high ball. */
+  keeperSortie: { keeperId: number; kind: 'sweep' | 'rush' | 'high' };
+  /** A loose ball won by the keeper outside his box. */
+  keeperSweep: { keeperId: number };
+  /** A keeper's challenge won the ball at a holder's feet. */
+  keeperSmother: { keeperId: number };
   /** A header at goal (also emitted as a `shot`). */
   header: { player: number; xg: number };
 

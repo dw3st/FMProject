@@ -1643,6 +1643,7 @@ export function MatchScreen() {
           saveId={liveTarget.saveId}
           live={liveRivals.live.filter((l) => l.fixtureId !== matchFixture?.id)}
           highlight={liveRivals.highlight}
+          excludeClubIds={matchFixture ? [matchFixture.home, matchFixture.away] : []}
         />
       )}
       {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}

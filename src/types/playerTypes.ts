@@ -116,6 +116,8 @@ export interface PlayerContract {
   until: string;
   /** Weekly wage in EUR, fixed for the whole contract. */
   wage: number;
+  /** Game date of the last renewal: another one waits `CONTRACT_CONFIG.RENEW_COOLDOWN_DAYS` (report). */
+  renewedOn?: string;
 }
 
 export interface RosterPlayer {

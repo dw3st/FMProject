@@ -7,8 +7,8 @@ import type { H2HSide, H2HWireState } from "@/types/h2hTypes";
 import type { ServerEvent } from "@/types/socialTypes";
 
 /**
- * The wire state as a `GameState`. The engine-only player fields (`fit`, `baseStats`, …) are absent: the screen
- * never reads them (the natural position falls back to the role). Benches left out of the wire (unchanged) keep the
+ * The wire state as a `GameState`. The engine-only player fields (`baseStats`, …) are absent and `fit` carries only
+ * the position aptitudes (the natural position the screens show). Benches left out of the wire (unchanged) keep the
  * last ones.
  */
 export function mergeWireState(prev: GameState | null, wire: H2HWireState): GameState {

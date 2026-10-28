@@ -85,7 +85,13 @@ export interface H2HStatsPayload {
  * A player as the browsers get him: the engine-only fields are left out (`fit`, `baseStats`, `decisionMemory`,
  * `engine`, `bounds`, `fatigueBaselineEnergy`) and the numbers rounded. `runtimeStats` stays (the bench rating).
  */
-export type H2HWirePlayer = Omit<GamePlayer, "fit" | "baseStats" | "decisionMemory" | "engine" | "bounds" | "fatigueBaselineEnergy">;
+/**
+ * A player on the wire: without the engine-only fields, but with his position aptitudes (`fit.aptitudes`, a few
+ * bytes): the screens show each player's natural position from them (report: every bench player read ST / CM / CB).
+ */
+export type H2HWirePlayer = Omit<GamePlayer, "fit" | "baseStats" | "decisionMemory" | "engine" | "bounds" | "fatigueBaselineEnergy"> & {
+  fit?: { aptitudes: NonNullable<GamePlayer["fit"]>["aptitudes"] };
+};
 
 /**
  * The match state as the browsers get it (`h2h_state`). `benchA` / `benchB` are absent when unchanged since the

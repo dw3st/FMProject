@@ -606,7 +606,7 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 - Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
   e gol ao vivo, com as ações; 8 s, no máximo 3.
 - **Últimos lances (4.35.3):** `LiveScoreView.moments` guarda os últimos `RIVALS.LIVE_MOMENTS_MAX` (12) lances (gol com autor, gol anulado, expulsão, intervalo, fim); clicar no amigo na faixa abre o popup `LiveMoments` (placar + lances, mais novos primeiro) com a resenha embaixo.
-- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 4.35.3); os avisos (`ChatPopups`) vão para o ponto `MATCH_POPUPS_ID` logo abaixo dela, centralizados sobre o topo do campo, em vez do canto; gol do amigo destaca 4 s com o autor; clique abre as ações
+- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 4.35.3); desde a 4.37 a faixa lista sempre os amigos da liga (quem não joga: próximo jogo com os dois escudos em ordem casa/fora e a data, de `GET …/rivals` a cada minuto; o rótulo vira "Amigos" sem ninguém ao vivo) e nenhum aviso cobre o campo (report): o gol do amigo acende a linha dele por 8 s com "gol de X", mensagens só acendem o selo do botão Amigos, e só o convite do jogo entre técnicos aparece em `MATCH_POPUPS_ID`; clique abre as ações
   sem pausar.
 - Chat: `TauntLine` (escudo 20px, placar, ícone ou frase em itálico no idioma de quem lê). i18n `rivals.*`.
 

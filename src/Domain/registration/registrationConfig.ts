@@ -84,3 +84,9 @@ export const FORMED_MAX_AGE = 21;
  * there aged ≤ MAX_ARRIVAL_AGE, or with the "origin" green card — a fixed draw by id (nothing stored), chance ORIGIN.
  */
 export const GREEN_CARD = { SEASONS: 3, MAX_ARRIVAL_AGE: 21, ORIGIN: 0.6 } as const;
+
+/**
+ * The `ibero` exemption stands for a Spanish passport (residence): only from this age (report: Endrick, 20, took no
+ * non-EU place while every Brazilian of any age was exempt). Vinícius, Rodrygo, Militão (23+) stay exempt.
+ */
+export const IBERO_PASSPORT_MIN_AGE = 23;

@@ -1,3 +1,4 @@
+import { replaceAfterSale } from "@/Domain/contracts/freeAgents";
 import { afterListedForSale } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
 import { seasonLabel } from "@/Domain/history/history";
@@ -351,6 +352,23 @@ export const transferRoutes = {
             for (const c of changes) {
               if (c.squadId !== buyerSquad.id) continue;
               for (const r of c.broken) await emitInboxMessage(saveId, buildClubRecordMessage(date, r), saveService, auth.seatId);
+            }
+          }
+
+          // An AI seller left below a role minimum signs a replacement today (`replaceAfterSale`).
+          if (!isSellerPlayerClub && !(await saveService.seatOfClub(saveId, sellerSquad.id))) {
+            const sellerNow = await saveService.getSquadById(saveId, sellerSquad.id);
+            const end = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === sellerResolved.leagueSlug)?.end ?? defaultSeasonEnd(date);
+            if (sellerNow) {
+              const pool = await saveService.getFreeAgents(saveId);
+              const r = replaceAfterSale(sellerNow, pool, end, `b${date.replaceAll("-", "")}`);
+              if (r) {
+                await saveService.saveSquadById(saveId, r.squad);
+                if (r.signed.length > 0) {
+                  const ids = new Set(r.signed.map((x) => x.id));
+                  await saveService.writeFreeAgents(saveId, pool.filter((f) => !ids.has(f.player.id)));
+                }
+              }
             }
           }
 

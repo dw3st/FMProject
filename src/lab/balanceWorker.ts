@@ -109,7 +109,7 @@ function emptyTeamRaw(): TeamRawStats {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
-    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -170,6 +170,9 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.headerGoals                 += src.headerGoals;
   dst.longBalls                   += src.longBalls;
   dst.longBallsCompleted          += src.longBallsCompleted;
+  dst.keeperSorties               += src.keeperSorties;
+  dst.keeperSweeps                += src.keeperSweeps;
+  dst.keeperSmothers              += src.keeperSmothers;
   dst.corners                     += src.corners;
   dst.freeKicks                   += src.freeKicks;
   dst.directFreeKickShots         += src.directFreeKickShots;
@@ -432,6 +435,9 @@ function runOneMatch(
   teamA.headerGoals        += sA.headerGoals;        teamB.headerGoals        += sB.headerGoals;
   teamA.longBalls          += sA.longBalls;          teamB.longBalls          += sB.longBalls;
   teamA.longBallsCompleted += sA.longBallsCompleted; teamB.longBallsCompleted += sB.longBallsCompleted;
+  teamA.keeperSorties      += sA.keeperSorties;      teamB.keeperSorties      += sB.keeperSorties;
+  teamA.keeperSweeps       += sA.keeperSweeps;       teamB.keeperSweeps       += sB.keeperSweeps;
+  teamA.keeperSmothers     += sA.keeperSmothers;     teamB.keeperSmothers     += sB.keeperSmothers;
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
   teamA.freeKicks           += sA.freeKicks;           teamB.freeKicks           += sB.freeKicks;
   teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;

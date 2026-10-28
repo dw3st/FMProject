@@ -30,7 +30,7 @@ export const RIVALS = {
   POPUP_MS: 8_000,
   POPUP_MAX: 3,
   /** A friend's line in the live strip lights up this long after his goal. */
-  STRIP_HIGHLIGHT_MS: 4_000,
+  STRIP_HIGHLIGHT_MS: 8_000,
   /** Results per page of `GET /results`. */
   RESULTS_PAGE: 50,
   /** Phrases shown in the menu. */

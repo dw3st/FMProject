@@ -286,3 +286,8 @@ forfeit/coin-flip kick) — the engine's `/test` debug panel shows it per kick.
   match (`finishing`/`reflex`/`jump` attributes), calls `resolvePenaltyShootout` with the match's
   own seeded `rng`, and reads only the final `score` — no kick-by-kick presentation. See
   `.claude/rules/non-player-games.md` → "quickSim (ligas não seguidas)".
+
+## Goleiro ativo (4.37)
+
+O arco e a qualidade de posição agora vêm de `Domain/Keeper.ts` (arco mais adiantado com a bola longe, saída no 1 contra
+1 sem punição na qualidade). Ver `.claude/rules/game-engine/keeper.md`.

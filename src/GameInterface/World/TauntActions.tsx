@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
-import { REACTION_ICON } from "@/GameInterface/World/reactionIcons";
+import { REACTION_COLOR, REACTION_ICON, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
-import { REACTIONS, tauntsFor } from "@/Domain/rivals/taunts";
+import { REACTIONS, tauntTone, tauntsFor } from "@/Domain/rivals/taunts";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { TauntGroup, TauntKind, TauntTarget } from "@/types/rivalsTypes";
 
 const ICON_BUTTON =
-  "flex items-center justify-center w-8 h-8 rounded bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50";
+  "flex items-center justify-center w-9 h-9 rounded-full bg-secondary/40 border-0 cursor-pointer hover:bg-secondary disabled:opacity-50 transition-colors";
 
 /** Reactions (icons) and ready phrases for a friend's result or live game. Sent to the league chat. */
 export function TauntActions({ saveId, target, groups }: { saveId: string; target: TauntTarget; groups: readonly TauntGroup[] }) {
@@ -42,13 +42,13 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
           <button
             key={id}
             type="button"
-            className={ICON_BUTTON}
+            className={`${ICON_BUTTON} ${REACTION_COLOR[id]}`}
             disabled={busy}
             onClick={() => void send("reaction", id)}
             aria-label={t(`rivals.reactions.${id}`)}
             title={t(`rivals.reactions.${id}`)}
           >
-            <Icon name={REACTION_ICON[id]} size={16} />
+            <Icon name={REACTION_ICON[id]} size={20} />
           </button>
         ))}
         {phrases.length > 0 && (
@@ -77,7 +77,7 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
                 type="button"
                 disabled={busy}
                 onClick={() => void send("phrase", id)}
-                className="w-full text-left text-sm text-foreground italic bg-transparent border-0 rounded px-2 py-1.5 cursor-pointer hover:bg-secondary/40"
+                className={`w-full text-left text-sm ${TONE_COLOR[tauntTone(id)]} italic bg-transparent border-0 rounded px-2 py-1.5 cursor-pointer hover:bg-secondary/40`}
               >
                 {t(`rivals.taunts.${id}`)}
               </button>

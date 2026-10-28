@@ -25,6 +25,78 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.37",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Goleiro mais ativo: sai da área para cortar bolas longas quando chega antes do atacante.",
+        en: "A more active goalkeeper: he leaves his box to cut out long balls when he gets there before the striker.",
+      },
+      {
+        pt: "No 1 contra 1, o goleiro vai ao encontro do atacante e pode abafar a bola nos pés dele.",
+        en: "In a one-on-one, the goalkeeper comes out at the striker and can smother the ball at his feet.",
+      },
+      {
+        pt: "Com o time no ataque, o goleiro se adianta até perto da entrada da área.",
+        en: "With his team attacking, the goalkeeper steps up toward the edge of his box.",
+      },
+      {
+        pt: "O goleiro também sai em cruzamentos que caem fora da pequena área.",
+        en: "The goalkeeper also comes for crosses that drop outside the six-yard box.",
+      },
+      {
+        pt: "Na renovação de contrato, o salário atual aparece ao lado do pedido.",
+        en: "When renewing a contract, the current wage shows next to the asking wage.",
+      },
+      {
+        pt: "Na partida ao vivo, a faixa de cima mostra sempre os amigos da liga: o placar de quem está jogando e o próximo jogo e a data de quem não está. O gol do amigo acende a linha dele, sem balão sobre o campo.",
+        en: "In the live match, the top strip always shows the league's friends: the score of those playing and the next match and date of those who are not. A friend's goal lights his line, with no popup over the pitch.",
+      },
+      {
+        pt: "Reações aos jogos dos amigos com ícones novos e frases coloridas.",
+        en: "Reactions to friends' games with new icons and coloured phrases.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O placar ao vivo do amigo agora segue a ordem casa e fora, com os dois escudos.",
+        en: "A friend's live score now follows the home and away order, with both crests.",
+      },
+      {
+        pt: "Dá para comprar jogador de clube com o elenco no mínimo da posição: ele vende e contrata um substituto.",
+        en: "You can buy from a club at the minimum for that position: it sells and signs a replacement.",
+      },
+      {
+        pt: "No jogo ao vivo entre amigos, o banco volta a mostrar a posição de cada jogador (antes todos viravam ST, CM ou CB).",
+        en: "In the live match between friends, the bench shows each player's position again (they all read ST, CM or CB).",
+      },
+      {
+        pt: "No painel de substituições, zagueiros e volantes não se sobrepõem mais e a vaga de um lesionado aparece no campo.",
+        en: "In the substitutions panel, centre-backs and holding midfielders no longer overlap and an injured player's empty slot shows on the pitch.",
+      },
+      {
+        pt: "Times B e reservas não disputam mais a copa nacional.",
+        en: "B and reserve teams no longer play in the national cup.",
+      },
+      {
+        pt: "Um jogador renovado só pode renovar de novo depois de 6 meses.",
+        en: "A player who just renewed can only renew again after 6 months.",
+      },
+      {
+        pt: "Na Espanha, sul-americanos com menos de 23 anos contam como extracomunitários.",
+        en: "In Spain, South Americans under 23 count as non-EU players.",
+      },
+      {
+        pt: "O escudo novo do Athletic Club aparece para todos (o antigo ficava guardado no navegador).",
+        en: "Athletic Club's new crest now shows for everyone (the old one stayed cached in the browser).",
+      },
+      {
+        pt: "O hall da fama mostra as edições por data e esconde as que ficaram sem pontos.",
+        en: "The hall of fame lists editions by date and hides the ones with no points.",
+      },
+    ],
+  },
+  {
     version: "4.36",
     date: "2026-10-27",
     items: [

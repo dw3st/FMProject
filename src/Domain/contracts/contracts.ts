@@ -229,3 +229,10 @@ export function renewalWithinLimits(player: RosterPlayer, date: string, seasonEn
   if (remaining + years > C.MAX_YEARS) return false;
   return player.age + remaining - 1 + years <= C.MAX_CONTRACT_AGE;
 }
+
+/** First day a renewed player can be renewed again, or null when he can be now. */
+export function renewalAvailableOn(contract: { renewedOn?: string } | undefined, date: string): string | null {
+  if (!contract?.renewedOn) return null;
+  const on = addDays(contract.renewedOn, C.RENEW_COOLDOWN_DAYS);
+  return on > date ? on : null;
+}

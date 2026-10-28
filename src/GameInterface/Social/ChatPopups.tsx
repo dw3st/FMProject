@@ -1,3 +1,5 @@
+import type { LiveScoreView } from "@/types/rivalsTypes";
+import { homeAwayOf } from "@/Domain/rivals/homeAway";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { resultLetter, scoreLineOf } from "@/Domain/rivals/results";
@@ -50,6 +52,12 @@ function PopupCard({ popup }: { popup: ChatPopup }) {
   );
 }
 
+/** "Getafe 1–2 Real Madrid": a friend's live game in home / away order. */
+function liveScoreLine(l: LiveScoreView): string {
+  const x = homeAwayOf(l);
+  return `${x.homeName} ${x.home}–${x.away} ${x.awayName}`;
+}
+
 const RESULT_BORDER = { W: "border-primary", D: "border-muted-foreground", L: "border-destructive" } as const;
 
 /** A friend's result or live goal, with the reactions and phrases to answer it in the league chat. */
@@ -64,7 +72,7 @@ function RivalPopupCard({ popup }: { popup: RivalPopup }) {
   const border = r ? RESULT_BORDER[resultLetter(r)] : "border-border";
   const text = r
     ? `${nickname} · ${scoreLineOf(r)}`
-    : t("rivals.goalPopup", { nickname, score: `${l!.score.for}–${l!.score.against}`, minute: l!.minute });
+    : t("rivals.goalPopup", { nickname, score: liveScoreLine(l!), minute: l!.minute });
   return (
     <div className={`pointer-events-auto w-[300px] rounded-md border ${border} bg-card shadow-lg flex flex-col gap-2 p-3`}>
       <div className="flex items-start gap-2">
@@ -96,8 +104,6 @@ function RivalPopupCard({ popup }: { popup: RivalPopup }) {
  */
 export function ChatPopups() {
   const s = useSocial();
-  // The live match (`MATCH_POPUPS_ID`) shows them under the friends' live strip, over the top of the pitch, instead of
-  // over the team list in the corner.
   const invite = s.h2hPopup && !!s.h2hInvite;
   if (s.popups.length === 0 && s.rivalPopups.length === 0 && !invite) return null;
   // Read at render: popups arrive after the match screen has mounted its spot (it may still be loading at first).
@@ -114,8 +120,11 @@ export function ChatPopups() {
     </>
   );
   if (anchor) {
+    // In the live match only the head-to-head invite is a card: a friend's goal lights his line in the live strip and a
+    // message lights the Friends button's badge, so nothing covers the pitch (report).
+    if (!invite) return null;
     return createPortal(
-      <div role="status" aria-live="polite" className="flex flex-col items-center gap-2">{cards}</div>,
+      <div role="status" aria-live="polite" className="flex flex-col items-center gap-2"><H2HInvitePopup /></div>,
       anchor,
     );
   }

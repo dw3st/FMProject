@@ -28,7 +28,8 @@ export type DebugCategory =
   | 'aerial'        // crosses, long balls, aerial duels, keeper claims, headers
   | 'setPiece'      // corners, direct free kicks and the wall, set-piece deliveries
   | 'var'           // referee errors, VAR checks, manager complaints
-  | 'weather';      // weather of the match (`weather.md`)
+  | 'weather'       // weather of the match (`weather.md`)
+  | 'keeper';       // active keeper: sweeps, 1v1 rushes, wide high-ball claims (`Keeper.ts`)
 
 export interface DebugEntry {
   id:        number;

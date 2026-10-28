@@ -3,6 +3,7 @@
  * A cup lives in leagues/cup_<country>/ like a league (meta, rounds, date-index; no standings)
  * and is NOT part of meta.activeLeagues.
  */
+import { reserveClubIds } from "@/Domain/cups/reserves";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
@@ -31,13 +32,16 @@ function countryClubs(
 ): CupEntrant[] {
   const pyr = pyramidByLeague(pyramids);
   const out: CupEntrant[] = [];
+  const names: { id: string; name: string }[] = [];
   for (const league of index.leagues()) {
     if (isCupSlug(league) || countryOf.get(league) !== country) continue;
     const p = pyr.get(league);
     const tier = (p && tierOfLeague(p, league)) ?? 1;
-    for (const t of index.inLeague(league)) out.push({ id: t.squadId, tier });
+    for (const t of index.inLeague(league)) { out.push({ id: t.squadId, tier }); names.push({ id: t.squadId, name: t.name }); }
   }
-  return out;
+  // Reserve / B sides never play the national cup.
+  const reserves = reserveClubIds(names);
+  return out.filter(e => !reserves.has(e.id));
 }
 
 /**

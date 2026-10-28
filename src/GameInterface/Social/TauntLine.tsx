@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { REACTION_ICON } from "@/GameInterface/World/reactionIcons";
+import { REACTION_COLOR, REACTION_ICON, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
+import { tauntTone } from "@/Domain/rivals/taunts";
 import { scoreLineOf } from "@/Domain/rivals/results";
 import type { ReactionId, TauntMeta } from "@/types/rivalsTypes";
 
@@ -16,12 +17,12 @@ export function TauntLine({ taunt }: { taunt: TauntMeta }) {
         {taunt.live && <span className="text-muted-foreground tabular-nums">· {t("rivals.liveMinute", { minute: taunt.minute ?? 0 })}</span>}
       </span>
       {taunt.kind === "reaction" ? (
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          <Icon name={REACTION_ICON[taunt.id as ReactionId]} size={16} />
+        <span className={`flex items-center gap-1.5 ${REACTION_COLOR[taunt.id as ReactionId]}`}>
+          <Icon name={REACTION_ICON[taunt.id as ReactionId]} size={18} />
           <span>{t(`rivals.reactions.${taunt.id}`)}</span>
         </span>
       ) : (
-        <span className="italic">{t(`rivals.taunts.${taunt.id}`)}</span>
+        <span className={`italic ${TONE_COLOR[tauntTone(taunt.id)]}`}>{t(`rivals.taunts.${taunt.id}`)}</span>
       )}
     </span>
   );
