@@ -5,9 +5,9 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
-import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, PHOTOGRAPHERS } from "@/GraficsEngine/benchView";
+import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, LED, ledAdFor, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -268,7 +268,9 @@ function drawPitch(
   const F = MATCH_LOOK.FLAG;
   for (const [fx, fy] of [[x, y], [rx, y], [x, y + height], [rx, y + height]] as const) {
     g.moveTo(fx, fy).lineTo(fx, fy - F.POLE).stroke({ width: 1.5, color: 0xe9e9e9 });
-    g.moveTo(fx, fy - F.POLE).lineTo(fx + F.W, fy - F.POLE + F.H / 2).lineTo(fx, fy - F.POLE + F.H).fill(F.COLOR);
+    // The pennant points into the pitch (tester report): right at the left corners, left at the right ones.
+    const dir = fx === x ? 1 : -1;
+    g.moveTo(fx, fy - F.POLE).lineTo(fx + dir * F.W, fy - F.POLE + F.H / 2).lineTo(fx, fy - F.POLE + F.H).fill(F.COLOR);
   }
 }
 
@@ -375,6 +377,9 @@ interface Props {
   teamAColor?: string;
   /** Team B (away) kit color — CSS hex. Falls back to red. */
   teamBColor?: string;
+  /** Second kit colours (the marker border is split in the two, 4.38.21). Absent: white. */
+  teamAColor2?: string;
+  teamBColor2?: string;
   /**
    * Keep the Pixi ticker running while paused (renders every frame). The ticker still
    * calls `pumpSimulation()` every frame in that case, but `pump(paused)` returns 0
@@ -477,6 +482,11 @@ export interface PitchStadium {
   homeColors?: [string, string];
   /** URL of the home crest, shown on the crowd's flags and banners (4.38.14). */
   homeCrest?: string;
+  /**
+   * LED boards around the pitch (4.38.21): panels of made-up ads that flip now and then (`ledAdFor`), and after a goal
+   * the goal text (`{name}` and `{minute}` replaced) on every panel. Absent: no boards.
+   */
+  led?: { goal: string };
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -501,6 +511,8 @@ export function PixiPitch({
   crowdClickPos = null,
   teamAColor,
   teamBColor,
+  teamAColor2,
+  teamBColor2,
   keepTickerAlive = false,
   captureRef,
   faceUrls,
@@ -531,6 +543,9 @@ export function PixiPitch({
   const crowdEvalConfigRef       = useRef(crowdEvalConfig);
   const crowdClickPosRef         = useRef(crowdClickPos);
   const faceUrlsRef              = useRef(faceUrls);
+  /** Second kit colours, read every frame: they can arrive after the pitch mounts (the roster loads later). */
+  const secondColorsRef          = useRef({ A: teamAColor2, B: teamBColor2 });
+  secondColorsRef.current = { A: teamAColor2, B: teamBColor2 };
   const effectLabelsRef          = useRef(effectLabels);
   const mirrorRef                = useRef(mirror);
   const perfRefRef               = useRef(perfRef);
@@ -662,6 +677,13 @@ export function PixiPitch({
 
       const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
       const fillB = teamBColor ? cssColorToPixiHex(teamBColor) : DEFAULT_TEAM_B;
+      // Second colour of each kit (marker border, number tag): white when unknown or the same as the kit.
+      const secondOf = (css: string | undefined, kit: number) => {
+        const c = css ? cssColorToPixiHex(css) : 0xffffff;
+        return c === kit ? (kit === 0xffffff ? 0x1a1a1a : 0xffffff) : c;
+      };
+      let fillA2 = secondOf(secondColorsRef.current.A, fillA);
+      let fillB2 = secondOf(secondColorsRef.current.B, fillB);
 
       // ── Stadium: stand + crowd baked into ONE texture (spec 2026-10-08-match-visual §2) ──
       // Re-baked only when the fill, the home team, the venue or the mirror change; zero cost per frame.
@@ -1269,6 +1291,15 @@ export function PixiPitch({
         });
       }
 
+      /** The marker border: the kit on the upper left half, the second colour on the other, a thin edge outside. */
+      function drawMarkerRing(ring: Graphics, team: TeamId): void {
+        const rw = MARKER_RING_W, rr = markerR - rw / 2 + 0.5;
+        ring.clear()
+          .arc(0, 0, rr, Math.PI * 0.75, Math.PI * 1.75).stroke({ width: rw, color: team === "A" ? fillA : fillB })
+          .arc(0, 0, rr, -Math.PI * 0.25, Math.PI * 0.75).stroke({ width: rw, color: team === "A" ? fillA2 : fillB2 })
+          .circle(0, 0, markerR + 0.5).stroke(team === "A" ? outlineA : outlineB);
+      }
+
       /** A dark rounded pill behind the name with a strip of the team colour (local coordinates: label anchor). */
       function drawPill(g: Graphics, label: Text, color: number): void {
         const P = MATCH_LOOK.PILL;
@@ -1286,9 +1317,24 @@ export function PixiPitch({
           .ellipse(markerR * MARKER_SHADOW.DX, markerR * MARKER_SHADOW.DY, markerR, markerR * MARKER_SHADOW.SCALE_Y)
           .fill({ color: 0x000000, alpha: MARKER_SHADOW.ALPHA });
         const disc = new Graphics().circle(0, 0, markerR).fill(color);
-        const ring = new Graphics()
-          .circle(0, 0, markerR - MARKER_RING_W / 2 + 0.5).stroke({ width: MARKER_RING_W, color })
-          .circle(0, 0, markerR + 0.5).stroke(player.team === "A" ? outlineA : outlineB);
+        // Border in the kit's two colours (4.38.21, mock option B): the kit on the upper left half, the second
+        // colour on the other, with a thin dark edge outside.
+        const color2 = player.team === "A" ? fillA2 : fillB2;
+        const ring = new Graphics();
+        ring.label = "ring";
+        drawMarkerRing(ring, player.team);
+        // Number tag under the marker: the position number of the slot (1 = keeper … 11), in the kit.
+        const tagW = markerR * 1.15, tagH = markerR * 0.72;
+        const numTag = new Graphics()
+          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).fill(color)
+          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
+        const numText = new Text({
+          text: String(player.slotIndex + 1),
+          style: new TextStyle({ fontSize: Math.max(8, Math.round(markerR * 0.62)), fontFamily: 'sans-serif', fontWeight: '800', fill: color2 }),
+        });
+        numText.anchor.set(0.5);
+        numText.y = markerR * 0.62 + tagH / 2;
+        numText.label = "num";
         // Card: a small tilted card at the marker's top-right.
         const cw = markerR * CARD_BADGE.W, ch = markerR * CARD_BADGE.H;
         const cardBadge = new Graphics()
@@ -1311,7 +1357,7 @@ export function PixiPitch({
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
-        marker.addChild(lightShadow, shadow, disc, ring, gloss, cardBadge);
+        marker.addChild(lightShadow, shadow, disc, ring, gloss, numTag, numText, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -1445,6 +1491,48 @@ export function PixiPitch({
       };
       const playerPos = (id: number) => stateRef.current.players.find((p) => p.id === id);
 
+      // ── Play lines (4.38.21, mock option B): the pass toward its receiver, the shot's arc, the impact ring ──
+      const playGfx = new Graphics();
+      playGfx.zIndex = -0.3; // over the grass, under the players
+      playGfx.eventMode = 'none';
+      world.addChild(playGfx);
+      let impacts: { x: number; y: number; at: number }[] = [];
+      const unsubImpact = gameBus.on("shotResolved", (e) => {
+        if (framesShown()) impacts = [...impacts.slice(-2), { x: e.toX, y: e.toY, at: effectNow }];
+      });
+      /** A dashed line between two pixel points. */
+      const dashed = (g: Graphics, ax: number, ay: number, bx: number, by: number, style: { width: number; color: number; alpha: number }) => {
+        const d = Math.hypot(bx - ax, by - ay), dash = Math.max(4, markerR * 0.45), n = Math.floor(d / (dash * 2));
+        for (let i = 0; i < n; i++) {
+          const t0 = (i * 2 * dash) / d, t1 = Math.min(1, ((i * 2 + 1) * dash) / d);
+          g.moveTo(ax + (bx - ax) * t0, ay + (by - ay) * t0).lineTo(ax + (bx - ax) * t1, ay + (by - ay) * t1);
+        }
+        g.stroke(style);
+      };
+      const drawPlayLines = (ball: { x: number; y: number }, positions: Map<number, { x: number; y: number }>) => {
+        playGfx.clear();
+        const st = stateRef.current;
+        const { px: bx, py: by } = toPixel(ball.x, ball.y);
+        if (st.pass && st.pass.toId !== null) {
+          const to = positions.get(st.pass.toId) ?? st.players.find((p) => p.id === st.pass!.toId);
+          if (to) {
+            const { px: tx, py: ty } = toPixel(to.x, to.y);
+            dashed(playGfx, bx, by, tx, ty, { width: 1.5, color: 0xffffff, alpha: 0.55 });
+            playGfx.circle(tx, ty, markerR * 1.4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
+          }
+        }
+        if (st.shot) {
+          const a = toPixel(st.shot.fromX, st.shot.fromY), b = toPixel(st.shot.toX, st.shot.toY);
+          const lift = Math.min(60, Math.hypot(b.px - a.px, b.py - a.py) * 0.18);
+          playGfx.moveTo(a.px, a.py).quadraticCurveTo((a.px + b.px) / 2, Math.min(a.py, b.py) - lift, b.px, b.py)
+            .stroke({ width: 2, color: 0xffe678, alpha: 0.75 });
+        }
+        impacts = impacts.filter((i) => effectNow - i.at < 0.6);
+        for (const i of impacts) {
+          const k = (effectNow - i.at) / 0.6, { px, py } = toPixel(i.x, i.y);
+          playGfx.circle(px, py, markerR * (0.5 + k * 2.5)).stroke({ width: 2, color: 0xffffff, alpha: 1 - k });
+        }
+      };
       const unsubShotFx = gameBus.on("shotResolved", (e) => {
         if (e.isGoal) { pendingGoalShot = { toX: e.toX, toY: e.toY }; return; }
         const labels = labelsOf();
@@ -1739,37 +1827,116 @@ export function PixiPitch({
         const gx = toPixel(engineGoalX(p.attackDir), PITCH_WIDTH / 2).px;
         photoBurst[gx < m.marginX + m.width / 2 ? "left" : "right"] = effectNow;
       });
+      const photoSpots = photographerSpots(stadiumRef.current?.seed ?? "match");
       const drawPhotographers = () => {
         photoGfx.clear();
         if (!(officialsOn && extrasRef.current && m.stand)) return;
         const u = markerR * 0.4; // the same unit as the benches
-        const midY = m.marginY + m.height / 2;
-        for (const side of ["left", "right"] as const) {
-          const out = side === "left" ? -1 : 1;
-          const lineX = side === "left" ? m.marginX : m.marginX + m.width;
-          const x = lineX + out * (m.goalNetDepth + u * 0.6);
-          PHOTOGRAPHERS.forEach((ph, i) => {
-            const y = midY + ph.dy * m.scale;
+        const midY = m.marginY + m.height / 2, midX = m.marginX + m.width / 2;
+        photoSpots.forEach((ph, i) => {
+            const side = ph.side;
+            // `out` points away from the pitch; the camera looks the other way.
+            const out = side === "left" ? -1 : side === "right" ? 1 : 0;
+            const lineX = side === "left" ? m.marginX : m.marginX + m.width;
+            const x = side === "top" ? midX + ph.along * m.scale : lineX + out * (m.goalNetDepth + u * 0.6);
+            const y = side === "top" ? m.marginY - STADIUM.RUNOFF_YDS * m.scale * 0.55 : midY + ph.along * m.scale;
+            const burstSide = side === "top" ? (x < midX ? "left" : "right") : side;
             const look = benchLook(`photo:${side}:${i}`);
-            // Shadow, body (dark jacket, a bib), the camera toward the pitch, the head.
+            const cx = side === "top" ? 0 : -out, cy = side === "top" ? 1 : 0;
+            // Shadow, body (dark jacket, a bib), the camera toward the pitch (cx, cy), the head.
             photoGfx.ellipse(x + u * 0.15, y + u * 0.3, u * 1.05, u * 0.7).fill({ color: 0x000000, alpha: 0.3 });
-            photoGfx.ellipse(x, y, u * 0.62, u).fill(0x2b3846);
-            photoGfx.ellipse(x, y, u * 0.4, u * 0.7).fill(0xf2a33a);
-            photoGfx.rect(x - out * u * 1.5, y - u * 0.35, u * 0.9, u * 0.7).fill(0x15191f);
-            photoGfx.circle(x - out * u * 1.6, y, u * 0.28).fill(0x3d4a59);
-            photoGfx.circle(x + out * u * 0.15, y, u * 0.5).fill(BENCH_SKIN[look.skin]!);
+            photoGfx.ellipse(x, y, cy ? u : u * 0.62, cy ? u * 0.62 : u).fill(0x2b3846);
+            photoGfx.ellipse(x, y, cy ? u * 0.7 : u * 0.4, cy ? u * 0.4 : u * 0.7).fill(0xf2a33a);
+            const camX = x + cx * u * 1.1, camY = y + cy * u * 1.1;
+            photoGfx.rect(camX - u * 0.42, camY - u * 0.42, u * 0.84, u * 0.84).fill(0x15191f);
+            photoGfx.circle(camX + cx * u * 0.4, camY + cy * u * 0.4, u * 0.28).fill(0x3d4a59);
+            photoGfx.circle(x - cx * u * 0.15, y - cy * u * 0.15, u * 0.5).fill(BENCH_SKIN[look.skin]!);
             const hair = BENCH_HAIR[look.hair];
-            if (hair !== undefined) photoGfx.circle(x + out * u * 0.3, y, u * 0.44).fill(hair);
-            // Flash: a short white burst; many in a row right after a shot toward this goal.
-            const burst = effectNow - photoBurst[side];
+            if (hair !== undefined) photoGfx.circle(x - cx * u * 0.3, y - cy * u * 0.3, u * 0.44).fill(hair);
+            // Flash: a short white burst; many in a row right after a shot toward that goal.
+            const burst = effectNow - photoBurst[burstSide];
             const period = burst >= 0 && burst < 2.2 ? 0.35 : 3.5 + (i % 3);
             const ph0 = (effectNow + look.phase * 2) % period;
             if (ph0 < 0.09 && (burst < 2.2 || (Math.floor((effectNow + look.phase * 2) / period) + i) % 2 === 0)) {
               const a = 1 - ph0 / 0.09;
-              photoGfx.circle(x - out * u * 1.7, y, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
-              photoGfx.circle(x - out * u * 1.7, y, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
+              const fx = camX + cx * u * 0.6, fy = camY + cy * u * 0.6;
+              photoGfx.circle(fx, fy, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
+              photoGfx.circle(fx, fy, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
             }
-          });
+        });
+      };
+      // ── LED boards (4.38.21): panels of made-up ads that flip together now and then, Winning Eleven style; after
+      // a goal every panel shows the goal ──
+      const ledLayer = new Container();
+      ledLayer.zIndex = -0.68;
+      ledLayer.eventMode = 'none';
+      world.addChild(ledLayer);
+      type LedPanel = { bg: Graphics; text: Text; w: number; h: number; order: number; shown: string };
+      const ledPanels: LedPanel[] = [];
+      const ledSeed = stadiumRef.current?.seed ?? "match";
+      if (m.stand && stadiumRef.current?.led) {
+        const inner = m.stand.inner, h = Math.max(5, Math.round(LED.HEIGHT_YDS * m.scale));
+        const specs = [
+          { x: inner.x, y: inner.y, len: inner.w, rot: 0 },
+          { x: inner.x + h, y: inner.y, len: inner.h, rot: Math.PI / 2 },
+          { x: inner.x + inner.w - h, y: inner.y + inner.h, len: inner.h, rot: -Math.PI / 2 },
+        ];
+        let order = 0;
+        for (const sp of specs) {
+          const board = new Container();
+          board.x = sp.x; board.y = sp.y; board.rotation = sp.rot;
+          ledLayer.addChild(board);
+          const n = Math.max(1, Math.round(sp.len / (h * LED.PANEL_H)));
+          const w = sp.len / n;
+          for (let k = 0; k < n; k++) {
+            const panel = new Container();
+            panel.x = k * w;
+            const bg = new Graphics();
+            const text = new Text({ text: "", style: new TextStyle({ fontSize: Math.round(h * 0.72), fontFamily: 'sans-serif', fontWeight: '800', fill: 0xffffff, letterSpacing: 1 }) });
+            text.anchor.set(0.5);
+            text.x = w / 2; text.y = h / 2;
+            panel.addChild(bg, text);
+            board.addChild(panel);
+            ledPanels.push({ bg, text, w, h, order: order++, shown: "" });
+          }
+        }
+      }
+      let ledGoal: { text: string; at: number } | null = null;
+      const unsubLedGoal = gameBus.on("goalScored", (e) => {
+        const tpl = stadiumRef.current?.led?.goal;
+        if (!tpl) return;
+        const scorer = stateRef.current.players.find((p) => p.id === e.scorerId);
+        const name = scorer ? shirtName(scorer.name).toUpperCase() : "";
+        ledGoal = { text: tpl.replace("{name}", name).replace("{minute}", String(e.minute + 1)), at: effectNow };
+      });
+      const drawLed = () => {
+        if (ledPanels.length === 0) return;
+        if (ledGoal && effectNow - ledGoal.at > LED.GOAL_S) ledGoal = null;
+        const cycle = Math.floor(effectNow / LED.SWITCH_S);
+        const into = effectNow - cycle * LED.SWITCH_S;
+        for (const p of ledPanels) {
+          // The flip runs along the boards: each panel a moment after the one before it.
+          const delay = (p.order % 24) * LED.FLIP_STAGGER_S;
+          const showCycle = into >= delay ? cycle : cycle - 1;
+          let key: string, text: string, bg: number, fg: number;
+          if (ledGoal) {
+            const blink = Math.floor((effectNow - ledGoal.at) * 3) % 2 === 0;
+            key = `goal:${blink}`; text = ledGoal.text; bg = blink ? LED.GOAL : 0x06090d; fg = blink ? 0x06090d : LED.GOAL;
+          } else {
+            const ad = ledAdFor(ledSeed, showCycle, p.order);
+            key = `ad:${showCycle}`; text = ad.text; bg = ad.bg; fg = ad.fg;
+          }
+          // The flip: the panel squeezes to a line and opens with the new ad.
+          const t = into - delay;
+          p.text.scale.y = !ledGoal && t >= 0 && t < LED.FLIP_S ? Math.abs(Math.cos((t / LED.FLIP_S) * Math.PI)) : 1;
+          if (p.shown !== key) {
+            p.shown = key;
+            p.bg.clear().rect(0, 0, p.w, p.h).fill(bg).rect(0, 0, 1, p.h).fill({ color: 0x000000, alpha: 0.5 });
+            p.text.text = text;
+            p.text.style.fill = fg;
+            const maxW = p.w * 0.9;
+            p.text.scale.x = p.text.width > maxW ? maxW / (p.text.width / p.text.scale.x) : 1;
+          }
         }
       };
       const coachWalkHalf = m.width * COACH_WALK_FRAC;
@@ -2079,6 +2246,7 @@ export function PixiPitch({
         }
         lastDrawnPos = drawnPos;
         lastDrawnBall = drawnB;
+        drawPlayLines(drawnB, drawnPos);
 
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
@@ -2099,6 +2267,20 @@ export function PixiPitch({
         const booked = bookedPlayerIds(stateRef.current.cards);
         holderGlowGfx.clear();
         fatigueGfx.clear();
+        // The second kit colours came in after the mount: redraw the borders and the numbers once.
+        {
+          const a2 = secondOf(secondColorsRef.current.A, fillA), b2 = secondOf(secondColorsRef.current.B, fillB);
+          if (a2 !== fillA2 || b2 !== fillB2) {
+            fillA2 = a2; fillB2 = b2;
+            for (const p of stateRef.current.players) {
+              const mk = playerGraphics.get(p.id);
+              const ring = mk?.getChildByLabel("ring") as Graphics | null;
+              if (ring) drawMarkerRing(ring, p.team);
+              const num = mk?.getChildByLabel("num") as Text | null;
+              if (num) num.style.fill = p.team === "A" ? fillA2 : fillB2;
+            }
+          }
+        }
         // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
         const st0 = stateRef.current;
         const glowId = st0.pass || st0.shot || st0.looseBall ? null : st0.ballHolderId;
@@ -2184,7 +2366,15 @@ export function PixiPitch({
           } else {
             markerVel.set(player.id, { x: px, y: py, vx: 0, vy: 0 });
           }
+          // The number follows the slot (substitution, position swap).
+          const numText = g.getChildByLabel("num") as Text | null;
+          if (numText && numText.text !== String(player.slotIndex + 1)) numText.text = String(player.slotIndex + 1);
           if (label) {
+            // Names only of the ball holder and of who the pass goes to (all of them in debug).
+            const named = debugModeRef.current || player.id === st0.ballHolderId || player.id === st0.pass?.toId;
+            label.visible = named;
+            const pillG = playerPills.get(player.id);
+            if (pillG) pillG.g.visible = named;
             { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
             label.y = py - (markerR + MATCH_LOOK.PILL.LIFT);
@@ -2658,6 +2848,7 @@ export function PixiPitch({
         drawOfficials(drawnB, [...drawnPos.values()]);
         { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); }
         drawPhotographers();
+        if (extrasRef.current) drawLed();
         drawStretchers();
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
@@ -2987,6 +3178,8 @@ export function PixiPitch({
         unsubArFlag();
         unsubCoachGoal();
         unsubBenchGoal();
+        unsubLedGoal();
+        unsubImpact();
         unsubPhotoShot();
         unsubAnimCelebrate();
         unsubStretcher();

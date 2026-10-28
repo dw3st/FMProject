@@ -83,8 +83,28 @@ export function benchLayout(n: number, cx: number, w: number, top: number, botto
   return { box: { x: cx - w / 2, y, w, h }, fig, seats };
 }
 
-/** Photographers behind each goal line: yards from the pitch's centre line along the end line (outside the posts). */
-export const PHOTOGRAPHERS = [{ dy: -24 }, { dy: -16 }, { dy: -8 }, { dy: 8 }, { dy: 15 }, { dy: 23 }] as const;
+/** Where a photographer stands: behind a goal line (`along` = yards from the centre line, outside the posts) or by the top touchline (`along` = yards from the halfway line). */
+export interface PhotographerSpot { side: "left" | "right" | "top"; along: number }
+
+/**
+ * Photographers for one match (tester report: a different spread every game): 8 to 13, most behind the goals
+ * (never between the posts), a few by the top touchline (never by the benches, below). Stable per seed.
+ */
+export function photographerSpots(seed: string): PhotographerSpot[] {
+  const r = mulberry32(seedFrom(`photographers:${seed}`));
+  const n = 8 + Math.floor(r() * 6);
+  const out: PhotographerSpot[] = [];
+  for (let i = 0; i < n; i++) {
+    const k = r();
+    if (k < 0.78) {
+      const sign = r() < 0.5 ? -1 : 1;
+      out.push({ side: r() < 0.5 ? "left" : "right", along: sign * (6 + r() * 26) });
+    } else {
+      out.push({ side: "top", along: (r() * 2 - 1) * 50 });
+    }
+  }
+  return out;
+}
 
 /** Pose of a substitute at `now`: head offset (radii) toward the ball, how far up (0 sitting, 1 standing), arms up. */
 export interface BenchPose { lookX: number; lookY: number; up: number; arms: number; bob: number }

@@ -1106,6 +1106,20 @@
         "managerRed": "Manager sent off"
       }
     },
+    "led": {
+      "goal": "GOAL · {{name}} {{minute}}'"
+    },
+    "banner": {
+      "goal": "Goal! {{player}}",
+      "goalLine": "{{minute}}' · {{team}}",
+      "goalLineAssist": "{{minute}}' · {{team}} · assist by {{assist}}",
+      "yellow": "Yellow card",
+      "red": "Red card",
+      "secondYellow": "Second yellow",
+      "cardLine": "{{player}} · {{team}} · {{minute}}'",
+      "sub": "Substitution",
+      "subLine": "{{out}} off, {{in}} on · {{team}} · {{minute}}'"
+    },
     "notice": {
       "offside": "Offside: {{player}} ({{team}})",
       "freeKick": "Foul near the box — free kick to {{team}}",

@@ -1106,6 +1106,20 @@
         "managerRed": "Técnico expulso"
       }
     },
+    "led": {
+      "goal": "GOL · {{name}} {{minute}}'"
+    },
+    "banner": {
+      "goal": "Gol! {{player}}",
+      "goalLine": "{{minute}}' · {{team}}",
+      "goalLineAssist": "{{minute}}' · {{team}} · assistência de {{assist}}",
+      "yellow": "Cartão amarelo",
+      "red": "Cartão vermelho",
+      "secondYellow": "Segundo amarelo",
+      "cardLine": "{{player}} · {{team}} · {{minute}}'",
+      "sub": "Substituição",
+      "subLine": "Sai {{out}}, entra {{in}} · {{team}} · {{minute}}'"
+    },
     "notice": {
       "offside": "Impedimento: {{player}} ({{team}})",
       "freeKick": "Falta perigosa — tiro livre para {{team}}",

@@ -25,6 +25,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.21",
+    date: "2026-10-28",
+    items: [
+      { pt: "Jogadores com borda nas duas cores do uniforme e o número da posição; o nome aparece em quem está com a bola e em quem vai receber.", en: "Players with a border in the kit's two colours and their position number; the name shows on the player with the ball and on who receives it." },
+      { pt: "Linha do passe até quem recebe, arco do chute e marca de impacto.", en: "A line from the pass to the receiver, the shot's arc and an impact mark." },
+      { pt: "Placas de LED em volta do campo com propagandas que trocam, e o gol em todas elas.", en: "LED boards around the pitch with ads that switch, and the goal on all of them." },
+      { pt: "Faixa de lance como na TV: gol com nome, minuto e assistência, cartões e substituições.", en: "A TV-style strip: goals with name, minute and assist, cards and substitutions." },
+      { pt: "Fotógrafos em lugares diferentes a cada jogo.", en: "Photographers in different spots every game." },
+    ],
+    fixes: [
+      { pt: "A bandeirinha de escanteio aponta para dentro do campo.", en: "The corner flag points into the pitch." },
+      { pt: "Campo menos embaçado.", en: "The pitch looks less hazy." },
+    ],
+  },
+  {
     version: "4.38.20",
     date: "2026-10-28",
     items: [

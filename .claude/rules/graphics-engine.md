@@ -246,3 +246,18 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   piso escuro entre paredes claras) e o caminho até a linha lateral (`benchGfx`); fotógrafos atrás dos dois gols
   (`PHOTOGRAPHERS`, mesma unidade do banco, câmera para o campo), flash de vez em quando e uma rajada depois de um chute
   para aquele gol. Padrão dos desenhos novos: vistos de cima, unidade = 0,4 do raio do jogador.
+
+## Campo ao vivo refinado (4.38.21, mock escolhido: Jogadores B, Bola B, Estádio A, faixa de lance sem placar de TV)
+
+- Jogadores: borda nas duas cores do uniforme (`drawMarkerRing`; segunda cor `teamAColor2`/`teamBColor2`, a primeira cor do
+  clube diferente do uniforme usado, lida a cada quadro porque chega depois), número da posição (vaga + 1) numa etiqueta
+  embaixo; nome só do portador e de quem recebe o passe (todos no debug).
+- Lances (`playGfx`): linha tracejada do passe até quem recebe com um anel nele, arco do chute em voo, anel de impacto
+  onde o chute termina.
+- Placas de LED (`LED`, `LED_ADS`, `ledAdFor`): no topo e atrás dos gols, painéis com propagandas fictícias sorteadas
+  por jogo, ciclo e painel, que viram juntos a cada `SWITCH_S` numa onda; depois de um gol todos piscam o gol
+  (`PitchStadium.led.goal`). Só com `extras`.
+- Faixa de lance (`MatchEventBanner`, `MatchScreen`): gol (nome, minuto, assistência), cartão e substituição, 4 s,
+  embaixo do campo; os cartões saíram do aviso de cima.
+- Fotógrafos sorteados por jogo (`photographerSpots`): 8 a 13, atrás dos gols (fora das traves) e junto da linha de cima.
+- Bandeirinha de escanteio aponta para dentro; textura e vinheta do gramado mais leves (`GRAIN` 0,045, `EDGE_DARK` 0,1).

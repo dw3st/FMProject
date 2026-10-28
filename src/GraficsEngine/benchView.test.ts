@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { benchKits, benchLook, benchPose, benchLayout, benchRows, benchShown, BENCH_VIEW } from "@/GraficsEngine/benchView";
+import { benchKits, benchLook, benchPose, benchLayout, benchRows, benchShown, BENCH_VIEW, photographerSpots } from "@/GraficsEngine/benchView";
 
 describe("bench view", () => {
   test("keepers wear their own colours, two keepers two colours, never close to the kit", () => {
@@ -55,6 +55,19 @@ describe("bench off the pitch", () => {
       expect(s.y - L.fig).toBeGreaterThan(710);
       expect(s.y + L.fig).toBeLessThan(740);
       expect(Math.abs(s.x - 300)).toBeLessThanOrEqual(60);
+    }
+  });
+});
+
+describe("photographers", () => {
+  test("a different spread per match, never between the posts, stable per seed", () => {
+    const a = photographerSpots("fixture-1"), b = photographerSpots("fixture-2");
+    expect(a).toEqual(photographerSpots("fixture-1"));
+    expect(a).not.toEqual(b);
+    for (const s of [...a, ...b]) {
+      expect(a.length).toBeGreaterThanOrEqual(8);
+      if (s.side !== "top") expect(Math.abs(s.along)).toBeGreaterThanOrEqual(6);
+      else expect(Math.abs(s.along)).toBeLessThanOrEqual(50);
     }
   });
 });

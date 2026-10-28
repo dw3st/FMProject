@@ -25,8 +25,8 @@ export const MATCH_LOOK = {
   LINE_W: 1.8, LINE_GLOW_W: 5, LINE_GLOW_ALPHA: 0.16,
   GOAL: { POST_W: 3, MESH_ROWS: 6, MESH_COLS: 4, MESH_ALPHA: 0.3, NET_FILL: 0.06 },
   FLAG: { POLE: 11, W: 7, H: 6, COLOR: 0xf2c230 },
-  GRAIN: { SIZE: 128, ALPHA: 0.07 },
-  CENTRE_LIGHT: 0.07, EDGE_DARK: 0.22,
+  GRAIN: { SIZE: 128, ALPHA: 0.045 },
+  CENTRE_LIGHT: 0.04, EDGE_DARK: 0.1,
   GLOSS: 0.2, RIM: 0.22,
   PILL: { PAD_X: 5, PAD_Y: 1, STRIP: 3, ALPHA: 0.62, LIFT: 5 },
   STAMINA_ARC: { GAP: 3.5, W: 3 },
@@ -105,6 +105,41 @@ export const TELEPORT_YDS = 4;
  * (~27 yd from 45 yd). A kickoff reset is ~57 yd.
  */
 export const BALL_TELEPORT_YDS = 30;
+
+/**
+ * LED boards around the pitch (4.38.21, Winning Eleven style): panels PANEL_H heights long, a made-up ad on each,
+ * all flipping every SWITCH_S (a ripple of FLIP_STAGGER_S per panel, FLIP_S each); a goal shows on every panel for GOAL_S.
+ */
+export const LED = {
+  HEIGHT_YDS: 0.7, PANEL_H: 11, GOAL: 0xf2c230,
+  SWITCH_S: 9, FLIP_S: 0.3, FLIP_STAGGER_S: 0.03, GOAL_S: 10,
+} as const;
+
+/** Made-up sponsors (never real brands): the text and the panel colours. */
+export const LED_ADS: readonly { text: string; bg: number; fg: number }[] = [
+  { text: "FMPROJECT", bg: 0x0f172a, fg: 0x4ade80 },
+  { text: "WESTLAB.DEV", bg: 0xffffff, fg: 0x111827 },
+  { text: "BOLA CERTA", bg: 0xf2c230, fg: 0x111827 },
+  { text: "PRANCHETA", bg: 0x1d4ed8, fg: 0xffffff },
+  { text: "CHUTEIRA 10", bg: 0xdc2626, fg: 0xffffff },
+  { text: "APITO", bg: 0x111827, fg: 0xf97316 },
+  { text: "VESTIÁRIO", bg: 0x065f46, fg: 0xffffff },
+  { text: "CAMISA 9", bg: 0x7c3aed, fg: 0xffffff },
+  { text: "GRAMADO+", bg: 0x16a34a, fg: 0xffffff },
+  { text: "TORCIDA TV", bg: 0xf97316, fg: 0x111827 },
+];
+
+/** The ad of a panel in a flip cycle: random per match, cycle and panel, never the same as the panel before it. */
+export function ledAdFor(seed: string, cycle: number, panel: number): { text: string; bg: number; fg: number } {
+  const pick = (k: number) => {
+    let h = 2166136261;
+    for (const ch of `${seed}:${cycle}:${k}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return (h >>> 0) % LED_ADS.length;
+  };
+  let i = pick(panel);
+  if (panel > 0 && i === pick(panel - 1)) i = (i + 1) % LED_ADS.length;
+  return LED_ADS[i]!;
+}
 
 /** Stadium band around the pitch (spec 2026-10-08-match-visual-design.md). */
 export const STADIUM = {

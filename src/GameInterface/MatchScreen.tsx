@@ -69,6 +69,7 @@ import { TeamPanel, type DepartedPlayer } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { useMatchHeading } from "@/GameInterface/useMatchHeading";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { MatchEventBanner, type MatchBannerItem } from "@/GameInterface/MatchEventBanner";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
@@ -267,6 +268,11 @@ export function MatchScreen() {
    * offside, dangerous free kick, card and penalty (Etapa 12, #17/#19).
    */
   const [notice, setNotice] = useState<{ text: string; tone: "danger" | "warn" | "info" } | null>(null);
+  /** Broadcast strip at the bottom of the pitch: goals, cards, substitutions (4.38.21). */
+  const [banner, setBanner] = useState<MatchBannerItem | null>(null);
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bannerKeyRef = useRef(0);
+  const crestOfRef = useRef<(tm: TeamId) => { logoUrl?: string; colors?: [string, string] }>(() => ({}));
   /** Goals, penalties and offsides as they happen (cards, subs and injuries come from `gameState`). */
   const [eventFeed, setEventFeed] = useState<MatchFeedItem[]>([]);
   const penaltyGoalPendingRef = useRef(false);
@@ -796,6 +802,13 @@ export function MatchScreen() {
     return () => { clearInterval(clock); offs.forEach((off) => off()); };
   }, []);
 
+  const showBanner = useCallback((item: Omit<MatchBannerItem, "key">) => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    bannerKeyRef.current += 1;
+    setBanner({ ...item, key: bannerKeyRef.current });
+    bannerTimerRef.current = setTimeout(() => setBanner(null), 4000);
+  }, []);
+
   const showNotice = useCallback((text: string, tone: "danger" | "warn" | "info") => {
     if (injuryTimerRef.current) clearTimeout(injuryTimerRef.current);
     setNotice({ text, tone });
@@ -838,7 +851,22 @@ export function MatchScreen() {
       }),
       gameBus.on("card", (e) => {
         const key = e.card === "yellow" ? "yellow" : e.secondYellow ? "secondYellow" : "red";
-        showNotice(t(`match.notice.${key}`, { player: shirtName(e.playerName), team: team(e.team) }), e.card === "red" ? "danger" : "warn");
+        showBanner({
+          kind: e.card === "yellow" ? "yellow" : "red",
+          title: t(`match.banner.${key}`),
+          line: t("match.banner.cardLine", { player: shirtName(e.playerName), team: team(e.team), minute: minuteNow() + 1 }),
+        });
+      }),
+      gameBus.on("playerSubstituted", (e) => {
+        const s = gameStateRef.current;
+        const all = s ? [...s.players, ...s.benchA, ...s.benchB] : [];
+        const name = (id: number) => shirtName(all.find((p) => p.id === id)?.name ?? "");
+        showBanner({
+          kind: "sub",
+          title: t("match.banner.sub"),
+          line: t("match.banner.subLine", { out: name(e.outId), in: name(e.inId), team: team(e.team), minute: minuteNow() + 1 }),
+          ...crestOfRef.current(e.team),
+        });
       }),
       gameBus.on("penaltyAwarded", (e) => {
         showNotice(t("match.notice.penalty", { team: team(e.team) }), "warn");
@@ -851,6 +879,15 @@ export function MatchScreen() {
         const kind = penaltyGoalPendingRef.current ? "penaltyGoal" : "goal";
         penaltyGoalPendingRef.current = false;
         push({ minute: minuteNow(), team: e.team, kind, player: nameOf(e.scorerId) });
+        const assist = e.assistId !== undefined ? nameOf(e.assistId) : "";
+        showBanner({
+          kind: "goal",
+          title: t("match.banner.goal", { player: shirtName(nameOf(e.scorerId)) }),
+          line: assist && kind === "goal"
+            ? t("match.banner.goalLineAssist", { minute: e.minute + 1, team: team(e.team), assist: shirtName(assist) })
+            : t("match.banner.goalLine", { minute: e.minute + 1, team: team(e.team) }),
+          ...crestOfRef.current(e.team),
+        });
       }),
       // VAR (`var.md` §3): the check shows as a notice, the decision in the feed.
       gameBus.on("varCheck", (e) => {
@@ -868,7 +905,7 @@ export function MatchScreen() {
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [t, showNotice]);
+  }, [t, showNotice, showBanner]);
 
   // Complaint (`var.md` §4): a call against the user's side (a foul, a card, a penalty, an offside, a VAR check)
   // opens the button for COMPLAINT_WINDOW real seconds; never with the manager off the touchline or no referee.
@@ -1267,6 +1304,23 @@ export function MatchScreen() {
     [teamAMeta, teamBMeta],
   );
 
+  // The marker border's second colour: the club's first colour that isn't the kit worn on the pitch.
+  const secondKitColors = useMemo(() => {
+    const other = (tm: TeamId, kit: string) =>
+      faceRoster?.[tm].clubColors.find((c) => c.toLowerCase() !== kit.toLowerCase());
+    const a = other("A", matchKitColors.teamA), b = other("B", matchKitColors.teamB);
+    return { ...(a ? { teamAColor2: a } : {}), ...(b ? { teamBColor2: b } : {}) };
+  }, [faceRoster, matchKitColors]);
+
+  crestOfRef.current = (tm: TeamId) => {
+    const meta = tm === "A" ? teamAMeta : teamBMeta;
+    const id = tm === "A" ? crestIds?.a : crestIds?.b;
+    return {
+      ...(id ? { logoUrl: squadLogoUrl(id) } : {}),
+      ...(meta ? { colors: [meta.primaryColor, meta.secondaryColor] as [string, string] } : {}),
+    };
+  };
+
   const effectLabels = useMemo(
     () => ({ save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside") }),
     [t],
@@ -1307,8 +1361,12 @@ export function MatchScreen() {
       ...(homeClubColors ? { homeColors: homeClubColors } : {}),
       // The home crest on the crowd's flags and banners.
       ...(homeCrest ? { homeCrest } : {}),
+      // LED boards around the pitch: made-up ads that flip; the scorer after a goal.
+      led: {
+        goal: t("match.led.goal", { name: "{name}", minute: "{minute}" }),
+      },
     };
-  }, [matchFixture, crestIds, touchline, faceRoster]);
+  }, [matchFixture, crestIds, touchline, faceRoster, t]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
   const coaches = useMemo(() => {
@@ -1743,6 +1801,7 @@ export function MatchScreen() {
                   gameSpeed={gameSpeed}
                   teamAColor={matchKitColors.teamA}
                   teamBColor={matchKitColors.teamB}
+                  {...secondKitColors}
                   faceUrls={faceUrls}
                   stadium={stadium}
                   officials={officials}
@@ -1754,6 +1813,7 @@ export function MatchScreen() {
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id } : null}
                   lighting={matchLightingProp}
                 />
+                {banner && <MatchEventBanner item={banner} />}
                 {notice && (
                   <div
                     role="status"
