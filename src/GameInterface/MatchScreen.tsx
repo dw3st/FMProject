@@ -1282,6 +1282,11 @@ export function MatchScreen() {
   // club's fans fill most of the stand. Engine team A is the human club.
   const stadium = useMemo<PitchStadium | null>(() => {
     if (!matchFixture || !crestIds) return null;
+    const homeSide: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
+    const club = faceRoster?.[homeSide].clubColors;
+    const homeClubColors: [string, string] | null = club && club.length >= 2 ? [club[0]!, club[1]!] : null;
+    const homeCrestId = matchFixture.neutral ? undefined : homeSide === "A" ? crestIds.a : crestIds.b;
+    const homeCrest = homeCrestId ? squadLogoUrl(homeCrestId) : undefined;
     const crowd = touchline?.crowd;
     const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
     const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
@@ -1292,8 +1297,12 @@ export function MatchScreen() {
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),
       ...(crowd?.bigMatch ? { bigMatch: true } : {}),
+      // The home club's colours for the crowd's flags, banners and scarves.
+      ...(homeClubColors ? { homeColors: homeClubColors } : {}),
+      // The home crest on the crowd's flags and banners.
+      ...(homeCrest ? { homeCrest } : {}),
     };
-  }, [matchFixture, crestIds, touchline]);
+  }, [matchFixture, crestIds, touchline, faceRoster]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
   const coaches = useMemo(() => {

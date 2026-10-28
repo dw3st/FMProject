@@ -94,6 +94,36 @@ async function rasterise(url: string, size: number): Promise<HTMLCanvasElement |
   }
 }
 
+/** A crest (or any picture) drawn whole into a `size` square, keeping its proportions; null when it can't be loaded. */
+export function loadCrestCanvas(url: string, size: number): Promise<HTMLCanvasElement | null> {
+  const key = `crest:${url}@${size}`;
+  let pending = cache.get(key);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = url;
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        const w = img.naturalWidth || size, h = img.naturalHeight || size;
+        const k = Math.min(size / w, size / h);
+        ctx.drawImage(img, (size - w * k) / 2, (size - h * k) / 2, w * k, h * k);
+        return canvas;
+      } catch {
+        return null;
+      }
+    })();
+    cache.set(key, pending);
+    pending.then((c) => { if (!c) cache.delete(key); });
+  }
+  return pending;
+}
+
 /** Circular face canvas for `url`, or null when it can't be loaded. Cached by `url@size`. */
 export function loadFaceCanvas(url: string, size: number): Promise<HTMLCanvasElement | null> {
   const key = `${url}@${size}`;

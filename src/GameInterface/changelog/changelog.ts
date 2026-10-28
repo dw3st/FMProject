@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.14",
+    date: "2026-10-28",
+    items: [
+      { pt: "Banco de reservas redesenhado: os reservas sentados em duas fileiras, olhando o lance e comemorando os gols do time.", en: "Redesigned bench: the substitutes sit in two rows, follow the play and celebrate their team's goals." },
+      { pt: "Goleiros reservas com uniforme próprio, cada um de uma cor.", en: "Substitute keepers wear their own kit, each in a different colour." },
+      { pt: "Bandeiras e bandeirões da torcida com a cor principal e o escudo do clube.", en: "Fans' flags and banners show the club's main colour and crest." },
+    ],
+  },
+  {
     version: "4.38.13",
     date: "2026-10-28",
     items: [

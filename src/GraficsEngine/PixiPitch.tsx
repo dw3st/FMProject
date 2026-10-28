@@ -5,7 +5,8 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { bannerOffset, CROWD_MOTION, fanLooks, fanPose, handFlagAngle, standBanners, type StandBanner } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
-import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
+import { benchKits, benchLook, benchPose, benchRows, benchShown } from "@/GraficsEngine/benchView";
+import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
@@ -50,7 +51,7 @@ import {
   type CelebrationBurst, type PhoneLight,
 } from "@/GraficsEngine/stadiumAtmosphere";
 import {
-  benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, startStretcher, STRETCHER,
+  benchRect, COACH_WALK_FRAC, coachWalkOffset, startStretcher, STRETCHER,
   stretcherPose, type StretcherRun,
 } from "@/GraficsEngine/matchExtras";
 import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
@@ -472,6 +473,10 @@ export interface PitchStadium {
   decor?: StadiumDecor;
   /** A big game: flares with smoke (and fireworks at night) at kickoff and at every home goal. */
   bigMatch?: boolean;
+  /** The home club's two colours (CSS): flags, banners and scarves of the crowd. Absent: the kit and white. */
+  homeColors?: [string, string];
+  /** URL of the home crest, shown on the crowd's flags and banners (4.38.14). */
+  homeCrest?: string;
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -573,7 +578,7 @@ export function PixiPitch({
   useEffect(() => {
     stadiumRef.current = stadium;
     redrawCrowdRef.current?.();
-  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, stadium?.homeColors?.join(","), stadium?.homeCrest, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
   // Pitch surface: redrawn only when the pitch of the day (or the mirror) changes.
   useEffect(() => {
     pitchRef.current = pitch;
@@ -682,8 +687,26 @@ export function PixiPitch({
       /** Waving flags over the home stands (crowd motion), set by every bake; drawn every frame with extras. */
       let standBannerSpots: StandBanner[] = [];
       let flagColor = fillA;
+      /** The home club's second colour (flags, banners, scarves): white when only one is known. */
+      let flagColor2 = 0xffffff;
       const flagGfx = new Graphics();
       flagGfx.eventMode = 'none';
+      /** Crests on the flags and banners: one sprite per hand flag and per banner, placed every frame. */
+      const crestLayer = new Container();
+      crestLayer.eventMode = 'none';
+      let crestTexture: Texture | null = null;
+      let crestBake = 0;
+      let flagCrests: Sprite[] = [];
+      let bannerCrests: Sprite[] = [];
+      const rebuildCrests = () => {
+        for (const s of [...flagCrests, ...bannerCrests]) s.destroy();
+        flagCrests = []; bannerCrests = [];
+        if (!crestTexture) return;
+        const nFlags = (crowdFans.home?.fans.filter((f) => f.flag).length ?? 0) + (crowdFans.away?.fans.filter((f) => f.flag).length ?? 0);
+        const mk = () => { const s = new Sprite(crestTexture!); s.anchor.set(0.5); s.visible = false; crestLayer.addChild(s); return s; };
+        flagCrests = Array.from({ length: nFlags }, mk);
+        bannerCrests = standBannerSpots.map(mk);
+      };
       /** Phone light candidates of the filled seats (stadium atmosphere), set by every bake. */
       let phones: PhoneLight[] = [];
       const bakeCrowd = () => {
@@ -713,13 +736,25 @@ export function PixiPitch({
         });
         const cell = seatCellPx(m.stand);
         figureSize = cell * CROWD_MOTION.FIGURE;
-        flagColor = st.homeTeam === "A" ? fillA : fillB;
+        flagColor = st.homeColors ? cssColorToPixiHex(st.homeColors[0]) : st.homeTeam === "A" ? fillA : fillB;
+        flagColor2 = st.homeColors ? cssColorToPixiHex(st.homeColors[1]) : 0xffffff;
+        if (flagColor2 === flagColor) flagColor2 = 0xffffff;
+        // The crest is loaded once per bake; the sprites appear when it arrives.
+        const bake = ++crestBake;
+        crestTexture?.destroy(true);
+        crestTexture = null;
+        if (st.homeCrest && !st.neutral) {
+          void loadCrestCanvas(st.homeCrest, 64).then((canvas) => {
+            if (!canvas || bake !== crestBake || disposed) return;
+            crestTexture = Texture.from(canvas);
+            rebuildCrests();
+          });
+        }
         standBannerSpots = st.neutral ? [] : standBanners(standSideRects(m.stand), homeLeft ? "left" : "right", cell, st.seed, works);
         phones = phoneLights(seats, st.seed);
         // The figures' atlas: one canvas, so each side renders in a single ParticleContainer.
         crowdAtlasSource?.destroy();
-        const homeColor = st.homeTeam === "A" ? fillA : fillB;
-        crowdAtlas = buildCrowdAtlas(homeColor, needsLightOutline(homeColor) || homeColor > 0xdddddd ? 0x1a1a1a : 0xffffff);
+        crowdAtlas = buildCrowdAtlas(flagColor, flagColor2);
         crowdAtlasSource = new CanvasSource({ resource: crowdAtlas.canvas, transparent: true });
         const frames = bindAtlas(crowdAtlas, crowdAtlasSource);
         const scale = figureSize / FIGURE_FRAME.SCALE;
@@ -754,6 +789,8 @@ export function PixiPitch({
           crowdFans[k] = { layer, fans };
         }
         crowdLayer.addChild(flagGfx); // hand flags and banners over the fans
+        crowdLayer.addChild(crestLayer);
+        rebuildCrests();
         // The manager's decorations (achievements): over the home end, unless it is under works.
         crowdDecor?.destroy();
         crowdDecor = null;
@@ -1633,25 +1670,65 @@ export function PixiPitch({
       benchGfx.zIndex = -0.7;
       benchGfx.eventMode = 'none';
       world.addChild(benchGfx);
-      let benchSig = "";
-      const drawBenches = () => {
+      /** Last goal per team (effects clock), for the bench celebration. */
+      let benchGoal: { team: TeamId; at: number } | null = null;
+      const unsubBenchGoal = gameBus.on("goalScored", (e) => { benchGoal = { team: e.team, at: effectNow }; });
+      /**
+       * The benches (4.38.14): a dugout seen from above with the substitutes as people (`benchView.ts`), looking at the
+       * ball, fidgeting, up with the arms raised when their team scores; keepers in their own colours. Every frame.
+       */
+      const drawBenches = (ballPx: { x: number; y: number }) => {
         const st = stateRef.current;
-        const on = officialsOn && extrasRef.current;
-        const sig = on ? `${st.benchA.length}:${st.benchB.length}:${mirrorRef.current}` : "";
-        if (sig === benchSig) return;
-        benchSig = sig;
         benchGfx.clear();
-        if (!on) return;
+        if (!(officialsOn && extrasRef.current)) return;
         for (const side of ["left", "right"] as const) {
           const team = teamOfDrawnSide(side);
           const b = benchRect(coachSpot[side], side, m, markerR);
-          benchGfx.roundRect(b.x, b.y, b.w, b.h, 3).fill(0x2b3542).stroke({ width: 1, color: 0x000000, alpha: 0.5 });
-          const color = team === "A" ? fillA : fillB;
-          const bench = team === "A" ? st.benchA : st.benchB;
-          const r = Math.min(markerR * 0.5, b.w / (2 * Math.max(1, bench.length)));
-          for (const seat of benchSeats(b, bench.length)) {
-            benchGfx.circle(seat.x, seat.y, r).fill(color).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
-          }
+          const all = team === "A" ? st.benchA : st.benchB;
+          const bench = benchShown(all.map((p) => p.role)).map((i) => all[i]!);
+          const perRow = Math.max(1, Math.ceil(bench.length / 2));
+          const r = Math.min(markerR * 0.7, b.w / (2.3 * perRow));
+          const toPitch: 1 | -1 = b.y + b.h / 2 > m.marginY + m.height / 2 ? -1 : 1;
+          const cy = b.y + b.h / 2;
+          // Dugout: floor, the bench along the back, side walls and the acrylic roof with a light front edge.
+          const pad = r * 0.7;
+          const dw = b.w + pad * 2, dh = r * 4.2 + pad;
+          const dx = b.x - pad, dy = cy - dh / 2;
+          benchGfx.roundRect(dx, dy, dw, dh, 4).fill({ color: 0x141b24, alpha: 0.92 });
+          const backY = toPitch === -1 ? dy + dh - r * 0.55 : dy + r * 0.1;
+          benchGfx.rect(dx + 2, backY, dw - 4, r * 0.45).fill({ color: 0x2c3a4a });
+          benchGfx.rect(dx, dy, 2, dh).fill(0x3a4756).rect(dx + dw - 2, dy, 2, dh).fill(0x3a4756);
+          benchGfx.roundRect(dx, dy, dw, dh, 4).fill({ color: 0xbfd8ea, alpha: 0.07 });
+          const frontY = toPitch === -1 ? dy : dy + dh;
+          benchGfx.moveTo(dx + 2, frontY).lineTo(dx + dw - 2, frontY).stroke({ width: 1.5, color: 0xdcecf7, alpha: 0.55 });
+          const kit = team === "A" ? fillA : fillB;
+          const kits = benchKits(bench.map((p) => p.role), kit);
+          const goalAge = benchGoal && benchGoal.team === team ? effectNow - benchGoal.at : null;
+          benchRows(bench.length, b.x + b.w / 2, cy, b.w, r, toPitch).forEach((seat, i) => {
+            const p = bench[i]!;
+            const look = benchLook(String(p.rosterId ?? p.id));
+            const pose = benchPose(look.phase, effectNow, ballPx.x - seat.x, toPitch, goalAge);
+            const grow = 1 + 0.18 * pose.up;
+            const sx = seat.x, sy = seat.y + toPitch * pose.up * r * 0.45 + pose.bob * r;
+            // Shadow, then the arms (raised: two hands beside the head), the shoulders, the head (hair on top, the face
+            // toward where he looks).
+            benchGfx.ellipse(sx + r * 0.15, sy + r * 0.25, r * 1.05 * grow, r * 0.7 * grow).fill({ color: 0x000000, alpha: 0.3 });
+            if (pose.arms > 0.05) {
+              const ay = sy + toPitch * r * (0.35 + 0.55 * pose.arms);
+              for (const k of [-1, 1]) {
+                benchGfx.moveTo(sx + k * r * 0.75, sy).lineTo(sx + k * r * 0.9, ay).stroke({ width: r * 0.32, color: kits[i]!, cap: "round" });
+                benchGfx.circle(sx + k * r * 0.9, ay, r * 0.2).fill(look.skin);
+              }
+            }
+            benchGfx.ellipse(sx, sy, r * 1.0 * grow, r * 0.62 * grow).fill(kits[i]!).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
+            const hx = sx + pose.lookX * r, hy = sy + pose.lookY * r;
+            if (look.hair !== null) {
+              benchGfx.circle(hx, hy, r * 0.46 * grow).fill(look.skin);
+              benchGfx.circle(hx - pose.lookX * r * 0.35, hy - pose.lookY * r * 0.35, r * 0.4 * grow).fill(look.hair);
+            } else {
+              benchGfx.circle(hx, hy, r * 0.44 * grow).fill(look.skin);
+            }
+          });
         }
       };
       const coachWalkHalf = m.width * COACH_WALK_FRAC;
@@ -2538,7 +2615,7 @@ export function PixiPitch({
         updateLight();
         drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);
-        drawBenches();
+        { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); }
         drawStretchers();
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
@@ -2548,6 +2625,9 @@ export function PixiPitch({
         const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };
         const moving = extrasRef.current;
         flagGfx.clear();
+        let flagCrestIdx = 0;
+        for (const s of flagCrests) s.visible = false;
+        for (const s of bannerCrests) s.visible = false;
         const frames = crowdAtlas?.frames;
         const H = CROWD_MOTION.HAND_FLAG;
         const sz = figureSize;
@@ -2574,8 +2654,15 @@ export function PixiPitch({
               const tx = hx + Math.sin(a) * sz * H.STICK, ty = hy - Math.cos(a) * sz * H.STICK;
               const fw = sz * H.W, fh = sz * H.H, flap = Math.sin(effectNow * 7 + f.phase) * fh * 0.18;
               flagGfx.moveTo(hx, hy).lineTo(tx, ty).stroke({ width: Math.max(0.8, sz * 0.07), color: 0xcfcfcf });
+              // The club's main colour, flapping a little, with the crest in the middle.
               flagGfx.moveTo(tx, ty).lineTo(tx + fw, ty + flap).lineTo(tx + fw, ty + fh + flap).lineTo(tx, ty + fh)
-                .fill({ color: (Math.floor(f.phase * 10) & 1) ? flagColor : 0xffffff, alpha: 0.95 });
+                .fill({ color: flagColor, alpha: 0.97 });
+              const crest = flagCrests[flagCrestIdx++];
+              if (crest) {
+                crest.visible = true;
+                crest.position.set(tx + fw / 2, ty + fh / 2 + flap / 2);
+                crest.width = crest.height = Math.min(fw, fh) * 0.9;
+              }
               flagGfx.circle(hx, hy, Math.max(0.8, sz * 0.08)).fill(0xd8a37a);
             }
           }
@@ -2588,14 +2675,22 @@ export function PixiPitch({
             for (let i = 0; i < B.STRIPS; i++) {
               const o0 = bannerOffset(b, i, effectNow), o1 = bannerOffset(b, i + 1, effectNow);
               const x0 = b.x + i * strip, x1 = x0 + strip + 0.5;
-              // Two bands: the club colour on top, white below, with a thin club-colour line at the bottom.
-              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h * 0.55 + o1).lineTo(x0, b.y + b.h * 0.55 + o0)
+              // The club's main colour, a thin line of the second colour along the edges.
+              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
                 .fill({ color: flagColor, alpha: 0.97 });
-              flagGfx.moveTo(x0, b.y + b.h * 0.55 + o0).lineTo(x1, b.y + b.h * 0.55 + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
-                .fill({ color: 0xffffff, alpha: 0.97 });
+              const e = b.h * 0.1;
+              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + e + o1).lineTo(x0, b.y + e + o0).fill({ color: flagColor2 });
+              flagGfx.moveTo(x0, b.y + b.h - e + o0).lineTo(x1, b.y + b.h - e + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0).fill({ color: flagColor2 });
               // Folds: a soft shade on the strips going down.
               if (o1 > o0) flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
                 .fill({ color: 0x000000, alpha: Math.min(0.18, (o1 - o0) / Math.max(1, b.h) * 2) });
+            }
+            // The crest in the middle of the cloth, riding the ripple.
+            const bc = bannerCrests[standBannerSpots.indexOf(b)];
+            if (bc) {
+              bc.visible = true;
+              bc.position.set(b.x + b.w / 2, b.y + b.h / 2 + bannerOffset(b, B.STRIPS / 2, effectNow));
+              bc.width = bc.height = b.h * 0.82;
             }
             // The holders' hands along the top edge.
             for (let i = 0; i <= B.STRIPS; i += B.HOLD_EVERY) {
@@ -2881,6 +2976,7 @@ export function PixiPitch({
         unsubRefCard();
         unsubArFlag();
         unsubCoachGoal();
+        unsubBenchGoal();
         unsubAnimCelebrate();
         unsubStretcher();
         redrawCrowdRef.current = null;
@@ -2889,6 +2985,7 @@ export function PixiPitch({
         coachCardFnRef.current = null;
         for (const k of ["home", "away"] as const) crowdFans[k]?.layer.destroy();
         crowdAtlasSource?.destroy();
+        crestTexture?.destroy(true);
         grainTexture.destroy(true);
         centreTexture.destroy(true);
         // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.
