@@ -24,9 +24,19 @@ function CardMark({ red }: { red?: boolean }) {
   return <span className={`inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 ${red ? "bg-destructive" : "bg-card-yellow"}`} aria-hidden />;
 }
 
-/** One yellow from a ban: an empty yellow card. */
-export function BanRiskMark({ label }: { label: string }) {
-  return <span role="img" aria-label={label} title={label} className="inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 border-2 border-card-yellow" />;
+/**
+ * One yellow from a ban ("pendurado"): a filled yellow card with a letter, the full text in the tooltip (tester
+ * report: an empty card read as a mistake; a written label took the name's room in the narrow lists).
+ */
+export function BanRiskMark() {
+  const { t } = useTranslation();
+  const full = t("match.playerEvents.banRisk");
+  return (
+    <span title={full} className="inline-flex items-center justify-center shrink-0 w-[18px] h-[22px] rounded-[2px] bg-card-yellow text-black font-display font-bold text-sm leading-none">
+      {t("match.playerEvents.banRiskShort")}
+      <span className="sr-only">{full}</span>
+    </span>
+  );
 }
 
 /** Column widths of the lineup list (#149): position, name, rating, fitness, goals, assists. */
@@ -112,7 +122,7 @@ function PlayerRow({
         {events?.red && (
           <span role="img" aria-label={t("match.playerEvents.red")} className="inline-flex items-center"><CardMark red /></span>
         )}
-        {!departed && isOneYellowFromBan(player.seasonYellows, events) && <BanRiskMark label={t("match.playerEvents.banRisk")} />}
+        {!departed && isOneYellowFromBan(player.seasonYellows, events) && <BanRiskMark />}
         {isSubbedIn && (
           <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" aria-label={t("common.substitutedIn")} />
         )}

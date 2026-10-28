@@ -316,8 +316,36 @@ export function pointsOf(key: AchievementKey): number {
   return A.POINTS[tier];
 }
 
-export function earnedPoints(state: AchievementsState): number {
+/** Points from the achievements unlocked. */
+export function achievementPoints(state: AchievementsState): number {
   return (Object.keys(state.unlocked) as AchievementKey[]).reduce((sum, k) => sum + pointsOf(k), 0);
+}
+
+/** Every point earned: achievements and the campaign (titles, stages, objective, awards). */
+export function earnedPoints(state: AchievementsState): number {
+  return achievementPoints(state) + (state.campaign?.points ?? 0);
+}
+
+/** Campaign points for an event, once per key (a retried day, or the same title seen again, adds nothing). */
+export function addCampaign(state: AchievementsState, key: string, points: number): AchievementsState {
+  const c = state.campaign ?? { points: 0, seen: [] };
+  if (points <= 0 || c.seen.includes(key)) return state;
+  return { ...state, campaign: { points: c.points + points, seen: [...c.seen, key] } };
+}
+
+/**
+ * Campaign points of the manager's record: every title and every manager award not counted yet (titles and awards
+ * won before this rule count too, once).
+ */
+export function applyCampaignRecord(state: AchievementsState, manager: ManagerRecord | null): AchievementsState {
+  let s = state;
+  for (const t of manager?.titles ?? []) {
+    s = addCampaign(s, `title:${t.season}:${t.kind}:${t.competition}:${t.squadId}`, A.CAMPAIGN.TITLE[t.kind] ?? 0);
+  }
+  for (const a of manager?.awards ?? []) {
+    s = addCampaign(s, `award:${a.season}:${a.kind}:${a.competition}`, A.CAMPAIGN.AWARD[a.kind] ?? 0);
+  }
+  return s;
 }
 
 export function pointsBalance(state: AchievementsState): number {

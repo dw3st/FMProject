@@ -21,6 +21,18 @@ export const ACHIEVEMENTS = {
   DECOR_POINTS: { banner: 100, flag: 400, mosaic: 900 },
   MAX_BADGES: 3,
   SHOP: { created: 300, legend: 500 },
+  /** Each shop item once per season; every purchase of it raises its price by this much. */
+  SHOP_STEP: 100,
+  /**
+   * Points from the campaign, on top of the achievements (tester report: no more points once every achievement is
+   * unlocked): titles, continental stages reached, the board's objective met, manager awards.
+   */
+  CAMPAIGN: {
+    TITLE: { league: 60, cup: 40, continental: 80, promotion: 25, national: 60 },
+    CONTINENTAL_STAGE: { sf: 15, final: 30 },
+    OBJECTIVE: 15,
+    AWARD: { best_manager: 20, world_manager: 40 },
+  },
   /** Thrashing = a win by this margin or more; `seven_up` / `humbled` margins. */
   THRASHING_MARGIN: 3,
   SEVEN_UP_MARGIN: 7,

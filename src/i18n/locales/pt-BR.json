@@ -1007,6 +1007,7 @@
     },
     "playerEvents": {
       "banRisk": "Pendurado: o próximo amarelo suspende",
+      "banRiskShort": "P",
       "goals": "Gols: {{count}}",
       "assists": "Assistências: {{count}}",
       "yellow": "Cartão amarelo",
@@ -4257,6 +4258,7 @@
     "kpi": {
       "unlocked": "Desbloqueadas",
       "earned": "Pontos ganhos",
+      "split": "{{achievements}} das conquistas · {{campaign}} da campanha",
       "balance": "Pontos para gastar"
     },
     "categories": {
@@ -4570,9 +4572,9 @@
       }
     },
     "shop": {
-      "note": "Uma de cada por carreira. Gastar pontos não tira nenhuma moldura.",
+      "note": "Uma compra de cada por temporada; o preço sobe a cada compra. Além das conquistas, títulos, fases continentais, a meta da diretoria e os prêmios de técnico dão pontos. Gastar pontos não tira nenhuma moldura.",
       "cost": "{{n}} pontos",
-      "bought": "Comprado em {{date}}",
+      "bought": "Comprado em {{date}}. Disponível de novo na próxima temporada.",
       "created": {
         "title": "Jogador criado",
         "desc": "Escolha nome, posição, nacionalidade e pé: ele entra na sua base com 16 anos, uma grande promessa.",

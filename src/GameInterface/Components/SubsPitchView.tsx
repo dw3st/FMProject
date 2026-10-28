@@ -252,7 +252,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                       <span className="inline-block w-2.5 h-3.5 rounded-sm bg-card-yellow" title={t("substitutionPanel.booked")} aria-label={t("substitutionPanel.booked")} />
                     )}
                     {isOneYellowFromBan(p.seasonYellows, { goals: 0, assists: 0, yellows: yellowCount.get(p.id) ?? 0, red: false }) && (
-                      <BanRiskMark label={t("match.playerEvents.banRisk")} />
+                      <BanRiskMark />
                     )}
                     {injuredIds.has(p.id) && (
                       <span title={t("substitutionPanel.injured")} aria-label={t("substitutionPanel.injured")} className="inline-flex text-destructive"><Icon name="heart-pulse" size={16} /></span>
@@ -302,7 +302,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                       {t(`roles.detailedAbbr.${gamePlayerNaturalRole(p)}`, { defaultValue: gamePlayerNaturalRole(p) })}
                     </span>
                     <span className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{shirtName(p.name)}</span>
-                    {isOneYellowFromBan(p.seasonYellows) && <BanRiskMark label={t("match.playerEvents.banRisk")} />}
+                    {isOneYellowFromBan(p.seasonYellows) && <BanRiskMark />}
                     <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>{r10.toFixed(1)}</span>
                     <span className="w-24 shrink-0">
                       <EnergyBar energy={p.energy} />

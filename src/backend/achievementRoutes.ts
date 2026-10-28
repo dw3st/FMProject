@@ -8,8 +8,10 @@ import {
   shownProfile, trackViews,
 } from "@/Domain/achievements/items";
 import { attributeBoost, attributeReduce } from "@/Domain/achievements/managerAttributes";
-import { earnedPoints, pointsBalance, trackValues } from "@/Domain/achievements/progress";
-import { createdPlayer, legendOptions, legendPlayer, parseCreatedPlayer, CREATED_POSITIONS } from "@/Domain/achievements/shop";
+import { achievementPoints, earnedPoints, pointsBalance, trackValues } from "@/Domain/achievements/progress";
+import {
+  boughtThisSeason, createdPlayer, legendOptions, legendPlayer, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
+} from "@/Domain/achievements/shop";
 import { weightedScore } from "@/Domain/playerRating";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { AchievementsState } from "@/types/achievementTypes";
@@ -27,16 +29,18 @@ async function humanClub(saveId: string, seatId: string): Promise<{ squad: Squad
 }
 
 /** Next season end of the human league (the academy contract), as the reborn route does. */
-async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; end: string; date: string }> {
+async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; end: string; date: string; season: string }> {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   const state = (meta?.activeLeagues ?? []).find((l) => l.leagueSlug === meta?.leagueSlug);
   const date = meta?.currentDate ?? new Date().toISOString().slice(0, 10);
   const year = state?.year ?? Number(date.slice(0, 4));
-  return { year, end: state?.end ?? `${year + 1}-05-31`, date };
+  // The shop's season key (each item once per season of the manager's league).
+  return { year, end: state?.end ?? `${year + 1}-05-31`, date, season: `${meta?.leagueSlug ?? ""}:${year}` };
 }
 
 async function view(saveId: string, seatId: string, state: AchievementsState) {
   const club = await humanClub(saveId, seatId);
+  const { season } = await nextSeasonEndOf(saveId, seatId);
   const managers = await saveService.getManagers(saveId);
   const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId));
   const a = state.attributes;
@@ -44,7 +48,10 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
   return {
     tracks: trackViews(state, values),
     secrets: secretViews(state),
-    points: { earned: earnedPoints(state), spent: state.spent, balance: pointsBalance(state) },
+    points: {
+      earned: earnedPoints(state), spent: state.spent, balance: pointsBalance(state),
+      achievements: achievementPoints(state), campaign: state.campaign?.points ?? 0,
+    },
     attributes: a,
     effects: {
       motivation: attributeBoost(a.motivation),
@@ -63,8 +70,9 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
     thresholds: { frames: ACHIEVEMENTS.FRAME_POINTS, decor: ACHIEVEMENTS.DECOR_POINTS, maxBadges: ACHIEVEMENTS.MAX_BADGES },
     decor: state.decor,
     shop: {
-      costs: ACHIEVEMENTS.SHOP,
+      costs: { created: shopPrice(state, "created"), legend: shopPrice(state, "legend") },
       bought: state.bought,
+      thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
       legends: (state.legendOptions?.ids ?? []).flatMap((id) => {
         const r = retired.find((x) => x.id === id);
@@ -137,15 +145,16 @@ export const achievementRoutes = {
     try { input = parseCreatedPlayer(body); } catch { return bad("invalidPlayer"); }
     return withSaveLock(saveId, async () => {
       const state = await saveService.getAchievements(saveId, auth.seatId);
-      if (state.bought.created) return bad("alreadyBought", 409);
-      if (pointsBalance(state) < ACHIEVEMENTS.SHOP.created) return bad("notEnoughPoints", 409);
+      const { season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
+      if (boughtThisSeason(state, "created", seasonKey)) return bad("alreadyBought", 409);
+      if (pointsBalance(state) < shopPrice(state, "created")) return bad("notEnoughPoints", 409);
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return bad("youthFull");
       const season = await nextSeasonEndOf(saveId, auth.seatId);
       const player = createdPlayer({ input, squad: club.squad, date: season.date, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
-      const next: AchievementsState = { ...state, spent: state.spent + ACHIEVEMENTS.SHOP.created, bought: { ...state.bought, created: season.date } };
+      const next: AchievementsState = recordPurchase(state, "created", season.date, season.season);
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });
@@ -159,10 +168,10 @@ export const achievementRoutes = {
     if (req.method !== "POST") return bad("method not allowed", 405);
     return withSaveLock(saveId, async () => {
       const state = await saveService.getAchievements(saveId, auth.seatId);
-      if (state.bought.legend) return bad("alreadyBought", 409);
-      if (pointsBalance(state) < ACHIEVEMENTS.SHOP.legend) return bad("notEnoughPoints", 409);
+      const { date, season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
+      if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
+      if (pointsBalance(state) < shopPrice(state, "legend")) return bad("notEnoughPoints", 409);
       if (state.legendOptions) return Response.json(await view(saveId, auth.seatId, state));
-      const { date } = await nextSeasonEndOf(saveId, auth.seatId);
       // A world of seats: each seat draws its own three (`.claude/rules/game/multiplayer.md`).
       const multi = (await saveService.getMeta(saveId))?.mode === "multi";
       const ids = legendOptions(await saveService.getRetired(saveId), saveId, date, multi ? auth.seatId : undefined);
@@ -184,8 +193,9 @@ export const achievementRoutes = {
     const retiredId = body.retiredId;
     return withSaveLock(saveId, async () => {
       const state = await saveService.getAchievements(saveId, auth.seatId);
-      if (state.bought.legend) return bad("alreadyBought", 409);
-      if (pointsBalance(state) < ACHIEVEMENTS.SHOP.legend) return bad("notEnoughPoints", 409);
+      const { season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
+      if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
+      if (pointsBalance(state) < shopPrice(state, "legend")) return bad("notEnoughPoints", 409);
       if (!state.legendOptions?.ids.includes(retiredId)) return bad("notOffered");
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
@@ -201,9 +211,7 @@ export const achievementRoutes = {
       await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
         ? { ...r, legendBy: auth.seatId, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
         : r)));
-      const next: AchievementsState = {
-        ...state, spent: state.spent + ACHIEVEMENTS.SHOP.legend, bought: { ...state.bought, legend: season.date }, legendOptions: undefined,
-      };
+      const next: AchievementsState = { ...recordPurchase(state, "legend", season.date, season.season), legendOptions: undefined };
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });

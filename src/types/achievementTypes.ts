@@ -116,7 +116,17 @@ export interface AchievementsState {
    */
   clubs: Record<string, ClubBaseline>;
   spent: number;
-  bought: { created?: string; legend?: string };
+  /**
+   * Shop purchases: the last day of each item, the season it was bought in (`league:year`; once per season) and how
+   * many times (each raises its price).
+   */
+  bought: {
+    created?: string; legend?: string;
+    createdSeason?: string; legendSeason?: string;
+    createdCount?: number; legendCount?: number;
+  };
+  /** Points from the campaign (titles, stages, objective, awards): total and the events counted, by key. */
+  campaign?: { points: number; seen: string[] };
   legendOptions?: { date: string; ids: string[] };
   profile: ManagerProfile;
   decor: StadiumDecor;

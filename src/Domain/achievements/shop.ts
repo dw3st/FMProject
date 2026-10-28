@@ -9,6 +9,7 @@ import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { lineAverage, statsFor } from "@/Domain/youth/youth";
 import type { DetailedRole, RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
+import type { AchievementsState } from "@/types/achievementTypes";
 
 /** The final rewards bought with points (spec §5): the created player and the retired legend. */
 
@@ -91,4 +92,29 @@ export function legendOptions(retired: readonly RetiredPlayer[], saveId: string,
 export function legendPlayer(args: { retired: RetiredPlayer; squad: Squad; year: number; nextSeasonEnd: string }): RosterPlayer {
   const p = generateReborn(args);
   return { ...p, id: `legend_${args.retired.id}_${args.year}` };
+}
+
+// ── Purchases: once per season, the price rising with each one (tester report) ──────────────
+
+export type ShopItem = "created" | "legend";
+
+/** Price of the next purchase of `item`: the base plus `SHOP_STEP` per earlier purchase. */
+export function shopPrice(state: AchievementsState, item: ShopItem): number {
+  const count = state.bought[`${item}Count`] ?? (state.bought[item] ? 1 : 0);
+  return A.SHOP[item] + A.SHOP_STEP * count;
+}
+
+/** Already bought in this season (`season` = "league:year" of the manager's league). */
+export function boughtThisSeason(state: AchievementsState, item: ShopItem, season: string): boolean {
+  return state.bought[`${item}Season`] === season;
+}
+
+/** The state after a purchase of `item` on `date`, in `season`: points spent, the count and the season kept. */
+export function recordPurchase(state: AchievementsState, item: ShopItem, date: string, season: string): AchievementsState {
+  const count = state.bought[`${item}Count`] ?? (state.bought[item] ? 1 : 0);
+  return {
+    ...state,
+    spent: state.spent + shopPrice(state, item),
+    bought: { ...state.bought, [item]: date, [`${item}Season`]: season, [`${item}Count`]: count + 1 },
+  };
 }

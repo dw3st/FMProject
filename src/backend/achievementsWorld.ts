@@ -115,6 +115,7 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
 
   // Today's official matches of the club.
   const matches: MatchFacts[] = [];
+  const continentalStages: { key: string; stage: "sf" | "final" }[] = [];
   if (club) {
     const keeper = new Set(club.players.filter((p) => (p.naturalPosition ?? p.positions[0]) === "GK").map((p) => p.id));
     for (const ev of args.events) {
@@ -126,6 +127,14 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
       const myCity = normCity(club.venue?.city ?? "");
       const derby = !!myCity && myCity === normCity(opp?.venue?.city ?? "");
       matches.push(matchFacts(ev, side, { league: kind === "league", derby, isKeeper: (id) => keeper.has(id) }));
+      if (kind === "continental") {
+        // Campaign points for a continental semi-final / final reached (shop, `achievementsConfig.CAMPAIGN`).
+        const meta = await service.getLeagueMeta(saveId, ev.competition);
+        const stage = meta?.continental?.stages.find((st) => st.rounds.includes(ev.round))?.name;
+        if (stage === "sf" || stage === "final") {
+          continentalStages.push({ key: `continental:${ev.competition}:${meta!.year}:${stage}:${club.id}`, stage });
+        }
+      }
     }
   }
 
@@ -167,6 +176,7 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
     transfers,
     snapshot,
     awards,
+    continentalStages,
     ...(rollover ? { rollover } : {}),
     ...(args.sacked ? { sacked: { hiredOn } } : {}),
     ...(args.nationalMatch ? { national: [nationalGameOf(args.nationalMatch)] } : {}),

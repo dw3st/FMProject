@@ -8,7 +8,7 @@ import type { DetailedRole } from "@/types/playerTypes";
 export interface AchievementsData {
   tracks: TrackView[];
   secrets: SecretView[];
-  points: { earned: number; spent: number; balance: number };
+  points: { earned: number; spent: number; balance: number; achievements: number; campaign: number };
   attributes: ManagerAttributes;
   effects: Record<ManagerAttribute, number>;
   profile: ManagerProfile;
@@ -18,6 +18,8 @@ export interface AchievementsData {
   shop: {
     costs: { created: number; legend: number };
     bought: { created?: string; legend?: string };
+    /** Bought in this season (each item once per season). */
+    thisSeason: { created: boolean; legend: boolean };
     positions: DetailedRole[];
     legends: {
       id: string; name: string; positions: string[]; nationality: string | null; age: number;

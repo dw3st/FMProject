@@ -1007,6 +1007,7 @@
     },
     "playerEvents": {
       "banRisk": "One yellow from a ban",
+      "banRiskShort": "R",
       "goals": "Goals: {{count}}",
       "assists": "Assists: {{count}}",
       "yellow": "Yellow card",
@@ -4257,6 +4258,7 @@
     "kpi": {
       "unlocked": "Unlocked",
       "earned": "Points earned",
+      "split": "{{achievements}} from achievements · {{campaign}} from the campaign",
       "balance": "Points to spend"
     },
     "categories": {
@@ -4570,9 +4572,9 @@
       }
     },
     "shop": {
-      "note": "One of each per career. Spending points never takes away a frame.",
+      "note": "One of each per season; the price rises with every purchase. Besides the achievements, titles, continental stages, the board's objective and manager awards give points. Spending points never removes a frame.",
       "cost": "{{n}} points",
-      "bought": "Bought on {{date}}",
+      "bought": "Bought on {{date}}. Available again next season.",
       "created": {
         "title": "Created player",
         "desc": "Choose name, position, nationality and foot: he joins your academy at 16, a top prospect.",

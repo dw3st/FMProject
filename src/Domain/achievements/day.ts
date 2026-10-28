@@ -1,6 +1,7 @@
 import type { MatchFacts } from "@/Domain/achievements/matchFacts";
+import { ACHIEVEMENTS } from "@/Domain/achievements/achievementsConfig";
 import {
-  applyNewTitles, applyRollover, ensureClub, newlyUnlocked, recordMatch, rollMonth, sackedEarly, trackValues,
+  addCampaign, applyCampaignRecord, applyNewTitles, applyRollover, ensureClub, newlyUnlocked, recordMatch, rollMonth, sackedEarly, trackValues,
   unlockReachedTiers, unlockSecret, type AchievementSnapshot, type ClubArrival, type RolloverFacts,
 } from "@/Domain/achievements/progress";
 import type { AchievementKey, AchievementsState } from "@/types/achievementTypes";
@@ -22,6 +23,8 @@ export interface AchievementDayInput {
   rollover?: RolloverFacts;
   /** Today's games of the national team he coaches (Etapa 41b): won, and against the team of his own nationality. */
   national?: { won: boolean; homeland: boolean }[];
+  /** Continental stages the club played for the first time today (semi-final, final), keyed by competition and season. */
+  continentalStages?: { key: string; stage: "sf" | "final" }[];
   /** Sacked today (or the contract ended with a sacking). */
   sacked?: { hiredOn?: string };
 }
@@ -92,6 +95,10 @@ export function applyAchievementDay(
   }
 
   s = applyNewTitles(s, input.snapshot.manager, date);
+  // Campaign points (shop): titles and manager awards of his record, continental stages, the board's objective.
+  s = applyCampaignRecord(s, input.snapshot.manager);
+  for (const c of input.continentalStages ?? []) s = addCampaign(s, c.key, ACHIEVEMENTS.CAMPAIGN.CONTINENTAL_STAGE[c.stage]);
+  if (input.rollover?.objectiveMet) s = addCampaign(s, `objective:${input.rollover.squadId}:${date}`, ACHIEVEMENTS.CAMPAIGN.OBJECTIVE);
   if (input.rollover) s = applyRollover(s, input.rollover, date);
   if (input.sacked && sackedEarly(input.sacked.hiredOn, date)) s = unlockSecret(s, "sacked_early", date);
   s = unlockReachedTiers(s, trackValues(s, input.snapshot), date, input.snapshot);

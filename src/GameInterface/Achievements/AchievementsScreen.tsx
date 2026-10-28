@@ -72,6 +72,11 @@ export function AchievementsScreen() {
         <div className="flex flex-col gap-1">
           <Label>{t("achievements.kpi.earned")}</Label>
           <span className={kpi}>{data.points.earned}</span>
+          {data.points.campaign > 0 && (
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {t("achievements.kpi.split", { achievements: data.points.achievements, campaign: data.points.campaign })}
+            </span>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <Label>{t("achievements.kpi.balance")}</Label>
@@ -349,9 +354,9 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
     else setMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
   }
 
-  const { costs, bought, legends } = data.shop;
-  const canCreated = !bought.created && data.points.balance >= costs.created && data.hasClub;
-  const canLegend = !bought.legend && data.points.balance >= costs.legend && data.hasClub;
+  const { costs, bought, legends, thisSeason } = data.shop;
+  const canCreated = !thisSeason.created && data.points.balance >= costs.created && data.hasClub;
+  const canLegend = !thisSeason.legend && data.points.balance >= costs.legend && data.hasClub;
   const card = "rounded-md border border-border bg-card p-4 flex flex-col gap-3";
 
   return (
@@ -365,7 +370,7 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
             <span className="font-display font-bold tabular-nums text-primary">{t("achievements.shop.cost", { n: costs.created })}</span>
           </div>
           <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.created.desc")}</p>
-          {bought.created
+          {thisSeason.created && bought.created
             ? <p className="text-sm m-0">{t("achievements.shop.bought", { date: formatDate(bought.created, i18n.language) })}</p>
             : (
               <>
@@ -405,7 +410,7 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
             <span className="font-display font-bold tabular-nums text-primary">{t("achievements.shop.cost", { n: costs.legend })}</span>
           </div>
           <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.legend.desc")}</p>
-          {bought.legend
+          {thisSeason.legend && bought.legend
             ? <p className="text-sm m-0">{t("achievements.shop.bought", { date: formatDate(bought.legend, i18n.language) })}</p>
             : legends.length === 0
               ? (

@@ -46,6 +46,12 @@ Visual: `.claude/rules/ui-standard.md`.
 ## Pontos e itens
 
 - Bronze 10, prata 25, ouro 50, secreta 40. Saldo = ganhos − gastos na loja (as molduras e os enfeites contam os ganhos).
+- **Pontos de campanha (4.37.2, report de tester: depois de todas as conquistas não havia mais pontos):** somados aos das
+  conquistas (`AchievementsState.campaign = { points, seen }`, uma vez por chave, `addCampaign`): título de liga 60, copa
+  40, continental 80, acesso 25, torneio de seleção 60 (`applyCampaignRecord`, sobre os títulos e prêmios do registro do
+  técnico, inclusive os de antes da regra), semifinal continental 15 e final 30 (primeiro jogo da fase, `continental:<slug>:<ano>:<fase>:<clube>`),
+  meta da diretoria cumprida na virada 15, melhor técnico da liga 20 e do mundo 40 (`ACHIEVEMENTS.CAMPAIGN`). A tela mostra
+  "N das conquistas · M da campanha".
 - Molduras do rosto: Bronze 100, Prata 400, Ouro 900, Lenda 1500 pontos ganhos. Selos (até 3): um por categoria com
   algum ouro, "Mistério" com alguma secreta. Título exibido (1): um por trilha com o ouro.
 - Mostrados no cartão do clube do Painel (moldura, título, selos, "Conquistas: N/98 · X pts") e no ranking de técnicos
@@ -76,7 +82,10 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
   a fonte é o `achievements.json`. A partida simulada (`buildMatchEvent`) e a ao vivo (`MatchScreen`) põem a Disciplina
   no `GameState`.
 
-## Loja (uma de cada por carreira)
+## Loja (uma de cada por temporada)
+
+- Desde a 4.37.2: cada item uma vez por temporada da liga do técnico (`bought.<item>Season` = `liga:ano`), o preço sobe
+  `SHOP_STEP` (100) a cada compra (`shopPrice`, `recordPurchase`); uma compra de antes da regra conta como uma.
 
 - **Jogador criado** (300 pontos): nome (2–30), posição (14), nacionalidade (com bandeira), pé; 16 anos, na base, nível
   = média da linha − 1,8 + 1,0 + 0,3, arquétipo "Wonderkid", formado no clube (`academyOf`), contrato de base.

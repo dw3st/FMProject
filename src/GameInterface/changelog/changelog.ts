@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.37.2",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Pontos de conquistas também pela campanha: títulos, semifinal e final continental, meta da diretoria cumprida e prêmios de técnico.",
+        en: "Achievement points from the campaign too: titles, continental semi-finals and finals, the board's objective met and manager awards.",
+      },
+      {
+        pt: "A loja vende o jogador criado e a lenda uma vez por temporada, com o preço subindo a cada compra.",
+        en: "The shop sells the created player and the legend once per season, with the price rising after each purchase.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O jogador pendurado agora aparece com um cartão amarelo cheio com a letra P (o texto completo ao passar o mouse).",
+        en: "A player one yellow from a ban now shows a filled yellow card with the letter R (the full text on hover).",
+      },
+    ],
+  },
+  {
     version: "4.37.1",
     date: "2026-10-28",
     items: [
