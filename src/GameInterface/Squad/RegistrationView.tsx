@@ -24,8 +24,18 @@ function formatDay(date: string, lang: string): string {
 }
 
 /** A small text badge (foreign, home-grown, free) in a row. */
-function Tag({ children, tone = "muted", title }: { children: string; tone?: "muted" | "primary" | "warn"; title?: string }) {
-  const cls = tone === "primary" ? "border-primary/40 text-primary" : tone === "warn" ? "border-chart-4/40 text-chart-4" : "border-border text-muted-foreground";
+type TagTone = "registered" | "out" | "free" | "foreign" | "greenCard" | "club" | "nation";
+const TAG_TONE: Record<TagTone, string> = {
+  registered: "border-green-500/50 bg-green-500/15 text-green-400",
+  out: "border-chart-4/50 bg-chart-4/15 text-chart-4",
+  free: "border-sky-400/50 bg-sky-400/15 text-sky-300",
+  foreign: "border-rose-400/50 bg-rose-400/15 text-rose-300",
+  greenCard: "border-emerald-400/50 bg-emerald-400/15 text-emerald-300",
+  club: "border-primary/50 bg-primary/15 text-primary",
+  nation: "border-violet-400/50 bg-violet-400/15 text-violet-300",
+};
+function Tag({ children, tone, title }: { children: string; tone: TagTone; title?: string }) {
+  const cls = TAG_TONE[tone];
   return <span title={title} className={`inline-flex items-center rounded border px-2 py-0.5 text-sm whitespace-nowrap ${cls}`}>{children}</span>;
 }
 
@@ -206,11 +216,11 @@ export function RegistrationView() {
                     </td>
                     <td className={TABLE_CELL.body}>
                       <span className="flex flex-wrap gap-1.5">
-                        {r.registered ? <Tag tone="primary">{t("registration.tags.registered")}</Tag> : <Tag tone="warn">{t("registration.tags.out")}</Tag>}
-                        {r.free && <Tag>{t("registration.tags.free")}</Tag>}
-                        {r.foreign && <Tag>{t("registration.tags.foreign")}</Tag>}
-                        {r.greenCard && <Tag title={t("registration.tags.greenCardHint")}>{t("registration.tags.greenCard")}</Tag>}
-                        {r.clubTrained ? <Tag>{t("registration.tags.clubTrained")}</Tag> : r.nationTrained ? <Tag>{t("registration.tags.nationTrained")}</Tag> : null}
+                        {r.registered ? <Tag tone="registered">{t("registration.tags.registered")}</Tag> : <Tag tone="out">{t("registration.tags.out")}</Tag>}
+                        {r.free && <Tag tone="free">{t("registration.tags.free")}</Tag>}
+                        {r.foreign && <Tag tone="foreign">{t("registration.tags.foreign")}</Tag>}
+                        {r.greenCard && <Tag tone="greenCard" title={t("registration.tags.greenCardHint")}>{t("registration.tags.greenCard")}</Tag>}
+                        {r.clubTrained ? <Tag tone="club">{t("registration.tags.clubTrained")}</Tag> : r.nationTrained ? <Tag tone="nation">{t("registration.tags.nationTrained")}</Tag> : null}
                       </span>
                     </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.key}`}>{r.overall.toFixed(1)}</td>

@@ -115,6 +115,9 @@ function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
  * attributes from the seed. Shared by the yearly intake and the youth-competition fillers
  * (`src/Domain/youthComps/youthLineup.ts`). Deterministic per `seed` + `i`.
  */
+/** Draws for a name not already in the club before keeping a repeated one. */
+const ACADEMY_NAME_TRIES = 12;
+
 export function makeAcademyPlayer(args: {
   id: string;
   seed: string;
@@ -125,14 +128,22 @@ export function makeAcademyPlayer(args: {
   ageRange: readonly [number, number];
   nationality: string | null;
   promise?: boolean;
+  /** Names already in the club (squad, academy, this intake): drawn again on a clash, and the new name added. */
+  taken?: Set<string>;
 }): RosterPlayer {
-  const { id, seed, i, squad, specific, level, ageRange, nationality, promise } = args;
-  const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}`) * squad.players.length)];
-  const parts = donor?.name.trim().split(" ") ?? ["Silva"];
-  const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}`) * squad.players.length)]?.name.trim()[0] ?? "J";
+  const { id, seed, i, squad, specific, level, ageRange, nationality, promise, taken } = args;
+  const nameAt = (salt: string): string => {
+    const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}${salt}`) * squad.players.length)];
+    const parts = donor?.name.trim().split(" ") ?? ["Silva"];
+    const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}${salt}`) * squad.players.length)]?.name.trim()[0] ?? "J";
+    return `${initial}. ${parts[parts.length - 1]}`;
+  };
+  let name = nameAt("");
+  for (let k = 1; taken?.has(name) && k <= ACADEMY_NAME_TRIES; k++) name = nameAt(`:n${k}`);
+  taken?.add(name);
   return {
     id,
-    name: `${initial}. ${parts[parts.length - 1]}`,
+    name,
     age: ageRange[0] + Math.floor(unit(`${seed}:age:${i}`) * (ageRange[1] - ageRange[0] + 1)),
     squadId: squad.id,
     preferredFoot: unit(`${seed}:foot:${i}`) < 0.5 ? "left" : "right",
@@ -180,6 +191,7 @@ export function generateIntake(args: {
   const tier = Y.TIER_BONUS[financialTierOf(squad)];
   const assistant = assistantRating === undefined ? 0 : assistantLevelBonus(assistantRating);
   const out: RosterPlayer[] = [];
+  const taken = new Set([...squad.players, ...(squad.youth ?? [])].map((p) => p.name));
   for (let i = 0; i < n; i++) {
     const id = `youth_${squad.id}_${year}_${i}`;
     const role = roles[i]!;
@@ -192,7 +204,7 @@ export function generateIntake(args: {
       Y.LEVEL_MIN, Y.LEVEL_MAX,
     );
     const player = makeAcademyPlayer({
-      id, seed, i, squad, specific, level, promise,
+      id, seed, i, squad, specific, level, promise, taken,
       ageRange: [Y.INTAKE_AGE_MIN, Y.INTAKE_AGE_MAX],
       nationality: squad.country ?? null,
     });

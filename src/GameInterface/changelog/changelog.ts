@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.4",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Pênalti: o goleiro agacha, dá impulso com uma perna e levanta a outra, voa com o tronco e a cabeça indo para a bola e cai encolhendo as pernas.",
+        en: "Penalties: the keeper crouches, pushes off one leg and lifts the other, flies with his torso and head going for the ball and lands curling his legs.",
+      },
+      {
+        pt: "Na lista de inscritos, cada situação tem a sua cor: inscrito, fora da lista, livre, estrangeiro, green card e formado no clube ou no país.",
+        en: "In the squad registration list every status has its own colour: registered, out, free, foreign, green card and trained at the club or in the country.",
+      },
+    ],
+    fixes: [
+      { pt: "A aba Joias dos olheiros mostra cada jogador uma vez só, com o relatório mais recente.", en: "The scouts' Gems tab shows each player once, with the newest report." },
+      { pt: "Os jovens que chegam à base não repetem mais o nome de alguém do clube.", en: "New academy players no longer repeat the name of someone at the club." },
+    ],
+  },
+  {
     version: "4.38.3",
     date: "2026-10-28",
     items: [

@@ -48,6 +48,19 @@ describe("youth intake", () => {
     expect(generateIntake({ ...base, year: 2028 })[0]!.id).not.toBe(a[0]!.id);
   });
 
+  test("never repeats a name already in the club (report: two \"D. Díaz\" in the academy)", () => {
+    for (let year = 2027; year < 2047; year++) {
+      const names0 = ["Ana Diaz", "Bruno Costa", "Caio Lima", "Davi Rocha", "Eli Souza", "Fabio Diaz", "Gil Nunes", "Hugo Reis"];
+      const sq = squad();
+      sq.players = sq.players.map((p, i) => ({ ...p, name: names0[i % names0.length]! }));
+      const intake = generateIntake({ ...base, squad: sq, year });
+      const club = new Set(sq.players.map((p) => p.name));
+      const fresh = intake.map((p) => p.name);
+      expect(fresh.some((n) => club.has(n))).toBe(false);
+      expect(new Set(fresh).size).toBe(fresh.length);
+    }
+  });
+
   test("academy level (facilities): quality ±0.15/level, up to 6 players at level 5", () => {
     const withAcademy = (level: number) => {
       const sq = squad();

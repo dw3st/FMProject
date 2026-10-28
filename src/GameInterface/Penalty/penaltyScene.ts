@@ -9,7 +9,7 @@ export const SCENE = {
   HORIZON: 136,
   BALL_START: { x: 200, y: 268 },
   /** Milliseconds: the taker's run-up, the ball's flight (shortened by power), the result after the flight. */
-  RUNUP_MS: 420, FLIGHT_MS: 520, FLIGHT_POWER_MS: 160, REBOUND_MS: 450, DIVE_MS: 380,
+  RUNUP_MS: 420, FLIGHT_MS: 520, FLIGHT_POWER_MS: 160, REBOUND_MS: 450, DIVE_MS: 520,
   /** Net mesh: columns, rows. */
   NET_X: 16, NET_Y: 7,
 } as const;
@@ -175,3 +175,92 @@ export function takerSpot(run: number): Pt {
   const to = { x: SCENE.BALL_START.x - 14, y: SCENE.BALL_START.y + 6 };
   return lerpPt(from, to, Math.max(0, Math.min(1, run)));
 }
+
+// ── Keeper's dive, body by body part (4.38.4): legs, torso, head and arms in phases ──
+
+export interface LegPose { hip: Pt; knee: Pt; foot: Pt }
+export interface KeeperPose {
+  /** Whole-body tilt (degrees) and lift (px, up) on top of the travel `keeperDive` gives. */
+  rot: number;
+  lift: number;
+  /** Torso lean relative to the hips (degrees), head tilt relative to the torso. */
+  lean: number;
+  tilt: number;
+  /** Arms reach (see `keeperArms`). */
+  reach: number;
+  legL: LegPose;
+  legR: LegPose;
+  /** 0..1: how far the body has travelled toward the end of the dive (eased). */
+  travel: number;
+}
+
+const HIP_L = { x: -3.5, y: -16 }, HIP_R = { x: 3.5, y: -16 };
+type LegKey = { knee: Pt; foot: Pt };
+interface Key { at: number; rot: number; lift: number; lean: number; tilt: number; reach: number; travel: number; l: LegKey; r: LegKey }
+
+/**
+ * Keyframes of a dive to `side` (−1 left, 1 right, 0 middle) and `high`. The far leg pushes off and the near one
+ * lifts; in the air the legs trail together, bent; on landing they curl. A middle dive is a jump (high) or a squat.
+ */
+export function diveKeys(side: -1 | 0 | 1, high: boolean): Key[] {
+  const s = side;
+  const ready: LegKey[] = [{ knee: { x: -5, y: -8 }, foot: { x: -7, y: 0 } }, { knee: { x: 5, y: -8 }, foot: { x: 7, y: 0 } }];
+  const crouch: LegKey[] = [{ knee: { x: -7, y: -6 }, foot: { x: -8, y: 0 } }, { knee: { x: 7, y: -6 }, foot: { x: 8, y: 0 } }];
+  if (s === 0) {
+    const tuck: LegKey[] = high
+      ? [{ knee: { x: -5, y: -12 }, foot: { x: -6, y: -5 } }, { knee: { x: 5, y: -12 }, foot: { x: 6, y: -5 } }]
+      : [{ knee: { x: -9, y: -5 }, foot: { x: -9, y: 0 } }, { knee: { x: 9, y: -5 }, foot: { x: 9, y: 0 } }];
+    return [
+      { at: 0, rot: 0, lift: 0, lean: 0, tilt: 0, reach: 0, travel: 0, l: ready[0]!, r: ready[1]! },
+      { at: 0.2, rot: 0, lift: -3, lean: 8, tilt: 6, reach: -1, travel: 0, l: crouch[0]!, r: crouch[1]! },
+      { at: 0.55, rot: 0, lift: high ? 22 : -4, lean: 0, tilt: high ? -8 : 10, reach: high ? 1 : 0.15, travel: 1, l: tuck[0]!, r: tuck[1]! },
+      { at: 1, rot: 0, lift: high ? 4 : -4, lean: 0, tilt: 0, reach: high ? 0.4 : 0.1, travel: 1, l: ready[0]!, r: ready[1]! },
+    ];
+  }
+  const push = { knee: { x: -s * 6, y: -7 }, foot: { x: -s * 11, y: 1 } };
+  const lead = { knee: { x: s * 9, y: -12 }, foot: { x: s * 12, y: -6 } };
+  const trailFar = { knee: { x: -s * 2, y: -9 }, foot: { x: -s * 1, y: 0 } };
+  const trailNear = { knee: { x: s * 3, y: -9 }, foot: { x: s * 4, y: -1 } };
+  const curlFar = { knee: { x: -s * 1, y: -10 }, foot: { x: s * 3, y: -4 } };
+  const curlNear = { knee: { x: s * 5, y: -10 }, foot: { x: s * 7, y: -5 } };
+  // Left/right legs: the far leg is the one on the side away from the dive.
+  const asLR = (far: LegKey, near: LegKey) => (s > 0 ? { l: far, r: near } : { l: near, r: far });
+  const tilt = high ? 70 : 82;
+  return [
+    { at: 0, rot: 0, lift: 0, lean: 0, tilt: 0, reach: 0, travel: 0, l: ready[0]!, r: ready[1]! },
+    { at: 0.18, rot: s * 6, lift: -3, lean: s * 6, tilt: s * 4, reach: -1, travel: 0.02, l: crouch[0]!, r: crouch[1]! },
+    { at: 0.42, rot: s * tilt * 0.45, lift: high ? 16 : 8, lean: s * 18, tilt: s * 12, reach: 0.5, travel: 0.4, ...asLR(push, lead) },
+    { at: 0.8, rot: s * tilt, lift: high ? 18 : 6, lean: s * 6, tilt: s * 8, reach: high ? 1 : 0.8, travel: 1, ...asLR(trailFar, trailNear) },
+    { at: 1, rot: s * (tilt + 6), lift: 0, lean: 0, tilt: s * 4, reach: high ? 0.75 : 0.6, travel: 1, ...asLR(curlFar, curlNear) },
+  ];
+}
+
+const smooth = (t: number) => t * t * (3 - 2 * t);
+
+/** The keeper's pose at `t` (0..1) of a dive to `area`. */
+export function keeperPose(area: GoalArea, t: number): KeeperPose {
+  const [row, col] = area.split("-");
+  const side = (col === "left" ? -1 : col === "right" ? 1 : 0) as -1 | 0 | 1;
+  const keys = diveKeys(side, row === "high");
+  const u = Math.max(0, Math.min(1, t));
+  let k = 0;
+  while (k < keys.length - 2 && u > keys[k + 1]!.at) k++;
+  const a = keys[k]!, b = keys[k + 1]!;
+  const f = smooth(b.at > a.at ? (u - a.at) / (b.at - a.at) : 1);
+  const leg = (x: LegKey, y: LegKey, hip: Pt): LegPose => ({ hip, knee: lerpPt(x.knee, y.knee, f), foot: lerpPt(x.foot, y.foot, f) });
+  return {
+    rot: lerp(a.rot, b.rot, f), lift: lerp(a.lift, b.lift, f), lean: lerp(a.lean, b.lean, f), tilt: lerp(a.tilt, b.tilt, f),
+    reach: lerp(a.reach, b.reach, f), travel: lerp(a.travel, b.travel, f),
+    legL: leg(a.l, b.l, HIP_L), legR: leg(a.r, b.r, HIP_R),
+  };
+}
+
+/** Standing pose (before the kick): `bob` −1..1 sways the knees a little. */
+export function keeperStance(bob: number): KeeperPose {
+  const p = keeperPose("low-mid", 0);
+  const d = bob * 0.6;
+  return { ...p, legL: { ...p.legL, knee: { x: p.legL.knee.x - d, y: p.legL.knee.y } }, legR: { ...p.legR, knee: { x: p.legR.knee.x + d, y: p.legR.knee.y } } };
+}
+
+export const legPath = (l: LegPose): string =>
+  `M${l.hip.x.toFixed(1)},${l.hip.y.toFixed(1)} L${l.knee.x.toFixed(1)},${l.knee.y.toFixed(1)} L${l.foot.x.toFixed(1)},${l.foot.y.toFixed(1)}`;

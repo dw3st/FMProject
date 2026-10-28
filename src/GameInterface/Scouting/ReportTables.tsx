@@ -242,7 +242,9 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const shortlisted = useMemo(() => new Set(data.shortlist.map((e) => e.playerId)), [data.shortlist]);
-  const gems = data.reports.filter((r) => r.gem && !r.prospectId);
+  // One row per player: several scouts (and weeks) often report the same gem.
+  const gems = filterReports(data.reports.filter((r) => r.gem && !r.prospectId), { mission: "all", scout: "all", grades: [] }, data.missions)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   const reportOf = new Map(data.reports.map((r) => [r.id, r]));
   async function sign(id: string) {
     setError(null);

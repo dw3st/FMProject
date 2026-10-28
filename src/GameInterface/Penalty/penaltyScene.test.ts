@@ -77,3 +77,27 @@ describe("penalty figures (4.38.3)", () => {
     expect(takerSpot(0).y).toBeGreaterThan(end.y);
   });
 });
+
+import { keeperPose, keeperStance } from "@/GameInterface/Penalty/penaltyScene";
+
+describe("keeper's dive by body part (4.38.4)", () => {
+  test("crouch first, then the far leg pushes and the near one lifts, then flight and landing", () => {
+    const crouch = keeperPose("low-right", 0.18);
+    expect(crouch.lift).toBeLessThan(0);
+    const push = keeperPose("low-right", 0.42);
+    expect(push.legL.foot.x).toBeLessThan(-8);       // far (left) leg stretched away
+    expect(push.legR.foot.y).toBeLessThan(-3);       // near (right) leg lifted
+    expect(push.lean).toBeGreaterThan(0);            // torso leans into the dive
+    const land = keeperPose("low-right", 1);
+    expect(land.rot).toBeGreaterThan(80);
+    expect(land.travel).toBe(1);
+  });
+
+  test("mirror for the left side; a high middle dive is a jump", () => {
+    expect(keeperPose("high-left", 0.8).rot).toBeCloseTo(-keeperPose("high-right", 0.8).rot);
+    const jump = keeperPose("high-mid", 0.55);
+    expect(jump.rot).toBe(0);
+    expect(jump.lift).toBeGreaterThan(15);
+    expect(keeperStance(0)).toEqual(keeperPose("low-mid", 0));
+  });
+});

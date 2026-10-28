@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef } from "react";
 import { GOAL_AREAS, areaCentre, type GoalArea, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import { clamp } from "@/Domain/math";
 import {
-  SCENE, armPath, ballHeight, crowdFans, crowdPhones, curveAt, diveReach, easeOut, goalToPx, grassStripes, keeperArms,
-  keeperDive, netPaths, shotControl, shotDuration, takerPose, takerSpot, type ArmPose, type Pt,
+  SCENE, armPath, ballHeight, crowdFans, crowdPhones, curveAt, easeOut, goalToPx, grassStripes, keeperArms,
+  keeperDive, keeperPose, keeperStance, netPaths, shotControl, shotDuration, takerPose, takerSpot,
+  type ArmPose, type KeeperPose, type LegPose, type Pt,
 } from "@/GameInterface/Penalty/penaltyScene";
 
 /**
@@ -44,6 +45,16 @@ const mix = (hex: string, toward: string, t: number): string => {
   return `#${a.map((v, i) => Math.round(v + (b[i]! - v) * t).toString(16).padStart(2, "0")).join("")}`;
 };
 
+/** A keeper's leg group [thigh, shin + sock, boot]. */
+function setLeg(g: SVGGElement | null, l: LegPose) {
+  if (!g) return;
+  const [thigh, shin, boot] = Array.from(g.children) as SVGElement[];
+  thigh?.setAttribute("d", `M${l.hip.x.toFixed(1)},${l.hip.y.toFixed(1)} L${l.knee.x.toFixed(1)},${l.knee.y.toFixed(1)}`);
+  shin?.setAttribute("d", `M${l.knee.x.toFixed(1)},${l.knee.y.toFixed(1)} L${l.foot.x.toFixed(1)},${l.foot.y.toFixed(1)}`);
+  boot?.setAttribute("cx", l.foot.x.toFixed(1));
+  boot?.setAttribute("cy", l.foot.y.toFixed(1));
+}
+
 /** An arm group [sleeve, forearm, hand]: the sleeve from the shoulder to the elbow, the bare forearm on to the hand. */
 function setArm(g: SVGGElement | null, a: ArmPose) {
   if (!g) return;
@@ -79,6 +90,10 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
   const tArmR = useRef<SVGGElement | null>(null);
   const tLegL = useRef<SVGGElement | null>(null);
   const tLegR = useRef<SVGGElement | null>(null);
+  const kLegL = useRef<SVGGElement | null>(null);
+  const kLegR = useRef<SVGGElement | null>(null);
+  const kTorso = useRef<SVGGElement | null>(null);
+  const kHead = useRef<SVGGElement | null>(null);
 
   const fans = useMemo(() => crowdFans(props.seed), [props.seed]);
   const phones = useMemo(() => crowdPhones(props.seed), [props.seed]);
@@ -161,22 +176,26 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
 
       // Keeper: sways until the kick leaves, then dives in three beats (crouch, stretch, land).
       const launchAt = shotStart === null ? null : shotStart + SCENE.RUNUP_MS;
-      let kx = GX + Math.sin(now / 420) * 6, ky = LINE_Y + 4, rot = 0;
+      let kx = GX + Math.sin(now / 420) * 6, ky = LINE_Y + 4;
       const bob = Math.sin(now / 210);
+      let pose: KeeperPose = keeperStance(bob);
       let body = `translate(0,${(-Math.abs(bob) * 1.2).toFixed(2)})`;
-      let reach = 0;
       if (o && launchAt !== null && now >= launchAt) {
+        // The dive by body part: crouch, push off with the far leg, fly with the legs trailing, land and curl.
         const d = keeperDive(o.dive);
-        const t = clamp((now - launchAt) / SCENE.DIVE_MS, 0, 1), e = easeOut(t);
-        const crouch = t < 0.2 ? t / 0.2 : 1;
-        kx = GX + (d.x - GX) * e;
-        ky = LINE_Y + 4 + (d.y - LINE_Y - 4) * e - Math.sin(t * Math.PI) * d.lift;
-        rot = d.rot * e;
-        body = `scale(${(1 + 0.08 * (1 - crouch)).toFixed(3)},${(1 - 0.1 * (1 - crouch)).toFixed(3)})`;
-        // Arms: low in the crouch, then stretched toward the ball.
-        reach = t < 0.2 ? -t / 0.2 : -1 + (1 + diveReach(o.dive)) * easeOut((t - 0.2) / 0.8);
+        const t = clamp((now - launchAt) / SCENE.DIVE_MS, 0, 1);
+        pose = keeperPose(o.dive, t);
+        kx = GX + (d.x - GX) * pose.travel;
+        ky = LINE_Y + 4 + (d.y - LINE_Y - 4) * pose.travel - pose.lift;
+        body = "";
       }
-      const ka = keeperArms(reach, reach === 0 ? bob : 0);
+      const rot = pose.rot;
+      const reach = pose.reach;
+      setLeg(kLegL.current, pose.legL);
+      setLeg(kLegR.current, pose.legR);
+      kTorso.current?.setAttribute("transform", `rotate(${pose.lean.toFixed(1)} 0 -20)`);
+      kHead.current?.setAttribute("transform", `rotate(${pose.tilt.toFixed(1)} 0 -47)`);
+      const ka = keeperArms(reach, o && launchAt !== null && now >= launchAt ? 0 : bob);
       kArmL.current?.setAttribute("d", armPath(ka.left));
       kArmR.current?.setAttribute("d", armPath(ka.right));
       kGloveL.current?.setAttribute("cx", ka.left.hand.x.toFixed(1));
@@ -265,6 +284,7 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
   const keeperShirt = [mix(props.keeperColor, "#ffffff", 0.15), mix(props.keeperColor, "#000000", 0.45)];
   const initialNet = useMemo(() => netPaths(null, 0), []);
   const initialKeeperArms = keeperArms(0);
+  const initialKeeper = keeperStance(0);
   const initialTaker = takerPose(0);
   const initialSpot = takerSpot(0);
   const fanColor = (f: (typeof fans)[number]) =>
@@ -360,42 +380,50 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
         <g ref={keeperRef} transform={`translate(${GX},${LINE_Y + 4})`}>
           <ellipse ref={keeperShadowRef} cx="0" cy="0" rx="14" ry="3" fill="#000" opacity=".3" />
           <g ref={keeperBodyRef}>
-            {/* Boots, socks, knees, shorts */}
-            <rect x="-8" y="-2" width="7" height="4" rx="2" fill="#0b0f19" />
-            <rect x="1" y="-2" width="7" height="4" rx="2" fill="#0b0f19" />
-            <rect x="-6" y="-12" width="5" height="11" rx="1.5" fill={keeperShirt[1]} />
-            <rect x="1" y="-12" width="5" height="11" rx="1.5" fill={keeperShirt[1]} />
-            <rect x="-6" y="-17" width="5" height="6" rx="1.5" fill={SKIN} />
-            <rect x="1" y="-17" width="5" height="6" rx="1.5" fill={SKIN} />
-            <path d="M-11,-24 L11,-24 L10,-15 L1,-15 L0,-18 L-1,-15 L-10,-15 Z" fill="#111827" />
-            {/* Shirt */}
-            <path d="M-11,-44 Q0,-48 11,-44 L12,-23 Q0,-20 -12,-23 Z" fill={`url(#${ids}shirtK)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
-            {/* Arms (sleeves) and gloves */}
-            <path ref={kArmL} d={armPath(initialKeeperArms.left)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path ref={kArmR} d={armPath(initialKeeperArms.right)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <circle ref={kGloveL} cx={initialKeeperArms.left.hand.x} cy={initialKeeperArms.left.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
-            <circle ref={kGloveR} cx={initialKeeperArms.right.hand.x} cy={initialKeeperArms.right.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
-            {/* Neck and head */}
-            <rect x="-2.5" y="-48" width="5" height="5" rx="1.5" fill={SKIN} />
-            {props.keeperFace ? (
-              <>
-                <circle cx="0" cy="-54" r="9" fill={SKIN} />
-                <image href={props.keeperFace} x="-16" y="-68" width="32" height="32" clipPath={`url(#${ids}face)`} preserveAspectRatio="xMidYMid meet" />
-                <circle cx="0" cy="-54" r="9" fill="none" stroke="#000" strokeOpacity=".35" strokeWidth=".6" />
-              </>
-            ) : (
-              <>
-                <ellipse cx="-8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
-                <ellipse cx="8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
-                <circle cx="0" cy="-54" r="8.5" fill={SKIN} stroke="#3b2414" strokeWidth=".5" />
-                <path d="M-8.6,-55.5 Q-8,-64.5 0,-64 Q8,-64.5 8.6,-55.5 Q5,-61 0,-60.5 Q-5,-61 -8.6,-55.5 Z" fill="#1f130a" />
-                <path d="M-5,-57 L-1.6,-57.4 M1.6,-57.4 L5,-57" stroke="#1f130a" strokeWidth=".9" strokeLinecap="round" />
-                <circle cx="-3.2" cy="-55" r="1" fill="#1f130a" />
-                <circle cx="3.2" cy="-55" r="1" fill="#1f130a" />
-                <path d="M0,-54.5 L-.8,-51.8 L.8,-51.8" stroke="#8a5a3c" strokeWidth=".6" fill="none" strokeLinejoin="round" />
-                <path d="M-2.8,-49.6 Q0,-48.2 2.8,-49.6" stroke="#6b3d26" strokeWidth=".8" fill="none" strokeLinecap="round" />
-              </>
-            )}
+            {/* Legs: thigh, shin with the sock, boot (each moves on its own) */}
+            {(["L", "R"] as const).map((k) => {
+              const l = k === "L" ? initialKeeper.legL : initialKeeper.legR;
+              return (
+                <g key={k} ref={k === "L" ? kLegL : kLegR}>
+                  <path d={`M${l.hip.x},${l.hip.y} L${l.knee.x},${l.knee.y}`} stroke={SKIN} strokeWidth="4.6" strokeLinecap="round" fill="none" />
+                  <path d={`M${l.knee.x},${l.knee.y} L${l.foot.x},${l.foot.y}`} stroke={keeperShirt[1]} strokeWidth="4.4" strokeLinecap="round" fill="none" />
+                  <ellipse cx={l.foot.x} cy={l.foot.y} rx="3.6" ry="1.9" fill="#0b0f19" />
+                </g>
+              );
+            })}
+            <path d="M-11,-24 L11,-24 L10,-14 L1,-14 L0,-17 L-1,-14 L-10,-14 Z" fill="#111827" />
+            <g ref={kTorso}>
+              {/* Shirt */}
+              <path d="M-11,-44 Q0,-48 11,-44 L12,-23 Q0,-20 -12,-23 Z" fill={`url(#${ids}shirtK)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
+              {/* Arms (sleeves) and gloves */}
+              <path ref={kArmL} d={armPath(initialKeeperArms.left)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              <path ref={kArmR} d={armPath(initialKeeperArms.right)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              <circle ref={kGloveL} cx={initialKeeperArms.left.hand.x} cy={initialKeeperArms.left.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
+              <circle ref={kGloveR} cx={initialKeeperArms.right.hand.x} cy={initialKeeperArms.right.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
+              {/* Neck and head */}
+              <rect x="-2.5" y="-48" width="5" height="5" rx="1.5" fill={SKIN} />
+              <g ref={kHead}>
+              {props.keeperFace ? (
+                <>
+                  <circle cx="0" cy="-54" r="9" fill={SKIN} />
+                  <image href={props.keeperFace} x="-16" y="-68" width="32" height="32" clipPath={`url(#${ids}face)`} preserveAspectRatio="xMidYMid meet" />
+                  <circle cx="0" cy="-54" r="9" fill="none" stroke="#000" strokeOpacity=".35" strokeWidth=".6" />
+                </>
+              ) : (
+                <>
+                  <ellipse cx="-8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
+                  <ellipse cx="8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
+                  <circle cx="0" cy="-54" r="8.5" fill={SKIN} stroke="#3b2414" strokeWidth=".5" />
+                  <path d="M-8.6,-55.5 Q-8,-64.5 0,-64 Q8,-64.5 8.6,-55.5 Q5,-61 0,-60.5 Q-5,-61 -8.6,-55.5 Z" fill="#1f130a" />
+                  <path d="M-5,-57 L-1.6,-57.4 M1.6,-57.4 L5,-57" stroke="#1f130a" strokeWidth=".9" strokeLinecap="round" />
+                  <circle cx="-3.2" cy="-55" r="1" fill="#1f130a" />
+                  <circle cx="3.2" cy="-55" r="1" fill="#1f130a" />
+                  <path d="M0,-54.5 L-.8,-51.8 L.8,-51.8" stroke="#8a5a3c" strokeWidth=".6" fill="none" strokeLinejoin="round" />
+                  <path d="M-2.8,-49.6 Q0,-48.2 2.8,-49.6" stroke="#6b3d26" strokeWidth=".8" fill="none" strokeLinecap="round" />
+                </>
+              )}
+              </g>
+            </g>
           </g>
         </g>
 
