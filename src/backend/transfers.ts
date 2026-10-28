@@ -34,6 +34,7 @@ import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { parseAskingPrice, playerMarketValue } from "@/Domain/negotiation/askingPrice";
+import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -170,6 +171,8 @@ export const transferRoutes = {
         if (sellerSquad.id === buyerSquad.id) return Response.json({ error: "not for sale" }, { status: 400 });
         // On loan at that club: not its player to sell (`.claude/rules/game/negotiation.md`).
         if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
+        const blockedUntil = rebuyBlockedUntil(player, buyerSquad.id, meta.currentDate ?? "");
+        if (blockedUntil) return Response.json({ error: "recentlySold", until: blockedUntil }, { status: 409 });
 
         // ── Look up seller's sell list for acceptance boost ───────────────────
         const rawMarket = await saveService.getMarket(saveId, auth.seatId);

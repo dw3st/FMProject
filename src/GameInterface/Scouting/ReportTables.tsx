@@ -15,6 +15,30 @@ import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 import { playerHref, scoutingCall, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
 import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { Icon } from "@/GameInterface/Icons";
+import {
+  REPORT_GRADES, defaultDir, filterReports, sortReports, type ReportSortKey, type SortDir,
+} from "@/Domain/scouting/reportView";
+import type { ScoutGrade } from "@/types/scoutingTypes";
+
+function SortHead({ col, label, sort, dir, onSort }: {
+  col: ReportSortKey; label: string; sort: ReportSortKey; dir: SortDir; onSort: (col: ReportSortKey) => void;
+}) {
+  const active = sort === col;
+  return (
+    <th className={`${TABLE_CELL.head} text-left`} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        className={`inline-flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer font-display font-bold uppercase tracking-[0.08em] text-[13px] hover:text-primary transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+      >
+        {label}
+        {active && <Icon name={dir === "asc" ? "chevron-up" : "chevron-down"} size={16} className="text-primary" />}
+      </button>
+    </th>
+  );
+}
 
 const range = (r: [number, number], scale = 10) =>
   r[0] === r[1] ? `${Math.round(r[0] * scale)}` : `${Math.round(r[0] * scale)}–${Math.round(r[1] * scale)}`;
@@ -23,29 +47,34 @@ const money = (r: [number, number]) => {
   return r[0] === r[1] ? `${f(r[0])}M` : `${f(r[0])}–${f(r[1])}M`;
 };
 
-function ReportsTable({ reports, saveId, shortlisted, onShortlist }: {
+function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
   reports: ScoutReport[];
   saveId: string;
   shortlisted: Set<string>;
   onShortlist: () => void;
+  /** Sortable headers (the reports tab); absent = fixed headers. */
+  sort?: { key: ReportSortKey; dir: SortDir; onSort: (col: ReportSortKey) => void };
 }) {
   const { t } = useTranslation();
   const th = `${TABLE_CELL.head} text-left`;
   const td = TABLE_CELL.body;
+  const head = (col: ReportSortKey, label: string) => sort
+    ? <SortHead col={col} label={label} sort={sort.key} dir={sort.dir} onSort={sort.onSort} />
+    : <th className={th}>{label}</th>;
   return (
     <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
       <table className="w-full text-sm border-collapse tabular-nums">
         <thead className={TABLE_STYLE.head}>
           <tr>
-            <th className={th}>{t("scouting.col.grade")}</th>
+            {head("grade", t("scouting.col.grade"))}
             <th className={th}>{t("scouting.col.player")}</th>
-            <th className={th}>{t("scouting.col.age")}</th>
+            {head("age", t("scouting.col.age"))}
             <th className={th}>{t("scouting.col.club")}</th>
-            <th className={th}>{t("scouting.col.overall")}</th>
-            <th className={th}>{t("scouting.col.potential")}</th>
-            <th className={th}>{t("scouting.col.value")}</th>
-            <th className={th}>{t("scouting.col.wage")}</th>
-            <th className={th}>{t("scouting.knowledge")}</th>
+            {head("overall", t("scouting.col.overall"))}
+            {head("potential", t("scouting.col.potential"))}
+            {head("value", t("scouting.col.value"))}
+            {head("wage", t("scouting.col.wage"))}
+            {head("knowledge", t("scouting.knowledge"))}
             <th className={th}>{t("scouting.col.verdict")}</th>
           </tr>
         </thead>
@@ -96,15 +125,46 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
     };
     return [{ value: "all", label: t("scouting.allMissions") }, ...ids.map((id) => ({ value: id, label: label(id) }))];
   }, [data, leagues, t, i18n.language]);
-  const rows = mission === "all" ? data.reports : data.reports.filter((r) => r.missionId === mission);
+  const scoutOptions = useMemo(() => [
+    { value: "all", label: t("scouting.allScouts") },
+    ...data.scouts.filter((s) => !s.vacant).map((s) => ({ value: s.id, label: s.chief ? t("scouting.chiefNamed", { name: s.name }) : s.name })),
+  ], [data.scouts, t]);
+  const [scout, setScout] = useState("all");
+  const [grades, setGrades] = useState<ScoutGrade[]>([]);
+  const [sortKey, setSortKey] = useState<ReportSortKey>("grade");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const onSort = (col: ReportSortKey) => {
+    if (col === sortKey) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(col); setSortDir(defaultDir(col)); }
+  };
+  const toggleGrade = (g: ScoutGrade) => setGrades(grades.includes(g) ? grades.filter((x) => x !== g) : [...grades, g]);
+  // One row per player (the newest report): several scouts often report the same player (report).
+  const rows = useMemo(
+    () => sortReports(filterReports(data.reports, { mission, scout, grades }, data.missions), sortKey, sortDir),
+    [data.reports, data.missions, mission, scout, grades, sortKey, sortDir],
+  );
   return (
     <div className="flex flex-col gap-4">
-      <div className="max-w-sm">
-        <SelectCombobox label={t("scouting.mission")} value={mission} onChange={setMission} options={missionOptions} />
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="w-full sm:w-72">
+          <SelectCombobox label={t("scouting.mission")} value={mission} onChange={setMission} options={missionOptions} />
+        </div>
+        <div className="w-full sm:w-64">
+          <SelectCombobox label={t("scouting.scout")} value={scout} onChange={setScout} options={scoutOptions} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scouting.col.grade")}</span>
+          <div className="flex gap-1.5">
+            {REPORT_GRADES.map((g) => (
+              <Chip key={g} selected={grades.includes(g)} onClick={() => toggleGrade(g)} aria-pressed={grades.includes(g)}>{g}</Chip>
+            ))}
+          </div>
+        </div>
       </div>
       {rows.length === 0
         ? <p className="text-sm text-muted-foreground m-0">{t("scouting.noReports")}</p>
-        : <ReportsTable reports={rows} saveId={saveId} shortlisted={shortlisted} onShortlist={onChanged} />}
+        : <ReportsTable reports={rows} saveId={saveId} shortlisted={shortlisted} onShortlist={onChanged}
+            sort={{ key: sortKey, dir: sortDir, onSort }} />}
     </div>
   );
 }

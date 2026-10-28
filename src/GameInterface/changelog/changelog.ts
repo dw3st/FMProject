@@ -25,6 +25,46 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.37.1",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Na partida, o jogador pendurado (a um amarelo da suspensão) aparece com um cartão amarelo vazado.",
+        en: "In the match, a player one yellow card from a ban shows an empty yellow card.",
+      },
+      {
+        pt: "Jogo de ida e volta de um amigo: a faixa ao vivo e o placar mostram o agregado.",
+        en: "A friend's two-legged tie: the live strip and the score show the aggregate.",
+      },
+      {
+        pt: "Obras em andamento aparecem no cartão da área com a porcentagem concluída e a data de entrega.",
+        en: "Works under way show in the area's card with the percentage done and the delivery date.",
+      },
+      {
+        pt: "Relatórios dos olheiros: filtro por olheiro e por nota, colunas ordenáveis e um jogador por linha.",
+        en: "Scout reports: filter by scout and by grade, sortable columns and one player per row.",
+      },
+      {
+        pt: "Um clube que comprou um jogador seu não o vende de volta antes de um ano.",
+        en: "A club that bought one of your players will not sell him back within a year.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Tela de formação mais compacta: o campo cabe na altura da janela.",
+        en: "A more compact formation screen: the pitch fits the window height.",
+      },
+      {
+        pt: "Resumo da partida mais compacto, deixando espaço para o mapa de posse.",
+        en: "A more compact match summary, leaving room for the possession map.",
+      },
+      {
+        pt: "Os dois bandeirinhas ficam colados à linha lateral; o de baixo não fica mais sobre o banco.",
+        en: "Both assistant referees stand on the touchline; the bottom one no longer sits over the bench.",
+      },
+    ],
+  },
+  {
     version: "4.37",
     date: "2026-10-28",
     items: [

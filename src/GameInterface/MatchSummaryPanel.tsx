@@ -56,7 +56,7 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
 
 function StatRow({ label, a, b }: { label: string; a: string | number; b: string | number }) {
   return (
-    <div className="flex items-center justify-between border-t border-border py-2 text-base">
+    <div className="flex items-center justify-between border-t border-border py-1 text-sm">
       <span className="w-12 font-display font-bold tabular-nums text-foreground">{a}</span>
       <span className="font-display font-bold uppercase tracking-[0.08em] text-sm text-muted-foreground">{label}</span>
       <span className="w-12 text-right font-display font-bold tabular-nums text-foreground">{b}</span>
@@ -142,14 +142,14 @@ export function MatchSummaryPanel({
     <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0 overflow-y-auto">
       {/* Crests instead of the (often long) names (#128), home side on the left (#98): the name stays in
           the tooltip and for screen readers. */}
-      <div className="px-4 pt-3 pb-3 border-b border-border">
+      <div className="px-4 pt-2 pb-2 border-b border-border">
         <div className="flex items-center justify-between gap-2">
           <TeamCrest team={teamA} fallback="A" />
           <h3 className="font-display font-black uppercase text-xl leading-none m-0 text-center">{t("match.summary.title")}</h3>
           <TeamCrest team={teamB} fallback="B" />
         </div>
         {referee && (
-          <div className="mt-3" title={t("referees.referee")}>
+          <div className="mt-2" title={t("referees.referee")}>
             <RefereeBadge referee={referee} size={32} compact />
           </div>
         )}
@@ -164,7 +164,7 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
-      <div className="px-4 pt-4 pb-1 flex items-center justify-between gap-2">
+      <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}
         </span>
@@ -184,7 +184,7 @@ export function MatchSummaryPanel({
       {win.open ? (
         <p className="m-0 px-4 pb-3 text-sm text-muted-foreground">{t("match.feedWindow.inWindow")}</p>
       ) : (
-        <MatchFeedList feed={feed} className="flex-1 min-h-[9rem] overflow-y-auto px-4 pb-3" />
+        <MatchFeedList feed={feed} className="flex-1 min-h-[6rem] overflow-y-auto px-4 pb-2" />
       )}
       {win.open && (
         <MatchFeedWindow
@@ -196,7 +196,7 @@ export function MatchSummaryPanel({
           <MatchFeedList feed={feed} />
         </MatchFeedWindow>
       )}
-      {extra && <div className="shrink-0 px-4 pt-3 pb-4 border-t border-border">{extra}</div>}
+      {extra && <div className="shrink-0 px-4 pt-2 pb-3 border-t border-border">{extra}</div>}
     </aside>
   );
 }

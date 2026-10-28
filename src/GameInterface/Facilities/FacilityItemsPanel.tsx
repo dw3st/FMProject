@@ -6,10 +6,11 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { formatEuros } from "@/Domain/money";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
-import type { FacilityGroup, FacilityRequest } from "@/types/facilityTypes";
+import type { FacilityGroup, FacilityProject, FacilityRequest } from "@/types/facilityTypes";
 import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
 import { FacilityItemArt, type ArtTone } from "@/GameInterface/Facilities/FacilityItemArt";
 import { formatGameDate } from "@/GameInterface/formatDate";
+import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
 type Mode = "repair" | "rebuild" | "upgrade";
 type RepairStep = "25" | "50" | "100";
@@ -92,6 +93,7 @@ export function FacilityItemsPanel({
             </div>
             {open && (
               <ItemDetail key={open.id} item={open} groupBusy={busy.has(g)} pending={pending}
+                running={runningWorksOf(data.facilities.projects, g)} date={data.date}
                 onClose={() => setSelected(null)}
                 onConfirm={async (req) => { await onAsk(req); setSelected(null); }} />
             )}
@@ -161,9 +163,9 @@ function ItemLevelMarks({ level }: { level: number }) {
 
 /** The item's panel: the drawing, the works it can get, cost, duration and the forecast. */
 function ItemDetail({
-  item, groupBusy, pending, onClose, onConfirm,
+  item, groupBusy, pending, onClose, onConfirm, running, date,
 }: {
-  item: FacilityItemView; groupBusy: boolean; pending: boolean;
+  item: FacilityItemView; groupBusy: boolean; pending: boolean; running?: FacilityProject; date: string;
   onClose: () => void; onConfirm: (req: FacilityRequest) => Promise<void>;
 }) {
   const { t, i18n } = useTranslation();
@@ -218,6 +220,7 @@ function ItemDetail({
             )}
             {quote && (
               <QuoteBlock item={item} mode={mode} quote={quote} groupBusy={groupBusy} pending={pending}
+                running={running} date={date}
                 onConfirm={() => void onConfirm(mode === "repair"
                   ? { kind: "repair", item: item.id, to: quote.to ?? 100 }
                   : { kind: mode, item: item.id })} />
@@ -230,9 +233,10 @@ function ItemDetail({
 }
 
 function QuoteBlock({
-  item, mode, quote, groupBusy, pending, onConfirm,
+  item, mode, quote, groupBusy, pending, onConfirm, running, date,
 }: {
   item: FacilityItemView; mode: Mode; quote: ItemQuote; groupBusy: boolean; pending: boolean; onConfirm: () => void;
+  running?: FacilityProject; date: string;
 }) {
   const { t } = useTranslation();
   const f = quote.forecast;
@@ -259,6 +263,7 @@ function QuoteBlock({
         <Figure label={t("facilities.items.condition")} value={`${Math.round(item.condition)}% → ${quote.to ?? 100}%`} />
         <Figure label={t("facilities.items.level")} value={quote.level !== undefined ? `${item.level} → ${quote.level}` : String(item.level)} />
       </div>
+      {blocked && running && <RunningWorks project={running} date={date} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className={`text-sm flex items-center gap-1.5 ${ok ? "text-chart-2" : "text-muted-foreground"}`}>
           <Icon name={ok ? "check-circle" : "alert"} size={16} />

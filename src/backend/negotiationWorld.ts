@@ -27,6 +27,7 @@ import type { StoredTransferRecord, TransferRecord } from "@/types/transferTypes
 import { withDirection } from "@/Domain/transfer/transferView";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import type { TransferInboxMessage } from "@/types/inboxTypes";
+import { withFormerClub } from "@/Domain/transfer/formerClub";
 
 type NewsArgs = {
   date: string;
@@ -309,6 +310,8 @@ export async function completeHumanSale(
     historyFromOf(meta.activeLeagues, sellerRef.leagueSlug),
     newClause,
   );
+  // The buyer will not sell him back to this club for a while (`Domain/transfer/formerClub.ts`).
+  buying.players = buying.players.map((p) => (p.id === player.id ? withFormerClub(p, seller.id, date) : p));
   const owed = sellOnFor(player, seller.id, fee);
   let nextMeta = await executeTransferFee(
     saveId, meta,

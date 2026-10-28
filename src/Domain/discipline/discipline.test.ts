@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyMatchCards, banFromCards, isSuspended, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
+import { applyMatchCards, banFromCards, isSuspended, isUnavailable, oneYellowFromBan, serveSuspension } from "@/Domain/discipline/discipline";
 import { emptySeasonLog } from "@/types/playerTypes";
 
 const Y = { card: "yellow" as const };
@@ -44,4 +44,8 @@ describe("discipline", () => {
     expect(r2.player.suspension).toEqual({ matches: 2 });
     expect(r2.log.redCards).toBe(1);
   });
+});
+
+test("oneYellowFromBan: 4, 9, 14 yellows are one from a ban", () => {
+  expect([0, 3, 4, 5, 8, 9, 14].map(oneYellowFromBan)).toEqual([false, false, true, false, false, true, true]);
 });

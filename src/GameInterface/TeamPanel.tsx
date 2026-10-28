@@ -10,7 +10,7 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { Icon } from "@/GameInterface/Icons";
 import { gamePlayerNaturalRole } from "@/GameInterface/positionHelpers";
 import { kitDotStyle, readableOnDark } from "@/GameInterface/matchTeamColors";
-import { cardRowClass, countCell, type PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
+import { cardRowClass, countCell, isOneYellowFromBan, type PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 
 /** Fitness number coloured by band (#149): green, amber, red. */
 function energyTextClass(energy: number): string {
@@ -22,6 +22,11 @@ function energyTextClass(energy: number): string {
 /** Card shown in the lineup list: a small upright rectangle in the card colour. */
 function CardMark({ red }: { red?: boolean }) {
   return <span className={`inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 ${red ? "bg-destructive" : "bg-card-yellow"}`} aria-hidden />;
+}
+
+/** One yellow from a ban: an empty yellow card. */
+export function BanRiskMark({ label }: { label: string }) {
+  return <span role="img" aria-label={label} title={label} className="inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 border-2 border-card-yellow" />;
 }
 
 /** Column widths of the lineup list (#149): position, name, rating, fitness, goals, assists. */
@@ -107,6 +112,7 @@ function PlayerRow({
         {events?.red && (
           <span role="img" aria-label={t("match.playerEvents.red")} className="inline-flex items-center"><CardMark red /></span>
         )}
+        {!departed && isOneYellowFromBan(player.seasonYellows, events) && <BanRiskMark label={t("match.playerEvents.banRisk")} />}
         {isSubbedIn && (
           <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" aria-label={t("common.substitutedIn")} />
         )}

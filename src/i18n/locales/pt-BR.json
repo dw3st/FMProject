@@ -1006,6 +1006,7 @@
       "offside": "IMPEDIMENTO"
     },
     "playerEvents": {
+      "banRisk": "Pendurado: o próximo amarelo suspende",
       "goals": "Gols: {{count}}",
       "assists": "Assistências: {{count}}",
       "yellow": "Cartão amarelo",
@@ -3126,6 +3127,7 @@
     "requestLoan": "Pedir empréstimo",
     "errors": {
       "talksClosed": "O clube não quer conversar sobre este jogador por enquanto.",
+      "recentlySold": "Você vendeu este jogador há pouco tempo. O clube não aceita devolvê-lo antes de um ano.",
       "noRounds": "Sem rodadas hoje. Tente amanhã.",
       "onLoan": "Um jogador emprestado não pode ser vendido nem emprestado.",
       "squadFull": "Seu elenco está cheio.",
@@ -3465,6 +3467,7 @@
       "stand": "Setor {{stand}} +{{seats}} lugares",
       "level": "{{what}} nível {{level}}",
       "delivery": "entrega {{date}}",
+      "running": "Obra em andamento",
       "item": "{{what}}: {{item}}"
     },
     "inbox": {
@@ -3882,6 +3885,9 @@
     },
     "mission": "Missão",
     "allMissions": "Todas as missões",
+    "scout": "Olheiro",
+    "allScouts": "Todos os olheiros",
+    "chiefNamed": "{{name}} (chefe)",
     "recommendationReports": "Indicações do olheiro-chefe",
     "finishedMission": "Missão encerrada",
     "noReports": "Nenhum relatório ainda. Mande um olheiro em missão.",
@@ -5484,6 +5490,8 @@
     "goalPopup": "{{nickname}} · gol · {{score}} · {{minute}}'",
     "scorer": "gol de {{name}}",
     "goalShort": "gol",
+    "aggregateShort": "agr. {{home}}–{{away}}",
+    "aggregateLine": "Agregado {{home}}–{{away}}",
     "nextShort": "próx.",
     "friendsBadge": "Amigos",
     "noNext": "sem jogo marcado",

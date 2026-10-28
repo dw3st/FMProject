@@ -55,7 +55,8 @@ function PopupCard({ popup }: { popup: ChatPopup }) {
 /** "Getafe 1–2 Real Madrid": a friend's live game in home / away order. */
 function liveScoreLine(l: LiveScoreView): string {
   const x = homeAwayOf(l);
-  return `${x.homeName} ${x.home}–${x.away} ${x.awayName}`;
+  const line = `${x.homeName} ${x.home}–${x.away} ${x.awayName}`;
+  return x.aggregate ? `${line} (${x.aggregate.home}–${x.aggregate.away})` : line;
 }
 
 const RESULT_BORDER = { W: "border-primary", D: "border-muted-foreground", L: "border-destructive" } as const;

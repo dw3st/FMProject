@@ -74,6 +74,8 @@ export interface LiveBase {
   home: boolean;
   fixtureId: string;
   date: string;
+  /** Two-legged tie: first-leg goals from this seat's side (absent in a single game). */
+  aggregate?: { for: number; against: number };
 }
 
 export interface LiveScoreView extends LiveBase {

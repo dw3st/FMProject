@@ -60,6 +60,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, excludeClubIds = [] }
                 <ClubLogo logoUrl={squadLogoUrl(sides.homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                 <span title={`${sides.homeName} ${sides.home}–${sides.away} ${sides.awayName}`}>{sides.home}–{sides.away}</span>
                 <ClubLogo logoUrl={squadLogoUrl(sides.awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                {sides.aggregate && <span className="text-muted-foreground">({t("rivals.aggregateShort", { home: sides.aggregate.home, away: sides.aggregate.away })})</span>}
                 <span className="text-muted-foreground">· {l.status === "live" ? t("rivals.liveMinute", { minute: l.minute }) : t(`rivals.${l.status}Status`)}</span>
                 {lit && <span className="font-display font-bold uppercase tracking-[0.08em]">· {l.lastGoal?.scorer ? t("rivals.scorer", { name: l.lastGoal.scorer }) : t("rivals.goalShort")}</span>}
               </button>

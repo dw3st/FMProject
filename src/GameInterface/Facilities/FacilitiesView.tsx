@@ -16,6 +16,7 @@ import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/G
 import { TurfCard } from "@/GameInterface/Facilities/TurfCard";
 import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
+import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
 /**
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
@@ -364,7 +365,10 @@ function AskRow({ data, cost, busy, pending, onAsk, disabled, group }: {
         ? t("facilities.preview.funded", { pct: Math.round(preview.boardShare * 100) })
         : t("facilities.preview.approve")
       : t(`facilities.reason.${preview.reason}`);
+  const running = busy ? runningWorksOf(data.facilities.projects, group) : undefined;
   return (
+    <div className="flex flex-col gap-3">
+    {running && <RunningWorks project={running} date={data.date} />}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <span className={`text-sm flex items-center gap-1.5 ${!busy && preview.approved ? "text-chart-2" : "text-muted-foreground"}`}>
         <Icon name={!busy && preview.approved ? "check-circle" : "alert"} size={16} />
@@ -374,6 +378,7 @@ function AskRow({ data, cost, busy, pending, onAsk, disabled, group }: {
         <Icon name="building" size={16} />
         {t("facilities.ask")}
       </Button>
+    </div>
     </div>
   );
 }
@@ -581,11 +586,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
       ) : projects.map((p) => {
         const progress = projectProgress(p, data.date);
         const paidNow = p.paidNow === true;
-        const what = p.kind === "stand"
-          ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: nf(p.seats ?? 0) })
-          : p.item
-            ? t("facilities.projects.item", { what: t(`facilities.kind.${p.kind}`), item: t(`facilities.item.${p.item}`) })
-            : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
+        const what = projectLabel(p, t, nf);
         return (
           <div key={p.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">

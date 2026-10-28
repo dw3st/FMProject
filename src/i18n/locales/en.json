@@ -1006,6 +1006,7 @@
       "offside": "OFFSIDE"
     },
     "playerEvents": {
+      "banRisk": "One yellow from a ban",
       "goals": "Goals: {{count}}",
       "assists": "Assists: {{count}}",
       "yellow": "Yellow card",
@@ -3126,6 +3127,7 @@
     "requestLoan": "Ask for loan",
     "errors": {
       "talksClosed": "The club is not talking to you about this player for now.",
+      "recentlySold": "You sold this player recently. The club will not sell him back within a year.",
       "noRounds": "No rounds left today. Try again tomorrow.",
       "onLoan": "A player on loan cannot be sold or loaned out.",
       "squadFull": "Your squad is full.",
@@ -3465,6 +3467,7 @@
       "stand": "{{stand}} stand +{{seats}} seats",
       "level": "{{what}} level {{level}}",
       "delivery": "ready {{date}}",
+      "running": "Works under way",
       "item": "{{what}}: {{item}}"
     },
     "inbox": {
@@ -3882,6 +3885,9 @@
     },
     "mission": "Mission",
     "allMissions": "All missions",
+    "scout": "Scout",
+    "allScouts": "All scouts",
+    "chiefNamed": "{{name}} (chief)",
     "recommendationReports": "Chief scout picks",
     "finishedMission": "Finished mission",
     "noReports": "No reports yet. Send a scout on a mission.",
@@ -5484,6 +5490,8 @@
     "goalPopup": "{{nickname}} · goal · {{score}} · {{minute}}'",
     "scorer": "goal by {{name}}",
     "goalShort": "goal",
+    "aggregateShort": "agg. {{home}}–{{away}}",
+    "aggregateLine": "Aggregate {{home}}–{{away}}",
     "nextShort": "next",
     "friendsBadge": "Friends",
     "noNext": "no match scheduled",

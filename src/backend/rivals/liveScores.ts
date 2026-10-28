@@ -46,6 +46,9 @@ const defaultResolver: LiveResolver = async (saveId, userId, fixtureId) => {
       nickname: getSocialUser(userId)?.nickname ?? seat.manager?.name ?? "?",
       clubId: seat.clubId, clubName: seat.clubName, opponentId, opponentName: opp?.name ?? opponentId,
       home, fixtureId, date: meta.currentDate,
+      ...(fixture.aggregate
+        ? { aggregate: home ? { for: fixture.aggregate.home, against: fixture.aggregate.away } : { for: fixture.aggregate.away, against: fixture.aggregate.home } }
+        : {}),
     },
     scorers: [...(mine?.players ?? []), ...(opp?.players ?? [])].map((p) => p.name),
   };

@@ -23,8 +23,11 @@ export const OFFICIALS = {
   SMOOTH_TAU: 0.6,
   /** Farther than this (tab back, side switch, repositioned restart): jump to the target. */
   SNAP_DIST: 30,
-  /** Assistants' y (engine yards, just off the pitch). */
-  AR_Y_TOP: -1, AR_Y_BOTTOM: 75,
+  /**
+   * Assistants' y (engine yards): on the touchline, slightly outside. Further out the bottom one stood over the benches
+   * and looked smaller than the top one (report).
+   */
+  AR_Y_TOP: -0.3, AR_Y_BOTTOM: 74.3,
   /** After a card, the referee's target stays on the foul spot this long (real seconds). */
   CARD_HOLD_S: 1.5,
 } as const;

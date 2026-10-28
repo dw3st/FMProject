@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { homeAwayOf } from "@/Domain/rivals/homeAway";
 import type { LiveMoment, LiveScoreView } from "@/types/rivalsTypes";
 
 /** A friend's live game in the popup of the live strip: the score and the latest moments, newest first. */
@@ -12,6 +13,7 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
   const away = live.home
     ? { id: live.opponentId, name: live.opponentName, goals: live.score.against }
     : { id: live.clubId, name: live.clubName, goals: live.score.for };
+  const aggregate = homeAwayOf(live).aggregate;
   const moments = [...(live.moments ?? [])].reverse();
   const line = (m: LiveMoment) => {
     if (m.kind === "half") return t("rivals.moments.half");
@@ -29,6 +31,11 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
         <span className="truncate flex-1 text-right">{away.name}</span>
         <ClubLogo logoUrl={squadLogoUrl(away.id)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
       </div>
+      {aggregate && (
+        <p className="m-0 -mt-1 text-sm text-center text-muted-foreground tabular-nums">
+          {t("rivals.aggregateLine", { home: aggregate.home, away: aggregate.away })}
+        </p>
+      )}
       <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("rivals.moments.title")}</div>
       {moments.length === 0 ? (
         <p className="m-0 text-sm text-muted-foreground">{t("rivals.moments.none")}</p>

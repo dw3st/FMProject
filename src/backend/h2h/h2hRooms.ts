@@ -667,12 +667,14 @@ async function startMatch(rec: Rec): Promise<void> {
   for (const side of SIDES) if (!rec.room.sides[side].connected) rec.engine.post({ type: "auto", side, on: true });
   // Rivals: the server sends both seats' live score (the browsers' frames for this game are ignored).
   const [homeSq, awaySq] = [home.mySquad, away.mySquad];
+  const agg = rec.fixture.aggregate;
   const base = (side: H2HSide): LiveBase => {
     const me = rec.room.sides[side];
     const them = rec.room.sides[side === "A" ? "B" : "A"];
     return {
       seatId: me.seatId, nickname: me.nickname ?? me.clubName, clubId: me.clubId, clubName: me.clubName,
       opponentId: them.clubId, opponentName: them.clubName, home: side === "A", fixtureId, date: rec.room.date,
+      ...(agg ? { aggregate: side === "A" ? { for: agg.home, against: agg.away } : { for: agg.away, against: agg.home } } : {}),
     };
   };
   rec.live = {

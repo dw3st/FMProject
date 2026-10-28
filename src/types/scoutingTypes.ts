@@ -84,6 +84,8 @@ export interface ScoutReport {
   id: string;
   date: string;
   missionId?: string;
+  /** Who wrote it: "chief" or the field scout's member id (absent on reports from before 4.38). */
+  scoutId?: string;
   playerId: string;
   name: string;
   squadId: string;

@@ -32,6 +32,14 @@ export function serveSuspension<P extends Pick<RosterPlayer, "suspension">>(play
 }
 
 /**
+ * One yellow from a ban ("pendurado"): the next yellow reaches a multiple of `YELLOW_ACCUMULATION`. `yellows` is the
+ * season count so far (the match's own yellows included).
+ */
+export function oneYellowFromBan(yellows: number): boolean {
+  return yellows > 0 && (yellows + 1) % DISCIPLINE.YELLOW_ACCUMULATION === 0;
+}
+
+/**
  * Matches banned for the cards this player got in one match, given the season's yellow count
  * BEFORE the match. Red = `RED_BAN_MATCHES`; crossing a multiple of `YELLOW_ACCUMULATION`
  * yellows = `YELLOW_BAN_MATCHES`. A second yellow is a yellow plus a red record: the yellow

@@ -128,7 +128,7 @@ function reportText(seenOverall: number, lineAverage: number, grade: ScoutGrade,
 
 /** The report of one observed player at knowledge `k` (seen values, never the real ones). */
 export function buildReport(
-  entry: PoolEntry, k: number, ctx: ViewerContext, args: { missionId?: string; youthMission?: boolean; noiseMult?: number },
+  entry: PoolEntry, k: number, ctx: ViewerContext, args: { missionId?: string; scoutId?: string; youthMission?: boolean; noiseMult?: number },
 ): ScoutReport {
   const p = entry.player;
   const line = lineOf(p);
@@ -139,6 +139,7 @@ export function buildReport(
     id: `rep_${seedFrom(`${ctx.saveId}:${args.missionId ?? "x"}:${p.id}:${ctx.date}`).toString(36)}`,
     date: ctx.date,
     ...(args.missionId ? { missionId: args.missionId } : {}),
+    ...(args.scoutId ? { scoutId: args.scoutId } : {}),
     playerId: p.id,
     name: p.name,
     squadId: entry.squadId,
@@ -285,7 +286,7 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
     }
     const written = observed
       .map((e) => buildReport(e, known(e.player.id), kctx, {
-        missionId: mission.id, youthMission: youth, noiseMult: countryNoiseMult(countryK(e)),
+        missionId: mission.id, scoutId: mission.scoutId, youthMission: youth, noiseMult: countryNoiseMult(countryK(e)),
       }))
       .sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade] || b.overall[1] - a.overall[1] || (a.playerId < b.playerId ? -1 : 1))
       .slice(0, S.REPORTS_PER_WEEK);
@@ -384,7 +385,7 @@ export function recordRecommendations(
     const entry = entries.get(pick.playerId);
     if (!entry) continue;
     knowledge[pick.playerId] = gainKnowledge(known(pick.playerId), gain, ctx.date);
-    const rep = buildReport(entry, known(pick.playerId), kctx, { missionId: RECOMMENDATION_ORIGIN });
+    const rep = buildReport(entry, known(pick.playerId), kctx, { missionId: RECOMMENDATION_ORIGIN, scoutId: "chief" });
     written.push(rep);
     reports.push(rep);
   }

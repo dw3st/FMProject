@@ -19,6 +19,7 @@ import {
 import type { MarketState } from "@/types/transferMarketTypes";
 import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { liveRivals } from "@/Domain/negotiation/rivals";
+import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -211,6 +212,8 @@ export const negotiationRoutes = {
       if (await isOtherSeatClub(saveService, saveId, parent.id, borrower.id)) return json({ error: "notFound" }, 404);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
+      const blockedUntil = rebuyBlockedUntil(player, borrower.id, date);
+      if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       if ((await humanRosterSize(saveService, saveId, auth.seatId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
       if (fee > (borrower.finances?.budget ?? 0)) return json({ error: "Insufficient funds" }, 400);
 

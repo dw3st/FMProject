@@ -292,6 +292,7 @@ function buildGamePlayerForSlot(
     age:              rp.age,
     strengthAttr:     buffed.strength,
     injuryLoad:       rp.seasonLog?.load ?? 0,
+    seasonYellows:    rp.seasonLog?.yellowCards ?? 0,
     morale:           matchMoraleOf(team, rp.morale),
     temperament:      matchTemperamentOf(team, rp),
   };
@@ -364,6 +365,7 @@ function buildTeam(
       age:              rp.age,
       strengthAttr:     buffed.strength,
       injuryLoad:       rp.seasonLog?.load ?? 0,
+      seasonYellows:    rp.seasonLog?.yellowCards ?? 0,
       morale:           matchMoraleOf(team, rp.morale),
       temperament:      matchTemperamentOf(team, rp),
     });

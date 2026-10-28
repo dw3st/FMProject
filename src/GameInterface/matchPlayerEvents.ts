@@ -1,4 +1,5 @@
 import type { CardRecord } from "@/GameEngine/types";
+import { oneYellowFromBan } from "@/Domain/discipline/discipline";
 
 /** What one player did in the live match, for the markers in the lineup list (#69). */
 export interface PlayerMatchEvents {
@@ -35,6 +36,15 @@ export function playerMatchEvents(
     else entry(c.playerId).red = true;
   }
   return out;
+}
+
+/**
+ * One yellow from a ban ("pendurado"): the season's yellows at kickoff plus this match's. A sent-off player is not
+ * marked (his ban is already certain).
+ */
+export function isOneYellowFromBan(seasonYellows: number | undefined, events?: PlayerMatchEvents): boolean {
+  if (events?.red) return false;
+  return oneYellowFromBan((seasonYellows ?? 0) + (events?.yellows ?? 0));
 }
 
 /** A count cell: empty instead of 0 (#149). */

@@ -167,6 +167,8 @@ export interface RosterPlayer {
    * parent club's; the borrowing club pays `wageShare` (0..1) of the wage. Returns at `until`.
    */
   loan?: PlayerLoan;
+  /** The human club that sold him and the last day it cannot buy him back (`Domain/transfer/formerClub.ts`). */
+  formerClub?: { squadId: string; until: string };
   /**
    * Market-value boost of a season award (`.claude/rules/game/awards.md`), until the next rollover
    * of his league. Never read by the engine.

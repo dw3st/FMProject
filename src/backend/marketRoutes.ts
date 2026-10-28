@@ -13,6 +13,7 @@ import { addYearsIso } from "@/Domain/contracts/contracts";
 import { renewedContract } from "@/Domain/managers/managerContract";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { MarketState } from "@/types/transferMarketTypes";
+import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
 
 type Req = Request & { params: Record<string, string> };
 const json = (body: unknown, status = 200) => Response.json(body, { status });
@@ -87,6 +88,8 @@ export const marketRoutes = {
       if (await isOtherSeatClub(saveService, saveId, current.id, human.id)) return json({ error: "notFound" }, 404);
       const player = current.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
+      const blockedUntil = rebuyBlockedUntil(player, human.id, date);
+      if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const signed = market.preContracts ?? [];
       if (signed.some((p) => p.playerId === playerId)) return json({ error: "notEligible" }, 400);

@@ -406,6 +406,8 @@ export interface GamePlayer {
    * energy cost from the same source value.
    */
   injuryLoad: number;
+  /** Yellow cards of the season at kickoff (`seasonLog.yellowCards`): the match screen marks a player one yellow from a ban. */
+  seasonYellows?: number;
   /** Morale this player plays at (`.claude/rules/game/morale.md`); absent = neutral 65. Debug display only. */
   morale?: number;
   /**

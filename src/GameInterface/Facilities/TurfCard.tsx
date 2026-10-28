@@ -7,6 +7,7 @@ import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { formatFee } from "@/Domain/money";
 import type { FacilitiesViewData } from "@/GameInterface/Facilities/facilitiesApi";
 import type { FacilityRequest, MowingPattern } from "@/types/facilityTypes";
+import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
 /** Club screen: the stadium pitch's grass and mowing, and the turf works (spec 2026-10-16-pitch-types §4). */
 export function TurfCard({ data, pending, onAsk, onMowing }: {
@@ -63,7 +64,12 @@ export function TurfCard({ data, pending, onAsk, onMowing }: {
             </div>
           );
         })}
-        {stadiumBusy && <p className="text-sm text-muted-foreground m-0">{t("facilities.groupBusy", { group: t("facilities.items.group.stadium") })}</p>}
+        {stadiumBusy && (() => {
+          const running = runningWorksOf(data.facilities.projects, "stadium");
+          return running
+            ? <RunningWorks project={running} date={data.date} />
+            : <p className="text-sm text-muted-foreground m-0">{t("facilities.groupBusy", { group: t("facilities.items.group.stadium") })}</p>;
+        })()}
       </div>
     </section>
   );

@@ -1261,8 +1261,9 @@ function FormationPitch({
         </span>
       </div>
 
-      {/* Field layer is clipped; markers sit outside so hover cards are not cut off */}
-      <div className="relative w-full aspect-[3/4] rounded-md border border-chart-2/50">
+      {/* Field layer is clipped; markers sit outside so hover cards are not cut off. The width is capped so the
+          whole pitch fits the window height (report: no scrolling to change a player). */}
+      <div className="relative w-full mx-auto max-w-[max(22rem,calc((100vh-17rem)*0.75))] aspect-[3/4] rounded-md border border-chart-2/50">
         <div className="absolute inset-0 rounded-md overflow-hidden">
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <rect x="5" y="5" width="90" height="90" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.3" />

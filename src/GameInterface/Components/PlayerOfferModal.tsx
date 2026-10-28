@@ -193,6 +193,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (code === "talksClosed") return t("negotiation.errors.talksClosed");
     if (code === "noRounds") return t("negotiation.errors.noRounds");
     if (code === "onLoan") return t("negotiation.errors.onLoan");
+    if (code === "recentlySold") return t("negotiation.errors.recentlySold");
     if (code === "squadFull") return t("negotiation.errors.squadFull");
     if (code === "Insufficient funds") return t("transfers.insufficientBudget");
     if (code === "noClub") return t("negotiation.errors.noClub");
