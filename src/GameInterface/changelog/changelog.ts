@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.13",
+    date: "2026-10-28",
+    items: [
+      { pt: "Jogo ao vivo de um amigo: depois de uma atualização do servidor o placar volta sozinho no minuto seguinte, e reagir a ele não mostra mais a mensagem de convite inválido.", en: "A friend's live game: after a server update the score comes back by itself on the next minute, and reacting to it no longer shows the invalid invite message." },
+    ],
+  },
+  {
     version: "4.38.12",
     date: "2026-10-28",
     items: [

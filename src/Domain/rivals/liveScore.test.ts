@@ -86,7 +86,8 @@ describe("applyLiveFrame", () => {
     const s = applyLiveFrame(null, frame({ phase: "goal", minute: 12, score: { for: 1, against: 0 } }), BASE, SCORERS, 1)!;
     expect(applyLiveFrame(s, frame({ phase: "minute", minute: 12, score: { for: 1, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
     expect(applyLiveFrame(s, frame({ phase: "minute", minute: 20, score: { for: 2, against: 0 } }), BASE, SCORERS, 2)).toBeNull();
-    expect(applyLiveFrame(null, frame({ phase: "minute", minute: 20 }), BASE, SCORERS, 2)).toBeNull();
+    // Without a previous state (the server lost the game) a minute frame rebuilds it.
+    expect(applyLiveFrame(null, frame({ phase: "minute", minute: 20 }), BASE, SCORERS, 2)).toMatchObject({ minute: 20, status: "live" });
     expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "minute", minute: 20, score: { for: 0, against: 0 } })?.phase).toBe("minute");
   });
   test("minute frames still go through once the event cap is reached", () => {

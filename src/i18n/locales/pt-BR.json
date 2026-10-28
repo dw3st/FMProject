@@ -5696,6 +5696,11 @@
       "loss_2": "Faz parte.",
       "loss_3": "Semana que vem tem mais.",
       "loss_4": "Lutou. Mais ou menos."
+    },
+    "errors": {
+      "notFound": "Esse jogo ou resultado não está mais disponível.",
+      "self": "Não dá para reagir ao próprio jogo.",
+      "invalidTaunt": "Essa frase não serve para esse momento."
     }
   },
   "h2h": {

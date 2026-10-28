@@ -65,7 +65,7 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
         )}
         {status && (
           <span className={`text-sm ml-1 ${status === "sent" ? "text-muted-foreground" : "text-destructive"}`}>
-            {status === "sent" ? t("rivals.sent") : t(`world.errors.${status}`)}
+            {status === "sent" ? t("rivals.sent") : t(`rivals.errors.${status}`, { defaultValue: t(`world.errors.${status}`) })}
           </span>
         )}
       </div>

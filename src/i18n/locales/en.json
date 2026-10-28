@@ -5696,6 +5696,11 @@
       "loss_2": "It happens.",
       "loss_3": "There's always next week.",
       "loss_4": "Fought. Sort of."
+    },
+    "errors": {
+      "notFound": "That game or result is no longer available.",
+      "self": "You can't react to your own game.",
+      "invalidTaunt": "That phrase doesn't fit this moment."
     }
   },
   "h2h": {

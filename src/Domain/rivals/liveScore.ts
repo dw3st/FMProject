@@ -46,7 +46,8 @@ export function applyLiveFrame(
   const tick = frame.phase === "minute";
   const disallowed = frame.phase === "disallowed";
   const red = frame.phase === "red";
-  if (tick && (!prev || frame.minute <= prev.minute)) return null;
+  // A minute frame for a game the server lost (a restart) rebuilds it from the frame's minute and score.
+  if (tick && prev && frame.minute <= prev.minute) return null;
   if ((disallowed || red) && !prev) return null;
   if (red && !frame.side) return null;
   if (prev) {
