@@ -28,7 +28,7 @@ export const MATCH_LOOK = {
   FLAG: { POLE: 11, W: 7, H: 6, COLOR: 0xf2c230 },
   GRAIN: { SIZE: 128, ALPHA: 0.045 },
   CENTRE_LIGHT: 0.04, EDGE_DARK: 0.1,
-  GLOSS: 0.2, RIM: 0.22,
+  RIM: 0.22,
   PILL: { PAD_X: 5, PAD_Y: 1, STRIP: 3, ALPHA: 0.62, LIFT: 5 },
   STAMINA_ARC: { GAP: 3.5, W: 3 },
   CHEVRON: { DIST: 6, SIZE: 4, MIN_PX: 0.35, SMOOTH: 0.15, ALPHA: 0.85 },

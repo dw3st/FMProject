@@ -1344,10 +1344,8 @@ export function PixiPitch({
         cardBadge.x = markerR * CARD_BADGE.X + cw / 2;
         cardBadge.y = markerR * CARD_BADGE.Y + ch / 2;
         cardBadge.rotation = 0.2;
-        // Volume (4.39): a light crescent at the top, a darker rim at the bottom, over the face.
+        // Volume: a darker rim at the bottom of the marker. The white crescent over the face came out (tester report).
         const gloss = new Graphics()
-          .ellipse(-markerR * 0.22, -markerR * 0.48, markerR * 0.52, markerR * 0.26).fill({ color: 0xffffff, alpha: MATCH_LOOK.GLOSS })
-          // After a fill Pixi keeps the last point, so an arc without a moveTo starts with a line across the face (report).
           .moveTo(Math.cos(Math.PI * 0.15) * (markerR - 1.5), Math.sin(Math.PI * 0.15) * (markerR - 1.5))
           .arc(0, 0, markerR - 1.5, Math.PI * 0.15, Math.PI * 0.85).stroke({ width: 2, color: 0x000000, alpha: MATCH_LOOK.RIM });
         cardBadge.label = "card";

@@ -19,7 +19,7 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
+import { InboxMessageBody, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
 import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
 import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
@@ -72,7 +72,7 @@ export function DashboardScreen() {
   const { t, i18n } = useTranslation();
   const {
     session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType,
-    inboxMessages, unreadInboxCount,
+    inboxMessages, unreadInboxCount, setInboxMessages,
   } = useGameSave();
   const windowsData = useTransferWindows();
   const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
@@ -382,7 +382,22 @@ export function DashboardScreen() {
           statsHref="/stats?tab=team"
           stars={stars}
         />
-        <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} previewOf={(m) => inboxPreview(m, t)} />
+        <InboxCard
+          messages={recentMessages}
+          unread={unreadInboxCount}
+          subjectOf={(m) => inboxSubject(m, t)}
+          previewOf={(m) => inboxPreview(m, t)}
+          renderBody={(m) => <InboxMessageBody message={m} leagues={leagues} />}
+          onOpen={(m) => {
+            if (m.read || !session) return;
+            setInboxMessages((prev) => (prev ? prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)) : prev));
+            void fetch(`/api/saves/${session.saveId}/inbox/mark-read`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ids: [m.id] }),
+            }).catch(() => undefined);
+          }}
+        />
       </div>
 
       <NewsCard items={news} leagues={leagues} />

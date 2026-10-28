@@ -2207,6 +2207,7 @@
       "overall": "OVR",
       "inbox": "Inbox",
       "openInbox": "Open",
+      "openInInbox": "Open in the inbox",
       "noMessages": "No messages",
       "weekFinances": "Week's finances",
       "weekOf": "Week of {{date}}",

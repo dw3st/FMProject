@@ -829,7 +829,7 @@ function MessageRow({
 }
 
 function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
   const prizeTexts = leaguePrizeTexts(message, t);
@@ -859,112 +859,125 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         </div>
       </div>
       <div className="p-6">
-        {message.category === "development" && <DevelopmentBody message={message} />}
-        {message.category === "transfer_in" && (
-          <TransferBody
-            direction="in"
-            playerName={message.playerName}
-            club={message.fromClub}
-            fee={message.feeEuros}
-            date={message.date}
-          />
-        )}
-        {message.category === "transfer_out" && (
-          <TransferBody
-            direction="out"
-            playerName={message.playerName}
-            club={message.toClub}
-            fee={message.feeEuros}
-            date={message.date}
-          />
-        )}
-        {message.category === "season" && <SeasonBody message={message} />}
-        {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
-        {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
-        {message.category === "injury" && <InjuryBody message={message} />}
-        {message.category === "club_record" && (() => {
-          const x = clubRecordTexts(message.record, t, (slug) => competitionName(slug, leagues, i18n.language));
-          return <p className="text-sm text-foreground m-0">{t("clubHistory.inboxBody", { record: x.label, value: x.value, detail: x.detail })}</p>;
-        })()}
-        {message.category === "youth" && (
-          <p className="text-sm text-foreground m-0">
-            {message.kind === "intake"
-              ? t("inbox.youth.intake", {
-                  year: message.year, count: message.count,
-                  best: message.best?.name ?? "",
-                })
-              : t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })}
-          </p>
-        )}
-        {message.category === "retirement" && <RetirementBody message={message} />}
-        {message.category === "facilities" && <p className="text-sm text-foreground m-0">{facilityTexts(message, t).body}</p>}
-        {message.category === "job" && <JobBody message={message} leagues={leagues} />}
-        {message.category === "transfer" && <TransferNegotiationBody message={message} />}
-        {message.category === "player" && <PlayerTalkBody message={message} />}
-        {message.category === "press" && <PressInboxBody message={message} />}
-        {message.category === "manager_news" && <ManagerNewsBody message={message} />}
-        {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
-        {message.category === "awards" && <AwardsInboxBody message={message} />}
-        {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
-        {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
-        {message.category === "world" && message.kind === "auto_advanced" && (
-          <p className="text-sm text-foreground m-0">
-            {message.simulated
-              ? t("world.advance.inbox.bodySimulated", { until: formatInboxDate(message.until), match: formatInboxDate(message.simulated) })
-              : t("world.advance.inbox.body", { until: formatInboxDate(message.until) })}
-          </p>
-        )}
-        {message.category === "world" && message.kind === "live_refused" && (
-          <p className="text-sm text-foreground m-0">
-            {t("world.advance.refused.body", { match: formatInboxDate(message.match), reason: t(`world.advance.refused.reason.${message.reason}`) })}
-          </p>
-        )}
-        {message.category === "world" && message.kind === "season_closed" && (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-foreground m-0">
-              {t("world.inbox.season_closed.body", {
-                manager: message.managerName, club: message.clubName, season: message.season,
-                points: message.points, count: message.points, rank: message.rank, of: message.of,
-              })}
-            </p>
-            <a href="/world?tab=standings" className="font-semibold text-primary hover:underline w-fit">{t("world.inbox.season_closed.open")}</a>
-          </div>
-        )}
-        {message.category === "world" && message.kind === "inactive_warning" && (
-          <p className="text-sm text-foreground m-0">{t("world.inbox.inactive_warning.body")}</p>
-        )}
-        {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && message.kind !== "season_closed" && message.kind !== "inactive_warning" && (
-          <p className="text-sm text-foreground m-0">
-            {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
-          </p>
-        )}
-        {message.category === "world" && message.kind === "h2h_invite" && <H2HInviteJoin match={message.match} />}
-        {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
-        {message.category === "national" && <NationalInboxBody message={message} />}
-        {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
-        {message.category === "achievement" && <AchievementInboxBody keys={message.keys} points={message.points} />}
-        {message.category === "board" && (
-          <p className="text-sm text-foreground m-0">
-            {boardText(
-              message, t,
-              message.objective ? competitionName(message.objective.leagueSlug, leagues, i18n.language) || (message.leagueName ?? "") : "",
-            )}
-          </p>
-        )}
-        {message.category === "board" && message.kind === "contract_offer" && <RenewalBody />}
-        {message.category === "contract" && message.kind === "director_summary" && <DirectorSummaryBody message={message} />}
-        {message.category === "contract" && message.kind !== "director_summary" && (
-          <p className="text-sm text-foreground m-0">
-            {t(`inbox.contract.${message.kind}`, {
-              players: message.staff
-                ? message.staff.map((m) => `${m.name} (${t(`staff.roles.${m.role}`)})`).join(", ")
-                : message.players.map((p) => p.name).join(", "),
-              until: formatInboxDate(message.until ?? ""),
-            })}
-          </p>
-        )}
+        <InboxMessageBody message={message} leagues={leagues} />
       </div>
     </div>
+  );
+}
+
+/**
+ * The body of a message with its actions (accept, answer, open the player...): the inbox detail and the dashboard
+ * inbox card (quick answer, tester report) render the same thing.
+ */
+export function InboxMessageBody({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <>
+    {message.category === "development" && <DevelopmentBody message={message} />}
+    {message.category === "transfer_in" && (
+      <TransferBody
+        direction="in"
+        playerName={message.playerName}
+        club={message.fromClub}
+        fee={message.feeEuros}
+        date={message.date}
+      />
+    )}
+    {message.category === "transfer_out" && (
+      <TransferBody
+        direction="out"
+        playerName={message.playerName}
+        club={message.toClub}
+        fee={message.feeEuros}
+        date={message.date}
+      />
+    )}
+    {message.category === "season" && <SeasonBody message={message} />}
+    {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
+    {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
+    {message.category === "injury" && <InjuryBody message={message} />}
+    {message.category === "club_record" && (() => {
+      const x = clubRecordTexts(message.record, t, (slug) => competitionName(slug, leagues, i18n.language));
+      return <p className="text-sm text-foreground m-0">{t("clubHistory.inboxBody", { record: x.label, value: x.value, detail: x.detail })}</p>;
+    })()}
+    {message.category === "youth" && (
+      <p className="text-sm text-foreground m-0">
+        {message.kind === "intake"
+          ? t("inbox.youth.intake", {
+              year: message.year, count: message.count,
+              best: message.best?.name ?? "",
+            })
+          : t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })}
+      </p>
+    )}
+    {message.category === "retirement" && <RetirementBody message={message} />}
+    {message.category === "facilities" && <p className="text-sm text-foreground m-0">{facilityTexts(message, t).body}</p>}
+    {message.category === "job" && <JobBody message={message} leagues={leagues} />}
+    {message.category === "transfer" && <TransferNegotiationBody message={message} />}
+    {message.category === "player" && <PlayerTalkBody message={message} />}
+    {message.category === "press" && <PressInboxBody message={message} />}
+    {message.category === "manager_news" && <ManagerNewsBody message={message} />}
+    {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
+    {message.category === "awards" && <AwardsInboxBody message={message} />}
+    {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
+    {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
+    {message.category === "world" && message.kind === "auto_advanced" && (
+      <p className="text-sm text-foreground m-0">
+        {message.simulated
+          ? t("world.advance.inbox.bodySimulated", { until: formatInboxDate(message.until), match: formatInboxDate(message.simulated) })
+          : t("world.advance.inbox.body", { until: formatInboxDate(message.until) })}
+      </p>
+    )}
+    {message.category === "world" && message.kind === "live_refused" && (
+      <p className="text-sm text-foreground m-0">
+        {t("world.advance.refused.body", { match: formatInboxDate(message.match), reason: t(`world.advance.refused.reason.${message.reason}`) })}
+      </p>
+    )}
+    {message.category === "world" && message.kind === "season_closed" && (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-foreground m-0">
+          {t("world.inbox.season_closed.body", {
+            manager: message.managerName, club: message.clubName, season: message.season,
+            points: message.points, count: message.points, rank: message.rank, of: message.of,
+          })}
+        </p>
+        <a href="/world?tab=standings" className="font-semibold text-primary hover:underline w-fit">{t("world.inbox.season_closed.open")}</a>
+      </div>
+    )}
+    {message.category === "world" && message.kind === "inactive_warning" && (
+      <p className="text-sm text-foreground m-0">{t("world.inbox.inactive_warning.body")}</p>
+    )}
+    {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && message.kind !== "season_closed" && message.kind !== "inactive_warning" && (
+      <p className="text-sm text-foreground m-0">
+        {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
+      </p>
+    )}
+    {message.category === "world" && message.kind === "h2h_invite" && <H2HInviteJoin match={message.match} />}
+    {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
+    {message.category === "national" && <NationalInboxBody message={message} />}
+    {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
+    {message.category === "achievement" && <AchievementInboxBody keys={message.keys} points={message.points} />}
+    {message.category === "board" && (
+      <p className="text-sm text-foreground m-0">
+        {boardText(
+          message, t,
+          message.objective ? competitionName(message.objective.leagueSlug, leagues, i18n.language) || (message.leagueName ?? "") : "",
+        )}
+      </p>
+    )}
+    {message.category === "board" && message.kind === "contract_offer" && <RenewalBody />}
+    {message.category === "contract" && message.kind === "director_summary" && <DirectorSummaryBody message={message} />}
+    {message.category === "contract" && message.kind !== "director_summary" && (
+      <p className="text-sm text-foreground m-0">
+        {t(`inbox.contract.${message.kind}`, {
+          players: message.staff
+            ? message.staff.map((m) => `${m.name} (${t(`staff.roles.${m.role}`)})`).join(", ")
+            : message.players.map((p) => p.name).join(", "),
+          until: formatInboxDate(message.until ?? ""),
+        })}
+      </p>
+    )}
+    </>
   );
 }
 

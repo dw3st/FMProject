@@ -271,3 +271,7 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 ## Caminhos no Pixi (4.38.23)
 
 Depois de `fill()`/`stroke()` o Pixi v8 continua o caminho do último ponto (`_initNextPathLocation`): um `arc()` sem `moveTo` antes começa com uma linha desde esse ponto. O brilho do marcador (elipse e depois o arco da borda) desenhava um risco cinza no rosto de todo jogador (report). Sempre `moveTo` até o início do arco depois de um preenchimento. O rastro da bola só começa fora do marcador de quem chutou.
+
+## Marcador sem brilho (4.38.24)
+
+O brilho branco em meia-lua sobre o rosto saiu (report: "círculo branco dentro da cabeça"); fica só a borda escura embaixo (`MATCH_LOOK.RIM`).

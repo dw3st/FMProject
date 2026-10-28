@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.24",
+    date: "2026-10-28",
+    items: [
+      { pt: "Resposta rápida no Painel: as mensagens da caixa de entrada abrem no próprio cartão, com os botões para aceitar, recusar, responder e os links.", en: "Quick answer on the dashboard: inbox messages open right in the card, with the buttons to accept, refuse, answer and the links." },
+    ],
+    fixes: [
+      { pt: "Saiu o brilho branco que aparecia dentro da cabeça dos jogadores na partida.", en: "The white highlight inside the players' heads in the match is gone." },
+    ],
+  },
+  {
     version: "4.38.23",
     date: "2026-10-28",
     items: [

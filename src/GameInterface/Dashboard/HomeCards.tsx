@@ -5,7 +5,7 @@
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData, StandingRow } from "@/types/playerTypes";
@@ -778,13 +778,31 @@ export function InboxCard({
   unread,
   subjectOf,
   previewOf,
+  renderBody,
+  onOpen,
 }: {
   messages: InboxMessage[];
   unread: number;
   subjectOf: (m: InboxMessage) => string;
   previewOf: (m: InboxMessage) => string;
+  /** Quick answer (tester report): the message body with its actions, shown inside the card. */
+  renderBody?: (m: InboxMessage) => ReactNode;
+  /** Called when a message is opened in the card (marks it read). */
+  onOpen?: (m: InboxMessage) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [openId, setOpenId] = useState<string | null>(null);
+  // While a message is open the rows keep their order: marking it read would otherwise move it down the list.
+  const [frozen, setFrozen] = useState<InboxMessage[] | null>(null);
+  const shown = frozen
+    ? frozen.map((f) => messages.find((m) => m.id === f.id) ?? f)
+    : messages;
+  const toggle = (m: InboxMessage) => {
+    if (openId === m.id) { setOpenId(null); setFrozen(null); return; }
+    setFrozen(frozen ?? messages);
+    setOpenId(m.id);
+    onOpen?.(m);
+  };
   return (
     <HomeCard
       title={
@@ -800,26 +818,40 @@ export function InboxCard({
       href="/inbox"
       linkLabel={t("dashboard.home.openInbox")}
     >
-      {messages.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{t("dashboard.home.noMessages")}</p>
       ) : (
         <ul className="list-none m-0 p-0 flex flex-col">
-          {messages.map((m) => (
-            <li key={m.id} className="border-t border-border/50 first:border-t-0">
-              <a
-                href={`/inbox?id=${encodeURIComponent(m.id)}`}
-                className={`flex items-start gap-3 py-2.5 no-underline hover:text-primary border-l-2 pl-3 ${
-                  m.read ? "border-l-transparent text-foreground/80" : "border-l-primary text-foreground"
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className={`text-sm truncate ${m.read ? "font-medium" : "font-bold"}`}>{subjectOf(m)}</div>
-                  <div className="text-sm text-muted-foreground truncate">{previewOf(m)}</div>
-                </div>
-                <span className="text-sm text-muted-foreground shrink-0">{formatDay(m.date, i18n.language)}</span>
-              </a>
-            </li>
-          ))}
+          {shown.map((m) => {
+            const open = openId === m.id;
+            return (
+              <li key={m.id} className="border-t border-border/50 first:border-t-0">
+                <button
+                  type="button"
+                  onClick={() => toggle(m)}
+                  aria-expanded={open}
+                  className={`w-full text-left flex items-start gap-3 py-2.5 bg-transparent cursor-pointer hover:text-primary border-0 border-l-2 pl-3 ${
+                    m.read ? "border-l-transparent text-foreground/80" : "border-l-primary text-foreground"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-sm truncate ${m.read ? "font-medium" : "font-bold"}`}>{subjectOf(m)}</div>
+                    {!open && <div className="text-sm text-muted-foreground truncate">{previewOf(m)}</div>}
+                  </div>
+                  <span className="text-sm text-muted-foreground shrink-0">{formatDay(m.date, i18n.language)}</span>
+                  <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="shrink-0 mt-0.5 text-muted-foreground" />
+                </button>
+                {open && (
+                  <div className="pl-5 pr-1 pb-3 flex flex-col gap-3">
+                    {renderBody ? renderBody(m) : <p className="text-sm text-foreground m-0">{previewOf(m)}</p>}
+                    <a href={`/inbox?id=${encodeURIComponent(m.id)}`} className="text-sm font-semibold text-primary hover:underline w-fit">
+                      {t("dashboard.home.openInInbox")}
+                    </a>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </HomeCard>

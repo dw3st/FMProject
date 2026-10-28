@@ -135,6 +135,9 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
   jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
   Finanças da semana. Abaixo de `lg` os pares empilham.
+- **Caixa de entrada do Painel (resposta rápida, 4.38.24):** clicar numa mensagem do cartão abre o corpo dela ali mesmo
+  (`InboxMessageBody`, o mesmo da tela Caixa de entrada, com os botões e links) e a marca como lida; a ordem das linhas
+  fica parada enquanto uma está aberta; "Abrir na caixa de entrada" leva à tela.
 
 **Barra superior e barra inferior (#65).** Mesma moldura do `ScreenContainer` (`px-6`, até
 `SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
