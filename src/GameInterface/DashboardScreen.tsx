@@ -304,6 +304,8 @@ export function DashboardScreen() {
 
       <GroupAdvanceBand />
 
+      {rivals && rivals.length >= 2 && <RivalsCard rows={rivals} />}
+
       <ClubCard
         club={myClub}
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
@@ -348,8 +350,6 @@ export function DashboardScreen() {
           humanClubs={humanClubs}
         />
       </div>
-
-      {rivals && rivals.length >= 2 && <RivalsCard rows={rivals} />}
 
       <WeekCard
         fixtures={fixtures}

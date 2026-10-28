@@ -5623,7 +5623,8 @@
     "loadMore": "Load more",
     "card": {
       "title": "Rivals",
-      "link": "See rivals"
+      "link": "See rivals",
+      "next": "Next game: {{date}} · {{opponent}}"
     },
     "stripLabel": "Friends playing now",
     "actionsLabel": "Banter",

@@ -12,7 +12,7 @@ import type { LeagueData, StandingRow } from "@/types/playerTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import { NewsRow } from "@/GameInterface/News/NewsList";
 import { RivalForm } from "@/GameInterface/World/RivalForm";
-import { liveText } from "@/GameInterface/World/liveText";
+import { LiveMoments } from "@/GameInterface/World/LiveMoments";
 import type { RivalRow } from "@/types/rivalsTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
@@ -928,22 +928,44 @@ export function NewsCard({ items, leagues }: { items: NewsItem[] | null; leagues
 
 /** One line per friend: nickname, league place, form, and the live score while he plays. */
 export function RivalsCard({ rows }: { rows: RivalRow[] }) {
-  const { t } = useTranslation();
-  const friends = rows.filter((r) => !r.me);
+  const { t, i18n } = useTranslation();
+  // Friends playing now first: their game is followed live (score, minute, the latest moments).
+  const friends = rows.filter((r) => !r.me).sort((a, b) => Number(!!b.live) - Number(!!a.live));
   return (
     <HomeCard title={t("rivals.card.title")} href="/world?tab=rivals" linkLabel={t("rivals.card.link")}>
       {friends.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{t("rivals.noRivals")}</p>
       ) : (
-        <ul className="m-0 p-0 list-none flex flex-col gap-2">
+        <ul className="m-0 p-0 list-none flex flex-col gap-3">
           {friends.map((r) => (
-            <li key={r.seatId} className="flex items-center gap-3 min-h-8">
-              <span className="font-semibold text-foreground truncate flex-1 min-w-0">{r.nickname ?? r.managerName}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}
-              </span>
-              <RivalForm form={r.form} />
-              {r.live && <span className="text-sm tabular-nums text-primary">{liveText(t, r.live)}</span>}
+            <li key={r.seatId} className="flex flex-col gap-2">
+              <div className="flex items-center gap-3 min-h-8">
+                <ClubLogo logoUrl={squadLogoUrl(r.clubId)} primaryColor={r.clubColors[0]} secondaryColor={r.clubColors[1]} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
+                  <span className="text-sm text-muted-foreground"> · {r.clubName}</span>
+                </span>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}
+                </span>
+                <RivalForm form={r.form} />
+              </div>
+              {r.live ? (
+                <div className="rounded-md border border-border bg-secondary/20 p-3 flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${r.live.status === "live" ? "bg-destructive animate-pulse" : "bg-muted-foreground"}`} aria-hidden="true" />
+                    <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-destructive">{t("rivals.liveBadge")}</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {r.live.status === "live" ? t("rivals.liveMinute", { minute: r.live.minute }) : t(`rivals.${r.live.status}Status`)}
+                    </span>
+                  </div>
+                  <LiveMoments live={r.live} />
+                </div>
+              ) : r.next ? (
+                <p className="m-0 text-sm text-muted-foreground pl-11">
+                  {t("rivals.card.next", { date: formatDay(r.next.date, i18n.language), opponent: r.next.opponentName })}
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

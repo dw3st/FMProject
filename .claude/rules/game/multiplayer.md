@@ -602,7 +602,7 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 
 - `/world`: abas **Rivais** (`RivalsTable`, clicar abre os resultados do amigo) e **Resultados** (`ResultsFeed`, por
   dia, filtro por amigo, ações de resenha); `?tab=rivals|results`.
-- Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos.
+- Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos, no topo (4.38.17): quem joga agora vem primeiro, com o placar, o minuto e os últimos lances (`LiveMoments`), atualizados pelo `friend_live`; sem jogo, o próximo jogo.
 - Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
   e gol ao vivo, com as ações; 8 s, no máximo 3.
 - **Últimos lances (4.35.3):** `LiveScoreView.moments` guarda os últimos `RIVALS.LIVE_MOMENTS_MAX` (12) lances (gol com autor, gol anulado, expulsão, intervalo, fim); clicar no amigo na faixa abre o popup `LiveMoments` (placar + lances, mais novos primeiro) com a resenha embaixo.

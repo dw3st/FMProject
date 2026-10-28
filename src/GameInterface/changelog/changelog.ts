@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.17",
+    date: "2026-10-28",
+    items: [
+      { pt: "Rivais no topo do Painel: o jogo de um amigo aparece ao vivo, com placar, minuto e os últimos lances.", en: "Rivals at the top of the Dashboard: a friend's game shows live, with the score, the minute and the latest moments." },
+    ],
+  },
+  {
     version: "4.38.16",
     date: "2026-10-28",
     items: [

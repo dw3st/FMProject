@@ -5623,7 +5623,8 @@
     "loadMore": "Carregar mais",
     "card": {
       "title": "Rivais",
-      "link": "Ver rivais"
+      "link": "Ver rivais",
+      "next": "Próximo jogo: {{date}} · {{opponent}}"
     },
     "stripLabel": "Amigos jogando agora",
     "actionsLabel": "Resenha",
