@@ -38,6 +38,14 @@ describe("shop once per season, rising price", () => {
     expect(recordPurchase(after, "created", "2027-09-01", "la_liga:2027").spent).toBe(700);
   });
 
+  test("a purchase with a player goes into the history with its price", () => {
+    const rich = { ...emptyAchievements(), campaign: { points: 5000, seen: [] } };
+    const one = recordPurchase(rich, "legend", "2027-01-10", "la_liga:2026", { id: "legend_r1_2027", name: "A. Lenda", positions: ["ST"], fromId: "r1" });
+    const two = recordPurchase(one, "legend", "2027-09-01", "la_liga:2027", { id: "legend_r2_2027", name: "B. Lenda", positions: ["CB"], fromId: "r2" });
+    expect(two.purchases?.map((p) => [p.name, p.price, p.fromId])).toEqual([["A. Lenda", 500, "r1"], ["B. Lenda", 600, "r2"]]);
+    expect(recordPurchase(rich, "created", "2027-01-10", "la_liga:2026").purchases).toBeUndefined();
+  });
+
   test("a purchase from before this rule counts as one", () => {
     const old = { ...emptyAchievements(), bought: { legend: "2027-01-01" } };
     expect(shopPrice(old, "legend")).toBe(600);

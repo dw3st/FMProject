@@ -21,6 +21,11 @@ export interface AchievementsData {
     /** Bought in this season (each item once per season). */
     thisSeason: { created: boolean; legend: boolean };
     positions: DetailedRole[];
+    /** Purchases, newest first; `date`/`price` null for a legend bought before the history existed. */
+    history: {
+      item: "created" | "legend"; date: string | null; playerId: string; name: string; position: string;
+      price: number | null; where: "squad" | "youth" | "gone"; href: string | null;
+    }[];
     legends: {
       id: string; name: string; positions: string[]; nationality: string | null; age: number;
       wasWorldClass: boolean; level: number; appearances: number; goals: number;

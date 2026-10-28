@@ -638,7 +638,10 @@
   },
   "social": {
     "publicRoom": "Só reações neste mundo",
-    "popup": { "open": "Abrir conversa: {{name}}", "dismiss": "Fechar aviso" },
+    "popup": {
+      "open": "Abrir conversa: {{name}}",
+      "dismiss": "Fechar aviso"
+    },
     "button": "Amigos: {{count}} online",
     "buttonUnread": "Amigos: {{count}} online, {{unread}} não lidas",
     "buttonShort": "Amigos · {{count}}",
@@ -648,9 +651,22 @@
     "loading": "Carregando…",
     "you": "Você:",
     "nicknameFinal": "O apelido não pode ser mudado depois.",
-    "tabs": { "friends": "Amigos", "requests": "Pedidos", "add": "Adicionar" },
-    "groups": { "playing": "Jogando", "online": "Online", "offline": "Offline", "worlds": "Mundos" },
-    "status": { "playing": "Jogando · {{club}}", "online": "Online", "offline": "Offline" },
+    "tabs": {
+      "friends": "Amigos",
+      "requests": "Pedidos",
+      "add": "Adicionar"
+    },
+    "groups": {
+      "playing": "Jogando",
+      "online": "Online",
+      "offline": "Offline",
+      "worlds": "Mundos"
+    },
+    "status": {
+      "playing": "Jogando · {{club}}",
+      "online": "Online",
+      "offline": "Offline"
+    },
     "noFriends": "Nenhum amigo ainda. Adicione pelo apelido na aba Adicionar.",
     "actions": "Ações",
     "unfriend": "Desfazer amizade",
@@ -1511,6 +1527,7 @@
       "health": "Lesões e disciplina",
       "growth": "Evolução",
       "transfers": "Transferências",
+      "scouting": "Olheiros",
       "contracts": "Contratos",
       "club": "Clube",
       "competitions": "Competições",
@@ -3031,7 +3048,10 @@
       "main": "Prévia da",
       "accent": "Partida"
     },
-    "matchRoom": { "main": "Sala do", "accent": "Jogo" },
+    "matchRoom": {
+      "main": "Sala do",
+      "accent": "Jogo"
+    },
     "matchResult": {
       "main": "Resultado da",
       "accent": "Partida"
@@ -3365,15 +3385,26 @@
   "facilities": {
     "turf": {
       "title": "Gramado",
-      "type": { "natural": "Grama natural", "hybrid": "Grama híbrida", "synthetic": "Grama sintética" },
-      "about": { "natural": "Desgasta no ritmo normal.", "hybrid": "Desgasta 40% mais devagar.", "synthetic": "Quase não desgasta; 10% mais lesões nos jogos em casa; a torcida não gosta." },
+      "type": {
+        "natural": "Grama natural",
+        "hybrid": "Grama híbrida",
+        "synthetic": "Grama sintética"
+      },
+      "about": {
+        "natural": "Desgasta no ritmo normal.",
+        "hybrid": "Desgasta 40% mais devagar.",
+        "synthetic": "Quase não desgasta; 10% mais lesões nos jogos em casa; a torcida não gosta."
+      },
       "change": "Trocar grama",
       "current": "Atual",
       "condition": "Condição {{pct}}%"
     },
     "mowing": {
       "label": "Padrão de corte",
-      "stripes": "Listras", "checker": "Xadrez", "diagonal": "Diagonal", "circles": "Círculos"
+      "stripes": "Listras",
+      "checker": "Xadrez",
+      "diagonal": "Diagonal",
+      "circles": "Círculos"
     },
     "kpi": {
       "capacity": "Capacidade",
@@ -3523,6 +3554,10 @@
       "item": "Item",
       "level": "Nível",
       "levelOf": "{{level}} de 10",
+      "conditionHint": "Estado de conservação: 100% é novo, cai com o tempo e o uso. Abaixo de 40% começa a atrapalhar.",
+      "works": "Obra: {{kind}}",
+      "delivery": "entrega {{date}}",
+      "done": "{{pct}}% feito",
       "condition": "Condição",
       "actions": "Obras",
       "condemned": "Interditado",
@@ -4596,6 +4631,24 @@
         "worldClass": "Classe mundial",
         "career": "{{apps}} jogos · {{goals}} gols",
         "done": "{{name}} voltou, na sua base."
+      },
+      "history": {
+        "title": "Histórico de compras",
+        "empty": "Nenhuma compra ainda.",
+        "player": "Jogador",
+        "item": "Compra",
+        "date": "Data",
+        "price": "Preço",
+        "where": "Situação",
+        "kind": {
+          "created": "Jogador criado",
+          "legend": "Lenda"
+        },
+        "at": {
+          "squad": "No elenco",
+          "youth": "Na base",
+          "gone": "Saiu do clube"
+        }
       }
     },
     "errors": {
@@ -5172,9 +5225,18 @@
       }
     },
     "world_member": {
-      "0": { "title": "{{manager}} assume: {{club}}", "text": "Um novo técnico entra na liga." },
-      "1": { "title": "{{club}} tem novo técnico: {{manager}}", "text": "Mais um amigo na liga." },
-      "2": { "title": "{{manager}} chega: {{club}}", "text": "A liga ganha mais um técnico." }
+      "0": {
+        "title": "{{manager}} assume: {{club}}",
+        "text": "Um novo técnico entra na liga."
+      },
+      "1": {
+        "title": "{{club}} tem novo técnico: {{manager}}",
+        "text": "Mais um amigo na liga."
+      },
+      "2": {
+        "title": "{{manager}} chega: {{club}}",
+        "text": "A liga ganha mais um técnico."
+      }
     },
     "world_member_left": {
       "title": "{{manager}} deixa o {{club}}",
@@ -5204,7 +5266,10 @@
       "points": "Pontos",
       "noNickname": "Sem apelido"
     },
-    "status": { "lobby": "Sala de espera", "running": "Em andamento" },
+    "status": {
+      "lobby": "Sala de espera",
+      "running": "Em andamento"
+    },
     "members": {
       "title": "Técnicos",
       "count": "{{count}} de {{max}} técnicos",
@@ -5245,7 +5310,10 @@
       "hours_other": "{{count}} h",
       "none": "Sem prazo"
     },
-    "start": { "button": "Começar a liga", "waiting": "Esperando o dono começar" },
+    "start": {
+      "button": "Começar a liga",
+      "waiting": "Esperando o dono começar"
+    },
     "chat": "Chat da liga",
     "standings": {
       "tab": "Classificação",
@@ -5315,11 +5383,26 @@
       "decline": "Recusar"
     },
     "inbox": {
-      "member_joined": { "subject": "{{manager}} entra na liga", "body": "{{manager}} assume: {{club}}." },
-      "member_left": { "subject": "{{manager}} sai da liga", "body": "Clube: {{club}}, que volta para a IA." },
-      "member_removed": { "subject": "{{manager}} foi removido da liga", "body": "Clube: {{club}}, que volta para a IA." },
-      "h2h_invite": { "subject": "{{manager}} está te esperando para o jogo", "body": "{{manager}} ({{club}}) abriu a sala do jogo ao vivo. Entre na sala para jogar." },
-      "h2h_lost": { "subject": "Seu jogo ao vivo foi perdido", "body": "O servidor reiniciou durante o jogo contra {{club}}. Nada foi gravado: decida o jogo de novo." },
+      "member_joined": {
+        "subject": "{{manager}} entra na liga",
+        "body": "{{manager}} assume: {{club}}."
+      },
+      "member_left": {
+        "subject": "{{manager}} sai da liga",
+        "body": "Clube: {{club}}, que volta para a IA."
+      },
+      "member_removed": {
+        "subject": "{{manager}} foi removido da liga",
+        "body": "Clube: {{club}}, que volta para a IA."
+      },
+      "h2h_invite": {
+        "subject": "{{manager}} está te esperando para o jogo",
+        "body": "{{manager}} ({{club}}) abriu a sala do jogo ao vivo. Entre na sala para jogar."
+      },
+      "h2h_lost": {
+        "subject": "Seu jogo ao vivo foi perdido",
+        "body": "O servidor reiniciou durante o jogo contra {{club}}. Nada foi gravado: decida o jogo de novo."
+      },
       "inactive_warning": {
         "subject": "Você não abre o mundo público há 5 dias",
         "body": "Você não abre o mundo público há 5 dias. Em mais 2 dias o seu clube volta para a IA."
@@ -5353,7 +5436,7 @@
       "unmark": "Não estou pronto",
       "dateInvalid": "Escolha uma data a partir de {{min}}.",
       "retry": "Tentar de novo",
-        "band": {
+      "band": {
         "title": "Avanço do grupo",
         "date": "Data do mundo",
         "target": "Alvo",
@@ -5469,7 +5552,14 @@
     "rivalsTitle": "Seus rivais",
     "rivalsHint": "Como cada amigo está indo. Clique numa linha para ver os resultados dele.",
     "resultsTitle": "Resultados",
-    "col": { "rank": "#", "position": "Liga", "form": "Forma", "last": "Último", "next": "Próximo", "live": "Agora" },
+    "col": {
+      "rank": "#",
+      "position": "Liga",
+      "form": "Forma",
+      "last": "Último",
+      "next": "Próximo",
+      "live": "Agora"
+    },
     "positionValue": "{{position}}º",
     "nextValue": "{{date}} · {{opponent}}",
     "moments": {
@@ -5504,12 +5594,20 @@
     "empty": "Nenhum resultado ainda.",
     "noRivals": "Nenhum amigo nesta liga ainda.",
     "loadMore": "Carregar mais",
-    "card": { "title": "Rivais", "link": "Ver rivais" },
+    "card": {
+      "title": "Rivais",
+      "link": "Ver rivais"
+    },
     "stripLabel": "Amigos jogando agora",
     "actionsLabel": "Resenha",
     "phrases": "Frases",
     "sent": "Enviado",
-    "reactions": { "applause": "Palmas", "fire": "Fogo", "laugh": "Risada", "sorry": "Lamento" },
+    "reactions": {
+      "applause": "Palmas",
+      "fire": "Fogo",
+      "laugh": "Risada",
+      "sorry": "Lamento"
+    },
     "taunts": {
       "live_goal_for_1": "Saiu o gol.",
       "live_goal_for_2": "Agora vai.",
@@ -5582,8 +5680,16 @@
     "room": {
       "you": "você",
       "subtitle": "A partida começa quando os dois técnicos clicam em Começar.",
-      "status": { "away": "Fora", "in": "Na sala", "ready": "Pronto" },
-      "line": { "away": "Esperando {{name}} entrar", "in": "{{name}} está na sala", "ready": "{{name}} está pronto" },
+      "status": {
+        "away": "Fora",
+        "in": "Na sala",
+        "ready": "Pronto"
+      },
+      "line": {
+        "away": "Esperando {{name}} entrar",
+        "in": "{{name}} está na sala",
+        "ready": "{{name}} está pronto"
+      },
       "starting": "A partida vai começar",
       "tactics": "Formação e táticas",
       "simulate": "Simular",
@@ -5591,9 +5697,18 @@
       "ready": "Pronto",
       "noMatch": "Hoje não há jogo ao vivo contra outro técnico."
     },
-    "invite": { "popup": "{{name}} está te esperando para o jogo ao vivo", "join": "Entrar" },
-    "preview": { "playLive": "Jogar ao vivo", "note": "Jogue ao vivo com o outro técnico ou simule com a tática dos dois.", "waiting": "{{name}} está te esperando na sala" },
-    "bar": { "live": "Ao vivo" },
+    "invite": {
+      "popup": "{{name}} está te esperando para o jogo ao vivo",
+      "join": "Entrar"
+    },
+    "preview": {
+      "playLive": "Jogar ao vivo",
+      "note": "Jogue ao vivo com o outro técnico ou simule com a tática dos dois.",
+      "waiting": "{{name}} está te esperando na sala"
+    },
+    "bar": {
+      "live": "Ao vivo"
+    },
     "closed": {
       "simulated": "O jogo foi simulado",
       "left": "O outro técnico saiu da sala",

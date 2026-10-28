@@ -21,6 +21,7 @@ import { nationalityFlagCode, NATIONALITY_NAMES } from "@/Domain/world/nationali
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import { formatEffect } from "@/GameInterface/Staff/staffApi";
 import { positionLabel } from "@/GameInterface/positionHelpers";
+import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import {
   BADGE_ICON, FRAME_RING, MONEY_TRACKS, TIER_TEXT, achievementsCall, type AchievementsData,
 } from "@/GameInterface/Achievements/achievementsApi";
@@ -444,6 +445,48 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
               )}
         </section>
       </div>
+      <ShopHistory history={data.shop.history} />
     </div>
+  );
+}
+
+/** The players bought with points, newest first (report of a tester: the legends had no history). */
+function ShopHistory({ history }: { history: AchievementsData["shop"]["history"] }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <section className="flex flex-col gap-3">
+      <SectionTitle>{t("achievements.shop.history.title")}</SectionTitle>
+      {history.length === 0 ? (
+        <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.history.empty")}</p>
+      ) : (
+        <div className={TABLE_STYLE.shell}>
+          <table className="w-full border-collapse">
+            <thead className={TABLE_STYLE.head}>
+              <tr>
+                <th className={`${TABLE_CELL.head} text-left`}>{t("achievements.shop.history.player")}</th>
+                <th className={`${TABLE_CELL.head} text-left`}>{t("achievements.shop.history.item")}</th>
+                <th className={`${TABLE_CELL.head} text-center`}>{t("achievements.shop.history.date")}</th>
+                <th className={`${TABLE_CELL.head} text-center`}>{t("achievements.shop.history.price")}</th>
+                <th className={`${TABLE_CELL.head} text-left`}>{t("achievements.shop.history.where")}</th>
+              </tr>
+            </thead>
+            <tbody className={TABLE_STYLE.body}>
+              {history.map((h) => (
+                <tr key={`${h.item}:${h.playerId}`} className={TABLE_STYLE.row}>
+                  <td className={`${TABLE_CELL.body} ${TABLE_STYLE.name}`}>
+                    {h.href ? <a href={h.href} className="hover:text-primary">{h.name}</a> : h.name}
+                    {h.position && <span className="ml-2 text-sm text-muted-foreground">{positionLabel(t, h.position, h.position)}</span>}
+                  </td>
+                  <td className={`${TABLE_CELL.body} text-sm`}>{t(`achievements.shop.history.kind.${h.item}`)}</td>
+                  <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{h.date ? formatDate(h.date, i18n.language) : "–"}</td>
+                  <td className={`${TABLE_CELL.body} ${TABLE_STYLE.key}`}>{h.price !== null ? t("achievements.shop.cost", { n: h.price }) : "–"}</td>
+                  <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>{t(`achievements.shop.history.at.${h.where}`)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

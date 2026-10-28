@@ -110,11 +110,21 @@ export function boughtThisSeason(state: AchievementsState, item: ShopItem, seaso
 }
 
 /** The state after a purchase of `item` on `date`, in `season`: points spent, the count and the season kept. */
-export function recordPurchase(state: AchievementsState, item: ShopItem, date: string, season: string): AchievementsState {
+export function recordPurchase(
+  state: AchievementsState, item: ShopItem, date: string, season: string,
+  player?: { id: string; name: string; positions: string[]; fromId?: string },
+): AchievementsState {
   const count = state.bought[`${item}Count`] ?? (state.bought[item] ? 1 : 0);
+  const price = shopPrice(state, item);
   return {
     ...state,
-    spent: state.spent + shopPrice(state, item),
+    spent: state.spent + price,
+    ...(player ? {
+      purchases: [...(state.purchases ?? []), {
+        item, date, playerId: player.id, name: player.name, position: player.positions[0] ?? "", price,
+        ...(player.fromId ? { fromId: player.fromId } : {}),
+      }],
+    } : {}),
     bought: { ...state.bought, [item]: date, [`${item}Season`]: season, [`${item}Count`]: count + 1 },
   };
 }

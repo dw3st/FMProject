@@ -125,11 +125,24 @@ export interface AchievementsState {
     createdSeason?: string; legendSeason?: string;
     createdCount?: number; legendCount?: number;
   };
+  /** Shop purchases, oldest first (the history on the shop tab). */
+  purchases?: ShopPurchase[];
   /** Points from the campaign (titles, stages, objective, awards): total and the events counted, by key. */
   campaign?: { points: number; seen: string[] };
   legendOptions?: { date: string; ids: string[] };
   profile: ManagerProfile;
   decor: StadiumDecor;
+}
+
+/** One shop purchase: the player who came in, for the history. `fromId` is the retired legend's id. */
+export interface ShopPurchase {
+  item: "created" | "legend";
+  date: string;
+  playerId: string;
+  name: string;
+  position: string;
+  price: number;
+  fromId?: string;
 }
 
 /** One line of the screen (`GET /achievements`). */

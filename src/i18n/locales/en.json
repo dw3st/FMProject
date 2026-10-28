@@ -638,7 +638,10 @@
   },
   "social": {
     "publicRoom": "Reactions only in this world",
-    "popup": { "open": "Open chat: {{name}}", "dismiss": "Dismiss" },
+    "popup": {
+      "open": "Open chat: {{name}}",
+      "dismiss": "Dismiss"
+    },
     "button": "Friends: {{count}} online",
     "buttonUnread": "Friends: {{count}} online, {{unread}} unread",
     "buttonShort": "Friends · {{count}}",
@@ -648,9 +651,22 @@
     "loading": "Loading…",
     "you": "You:",
     "nicknameFinal": "Your nickname can't be changed later.",
-    "tabs": { "friends": "Friends", "requests": "Requests", "add": "Add" },
-    "groups": { "playing": "Playing", "online": "Online", "offline": "Offline", "worlds": "Worlds" },
-    "status": { "playing": "Playing · {{club}}", "online": "Online", "offline": "Offline" },
+    "tabs": {
+      "friends": "Friends",
+      "requests": "Requests",
+      "add": "Add"
+    },
+    "groups": {
+      "playing": "Playing",
+      "online": "Online",
+      "offline": "Offline",
+      "worlds": "Worlds"
+    },
+    "status": {
+      "playing": "Playing · {{club}}",
+      "online": "Online",
+      "offline": "Offline"
+    },
     "noFriends": "No friends yet. Add someone by nickname in the Add tab.",
     "actions": "Actions",
     "unfriend": "Remove friend",
@@ -1511,6 +1527,7 @@
       "health": "Injuries & discipline",
       "growth": "Development",
       "transfers": "Transfers",
+      "scouting": "Scouting",
       "contracts": "Contracts",
       "club": "Club",
       "competitions": "Competitions",
@@ -3031,7 +3048,10 @@
       "main": "Match",
       "accent": "Preview"
     },
-    "matchRoom": { "main": "Match", "accent": "Room" },
+    "matchRoom": {
+      "main": "Match",
+      "accent": "Room"
+    },
     "matchResult": {
       "main": "Match",
       "accent": "Result"
@@ -3365,15 +3385,26 @@
   "facilities": {
     "turf": {
       "title": "Pitch",
-      "type": { "natural": "Natural grass", "hybrid": "Hybrid grass", "synthetic": "Synthetic grass" },
-      "about": { "natural": "Wears at the normal pace.", "hybrid": "Wears 40% slower.", "synthetic": "Barely wears; 10% more injuries in home games; the fans dislike it." },
+      "type": {
+        "natural": "Natural grass",
+        "hybrid": "Hybrid grass",
+        "synthetic": "Synthetic grass"
+      },
+      "about": {
+        "natural": "Wears at the normal pace.",
+        "hybrid": "Wears 40% slower.",
+        "synthetic": "Barely wears; 10% more injuries in home games; the fans dislike it."
+      },
       "change": "Change grass",
       "current": "Current",
       "condition": "Condition {{pct}}%"
     },
     "mowing": {
       "label": "Mowing pattern",
-      "stripes": "Stripes", "checker": "Checker", "diagonal": "Diagonal", "circles": "Circles"
+      "stripes": "Stripes",
+      "checker": "Checker",
+      "diagonal": "Diagonal",
+      "circles": "Circles"
     },
     "kpi": {
       "capacity": "Capacity",
@@ -3523,6 +3554,10 @@
       "item": "Item",
       "level": "Level",
       "levelOf": "{{level}} of 10",
+      "conditionHint": "How well kept it is: 100% is new, it drops with time and use. Below 40% it starts to hurt.",
+      "works": "Works: {{kind}}",
+      "delivery": "due {{date}}",
+      "done": "{{pct}}% done",
       "condition": "Condition",
       "actions": "Works",
       "condemned": "Closed",
@@ -4596,6 +4631,24 @@
         "worldClass": "World class",
         "career": "{{apps}} games · {{goals}} goals",
         "done": "{{name}} is back, in your academy."
+      },
+      "history": {
+        "title": "Purchase history",
+        "empty": "No purchases yet.",
+        "player": "Player",
+        "item": "Purchase",
+        "date": "Date",
+        "price": "Price",
+        "where": "Status",
+        "kind": {
+          "created": "Created player",
+          "legend": "Legend"
+        },
+        "at": {
+          "squad": "In the squad",
+          "youth": "In the academy",
+          "gone": "Left the club"
+        }
       }
     },
     "errors": {
@@ -5172,9 +5225,18 @@
       }
     },
     "world_member": {
-      "0": { "title": "{{manager}} takes over {{club}}", "text": "A new manager joins the league." },
-      "1": { "title": "{{club}} have a new manager: {{manager}}", "text": "One more friend in the league." },
-      "2": { "title": "{{manager}} arrives at {{club}}", "text": "The league grows by one manager." }
+      "0": {
+        "title": "{{manager}} takes over {{club}}",
+        "text": "A new manager joins the league."
+      },
+      "1": {
+        "title": "{{club}} have a new manager: {{manager}}",
+        "text": "One more friend in the league."
+      },
+      "2": {
+        "title": "{{manager}} arrives at {{club}}",
+        "text": "The league grows by one manager."
+      }
     },
     "world_member_left": {
       "title": "{{manager}} leaves {{club}}",
@@ -5204,7 +5266,10 @@
       "points": "Points",
       "noNickname": "No nickname"
     },
-    "status": { "lobby": "Waiting room", "running": "In progress" },
+    "status": {
+      "lobby": "Waiting room",
+      "running": "In progress"
+    },
     "members": {
       "title": "Managers",
       "count": "{{count}} of {{max}} managers",
@@ -5245,7 +5310,10 @@
       "hours_other": "{{count}} h",
       "none": "No deadline"
     },
-    "start": { "button": "Start the league", "waiting": "Waiting for the owner to start" },
+    "start": {
+      "button": "Start the league",
+      "waiting": "Waiting for the owner to start"
+    },
     "chat": "League chat",
     "standings": {
       "tab": "Standings",
@@ -5315,11 +5383,26 @@
       "decline": "Decline"
     },
     "inbox": {
-      "member_joined": { "subject": "{{manager}} joins the league", "body": "{{manager}} takes over {{club}}." },
-      "member_left": { "subject": "{{manager}} leaves the league", "body": "{{club}} goes back to the AI." },
-      "member_removed": { "subject": "{{manager}} was removed from the league", "body": "{{club}} goes back to the AI." },
-      "h2h_invite": { "subject": "{{manager}} is waiting for you for the match", "body": "{{manager}} ({{club}}) opened the live match room. Join the room to play." },
-      "h2h_lost": { "subject": "Your live match was lost", "body": "The server restarted during the match against {{club}}. Nothing was recorded: decide the match again." },
+      "member_joined": {
+        "subject": "{{manager}} joins the league",
+        "body": "{{manager}} takes over {{club}}."
+      },
+      "member_left": {
+        "subject": "{{manager}} leaves the league",
+        "body": "{{club}} goes back to the AI."
+      },
+      "member_removed": {
+        "subject": "{{manager}} was removed from the league",
+        "body": "{{club}} goes back to the AI."
+      },
+      "h2h_invite": {
+        "subject": "{{manager}} is waiting for you for the match",
+        "body": "{{manager}} ({{club}}) opened the live match room. Join the room to play."
+      },
+      "h2h_lost": {
+        "subject": "Your live match was lost",
+        "body": "The server restarted during the match against {{club}}. Nothing was recorded: decide the match again."
+      },
       "inactive_warning": {
         "subject": "You have not opened the public world for 5 days",
         "body": "You have not opened the public world for 5 days. In 2 more days your club goes back to the AI."
@@ -5353,7 +5436,7 @@
       "unmark": "Not ready",
       "dateInvalid": "Pick {{min}} or a later date.",
       "retry": "Try again",
-        "band": {
+      "band": {
         "title": "Group advance",
         "date": "World date",
         "target": "Target",
@@ -5469,7 +5552,14 @@
     "rivalsTitle": "Your rivals",
     "rivalsHint": "How each friend is doing. Click a row to see their results.",
     "resultsTitle": "Results",
-    "col": { "rank": "#", "position": "League", "form": "Form", "last": "Last", "next": "Next", "live": "Now" },
+    "col": {
+      "rank": "#",
+      "position": "League",
+      "form": "Form",
+      "last": "Last",
+      "next": "Next",
+      "live": "Now"
+    },
     "positionValue": "#{{position}}",
     "nextValue": "{{date}} · {{opponent}}",
     "moments": {
@@ -5504,12 +5594,20 @@
     "empty": "No results yet.",
     "noRivals": "No friends in this league yet.",
     "loadMore": "Load more",
-    "card": { "title": "Rivals", "link": "See rivals" },
+    "card": {
+      "title": "Rivals",
+      "link": "See rivals"
+    },
     "stripLabel": "Friends playing now",
     "actionsLabel": "Banter",
     "phrases": "Phrases",
     "sent": "Sent",
-    "reactions": { "applause": "Applause", "fire": "On fire", "laugh": "Laugh", "sorry": "Commiserations" },
+    "reactions": {
+      "applause": "Applause",
+      "fire": "On fire",
+      "laugh": "Laugh",
+      "sorry": "Commiserations"
+    },
     "taunts": {
       "live_goal_for_1": "There it is.",
       "live_goal_for_2": "Now we're talking.",
@@ -5582,8 +5680,16 @@
     "room": {
       "you": "you",
       "subtitle": "The match starts when both managers click Start.",
-      "status": { "away": "Away", "in": "In the room", "ready": "Ready" },
-      "line": { "away": "Waiting for {{name}} to join", "in": "{{name}} is in the room", "ready": "{{name}} is ready" },
+      "status": {
+        "away": "Away",
+        "in": "In the room",
+        "ready": "Ready"
+      },
+      "line": {
+        "away": "Waiting for {{name}} to join",
+        "in": "{{name}} is in the room",
+        "ready": "{{name}} is ready"
+      },
       "starting": "The match is starting",
       "tactics": "Formation and tactics",
       "simulate": "Simulate",
@@ -5591,9 +5697,18 @@
       "ready": "Ready",
       "noMatch": "There is no live match against another manager today."
     },
-    "invite": { "popup": "{{name}} is waiting for you for the live match", "join": "Join" },
-    "preview": { "playLive": "Play live", "note": "Play it live with the other manager or simulate it with both tactics.", "waiting": "{{name}} is waiting for you in the room" },
-    "bar": { "live": "Live" },
+    "invite": {
+      "popup": "{{name}} is waiting for you for the live match",
+      "join": "Join"
+    },
+    "preview": {
+      "playLive": "Play live",
+      "note": "Play it live with the other manager or simulate it with both tactics.",
+      "waiting": "{{name}} is waiting for you in the room"
+    },
+    "bar": {
+      "live": "Live"
+    },
     "closed": {
       "simulated": "The match was simulated",
       "left": "The other manager left the room",

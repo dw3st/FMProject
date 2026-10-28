@@ -104,6 +104,8 @@ export function FacilityItemsPanel({
   );
 }
 
+const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
+
 function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; selected: boolean; onSelect: () => void }) {
   const { t, i18n } = useTranslation();
   const tone = conditionTone(item.condition, item.condemned);
@@ -117,17 +119,31 @@ function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; select
     >
       <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} />
       <span className="font-semibold text-foreground truncate">{t(`facilities.item.${item.id}`)}</span>
-      <span className="flex items-center justify-between gap-2">
-        <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
-        <ItemLevelMarks level={item.level} />
-      </span>
-      <ConditionLine item={item} />
-      {item.project ? (
-        <span className="flex items-center gap-2 text-sm text-muted-foreground tabular-nums">
-          <span className="h-1.5 w-12 bg-border rounded overflow-hidden shrink-0" aria-hidden>
-            <span className="block h-full bg-chart-4" style={{ width: `${Math.round(item.project.progress * 100)}%` }} />
+      <span className="flex flex-col gap-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className={LABEL}>{t("facilities.items.level")}</span>
+          <span className="flex items-center gap-2">
+            <ItemLevelMarks level={item.level} />
+            <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
           </span>
-          <span className="truncate">{t(`facilities.kind.${item.project.kind}`)} · {formatGameDate(item.project.end, i18n.language)}</span>
+        </span>
+      </span>
+      <span className="flex flex-col gap-1" title={t("facilities.items.conditionHint")}>
+        <span className={LABEL}>{t("facilities.items.condition")}</span>
+        <ConditionLine item={item} />
+      </span>
+      {item.project ? (
+        <span className="flex flex-col gap-1">
+          <span className="flex items-center justify-between gap-2">
+            <span className={LABEL}>{t("facilities.items.works", { kind: t(`facilities.kind.${item.project.kind}`) })}</span>
+            <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.delivery", { date: formatGameDate(item.project.end, i18n.language) })}</span>
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-1.5 flex-1 min-w-16 bg-border rounded overflow-hidden" aria-hidden>
+              <span className="block h-full bg-chart-4" style={{ width: `${Math.round(item.project.progress * 100)}%` }} />
+            </span>
+            <span className="text-sm font-semibold tabular-nums text-chart-4">{t("facilities.items.done", { pct: Math.round(item.project.progress * 100) })}</span>
+          </span>
         </span>
       ) : item.effects.length > 0 ? (
         <span className="text-sm text-muted-foreground tabular-nums">{itemEffectText(item.effects, t, i18n.language)}</span>

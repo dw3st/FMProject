@@ -15,7 +15,7 @@ import {
 import { weightedScore } from "@/Domain/playerRating";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { AchievementsState } from "@/types/achievementTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { RetiredPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -44,7 +44,7 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
   const managers = await saveService.getManagers(saveId);
   const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId));
   const a = state.attributes;
-  const retired = state.legendOptions ? await saveService.getRetired(saveId) : [];
+  const retired = await saveService.getRetired(saveId);
   return {
     tracks: trackViews(state, values),
     secrets: secretViews(state),
@@ -74,6 +74,7 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       bought: state.bought,
       thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
+      history: shopHistory(state, retired, club, seatId),
       legends: (state.legendOptions?.ids ?? []).flatMap((id) => {
         const r = retired.find((x) => x.id === id);
         return r ? [{
@@ -85,6 +86,36 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
     },
     hasClub: !!club,
   };
+}
+
+/**
+ * The shop history, newest first: every purchase logged, plus the legends this seat brought back before the log
+ * existed (from `retired.json`), with where the player is now.
+ */
+function shopHistory(
+  state: AchievementsState, retired: RetiredPlayer[],
+  club: { squad: Squad; leagueSlug: string; clubSlug: string } | null, seatId: string,
+) {
+  const squad = club?.squad ?? null;
+  const logged = state.purchases ?? [];
+  const loggedLegends = new Set(logged.flatMap((p) => (p.fromId ? [p.fromId] : [])));
+  const older = retired
+    .filter((r) => r.legendBy === seatId && !loggedLegends.has(r.id))
+    .map((r) => {
+      const prefix = `legend_${r.id}_`;
+      const now = [...(squad?.players ?? []), ...(squad?.youth ?? [])].find((p) => p.id.startsWith(prefix));
+      return { item: "legend" as const, date: null, playerId: now?.id ?? prefix, name: r.name, position: r.positions[0] ?? "", price: null, fromId: r.id };
+    });
+  const where = (id: string): "squad" | "youth" | "gone" =>
+    squad?.players.some((p) => p.id === id) ? "squad" : squad?.youth?.some((p) => p.id === id) ? "youth" : "gone";
+  return [...logged.map((p) => ({ ...p, price: p.price as number | null, date: p.date as string | null })).reverse(), ...older]
+    .map((p) => {
+      const at = where(p.playerId);
+      const href = club && at !== "gone"
+        ? `/player/${encodeURIComponent(club.leagueSlug)}/${encodeURIComponent(club.clubSlug)}/${encodeURIComponent(p.playerId)}`
+        : null;
+      return { ...p, where: at, href };
+    });
 }
 
 const bad = (error: string, status = 400) => Response.json({ error }, { status });
@@ -154,7 +185,7 @@ export const achievementRoutes = {
       const season = await nextSeasonEndOf(saveId, auth.seatId);
       const player = createdPlayer({ input, squad: club.squad, date: season.date, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
-      const next: AchievementsState = recordPurchase(state, "created", season.date, season.season);
+      const next: AchievementsState = recordPurchase(state, "created", season.date, season.season, player);
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });
@@ -211,7 +242,7 @@ export const achievementRoutes = {
       await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
         ? { ...r, legendBy: auth.seatId, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
         : r)));
-      const next: AchievementsState = { ...recordPurchase(state, "legend", season.date, season.season), legendOptions: undefined };
+      const next: AchievementsState = { ...recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId }), legendOptions: undefined };
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });

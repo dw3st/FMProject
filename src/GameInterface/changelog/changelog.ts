@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.6",
+    date: "2026-10-28",
+    items: [
+      { pt: "Instalações do clube: cada cartão mostra com nome o nível, a condição e a obra em andamento (quanto já foi feito e a entrega).", en: "Club facilities: each card labels the level, the condition and the works under way (how much is done and the due date)." },
+      { pt: "Conquistas: a loja tem o histórico das lendas e dos jogadores criados que você comprou.", en: "Achievements: the shop lists the legends and created players you bought." },
+      { pt: "Caixa de entrada: as mensagens dos olheiros têm um filtro próprio, separado de Transferências.", en: "Inbox: scouting messages have their own filter, apart from Transfers." },
+    ],
+  },
+  {
     version: "4.38.5",
     date: "2026-10-28",
     items: [

@@ -5,6 +5,7 @@ export type InboxTheme =
   | "health"
   | "growth"
   | "transfers"
+  | "scouting"
   | "contracts"
   | "club"
   | "competitions"
@@ -12,7 +13,7 @@ export type InboxTheme =
 
 /** Display order of the theme filter (after "all"). */
 export const INBOX_THEMES: readonly InboxTheme[] = [
-  "health", "growth", "transfers", "contracts", "club", "competitions", "jobs",
+  "health", "growth", "transfers", "scouting", "contracts", "club", "competitions", "jobs",
 ];
 
 /** Exhaustive on purpose: a new `InboxCategory` does not compile until it gets a theme. */
@@ -23,7 +24,7 @@ const THEME_OF: Record<InboxCategory, InboxTheme> = {
   transfer: "transfers",
   transfer_in: "transfers",
   transfer_out: "transfers",
-  scouting: "transfers",
+  scouting: "scouting",
   contract: "contracts",
   board: "club",
   facilities: "club",
