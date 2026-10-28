@@ -29,7 +29,7 @@ export function drawStandBase(g: Graphics, stand: StandGeometry, worksSides?: Cr
   g.rect(outer.x, innerB, outer.w, outer.y + outer.h - innerB).fill(STADIUM.STAND_COLOR);
   g.rect(outer.x, inner.y, inner.x - outer.x, inner.h).fill(STADIUM.STAND_COLOR);
   g.rect(innerR, inner.y, outer.x + outer.w - innerR, inner.h).fill(STADIUM.STAND_COLOR);
-  for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill(c.ring ? STADIUM.RING_COLOR : STADIUM.CONCRETE);
+  for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill(STADIUM.CONCRETE);
   const works = new Set<string>(worksSides ?? []);
   for (const r of standSideRects(stand)) if (works.has(r.side)) drawWorks(g, r, seatCellPx(stand));
 }

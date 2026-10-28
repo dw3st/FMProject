@@ -20,8 +20,7 @@ export interface SeatCell {
 }
 
 /** A concrete walkway row (drawn, never seated): centre line and extent, px. */
-/** `ring`: the walkway between the lower and the upper tier (4.38.18). */
-export interface ConcreteRow { side: StandSide; x: number; y: number; w: number; h: number; ring?: true }
+export interface ConcreteRow { side: StandSide; x: number; y: number; w: number; h: number }
 
 export interface CrowdInput {
   stand: StandGeometry;
@@ -82,15 +81,6 @@ export function standSideRects(s: StandGeometry): SideRect[] {
 
 /** Cell index `k` (0 = next to the pitch) is a concrete walkway every CONCRETE_EVERY seat rows. */
 const isConcrete = (k: number) => k % (STADIUM.CONCRETE_EVERY + 1) === STADIUM.CONCRETE_EVERY;
-/**
- * Two tiers (4.38.18): a stand deep enough (RING_MIN_ROWS cells) has a walkway of RING_ROWS cells halfway back,
- * between the lower and the upper tier.
- */
-export function isRingGap(k: number, depthCells: number): boolean {
-  if (depthCells < STADIUM.RING_MIN_ROWS) return false;
-  const start = Math.floor((depthCells - STADIUM.RING_ROWS) / 2);
-  return k >= start && k < start + STADIUM.RING_ROWS;
-}
 
 function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concrete: ConcreteRow[] } {
   const seats: SeatCell[] = [];
@@ -102,8 +92,7 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
     const depthCells = Math.floor(depth / cell);
     const cols = Math.floor(length / cell);
     if (depthCells <= 0 || cols <= 0) continue;
-    const gap = (k: number) => isConcrete(k) || isRingGap(k, depthCells);
-    const seatRows = Array.from({ length: depthCells }, (_, k) => k).filter((k) => !gap(k)).length;
+    const seatRows = Array.from({ length: depthCells }, (_, k) => k).filter((k) => !isConcrete(k)).length;
     const lenStart = (length - cols * cell) / 2;
     // Distance (px) of cell k's centre from the pitch edge of this side.
     const away = (k: number) => (k + 0.5) * cell;
@@ -118,12 +107,11 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
     };
     let row = 0;
     for (let k = 0; k < depthCells; k++) {
-      if (gap(k)) {
+      if (isConcrete(k)) {
         const p = toXY(k, 0);
-        const ring = isRingGap(k, depthCells) ? { ring: true as const } : {};
         concrete.push(horizontal
-          ? { side: r.side, x: r.x, y: p.y - cell / 2, w: r.w, h: cell, ...ring }
-          : { side: r.side, x: p.x - cell / 2, y: r.y, w: cell, h: r.h, ...ring });
+          ? { side: r.side, x: r.x, y: p.y - cell / 2, w: r.w, h: cell }
+          : { side: r.side, x: p.x - cell / 2, y: r.y, w: cell, h: r.h });
         continue;
       }
       const rowFrac = seatRows > 1 ? row / (seatRows - 1) : 0;

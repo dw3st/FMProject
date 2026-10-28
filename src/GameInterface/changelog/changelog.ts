@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.19",
+    date: "2026-10-28",
+    items: [
+      { pt: "Campo um pouco maior que na versão anterior e arquibancada sem os dois anéis; os bandeirões da torcida saíram (as bandeirinhas na mão continuam).", en: "The pitch is a bit bigger than in the last version and the stand has no second tier; the fans' big banners are gone (hand flags stay)." },
+    ],
+  },
+  {
     version: "4.38.18",
     date: "2026-10-28",
     items: [

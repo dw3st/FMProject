@@ -26,7 +26,6 @@ export const CROWD_MOTION = {
    * Big banners held up over the heads by a group of home fans: per long side and on the home end, size in seat cells
    * (along the side, across), cloth strips, ripple speed, the holders' bounce.
    */
-  BANNERS: { PER_LONG_SIDE: 2, HOME_END: 1, LONG: 12, DEEP: 3.2, END_DEEP: 0.6, STRIPS: 14, HZ: 0.55, RIPPLE: 0.35, BOB: 0.18, HOLD_EVERY: 3 },
 } as const;
 
 /** A seat with a position (px) and a side. */
@@ -111,52 +110,4 @@ export interface StandBand { side: "top" | "bottom" | "left" | "right"; x: numbe
 export function handFlagAngle(fan: { phase: number; speed: number }, now: number, arms: number): number {
   const H = CROWD_MOTION.HAND_FLAG;
   return Math.sin(now * H.HZ * Math.PI * 2 * fan.speed + fan.phase * 1.3) * H.SWING * (0.7 + 0.3 * arms);
-}
-
-/** A banner held over a stand: its rectangle (px, the cloth at rest) and its ripple phase. */
-export interface StandBanner { x: number; y: number; w: number; h: number; phase: number }
-
-/**
- * Banners over the home stands: along the two long sides and on the home end (never the away end, never a stand under
- * works), held a little up from the middle of the band. `cellPx` is the seat cell.
- */
-export function standBanners(
-  bands: readonly StandBand[], homeSide: "left" | "right", cellPx: number, seed: string, skip: readonly string[] = [],
-): StandBanner[] {
-  const B = CROWD_MOTION.BANNERS;
-  const rng = mulberry32(seedFrom(`stand-banners:${seed}`));
-  const out: StandBanner[] = [];
-  for (const b of bands) {
-    if (skip.includes(b.side)) continue;
-    if (b.side === "top" || b.side === "bottom") {
-      const w = Math.min(b.w / (B.PER_LONG_SIDE * 2), B.LONG * cellPx);
-      const h = Math.min(b.h * 0.7, B.DEEP * cellPx);
-      for (let i = 0; i < B.PER_LONG_SIDE; i++) {
-        const cx = b.x + b.w * (i * 2 + 1.5) / (B.PER_LONG_SIDE * 2 + 1);
-        // Room above for the lift (bob + ripple): low in the band, toward the pitch on the top stand.
-        const room = (B.BOB + B.RIPPLE * 0.5) * h;
-        const y = b.side === "top" ? b.y + Math.max(room, b.h - h - 1) : b.y + Math.max(room, Math.min(1, b.h - h));
-        out.push({ x: cx - w / 2, y, w, h, phase: rng() * Math.PI * 2 });
-      }
-    } else if (b.side === homeSide) {
-      const w = b.w * B.END_DEEP * 1.4;
-      const h = Math.min(b.h * 0.25, B.LONG * cellPx * 0.5);
-      for (let i = 0; i < B.HOME_END; i++) {
-        const cy = b.y + b.h * (i + 0.5) / B.HOME_END;
-        out.push({ x: b.x + (b.w - w) / 2, y: cy - h / 2, w, h, phase: rng() * Math.PI * 2 });
-      }
-    }
-  }
-  return out;
-}
-
-/**
- * Vertical offset (px) of the cloth at strip `k` (0..STRIPS) of a banner at `now`: the holders lift it together
- * (bob) and a ripple runs along it. Never below its rest position.
- */
-export function bannerOffset(banner: StandBanner, k: number, now: number): number {
-  const B = CROWD_MOTION.BANNERS;
-  const bob = (Math.sin(now * B.HZ * Math.PI * 2 + banner.phase) * 0.5 + 0.5) * B.BOB * banner.h;
-  const ripple = (Math.sin(now * B.HZ * 2.3 * Math.PI * 2 + banner.phase - k * 0.55) * 0.5 + 0.5) * B.RIPPLE * banner.h * 0.5;
-  return -(bob + ripple);
 }

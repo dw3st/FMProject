@@ -3,7 +3,7 @@ import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
-import { bannerOffset, CROWD_MOTION, fanLooks, fanPose, handFlagAngle, standBanners, type StandBanner } from "@/GraficsEngine/crowdMotion";
+import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
@@ -685,7 +685,6 @@ export function PixiPitch({
       /** Height (px) of a fans' jump: under half a seat. */
       let crowdDecor: Graphics | null = null;
       /** Waving flags over the home stands (crowd motion), set by every bake; drawn every frame with extras. */
-      let standBannerSpots: StandBanner[] = [];
       let flagColor = fillA;
       /** The home club's second colour (flags, banners, scarves): white when only one is known. */
       let flagColor2 = 0xffffff;
@@ -697,15 +696,13 @@ export function PixiPitch({
       let crestTexture: Texture | null = null;
       let crestBake = 0;
       let flagCrests: Sprite[] = [];
-      let bannerCrests: Sprite[] = [];
       const rebuildCrests = () => {
-        for (const s of [...flagCrests, ...bannerCrests]) s.destroy();
-        flagCrests = []; bannerCrests = [];
+        for (const s of flagCrests) s.destroy();
+        flagCrests = [];
         if (!crestTexture) return;
         const nFlags = (crowdFans.home?.fans.filter((f) => f.flag).length ?? 0) + (crowdFans.away?.fans.filter((f) => f.flag).length ?? 0);
         const mk = () => { const s = new Sprite(crestTexture!); s.anchor.set(0.5); s.visible = false; crestLayer.addChild(s); return s; };
         flagCrests = Array.from({ length: nFlags }, mk);
-        bannerCrests = standBannerSpots.map(mk);
       };
       /** Phone light candidates of the filled seats (stadium atmosphere), set by every bake. */
       let phones: PhoneLight[] = [];
@@ -750,7 +747,6 @@ export function PixiPitch({
             rebuildCrests();
           });
         }
-        standBannerSpots = st.neutral ? [] : standBanners(standSideRects(m.stand), homeLeft ? "left" : "right", cell, st.seed, works);
         phones = phoneLights(seats, st.seed);
         // The figures' atlas: one canvas, so each side renders in a single ParticleContainer.
         crowdAtlasSource?.destroy();
@@ -2616,7 +2612,6 @@ export function PixiPitch({
         flagGfx.clear();
         let flagCrestIdx = 0;
         for (const s of flagCrests) s.visible = false;
-        for (const s of bannerCrests) s.visible = false;
         const frames = crowdAtlas?.frames;
         const H = CROWD_MOTION.HAND_FLAG;
         const sz = figureSize;
@@ -2653,34 +2648,6 @@ export function PixiPitch({
                 crest.width = crest.height = Math.min(fw, fh) * 0.9;
               }
               flagGfx.circle(hx, hy, Math.max(0.8, sz * 0.08)).fill(0xd8a37a);
-            }
-          }
-        }
-        // Banners held up over the heads by a group of home fans: the cloth rides on their hands and ripples.
-        if (moving && standBannerSpots.length > 0) {
-          const B = CROWD_MOTION.BANNERS;
-          for (const b of standBannerSpots) {
-            const strip = b.w / B.STRIPS;
-            for (let i = 0; i < B.STRIPS; i++) {
-              const o0 = bannerOffset(b, i, effectNow), o1 = bannerOffset(b, i + 1, effectNow);
-              const x0 = b.x + i * strip, x1 = x0 + strip + 0.5;
-              // One colour only: the club's main colour (the crest goes in the middle).
-              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
-                .fill({ color: flagColor, alpha: 0.97 });
-              // Folds: a soft shade on the strips going down.
-              if (o1 > o0) flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
-                .fill({ color: 0x000000, alpha: Math.min(0.18, (o1 - o0) / Math.max(1, b.h) * 2) });
-            }
-            // The crest in the middle of the cloth, riding the ripple.
-            const bc = bannerCrests[standBannerSpots.indexOf(b)];
-            if (bc) {
-              bc.visible = true;
-              bc.position.set(b.x + b.w / 2, b.y + b.h / 2 + bannerOffset(b, B.STRIPS / 2, effectNow));
-              bc.width = bc.height = b.h * 0.82;
-            }
-            // The holders' hands along the top edge.
-            for (let i = 0; i <= B.STRIPS; i += B.HOLD_EVERY) {
-              flagGfx.circle(b.x + i * strip, b.y + bannerOffset(b, i, effectNow), Math.max(1, sz * 0.09)).fill(0xd8a37a);
             }
           }
         }
