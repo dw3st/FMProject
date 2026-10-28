@@ -199,7 +199,7 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
             <div className="relative flex-1 h-3 rounded bg-border overflow-hidden">
               <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${Math.round(power * 100)}%` }} />
               {/* The green zone stays visible over the fill. */}
-              <div className="absolute inset-y-0 border-2 border-chart-2 bg-chart-2/25 rounded-sm" style={{ left: `${green[0] * 100}%`, width: `${(green[1] - green[0]) * 100}%` }} />
+              <div className="absolute inset-y-0 border-2 border-green-500 bg-green-500/25 rounded-sm" style={{ left: `${green[0] * 100}%`, width: `${(green[1] - green[0]) * 100}%` }} />
             </div>
           </div>
         )}

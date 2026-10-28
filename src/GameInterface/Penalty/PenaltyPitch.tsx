@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { GOAL_AREAS, areaCentre, type GoalArea, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import { clamp } from "@/Domain/math";
 import {
-  SCENE, ballHeight, crowdFans, crowdPhones, curveAt, easeOut, goalToPx, grassStripes, keeperDive, netPaths,
-  shotControl, shotDuration, type Pt,
+  SCENE, armPath, ballHeight, crowdFans, crowdPhones, curveAt, diveReach, easeOut, goalToPx, grassStripes, keeperArms,
+  keeperDive, netPaths, shotControl, shotDuration, takerPose, takerSpot, type ArmPose, type Pt,
 } from "@/GameInterface/Penalty/penaltyScene";
 
 /**
@@ -35,12 +35,24 @@ export interface PenaltyPitchProps {
 }
 
 const { GX, LINE_Y, HALF_W, GOAL_H, NET_DEPTH, BALL_START } = SCENE;
+const SKIN = "#c99a6e";
+const SKIN_DARK = "#8d5a3b";
 
 const mix = (hex: string, toward: string, t: number): string => {
   const p = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const a = p(hex.length === 7 ? hex : "#888888"), b = p(toward);
   return `#${a.map((v, i) => Math.round(v + (b[i]! - v) * t).toString(16).padStart(2, "0")).join("")}`;
 };
+
+/** An arm group [sleeve, forearm, hand]: the sleeve from the shoulder to the elbow, the bare forearm on to the hand. */
+function setArm(g: SVGGElement | null, a: ArmPose) {
+  if (!g) return;
+  const [sleeve, fore, hand] = Array.from(g.children) as SVGElement[];
+  sleeve?.setAttribute("d", `M${a.shoulder.x.toFixed(1)},${a.shoulder.y.toFixed(1)} L${a.elbow.x.toFixed(1)},${a.elbow.y.toFixed(1)}`);
+  fore?.setAttribute("d", `M${a.elbow.x.toFixed(1)},${a.elbow.y.toFixed(1)} L${a.hand.x.toFixed(1)},${a.hand.y.toFixed(1)}`);
+  hand?.setAttribute("cx", a.hand.x.toFixed(1));
+  hand?.setAttribute("cy", a.hand.y.toFixed(1));
+}
 
 export function PenaltyPitch(props: PenaltyPitchProps) {
   const live = useRef(props);
@@ -59,6 +71,14 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
   const woodRef = useRef<{ left: SVGRectElement | null; right: SVGRectElement | null; bar: SVGRectElement | null }>({ left: null, right: null, bar: null });
   const takerFansRef = useRef<SVGGElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const kArmL = useRef<SVGPathElement | null>(null);
+  const kArmR = useRef<SVGPathElement | null>(null);
+  const kGloveL = useRef<SVGCircleElement | null>(null);
+  const kGloveR = useRef<SVGCircleElement | null>(null);
+  const tArmL = useRef<SVGGElement | null>(null);
+  const tArmR = useRef<SVGGElement | null>(null);
+  const tLegL = useRef<SVGGElement | null>(null);
+  const tLegR = useRef<SVGGElement | null>(null);
 
   const fans = useMemo(() => crowdFans(props.seed), [props.seed]);
   const phones = useMemo(() => crowdPhones(props.seed), [props.seed]);
@@ -129,14 +149,22 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
       const flying = !!o && (p.phase === "flight" || p.phase === "result");
       if (flying && shotStart === null) shotStart = now;
 
-      // Taker: two steps to the ball, then he stays.
+      // Taker: the run-up to beside the ball, arms swinging and legs lifting in turn, then the kick.
       const runT = shotStart === null ? 0 : clamp((now - shotStart) / SCENE.RUNUP_MS, 0, 1);
-      takerRef.current?.setAttribute("transform", `translate(${BALL_START.x - 24 + 20 * runT},${BALL_START.y + 26 - 8 * runT}) scale(${(1 + 0.04 * Math.sin(runT * Math.PI * 3)).toFixed(3)})`);
+      const spot = takerSpot(runT);
+      takerRef.current?.setAttribute("transform", `translate(${spot.x.toFixed(1)},${spot.y.toFixed(1)})`);
+      const tp = takerPose(runT);
+      setArm(tArmL.current, tp.left);
+      setArm(tArmR.current, tp.right);
+      tLegL.current?.setAttribute("transform", `translate(0,${(-tp.legL).toFixed(1)})`);
+      tLegR.current?.setAttribute("transform", `translate(${(tp.kick * 3).toFixed(1)},${(-tp.legR).toFixed(1)})`);
 
       // Keeper: sways until the kick leaves, then dives in three beats (crouch, stretch, land).
       const launchAt = shotStart === null ? null : shotStart + SCENE.RUNUP_MS;
       let kx = GX + Math.sin(now / 420) * 6, ky = LINE_Y + 4, rot = 0;
-      let body = `translate(0,${(-Math.abs(Math.sin(now / 210)) * 1.2).toFixed(2)})`;
+      const bob = Math.sin(now / 210);
+      let body = `translate(0,${(-Math.abs(bob) * 1.2).toFixed(2)})`;
+      let reach = 0;
       if (o && launchAt !== null && now >= launchAt) {
         const d = keeperDive(o.dive);
         const t = clamp((now - launchAt) / SCENE.DIVE_MS, 0, 1), e = easeOut(t);
@@ -145,7 +173,16 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
         ky = LINE_Y + 4 + (d.y - LINE_Y - 4) * e - Math.sin(t * Math.PI) * d.lift;
         rot = d.rot * e;
         body = `scale(${(1 + 0.08 * (1 - crouch)).toFixed(3)},${(1 - 0.1 * (1 - crouch)).toFixed(3)})`;
+        // Arms: low in the crouch, then stretched toward the ball.
+        reach = t < 0.2 ? -t / 0.2 : -1 + (1 + diveReach(o.dive)) * easeOut((t - 0.2) / 0.8);
       }
+      const ka = keeperArms(reach, reach === 0 ? bob : 0);
+      kArmL.current?.setAttribute("d", armPath(ka.left));
+      kArmR.current?.setAttribute("d", armPath(ka.right));
+      kGloveL.current?.setAttribute("cx", ka.left.hand.x.toFixed(1));
+      kGloveL.current?.setAttribute("cy", ka.left.hand.y.toFixed(1));
+      kGloveR.current?.setAttribute("cx", ka.right.hand.x.toFixed(1));
+      kGloveR.current?.setAttribute("cy", ka.right.hand.y.toFixed(1));
       keeperRef.current?.setAttribute("transform", `translate(${kx.toFixed(1)},${ky.toFixed(1)}) rotate(${rot.toFixed(1)})`);
       keeperBodyRef.current?.setAttribute("transform", body);
       keeperShadowRef.current?.setAttribute("transform", `rotate(${(-rot).toFixed(1)})`);
@@ -227,6 +264,9 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
   const takerShirt = [mix(props.takerColor, "#ffffff", 0.15), mix(props.takerColor, "#000000", 0.45)];
   const keeperShirt = [mix(props.keeperColor, "#ffffff", 0.15), mix(props.keeperColor, "#000000", 0.45)];
   const initialNet = useMemo(() => netPaths(null, 0), []);
+  const initialKeeperArms = keeperArms(0);
+  const initialTaker = takerPose(0);
+  const initialSpot = takerSpot(0);
   const fanColor = (f: (typeof fans)[number]) =>
     f.team === "neutral" ? (f.shade < 0.6 ? "#e5e7eb" : "#475569") : mix(f.team === "taker" ? props.takerColor : props.keeperColor, "#000000", f.shade * 0.25);
 
@@ -254,7 +294,7 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
           <radialGradient id={`${ids}glow`} cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#fff6d8" stopOpacity=".9" /><stop offset="1" stopColor="#fff6d8" stopOpacity="0" /></radialGradient>
           <radialGradient id={`${ids}vig`} cx=".5" cy=".55" r=".75"><stop offset=".6" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".55" /></radialGradient>
           <filter id={`${ids}blur`}><feGaussianBlur stdDeviation="0.9" /></filter>
-          <clipPath id={`${ids}face`}><circle cx="0" cy="-53" r="8.5" /></clipPath>
+          <clipPath id={`${ids}face`}><circle cx="0" cy="-54" r="9" /></clipPath>
         </defs>
 
         {/* Sky, stand, crowd (blurred: depth of field), phones at night, ad boards */}
@@ -320,25 +360,40 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
         <g ref={keeperRef} transform={`translate(${GX},${LINE_Y + 4})`}>
           <ellipse ref={keeperShadowRef} cx="0" cy="0" rx="14" ry="3" fill="#000" opacity=".3" />
           <g ref={keeperBodyRef}>
-            <rect x="-6" y="-14" width="5" height="16" rx="2" fill="#111827" />
-            <rect x="1" y="-14" width="5" height="16" rx="2" fill="#111827" />
-            <path d="M-11,-44 Q0,-48 11,-44 L12,-16 Q0,-12 -12,-16 Z" fill={`url(#${ids}shirtK)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
-            <rect x="-26" y="-43" width="16" height="6" rx="3" fill={`url(#${ids}shirtK)`} />
-            <rect x="10" y="-43" width="16" height="6" rx="3" fill={`url(#${ids}shirtK)`} />
-            <circle cx="-27" cy="-40" r="4.2" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
-            <circle cx="27" cy="-40" r="4.2" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
+            {/* Boots, socks, knees, shorts */}
+            <rect x="-8" y="-2" width="7" height="4" rx="2" fill="#0b0f19" />
+            <rect x="1" y="-2" width="7" height="4" rx="2" fill="#0b0f19" />
+            <rect x="-6" y="-12" width="5" height="11" rx="1.5" fill={keeperShirt[1]} />
+            <rect x="1" y="-12" width="5" height="11" rx="1.5" fill={keeperShirt[1]} />
+            <rect x="-6" y="-17" width="5" height="6" rx="1.5" fill={SKIN} />
+            <rect x="1" y="-17" width="5" height="6" rx="1.5" fill={SKIN} />
+            <path d="M-11,-24 L11,-24 L10,-15 L1,-15 L0,-18 L-1,-15 L-10,-15 Z" fill="#111827" />
+            {/* Shirt */}
+            <path d="M-11,-44 Q0,-48 11,-44 L12,-23 Q0,-20 -12,-23 Z" fill={`url(#${ids}shirtK)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
+            {/* Arms (sleeves) and gloves */}
+            <path ref={kArmL} d={armPath(initialKeeperArms.left)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path ref={kArmR} d={armPath(initialKeeperArms.right)} stroke={`url(#${ids}shirtK)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <circle ref={kGloveL} cx={initialKeeperArms.left.hand.x} cy={initialKeeperArms.left.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
+            <circle ref={kGloveR} cx={initialKeeperArms.right.hand.x} cy={initialKeeperArms.right.hand.y} r="3.8" fill="#f59e0b" stroke="#78350f" strokeWidth=".6" />
+            {/* Neck and head */}
+            <rect x="-2.5" y="-48" width="5" height="5" rx="1.5" fill={SKIN} />
             {props.keeperFace ? (
               <>
-                <circle cx="0" cy="-53" r="8.5" fill="#c99a6e" />
-                <image href={props.keeperFace} x="-11" y="-64.5" width="22" height="22" clipPath={`url(#${ids}face)`} preserveAspectRatio="xMidYMid slice" />
-                <circle cx="0" cy="-53" r="8.5" fill="none" stroke="#000" strokeOpacity=".4" strokeWidth=".6" />
+                <circle cx="0" cy="-54" r="9" fill={SKIN} />
+                <image href={props.keeperFace} x="-16" y="-68" width="32" height="32" clipPath={`url(#${ids}face)`} preserveAspectRatio="xMidYMid meet" />
+                <circle cx="0" cy="-54" r="9" fill="none" stroke="#000" strokeOpacity=".35" strokeWidth=".6" />
               </>
             ) : (
               <>
-                <circle cx="0" cy="-53" r="8.5" fill="#c99a6e" stroke="#3b2414" strokeWidth=".6" />
-                <path d="M-8.5,-55 Q-6,-64 0,-63 Q7,-64 8.5,-55 Q4,-60 0,-59 Q-4,-60 -8.5,-55 Z" fill="#1f130a" />
-                <circle cx="-3" cy="-53" r="1" fill="#1f130a" />
-                <circle cx="3" cy="-53" r="1" fill="#1f130a" />
+                <ellipse cx="-8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
+                <ellipse cx="8.6" cy="-54" rx="1.6" ry="2.4" fill={SKIN} />
+                <circle cx="0" cy="-54" r="8.5" fill={SKIN} stroke="#3b2414" strokeWidth=".5" />
+                <path d="M-8.6,-55.5 Q-8,-64.5 0,-64 Q8,-64.5 8.6,-55.5 Q5,-61 0,-60.5 Q-5,-61 -8.6,-55.5 Z" fill="#1f130a" />
+                <path d="M-5,-57 L-1.6,-57.4 M1.6,-57.4 L5,-57" stroke="#1f130a" strokeWidth=".9" strokeLinecap="round" />
+                <circle cx="-3.2" cy="-55" r="1" fill="#1f130a" />
+                <circle cx="3.2" cy="-55" r="1" fill="#1f130a" />
+                <path d="M0,-54.5 L-.8,-51.8 L.8,-51.8" stroke="#8a5a3c" strokeWidth=".6" fill="none" strokeLinejoin="round" />
+                <path d="M-2.8,-49.6 Q0,-48.2 2.8,-49.6" stroke="#6b3d26" strokeWidth=".8" fill="none" strokeLinecap="round" />
               </>
             )}
           </g>
@@ -356,12 +411,36 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
         )}
 
         {/* Taker (back view), the ball's shadow, trail and the ball */}
-        <g ref={takerRef} transform={`translate(${BALL_START.x - 24},${BALL_START.y + 26})`}>
+        <g ref={takerRef} transform={`translate(${initialSpot.x},${initialSpot.y})`}>
           <ellipse cx="0" cy="2" rx="13" ry="3.5" fill="#000" opacity=".3" />
-          <rect x="-8" y="-20" width="6" height="22" rx="2.5" fill="#f8fafc" />
-          <rect x="2" y="-20" width="6" height="22" rx="2.5" fill="#f8fafc" />
-          <path d="M-14,-56 Q0,-61 14,-56 L13,-20 Q0,-16 -13,-20 Z" fill={`url(#${ids}shirtT)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
-          <circle cx="0" cy="-66" r="9.5" fill="#2a1a10" />
+          {/* Legs: boot, sock, calf (each lifts on its own) */}
+          <g ref={tLegL}>
+            <rect x="-9" y="-1" width="8" height="4" rx="2" fill="#0b0f19" />
+            <rect x="-8" y="-11" width="6" height="11" rx="2" fill="#f8fafc" />
+            <rect x="-8" y="-18" width="6" height="8" rx="2" fill={SKIN_DARK} />
+          </g>
+          <g ref={tLegR}>
+            <rect x="1" y="-1" width="8" height="4" rx="2" fill="#0b0f19" />
+            <rect x="2" y="-11" width="6" height="11" rx="2" fill="#f8fafc" />
+            <rect x="2" y="-18" width="6" height="8" rx="2" fill={SKIN_DARK} />
+          </g>
+          <path d="M-13,-27 L13,-27 L12,-17 L1,-17 L0,-20 L-1,-17 L-12,-17 Z" fill="#f8fafc" stroke="#000" strokeOpacity=".25" strokeWidth=".6" />
+          {/* Arms: sleeve, bare forearm, hand */}
+          <g ref={tArmL}>
+            <path d={armPath(initialTaker.left)} stroke={`url(#${ids}shirtT)`} strokeWidth="6" strokeLinecap="round" fill="none" />
+            <path d="" stroke={SKIN_DARK} strokeWidth="4.2" strokeLinecap="round" fill="none" />
+            <circle r="2.4" fill={SKIN_DARK} />
+          </g>
+          <g ref={tArmR}>
+            <path d={armPath(initialTaker.right)} stroke={`url(#${ids}shirtT)`} strokeWidth="6" strokeLinecap="round" fill="none" />
+            <path d="" stroke={SKIN_DARK} strokeWidth="4.2" strokeLinecap="round" fill="none" />
+            <circle r="2.4" fill={SKIN_DARK} />
+          </g>
+          <path d="M-14,-56 Q0,-61 14,-56 L13,-25 Q0,-22 -13,-25 Z" fill={`url(#${ids}shirtT)`} stroke="#000" strokeOpacity=".45" strokeWidth=".8" />
+          <rect x="-3" y="-61" width="6" height="5" rx="1.5" fill={SKIN_DARK} />
+          <ellipse cx="-9.2" cy="-66" rx="1.5" ry="2.4" fill={SKIN_DARK} />
+          <ellipse cx="9.2" cy="-66" rx="1.5" ry="2.4" fill={SKIN_DARK} />
+          <circle cx="0" cy="-67" r="9.5" fill="#2a1a10" />
         </g>
         <ellipse ref={ballShadowRef} cx={BALL_START.x} cy={BALL_START.y + 5} rx="6" ry="2" fill="#000" opacity=".35" />
         <path ref={trailRef} stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0" />

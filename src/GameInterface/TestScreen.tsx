@@ -38,7 +38,7 @@ import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import type { TestScenario } from "@/GameEngine/Support/TestCases";
 import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot, withReferee } from "@/GameEngine/Domain/gameState";
 import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
-import { refereeFaceUrl } from "@/Domain/faces/faceUrl";
+import { faceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { REFEREE_ERROR_KINDS, resolveComplaint, type RefereeErrorKind } from "@/GameEngine/Domain/Var";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { debugLog } from "@/GameEngine/Support/DebugLog";
@@ -1889,6 +1889,10 @@ export function TestScreen() {
               onOutcome={(outcome) => gameBus.emit('testCommand', { type: 'penaltyOutcome', outcome })}
               lighting={pitchLighting}
               seed="test"
+              faceUrls={{
+                A: Object.fromEntries(liveGameState.players.filter((p) => p.team === 'A').map((p) => [p.rosterId, faceUrl(p.rosterId, null, ['#2d6cdf'])])),
+                B: Object.fromEntries(liveGameState.players.filter((p) => p.team === 'B').map((p) => [p.rosterId, faceUrl(p.rosterId, null, ['#df3b2d'])])),
+              }}
             />
           )}
           {activeState && pitchSize ? (

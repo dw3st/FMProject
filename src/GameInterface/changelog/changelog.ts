@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.3",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Pênalti: o goleiro tem braços articulados, que descem no agacho e esticam no pulo, e o batedor balança os braços na corrida e abre para chutar. Os dois de chuteira e meião.",
+        en: "Penalties: the keeper's arms bend, drop in the crouch and stretch in the dive, and the taker swings his arms on the run-up and opens them to kick. Both in boots and socks.",
+      },
+    ],
+    fixes: [
+      { pt: "No pênalti, o batedor termina ao lado da bola, não em cima dela, e a faixa verde da barra de força é sempre verde.", en: "In penalties the taker ends beside the ball, not on it, and the green zone of the power bar is always green." },
+    ],
+  },
+  {
     version: "4.38.2",
     date: "2026-10-28",
     items: [

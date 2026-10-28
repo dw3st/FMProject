@@ -111,3 +111,67 @@ export function grassStripes(n = 9): { y: number; h: number }[] {
     return { y: y0, h: y1 - y0 + 0.5 };
   });
 }
+
+// ── Limbs (4.38.3): two-segment arms drawn as round-capped strokes, in each figure's own frame (feet at y 0) ──
+
+export interface ArmPose { shoulder: Pt; elbow: Pt; hand: Pt }
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpPt = (a: Pt, b: Pt, t: number): Pt => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) });
+const mirror = (p: Pt): Pt => ({ x: -p.x, y: p.y });
+
+/** Keeper's left arm (the right one is its mirror) at a reach: −1 hands low (crouch), 0 ready stance, 1 over the head. */
+const KEEPER_ARM = {
+  shoulder: { x: -11, y: -42 },
+  low: { elbow: { x: -16, y: -31 }, hand: { x: -17, y: -21 } },
+  ready: { elbow: { x: -19, y: -34 }, hand: { x: -24, y: -27 } },
+  up: { elbow: { x: -14, y: -56 }, hand: { x: -10, y: -71 } },
+} as const;
+
+export function keeperArms(reach: number, bob = 0): { left: ArmPose; right: ArmPose } {
+  const r = Math.max(-1, Math.min(1, reach));
+  const A = KEEPER_ARM;
+  const elbow = r < 0 ? lerpPt(A.ready.elbow, A.low.elbow, -r) : lerpPt(A.ready.elbow, A.up.elbow, r);
+  const hand = r < 0 ? lerpPt(A.ready.hand, A.low.hand, -r) : lerpPt(A.ready.hand, A.up.hand, r);
+  const left = { shoulder: A.shoulder, elbow: { x: elbow.x, y: elbow.y + bob * 0.5 }, hand: { x: hand.x, y: hand.y + bob } };
+  return { left, right: { shoulder: mirror(left.shoulder), elbow: mirror(left.elbow), hand: { x: -left.hand.x, y: hand.y - bob } } };
+}
+
+/** How far the keeper's arms reach on a dive to an area. */
+export function diveReach(area: GoalArea): number {
+  const [row, col] = area.split("-");
+  if (row === "high") return 1;
+  return col === "mid" ? 0.15 : 0.8;
+}
+
+/**
+ * Taker seen from behind at `run` (0 on the spot … 1 at the ball): arms swing with the steps, legs lift in turn, and
+ * at the ball the kicking (right) leg swings through and the arms open for balance.
+ */
+export function takerPose(run: number): { left: ArmPose; right: ArmPose; legL: number; legR: number; kick: number } {
+  const swing = run < 1 ? Math.sin(run * Math.PI * 3) : 0;
+  const kick = run >= 0.85 ? (run - 0.85) / 0.15 : 0;
+  const sh = { x: -13, y: -54 };
+  const hangL = { elbow: { x: -16, y: -42 - 3 * swing }, hand: { x: -17, y: -31 - 5 * swing } };
+  const hangR = { elbow: { x: 16, y: -42 + 3 * swing }, hand: { x: 17, y: -31 + 5 * swing } };
+  const openL = { elbow: { x: -22, y: -46 }, hand: { x: -28, y: -40 } };
+  const openR = { elbow: { x: 18, y: -40 }, hand: { x: 16, y: -30 } };
+  return {
+    left: { shoulder: sh, elbow: lerpPt(hangL.elbow, openL.elbow, kick), hand: lerpPt(hangL.hand, openL.hand, kick) },
+    right: { shoulder: mirror(sh), elbow: lerpPt(hangR.elbow, openR.elbow, kick), hand: lerpPt(hangR.hand, openR.hand, kick) },
+    legL: Math.max(0, swing) * 3,
+    legR: Math.max(0, -swing) * 3 + kick * 6,
+    kick,
+  };
+}
+
+/** SVG path of an arm: shoulder → elbow → hand. */
+export const armPath = (a: ArmPose): string =>
+  `M${a.shoulder.x.toFixed(1)},${a.shoulder.y.toFixed(1)} L${a.elbow.x.toFixed(1)},${a.elbow.y.toFixed(1)} L${a.hand.x.toFixed(1)},${a.hand.y.toFixed(1)}`;
+
+/** Where the taker stands: from the start of the run-up to beside the ball (his right foot at the ball). */
+export function takerSpot(run: number): Pt {
+  const from = { x: SCENE.BALL_START.x - 30, y: SCENE.BALL_START.y + 30 };
+  const to = { x: SCENE.BALL_START.x - 14, y: SCENE.BALL_START.y + 6 };
+  return lerpPt(from, to, Math.max(0, Math.min(1, run)));
+}

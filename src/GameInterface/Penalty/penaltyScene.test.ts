@@ -51,3 +51,29 @@ describe("penalty scene", () => {
     expect(s[s.length - 1]!.h).toBeGreaterThan(s[0]!.h);
   });
 });
+
+import { diveReach, keeperArms, takerPose, takerSpot } from "@/GameInterface/Penalty/penaltyScene";
+
+describe("penalty figures (4.38.3)", () => {
+  test("keeper's arms: mirrored, low in the crouch, over the head on a high dive", () => {
+    const ready = keeperArms(0);
+    expect(ready.right.hand.x).toBe(-ready.left.hand.x);
+    expect(keeperArms(1).left.hand.y).toBeLessThan(ready.left.hand.y);
+    expect(keeperArms(-1).left.hand.y).toBeGreaterThan(ready.left.hand.y);
+    expect(diveReach("high-left")).toBe(1);
+    expect(diveReach("low-mid")).toBeLessThan(diveReach("low-right"));
+  });
+
+  test("taker: swings on the run-up, opens his arms and lifts the kicking leg at the ball", () => {
+    const start = takerPose(0), kick = takerPose(1);
+    expect(kick.kick).toBeCloseTo(1);
+    expect(kick.legR).toBeGreaterThan(start.legR);
+    expect(kick.left.hand.x).toBeLessThan(start.left.hand.x);
+  });
+
+  test("taker ends beside the ball, never on it", () => {
+    const end = takerSpot(1);
+    expect(end.x).toBeLessThan(SCENE.BALL_START.x - 8);
+    expect(takerSpot(0).y).toBeGreaterThan(end.y);
+  });
+});
