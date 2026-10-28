@@ -68,6 +68,7 @@ import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName } from "@/Domain/world/labels";
+import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
 
 interface FormationOption {
   id: string;
@@ -1399,6 +1400,16 @@ function FormationPitch({
                       : "bg-background/80 text-foreground"
                   }`}>
                     {player.name.split(" ").pop()}
+                  </div>
+                  {/* Fitness under the name (tester report): swap tired starters without opening the list. */}
+                  <div
+                    className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded bg-background/80 px-1.5 py-0.5 pointer-events-none"
+                    title={t("formations.fitness", { value: Math.round(energy) })}
+                  >
+                    <span className="block w-16 h-1.5 rounded-full bg-border overflow-hidden">
+                      <span className={`block h-full rounded-full ${energyBarClass(energy)}`} style={{ width: `${Math.max(0, Math.min(100, energy))}%` }} />
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums text-foreground leading-none">{Math.round(energy)}</span>
                   </div>
 
                   <div className={`opacity-0 ${dragging ? "" : "group-hover:opacity-100"} transition-opacity duration-200 pointer-events-none`}>

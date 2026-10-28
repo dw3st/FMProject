@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.37.3",
+    date: "2026-10-28",
+    items: [
+      {
+        pt: "Na tela de formação, o fôlego de cada titular aparece embaixo dele no campo.",
+        en: "On the formation screen, each starter's fitness shows under him on the pitch.",
+      },
+    ],
+  },
+  {
     version: "4.37.2",
     date: "2026-10-28",
     items: [

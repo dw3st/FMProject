@@ -895,6 +895,7 @@
     "outOfPosition": "Fora de posição",
     "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
     "rating": "Nota",
+    "fitness": "Fôlego {{value}}",
     "energy": "Energia",
     "blurbs": {
       "4-3-3": "Três atacantes na frente, com controle no meio e estabilidade defensiva.",

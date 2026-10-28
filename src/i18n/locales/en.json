@@ -895,6 +895,7 @@
     "outOfPosition": "Out of position",
     "outOfPositionPrimary": "Out of position — primary: {{position}} ({{role}})",
     "rating": "Rating",
+    "fitness": "Fitness {{value}}",
     "energy": "Energy",
     "blurbs": {
       "4-3-3": "Three forwards up top with midfield control and defensive stability.",
