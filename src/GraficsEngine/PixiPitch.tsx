@@ -2,8 +2,9 @@ import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
-import { crowdTiles, CROWD_MOTION, flagWave, standFlags, tileLift, type StandFlag } from "@/GraficsEngine/crowdMotion";
+import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { bannerOffset, CROWD_MOTION, fanLooks, fanPose, handFlagAngle, standBanners, type StandBanner } from "@/GraficsEngine/crowdMotion";
+import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
@@ -40,7 +41,7 @@ import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
-import { drawDecor, drawFans, drawStandBase, drawStandEdges, fansBounds, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { drawDecor, drawStandBase, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, seatCellPx, standSideRects, worksSides } from "@/GraficsEngine/crowd";
@@ -49,7 +50,7 @@ import {
   type CelebrationBurst, type PhoneLight,
 } from "@/GraficsEngine/stadiumAtmosphere";
 import {
-  benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, CROWD_JUMP_S, crowdJumpPx, startStretcher, STRETCHER,
+  benchRect, benchSeats, COACH_WALK_FRAC, coachWalkOffset, startStretcher, STRETCHER,
   stretcherPose, type StretcherRun,
 } from "@/GraficsEngine/matchExtras";
 import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
@@ -666,13 +667,20 @@ export function PixiPitch({
       app.stage.addChildAt(crowdLayer, 0);
       let crowdBase: Graphics | null = null;
       /** Each side's fans, baked in tiles that move on their own (`crowdMotion.ts`). */
-      type FanTile = { sprite: Sprite; baseY: number; cx: number; cy: number; phase: number };
-      const crowdFans: Record<"home" | "away", FanTile[]> = { home: [], away: [] };
+      /** One fan: his seat, motion, and the particles he is made of (body, scarf, head). */
+      type Fan = {
+        x: number; baseY: number; phase: number; speed: number; flag: boolean;
+        body: FanParticle; scarf: FanParticle | null; head: FanParticle;
+      };
+      /** Each side's fans: a ParticleContainer of small people (`crowdFigures.ts`) that move on their own. */
+      const crowdFans: Record<"home" | "away", { layer: ParticleContainer; fans: Fan[] } | null> = { home: null, away: null };
+      let crowdAtlas: ReturnType<typeof buildCrowdAtlas> | null = null;
+      let crowdAtlasSource: CanvasSource | null = null;
+      let figureSize = 6;
       /** Height (px) of a fans' jump: under half a seat. */
-      let crowdJumpAmp = 0;
       let crowdDecor: Graphics | null = null;
       /** Waving flags over the home stands (crowd motion), set by every bake; drawn every frame with extras. */
-      let standFlagSpots: StandFlag[] = [];
+      let standBannerSpots: StandBanner[] = [];
       let flagColor = fillA;
       const flagGfx = new Graphics();
       flagGfx.eventMode = 'none';
@@ -682,8 +690,8 @@ export function PixiPitch({
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
         for (const k of ["home", "away"] as const) {
-          for (const f of crowdFans[k]) f.sprite.destroy({ texture: true, textureSource: true });
-          crowdFans[k] = [];
+          crowdFans[k]?.layer.destroy();
+          crowdFans[k] = null;
         }
         crowdBase?.destroy();
         // The home club is drawn on the left when it is team A and the pitch is not mirrored (or B, mirrored).
@@ -703,33 +711,49 @@ export function PixiPitch({
           seed: st.seed,
           works,
         });
-        crowdJumpAmp = Math.max(1.5, seatCellPx(m.stand) * 0.45);
+        const cell = seatCellPx(m.stand);
+        figureSize = cell * CROWD_MOTION.FIGURE;
         flagColor = st.homeTeam === "A" ? fillA : fillB;
-        standFlagSpots = st.neutral ? [] : standFlags(standSideRects(m.stand), homeLeft ? "left" : "right", st.seed, works);
+        standBannerSpots = st.neutral ? [] : standBanners(standSideRects(m.stand), homeLeft ? "left" : "right", cell, st.seed, works);
         phones = phoneLights(seats, st.seed);
-        const tilePx = seatCellPx(m.stand) * CROWD_MOTION.TILE_SEATS;
+        // The figures' atlas: one canvas, so each side renders in a single ParticleContainer.
+        crowdAtlasSource?.destroy();
+        const homeColor = st.homeTeam === "A" ? fillA : fillB;
+        crowdAtlas = buildCrowdAtlas(homeColor, needsLightOutline(homeColor) || homeColor > 0xdddddd ? 0x1a1a1a : 0xffffff);
+        crowdAtlasSource = new CanvasSource({ resource: crowdAtlas.canvas, transparent: true });
+        const frames = bindAtlas(crowdAtlas, crowdAtlasSource);
+        const scale = figureSize / FIGURE_FRAME.SCALE;
+        const anchorY = FIGURE_FRAME.FOOT_Y / FIGURE_FRAME.SIZE;
+        const make = (texture: Texture, x: number, y: number, tint?: number) => new FanParticle({
+          texture, x, y, scaleX: scale, scaleY: scale, anchorX: 0.5, anchorY, ...(tint !== undefined ? { tint } : {}),
+        });
         for (const k of ["home", "away"] as const) {
-          const mine = seats.filter((seat) => seat.team === k);
-          for (const tile of crowdTiles(mine, tilePx, `${st.seed}:${k}`)) {
-            const box = fansBounds(m.stand!, tile.seats);
-            if (!box) continue;
-            const g = new Graphics();
-            drawFans(g, m.stand!, tile.seats);
-            const texture = app.renderer.generateTexture({
-              target: g,
-              resolution: app.renderer.resolution,
-              frame: new Rectangle(box.x, box.y, box.w, box.h),
-            });
-            g.destroy();
-            const sprite = new Sprite(texture);
-            sprite.eventMode = 'none';
-            sprite.x = box.x;
-            sprite.y = box.y;
-            crowdLayer.addChild(sprite);
-            crowdFans[k].push({ sprite, baseY: box.y, cx: tile.cx, cy: tile.cy, phase: tile.phase });
-          }
+          // Back rows first, so the fans nearer the bottom of the screen stand in front.
+          const mine = seats.filter((seat) => seat.team === k).sort((a, b) => a.y - b.y || a.x - b.x);
+          if (mine.length === 0) continue;
+          const looks = fanLooks(mine, cell, `${st.seed}:${k}`);
+          const layer = new ParticleContainer({
+            texture: frames.body[0],
+            dynamicProperties: { position: true, uvs: true, color: false, vertex: false, rotation: false },
+          });
+          layer.eventMode = 'none';
+          const fans: Fan[] = [];
+          mine.forEach((seat, i) => {
+            const look = looks[i]!;
+            // The figure stands on the seat: its feet half a cell below the seat's centre.
+            const baseY = seat.y + cell * 0.5;
+            const body = make(frames.body[0], seat.x, baseY, seat.color);
+            const scarf = look.scarf ? make(frames.scarf[0], seat.x, baseY) : null;
+            const head = make(frames.heads[headFrame(look.skin, look.hair)]!, seat.x, baseY);
+            layer.addParticle(body);
+            if (scarf) layer.addParticle(scarf);
+            layer.addParticle(head);
+            fans.push({ x: seat.x, baseY, phase: look.phase, speed: look.speed, flag: look.flag, body, scarf, head });
+          });
+          crowdLayer.addChild(layer);
+          crowdFans[k] = { layer, fans };
         }
-        crowdLayer.addChild(flagGfx); // flags over the fans
+        crowdLayer.addChild(flagGfx); // hand flags and banners over the fans
         // The manager's decorations (achievements): over the home end, unless it is under works.
         crowdDecor?.destroy();
         crowdDecor = null;
@@ -2519,33 +2543,64 @@ export function PixiPitch({
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
         const homeAlpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
-        if (crowdJump && effectNow - crowdJump.at >= CROWD_JUMP_S) crowdJump = null;
-        // The stand sways and the wave goes round (with extras); the scoring side jumps.
+        if (crowdJump && effectNow - crowdJump.at >= CROWD_MOTION.GOAL_S) crowdJump = null;
+        // Each fan bounces softly, the wave raises the arms as it goes round, the scoring side jumps (with extras).
         const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };
         const moving = extrasRef.current;
         flagGfx.clear();
-        if (moving && m.stand && standFlagSpots.length > 0) {
-          const F = CROWD_MOTION.FLAGS;
-          const cell = seatCellPx(m.stand);
-          const fw = cell * F.W, fh = cell * F.H, pole = cell * F.POLE, strip = fw / F.STRIPS;
-          for (const f of standFlagSpots) {
-            const top = f.y - pole;
-            flagGfx.moveTo(f.x, f.y).lineTo(f.x, top - fh * 0.2).stroke({ width: 1.2, color: 0xd9d9d9 });
-            for (let k = 0; k < F.STRIPS; k++) {
-              const y0 = top + flagWave(f, k, effectNow, fh * 0.35);
-              const y1 = top + flagWave(f, k + 1, effectNow, fh * 0.35);
-              const x0 = f.x + k * strip;
-              const color = Math.floor(k / 2) % 2 === 0 ? flagColor : 0xffffff;
-              flagGfx.moveTo(x0, y0).lineTo(x0 + strip + 0.5, y1).lineTo(x0 + strip + 0.5, y1 + fh).lineTo(x0, y0 + fh)
-                .fill({ color, alpha: 0.95 });
+        const frames = crowdAtlas?.frames;
+        const H = CROWD_MOTION.HAND_FLAG;
+        const sz = figureSize;
+        for (const k of ["home", "away"] as const) {
+          const side = crowdFans[k];
+          if (!side || !frames) continue;
+          if (k === "home") side.layer.alpha = homeAlpha;
+          if (!moving) continue;
+          const goalAge = crowdJump?.side === k ? effectNow - crowdJump.at : null;
+          for (const f of side.fans) {
+            const pose = fanPose({ x: f.x, y: f.baseY, phase: f.phase, speed: f.speed }, effectNow, sz, centre, 0, goalAge);
+            const y = f.baseY - pose.lift;
+            const up = pose.arms > 0.5 ? 1 : 0;
+            f.body.y = y; f.head.y = y;
+            if (f.body.texture !== frames.body[up]) f.body.texture = frames.body[up];
+            if (f.scarf) {
+              f.scarf.y = y;
+              if (f.scarf.texture !== frames.scarf[up]) f.scarf.texture = frames.scarf[up];
+            }
+            if (f.flag) {
+              // A small flag on a stick, held in the right hand, swinging side to side.
+              const a = handFlagAngle(f, effectNow, pose.arms);
+              const hx = f.x + sz * 0.34, hy = y - sz * (0.1 + 0.55 * pose.arms);
+              const tx = hx + Math.sin(a) * sz * H.STICK, ty = hy - Math.cos(a) * sz * H.STICK;
+              const fw = sz * H.W, fh = sz * H.H, flap = Math.sin(effectNow * 7 + f.phase) * fh * 0.18;
+              flagGfx.moveTo(hx, hy).lineTo(tx, ty).stroke({ width: Math.max(0.8, sz * 0.07), color: 0xcfcfcf });
+              flagGfx.moveTo(tx, ty).lineTo(tx + fw, ty + flap).lineTo(tx + fw, ty + fh + flap).lineTo(tx, ty + fh)
+                .fill({ color: (Math.floor(f.phase * 10) & 1) ? flagColor : 0xffffff, alpha: 0.95 });
+              flagGfx.circle(hx, hy, Math.max(0.8, sz * 0.08)).fill(0xd8a37a);
             }
           }
         }
-        for (const k of ["home", "away"] as const) {
-          const jump = crowdJump?.side === k ? crowdJumpPx(effectNow - crowdJump.at, crowdJumpAmp) : 0;
-          for (const f of crowdFans[k]) {
-            if (k === "home") f.sprite.alpha = homeAlpha;
-            f.sprite.y = f.baseY + jump - (moving ? tileLift(f, effectNow, centre, crowdJumpAmp) : 0);
+        // Banners held up over the heads by a group of home fans: the cloth rides on their hands and ripples.
+        if (moving && standBannerSpots.length > 0) {
+          const B = CROWD_MOTION.BANNERS;
+          for (const b of standBannerSpots) {
+            const strip = b.w / B.STRIPS;
+            for (let i = 0; i < B.STRIPS; i++) {
+              const o0 = bannerOffset(b, i, effectNow), o1 = bannerOffset(b, i + 1, effectNow);
+              const x0 = b.x + i * strip, x1 = x0 + strip + 0.5;
+              // Two bands: the club colour on top, white below, with a thin club-colour line at the bottom.
+              flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h * 0.55 + o1).lineTo(x0, b.y + b.h * 0.55 + o0)
+                .fill({ color: flagColor, alpha: 0.97 });
+              flagGfx.moveTo(x0, b.y + b.h * 0.55 + o0).lineTo(x1, b.y + b.h * 0.55 + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
+                .fill({ color: 0xffffff, alpha: 0.97 });
+              // Folds: a soft shade on the strips going down.
+              if (o1 > o0) flagGfx.moveTo(x0, b.y + o0).lineTo(x1, b.y + o1).lineTo(x1, b.y + b.h + o1).lineTo(x0, b.y + b.h + o0)
+                .fill({ color: 0x000000, alpha: Math.min(0.18, (o1 - o0) / Math.max(1, b.h) * 2) });
+            }
+            // The holders' hands along the top edge.
+            for (let i = 0; i <= B.STRIPS; i += B.HOLD_EVERY) {
+              flagGfx.circle(b.x + i * strip, b.y + bannerOffset(b, i, effectNow), Math.max(1, sz * 0.09)).fill(0xd8a37a);
+            }
           }
         }
         const st = stateRef.current;
@@ -2832,7 +2887,8 @@ export function PixiPitch({
         redrawSurfaceRef.current = null;
         coachCueFnRef.current = null;
         coachCardFnRef.current = null;
-        for (const k of ["home", "away"] as const) for (const f of crowdFans[k]) f.sprite.destroy({ texture: true, textureSource: true });
+        for (const k of ["home", "away"] as const) crowdFans[k]?.layer.destroy();
+        crowdAtlasSource?.destroy();
         grainTexture.destroy(true);
         centreTexture.destroy(true);
         // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.

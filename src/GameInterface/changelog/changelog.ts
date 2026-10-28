@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.12",
+    date: "2026-10-28",
+    items: [
+      { pt: "Torcida nova: cada torcedor é uma pessoa, com rosto, cabelo e a camisa do time, e se mexe de forma suave e independente.", en: "New crowd: every fan is a person, with a face, hair and the team shirt, moving smoothly on his own." },
+      { pt: "Na ola e no gol os torcedores levantam os braços e os cachecóis; parte da torcida balança bandeirinhas e grupos seguram bandeirões que ondulam sobre a arquibancada.", en: "On the wave and on a goal the fans raise their arms and scarves; some wave small flags and groups hold up big banners rippling over the stand." },
+    ],
+  },
+  {
     version: "4.38.11",
     date: "2026-10-28",
     items: [
