@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 
+const s0 = (m: ReturnType<typeof buildMetrics>) => m.stand!.inner.y + m.stand!.inner.h - (m.marginY + m.height);
+
 describe("pitch metrics", () => {
   test("without stadium: same numbers as the old buildMetrics (1100x700, 900x520)", () => {
     expect(buildMetrics(1100, 700, { stadium: false })).toEqual({
@@ -20,7 +22,9 @@ describe("pitch metrics", () => {
     for (const [w, h] of [[1100, 700], [900, 520]] as const) {
       const plain = buildMetrics(w, h, { stadium: false });
       const m = buildMetrics(w, h, { stadium: true });
-      expect(m.scale).toBeCloseTo(plain.scale * STADIUM.PITCH_SHRINK, 6);
+      expect(m.scale).toBeLessThanOrEqual(plain.scale * STADIUM.PITCH_SHRINK + 1e-9);
+      // the bottom run-off holds the assistant's lane and the benches
+      expect(s0(m)).toBeGreaterThanOrEqual(Math.round(STADIUM.BENCH_RUNOFF_YDS * m.scale) - 1);
       const s = m.stand!;
       expect(s.outer).toEqual({ x: 0, y: 0, w, h });
       for (const side of ["top", "bottom", "left", "right"] as const) expect(s.thickness[side]).toBeGreaterThan(4);

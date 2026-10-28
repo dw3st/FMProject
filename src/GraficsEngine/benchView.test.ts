@@ -47,12 +47,13 @@ describe("bench layout", () => {
 });
 
 describe("bench off the pitch", () => {
-  test("the dugout starts below the touchline and every figure stands inside it", () => {
-    const L = benchLayout(9, 300, 120, 700, 740, 2, 20);
-    expect(L.box.y).toBeGreaterThan(700);
+  test("one row inside the dugout, every figure smaller than a player", () => {
+    const L = benchLayout(9, 300, 120, 710, 740, 0, 20);
+    expect(L.box.y).toBe(710);
+    expect(L.fig).toBeLessThanOrEqual(20 * 0.4);
     for (const s of L.seats) {
-      expect(s.y - L.fig * 0.9).toBeGreaterThan(700 - L.fig);
-      expect(s.y).toBeLessThanOrEqual(740);
+      expect(s.y - L.fig).toBeGreaterThan(710);
+      expect(s.y + L.fig).toBeLessThan(740);
       expect(Math.abs(s.x - 300)).toBeLessThanOrEqual(60);
     }
   });

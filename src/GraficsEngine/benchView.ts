@@ -1,7 +1,8 @@
 /**
- * The substitutes' bench (4.38.14-16, tester reports): a dugout just off the pitch with the substitutes drawn like the
- * crowd (the same small figures, in the kit), fidgeting, now and then up, and jumping with the arms raised when their
- * team scores. Goalkeepers wear their own colours (two keepers, two colours). Pure; drawn by `PixiPitch` with the extras.
+ * The substitutes' bench (4.38.14-16, tester reports; mock option A): a covered dugout seen from above, below the
+ * assistant's lane, the substitutes as small heads and shoulders in the kit, fidgeting, now and then up, and with the
+ * arms raised when their team scores. Goalkeepers wear their own colours (two keepers, two colours). Pure; drawn by
+ * `PixiPitch` with the extras.
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { CROWD_MOTION } from "@/GraficsEngine/crowdMotion";
@@ -62,27 +63,23 @@ export function benchLook(id: string): { skin: number; hair: number; phase: numb
   return { skin, hair, phase: r() * Math.PI * 2 };
 }
 
+/** Skin tones and hair colours of the substitutes (index HAIRS of the hair = bald: no entry). */
+export const BENCH_SKIN = [0xf1c9a5, 0xe0ac83, 0xc68b5e, 0x9b6a42, 0x6f4527, 0x4a2c17];
+export const BENCH_HAIR = [0x1b1410, 0x3a2616, 0x6b4423, 0xa8742f, 0xd8c08a, 0x2b2b2b, 0x777777];
+
 /**
- * The dugout of one bench, always off the pitch: from `gap` px below the bottom touchline down to `bottom` (the canvas
- * edge), `w` wide centred on `cx`. Crowd-style figures (height `fig`, feet at the seat) in two rows: the first half on
- * the back row (the lower one), the rest in front.
+ * One bench seen from above (mock option A): the dugout from `top` to `bottom` px (below the assistant's lane), `w`
+ * wide centred on `cx`, the substitutes in one row. `fig` is the unit of a figure (the shoulders' half width), at most
+ * `maxUnit`; each seat is the centre of a figure.
  */
-export function benchLayout(n: number, cx: number, w: number, touchY: number, bottom: number, gap: number, maxFig: number): {
+export function benchLayout(n: number, cx: number, w: number, top: number, bottom: number, gap: number, maxUnit: number): {
   box: { x: number; y: number; w: number; h: number }; fig: number; seats: { x: number; y: number }[];
 } {
-  const y = touchY + gap;
+  const y = top + gap;
   const h = Math.max(4, bottom - y);
-  const back = Math.ceil(n / 2);
-  const fig = Math.max(3, Math.min(maxFig, h / 1.55, w / Math.max(1, back) / 0.72));
-  const step = w / Math.max(1, back);
-  const seats: { x: number; y: number }[] = [];
-  for (let i = 0; i < n; i++) {
-    const row = i < back ? 1 : 0;
-    const k = row === 1 ? i : i - back;
-    const inRow = row === 1 ? back : n - back;
-    const x = cx + (k - (inRow - 1) / 2) * step;
-    seats.push({ x, y: y + (row === 1 ? h * 0.97 : h * 0.62) });
-  }
+  const step = w / Math.max(1, n);
+  const fig = Math.max(1.5, Math.min(maxUnit * 0.4, step * 0.4, h * 0.28));
+  const seats = Array.from({ length: n }, (_, i) => ({ x: cx - w / 2 + step * (i + 0.5), y: y + h * 0.5 }));
   return { box: { x: cx - w / 2, y, w, h }, fig, seats };
 }
 

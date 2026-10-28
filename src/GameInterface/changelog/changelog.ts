@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.38.16",
+    date: "2026-10-28",
+    items: [
+      { pt: "Banco de reservas visto de cima, com os reservas pequenos numa fileira, como no mock escolhido.", en: "Bench seen from above, the substitutes small in one row, as in the chosen mock." },
+      { pt: "O bandeirinha não passa mais por cima do banco: o campo foi medido de novo para abrir espaço embaixo.", en: "The assistant referee no longer runs over the bench: the pitch was resized to make room below it." },
+    ],
+  },
+  {
     version: "4.38.15",
     date: "2026-10-28",
     items: [

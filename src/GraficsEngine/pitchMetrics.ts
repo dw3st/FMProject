@@ -44,7 +44,12 @@ export const GOAL_NET_DEPTH_YDS = 2;
 export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: boolean }): PitchMetrics {
   const totalLengthYds = PITCH_SPEC.lengthYds + 2 * GOAL_NET_DEPTH_YDS;
   const fullScale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
-  const scale = fullScale * (opts.stadium ? STADIUM.PITCH_SHRINK : 1);
+  // With the stadium the pitch is measured with the deeper bottom run-off counted in (4.38.16), so the stands keep
+  // their depth on every side.
+  const extraYds = opts.stadium ? STADIUM.BENCH_RUNOFF_YDS - STADIUM.RUNOFF_YDS : 0;
+  const scale = opts.stadium
+    ? Math.min(canvasW / totalLengthYds, canvasH / (PITCH_SPEC.widthYds + extraYds)) * STADIUM.PITCH_SHRINK
+    : fullScale;
 
   const netDepth = Math.round(GOAL_NET_DEPTH_YDS * scale);
   const pitchW   = Math.round(PITCH_SPEC.lengthYds * scale);
@@ -53,7 +58,9 @@ export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: 
   const totalW      = pitchW + 2 * netDepth;
   const outerMargin = Math.round((canvasW - totalW) / 2);
   const marginX = outerMargin + netDepth;
-  const marginY = Math.round((canvasH - pitchH) / 2);
+  // With the stadium the bottom run-off is deeper (the benches below the assistant's lane): the pitch moves up.
+  const extraBottom = opts.stadium ? Math.round((STADIUM.BENCH_RUNOFF_YDS - STADIUM.RUNOFF_YDS) * scale) : 0;
+  const marginY = Math.round((canvasH - pitchH - extraBottom) / 2);
 
   let stand: StandGeometry | null = null;
   if (opts.stadium) {
@@ -62,7 +69,7 @@ export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: 
     const x = Math.max(0, marginX - end);
     const y = Math.max(0, marginY - side);
     const right = Math.min(canvasW, marginX + pitchW + end);
-    const bottom = Math.min(canvasH, marginY + pitchH + side);
+    const bottom = Math.min(canvasH, marginY + pitchH + side + extraBottom);
     const inner = { x, y, w: right - x, h: bottom - y };
     stand = {
       outer: { x: 0, y: 0, w: canvasW, h: canvasH },

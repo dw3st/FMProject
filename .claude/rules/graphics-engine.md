@@ -235,3 +235,8 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   bandeirinhas e os bandeirões ficam na cor principal com o escudo no meio (`loadCrestCanvas`, sprites na `crestLayer`
   que seguem o pano), uma cor só; cachecóis e bonés nas duas cores.
 - Pênalti 2D (4.38.15): a mira corre sozinha pelo gol (`aimAt`, períodos de 2,3 s e 1,7 s, fora de passo com a barra de força de 1,4 s); um clique (ou espaço) chuta com a mira e a força daquele instante.
+- Banco (4.38.16, opção A do mock): visto de cima, cabeça e ombros pequenos (unidade ≤ 0,4 do raio do jogador) numa
+  fileira, sempre abaixo da faixa do bandeirinha. Com o estádio a faixa de baixo é mais funda
+  (`STADIUM.BENCH_RUNOFF_YDS` 4,7: `AR_LANE_YDS` 1,8 para o bandeirinha, o resto para os bancos) e o campo é medido com
+  ela (`buildMetrics`: a escala vem de `largura / comprimento` ou `altura / (74 + extra)`), então as arquibancadas
+  mantêm a profundidade.

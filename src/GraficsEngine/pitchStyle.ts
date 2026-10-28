@@ -113,6 +113,12 @@ export const STADIUM = {
   RUNOFF_YDS: 1.5,
   /** Behind the goals: past the net. */
   END_RUNOFF_YDS: 1,
+  /**
+   * Below the bottom touchline (4.38.16): the assistant's lane (AR_LANE_YDS) and then the benches, so the assistant
+   * never runs over a bench. The pitch moves up to make room; the top keeps RUNOFF_YDS.
+   */
+  BENCH_RUNOFF_YDS: 4.7,
+  AR_LANE_YDS: 1.8,
   SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4,
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,
   STAND_COLOR: 0x1f2a36, CONCRETE: 0x2c3946, ROOF_EDGE: 0x445566,
