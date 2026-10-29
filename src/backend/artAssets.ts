@@ -6,14 +6,15 @@
  *   forever (the version in the URL changes with the art).
  * - `GET /api/art/faces`: the ids that have a painted face (players, the human manager's combinations, referees),
  *   only when the painted faces are switched on (`ART_FACES=1`): they come from real players' features, so the owner
- *   decides before they go public. Off = empty lists, and every face stays the SVG one.
+ *   decides before they go public. Off = empty lists, and every face stays the SVG one. Also the painted match
+ *   backdrops (`backdrops`), unless the new visual is switched off (`ART_VISUAL=0`).
  *
  * The index is re-read when the file's modification time changes (a new art sync needs no restart).
  */
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
-import { ART_ASSET_VERSION, type PaintedFaceIds } from "@/Domain/art/paintedFaces";
+import { ART_ASSET_VERSION, type ArtManifest, type PaintedFaceIds } from "@/Domain/art/paintedFaces";
 
 const CACHE_FOREVER = "public, max-age=31536000, immutable";
 const CONTENT_TYPE: Record<string, string> = { webp: "image/webp", png: "image/png", jpg: "image/jpeg" };
@@ -21,6 +22,8 @@ const CONTENT_TYPE: Record<string, string> = { webp: "image/webp", png: "image/p
 interface ArtIndex {
   paths: Set<string>;
   faces: PaintedFaceIds;
+  /** Painted match backdrops (`backdrops/match/<id>.webp`). */
+  backdrops: string[];
 }
 
 let cache: { mtimeMs: number; dir: string; index: ArtIndex } | null = null;
@@ -46,10 +49,10 @@ function collectPaths(node: unknown, out: Set<string>): void {
 const SAFE_PATH = /^(?!.*\.\.)[A-Za-z0-9_\-./]+$/;
 
 /** The ids of a face map whose path follows the convention the client builds (`faces/<kind>/<id>.webp`). */
-function faceIds(map: unknown, kind: string): string[] {
+function idsAt(map: unknown, folder: string): string[] {
   if (!map || typeof map !== "object") return [];
   return Object.entries(map as Record<string, unknown>)
-    .filter(([id, path]) => path === `faces/${kind}/${id}.webp`)
+    .filter(([id, path]) => path === `${folder}/${id}.webp`)
     .map(([id]) => id);
 }
 
@@ -70,9 +73,15 @@ function loadIndex(): ArtIndex | null {
     collectPaths({ ...raw, version: undefined }, paths);
     for (const p of [...paths]) if (!SAFE_PATH.test(p) || p.startsWith("/")) paths.delete(p);
     const faces = (raw.faces ?? {}) as Record<string, unknown>;
+    const backdrops = (raw.backdrops ?? {}) as Record<string, unknown>;
     const index: ArtIndex = {
       paths,
-      faces: { players: faceIds(faces.players, "players"), coaches: faceIds(faces.coaches, "coaches"), referees: faceIds(faces.referees, "referees") },
+      faces: {
+        players: idsAt(faces.players, "faces/players"),
+        coaches: idsAt(faces.coaches, "faces/coaches"),
+        referees: idsAt(faces.referees, "faces/referees"),
+      },
+      backdrops: idsAt(backdrops.match, "backdrops/match"),
     };
     cache = { mtimeMs, dir, index };
     return index;
@@ -84,6 +93,11 @@ function loadIndex(): ArtIndex | null {
 /** The painted faces are on (`ART_FACES=1`, decision 4). */
 export function paintedFacesEnabled(): boolean {
   return process.env.ART_FACES === "1";
+}
+
+/** The new pitch art (painted turf, phase 1) is on unless `ART_VISUAL=0`: the switch to go back without a rebuild. */
+export function newVisualEnabled(): boolean {
+  return process.env.ART_VISUAL !== "0";
 }
 
 const notFound = () => new Response("Not found", { status: 404 });
@@ -105,8 +119,9 @@ export const artAssetRoutes = {
       : notFound());
   },
   "/api/art/faces": () => {
-    const index = paintedFacesEnabled() ? loadIndex() : null;
-    const body: PaintedFaceIds = index ? index.faces : { players: [], coaches: [], referees: [] };
+    const index = loadIndex();
+    const faces: PaintedFaceIds = index && paintedFacesEnabled() ? index.faces : { players: [], coaches: [], referees: [] };
+    const body: ArtManifest = { ...faces, backdrops: index && newVisualEnabled() ? index.backdrops : [] };
     return Response.json(body, { headers: { "Cache-Control": "no-cache" } });
   },
 };

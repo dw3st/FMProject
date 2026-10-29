@@ -36,6 +36,12 @@ Cobertura (2026-10-27): 1081 de 1273 clubes (nativo/ESPN 632, TheSportsDB 449); 
 `ClubLogo` guarda em memória (`failedLogoUrls`) as URLs que já deram 404, para não pedir de novo a
 cada instância montada — cai no brasão gerado com as cores do clube. Ver `.claude/rules/data/espn-import.md`.
 
+### Escudos de traço escuro (4.41.4)
+
+`bun scripts/logoContrast.ts` mede os PNG do índice e grava `src/example_data/logoBacking.json` (pouca área pintada,
+traço escuro, quase nada claro: QPR, Bolton e outros 9); o `ClubLogo` desenha esses sobre um disco claro. Rodar de novo
+quando o índice de escudos mudar.
+
 ## Ligas seguidas
 
 Até 3 (`MAX_FOLLOWED_LEAGUES` em `src/Domain/advanceDay/simMode.ts`), guardadas em

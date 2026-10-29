@@ -25,6 +25,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.4",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Gramado pintado na partida, com o padrão de corte do clube. Dá para voltar ao desenho antigo em Configurações, em Visual novo.",
+        en: "Painted turf in the match, with the club's mowing pattern. You can switch back to the old drawing in Settings, under New visual.",
+      },
+      {
+        pt: "Prévia dos enfeites do estádio na tela de conquistas.",
+        en: "Preview of the stadium decorations on the achievements screen.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Na transmissão do jogo de um amigo, a bola parecia ficar com o mesmo jogador depois de um passe.",
+        en: "In a friend's match broadcast, the ball seemed to stay with the same player after a pass.",
+      },
+      {
+        pt: "Escudos de traço fino e escuro sumiam no fundo escuro; agora aparecem sobre um disco claro.",
+        en: "Crests drawn in thin dark lines vanished on the dark background; they now sit on a light disc.",
+      },
+    ],
+  },
+  {
     version: "4.41.3",
     date: "2026-10-29",
     items: [

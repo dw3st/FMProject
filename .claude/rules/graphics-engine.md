@@ -275,3 +275,22 @@ Depois de `fill()`/`stroke()` o Pixi v8 continua o caminho do último ponto (`_i
 ## Marcador sem brilho (4.38.24)
 
 O brilho branco em meia-lua sobre o rosto saiu (report: "círculo branco dentro da cabeça"); fica só a borda escura embaixo (`MATCH_LOOK.RIM`).
+
+## Gramado pintado (arte nova, fase 1, 4.41.4)
+
+`paintedTurf.ts` (puro, com teste): a partida usa um fundo pintado de `art/backdrops/match/` (o mesmo volume e rota da arte
+nova, `src/backend/artAssets.ts`), escolhido pela grama e pelo corte (`paintedTurfId`: sintético; xadrez, diagonal e
+anéis; listras em três tons, o tom pelo clube mandante, `pitch.ground`). Só as versões noturnas (as de dia trazem uma
+sombra de arquibancada fixa: a luz e a sombra real do jogo continuam por cima) e só a grama (`PAINTED_TURF.FRAME`; a
+arquibancada pintada fica de fora): o retângulo do campo pintado (`PITCH`) cai sobre o campo do jogo
+(`paintedPlacement`, girado 180° no espelho). As imagens de gasto/lamacento não são usadas: sobre a grama limpa vão um véu
+da cor da faixa (`paintedWash`) e as falhas sorteadas do jogo (`paintedOverlay`, só a camada `wear`), as linhas e o
+tracejado de sempre. Sem a imagem (servidor sem arte, `ART_VISUAL=0`, chave "Visual novo" desligada em Configurações,
+`fm.visual.new`) ou enquanto ela carrega (`Assets.load`, ~350 KB), o gramado desenhado de antes. O `/test` carrega a
+arte (`createPage(..., { art: true })`) e mostra pelos chips de grama, corte e condição. Neve e neblina ficam para depois.
+
+## Bola com dono no modo remoto (4.41.4)
+
+`heldBallId` (`remoteInterp.ts`): no modo remoto (transmissão, jogo entre técnicos) o estado chega a cada segundo e as
+posições a cada passo; o dono do estado só conta (bola nos pés, brilho, nome) enquanto a bola desenhada está a até
+`REMOTE_HOLD_YDS` (2) dele. Antes, depois de um passe a bola voltava aos pés do dono antigo até o estado seguinte (report).

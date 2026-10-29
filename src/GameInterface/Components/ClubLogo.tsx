@@ -1,7 +1,13 @@
 import { useState } from "react";
 import LOGO_INDEX from "@/Data/logoIndex.json";
+import LOGO_BACKING from "@/Data/logoBacking.json";
 import { logoUrlFromIndex } from "@/Domain/world/logos";
 import { Icon } from "@/GameInterface/Icons";
+
+/** Crests of thin dark lines that vanish on the dark background (`scripts/logoContrast.ts`): drawn on a light disc. */
+const BACKED_URLS = new Set(
+  (LOGO_BACKING as string[]).map((id) => logoUrlFromIndex(LOGO_INDEX as Record<string, string>, id)).filter(Boolean),
+);
 
 /** URLs that already 404'd this page load — avoid re-requesting them from every mounted instance. */
 const failedLogoUrls = new Set<string>();
@@ -49,8 +55,9 @@ export function ClubLogo({
     // A real crest is never clipped (#53): a circular mask (`rounded-full` + `overflow-hidden`,
     // meant for the generated fallback shield) cuts the corners of square-topped crests such as
     // São Paulo's. The box keeps its size; the image is contained inside it.
+    const backed = BACKED_URLS.has(logoUrl);
     return (
-      <div className={`${crestBoxClass(className)} flex items-center justify-center shrink-0`}>
+      <div className={`${crestBoxClass(className)} flex items-center justify-center shrink-0${backed ? " rounded-full bg-white/90" : ""}`}>
         <img
           src={logoUrl}
           alt=""

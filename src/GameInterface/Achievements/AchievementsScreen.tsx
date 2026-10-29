@@ -1,3 +1,4 @@
+import { StadiumDecorPreview } from "@/GameInterface/Achievements/StadiumDecorPreview";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { useTranslation } from "react-i18next";
@@ -291,6 +292,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
               </Chip>
             ))}
           </div>
+          <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} />
           <div>
             <Button onClick={() => void save("stadium", decor)}>{t("achievements.profile.saveStadium")}</Button>
           </div>

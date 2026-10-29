@@ -5,6 +5,8 @@ import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n/i18n";
 import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/AuthGate";
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { readNewVisual, writeNewVisual } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -17,6 +19,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguage();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [newVisual, setNewVisual] = useState(readNewVisual);
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +67,16 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
               onSelect={() => setLanguage(lang.code)}
             />
           ))}
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-border flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.newVisual")}</div>
+          <OptionChips
+            value={newVisual ? "on" : "off"}
+            onChange={(k) => { const on = k === "on"; setNewVisual(on); writeNewVisual(on); }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.newVisualDescription")}</p>
         </div>
 
         {onExitToMenu && (

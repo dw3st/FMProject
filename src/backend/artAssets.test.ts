@@ -18,9 +18,10 @@ beforeAll(() => {
     version: 1,
     faces: { players: { p1: "faces/players/p1.webp", p2: "faces/players/p2.webp", odd: "elsewhere/odd.webp" }, coaches: {}, referees: {} },
     news: { "news-x": "../escape.webp" },
+    backdrops: { match: { "match-backdrop-grass-a": "backdrops/match/match-backdrop-grass-a.webp", odd: "x/odd.webp" } },
   }));
 });
-afterEach(() => { delete process.env.ART_FACES; });
+afterEach(() => { delete process.env.ART_FACES; delete process.env.ART_VISUAL; });
 afterAll(() => { setArtDirForTests(null); rmSync(dir, { recursive: true, force: true }); });
 
 describe("art assets", () => {
@@ -44,13 +45,19 @@ describe("art assets", () => {
     setArtDirForTests(join(dir, "nothing"));
     process.env.ART_FACES = "1";
     expect((await get("faces/players/p1.webp")).status).toBe(404);
-    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [] });
+    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: [] });
   });
 
   test("the face list only with ART_FACES=1, and only ids on the client's path convention", async () => {
     setArtDirForTests(dir);
-    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [] });
+    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"] });
     process.env.ART_FACES = "1";
-    expect(await faces().json()).toEqual({ players: ["p1", "p2"], coaches: [], referees: [] });
+    expect(await faces().json()).toEqual({ players: ["p1", "p2"], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"] });
+  });
+
+  test("the painted backdrops are announced unless ART_VISUAL=0 (no image rights involved)", async () => {
+    setArtDirForTests(dir);
+    process.env.ART_VISUAL = "0";
+    expect((await faces().json()).backdrops).toEqual([]);
   });
 });

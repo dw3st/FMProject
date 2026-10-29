@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { coachCombo, setPaintedFaces } from "@/Domain/art/paintedFaces";
+import { coachCombo, paintedBackdrop, setPaintedBackdrops, setPaintedFaces } from "@/Domain/art/paintedFaces";
 import { faceUrl, managerAvatarUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 
-afterEach(() => setPaintedFaces(null));
+afterEach(() => { setPaintedFaces(null); setPaintedBackdrops(null); });
 
 describe("painted faces", () => {
   test("a player with a painted face gets the webp; one without keeps the SVG", () => {
@@ -24,5 +24,11 @@ describe("painted faces", () => {
     // A trait left to the draw: no painted combination, the SVG avatar.
     expect(coachCombo({ seed: 1, skin: 1, hairColor: "black", hairLength: "bald", beard: "full" })).toBeNull();
     expect(managerAvatarUrl({ seed: 1, skin: 2 })).toStartWith("/api/faces/manager/avatar.svg?");
+  });
+
+  test("a backdrop is served only when announced", () => {
+    expect(paintedBackdrop("match-backdrop-grass-a")).toBeNull();
+    setPaintedBackdrops(["match-backdrop-grass-a"]);
+    expect(paintedBackdrop("match-backdrop-grass-a")).toBe("/assets/art/v1/backdrops/match/match-backdrop-grass-a.webp");
   });
 });

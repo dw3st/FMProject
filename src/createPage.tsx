@@ -7,6 +7,7 @@ import { AuthGate } from "@/GameInterface/AuthGate";
 import { ScreenSizeGate } from "@/GameInterface/ScreenSizeGate";
 import { initAnalytics } from "@/analytics";
 import { loadPaintedFaces } from "@/Domain/art/paintedFaces";
+import { readNewVisual } from "@/GameInterface/artPrefs";
 
 export interface CreatePageOptions {
   /** Skip the auth gate + GameSaveProvider. Used for landing & login. */
@@ -15,6 +16,8 @@ export interface CreatePageOptions {
   noAuth?: boolean;
   /** Page works at any screen size; skip the minimum-size gate. Used for landing, login and start. */
   responsive?: boolean;
+  /** A public page that still draws the new art (the /test pitch): asks the server for it before rendering. */
+  art?: boolean;
 }
 
 export function createPage(Component: React.ComponentType, options: CreatePageOptions = {}) {
@@ -44,7 +47,7 @@ export function createPage(Component: React.ComponentType, options: CreatePageOp
   }
 
   // The painted faces (new art) are known before the first render, so a face never swaps from the SVG to the webp.
-  const ready = options.public ? Promise.resolve() : loadPaintedFaces();
+  const ready = options.public && !options.art ? Promise.resolve() : loadPaintedFaces(1500, readNewVisual());
   const go = () => void ready.then(start);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", go);

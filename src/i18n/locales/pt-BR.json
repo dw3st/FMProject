@@ -588,7 +588,11 @@
     "language": "Idioma",
     "languageDescription": "Escolha o idioma usado em todo o jogo.",
     "mainMenu": "Menu Principal",
-    "mainMenuDescription": "Volte ao menu para carregar outro jogo salvo."
+    "mainMenuDescription": "Volte ao menu para carregar outro jogo salvo.",
+    "newVisual": "Visual novo",
+    "newVisualOn": "Ligado",
+    "newVisualOff": "Desligado",
+    "newVisualDescription": "Gramado pintado na partida. Vale a partir da próxima tela aberta."
   },
   "reports": {
     "title": "Enviar um relatório",
@@ -4704,7 +4708,8 @@
       "saved": "Salvo.",
       "stadium": "Estádio",
       "stadiumNote": "Aparecem na torcida da casa nos seus jogos em casa.",
-      "saveStadium": "Salvar estádio"
+      "saveStadium": "Salvar estádio",
+      "stadiumPreview": "Prévia dos enfeites na torcida da casa"
     },
     "frames": {
       "none": "Sem moldura",

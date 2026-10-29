@@ -135,3 +135,23 @@ export function withFramePositions<S extends Pick<GameState, "players">>(state: 
   });
   return changed ? { ...state, players } : state;
 }
+
+/** A remote ball this close (yards) to the holder's drawn spot is still at his feet. */
+export const REMOTE_HOLD_YDS = 2;
+
+/**
+ * Who holds the ball in this frame's drawing. Locally the state is current, so it is its holder. In remote mode the
+ * state comes once a second while the positions come every step: its holder only counts while the drawn ball is
+ * still at his feet (tester report: a pass drawn as if the old holder kept the ball until the next state).
+ */
+export function heldBallId(
+  state: Pick<GameState, "pass" | "shot" | "looseBall" | "ballHolderId">,
+  players: Map<number, Pos>,
+  ball: Pos,
+  remote: boolean,
+): number | null {
+  if (state.pass || state.shot || state.looseBall) return null;
+  if (!remote) return state.ballHolderId;
+  const p = players.get(state.ballHolderId);
+  return p && Math.hypot(p.x - ball.x, p.y - ball.y) <= REMOTE_HOLD_YDS ? state.ballHolderId : null;
+}

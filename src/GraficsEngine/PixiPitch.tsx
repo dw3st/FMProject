@@ -2,7 +2,7 @@ import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Application, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { Application, Assets, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
@@ -14,7 +14,9 @@ import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/wea
 import { stadiumShadeGrid } from "@/GraficsEngine/stadiumShadow";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
-import { pitchSurface, type PitchSurface } from "@/GraficsEngine/pitchSurface";
+import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
+import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
+import { paintedBackdrop } from "@/Domain/art/paintedFaces";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -31,7 +33,7 @@ import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
-import { remoteDrawnBall, remotePositions, withFramePositions, type RemoteFeed } from "@/GraficsEngine/remoteInterp";
+import { heldBallId, remoteDrawnBall, remotePositions, withFramePositions, type RemoteFeed } from "@/GraficsEngine/remoteInterp";
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
@@ -161,14 +163,16 @@ function cssColorToPixiHex(css: string): number {
 const DEFAULT_TEAM_A = 0x2d6cdf;
 const DEFAULT_TEAM_B = 0xdf3b2d;
 
-/** The pitch surface (`pitchSurface.ts`); the run-off around the pitch takes the same base colour. */
-function drawSurface(g: Graphics, rings: Graphics, m: PitchMetrics, s: PitchSurface, mirror: boolean) {
+/** The grass area around the pitch (inside the stand, or the whole canvas). */
+function runOffRect(m: PitchMetrics) {
+  return m.stand?.inner ?? { x: 0, y: 0, w: 2 * m.marginX + m.width, h: 2 * m.marginY + m.height };
+}
+
+/** Surface shapes (mowing, wear) in canvas px; rings go to their own masked layer. */
+function drawShapes(g: Graphics, rings: Graphics, m: PitchMetrics, shapes: SurfaceShape[], mirror: boolean) {
   const px = (x: number) => m.marginX + mirrorX(x, mirror) * m.scale;
   const py = (y: number) => m.marginY + mirrorY(y, mirror) * m.scale;
-  // A worn pitch has no bright green frame: the run-off (inside the stand, or the whole canvas) gets the base too.
-  const runOff = m.stand?.inner ?? { x: 0, y: 0, w: 2 * m.marginX + m.width, h: 2 * m.marginY + m.height };
-  g.rect(runOff.x, runOff.y, runOff.w, runOff.h).fill(s.base);
-  for (const sh of s.shapes) {
+  for (const sh of shapes) {
     if (sh.kind === "rect") {
       const x1 = px(sh.x), x2 = px(sh.x + sh.w), y1 = py(sh.y), y2 = py(sh.y + sh.h);
       g.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)).fill({ color: sh.color, alpha: sh.alpha });
@@ -180,6 +184,14 @@ function drawSurface(g: Graphics, rings: Graphics, m: PitchMetrics, s: PitchSurf
       rings.circle(px(sh.cx), py(sh.cy), sh.r * m.scale).stroke({ width: sh.width * m.scale, color: sh.color, alpha: sh.alpha });
     }
   }
+}
+
+/** The pitch surface (`pitchSurface.ts`); the run-off around the pitch takes the same base colour. */
+function drawSurface(g: Graphics, rings: Graphics, m: PitchMetrics, s: PitchSurface, mirror: boolean) {
+  // A worn pitch has no bright green frame: the run-off (inside the stand, or the whole canvas) gets the base too.
+  const runOff = runOffRect(m);
+  g.rect(runOff.x, runOff.y, runOff.w, runOff.h).fill(s.base);
+  drawShapes(g, rings, m, s.shapes, mirror);
 }
 
 /** A straight line drawn as dashes (failing paint on a rotten pitch). */
@@ -425,7 +437,7 @@ interface Props {
    * The match pitch (spec 2026-10-16-pitch-types): condition, grass, mowing and the seed of the patches.
    * Absent: crisp stripes, as before. Changes redraw the surface (never per frame).
    */
-  pitch?: { condition: number; turf: TurfType; mowing: MowingPattern; seed: string } | null;
+  pitch?: { condition: number; turf: TurfType; mowing: MowingPattern; seed: string; ground?: string } | null;
   /**
    * Light of the match (spec 2026-10-16-match-lighting): kickoff and sunset, weather, where the sun sets over the
    * stadium, the seed of the particles. Light layer redrawn when the match clock moves a minute; player shadows
@@ -836,7 +848,19 @@ export function PixiPitch({
       const ringsGraphics = new Graphics();
       const ringsMask = new Graphics().rect(m.marginX, m.marginY, m.width, m.height).fill(0xffffff);
       ringsGraphics.mask = ringsMask;
-      app.stage.addChild(surfaceGraphics, ringsGraphics, ringsMask);
+      // Painted turf (art phase 1, `paintedTurf.ts`): the grass of the painted backdrop over the base, cropped to the
+      // grass area; the game's own wear goes over it (`wearGraphics`). Loaded on demand; until then, the drawn turf.
+      const turfSprite = new Sprite();
+      turfSprite.visible = false;
+      turfSprite.eventMode = 'none';
+      const turfRect = runOffRect(m);
+      const turfMask = new Graphics().rect(turfRect.x, turfRect.y, turfRect.w, turfRect.h).fill(0xffffff);
+      turfSprite.mask = turfMask;
+      const wearGraphics = new Graphics();
+      let turfTexture: { url: string; texture: Texture } | null = null;
+      let turfLoading: string | null = null;
+      let turfDisposed = false;
+      app.stage.addChild(surfaceGraphics, turfSprite, turfMask, ringsGraphics, ringsMask, wearGraphics);
 
       // Grass grain and a soft centre light over the mowing (4.39): one tiling noise texture and one radial
       // gradient, baked once, under the lines.
@@ -878,13 +902,48 @@ export function PixiPitch({
       // Pitch lines (alpha / dashes follow the surface): a soft chalk glow under a crisp line.
       const pitchGraphics = new Graphics();
       const drawSurfaceNow = () => {
-        const s = pitchSurface(pitchRef.current ?? { condition: 100, turf: "natural", mowing: "stripes", seed: "" });
+        const input = pitchRef.current ?? { condition: 100, turf: "natural", mowing: "stripes", seed: "" };
         surfaceGraphics.clear();
         ringsGraphics.clear();
-        drawSurface(surfaceGraphics, ringsGraphics, m, s, mirrorRef.current);
+        wearGraphics.clear();
+        const turfUrl = paintedBackdrop(paintedTurfId(input));
+        let lines: { lineAlpha: number; dashedLines: boolean };
+        if (turfUrl && turfTexture?.url === turfUrl) {
+          // Painted: base under the crop's edges, the painted grass, then the wash of the band and the game's wear.
+          const o = paintedOverlay(input);
+          const r = runOffRect(m);
+          surfaceGraphics.rect(r.x, r.y, r.w, r.h).fill(o.washColor);
+          const pl = paintedPlacement({ x: m.marginX, y: m.marginY, w: m.width, h: m.height }, mirrorRef.current);
+          turfSprite.texture = turfTexture.texture;
+          turfSprite.pivot.set(pl.pivotX, pl.pivotY);
+          turfSprite.position.set(pl.x, pl.y);
+          turfSprite.scale.set(pl.scaleX, pl.scaleY);
+          turfSprite.rotation = pl.rotation;
+          turfSprite.visible = true;
+          grain.visible = false;
+          if (o.washAlpha > 0) wearGraphics.rect(r.x, r.y, r.w, r.h).fill({ color: o.washColor, alpha: o.washAlpha });
+          drawShapes(wearGraphics, ringsGraphics, m, o.shapes, mirrorRef.current);
+          lines = o;
+        } else {
+          const s = pitchSurface(input);
+          turfSprite.visible = false;
+          grain.visible = true;
+          drawSurface(surfaceGraphics, ringsGraphics, m, s, mirrorRef.current);
+          lines = s;
+          if (turfUrl && turfLoading !== turfUrl) {
+            turfLoading = turfUrl;
+            void Assets.load<Texture>(turfUrl).then((tex) => {
+              if (turfDisposed || !tex) return;
+              const F = PAINTED_TURF.FRAME;
+              turfTexture?.texture.destroy(false);
+              turfTexture = { url: turfUrl, texture: new Texture({ source: tex.source, frame: new Rectangle(F.x, F.y, F.w, F.h) }) };
+              redrawSurfaceRef.current?.();
+            }).catch(() => { /* the drawn turf stays */ });
+          }
+        }
         pitchGraphics.clear();
-        drawPitch(pitchGraphics, m, { alpha: s.lineAlpha * MATCH_LOOK.LINE_GLOW_ALPHA, dashed: s.dashedLines, width: MATCH_LOOK.LINE_GLOW_W, goals: false });
-        drawPitch(pitchGraphics, m, { alpha: s.lineAlpha, dashed: s.dashedLines });
+        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha * MATCH_LOOK.LINE_GLOW_ALPHA, dashed: lines.dashedLines, width: MATCH_LOOK.LINE_GLOW_W, goals: false });
+        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha, dashed: lines.dashedLines });
       };
       drawSurfaceNow();
       redrawSurfaceRef.current = drawSurfaceNow;
@@ -2252,6 +2311,7 @@ export function PixiPitch({
         }
         lastDrawnPos = drawnPos;
         lastDrawnBall = drawnB;
+        const heldId = heldBallId(stateRef.current, drawnPos, drawnB, Boolean(remote));
         drawPlayLines(drawnB, drawnPos);
 
         // Reconcile player sprites after substitutions — new player ids get fresh
@@ -2289,7 +2349,7 @@ export function PixiPitch({
         }
         // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
         const st0 = stateRef.current;
-        const glowId = st0.pass || st0.shot || st0.looseBall ? null : st0.ballHolderId;
+        const glowId = heldId;
         // Short player animations: an offset on top of the interpolated marker (engine untouched).
         anims = liveAnims(anims, effectNow);
         const animOf = new Map(anims.map((a) => [a.playerId, a] as const));
@@ -2374,7 +2434,7 @@ export function PixiPitch({
           if (numText && numText.text !== String(player.slotIndex + 1)) numText.text = String(player.slotIndex + 1);
           if (label) {
             // Names only of the ball holder and of who the pass goes to (all of them in debug).
-            const named = debugModeRef.current || player.id === st0.ballHolderId || player.id === st0.pass?.toId;
+            const named = debugModeRef.current || player.id === heldId || player.id === st0.pass?.toId;
             label.visible = named;
             const pillG = playerPills.get(player.id);
             if (pillG) pillG.g.visible = named;
@@ -2836,7 +2896,7 @@ export function PixiPitch({
         // toward where he runs, or toward the goal he attacks when he stands still.
         {
           const stB = stateRef.current;
-          const holder = stB.pass || stB.shot || stB.looseBall ? null : stB.players.find((p) => p.id === stB.ballHolderId);
+          const holder = heldId === null ? null : stB.players.find((p) => p.id === heldId);
           const hg = holder ? playerGraphics.get(holder.id) : undefined;
           if (holder && hg) {
             const v = markerVel.get(holder.id);
@@ -3218,6 +3278,8 @@ export function PixiPitch({
         crestTexture?.destroy(true);
         grainTexture.destroy(true);
         centreTexture.destroy(true);
+        turfDisposed = true;
+        turfTexture?.texture.destroy(false);
         // The stadium shadow's canvas texture (`drawShade`): one per match, freed with it.
         shadeTexture?.destroy(true);
         shadeTexture = null;

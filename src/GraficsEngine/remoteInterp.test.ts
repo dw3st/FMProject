@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  EMPTY_REMOTE_FRAMES, pushRemoteFrame, remoteAlpha, remoteBallHeight, remotePositions, toRemoteFrame, withFramePositions,
+  EMPTY_REMOTE_FRAMES, heldBallId, pushRemoteFrame, remoteAlpha, remoteBallHeight, remotePositions, toRemoteFrame, withFramePositions,
 } from "@/GraficsEngine/remoteInterp";
 import type { GameState } from "@/GameEngine/types";
 
@@ -75,5 +75,20 @@ describe("withFramePositions", () => {
     expect(moved.players[0]).toMatchObject({ id: 1, x: 3, y: 4 });
     expect(moved.players[1]).toBe(state.players[1]);
     expect(withFramePositions(state, frame(0, [0, 0], [[1, 1, 1], [2, 5, 5]]))).toBe(state);
+  });
+});
+
+describe("heldBallId", () => {
+  const players = new Map([[1, { x: 50, y: 30 }], [2, { x: 70, y: 40 }]]);
+  const st = { pass: null, shot: null, looseBall: null, ballHolderId: 1 } as never;
+  test("locally the state's holder", () => {
+    expect(heldBallId(st, players, { x: 90, y: 10 }, false)).toBe(1);
+  });
+  test("remote: only while the drawn ball is at his feet (the state is up to a second old)", () => {
+    expect(heldBallId(st, players, { x: 50.5, y: 30.5 }, true)).toBe(1);
+    expect(heldBallId(st, players, { x: 60, y: 35 }, true)).toBeNull();
+  });
+  test("a ball in flight is nobody's", () => {
+    expect(heldBallId({ ...(st as object), pass: {} } as never, players, { x: 50, y: 30 }, false)).toBeNull();
   });
 });

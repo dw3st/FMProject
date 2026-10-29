@@ -1506,7 +1506,7 @@ export function MatchScreen() {
       teamAColor: matchKitColors.teamA, teamBColor: matchKitColors.teamB, ...secondKitColors,
       ...(faceUrls ? { faceUrls } : {}),
       stadium: stadium ? (stadiumData as unknown as Record<string, unknown>) : null,
-      pitch: touchline?.pitch && matchFixture ? ({ ...touchline.pitch, seed: matchFixture.id } as unknown as Record<string, unknown>) : null,
+      pitch: touchline?.pitch && matchFixture ? ({ ...touchline.pitch, seed: matchFixture.id, ground: matchFixture.home } as unknown as Record<string, unknown>) : null,
       lighting: matchLightingProp as unknown as Record<string, unknown> | null,
       officials,
       coaches,
@@ -1912,7 +1912,7 @@ export function MatchScreen() {
                   coachCard={coachCard}
                   extras
                   staminaTeams={[mySide]}
-                  pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id } : null}
+                  pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id, ground: matchFixture.home } : null}
                   lighting={matchLightingProp}
                 />
                 {banner && <MatchEventBanner item={banner} />}

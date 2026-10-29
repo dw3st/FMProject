@@ -588,7 +588,11 @@
     "language": "Language",
     "languageDescription": "Choose the language used across the game.",
     "mainMenu": "Main Menu",
-    "mainMenuDescription": "Return to the menu to load a different save."
+    "mainMenuDescription": "Return to the menu to load a different save.",
+    "newVisual": "New visual",
+    "newVisualOn": "On",
+    "newVisualOff": "Off",
+    "newVisualDescription": "Painted turf in the match. Applies from the next screen you open."
   },
   "reports": {
     "title": "Send a report",
@@ -4704,7 +4708,8 @@
       "saved": "Saved.",
       "stadium": "Stadium",
       "stadiumNote": "Drawn in your home end in home games.",
-      "saveStadium": "Save stadium"
+      "saveStadium": "Save stadium",
+      "stadiumPreview": "Preview of the decorations in the home end"
     },
     "frames": {
       "none": "No frame",

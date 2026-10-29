@@ -14,6 +14,23 @@ export interface PaintedFaceIds {
   referees: string[];
 }
 
+/** What the server announces: the painted faces and the painted match backdrops. */
+export interface ArtManifest extends PaintedFaceIds {
+  backdrops: string[];
+}
+
+let backdrops = new Set<string>();
+
+/** Painted match backdrops on (empty = the drawn turf). */
+export function setPaintedBackdrops(ids: string[] | null): void {
+  backdrops = new Set(ids ?? []);
+}
+
+/** Painted match backdrop by id (`match-backdrop-grass-a`…), or null. */
+export function paintedBackdrop(id: string): string | null {
+  return backdrops.has(id) ? artUrl(`backdrops/match/${encodeURIComponent(id)}.webp`) : null;
+}
+
 let painted: { players: Set<string>; coaches: Set<string>; referees: Set<string> } = {
   players: new Set(), coaches: new Set(), referees: new Set(),
 };
@@ -54,17 +71,19 @@ export function paintedCoachFace(face: ManagerFace): string | null {
 }
 
 /**
- * Asks the server which painted faces exist (empty while the art is switched off) before the page renders, at most
- * `timeoutMs`: a slow answer just leaves the SVG faces.
+ * Asks the server which painted faces and backdrops exist (empty while the art is switched off) before the page
+ * renders, at most `timeoutMs`: a slow answer just leaves the SVG faces and the drawn turf. `newVisual` false (the
+ * player's own switch, Settings) keeps the drawn turf.
  */
-export async function loadPaintedFaces(timeoutMs = 1500): Promise<void> {
+export async function loadPaintedFaces(timeoutMs = 1500, newVisual = true): Promise<void> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     const res = await fetch("/api/art/faces", { signal: ctrl.signal });
     clearTimeout(timer);
     if (!res.ok) return;
-    const body = (await res.json()) as Partial<PaintedFaceIds>;
+    const body = (await res.json()) as Partial<ArtManifest>;
+    setPaintedBackdrops(newVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
     setPaintedFaces({
       players: Array.isArray(body.players) ? body.players : [],
       coaches: Array.isArray(body.coaches) ? body.coaches : [],

@@ -14,4 +14,4 @@ function TestPage() {
 }
 
 // Lab tool — no auth required. TestScreen doesn't read game saves.
-createPage(TestPage, { public: true });
+createPage(TestPage, { public: true, art: true });
