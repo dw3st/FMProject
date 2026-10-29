@@ -16,6 +16,8 @@ const LOGOUT_CLOSE_CODE = 4001;
 export function useLiveRivals(target: { saveId: string; seatId: string } | null) {
   const [live, setLive] = useState<Record<string, LiveScoreView>>({});
   const [highlight, setHighlight] = useState<Record<string, true>>({});
+  /** Someone watches this match (`watch_on`): the match screen relays it while true. */
+  const [watched, setWatched] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const pending = useRef<ClientEvent[]>([]);
   const saveId = target?.saveId ?? null;
@@ -45,6 +47,10 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
       };
       ws.onmessage = (m) => {
         const ev = parseServerEvent(m.data);
+        if (ev && (ev.type === "watch_on" || ev.type === "watch_off") && ev.saveId === saveId) {
+          setWatched(ev.type === "watch_on");
+          return;
+        }
         if (!ev || ev.type !== "friend_live" || ev.saveId !== saveId || ev.seatId === seatId) return;
         setLive((prev) => {
           const next = { ...prev };
@@ -63,6 +69,8 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
       };
       ws.onclose = (e) => {
         if (wsRef.current === ws) wsRef.current = null;
+        // The server tells again on the next hello if someone still watches.
+        setWatched(false);
         if (stopped || e.code === LOGOUT_CLOSE_CODE || retries >= MAX_RETRIES) return;
         retries++;
         timer = setTimeout(connect, RETRY_MS);
@@ -88,6 +96,12 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
     else pending.current.push(event);
   }, [saveId]);
 
+  /** A relay of this match to its spectators; dropped while the socket is down (the next state catches up). */
+  const relay = useCallback((event: Extract<ClientEvent, { type: `relay_${string}` }>) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
+  }, []);
+
   const list = Object.values(live).sort((a, b) => a.nickname.localeCompare(b.nickname));
-  return { live: list, highlight, send };
+  return { live: list, highlight, send, watched, relay };
 }

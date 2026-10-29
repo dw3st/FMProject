@@ -147,6 +147,10 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
       return str(e.saveId) && str(e.fixtureId) && H2H_CLOSE_REASONS.has(e.reason as string)
         ? { type: "h2h_closed", saveId: e.saveId, fixtureId: e.fixtureId, reason: e.reason as H2HCloseReason }
         : null;
+    // Someone watches the user's live match (relay it) / nobody any more.
+    case "watch_on":
+    case "watch_off":
+      return str(e.saveId) ? { type: e.type, saveId: e.saveId } : null;
     default:
       return null;
   }

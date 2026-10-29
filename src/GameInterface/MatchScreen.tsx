@@ -9,17 +9,19 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { applyPenaltyOutcome, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
 import { otherSide } from "@/GameInterface/H2H/h2hState";
 import type { H2HCommand } from "@/types/h2hTypes";
 import { applyLiveSideConfigs, buildLiveMatchState, eligibleLivePlayers } from "@/Domain/match/liveMatchSetup";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
-import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
+import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
+import { WATCH, WATCH_EVENTS } from "@/Domain/watch/watchConfig";
+import { wireState } from "@/Domain/match/wireState";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
 import { initRatings, getAllRatings, exportRatings, importRatings } from "@/GameEngine/Domain/PlayerRating";
-import { getTeamStats, getAllPlayerStats, initStats, exportStatsState, importStatsState } from "@/GameEngine/Domain/Statistics";
+import { getTeamStats, getAllPlayerStats, initStats, exportStatsState, importStatsState, getGoalLog } from "@/GameEngine/Domain/Statistics";
 import {
   MATCH_SNAPSHOT_VERSION,
   SNAPSHOT_INTERVAL_MS,
@@ -775,8 +777,23 @@ export function MatchScreen() {
     const now = () => gameStateRef.current;
     // The clock for the friends: a `minute` frame every LIVE_MINUTE_STEP minutes of play (checked each second).
     let lastMinute = 0;
+    // Substitutions go to the friends from the match record (the engine event has no names): -1 = not read yet (a
+    // resumed match does not send the old ones again).
+    let subsSent = -1;
     const clock = setInterval(() => {
       const s = now();
+      const fixtureId = liveFixtureRef.current;
+      if (s && fixtureId && s.matchPhase !== "preMatch") {
+        if (subsSent < 0) subsSent = s.substitutions.length;
+        for (const sub of s.substitutions.slice(subsSent)) {
+          sendLiveRef.current({
+            fixtureId, phase: "sub", minute: Math.max(0, Math.min(130, sub.matchMinute)),
+            score: { for: s.score.A, against: s.score.B }, scorer: sub.playerOutName, playerIn: sub.playerInName,
+            side: sub.team === "A" ? "for" : "against",
+          });
+        }
+        subsSent = s.substitutions.length;
+      }
       if (!s || !isLivePhase(s.matchPhase)) return;
       const m = matchMinute(s);
       if (m - lastMinute < RIVALS.LIVE_MINUTE_STEP) return;
@@ -784,15 +801,15 @@ export function MatchScreen() {
       send("minute", m, s.score);
     }, 1000);
     const offs = [
-      gameBus.on("matchStart", () => { lastMinute = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
+      gameBus.on("matchStart", () => { lastMinute = 0; subsSent = 0; send("start", 0, now()?.score ?? { A: 0, B: 0 }); }),
       gameBus.on("goalScored", (e) => send("goal", e.minute, e.score, now()?.players.find((p) => p.id === e.scorerId)?.name)),
       gameBus.on("goalDisallowed", (e) => send("disallowed", e.minute, e.score)),
       gameBus.on("card", (e) => {
         const s = now();
         const fixtureId = liveFixtureRef.current;
-        if (e.card !== "red" || !s || !fixtureId) return;
+        if (!s || !fixtureId) return;
         sendLiveRef.current({
-          fixtureId, phase: "red", minute: Math.max(0, Math.min(130, e.minute)),
+          fixtureId, phase: e.card, minute: Math.max(0, Math.min(130, e.minute)),
           score: { for: s.score.A, against: s.score.B }, scorer: e.playerName, side: e.team === "A" ? "for" : "against",
         });
       }),
@@ -804,6 +821,64 @@ export function MatchScreen() {
     ];
     return () => { clearInterval(clock); offs.forEach((off) => off()); };
   }, []);
+
+  // Watching (spec 2026-10-29-friend-match-broadcast-design): while a friend of the league watches this match
+  // (`watch_on`), the pitch's positions, the state and the engine events go to him through the server. A match between
+  // two managers runs in the server, which relays it itself.
+  const relayLive = liveRivals.relay;
+  useEffect(() => {
+    const saveId = liveTarget?.saveId;
+    if (!liveRivals.watched || h2hModeRef.current || !saveId) return;
+    let benchSig = "";
+    let soon: ReturnType<typeof setTimeout> | null = null;
+    const at = () => {
+      const fixtureId = liveFixtureRef.current;
+      const s = gameStateRef.current;
+      return fixtureId && s ? { fixtureId, s } : null;
+    };
+    const sendFrame = () => {
+      const cur = at();
+      if (!cur) return;
+      const ball = getBallPos(cur.s);
+      relayLive({
+        type: "relay_frame", saveId, fixtureId: cur.fixtureId, t: performance.now(), ball: [ball.x, ball.y],
+        players: cur.s.players.map((p) => [p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100] as [number, number, number]),
+        minute: matchMinute(cur.s), phase: cur.s.matchPhase, score: { ...cur.s.score },
+      });
+    };
+    const sendState = () => {
+      soon = null;
+      const cur = at();
+      if (!cur) return;
+      const sig = `${cur.s.benchA.map((p) => p.id).join(",")}|${cur.s.benchB.map((p) => p.id).join(",")}`;
+      const benches = sig !== benchSig;
+      benchSig = sig;
+      relayLive({
+        type: "relay_state", saveId, fixtureId: cur.fixtureId, state: wireState(cur.s, benches),
+        stats: { teams: { A: getTeamStats("A"), B: getTeamStats("B") }, goals: getGoalLog(), ratings: exportRatings() },
+      });
+    };
+    sendState();
+    // Frames and states follow the simulation's steps (they keep coming with the tab hidden, where timers slow down).
+    let lastFrameAt = 0;
+    let lastStateAt = performance.now();
+    const offStep = gameBus.on("stateChanged", () => {
+      const now = performance.now();
+      if (now - lastFrameAt >= WATCH.FRAME_MS) { lastFrameAt = now; sendFrame(); }
+      if (now - lastStateAt >= WATCH.STATE_MS) { lastStateAt = now; sendState(); }
+    });
+    const offs = [...WATCH_EVENTS].map((name) => gameBus.on(name as keyof GameEvents, (payload: unknown) => {
+      const cur = at();
+      if (!cur) return;
+      relayLive({ type: "relay_event", saveId, fixtureId: cur.fixtureId, name, payload });
+      if (!soon) soon = setTimeout(sendState, 100);
+    }));
+    return () => {
+      offStep();
+      if (soon) clearTimeout(soon);
+      offs.forEach((off) => off());
+    };
+  }, [liveRivals.watched, relayLive, liveTarget]);
 
   const showBanner = useCallback((item: Omit<MatchBannerItem, "key">) => {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);

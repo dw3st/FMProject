@@ -13,6 +13,7 @@ import type { NewsItem } from "@/types/newsTypes";
 import { NewsRow } from "@/GameInterface/News/NewsList";
 import { RivalForm } from "@/GameInterface/World/RivalForm";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
+import { WatchButton } from "@/GameInterface/Watch/WatchButton";
 import type { RivalRow } from "@/types/rivalsTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
@@ -1030,6 +1031,7 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                     <span className="text-sm text-muted-foreground tabular-nums">
                       {r.live.status === "live" ? t("rivals.liveMinute", { minute: r.live.minute }) : t(`rivals.${r.live.status}Status`)}
                     </span>
+                    <WatchButton live={r.live} />
                   </div>
                   <LiveMoments live={r.live} />
                 </div>

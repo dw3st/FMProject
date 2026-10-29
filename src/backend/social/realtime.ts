@@ -1,5 +1,7 @@
 // Friends and chat in real time (`.claude/rules/social.md`). In memory, per process: the open sockets of each
 // user, and the last status sent to friends. Sending a message is HTTP; the socket only delivers.
+import { relayFromPlayer, watchJoin, watchLeave, watchResendOn, watchSocketClosed } from "@/backend/watch/watchRooms";
+import { WATCH, WATCH_EVENTS } from "@/Domain/watch/watchConfig";
 import { parsePenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { ServerWebSocket } from "bun";
 import { readSessionCookie } from "@/backend/auth/cookie";
@@ -51,6 +53,11 @@ interface SocketLimits {
   /** `h2h_cmd` (per `H2H.CMD_WINDOW_MS`) and the other `h2h_*` events (per minute). */
   h2hCmd: number[];
   h2h: number[];
+  /** Watching (spectator joins/leaves per minute) and the friend's relays (per second). */
+  watch: number[];
+  relayFrame: number[];
+  relayState: number[];
+  relayEvent: number[];
   typing: Map<string, number>;
 }
 
@@ -60,7 +67,7 @@ const limits = new WeakMap<SocialSocket, SocketLimits>();
 function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolean {
   let l = limits.get(ws);
   if (!l) {
-    l = { hello: [], ping: [], live: [], h2hCmd: [], h2h: [], typing: new Map() };
+    l = { hello: [], ping: [], live: [], h2hCmd: [], h2h: [], watch: [], relayFrame: [], relayState: [], relayEvent: [], typing: new Map() };
     limits.set(ws, l);
   }
   if (event.type === "typing") {
@@ -73,10 +80,16 @@ function withinLimits(ws: SocialSocket, event: ClientEvent, now: number): boolea
   const key = event.type === "live_score" ? "live"
     : event.type === "h2h_cmd" ? "h2hCmd"
       : event.type.startsWith("h2h_") ? "h2h"
-        : event.type as "hello" | "ping";
+        : event.type === "watch_join" || event.type === "watch_leave" ? "watch"
+          : event.type === "relay_frame" ? "relayFrame"
+            : event.type === "relay_state" ? "relayState"
+              : event.type === "relay_event" ? "relayEvent"
+                : event.type as "hello" | "ping";
   const max = key === "hello" ? HELLO_PER_MINUTE : key === "live" ? RIVALS.LIVE_PER_MINUTE
-    : key === "h2hCmd" ? H2H.CMD_MAX : key === "h2h" ? H2H_CONTROL_PER_MINUTE : PING_PER_MINUTE;
-  const window = key === "h2hCmd" ? H2H.CMD_WINDOW_MS : MINUTE_MS;
+    : key === "h2hCmd" ? H2H.CMD_MAX : key === "h2h" || key === "watch" ? H2H_CONTROL_PER_MINUTE
+      : key === "relayFrame" ? WATCH.FRAMES_PER_SEC : key === "relayState" ? WATCH.STATES_PER_SEC
+        : key === "relayEvent" ? WATCH.EVENTS_PER_SEC : PING_PER_MINUTE;
+  const window = key === "h2hCmd" ? H2H.CMD_WINDOW_MS : key.startsWith("relay") ? 1_000 : MINUTE_MS;
   const recent = l[key].filter((t) => now - t < window);
   if (recent.length >= max) {
     l[key] = recent;
@@ -212,7 +225,10 @@ export function deliverMessage(row: ChatMessageRow): void {
 }
 
 function parseClientEvent(raw: unknown): ClientEvent | null {
-  if (typeof raw !== "string" || raw.length > H2H.MAX_FRAME_BYTES) return null;
+  if (typeof raw !== "string") return null;
+  // A relayed match state (players and benches) is the one large client frame.
+  const cap = raw.startsWith('{"type":"relay_state"') ? WATCH.STATE_MAX_BYTES : H2H.MAX_FRAME_BYTES;
+  if (raw.length > cap) return null;
   let v: unknown;
   try {
     v = JSON.parse(raw);
@@ -222,6 +238,7 @@ function parseClientEvent(raw: unknown): ClientEvent | null {
   if (!v || typeof v !== "object") return null;
   const e = v as Record<string, unknown>;
   if (typeof e.type === "string" && e.type.startsWith("h2h_")) return parseH2HEvent(e);
+  if (typeof e.type === "string" && (e.type.startsWith("watch_") || e.type.startsWith("relay_"))) return parseWatchEvent(e);
   // Social events stay small.
   if (raw.length > MAX_CLIENT_FRAME) return null;
   if (e.type === "ping") return { type: "ping" };
@@ -274,6 +291,47 @@ function parseH2HEvent(e: Record<string, unknown>): ClientEvent | null {
   }
 }
 
+const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const isPair = (v: unknown): v is [number, number] => Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1]);
+
+/** Watching a friend's live match: strict shapes for the small events; the relayed state is only shape-checked. */
+function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
+  const only = (...keys: string[]) => Object.keys(e).every((k) => k === "type" || keys.includes(k));
+  if (e.type === "watch_leave") return only() ? { type: "watch_leave" } : null;
+  if (e.type === "watch_join") {
+    if (!only("saveId", "seatId") || typeof e.saveId !== "string" || !SAVE_ID_RE.test(e.saveId)) return null;
+    if (typeof e.seatId !== "string" || !SAVE_ID_RE.test(e.seatId)) return null;
+    return { type: "watch_join", saveId: e.saveId, seatId: e.seatId };
+  }
+  if (typeof e.saveId !== "string" || !SAVE_ID_RE.test(e.saveId)) return null;
+  if (typeof e.fixtureId !== "string" || e.fixtureId.length === 0 || e.fixtureId.length > FIXTURE_ID_MAX) return null;
+  const at = { saveId: e.saveId, fixtureId: e.fixtureId };
+  if (e.type === "relay_frame") {
+    const score = e.score as Record<string, unknown> | undefined;
+    const players = e.players;
+    if (!isNum(e.t) || !isPair(e.ball) || !isNum(e.minute) || typeof e.phase !== "string") return null;
+    if (!score || !isNum(score.A) || !isNum(score.B)) return null;
+    if (!Array.isArray(players) || players.length > 30) return null;
+    if (!players.every((p) => Array.isArray(p) && p.length === 3 && p.every(isNum))) return null;
+    return {
+      type: "relay_frame", ...at, t: e.t, ball: e.ball, minute: e.minute, phase: e.phase as never,
+      score: { A: score.A, B: score.B }, players: players as [number, number, number][],
+    };
+  }
+  if (e.type === "relay_state") {
+    const state = e.state as Record<string, unknown> | undefined;
+    const stats = e.stats as Record<string, unknown> | undefined;
+    if (!state || typeof state !== "object" || !Array.isArray(state.players)) return null;
+    if (!stats || typeof stats !== "object" || !stats.teams || !Array.isArray(stats.goals) || !Array.isArray(stats.ratings)) return null;
+    return { type: "relay_state", ...at, state: state as never, stats: { teams: stats.teams as never, goals: stats.goals as never, ratings: stats.ratings as never } };
+  }
+  if (e.type === "relay_event") {
+    if (typeof e.name !== "string" || !WATCH_EVENTS.has(e.name)) return null;
+    return { type: "relay_event", ...at, name: e.name, payload: e.payload ?? null };
+  }
+  return null;
+}
+
 function relayTyping(userId: string, rawRoom: string): void {
   const me = getSocialUser(userId);
   if (!me?.nickname) return;
@@ -298,6 +356,19 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
     await handleH2HEvent(ws, event);
     return;
   }
+  if (event.type === "watch_join") {
+    await watchJoin(ws, event.saveId, event.seatId);
+    return;
+  }
+  if (event.type === "watch_leave") {
+    watchLeave(ws);
+    return;
+  }
+  if (event.type === "relay_frame" || event.type === "relay_state" || event.type === "relay_event") {
+    const { type, saveId, fixtureId, ...rest } = event;
+    relayFromPlayer(ws, saveId, fixtureId, { kind: type === "relay_frame" ? "frame" : type === "relay_state" ? "state" : "event", ...rest } as never);
+    return;
+  }
   if (event.type === "live_score") {
     // Rivals (part 6): a friend's live score. Never a pong, never presence; a refused frame is silent.
     const { type: _type, ...frame } = event;
@@ -312,6 +383,8 @@ export async function handleClientEvent(ws: SocialSocket, raw: unknown): Promise
       ws.data.clubName = await clubNameOf(event.saveId, userId);
       // A live match room between two managers (part 7) waiting for him: the invite comes back on this tab.
       resendH2HInvites(userId, event.saveId);
+      // Someone watches his live match: this tab relays it again.
+      watchResendOn(userId, event.saveId);
     }
   }
   const now = Date.now();
@@ -335,6 +408,7 @@ export function onSocketOpen(ws: SocialSocket): void {
 export function onSocketClose(ws: SocialSocket): void {
   const { userId, clubName } = ws.data;
   h2hSocketClosed(ws);
+  watchSocketClosed(ws);
   const set = sockets.get(userId);
   if (set) {
     set.delete(ws);
@@ -388,7 +462,8 @@ export function handleSocialUpgrade(
 /** `websocket` of `Bun.serve` (`src/index.ts`). */
 export const socialWebSocket = {
   data: {} as WsData,
-  maxPayloadLength: H2H.MAX_FRAME_BYTES,
+  // A relayed match state is the largest client frame; `parseClientEvent` keeps every other one small.
+  maxPayloadLength: WATCH.STATE_MAX_BYTES,
   idleTimeout: 120,
   sendPings: true,
   open(ws: ServerWebSocket<WsData>) {

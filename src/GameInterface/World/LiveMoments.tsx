@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { Icon } from "@/GameInterface/Icons";
 import { homeAwayOf } from "@/Domain/rivals/homeAway";
 import type { LiveMoment, LiveScoreView } from "@/types/rivalsTypes";
 
@@ -20,6 +21,9 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
     if (m.kind === "end") return t("rivals.moments.end");
     const team = teamOf(m.side);
     const text = t(`rivals.moments.${m.kind}`, { team });
+    if (m.kind === "sub") {
+      return m.player || m.playerIn ? `${text} · ${t("rivals.moments.subLine", { out: m.player ?? "?", in: m.playerIn ?? "?" })}` : text;
+    }
     return m.player ? `${text} · ${m.player}` : text;
   };
   return (
@@ -44,7 +48,8 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
           {moments.map((m, i) => (
             <li key={`${m.minute}-${m.kind}-${i}`} className="flex items-start gap-2 text-sm">
               <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground">{m.minute}'</span>
-              <span className={`w-2 h-2 mt-1.5 shrink-0 rounded-full ${m.kind === "goal" ? "bg-primary" : m.kind === "red" ? "bg-destructive" : "bg-border"}`} aria-hidden="true" />
+              <MomentMark kind={m.kind} />
+              <ClubLogo logoUrl={squadLogoUrl(m.side === "against" ? live.opponentId : live.clubId)} className={`w-5 h-5 shrink-0 ${m.side ? "" : "invisible"}`} imgClassName="w-full h-full object-contain" />
               <span className="min-w-0 break-words">{line(m)}</span>
             </li>
           ))}
@@ -52,4 +57,14 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
       )}
     </div>
   );
+}
+
+/** Goal ball, yellow / red card, substitution arrows; a dot for the rest. */
+function MomentMark({ kind }: { kind: LiveMoment["kind"] }) {
+  if (kind === "yellow" || kind === "red") {
+    return <span className={`w-2.5 h-3.5 mt-0.5 shrink-0 rounded-[2px] ${kind === "red" ? "bg-destructive" : "bg-chart-4"}`} aria-hidden="true" />;
+  }
+  if (kind === "goal") return <span className="shrink-0 mt-0.5 text-primary" aria-hidden="true"><Icon name="ball" size={16} /></span>;
+  if (kind === "sub") return <span className="shrink-0 mt-0.5 text-muted-foreground" aria-hidden="true"><Icon name="arrow-right-left" size={16} /></span>;
+  return <span className={`w-2 h-2 mt-1.5 shrink-0 rounded-full ${kind === "disallowed" ? "bg-chart-4" : "bg-border"}`} aria-hidden="true" />;
 }

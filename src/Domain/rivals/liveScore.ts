@@ -2,7 +2,7 @@
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { LiveBase, LiveMoment, LivePhase, LiveScoreFrame, LiveScoreView, LiveStatus } from "@/types/rivalsTypes";
 
-const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "disallowed", "red", "half", "minute", "end"]);
+const PHASES: ReadonlySet<string> = new Set<LivePhase>(["start", "goal", "disallowed", "red", "yellow", "sub", "half", "minute", "end"]);
 const SAVE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const isInt = (v: unknown, min: number, max: number): v is number =>
@@ -26,10 +26,12 @@ export function parseLiveFrame(e: Record<string, unknown>): LiveScoreFrame | nul
   if (!isInt(s.for, 0, RIVALS.LIVE_MAX_GOALS) || !isInt(s.against, 0, RIVALS.LIVE_MAX_GOALS)) return null;
   const scorer = cleanScorer(e.scorer);
   const side = e.side === "for" || e.side === "against" ? e.side : null;
-  if (e.phase === "red" && !side) return null;
+  if ((e.phase === "red" || e.phase === "yellow" || e.phase === "sub") && !side) return null;
+  const playerIn = e.phase === "sub" ? cleanScorer(e.playerIn) : null;
   return {
     saveId: e.saveId, fixtureId: e.fixtureId, phase: e.phase as LivePhase, minute: e.minute,
     score: { for: s.for, against: s.against }, ...(scorer ? { scorer } : {}), ...(side ? { side } : {}),
+    ...(playerIn ? { playerIn } : {}),
   };
 }
 
@@ -46,10 +48,12 @@ export function applyLiveFrame(
   const tick = frame.phase === "minute";
   const disallowed = frame.phase === "disallowed";
   const red = frame.phase === "red";
+  // A booking or a substitution: one side, the score never moves.
+  const sided = red || frame.phase === "yellow" || frame.phase === "sub";
   // A minute frame for a game the server lost (a restart) rebuilds it from the frame's minute and score.
   if (tick && prev && frame.minute <= prev.minute) return null;
-  if ((disallowed || red) && !prev) return null;
-  if (red && !frame.side) return null;
+  if ((disallowed || sided) && !prev) return null;
+  if (sided && !frame.side) return null;
   if (prev) {
     if (prev.status === "ended") return null;
     if (!tick && prev.events >= RIVALS.LIVE_MAX_EVENTS) return null;
@@ -74,8 +78,10 @@ export function applyLiveFrame(
     ? { minute: frame.minute, kind: "goal", side: lastGoal!.side, player: lastGoal!.scorer }
     : disallowed
       ? { minute: frame.minute, kind: "disallowed", side: frame.score.for < before.for ? "for" : "against" }
-      : red
-        ? { minute: frame.minute, kind: "red", side: frame.side, player: named(frame.scorer) }
+      : red || frame.phase === "yellow"
+        ? { minute: frame.minute, kind: frame.phase as "red" | "yellow", side: frame.side, player: named(frame.scorer) }
+        : frame.phase === "sub"
+          ? { minute: frame.minute, kind: "sub", side: frame.side, player: named(frame.scorer), playerIn: named(frame.playerIn) }
         : frame.phase === "half" || frame.phase === "end"
           ? { minute: frame.minute, kind: frame.phase }
           : null;

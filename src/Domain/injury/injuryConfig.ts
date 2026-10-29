@@ -18,7 +18,7 @@ export const INJURY = {
    * per-minute component alone accounts for roughly half the target, the rest coming from
    * `CONTACT_BASE` (tackles/duels).
    */
-  BASE: 0.0000874,
+  BASE: 0.000109,
 
   /** Energy (0..100) → injury-rate multiplier: 1 at full energy (100), up to this at 0 energy. */
   ENERGY_MAX_MULT: 2,
@@ -49,7 +49,7 @@ export const INJURY = {
    * `scripts/injury-calibrate.ts` against the engine's real tackle/duel volume (see the module
    * doc comment above).
    */
-  CONTACT_BASE: 0.002307,
+  CONTACT_BASE: 0.00288,
 
   /**
    * quickSim-only multiplier on `CONTACT_BASE` (Task 3, `docs/superpowers/archive/2026-09-28-
@@ -64,16 +64,17 @@ export const INJURY = {
   QUICKSIM_CONTACT_SCALE: 1.6,
 
   /** Heavy training session → small flat chance of a light injury. Light/normal training: 0. */
-  HEAVY_TRAINING_CHANCE: 0.01,
+  HEAVY_TRAINING_CHANCE: 0.0125,
 
   /** Severity distribution (must sum to 1): 60% light, 30% medium, 10% severe. */
   SEVERITY_WEIGHTS: { light: 0.6, medium: 0.3, severe: 0.1 } as const,
 
-  /** Days out per severity — [min, max] inclusive, uniform. */
+  /** Days out per severity — [min, max] inclusive, uniform. Since 4.40.1 (tester report: injuries too rare) the average
+   * absence is ~20 days (was ~16), and BASE / CONTACT_BASE are ×1.25 (engine ~0.24 → ~0.30 injuries per match). */
   DURATION_DAYS: {
-    light: [3, 7],
-    medium: [7, 28],
-    severe: [30, 120],
+    light: [4, 10],
+    medium: [10, 35],
+    severe: [35, 150],
   } as const,
 
   /** Fitness a healed player returns with (spec: "volta com fôlego ~70"). */

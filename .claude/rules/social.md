@@ -131,3 +131,10 @@ reenviado a cada `hello` enquanto a sala espera, `resendH2HInvites`), `h2h_frame
 `h2h_paused`, `h2h_closed { reason }`, `h2h_done`. Os frames do cliente podem ter até 8 KB (`H2H.MAX_FRAME_BYTES`, o
 `maxPayloadLength` do socket; maiores são ignorados); por socket `h2h_cmd` 20 a cada 10 s e os outros `h2h_*` 30 por
 minuto. Entrada recusada é silenciosa. Ver `.claude/rules/game/multiplayer.md` → "Parte 7".
+
+## Assistir ao jogo de um amigo (multiplayer parte 8, 4.41)
+
+Cliente → servidor: `watch_join { saveId, seatId }`, `watch_leave`; de quem joga, só depois de `watch_on`:
+`relay_frame`, `relay_state`, `relay_event`. Servidor → cliente: `watch_on` / `watch_off` (a quem joga), `watch_info`,
+`watch_frame`, `watch_state`, `watch_event`, `watch_closed { reason }` (ao espectador). Ver
+`.claude/rules/game/multiplayer.md` → "Parte 8".

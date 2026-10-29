@@ -198,37 +198,39 @@ describe("rollSeverity", () => {
 });
 
 describe("injuryDurationDays / returnDate", () => {
-  test("light injury: 3-7 days", () => {
+  test("light injury: within DURATION_DAYS", () => {
     for (const r of [0, 0.25, 0.5, 0.75, 0.999999]) {
       const days = injuryDurationDays("light", () => r);
-      expect(days).toBeGreaterThanOrEqual(3);
-      expect(days).toBeLessThanOrEqual(7);
+      expect(days).toBeGreaterThanOrEqual(INJURY.DURATION_DAYS.light[0]);
+      expect(days).toBeLessThanOrEqual(INJURY.DURATION_DAYS.light[1]);
     }
   });
 
-  test("medium injury: 7-28 days", () => {
+  test("medium injury: within DURATION_DAYS", () => {
     for (const r of [0, 0.5, 0.999999]) {
       const days = injuryDurationDays("medium", () => r);
-      expect(days).toBeGreaterThanOrEqual(7);
-      expect(days).toBeLessThanOrEqual(28);
+      expect(days).toBeGreaterThanOrEqual(INJURY.DURATION_DAYS.medium[0]);
+      expect(days).toBeLessThanOrEqual(INJURY.DURATION_DAYS.medium[1]);
     }
   });
 
-  test("severe injury: 30-120 days", () => {
+  test("severe injury: within DURATION_DAYS", () => {
     for (const r of [0, 0.5, 0.999999]) {
       const days = injuryDurationDays("severe", () => r);
-      expect(days).toBeGreaterThanOrEqual(30);
-      expect(days).toBeLessThanOrEqual(120);
+      expect(days).toBeGreaterThanOrEqual(INJURY.DURATION_DAYS.severe[0]);
+      expect(days).toBeLessThanOrEqual(INJURY.DURATION_DAYS.severe[1]);
     }
   });
 
   test("returnDate adds the rolled duration in days to the given date", () => {
-    expect(returnDate("2027-03-01", "light", () => 0)).toBe("2027-03-04");
-    expect(returnDate("2027-03-01", "light", () => 0.999999)).toBe("2027-03-08");
+    const [lo, hi] = INJURY.DURATION_DAYS.light;
+    expect(returnDate("2027-03-01", "light", () => 0)).toBe(addDays("2027-03-01", lo));
+    expect(returnDate("2027-03-01", "light", () => 0.999999)).toBe(addDays("2027-03-01", hi));
   });
 
   test("returnDate crosses month/year boundaries correctly", () => {
-    expect(returnDate("2027-12-30", "light", () => 0)).toBe("2028-01-02");
+    expect(returnDate("2027-12-30", "light", () => 0)).toBe(addDays("2027-12-30", INJURY.DURATION_DAYS.light[0]));
+    expect(addDays("2027-12-30", 4)).toBe("2028-01-03");
   });
 });
 

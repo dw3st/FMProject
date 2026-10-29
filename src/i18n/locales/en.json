@@ -2342,7 +2342,7 @@
     "inboxSubject": "New club record: {{record}}",
     "inboxBody": "{{record}}: {{value}} ({{detail}}).",
     "legends": "Idols and legends",
-    "legendsAbout": "Idol: {{idolApps}} games, or {{idolWith}} with {{idolGoals}} goals, {{idolTitles}} titles or an award. Legend: {{legendApps}} games, or {{legendWith}} with {{legendGoals}} goals, {{legendTitles}} titles or {{legendAwards}} awards.",
+    "legendsAbout": "Idol: {{idolApps}} games, or {{idolWith}} with {{idolGoals}} goals, {{idolTitles}} titles or {{idolAwards}} awards. Legend: {{legendApps}} games, or {{legendWith}} with {{legendGoals}} goals, {{legendTitles}} titles or {{legendAwards}} awards.",
     "noLegends": "No idol yet.",
     "tier": {
       "legend": "Legend",
@@ -5695,7 +5695,10 @@
       "disallowed": "{{team}} goal ruled out by VAR",
       "red": "{{team}} player sent off",
       "half": "Half-time",
-      "end": "Full time"
+      "end": "Full time",
+      "yellow": "{{team}} booking",
+      "sub": "{{team}} substitution",
+      "subLine": "{{out}} off, {{in}} on"
     },
     "liveBadge": "live",
     "liveLine": "live · {{score}} · {{minute}}'",
@@ -5870,5 +5873,33 @@
     "refused": "You already have {{max}} of the world's top {{top}} players. Sell one of them before signing another.",
     "count": "World top {{top}}: {{count}}/{{max}}",
     "rule": "A club can sign until it has {{max}} of the world's top {{top}} players. A player of the club who climbs into the top stays; promoting an academy player is always allowed."
+  },
+  "watch": {
+    "button": "Watch",
+    "title": "Watching",
+    "live": "Live",
+    "readOnly": "Watching only: your friend is in charge.",
+    "leave": "Leave",
+    "connecting": "Connecting to the match...",
+    "waitingFirst": "Waiting for the broadcast...",
+    "half": "Half-time",
+    "end": "Full time",
+    "lineups": "On the pitch",
+    "closed": {
+      "ended": "The match is over.",
+      "gone": "The match is no longer live.",
+      "full": "This match has too many spectators already.",
+      "refused": "You cannot watch this match."
+    },
+    "stats": {
+      "title": "Numbers",
+      "shots": "Shots",
+      "passesCompleted": "Passes completed",
+      "fouls": "Fouls",
+      "corners": "Corners",
+      "offsides": "Offsides",
+      "yellowCards": "Yellow cards",
+      "redCards": "Red cards"
+    }
   }
 }

@@ -149,4 +149,18 @@ describe("live moments", () => {
     expect(s.moments.length).toBe(RIVALS.LIVE_MOMENTS_MAX);
     expect(s.moments.at(-1)!.minute).toBe(RIVALS.LIVE_MOMENTS_MAX + 3);
   });
+
+  test("yellow cards and substitutions: one side, a moment, the score never moves (4.40.1)", () => {
+    let s = applyLiveFrame(null, frame({}), BASE, SCORERS, 1)!;
+    s = applyLiveFrame(s, frame({ phase: "yellow", minute: 12, side: "for", scorer: "Silva" }), BASE, SCORERS, 2)!;
+    s = applyLiveFrame(s, frame({ phase: "sub", minute: 60, side: "against", scorer: "Silva", playerIn: "Nobody" }), BASE, SCORERS, 3)!;
+    expect(s.moments).toEqual([
+      { minute: 12, kind: "yellow", side: "for", player: "Silva" },
+      { minute: 60, kind: "sub", side: "against", player: "Silva", playerIn: null },
+    ]);
+    expect(applyLiveFrame(s, frame({ phase: "yellow", minute: 70, score: { for: 1, against: 0 }, side: "for" }), BASE, SCORERS, 4)).toBeNull();
+    expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "sub", minute: 5, score: { for: 0, against: 0 } })).toBeNull();
+    expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "sub", minute: 5, score: { for: 0, against: 0 }, side: "for", scorer: "A", playerIn: "B" }))
+      .toEqual({ saveId: "s1", fixtureId: "f1", phase: "sub", minute: 5, score: { for: 0, against: 0 }, side: "for", scorer: "A", playerIn: "B" });
+  });
 });

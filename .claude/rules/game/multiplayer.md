@@ -852,3 +852,51 @@ de quem bate (só chute) e de quem defende (só pulo); lado automático, descone
 a IA completa depois de `H2H.PENALTY_CHOICE_S` (20 s). Com as duas, `resolveKick` no servidor, `h2h_penalty_result`
 para os dois e, `H2H.PENALTY_APPLY_MS` (2,4 s) depois, o worker aplica (`{ type: "penalty", outcome }`). Teste:
 `h2hRooms.test.ts` ("2D penalties").
+
+## Parte 8: assistir ao jogo de um amigo
+
+Spec: `docs/superpowers/specs/2026-10-29-friend-match-broadcast-design.md`. Versão **4.41**. Vale em mundos em grupo
+(liga de amigos e mundo público): qualquer membro do mundo assiste a partida ao vivo de outro assento.
+
+### Regra
+
+- **Lances completos:** `live_score` ganhou `yellow` e `sub` (com `side`, `scorer` = quem sai, `playerIn`); viram
+  `LiveMoment` `yellow` / `sub`, não mudam o placar. `RIVALS.LIVE_MOMENTS_MAX` 12 → 20, `LIVE_MAX_EVENTS` 40 → 80. O
+  `MatchScreen` manda o amarelo pelo evento `card` e as trocas pelo registro `substitutions` (o evento não tem nomes); a
+  partida entre dois técnicos manda pelo `h2hRooms` (`liveFrame`). `LiveMoments` mostra ícone (bola, cartão, setas) e o
+  escudo do lado.
+- **Assistir:** botão **Assistir** (`Watch/WatchButton.tsx`) no cartão Rivais do Painel e no popup da faixa da partida
+  ao vivo (em nova aba: a partida de quem clica continua). Abre `/watch?save=…&seat=…` (`Watch/WatchScreen.tsx`, fora do
+  `Layout`): campo no modo remoto do `PixiPitch`, placar e relógio, lances (`LiveMoments`), números do jogo, quem está em
+  campo com fôlego. Só leitura.
+- **Partida solo:** roda no navegador de quem joga. O servidor (`src/backend/watch/watchRooms.ts`, em memória por
+  `saveId:seatId`) manda `watch_on` a ele quando entra o primeiro espectador e `watch_off` quando sai o último; enquanto
+  `watched`, o `MatchScreen` repassa a cada passo da simulação um `relay_frame` a cada `WATCH.FRAME_MS` (200 ms), um
+  `relay_state` (`wireState`, os bancos só quando mudam, e os números) a cada `STATE_MS` (1 s) e logo depois de um lance,
+  e os eventos de `WATCH_EVENTS` (`relay_event`). O servidor só aceita do usuário do assento assistido, para a partida
+  ao vivo dele de hoje, e repassa (`watch_frame`, `watch_state`, `watch_event`); guarda o último estado para quem
+  entra no meio. Um `hello` de quem joga com espectadores manda `watch_on` de novo (recarregar a página).
+- **Partida entre dois técnicos:** o servidor já roda; `h2hRooms` repassa frames, estados e eventos aos espectadores
+  dos dois assentos (`relayFromServer`). No espectador o lado A é o mandante.
+- **Recusas:** `watch_closed` com `refused` (não membro, o próprio assento), `gone` (sem jogo ao vivo, ou o jogo saiu:
+  dia rodado, jogo parado), `ended`, `full` (`WATCH.MAX_WATCHERS` 8).
+- **Socket:** `maxPayloadLength` 96 KB (`WATCH.STATE_MAX_BYTES`), só para `relay_state` (o `parseClientEvent` deixa os
+  outros em `H2H.MAX_FRAME_BYTES`). Limites por socket: `relay_frame` 12/s, `relay_state` 4/s, `relay_event` 30/s,
+  `watch_join`/`watch_leave` 30/min.
+- `wireState` / `wirePlayer` moraram para `src/Domain/match/wireState.ts` (servidor e navegador).
+
+### Testes
+
+```
+bun test src/Domain/watch src/backend/watch src/Domain/rivals src/backend/rivals src/backend/h2h src/GameInterface/World
+```
+
+Navegador (local, 2026-10-29): mundo de dois assentos, partida solo em 1× e 4×; o espectador recebeu campo, números,
+amarelos, trocas, gols, intervalo e fim; recarregar a aba de quem joga retomou a transmissão.
+
+### Limitações (parte 8)
+
+- A partida pausada por quem joga congela no espectador, sem aviso de pausa.
+- Um processo só (salas em memória). A partida entre dois técnicos vista por espectador foi testada só pelos testes do
+  servidor.
+- Quem assiste vê o ritmo de quem joga (2×, 4×), com os quadros a 5 por segundo.

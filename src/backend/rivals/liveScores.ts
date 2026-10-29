@@ -1,5 +1,6 @@
 // A friend's live score (multiplayer part 6): in memory, per world and seat. The browser of who plays sends it
 // (`live_score` on `/api/ws`); the other members get `friend_live`. Provisional: the official result is the day's.
+import { watchLiveGone } from "@/backend/watch/watchRooms";
 import { saveService } from "@/backend/SaveService";
 import { listSaveMembers, memberOf } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
@@ -20,6 +21,11 @@ const worlds = new Map<string, Map<string, Entry>>();
  * (`pushServerLiveScore`), so a browser's `live_score` frame for them is ignored.
  */
 const serverOwned = new Set<string>();
+
+/** True when the server runs this fixture (a live match between two managers). */
+export function isServerOwnedLive(saveId: string, fixtureId: string): boolean {
+  return serverOwned.has(`${saveId}:${fixtureId}`);
+}
 
 /** The server runs this fixture's live score from now on (`true`), or no longer (`false`). */
 export function setServerOwnedLive(saveId: string, fixtureId: string, owned: boolean): void {
@@ -72,6 +78,7 @@ function tellOthers(
   saveId: string, seatId: string, live: LiveScoreView | null, notify: LiveNotify, except?: string, goal?: boolean,
   skipSeats?: ReadonlySet<string>,
 ): void {
+  if (!live) watchLiveGone(saveId, seatId);
   for (const m of listSaveMembers(saveId)) {
     if (m.userId === except || m.seatId === seatId || skipSeats?.has(m.seatId)) continue;
     notify(m.userId, { type: "friend_live", saveId, seatId, live, ...(goal ? { goal: true as const } : {}) });

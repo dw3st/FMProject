@@ -417,7 +417,7 @@ describe("buildTrainingEvent — injuries", () => {
     }
   });
 
-  test("bad training pitches: a normal session can injure (≤ 0.5%), the physio lengthens the time out", () => {
+  test("bad training pitches: a normal session can injure (≤ 0.625%), the physio lengthens the time out", () => {
     const base: Squad = {
       id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
       players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ fitness: 90 }) })],
@@ -435,10 +435,10 @@ describe("buildTrainingEvent — injuries", () => {
       },
     });
     const normal = { minEnergyToTrain: 60, intensity: "normal" as const };
-    // Good pitches: no chance; pitches at 0%: HEAVY × 0.5 = 0.5% (rng 0.004 hits, 0.006 does not).
+    // Good pitches: no chance; pitches at 0%: HEAVY × 0.5 = 0.625% (rng 0.004 hits, 0.007 does not).
     expect(buildTrainingEvent("s", at({}), normal, "2027-03-10", () => 0.004).newInjuries).toEqual([]);
     expect(buildTrainingEvent("s", at({ trainingPitches: 0 }), normal, "2027-03-10", () => 0.004).newInjuries).toHaveLength(1);
-    expect(buildTrainingEvent("s", at({ trainingPitches: 0 }), normal, "2027-03-10", () => 0.006).newInjuries).toEqual([]);
+    expect(buildTrainingEvent("s", at({ trainingPitches: 0 }), normal, "2027-03-10", () => 0.007).newInjuries).toEqual([]);
     // Same draws, physio at 0%: the injury lasts longer (× 1.25).
     const heavy = { minEnergyToTrain: 60, intensity: "heavy" as const };
     const days = (s: Squad) => daysBetween("2027-03-10", buildTrainingEvent("s", s, heavy, "2027-03-10", () => 0.5 * 0.01).newInjuries[0]!.returnDate);

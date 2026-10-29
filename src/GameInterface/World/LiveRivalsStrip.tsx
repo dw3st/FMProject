@@ -4,6 +4,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { TauntActions } from "@/GameInterface/World/TauntActions";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
+import { WatchButton } from "@/GameInterface/Watch/WatchButton";
 import { liveGroups } from "@/Domain/rivals/taunts";
 import { homeAwayOf } from "@/Domain/rivals/homeAway";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
@@ -67,6 +68,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, excludeClubIds = [] }
               {open === l.seatId && (
                 <div className="absolute left-0 top-full mt-1 z-[60] w-[320px] rounded-md border border-border bg-card shadow-lg p-3 flex flex-col gap-3">
                   <LiveMoments live={l} />
+                  <div className="flex"><WatchButton live={l} saveId={saveId} newTab /></div>
                   <div className="border-t border-border pt-2">
                     <TauntActions saveId={saveId} target={{ live: l.seatId }} groups={liveGroups(l)} />
                   </div>

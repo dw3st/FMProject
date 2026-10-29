@@ -281,16 +281,16 @@ export function topPlayers(
  * titles / LEGEND_AWARDS awards. Idol: the same with the IDOL_ values.
  */
 export const CLUB_LEGENDS = {
-  LEGEND_APPS: 200,
-  LEGEND_APPS_WITH: 120,
-  LEGEND_GOALS: 60,
-  LEGEND_TITLES: 3,
-  LEGEND_AWARDS: 2,
-  IDOL_APPS: 100,
-  IDOL_APPS_WITH: 50,
-  IDOL_GOALS: 25,
-  IDOL_TITLES: 2,
-  IDOL_AWARDS: 1,
+  LEGEND_APPS: 300,
+  LEGEND_APPS_WITH: 200,
+  LEGEND_GOALS: 100,
+  LEGEND_TITLES: 6,
+  LEGEND_AWARDS: 3,
+  IDOL_APPS: 150,
+  IDOL_APPS_WITH: 100,
+  IDOL_GOALS: 40,
+  IDOL_TITLES: 4,
+  IDOL_AWARDS: 2,
 } as const;
 
 /** "legend", "idol" or null for a player's totals at a club. */

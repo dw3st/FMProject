@@ -109,10 +109,11 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
   `awards` (prêmios de temporada), somados em `applySeason` junto de jogos/gols/assistências (as linhas parciais de
   venda não trazem títulos).
 - **Regra (`legendTier`, constantes `CLUB_LEGENDS` em `clubHistory.ts`):**
-  - **Lenda:** 200 jogos no clube, ou 120 jogos com 60 gols, 3 títulos ou 2 prêmios.
-  - **Ídolo:** 100 jogos, ou 50 jogos com 25 gols, 2 títulos ou 1 prêmio.
-  Um titular regular faz ~40–50 jogos por temporada: ídolo em 2–3 temporadas (antes se ganhar títulos/prêmios),
-  lenda em 4–5. `clubLegends` ordena lendas primeiro, depois jogos, gols e nome.
+  - **Lenda:** 300 jogos no clube, ou 200 jogos com 100 gols, 6 títulos ou 3 prêmios.
+  - **Ídolo:** 150 jogos, ou 100 jogos com 40 gols, 4 títulos ou 2 prêmios.
+  Um titular regular faz ~40–50 jogos por temporada: ídolo em 3–4 temporadas (antes com títulos/prêmios), lenda em
+  5–7. Até a 4.40 era 200/120 (60 gols, 3 títulos, 2 prêmios) e 100/50 (25, 2, 1): num clube grande dois títulos numa
+  temporada já faziam um ídolo (report de tester). `clubLegends` ordena lendas primeiro, depois jogos, gols e nome.
 - **Fatos (`clubFacts`):** temporadas, títulos (sem acessos), acessos/rebaixamentos, gols na liga, melhor campanha
   (mais pontos), mais gols numa temporada, maior artilheiro e quem mais jogou.
 - **Rota:** `legends` (com `current`/`retired`; nem um nem outro = saiu do clube) e `facts` em `ClubHistoryResponse`.

@@ -39,7 +39,7 @@ export interface SeatResult {
  * `minute`: the clock moved on (every `RIVALS.LIVE_MINUTE_STEP` minutes of play), the score unchanged.
  * `disallowed`: the VAR took a goal back (the score drops by one on one side).
  */
-export type LivePhase = "start" | "goal" | "disallowed" | "red" | "half" | "minute" | "end";
+export type LivePhase = "start" | "goal" | "disallowed" | "red" | "yellow" | "sub" | "half" | "minute" | "end";
 export type LiveStatus = "live" | "half" | "ended" | "stale";
 
 /** `live_score` from the browser of who plays (score from his club's side). */
@@ -51,16 +51,20 @@ export interface LiveScoreFrame {
   score: { for: number; against: number };
   /** The scorer (`goal`) or the player sent off (`red`): only kept when he is in one of the two squads. */
   scorer?: string;
-  /** `red`: which side lost a player (his club's side = "for"). */
+  /** `red` / `yellow` / `sub`: which side (his club's side = "for"). */
   side?: "for" | "against";
+  /** `sub`: the player coming on (`scorer` is the one going off). */
+  playerIn?: string;
 }
 
 /** One line of a friend's live game ("últimos lances"): the server keeps the last `RIVALS.LIVE_MOMENTS_MAX`. */
 export interface LiveMoment {
   minute: number;
-  kind: "goal" | "disallowed" | "red" | "half" | "end";
+  kind: "goal" | "disallowed" | "red" | "yellow" | "sub" | "half" | "end";
   side?: "for" | "against";
   player?: string | null;
+  /** `sub`: the player coming on. */
+  playerIn?: string | null;
 }
 
 /** The fixed part of a live game (who, against whom, which fixture). */

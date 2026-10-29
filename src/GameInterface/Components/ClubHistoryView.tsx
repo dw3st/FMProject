@@ -245,7 +245,7 @@ function LegendsPanel({ legends, squadId, leagueSlug }: { legends: ClubLegend[];
     <Panel title={t("clubHistory.legends")}>
       <p className="m-0 mb-3 text-sm text-muted-foreground">
         {t("clubHistory.legendsAbout", {
-          idolApps: L.IDOL_APPS, idolWith: L.IDOL_APPS_WITH, idolGoals: L.IDOL_GOALS, idolTitles: L.IDOL_TITLES,
+          idolApps: L.IDOL_APPS, idolWith: L.IDOL_APPS_WITH, idolGoals: L.IDOL_GOALS, idolTitles: L.IDOL_TITLES, idolAwards: L.IDOL_AWARDS,
           legendApps: L.LEGEND_APPS, legendWith: L.LEGEND_APPS_WITH, legendGoals: L.LEGEND_GOALS,
           legendTitles: L.LEGEND_TITLES, legendAwards: L.LEGEND_AWARDS,
         })}

@@ -1063,6 +1063,41 @@ export function MatchPreviewScreen() {
   const homeHex = readableOnDark(kits.teamA);
   const awayHex = readableOnDark(kits.teamB);
 
+  // Simulate / play: at the top of the preview too, so starting never needs a scroll.
+  const playButtons = (
+    seatOpponent && liveVsSeat ? (
+      <>
+        <Button variant="secondary" onClick={() => void handleSendAssistant()} disabled={commencing}>
+          {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
+          {!commencing && <Icon name="chevron-right" size={16} />}
+        </Button>
+        <Button variant="primary" onClick={() => { window.location.href = "/match-room"; }} disabled={commencing}>
+          {seatInvite ? t("h2h.invite.join") : t("h2h.preview.playLive")}
+          <Icon name="play" size={16} />
+        </Button>
+      </>
+    ) : seatOpponent ? (
+      <>
+        <Button variant="primary" onClick={() => void handleSendAssistant()} disabled={commencing}>
+          {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
+          {!commencing && <Icon name="play" size={16} />}
+        </Button>
+      </>
+    ) : (
+      <>
+        <Button variant="secondary" onClick={handleSendAssistant} disabled={commencing}>
+          {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
+          {!commencing && <Icon name="chevron-right" size={16} />}
+        </Button>
+  
+        <Button variant="primary" onClick={handleStartGame} disabled={commencing}>
+          {t("matchPreview.startGame")}
+          <Icon name="play" size={16} />
+        </Button>
+      </>
+    )
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -1080,6 +1115,7 @@ export function MatchPreviewScreen() {
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
           style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
         />
+        <div className="flex items-center gap-3 flex-wrap justify-center pt-3">{playButtons}</div>
         {isContinentalTie && fixture?.leg === 2 && fixture.aggregate && (
           <div className="pt-1 space-y-0.5">
             {/* fixture.home/away are this (2nd) leg's sides; the 1st leg had them swapped, and
@@ -1338,41 +1374,12 @@ export function MatchPreviewScreen() {
           {t("matchPreview.lastMinuteSubs")}
         </Button>
 
-        {seatOpponent && liveVsSeat ? (
-          <>
-            <p className="text-sm text-muted-foreground m-0 basis-full text-center">
-              {seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")}
-            </p>
-            <Button variant="secondary" onClick={() => void handleSendAssistant()} disabled={commencing}>
-              {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
-              {!commencing && <Icon name="chevron-right" size={16} />}
-            </Button>
-            <Button variant="primary" onClick={() => { window.location.href = "/match-room"; }} disabled={commencing}>
-              {seatInvite ? t("h2h.invite.join") : t("h2h.preview.playLive")}
-              <Icon name="play" size={16} />
-            </Button>
-          </>
-        ) : seatOpponent ? (
-          <>
-            <p className="text-sm text-muted-foreground m-0 basis-full text-center">{t("matchPreview.seatSimulateNote")}</p>
-            <Button variant="primary" onClick={() => void handleSendAssistant()} disabled={commencing}>
-              {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
-              {!commencing && <Icon name="play" size={16} />}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="secondary" onClick={handleSendAssistant} disabled={commencing}>
-              {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
-              {!commencing && <Icon name="chevron-right" size={16} />}
-            </Button>
-
-            <Button variant="primary" onClick={handleStartGame} disabled={commencing}>
-              {t("matchPreview.startGame")}
-              <Icon name="play" size={16} />
-            </Button>
-          </>
+        {seatOpponent && (
+          <p className="text-sm text-muted-foreground m-0 basis-full text-center">
+            {liveVsSeat ? (seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")) : t("matchPreview.seatSimulateNote")}
+          </p>
         )}
+        {playButtons}
       </div>
 
       {showLastMinuteSubs && matchSetup && (

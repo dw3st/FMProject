@@ -356,3 +356,10 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
 
 O quickSim de seleção rola lesões como o de clube; a duração usa o médico e a fisioterapia do clube do jogador, e a
 inbox do clube do jogador avisa. Ver `.claude/rules/game/national-teams.md`.
+
+## Lesões mais frequentes e mais longas (4.41)
+
+Report de tester (lesões raras demais). `BASE` 0,0000874 → 0,000109 e `CONTACT_BASE` 0,002307 → 0,00288 (× 1,25),
+`HEAVY_TRAINING_CHANCE` 0,01 → 0,0125, `DURATION_DAYS` leve 4–10, média 10–35, grave 35–150 (média ~20 dias, era ~16).
+Medido (`bun scripts/injury-calibrate.ts 150 --pitch ai --quicksim`, 2026-10-29): motor 0,330 lesões por jogo (era
+0,243; ruído ±0,03), quickSim 26 ligas 0,321 (era 0,257). `QUICKSIM_CONTACT_SCALE` não mudou.

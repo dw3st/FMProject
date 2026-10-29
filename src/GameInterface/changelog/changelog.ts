@@ -25,6 +25,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Assista ao jogo de um amigo da liga: o botão Assistir, nos Rivais, abre o campo, o placar, os números e quem está em campo durante a partida ao vivo. No mundo público vale para qualquer técnico do mundo.",
+        en: "Watch a friend's match: the Watch button in Rivals opens the pitch, the score, the numbers and who is on the pitch during the live match. In the public world it works for any manager of the world.",
+      },
+      {
+        pt: "Últimos lances dos amigos com amarelos e substituições dos dois times.",
+        en: "Friends' latest moments now show both teams' bookings and substitutions.",
+      },
+      {
+        pt: "Prévia da partida: Jogar e Simular também no topo da tela.",
+        en: "Match preview: Play and Simulate at the top of the screen too.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Ídolos e lendas do clube ficaram mais difíceis: lenda pede 300 jogos, ou 200 com 100 gols, 6 títulos ou 3 prêmios.",
+        en: "Club idols and legends are harder to reach: a legend needs 300 games, or 200 with 100 goals, 6 titles or 3 awards.",
+      },
+      {
+        pt: "Lesões um pouco mais frequentes e um pouco mais longas.",
+        en: "Injuries are a little more frequent and last a little longer.",
+      },
+    ],
+  },
+  {
     version: "4.40",
     date: "2026-10-29",
     items: [
@@ -2503,6 +2531,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Assistir ao jogo ao vivo de um amigo", en: "Watch a friend's live match" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

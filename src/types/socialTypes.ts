@@ -1,5 +1,6 @@
 // Shapes shared by the social routes, the socket and the screens. Nothing here carries an e-mail or a
 // user id: the client only ever sees nicknames (`.claude/rules/social.md`).
+import type { WatchCloseReason, WatchEventPayload, WatchFramePayload, WatchInfo, WatchStatePayload } from "@/types/watchTypes";
 import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
 import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
@@ -82,7 +83,14 @@ export type ClientEvent =
   | { type: "h2h_pause" }
   | { type: "h2h_resume" }
   | { type: "h2h_leave" }
-  | { type: "h2h_penalty"; choice: PenaltyChoice };
+  | { type: "h2h_penalty"; choice: PenaltyChoice }
+  // Watching a friend's live match: the spectator joins and leaves; the friend's browser relays its match (only after
+  // `watch_on`).
+  | { type: "watch_join"; saveId: string; seatId: string }
+  | { type: "watch_leave" }
+  | ({ type: "relay_frame"; saveId: string; fixtureId: string } & WatchFramePayload)
+  | ({ type: "relay_state"; saveId: string; fixtureId: string } & WatchStatePayload)
+  | ({ type: "relay_event"; saveId: string; fixtureId: string } & WatchEventPayload);
 
 export type ServerEvent =
   | { type: "message"; room: string; message: ChatMessageView }
@@ -125,7 +133,16 @@ export type ServerEvent =
   | { type: "h2h_paused"; saveId: string; fixtureId: string; by: H2HSide | null; until: number | null; left: Record<H2HSide, number> }
   | { type: "h2h_closed"; saveId: string; fixtureId: string; reason: H2HCloseReason }
   | { type: "h2h_done"; saveId: string; fixtureId: string }
-  | { type: "h2h_penalty_result"; saveId: string; fixtureId: string; outcome: KickOutcome };
+  | { type: "h2h_penalty_result"; saveId: string; fixtureId: string; outcome: KickOutcome }
+  // Watching a friend's live match. To who plays: someone watches (relay your match) / nobody any more.
+  | { type: "watch_on"; saveId: string }
+  | { type: "watch_off"; saveId: string }
+  // To the spectator.
+  | { type: "watch_info"; saveId: string; info: WatchInfo }
+  | ({ type: "watch_frame"; saveId: string; seatId: string } & WatchFramePayload)
+  | ({ type: "watch_state"; saveId: string; seatId: string } & WatchStatePayload)
+  | ({ type: "watch_event"; saveId: string; seatId: string } & WatchEventPayload)
+  | { type: "watch_closed"; saveId: string; seatId: string; reason: WatchCloseReason };
 
 export type SocialErrorCode =
   | "invalidNickname"

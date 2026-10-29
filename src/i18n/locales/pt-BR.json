@@ -2342,7 +2342,7 @@
     "inboxSubject": "Novo recorde do clube: {{record}}",
     "inboxBody": "{{record}}: {{value}} ({{detail}}).",
     "legends": "Ídolos e lendas",
-    "legendsAbout": "Ídolo: {{idolApps}} jogos, ou {{idolWith}} com {{idolGoals}} gols, {{idolTitles}} títulos ou um prêmio. Lenda: {{legendApps}} jogos, ou {{legendWith}} com {{legendGoals}} gols, {{legendTitles}} títulos ou {{legendAwards}} prêmios.",
+    "legendsAbout": "Ídolo: {{idolApps}} jogos, ou {{idolWith}} com {{idolGoals}} gols, {{idolTitles}} títulos ou {{idolAwards}} prêmios. Lenda: {{legendApps}} jogos, ou {{legendWith}} com {{legendGoals}} gols, {{legendTitles}} títulos ou {{legendAwards}} prêmios.",
     "noLegends": "Nenhum ídolo ainda.",
     "tier": {
       "legend": "Lenda",
@@ -5695,7 +5695,10 @@
       "disallowed": "Gol do {{team}} anulado pelo VAR",
       "red": "Expulsão no {{team}}",
       "half": "Intervalo",
-      "end": "Fim de jogo"
+      "end": "Fim de jogo",
+      "yellow": "Amarelo no {{team}}",
+      "sub": "Troca no {{team}}",
+      "subLine": "sai {{out}}, entra {{in}}"
     },
     "liveBadge": "ao vivo",
     "liveLine": "ao vivo · {{score}} · {{minute}}'",
@@ -5870,5 +5873,33 @@
     "refused": "Você já tem {{max}} jogadores do top {{top}} do mundo. Venda um deles antes de contratar outro.",
     "count": "Top {{top}} do mundo: {{count}}/{{max}}",
     "rule": "Cada clube pode contratar até ter {{max}} jogadores do top {{top}} do mundo. Quem já é do clube e entra no top fica; promover um jovem da base sempre vale."
+  },
+  "watch": {
+    "button": "Assistir",
+    "title": "Assistindo",
+    "live": "Ao vivo",
+    "readOnly": "Só assistindo: quem comanda é o seu amigo.",
+    "leave": "Sair",
+    "connecting": "Conectando à partida...",
+    "waitingFirst": "Esperando a transmissão...",
+    "half": "Intervalo",
+    "end": "Fim de jogo",
+    "lineups": "Em campo",
+    "closed": {
+      "ended": "A partida terminou.",
+      "gone": "A partida não está mais ao vivo.",
+      "full": "Esta partida já tem espectadores demais.",
+      "refused": "Não dá para assistir esta partida."
+    },
+    "stats": {
+      "title": "Números",
+      "shots": "Chutes",
+      "passesCompleted": "Passes certos",
+      "fouls": "Faltas",
+      "corners": "Escanteios",
+      "offsides": "Impedimentos",
+      "yellowCards": "Amarelos",
+      "redCards": "Vermelhos"
+    }
   }
 }

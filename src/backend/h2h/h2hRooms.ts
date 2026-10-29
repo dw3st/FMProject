@@ -9,6 +9,9 @@
  * message) run under the save lock. The callers that already hold it (the match-decision route, the deadline
  * assistant, the server resume) use the lock-free helpers at the bottom.
  */
+import { relayFromServer } from "@/backend/watch/watchRooms";
+import { wireState } from "@/Domain/match/wireState";
+import { WATCH_EVENTS } from "@/Domain/watch/watchConfig";
 import { saveService as defaultService, type SaveService, type SeatMeta } from "@/backend/SaveService";
 import { withSaveLock } from "@/backend/saveLock";
 import { memberBySeat, memberOf } from "@/backend/auth/saveOwnership";
@@ -36,14 +39,14 @@ import { importRatings } from "@/GameEngine/Domain/PlayerRating";
 import { isLivePhase, matchMinute } from "@/GameEngine/Domain/gameState";
 import { DEFAULT_MENTALITY, type TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
-import type { Formation, GamePlayer, GameState, PendingPenalty } from "@/GameEngine/types";
+import type { Formation, GameState, PendingPenalty } from "@/GameEngine/types";
 import { aiDive, aiKick, resolveKick, type GoalArea, type KickInput, type PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { Squad } from "@/types/playerTypes";
 import type { H2HLiveEntry } from "@/types/multiplayerTypes";
 import type { LiveBase, LivePhase } from "@/types/rivalsTypes";
 import type { ClientEvent, ServerEvent } from "@/types/socialTypes";
 import type {
-  H2HCloseReason, H2HCommand, H2HSide, H2HStatsPayload, H2HWirePlayer, H2HWireState, H2HWireStats, WorkerIn, WorkerOut,
+  H2HCloseReason, H2HCommand, H2HSide, H2HStatsPayload, H2HWireState, H2HWireStats, WorkerIn, WorkerOut,
 } from "@/types/h2hTypes";
 
 // ── Engine (a Bun Worker; tests run the match in-process) ────────────────────
@@ -112,7 +115,7 @@ interface Rec {
   benchSig: { A: string; B: string };
   lastSnapshotAt: number;
   /** Rivals: the friends' live score of both seats (part 6), sent by the server. */
-  live: { bases: Record<H2HSide, LiveBase>; scorers: Set<string>; lastMinute: number } | null;
+  live: { bases: Record<H2HSide, LiveBase>; scorers: Set<string>; lastMinute: number; minuteNow: number } | null;
   /** Engine id → name (scorers), from the latest state. */
   names: Map<number, string>;
   /** Each manager kicks and saves his penalties in 2D (chosen in the preview, sent with `h2h_ready`). */
@@ -212,39 +215,7 @@ function dropRoom(rec: Rec): void {
 
 // ── Wire state (what the browsers get) ───────────────────────────────────────
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
-const r3 = (n: number) => Math.round(n * 1000) / 1000;
-
-function roundStats<T extends object>(o: T): T {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(o)) out[k] = typeof v === "number" ? r3(v) : v;
-  return out as T;
-}
-
-/** A player without the engine-only fields, numbers rounded (a player goes from ~2.2 KB to ~0.9 KB). */
-export function wirePlayer(p: GamePlayer): H2HWirePlayer {
-  const { fit: _f, baseStats: _b, decisionMemory: _d, engine: _e, bounds: _bo, fatigueBaselineEnergy: _fb, ...rest } = p;
-  return {
-    ...rest,
-    ...(p.fit ? { fit: { aptitudes: p.fit.aptitudes } } : {}),
-    x: r2(p.x),
-    y: r2(p.y),
-    energy: r2(p.energy),
-    startEnergy: r2(p.startEnergy),
-    targetPosition: { x: r2(p.targetPosition.x), y: r2(p.targetPosition.y) },
-    runtimeStats: { withBall: roundStats(p.runtimeStats.withBall), withoutBall: roundStats(p.runtimeStats.withoutBall) },
-  };
-}
-
-/** The wire state; `benches` false leaves the benches out (unchanged since the last state). */
-export function wireState(state: GameState, benches: boolean): H2HWireState {
-  const { players, benchA, benchB, throughBallCellsCache: _c, ...rest } = state;
-  return {
-    ...rest,
-    players: players.map(wirePlayer),
-    ...(benches ? { benchA: benchA.map(wirePlayer), benchB: benchB.map(wirePlayer) } : {}),
-  };
-}
+export { wirePlayer, wireState } from "@/Domain/match/wireState";
 
 function wireStats(stats: H2HStatsPayload, snapshot: boolean): H2HWireStats {
   return { teams: stats.teams, goals: stats.goals, ratings: stats.ratings, ...(snapshot ? { snapshot: stats.snapshot } : {}) };
@@ -266,9 +237,15 @@ function onState(rec: Rec, state: GameState, stats: H2HStatsPayload, now = clock
   toSockets(rec, {
     type: "h2h_state", saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, state: out, stats: wireStats(stats, snapshot),
   });
+  relayFromServer(rec.room.saveId, seatsOf(rec), {
+    kind: "state", state: out, stats: { teams: stats.teams, goals: stats.goals, ratings: stats.ratings },
+  });
 }
 
-function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: number; B: number }, extra?: { scorer?: string; team?: H2HSide }) {
+/** The two seats of the match: their spectators get it too. */
+const seatsOf = (rec: Rec) => [rec.room.sides.A.seatId, rec.room.sides.B.seatId];
+
+function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: number; B: number }, extra?: { scorer?: string; playerIn?: string; team?: H2HSide }) {
   if (!rec.live) return;
   for (const side of SIDES) {
     const mine = side === "A" ? score.A : score.B;
@@ -277,13 +254,15 @@ function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: numbe
       saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, phase, minute: Math.max(0, Math.min(130, minute)),
       score: { for: mine, against: theirs },
       ...(extra?.scorer ? { scorer: extra.scorer } : {}),
-      ...(phase === "red" && extra?.team ? { side: extra.team === side ? ("for" as const) : ("against" as const) } : {}),
+      ...(extra?.playerIn ? { playerIn: extra.playerIn } : {}),
+      ...((phase === "red" || phase === "yellow" || phase === "sub") && extra?.team ? { side: extra.team === side ? ("for" as const) : ("against" as const) } : {}),
     }, notify, undefined, new Set([rec.room.sides.A.seatId, rec.room.sides.B.seatId]));
   }
 }
 
 function onEvent(rec: Rec, name: string, payload: unknown): void {
   toSockets(rec, { type: "h2h_event", saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, name, payload });
+  if (WATCH_EVENTS.has(name)) relayFromServer(rec.room.saveId, seatsOf(rec), { kind: "event", name, payload });
   const p = payload as Record<string, unknown>;
   const score = (p.score as { A: number; B: number } | undefined) ?? rec.lastState?.score ?? { A: 0, B: 0 };
   const minute = typeof p.minute === "number" ? p.minute : 0;
@@ -291,14 +270,20 @@ function onEvent(rec: Rec, name: string, payload: unknown): void {
   else if (name === "goalDisallowed") liveFrame(rec, "disallowed", minute, score);
   else if (name === "halfTime") liveFrame(rec, "half", 45, score);
   else if (name === "penaltyPending") startPenaltyRound(rec, payload as PendingPenalty);
-  else if (name === "card" && p.card === "red") {
-    liveFrame(rec, "red", minute, rec.lastState?.score ?? { A: 0, B: 0 }, { scorer: p.playerName as string, team: p.team as H2HSide });
+  else if (name === "playerSubstituted" && rec.live) {
+    liveFrame(rec, "sub", rec.live.minuteNow, score, {
+      scorer: rec.names.get(p.outId as number), playerIn: rec.names.get(p.inId as number), team: p.team as H2HSide,
+    });
+  } else if (name === "card" && (p.card === "red" || p.card === "yellow")) {
+    liveFrame(rec, p.card, minute, rec.lastState?.score ?? { A: 0, B: 0 }, { scorer: p.playerName as string, team: p.team as H2HSide });
   }
 }
 
 function onFrame(rec: Rec, m: Extract<WorkerOut, { type: "frame" }>): void {
   const { type: _t, ...frame } = m;
   toSockets(rec, { type: "h2h_frame", saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, ...frame });
+  relayFromServer(rec.room.saveId, seatsOf(rec), { kind: "frame", ...frame });
+  if (rec.live) rec.live.minuteNow = Math.max(rec.live.minuteNow, m.minute);
   // The friends' clock: a `minute` frame every LIVE_MINUTE_STEP minutes of play.
   if (rec.live && isLivePhase(m.phase) && m.minute - rec.live.lastMinute >= 5) {
     rec.live.lastMinute = m.minute;
@@ -707,6 +692,7 @@ async function startMatch(rec: Rec): Promise<void> {
     bases: { A: base("A"), B: base("B") },
     scorers: new Set([...homeSq.players, ...awaySq.players].map((p) => p.name)),
     lastMinute: 0,
+    minuteNow: 0,
   };
   setServerOwnedLive(saveId, fixtureId, true);
   liveFrame(rec, "start", 0, { A: 0, B: 0 });
