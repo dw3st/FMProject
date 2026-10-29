@@ -557,6 +557,7 @@ export async function groupAdvanceView(
         ? { fixtureId: today.id, humanOpponent: [today.home, today.away].some((c) => c !== mine?.seat.clubId && humans.has(c)) }
         : null,
       decision: mine?.seat.matchDecision ?? null,
+      ...(mine?.input.unemployed ? { unemployed: true } : {}),
     },
   };
 }

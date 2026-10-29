@@ -168,7 +168,7 @@ import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
 import { liveRivals } from "@/Domain/negotiation/rivals";
-import { contractDay, managerWeeklyWage, reanchorContract, severancePay } from "@/Domain/managers/managerContract";
+import { contractDay, managerWeeklyWage, reanchorContract, renewedContract, severancePay } from "@/Domain/managers/managerContract";
 import { managerReputation } from "@/Domain/jobs/jobs";
 import type { DayTransfer } from "@/types/dayLogTypes";
 import { cupAndContinentalFixtures, recordLeagueSeasonHistory, recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -2821,6 +2821,17 @@ export async function advanceOneDay(
       // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
       // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
       let contract = ds.job.contract;
+      // A renewal the board offered and he never answered is taken at the end (4.41: a manager with titles lost
+      // his club by not clicking). Refusing it on the card is how he leaves.
+      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate && ds.job.renewal) {
+        const offer = ds.job.renewal;
+        contract = renewedContract(contract, offer, currentDate);
+        ds.job.renewal = undefined;
+        ds.boardMessages.push({
+          date: currentDate, kind: "contract_renewed", board: Math.round(ds.board.board),
+          contract: { wage: contract.wage, seasons: offer.seasons, until: contract.until },
+        });
+      }
       if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate) {
         const leagueNow = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
         ds.job.ended = {

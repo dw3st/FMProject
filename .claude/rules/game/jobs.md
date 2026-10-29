@@ -167,6 +167,11 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
   `manager` (`ref.stage = "severance"`) antes do `club_change` "leave" (soma = saldo continua).
 - **Virada do país:** o `until` é reancorado no fim da temporada da liga nova (`reanchorContract`, mantém as
   temporadas restantes) — um rebaixamento para uma liga que acaba antes não trava a renovação nem o fim.
+- **Renovação não respondida (4.41.1):** uma oferta da diretoria pendente na virada (nem aceita nem recusada) é aceita
+  ali (`renewedContract`, mensagem `contract_renewed`); só recusar no cartão deixa o contrato acabar. Report: o técnico
+  do Real Madrid (2 Champions, diretoria 77) ficou sem clube por não clicar.
+- **Desempregado com reputação (4.41.1):** `unemployedBand(último, reputação)`: teto = max(último − 0,05, reputação/100),
+  alvo = max(último − 0,12, reputação/100 − 0,12).
 - **Sem "Pode ser demitido":** a diretoria sempre oferece (no mínimo 1 temporada com o salário atual).
 - **Proposta aceita depois de 85% da temporada da liga nova:** o contrato conta a partir da próxima temporada.
   `careerStart` é apagado na troca (a carência de mercado vale só na carreira nova).

@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.1",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Sem clube, o \"Pronto até\" ganha \"Até as próximas propostas\": o jogo anda sozinho até chegarem propostas.",
+        en: "Without a club, \"Ready until\" gets \"Until the next job offers\": the game moves on by itself until offers arrive.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Uma renovação de contrato oferecida pela diretoria e não respondida é aceita no fim do contrato, em vez de deixar o técnico sem clube.",
+        en: "A contract renewal the board offered and you never answered is taken when the contract ends, instead of leaving you without a club.",
+      },
+      {
+        pt: "Técnico sem clube com boa reputação recebe propostas de clubes à altura da reputação.",
+        en: "A manager without a club and a good reputation gets offers from clubs that match the reputation.",
+      },
+    ],
+  },
+  {
     version: "4.41",
     date: "2026-10-29",
     items: [

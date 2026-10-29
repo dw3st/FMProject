@@ -5644,7 +5644,8 @@
           "two_seats": "a game between two managers cannot be played live",
           "other": "the match could not be recorded"
         }
-      }
+      },
+      "readyNextOffers": "Until the next job offers"
     },
     "errors": {
       "notFound": "This invite is not valid any more.",

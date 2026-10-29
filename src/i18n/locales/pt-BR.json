@@ -5644,7 +5644,8 @@
           "two_seats": "um jogo entre dois técnicos não pode ser ao vivo",
           "other": "não foi possível registrar a partida"
         }
-      }
+      },
+      "readyNextOffers": "Até as próximas propostas"
     },
     "errors": {
       "notFound": "Este convite não vale mais.",

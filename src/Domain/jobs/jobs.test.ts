@@ -75,6 +75,10 @@ describe("prestige and band", () => {
     const u = unemployedBand(0.6);
     expect(u.hi).toBeCloseTo(0.55);
     expect(u.lo).toBe(0);
+    // A reputation above the last club lifts the band (a contract that ran out at a big club, 4.41).
+    expect(unemployedBand(0.6, 90)).toMatchObject({ hi: 0.9 });
+    expect(unemployedBand(0.6, 90).target).toBeCloseTo(0.78);
+    expect(unemployedBand(0.6, 30).hi).toBeCloseTo(0.55);
   });
 
   test("eligibility: band, excluded clubs, same-city rival", () => {

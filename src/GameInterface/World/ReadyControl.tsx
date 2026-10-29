@@ -253,7 +253,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
           className="z-[60] w-64 rounded-md border border-border bg-card p-2 shadow-sm flex flex-col gap-1"
         >
           <button ref={firstRef} type="button" className={MENU_ITEM} onClick={() => void choose("tomorrow")}>{t("world.advance.readyTomorrow")}</button>
-          <button type="button" className={MENU_ITEM} onClick={() => void choose("next_match")}>{t("world.advance.readyNextMatch")}</button>
+          <button type="button" className={MENU_ITEM} onClick={() => void choose("next_match")}>{t(view?.me.unemployed ? "world.advance.readyNextOffers" : "world.advance.readyNextMatch")}</button>
           <label htmlFor="ready-until-date" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground px-3 pt-2">
             {t("world.advance.readyDate")}
           </label>

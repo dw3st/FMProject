@@ -140,13 +140,16 @@ export function employedBand(currentPrestige: number, rep: number): PrestigeBand
   };
 }
 
-/** Unemployed: smaller clubs, up to just below the club he left. */
-export function unemployedBand(lastPrestige: number): PrestigeBand {
+/**
+ * Unemployed: smaller clubs, up to just below the club he left, or up to his reputation when it is higher (a
+ * manager with titles whose contract ran out is still wanted by big clubs, 4.41).
+ */
+export function unemployedBand(lastPrestige: number, rep = 0): PrestigeBand {
   const b = JOBS.band;
   return {
     lo: 0,
-    hi: lastPrestige - b.UNEMPLOYED_BELOW,
-    target: lastPrestige - b.UNEMPLOYED_TARGET_BELOW,
+    hi: Math.max(lastPrestige - b.UNEMPLOYED_BELOW, rep / 100),
+    target: Math.max(lastPrestige - b.UNEMPLOYED_TARGET_BELOW, rep / 100 - b.UNEMPLOYED_TARGET_BELOW),
     sigma: b.UNEMPLOYED_SIGMA,
   };
 }

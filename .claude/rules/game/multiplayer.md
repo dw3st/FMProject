@@ -252,6 +252,8 @@ em `world.phase === "running"`. O solo não muda.
 - **Alvo** (`computeGroupTarget`, `src/Domain/groupAdvance/groupAdvance.ts`): `min(readyUntil)` de todos os assentos, e um
   jogo oficial do assento (clube ou seleção) sem `matchDecision` para o mundo **no** dia do jogo. Sem clube: só a data.
   Decidir o jogo (`live`/`simulate`) conta como pronto até o dia seguinte.
+- **Sem clube (4.41.1):** "meu próximo jogo" vira "Até as próximas propostas" (`readyNextOffers`): o `readyUntil` é
+  `unemployed.nextOfferDate`; uma proposta antes disso para o assento (`seatStops`). `GET …/advance` → `me.unemployed`.
 - **Paradas do dia** (`seatStops`): demissão, proposta de emprego ou de seleção, fim da temporada do país do assento; o
   `readyUntil` dele volta a `null`. Técnico desempregado nunca para por jogo (o jogo da seleção dele é simulado).
 - **Prazo e assistente:** toda parada grava `world.advance.waitingSince`. Passadas `deadlineHours` (12/24/48; `null` =

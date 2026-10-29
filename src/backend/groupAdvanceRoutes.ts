@@ -87,9 +87,12 @@ export const groupAdvanceRoutes = {
     const res = await withSaveLock(saveId, async () => {
       const current = (await saveService.getMeta(saveId))!.currentDate!;
       // Only "next_match" reads the calendar; a read failure throws (never "no game": he would be skipped).
-      const next = body.until === "next_match"
-        ? await seatNextMatchDate(saveService, saveId, auth.seatId, addDays(current, 1))
-        : null;
+      // Without a club it means the day the next job offers come (an offer stops the world anyway, 4.41.1).
+      const seat = body.until === "next_match" ? await saveService.getSeat(saveId, auth.seatId) : null;
+      const unemployedOn = seat && (seat.unemployed || !seat.clubId) ? seat.unemployed?.nextOfferDate ?? null : null;
+      const next = body.until !== "next_match" ? null
+        : seat && (seat.unemployed || !seat.clubId) ? unemployedOn
+          : await seatNextMatchDate(saveService, saveId, auth.seatId, addDays(current, 1));
       const r = resolveReadyUntil("until" in body ? body.until : undefined, current, next);
       if (!r.ok) return Response.json({ error: r.error }, { status: 400 });
       await saveService.updateSeat(saveId, auth.seatId, { readyUntil: r.readyUntil });

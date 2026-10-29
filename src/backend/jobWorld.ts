@@ -210,7 +210,7 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   const fromId = req.humanSquadId ?? req.unemployed?.lastClubId ?? "";
   const from = world.candidates.find((c) => c.squadId === fromId);
   const fromPrestige = world.prestige.get(fromId) ?? 0.5;
-  const band: PrestigeBand = req.window === "unemployed" ? unemployedBand(fromPrestige) : employedBand(fromPrestige, rep);
+  const band: PrestigeBand = req.window === "unemployed" ? unemployedBand(fromPrestige, rep) : employedBand(fromPrestige, rep);
   const exclude = new Set([fromId, ...(req.excludeClubs ?? [])]);
   const eligible = eligibleCandidates(world.candidates, {
     band, exclude,

@@ -110,5 +110,7 @@ export interface GroupAdvanceView {
     /** The seat's game today, still to decide or decided. */
     matchToday: { fixtureId: string; humanOpponent: boolean } | null;
     decision: MatchDecision | null;
+    /** Without a club: "next match" means "until the next job offers" (4.41.1). */
+    unemployed?: boolean;
   };
 }
