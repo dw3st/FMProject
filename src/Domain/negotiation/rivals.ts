@@ -1,4 +1,5 @@
 import { addDays } from "@/Domain/dates";
+import { breaksStarLimit } from "@/Domain/squad/starLimit";
 import { playerValueModel } from "@/Domain/awards/awardValue";
 import { getMainRole } from "@/Domain/roles";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
@@ -45,6 +46,8 @@ export function rivalCandidates(args: {
   /** The buyer's transfer window is open. */
   windowOpen?: (squad: Squad) => boolean;
   exclude?: Set<string>;
+  /** The world's top players (`STAR_LIMIT`): a club at its limit is no rival for one. */
+  top?: ReadonlySet<string>;
 }): RivalCandidate[] {
   const { player } = args;
   const rating = playerOverallRating(player);
@@ -58,6 +61,7 @@ export function rivalCandidates(args: {
     if (!need) continue;
     const squad = args.squadOf(id);
     if (!squad || squad.players.length >= MAX_SQUAD) continue;
+    if (breaksStarLimit(squad, player.id, args.top)) continue;
     if (args.windowOpen && !args.windowOpen(squad)) continue;
     // A very ambitious player turns down a much smaller club (`personality.md`).
     if (refusesSmallerClub(player, tierStepsDown(seller, squad))) continue;

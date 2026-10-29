@@ -3,6 +3,7 @@
  * accept, refuse and withdraw. The pure rules live in `src/Domain/seatOffers/`, the world side in
  * `src/backend/seatOfferWorld.ts`.
  */
+import { starLimitResponse } from "@/backend/starLimitWorld";
 import { randomUUID } from "crypto";
 import { SaveService, saveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -94,6 +95,8 @@ async function createOffer(saveId: string, seatId: string, body: Record<string, 
 
   const buyerSquad = await saveService.getSquadById(saveId, meta.clubId);
   if (!buyerSquad) return json({ error: "noClub" }, 409);
+  const starLimit = await starLimitResponse(saveId, buyerSquad, playerId);
+  if (starLimit) return starLimit;
   const parties = {
     kind, playerId,
     seller: { seatId: sellerSeatId, clubId: sellerSquad.id, clubName: sellerSquad.name },
@@ -195,7 +198,7 @@ async function answerOffer(saveId: string, seatId: string, offerId: string, body
   const check = await checkOfferWorld(saveService, saveId, offer);
   if (!check.ok) {
     // A full squad or the seller's minimums only block the accept (as in the daily expiry): the offer stays.
-    if (check.error !== "squadFull" && check.error !== "squadDepth") await dropOffer(saveId, offers, offer, "closed", date);
+    if (check.error !== "squadFull" && check.error !== "squadDepth" && check.error !== "starLimit") await dropOffer(saveId, offers, offer, "closed", date);
     return json({ error: check.error }, check.status);
   }
   if (offer.kind === "transfer") {

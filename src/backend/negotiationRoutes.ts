@@ -1,4 +1,5 @@
 import { negotiationSummary } from "@/Domain/negotiation/summary";
+import { starLimitResponse } from "@/backend/starLimitWorld";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -222,6 +223,8 @@ export const negotiationRoutes = {
       const blockedUntil = rebuyBlockedUntil(player, borrower.id, date);
       if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       if ((await humanRosterSize(saveService, saveId, auth.seatId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
+      const starLimit = await starLimitResponse(saveId, borrower, playerId);
+      if (starLimit) return starLimit;
       if (fee > (borrower.finances?.budget ?? 0)) return json({ error: "Insufficient funds" }, 400);
 
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();

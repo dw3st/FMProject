@@ -1,9 +1,9 @@
 import { Player } from "@/Domain/Player";
+import { STAR_LIMIT } from "@/Domain/squad/starLimit";
 import type { Squad } from "@/types/playerTypes";
 
 export type StarKind = "gold" | "blue" | "green";
 
-const GOLD_STARS = 25;
 const GREEN_STARS = 30;
 const PRODIGY_MAX_AGE = 19;
 const FORM_MIN_RATING = 7.2;
@@ -22,7 +22,7 @@ export function computeStars(squads: Squad[]): Record<string, StarKind> {
     .sort((a, b) => b.overall - a.overall || (a.p.id < b.p.id ? -1 : a.p.id > b.p.id ? 1 : 0));
 
   const out: Record<string, StarKind> = {};
-  for (const { p } of all.slice(0, GOLD_STARS)) out[p.id] = "gold";
+  for (const { p } of all.slice(0, STAR_LIMIT.TOP)) out[p.id] = "gold";
   for (const { p } of all) {
     const log = p.seasonLog;
     if (log && log.avgRating >= FORM_MIN_RATING && log.appearances >= FORM_MIN_GAMES && !out[p.id]) out[p.id] = "blue";

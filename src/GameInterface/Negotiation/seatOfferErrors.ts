@@ -1,3 +1,4 @@
+import { STAR_LIMIT } from "@/Domain/squad/starLimit";
 import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 
 /** Error codes of the seat-offer routes with their own text (`seatOffers.errors.<code>`). */
@@ -14,6 +15,7 @@ type T = (key: string, opts?: Record<string, unknown>) => string;
 /** The player-facing text of a failed seat-offer call. */
 export function seatOfferErrorText(t: T, lang: string, r: { error: string; opensOn?: string; reason?: string }): string {
   if (r.error === "windowClosed") return windowClosedText(t, lang, r.opensOn);
+  if (r.error === "starLimit") return t("starLimit.refused", { max: STAR_LIMIT.MAX, top: STAR_LIMIT.TOP });
   if (CONTRACT_REFUSALS.includes(r.error)) return t(`contracts.refusal.${r.error}`);
   if (r.error === "contractRefused" && r.reason && CONTRACT_REFUSALS.includes(r.reason)) {
     return `${t("seatOffers.errors.contractRefused")} ${t(`contracts.refusal.${r.reason}`)}`;

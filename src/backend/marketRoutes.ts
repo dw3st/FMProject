@@ -1,4 +1,5 @@
 import { saveService } from "@/backend/SaveService";
+import { starLimitResponse } from "@/backend/starLimitWorld";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
@@ -96,6 +97,8 @@ export const marketRoutes = {
       // The human club's limit; only this club's pending pre-contracts count.
       const mine = signed.filter((p) => p.toClubId === human.id).length;
       if ((await humanRosterSize(saveService, saveId, auth.seatId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);
+      const starLimit = await starLimitResponse(saveId, human, playerId);
+      if (starLimit) return starLimit;
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
       const answer = answerPreContract({
         offer: { wage, years }, player, human, current, date,

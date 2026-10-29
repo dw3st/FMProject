@@ -5863,5 +5863,12 @@
       "post": "Off the woodwork"
     },
     "hintKick": "Pick where to shoot ({{s}} s)."
+  },
+  "starLimit": {
+    "line": "World top {{top}}: you have {{count}} of {{max}}.",
+    "full": "Limit reached: sell one of them before signing another.",
+    "refused": "You already have {{max}} of the world's top {{top}} players. Sell one of them before signing another.",
+    "count": "World top {{top}}: {{count}}/{{max}}",
+    "rule": "A club can sign until it has {{max}} of the world's top {{top}} players. A player of the club who climbs into the top stays; promoting an academy player is always allowed."
   }
 }

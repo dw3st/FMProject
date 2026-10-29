@@ -1,4 +1,5 @@
 import { addDays } from "@/Domain/dates";
+import { breaksStarLimit } from "@/Domain/squad/starLimit";
 import { playerValueModel } from "@/Domain/awards/awardValue";
 import { AWARDS } from "@/Domain/awards/awardsConfig";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
@@ -118,6 +119,8 @@ export function generateBidsForHuman(args: {
   buyerClosesOn?: (squad: Squad) => string | undefined;
   /** Every human club of the world (`.claude/rules/game/multiplayer.md`): never a bidder. */
   humanClubIds?: ReadonlySet<string>;
+  /** The world's top players (`STAR_LIMIT`): a club at its limit bids for none. */
+  top?: ReadonlySet<string>;
 }): MarketBid[] {
   const { rng, humanSquad, squads, profiles, date } = args;
   const pushed: MarketBid[] = [];
@@ -140,7 +143,8 @@ export function generateBidsForHuman(args: {
       .filter(([, prof]) => prof.needs?.some((n) => playerMatchesBand(player, n.position) && (!needKind || n.intentType === needKind)))
       // A transfer (not a loan): a very ambitious player refuses a much smaller club (`personality.md`).
       .filter(([id]) => needKind !== undefined || !refusesSmallerClub(player, tierStepsDown(humanSquad, squads.get(id)!)))
-      .map(([id]) => squads.get(id)!);
+      .map(([id]) => squads.get(id)!)
+      .filter((b) => !breaksStarLimit(b, player.id, args.top));
 
   // Asking price of a listed player (#88): r = asking / value (1 without a price).
   const askingOf = (player: RosterPlayer) => args.sellList.find((c) => c.playerId === player.id)?.askingPrice;

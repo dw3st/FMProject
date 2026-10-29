@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { STAR_LIMIT } from "@/Domain/squad/starLimit";
 import { useTranslation } from "react-i18next";
 import { formatBirthDate, heightCmOf } from "@/GameInterface/playerIdentity";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -21,6 +22,7 @@ import { NationalCareerLine } from "@/GameInterface/National/NationalCareerLine"
 import { PlayerAwards } from "@/GameInterface/Awards/PlayerAwards";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
+import { StarLimitLine, useStarLimit } from "@/GameInterface/Squad/StarLimitLine";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
 import { personalityViewOf } from "@/Domain/personality/personality";
@@ -44,6 +46,7 @@ export function PlayerScreen({
   const { t, i18n } = useTranslation();
   const { session, squad: mySquad, loading: saveLoading, refresh } = useGameSave();
   const [player, setPlayer] = useState<RosterPlayer | null>(null);
+  const starLimit = useStarLimit(player?.id ?? null);
   const [squadId, setSquadId] = useState("");
   const [squadName, setSquadName] = useState("");
   const [squadColors, setSquadColors] = useState<[string, string]>(["#555", "#888"]);
@@ -164,9 +167,9 @@ export function PlayerScreen({
             !isOwnPlayer && !player.loan ? (
               <button
                 type="button"
-                disabled={offerState === "closed"}
+                disabled={offerState === "closed" || starLimit.full}
                 onClick={() => setOfferTarget(displayPlayer)}
-                title={offerState === "closed" ? windowClosedText(t, i18n.language, windowsData?.player.opensOn) : undefined}
+                title={offerState === "closed" ? windowClosedText(t, i18n.language, windowsData?.player.opensOn) : starLimit.full ? t("starLimit.refused", { max: starLimit.max, top: STAR_LIMIT.TOP }) : undefined}
                 className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Icon name="user-plus" className="w-4 h-4" />
@@ -215,6 +218,7 @@ export function PlayerScreen({
         </a>
 
         {!isOwnPlayer && <ForeignCheckLine playerId={player.id} fromSquadId={squadId} />}
+        {!isOwnPlayer && <StarLimitLine playerId={player.id} />}
 
         <PlayerCard
           player={displayPlayer}

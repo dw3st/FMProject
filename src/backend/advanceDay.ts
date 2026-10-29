@@ -1,4 +1,5 @@
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
+import { worldTopIds } from "@/Domain/squad/starLimit";
 import { appendSeatSeasons, newPassage, positionOf, standingsOn, standingsView } from "@/backend/standingsWorld";
 import { closePassage, rankOf, sumItems, withExtra } from "@/Domain/multiplayer/standings";
 import { continentalEventItem, cupTieItems, nationalNewsItems } from "@/Domain/multiplayer/standingsEvents";
@@ -1713,6 +1714,8 @@ export async function advanceOneDay(
 
       // What is each seat's: the AI's bids for its players, its talks, the rivals for its targets.
       const squadsNow = squadsAfterTick(allSquadsMarket, completedTransfers);
+      // Top players of the world (`STAR_LIMIT`), read once: a rival at its limit never enters.
+      let dayTop: Set<string> | undefined;
       for (const ds of daySeats) {
         if (!ds.clubId) continue;
         const seatMarket = await saveService.getMarket(saveId, ds.seatId);
@@ -1769,6 +1772,7 @@ export async function advanceOneDay(
             if (!seller || !target) continue;
             const more = await rollRivalFor(saveService, saveId, {
               market, player: target, seller, humanId: ds.clubId, humanClubIds: humanClubs, date: currentDate, windows,
+              top: (dayTop ??= worldTopIds(squadsNow)),
             });
             market = more.market;
             if (more.news) ds.deferred.negotiation.push(more.news);

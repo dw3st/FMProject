@@ -5863,5 +5863,12 @@
       "post": "Na trave"
     },
     "hintKick": "Escolha onde chutar ({{s}} s)."
+  },
+  "starLimit": {
+    "line": "Top {{top}} do mundo: você tem {{count}} de {{max}}.",
+    "full": "Limite atingido: venda um deles antes de contratar outro.",
+    "refused": "Você já tem {{max}} jogadores do top {{top}} do mundo. Venda um deles antes de contratar outro.",
+    "count": "Top {{top}} do mundo: {{count}}/{{max}}",
+    "rule": "Cada clube pode contratar até ter {{max}} jogadores do top {{top}} do mundo. Quem já é do clube e entra no top fica; promover um jovem da base sempre vale."
   }
 }

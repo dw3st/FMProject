@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { StarLimitLine } from "@/GameInterface/Squad/StarLimitLine";
+import { STAR_LIMIT } from "@/Domain/squad/starLimit";
 import { useTranslation } from "react-i18next";
 import { loadSession } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
@@ -196,6 +198,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (code === "onLoan") return t("negotiation.errors.onLoan");
     if (code === "recentlySold") return t("negotiation.errors.recentlySold");
     if (code === "squadFull") return t("negotiation.errors.squadFull");
+    if (code === "starLimit") return t("starLimit.refused", { max: STAR_LIMIT.MAX, top: STAR_LIMIT.TOP });
     if (code === "Insufficient funds") return t("transfers.insufficientBudget");
     if (code === "noClub") return t("negotiation.errors.noClub");
     if (code === "notEligible") return t("negotiation.preContract.notEligible");
@@ -361,7 +364,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             <p className="text-sm text-muted-foreground m-0 mt-0.5">
               {player.name} · {player.pos} · {t("common.ageYears", { age: player.age })} · {player.club}
             </p>
-            {!done && <div className="mt-1"><ForeignCheckLine playerId={player.id} fromSquadId={player.squadId} /></div>}
+            {!done && <div className="mt-1"><ForeignCheckLine playerId={player.id} fromSquadId={player.squadId} /><StarLimitLine playerId={player.id} /></div>}
           </div>
           {!done && (
             <SegmentedTabs

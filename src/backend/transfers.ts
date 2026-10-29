@@ -1,4 +1,5 @@
 import { replaceAfterSale } from "@/Domain/contracts/freeAgents";
+import { starLimitResponse } from "@/backend/starLimitWorld";
 import { afterListedForSale } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
 import { seasonLabel } from "@/Domain/history/history";
@@ -154,6 +155,9 @@ export const transferRoutes = {
         if (await isOtherSeatClub(saveService, saveId, sellerSquad.id, buyerSquad.id)) return Response.json({ error: "notFound" }, { status: 404 });
 
         if ((await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+        // At most STAR_LIMIT.MAX of the world's top players (`.claude/rules/game/transfers.md`).
+        const starLimit = await starLimitResponse(saveId, buyerSquad, playerId);
+        if (starLimit) return starLimit;
 
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;

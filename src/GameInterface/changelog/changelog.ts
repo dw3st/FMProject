@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.40",
+    date: "2026-10-29",
+    items: [
+      { pt: "Cada clube pode ter no máximo 5 jogadores do top 25 do mundo. Quem já é seu e entra no top fica, e promover um jovem da base sempre vale; só não dá para contratar outro acima do limite.", en: "Each club can have at most 5 of the world's top 25 players. One of yours who climbs into the top stays, and promoting an academy player is always allowed; you just cannot sign another over the limit." },
+    ],
+  },
+  {
     version: "4.39.5",
     date: "2026-10-29",
     items: [

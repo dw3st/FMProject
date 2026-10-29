@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
+import { StarCount } from "@/GameInterface/Squad/StarLimitLine";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
@@ -110,6 +111,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             <div className="flex items-center gap-3">
               {squad.id !== mySquadId && humanClubs.get(squad.id) && <HumanBadge nickname={humanClubs.get(squad.id)!} />}
               <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
+              {squad.id === mySquadId && <StarCount />}
             </div>
           }
         >

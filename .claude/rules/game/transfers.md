@@ -201,3 +201,14 @@ passam por propostas na inbox. Ver `.claude/rules/game/negotiation.md`.
 ## Assentos (Etapa 43)
 
 O mercado da IA ignora o conjunto de clubes humanos (todos os assentos). Ver `.claude/rules/game/multiplayer.md`.
+
+## Limite do top 25 (4.40)
+
+Report de tester. Cada clube (humano e IA) tem no máximo `STAR_LIMIT.MAX` (5) jogadores do top `STAR_LIMIT.TOP` (25)
+do mundo no elenco profissional (`src/Domain/squad/starLimit.ts`); o top 25 é a mesma lista da estrela dourada
+(`worldTopIds`, usada por `computeStars`). O limite só barra **chegadas** (`breaksStarLimit`): compra, empréstimo,
+pré-contrato e propostas entre técnicos (409 `starLimit`, `starLimitWorld.ts`), e na IA `findCandidates`, as
+propostas pelos jogadores do humano e os rivais. Quem já é do clube e entra no top fica (o clube só não contrata
+outro); promover um jovem da base sempre vale; livres nunca contam (o top é só dos elencos). No início do mundo o
+máximo é 4 por clube (Barcelona, Real Madrid, Arsenal). Telas: "Top 25 do mundo: N/5" no cabeçalho do Elenco, linha
+na ficha e na negociação de um jogador do top de outro clube, botão de oferta desligado no limite.

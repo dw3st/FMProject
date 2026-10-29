@@ -7,6 +7,7 @@ import type {
   MarketBid, MarketState, SellCandidate, SquadMarketProfile, TransferNeed, WorldMarketState,
 } from "@/types/transferMarketTypes";
 import { generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
+import { worldTopIds } from "@/Domain/squad/starLimit";
 import { defaultRng, generateTransferNeeds, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
 import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
 import { logDebug } from "@/Logger";
@@ -213,6 +214,8 @@ export function dailyMarketTick(
 
   // Build sell list lookup for scoring
   const sellerSellLists = buildSellerSellLists(profiles);
+  // Top players of the world (`STAR_LIMIT`): no buyer signs one over its limit.
+  const top = worldTopIds(allSquads);
 
   for (const buyerId of buyers) {
     const buyerSquad = squads.get(buyerId);
@@ -227,6 +230,7 @@ export function dailyMarketTick(
       rng,
       excluded,
       sellerSellLists,
+      top,
     );
     if (!attempt) continue;
 
@@ -336,6 +340,7 @@ export function humanBidsTick(args: HumanBidsArgs): { market: MarketState; newBi
       : {}),
     newId: args.newBidId ?? (() => `bid-${args.currentDate}-${++seq}`),
     ...(args.humanClubIds ? { humanClubIds: args.humanClubIds } : {}),
+    top: worldTopIds(args.squads),
   });
   if (newBids.length > 0) logDebug("transfers", `${newBids.length} bid(s) for the human club's players`);
   return { market: { ...args.market, pendingBids: [...pending, ...newBids] }, newBids };

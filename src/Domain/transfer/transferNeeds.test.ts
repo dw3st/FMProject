@@ -127,6 +127,20 @@ describe("findCandidates", () => {
     expect(ids).toEqual(["y"]);
   });
 
+  test("a buyer with 5 of the world's top players signs no other one (STAR_LIMIT)", () => {
+    const star = basePlayer({ id: "star", name: "S", positions: ["CM"], age: 26 });
+    const plain = basePlayer({ id: "plain", name: "P", positions: ["CM"], age: 26 });
+    const mine = ["t1", "t2", "t3", "t4", "t5"].map((id) => basePlayer({ id, name: id, positions: ["CM"], age: 26 }));
+    const need = {
+      position: "Midfielder" as const, targetMin: 0, targetMax: 10, urgency: 1,
+      budgetTier: "high" as const, intentType: "cover_need" as const,
+    };
+    const squads = [makeSquad("sell", [star, plain]), makeSquad("buy", mine)];
+    const top = new Set(["star", "t1", "t2", "t3", "t4", "t5"]);
+    expect(findCandidates(need, squads, "buy", undefined, top).map((p) => p.id)).toEqual(["plain"]);
+    expect(findCandidates(need, squads, "buy").map((p) => p.id).sort()).toEqual(["plain", "star"]);
+  });
+
   test("low tier rejects player above price cap", () => {
     const expensive = basePlayer({
       id: "exp",

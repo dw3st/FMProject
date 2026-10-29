@@ -1,4 +1,5 @@
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
+import { breaksStarLimit } from "@/Domain/squad/starLimit";
 import { Player } from "@/Domain/Player";
 import { playerValueModel } from "@/Domain/awards/awardValue";
 import { AWARDS } from "@/Domain/awards/awardsConfig";
@@ -200,6 +201,8 @@ export function findCandidates(
   allSquads: Squad[],
   buyerSquadId: string,
   excludeSellerSquadIds?: ReadonlySet<string>,
+  /** The world's top players (`STAR_LIMIT`): the buyer signs none over its limit. Absent = no limit. */
+  top?: ReadonlySet<string>,
 ): RosterPlayer[] {
   const cap = priceCapForTier(need.budgetTier);
   const out: RosterPlayer[] = [];
@@ -223,6 +226,7 @@ export function findCandidates(
       const price = playerValueModel(player, rating).price;
       if (cap != null && price > cap) continue;
       if (refusesSmallerClub(player, steps)) continue;
+      if (buyer && breaksStarLimit(buyer, player.id, top)) continue;
       out.push(player);
     }
   }
@@ -401,6 +405,7 @@ export function processTeamTransferAttempt(
   rng: () => number = defaultRng,
   excludeSquadIds?: ReadonlySet<string>,
   sellerSellLists: Record<string, SellCandidate[]> = {},
+  top?: ReadonlySet<string>,
 ): TransferAttemptResult | null {
   if (!profile?.needs.length) return null;
 
@@ -414,7 +419,7 @@ export function processTeamTransferAttempt(
   const buyerBudget = aiTransferBudgetOf(buyerSquad);
   const buyerAvg = teamAvgRating(buyerSquad);
   const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
-  const candidates = findCandidates(need, allSquads, buyerSquad.id, excludeSquadIds);
+  const candidates = findCandidates(need, allSquads, buyerSquad.id, excludeSquadIds, top);
   if (candidates.length === 0) return null;
 
   const squadByPlayerId = new Map<string, string>();

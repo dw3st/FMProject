@@ -3,6 +3,7 @@
  * "Disputa"): rival AI bids appear while the human negotiates an AI player, and the seller sells to
  * the rival on the deadline. The rules live in `src/Domain/negotiation/rivals.ts`.
  */
+import { topIdsOf } from "@/backend/starLimitWorld";
 import { randomUUID } from "crypto";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { WindowContext } from "@/backend/marketWindowWorld";
@@ -40,6 +41,8 @@ export async function rollRivalFor(
     market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext;
     /** Every human club of the world (`.claude/rules/game/multiplayer.md`): never a rival. Absent = `humanId` only. */
     humanClubIds?: ReadonlySet<string>;
+    /** The world's top players (`STAR_LIMIT`); absent = read from the save. */
+    top?: ReadonlySet<string>;
   },
 ): Promise<{ market: MarketState; rival: RivalBid | null; news: News | null }> {
   const { market, player, seller, date, windows } = args;
@@ -59,6 +62,7 @@ export async function rollRivalFor(
     player, sellerId: seller.id, humanId: args.humanId, profiles: market.profiles ?? {},
     squadOf: (id) => squads.get(id) ?? null,
     windowOpen: (sq) => windows.ofLeague(sq.leagueSlug ?? "").open,
+    top: args.top ?? (await topIdsOf(saveId)),
   });
   const rival = rollRival({
     player, seller, candidates, existing, date,

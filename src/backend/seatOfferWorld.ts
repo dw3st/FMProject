@@ -3,6 +3,8 @@
  * socket nudge to each side, closing the offers of a player or of a seat, rechecking the world, completing a
  * transfer or a loan, and the daily expiry. The pure rules live in `src/Domain/seatOffers/`.
  */
+import { topIdsOf } from "@/backend/starLimitWorld";
+import { breaksStarLimit } from "@/Domain/squad/starLimit";
 import { randomUUID } from "crypto";
 import type { SaveService } from "@/backend/SaveService";
 import { memberBySeat } from "@/backend/auth/saveOwnership";
@@ -113,7 +115,7 @@ export async function closeOffersOfSeat(
 
 export type OfferCheck =
   | { ok: true; seller: Squad; buyer: Squad; player: RosterPlayer }
-  | { ok: false; status: number; error: "offerClosed" | "onLoan" | "squadFull" | "squadDepth" };
+  | { ok: false; status: number; error: "offerClosed" | "onLoan" | "squadFull" | "squadDepth" | "starLimit" };
 
 /**
  * The world still allows the deal: both clubs are still the seats', the player is at the seller and not on
@@ -131,6 +133,7 @@ export async function checkOfferWorld(
   if (player.loan) return { ok: false, status: 400, error: "onLoan" };
   if ((await humanRosterSize(service, saveId, o.buyer.seatId, buyer)) >= HUMAN_MAX_SQUAD) return { ok: false, status: 409, error: "squadFull" };
   if (squadDepthBlocked(player, seller, false)) return { ok: false, status: 409, error: "squadDepth" };
+  if (breaksStarLimit(buyer, player.id, await topIdsOf(saveId))) return { ok: false, status: 409, error: "starLimit" };
   return { ok: true, seller, buyer, player };
 }
 
@@ -263,7 +266,7 @@ export async function expireSeatOffers(
     const expired = o.expires < date || !buyerWindowOpen(o.buyer.seatId);
     if (!expired) {
       const world = await checkOfferWorld(service, saveId, o);
-      if (world.ok || world.error === "squadFull" || world.error === "squadDepth") { left.push(o); continue; }
+      if (world.ok || world.error === "squadFull" || world.error === "squadDepth" || world.error === "starLimit") { left.push(o); continue; }
     }
     const action: SeatOfferAction = expired ? "expired" : "closed";
     await tellSeat(service, saveId, o, "seller", action, date, sink, nudges);
