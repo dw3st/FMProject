@@ -1,6 +1,6 @@
 // src/Domain/rng.test.ts
 import { describe, expect, test } from "bun:test";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, unitFrom } from "@/Domain/rng";
 
 describe("mulberry32", () => {
   test("mesma semente gera a mesma sequência", () => {
@@ -20,5 +20,13 @@ describe("mulberry32", () => {
 
   test("sementes diferentes divergem", () => {
     expect(mulberry32(1)()).not.toBe(mulberry32(2)());
+  });
+});
+
+describe("unitFrom", () => {
+  test("keys that differ only in the last character spread over the range", () => {
+    const xs = Array.from({ length: 10 }, (_, i) => unitFrom(`save:529:2027:donor:${i}`));
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.5);
+    for (const x of xs) expect(x >= 0 && x < 1).toBe(true);
   });
 });

@@ -165,27 +165,6 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   return (
     <>
       <DragGhost drag={drag} />
-      {pendingQueue.length > 0 && (
-        <div className="shrink-0 px-4 py-2 border-b border-border/60 bg-chart-4/5">
-          <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-chart-4 m-0 mb-1.5 font-display">
-            {t("substitutionPanel.pendingSubstitutions")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {pendingQueue.map((pq) => {
-              const out = onPitch.find((p) => p.id === pq.outId) ?? bench.find((p) => p.id === pq.outId);
-              const inP = bench.find((p) => p.id === pq.inId);
-              return (
-                <div key={`${pq.outId}-${pq.inId}`} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-chart-4/10 border border-chart-4/20 text-sm">
-                  <span className="text-destructive font-medium truncate max-w-[8rem]">{out?.name ?? "?"}</span>
-                  <Icon name="arrow-right-left" size={16} className="text-chart-4 shrink-0" />
-                  <span className="text-chart-2 font-medium truncate max-w-[8rem]">{inP?.name ?? "?"}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div className="shrink-0 px-4 pt-2 pb-1 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground m-0">{hint}</p>
         {selection && (

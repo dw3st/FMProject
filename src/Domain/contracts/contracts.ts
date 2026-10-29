@@ -6,7 +6,7 @@ import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
 import { addDays } from "@/Domain/dates";
 import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
-import { seedFrom } from "@/Domain/rng";
+import { unitFrom } from "@/Domain/rng";
 import {
   ambitionDemandMult, compatriotMult, loyaltyRenewalMult, refusesSmallerClub, seasonsAtClub, smallerClubMult, tierStepsDown,
 } from "@/Domain/personality/personality";
@@ -77,7 +77,7 @@ function teamAverage(squad: Squad): number {
 
 /** Deterministic 0..1 from a player id (and salt). */
 function unit(playerId: string, salt: string): number {
-  return seedFrom(`${playerId}:${salt}`) / 4294967296;
+  return unitFrom(`${playerId}:${salt}`);
 }
 
 /** Initial contract: deterministic length by age; wage from the shared curve at the club's factor. */

@@ -20,6 +20,21 @@ export function seedFrom(key: string): number {
   return h >>> 0;
 }
 
+/**
+ * Deterministic 0..1 from a key. The raw FNV-1a hash is badly mixed in its high bits: keys that differ
+ * only in the last character (`seed:donor:0`, `seed:donor:1`…) land within ~0.01 of each other, so
+ * `seedFrom(key) / 2^32` repeats the same pick. The murmur3 finalizer spreads them over the range.
+ */
+export function unitFrom(key: string): number {
+  let h = seedFrom(key);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
 /** Fisher–Yates shuffle into a new array (one `rng()` call per position, last to first). */
 export function shuffle<T>(xs: readonly T[], rng: () => number): T[] {
   const a = [...xs];

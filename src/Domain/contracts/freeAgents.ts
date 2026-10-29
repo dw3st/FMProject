@@ -9,7 +9,7 @@ import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/t
 import { getMainRole } from "@/Domain/roles";
 import type { MainRole } from "@/Domain/roles";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
-import { seedFrom } from "@/Domain/rng";
+import { unitFrom } from "@/Domain/rng";
 
 const ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
@@ -21,7 +21,7 @@ export const HUMAN_MAX_SQUAD = 36;
 export const roleOf = (p: RosterPlayer): MainRole => getMainRole(p.positions[0] ?? "CM");
 
 function unit(key: string): number {
-  return seedFrom(key) / 4294967296;
+  return unitFrom(key);
 }
 
 export function countByRole(players: RosterPlayer[]): Record<MainRole, number> {

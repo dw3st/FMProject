@@ -15,7 +15,7 @@ import ROLES from "@/Data/roles.json";
 import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
-import { seedFrom } from "@/Domain/rng";
+import { unitFrom } from "@/Domain/rng";
 
 /** Pure youth-academy model (`.claude/rules/game/youth.md`). No I/O. */
 
@@ -24,7 +24,7 @@ const STAT_KEYS: (keyof PlayerStatsRecord)[] = [
   "pressing", "stamina", "heading", "strength", "reflex", "jump",
 ];
 
-const unit = (key: string) => seedFrom(key) / 4294967296;
+const unit = unitFrom;
 const gauss = (key: string) =>
   Math.sqrt(-2 * Math.log(Math.max(1e-9, unit(`${key}:u`)))) * Math.cos(2 * Math.PI * unit(`${key}:v`));
 

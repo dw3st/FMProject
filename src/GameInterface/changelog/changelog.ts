@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39.2",
+    date: "2026-10-29",
+    items: [
+      { pt: "As trocas na fila aparecem uma vez só no painel de substituições, com o botão de desfazer.", en: "Queued substitutions show once in the substitutions panel, with the undo button." },
+      { pt: "A base não recebe mais vários jovens com o mesmo nome na mesma safra.", en: "An academy intake no longer brings several players with the same name." },
+    ],
+  },
+  {
     version: "4.39.1",
     date: "2026-10-28",
     items: [

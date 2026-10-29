@@ -10,7 +10,7 @@ import type {
   FreeAgent, PlayerStatsRecord, RetiredPlayer, RosterPlayer, Squad,
 } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
-import { seedFrom } from "@/Domain/rng";
+import { unitFrom } from "@/Domain/rng";
 
 /** Pure retirement + reborn model (`.claude/rules/game/retirement.md`). No I/O. */
 
@@ -18,7 +18,7 @@ const STAT_KEYS: (keyof PlayerStatsRecord)[] = [
   "passing", "vision", "finishing", "dribbling", "speed", "acceleration", "tackling",
   "pressing", "stamina", "heading", "strength", "reflex", "jump",
 ];
-const unit = (key: string) => seedFrom(key) / 4294967296;
+const unit = unitFrom;
 
 /** Retirement chance at `age` for a player at level percentile `pctl` (0 worst .. 1 best of his line). */
 export function retireChance(age: number, pctl: number): number {
