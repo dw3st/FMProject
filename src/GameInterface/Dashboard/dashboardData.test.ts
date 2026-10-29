@@ -11,7 +11,6 @@ import {
   latestWeekMoney,
   nextFixture,
   seasonHighlights,
-  standingsWindow,
 } from "@/GameInterface/Dashboard/dashboardData";
 
 function fx(id: string, date: string, home: string, away: string, result?: [number, number], competition = "pl", round = 1): Fixture {
@@ -59,24 +58,6 @@ describe("next match and form", () => {
     expect(currentRound(fixtures, "me", "pl", "2027-02-16")).toBe(4);
     expect(currentRound(fixtures, "me", "pl", "2027-03-01")).toBe(3);
     expect(currentRound(fixtures, "me", "other", "2027-02-16")).toBeNull();
-  });
-});
-
-describe("standingsWindow", () => {
-  const rows = Array.from({ length: 10 }, (_, i) => ({ squadId: `c${i}`, name: `C${i}` }) as StandingRow);
-
-  test("centres the club", () => {
-    expect(standingsWindow(rows, "c5").map((r) => r.rank)).toEqual([4, 5, 6, 7, 8]);
-  });
-
-  test("clamps at the table edges", () => {
-    expect(standingsWindow(rows, "c0").map((r) => r.rank)).toEqual([1, 2, 3, 4, 5]);
-    expect(standingsWindow(rows, "c9").map((r) => r.rank)).toEqual([6, 7, 8, 9, 10]);
-  });
-
-  test("short table returns every row", () => {
-    expect(standingsWindow(rows.slice(0, 3), "c1")).toHaveLength(3);
-    expect(standingsWindow([], "c1")).toEqual([]);
   });
 });
 

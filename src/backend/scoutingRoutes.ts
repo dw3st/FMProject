@@ -24,7 +24,7 @@ import type { SeatMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { StaffMember } from "@/types/staffTypes";
 import type {
-  ScoutAssignment, ScoutFocus, ScoutProspect, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
+  ScoutAssignment, ScoutFocus, ScoutProspect, ScoutReport, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
 } from "@/types/scoutingTypes";
 import countriesRaw from "@/Data/countries.json";
 
@@ -202,12 +202,35 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
     weeks: { region: S.REGION_WEEKS, continent: S.CONTINENT_WEEKS, youth: S.YOUTH_WEEKS, player: S.PLAYER_MAX_WEEKS },
     scouts: scouts.map((s) => ({ ...s, busy: state.missions.some((m) => m.scoutId === s.id) })),
     missions,
-    reports: state.reports,
+    reports: await reportsView(saveId, own, state.reports),
     shortlist,
     // Only what the card shows: the exact attributes stay on the server (the report carries the
     // seen ranges); the player is exact once he is in the academy.
     prospects: state.prospects.map(prospectView),
   };
+}
+
+/**
+ * The reports as the screens list them (tester report): a player who is now at the user's club (bought, signed) is
+ * dropped, and one who left the observed club keeps his report without the link (`gone`), which pointed at the old club.
+ */
+async function reportsView(saveId: string, own: Squad | null, reports: ScoutReport[]): Promise<ScoutReport[]> {
+  const mine = new Set([...(own?.players ?? []), ...(own?.youth ?? [])].map((p) => p.id));
+  const kept = reports.filter((r) => !mine.has(r.playerId));
+  const clubs = new Map<string, Promise<Set<string> | null>>();
+  const rosterOf = (id: string) => {
+    let p = clubs.get(id);
+    if (!p) {
+      p = saveService.getSquadById(saveId, id).then((sq) => (sq ? new Set(sq.players.map((x) => x.id)) : null)).catch(() => null);
+      clubs.set(id, p);
+    }
+    return p;
+  };
+  return Promise.all(kept.map(async (r) => {
+    if (r.prospectId || !r.squadId) return r;
+    const roster = await rosterOf(r.squadId);
+    return roster?.has(r.playerId) ? r : { ...r, gone: true as const };
+  }));
 }
 
 /** A prospect as the screen sees him: identity only, never his exact attributes. */

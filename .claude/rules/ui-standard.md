@@ -135,6 +135,8 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
   jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
   Finanças da semana. Abaixo de `lg` os pares empilham.
+- **Liga do Painel (`LeagueMiniTable`, 4.39.4):** a tabela inteira numa caixa de ~5 linhas com rolagem própria
+  (`max-h-[262px]`), aberta com o clube do jogador no meio; o cabeçalho fica fora da rolagem.
 - **Atenção com ação (4.39.3):** cada linha do cartão Atenção tem à direita um botão pequeno com borda (`h-8`) que leva
   direto à ação: Renovar (contrato; a ficha com `?action=renew` abre a renovação), Escalar (lesionado, suspenso, cansado →
   Formação), Mercado (janela fechando), Conversar (`?action=talk` abre a conversa), Responder, Reformar, Ver.

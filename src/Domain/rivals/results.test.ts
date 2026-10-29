@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  buildSeatResults, formOf, isSeatResult, mergeFeed, resultLetter, resultSituations, scoreLineOf,
+  buildSeatResults, formOf, isSeatResult, penaltiesInLineOrder, mergeFeed, resultLetter, resultSituations, scoreLineOf,
 } from "@/Domain/rivals/results";
 import type { MatchEvent } from "@/types/dayLogTypes";
 import type { SeatResult, SeatResultGoal } from "@/types/rivalsTypes";
@@ -18,6 +18,15 @@ describe("scoreLineOf", () => {
   test("home side first", () => {
     expect(scoreLineOf({ clubName: "Vasco", opponentName: "Bahia", home: true, score: { for: 0, against: 3 } })).toBe("Vasco 0–3 Bahia");
     expect(scoreLineOf({ clubName: "Vasco", opponentName: "Bahia", home: false, score: { for: 3, against: 0 } })).toBe("Bahia 0–3 Vasco");
+  });
+});
+
+describe("penaltiesInLineOrder", () => {
+  test("follows the score line: home side first (report: Levante 1-1 Barcelona, pen. 2-4 for a Barcelona loss)", () => {
+    const pens = { penalties: { for: 2, against: 4 } };
+    expect(penaltiesInLineOrder({ home: false, decider: pens })).toEqual({ home: 4, away: 2 });
+    expect(penaltiesInLineOrder({ home: true, decider: pens })).toEqual({ home: 2, away: 4 });
+    expect(penaltiesInLineOrder({ home: true })).toBeNull();
   });
 });
 

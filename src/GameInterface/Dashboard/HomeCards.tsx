@@ -5,7 +5,7 @@
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData, StandingRow } from "@/types/playerTypes";
@@ -488,6 +488,15 @@ export function LeagueMiniTable({
 }) {
   const { t } = useTranslation();
   const grid = "grid grid-cols-[32px_1fr_40px_44px_48px] gap-2 px-4";
+  // The whole league in a box about five rows tall (report: scroll to see it all), opened on the user's club.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const myRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const box = bodyRef.current;
+    const row = myRef.current;
+    if (!box || !row) return;
+    box.scrollTop = Math.max(0, row.offsetTop - box.offsetTop - (box.clientHeight - row.clientHeight) / 2);
+  }, [rows.length, myId]);
   return (
     <HomeCard title={title} href="/leagues" linkLabel={t("dashboard.home.fullTable")}>
       {rows.length === 0 ? (
@@ -501,12 +510,13 @@ export function LeagueMiniTable({
             <div className="text-center">{t("leagues.goalDifference")}</div>
             <div className="text-center">{t("leagues.points")}</div>
           </div>
-          <div className={TABLE_STYLE.body}>
+          <div ref={bodyRef} className={`${TABLE_STYLE.body} max-h-[262px] overflow-y-auto`}>
             {rows.map(({ rank, row }) => {
               const mine = row.squadId === myId;
               return (
                 <a
                   key={row.squadId}
+                  ref={mine ? myRef : undefined}
                   href="/leagues"
                   className={`${grid} py-2.5 items-center no-underline ${TABLE_STYLE.row} ${mine ? TABLE_STYLE.rowHighlight : ""}`}
                 >

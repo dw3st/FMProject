@@ -14,7 +14,7 @@ const WINDOW_ATTENTION_DAYS = WINDOWS.ATTENTION_DAYS;
 const SCOUTING_ATTENTION_DAYS = 7;
 import type { ClubMoraleState, PlayerPromise, TalkReason } from "@/types/moraleTypes";
 import type { Fixture } from "@/types/calendarTypes";
-import type { RosterPlayer, StandingRow } from "@/types/playerTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { ShortlistReason } from "@/types/scoutingTypes";
 import { isoWeekStart, type LedgerEntry } from "@/Domain/finance/ledger";
@@ -67,22 +67,6 @@ export function currentRound(fixtures: Fixture[], clubId: string, leagueSlug: st
   if (next) return next.round;
   const last = league.filter((f) => f.played).at(-1);
   return last ? last.round : null;
-}
-
-/**
- * `size` rows of the table around the club (the club as centred as the table edges allow), each
- * with its 1-based position.
- */
-export function standingsWindow(
-  rows: StandingRow[],
-  clubId: string,
-  size = 5,
-): { rank: number; row: StandingRow }[] {
-  if (rows.length === 0) return [];
-  const idx = Math.max(0, rows.findIndex((r) => r.squadId === clubId));
-  const n = Math.min(size, rows.length);
-  const start = Math.min(Math.max(0, idx - Math.floor(n / 2)), rows.length - n);
-  return rows.slice(start, start + n).map((row, i) => ({ rank: start + i + 1, row }));
 }
 
 export type AttentionItem =

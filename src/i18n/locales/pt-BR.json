@@ -4059,6 +4059,9 @@
     "attention": {
       "gem": "Joia encontrada: {{name}} ({{club}})",
       "shortlist": "Observado: {{name}} ({{reason}})"
+    },
+    "reports": {
+      "moved": "mudou de clube"
     }
   },
   "scoutCountries": {
@@ -5711,7 +5714,7 @@
     "nextShort": "próx.",
     "friendsBadge": "Amigos",
     "noNext": "sem jogo marcado",
-    "pens": "pên. {{for}}–{{against}}",
+    "pens": "pên. {{home}}–{{away}}",
     "filterLabel": "Amigo",
     "filterAll": "Todos",
     "empty": "Nenhum resultado ainda.",

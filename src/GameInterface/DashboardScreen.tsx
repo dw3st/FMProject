@@ -33,7 +33,6 @@ import {
   latestWeekMoney,
   nextFixture,
   seasonHighlights,
-  standingsWindow,
 } from "@/GameInterface/Dashboard/dashboardData";
 import {
   AttentionCard,
@@ -347,7 +346,7 @@ export function DashboardScreen() {
         />
         <LeagueMiniTable
           title={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
-          rows={standingsWindow(standingRows, mySquadId)}
+          rows={standingRows.map((row, i) => ({ rank: i + 1, row }))}
           myId={mySquadId}
           loading={standings === null}
           humanClubs={humanClubs}

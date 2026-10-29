@@ -83,6 +83,8 @@ export type ScoutReportText = "ready" | "future" | "squad" | "no_upgrade";
 export interface ScoutReport {
   id: string;
   date: string;
+  /** Screens only (`GET /scouting`): the player left the observed club, so the report no longer links to him. */
+  gone?: true;
   missionId?: string;
   /** Who wrote it: "chief" or the field scout's member id (absent on reports from before 4.38). */
   scoutId?: string;

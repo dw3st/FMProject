@@ -4059,6 +4059,9 @@
     "attention": {
       "gem": "Gem found: {{name}} ({{club}})",
       "shortlist": "Shortlist: {{name}} ({{reason}})"
+    },
+    "reports": {
+      "moved": "changed clubs"
     }
   },
   "scoutCountries": {
@@ -5711,7 +5714,7 @@
     "nextShort": "next",
     "friendsBadge": "Friends",
     "noNext": "no match scheduled",
-    "pens": "pens {{for}}–{{against}}",
+    "pens": "pens {{home}}–{{away}}",
     "filterLabel": "Friend",
     "filterAll": "Everyone",
     "empty": "No results yet.",

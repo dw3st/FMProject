@@ -87,12 +87,13 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
                   {!r.prospectId && (
                     <ShortlistStar saveId={saveId} playerId={r.playerId} squadId={r.squadId} on={shortlisted.has(r.playerId)} onChange={onShortlist} />
                   )}
-                  {r.prospectId || !r.squadId ? (
+                  {r.prospectId || !r.squadId || r.gone ? (
                     <span className={`${TABLE_STYLE.name} text-base`}>{r.name}</span>
                   ) : (
                     <a href={playerHref(r.playerId, r.squadId, r.league)} className={`${TABLE_STYLE.name} text-base no-underline hover:text-primary`}>{r.name}</a>
                   )}
                   {r.gem && <GemBadge />}
+                  {r.gone && <span className="text-sm text-muted-foreground">{t("scouting.reports.moved")}</span>}
                 </span>
                 <span className="block text-sm text-muted-foreground">{positionLabel(t, r.position, r.position)}{r.forSale ? ` · ${t("scouting.forSale")}` : ""}</span>
               </td>

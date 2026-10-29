@@ -1,0 +1,12 @@
+import { formationForSimId } from "@/Domain/matchFormations";
+import { autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
+import { slotValue } from "@/Domain/positions/positionAptitude";
+const [sqf, tacf, date, formation, style, out] = process.argv.slice(2);
+const sq = await Bun.file(sqf!).json(); const tac = await Bun.file(tacf!).json();
+const form = formationForSimId(formation);
+const lineup = autoLineupForFormationWithFitness(sq, form, date);
+const by = new Map(sq.players.map((p: any) => [p.id, p]));
+form.attacking.forEach((s: any, i: number) => { const p = by.get(lineup[i]) as any; console.log(s.role.padEnd(4), p?.name, Math.round(slotValue(p, s.role) * 10)); });
+const next = { ...tac, formation, tactical_style: style, lineup, assistantRotation: true };
+delete next.slotInstructions; delete next.customFormation; delete next.axesOverride;
+await Bun.write(out!, JSON.stringify(next));

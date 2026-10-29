@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39.4",
+    date: "2026-10-29",
+    items: [
+      { pt: "O cartão da liga no Painel mostra a tabela inteira, com rolagem, e abre no seu time.", en: "The dashboard's league card shows the whole table, scrollable, opened on your club." },
+    ],
+    fixes: [
+      { pt: "Nos resultados dos amigos, os pênaltis saem na mesma ordem do placar.", en: "In friends' results, the shootout score follows the order of the match score." },
+      { pt: "Um jogador que você contratou sai das joias e dos relatórios dos olheiros; quem mudou de clube fica sem o link quebrado.", en: "A player you signed leaves the scouts' gems and reports; one who changed clubs no longer has a broken link." },
+    ],
+  },
+  {
     version: "4.39.3",
     date: "2026-10-29",
     items: [

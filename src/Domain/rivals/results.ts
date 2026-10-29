@@ -14,6 +14,13 @@ export function scoreLineOf(r: Scored & { clubName: string; opponentName: string
     : `${r.opponentName} ${r.score.against}–${r.score.for} ${r.clubName}`;
 }
 
+/** The shootout in the same order as `scoreLineOf` (home side first): "pen. 4–2" after "Levante 1–1 Barcelona". */
+export function penaltiesInLineOrder(r: { home: boolean; decider?: { penalties: { for: number; against: number } } }): { home: number; away: number } | null {
+  const p = r.decider?.penalties;
+  if (!p) return null;
+  return r.home ? { home: p.for, away: p.against } : { home: p.against, away: p.for };
+}
+
 /** What the game says about the club. Always one of win / draw / loss; the goals' minutes tell the story. */
 export function resultSituations(r: Scored & {
   goals: readonly SeatResultGoal[];

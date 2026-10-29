@@ -114,6 +114,20 @@ describe("scouting routes and the weekly step", () => {
     }, meta.seatId);
     expect((await call("/api/saves/:saveId/scouting/shortlist", "POST", session.token, { playerId: target.id, squadId: spanishSquad.id })).status).toBe(409);
 
+    // Reports (tester report): a player now at the club is dropped; one who left the observed club loses the link.
+    const reportedOwn = (await saveService.getSquadById(saveId, "33"))!.players[0]!;
+    const rep = (id: string, playerId: string, squadId: string) => ({ id, date: monday, playerId, name: id, squadId, club: "", league: "", gem: true });
+    const withReports = await saveService.getScouting(saveId, meta.seatId);
+    await saveService.writeScouting(saveId, {
+      ...withReports,
+      shortlist: [],
+      reports: [rep("r_own", reportedOwn.id, spanishSquad.id), rep("r_there", target.id, spanishSquad.id), rep("r_moved", "nobody_here", spanishSquad.id)] as never,
+    }, meta.seatId);
+    const rv = await (await call("/api/saves/:saveId/scouting", "GET", session.token)).json() as { reports: { id: string; gone?: boolean }[] };
+    expect(rv.reports.map((r) => r.id)).toEqual(["r_there", "r_moved"]);
+    expect(rv.reports.find((r) => r.id === "r_there")!.gone).toBeUndefined();
+    expect(rv.reports.find((r) => r.id === "r_moved")!.gone).toBe(true);
+
     // Prospects: an expired one is closed; a valid one joins the academy with a fee in the ledger.
     const base = (await saveService.getScouting(saveId, meta.seatId));
     const mk = (id: string, expires: string): ScoutProspect => ({

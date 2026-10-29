@@ -329,3 +329,9 @@ Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da E
 Análise do mundo dos testers: 58 avisos de joia em 28 semanas, 26 jogadores (R. Navarro 8 vezes), com notas C e D. A
 joia vira notícia uma vez por jogador (`ScoutingState.gemsAnnounced`, os últimos `GEMS_REMEMBERED` 300) e só com nota A
 ou B; o relatório continua marcando a joia como antes.
+
+## Relatórios de quem mudou de clube (4.39.4)
+
+Report de tester. `GET /scouting` devolve os relatórios sem os de jogadores que hoje estão no clube do jogador (elenco ou
+base: comprados, contratados) e marca `ScoutReport.gone` (só na resposta) quem saiu do clube observado: a tabela mostra o
+nome sem link e "mudou de clube" (`reportsView`, `scoutingRoutes.ts`).

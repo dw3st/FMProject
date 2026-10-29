@@ -9,7 +9,7 @@ import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { TauntActions } from "@/GameInterface/World/TauntActions";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
-import { scoreLineOf } from "@/Domain/rivals/results";
+import { penaltiesInLineOrder, scoreLineOf } from "@/Domain/rivals/results";
 import type { RivalRow, SeatResult } from "@/types/rivalsTypes";
 
 /** The league's results by day, filtered by friend, each with the banter actions (multiplayer part 6). */
@@ -71,7 +71,7 @@ export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
                   <span className="font-semibold text-foreground truncate">{r.nickname}</span>
                   <span className="text-sm tabular-nums text-foreground">
                     {scoreLineOf(r)}
-                    {r.decider && <span className="text-muted-foreground"> · {t("rivals.pens", r.decider.penalties)}</span>}
+                    {penaltiesInLineOrder(r) && <span className="text-muted-foreground"> · {t("rivals.pens", penaltiesInLineOrder(r)!)}</span>}
                   </span>
                 </span>
                 {r.seatId !== mySeatId && <TauntActions saveId={saveId} target={{ result: r.id }} groups={r.situations} />}
