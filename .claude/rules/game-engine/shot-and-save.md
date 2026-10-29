@@ -310,3 +310,13 @@ keeper who dived reaches a ball down the middle sometimes (`MID_REACH_LOW/HIGH`)
   the kick resolves in the browser; between two managers the server resolves it). Choice in the match preview and the
   match room (`PenaltyModeChips`, `localStorage` `fm.match.penaltyMode`).
 - `/test`: toggle "Penalties 2D A" and scenario `shootout-2d`.
+
+## 2D penalty in the new art (art phase 6, 4.41.10)
+
+With the new visual and the painted backdrop on the server (`backdrops/penalty/penalty-bg-<day|night|rain|fog|snow>.webp`
+of the art volume, announced by `/api/art/faces` as `penaltyBackdrops`), `PenaltyPitch` draws `PenaltyArtScene`: the
+backdrop of the match weather (rain, snow, else night or day) and the art's articulated figures (`penaltyRig.ts`, port of
+the art preview's `penalty-rig.js`: keeper front view with keyframed joints, ballistic dive, jump, getting up with the
+ball; taker from behind with run-up, plant, strike, follow-through and reaction; panelled spinning ball; bulging net).
+`rigPlan` turns the decided `KickOutcome` into the animation (dive side and height, the ball's target, saved / post /
+miss); nothing about the outcome changes. Without the new visual or the backdrop, the drawn scene of 4.38.

@@ -24,6 +24,8 @@ interface ArtIndex {
   faces: PaintedFaceIds;
   /** Painted match backdrops (`backdrops/match/<id>.webp`). */
   backdrops: string[];
+  /** Painted penalty backdrops (`backdrops/penalty/<id>.webp`, art phase 6). */
+  penalty: string[];
 }
 
 let cache: { mtimeMs: number; dir: string; index: ArtIndex } | null = null;
@@ -82,6 +84,7 @@ function loadIndex(): ArtIndex | null {
         referees: idsAt(faces.referees, "faces/referees"),
       },
       backdrops: idsAt(backdrops.match, "backdrops/match"),
+      penalty: idsAt(backdrops.penalty, "backdrops/penalty"),
     };
     cache = { mtimeMs, dir, index };
     return index;
@@ -121,7 +124,13 @@ export const artAssetRoutes = {
   "/api/art/faces": () => {
     const index = loadIndex();
     const faces: PaintedFaceIds = index && paintedFacesEnabled() ? index.faces : { players: [], coaches: [], referees: [] };
-    const body: ArtManifest = { ...faces, backdrops: index && newVisualEnabled() ? index.backdrops : [], visual: newVisualEnabled() };
+    const visual = newVisualEnabled();
+    const body: ArtManifest = {
+      ...faces,
+      backdrops: index && visual ? index.backdrops : [],
+      penaltyBackdrops: index && visual ? index.penalty : [],
+      visual,
+    };
     return Response.json(body, { headers: { "Cache-Control": "no-cache" } });
   },
 };

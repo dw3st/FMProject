@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.10",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Pênalti com o visual novo: estádio pintado conforme o clima, batedor e goleiro de corpo inteiro (corrida, chute, mergulho, defesa com a bola nas mãos) e bola com gomos girando.",
+        en: "Penalties in the new look: a painted stadium by the weather, full-body taker and keeper (run-up, kick, dive, save with the ball in the hands) and a spinning panelled ball.",
+      },
+    ],
+  },
+  {
     version: "4.41.9",
     date: "2026-10-29",
     items: [
@@ -2673,6 +2683,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Visual novo também no pênalti e nas telas", en: "The new look in the penalties and the screens too" },
+  { pt: "Visual novo também nas telas fora da partida", en: "The new look on the screens outside the match too" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

@@ -17,6 +17,8 @@ export interface PaintedFaceIds {
 /** What the server announces: the painted faces and the painted match backdrops. */
 export interface ArtManifest extends PaintedFaceIds {
   backdrops: string[];
+  /** Painted penalty backdrops (art phase 6). */
+  penaltyBackdrops?: string[];
   /** The new visual is on on the server (`ART_VISUAL` not 0). */
   visual?: boolean;
 }
@@ -42,6 +44,18 @@ let backdrops = new Set<string>();
 /** Painted match backdrops on (empty = the drawn turf). */
 export function setPaintedBackdrops(ids: string[] | null): void {
   backdrops = new Set(ids ?? []);
+}
+
+let penaltyBackdrops = new Set<string>();
+
+/** Painted penalty backdrops on (empty = the drawn penalty scene). */
+export function setPaintedPenaltyBackdrops(ids: string[] | null): void {
+  penaltyBackdrops = new Set(ids ?? []);
+}
+
+/** Painted penalty backdrop by id (`penalty-bg-night`…), or null. */
+export function paintedPenaltyBackdrop(id: string): string | null {
+  return penaltyBackdrops.has(id) ? artUrl(`backdrops/penalty/${encodeURIComponent(id)}.webp`) : null;
 }
 
 /** Painted match backdrop by id (`match-backdrop-grass-a`…), or null. */
@@ -102,6 +116,7 @@ export async function loadPaintedFaces(timeoutMs = 1500, wantsNewVisual = true):
     if (!res.ok) return;
     const body = (await res.json()) as Partial<ArtManifest>;
     setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
+    setPaintedPenaltyBackdrops(wantsNewVisual && Array.isArray(body.penaltyBackdrops) ? body.penaltyBackdrops : []);
     setNewVisual(wantsNewVisual && body.visual === true);
     setPaintedFaces({
       players: Array.isArray(body.players) ? body.players : [],

@@ -4,6 +4,7 @@ import { aiKick, areaTarget, PENALTY_2D, type GoalArea, type KickInput, type Kic
 import { clamp } from "@/Domain/math";
 import { shirtName } from "@/Domain/shirtName";
 import { PenaltyPitch } from "@/GameInterface/Penalty/PenaltyPitch";
+import type { PenaltyWeather } from "@/GameInterface/Penalty/penaltyRig";
 import { SCENE, shotDuration } from "@/GameInterface/Penalty/penaltyScene";
 
 /**
@@ -32,6 +33,8 @@ export interface PenaltyScreenProps {
   night?: boolean;
   /** Seed of the crowd (the same game, the same fans). */
   seed?: string;
+  /** Weather of the match, for the painted backdrop (art phase 6). */
+  weather?: PenaltyWeather;
 }
 
 /** After the kick leaves: the result shows when the ball arrives, the screen closes a while later. */
@@ -126,6 +129,7 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
           keeperColor={props.keeperColor}
           {...(props.keeperFace ? { keeperFace: props.keeperFace } : {})}
           night={!!props.night}
+          {...(props.weather ? { weather: props.weather } : {})}
           seed={props.seed ?? "penalty"}
           resultLabel={phase === "result" && outcome ? t(`penalty2d.result.${outcome.result}`) : null}
           resultClass={outcome && outcome.scored === kick ? "text-white" : "text-destructive"}

@@ -6,6 +6,9 @@ import {
   keeperDive, keeperPose, keeperStance, netPaths, shotControl, shotDuration, takerPose, takerSpot,
   type ArmPose, type KeeperPose, type LegPose, type Pt,
 } from "@/GameInterface/Penalty/penaltyScene";
+import { newVisualOn, paintedPenaltyBackdrop } from "@/Domain/art/paintedFaces";
+import { penaltyBackdropId, type PenaltyWeather } from "@/GameInterface/Penalty/penaltyRig";
+import { PenaltyArtScene } from "@/GameInterface/Penalty/PenaltyArtScene";
 
 /**
  * The scene of a 2D penalty (4.39): crowd behind the goal, grass in perspective, a net that bulges, posts with volume,
@@ -24,6 +27,8 @@ export interface PenaltyPitchProps {
   /** Keeper's face (server SVG); absent = a drawn face. */
   keeperFace?: string;
   night: boolean;
+  /** Weather of the match, for the painted backdrop (art phase 6); absent = day or night by `night`. */
+  weather?: PenaltyWeather;
   seed: string;
   /** Big text over the scene at the result ("GOL!"), and its colour class. */
   resultLabel: string | null;
@@ -65,7 +70,13 @@ function setArm(g: SVGGElement | null, a: ArmPose) {
   hand?.setAttribute("cy", a.hand.y.toFixed(1));
 }
 
+/** The penalty scene: the art's (painted backdrop and figures) with the new visual, else the drawn one. */
 export function PenaltyPitch(props: PenaltyPitchProps) {
+  const backdrop = newVisualOn() ? paintedPenaltyBackdrop(penaltyBackdropId(props.weather ?? (props.night ? "night" : "day"))) : null;
+  return backdrop ? <PenaltyArtScene {...props} backdrop={backdrop} /> : <DrawnPenaltyPitch {...props} />;
+}
+
+function DrawnPenaltyPitch(props: PenaltyPitchProps) {
   const live = useRef(props);
   live.current = props;
   const wrapRef = useRef<HTMLDivElement | null>(null);

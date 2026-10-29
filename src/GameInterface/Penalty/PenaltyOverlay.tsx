@@ -68,6 +68,7 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose, 
       onDone={(o) => onOutcome({ scored: o.scored, result: o.result, chance: o.chance })}
       {...(keeperFace ? { keeperFace } : {})}
       night={night}
+      weather={lighting?.weather === "rain" || lighting?.weather === "wind_rain" ? "rain" : lighting?.weather === "snow" ? "snow" : night ? "night" : "day"}
       seed={seed ?? "penalty"}
     />
   );
