@@ -50,6 +50,16 @@ export const GAME_ART_FILES: Record<string, string> = {
   "officials/officials-atlas.png": "image/png",
   "crowd/crowd-atlas.json": "application/json",
   "crowd/crowd-atlas.png": "image/png",
+  "backgrounds/bg-landing.webp": "image/webp",
+  "backgrounds/bg-new-game.webp": "image/webp",
+  "medals/medal-bronze.svg": "image/svg+xml",
+  "medals/medal-silver.svg": "image/svg+xml",
+  "medals/medal-gold.svg": "image/svg+xml",
+  "medals/medal-secret.svg": "image/svg+xml",
+  "frames/frame-bronze.svg": "image/svg+xml",
+  "frames/frame-silver.svg": "image/svg+xml",
+  "frames/frame-gold.svg": "image/svg+xml",
+  "frames/frame-legend.svg": "image/svg+xml",
 };
 const GAME_ART_DIR = join(import.meta.dir, "..", "Data", "assets");
 

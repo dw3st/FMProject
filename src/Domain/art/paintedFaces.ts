@@ -19,6 +19,9 @@ export interface ArtManifest extends PaintedFaceIds {
   backdrops: string[];
   /** Painted penalty backdrops (art phase 6). */
   penaltyBackdrops?: string[];
+  /** Painted facilities and inbox illustrations (art phase 7). */
+  facilities?: string[];
+  news?: string[];
   /** The new visual is on on the server (`ART_VISUAL` not 0). */
   visual?: boolean;
 }
@@ -56,6 +59,31 @@ export function setPaintedPenaltyBackdrops(ids: string[] | null): void {
 /** Painted penalty backdrop by id (`penalty-bg-night`…), or null. */
 export function paintedPenaltyBackdrop(id: string): string | null {
   return penaltyBackdrops.has(id) ? artUrl(`backdrops/penalty/${encodeURIComponent(id)}.webp`) : null;
+}
+
+let paintedFacilityIds = new Set<string>();
+let paintedNewsIds = new Set<string>();
+
+export function setPaintedScreens(facilities: string[] | null, news: string[] | null): void {
+  paintedFacilityIds = new Set(facilities ?? []);
+  paintedNewsIds = new Set(news ?? []);
+}
+
+/**
+ * Painted facility (art phase 7) for an item (`stadiumPitch` → `facility-stadium-pitch`) at the game's level 1..10:
+ * the painting has five levels (1–2 → 1 … 9–10 → 5); null without it.
+ */
+export function paintedFacility(itemId: string, level: number): string | null {
+  const kebab = itemId.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+  const lv = Math.min(5, Math.max(1, Math.ceil(level / 2)));
+  const id = `facility-${kebab}-${lv}`;
+  return paintedFacilityIds.has(id) ? artUrl(`facilities/${id}.webp`) : null;
+}
+
+/** Painted illustration of an inbox category (art phase 7), or null. */
+export function paintedNews(category: string): string | null {
+  const id = `news-${category}`;
+  return paintedNewsIds.has(id) ? artUrl(`news/${encodeURIComponent(id)}.webp`) : null;
 }
 
 /** Painted match backdrop by id (`match-backdrop-grass-a`…), or null. */
@@ -117,6 +145,10 @@ export async function loadPaintedFaces(timeoutMs = 1500, wantsNewVisual = true):
     const body = (await res.json()) as Partial<ArtManifest>;
     setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
     setPaintedPenaltyBackdrops(wantsNewVisual && Array.isArray(body.penaltyBackdrops) ? body.penaltyBackdrops : []);
+    setPaintedScreens(
+      wantsNewVisual && Array.isArray(body.facilities) ? body.facilities : [],
+      wantsNewVisual && Array.isArray(body.news) ? body.news : [],
+    );
     setNewVisual(wantsNewVisual && body.visual === true);
     setPaintedFaces({
       players: Array.isArray(body.players) ? body.players : [],

@@ -17,6 +17,7 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
 import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
@@ -480,6 +481,8 @@ interface Props {
   replay?: boolean;
   /** Told when a goal replay starts and ends (the page shows its tag). */
   onReplay?: (on: boolean) => void;
+  /** Graphics quality (art phase 8): `light` draws a calm pitch (no fireworks, flashes, crowd motion, weather). */
+  quality?: PitchQuality;
 }
 
 export interface PitchOfficials {
@@ -555,6 +558,7 @@ export function PixiPitch({
   camera = "fixed",
   replay = false,
   onReplay,
+  quality = "high",
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -583,6 +587,7 @@ export function PixiPitch({
   const coachesRef               = useRef(coaches);
   const extrasRef                = useRef(extras);
   const cameraRef                = useRef(camera);
+  const qualityRef               = useRef(quality);
   const replayRef                = useRef(replay);
   const onReplayRef              = useRef(onReplay);
   const staminaTeamsRef          = useRef(staminaTeams);
@@ -617,6 +622,7 @@ export function PixiPitch({
   useEffect(() => { coachesRef.current = coaches; }, [coaches]);
   useEffect(() => { extrasRef.current = extras; }, [extras]);
   useEffect(() => { cameraRef.current = camera; }, [camera]);
+  useEffect(() => { qualityRef.current = quality; }, [quality]);
   useEffect(() => { replayRef.current = replay; }, [replay]);
   useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
   // Stadium flags read at event time (big game): the ref follows every prop change.
@@ -1261,8 +1267,11 @@ export function PixiPitch({
         onReplayRef.current?.(false);
       };
       const unsubReplay = gameBus.on("goalScored", () => {
-        if (!remote && replayRef.current && framesVisible()) replayPending = { goalAt: replayClock };
+        if (!remote && replayRef.current && !calm() && framesVisible()) replayPending = { goalAt: replayClock };
       });
+      // Reduced motion or light quality (art phase 8, `motionPrefs.ts`): a calm pitch.
+      const reducedMotion = prefersReducedMotion();
+      const calm = () => reducedMotion || qualityRef.current === "light";
       let cam: CameraView = { zoom: 1, x: canvasWidth / 2, y: canvasHeight / 2 };
 
       const pumpSimulation = () => {
@@ -2213,6 +2222,7 @@ export function PixiPitch({
             }
             const camX0 = x + cx * u * 1.1, camY0 = y + cy * u * 1.1;
             if (officialSheet) {
+              if (calm()) return;
               const period = burstAge >= 0 && burstAge < 2.2 ? 0.35 : 3.5 + (i % 3);
               const ph0 = (effectNow + look.phase * 2) % period;
               if (ph0 < 0.09 && (burstAge < 2.2 || (Math.floor((effectNow + look.phase * 2) / period) + i) % 2 === 0)) {
@@ -2234,6 +2244,7 @@ export function PixiPitch({
             const hair = BENCH_HAIR[look.hair];
             if (hair !== undefined) photoGfx.circle(x - cx * u * 0.3, y - cy * u * 0.3, u * 0.44).fill(hair);
             // Flash: a short white burst; many in a row right after a shot toward that goal.
+            if (calm()) return;
             const burst = effectNow - photoBurst[burstSide];
             const period = burst >= 0 && burst < 2.2 ? 0.35 : 3.5 + (i % 3);
             const ph0 = (effectNow + look.phase * 2) % period;
@@ -2503,6 +2514,15 @@ export function PixiPitch({
       });
       const drawAtmosphere = () => {
         drawTowers();
+        if (calm()) {
+          // No phone lights, flares or fireworks: what was drawn goes.
+          phoneG.clear();
+          phonesDrawnAt = -Infinity;
+          bursts = [];
+          smokeG.clear();
+          sparkG.clear();
+          return;
+        }
         drawPhones();
         drawBursts();
       };
@@ -2516,7 +2536,7 @@ export function PixiPitch({
       let particleSeedKey = "";
       const drawParticles = () => {
         const li = lightingRef.current;
-        if (li && !li.sun.covered && (li.weather === "rain" || li.weather === "snow" || li.weather === "wind_rain")) {
+        if (li && !calm() && !li.sun.covered && (li.weather === "rain" || li.weather === "snow" || li.weather === "wind_rain")) {
           const pk = `${li.weather}|${li.seed}`;
           if (particleSeedKey !== pk) { particles = weatherParticles(li.weather, li.seed); particleSeedKey = pk; }
           particleGraphics.clear();
@@ -3331,7 +3351,7 @@ export function PixiPitch({
         drawStretchers();
         // Camera: the whole pitch, or zoomed on the ball (following, or during a replay).
         {
-          const want = replayRun ? CAMERA.REPLAY_ZOOM : cameraRef.current === "follow" ? CAMERA.FOLLOW_ZOOM : 1;
+          const want = replayRun ? CAMERA.REPLAY_ZOOM : cameraRef.current === "follow" && !calm() ? CAMERA.FOLLOW_ZOOM : 1;
           const bp = toPixel(drawnB.x, drawnB.y);
           cam = stepCamera(cam, want, { x: bp.px, y: bp.py }, canvasWidth, canvasHeight, app.ticker.deltaMS / 1000);
           app.stage.scale.set(cam.zoom);
@@ -3344,7 +3364,7 @@ export function PixiPitch({
         if (crowdJump && effectNow - crowdJump.at >= CROWD_MOTION.GOAL_S) crowdJump = null;
         // Each fan bounces softly, the wave raises the arms as it goes round, the scoring side jumps (with extras).
         const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };
-        const moving = extrasRef.current;
+        const moving = extrasRef.current && !calm();
         flagGfx.clear();
         let flagCrestIdx = 0;
         for (const s of flagCrests) s.visible = false;

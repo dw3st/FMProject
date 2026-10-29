@@ -45,11 +45,12 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readQuality } from "@/GameInterface/artPrefs";
+import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
-import type { PitchLighting, PitchOfficials, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import type { PitchLighting, PitchOfficials, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 
@@ -207,6 +208,19 @@ export function MatchScreen() {
   // Camera and goal replay (art phase 5): the player's settings, read when the page opens.
   const matchCameraPref = useMemo(readMatchCamera, []);
   const goalReplayPref = useMemo(readGoalReplay, []);
+  // Graphics quality (art phase 8): the setting, or automatic by the frame rate (light after a run of slow seconds).
+  const qualityPref = useMemo(readQuality, []);
+  const pitchPerfRef = useRef<PitchPerf | null>(null);
+  const [autoQuality, setAutoQuality] = useState<{ quality: PitchQuality; slow: number }>({ quality: "high", slow: 0 });
+  useEffect(() => {
+    if (qualityPref !== "auto") return;
+    const iv = window.setInterval(() => {
+      const fps = pitchPerfRef.current?.fps ?? 0;
+      if (!document.hidden) setAutoQuality((s) => nextAutoQuality(s, fps));
+    }, AUTO_QUALITY.INTERVAL_MS);
+    return () => window.clearInterval(iv);
+  }, [qualityPref]);
+  const pitchQuality: PitchQuality = qualityPref === "auto" ? autoQuality.quality : qualityPref;
   const [replayOn, setReplayOn] = useState(false);
   const [h2hTarget, setH2HTarget] = useState<{ saveId: string; fixtureId: string } | null>(null);
   const h2h = useH2HSocket(h2hTarget);
@@ -1918,6 +1932,8 @@ export function MatchScreen() {
                   camera={matchCameraPref}
                   replay={!h2hMode && goalReplayPref}
                   onReplay={setReplayOn}
+                  quality={pitchQuality}
+                  perfRef={pitchPerfRef}
                   effectLabels={effectLabels}
                   debugMode={DEV_TOOLS && debug}
                   mirror={awayView}

@@ -697,7 +697,7 @@ function WizardFrame({ backdrop = false, children }: { backdrop?: boolean; child
     <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
       <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
       <div className="relative flex w-full max-w-[1600px] flex-1 min-h-0">
-        {backdrop && <PitchBackdrop players={false} />}
+        {backdrop && <PitchBackdrop players={false} scene="new-game" />}
         <div className="relative flex w-full flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90">
           {children}
         </div>

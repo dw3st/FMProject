@@ -10,8 +10,14 @@ describe("entry visuals", () => {
     expect(html).toContain("PROJECT");
   });
 
+  test("PitchBackdrop with the new visual shows the painted stadium", () => {
+    const html = renderToStaticMarkup(<PitchBackdrop painted scene="new-game" />);
+    expect(html).toContain("backgrounds/bg-new-game.webp");
+    expect(html).toContain('aria-hidden="true"');
+  });
+
   test("PitchBackdrop is decorative with 22 players + centre circle", () => {
-    const html = renderToStaticMarkup(<PitchBackdrop />);
+    const html = renderToStaticMarkup(<PitchBackdrop painted={false} />);
     expect(html).toContain('aria-hidden="true"');
     expect(html.match(/<circle/g)?.length).toBe(23);
   });

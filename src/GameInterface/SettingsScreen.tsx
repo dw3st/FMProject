@@ -6,7 +6,7 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { readGoalReplay, readMatchCamera, readNewVisual, writeGoalReplay, writeMatchCamera, writeNewVisual } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -22,6 +22,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [newVisual, setNewVisual] = useState(readNewVisual);
   const [matchCamera, setMatchCamera] = useState(readMatchCamera);
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
+  const [quality, setQuality] = useState<QualityPref>(readQuality);
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +99,16 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.goalReplayDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.quality")}</div>
+          <OptionChips
+            value={quality}
+            onChange={(k) => { const v = k === "high" || k === "light" ? k : "auto"; setQuality(v); writeQuality(v); }}
+            options={[{ key: "auto", label: t("settings.qualityAuto") }, { key: "high", label: t("settings.qualityHigh") }, { key: "light", label: t("settings.qualityLight") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.qualityDescription")}</p>
         </div>
 
         {onExitToMenu && (

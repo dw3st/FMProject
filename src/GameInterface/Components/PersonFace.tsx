@@ -1,3 +1,4 @@
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { FaceImage, playerInitials, type PlayerFaceSize } from "@/GameInterface/Components/PlayerFace";
 import { managerFaceUrl, personFaceUrl } from "@/Domain/faces/faceUrl";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
@@ -28,21 +29,31 @@ export function StaffFace({
 
 /** Face of a manager: the human one's saved avatar, otherwise the face drawn from the id. */
 export function ManagerFaceImage({
-  manager, clubColors, size, className, ringClassName,
+  manager, clubColors, size, className, ringClassName, frame,
 }: {
   ringClassName?: string;
+  /** Achievements frame (art phase 7): with the new visual, the painted ring around the face. */
+  frame?: "none" | "bronze" | "silver" | "gold" | "legend";
   manager: { id: string; name: string; face?: ManagerFace | null; nationality?: string | null };
   clubColors?: readonly string[] | null;
   size: PlayerFaceSize;
   className?: string;
 }) {
-  return (
+  const face = (
     <FaceImage
       src={managerFaceUrl(manager, clubColors ?? undefined)}
       size={size}
       fallback={playerInitials(manager.name)}
-      className={className}
-      ringClassName={ringClassName}
+      className={frame && frame !== "none" && newVisualOn() ? "" : className}
+      ringClassName={frame && frame !== "none" && newVisualOn() ? "border-0" : ringClassName}
     />
+  );
+  if (!frame || frame === "none" || !newVisualOn()) return face;
+  // The ring's clear centre is 104 of its 128 px: drawn 23% larger than the face, centred on it.
+  return (
+    <span className={`relative inline-flex shrink-0 ${className ?? ""}`}>
+      {face}
+      <img src={gameArtUrl(`frames/frame-${frame}.svg`)} alt="" aria-hidden="true" className="pointer-events-none absolute -inset-[11.5%] w-[123%] h-[123%] max-w-none" />
+    </span>
   );
 }

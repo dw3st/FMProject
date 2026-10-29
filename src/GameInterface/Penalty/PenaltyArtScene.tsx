@@ -3,6 +3,7 @@ import { GOAL_AREAS, areaCentre } from "@/Domain/penalty/penaltyKick";
 import { SCENE, goalToPx, shotDuration } from "@/GameInterface/Penalty/penaltyScene";
 import { rigPlan, rigScene, type KeeperLook, type RigPlan, type TakerLook } from "@/GameInterface/Penalty/penaltyRig";
 import type { PenaltyPitchProps } from "@/GameInterface/Penalty/PenaltyPitch";
+import { prefersReducedMotion } from "@/GraficsEngine/motionPrefs";
 
 /**
  * The 2D penalty with the new art (art plan phase 6): the painted backdrop of the weather, the keeper and the taker
@@ -23,6 +24,7 @@ export function PenaltyArtScene(props: PenaltyPitchProps & { backdrop: string })
     let shotStart: number | null = null;
     let plan: RigPlan | null = null;
     let shook = false;
+    const still = prefersReducedMotion();
     const step = (nowMs: number) => {
       const p = live.current;
       const o = p.outcome;
@@ -33,9 +35,9 @@ export function PenaltyArtScene(props: PenaltyPitchProps & { backdrop: string })
       const t = shotStart === null ? 0 : (nowMs - shotStart) / 1000;
       const keeper: KeeperLook = { shirt: p.keeperColor, trim: "#1e1e22", shorts: "#1e1e22", socks: p.keeperColor, skin: "#c99a6e", ...(p.keeperFace ? { face: p.keeperFace } : {}) };
       const taker: TakerLook = { shirt: p.takerColor, trim: "#ffffff", shorts: "#f4f6fa", socks: p.takerColor, skin: "#a66f4f", hair: "#1e130c", number: "" };
-      if (sceneRef.current) sceneRef.current.innerHTML = rigScene(t, nowMs / 1000, plan, keeper, taker, id);
+      if (sceneRef.current) sceneRef.current.innerHTML = rigScene(t, still ? 0 : nowMs / 1000, plan, keeper, taker, id);
       // A goal shakes the picture once.
-      if (plan && !shook && !plan.saved && !plan.post && !plan.miss && t > plan.kick + plan.dur) {
+      if (plan && !shook && !still && !plan.saved && !plan.post && !plan.miss && t > plan.kick + plan.dur) {
         shook = true;
         wrapRef.current?.animate(
           [{ transform: "translate(0,0)" }, { transform: "translate(-3px,1px)" }, { transform: "translate(3px,-1px)" }, { transform: "translate(0,0)" }],

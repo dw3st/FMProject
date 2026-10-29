@@ -58,3 +58,24 @@ export function writeGoalReplay(on: boolean): void {
     // no storage: the default stays
   }
 }
+
+/** Graphics quality of the live match (art phase 8): automatic (default), high or light. */
+const QUALITY_KEY = "fm.visual.quality";
+export type QualityPref = "auto" | "high" | "light";
+
+export function readQuality(): QualityPref {
+  try {
+    const v = localStorage.getItem(QUALITY_KEY);
+    return v === "high" || v === "light" ? v : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+export function writeQuality(v: QualityPref): void {
+  try {
+    localStorage.setItem(QUALITY_KEY, v);
+  } catch {
+    // no storage: the default stays
+  }
+}

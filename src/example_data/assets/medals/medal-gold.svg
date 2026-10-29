@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".55" stop-color="#f2c230"/><stop offset="1" stop-color="#a8740f"/></linearGradient>
+    <linearGradient id="i" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff1a8"/><stop offset=".6" stop-color="#f2c230"/><stop offset="1" stop-color="#a8740f"/></linearGradient>
+  </defs>
+  <path d="M18 2h11l5 18h-11z" fill="#2a55b0"/>
+  <path d="M46 2H35l-5 18h11z" fill="#407aea"/>
+  <path d="M26 2h3l5 18h-3z" fill="#ffffff" opacity=".35"/>
+  <circle cx="32" cy="38" r="21" fill="#0b121d"/>
+  <circle cx="32" cy="38" r="19.5" fill="url(#m)"/>
+  <circle cx="32" cy="38" r="14.5" fill="url(#i)"/>
+  <circle cx="32" cy="38" r="14.5" fill="none" stroke="#a8740f" stroke-opacity=".5"/>
+  <g transform="translate(0 2.5)"><path d="M32 25.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z" fill="#a8740f" opacity=".55" transform="translate(0 .8)"/><path d="M32 25.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z" fill="#fff1a8"/></g>
+</svg>

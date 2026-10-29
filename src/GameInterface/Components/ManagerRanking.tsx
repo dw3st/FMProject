@@ -135,7 +135,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
               <RankCell rank={m.rank} />
               <CrestCell squadId={m.squadId} />
               <NameCell highlight={m.isPlayer}>
-                <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName={m.profile && m.profile.frame !== "none" ? FRAME_RING[m.profile.frame] : "border border-border"} className="mr-1.5" />
+                <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName={m.profile && m.profile.frame !== "none" ? FRAME_RING[m.profile.frame] : "border border-border"} className="mr-1.5" {...(m.profile ? { frame: m.profile.frame } : {})} />
                 <span className="truncate">{m.name}</span>
                 {m.profile?.title && <span className="text-sm font-semibold text-primary truncate ml-1.5">{t(`achievements.titles.${m.profile.title}`)}</span>}
               </NameCell>
@@ -150,7 +150,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={7}>
                 <div className="flex items-center gap-3 mb-3">
-                  <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame] } : {})} />
+                  <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame], frame: m.profile.frame } : {})} />
                   <div className="min-w-0">
                     <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{m.name}</p>
                     {m.isPlayer && m.profile && (

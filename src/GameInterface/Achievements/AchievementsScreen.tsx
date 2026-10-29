@@ -1,3 +1,4 @@
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { StadiumDecorPreview } from "@/GameInterface/Achievements/StadiumDecorPreview";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { seatManagerId } from "@/Domain/seats/seats";
@@ -164,7 +165,9 @@ function TrackCard({ track, lang }: { track: TrackView; lang: string }) {
           const on = track.unlocked[tier];
           return (
             <div key={tier} className="flex flex-col items-center gap-0.5 text-center" title={on ? t("achievements.unlockedOn", { date: formatDate(on, lang) }) : t(`achievements.tiers.${tier}`)}>
-              <Icon name="medal" size={20} className={on ? TIER_TEXT[tier] : "text-muted-foreground/40"} />
+              {newVisualOn()
+                ? <img src={gameArtUrl(`medals/medal-${tier}.svg`)} alt="" aria-hidden="true" className={`w-7 h-7 ${on ? "" : "grayscale opacity-30"}`} />
+                : <Icon name="medal" size={20} className={on ? TIER_TEXT[tier] : "text-muted-foreground/40"} />}
               <span className={`text-sm tabular-nums leading-tight ${on ? "text-foreground" : "text-muted-foreground"}`}>{thresholdLabel(i)}</span>
             </div>
           );
@@ -216,6 +219,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
           clubColors={session?.clubColors}
           size={96}
           ringClassName={FRAME_RING[frame]}
+          frame={frame}
         />
         <span className="font-semibold text-foreground">{manager?.name ?? "—"}</span>
         {title && <span className="text-sm font-semibold text-primary">{t(`achievements.titles.${title}`)}</span>}

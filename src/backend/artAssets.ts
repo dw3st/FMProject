@@ -26,6 +26,9 @@ interface ArtIndex {
   backdrops: string[];
   /** Painted penalty backdrops (`backdrops/penalty/<id>.webp`, art phase 6). */
   penalty: string[];
+  /** Painted facilities (`facilities/<id>.webp`) and inbox illustrations (`news/<id>.webp`, art phase 7). */
+  facilities: string[];
+  news: string[];
 }
 
 let cache: { mtimeMs: number; dir: string; index: ArtIndex } | null = null;
@@ -85,6 +88,8 @@ function loadIndex(): ArtIndex | null {
       },
       backdrops: idsAt(backdrops.match, "backdrops/match"),
       penalty: idsAt(backdrops.penalty, "backdrops/penalty"),
+      facilities: idsAt(raw.facilities, "facilities"),
+      news: idsAt(raw.news, "news"),
     };
     cache = { mtimeMs, dir, index };
     return index;
@@ -129,6 +134,8 @@ export const artAssetRoutes = {
       ...faces,
       backdrops: index && visual ? index.backdrops : [],
       penaltyBackdrops: index && visual ? index.penalty : [],
+      facilities: index && visual ? index.facilities : [],
+      news: index && visual ? index.news : [],
       visual,
     };
     return Response.json(body, { headers: { "Cache-Control": "no-cache" } });

@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.11",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Visual novo também fora da partida: fundo pintado na tela inicial e no novo jogo, desenhos das instalações do clube, ilustração nas mensagens, medalhas das conquistas e moldura do rosto do técnico.",
+        en: "The new look outside the match too: painted backgrounds on the start and new game screens, club facility drawings, illustrations in the messages, achievement medals and the manager's face frame.",
+      },
+      {
+        pt: "Qualidade gráfica em Configurações (automática, alta ou leve). A leve tira fogos, flashes, movimento da torcida e chuva; a automática passa para leve quando a partida fica lenta. Com a opção de reduzir movimento do sistema, a partida e o pênalti ficam sem esses efeitos.",
+        en: "Graphics quality in Settings (automatic, high or light). Light drops fireworks, flashes, crowd movement and rain; automatic switches to light when the match runs slowly. With the system's reduce motion option, the match and the penalty skip those effects.",
+      },
+    ],
+  },
+  {
     version: "4.41.10",
     date: "2026-10-29",
     items: [
@@ -2683,6 +2697,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Visual novo também nas telas fora da partida", en: "The new look on the screens outside the match too" },
+  { pt: "Histórico de campeões de todas as competições do mundo", en: "Champions history of every competition in the world" },
+  { pt: "Busca por time na tela de ligas", en: "Search by team on the leagues screen" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

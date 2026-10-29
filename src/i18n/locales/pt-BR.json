@@ -597,7 +597,12 @@
     "matchCameraFixed": "Campo inteiro",
     "matchCameraFollow": "Segue a bola",
     "goalReplay": "Replay do gol",
-    "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta."
+    "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta.",
+    "quality": "Qualidade gráfica",
+    "qualityAuto": "Automática",
+    "qualityHigh": "Alta",
+    "qualityLight": "Leve",
+    "qualityDescription": "Leve tira fogos, flashes, movimento da torcida e chuva na partida. Automática passa para leve quando a partida fica lenta."
   },
   "reports": {
     "title": "Enviar um relatório",

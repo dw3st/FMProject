@@ -345,3 +345,21 @@ atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do g
 - **Bolas paradas e goleiro** (`playerSprite.ts`): no lateral o cobrador segura a bola sobre a cabeça (`THROW_IN_HOLD`)
   e arremessa (`throwGo`); o goleiro soca quando não agarra (`punch`) e anda de lado quando se move devagar
   (`keeper-side`); `KNEE_SLIDE_SHARE` (35%) dos gols com o joelho no chão.
+
+## Telas fora da partida (arte nova, fase 7, 4.41.11)
+
+Com o visual novo: fundos pintados nas telas de entrada (`PitchBackdrop` `scene`, `backgrounds/bg-landing|new-game.webp`),
+medalhas (`medals/medal-<tier>.svg`) e molduras do rosto do técnico (`ManagerFaceImage` `frame`, `frames/frame-<f>.svg`),
+servidos do repositório (`GAME_ART_FILES`); desenhos das instalações (`paintedFacility(item, nível)`,
+`facilities/facility-<id>-<1..5>.webp`) e ilustrações da caixa de entrada por categoria (`paintedNews`) do volume de arte,
+anunciados por `/api/art/faces` (`facilities`, `news`). Sem a arte, o desenho de antes. Ficaram para depois: ícones das
+abas e da caixa (seguem no lucide), og-image/favicon, fundo de neblina do pênalti.
+
+## Qualidade e movimento reduzido (arte nova, fase 8, 4.41.11)
+
+`motionPrefs.ts` (+ teste): `prefersReducedMotion()` e `nextAutoQuality`. Prop `quality` do `PixiPitch` (`high` | `light`);
+com `light` ou movimento reduzido (`calm`) o campo não desenha celulares, sinalizadores, fogos, flashes dos fotógrafos,
+movimento da torcida nem chuva/neve, a câmera fica no campo inteiro e não há replay. Configurações → "Qualidade gráfica"
+(`fm.visual.quality`: automática, alta, leve); a automática lê o FPS do campo (`perfRef`) a cada 2 s e passa para leve
+depois de 3 leituras abaixo de 40 (`AUTO_QUALITY`), sem voltar na mesma partida. O pênalti pintado com movimento reduzido
+não balança nem treme a tela. Só desenho.

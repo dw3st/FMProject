@@ -45,14 +45,14 @@ describe("art assets", () => {
     setArtDirForTests(join(dir, "nothing"));
     process.env.ART_FACES = "1";
     expect((await get("faces/players/p1.webp")).status).toBe(404);
-    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: [], penaltyBackdrops: [], visual: true });
+    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: [], penaltyBackdrops: [], facilities: [], news: [], visual: true });
   });
 
   test("the face list only with ART_FACES=1, and only ids on the client's path convention", async () => {
     setArtDirForTests(dir);
-    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"], penaltyBackdrops: [], visual: true });
+    expect(await faces().json()).toEqual({ players: [], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"], penaltyBackdrops: [], facilities: [], news: [], visual: true });
     process.env.ART_FACES = "1";
-    expect(await faces().json()).toEqual({ players: ["p1", "p2"], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"], penaltyBackdrops: [], visual: true });
+    expect(await faces().json()).toEqual({ players: ["p1", "p2"], coaches: [], referees: [], backdrops: ["match-backdrop-grass-a"], penaltyBackdrops: [], facilities: [], news: [], visual: true });
   });
 
   test("the painted backdrops are announced unless ART_VISUAL=0 (no image rights involved)", async () => {

@@ -597,7 +597,12 @@
     "matchCameraFixed": "Whole pitch",
     "matchCameraFollow": "Follows the ball",
     "goalReplay": "Goal replay",
-    "goalReplayDescription": "After every goal, the last seconds play again in slow motion."
+    "goalReplayDescription": "After every goal, the last seconds play again in slow motion.",
+    "quality": "Graphics quality",
+    "qualityAuto": "Automatic",
+    "qualityHigh": "High",
+    "qualityLight": "Light",
+    "qualityDescription": "Light drops fireworks, flashes, crowd movement and rain in the match. Automatic switches to light when the match runs slowly."
   },
   "reports": {
     "title": "Send a report",

@@ -1,3 +1,5 @@
+import { gameArtUrl } from "@/Domain/art/paintedFaces";
+import { readNewVisual } from "@/GameInterface/artPrefs";
 const TEAM_A = [
   [10, 65], [38, 25], [36, 55], [36, 78], [40, 106], [72, 40],
   [70, 95], [118, 30], [116, 100], [78, 68], [128, 64],
@@ -7,7 +9,18 @@ const TEAM_B = [
   [142, 80], [84, 18], [88, 112], [104, 52], [96, 84],
 ] as const;
 
-export function PitchBackdrop({ players = true }: { players?: boolean } = {}) {
+/**
+ * Entry screens' backdrop: with the new visual (the player's switch), the painted stadium (art phase 7) under a dark
+ * veil; else the drawn pitch lines.
+ */
+export function PitchBackdrop({ players = true, scene = "landing", painted = readNewVisual() }: { players?: boolean; scene?: "landing" | "new-game"; painted?: boolean } = {}) {
+  if (painted) {
+    return (
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <img src={gameArtUrl(`backgrounds/bg-${scene}.webp`)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+      </div>
+    );
+  }
   return (
     <svg
       viewBox="0 0 200 130"

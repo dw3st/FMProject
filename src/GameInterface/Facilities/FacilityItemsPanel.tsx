@@ -117,7 +117,7 @@ function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; select
       className={`flex flex-col gap-2 rounded-md border bg-card p-3 text-left cursor-pointer transition-colors min-w-0 ${
         selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-muted-foreground"}`}
     >
-      <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} />
+      <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} level={item.level} />
       <span className="font-semibold text-foreground truncate">{t(`facilities.item.${item.id}`)}</span>
       <span className="flex flex-col gap-1">
         <span className="flex items-center justify-between gap-2">
@@ -195,7 +195,7 @@ function ItemDetail({
   return (
     <div className="card-arcade rounded-md p-4 grid grid-cols-1 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)] gap-5">
       <div className="flex flex-col gap-3">
-        <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} />
+        <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} level={item.level} />
         <span className="flex items-center justify-between gap-2">
           <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.items.levelOf", { level: item.level })}</span>
           <ItemLevelMarks level={item.level} />

@@ -1,3 +1,4 @@
+import { paintedFacility } from "@/Domain/art/paintedFaces";
 import type { ReactNode } from "react";
 import type { FacilityItemId } from "@/types/facilityTypes";
 
@@ -19,9 +20,11 @@ const LINE = "fill-none stroke-foreground/45";
  * next to it names the item.
  */
 export function FacilityItemArt({
-  id, tone, closed = false, works = false, className = "",
+  id, tone, closed = false, works = false, className = "", level,
 }: {
   id: FacilityItemId;
+  /** Level 1..10: with the new visual, the painted picture of that level (art phase 7). */
+  level?: number;
   tone: ArtTone;
   closed?: boolean;
   /** Works under way on the item: a small crane in the corner. */
@@ -30,6 +33,25 @@ export function FacilityItemArt({
 }) {
   const a = ACCENT[tone];
   const hatch = `fac-hatch-${id}`;
+  const painted = level !== undefined ? paintedFacility(id, level) : null;
+  if (painted) {
+    return (
+      <div className={`relative w-full aspect-[16/10] overflow-hidden rounded-[10px] bg-secondary/30 ${className}`} aria-hidden>
+        <img src={painted} alt="" loading="lazy" className={`absolute inset-0 w-full h-full object-cover ${closed ? "grayscale opacity-60" : ""}`} />
+        {(works || closed) && (
+          <svg viewBox="0 0 160 100" className="absolute inset-0 w-full h-full">
+            <defs>
+              <pattern id={hatch} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="8" className="stroke-destructive/60" strokeWidth="3" />
+              </pattern>
+            </defs>
+            {works && <Crane />}
+            {closed && <rect x="2" y="2" width="156" height="96" rx="10" fill={`url(#${hatch})`} />}
+          </svg>
+        )}
+      </div>
+    );
+  }
   return (
     <svg viewBox="0 0 160 100" className={`block w-full h-auto ${className}`} aria-hidden>
       <defs>

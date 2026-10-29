@@ -1,3 +1,4 @@
+import { paintedNews } from "@/Domain/art/paintedFaces";
 import { AchievementInboxBody } from "@/GameInterface/Achievements/AchievementInboxBody";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
@@ -834,8 +835,15 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
   const MetaIcon = meta.Icon;
   const prizeTexts = leaguePrizeTexts(message, t);
 
+  // The painted illustration of the category over the message (art phase 7, new visual only).
+  const illustration = paintedNews(message.category);
   return (
     <div className="flex-1 overflow-y-auto">
+      {illustration && (
+        <div className="relative w-full aspect-[16/5] overflow-hidden border-b border-border bg-secondary/30">
+          <img src={illustration} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        </div>
+      )}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3 mb-3">
           <div
