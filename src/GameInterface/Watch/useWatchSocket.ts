@@ -9,7 +9,9 @@ import { reconnectDelay } from "@/GameInterface/Social/socialState";
 import { mergeWireState } from "@/GameInterface/H2H/h2hState";
 import type { ClientEvent } from "@/types/socialTypes";
 import type { LiveScoreView } from "@/types/rivalsTypes";
-import type { WatchCloseReason, WatchInfo, WatchStats } from "@/types/watchTypes";
+import type { WatchCloseReason, WatchInfo, WatchLook, WatchStats } from "@/types/watchTypes";
+import { sanitizeWatchLook } from "@/Domain/watch/watchState";
+import { clamp } from "@/Domain/math";
 
 const LOGOUT_CLOSE_CODE = 4001;
 const CLOSE_REASONS = new Set<WatchCloseReason>(["ended", "gone", "full", "refused"]);
@@ -22,6 +24,8 @@ export interface WatchSocket {
   stats: WatchStats | null;
   feed: RemoteFeed;
   closed: WatchCloseReason | null;
+  /** How the friend's pitch is drawn (null until his first state with it). */
+  look: WatchLook | null;
 }
 
 /**
@@ -35,6 +39,9 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
   const [state, setState] = useState<GameState | null>(null);
   const [stats, setStats] = useState<WatchStats | null>(null);
   const [closed, setClosed] = useState<WatchCloseReason | null>(null);
+  const [look, setLook] = useState<WatchLook | null>(null);
+  /** Real ms between two frames, smoothed: the drawing blends over the cadence the friend really sends at. */
+  const gapRef = useRef<{ last: number; ema: number }>({ last: 0, ema: WATCH.FRAME_MS });
   const framesRef = useRef<RemoteFrames>(EMPTY_REMOTE_FRAMES);
   const feedRef = useRef<RemoteFeed>({ frames: framesRef, stepMs: WATCH.FRAME_MS });
   const stateRef = useRef<GameState | null>(null);
@@ -82,8 +89,13 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
         }
         if (e.seatId !== seatId) return;
         if (e.type === "watch_frame" && Array.isArray(e.ball) && Array.isArray(e.players)) {
+          const now = performance.now();
+          const g = gapRef.current;
+          if (g.last > 0) g.ema = g.ema * 0.8 + clamp(now - g.last, 40, 1000) * 0.2;
+          g.last = now;
+          feedRef.current.stepMs = clamp(g.ema, 80, 600);
           framesRef.current = pushRemoteFrame(
-            framesRef.current, toRemoteFrame(e as { ball: [number, number]; players: [number, number, number][] }, performance.now()),
+            framesRef.current, toRemoteFrame(e as { ball: [number, number]; players: [number, number, number][] }, now),
           );
         } else if (e.type === "watch_state" && e.state && Array.isArray((e.state as { players?: unknown }).players)) {
           const st = e.stats as WatchStats | undefined;
@@ -92,6 +104,10 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
           stateRef.current = next;
           setState(next);
           if (st) setStats(st);
+          if (e.look) {
+            const clean = sanitizeWatchLook(e.look);
+            if (clean) setLook(clean);
+          }
         } else if (e.type === "watch_event" && typeof e.name === "string" && WATCH_EVENTS.has(e.name)) {
           gameBus.emit(e.name as keyof GameEvents, e.payload as never);
         } else if (e.type === "watch_closed" && CLOSE_REASONS.has(e.reason as WatchCloseReason)) {
@@ -115,5 +131,5 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
     };
   }, [saveId, seatId]);
 
-  return { info, live, state, stats, feed: feedRef.current, closed };
+  return { info, live, state, stats, feed: feedRef.current, closed, look };
 }

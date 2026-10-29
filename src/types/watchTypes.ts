@@ -37,5 +37,24 @@ export interface WatchInfo {
 export type WatchCloseReason = "ended" | "gone" | "full" | "refused";
 
 export type WatchFramePayload = H2HFrame;
-export interface WatchStatePayload { state: H2HWireState; stats: WatchStats }
+/**
+ * How the friend's pitch is drawn (the `PixiPitch` props of his match screen), so the broadcast looks the same: kits,
+ * faces, stadium and crowd, turf, light, officials, managers. Only URLs of the game's own face / art / logo routes are
+ * kept by the spectator (`sanitizeWatchLook`).
+ */
+export interface WatchLook {
+  teamAColor: string;
+  teamBColor: string;
+  teamAColor2?: string;
+  teamBColor2?: string;
+  faceUrls?: Partial<Record<TeamId, Record<string, string>>>;
+  /** `PitchStadium` without the LED goal text (each spectator writes it in his own language). */
+  stadium?: Record<string, unknown> | null;
+  pitch?: Record<string, unknown> | null;
+  lighting?: Record<string, unknown> | null;
+  officials?: boolean | { refereeFace?: string; assistantFaces?: [string | undefined, string | undefined] };
+  coaches?: Partial<Record<TeamId, { color: string; faceUrl?: string }>>;
+}
+
+export interface WatchStatePayload { state: H2HWireState; stats: WatchStats; look?: WatchLook }
 export interface WatchEventPayload { name: string; payload: unknown }

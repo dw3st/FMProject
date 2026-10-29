@@ -19,6 +19,7 @@ import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { WATCH, WATCH_EVENTS } from "@/Domain/watch/watchConfig";
 import { wireState } from "@/Domain/match/wireState";
+import type { WatchLook } from "@/types/watchTypes";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
 import { initRatings, getAllRatings, exportRatings, importRatings } from "@/GameEngine/Domain/PlayerRating";
 import { getTeamStats, getAllPlayerStats, initStats, exportStatsState, importStatsState, getGoalLog } from "@/GameEngine/Domain/Statistics";
@@ -826,10 +827,12 @@ export function MatchScreen() {
   // (`watch_on`), the pitch's positions, the state and the engine events go to him through the server. A match between
   // two managers runs in the server, which relays it itself.
   const relayLive = liveRivals.relay;
+  const watchLookRef = useRef<WatchLook | null>(null);
   useEffect(() => {
     const saveId = liveTarget?.saveId;
     if (!liveRivals.watched || h2hModeRef.current || !saveId) return;
     let benchSig = "";
+    let lookSent: WatchLook | null = null;
     let soon: ReturnType<typeof setTimeout> | null = null;
     const at = () => {
       const fixtureId = liveFixtureRef.current;
@@ -853,9 +856,14 @@ export function MatchScreen() {
       const sig = `${cur.s.benchA.map((p) => p.id).join(",")}|${cur.s.benchB.map((p) => p.id).join(",")}`;
       const benches = sig !== benchSig;
       benchSig = sig;
+      // The pitch look goes with the first state and again whenever it changes.
+      const look = watchLookRef.current;
+      const sendLook = !!look && look !== lookSent;
+      if (sendLook) lookSent = look;
       relayLive({
         type: "relay_state", saveId, fixtureId: cur.fixtureId, state: wireState(cur.s, benches),
         stats: { teams: { A: getTeamStats("A"), B: getTeamStats("B") }, goals: getGoalLog(), ratings: exportRatings() },
+        ...(sendLook && look ? { look } : {}),
       });
     };
     sendState();
@@ -864,7 +872,8 @@ export function MatchScreen() {
     let lastStateAt = performance.now();
     const offStep = gameBus.on("stateChanged", () => {
       const now = performance.now();
-      if (now - lastFrameAt >= WATCH.FRAME_MS) { lastFrameAt = now; sendFrame(); }
+      // Every simulation step (5 a second at 1x), never closer than FRAME_MIN_MS (2x / 4x).
+      if (now - lastFrameAt >= WATCH.FRAME_MIN_MS) { lastFrameAt = now; sendFrame(); }
       if (now - lastStateAt >= WATCH.STATE_MS) { lastStateAt = now; sendState(); }
     });
     const offs = [...WATCH_EVENTS].map((name) => gameBus.on(name as keyof GameEvents, (payload: unknown) => {
@@ -1489,6 +1498,21 @@ export function MatchScreen() {
     () => (lightConditions && lightSun && matchFixture ? { ...lightConditions, sun: lightSun, seed: matchFixture.id } : null),
     [lightConditions, lightSun, matchFixture?.id], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  // What a friend watching this match needs to draw it the same way (the pitch props below), relayed with the states.
+  const watchLook = useMemo<WatchLook>(() => {
+    const { led: _led, ...stadiumData } = stadium ?? ({} as PitchStadium);
+    return {
+      teamAColor: matchKitColors.teamA, teamBColor: matchKitColors.teamB, ...secondKitColors,
+      ...(faceUrls ? { faceUrls } : {}),
+      stadium: stadium ? (stadiumData as unknown as Record<string, unknown>) : null,
+      pitch: touchline?.pitch && matchFixture ? ({ ...touchline.pitch, seed: matchFixture.id } as unknown as Record<string, unknown>) : null,
+      lighting: matchLightingProp as unknown as Record<string, unknown> | null,
+      officials,
+      coaches,
+    };
+  }, [matchKitColors, secondKitColors, faceUrls, stadium, touchline, matchFixture, matchLightingProp, officials, coaches]);
+  watchLookRef.current = watchLook;
 
   if (loadError) {
     return (

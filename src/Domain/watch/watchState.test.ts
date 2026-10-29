@@ -26,3 +26,24 @@ describe("withBenches", () => {
     expect(withBenches(undefined, next)).toMatchObject({ benchA: [], benchB: [] });
   });
 });
+
+describe("sanitizeWatchLook", () => {
+  test("keeps colours, the game's own URLs and drawing data; drops foreign URLs", async () => {
+    const { sanitizeWatchLook } = await import("@/Domain/watch/watchState");
+    const look = sanitizeWatchLook({
+      teamAColor: "#da291c", teamBColor: "#87ceeb", teamAColor2: "javascript:x",
+      faceUrls: { A: { p1: "/assets/art/v1/faces/players/p1.webp", p2: "https://evil.example/x.png" } },
+      stadium: { fill: 0.9, homeTeam: "A", neutral: false, seed: "f1", homeCrest: "/api/logos/espn/33", led: { goal: "x" } },
+      lighting: { kickoff: "20:00", sunset: "19:30", weather: "rain", sun: { side: "top", lean: 0.2 }, seed: "f1" },
+      officials: { refereeFace: "//evil.example/r.png", assistantFaces: ["/api/faces/person/ref_1.svg?v=1", null] },
+      coaches: { A: { color: "#da291c", faceUrl: "/api/faces/manager/avatar.svg?seed=1" } },
+    })!;
+    expect(look.teamAColor2).toBeUndefined();
+    expect(look.faceUrls).toEqual({ A: { p1: "/assets/art/v1/faces/players/p1.webp" } });
+    expect(look.stadium).toEqual({ fill: 0.9, homeTeam: "A", neutral: false, seed: "f1", homeCrest: "/api/logos/espn/33" });
+    expect(look.lighting).toMatchObject({ weather: "rain", sun: { side: "top", lean: 0.2 } });
+    expect(look.officials).toEqual({ assistantFaces: ["/api/faces/person/ref_1.svg?v=1", undefined] });
+    expect(look.coaches?.A).toEqual({ color: "#da291c", faceUrl: "/api/faces/manager/avatar.svg?seed=1" });
+    expect(sanitizeWatchLook({ teamAColor: "red" })).toBeNull();
+  });
+});

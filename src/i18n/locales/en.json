@@ -5906,6 +5906,7 @@
       "offsides": "Offsides",
       "yellowCards": "Yellow cards",
       "redCards": "Red cards"
-    }
+    },
+    "watching": "Watching {{name}}"
   }
 }

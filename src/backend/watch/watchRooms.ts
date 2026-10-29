@@ -24,6 +24,8 @@ interface Entry {
   watchers: Set<SocialSocket>;
   /** The last relayed state (benches kept), for who joins mid-match. */
   last?: WatchStatePayload;
+  /** The friend's pitch look (sent with the first state and when it changes). */
+  look?: WatchStatePayload["look"];
 }
 
 const entries = new Map<string, Entry>();
@@ -96,7 +98,7 @@ export async function watchJoin(ws: SocialSocket, saveId: string, seatId: string
   e.watchers.add(ws);
   watching.set(ws, keyOf(saveId, seatId));
   send(ws, { type: "watch_info", saveId, info: watchInfoOf(live, kind, club, opponent) });
-  if (e.last) send(ws, { type: "watch_state", saveId, seatId, ...e.last });
+  if (e.last) send(ws, { type: "watch_state", saveId, seatId, ...e.last, ...(e.look ? { look: e.look } : {}) });
   if (kind === "solo" && e.watchers.size === 1) notifyUser(e.userId, { type: "watch_on", saveId });
 }
 
@@ -117,8 +119,9 @@ function fanOut(e: Entry, relay: Relay): void {
   const base = { saveId: e.saveId, seatId: e.seatId };
   let event: ServerEvent;
   if (relay.kind === "state") {
+    if (relay.look) e.look = relay.look;
     e.last = { state: withBenches(e.last?.state, relay.state), stats: relay.stats };
-    event = { type: "watch_state", ...base, state: relay.state, stats: relay.stats };
+    event = { type: "watch_state", ...base, state: relay.state, stats: relay.stats, ...(relay.look ? { look: relay.look } : {}) };
   } else if (relay.kind === "frame") {
     const { kind: _k, ...frame } = relay;
     event = { type: "watch_frame", ...base, ...frame };

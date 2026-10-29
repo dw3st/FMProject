@@ -4,6 +4,8 @@ export const WATCH = {
   MAX_WATCHERS: 8,
   /** The friend's browser: a position frame every this many real ms, a state every `STATE_MS` (and after events). */
   FRAME_MS: 200,
+  /** Never two relayed frames closer than this (a fast match sends at most ~10 a second). */
+  FRAME_MIN_MS: 90,
   STATE_MS: 1_000,
   /** Socket limits on what the friend's browser relays (per socket, per second; excess dropped in silence). */
   FRAMES_PER_SEC: 12,

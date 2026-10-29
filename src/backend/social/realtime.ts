@@ -323,7 +323,12 @@ function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
     const stats = e.stats as Record<string, unknown> | undefined;
     if (!state || typeof state !== "object" || !Array.isArray(state.players)) return null;
     if (!stats || typeof stats !== "object" || !stats.teams || !Array.isArray(stats.goals) || !Array.isArray(stats.ratings)) return null;
-    return { type: "relay_state", ...at, state: state as never, stats: { teams: stats.teams as never, goals: stats.goals as never, ratings: stats.ratings as never } };
+    const look = e.look && typeof e.look === "object" && !Array.isArray(e.look) ? e.look : undefined;
+    return {
+      type: "relay_state", ...at, state: state as never,
+      stats: { teams: stats.teams as never, goals: stats.goals as never, ratings: stats.ratings as never },
+      ...(look ? { look: look as never } : {}),
+    };
   }
   if (e.type === "relay_event") {
     if (typeof e.name !== "string" || !WATCH_EVENTS.has(e.name)) return null;

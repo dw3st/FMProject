@@ -6,6 +6,8 @@ const sizeClass = {
   md: "max-w-lg",
   lg: "max-w-3xl",
   xl: "max-w-4xl",
+  /** Almost the whole screen (a friend's match broadcast). */
+  wide: "max-w-[min(1400px,95vw)]",
 } as const;
 
 interface ModalProps {

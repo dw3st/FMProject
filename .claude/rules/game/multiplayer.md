@@ -896,6 +896,19 @@ bun test src/Domain/watch src/backend/watch src/Domain/rivals src/backend/rivals
 Navegador (local, 2026-10-29): mundo de dois assentos, partida solo em 1× e 4×; o espectador recebeu campo, números,
 amarelos, trocas, gols, intervalo e fim; recarregar a aba de quem joga retomou a transmissão.
 
+### Transmissão igual à partida (4.41.3)
+
+- Report: "gráfico diferente e muito lag". Os quadros saíam a cada 400 ms (a checagem de 200 ms contra passos de ~199 ms
+  pulava um passo sim, um não) e a interpolação fixa de 200 ms parava metade do tempo. Agora sai um quadro a cada passo
+  (no mínimo `WATCH.FRAME_MIN_MS` 90 ms entre dois) e o espectador ajusta o passo da interpolação à média real dos
+  intervalos (`useWatchSocket`, 80–600 ms). Medido no navegador: mediana 200 ms, p90 206 ms.
+- **Visual (`WatchLook`):** quem joga manda junto do primeiro estado (e quando muda) as props do `PixiPitch` da partida
+  (cores e segunda cor dos uniformes, rostos, estádio sem o texto do LED, gramado, luz, árbitro, técnicos). O espectador
+  limpa com `sanitizeWatchLook` (só cores, URLs das rotas `/api/faces`, `/assets/art`, `/api/logos` e dados simples) e
+  desenha igual; o texto do LED sai no idioma dele. A partida entre dois técnicos ainda não manda o visual.
+- **Janela:** `WatchButton` abre `WatchPopup` (`Modal` `size="wide"`) no Painel; da partida ao vivo continua em outra
+  aba (`/watch`, a mesma `WatchBroadcast`), para uma página nunca desenhar dois campos.
+
 ### Limitações (parte 8)
 
 - A partida pausada por quem joga congela no espectador, sem aviso de pausa.

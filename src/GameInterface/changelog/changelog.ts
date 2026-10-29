@@ -25,6 +25,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.3",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Assistir ao jogo de um amigo abre uma janela no estilo transmissão, com o campo igual ao dele: estádio, torcida, uniformes, rostos, gramado e luz.",
+        en: "Watching a friend's match opens a broadcast-style window with the pitch exactly as he sees it: stadium, crowd, kits, faces, turf and light.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A transmissão do jogo de um amigo travava: os jogadores andavam aos trancos.",
+        en: "A friend's match broadcast stuttered: the players moved in jerks.",
+      },
+    ],
+  },
+  {
     version: "4.41.2",
     date: "2026-10-29",
     items: [
