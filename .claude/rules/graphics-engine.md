@@ -308,3 +308,14 @@ Goleiro com uniforme próprio (`benchKits`) e gola escura. Atlas `src/example_da
 quatro arquivos versionados), servidos em `/assets/game/v1/` (`GAME_ART_FILES`, `staticAssets.ts`). Só com o visual novo
 (`newVisualOn`: `ART_VISUAL` do servidor e a chave do jogador); sem ele, o disco com o rosto de antes. Os eventos de passe,
 carrinho e encaixe também seguem na transmissão e no jogo entre técnicos (`WATCH_EVENTS`, `H2H_FORWARDED_EVENTS`).
+
+## Arbitragem e equipe em sprite (arte nova, fase 3, 4.41.7)
+
+`officialSprite.ts` (puro, com teste): árbitro, bandeirinhas, técnicos, médicos e quarto árbitro como bonecos do atlas
+`src/example_data/assets/officials` (seis camadas tingidas, mesmo andar e virada dos jogadores, `stepMotion`). Árbitro com
+o uniforme escuro de gola amarela, levanta o cartão (`referee-card`); bandeirinha anda de lado de frente para o campo e
+corre pela linha acima de `AR_RUN_UP` (`assistantSideStep`), bandeira levantada no impedimento; técnico na cor do clube,
+aponta no gesto e no gol; médicos da maca correm, ajoelham e carregam; quarto árbitro entre as áreas técnicas, placa
+levantada por `BOARD_S` a cada `playerSubstituted`. `attachFigure` (PixiPitch) esconde o disco, o rosto e a bandeira
+desenhados; sem o atlas ou com o visual novo desligado, o desenho antigo. Os rostos reais dos árbitros não aparecem nos
+bonecos.

@@ -53,7 +53,9 @@ export function makeOfficial(playerR: number, assistant: boolean): Container {
   const r = playerR * (assistant ? OFFICIAL_LOOK.AR_SCALE : OFFICIAL_LOOK.REF_SCALE);
   const c = new Container();
   c.addChild(shadowOf(r));
-  c.addChild(new Graphics().circle(0, 0, r).fill(OFFICIAL_LOOK.KIT).stroke({ width: 1.5, color: OFFICIAL_LOOK.EDGE, alpha: 0.9 }));
+  const disc = new Graphics().circle(0, 0, r).fill(OFFICIAL_LOOK.KIT).stroke({ width: 1.5, color: OFFICIAL_LOOK.EDGE, alpha: 0.9 });
+  disc.label = "disc";
+  c.addChild(disc);
   // The face (referees.md) goes here once loaded, inside the kit's edge; empty = the plain kit disc.
   const head = new Container() as Container & { faceR?: number };
   head.label = "head";
@@ -70,10 +72,13 @@ export function makeOfficial(playerR: number, assistant: boolean): Container {
 }
 
 export function setFlagRaised(c: Container, raised: boolean): void {
+  // A sprite figure (art phase 3) shows the flag in its own frame.
+  if (c.getChildByLabel("body")) raised = false;
+  const sprite = !!c.getChildByLabel("body");
   const up = c.getChildByLabel("flagUp");
   const down = c.getChildByLabel("flagDown");
   if (up) up.visible = raised;
-  if (down) down.visible = !raised;
+  if (down) down.visible = !raised && !sprite;
 }
 
 export function showCard(c: Container, card: "yellow" | "red" | null): void {
@@ -103,6 +108,7 @@ export function makeCoach(playerR: number, color: number): CoachSprite {
   const arms = new Graphics();
   root.addChild(arms);
   const head = new Container();
+  head.label = "head";
   head.addChild(new Graphics().circle(0, 0, headR).fill(color).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 }));
   root.addChild(head);
   // A card over his head after a complaint (`.claude/rules/game/var.md` §4), like the referee's.

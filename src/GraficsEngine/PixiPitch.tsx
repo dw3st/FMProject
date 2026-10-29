@@ -17,6 +17,7 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
 import { addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
@@ -1307,6 +1308,9 @@ export function PixiPitch({
       const spriteMotion = new Map<number, SpriteMotion>();
       let spriteActions: SpriteAction[] = [];
       const bodyPose = new WeakMap<Container, string>();
+      // Officials, managers and medics as sprites (art phase 3, `officialSprite.ts`), from their own atlas.
+      let officialSheet: Spritesheet | null = null;
+      let onOfficialsReady: (() => void) | null = null;
 
       const labelStyle = new TextStyle({
         fontSize:   markerLabelFontSize(markerR),
@@ -1503,6 +1507,48 @@ export function PixiPitch({
         bodyPose.set(body, key);
       }
 
+      /** A figure of the officials atlas (six tinted layers), as wide as a player times the kind's scale. */
+      function makeFigureBody(kind: OfficialKind, tints: Record<string, number>): Container {
+        const body = new Container();
+        body.label = 'body';
+        body.scale.set(spriteScale(markerR * OFFICIAL_SPRITE.SCALE[kind]));
+        for (const layer of SPRITE_LAYERS) {
+          const sp = new Sprite(Texture.EMPTY);
+          sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
+          sp.label = layer;
+          const t = tints[layer];
+          if (t !== undefined) sp.tint = t;
+          body.addChild(sp);
+        }
+        return body;
+      }
+
+      /** Shows the frame `base` of the officials atlas on a figure. */
+      function setFigurePose(body: Container, base: string): void {
+        const key = `officials:${base}`;
+        if (!officialSheet || bodyPose.get(body) === key) return;
+        for (const layer of SPRITE_LAYERS) {
+          const sp = body.getChildByLabel(layer) as Sprite | null;
+          const tex = officialSheet.textures[`${base}-${layer}.png`];
+          if (sp && tex) sp.texture = tex;
+        }
+        bodyPose.set(body, key);
+      }
+
+      /**
+       * Puts a figure in an official's / manager's container (after its shadow): the drawn disc, head and flag hide.
+       * Nothing without the atlas.
+       */
+      function attachFigure(c: Container | null, kind: OfficialKind, id: string, clubColor?: number): void {
+        if (!officialSheet || !c || c.destroyed || c.getChildByLabel('body')) return;
+        const body = makeFigureBody(kind, officialTints(kind, id, clubColor));
+        c.addChildAt(body, Math.min(1, c.children.length));
+        for (const l of ['disc', 'head', 'flagUp', 'flagDown']) {
+          const ch = c.getChildByLabel(l);
+          if (ch) ch.visible = false;
+        }
+      }
+
       /** Remove and destroy the marker + label for a player that left the pitch. */
       function removePlayerSprite(id: number): void {
         const g = playerGraphics.get(id);
@@ -1542,6 +1588,11 @@ export function PixiPitch({
           spriteSheets = { player, keeper };
           for (const p of stateRef.current.players) addBody(p);
         }).catch(() => { /* the discs stay */ });
+        void Assets.load<Spritesheet>(gameArtUrl("officials/officials-atlas.json")).then((sheet) => {
+          if (facesDisposed || !sheet) return;
+          officialSheet = sheet;
+          onOfficialsReady?.();
+        }).catch(() => { /* the drawn officials stay */ });
       }
 
       // ── Ball ──
@@ -1785,7 +1836,7 @@ export function PixiPitch({
       stretcherGfx.zIndex = 6;
       stretcherGfx.eventMode = 'none';
       world.addChild(stretcherGfx);
-      let stretchers: { run: StretcherRun; color: number }[] = [];
+      let stretchers: { run: StretcherRun; color: number; medics?: Container[] }[] = [];
       const unsubStretcher = gameBus.on("injury", (e) => {
         if (!extrasRef.current || !framesShown()) return;
         const at = lastDrawnPos?.get(e.playerId) ?? playerPos(e.playerId);
@@ -1797,12 +1848,38 @@ export function PixiPitch({
         stretcherGfx.clear();
         if (stretchers.length === 0) return;
         const w = markerR * 1.1, h = markerR * 2.6, medic = markerR * 0.55;
-        stretchers = stretchers.filter((st) => !stretcherPose(st.run, effectNow).done);
         for (const st of stretchers) {
+          if (!stretcherPose(st.run, effectNow).done) continue;
+          for (const c of st.medics ?? []) c.destroy({ children: true });
+        }
+        stretchers = stretchers.filter((st) => !stretcherPose(st.run, effectNow).done);
+        for (const [si, st] of stretchers.entries()) {
           const pose = stretcherPose(st.run, effectNow);
           const showPatient = pose.carrying || effectNow - st.run.startedAt >= STRETCHER.IN_S;
           stretcherGfx.roundRect(pose.x - w / 2, pose.y - h / 2, w, h, 2).fill(0xf2f2f2).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
           if (showPatient) stretcherGfx.circle(pose.x, pose.y, markerR * 0.7).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+          // Sprite medics (art phase 3): run in, kneel by the player, carry him off.
+          if (officialSheet) {
+            if (!st.medics) {
+              st.medics = [-1, 1].map((end) => {
+                const c = new Container();
+                c.zIndex = 6.1;
+                c.eventMode = 'none';
+                world.addChild(c);
+                c.addChild(makeFigureBody("medic", officialTints("medic", `medic:${si}:${end}`)));
+                return c;
+              });
+            }
+            const t = effectNow - st.run.startedAt;
+            const kneel = t >= STRETCHER.IN_S && t < STRETCHER.IN_S + STRETCHER.HOLD_S;
+            for (const [k, end] of [-1, 1].entries()) {
+              const c = st.medics[k]!;
+              c.x = pose.x;
+              c.y = pose.y + end * (h / 2 + medic * 0.8);
+              animateFigure(c, "medic", null, { kneel }, kneel ? (end < 0 ? Math.PI / 2 : -Math.PI / 2) : undefined);
+            }
+            continue;
+          }
           for (const end of [-1, 1]) {
             const my = pose.y + end * (h / 2 + medic * 0.8);
             stretcherGfx.circle(pose.x, my, medic).fill(0xffffff).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
@@ -1811,6 +1888,30 @@ export function PixiPitch({
           }
         }
       };
+
+      // ── Figure motion (art phase 3): the players' gait and turning for officials, managers and medics ──
+      const figureMotion = new WeakMap<Container, { m: SpriteMotion; side: boolean }>();
+      /**
+       * Steps a figure's motion from its container's drawn position and shows its frame. `look` (px) is where it faces
+       * when standing; `face` (radians) forces the facing (an assistant side-stepping, a medic kneeling).
+       */
+      function animateFigure(c: Container, kind: OfficialKind, look: { x: number; y: number } | null, s: OfficialPoseState, face?: number): void {
+        const body = c.getChildByLabel('body') as Container | null;
+        if (!body) return;
+        const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
+        const pos = { x: c.x / m.scale, y: c.y / m.scale };
+        const prev = figureMotion.get(c) ?? { m: newMotion(pos.x, pos.y), side: true };
+        let mo = stepMotion(prev.m, pos, dtS, look ? { x: look.x / m.scale, y: look.y / m.scale } : null);
+        const side = kind === "assistant" ? assistantSideStep(prev.side, mo.vx) : false;
+        const forced = face ?? (kind === "assistant" && side ? (c.y < m.marginY + m.height / 2 ? Math.PI / 2 : -Math.PI / 2) : undefined);
+        if (forced !== undefined) {
+          const d = Math.atan2(Math.sin(forced - mo.angle), Math.cos(forced - mo.angle));
+          mo = { ...mo, angle: mo.angle + d * Math.min(1, dtS * 6) };
+        }
+        figureMotion.set(c, { m: mo, side });
+        setFigurePose(body, officialPose(kind, mo, { ...s, sideStep: side }));
+        body.rotation = mo.angle + Math.PI / 2;
+      }
 
       // ── Referee, assistants, managers (spec 2026-10-08-match-visual §3–§4) ──
       const officialsOn = !!officials;
@@ -1868,7 +1969,7 @@ export function PixiPitch({
       type DrawnSide = "left" | "right";
       const coachSpot = coachSlots(m, canvasHeight);
       const teamOfDrawnSide = (side: DrawnSide): TeamId => ((side === "left") !== mirrorRef.current ? "A" : "B");
-      const coachSprites: Partial<Record<DrawnSide, { sprite: CoachSprite; team: TeamId }>> = {};
+      const coachSprites: Partial<Record<DrawnSide, { sprite: CoachSprite; team: TeamId; color: number }>> = {};
       const coachGest: Partial<Record<TeamId, { kind: CoachGestureKind; at: number }>> = {};
       if (officialsOn) {
         for (const side of ["left", "right"] as const) {
@@ -1880,7 +1981,7 @@ export function PixiPitch({
           sprite.root.y = coachSpot[side].y;
           sprite.root.zIndex = -0.6;
           world.addChild(sprite.root);
-          coachSprites[side] = { sprite, team };
+          coachSprites[side] = { sprite, team, color };
           const url = info?.faceUrl;
           if (url) {
             const size = faceRasterSize(sprite.headR - 1, app.renderer.resolution);
@@ -1912,6 +2013,33 @@ export function PixiPitch({
         if (cardKind === "red") coachOff[team] = true;
       };
       const unsubCoachGoal = gameBus.on("goalScored", (e) => startGesture(e.team, "celebrate"));
+
+      // The fourth official (art phase 3): between the technical areas, the board up on a substitution.
+      let fourth: Container | null = null;
+      let boardUntil = -1;
+      const unsubFourth = gameBus.on("playerSubstituted", () => {
+        if (officialsOn && framesShown()) boardUntil = effectNow + OFFICIAL_SPRITE.BOARD_S;
+      });
+      onOfficialsReady = () => {
+        if (!officialsOn) return;
+        attachFigure(referee, "referee", "referee");
+        attachFigure(assistantC.top, "assistant", "assistant:top");
+        attachFigure(assistantC.bottom, "assistant", "assistant:bottom");
+        for (const side of ["left", "right"] as const) {
+          const entry = coachSprites[side];
+          if (entry) attachFigure(entry.sprite.root, "coach", `coach:${entry.team}`, entry.color);
+        }
+        if (!fourth) {
+          fourth = new Container();
+          fourth.zIndex = -0.6;
+          fourth.eventMode = 'none';
+          fourth.x = (coachSpot.left.x + coachSpot.right.x) / 2;
+          fourth.y = coachSpot.left.y;
+          world.addChild(fourth);
+          fourth.addChild(makeFigureBody("fourth", officialTints("fourth", "fourth")));
+        }
+      };
+      if (officialSheet) onOfficialsReady();
 
       // Benches beside the technical areas (#129): redrawn only when a bench changes size.
       const benchGfx = new Graphics();
@@ -2124,6 +2252,8 @@ export function PixiPitch({
           referee.y = py;
           if (refCard && effectNow >= refCard.until) refCard = null;
           showCard(referee, refCard?.card ?? null);
+          const ballPx = toPixel(ball.x, ball.y);
+          animateFigure(referee, "referee", { x: ballPx.px, y: ballPx.py }, { card: !!refCard });
         }
         for (const side of ["top", "bottom"] as const) {
           const c = assistantC[side];
@@ -2137,6 +2267,11 @@ export function PixiPitch({
           // Without a stadium there may be no run-off: keep the assistant on the canvas.
           c.y = Math.min(canvasHeight - markerR, Math.max(markerR, py));
           setFlagRaised(c, effectNow < flagUntil[side]);
+          animateFigure(c, "assistant", null, { flagUp: effectNow < flagUntil[side] });
+        }
+        if (fourth) {
+          const ballPx = toPixel(ball.x, ball.y);
+          animateFigure(fourth, "fourth", { x: ballPx.px, y: ballPx.py }, { board: effectNow < boardUntil });
         }
         for (const side of ["left", "right"] as const) {
           const entry = coachSprites[side];
@@ -2153,6 +2288,10 @@ export function PixiPitch({
           if (shown && effectNow >= shown.until) delete coachCards[entry.team];
           showCard(entry.sprite.root, coachCards[entry.team]?.card ?? null);
           entry.sprite.root.visible = !coachOff[entry.team] || !!coachCards[entry.team];
+          const ballPx = toPixel(ball.x, ball.y);
+          // Pointing through a gesture; on a goal, alternating with the arms down.
+          const point = !!live && (live.kind !== "celebrate" || Math.floor((effectNow - live.at) * 4) % 2 === 0);
+          animateFigure(entry.sprite.root, "coach", { x: ballPx.px, y: ballPx.py }, { point });
         }
       };
 
@@ -3406,6 +3545,8 @@ export function PixiPitch({
         unsubRefCard();
         unsubArFlag();
         unsubCoachGoal();
+        unsubFourth();
+        onOfficialsReady = null;
         unsubBenchGoal();
         unsubLedGoal();
         unsubImpact();

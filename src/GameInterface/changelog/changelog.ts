@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.7",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Árbitro, bandeirinhas, técnicos e médicos também viraram bonecos animados. O quarto árbitro aparece entre os bancos e levanta a placa nas substituições.",
+        en: "Referee, assistants, managers and medics are now animated figures too. The fourth official stands between the benches and raises the board at substitutions.",
+      },
+    ],
+  },
+  {
     version: "4.41.6",
     date: "2026-10-29",
     items: [
