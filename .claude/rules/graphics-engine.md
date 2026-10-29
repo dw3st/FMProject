@@ -319,3 +319,12 @@ aponta no gesto e no gol; médicos da maca correm, ajoelham e carregam; quarto �
 levantada por `BOARD_S` a cada `playerSubstituted`. `attachFigure` (PixiPitch) esconde o disco, o rosto e a bandeira
 desenhados; sem o atlas ou com o visual novo desligado, o desenho antigo. Os rostos reais dos árbitros não aparecem nos
 bonecos.
+
+## Torcida e fotógrafos da arte nova (fase 4, 4.41.8)
+
+`buildArtCrowdAtlas` (`crowdFigures.ts`): com o visual novo, o atlas da torcida é montado das peças de
+`src/example_data/assets/crowd` (24 px, `ART_FIGURE_FRAME`), no mesmo esquema de uma textura por lado (ParticleContainer):
+camisas brancas tingidas por torcedor, cachecóis na cor da casa, cabeças = pele com os braços da pose + cabelo (estilo e
+cor pelo índice) ou boné. Três poses (`FanArms`): braços baixos, levantados e mãos na cabeça (o lado que levou o gol,
+enquanto o outro comemora). Sem a arte, `buildCrowdAtlas` de antes (duas poses). Fotógrafos: bonecos `photographer` do
+atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do gol deles ou depois de um chute.

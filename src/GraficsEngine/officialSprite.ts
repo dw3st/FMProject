@@ -7,7 +7,7 @@
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { PLAYER_SPRITE, type SpriteMotion } from "@/GraficsEngine/playerSprite";
 
-export type OfficialKind = "referee" | "assistant" | "fourth" | "coach" | "medic";
+export type OfficialKind = "referee" | "assistant" | "fourth" | "coach" | "medic" | "photographer";
 
 export const OFFICIAL_SPRITE = {
   /** The referee's kit (the preview's REF): dark shirt and socks, yellow trim. */
@@ -15,10 +15,12 @@ export const OFFICIAL_SPRITE = {
   /** The fourth official: a bluer shirt, so he reads apart from the referee. */
   FOURTH: { shirt: 0x3a4458, trim: 0xf2c230, socks: 0x23262e },
   MEDIC: { shirt: 0xf4f6fa, trim: 0xd63430, socks: 0x2b3140 },
+  /** Photographers: a dark jacket with an orange bib. */
+  PHOTO: { shirt: 0x2b3846, trim: 0xf2a33a, socks: 0x2b3846 },
   /** The managers' trousers (the shirt is the club colour). */
   COACH_SOCKS: 0x1d2433,
   /** Body width relative to a player's (the officials stay a little smaller than the players). */
-  SCALE: { referee: 0.85, assistant: 0.8, fourth: 0.8, coach: 0.85, medic: 0.8 },
+  SCALE: { referee: 0.85, assistant: 0.8, fourth: 0.8, coach: 0.85, medic: 0.8, photographer: 0.6 },
   /** An assistant runs along the line above this drawn lateral speed (yards per second) and side-steps below RUN_DOWN. */
   AR_RUN_UP: 3.6,
   AR_RUN_DOWN: 2.4,
@@ -38,7 +40,7 @@ export function officialTints(kind: OfficialKind, id: string, clubColor = 0x2b31
   const hair = PLAYER_SPRITE.HAIR[Math.floor(r() * PLAYER_SPRITE.HAIR.length)]!;
   const S = OFFICIAL_SPRITE;
   if (kind === "coach") return { shirt: clubColor, trim: clubColor, socks: S.COACH_SOCKS, skin, hair };
-  const kit = kind === "medic" ? S.MEDIC : kind === "fourth" ? S.FOURTH : S.REF;
+  const kit = kind === "photographer" ? S.PHOTO : kind === "medic" ? S.MEDIC : kind === "fourth" ? S.FOURTH : S.REF;
   return { ...kit, skin, hair };
 }
 
@@ -51,6 +53,8 @@ export interface OfficialPoseState {
   board?: boolean;
   point?: boolean;
   kneel?: boolean;
+  /** Photographer: the camera up. */
+  shoot?: boolean;
   /** Assistant only: side-stepping facing the pitch (else running along the line). */
   sideStep?: boolean;
 }
@@ -59,6 +63,7 @@ export interface OfficialPoseState {
 export function officialPose(kind: OfficialKind, m: SpriteMotion, s: OfficialPoseState = {}): string {
   const p = atlasPrefix(kind);
   if (kind === "coach") return s.point ? "coach-point" : "coach-idle";
+  if (kind === "photographer") return s.shoot ? "photographer-shoot" : "photographer-idle";
   if (s.card && kind === "referee") return "referee-card";
   if (s.board) return "referee-board";
   if (s.flagUp && kind === "assistant") return "assistant-flag-up";

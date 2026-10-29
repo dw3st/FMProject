@@ -48,6 +48,8 @@ export const GAME_ART_FILES: Record<string, string> = {
   "keeper/keeper-atlas.png": "image/png",
   "officials/officials-atlas.json": "application/json",
   "officials/officials-atlas.png": "image/png",
+  "crowd/crowd-atlas.json": "application/json",
+  "crowd/crowd-atlas.png": "image/png",
 };
 const GAME_ART_DIR = join(import.meta.dir, "..", "Data", "assets");
 

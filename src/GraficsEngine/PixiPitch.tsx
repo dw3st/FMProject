@@ -4,9 +4,9 @@ import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, Assets, Spritesheet, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
-import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
+import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
-import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
+import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, LED, ledAdFor, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
@@ -712,12 +712,14 @@ export function PixiPitch({
       /** Each side's fans, baked in tiles that move on their own (`crowdMotion.ts`). */
       /** One fan: his seat, motion, and the particles he is made of (body, scarf, head). */
       type Fan = {
-        x: number; baseY: number; phase: number; speed: number; flag: boolean;
+        x: number; baseY: number; phase: number; speed: number; flag: boolean; skin: number; hair: number;
         body: FanParticle; scarf: FanParticle | null; head: FanParticle;
       };
       /** Each side's fans: a ParticleContainer of small people (`crowdFigures.ts`) that move on their own. */
       const crowdFans: Record<"home" | "away", { layer: ParticleContainer; fans: Fan[] } | null> = { home: null, away: null };
       let crowdAtlas: ReturnType<typeof buildCrowdAtlas> | null = null;
+      /** The art crowd pieces (art phase 4), loaded with the new visual; until then the drawn figures. */
+      let crowdArt: ArtCrowdSheet | null = null;
       let crowdAtlasSource: CanvasSource | null = null;
       let figureSize = 6;
       /** Height (px) of a fans' jump: under half a seat. */
@@ -788,11 +790,12 @@ export function PixiPitch({
         phones = phoneLights(seats, st.seed);
         // The figures' atlas: one canvas, so each side renders in a single ParticleContainer.
         crowdAtlasSource?.destroy();
-        crowdAtlas = buildCrowdAtlas(flagColor, flagColor2);
+        crowdAtlas = crowdArt ? buildArtCrowdAtlas(crowdArt, flagColor) : buildCrowdAtlas(flagColor, flagColor2);
         crowdAtlasSource = new CanvasSource({ resource: crowdAtlas.canvas, transparent: true });
         const frames = bindAtlas(crowdAtlas, crowdAtlasSource);
-        const scale = figureSize / FIGURE_FRAME.SCALE;
-        const anchorY = FIGURE_FRAME.FOOT_Y / FIGURE_FRAME.SIZE;
+        const scale = figureSize / crowdAtlas.frame.SCALE;
+        const anchorY = crowdAtlas.frame.FOOT_Y / crowdAtlas.frame.SIZE;
+        const headIndex = crowdAtlas.headIndex;
         const make = (texture: Texture, x: number, y: number, tint?: number) => new FanParticle({
           texture, x, y, scaleX: scale, scaleY: scale, anchorX: 0.5, anchorY, ...(tint !== undefined ? { tint } : {}),
         });
@@ -802,7 +805,7 @@ export function PixiPitch({
           if (mine.length === 0) continue;
           const looks = fanLooks(mine, cell, `${st.seed}:${k}`);
           const layer = new ParticleContainer({
-            texture: frames.body[0],
+            texture: frames.body[0]!,
             dynamicProperties: { position: true, uvs: true, color: false, vertex: false, rotation: false },
           });
           layer.eventMode = 'none';
@@ -811,13 +814,13 @@ export function PixiPitch({
             const look = looks[i]!;
             // The figure stands on the seat: its feet half a cell below the seat's centre.
             const baseY = seat.y + cell * 0.5;
-            const body = make(frames.body[0], seat.x, baseY, seat.color);
+            const body = make(frames.body[0]!, seat.x, baseY, seat.color);
             const scarf = look.scarf ? make(frames.scarf[0], seat.x, baseY) : null;
-            const head = make(frames.heads[headFrame(look.skin, look.hair)]!, seat.x, baseY);
+            const head = make(frames.heads[headIndex(look.skin, look.hair, 0)]!, seat.x, baseY);
             layer.addParticle(body);
             if (scarf) layer.addParticle(scarf);
             layer.addParticle(head);
-            fans.push({ x: seat.x, baseY, phase: look.phase, speed: look.speed, flag: look.flag, body, scarf, head });
+            fans.push({ x: seat.x, baseY, phase: look.phase, speed: look.speed, flag: look.flag, skin: look.skin, hair: look.hair, body, scarf, head });
           });
           crowdLayer.addChild(layer);
           crowdFans[k] = { layer, fans };
@@ -1588,6 +1591,13 @@ export function PixiPitch({
           spriteSheets = { player, keeper };
           for (const p of stateRef.current.players) addBody(p);
         }).catch(() => { /* the discs stay */ });
+        void (async () => {
+          const json = await fetch(gameArtUrl("crowd/crowd-atlas.json")).then((r) => (r.ok ? r.json() : null)) as { frames: Record<string, { frame: { x: number; y: number; w: number; h: number } }> } | null;
+          const image = json ? await loadImage(gameArtUrl("crowd/crowd-atlas.png")) : null;
+          if (!json || !image || facesDisposed) return;
+          crowdArt = { image, frames: Object.fromEntries(Object.entries(json.frames).map(([k, v]) => [k, v.frame])) };
+          redrawCrowdRef.current?.();
+        })().catch(() => { /* the drawn crowd stays */ });
         void Assets.load<Spritesheet>(gameArtUrl("officials/officials-atlas.json")).then((sheet) => {
           if (facesDisposed || !sheet) return;
           officialSheet = sheet;
@@ -2112,6 +2122,12 @@ export function PixiPitch({
       photoGfx.zIndex = -0.69;
       photoGfx.eventMode = 'none';
       world.addChild(photoGfx);
+      // Sprite photographers (art phase 4): one figure per spot, under the flashes.
+      const photoLayer = new Container();
+      photoLayer.zIndex = -0.695;
+      photoLayer.eventMode = 'none';
+      world.addChild(photoLayer);
+      const photoFigures: Container[] = [];
       const photoBurst: Record<"left" | "right", number> = { left: -99, right: -99 };
       const unsubPhotoShot = gameBus.on("shot", (e) => {
         const p = playerPos(e.player);
@@ -2120,8 +2136,9 @@ export function PixiPitch({
         photoBurst[gx < m.marginX + m.width / 2 ? "left" : "right"] = effectNow;
       });
       const photoSpots = photographerSpots(stadiumRef.current?.seed ?? "match");
-      const drawPhotographers = () => {
+      const drawPhotographers = (lastBallForPhotos: YdPos) => {
         photoGfx.clear();
+        photoLayer.visible = officialsOn && extrasRef.current && !!m.stand;
         if (!(officialsOn && extrasRef.current && m.stand)) return;
         const u = markerR * 0.4; // the same unit as the benches
         const midY = m.marginY + m.height / 2;
@@ -2135,6 +2152,35 @@ export function PixiPitch({
             const burstSide = side;
             const look = benchLook(`photo:${side}:${i}`);
             const cx = -out, cy = 0;
+            // Sprite photographers (art phase 4): idle, the camera up when the play is near their goal or after a shot.
+            const burstAge = effectNow - photoBurst[side];
+            if (officialSheet) {
+              let c = photoFigures[i];
+              if (!c) {
+                c = new Container();
+                c.eventMode = 'none';
+                c.addChild(makeFigureBody("photographer", officialTints("photographer", `photo:${side}:${i}`)));
+                photoLayer.addChild(c);
+                photoFigures[i] = c;
+              }
+              c.x = x;
+              c.y = y;
+              const ballX = toPixel(lastBallForPhotos.x, lastBallForPhotos.y).px;
+              const near = Math.abs(ballX - lineX) < m.width * 0.28;
+              animateFigure(c, "photographer", null, { shoot: near || (burstAge >= 0 && burstAge < 2.2) }, out < 0 ? 0 : Math.PI);
+            }
+            const camX0 = x + cx * u * 1.1, camY0 = y + cy * u * 1.1;
+            if (officialSheet) {
+              const period = burstAge >= 0 && burstAge < 2.2 ? 0.35 : 3.5 + (i % 3);
+              const ph0 = (effectNow + look.phase * 2) % period;
+              if (ph0 < 0.09 && (burstAge < 2.2 || (Math.floor((effectNow + look.phase * 2) / period) + i) % 2 === 0)) {
+                const a = 1 - ph0 / 0.09;
+                const fx = camX0 + cx * u * 0.6, fy = camY0 + cy * u * 0.6;
+                photoGfx.circle(fx, fy, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
+                photoGfx.circle(fx, fy, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
+              }
+              return;
+            }
             // Shadow, body (dark jacket, a bib), the camera toward the pitch (cx, cy), the head.
             photoGfx.ellipse(x + u * 0.15, y + u * 0.3, u * 1.05, u * 0.7).fill({ color: 0x000000, alpha: 0.3 });
             photoGfx.ellipse(x, y, cy ? u : u * 0.62, cy ? u * 0.62 : u).fill(0x2b3846);
@@ -3207,7 +3253,7 @@ export function PixiPitch({
         drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);
         { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); }
-        drawPhotographers();
+        drawPhotographers(drawnB);
         if (extrasRef.current) drawLed();
         drawStretchers();
         effectCtx.netShake = extrasRef.current;
@@ -3229,12 +3275,19 @@ export function PixiPitch({
           if (k === "home") side.layer.alpha = homeAlpha;
           if (!moving) continue;
           const goalAge = crowdJump?.side === k ? effectNow - crowdJump.at : null;
+          // The other side's fans hold their heads while the scorers celebrate (art crowd only: it has that pose).
+          const conceded = !!crowdJump && crowdJump.side !== k && frames.body.length > 2;
+          const headIndex = crowdAtlas!.headIndex;
           for (const f of side.fans) {
             const pose = fanPose({ x: f.x, y: f.baseY, phase: f.phase, speed: f.speed }, effectNow, sz, centre, 0, goalAge);
             const y = f.baseY - pose.lift;
             const up = pose.arms > 0.5 ? 1 : 0;
+            const arms: FanArms = conceded ? 2 : up;
             f.body.y = y; f.head.y = y;
-            if (f.body.texture !== frames.body[up]) f.body.texture = frames.body[up];
+            const bodyTex = frames.body[arms]!;
+            if (f.body.texture !== bodyTex) f.body.texture = bodyTex;
+            const headTex = frames.heads[headIndex(f.skin, f.hair, arms)]!;
+            if (f.head.texture !== headTex) f.head.texture = headTex;
             if (f.scarf) {
               f.scarf.y = y;
               if (f.scarf.texture !== frames.scarf[up]) f.scarf.texture = frames.scarf[up];

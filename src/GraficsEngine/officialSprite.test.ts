@@ -13,8 +13,8 @@ describe("officialPose", () => {
   const walk = { ...newMotion(0, 0), gait: "walk" as const, phase: 0.9 };
 
   test("every pose exists in the atlas", () => {
-    const kinds: OfficialKind[] = ["referee", "assistant", "fourth", "coach", "medic"];
-    for (const k of kinds) for (const m of [idle, run, walk]) for (const s of [{}, { card: true }, { flagUp: true }, { board: true }, { point: true }, { kneel: true }, { sideStep: true }]) {
+    const kinds: OfficialKind[] = ["referee", "assistant", "fourth", "coach", "medic", "photographer"];
+    for (const k of kinds) for (const m of [idle, run, walk]) for (const s of [{}, { card: true }, { flagUp: true }, { board: true }, { point: true }, { kneel: true }, { sideStep: true }, { shoot: true }]) {
       expect(has(officialPose(k, m, s))).toBe(true);
     }
   });

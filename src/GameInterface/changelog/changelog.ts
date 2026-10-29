@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.8",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Torcida com o visual novo: cada torcedor tem roupa, cabelo, boné e cachecol próprios, e quem leva gol põe as mãos na cabeça. Os fotógrafos atrás dos gols também ganharam o visual novo.",
+        en: "The crowd in the new look: every fan has their own clothes, hair, cap and scarf, and the side that concedes holds their heads. The photographers behind the goals have the new look too.",
+      },
+    ],
+  },
+  {
     version: "4.41.7",
     date: "2026-10-29",
     items: [
@@ -2645,6 +2655,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Visual novo também na torcida, nos lances, no pênalti e nas telas", en: "The new look in the crowd, the highlights, the penalties and the screens too" },
+  { pt: "Visual novo também nos lances, no pênalti e nas telas", en: "The new look in the highlights, the penalties and the screens too" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

@@ -75,7 +75,7 @@ export function faceRasterSize(radius: number, resolution: number): number {
  * Loads a picture. `img.decode()` sometimes rejects for no reason in Chrome when many images load at once (tester report:
  * two players without a face for the whole match); then it waits for `onload` instead, and tries a fresh request once.
  */
-async function loadImage(url: string, attempts = 2): Promise<HTMLImageElement | null> {
+export async function loadImage(url: string, attempts = 2): Promise<HTMLImageElement | null> {
   for (let i = 0; i < attempts; i++) {
     const img = new Image();
     img.decoding = "async";

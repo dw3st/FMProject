@@ -13,12 +13,24 @@ export const FIGURE_FRAME = { SIZE: 40, FOOT_Y: 35, SCALE: 26 } as const;
 const SKIN = ["#f1c9a5", "#e0ac83", "#c68b5e", "#9b6a42", "#6f4527", "#4a2c17"];
 const HAIR = ["#1b1410", "#3a2616", "#6b4423", "#a8742f", "#d8c08a", "#2b2b2b", "#777777"];
 
+/** The art crowd's frames (art phase 4, `src/example_data/assets/crowd`): 24 px, the figure's feet at the bottom. */
+export const ART_FIGURE_FRAME = { SIZE: 24, FOOT_Y: 23, SCALE: 21 } as const;
+
+/** A fan's pose: arms down, arms up, hands on the head (the side that conceded). */
+export type FanArms = 0 | 1 | 2;
+
 export interface CrowdAtlas {
   canvas: HTMLCanvasElement;
-  /** Frames once the atlas texture exists (`bindAtlas`). */
-  frames: { body: [Texture, Texture]; scarf: [Texture, Texture]; heads: Texture[] } | null;
-  /** Frame rectangles: body down/up, scarf down/up, then heads (skin × (HAIRS + bald + cap)). */
+  /** Frames once the atlas texture exists (`bindAtlas`); `body` and `scarf` per pose (the scarf has no head pose). */
+  frames: { body: Texture[]; scarf: [Texture, Texture]; heads: Texture[] } | null;
+  /** Frame rectangles: bodies, scarves down/up, then heads. */
   rects: Rectangle[];
+  /** Frame geometry (side, feet, figure scale). */
+  frame: { SIZE: number; FOOT_Y: number; SCALE: number };
+  /** Body frames (2: down/up; 3 with the hands-on-head pose). */
+  bodies: number;
+  /** Index of a head frame: the art heads carry the arms, so they change with the pose. */
+  headIndex: (skin: number, hair: number, arms: FanArms) => number;
 }
 
 const css = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
@@ -86,22 +98,79 @@ export function buildCrowdAtlas(home: number, homeAlt: number): CrowdAtlas {
       g.restore();
     }
   }
-  return { canvas, frames: null, rects };
+  return { canvas, frames: null, rects, frame: FIGURE_FRAME, bodies: 2, headIndex: (skin, hair) => skin * (CROWD_MOTION.HAIRS + 2) + hair };
+}
+
+/** A frame of the art crowd atlas: the image and the frame's rectangle. */
+export interface ArtCrowdSheet {
+  image: CanvasImageSource;
+  frames: Record<string, { x: number; y: number; w: number; h: number }>;
+}
+
+/**
+ * The crowd's atlas from the art pieces (art phase 4): the same layout as `buildCrowdAtlas` (one canvas, one texture
+ * source, so each side stays one ParticleContainer), with the painted pieces composited. Bodies white (tinted per fan),
+ * scarves in the home colour, heads = skin with the arms of the pose + hair (style and colour by the fan's hair index),
+ * bald, or a cap in the home colour.
+ */
+export function buildArtCrowdAtlas(sheet: ArtCrowdSheet, home: number): CrowdAtlas {
+  const F = ART_FIGURE_FRAME.SIZE;
+  const H = CROWD_MOTION.HAIRS + 2;
+  const heads = 3 * CROWD_MOTION.SKINS * H;
+  const total = 3 + 2 + heads;
+  const cols = 16, rows = Math.ceil(total / cols);
+  const canvas = document.createElement("canvas");
+  canvas.width = cols * F;
+  canvas.height = rows * F;
+  const g = canvas.getContext("2d")!;
+  const rects: Rectangle[] = [];
+  const at = (i: number) => { const r = new Rectangle((i % cols) * F, Math.floor(i / cols) * F, F, F); rects.push(r); return r; };
+  const piece = (name: string, r: Rectangle, tint?: string) => {
+    const f = sheet.frames[`${name}.png`];
+    if (!f) return;
+    if (!tint) { g.drawImage(sheet.image, f.x, f.y, f.w, f.h, r.x, r.y, F, F); return; }
+    const t = document.createElement("canvas");
+    t.width = t.height = F;
+    const tg = t.getContext("2d")!;
+    tg.drawImage(sheet.image, f.x, f.y, f.w, f.h, 0, 0, F, F);
+    tg.globalCompositeOperation = "multiply";
+    tg.fillStyle = tint;
+    tg.fillRect(0, 0, F, F);
+    tg.globalCompositeOperation = "destination-in";
+    tg.drawImage(sheet.image, f.x, f.y, f.w, f.h, 0, 0, F, F);
+    g.drawImage(t, r.x, r.y);
+  };
+  const POSES = ["down", "up", "head"] as const;
+  POSES.forEach((p, i) => piece(`crowd-body-${p}`, at(i)));
+  piece("crowd-scarf-down", at(3), css(home));
+  piece("crowd-scarf-up", at(4), css(home));
+  POSES.forEach((p, pi) => {
+    const base = p === "head" ? "down" : p;
+    for (let sk = 0; sk < CROWD_MOTION.SKINS; sk++) {
+      for (let h = 0; h < H; h++) {
+        const r = at(5 + (pi * CROWD_MOTION.SKINS + sk) * H + h);
+        piece(`crowd-skin-${sk + 1}-${base}`, r);
+        if (h === CROWD_MOTION.HAIRS + 1) piece("crowd-cap", r, css(home));
+        else if (h < CROWD_MOTION.HAIRS) piece(`crowd-hair-0${(h % 7) + 1}`, r, HAIR[h]!);
+        if (p === "head") piece(`crowd-hands-${sk + 1}-head`, r);
+      }
+    }
+  });
+  return {
+    canvas, frames: null, rects, frame: ART_FIGURE_FRAME, bodies: 3,
+    headIndex: (skin, hair, arms) => (arms * CROWD_MOTION.SKINS + skin) * H + hair,
+  };
 }
 
 /** Cuts the frames out of the atlas texture source. */
 export function bindAtlas(atlas: CrowdAtlas, source: CanvasSource): NonNullable<CrowdAtlas["frames"]> {
   const t = (r: Rectangle) => new Texture({ source, frame: r });
+  const n = atlas.bodies;
   const frames = {
-    body: [t(atlas.rects[0]!), t(atlas.rects[1]!)] as [Texture, Texture],
-    scarf: [t(atlas.rects[2]!), t(atlas.rects[3]!)] as [Texture, Texture],
-    heads: atlas.rects.slice(4).map(t),
+    body: atlas.rects.slice(0, n).map(t),
+    scarf: [t(atlas.rects[n]!), t(atlas.rects[n + 1]!)] as [Texture, Texture],
+    heads: atlas.rects.slice(n + 2).map(t),
   };
   atlas.frames = frames;
   return frames;
-}
-
-/** Index of a head frame. */
-export function headFrame(skin: number, hair: number): number {
-  return skin * (CROWD_MOTION.HAIRS + 2) + hair;
 }
