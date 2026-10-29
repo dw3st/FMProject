@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthGate } from "@/GameInterface/AuthGate";
 import { ScreenSizeGate } from "@/GameInterface/ScreenSizeGate";
 import { initAnalytics } from "@/analytics";
+import { loadPaintedFaces } from "@/Domain/art/paintedFaces";
 
 export interface CreatePageOptions {
   /** Skip the auth gate + GameSaveProvider. Used for landing & login. */
@@ -42,9 +43,12 @@ export function createPage(Component: React.ComponentType, options: CreatePageOp
     );
   }
 
+  // The painted faces (new art) are known before the first render, so a face never swaps from the SVG to the webp.
+  const ready = options.public ? Promise.resolve() : loadPaintedFaces();
+  const go = () => void ready.then(start);
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", start);
+    document.addEventListener("DOMContentLoaded", go);
   } else {
-    start();
+    go();
   }
 }

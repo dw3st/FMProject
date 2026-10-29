@@ -49,6 +49,7 @@ import { reportRoutes } from "@/backend/reports";
 import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
+import { artAssetRoutes } from "@/backend/artAssets";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
 import { listUserSaveIds, memberOf } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
@@ -88,6 +89,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...presenceRoutes,
   ...faceRoutes,
   ...staticAssetRoutes,
+  ...artAssetRoutes,
   ...saveRoutes,
   ...advanceDayRoutes,
   ...advanceUntilRoutes,

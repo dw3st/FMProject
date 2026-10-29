@@ -179,3 +179,17 @@ para o repositório nem para o jogo).
 - Rótulos: `data_process/thesportsdb/faceTraitLabels.txt` (guarda o `idPlayer` da foto vista);
   `bun scripts/faces/labelQueue.ts --source thesportsdb` dá a fila. `mergeTraits` mescla: ESPN < TheSportsDB < Commons.
   `FACE_VERSION` 6.
+
+### Arte nova: rostos pintados (handoff `C:\projects\fmproject-art-handoff`)
+
+- Os arquivos ficam no volume persistente, em `${RUNTIME_DATA_DIR}/art/` (produção: `persistent/art/`, copiado com
+  `tar` pelo `docker compose exec`), nunca na imagem nem no bundle. `art/index.json` mapeia id → arquivo.
+- `GET /assets/art/v1/<caminho>` (`src/backend/artAssets.ts`): só caminhos que estão no `index.json` (sem `..`), webp/png/jpg,
+  cache `immutable`; o índice é relido quando o arquivo muda (sem reiniciar). Trocar a arte = subir `ART_ASSET_VERSION`
+  (`src/Domain/art/paintedFaces.ts`).
+- `GET /api/art/faces`: os ids com rosto pintado (jogadores, combinações do avatar do técnico
+  `<pele>-<cor>-<comprimento>-<barba>-<g|n>`, árbitros), só com `ART_FACES=1` (direito de imagem: o dono decide antes de
+  publicar). Desligado = listas vazias.
+- `createPage` busca a lista antes do primeiro render (no máximo 1,5 s); `faceUrl`, `managerAvatarUrl` e `refereeFaceUrl`
+  usam o webp quando o id está na lista, senão o SVG de sempre. Avatar com algum traço "Sorteado" fica no SVG.
+- Testes: `bun test src/Domain/art src/backend/artAssets.test.ts`.
