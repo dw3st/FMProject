@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39.5",
+    date: "2026-10-29",
+    items: [
+      { pt: "Novo pênalti: o batedor escolhe um dos seis cantos do gol, como o goleiro escolhe o pulo. A finalização decide se a bola vai onde ele quis, a força dificulta a defesa.", en: "New penalties: the taker picks one of the six areas of the goal, just as the keeper picks his dive. Finishing decides whether the ball goes where he wanted, strength makes it harder to save." },
+    ],
+  },
+  {
     version: "4.39.4",
     date: "2026-10-29",
     items: [

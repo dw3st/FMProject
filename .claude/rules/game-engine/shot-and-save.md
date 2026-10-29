@@ -295,10 +295,11 @@ O arco e a qualidade de posição agora vêm de `Domain/Keeper.ts` (arco mais ad
 ## 9. 2D penalties (4.38)
 
 Spec: `docs/superpowers/specs/2026-10-28-penalty-2d-design.md`. Pure model in `src/Domain/penalty/penaltyKick.ts`
-(`PENALTY_2D`): the taker aims at a point of the goal (x in [-1, 1], y in [0, 1]) and releases a power bar; the keeper
-dives to one of six areas. Spread `AIM_SPREAD × (1.2 − finishing)`, lift above the green zone (`POWER_LIFT`), woodwork
-band, save chance by area, corner and weakness. AI kick/dive by weights; an average taker converts ~75%
-(`bun scripts/penalty-2d-measure.ts`).
+(`PENALTY_2D`): since 4.39.5 the taker picks one of six areas of the goal (`KICK_WINDOW_S` 6 s, the AI's pick on
+timeout), like the keeper's dive. The ball goes to the area's target (`areaTarget`: corners near the woodwork) with a
+spread `AIM_SPREAD × (1.2 − finishing)`; strength (`POWER_SAVE`) and finishing (`FINISH_SAVE`) make it harder to save; a
+keeper who dived reaches a ball down the middle sometimes (`MID_REACH_LOW/HIGH`). Measured: average taker ~74%, finishing
+0.85 ~85%, 0.2 ~64%, strength 0.9 / 0.1 ~78% / ~72%; no aim nor power bar any more (`bun scripts/penalty-2d-measure.ts`).
 
 - Engine: `GameState.penaltyInteractive` (teams that answer their penalties). With it, `startPenalties` builds
   `shootout.live` (order, taken, next) and each kick becomes `pendingPenalty`; `resolveInMatchPenalty` also waits.

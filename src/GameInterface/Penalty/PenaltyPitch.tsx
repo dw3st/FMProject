@@ -359,7 +359,7 @@ export function PenaltyPitch(props: PenaltyPitchProps) {
         <rect ref={(e) => { woodRef.current.right = e; }} x={GX + HALF_W - 3} y={LINE_Y - GOAL_H} width="6" height={GOAL_H} rx="2" fill={`url(#${ids}post)`} />
         <rect ref={(e) => { woodRef.current.bar = e; }} x={GX - HALF_W - 3} y={LINE_Y - GOAL_H - 3} width={HALF_W * 2 + 6} height="6" rx="2" fill={`url(#${ids}bar)`} />
 
-        {/* Dive areas (the manager saving) */}
+        {/* The six areas: where the taker shoots, where the keeper dives */}
         {phase === "dive" && GOAL_AREAS.map((a) => {
           const c = goalToPx(areaCentre(a));
           const on = a === area;

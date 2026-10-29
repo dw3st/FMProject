@@ -37,6 +37,7 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose, 
   };
   const players = {
     accuracy: taker.runtimeStats.withBall.shootAccuracy,
+    strength: taker.runtimeStats.withBall.strength ?? 0.5,
     keeper: keeper ? { reflex: keeper.runtimeStats.withoutBall.gkReflex, diving: keeper.runtimeStats.withoutBall.gkDiving } : null,
   };
   const keeperTeam: TeamId = pending.team === "A" ? "B" : "A";
@@ -57,6 +58,7 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose, 
       role={pending.team === mySide ? "kick" : "save"}
       takerName={taker.name}
       keeperName={keeper?.name ?? null}
+      takerStrength={players.strength}
       takerColor={kits[pending.team]}
       keeperColor={kits[pending.team === "A" ? "B" : "A"]}
       shootout={pending.kind === "shootout"

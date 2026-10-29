@@ -215,10 +215,10 @@ describe("h2h rooms (live match between two managers)", () => {
     setH2HPenalty2d(saveId, match.id, "A", true);
     engine!.deliver({ type: "event", name: "penaltyPending", payload: pending });
     const mid = results();
-    await handleClientEvent(sockB, JSON.stringify({ type: "h2h_penalty", choice: { kick: { aim: { x: 0.5, y: 0.3 }, power: 0.7 } } }));
+    await handleClientEvent(sockB, JSON.stringify({ type: "h2h_penalty", choice: { kick: { area: "low-right" } } }));
     await handleClientEvent(sockA, JSON.stringify({ type: "h2h_penalty", choice: { dive: "low-left" } }));
     expect(results()).toBe(mid);
-    await handleClientEvent(sockA, JSON.stringify({ type: "h2h_penalty", choice: { kick: { aim: { x: 0.6, y: 0.3 }, power: 0.7 } } }));
+    await handleClientEvent(sockA, JSON.stringify({ type: "h2h_penalty", choice: { kick: { area: "high-right" } } }));
     expect(results()).toBe(mid + 1);
     setH2HPenalty2d(saveId, match.id, "A", false);
   }, 30_000);

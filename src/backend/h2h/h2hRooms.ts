@@ -784,6 +784,7 @@ function resolvePenaltyRound(rec: Rec): void {
   const keeper = round.pending.keeperId === null ? null : players.find((p) => p.id === round.pending.keeperId) ?? null;
   const outcome = resolveKick(round.kick, round.dive, {
     accuracy: taker?.runtimeStats.withBall.shootAccuracy ?? 0.5,
+    strength: taker?.runtimeStats.withBall.strength ?? 0.5,
     keeper: round.pending.keeperId === null ? null
       : { reflex: keeper?.runtimeStats.withoutBall.gkReflex ?? 0.5, diving: keeper?.runtimeStats.withoutBall.gkDiving ?? 0.5 },
   }, Math.random);

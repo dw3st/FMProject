@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { aimAt, PENALTY_2D, powerAt, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
+import { aiKick, areaTarget, PENALTY_2D, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import { clamp } from "@/Domain/math";
 import { shirtName } from "@/Domain/shirtName";
 import { PenaltyPitch } from "@/GameInterface/Penalty/PenaltyPitch";
-import { SCENE, pxToGoal, shotDuration } from "@/GameInterface/Penalty/penaltyScene";
+import { SCENE, shotDuration } from "@/GameInterface/Penalty/penaltyScene";
 
 /**
  * A penalty in 2D (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`), seen from behind the taker.
- * `role` "kick": the aim sweeps the goal on its own and the power bar runs; one click (or space) shoots at that aim and power.
- * `role` "save": he picks one of six areas before the clock runs out (click or arrows + Enter).
- * `choose` turns his choice into the outcome: resolved in the browser (solo) or by the server (two managers).
+ * Both sides pick one of the six areas of the goal before the clock runs out (click, or arrows + Enter): `role` "kick"
+ * where to shoot (4.39.5: no aim nor power bar), `role` "save" where to dive. The taker's finishing and strength decide
+ * the rest (`resolveKick`). `choose` turns the pick into the outcome: in the browser (solo) or on the server (two managers).
  */
 
 export interface PenaltyScreenProps {
   role: "kick" | "save";
   takerName: string;
   keeperName: string | null;
+  /** Taker's strength, 0..1: only the pace of the ball in the animation. */
+  takerStrength?: number;
   /** Kit colours (hex) of the taker's and the keeper's team. */
   takerColor: string;
   keeperColor: string;
@@ -35,135 +37,72 @@ export interface PenaltyScreenProps {
 /** After the kick leaves: the result shows when the ball arrives, the screen closes a while later. */
 const RESULT_HOLD_MS = 1700;
 
-type Phase = "aim" | "power" | "dive" | "flight" | "result";
+type Phase = "pick" | "flight" | "result";
 
 export function PenaltyScreen(props: PenaltyScreenProps) {
   const { t } = useTranslation();
   const { role, choose, onDone } = props;
-  const [phase, setPhase] = useState<Phase>(role === "kick" ? "power" : "dive");
-  const [aim, setAim] = useState<{ x: number; y: number }>({ x: 0, y: 0.35 });
-  const [power, setPower] = useState(0);
-  const [area, setArea] = useState<GoalArea>("low-mid");
+  const kick = role === "kick";
+  const [phase, setPhase] = useState<Phase>("pick");
+  const [area, setArea] = useState<GoalArea>(kick ? "low-left" : "low-mid");
   const [outcome, setOutcome] = useState<KickOutcome | null>(null);
-  const [left, setLeft] = useState<number>(PENALTY_2D.DIVE_WINDOW_S);
+  const window_s = kick ? PENALTY_2D.KICK_WINDOW_S : PENALTY_2D.DIVE_WINDOW_S;
+  const [left, setLeft] = useState<number>(window_s);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const startRef = useRef(0);
   const busy = useRef(false);
+  // Pace of the ball in the animation: a stronger taker hits it harder.
+  const power = 0.6 + 0.25 * clamp(props.takerStrength ?? 0.5, 0, 1);
 
-  const powerRef = useRef(0);
   const finish = useCallback((o: KickOutcome) => {
     setOutcome(o);
     setPhase("flight");
-    const arrive = SCENE.RUNUP_MS + shotDuration(powerRef.current) + 60;
+    const arrive = SCENE.RUNUP_MS + shotDuration(power) + 60;
     window.setTimeout(() => setPhase("result"), arrive);
     window.setTimeout(() => onDone(o), arrive + RESULT_HOLD_MS);
-  }, [onDone]);
+  }, [onDone, power]);
 
-  const send = useCallback((choice: { kick: KickInput } | { dive: GoalArea }) => {
+  const pick = useCallback((a: GoalArea) => {
     if (busy.current) return;
     busy.current = true;
-    void choose(choice).then(finish);
-  }, [choose, finish]);
+    setArea(a);
+    void choose(kick ? { kick: { area: a } } : { dive: a }).then(finish);
+  }, [choose, finish, kick]);
 
-  // Power bar (a triangle wave) and the aim (sweeping the goal) run together until the click.
+  // Clock: no pick in time = the AI's area for the taker, the middle for the keeper.
   useEffect(() => {
-    if (phase !== "power") return;
-    startRef.current = performance.now();
-    let raf = 0;
-    const step = () => {
-      const s = (performance.now() - startRef.current) / 1000;
-      setPower(powerAt(s));
-      setAim(aimAt(s));
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [phase]);
-
-  // Dive clock: no pick in time = he stays in the middle.
-  useEffect(() => {
-    if (phase !== "dive") return;
-    const end = performance.now() + PENALTY_2D.DIVE_WINDOW_S * 1000;
+    if (phase !== "pick") return;
+    const end = performance.now() + window_s * 1000;
     const id = window.setInterval(() => {
       const s = Math.max(0, (end - performance.now()) / 1000);
       setLeft(s);
-      if (s <= 0) { window.clearInterval(id); send({ dive: "low-mid" }); }
+      if (s <= 0) { window.clearInterval(id); pick(kick ? aiKick(Math.random).area : "low-mid"); }
     }, 100);
     return () => window.clearInterval(id);
-  }, [phase, send]);
+  }, [phase, pick, kick, window_s]);
 
-  const release = useCallback(() => {
-    const s = (performance.now() - startRef.current) / 1000;
-    const p = powerAt(s);
-    const a = aimAt(s);
-    setPower(p);
-    setAim(a);
-    powerRef.current = p;
-    send({ kick: { aim: a, power: p } });
-  }, [send]);
-
-  // Keyboard: arrows move the aim / the area, Enter confirms, space releases the power bar.
+  // Keyboard: arrows move the area, Enter or space confirms.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (phase === "aim") {
-        const d = 0.1;
-        if (e.key === "ArrowLeft") setAim((a) => ({ ...a, x: clamp(a.x - d, -1.1, 1.1) }));
-        else if (e.key === "ArrowRight") setAim((a) => ({ ...a, x: clamp(a.x + d, -1.1, 1.1) }));
-        else if (e.key === "ArrowUp") setAim((a) => ({ ...a, y: clamp(a.y + d, 0, 1.1) }));
-        else if (e.key === "ArrowDown") setAim((a) => ({ ...a, y: clamp(a.y - d, 0, 1.1) }));
-        else if (e.key === "Enter" || e.key === " ") setPhase("power");
-        else return;
-        e.preventDefault();
-      } else if (phase === "power" && (e.key === " " || e.key === "Enter")) {
-        e.preventDefault();
-        release();
-      } else if (phase === "dive") {
-        const [row, col] = area.split("-") as [string, string];
-        const cols = ["left", "mid", "right"];
-        const ci = cols.indexOf(col);
-        if (e.key === "ArrowLeft") setArea(`${row}-${cols[Math.max(0, ci - 1)]}` as GoalArea);
-        else if (e.key === "ArrowRight") setArea(`${row}-${cols[Math.min(2, ci + 1)]}` as GoalArea);
-        else if (e.key === "ArrowUp") setArea(`high-${col}` as GoalArea);
-        else if (e.key === "ArrowDown") setArea(`low-${col}` as GoalArea);
-        else if (e.key === "Enter" || e.key === " ") send({ dive: area });
-        else return;
-        e.preventDefault();
-      }
+      if (phase !== "pick") return;
+      const [row, col] = area.split("-") as [string, string];
+      const cols = ["left", "mid", "right"];
+      const ci = cols.indexOf(col);
+      if (e.key === "ArrowLeft") setArea(`${row}-${cols[Math.max(0, ci - 1)]}` as GoalArea);
+      else if (e.key === "ArrowRight") setArea(`${row}-${cols[Math.min(2, ci + 1)]}` as GoalArea);
+      else if (e.key === "ArrowUp") setArea(`high-${col}` as GoalArea);
+      else if (e.key === "ArrowDown") setArea(`low-${col}` as GoalArea);
+      else if (e.key === "Enter" || e.key === " ") pick(area);
+      else return;
+      e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, area, release, send]);
+  }, [phase, area, pick]);
 
-  const pointOf = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = svgRef.current;
-    if (!svg) return null;
-    const r = svg.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * SCENE.W;
-    const y = ((e.clientY - r.top) / r.height) * SCENE.H;
-    return pxToGoal(x, y);
-  };
-  const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (phase !== "aim") return;
-    const p = pointOf(e);
-    if (p) setAim({ x: clamp(p.x, -1.1, 1.1), y: clamp(p.y, 0, 1.1) });
-  };
-  const onClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (phase === "aim") {
-      const p = pointOf(e);
-      if (p) setAim({ x: clamp(p.x, -1.1, 1.1), y: clamp(p.y, 0, 1.1) });
-      setPhase("power");
-    } else if (phase === "power") release();
-  };
-
-  const green = PENALTY_2D.POWER_GREEN;
-
-  const title = role === "kick"
+  const title = kick
     ? t("penalty2d.kickTitle", { name: shirtName(props.takerName) })
     : t("penalty2d.saveTitle", { name: shirtName(props.takerName) });
-  const hint = phase === "aim" ? t("penalty2d.hintAim")
-    : phase === "power" ? t("penalty2d.hintPower")
-    : phase === "dive" ? t("penalty2d.hintDive", { s: Math.ceil(left) })
-    : "";
+  const hint = phase === "pick" ? t(kick ? "penalty2d.hintKick" : "penalty2d.hintDive", { s: Math.ceil(left) }) : "";
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/85 px-4" role="dialog" aria-modal="true" aria-label={title}>
@@ -177,9 +116,9 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
         {props.shootout && <ShootoutDots {...props.shootout} />}
 
         <PenaltyPitch
-          phase={phase}
+          phase={phase === "pick" ? "dive" : phase}
           role={role}
-          aim={aim}
+          aim={areaTarget(area)}
           area={area}
           outcome={outcome}
           power={power}
@@ -189,29 +128,17 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
           night={!!props.night}
           seed={props.seed ?? "penalty"}
           resultLabel={phase === "result" && outcome ? t(`penalty2d.result.${outcome.result}`) : null}
-          resultClass={outcome && outcome.scored === (role === "kick") ? "text-white" : "text-destructive"}
+          resultClass={outcome && outcome.scored === kick ? "text-white" : "text-destructive"}
           svgRef={svgRef}
-          onMove={onMove}
-          onClick={onClick}
+          onMove={() => {}}
+          onClick={() => {}}
           onAreaHover={setArea}
-          onAreaPick={(a) => send({ dive: a })}
+          onAreaPick={pick}
         />
-
-        {/* Power bar */}
-        {role === "kick" && (
-          <div className="flex items-center gap-3">
-            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground w-16">{t("penalty2d.power")}</span>
-            <div className="relative flex-1 h-3 rounded bg-border overflow-hidden">
-              <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${Math.round(power * 100)}%` }} />
-              {/* The green zone stays visible over the fill. */}
-              <div className="absolute inset-y-0 border-2 border-green-500 bg-green-500/25 rounded-sm" style={{ left: `${green[0] * 100}%`, width: `${(green[1] - green[0]) * 100}%` }} />
-            </div>
-          </div>
-        )}
 
         <div className="min-h-8 flex items-center justify-between gap-3">
           {phase === "result" && outcome ? (
-            <span className={`font-display font-black uppercase text-2xl leading-none ${outcome.scored === (role === "kick") ? "text-chart-2" : "text-destructive"}`}>
+            <span className={`font-display font-black uppercase text-2xl leading-none ${outcome.scored === kick ? "text-chart-2" : "text-destructive"}`}>
               {t(`penalty2d.result.${outcome.result}`)}
             </span>
           ) : (

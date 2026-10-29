@@ -1,51 +1,55 @@
-// A penalty kicked and saved in 2D (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`): the taker aims at a
-// point of the goal and releases a power bar, the keeper dives to one of six areas. Pure; the same resolution runs in
-// the browser (solo live match) and on the server (live match between two managers).
+// A penalty kicked and saved in 2D (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`): the taker picks one of
+// six areas of the goal (4.39.5: no aim nor power bar any more), the keeper dives to one of the same six. The taker's
+// finishing decides how close to the area the ball goes, his strength how hard it is to save. Pure; the same
+// resolution runs in the browser (solo live match) and on the server (live match between two managers).
 //
 // Goal space: x in [-1, 1] across the mouth (posts at ±1), y in [0, 1] up the mouth (bar at 1).
 import { clamp } from "@/Domain/math";
 
 export const PENALTY_2D = {
-  /** Spread of the shot around the aim (goal half-widths) for a taker of finishing 0; × (1.2 − finishing). */
-  AIM_SPREAD: 0.2,
-  /** Green zone of the power bar: inside it the shot keeps its height and pace. */
-  POWER_GREEN: [0.55, 0.8] as const,
-  /** Height added per unit of power above the green zone (a full bar adds 0.6: over the bar from mid-height). */
-  POWER_LIFT: 3,
+  /** Spread of the shot around the area's target (goal half-widths) for a taker of finishing 0; × (1.2 − finishing). */
+  AIM_SPREAD: 0.22,
+  /**
+   * Where a kick at each area is aimed (goal space). The corners sit close to the woodwork (hard to save, but a wide
+   * spread goes out); the middle is safe from missing and easy for a keeper who stays.
+   */
+  TARGET_X: 0.74,
+  TARGET_LOW_Y: 0.2,
+  TARGET_HIGH_Y: 0.74,
   /** Width of the woodwork, in goal units: a shot landing on it hits the post or the bar. */
   WOODWORK: 0.04,
   /** Keeper in the right area: base save chance, scaled by his reflex/diving (0.6..1.4 ×). */
-  SAVE_BASE: 0.95,
+  SAVE_BASE: 0.85,
   /** A shot near the corner is harder to reach: × (1 − corner × CORNER_PROTECT). */
   CORNER_PROTECT: 0.7,
-  /** A weak shot (power below the green zone) is easier: × (1 + weakness × WEAK_BONUS). */
-  WEAK_BONUS: 0.8,
+  /** Taker's strength: save chance × (1 + (0.5 − strength) × POWER_SAVE): a strong shot is harder to stop. */
+  POWER_SAVE: 0.5,
+  /** Taker's finishing on the save: × (1 + (0.5 − finishing) × FINISH_SAVE): a cleaner strike is harder to reach. */
+  FINISH_SAVE: 0.6,
   /** Keeper in the right column but the other row: this share of the save chance. */
   OTHER_ROW: 0.35,
+  /**
+   * A ball in the middle column against a keeper who dived to a side: he still reaches it with a leg this share of the
+   * time (low more than high), so the middle is not a free goal against a keeper who always dives.
+   */
+  MID_REACH_LOW: 0.35,
+  MID_REACH_HIGH: 0.15,
   MAX_SAVE: 0.95,
-  /** Power bar: seconds for a full up-and-down cycle. */
-  POWER_CYCLE_S: 1.4,
-  /** Moving aim (4.38.14): seconds per sweep across the goal and up/down, out of step with the power bar. */
-  AIM_CYCLE_X_S: 2.3,
-  AIM_CYCLE_Y_S: 1.7,
   /** Seconds the human keeper has to pick an area. */
   DIVE_WINDOW_S: 4,
+  /** Seconds the human taker has to pick an area (none in time: the AI's pick). */
+  KICK_WINDOW_S: 6,
   /** AI choices: where the AI shoots and where the AI keeper dives (weights per area). */
   AI_AIM: { "low-left": 0.27, "low-mid": 0.08, "low-right": 0.27, "high-left": 0.17, "high-mid": 0.04, "high-right": 0.17 },
   AI_DIVE: { "low-left": 0.32, "low-mid": 0.12, "low-right": 0.32, "high-left": 0.1, "high-mid": 0.04, "high-right": 0.1 },
-  /** AI power: normal around the middle of the green zone. */
-  AI_POWER_MEAN: 0.67,
-  AI_POWER_SD: 0.06,
 } as const;
 
 export type GoalArea = "low-left" | "low-mid" | "low-right" | "high-left" | "high-mid" | "high-right";
 export const GOAL_AREAS: readonly GoalArea[] = ["high-left", "high-mid", "high-right", "low-left", "low-mid", "low-right"];
 
 export interface KickInput {
-  /** Aim point in goal space. */
-  aim: { x: number; y: number };
-  /** Power bar value at release, 0..1. */
-  power: number;
+  /** The area the taker shoots at. */
+  area: GoalArea;
 }
 
 export type KickResult = "goal" | "saved" | "miss" | "post";
@@ -63,6 +67,8 @@ export interface KickOutcome {
 export interface KickPlayers {
   /** Taker's finishing, 0..0.95 (`runtimeStats.withBall.shootAccuracy`). */
   accuracy: number;
+  /** Taker's strength, 0..1 (`runtimeStats.withBall.strength`); absent = 0.5. */
+  strength?: number;
   /** Keeper's reflex and diving, 0..1 (null: empty goal). */
   keeper: { reflex: number; diving: number } | null;
 }
@@ -85,14 +91,20 @@ function gaussian(rng: () => number): number {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-/** Where the ball goes: the aim, a spread by the taker's finishing, the height a too-strong shot adds. */
+/** The point a kick at `area` is aimed at (goal space). */
+export function areaTarget(area: GoalArea): { x: number; y: number } {
+  const [row, col] = area.split("-") as ["low" | "high", "left" | "mid" | "right"];
+  return {
+    x: col === "left" ? -PENALTY_2D.TARGET_X : col === "right" ? PENALTY_2D.TARGET_X : 0,
+    y: row === "high" ? PENALTY_2D.TARGET_HIGH_Y : PENALTY_2D.TARGET_LOW_Y,
+  };
+}
+
+/** Where the ball goes: the area's target and a spread by the taker's finishing. */
 export function ballPoint(input: KickInput, accuracy: number, rng: () => number): { x: number; y: number } {
   const sigma = PENALTY_2D.AIM_SPREAD * (1.2 - clamp(accuracy, 0, 0.95));
-  const over = Math.max(0, input.power - PENALTY_2D.POWER_GREEN[1]);
-  return {
-    x: input.aim.x + gaussian(rng) * sigma,
-    y: Math.max(0, input.aim.y + gaussian(rng) * sigma * 0.7 + over * PENALTY_2D.POWER_LIFT),
-  };
+  const t = areaTarget(input.area);
+  return { x: t.x + gaussian(rng) * sigma, y: Math.max(0, t.y + gaussian(rng) * sigma * 0.7) };
 }
 
 /** Out (wide or over), on the woodwork, or in the mouth. */
@@ -105,15 +117,20 @@ function frameOf(ball: { x: number; y: number }): "in" | "post" | "miss" {
 }
 
 /** Save chance of a keeper diving to `dive` against a ball at `ball` (0 when he is in the wrong column). */
-export function saveChance(ball: { x: number; y: number }, dive: GoalArea, keeper: KickPlayers["keeper"], power: number): number {
+export function saveChance(
+  ball: { x: number; y: number }, dive: GoalArea, keeper: KickPlayers["keeper"], strength = 0.5, accuracy = 0.5,
+): number {
   if (!keeper) return 0;
   const shot = areaOf(ball);
   const sameCol = shot.split("-")[1] === dive.split("-")[1];
-  if (!sameCol) return 0;
+  const midBall = shot.endsWith("-mid") && !dive.endsWith("-mid");
+  if (!sameCol && !midBall) return 0;
   const skill = 0.6 + 0.8 * ((keeper.reflex + keeper.diving) / 2);
   const corner = clamp((Math.abs(ball.x) - 0.3) / 0.7, 0, 1) * (0.6 + 0.4 * clamp(ball.y, 0, 1));
-  const weakness = Math.max(0, PENALTY_2D.POWER_GREEN[0] - power) / PENALTY_2D.POWER_GREEN[0];
-  const base = PENALTY_2D.SAVE_BASE * skill * (1 - corner * PENALTY_2D.CORNER_PROTECT) * (1 + weakness * PENALTY_2D.WEAK_BONUS);
+  const power = 1 + (0.5 - clamp(strength, 0, 1)) * PENALTY_2D.POWER_SAVE;
+  const strike = 1 + (0.5 - clamp(accuracy, 0, 0.95)) * PENALTY_2D.FINISH_SAVE;
+  const base = PENALTY_2D.SAVE_BASE * skill * (1 - corner * PENALTY_2D.CORNER_PROTECT) * power * strike;
+  if (midBall) return clamp(base * (shot.startsWith("low") ? PENALTY_2D.MID_REACH_LOW : PENALTY_2D.MID_REACH_HIGH), 0, PENALTY_2D.MAX_SAVE);
   return clamp(shot === dive ? base : base * PENALTY_2D.OTHER_ROW, 0, PENALTY_2D.MAX_SAVE);
 }
 
@@ -124,10 +141,10 @@ export function resolveKick(input: KickInput, dive: GoalArea, players: KickPlaye
   // The dive is unknown to the taker: the chance averages the AI's dive weights.
   const chance = frame === "in"
     ? 1 - (Object.entries(PENALTY_2D.AI_DIVE) as [GoalArea, number][])
-      .reduce((s, [a, w]) => s + w * saveChance(ball, a, players.keeper, input.power), 0)
+      .reduce((s, [a, w]) => s + w * saveChance(ball, a, players.keeper, players.strength, players.accuracy), 0)
     : 0;
   if (frame !== "in") return { result: frame, scored: false, ball, dive, chance };
-  const saved = rng() < saveChance(ball, dive, players.keeper, input.power);
+  const saved = rng() < saveChance(ball, dive, players.keeper, players.strength, players.accuracy);
   return { result: saved ? "saved" : "goal", scored: !saved, ball, dive, chance };
 }
 
@@ -147,13 +164,9 @@ export function aiDive(rng: () => number): GoalArea {
   return pickWeighted(PENALTY_2D.AI_DIVE, rng);
 }
 
-/** The AI taker's kick: an area by the weights, a point inside it away from the woodwork, a normal power. */
+/** The AI taker's kick: an area by the weights. */
 export function aiKick(rng: () => number): KickInput {
-  const c = areaCentre(pickWeighted(PENALTY_2D.AI_AIM, rng));
-  return {
-    aim: { x: c.x + (rng() - 0.5) * 0.35, y: clamp(c.y + (rng() - 0.5) * 0.3, 0.05, 0.9) },
-    power: clamp(PENALTY_2D.AI_POWER_MEAN + gaussian(rng) * PENALTY_2D.AI_POWER_SD, 0, 1),
-  };
+  return { area: pickWeighted(PENALTY_2D.AI_AIM, rng) };
 }
 
 /** A manager's answer to a pending penalty: the kick (taker's side) or the dive (keeper's side). */
@@ -167,27 +180,6 @@ export function parsePenaltyChoice(v: unknown): PenaltyChoice | null {
   if (keys.length !== 1) return null;
   if (typeof o.dive === "string") return (GOAL_AREAS as readonly string[]).includes(o.dive) ? { dive: o.dive as GoalArea } : null;
   const k = o.kick as Record<string, unknown> | undefined;
-  if (!k || typeof k !== "object" || Object.keys(k).some((x) => x !== "aim" && x !== "power")) return null;
-  const aim = k.aim as Record<string, unknown> | undefined;
-  const num = (n: unknown, lo: number, hi: number) => typeof n === "number" && Number.isFinite(n) && n >= lo && n <= hi;
-  if (!aim || typeof aim !== "object" || Object.keys(aim).some((x) => x !== "x" && x !== "y")) return null;
-  if (!num(aim.x, -1.5, 1.5) || !num(aim.y, 0, 1.5) || !num(k.power, 0, 1)) return null;
-  return { kick: { aim: { x: aim.x as number, y: aim.y as number }, power: k.power as number } };
-}
-
-/**
- * The aim at `t` seconds: it sweeps the goal on its own (wide to the posts, low to just under the bar), so the taker only
- * times one click against the aim and the power bar together.
- */
-export function aimAt(t: number): { x: number; y: number } {
-  return {
-    x: Math.sin((2 * Math.PI * t) / PENALTY_2D.AIM_CYCLE_X_S) * 0.95,
-    y: 0.45 + 0.45 * Math.sin((2 * Math.PI * t) / PENALTY_2D.AIM_CYCLE_Y_S + 1),
-  };
-}
-
-/** Power bar value at `t` seconds after it started (a triangle wave 0 → 1 → 0). */
-export function powerAt(t: number): number {
-  const p = (t / PENALTY_2D.POWER_CYCLE_S) % 1;
-  return p < 0.5 ? p * 2 : 2 - p * 2;
+  if (!k || typeof k !== "object" || Array.isArray(k) || Object.keys(k).length !== 1) return null;
+  return typeof k.area === "string" && (GOAL_AREAS as readonly string[]).includes(k.area) ? { kick: { area: k.area as GoalArea } } : null;
 }

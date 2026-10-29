@@ -5855,15 +5855,13 @@
     "kickTitle": "{{name}} to take",
     "saveTitle": "Save it: {{name}} to take",
     "keeper": "Keeper: {{name}}",
-    "power": "Power",
-    "hintAim": "Click in the goal to aim (or arrows and Enter).",
-    "hintPower": "The aim moves on its own: click (or space) when it and the power are right. In the green zone the shot is firm.",
     "hintDive": "Pick where the keeper dives ({{s}} s).",
     "result": {
       "goal": "Goal",
       "saved": "Saved",
       "miss": "Wide",
       "post": "Off the woodwork"
-    }
+    },
+    "hintKick": "Pick where to shoot ({{s}} s)."
   }
 }

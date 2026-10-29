@@ -5855,15 +5855,13 @@
     "kickTitle": "Cobrança de {{name}}",
     "saveTitle": "Defenda: {{name}} vai bater",
     "keeper": "Goleiro: {{name}}",
-    "power": "Força",
-    "hintAim": "Clique no gol para mirar (ou use as setas e Enter).",
-    "hintPower": "A mira corre sozinha: clique (ou espaço) quando ela e a força estiverem no ponto. Na faixa verde, o chute sai firme.",
     "hintDive": "Escolha para onde o goleiro pula ({{s}} s).",
     "result": {
       "goal": "Gol",
       "saved": "Defendeu",
       "miss": "Fora",
       "post": "Na trave"
-    }
+    },
+    "hintKick": "Escolha onde chutar ({{s}} s)."
   }
 }
