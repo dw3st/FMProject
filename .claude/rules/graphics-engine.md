@@ -328,3 +328,20 @@ camisas brancas tingidas por torcedor, cachecóis na cor da casa, cabeças = pel
 cor pelo índice) ou boné. Três poses (`FanArms`): braços baixos, levantados e mãos na cabeça (o lado que levou o gol,
 enquanto o outro comemora). Sem a arte, `buildCrowdAtlas` de antes (duas poses). Fotógrafos: bonecos `photographer` do
 atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do gol deles ou depois de um chute.
+
+## Lances, câmera e replay (arte nova, fase 5, 4.41.9)
+
+- **Letreiro de gol** (`MatchEventBanner` → `GoalTvCard`): com o visual novo, o gol entra pela esquerda com a foto de quem
+  marcou, `GOL · 23'`, o nome, escudo e time (e a assistência) e o placar na ordem da tela; 5,2 s. Sem o visual novo, a
+  faixa de antes.
+- **Câmera** (`matchCamera.ts`, `stepCamera`): prop `camera` do `PixiPitch` (`fixed` = o campo inteiro, como sempre;
+  `follow` = zoom `FOLLOW_ZOOM` 1,6 seguindo a bola, sem mostrar fora do canvas). A transformação é do `app.stage`; só a
+  partida ao vivo (preferência `fm.match.camera`, Configurações) e o chip Follow cam do `/test` a ligam.
+- **Replay do gol** (prop `replay`, preferência `fm.match.replay`, ligado por padrão): o campo guarda as posições
+  desenhadas dos últimos segundos (`recordFrame`); `DELAY_S` (1,6) depois do gol toca `WINDOW_S` (4,2 s) antes dele a
+  `SPEED` 0,55 com zoom `REPLAY_ZOOM` 1,9, segurando a simulação (o `pump` conta como pausado), e avisa a tela
+  (`onReplay`, selo "Replay"). Só desenho: o resultado não muda. Nunca no modo remoto (jogo entre técnicos, transmissão)
+  nem com a aba escondida.
+- **Bolas paradas e goleiro** (`playerSprite.ts`): no lateral o cobrador segura a bola sobre a cabeça (`THROW_IN_HOLD`)
+  e arremessa (`throwGo`); o goleiro soca quando não agarra (`punch`) e anda de lado quando se move devagar
+  (`keeper-side`); `KNEE_SLIDE_SHARE` (35%) dos gols com o joelho no chão.

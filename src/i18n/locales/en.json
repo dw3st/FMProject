@@ -592,7 +592,12 @@
     "newVisual": "New visual",
     "newVisualOn": "On",
     "newVisualOff": "Off",
-    "newVisualDescription": "Painted turf in the match. Applies from the next screen you open."
+    "newVisualDescription": "Painted turf in the match. Applies from the next screen you open.",
+    "matchCamera": "Match camera",
+    "matchCameraFixed": "Whole pitch",
+    "matchCameraFollow": "Follows the ball",
+    "goalReplay": "Goal replay",
+    "goalReplayDescription": "After every goal, the last seconds play again in slow motion."
   },
   "reports": {
     "title": "Send a report",
@@ -1122,7 +1127,9 @@
       "secondYellow": "Second yellow",
       "cardLine": "{{player}} · {{team}} · {{minute}}'",
       "sub": "Substitution",
-      "subLine": "{{out}} off, {{in}} on · {{team}} · {{minute}}'"
+      "subLine": "{{out}} off, {{in}} on · {{team}} · {{minute}}'",
+      "tvTag": "GOAL · {{minute}}'",
+      "tvLineAssist": "{{team}} · assist by {{assist}}"
     },
     "notice": {
       "offside": "Offside: {{player}} ({{team}})",
@@ -1157,7 +1164,8 @@
       "close": "Close the window",
       "drag": "Drag to move",
       "inWindow": "Events open in a window."
-    }
+    },
+    "replay": "Replay"
   },
   "broadcast": {
     "teamLabel": "Team {{team}}",

@@ -592,7 +592,12 @@
     "newVisual": "Visual novo",
     "newVisualOn": "Ligado",
     "newVisualOff": "Desligado",
-    "newVisualDescription": "Gramado pintado na partida. Vale a partir da próxima tela aberta."
+    "newVisualDescription": "Gramado pintado na partida. Vale a partir da próxima tela aberta.",
+    "matchCamera": "Câmera da partida",
+    "matchCameraFixed": "Campo inteiro",
+    "matchCameraFollow": "Segue a bola",
+    "goalReplay": "Replay do gol",
+    "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta."
   },
   "reports": {
     "title": "Enviar um relatório",
@@ -1122,7 +1127,9 @@
       "secondYellow": "Segundo amarelo",
       "cardLine": "{{player}} · {{team}} · {{minute}}'",
       "sub": "Substituição",
-      "subLine": "Sai {{out}}, entra {{in}} · {{team}} · {{minute}}'"
+      "subLine": "Sai {{out}}, entra {{in}} · {{team}} · {{minute}}'",
+      "tvTag": "GOL · {{minute}}'",
+      "tvLineAssist": "{{team}} · assistência de {{assist}}"
     },
     "notice": {
       "offside": "Impedimento: {{player}} ({{team}})",
@@ -1157,7 +1164,8 @@
       "close": "Fechar a janela",
       "drag": "Arraste para mover",
       "inWindow": "Lances abertos numa janela."
-    }
+    },
+    "replay": "Replay"
   },
   "broadcast": {
     "teamLabel": "Time {{team}}",

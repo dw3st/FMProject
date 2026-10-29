@@ -6,7 +6,7 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { readNewVisual, writeNewVisual } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readNewVisual, writeGoalReplay, writeMatchCamera, writeNewVisual } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -20,6 +20,8 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const { language, setLanguage } = useLanguage();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [newVisual, setNewVisual] = useState(readNewVisual);
+  const [matchCamera, setMatchCamera] = useState(readMatchCamera);
+  const [goalReplay, setGoalReplay] = useState(readGoalReplay);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +79,25 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.newVisualDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.matchCamera")}</div>
+          <OptionChips
+            value={matchCamera}
+            onChange={(k) => { const v = k === "follow" ? "follow" : "fixed"; setMatchCamera(v); writeMatchCamera(v); }}
+            options={[{ key: "fixed", label: t("settings.matchCameraFixed") }, { key: "follow", label: t("settings.matchCameraFollow") }]}
+          />
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.goalReplay")}</div>
+          <OptionChips
+            value={goalReplay ? "on" : "off"}
+            onChange={(k) => { const on = k === "on"; setGoalReplay(on); writeGoalReplay(on); }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.goalReplayDescription")}</p>
         </div>
 
         {onExitToMenu && (

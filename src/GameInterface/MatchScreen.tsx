@@ -44,6 +44,8 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
+import { newVisualOn } from "@/Domain/art/paintedFaces";
+import { readGoalReplay, readMatchCamera } from "@/GameInterface/artPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
@@ -202,6 +204,10 @@ export function MatchScreen() {
    */
   const h2hMode = useMemo(() => new URLSearchParams(window.location.search).get("h2h") === "1", []);
   const h2hModeRef = useRef(h2hMode);
+  // Camera and goal replay (art phase 5): the player's settings, read when the page opens.
+  const matchCameraPref = useMemo(readMatchCamera, []);
+  const goalReplayPref = useMemo(readGoalReplay, []);
+  const [replayOn, setReplayOn] = useState(false);
   const [h2hTarget, setH2HTarget] = useState<{ saveId: string; fixtureId: string } | null>(null);
   const h2h = useH2HSocket(h2hTarget);
   const [mySide, setMySide] = useState<TeamId>("A");
@@ -276,6 +282,8 @@ export function MatchScreen() {
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bannerKeyRef = useRef(0);
   const crestOfRef = useRef<(tm: TeamId) => { logoUrl?: string; colors?: [string, string] }>(() => ({}));
+  /** The TV goal card's data (art phase 5, with the new visual): scorer's face, kit colour, score as displayed. */
+  const goalTvRef = useRef<(tm: TeamId, scorerId: number, score: { A: number; B: number }) => { photo?: string; score: string; color: string } | null>(() => null);
   /** Goals, penalties and offsides as they happen (cards, subs and injuries come from `gameState`). */
   const [eventFeed, setEventFeed] = useState<MatchFeedItem[]>([]);
   const penaltyGoalPendingRef = useRef(false);
@@ -893,7 +901,7 @@ export function MatchScreen() {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     bannerKeyRef.current += 1;
     setBanner({ ...item, key: bannerKeyRef.current });
-    bannerTimerRef.current = setTimeout(() => setBanner(null), 4000);
+    bannerTimerRef.current = setTimeout(() => setBanner(null), item.goal ? 5200 : 4000);
   }, []);
 
   const showNotice = useCallback((text: string, tone: "danger" | "warn" | "info") => {
@@ -967,13 +975,17 @@ export function MatchScreen() {
         penaltyGoalPendingRef.current = false;
         push({ minute: minuteNow(), team: e.team, kind, player: nameOf(e.scorerId) });
         const assist = e.assistId !== undefined ? nameOf(e.assistId) : "";
+        const tv = goalTvRef.current(e.team, e.scorerId, e.score);
         showBanner({
           kind: "goal",
-          title: t("match.banner.goal", { player: shirtName(nameOf(e.scorerId)) }),
-          line: assist && kind === "goal"
-            ? t("match.banner.goalLineAssist", { minute: e.minute + 1, team: team(e.team), assist: shirtName(assist) })
-            : t("match.banner.goalLine", { minute: e.minute + 1, team: team(e.team) }),
+          title: tv ? shirtName(nameOf(e.scorerId)) : t("match.banner.goal", { player: shirtName(nameOf(e.scorerId)) }),
+          line: tv
+            ? (assist && kind === "goal" ? t("match.banner.tvLineAssist", { team: team(e.team), assist: shirtName(assist) }) : team(e.team))
+            : assist && kind === "goal"
+              ? t("match.banner.goalLineAssist", { minute: e.minute + 1, team: team(e.team), assist: shirtName(assist) })
+              : t("match.banner.goalLine", { minute: e.minute + 1, team: team(e.team) }),
           ...crestOfRef.current(e.team),
+          ...(tv ? { goal: { ...tv, tag: t("match.banner.tvTag", { minute: e.minute + 1 }) } } : {}),
         });
       }),
       // VAR (`var.md` §3): the check shows as a notice, the decision in the feed.
@@ -1399,6 +1411,13 @@ export function MatchScreen() {
     return { ...(a ? { teamAColor2: a } : {}), ...(b ? { teamBColor2: b } : {}) };
   }, [faceRoster, matchKitColors]);
 
+  goalTvRef.current = (tm, scorerId, sc) => {
+    if (!newVisualOn()) return null;
+    const rosterId = gameStateRef.current?.players.find((p) => p.id === scorerId)?.rosterId;
+    const photo = rosterId ? faceUrls?.[tm]?.[rosterId] : undefined;
+    const shown = toDisplayPair(sc, isAwayView(matchFixture, crestIds?.a));
+    return { ...(photo ? { photo } : {}), score: `${shown.A}–${shown.B}`, color: tm === "A" ? matchKitColors.teamA : matchKitColors.teamB };
+  };
   crestOfRef.current = (tm: TeamId) => {
     const meta = tm === "A" ? teamAMeta : teamBMeta;
     const id = tm === "A" ? crestIds?.a : crestIds?.b;
@@ -1896,6 +1915,9 @@ export function MatchScreen() {
                   paused={effectivePaused}
                   keepTickerAlive={h2hMode}
                   remote={h2hMode ? h2h.feed : null}
+                  camera={matchCameraPref}
+                  replay={!h2hMode && goalReplayPref}
+                  onReplay={setReplayOn}
                   effectLabels={effectLabels}
                   debugMode={DEV_TOOLS && debug}
                   mirror={awayView}
@@ -1916,6 +1938,11 @@ export function MatchScreen() {
                   lighting={matchLightingProp}
                 />
                 {banner && <MatchEventBanner item={banner} />}
+                {replayOn && (
+                  <div className="absolute top-4 left-4 z-10 pointer-events-none rounded-md bg-background/90 border border-border px-3 py-1.5 font-display font-bold uppercase tracking-[0.08em] text-sm text-primary">
+                    {t("match.replay")}
+                  </div>
+                )}
                 {notice && (
                   <div
                     role="status"

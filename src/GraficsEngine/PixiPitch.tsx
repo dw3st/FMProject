@@ -17,8 +17,9 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
-import { addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
+import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -65,7 +66,7 @@ import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepTowar
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
 import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
-import { seedFrom } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { TeamId } from "@/GameEngine/types";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
@@ -473,6 +474,12 @@ interface Props {
    * frames of `frames` (`remoteInterp.ts`). Read at mount. Absent = the pitch runs the match itself, as always.
    */
   remote?: RemoteFeed | null;
+  /** Camera (art phase 5): `follow` zooms in and follows the ball. Absent: the whole pitch, as always. */
+  camera?: "fixed" | "follow";
+  /** Slow-motion replay of a goal (art phase 5): the page holds the match while it plays. Never in remote mode. */
+  replay?: boolean;
+  /** Told when a goal replay starts and ends (the page shows its tag). */
+  onReplay?: (on: boolean) => void;
 }
 
 export interface PitchOfficials {
@@ -545,6 +552,9 @@ export function PixiPitch({
   extras = false,
   staminaTeams,
   remote = null,
+  camera = "fixed",
+  replay = false,
+  onReplay,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -572,6 +582,9 @@ export function PixiPitch({
   const lightGenRef              = useRef(0);
   const coachesRef               = useRef(coaches);
   const extrasRef                = useRef(extras);
+  const cameraRef                = useRef(camera);
+  const replayRef                = useRef(replay);
+  const onReplayRef              = useRef(onReplay);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
@@ -603,6 +616,9 @@ export function PixiPitch({
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
   useEffect(() => { coachesRef.current = coaches; }, [coaches]);
   useEffect(() => { extrasRef.current = extras; }, [extras]);
+  useEffect(() => { cameraRef.current = camera; }, [camera]);
+  useEffect(() => { replayRef.current = replay; }, [replay]);
+  useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
   // Stadium flags read at event time (big game): the ref follows every prop change.
   useEffect(() => { stadiumRef.current = stadium; }, [stadium]);
   // Crowd texture: re-baked only when what it shows changes (never per frame).
@@ -1233,10 +1249,28 @@ export function PixiPitch({
         : null;
       let remoteSeenSeq = -1;
 
+      // Goal replay (art phase 5, `matchCamera.ts`): the drawn positions of the last seconds are kept; after a goal
+      // they play back slowly while the simulation is held. Drawing only, never in remote mode or with the tab hidden.
+      let replayBuf: ReplayFrame<Pos, DrawnBall>[] = [];
+      let replayClock = 0;
+      let replayPending: { goalAt: number } | null = null;
+      let replayRun: { clip: ReplayFrame<Pos, DrawnBall>[]; started: number } | null = null;
+      const endReplay = () => {
+        if (!replayRun) return;
+        replayRun = null;
+        onReplayRef.current?.(false);
+      };
+      const unsubReplay = gameBus.on("goalScored", () => {
+        if (!remote && replayRef.current && framesVisible()) replayPending = { goalAt: replayClock };
+      });
+      let cam: CameraView = { zoom: 1, x: canvasWidth / 2, y: canvasHeight / 2 };
+
       const pumpSimulation = () => {
         // Remote mode: the server simulates; nothing to pump here.
         if (remote) return;
-        const elapsedRealSeconds = pump(pausedRef.current);
+        // A replay holds the match; with the tab hidden there is no replay.
+        if (replayRun && !framesVisible()) endReplay();
+        const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null);
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
@@ -1812,6 +1846,8 @@ export function PixiPitch({
       });
 
       // ── Sprite poses (art phase 2): the engine's events start a short action of the player's sprite ──
+      /** The taker of the current throw-in: his throw shows the throw frame. */
+      let throwTaker: number | null = null;
       const act = (playerId: number | null | undefined, kind: SpriteAction["kind"], side: 1 | -1 = 1) => {
         if (playerId === null || playerId === undefined || !spriteSheets || !framesShown()) return;
         spriteActions = addAction(spriteActions, { playerId, kind, side }, effectNow);
@@ -1822,6 +1858,7 @@ export function PixiPitch({
         // The preview's choice: a keeper throws a short ball, a long pass is a kick, a short one a pass.
         gameBus.on("passAttempted", (e) => {
           const d = e.distance ?? 0;
+          if (e.player === throwTaker) { throwTaker = null; act(e.player, "throwGo"); return; }
           act(e.player, playerPos(e.player)?.role === "GK" ? (d < 32 ? "throw" : "kick") : d < 22 ? "pass" : "kick");
         }),
         gameBus.on("passCompleted", (e) => act(e.toId, "receive")),
@@ -1830,9 +1867,14 @@ export function PixiPitch({
         gameBus.on("throughBallStarted", (e) => act(e.player, "pass")),
         gameBus.on("tackle", (e) => act(e.player, e.success ? "tackle" : "tackleStand")),
         gameBus.on("foul", (e) => { act(e.fouledId, "fall"); act(e.offenderId, "appeal"); }),
-        gameBus.on("gkClaim", (e) => { if (e.claimed) act(e.keeperId, "catch"); }),
+        gameBus.on("gkClaim", (e) => act(e.keeperId, e.claimed ? "catch" : "punch")),
         gameBus.on("injury", (e) => act(e.playerId, "injured")),
-        gameBus.on("goalScored", (e) => { act(e.scorerId, "celebrate"); act(e.assistId, "celebrate"); }),
+        gameBus.on("goalScored", (e) => {
+          // Some goals are celebrated with a knee slide (stable per scorer and minute).
+          const slide = mulberry32(seedFrom(`slide:${e.scorerId}:${e.minute}`))() < KNEE_SLIDE_SHARE;
+          act(e.scorerId, slide ? "kneeSlide" : "celebrate");
+          act(e.assistId, "celebrate");
+        }),
         gameBus.on("shotResolved", (e) => {
           if (e.isGoal || !e.inPosts) return;
           const shooter = playerPos(e.player);
@@ -2597,6 +2639,34 @@ export function PixiPitch({
           drawnPos = blendPlayers(transition.fromPlayers, drawnPos, k);
           drawnB = blendBall(transition.fromBall, drawnB, k);
         }
+        // Goal replay: record, or draw the recorded frames slowly.
+        const dtReal = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
+        replayClock += dtReal;
+        if (replayRun) {
+          const at = replayAt(replayRun.clip, replayClock - replayRun.started);
+          if (!at) endReplay();
+          else {
+            const k = at.k;
+            const pos = new Map<number, Pos>();
+            for (const [id, a] of at.a.players) {
+              const b = at.b.players.get(id) ?? a;
+              pos.set(id, { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k });
+            }
+            drawnPos = pos;
+            const ba = at.a.ball, bb = at.b.ball;
+            drawnB = { x: ba.x + (bb.x - ba.x) * k, y: ba.y + (bb.y - ba.y) * k, h: ba.h + (bb.h - ba.h) * k };
+          }
+        } else if (!remote && replayRef.current) {
+          replayBuf = recordFrame(replayBuf, { t: replayClock, players: drawnPos, ball: drawnB });
+          if (replayPending && replayClock - replayPending.goalAt >= REPLAY.DELAY_S) {
+            const clip = replayClip(replayBuf, replayPending.goalAt);
+            replayPending = null;
+            if (clip) {
+              replayRun = { clip, started: replayClock };
+              onReplayRef.current?.(true);
+            }
+          }
+        }
         lastDrawnPos = drawnPos;
         lastDrawnBall = drawnB;
         const heldId = heldBallId(stateRef.current, drawnPos, drawnB, Boolean(remote));
@@ -2688,7 +2758,10 @@ export function PixiPitch({
             const action = actionOf.get(player.id) ?? null;
             // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.
             const diveSide = action?.kind === "dive" && Math.sin(mo.angle + Math.PI / 2) * action.side * (mirrorRef.current ? -1 : 1) >= 0 ? "right" : "left";
-            const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide);
+            const sp = stateRef.current.setPiece;
+            const throwing = sp?.type === "throw_in" && sp.takerId === player.id;
+            if (throwing) throwTaker = player.id;
+            const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide, throwing ? THROW_IN_HOLD : undefined);
             setPose(body, pose.atlas, pose.base);
             // The sprite faces -y: turn it to where he faces, against the marker's own animation turn.
             body.rotation = mo.angle + Math.PI / 2 - g.rotation;
@@ -3256,6 +3329,15 @@ export function PixiPitch({
         drawPhotographers(drawnB);
         if (extrasRef.current) drawLed();
         drawStretchers();
+        // Camera: the whole pitch, or zoomed on the ball (following, or during a replay).
+        {
+          const want = replayRun ? CAMERA.REPLAY_ZOOM : cameraRef.current === "follow" ? CAMERA.FOLLOW_ZOOM : 1;
+          const bp = toPixel(drawnB.x, drawnB.y);
+          cam = stepCamera(cam, want, { x: bp.px, y: bp.py }, canvasWidth, canvasHeight, app.ticker.deltaMS / 1000);
+          app.stage.scale.set(cam.zoom);
+          app.stage.pivot.set(cam.x, cam.y);
+          app.stage.position.set(canvasWidth / 2, canvasHeight / 2);
+        }
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
         const homeAlpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
@@ -3598,6 +3680,7 @@ export function PixiPitch({
         unsubRefCard();
         unsubArFlag();
         unsubCoachGoal();
+        unsubReplay();
         unsubFourth();
         onOfficialsReady = null;
         unsubBenchGoal();

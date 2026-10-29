@@ -41,6 +41,9 @@ export const PLAYER_SPRITE = {
 export type ActionStep = readonly [base: string, seconds: number];
 
 /** The preview's chains (`act(p, ...)`); `side` only matters for the keeper's dive. */
+export const THROW_IN_HOLD = "player-throw-in";
+/** Share of goals celebrated with a knee slide. */
+export const KNEE_SLIDE_SHARE = 0.35;
 export function actionChain(kind: SpriteActionKind, side: "left" | "right" = "left"): readonly ActionStep[] {
   switch (kind) {
     case "kick": return [["player-kick-wind", 0.11], ["player-kick", 0.15], ["player-kick-follow", 0.3]];
@@ -59,12 +62,15 @@ export function actionChain(kind: SpriteActionKind, side: "left" | "right" = "le
       return [[`${d}-0`, 0.09], [`${d}-1`, 0.1], [d, 0.31], [`${d}-3`, 0.15], [`${d}-sprawl`, 0.3], [`${d}-up`, 0.45]];
     }
     case "catch": return [["keeper-catch", 0.5]];
+    case "punch": return [["keeper-punch", 0.4]];
+    case "throwGo": return [["player-throw-go", 0.35]];
+    case "kneeSlide": return [["player-knee-slide", 1.1], ["player-celebrate", 0.4], ["player-fist", 0.4]];
   }
 }
 
 export type SpriteActionKind =
   | "kick" | "pass" | "throw" | "header" | "tackle" | "tackleStand" | "fall" | "appeal" | "receive" | "injured"
-  | "celebrate" | "dive" | "catch";
+  | "celebrate" | "dive" | "catch" | "punch" | "throwGo" | "kneeSlide";
 
 export interface SpriteAction {
   playerId: number;
@@ -149,7 +155,7 @@ const poseFor = (base: string): SpritePose => ({ atlas: base.startsWith("keeper-
  * The frame a player shows: a running action wins (its step at `now`; `diveSide` the drawn side of a dive), else
  * idle / walk / run by the gait (an idle keeper stands ready).
  */
-export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number, keeper: boolean, diveSide: "left" | "right" = "left"): SpritePose {
+export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number, keeper: boolean, diveSide: "left" | "right" = "left", hold?: string): SpritePose {
   if (action) {
     let t = now - action.startedAt;
     const chain = actionChain(action.kind, diveSide);
@@ -159,7 +165,11 @@ export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number
     }
     return poseFor(chain[chain.length - 1]![0]);
   }
+  // A held set-piece pose (the ball over the head at a throw-in, art phase 5).
+  if (hold) return poseFor(hold);
   if (m.gait === "idle") return keeper ? poseFor("keeper-ready") : poseFor("player-idle");
+  // A keeper moving slowly shuffles sideways, facing the play.
+  if (keeper && m.gait === "walk") return poseFor(`keeper-side-${String((Math.floor(m.phase * 8) % 8) + 1).padStart(2, "0")}`);
   return poseFor(`player-${m.gait}-${String((Math.floor(m.phase * 8) % 8) + 1).padStart(2, "0")}`);
 }
 

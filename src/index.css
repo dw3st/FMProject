@@ -166,6 +166,13 @@
 }
 
 /* Broadcast strip of the live match (MatchEventBanner, 4.38.21): rises a little and fades in. */
+/* TV goal card of the live match (art phase 5): slides in from the left. */
+@keyframes tvGoalIn {
+  from { transform: translateX(-115%); }
+  to { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) { .animate-tv-goal { animation: none !important; } }
+
 @keyframes bannerIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }

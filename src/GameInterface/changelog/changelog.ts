@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.9",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Gol com letreiro de TV na partida: foto de quem marcou, minuto, time e placar.",
+        en: "Goals get a TV caption in the match: the scorer's photo, the minute, the team and the score.",
+      },
+      {
+        pt: "Replay do gol em câmera lenta e câmera que segue a bola, os dois com opção em Configurações.",
+        en: "Slow-motion goal replay and a camera that follows the ball, both with an option in Settings.",
+      },
+      {
+        pt: "No lateral, o jogador segura a bola sobre a cabeça antes de cobrar. O goleiro soca a bola quando não consegue agarrar, e alguns gols são comemorados de joelho.",
+        en: "At a throw-in the player holds the ball over their head before throwing. The keeper punches the ball when they can't catch it, and some goals are celebrated with a knee slide.",
+      },
+    ],
+  },
+  {
     version: "4.41.8",
     date: "2026-10-29",
     items: [
@@ -2655,6 +2673,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Visual novo também nos lances, no pênalti e nas telas", en: "The new look in the highlights, the penalties and the screens too" },
+  { pt: "Visual novo também no pênalti e nas telas", en: "The new look in the penalties and the screens too" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

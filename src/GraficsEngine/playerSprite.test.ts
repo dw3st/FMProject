@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion } from "@/GraficsEngine/playerSprite";
+import { actionChain, actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion, THROW_IN_HOLD } from "@/GraficsEngine/playerSprite";
 
 const run = (speed: number, seconds: number, dt = 1 / 60) => {
   let m = newMotion(0, 0);
@@ -50,5 +50,19 @@ describe("player sprite", () => {
 
   test("the look is stable per player", () => {
     expect(spriteLook("es_1")).toEqual(spriteLook("es_1"));
+  });
+});
+
+describe("set pieces and keeper extras (art phase 5)", () => {
+  const atlas = (n: string) => JSON.parse(require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "example_data", "assets", n), "utf8")) as { frames: Record<string, unknown> };
+  const frames = { ...atlas("player/player-atlas.json").frames, ...atlas("keeper/keeper-atlas.json").frames };
+  test("new chains use existing frames", () => {
+    for (const k of ["punch", "throwGo", "kneeSlide"] as const) for (const [base] of actionChain(k)) expect(`${base}-shirt.png` in frames).toBe(true);
+    expect(`${THROW_IN_HOLD}-shirt.png` in frames).toBe(true);
+  });
+  test("a held pose wins over the gait; a walking keeper side-steps", () => {
+    const walk = { ...newMotion(0, 0), gait: "walk" as const, phase: 0.2 };
+    expect(poseOf(walk, null, 0, false, "left", THROW_IN_HOLD).base).toBe(THROW_IN_HOLD);
+    expect(poseOf(walk, null, 0, true).base).toBe("keeper-side-02");
   });
 });
