@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.6",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Jogadores desenhados como bonecos animados na partida: andam, correm, chutam, cabeceiam, dão carrinho, caem e comemoram. O rosto aparece no nome de quem está com a bola.",
+        en: "Players drawn as animated figures in the match: they walk, run, kick, head, slide in, fall and celebrate. The face shows in the name of whoever has the ball.",
+      },
+    ],
+  },
+  {
     version: "4.41.5",
     date: "2026-10-29",
     items: [

@@ -17,6 +17,24 @@ export interface PaintedFaceIds {
 /** What the server announces: the painted faces and the painted match backdrops. */
 export interface ArtManifest extends PaintedFaceIds {
   backdrops: string[];
+  /** The new visual is on on the server (`ART_VISUAL` not 0). */
+  visual?: boolean;
+}
+
+/** Version segment of the in-repo game art (`/assets/game/v1/...`, atlases of `src/example_data/assets`). */
+export const GAME_ART_VERSION = "v1";
+export const gameArtUrl = (path: string) => `/assets/game/${GAME_ART_VERSION}/${path}`;
+
+let newVisual = false;
+
+/** The new visual is on for this page (server switch and the player's own, Settings). */
+export function newVisualOn(): boolean {
+  return newVisual;
+}
+
+/** Tests and tools: switch the new visual for this page. */
+export function setNewVisual(on: boolean): void {
+  newVisual = on;
 }
 
 let backdrops = new Set<string>();
@@ -75,7 +93,7 @@ export function paintedCoachFace(face: ManagerFace): string | null {
  * renders, at most `timeoutMs`: a slow answer just leaves the SVG faces and the drawn turf. `newVisual` false (the
  * player's own switch, Settings) keeps the drawn turf.
  */
-export async function loadPaintedFaces(timeoutMs = 1500, newVisual = true): Promise<void> {
+export async function loadPaintedFaces(timeoutMs = 1500, wantsNewVisual = true): Promise<void> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -83,7 +101,8 @@ export async function loadPaintedFaces(timeoutMs = 1500, newVisual = true): Prom
     clearTimeout(timer);
     if (!res.ok) return;
     const body = (await res.json()) as Partial<ArtManifest>;
-    setPaintedBackdrops(newVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
+    setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
+    setNewVisual(wantsNewVisual && body.visual === true);
     setPaintedFaces({
       players: Array.isArray(body.players) ? body.players : [],
       coaches: Array.isArray(body.coaches) ? body.coaches : [],

@@ -2,7 +2,7 @@ import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Application, Assets, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { Application, Assets, Spritesheet, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildCrowdAtlas, FIGURE_FRAME, headFrame } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
@@ -16,7 +16,8 @@ import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
-import { paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -1296,10 +1297,16 @@ export function PixiPitch({
       const playerGraphics = new Map<number, Container>();
       const playerLabels   = new Map<number, Text>();
       /** Name pill behind each label (4.39): redrawn only when the name changes. */
-      const playerPills    = new Map<number, { g: Graphics; text: string }>();
+      const playerPills    = new Map<number, { g: Graphics; text: string; face?: Sprite; faceUrl?: string }>();
       /** Pixi textures of the faces, per URL: owned by this app, destroyed on unmount. */
       const faceTextures = new Map<string, Texture>();
       let facesDisposed = false;
+      // Players as animated sprites (art phase 2, `playerSprite.ts`): the atlases load on demand; until then (or with the
+      // new visual off) the disc with the face, as before.
+      let spriteSheets: Record<SpriteAtlas, Spritesheet> | null = null;
+      const spriteMotion = new Map<number, SpriteMotion>();
+      let spriteActions: SpriteAction[] = [];
+      const bodyPose = new WeakMap<Container, string>();
 
       const labelStyle = new TextStyle({
         fontSize:   markerLabelFontSize(markerR),
@@ -1328,6 +1335,7 @@ export function PixiPitch({
         face.label = 'face';
         face.anchor.set(0.5);
         face.width = face.height = (markerR - 1) * 2;
+        face.visible = !marker.getChildByLabel('body');
         marker.addChildAt(face, 3); // above the light shadows, shadow + disc, below the ring
         marker.label = url;
       }
@@ -1361,13 +1369,17 @@ export function PixiPitch({
           .circle(0, 0, markerR + 0.5).stroke(team === "A" ? outlineA : outlineB);
       }
 
-      /** A dark rounded pill behind the name with a strip of the team colour (local coordinates: label anchor). */
-      function drawPill(g: Graphics, label: Text, color: number): void {
+      /**
+       * A dark rounded pill behind the name with a strip of the team colour (local coordinates: label anchor). `faceW`
+       * px more on the left for the player's face (sprite players, art phase 2).
+       */
+      function drawPill(g: Graphics, label: Text, color: number, faceW = 0): void {
         const P = MATCH_LOOK.PILL;
-        const w = label.width + P.PAD_X * 2, h = label.height + P.PAD_Y * 2;
+        const w = label.width + P.PAD_X * 2 + faceW, h = label.height + P.PAD_Y * 2;
+        const x0 = -w / 2 - faceW / 2;
         g.clear()
-          .roundRect(-w / 2, -h + P.PAD_Y, w, h, h / 2).fill({ color: 0x070b14, alpha: P.ALPHA })
-          .roundRect(-w / 2, -h + P.PAD_Y, P.STRIP, h, h / 2).fill({ color, alpha: 0.95 });
+          .roundRect(x0 + faceW / 2, -h + P.PAD_Y, w, h, h / 2).fill({ color: 0x070b14, alpha: P.ALPHA })
+          .roundRect(x0 + faceW / 2, -h + P.PAD_Y, P.STRIP, h, h / 2).fill({ color, alpha: 0.95 });
       }
 
       /** Create a marker + label for a player and register them in the maps. */
@@ -1378,6 +1390,7 @@ export function PixiPitch({
           .ellipse(markerR * MARKER_SHADOW.DX, markerR * MARKER_SHADOW.DY, markerR, markerR * MARKER_SHADOW.SCALE_Y)
           .fill({ color: 0x000000, alpha: MARKER_SHADOW.ALPHA });
         const disc = new Graphics().circle(0, 0, markerR).fill(color);
+        disc.label = "disc";
         // Border in the kit's two colours (4.38.21, mock option B): the kit on the upper left half, the second
         // colour on the other, with a thin dark edge outside.
         const color2 = player.team === "A" ? fillA2 : fillB2;
@@ -1411,6 +1424,7 @@ export function PixiPitch({
           .arc(0, 0, markerR - 1.5, Math.PI * 0.15, Math.PI * 0.85).stroke({ width: 2, color: 0x000000, alpha: MATCH_LOOK.RIM });
         cardBadge.label = "card";
         cardBadge.visible = false;
+        gloss.label = "gloss";
         // Light shadows (time of day): empty without `lighting`; redrawn only when the light changes. With the
         // light on they include a soft contact shadow, so the old hard one is hidden.
         shadow.label = "contactShadow";
@@ -1438,6 +1452,55 @@ export function PixiPitch({
         playerPills.set(player.id, { g: pill, text: label.text });
 
         applyFace(player);
+        addBody(player);
+      }
+
+      /**
+       * The player's sprite body (six tinted layers) over his ground ring: the disc, its rim and the face hide (the face
+       * goes to the name pill). Nothing without the atlases.
+       */
+      function addBody(player: PitchPlayer): void {
+        const marker = playerGraphics.get(player.id);
+        if (!spriteSheets || !marker || marker.getChildByLabel('body')) return;
+        const teamKit = player.team === "A" ? fillA : fillB;
+        const keeper = player.role === "GK";
+        // The keeper wears his own kit, far from his team's (the bench's keeper colours), with a dark trim.
+        const kit = keeper ? benchKits(["GK"], teamKit)[0]! : teamKit;
+        const look = spriteLook(player.rosterId ?? String(player.id));
+        const trim = keeper ? PLAYER_SPRITE.KEEPER_TRIM : player.team === "A" ? fillA2 : fillB2;
+        const tints: Record<string, number> = { socks: kit, shirt: kit, trim, skin: look.skin, hair: look.hair };
+        const body = new Container();
+        body.label = 'body';
+        body.scale.set(spriteScale(markerR));
+        for (const layer of SPRITE_LAYERS) {
+          const sp = new Sprite(spriteSheets.player.textures[`player-idle-${layer}.png`] ?? Texture.EMPTY);
+          sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
+          sp.label = layer;
+          const t = tints[layer];
+          if (t !== undefined) sp.tint = t;
+          body.addChild(sp);
+        }
+        const ring = marker.getChildByLabel('ring');
+        marker.addChildAt(body, ring ? marker.getChildIndex(ring) + 1 : marker.children.length);
+        for (const l of ['disc', 'gloss', 'face']) {
+          const c = marker.getChildByLabel(l);
+          if (c) c.visible = false;
+        }
+        const { px, py } = toPixel(player.x, player.y);
+        spriteMotion.set(player.id, newMotion(px / m.scale, py / m.scale));
+      }
+
+      /** Shows the frame `base` of `atlas` on a body (only the textures that change). */
+      function setPose(body: Container, atlas: SpriteAtlas, base: string): void {
+        const key = `${atlas}:${base}`;
+        if (!spriteSheets || bodyPose.get(body) === key) return;
+        const sheet = spriteSheets[atlas];
+        for (const layer of SPRITE_LAYERS) {
+          const sp = body.getChildByLabel(layer) as Sprite | null;
+          const tex = sheet.textures[`${base}-${layer}.png`];
+          if (sp && tex) sp.texture = tex;
+        }
+        bodyPose.set(body, key);
       }
 
       /** Remove and destroy the marker + label for a player that left the pitch. */
@@ -1447,7 +1510,7 @@ export function PixiPitch({
         const lbl = playerLabels.get(id);
         if (lbl) { world.removeChild(lbl); lbl.destroy(); playerLabels.delete(id); }
         const pl = playerPills.get(id);
-        if (pl) { world.removeChild(pl.g); pl.g.destroy(); playerPills.delete(id); }
+        if (pl) { world.removeChild(pl.g); pl.g.destroy(); pl.face?.destroy(); playerPills.delete(id); }
       }
 
       refreshFacesRef.current = () => {
@@ -1469,6 +1532,16 @@ export function PixiPitch({
 
       for (const player of stateRef.current.players) {
         addPlayerSprite(player);
+      }
+      if (newVisualOn()) {
+        void Promise.all([
+          Assets.load<Spritesheet>(gameArtUrl("player/player-atlas.json")),
+          Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas.json")),
+        ]).then(([player, keeper]) => {
+          if (facesDisposed || !player || !keeper) return;
+          spriteSheets = { player, keeper };
+          for (const p of stateRef.current.players) addBody(p);
+        }).catch(() => { /* the discs stay */ });
       }
 
       // ── Ball ──
@@ -1676,6 +1749,36 @@ export function PixiPitch({
           anims = addAnim(anims, { playerId: id, kind: "celebrate", dir: { x: 1, y: 0 }, side: id % 2 === 0 ? 1 : -1 }, effectNow);
         }
       });
+
+      // ── Sprite poses (art phase 2): the engine's events start a short action of the player's sprite ──
+      const act = (playerId: number | null | undefined, kind: SpriteAction["kind"], side: 1 | -1 = 1) => {
+        if (playerId === null || playerId === undefined || !spriteSheets || !framesShown()) return;
+        spriteActions = addAction(spriteActions, { playerId, kind, side }, effectNow);
+      };
+      const unsubPoses = [
+        gameBus.on("shot", (e) => act(e.player, "kick")),
+        gameBus.on("header", (e) => act(e.player, "header")),
+        // The preview's choice: a keeper throws a short ball, a long pass is a kick, a short one a pass.
+        gameBus.on("passAttempted", (e) => {
+          const d = e.distance ?? 0;
+          act(e.player, playerPos(e.player)?.role === "GK" ? (d < 32 ? "throw" : "kick") : d < 22 ? "pass" : "kick");
+        }),
+        gameBus.on("passCompleted", (e) => act(e.toId, "receive")),
+        gameBus.on("crossStarted", (e) => act(e.player, "kick")),
+        gameBus.on("longBallStarted", (e) => act(e.player, "kick")),
+        gameBus.on("throughBallStarted", (e) => act(e.player, "pass")),
+        gameBus.on("tackle", (e) => act(e.player, e.success ? "tackle" : "tackleStand")),
+        gameBus.on("foul", (e) => { act(e.fouledId, "fall"); act(e.offenderId, "appeal"); }),
+        gameBus.on("gkClaim", (e) => { if (e.claimed) act(e.keeperId, "catch"); }),
+        gameBus.on("injury", (e) => act(e.playerId, "injured")),
+        gameBus.on("goalScored", (e) => { act(e.scorerId, "celebrate"); act(e.assistId, "celebrate"); }),
+        gameBus.on("shotResolved", (e) => {
+          if (e.isGoal || !e.inPosts) return;
+          const shooter = playerPos(e.player);
+          const gk = shooter && stateRef.current.players.find((q) => q.team !== shooter.team && q.role === "GK");
+          if (gk) act(gk.id, "dive", e.toY >= gk.y ? 1 : -1);
+        }),
+      ];
 
       // ── Stretcher (#129): two medics in from the nearest touchline, out with the injured player ──
       const stretcherGfx = new Graphics();
@@ -2353,6 +2456,8 @@ export function PixiPitch({
         // Short player animations: an offset on top of the interpolated marker (engine untouched).
         anims = liveAnims(anims, effectNow);
         const animOf = new Map(anims.map((a) => [a.playerId, a] as const));
+        spriteActions = liveActions(spriteActions, effectNow);
+        const actionOf = new Map(spriteActions.map((a) => [a.playerId, a] as const));
         animGfx.clear();
         for (const player of stateRef.current.players) {
           const g     = playerGraphics.get(player.id);
@@ -2388,6 +2493,21 @@ export function PixiPitch({
           }
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
+          const body = g.getChildByLabel('body') as Container | null;
+          if (body) {
+            const prevM = spriteMotion.get(player.id) ?? newMotion(px / m.scale, py / m.scale);
+            const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
+            const ballPx = toPixel(drawnB.x, drawnB.y);
+            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale });
+            spriteMotion.set(player.id, mo);
+            const action = actionOf.get(player.id) ?? null;
+            // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.
+            const diveSide = action?.kind === "dive" && Math.sin(mo.angle + Math.PI / 2) * action.side * (mirrorRef.current ? -1 : 1) >= 0 ? "right" : "left";
+            const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide);
+            setPose(body, pose.atlas, pose.base);
+            // The sprite faces -y: turn it to where he faces, against the marker's own animation turn.
+            body.rotation = mo.angle + Math.PI / 2 - g.rotation;
+          }
           if (player.id === glowId) {
             // A gold ring pulsing on the ground under the ball holder.
             const H = MATCH_LOOK.HOLDER;
@@ -2444,9 +2564,32 @@ export function PixiPitch({
             label.y = py - (markerR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
             const pill = playerPills.get(player.id);
             if (pill) {
-              if (pill.text !== label.text) { drawPill(pill.g, label, player.team === "A" ? fillA : fillB); pill.text = label.text; }
-              pill.g.x = label.x;
+              // Sprite players: the face goes in the pill, left of the name (the marker has none).
+              const P = MATCH_LOOK.PILL;
+              const faceUrl = g.getChildByLabel('body') ? faceUrlOf(player) : undefined;
+              const faceTex = faceUrl ? faceTextures.get(faceUrl) : undefined;
+              const faceD = faceTex ? label.height + P.PAD_Y * 2 - 4 : 0;
+              const faceW = faceD > 0 ? faceD + 3 : 0;
+              const pillKey = `${label.text}|${faceW}`;
+              if (pill.text !== pillKey) { drawPill(pill.g, label, player.team === "A" ? fillA : fillB, faceW); pill.text = pillKey; }
+              if (faceTex && (!pill.face || pill.faceUrl !== faceUrl)) {
+                pill.face?.destroy();
+                pill.face = new Sprite(faceTex);
+                pill.face.anchor.set(0.5);
+                pill.face.zIndex = 5;
+                world.addChild(pill.face);
+                pill.faceUrl = faceUrl;
+              }
+              // The name moves right to make room for the face.
+              label.x = px + faceW / 2;
+              pill.g.x = px;
               pill.g.y = label.y;
+              if (pill.face) {
+                pill.face.visible = named && faceW > 0;
+                pill.face.width = pill.face.height = faceD;
+                pill.face.x = px - (label.width + P.PAD_X * 2 + faceW) / 2 + P.STRIP + faceD / 2 + 1;
+                pill.face.y = label.y - label.height / 2;
+              }
             }
           }
         }
@@ -3268,6 +3411,7 @@ export function PixiPitch({
         unsubImpact();
         unsubPhotoShot();
         unsubAnimCelebrate();
+        for (const off of unsubPoses) off();
         unsubStretcher();
         redrawCrowdRef.current = null;
         redrawSurfaceRef.current = null;

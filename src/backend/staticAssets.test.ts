@@ -78,3 +78,15 @@ describe("static assets (fonts and flags served as files)", () => {
     expect(offenders).toEqual([]);
   }, 30_000);
 });
+
+describe("game art", () => {
+  test("only the whitelisted atlases are served", async () => {
+    const route = staticAssetRoutes["/assets/game/v1/:dir/:file"] as (req: Request & { params: { dir: string; file: string } }) => Response;
+    const get = (dir: string, file: string) => route(Object.assign(new Request(`http://x/assets/game/v1/${dir}/${file}`), { params: { dir, file } }));
+    expect(get("player", "player-idle-shirt.png").status).toBe(404);
+    expect(get("..", "package.json").status).toBe(404);
+    const ok = get("player", "player-atlas.json");
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-type")).toBe("application/json");
+  });
+});

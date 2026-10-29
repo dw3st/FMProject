@@ -34,10 +34,14 @@ export const H2H_FORWARDED_EVENTS = [
   "penaltyResolved", "offsideCalled", "injury", "injuryNeedsSub", "playerSubstituted", "positionsSwapped",
   "varCheck", "varReview", "refereeError", "halfTime", "extraTimeStart", "penaltyKick", "shootoutEnd",
   "matchStart", "matchEnd", "kickOff", "shot", "shotResolved", "header", "teamIntentChanged", "penaltyPending",
+  "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim",
 ] as const satisfies readonly (keyof GameEvents)[];
 
 /** Forwarded events that do not need an immediate full state (the next frame / periodic state covers them). */
-const NO_STATE_AFTER = new Set<string>(["shot", "shotResolved", "header", "kickOff", "teamIntentChanged"]);
+const NO_STATE_AFTER = new Set<string>([
+  "shot", "shotResolved", "header", "kickOff", "teamIntentChanged",
+  "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim",
+]);
 
 export interface H2HMatch {
   readonly state: GameState;

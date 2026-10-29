@@ -121,7 +121,7 @@ export const artAssetRoutes = {
   "/api/art/faces": () => {
     const index = loadIndex();
     const faces: PaintedFaceIds = index && paintedFacesEnabled() ? index.faces : { players: [], coaches: [], referees: [] };
-    const body: ArtManifest = { ...faces, backdrops: index && newVisualEnabled() ? index.backdrops : [] };
+    const body: ArtManifest = { ...faces, backdrops: index && newVisualEnabled() ? index.backdrops : [], visual: newVisualEnabled() };
     return Response.json(body, { headers: { "Cache-Control": "no-cache" } });
   },
 };

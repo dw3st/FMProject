@@ -294,3 +294,17 @@ arte (`createPage(..., { art: true })`) e mostra pelos chips de grama, corte e c
 `heldBallId` (`remoteInterp.ts`): no modo remoto (transmissão, jogo entre técnicos) o estado chega a cada segundo e as
 posições a cada passo; o dono do estado só conta (bola nos pés, brilho, nome) enquanto a bola desenhada está a até
 `REMOTE_HOLD_YDS` (2) dele. Antes, depois de um passe a bola voltava aos pés do dono antigo até o estado seguinte (report).
+
+## Jogadores em sprite (arte nova, fase 2, 4.41.6)
+
+`playerSprite.ts` (puro, com teste), no modelo da prévia de arte (`fmproject-art-handoff/reference/preview-template.html`):
+cada jogador é um boneco visto de cima em seis camadas tingidas (meias e camisa no uniforme, gola na segunda cor, pele e
+cabelo por jogador `spriteLook`, detalhe sem tinta), do tamanho do marcador (`spriteScale`), sobre o anel do time; o disco,
+o brilho e o rosto do marcador somem e o rosto vai para a pílula de nome (quem tem a bola ou vai receber). Andar e correr
+pela velocidade desenhada com folga (`RUN_UP` / `RUN_DOWN`), passada que cresce com a velocidade, virada pelo tempo; ações
+como sequências de quadros com tempos fixos (`actionChain`) disparadas pelos eventos: chute, passe, lançamento do goleiro,
+domínio, cabeceio, carrinho, falta (cai / reclama), lesão, comemoração, mergulho e encaixe do goleiro (lado pelo desenho).
+Goleiro com uniforme próprio (`benchKits`) e gola escura. Atlas `src/example_data/assets/player` e `/keeper` (só esses
+quatro arquivos versionados), servidos em `/assets/game/v1/` (`GAME_ART_FILES`, `staticAssets.ts`). Só com o visual novo
+(`newVisualOn`: `ART_VISUAL` do servidor e a chave do jogador); sem ele, o disco com o rosto de antes. Os eventos de passe,
+carrinho e encaixe também seguem na transmissão e no jogo entre técnicos (`WATCH_EVENTS`, `H2H_FORWARDED_EVENTS`).
