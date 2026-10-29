@@ -11,6 +11,7 @@ import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
 import { SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
 import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
 import type { GroupAdvanceView, PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
+import { RENEWAL_URL } from "@/GameInterface/useAdvanceDay";
 import type { LeagueData } from "@/types/playerTypes";
 
 export interface GroupAdvanceContextValue {
@@ -126,6 +127,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(true);
     setError(null);
     const r = await groupAdvanceApi.ready(saveId, until);
+    if (!r.ok && r.error === "renewalPending") { window.location.href = RENEWAL_URL; return; }
     if (!r.ok) setError(r.error);
     await refresh();
     setBusy(false);
@@ -137,6 +139,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(true);
     setError(null);
     const r = await groupAdvanceApi.simulate(saveId, view.currentDate, today.fixtureId);
+    if (!r.ok && r.error === "renewalPending") { window.location.href = RENEWAL_URL; return; }
     if (!r.ok) setError(r.error);
     await refresh();
     setBusy(false);

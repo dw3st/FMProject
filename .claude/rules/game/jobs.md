@@ -170,6 +170,11 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
 - **Renovação não respondida (4.41.1):** uma oferta da diretoria pendente na virada (nem aceita nem recusada) é aceita
   ali (`renewedContract`, mensagem `contract_renewed`); só recusar no cartão deixa o contrato acabar. Report: o técnico
   do Real Madrid (2 Champions, diretoria 77) ficou sem clube por não clicar.
+- **Responder antes de avançar (4.41.5, pedido de tester):** com uma oferta da diretoria pendente (`renewalPending`),
+  o avanço do próprio técnico recusa com 409 `renewalPending`: `/advance-day` (salvo com uma partida ao vivo já jogada),
+  `/advance-until`, e no grupo o "Pronto até" e o "Simular". A oferta nova para o avanço rápido (`renewalOffer`) e o
+  avanço em grupo (parada do assento, `seatStops`). O cliente leva ao Painel com `?renewal=1`, que reabre a janela. A
+  aceitação na virada continua só para quem estava ausente (o prazo do grupo avançou por ele).
 - **Janela da renovação (4.41.2):** com `managerRenewal` válida, o Painel abre `RenewalPopup` (o mesmo
   `ManagerRenewalCard`), uma vez por oferta e sessão do navegador ("Decidir depois" fecha; o cartão da inbox fica).
 - **Proposta com país e divisão (4.41.2):** `JobOffer.country` e `tier` (pirâmide do país; liga sem pirâmide = 1); o

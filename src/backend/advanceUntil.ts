@@ -1,3 +1,4 @@
+import { renewalPending } from "@/Domain/managers/managerContract";
 import { saveService as defaultSaveService, type SaveService } from "@/backend/SaveService";
 import { withSaveLock } from "@/backend/saveLock";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -87,6 +88,8 @@ export interface AdvanceBatchResult {
   sacked?: boolean;
   /** Job offers arrived on the last simulated day (`.claude/rules/game/jobs.md`): the batch stops there. */
   jobOffers?: boolean;
+  /** The board made a renewal offer: the manager answers it before advancing (4.41.4). */
+  renewalOffer?: boolean;
   /** A press conference invite arrived on the last simulated day (`.claude/rules/game/press.md`): the batch stops there. */
   pressInvite?: boolean;
   error?: { status: number; message: string };
@@ -143,6 +146,7 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
     if (typeof step.payload.jobOffers === "number" && step.payload.jobOffers > 0) {
       result.jobOffers = true; result.done = true; return result;
     }
+    if (step.payload.renewalOffer === true) { result.renewalOffer = true; result.done = true; return result; }
     if (step.payload.pressInvite === true) { result.pressInvite = true; result.done = true; return result; }
   }
 }
@@ -293,6 +297,9 @@ export const advanceUntilRoutes = {
     // `.claude/rules/game/multiplayer.md`). A single day still advances.
     if ((worldMeta?.seats.length ?? 0) > 1) {
       return Response.json({ error: "multiSeat" }, { status: 409 });
+    }
+    if (renewalPending((await defaultSaveService.getSeat(saveId, auth.seatId))?.managerRenewal, worldMeta?.currentDate)) {
+      return Response.json({ error: "renewalPending" }, { status: 409 });
     }
 
     let maxDays = ADVANCE_UNTIL_DEFAULT_DAYS;

@@ -71,12 +71,33 @@ export function faceRasterSize(radius: number, resolution: number): number {
   return Math.max(16, Math.round(radius * 2 * Math.max(1, resolution)));
 }
 
-async function rasterise(url: string, size: number): Promise<HTMLCanvasElement | null> {
-  try {
+/**
+ * Loads a picture. `img.decode()` sometimes rejects for no reason in Chrome when many images load at once (tester report:
+ * two players without a face for the whole match); then it waits for `onload` instead, and tries a fresh request once.
+ */
+async function loadImage(url: string, attempts = 2): Promise<HTMLImageElement | null> {
+  for (let i = 0; i < attempts; i++) {
     const img = new Image();
     img.decoding = "async";
-    img.src = url;
-    await img.decode();
+    const loaded = new Promise<boolean>((resolve) => {
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+    });
+    img.src = i === 0 ? url : `${url}${url.includes("?") ? "&" : "?"}r=${i}`;
+    try {
+      await img.decode();
+      return img;
+    } catch {
+      if (await loaded && img.naturalWidth > 0) return img;
+    }
+  }
+  return null;
+}
+
+async function rasterise(url: string, size: number): Promise<HTMLCanvasElement | null> {
+  try {
+    const img = await loadImage(url);
+    if (!img) return null;
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
@@ -101,10 +122,8 @@ export function loadCrestCanvas(url: string, size: number): Promise<HTMLCanvasEl
   if (!pending) {
     pending = (async () => {
       try {
-        const img = new Image();
-        img.decoding = "async";
-        img.src = url;
-        await img.decode();
+        const img = await loadImage(url);
+        if (!img) return null;
         const canvas = document.createElement("canvas");
         canvas.width = size;
         canvas.height = size;

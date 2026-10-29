@@ -5636,7 +5636,8 @@
         "network": "No connection.",
         "dayFailed": "The league could not advance this day.",
         "noError": "There is nothing to try again.",
-        "notGaveUp": "The league is still trying on its own."
+        "notGaveUp": "The league is still trying on its own.",
+        "renewalPending": "Answer the board's renewal offer first."
       },
       "inbox": {
         "subject": "The assistant advanced for you",

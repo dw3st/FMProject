@@ -7,6 +7,9 @@ import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 import { addDays, daysBetween } from "@/Domain/dates";
 import type { ClubMove } from "@/types/pyramidTypes";
 
+/** A board renewal offer waits for an answer: the dashboard opens it (4.41.4). */
+export const RENEWAL_URL = "/dashboard?renewal=1";
+
 /**
  * The fast-forward button only shows when the next player match is more than this many days away
  * (fast-forward stops ON the match day, so a match tomorrow is one plain Continuar).
@@ -93,6 +96,10 @@ export function useAdvanceDay() {
     setAdvancing(true);
     try {
       const res = await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
+      if (res.status === 409 && (await res.clone().json().catch(() => null))?.error === "renewalPending") {
+        window.location.href = RENEWAL_URL;
+        return;
+      }
       if (!res.ok) throw new Error("Failed to advance day");
       // The day moved on: a half-played match snapshot of the old day is stale (#64).
       clearMatchSnapshot();
@@ -153,6 +160,10 @@ export function useAdvanceDay() {
         if (body.seasonEvents?.length) notice = body.seasonEvents[body.seasonEvents.length - 1]!;
         if ((body as { sacked?: boolean }).sacked) {
           window.location.href = "/fired";
+          return;
+        }
+        if (body.error === "renewalPending" || (body as { renewalOffer?: boolean }).renewalOffer) {
+          window.location.href = RENEWAL_URL;
           return;
         }
         if (!res.ok || body.error) throw new Error(body.error ?? `HTTP ${res.status}`);

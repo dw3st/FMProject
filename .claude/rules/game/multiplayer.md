@@ -909,6 +909,13 @@ amarelos, trocas, gols, intervalo e fim; recarregar a aba de quem joga retomou a
 - **Janela:** `WatchButton` abre `WatchPopup` (`Modal` `size="wide"`) no Painel; da partida ao vivo continua em outra
   aba (`/watch`, a mesma `WatchBroadcast`), para uma página nunca desenhar dois campos.
 
+### Buffer de quadros (4.41.5)
+
+Report: a transmissão ainda engasgava em 2x e 4x (vários passos no mesmo quadro de tela, quadros em rajadas). Cada quadro
+leva o relógio de quem joga (`t`); quem assiste guarda os últimos 16 (`remoteBuffer.ts`, puro, com teste) e desenha
+`max(120 ms, 1,6 × intervalo médio)` atrás do mais novo, sempre entre dois quadros que já tem (`pairAt`); a diferença de
+relógio é o menor atraso visto, relaxado 0,5 ms por quadro. Os eventos (gol, cartão) chegam um pouco antes do desenho.
+
 ### Limitações (parte 8)
 
 - A partida pausada por quem joga congela no espectador, sem aviso de pausa.

@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { importRatings } from "@/GameEngine/Domain/PlayerRating";
 import type { GameState } from "@/GameEngine/types";
-import { WATCH, WATCH_EVENTS } from "@/Domain/watch/watchConfig";
+import { WATCH_EVENTS } from "@/Domain/watch/watchConfig";
 import { isLiveScoreView } from "@/Domain/rivals/liveScore";
-import { EMPTY_REMOTE_FRAMES, pushRemoteFrame, toRemoteFrame, type RemoteFeed, type RemoteFrames } from "@/GraficsEngine/remoteInterp";
+import { toRemoteFrame, type RemoteFeed } from "@/GraficsEngine/remoteInterp";
+import { EMPTY_REMOTE_BUFFER, pairAt, pushBuffered, REMOTE_BUFFER, type RemoteBuffer } from "@/GraficsEngine/remoteBuffer";
 import { reconnectDelay } from "@/GameInterface/Social/socialState";
 import { mergeWireState } from "@/GameInterface/H2H/h2hState";
 import type { ClientEvent } from "@/types/socialTypes";
 import type { LiveScoreView } from "@/types/rivalsTypes";
 import type { WatchCloseReason, WatchInfo, WatchLook, WatchStats } from "@/types/watchTypes";
 import { sanitizeWatchLook } from "@/Domain/watch/watchState";
-import { clamp } from "@/Domain/math";
 
 const LOGOUT_CLOSE_CODE = 4001;
 const CLOSE_REASONS = new Set<WatchCloseReason>(["ended", "gone", "full", "refused"]);
@@ -40,10 +40,12 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
   const [stats, setStats] = useState<WatchStats | null>(null);
   const [closed, setClosed] = useState<WatchCloseReason | null>(null);
   const [look, setLook] = useState<WatchLook | null>(null);
-  /** Real ms between two frames, smoothed: the drawing blends over the cadence the friend really sends at. */
-  const gapRef = useRef<{ last: number; ema: number }>({ last: 0, ema: WATCH.FRAME_MS });
-  const framesRef = useRef<RemoteFrames>(EMPTY_REMOTE_FRAMES);
-  const feedRef = useRef<RemoteFeed>({ frames: framesRef, stepMs: WATCH.FRAME_MS });
+  /** The last frames by the friend's clock: the drawing runs a little behind the newest, always between two frames. */
+  const bufferRef = useRef<RemoteBuffer>(EMPTY_REMOTE_BUFFER);
+  const feedRef = useRef<RemoteFeed>({
+    frames: { get current() { return pairAt(bufferRef.current, performance.now()); } },
+    stepMs: REMOTE_BUFFER.STEP_MS,
+  });
   const stateRef = useRef<GameState | null>(null);
   const saveId = target?.saveId ?? null;
   const seatId = target?.seatId ?? null;
@@ -90,12 +92,9 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
         if (e.seatId !== seatId) return;
         if (e.type === "watch_frame" && Array.isArray(e.ball) && Array.isArray(e.players)) {
           const now = performance.now();
-          const g = gapRef.current;
-          if (g.last > 0) g.ema = g.ema * 0.8 + clamp(now - g.last, 40, 1000) * 0.2;
-          g.last = now;
-          feedRef.current.stepMs = clamp(g.ema, 80, 600);
-          framesRef.current = pushRemoteFrame(
-            framesRef.current, toRemoteFrame(e as { ball: [number, number]; players: [number, number, number][] }, now),
+          const sentAt = typeof e.t === "number" && Number.isFinite(e.t) ? e.t : now;
+          bufferRef.current = pushBuffered(
+            bufferRef.current, toRemoteFrame(e as { ball: [number, number]; players: [number, number, number][] }, now), sentAt, now,
           );
         } else if (e.type === "watch_state" && e.state && Array.isArray((e.state as { players?: unknown }).players)) {
           const st = e.stats as WatchStats | undefined;

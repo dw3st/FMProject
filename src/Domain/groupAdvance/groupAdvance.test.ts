@@ -143,6 +143,7 @@ describe("seatStops", () => {
     expect(seatStops({ sacked: true })).toBe(true);
     expect(seatStops({ jobOffers: 1 })).toBe(true);
     expect(seatStops({ seasonEnded: true })).toBe(true);
+    expect(seatStops({ renewalOffer: true })).toBe(true);
     expect(seatStops({ jobOffers: 0, pressInvite: true })).toBe(false);
     expect(seatStops({})).toBe(false);
   });

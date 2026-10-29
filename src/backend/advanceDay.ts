@@ -168,7 +168,7 @@ import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
 import { liveRivals } from "@/Domain/negotiation/rivals";
-import { contractDay, managerWeeklyWage, reanchorContract, renewedContract, severancePay } from "@/Domain/managers/managerContract";
+import { contractDay, managerWeeklyWage, reanchorContract, renewalPending, renewedContract, severancePay } from "@/Domain/managers/managerContract";
 import { managerReputation } from "@/Domain/jobs/jobs";
 import type { DayTransfer } from "@/types/dayLogTypes";
 import { cupAndContinentalFixtures, recordLeagueSeasonHistory, recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -3450,6 +3450,7 @@ export async function advanceOneDay(
           : {}),
         ...(ds.job.ended ? { sacked: true as const } : {}),
         ...(offers > 0 ? { jobOffers: offers } : {}),
+        ...(ds.job.renewal && ds.job.renewal !== ds.meta.managerRenewal && !ds.job.ended ? { renewalOffer: true as const } : {}),
         ...(ds.achievementsUnlocked > 0 ? { achievements: ds.achievementsUnlocked } : {}),
         ...(ds.pressOut.invite ? { pressInvite: true as const } : {}),
       };
@@ -3614,6 +3615,11 @@ export const advanceDayRoutes = {
         }
         playedMatchOverride = pm;
       }
+    }
+    // A renewal offer of the board waits for an answer before the day moves (4.41.4); a match already played live
+    // is still recorded.
+    if (!playedMatchOverride && renewalPending((await saveService.getSeat(req.params.saveId!, auth.seatId))?.managerRenewal, worldMeta?.currentDate)) {
+      return Response.json({ error: "renewalPending" }, { status: 409 });
     }
 
     // Serialise days per save: a second request for the same save waits until the

@@ -5636,7 +5636,8 @@
         "network": "Sem conexão.",
         "dayFailed": "A liga não conseguiu avançar este dia.",
         "noError": "Não há nada para tentar de novo.",
-        "notGaveUp": "A liga ainda está tentando sozinha."
+        "notGaveUp": "A liga ainda está tentando sozinha.",
+        "renewalPending": "Responda primeiro à proposta de renovação da diretoria."
       },
       "inbox": {
         "subject": "O assistente avançou por você",

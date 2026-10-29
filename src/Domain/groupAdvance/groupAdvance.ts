@@ -133,7 +133,8 @@ export function assistantPatches(currentDate: string, seats: readonly GroupSeatI
 export function seatStops(part: Record<string, unknown>): boolean {
   return part.sacked === true
     || (typeof part.jobOffers === "number" && part.jobOffers > 0)
-    || part.seasonEnded === true;
+    || part.seasonEnded === true
+    || part.renewalOffer === true;
 }
 
 /** Keeps at most `max` days, dropping the oldest days without a stop first; a day with a stop is never dropped. */

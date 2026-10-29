@@ -58,6 +58,18 @@ describe("group advance routes", () => {
     expect((await api("POST", "ready", multi, { until: null })).json.readyUntil).toBeNull();
   });
 
+  test("a pending board renewal offer blocks marking ready (4.41.4); unmarking still works", async () => {
+    await saveService.updateSeat(multi, "a", { managerRenewal: { offeredOn: D, expires: "2027-06-30", wage: 10000, seasons: 2 } });
+    try {
+      const res = await api("POST", "ready", multi, { until: "tomorrow" });
+      expect(res.status).toBe(409);
+      expect(res.json.error).toBe("renewalPending");
+      expect((await api("POST", "ready", multi, { until: null })).status).toBe(200);
+    } finally {
+      await saveService.updateSeat(multi, "a", { managerRenewal: undefined });
+    }
+  });
+
   test("a real future date is stored; next_match without a game is tomorrow", async () => {
     expect((await api("POST", "ready", multi, { until: "2027-03-14" })).json.readyUntil).toBe("2027-03-14");
     expect((await api("POST", "ready", multi, { until: "next_match" })).json.readyUntil).toBe("2027-03-11");

@@ -1,3 +1,4 @@
+import { renewalPending } from "@/Domain/managers/managerContract";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { requireSeat, type SeatAuth } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -86,6 +87,10 @@ export const groupAdvanceRoutes = {
     const { saveId, auth } = ctx;
     const res = await withSaveLock(saveId, async () => {
       const current = (await saveService.getMeta(saveId))!.currentDate!;
+      // A renewal offer of the board waits for an answer before he can mark himself ready (4.41.4).
+      if (body.until !== null && renewalPending((await saveService.getSeat(saveId, auth.seatId))?.managerRenewal, current)) {
+        return Response.json({ error: "renewalPending" }, { status: 409 });
+      }
       // Only "next_match" reads the calendar; a read failure throws (never "no game": he would be skipped).
       // Without a club it means the day the next job offers come (an offer stops the world anyway, 4.41.1).
       const seat = body.until === "next_match" ? await saveService.getSeat(saveId, auth.seatId) : null;
@@ -116,6 +121,9 @@ export const groupAdvanceRoutes = {
     const fixtureId = body.fixtureId;
     const res = await withSaveLock(saveId, async () => {
       if ((await saveService.getMeta(saveId))!.currentDate !== date) return Response.json({ error: "dayClosed" }, { status: 409 });
+      if (body.mode === "simulate" && renewalPending((await saveService.getSeat(saveId, auth.seatId))?.managerRenewal, date)) {
+        return Response.json({ error: "renewalPending" }, { status: 409 });
+      }
       if (body.mode === "undo") {
         // Undo "Simulate" while the day has not run: the game is to decide again (Play comes back). The "ready until"
         // the decision set (D+1) goes too; a later one the manager chose stays.

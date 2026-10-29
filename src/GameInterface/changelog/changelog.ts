@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.5",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Com uma proposta de renovação da diretoria pendente, é preciso responder antes de avançar os dias.",
+        en: "With a renewal offer from the board pending, you must answer it before advancing the days.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A transmissão do jogo de um amigo ficou mais suave, também em 2x e 4x.",
+        en: "A friend's match broadcast is smoother, also at 2x and 4x.",
+      },
+      {
+        pt: "Alguns jogadores ficavam sem rosto na partida e na transmissão.",
+        en: "Some players showed no face in the match and in the broadcast.",
+      },
+    ],
+  },
+  {
     version: "4.41.4",
     date: "2026-10-29",
     items: [

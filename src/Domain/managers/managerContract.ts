@@ -171,3 +171,11 @@ export function contractDay(args: {
 export function renewedContract(contract: ManagerContract, offer: Pick<ManagerRenewalOffer, "wage" | "seasons">, date: string): ManagerContract {
   return { ...contract, wage: offer.wage, until: addYearsIso(contract.until, offer.seasons), signed: date };
 }
+
+/**
+ * A board renewal offer still waiting for the manager's answer (tester report 4.41.4): the manager's own advance stops
+ * until he accepts or refuses it. Only an absent manager (the group deadline) reaches the contract end with it unanswered.
+ */
+export function renewalPending(offer: Pick<ManagerRenewalOffer, "expires"> | undefined | null, date: string | undefined): boolean {
+  return !!offer && !!date && offer.expires >= date;
+}

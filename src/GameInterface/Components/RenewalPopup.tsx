@@ -8,6 +8,8 @@ import { Button } from "@/GameInterface/ui/Button";
 const SEEN_KEY = "fm.renewalPopup.seen";
 
 function seen(id: string): boolean {
+  // Sent here because the advance waits for the answer (`?renewal=1`): always shown.
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("renewal") === "1") return false;
   try {
     return sessionStorage.getItem(SEEN_KEY) === id;
   } catch {
@@ -17,7 +19,8 @@ function seen(id: string): boolean {
 
 /**
  * The board's renewal offer pops up on the dashboard (a critical decision a manager missed in the inbox, 4.41.2):
- * once per offer and browser session; "Decide later" closes it, the inbox card stays.
+ * once per offer and browser session; "Decide later" closes it, the inbox card stays. The manager's own advance waits
+ * for the answer (4.41.4): a blocked advance comes back here with `?renewal=1`.
  */
 export function RenewalPopup({ saveId, renewal, currentDate, onAnswered }: {
   saveId: string;
