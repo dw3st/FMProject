@@ -97,7 +97,6 @@ export type AttentionItem =
   | { kind: "promiseDue"; playerId: string; name: string; promise: PlayerPromise }
   // Etapa 25: the transfer window of the club's country and the manager's contract.
   | { kind: "windowClosing"; days: number; until: string }
-  | { kind: "windowOpen"; until: string }
   | { kind: "managerRenewal" }
   // Etapa 28 (`.claude/rules/game/scouting.md`): a gem found / a shortlist alert in the last 7 days.
   | { kind: "scoutGem"; name: string; club: string }
@@ -130,7 +129,8 @@ export function attentionItems(input: {
   if (input.renewalPending) items.push({ kind: "managerRenewal" });
   if (input.window?.open && input.window.until) {
     const days = daysBetween(today, input.window.until);
-    items.push(days <= WINDOW_ATTENTION_DAYS ? { kind: "windowClosing", days, until: input.window.until } : { kind: "windowOpen", until: input.window.until });
+    // An open window is the green strip above the cards (`MarketWindowStrip`); only its last days come here.
+    if (days <= WINDOW_ATTENTION_DAYS) items.push({ kind: "windowClosing", days, until: input.window.until });
   }
 
   // Players asking to talk, then promises close to their deadline.

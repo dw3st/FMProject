@@ -29,6 +29,7 @@ import { HallOfFame } from "@/GameInterface/World/HallOfFame";
 import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { GroupAdvanceBand, MemberAdvanceStatus } from "@/GameInterface/World/GroupAdvanceBand";
+import { MarketWindowStrip } from "@/GameInterface/Transfers/transferWindow";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import type { WorldDeadline, WorldMemberView, WorldView } from "@/types/multiplayerTypes";
 import type { StandingsView } from "@/types/standingsTypes";
@@ -187,6 +188,7 @@ export function WorldScreen() {
       )}
 
       {view?.phase !== "lobby" && <GroupAdvanceBand />}
+      {view?.phase !== "lobby" && <MarketWindowStrip />}
 
       {error && <Notice kind="error">{t(`world.errors.${error}`)}</Notice>}
       {!view && !error && <p className="text-sm text-muted-foreground">{t("common.loading")}</p>}

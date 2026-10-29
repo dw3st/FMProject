@@ -12,6 +12,7 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { IBERO_PASSPORT_MIN_AGE } from "@/Domain/registration/registrationConfig";
 import type { LeagueData } from "@/types/playerTypes";
 import type { RegistrationCompView, RegistrationRowView } from "@/types/registrationTypes";
 import {
@@ -133,11 +134,20 @@ export function RegistrationView() {
     rule.maxList != null ? t("registration.rule.list", { n: rule.maxList }) : t("registration.rule.noList"),
     rule.free ? t(rule.free.formedOnly ? "registration.rule.freeFormed" : "registration.rule.free", { age: rule.free.maxAge }) : null,
     rule.minFormed && rule.maxList != null ? t("registration.rule.formed", { n: rule.minFormed }) : null,
-    rule.maxForeign != null ? t("registration.rule.foreign", { n: rule.maxForeign }) : null,
+    rule.maxForeign != null
+      ? t(rule.foreign === "nonEU" ? "registration.rule.foreignNonEU" : "registration.rule.foreign", { n: rule.maxForeign })
+      : null,
+    rule.foreign === "nonEU" && rule.exempt?.includes("ibero") ? t("registration.rule.exemptIbero", { age: IBERO_PASSPORT_MIN_AGE }) : null,
+    rule.foreign === "nonEU" && rule.exempt?.includes("acp") ? t("registration.rule.exemptAcp") : null,
     rule.greenCard ? t("registration.rule.greenCard") : null,
     rule.maxForeignMatchday != null ? t("registration.rule.foreignMatchday", { n: rule.maxForeignMatchday }) : null,
   ].filter(Boolean);
   const reasonText = (r: RegistrationRowView) => (r.reason ? t(`registration.reason.${r.reason}`) : "");
+  // The reason he takes a foreign place (`foreignBasis`), shown on the "Foreign" tag.
+  const basisText = (r: RegistrationRowView) =>
+    r.foreignBasis && r.foreignBasis !== "greenCard"
+      ? t(`registration.basis.${r.foreignBasis}`, { nation: nationalityDisplayName(r.nationality ?? "", i18n.language, t), age: IBERO_PASSPORT_MIN_AGE })
+      : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -218,7 +228,7 @@ export function RegistrationView() {
                       <span className="flex flex-wrap gap-1.5">
                         {r.registered ? <Tag tone="registered">{t("registration.tags.registered")}</Tag> : <Tag tone="out">{t("registration.tags.out")}</Tag>}
                         {r.free && <Tag tone="free">{t("registration.tags.free")}</Tag>}
-                        {r.foreign && <Tag tone="foreign">{t("registration.tags.foreign")}</Tag>}
+                        {r.foreign && <Tag tone="foreign" title={basisText(r)}>{t("registration.tags.foreign")}</Tag>}
                         {r.greenCard && <Tag tone="greenCard" title={t("registration.tags.greenCardHint")}>{t("registration.tags.greenCard")}</Tag>}
                         {r.clubTrained ? <Tag tone="club">{t("registration.tags.clubTrained")}</Tag> : r.nationTrained ? <Tag tone="nation">{t("registration.tags.nationTrained")}</Tag> : null}
                       </span>

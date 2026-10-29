@@ -20,6 +20,7 @@ import { YouthSeasonLine } from "@/GameInterface/Components/YouthSeasonLine";
 import { NationalCareerLine } from "@/GameInterface/National/NationalCareerLine";
 import { PlayerAwards } from "@/GameInterface/Awards/PlayerAwards";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
+import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
 import { personalityViewOf } from "@/Domain/personality/personality";
@@ -52,6 +53,9 @@ export function PlayerScreen({
   // Transfer window of the human club (Etapa 25): closed = no offer, but a pre-contract when eligible.
   const windowsData = useTransferWindows();
   const [renewOpen, setRenewOpen] = useState(false);
+  // `?action=renew|talk` (dashboard Attention buttons): open the renewal or the conversation straight away.
+  const [action] = useState(() => new URLSearchParams(window.location.search).get("action"));
+  const actionDone = useRef(false);
   const lastTransferResult = useRef<TransferRecord | null>(null);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
 
@@ -108,6 +112,12 @@ export function PlayerScreen({
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
   const isOwnPlayer = !!player && !!mySquadId && player.squadId === mySquadId;
+
+  useEffect(() => {
+    if (action !== "renew" || actionDone.current || !isOwnPlayer || player?.loan) return;
+    actionDone.current = true;
+    setRenewOpen(true);
+  }, [action, isOwnPlayer, player?.loan]);
 
   const backTo = `/squad/${league}/${club}`;
   const today = session?.currentDate ?? "";
@@ -204,6 +214,8 @@ export function PlayerScreen({
           </div>
         </a>
 
+        {!isOwnPlayer && <ForeignCheckLine playerId={player.id} fromSquadId={squadId} />}
+
         <PlayerCard
           player={displayPlayer}
           layout="wide"
@@ -227,6 +239,7 @@ export function PlayerScreen({
             playerName={player.name}
             onRenew={() => setRenewOpen(true)}
             onChanged={() => void refresh({ background: true })}
+            openTalk={action === "talk"}
           />
         )}
 

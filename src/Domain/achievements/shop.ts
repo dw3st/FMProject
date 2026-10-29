@@ -7,6 +7,7 @@ import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
 import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 import { getMainRole } from "@/Domain/roles";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { normalizeForSearch } from "@/Domain/world/labels";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { lineAverage, statsFor } from "@/Domain/youth/youth";
 import type { DetailedRole, RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -95,6 +96,23 @@ export function legendOptions(retired: readonly RetiredPlayer[], saveId: string,
  */
 export function isLegend(r: RetiredPlayer): boolean {
   return !r.freeAgent && (r.wasWorldClass || retiredLevel(r) >= RETIREMENT.LEGEND_MIN_LEVEL);
+}
+
+/** A retiree worth listing by default: a legend, or level at retirement >= `NOTABLE_MIN_LEVEL`. */
+export function isNotableRetiree(r: RetiredPlayer): boolean {
+  return isLegend(r) || (!r.freeAgent && retiredLevel(r) >= RETIREMENT.NOTABLE_MIN_LEVEL);
+}
+
+/** The retired list filters: name (accents and case ignored), nationality, and only the notable ones. */
+export function filterRetired(
+  list: RetiredPlayer[],
+  f: { q?: string; nation?: string; notable?: boolean },
+): RetiredPlayer[] {
+  const q = normalizeForSearch((f.q ?? "").trim());
+  return list.filter((r) =>
+    (!q || normalizeForSearch(r.name).includes(q))
+    && (!f.nation || r.nationality === f.nation)
+    && (!f.notable || isNotableRetiree(r)));
 }
 
 /** Still out of the game: never brought back as a reborn or a legend, by anyone. */

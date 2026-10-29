@@ -63,6 +63,25 @@ export type ReplacementReason = "injured" | "suspended" | "unregistered" | "fore
 
 export type RegViolationKind = "listFull" | "foreign" | "formed";
 
+/**
+ * Why a player counts (or not) as foreign under a rule, for the screens: `outsideEU` (nonEU rules), `nationality`
+ * (the nation is not one of the league's), `iberoUnderAge` (a Latin American below the age of the Spanish passport),
+ * or the exemption that keeps him domestic (`ibero`, `acp`, `greenCard`).
+ */
+export type ForeignBasis = "outsideEU" | "nationality" | "iberoUnderAge" | "ibero" | "acp" | "greenCard";
+
+/** `GET /api/saves/:id/registration/check/:playerId`: what the player would be in the human club's league. */
+export interface ForeignCheckView {
+  competition: string;
+  basis: ForeignBasis | null;
+  foreign: boolean;
+  /** Foreign players on the club's current list, and the cap (null: no cap). */
+  used: number;
+  max: number | null;
+  /** Per-match cap (Brazil), when the rule has one. */
+  matchday: number | null;
+}
+
 export interface RegCounts {
   counted: number;
   max: number | null;
@@ -99,6 +118,8 @@ export interface RegistrationRowView {
   foreign: boolean;
   /** Foreign by nationality, but domestic under the rule's green card (MLS). */
   greenCard: boolean;
+  /** Why he counts (or not) as foreign; null for domestic and EU players. */
+  foreignBasis: ForeignBasis | null;
   clubTrained: boolean;
   nationTrained: boolean;
   free: boolean;

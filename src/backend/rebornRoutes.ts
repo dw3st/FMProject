@@ -3,7 +3,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { humanClub, nextSeasonEndOf } from "@/backend/achievementRoutes";
 import { recordMoney } from "@/backend/FinancialService";
-import { isLegend, legendAvailable, legendHireFee, legendPlayer } from "@/Domain/achievements/shop";
+import { filterRetired, isLegend, legendAvailable, legendHireFee, legendPlayer } from "@/Domain/achievements/shop";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -41,6 +41,10 @@ export const rebornRoutes = {
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
     if (q.get("legends") === "1") retired = retired.filter(isLegend);
+    // Name search, nationality and "highlights only" (tester reports); the nations offered are the list's before them.
+    const nations = [...new Set(retired.map((r) => r.nationality).filter((n): n is string => !!n))].sort();
+    const search = (q.get("q") ?? "").slice(0, 60);
+    retired = filterRetired(retired, { q: search, nation: q.get("nation") ?? "", notable: q.get("notable") === "1" });
     const index = await saveService.getSquadIndex(saveId);
     const managers = retired.some((r) => r.legendBy) ? await saveService.getManagers(saveId) : [];
     const managerName = (seatId: string) => managers.find((m) => m.seatId === seatId)?.name ?? null;
@@ -59,7 +63,7 @@ export const rebornRoutes = {
     });
     const { season } = await nextSeasonEndOf(saveId, auth.seatId);
     const thisSeason = (await saveService.getAchievements(saveId, auth.seatId)).bought.legendMoneySeason === season;
-    return Response.json({ total: retired.length, items, legendHire: { thisSeason } });
+    return Response.json({ total: retired.length, items, nations, legendHire: { thisSeason } });
   },
 
   /**

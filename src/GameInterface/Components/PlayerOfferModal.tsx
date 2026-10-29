@@ -12,6 +12,7 @@ import { ContractTermsFields, useContractDemandInfo, useRefusalText } from "@/Ga
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee } from "@/Domain/money";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Button } from "@/GameInterface/ui/Button";
 import { NegotiationHistory } from "@/GameInterface/Negotiation/NegotiationHistory";
@@ -360,6 +361,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             <p className="text-sm text-muted-foreground m-0 mt-0.5">
               {player.name} · {player.pos} · {t("common.ageYears", { age: player.age })} · {player.club}
             </p>
+            {!done && <div className="mt-1"><ForeignCheckLine playerId={player.id} fromSquadId={player.squadId} /></div>}
           </div>
           {!done && (
             <SegmentedTabs

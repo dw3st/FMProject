@@ -4,7 +4,7 @@ import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
-import type { RegistrationCompView } from "@/types/registrationTypes";
+import type { ForeignCheckView, RegistrationCompView } from "@/types/registrationTypes";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
 
 const HUMAN = "33";
@@ -117,4 +117,23 @@ describe("registration routes", () => {
     expect(err.error).toBe("registrationClosed");
     expect(err.opensOn).toBe("2027-01-01");
   }, 120_000);
+
+  test("check: a player from another club in the user's league", async () => {
+    const CHECK = "/api/saves/:saveId/registration/check/:playerId";
+    const index = await saveService.getSquadIndex(saveId);
+    const otherClub = index.inLeague("premier_league").find((e) => e.squadId !== HUMAN)!;
+    const sq = (await saveService.getSquadById(saveId, otherClub.squadId))!;
+    const foreigner = sq.players.find((x) => x.nationality && !["England", "Wales"].includes(x.nationality))!;
+    const res = await call(CHECK, `/api/saves/${saveId}/registration/check/${foreigner.id}?from=${sq.id}`, "GET", undefined, token, { playerId: foreigner.id });
+    expect(res.status).toBe(200);
+    const view = (await res.json()) as ForeignCheckView;
+    expect(view.competition).toBe("premier_league");
+    expect(view.foreign).toBe(true);
+    expect(view.basis).toBe("nationality");
+    expect(view.max).toBeNull(); // the Premier League has no foreign cap
+    const missing = await call(CHECK, `/api/saves/${saveId}/registration/check/nobody?from=${sq.id}`, "GET", undefined, token, { playerId: "nobody" });
+    expect(missing.status).toBe(404);
+    const stranger = await call(CHECK, `/api/saves/${saveId}/registration/check/${foreigner.id}?from=${sq.id}`, "GET", undefined, other, { playerId: foreigner.id });
+    expect(stranger.status).toBe(404);
+  }, 60_000);
 });

@@ -67,6 +67,16 @@ describe("reborn routes", () => {
     const mine = await list("?mine=1");
     expect(mine.total).toBe(3);
     expect(mine.items.map((r) => r.id)).toEqual(["c", "b", "a"]);
+    // Filters (tester reports): name without accents, nationality, highlights only (a weak free retiree is hidden).
+    const weak: RetiredPlayer = {
+      ...mkRetired("w"), name: "José Fraco", nationality: "Portugal", wasWorldClass: false,
+      statsAtRetirement: Object.fromEntries(Object.keys(mkRetired("w").statsAtRetirement).map((k) => [k, 1])) as RosterPlayer["stats"],
+    };
+    await saveService.writeRetired(saveId, [weak, mkRetired("a"), mkRetired("b"), mkRetired("c")]);
+    expect((await list("?q=jose")).items.map((r) => r.id)).toEqual(["w"]);
+    expect((await list("?nation=Portugal")).total).toBe(1);
+    expect((await list("?notable=1")).items.map((r) => r.id)).toEqual(["c", "b", "a"]);
+    expect(((await list()) as unknown as { nations: string[] }).nations).toEqual(["Brazil", "Portugal"]);
     await saveService.writeRetired(saveId, [mkRetired("a"), mkRetired("b"), mkRetired("c")]);
     for (const bad of ["?limit=0", "?limit=101", "?offset=-1", "?limit=abc"]) {
       expect((await call(rKey, `/api/saves/${saveId}/retired${bad}`, "GET", session.token)).status).toBe(400);

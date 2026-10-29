@@ -154,6 +154,21 @@ sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
 - i18n `registration.*`, `inbox.registration.*`, `matchPreview.unregisteredReplaced`/`foreignLimitReplaced`,
   `squadScreen.tabRegistration` (en, pt-BR).
 
+## Regra explicada nas telas (4.39.3)
+
+- `foreignBasis(p, rule, country, holder)` (`formed.ts`, tipo `ForeignBasis` em `registrationTypes.ts`): por que o jogador
+  conta (`outsideEU`, `nationality`, `iberoUnderAge`) ou não conta (`ibero`, `acp`, `greenCard`) como estrangeiro; null
+  para doméstico e UE. Sempre coerente com `isForeign` (teste).
+- **Aba Inscritos:** numa regra `nonEU` a linha da regra diz "No máximo N extracomunitários (de fora da UE)" e as isenções
+  ("Latino-americanos com 23 anos ou mais não contam", "Jogadores de países ACP… não contam"); o selo "Estrangeiro" de
+  cada linha tem o motivo no `title` (`RegistrationRowView.foreignBasis`, "Inglaterra fica fora da UE…").
+- **Ficha e negociação de um jogador de fora** (`Squad/ForeignCheckLine.tsx`): uma linha com o que ele seria na liga do
+  clube do jogador: "La Liga: ocupa vaga de extracomunitário (2 de 3 já usadas)", e "Sem vaga…" quando o limite já está
+  cheio; o limite por jogo do Brasil; a isenção quando ela vale. Nada quando é doméstico, da UE ou a liga não tem limite.
+  Rota `GET /api/saves/:id/registration/check/:playerId?from=<squadId>` (vazio = livre; 404 jogador desconhecido ou
+  sem assento; 409 `noClub`): `ForeignCheckView { competition, basis, foreign, used, max, matchday }`, com `used` = os
+  estrangeiros da lista atual da liga.
+
 ## `/test`, `/lab`
 
 Sem efeito de partida: a inscrição só filtra quem pode ser escalado, antes do motor; `Statistics.ts` não muda.

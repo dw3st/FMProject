@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39.3",
+    date: "2026-10-29",
+    items: [
+      { pt: "A aba Inscritos diz quem conta como estrangeiro em cada liga (na La Liga, quem é de fora da UE; latino-americanos com 23 anos ou mais não contam) e, no selo de cada jogador, o motivo.", en: "The Registration tab says who counts as foreign in each league (in La Liga, players from outside the EU; Latin Americans aged 23 or over don't count) and, on each player's tag, why." },
+      { pt: "Na ficha e na negociação de um jogador de outro clube, uma linha avisa se ele ocuparia vaga de estrangeiro na sua liga e quantas já estão usadas.", en: "On another club's player's profile and in the negotiation, a line tells you whether he would take a foreign place in your league and how many are already used." },
+      { pt: "Cada aviso do cartão Atenção do Painel tem um botão para a ação: renovar, escalar, conversar, ir ao mercado.", en: "Each line of the dashboard's Attention card has a button for its action: renew, pick the lineup, talk, go to the market." },
+      { pt: "Com a janela aberta, uma faixa verde no Painel mostra até quando ela vai e quantas compras e vendas você tem em andamento.", en: "While the window is open, a green strip on the dashboard shows until when and how many purchases and sales you have in progress." },
+      { pt: "A lista de aposentados mostra só os destaques por padrão e ganhou busca por nome e filtro de país.", en: "The retired list shows only the highlights by default and has a name search and a country filter." },
+    ],
+  },
+  {
     version: "4.39.2",
     date: "2026-10-29",
     items: [

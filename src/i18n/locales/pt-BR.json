@@ -2232,7 +2232,16 @@
       "worksDone": "concluída em {{date}}",
       "news": "Notícias",
       "newsAll": "Todas",
-      "newsEmpty": "Nenhuma notícia ainda."
+      "newsEmpty": "Nenhuma notícia ainda.",
+      "attentionAction": {
+        "renew": "Renovar",
+        "lineup": "Escalar",
+        "market": "Mercado",
+        "talk": "Conversar",
+        "respond": "Responder",
+        "view": "Ver",
+        "repair": "Reformar"
+      }
     }
   },
   "squadScreen": {
@@ -2896,7 +2905,14 @@
           "noClub": "Você precisa de um clube.",
           "lobby": "A liga ainda não começou."
         }
-      }
+      },
+      "notable": "Só destaques",
+      "notableHint": "Esconde quem se aposentou com nível baixo",
+      "searchLabel": "Nome",
+      "searchPlaceholder": "Buscar",
+      "nation": "País",
+      "allNations": "Todos os países",
+      "emptyFiltered": "Nenhum aposentado com esses filtros."
     },
     "managers": {
       "tab": "Técnicos",
@@ -3684,8 +3700,17 @@
     },
     "attention": {
       "closing_one": "A janela de transferências fecha amanhã ({{date}})",
-      "closing_other": "A janela de transferências fecha em {{count}} dias ({{date}})",
-      "open": "Janela de transferências aberta até {{date}}"
+      "closing_other": "A janela de transferências fecha em {{count}} dias ({{date}})"
+    },
+    "strip": {
+      "open": "Janela de transferências aberta até {{date}}",
+      "deals": "{{buying}} e {{selling}} em andamento",
+      "buying_one": "{{count}} compra",
+      "buying_other": "{{count}} compras",
+      "selling_one": "{{count}} venda",
+      "selling_other": "{{count}} vendas",
+      "market": "Mercado",
+      "dealsNone": "nenhuma negociação em andamento"
     }
   },
   "managerContract": {
@@ -4171,7 +4196,10 @@
       "formed": "Mínimo de {{n}} formados",
       "foreign": "No máximo {{n}} estrangeiros",
       "foreignMatchday": "No máximo {{n}} estrangeiros por jogo",
-      "greenCard": "Green card conta como doméstico"
+      "greenCard": "Green card conta como doméstico",
+      "foreignNonEU": "No máximo {{n}} extracomunitários (de fora da UE)",
+      "exemptIbero": "Latino-americanos com {{age}} anos ou mais não contam",
+      "exemptAcp": "Jogadores de países ACP (África, Caribe e Pacífico) não contam"
     },
     "counters": {
       "registered": "Inscritos",
@@ -4217,7 +4245,23 @@
       "failed": "Não foi possível salvar a lista."
     },
     "notRegistered": "Não inscrito",
-    "notRegisteredFor": "Não inscrito na {{competition}}"
+    "notRegisteredFor": "Não inscrito na {{competition}}",
+    "basis": {
+      "outsideEU": "{{nation}} fica fora da UE: conta como extracomunitário",
+      "nationality": "{{nation}} não é um país desta liga: conta como estrangeiro",
+      "iberoUnderAge": "Latino-americano com menos de {{age}} anos: ainda conta como extracomunitário",
+      "ibero": "Latino-americano com {{age}} anos ou mais: não conta como extracomunitário",
+      "acp": "País ACP: não conta como extracomunitário"
+    },
+    "check": {
+      "foreign": "{{competition}}: ocupa vaga de estrangeiro ({{used}} de {{max}} já usadas).",
+      "foreignNonEU": "{{competition}}: ocupa vaga de extracomunitário ({{used}} de {{max}} já usadas).",
+      "full": "Sem vaga: hoje ele não poderia ser inscrito.",
+      "matchday": "{{competition}}: conta como estrangeiro (no máximo {{n}} por jogo).",
+      "exemptIbero": "{{competition}}: não ocupa vaga de extracomunitário (latino-americano com {{age}} anos ou mais).",
+      "exemptAcp": "{{competition}}: não ocupa vaga de extracomunitário (país ACP).",
+      "greenCard": "{{competition}}: conta como doméstico pelo green card."
+    }
   },
   "complaint": {
     "button": "Reclamar",

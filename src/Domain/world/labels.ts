@@ -135,7 +135,7 @@ export function continentI18nKey(continent: Continent): string {
   return continent.toLowerCase().replace(/\s+/g, "_");
 }
 
-function normalizeForSearch(s: string): string {
+export function normalizeForSearch(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 

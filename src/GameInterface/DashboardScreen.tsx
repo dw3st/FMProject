@@ -6,6 +6,7 @@ import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { GroupAdvanceBand } from "@/GameInterface/World/GroupAdvanceBand";
+import { MarketWindowStrip } from "@/GameInterface/Transfers/transferWindow";
 import { worldApi } from "@/GameInterface/World/worldApi";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
@@ -303,6 +304,8 @@ export function DashboardScreen() {
       </ScreenTitle>
 
       <GroupAdvanceBand />
+
+      <MarketWindowStrip />
 
       {rivals && rivals.length >= 2 && <RivalsCard rows={rivals} />}
 

@@ -15,7 +15,7 @@ import { SQUAD_STATUSES, type SquadStatus } from "@/types/moraleTypes";
  * the 7-day trend, squad status (editable), expected vs played minutes, open promises, Talk.
  */
 export function PlayerMoralePanel({
-  saveId, playerId, playerName, onRenew, onChanged,
+  saveId, playerId, playerName, onRenew, onChanged, openTalk = false,
 }: {
   saveId: string;
   playerId: string;
@@ -23,10 +23,12 @@ export function PlayerMoralePanel({
   /** A renewal was promised: open the renewal. */
   onRenew: () => void;
   onChanged: () => void;
+  /** Open the conversation as soon as the panel shows (the dashboard's "Talk" button). */
+  openTalk?: boolean;
 }) {
   const { t } = useTranslation();
   const { data, reload } = useMorale(saveId);
-  const [talkOpen, setTalkOpen] = useState(false);
+  const [talkOpen, setTalkOpen] = useState(openTalk);
   const [saving, setSaving] = useState(false);
   // The chip just clicked, shown while the PUT and the morale reload are in flight.
   const [pending, setPending] = useState<SquadStatus | "auto" | null>(null);

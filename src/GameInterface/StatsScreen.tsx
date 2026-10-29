@@ -21,6 +21,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { AwardsView } from "@/GameInterface/Awards/AwardsView";
 import { RefereesTab } from "@/GameInterface/Referees/RefereesTab";
 import { Chip } from "@/GameInterface/ui/Chip";
+import { nationalityDisplayName } from "@/Domain/world/labels";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
@@ -175,6 +176,16 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const [filter, setFilter] = useState<RetiredFilter>("mine");
   const mine = filter === "mine";
   const legends = filter === "legends";
+  // Name search (debounced), nationality and "highlights only", on by default (tester reports).
+  const [searchText, setSearchText] = useState("");
+  const [search, setSearch] = useState("");
+  const [nation, setNation] = useState("");
+  const [notable, setNotable] = useState(true);
+  const [nations, setNations] = useState<string[]>([]);
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchText.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchText]);
   const [hiredThisSeason, setHiredThisSeason] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [hiring, setHiring] = useState(false);
@@ -190,9 +201,10 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const generation = useRef(0);
 
   const fetchPage = (offset: number) =>
-    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}${legends ? "&legends=1" : ""}`)
+    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}${legends ? "&legends=1" : ""}`
+      + `${notable && !legends ? "&notable=1" : ""}${search ? `&q=${encodeURIComponent(search)}` : ""}${nation ? `&nation=${encodeURIComponent(nation)}` : ""}`)
       .then((r) => (r.ok
-        ? (r.json() as Promise<{ total: number; items: RetiredRow[]; legendHire: { thisSeason: boolean } }>)
+        ? (r.json() as Promise<{ total: number; items: RetiredRow[]; nations: string[]; legendHire: { thisSeason: boolean } }>)
         : Promise.reject(new Error(String(r.status)))));
 
   useEffect(() => {
@@ -204,11 +216,11 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
     setLoadingMore(false);
     setMoreFailed(false);
     fetchPage(0)
-      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setHiredThisSeason(d.legendHire.thisSeason); } })
+      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setNations(d.nations ?? []); setHiredThisSeason(d.legendHire.thisSeason); } })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveId, filter, reload]);
+  }, [saveId, filter, reload, notable, search, nation]);
 
   const hire = async (r: RetiredRow) => {
     setHiring(true);
@@ -236,17 +248,53 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
 
+  const nationOptions = [
+    { value: "", label: t("statsScreen.retired.allNations") },
+    ...nations
+      .map((n) => ({ value: n, label: nationalityDisplayName(n, i18n.language, t) }))
+      .sort((a, b) => a.label.localeCompare(b.label, i18n.language)),
+  ];
   const filters = (
-    <OptionChips
-      className="mb-3"
-      options={[
-        { key: "mine", label: t("statsScreen.retired.mine") },
-        { key: "legends", label: t("statsScreen.retired.legends") },
-        { key: "all", label: t("statsScreen.retired.all") },
-      ]}
-      value={filter}
-      onChange={(k) => { setFilter(k); setHireMsg(null); setConfirming(null); }}
-    />
+    <div className="mb-3 flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <OptionChips
+          options={[
+            { key: "mine", label: t("statsScreen.retired.mine") },
+            { key: "legends", label: t("statsScreen.retired.legends") },
+            { key: "all", label: t("statsScreen.retired.all") },
+          ]}
+          value={filter}
+          onChange={(k) => { setFilter(k); setHireMsg(null); setConfirming(null); }}
+        />
+        {!legends && (
+          <Chip selected={notable} onClick={() => setNotable((v) => !v)} title={t("statsScreen.retired.notableHint")}>
+            {t("statsScreen.retired.notable")}
+          </Chip>
+        )}
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("statsScreen.retired.searchLabel")}</span>
+          <input
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder={t("statsScreen.retired.searchPlaceholder")}
+            maxLength={60}
+            className="h-10 w-64 rounded border border-border bg-transparent px-3 text-sm text-foreground focus:border-primary focus:outline-none"
+          />
+        </label>
+        <SelectCombobox
+          label={t("statsScreen.retired.nation")}
+          labelId="retired-nation"
+          value={nation}
+          onChange={setNation}
+          options={nationOptions}
+          placeholder={t("statsScreen.retired.searchPlaceholder")}
+          className="w-64"
+        />
+      </div>
+    </div>
   );
 
   const legendCell = (r: RetiredRow) => {
@@ -277,7 +325,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   if (error) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p></>;
   if (!rows) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p></>;
   if (rows.length === 0) {
-    return <>{filters}<p className="text-sm text-muted-foreground">{t(mine ? "statsScreen.retired.emptyMine" : legends ? "statsScreen.retired.emptyLegends" : "statsScreen.retired.empty")}</p></>;
+    return <>{filters}<p className="text-sm text-muted-foreground">{t(search || nation ? "statsScreen.retired.emptyFiltered" : mine ? "statsScreen.retired.emptyMine" : legends ? "statsScreen.retired.emptyLegends" : "statsScreen.retired.empty")}</p></>;
   }
   return (
     <div className={legends ? "max-w-6xl" : "max-w-4xl"}>

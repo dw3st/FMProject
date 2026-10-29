@@ -2232,7 +2232,16 @@
       "worksDone": "finished {{date}}",
       "news": "News",
       "newsAll": "All news",
-      "newsEmpty": "No news yet."
+      "newsEmpty": "No news yet.",
+      "attentionAction": {
+        "renew": "Renew",
+        "lineup": "Lineup",
+        "market": "Market",
+        "talk": "Talk",
+        "respond": "Reply",
+        "view": "View",
+        "repair": "Repair"
+      }
     }
   },
   "squadScreen": {
@@ -2896,7 +2905,14 @@
           "noClub": "You need a club.",
           "lobby": "The league hasn't started yet."
         }
-      }
+      },
+      "notable": "Highlights only",
+      "notableHint": "Hides players who retired at a low level",
+      "searchLabel": "Name",
+      "searchPlaceholder": "Search",
+      "nation": "Country",
+      "allNations": "All countries",
+      "emptyFiltered": "No retired player with these filters."
     },
     "managers": {
       "tab": "Managers",
@@ -3684,8 +3700,17 @@
     },
     "attention": {
       "closing_one": "Transfer window closes tomorrow ({{date}})",
-      "closing_other": "Transfer window closes in {{count}} days ({{date}})",
-      "open": "Transfer window open until {{date}}"
+      "closing_other": "Transfer window closes in {{count}} days ({{date}})"
+    },
+    "strip": {
+      "open": "Transfer window open until {{date}}",
+      "deals": "{{buying}} and {{selling}} in progress",
+      "buying_one": "{{count}} purchase",
+      "buying_other": "{{count}} purchases",
+      "selling_one": "{{count}} sale",
+      "selling_other": "{{count}} sales",
+      "market": "Market",
+      "dealsNone": "no deals in progress"
     }
   },
   "managerContract": {
@@ -4171,7 +4196,10 @@
       "formed": "At least {{n}} home-grown",
       "foreign": "At most {{n}} foreign",
       "foreignMatchday": "At most {{n}} foreign per match",
-      "greenCard": "Green card holder: counts as domestic"
+      "greenCard": "Green card holder: counts as domestic",
+      "foreignNonEU": "At most {{n}} non-EU players",
+      "exemptIbero": "Latin Americans aged {{age}} or over don't count",
+      "exemptAcp": "Players from ACP countries (Africa, Caribbean, Pacific) don't count"
     },
     "counters": {
       "registered": "Registered",
@@ -4217,7 +4245,23 @@
       "failed": "Could not save the list."
     },
     "notRegistered": "Not registered",
-    "notRegisteredFor": "Not registered for {{competition}}"
+    "notRegisteredFor": "Not registered for {{competition}}",
+    "basis": {
+      "outsideEU": "{{nation}} is outside the EU: counts as non-EU",
+      "nationality": "{{nation}} is not one of this league's countries: counts as foreign",
+      "iberoUnderAge": "Latin American under {{age}}: still counts as non-EU",
+      "ibero": "Latin American aged {{age}} or over: doesn't count as non-EU",
+      "acp": "ACP country: doesn't count as non-EU"
+    },
+    "check": {
+      "foreign": "{{competition}}: takes a foreign place ({{used}} of {{max}} already used).",
+      "foreignNonEU": "{{competition}}: takes a non-EU place ({{used}} of {{max}} already used).",
+      "full": "No place left: he could not be registered today.",
+      "matchday": "{{competition}}: counts as foreign (at most {{n}} per match).",
+      "exemptIbero": "{{competition}}: doesn't take a non-EU place (Latin American aged {{age}} or over).",
+      "exemptAcp": "{{competition}}: doesn't take a non-EU place (ACP country).",
+      "greenCard": "{{competition}}: counts as domestic through the green card."
+    }
   },
   "complaint": {
     "button": "Complain",

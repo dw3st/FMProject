@@ -168,3 +168,12 @@ abrir, e Convites).
 
 A lista de inscritos de cada competição só muda com a janela do país do clube aberta (na continental, também antes
 da fase seguinte); fora dela fica congelada e quem chega espera a próxima janela. Ver `.claude/rules/game/registration.md`.
+
+## Faixa da janela no Painel (4.39.3)
+
+Report de tester. Com a janela do clube do jogador aberta, uma faixa verde (`MarketWindowStrip`,
+`Transfers/transferWindow.tsx`) no Painel e na tela do mundo: "Janela de transferências aberta até 31/01 · 2 compras e
+1 venda em andamento" e o botão Mercado. O resumo vem de `GET /api/saves/:id/negotiation` → `summary`
+(`negotiationSummary`, `src/Domain/negotiation/summary.ts`: compra = conversas do dia abertas, alvos com rival vivo e
+propostas a outro assento; venda = propostas vivas da IA e de outro assento; cada jogador uma vez por lado). A linha
+"Janela aberta até…" saiu do cartão Atenção (fica só o aviso dos últimos dias).

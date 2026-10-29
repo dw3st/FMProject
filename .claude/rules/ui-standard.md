@@ -135,6 +135,9 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
   jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
   Finanças da semana. Abaixo de `lg` os pares empilham.
+- **Atenção com ação (4.39.3):** cada linha do cartão Atenção tem à direita um botão pequeno com borda (`h-8`) que leva
+  direto à ação: Renovar (contrato; a ficha com `?action=renew` abre a renovação), Escalar (lesionado, suspenso, cansado →
+  Formação), Mercado (janela fechando), Conversar (`?action=talk` abre a conversa), Responder, Reformar, Ver.
 - **Caixa de entrada do Painel (resposta rápida, 4.38.24):** clicar numa mensagem do cartão abre o corpo dela ali mesmo
   (`InboxMessageBody`, o mesmo da tela Caixa de entrada, com os botões e links) e a marca como lida; a ordem das linhas
   fica parada enquanto uma está aberta; "Abrir na caixa de entrada" leva à tela.

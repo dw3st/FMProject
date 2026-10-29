@@ -92,3 +92,11 @@ regra do renascido (`legendPlayer`, id `legend_<id>_<ano>`) pagando em **dinheir
 (`AchievementsState.bought.legendMoneySeason`), separada da loja de pontos; cada lenda volta uma vez no mundo. 409
 `noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`; guarda de lobby. Teste:
 `src/backend/legendHire.routes.test.ts`.
+
+## Filtros da lista (4.39.3)
+
+Reports de tester. `GET /api/saves/:id/retired` aceita `q` (nome, sem acento nem caixa, até 60 caracteres), `nation`
+(nacionalidade exata) e `notable=1` (`isNotableRetiree`: lenda, ou nível ao se aposentar ≥ `RETIREMENT.NOTABLE_MIN_LEVEL`
+3,5; no mundo dos testers, 250 de 1633), aplicados depois de `mine`/`legends` por `filterRetired` (`shop.ts`), e devolve
+`nations` (as nacionalidades da lista antes desses filtros). Tela: chip "Só destaques" (ligado por padrão; some na aba
+Lendas), busca por nome (300 ms) e seletor de país.

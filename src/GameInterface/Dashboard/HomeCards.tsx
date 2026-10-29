@@ -550,6 +550,30 @@ export function AttentionCard({
 }) {
   const { t, i18n } = useTranslation();
 
+  // The quick action of each line (report: "when there is an action, show the button for it").
+  const ACTION_LABEL = {
+    renew: "dashboard.home.attentionAction.renew",
+    lineup: "dashboard.home.attentionAction.lineup",
+    market: "dashboard.home.attentionAction.market",
+    talk: "dashboard.home.attentionAction.talk",
+    respond: "dashboard.home.attentionAction.respond",
+    view: "dashboard.home.attentionAction.view",
+    repair: "dashboard.home.attentionAction.repair",
+  } as const;
+  function actionOf(item: AttentionItem, href: string): { label: string; href: string } {
+    const to = (key: keyof typeof ACTION_LABEL, h = href) => ({ label: t(ACTION_LABEL[key]), href: h });
+    switch (item.kind) {
+      case "contract": return to("renew", `${playerHref(item.playerId)}?action=renew`);
+      case "contractGroup": return to("renew");
+      case "injured": case "suspended": case "lowFitness": case "lowFitnessGroup": return to("lineup", "/formation");
+      case "windowClosing": return to("market");
+      case "talk": return to("talk", `${playerHref(item.playerId)}?action=talk`);
+      case "managerRenewal": return to("respond");
+      case "facilityWorn": return to("repair");
+      default: return to("view");
+    }
+  }
+
   function describe(item: AttentionItem): { icon: IconName; tone: string; text: string; href: string } {
     switch (item.kind) {
       case "injured":
@@ -628,13 +652,6 @@ export function AttentionCard({
           text: t("transferWindows.attention.closing", { count: item.days, date: formatDay(item.until, i18n.language) }),
           href: "/transfers",
         };
-      case "windowOpen":
-        return {
-          icon: "check-circle",
-          tone: "text-chart-2",
-          text: t("transferWindows.attention.open", { date: formatDay(item.until, i18n.language) }),
-          href: "/transfers",
-        };
       case "managerRenewal":
         return {
           icon: "file-signature",
@@ -681,13 +698,26 @@ export function AttentionCard({
             const d = describe(item);
             return (
               <li key={`${item.kind}-${i}`} className="border-t border-border/50 first:border-t-0 sm:[&:nth-child(2)]:border-t-0">
-                <a
-                  href={d.href}
-                  className="flex items-center gap-3 min-h-10 py-2 text-sm text-foreground no-underline hover:text-primary"
-                >
-                  <Icon name={d.icon} size={16} className={`shrink-0 ${d.tone}`} />
-                  <span className="min-w-0">{d.text}</span>
-                </a>
+                <div className="flex items-center gap-3 min-h-10 py-1.5">
+                  <a
+                    href={d.href}
+                    className="flex flex-1 min-w-0 items-center gap-3 py-0.5 text-sm text-foreground no-underline hover:text-primary"
+                  >
+                    <Icon name={d.icon} size={16} className={`shrink-0 ${d.tone}`} />
+                    <span className="min-w-0">{d.text}</span>
+                  </a>
+                  {(() => {
+                    const a = actionOf(item, d.href);
+                    return (
+                      <a
+                        href={a.href}
+                        className="shrink-0 inline-flex items-center h-8 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground no-underline hover:border-primary hover:text-primary"
+                      >
+                        {a.label}
+                      </a>
+                    );
+                  })()}
+                </div>
               </li>
             );
           })}

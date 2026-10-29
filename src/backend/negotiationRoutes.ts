@@ -1,3 +1,4 @@
+import { negotiationSummary } from "@/Domain/negotiation/summary";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -39,13 +40,19 @@ export const negotiationRoutes = {
     const squad = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
     const date = meta.currentDate ?? "";
     const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
+    const bids = liveBids(market?.pendingBids, date, squad);
+    const summary = negotiationSummary({
+      date, seatId: auth.seatId, talks: market?.talks, rivals: market?.rivalBids, bids,
+      seatOffers: meta.mode === "multi" ? await saveService.getSeatOffers(saveId) : [],
+    });
     return json({
       clubId: meta.clubId,
       window: windows.seat(auth.seatId).today,
+      summary,
       preContracts: market?.preContracts ?? [],
       rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
       lostTargets: market?.lostTargets ?? [],
-      bids: liveBids(market?.pendingBids, date, squad),
+      bids,
       loans: (market?.loans ?? []).filter((l) => l.fromClubId === meta.clubId || l.toClubId === meta.clubId),
       loanList: market?.playerLoanList ?? [],
       sellOnHeld: market?.sellOnHeld ?? [],

@@ -30,4 +30,9 @@ export const RETIREMENT = {
    * retires in the world's top 50 (they decline from 34), so world class alone left the list empty.
    */
   LEGEND_MIN_LEVEL: 4.5,
+  /**
+   * "Highlights" filter of the retired list (tester report: average players fill it): level at retirement at least
+   * this. Friends world of 2027-01: 250 of 1633 club retirees (the top ~15%).
+   */
+  NOTABLE_MIN_LEVEL: 3.5,
 } as const;

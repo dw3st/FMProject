@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  arrivalAge, clubTrained, hasGreenCard, isGreenCardHolder, nationTrained, isForeign, isFree, isFormed, originGreenCard, type FormedCtx,
+  arrivalAge, clubTrained, foreignBasis, hasGreenCard, isGreenCardHolder, nationTrained, isForeign, isFree, isFormed, originGreenCard, type FormedCtx,
 } from "@/Domain/registration/formed";
 import { GREEN_CARD } from "@/Domain/registration/registrationConfig";
 import { REGISTRATION_RULES as R } from "@/Domain/registration/registrationConfig";
@@ -51,6 +51,25 @@ describe("formed", () => {
     expect(isForeign(p({ nationality: "United States" }), R.mls!, "USA")).toBe(false);
     expect(isForeign(p({ nationality: "Canada" }), R.mls!, "USA")).toBe(false);
     expect(isForeign(p({ nationality: null }), R.brazil!, "Brazil")).toBe(false);
+  });
+  test("foreign basis explains each case and agrees with isForeign", () => {
+    const cases: [Partial<RosterPlayer>, keyof typeof R, string, string | null][] = [
+      [{ nationality: "England", age: 23 }, "la_liga", "Spain", "outsideEU"],
+      [{ nationality: "Türkiye", age: 21 }, "la_liga", "Spain", "outsideEU"],
+      [{ nationality: "Brazil", age: 20 }, "la_liga", "Spain", "iberoUnderAge"],
+      [{ nationality: "Brazil", age: 26 }, "la_liga", "Spain", "ibero"],
+      [{ nationality: "Senegal" }, "ligue_1", "France", "acp"],
+      [{ nationality: "France" }, "la_liga", "Spain", null],
+      [{ nationality: "Spain" }, "la_liga", "Spain", null],
+      [{ nationality: "Argentina" }, "brazil", "Brazil", "nationality"],
+      [{ nationality: "Canada" }, "mls", "USA", null],
+    ];
+    for (const [o, rule, country, basis] of cases) {
+      const pl = p(o);
+      expect(foreignBasis(pl, R[rule]!, country)).toBe(basis as never);
+      const foreign = basis === "outsideEU" || basis === "iberoUnderAge" || basis === "nationality";
+      expect(isForeign(pl, R[rule]!, country)).toBe(foreign);
+    }
   });
   test("free", () => {
     expect(isFree(p({ age: 21, nationality: "Spain" }), R.uefa!, "Spain", "c1", ctx)).toBe(true);

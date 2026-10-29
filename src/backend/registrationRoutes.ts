@@ -9,12 +9,13 @@ import { registrationDayCtx, type RegistrationDayCtx } from "@/backend/registrat
 import { seatWindowRef } from "@/backend/marketWindowWorld";
 import { automaticList, ensureList, manualList, withList, type CompInfo } from "@/Domain/registration/lists";
 import { canAdd, countsOf, validateList } from "@/Domain/registration/rules";
-import { clubTrained, domesticNations, isForeign, isFree, isGreenCardHolder, nationTrained } from "@/Domain/registration/formed";
+import { clubTrained, domesticNations, foreignBasis, isForeign, isFree, isGreenCardHolder, nationTrained } from "@/Domain/registration/formed";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { overallAvg } from "@/Domain/playerRating";
 import type { Squad } from "@/types/playerTypes";
-import type { RegistrationCompView, RegistrationRowView } from "@/types/registrationTypes";
+import type { ForeignCheckView, RegistrationCompView, RegistrationRowView } from "@/types/registrationTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -33,6 +34,7 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
       registered,
       foreign: isForeign(p, info.rule, info.ctx.country, holder),
       greenCard: isGreenCardHolder(p, info.rule, info.ctx.country, holder),
+      foreignBasis: foreignBasis(p, info.rule, info.ctx.country, holder),
       clubTrained: clubTrained(p, info.ctx.squadId, info.ctx),
       nationTrained: nationTrained(p, info.ctx.country, info.ctx, domesticNations(info.rule, info.ctx.country)),
       free,
@@ -83,6 +85,37 @@ function closedResponse(info: CompInfo): Response {
 }
 
 export const registrationRoutes = {
+  /**
+   * `GET ?from=<squadId>` (empty for a free agent): would the player count as foreign in the human club's league, and
+   * how many foreign places the club's list already uses. 404 for an unknown player.
+   */
+  "/api/saves/:saveId/registration/check/:playerId": async (req: Req) => {
+    const { saveId, playerId } = req.params;
+    const auth = requireSeat(req, saveId!);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const h = await humanCtx(saveId!, auth.seatId);
+    if (h instanceof Response) return h;
+    const from = new URL(req.url).searchParams.get("from") ?? "";
+    let player: RosterPlayer | undefined;
+    if (from) player = (await saveService.getSquadById(saveId!, from))?.players.find((p) => p.id === playerId);
+    else player = (await saveService.getFreeAgents(saveId!)).find((f) => f.player.id === playerId)?.player;
+    if (!player) return Response.json({ error: "notFound" }, { status: 404 });
+    const info = await h.dctx.infoFor(h.squad, h.leagueSlug, h.leagueSlug);
+    if (!info) return Response.json({ error: "notInCompetition" }, { status: 404 });
+    const ids = ensureList(h.squad, info, h.date).squad.registrations![info.slug]!.ids;
+    const holder = { squadId: info.ctx.squadId, ctx: info.ctx };
+    const view: ForeignCheckView = {
+      competition: info.slug,
+      basis: foreignBasis(player, info.rule, info.ctx.country, holder),
+      foreign: isForeign(player, info.rule, info.ctx.country, holder),
+      used: countsOf(ids, h.squad.players, info.rule, info.ctx).foreign,
+      max: info.rule.maxForeign ?? null,
+      matchday: info.rule.maxForeignMatchday ?? null,
+    };
+    return Response.json(view);
+  },
+
   /** Every competition of the human club with its rule, deadline, counters and players. */
   "/api/saves/:saveId/registration": async (req: Req) => {
     const saveId = req.params.saveId!;

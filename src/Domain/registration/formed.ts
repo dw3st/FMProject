@@ -1,5 +1,5 @@
 import type { PlayerHistoryRow, RosterPlayer } from "@/types/playerTypes";
-import type { RegistrationRule } from "@/types/registrationTypes";
+import type { ForeignBasis, RegistrationRule } from "@/types/registrationTypes";
 import { DOMESTIC_EXTRA, FORMED_MAX_AGE, FORMED_SEASONS, GREEN_CARD, IBERO_PASSPORT_MIN_AGE } from "@/Domain/registration/registrationConfig";
 import { seasonsAtClub } from "@/Domain/personality/personality";
 import { mulberry32, seedFrom } from "@/Domain/rng";
@@ -101,6 +101,23 @@ export function foreignByNation(p: RosterPlayer, rule: RegistrationRule, country
     if ((rule.exempt ?? []).some((g) => inGroup(n, g) && (g !== "ibero" || p.age >= IBERO_PASSPORT_MIN_AGE))) return false;
   }
   return true;
+}
+
+/** Why a player counts (or not) as foreign under a rule (`ForeignBasis`). Null: domestic or EU, nothing to explain. */
+export function foreignBasis(p: RosterPlayer, rule: RegistrationRule, country: string, holder?: ForeignHolder): ForeignBasis | null {
+  const n = normalizeNation(p.nationality);
+  if (!n || domesticNations(rule, country).includes(n)) return null;
+  if (rule.foreign === "nonEU") {
+    if (inGroup(n, "EU")) return null;
+    for (const g of rule.exempt ?? []) {
+      if (!inGroup(n, g)) continue;
+      if (g === "ibero" && p.age < IBERO_PASSPORT_MIN_AGE) return "iberoUnderAge";
+      return g === "ibero" ? "ibero" : "acp";
+    }
+    return "outsideEU";
+  }
+  if (rule.greenCard && hasGreenCard(p, holder)) return "greenCard";
+  return "nationality";
 }
 
 /** Foreign by nationality, but domestic under the rule's green card (MLS). */

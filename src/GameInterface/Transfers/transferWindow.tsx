@@ -102,3 +102,54 @@ export function WindowsTable({ data }: { data: TransferWindowsDto | null }) {
 export function windowClosedText(t: (k: string, o?: Record<string, unknown>) => string, lang: string, opensOn?: string): string {
   return opensOn ? t("transferWindows.closedOpensOnShort", { date: formatDay(opensOn, lang, "year") }) : t("transferWindows.closed");
 }
+
+/** Players the club is buying and selling (`summary` of `GET /api/saves/:id/negotiation`). */
+function useNegotiationSummary(): { buying: number; selling: number } | null {
+  const { session, currentDate } = useGameSave();
+  const saveId = session?.saveId;
+  const [data, setData] = useState<{ buying: number; selling: number } | null>(null);
+  useEffect(() => {
+    if (!saveId) return;
+    let alive = true;
+    void fetch(`/api/saves/${saveId}/negotiation`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { summary?: { buying: number; selling: number } } | null) => { if (alive) setData(d?.summary ?? null); })
+      .catch(() => { if (alive) setData(null); });
+    return () => { alive = false; };
+  }, [saveId, currentDate]);
+  return data;
+}
+
+/**
+ * Green strip while the club's window is open (report: highlight it, with the deals in progress): until when, how
+ * many players the club is buying and selling, and a link to the market. Nothing with the window closed.
+ */
+export function MarketWindowStrip() {
+  const { t, i18n } = useTranslation();
+  const windows = useTransferWindows();
+  const summary = useNegotiationSummary();
+  const p = windows?.player;
+  if (!p?.open) return null;
+  const until = t("transferWindows.strip.open", { date: p.until ? formatDay(p.until, i18n.language, "short") : "—" });
+  const deals = !summary
+    ? null
+    : summary.buying + summary.selling === 0
+      ? t("transferWindows.strip.dealsNone")
+      : t("transferWindows.strip.deals", {
+          buying: t("transferWindows.strip.buying", { count: summary.buying }),
+          selling: t("transferWindows.strip.selling", { count: summary.selling }),
+        });
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-green-500/50 bg-green-500/15 px-4 py-2.5">
+      <Icon name="check-circle" size={16} className="text-green-400 shrink-0" />
+      <span className="text-sm font-semibold text-foreground">{until}</span>
+      {deals && <span className="text-sm text-muted-foreground tabular-nums">· {deals}</span>}
+      <a
+        href="/transfers"
+        className="ml-auto inline-flex items-center h-8 px-3 rounded-md border border-green-500/50 text-sm font-semibold text-green-400 no-underline hover:bg-green-500/20"
+      >
+        {t("transferWindows.strip.market")}
+      </a>
+    </div>
+  );
+}
