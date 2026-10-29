@@ -2645,5 +2645,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Visual novo também na torcida, nos lances, no pênalti e nas telas", en: "The new look in the crowd, the highlights, the penalties and the screens too" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];
