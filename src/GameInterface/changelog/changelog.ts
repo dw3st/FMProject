@@ -29,8 +29,8 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-10-29",
     items: [
       {
-        pt: "Assistir ao jogo de um amigo abre uma janela no estilo transmissão, com o campo igual ao dele: estádio, torcida, uniformes, rostos, gramado e luz.",
-        en: "Watching a friend's match opens a broadcast-style window with the pitch exactly as he sees it: stadium, crowd, kits, faces, turf and light.",
+        pt: "Assistir ao jogo de um amigo abre uma janela no estilo transmissão, com o campo igual ao da partida: estádio, torcida, uniformes, rostos, gramado e luz.",
+        en: "Watching a friend's match opens a broadcast-style window with the pitch exactly as in the match: stadium, crowd, kits, faces, turf and light.",
       },
     ],
     fixes: [
