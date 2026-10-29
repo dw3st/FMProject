@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39.1",
+    date: "2026-10-28",
+    items: [
+      { pt: "Barra de energia reta acima da cabeça dos jogadores, no lugar do arco em volta do marcador.", en: "Straight stamina bar above the players' heads, replacing the arc around the marker." },
+      { pt: "Fogos de artifício mais variados e suaves: cada comemoração sorteia quantos fogos, estilos, cores e tamanhos, com faíscas redondas que somem aos poucos.", en: "More varied, smoother fireworks: every celebration draws its own number of shells, styles, colours and sizes, with round sparks that fade out gently." },
+      { pt: "Os sinalizadores na torcida brilham com uma pulsação suave, cada um no seu ritmo.", en: "The flares in the crowd glow with a soft pulse, each at its own pace." },
+      { pt: "Os patrocinadores das placas de LED agora também em inglês, acompanhando o idioma do jogo.", en: "The LED board sponsors now come in English too, following the game language." },
+    ],
+  },
+  {
     version: "4.39",
     date: "2026-10-28",
     items: [

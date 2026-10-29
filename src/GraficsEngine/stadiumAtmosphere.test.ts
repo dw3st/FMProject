@@ -67,15 +67,18 @@ describe("stadium atmosphere", () => {
     expect(fireworks(burst(), 10 + burstLength(burst()) + 0.1)).toEqual([]);
   });
 
-  test("fireworks: a rocket with a trail, then two rings of square sparks that blink out", () => {
+  test("fireworks: random shells per burst, round glowing sparks that fade out smoothly", () => {
     const W = ATMOSPHERE.FIREWORKS;
-    const rocket = fireworks(burst(), 10 + W.RISE_S * 0.5);
-    expect(rocket).toHaveLength(W.TRAIL);
-    expect(rocket.every((k) => k.square)).toBe(true);
-    // The first shell has burst (the next ones are still climbing or bursting over it).
-    expect(fireworks(burst(), 10 + W.RISE_S + 0.05).length).toBeGreaterThanOrEqual(W.OUTER + W.INNER);
-    // The last shell alone, late in its life: some sparks blink off.
-    const lastStart = 10 + (W.SHELLS - 1) * W.EVERY_S + W.RISE_S;
-    expect(fireworks(burst(), lastStart + W.LIFE_S * 0.95).length).toBeLessThan(W.OUTER + W.INNER);
+    const b = burst();
+    const rocket = fireworks(b, 10 + W.RISE_S[0] * 0.5);
+    expect(rocket.length).toBeGreaterThanOrEqual(W.TRAIL);
+    expect(rocket.every((k) => !("square" in k))).toBe(true);
+    // Sampled through the burst: the shells open into many sparks.
+    const frames = Array.from({ length: 200 }, (_, i) => fireworks(b, 10 + i * (burstLength(b) / 200)));
+    expect(Math.max(...frames.map((f) => f.length))).toBeGreaterThan(W.SPARKS[0]);
+    // Two bursts with different seeds do not draw the same thing.
+    const other = { ...b, seed: "other" };
+    expect(JSON.stringify(fireworks(other, 11))).not.toBe(JSON.stringify(fireworks(b, 11)));
+    expect(fireworks(b, 11)).toEqual(fireworks(b, 11));
   });
 });

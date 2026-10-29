@@ -1,4 +1,4 @@
-import { LED_ADS } from "@/GraficsEngine/ledAds";
+import { LED_ADS, type LedLang } from "@/GraficsEngine/ledAds";
 /**
  * Visual constants of the live-match pitch (spec 2026-10-06-match-pitch-visual-design.md).
  * Distances in "marker radii" are multiplied by the marker radius (px); heights are in yards.
@@ -19,7 +19,7 @@ export const PITCH_WEAR = {
 
 /**
  * Match look 4.39 (mock approved 2026-10-28): chalk lines with a soft glow, goals with a net mesh, corner flags,
- * grass grain and a soft centre light, marker volume, name pills, a stamina arc, a heading chevron and a pulsing ring
+ * grass grain and a soft centre light, marker volume, name pills, a stamina bar, a heading chevron and a pulsing ring
  * under the ball holder. Sizes in px unless noted ("marker radii" for HOLDER).
  */
 export const MATCH_LOOK = {
@@ -30,7 +30,8 @@ export const MATCH_LOOK = {
   CENTRE_LIGHT: 0.04, EDGE_DARK: 0.1,
   RIM: 0.22,
   PILL: { PAD_X: 5, PAD_Y: 1, STRIP: 3, ALPHA: 0.62, LIFT: 5 },
-  STAMINA_ARC: { GAP: 3.5, W: 3 },
+  /** Stamina bar above the head: gap over the marker and height (px), width in marker radii, corner radius. */
+  STAMINA_BAR: { GAP: 3, H: 3, W: 1.8, R: 1.5 },
   CHEVRON: { DIST: 6, SIZE: 4, MIN_PX: 0.35, SMOOTH: 0.15, ALPHA: 0.85 },
   HOLDER: { R: 1.55, PULSE: 0.18, HZ: 1, COLOR: 0xffec96, ALPHA: 0.55 },
 } as const;
@@ -116,8 +117,11 @@ export const LED = {
   SWITCH_S: 9, FLIP_S: 0.3, FLIP_STAGGER_S: 0.03, GOAL_S: 10,
 } as const;
 
-/** The ad of a panel in a flip cycle: random per match, cycle and panel, never the same as the panel before it. */
-export function ledAdFor(seed: string, cycle: number, panel: number): { text: string; bg: number; fg: number } {
+/**
+ * The ad of a panel in a flip cycle: random per match, cycle and panel, never the same as the panel before it. The text
+ * is in `lang`; the pick does not depend on it, so a language switch only translates the boards.
+ */
+export function ledAdFor(seed: string, cycle: number, panel: number, lang: LedLang): { text: string; bg: number; fg: number } {
   const pick = (k: number) => {
     let h = 2166136261;
     for (const ch of `${seed}:${cycle}:${k}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
@@ -125,7 +129,8 @@ export function ledAdFor(seed: string, cycle: number, panel: number): { text: st
   };
   let i = pick(panel);
   if (panel > 0 && i === pick(panel - 1)) i = (i + 1) % LED_ADS.length;
-  return LED_ADS[i]!;
+  const ad = LED_ADS[i]!;
+  return { text: ad.text[lang], bg: ad.bg, fg: ad.fg };
 }
 
 /** Stadium band around the pitch (spec 2026-10-08-match-visual-design.md). */

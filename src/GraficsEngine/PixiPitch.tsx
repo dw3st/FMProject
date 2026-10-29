@@ -19,6 +19,8 @@ import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
+import { ledLang } from "@/GraficsEngine/ledAds";
+import i18n from "@/i18n/i18n";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
   type PitchEffect, type TrailPoint,
@@ -449,7 +451,7 @@ interface Props {
    * the net shaking, the scoring side's fans jumping and the scorer's celebration. Read every frame.
    */
   extras?: boolean;
-  /** Teams whose players show the stamina arc (absent = both; the live match passes only the user's side). */
+  /** Teams whose players show the stamina bar (absent = both; the live match passes only the user's side). */
   staminaTeams?: TeamId[];
   /**
    * Remote mode (multiplayer part 7): the server runs the match. The pitch never simulates; it draws the state it
@@ -1914,6 +1916,7 @@ export function PixiPitch({
         if (ledGoal && effectNow - ledGoal.at > LED.GOAL_S) ledGoal = null;
         const cycle = Math.floor(effectNow / LED.SWITCH_S);
         const into = effectNow - cycle * LED.SWITCH_S;
+        const lang = ledLang(i18n.language);
         for (const p of ledPanels) {
           // The flip runs along the boards: each panel a moment after the one before it.
           const delay = (p.order % 24) * LED.FLIP_STAGGER_S;
@@ -1923,8 +1926,8 @@ export function PixiPitch({
             const blink = Math.floor((effectNow - ledGoal.at) * 3) % 2 === 0;
             key = `goal:${blink}`; text = ledGoal.text; bg = blink ? LED.GOAL : 0x06090d; fg = blink ? 0x06090d : LED.GOAL;
           } else {
-            const ad = ledAdFor(ledSeed, showCycle, p.order);
-            key = `ad:${showCycle}`; text = ad.text; bg = ad.bg; fg = ad.fg;
+            const ad = ledAdFor(ledSeed, showCycle, p.order, lang);
+            key = `ad:${showCycle}:${lang}`; text = ad.text; bg = ad.bg; fg = ad.fg;
           }
           // The flip: the panel squeezes to a line and opens with the new ad.
           const t = into - delay;
@@ -2075,12 +2078,15 @@ export function PixiPitch({
           const { glows, puffs } = flareSmoke(b, effectNow);
           for (const q of puffs) smokeG.circle(q.x, q.y, q.r).fill({ color: q.color, alpha: q.alpha });
           for (const g of glows) {
-            sparkG.circle(g.x, g.y, g.r * 2.2).fill({ color: ATMOSPHERE.FLARES.GLOW, alpha: g.alpha * 0.25 });
-            sparkG.circle(g.x, g.y, g.r).fill({ color: 0xffe6c7, alpha: g.alpha });
+            // Soft layered glow: wide halo, warm body, bright core.
+            sparkG.circle(g.x, g.y, g.r * 2.6).fill({ color: ATMOSPHERE.FLARES.GLOW, alpha: g.alpha * 0.14 });
+            sparkG.circle(g.x, g.y, g.r * 1.6).fill({ color: ATMOSPHERE.FLARES.GLOW, alpha: g.alpha * 0.28 });
+            sparkG.circle(g.x, g.y, g.r).fill({ color: 0xffb27a, alpha: g.alpha * 0.8 });
+            sparkG.circle(g.x, g.y, g.r * 0.55).fill({ color: 0xfff1de, alpha: g.alpha });
           }
           for (const k of fireworks(b, effectNow)) {
-            if (k.square) sparkG.rect(k.x - k.r, k.y - k.r, k.r * 2, k.r * 2).fill({ color: k.color, alpha: k.alpha });
-            else sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
+            if (k.glow) sparkG.circle(k.x, k.y, k.r * 2.6).fill({ color: k.color, alpha: k.alpha * k.glow * 0.35 });
+            sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
           }
         }
       };
@@ -2333,17 +2339,14 @@ export function PixiPitch({
               .ellipse(px, py + 1, rr, rr * 0.85)
               .stroke({ width: 2, color: H.COLOR, alpha: H.ALPHA + 0.2 * pulse });
           }
-          // Stamina as a thin arc round the marker, from the bottom-left clockwise (only the user's players live).
-          const A = MATCH_LOOK.STAMINA_ARC;
+          // Stamina as a straight bar above the head, filling left to right (only the user's players live).
+          const B = MATCH_LOOK.STAMINA_BAR;
           const showStamina = !staminaTeamsRef.current || staminaTeamsRef.current.includes(player.team);
-          const ar = markerR + A.GAP;
-          const a0 = Math.PI * 0.75, span = Math.PI * 1.5;
-          if (showStamina) fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
-            .arc(px, py, ar, a0, a0 + span).stroke({ width: A.W, color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
+          const bw = markerR * B.W, bx = px - bw / 2, by = py - markerR - B.GAP - B.H;
+          if (showStamina) fatigueGfx.roundRect(bx - 1, by - 1, bw + 2, B.H + 2, B.R + 1).fill({ color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
           const fill = fatigueFill(player.energy);
           if (showStamina && fill > 0) {
-            fatigueGfx.moveTo(px + Math.cos(a0) * ar, py + Math.sin(a0) * ar)
-              .arc(px, py, ar, a0, a0 + span * fill).stroke({ width: A.W, color: fatigueColor(player.energy), cap: "round" });
+            fatigueGfx.roundRect(bx, by, Math.max(B.R * 2, bw * fill), B.H, B.R).fill({ color: fatigueColor(player.energy) });
           }
           // Heading chevron: where the drawn marker is going (smoothed), only when it really moves.
           const prevV = markerVel.get(player.id);
@@ -2377,7 +2380,8 @@ export function PixiPitch({
             if (pillG) pillG.g.visible = named;
             { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
-            label.y = py - (markerR + MATCH_LOOK.PILL.LIFT);
+            // The name sits over the stamina bar when both show.
+            label.y = py - (markerR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
             const pill = playerPills.get(player.id);
             if (pill) {
               if (pill.text !== label.text) { drawPill(pill.g, label, player.team === "A" ? fillA : fillB); pill.text = label.text; }
