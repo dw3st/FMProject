@@ -34,6 +34,9 @@ export interface JobOffer {
   seasons?: number;
   /** Compensation the new club pays the current one (D3), deducted from `budget` on arrival. */
   compensation?: number;
+  /** The club's country (leagueData name) and its league's level in the pyramid (1 = top; absent without one). */
+  country?: string;
+  tier?: number;
 }
 
 /** The manager was sacked and has no club (`SaveMeta.unemployed`). */

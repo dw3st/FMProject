@@ -170,6 +170,10 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
 - **Renovação não respondida (4.41.1):** uma oferta da diretoria pendente na virada (nem aceita nem recusada) é aceita
   ali (`renewedContract`, mensagem `contract_renewed`); só recusar no cartão deixa o contrato acabar. Report: o técnico
   do Real Madrid (2 Champions, diretoria 77) ficou sem clube por não clicar.
+- **Janela da renovação (4.41.2):** com `managerRenewal` válida, o Painel abre `RenewalPopup` (o mesmo
+  `ManagerRenewalCard`), uma vez por oferta e sessão do navegador ("Decidir depois" fecha; o cartão da inbox fica).
+- **Proposta com país e divisão (4.41.2):** `JobOffer.country` e `tier` (pirâmide do país; liga sem pirâmide = 1); o
+  `JobOfferCard` mostra bandeira, país e "Nª divisão" e o link Ver elenco (`/squad/<liga>/<clube>`).
 - **Desempregado com reputação (4.41.1):** `unemployedBand(último, reputação)`: teto = max(último − 0,05, reputação/100),
   alvo = max(último − 0,12, reputação/100 − 0,12).
 - **Sem "Pode ser demitido":** a diretoria sempre oferece (no mínimo 1 temporada com o salário atual).

@@ -1,4 +1,6 @@
 import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
+import { getPyramids } from "@/backend/advanceDay";
+import { tierOfLeague } from "@/Domain/season/countryRollover";
 import { closeSeatPassage, newPassage, standingsOn } from "@/backend/standingsWorld";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
@@ -130,6 +132,10 @@ async function buildOffer(args: {
     .filter((s): s is Squad => !!s);
   const state = args.activeLeagues.find((l) => l.leagueSlug === league);
   const rank = await currentRank(args.service, args.saveId, league, squadId);
+  // Where the club plays (tester report: "which country, which division").
+  const country = world.catalog.find((l) => l.slug === league)?.country;
+  const pyramid = country ? (await getPyramids())[country] : undefined;
+  const tier = pyramid ? tierOfLeague(pyramid, league) ?? undefined : 1;
   const objective = objectiveFromSquads({
     squads: leagueSquads,
     playerSquadId: squadId,
@@ -155,6 +161,8 @@ async function buildOffer(args: {
     wage: managerWeeklyWage(wageRevenueBasisOf(squad), args.reputation),
     seasons: offerSeasons(world.prestige.get(squadId) ?? 0),
     ...(args.compensation > 0 ? { compensation: args.compensation } : {}),
+    ...(country ? { country } : {}),
+    ...(tier ? { tier } : {}),
   };
 }
 

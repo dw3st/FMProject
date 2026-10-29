@@ -1,4 +1,5 @@
 import type { AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
+import { RenewalPopup } from "@/GameInterface/Components/RenewalPopup";
 import { clubCardAchievements, type ClubCardAchievements } from "@/GameInterface/Dashboard/HomeCards";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -72,7 +73,7 @@ export function DashboardScreen() {
   const { t, i18n } = useTranslation();
   const {
     session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType,
-    inboxMessages, unreadInboxCount, setInboxMessages,
+    inboxMessages, unreadInboxCount, setInboxMessages, refresh,
   } = useGameSave();
   const windowsData = useTransferWindows();
   const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
@@ -298,6 +299,9 @@ export function DashboardScreen() {
 
   return (
     <ScreenContainer>
+      {session?.saveId && (
+        <RenewalPopup saveId={session.saveId} renewal={save?.managerRenewal} currentDate={currentDate} onAnswered={() => void refresh()} />
+      )}
       <ScreenTitle subtitle={subtitle || undefined} accent={t("screenTitles.dashboard.accent")}>
         {t("screenTitles.dashboard.main")}
       </ScreenTitle>

@@ -3210,7 +3210,9 @@
       "wageValue": "{{wage}}/sem",
       "years_one": "{{count}} temporada",
       "years_other": "{{count}} temporadas",
-      "compensation": "Compensação ao {{club}}: {{amount}} (já descontada)"
+      "compensation": "Compensação ao {{club}}: {{amount}} (já descontada)",
+      "tier": "{{tier}}ª divisão",
+      "viewSquad": "Ver elenco"
     }
   },
   "negotiation": {
@@ -3724,7 +3726,10 @@
     "offerTerms_other": "{{wage}} por semana · {{count}} temporadas",
     "validUntil": "Vale até {{date}}",
     "attention": "A diretoria oferece um novo contrato",
-    "cardLine": "Contrato até {{year}} · {{wage}}/sem"
+    "cardLine": "Contrato até {{year}} · {{wage}}/sem",
+    "popupTitle": "A diretoria quer renovar",
+    "popupBody": "Seu contrato acaba nesta temporada. Responda antes do fim: sem resposta, a renovação é aceita na virada.",
+    "popupLater": "Decidir depois"
   },
   "instructions": {
     "title": "Instruções",

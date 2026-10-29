@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { countryDisplayName } from "@/Domain/world/labels";
+import countriesRaw from "@/Data/countries.json";
+import type { CountryEntry } from "@/types/worldTypes";
 import { DialogTitle } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -10,6 +14,8 @@ import { competitionName } from "@/Domain/world/labels";
 import { formatFee } from "@/Domain/money";
 import type { JobOffer } from "@/types/jobTypes";
 import type { LeagueData } from "@/types/playerTypes";
+
+const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
 /**
  * A club's job offer (`.claude/rules/game/jobs.md`): club, league, the board's objective, the
@@ -39,6 +45,11 @@ export function JobOfferCard({
   const [error, setError] = useState<string | null>(null);
   const [declined, setDeclined] = useState(false);
   const league = competitionName(offer.leagueSlug, leagues, i18n.language) || offer.leagueName;
+  const countryEntry = offer.country ? COUNTRY_BY_NAME.get(offer.country) : undefined;
+  const where = [
+    countryEntry ? countryDisplayName(countryEntry, i18n.language, t) : offer.country,
+    offer.tier ? t("jobs.offer.tier", { tier: offer.tier }) : null,
+  ].filter(Boolean).join(" · ");
   const label = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
   async function answer(accept: boolean) {
@@ -71,10 +82,22 @@ export function JobOfferCard({
     <div className="space-y-4">
       <div className="flex items-center gap-3 min-w-0">
         <ClubLogo logoUrl={squadLogoUrl(offer.squadId)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-semibold text-foreground m-0 truncate">{offer.clubName}</p>
           <p className="text-sm text-muted-foreground m-0 truncate">{league}</p>
+          {where && (
+            <p className="text-sm text-muted-foreground m-0 flex items-center gap-1.5 min-w-0">
+              {countryEntry?.iso2 && <Flag code={countryEntry.iso2} />}
+              <span className="truncate">{where}</span>
+            </p>
+          )}
         </div>
+        <a
+          href={`/squad/${encodeURIComponent(offer.leagueSlug)}/${encodeURIComponent(offer.squadId)}`}
+          className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground no-underline hover:border-primary"
+        >
+          {t("jobs.offer.viewSquad")}
+        </a>
       </div>
 
       <dl className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 m-0">

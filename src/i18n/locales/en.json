@@ -3210,7 +3210,9 @@
       "wageValue": "{{wage}}/wk",
       "years_one": "{{count}} season",
       "years_other": "{{count}} seasons",
-      "compensation": "Compensation to {{club}}: {{amount}} (already deducted)"
+      "compensation": "Compensation to {{club}}: {{amount}} (already deducted)",
+      "tier": "Division {{tier}}",
+      "viewSquad": "View squad"
     }
   },
   "negotiation": {
@@ -3724,7 +3726,10 @@
     "offerTerms_other": "{{wage}} a week · {{count}} seasons",
     "validUntil": "Valid until {{date}}",
     "attention": "The board offers you a new contract",
-    "cardLine": "Contract until {{year}} · {{wage}}/wk"
+    "cardLine": "Contract until {{year}} · {{wage}}/wk",
+    "popupTitle": "The board wants to renew",
+    "popupBody": "Your contract ends this season. Answer before the end: without an answer, the renewal is taken at the rollover.",
+    "popupLater": "Decide later"
   },
   "instructions": {
     "title": "Instructions",

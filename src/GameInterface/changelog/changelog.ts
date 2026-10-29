@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.2",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Quando a diretoria oferece a renovação do seu contrato, uma janela abre no Painel para você responder.",
+        en: "When the board offers to renew your contract, a window opens on the dashboard so you can answer.",
+      },
+      {
+        pt: "Proposta de emprego: país e divisão do clube, e o botão Ver elenco.",
+        en: "Job offer: the club's country and division, and a View squad button.",
+      },
+    ],
+  },
+  {
     version: "4.41.1",
     date: "2026-10-29",
     items: [
