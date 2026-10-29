@@ -272,6 +272,8 @@ describe("buildRestEvent and the youth competitions", () => {
     expect(y.seasonLog!.fitness).toBeCloseTo(recoverDay(50, { age: 17, load: 90, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult }), 5);
     expect(y.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
     expect(y.seasonLog!.trainingSessions).toBe(3);
-    expect(updatedSquad.youth![1]).toEqual(fresh);
+    // A youngster who never played only gets his weekly overall snapshot (academy training, 4.39).
+    expect({ ...updatedSquad.youth![1]!, youthTrend: undefined }).toEqual({ ...fresh, youthTrend: undefined });
+    expect(updatedSquad.youth![1]!.youthTrend).toHaveLength(1);
   });
 });

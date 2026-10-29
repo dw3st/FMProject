@@ -255,6 +255,8 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
   const missions: ScoutAssignment[] = [];
   const visits: MissionVisit[] = [];
   let gems = 0;
+  // A gem is news once per player (tester-report save analysis: the same teenager came back 8 weeks running).
+  const announced = new Set(state.gemsAnnounced ?? []);
   const kctx: ViewerContext = { ...ctx, knowledgeOf: known };
   const byId = new Map(inputs.map((i) => [i.mission.id, i]));
   for (const mission of state.missions) {
@@ -293,7 +295,9 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
     reports.push(...written);
     for (const rep of written) {
       if (rep.prospectId) continue;
-      if (rep.gem && gems < S.GEMS_PER_WEEK) { news.push({ kind: "gem", report: rep }); gems++; }
+      if (rep.gem && (rep.grade === "A" || rep.grade === "B") && !announced.has(rep.playerId) && gems < S.GEMS_PER_WEEK) {
+        news.push({ kind: "gem", report: rep }); gems++; announced.add(rep.playerId);
+      }
     }
     if (written.length > 0) {
       news.push({ kind: "report", missionId: mission.id, target: mission.target, count: observed.length, best: written.slice(0, 3).map((r) => ({ name: r.name, grade: r.grade })) });
@@ -309,6 +313,7 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
       missions,
       knowledge,
       reports: [...reports, ...state.reports.filter((r) => !reportIds.has(r.id))].slice(0, S.MAX_REPORTS),
+      ...(announced.size > 0 ? { gemsAnnounced: [...announced].slice(-S.GEMS_REMEMBERED) } : {}),
     },
     news,
     reports,

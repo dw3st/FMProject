@@ -34,6 +34,14 @@ export function moraleOf(p: Pick<RosterPlayer, "morale">): number {
   return p.morale ?? MORALE.NEUTRAL;
 }
 
+/** An AI club's morale for a match against a human club, from its last league results (`MORALE.AI_FORM_*`). */
+export function aiFormMorale(form: readonly ("W" | "D" | "L")[] | undefined): number {
+  if (!form || form.length === 0) return MORALE.NEUTRAL;
+  const points = form.reduce((s, r) => s + (r === "W" ? 3 : r === "D" ? 1 : 0), 0);
+  const v = MORALE.NEUTRAL + MORALE.AI_FORM_PER_POINT * (points - 1.5 * form.length);
+  return Math.max(MORALE.AI_FORM_MIN, Math.min(MORALE.AI_FORM_MAX, v));
+}
+
 export function clampMorale(v: number): number {
   return round1(clamp(v, MORALE.MIN, MORALE.MAX));
 }

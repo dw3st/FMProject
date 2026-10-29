@@ -589,7 +589,7 @@ describe("coaching staff on a training day", () => {
 });
 
 describe("buildTrainingEvent and the youth competitions", () => {
-  test("skipped players stay identical; the academy recovers without training DP", () => {
+  test("skipped players stay identical; the academy trains one session (4.39)", () => {
     const played = basePlayer({ id: "a", name: "A", seasonLog: makeSeasonLog({ fitness: 90 }) });
     const other = basePlayer({ id: "b", name: "B", seasonLog: makeSeasonLog({ fitness: 90 }) });
     const kid = basePlayer({ id: "y", name: "Y", age: 17, seasonLog: makeSeasonLog({ fitness: 50, load: 90 }) });
@@ -601,9 +601,13 @@ describe("buildTrainingEvent and the youth competitions", () => {
     expect(updatedSquad.players[0]).toBe(played);
     expect(event.effects.map((e) => e.playerId)).toEqual(["b"]);
     const y = updatedSquad.youth![0]!;
-    expect(y.stats).toEqual(kid.stats);
-    expect(y.seasonLog!.trainingSessions).toBe(kid.seasonLog!.trainingSessions);
-    expect(y.seasonLog!.fitness).toBeCloseTo(recoverDay(50, { age: 17, load: 90, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult }), 5);
-    expect(y.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
+    // Normal session: fitness −3 × fitness/100, development under way, a weekly snapshot.
+    expect(y.seasonLog!.fitness).toBeCloseTo(48.5, 5);
+    expect(y.youthTrend).toHaveLength(1);
+    const tired = { ...squad, youth: [{ ...kid, seasonLog: makeSeasonLog({ fitness: 30, load: 90 }) }] };
+    const rested = buildTrainingEvent("s", tired, policy, "2027-02-05", () => 0.99).updatedSquad.youth![0]!;
+    expect(rested.stats).toEqual(kid.stats);
+    expect(rested.seasonLog!.fitness).toBeCloseTo(recoverDay(30, { age: 17, load: 90, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult }), 5);
+    expect(rested.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
   });
 });

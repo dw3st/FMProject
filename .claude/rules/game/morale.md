@@ -235,3 +235,11 @@ gols, boa nota) por 1 ± 5% (`MoraleDayInput.motivation`, lida do `achievements.
 ## Imprensa (Etapa 42)
 
 Uma resposta de coletiva mexe na moral do elenco inteiro (`defend_squad` +2, `demand_squad` −2, `confident` e `provocative` +1) ou de um jogador (`praise` +4, `criticize` −4, `protect` +2) por `afterPressAnswer`, com o `withEventDelta` (temperamento escala; um profissional leva só +1 do `criticize`). Ver `.claude/rules/game/press.md`.
+
+## Moral da IA contra um humano (4.39)
+
+Análise do mundo dos testers: o elenco vencedor do humano fica com moral 90+ (atributos até × 1,02) e a IA sempre em 65;
+medido, +0,1 a +0,2 ponto por jogo. Decisão do usuário: a IA ganha um pouco. Num jogo contra um clube humano (avanço do
+dia com um assento só, e a partida ao vivo pelo `match-setup` → `oppMorale`), o lado IA joga com
+`aiFormMorale(form)` = 65 + 2 × (pontos − 1,5 × jogos) dos últimos resultados da liga, entre 50 e 80 (`MORALE.AI_FORM_*`).
+Nada é gravado; IA × IA e humano × humano não mudam.

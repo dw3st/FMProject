@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.39",
+    date: "2026-10-28",
+    items: [
+      { pt: "Treino da base: escolha a intensidade e o foco do grupo, e por jovem um foco próprio e uma posição de treino. A base agora treina nos dias de treino do clube, e a tabela mostra a evolução das últimas 4 semanas.", en: "Academy training: pick the intensity and the group focus, and per youngster a focus and a training position. The academy now trains on the club's training days, and the table shows the last 4 weeks' growth." },
+      { pt: "Treino individual no time principal: na tela Desenvolvimento, cada jogador pode ter um foco e uma posição de treino.", en: "Individual training for the first team: on the Development screen, each player can have a focus and a training position." },
+      { pt: "A torcida de um clube grande reage melhor a uma boa temporada: um vice com muitos pontos não fica mais com a torcida lá embaixo.", en: "A big club's fans react better to a good season: a high-scoring runner-up no longer has its fans at the bottom." },
+      { pt: "Clubes da IA mais competitivos contra os técnicos humanos: entrosam um pouco mais com o próprio estilo e a confiança deles acompanha a fase do time.", en: "AI clubs compete better against human managers: they know their own style a little better and their confidence follows their form." },
+      { pt: "Joias do olheiro mais raras: cada jogador é anunciado uma vez só, e só os melhores relatórios.", en: "Scout gems are rarer: each player is announced once, and only the best reports." },
+      { pt: "Saves mais leves: os dias antigos guardam só o essencial das partidas de outros clubes.", en: "Lighter saves: old days keep only the essentials of other clubs' matches." },
+    ],
+  },
+  {
     version: "4.38.24",
     date: "2026-10-28",
     items: [

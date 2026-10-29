@@ -151,8 +151,9 @@ export function applyMatchResult(state: BoardState, m: MatchForBoard): BoardStat
 
   // Expectation: a favourite gains little from a win and loses more; an underdog the opposite.
   const e = Math.max(-1, Math.min(1, m.expectation ?? 0));
-  const winMult = 1 - cfg.WIN_EXPECT * e;
-  const lossMult = 1 + cfg.LOSS_EXPECT * e;
+  const fav = e > 0;
+  const winMult = 1 - (fav ? cfg.FAVOURITE_WIN_EXPECT : cfg.WIN_EXPECT) * e;
+  const lossMult = 1 + (fav ? cfg.FAVOURITE_LOSS_EXPECT : cfg.LOSS_EXPECT) * e;
 
   let fans = result === "W"
     ? cfg.FANS_WIN * winMult
@@ -160,7 +161,7 @@ export function applyMatchResult(state: BoardState, m: MatchForBoard): BoardStat
   if (result === "L" && m.home) fans *= cfg.HOME_LOSS_MULT;
   if (m.derby) fans *= cfg.DERBY_MULT;
   const formPoints = recent.reduce((s, r) => s + POINTS[r], 0);
-  const expectedPerGame = cfg.FORM_EXPECTED_BASE + cfg.FORM_EXPECTED_SPAN * e;
+  const expectedPerGame = cfg.FORM_EXPECTED_BASE + (fav ? cfg.FAVOURITE_FORM_SPAN : cfg.FORM_EXPECTED_SPAN) * e;
   fans += (formPoints - expectedPerGame * recent.length) * cfg.FORM_WEIGHT;
 
   let board = result === "W"

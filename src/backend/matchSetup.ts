@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { aiFormMorale } from "@/Domain/morale/morale";
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { publicSeatSquad } from "@/Domain/seats/publicSquad";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
@@ -270,6 +271,14 @@ export async function matchSetupFor(
   // Referee of the match (`.claude/rules/game/referees.md`): the appointment the day advance will use.
   const referee = !legacy && matchFixture && matchDate ? await matchSetupReferee(save.id, matchDate, matchFixture) : null;
 
+  // An AI opponent plays at its form's morale (`aiFormMorale`, 4.39); another seat keeps its own.
+  let oppMorale: number | undefined;
+  if (opponentSquad && !seatOpponent) {
+    const oppLeague = (await saveService.getSquadIndex(save.id)).byId(opponentSquad.id)?.leagueSlug;
+    const rows = oppLeague ? await saveService.getLeagueStandings(save.id, oppLeague) : null;
+    oppMorale = aiFormMorale(rows?.find((r) => r.squadId === opponentSquad!.id)?.form);
+  }
+
   return { ok: true, body: {
     save,
     mySquad,
@@ -299,6 +308,7 @@ export async function matchSetupFor(
     // The manager serves a touchline ban in this match (`.claude/rules/game/var.md` §4).
     managerBanned: !!save.managerBan && save.managerBan.matches > 0,
     seatOpponent,
+    ...(oppMorale !== undefined ? { oppMorale } : {}),
     h2h: seatOpponent && opts.live && !!opts.h2h,
   } };
 }

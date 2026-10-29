@@ -1,4 +1,5 @@
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import { withYouthTrend } from "@/Domain/youth/youthTraining";
 import type { RestEvent } from "@/types/dayLogTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
@@ -119,12 +120,12 @@ export function restAcademy(
   return youth.map((p) => {
     if (skip?.has(String(p.id))) return p;
     const healed = clearHealed(p, date);
-    if (!healed.seasonLog) return healed;
+    if (!healed.seasonLog) return withYouthTrend(healed, date);
     const log = { ...healed.seasonLog };
     log.fitness = Math.min(100, recoverDay(log.fitness, {
       age: healed.age, load: log.load ?? 0, stamina: healed.stats.stamina ?? DEFAULT_STAMINA, recoveryMult,
     }));
     log.load = decayLoad(log.load ?? 0);
-    return { ...healed, seasonLog: log };
+    return withYouthTrend({ ...healed, seasonLog: log }, date);
   });
 }

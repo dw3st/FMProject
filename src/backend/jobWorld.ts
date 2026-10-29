@@ -283,7 +283,7 @@ export async function releaseHumanClub(
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.
-  const { staff: _s, styleFamiliarity: _f, facilities: _fac, managerAttributes: _a, ...rest } = stripClubMorale(academy.squad);
+  const { staff: _s, styleFamiliarity: _f, facilities: _fac, managerAttributes: _a, youthTraining: _yt, playerTraining: _pt, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).

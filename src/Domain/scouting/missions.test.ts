@@ -100,6 +100,18 @@ describe("missions", () => {
     expect(lowR.news.some((n) => n.kind === "mission_done")).toBe(true);
     expect(lowR.news.some((n) => n.kind === "report")).toBe(true);
   });
+  test("a gem is news once per player", () => {
+    const pool = [entry(player("kid", 8, 17))];
+    let state = { ...emptyScoutingState(), missions: [mission({ weeks: 4 })] };
+    const gemsPerWeek: number[] = [];
+    for (let w = 0; w < 3; w++) {
+      const r = advanceScoutingWeek(state, [{ mission: state.missions[0]!, leaderRating: 5, pool }], ctx({ date: `2027-03-0${w + 1}` }));
+      state = r.state;
+      gemsPerWeek.push(r.news.filter((n) => n.kind === "gem").length);
+    }
+    expect(gemsPerWeek).toEqual([1, 0, 0]);
+    expect(state.gemsAnnounced).toEqual(["kid"]);
+  });
   test("player mission: +35 per week until 100", () => {
     const target = entry(player("t", 6));
     let state = { ...emptyScoutingState(), missions: [mission({ target: { kind: "player", playerId: "t" }, weeks: 3 })] };

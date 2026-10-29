@@ -155,6 +155,8 @@ export interface RosterPlayer {
   contract?: PlayerContract;
   /** Reborn academy star (+30% DP while young). */
   reborn?: RebornMark;
+  /** Academy players: Monday overall snapshots (newest last), for the trend column (`youthTraining.ts`). */
+  youthTrend?: { date: string; overall: number }[];
   /** Closed seasons (and partial stints), oldest first (`.claude/rules/game/history.md`). */
   history?: PlayerHistoryRow[];
   /**
@@ -344,6 +346,10 @@ export interface Squad {
    * `players`. They train and age at the rollover but do not play until promoted.
    */
   youth?: RosterPlayer[];
+  /** Academy training plan (human club only, `src/Domain/youth/youthTraining.ts`); absent = normal, balanced. */
+  youthTraining?: import("@/types/youthTrainingTypes").YouthTrainingPlan;
+  /** First-team individual training (human club only): focus and training position per player id. */
+  playerTraining?: Record<string, { focus?: import("@/types/youthTrainingTypes").YouthFocus; position?: string }>;
   /**
    * AI clubs only: the formation chosen for the season (`src/Domain/formation/aiFormation.ts`).
    * Recomputed when the season or the roster changes; the human club uses its tactics instead.

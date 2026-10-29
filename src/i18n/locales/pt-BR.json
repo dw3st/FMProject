@@ -2364,6 +2364,37 @@
     }
   },
   "youth": {
+    "training": {
+      "title": "Treino da base",
+      "intensity": "Intensidade",
+      "groupFocus": "Foco do grupo",
+      "focus": "Foco",
+      "position": "Posição de treino",
+      "trend": "4 sem.",
+      "group": "Grupo",
+      "natural": "Natural",
+      "saveFailed": "Não foi possível salvar o treino da base.",
+      "intensities": {
+        "light": "Leve",
+        "normal": "Normal",
+        "heavy": "Pesado"
+      },
+      "foci": {
+        "balanced": "Equilibrado",
+        "technical": "Técnica",
+        "physical": "Físico",
+        "passing": "Tática",
+        "shooting": "Ataque",
+        "defending": "Defesa",
+        "goalkeeping": "Goleiros",
+        "setPieces": "Bola parada"
+      },
+      "effect": {
+        "light": "Leve: evolui menos e chega descansado aos jogos de base.",
+        "normal": "Normal: o ritmo padrão de evolução.",
+        "heavy": "Pesado: evolui mais, cansa e tem um risco pequeno de lesão."
+      }
+    },
     "loading": "Carregando a base...",
     "loadFailed": "Não foi possível carregar a base.",
     "actionFailed": "Algo deu errado. Tente de novo.",
@@ -2637,6 +2668,11 @@
     "scouting": "Olheiros"
   },
   "developmentScreen": {
+    "individual": {
+      "title": "Treino individual",
+      "hint": "Para onde vai a evolução do treino deste jogador. A intensidade vale para o elenco todo.",
+      "saveFailed": "Não foi possível salvar o treino individual."
+    },
     "explanation": {
       "developingImproving": "Jovem e evoluindo bem. Minutos regulares e boa forma estão acelerando o crescimento nas áreas principais.",
       "developing": "Ainda em fase de desenvolvimento. Precisa de minutos constantes e boas atuações para continuar evoluindo.",

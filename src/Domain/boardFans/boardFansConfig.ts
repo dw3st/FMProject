@@ -51,6 +51,15 @@ export const BOARD_FANS = {
     EXPECTATION_HOME_BONUS: 0.1,
     WIN_EXPECT: 0.6,
     LOSS_EXPECT: 0.6,
+    /**
+     * A favourite (e > 0) uses softer numbers (4.39, tester-report save analysis: a 94-point runner-up kept its
+     * fans at 37–40, and a big club winning everything topped out near 68): expected points per game
+     * FORM_EXPECTED_BASE + FAVOURITE_FORM_SPAN × e (2.0 at most), a win × (1 − FAVOURITE_WIN_EXPECT × e), a defeat
+     * × (1 + FAVOURITE_LOSS_EXPECT × e). The underdog side keeps the numbers above.
+     */
+    FAVOURITE_FORM_SPAN: 0.6,
+    FAVOURITE_WIN_EXPECT: 0.4,
+    FAVOURITE_LOSS_EXPECT: 0.35,
     DRAW_EXPECT_FANS: 1,
     DRAW_EXPECT_BOARD: 0.4,
     /** Board per result. */

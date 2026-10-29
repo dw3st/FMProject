@@ -85,6 +85,8 @@ export interface SaveMeta {
   activeLeagues?: LeagueSeasonState[];
   /** World year whose free-agent retirement draw already ran. */
   freeAgentsRetiredYear?: number;
+  /** Day logs up to this date are compacted (`compactDayLog`): the next day continues after it. */
+  dayLogsCompactedTo?: string;
   /** The world's start (start kit + safety nets, `/presimulate`) already ran: once per world. */
   presimulated?: true;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */

@@ -1,4 +1,3 @@
-import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { professionalismDpMult } from "@/Domain/personality/personality";
@@ -8,7 +7,7 @@ import { renewalContract } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import { roundAttr } from "@/Domain/attributes";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
-import { areaMultsOf, effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
+import { effectiveRating } from "@/Domain/staff/staff";
 import { dpWeightsFor } from "@/Domain/development/dpWeights";
 import { academyEffectsOf } from "@/Domain/facilities/facilities";
 import { applyTrainingDevelopment, GROWTH_DP_SCALE, type AreaMults } from "@/GameEngine/PlayerDevelopment";
@@ -257,10 +256,8 @@ export function processYouthRollover(args: {
   const { saveId, squad, year, nextSeasonEnd, isHuman } = args;
   if (isHuman) {
     const assistantRating = effectiveRating(squad, "assistant");
-    const devMult = staffEffectsOf(squad).devMult;
-    const areas = areaMultsOf(squad);
-    // The manager's Youth attribute (`.claude/rules/game/achievements.md`): every academy player is ≤ 21.
-    const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult * youthAttributeMult(squad.managerAttributes, p.age), areas));
+    // The academy trains day by day now (`youthTraining.ts`, 4.39): the rollover only ages it.
+    const aged = (squad.youth ?? []).map((p) => ({ ...p, age: p.age + 1, overallAvg: undefined }));
     // Reborn players may stay until the end of their x1.3 window (REBORN_UNTIL_AGE).
     const leaves = (p: RosterPlayer) => p.age >= (p.reborn ? RETIREMENT.REBORN_UNTIL_AGE : Y.RELEASE_AGE);
     const autoReleased = aged.filter(leaves);

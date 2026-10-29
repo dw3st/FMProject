@@ -10,6 +10,7 @@ import { RecentTrend } from "@/GameInterface/Development/RecentTrend";
 import { DevelopmentExplanation } from "@/GameInterface/Development/DevelopmentExplanation";
 import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarnings";
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
+import { IndividualTrainingPanel } from "@/GameInterface/Development/IndividualTrainingPanel";
 import { attributeText } from "@/GameInterface/attributeText";
 import type { AttributeId } from "@/Domain/attributes";
 import type { RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
@@ -143,7 +144,7 @@ function buildRecentForm(player: RosterPlayer): TrendDirection[] {
 
 export function DevelopmentScreen() {
   const { t } = useTranslation();
-  const { squad, loading: saveLoading, session } = useGameSave();
+  const { squad, loading: saveLoading, session, refresh } = useGameSave();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
 
   useEffect(() => {
@@ -231,6 +232,14 @@ export function DevelopmentScreen() {
                       developmentStatus: devStatus,
                     }}
                   />
+                  {session && (
+                    <IndividualTrainingPanel
+                      saveId={session.saveId}
+                      playerId={player.id}
+                      initial={squad.playerTraining?.[player.id]}
+                      onSaved={() => void refresh()}
+                    />
+                  )}
                   <RecentTrend trend={recentForm} />
                   <DevelopmentWarnings warnings={warnings} />
                 </div>

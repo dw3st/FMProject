@@ -513,6 +513,8 @@ export interface EngineMatchSim {
   weather?: WeatherOfMatch;
   /** Players each side may name (registration, `computeMatchSimulationLineups().pools`); absent = all. */
   pools?: { home?: Set<string>; away?: Set<string> };
+  /** An AI side's morale against a human club (`aiFormMorale`); absent = neutral. */
+  aiMorale?: { home?: number; away?: number };
 }
 
 function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: EngineMatchSim): EngineMatch {
@@ -543,6 +545,7 @@ function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: 
     {
       knockout: fixture.knockout === true,
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
+      ...(sim.aiMorale ? { morale: { A: sim.aiMorale.home, B: sim.aiMorale.away } } : {}),
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(sim.turf ? { turf: sim.turf } : {}),
       ...(sim.referee ? { referee: sim.referee } : {}),

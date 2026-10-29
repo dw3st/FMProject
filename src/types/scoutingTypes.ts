@@ -135,6 +135,8 @@ export interface ScoutingState {
    * `CHIEF_PLAN.HOLD_DAYS` (`src/Domain/scouting/chiefPlanner.ts`).
    */
   chiefHold?: Record<string, string>;
+  /** Players already announced as gems (newest last): a gem is news once per player. */
+  gemsAnnounced?: string[];
 }
 
 /** `missionId` of the reports the chief writes for his monthly picks (no mission behind them). */

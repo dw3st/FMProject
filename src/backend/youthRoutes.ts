@@ -7,6 +7,7 @@ import { humanRosterSize } from "@/backend/negotiationWorld";
 import { overallAvg } from "@/Domain/playerRating";
 import { wageFactorOf, playerWeeklyWage } from "@/Domain/finance/wages";
 import { potentialBand } from "@/Domain/youth/youth";
+import { DEFAULT_YOUTH_PLAN, parsePlayerTraining, parseYouthPlan, TRAINING_POSITIONS, youthTrendDelta } from "@/Domain/youth/youthTraining";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -24,9 +25,12 @@ async function loadHumanSquad(saveId: string, seatId: string) {
 function youthView(squad: Squad) {
   const youth = (squad.youth ?? []).map((player) => {
     const [lo, hi] = potentialBand(player);
-    return { player, overall: overallAvg(player), potential: { low: lo, high: hi } };
+    return { player, overall: overallAvg(player), potential: { low: lo, high: hi }, trend: youthTrendDelta(player) };
   });
-  return { youth, squadSize: squad.players.length, squadLimit: HUMAN_MAX_SQUAD };
+  return {
+    youth, squadSize: squad.players.length, squadLimit: HUMAN_MAX_SQUAD,
+    training: squad.youthTraining ?? DEFAULT_YOUTH_PLAN, positions: TRAINING_POSITIONS,
+  };
 }
 
 /**
@@ -42,6 +46,53 @@ export const youthRoutes = {
     const found = await loadHumanSquad(saveId, auth.seatId);
     if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
     return Response.json(youthView(found.squad));
+  },
+
+  /**
+   * `PUT { intensity, focus, players }` - the academy training plan (`youthTraining.ts`). Free in the lobby, like the
+   * tactics. 400 `invalidTraining`.
+   */
+  "/api/saves/:saveId/youth/training": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await req.json().catch(() => null);
+    return withSaveLock(saveId, async () => {
+      const found = await loadHumanSquad(saveId, auth.seatId);
+      if (!found) return Response.json({ error: "noClub" }, { status: 409 });
+      const plan = parseYouthPlan(body, new Set((found.squad.youth ?? []).map((p) => p.id)));
+      if (!plan) return Response.json({ error: "invalidTraining" }, { status: 400 });
+      const next: Squad = { ...found.squad, youthTraining: plan };
+      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      return Response.json(youthView(next));
+    });
+  },
+
+  /**
+   * `PUT { focus, position }` - a first-team player's individual training (4.39); `{}` (or nulls) clears it. Free in
+   * the lobby, like the tactics. 400 `invalidTraining`, 404 `notYourPlayer`.
+   */
+  "/api/saves/:saveId/players/:playerId/training": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const playerId = req.params.playerId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await req.json().catch(() => null);
+    return withSaveLock(saveId, async () => {
+      const found = await loadHumanSquad(saveId, auth.seatId);
+      if (!found) return Response.json({ error: "noClub" }, { status: 409 });
+      if (!found.squad.players.some((p) => p.id === playerId)) return Response.json({ error: "notYourPlayer" }, { status: 404 });
+      const entry = parsePlayerTraining(body);
+      if (!entry) return Response.json({ error: "invalidTraining" }, { status: 400 });
+      const ids = new Set(found.squad.players.map((p) => p.id));
+      const playerTraining = Object.fromEntries(Object.entries(found.squad.playerTraining ?? {}).filter(([id]) => ids.has(id) && id !== playerId));
+      if (entry.focus || entry.position) playerTraining[playerId] = entry;
+      const next: Squad = { ...found.squad, playerTraining };
+      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      return Response.json({ playerTraining });
+    });
   },
 
   /** `POST` - move an academy player into the squad (400 `squadFull` at `HUMAN_MAX_SQUAD`). New wage from the curve. */

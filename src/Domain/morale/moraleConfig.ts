@@ -9,6 +9,14 @@ export const MORALE = {
   MAX: 100,
   /** Start value and neutral point: the match effect is exactly 0 here. */
   NEUTRAL: 65,
+  /**
+   * AI morale against a human club (4.39, tester-report save analysis): no stored morale, computed from the last
+   * league results: NEUTRAL + AI_FORM_PER_POINT × (points − 1.5 × games), between AI_FORM_MIN and AI_FORM_MAX. A
+   * human club on a good run sits at 90+; the AI moves a little with its form, never that far.
+   */
+  AI_FORM_PER_POINT: 2,
+  AI_FORM_MIN: 50,
+  AI_FORM_MAX: 80,
 
   /** Bands (lower bound, inclusive): >= 80 very happy, 60–79 content, 40–59 neutral, 25–39 unhappy, < 25 furious. */
   BAND_MIN: { very_happy: 80, content: 60, neutral: 40, unhappy: 25 } as const,

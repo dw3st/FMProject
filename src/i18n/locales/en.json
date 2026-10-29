@@ -2364,6 +2364,37 @@
     }
   },
   "youth": {
+    "training": {
+      "title": "Academy training",
+      "intensity": "Intensity",
+      "groupFocus": "Group focus",
+      "focus": "Focus",
+      "position": "Training position",
+      "trend": "4 wk",
+      "group": "Group",
+      "natural": "Natural",
+      "saveFailed": "Could not save the academy training.",
+      "intensities": {
+        "light": "Light",
+        "normal": "Normal",
+        "heavy": "Heavy"
+      },
+      "foci": {
+        "balanced": "Balanced",
+        "technical": "Technique",
+        "physical": "Physical",
+        "passing": "Tactics",
+        "shooting": "Attack",
+        "defending": "Defence",
+        "goalkeeping": "Goalkeeping",
+        "setPieces": "Set pieces"
+      },
+      "effect": {
+        "light": "Light: slower growth, fresher for the youth games.",
+        "normal": "Normal: the standard growth pace.",
+        "heavy": "Heavy: faster growth, more tiring, a small injury risk."
+      }
+    },
     "loading": "Loading academy...",
     "loadFailed": "Could not load the academy.",
     "actionFailed": "Something went wrong. Try again.",
@@ -2637,6 +2668,11 @@
     "scouting": "Scouting"
   },
   "developmentScreen": {
+    "individual": {
+      "title": "Individual training",
+      "hint": "Where this player's training growth goes. The intensity is the whole squad's.",
+      "saveFailed": "Could not save the individual training."
+    },
     "explanation": {
       "developingImproving": "Young and developing well. Regular playing time and good form are accelerating growth in key areas.",
       "developing": "Still in the development phase. Needs consistent match time and good performances to continue progressing.",

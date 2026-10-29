@@ -1,3 +1,4 @@
+import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { compensationFee } from "@/Domain/managers/managerContract";
@@ -155,7 +156,7 @@ describe("jobs: sacking, offers, changing club", () => {
 
     const mine = (await saveService.getSquadById(meta.id, target))!;
     expect(mine.staff?.members.length ?? 0).toBeGreaterThan(8);
-    expect(mine.styleFamiliarity?.balanced).toBe(75);
+    expect(mine.styleFamiliarity?.balanced).toBe(FAMILIARITY.SAVED_STYLE_INITIAL);
     expect(mine.moraleClub).toEqual({ talks: [], promises: [] });
     expect(mine.players.every((p) => p.morale === 65)).toBe(true);
     expect(mine.financialTier).toBeUndefined();

@@ -323,3 +323,9 @@ Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da E
 - Testes: `src/Domain/scouting/chiefPlanner.test.ts`; `src/backend/scouting.routes.test.ts` ("the chief scout plans the
   missions (#157)": técnico não cria, o avanço do dia por uma segunda cria com o chefe, o cancelamento segura uma
   semana); `src/backend/responsibilities.routes.test.ts` (validação do `PUT`).
+
+## Joia uma vez por jogador (4.39)
+
+Análise do mundo dos testers: 58 avisos de joia em 28 semanas, 26 jogadores (R. Navarro 8 vezes), com notas C e D. A
+joia vira notícia uma vez por jogador (`ScoutingState.gemsAnnounced`, os últimos `GEMS_REMEMBERED` 300) e só com nota A
+ou B; o relatório continua marcando a joia como antes.

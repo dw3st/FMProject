@@ -122,3 +122,9 @@ format changed without a new version: saves from before have no members and leav
 
 ## Group advance (multiplayer part 3)
 In a `running` multi world only `src/backend/groupAdvance.ts` advances the day (in the background, one run per world, a deadline clock started by `startWorldClock()` in `src/index.ts`); `/advance-day` and `/advance-until` answer 409 `groupAdvance`. Pure rules in `src/Domain/groupAdvance/`, routes in `src/backend/groupAdvanceRoutes.ts`, push as the `world_progress` `ServerEvent`. See `.claude/rules/game/multiplayer.md`.
+
+## Day log compaction (4.39)
+Day logs older than `DAY_LOG_KEEP_FULL_DAYS` (60) are compacted by the day advance (`compactDayLog`,
+`src/Domain/advanceDay/dayLogCompaction.ts`): training/rest lines dropped (they never stored effects), matches of
+clubs without a seat reduced to the `compact` form (no player stats, ratings or development). At most 40 logs a day,
+from `SaveMeta.dayLogsCompactedTo` on. A two-season friends world had 170 MB of day logs (~130 MB a season).

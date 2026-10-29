@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   afterAward,
+  aiFormMorale,
   afterListedForSale,
   afterRenewal,
   answerTalk,
@@ -457,5 +458,14 @@ describe("season awards (`awards.md`)", () => {
     expect(s.players[0]!.moraleLog?.awards).toEqual(["league:l2:2027", "league:l3:2027", "league:l4:2027", "league:l5:2027"]);
     // No morale award → nothing recorded.
     expect(afterAward(sq, "a", ["best_manager"], "league:x:2027")).toBe(sq);
+  });
+});
+
+describe("aiFormMorale (4.39)", () => {
+  test("neutral without form, moves with the last results, between 50 and 80", () => {
+    expect(aiFormMorale(undefined)).toBe(MORALE.NEUTRAL);
+    expect(aiFormMorale(["W", "D", "L", "W", "L"])).toBe(MORALE.NEUTRAL + 2 * (7 - 7.5));
+    expect(aiFormMorale(["W", "W", "W", "W", "W"])).toBe(MORALE.AI_FORM_MAX);
+    expect(aiFormMorale(["L", "L", "L", "L", "L"])).toBe(MORALE.AI_FORM_MIN);
   });
 });

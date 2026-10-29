@@ -430,6 +430,8 @@ export function MatchScreen() {
           matchDay?: { date: string; fixtureId: string } | null;
           /** Against another seat with `h2h=1`: the server runs this match (multiplayer part 7). */
           h2h?: boolean;
+          /** An AI opponent's morale from its form (absent: own / neutral). */
+          oppMorale?: number;
         };
       })
       .then((data) => {
@@ -522,7 +524,8 @@ export function MatchScreen() {
         const opponentPlayers = eligibleLivePlayers(data.opponentSquad?.players ?? data.mySquad.players, matchDate, oppOk);
         // Morale (`.claude/rules/game/morale.md`): every player at his own stored value — the AI side
         // stores none (neutral). No team override from another screen may leak into a real match.
-        const oppMorale = data.opponentSquad ? "own" as const : "neutral" as const;
+        // An AI opponent plays at its form's morale (`aiFormMorale`, from match-setup).
+        const oppMorale = typeof data.oppMorale === "number" ? data.oppMorale : data.opponentSquad ? "own" as const : "neutral" as const;
         // Fresh match: the shared builder (`src/Domain/match/liveMatchSetup.ts`, also the H2H worker's). The user is
         // side A; player instructions and man-marking only for his side (the AI side never has any).
         // A resumed match keeps its state; only the per-team engine configs are re-applied.

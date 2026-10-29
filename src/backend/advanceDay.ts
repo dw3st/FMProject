@@ -10,7 +10,7 @@ import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerB
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard, applyPressEffect } from "@/Domain/boardFans/boardFans";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
-import { afterManagerComplaint } from "@/Domain/morale/morale";
+import { afterManagerComplaint, aiFormMorale } from "@/Domain/morale/morale";
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
@@ -80,6 +80,7 @@ import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/
 import { cancelScoutMissions, rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { addDays, addOneDay } from "@/Domain/dates";
+import { compactDayLog, DAY_LOG_COMPACT_LOOKBACK_DAYS, DAY_LOG_COMPACT_PER_DAY, DAY_LOG_KEEP_FULL_DAYS } from "@/Domain/advanceDay/dayLogCompaction";
 import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
 import {
   buildMatchEvent,
@@ -571,6 +572,19 @@ export async function advanceOneDay(
       return r ? engineReferee(r, await fixtureHasVar(f)) : undefined;
     };
 
+    // An AI club's morale against a human club: its league form before today's games (`aiFormMorale`).
+    const formByLeague = new Map<string, Map<string, StandingRow["form"]>>();
+    const aiMoraleOf = async (squadId: string): Promise<number> => {
+      const league = (await saveService.getSquadIndex(saveId)).byId(squadId)?.leagueSlug;
+      if (!league) return aiFormMorale(undefined);
+      let forms = formByLeague.get(league);
+      if (!forms) {
+        forms = new Map(((await saveService.getLeagueStandings(saveId, league)) ?? []).map((r) => [r.squadId, r.form]));
+        formByLeague.set(league, forms);
+      }
+      return aiFormMorale(forms.get(squadId));
+    };
+
     // Group updates per league for round file writes
     const roundUpdates = new Map<string, Map<number, Fixture[]>>();
 
@@ -778,8 +792,12 @@ export async function advanceOneDay(
             const referee = await refereeOf(fixture);
             // Weather of the match (`.claude/rules/game/weather.md`): a closed roof plays it neutral.
             const weather = matchWeatherOf(fixture, homeSquad);
+            // The AI side against one human club plays at its form's morale (`aiFormMorale`, 4.39).
+            const aiMorale = homeSeat && !awaySeat
+              ? { away: await aiMoraleOf(fixture.away) }
+              : awaySeat && !homeSeat ? { home: await aiMoraleOf(fixture.home) } : undefined;
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather })
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
             registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
@@ -3295,6 +3313,25 @@ export async function advanceOneDay(
     // World keys of the day; each seat's keys go into its `DaySeat.patch`.
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
+
+    // Old day logs lose the detail no screen reads any more (training lines, AI match player stats): the save no
+    // longer grows ~130 MB a season (tester-report save analysis).
+    {
+      const target = addDays(currentDate, -DAY_LOG_KEEP_FULL_DAYS);
+      let d = world.dayLogsCompactedTo ? addDays(world.dayLogsCompactedTo, 1) : addDays(currentDate, -DAY_LOG_COMPACT_LOOKBACK_DAYS);
+      let done = 0, last: string | undefined;
+      const humans = humanClubSet(daySeats);
+      while (d <= target && done < DAY_LOG_COMPACT_PER_DAY) {
+        const log = await saveService.getDayLog(saveId, d);
+        if (log) {
+          const compacted = compactDayLog(log, humans);
+          if (compacted) { await saveService.writeDayLog(saveId, d, compacted); done += 1; }
+        }
+        last = d;
+        d = addDays(d, 1);
+      }
+      if (last) metaPatch.dayLogsCompactedTo = last;
+    }
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
 

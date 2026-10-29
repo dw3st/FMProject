@@ -66,8 +66,8 @@ export async function listStartKits(): Promise<string[]> {
 export function stripHumanOnly(squad: Squad): Squad {
   // Morale too (`.claude/rules/game/morale.md`): the kit carries no club's morale.
   const hasMorale = !!squad.moraleClub || squad.players.some((p) => p.morale !== undefined || p.moraleLog || p.squadStatus);
-  if (!squad.staff && !squad.styleFamiliarity && !squad.facilities && !squad.managerAttributes && !hasMorale) return squad;
-  const { staff: _staff, styleFamiliarity: _fam, facilities: _fac, managerAttributes: _attrs, ...rest } = squad;
+  if (!squad.staff && !squad.styleFamiliarity && !squad.facilities && !squad.managerAttributes && !squad.youthTraining && !squad.playerTraining && !hasMorale) return squad;
+  const { staff: _staff, styleFamiliarity: _fam, facilities: _fac, managerAttributes: _attrs, youthTraining: _yt, playerTraining: _pt, ...rest } = squad;
   return hasMorale ? stripClubMorale(rest) : rest;
 }
 

@@ -137,3 +137,14 @@ Os jovens da base jogam o sub-19 e o sub-21 do país (`.claude/rules/game/youth-
 fôlego e carga. Por isso a base recupera fôlego todo dia pela curva de descanso (`restAcademy`, sem DP de treino); o
 treino anual da virada (`developYouthSeason`) não mudou. A aba Base do Elenco mostra os jogos e gols de base e o bloco de
 convocação.
+
+## Treino da base (4.39)
+
+Spec `docs/superpowers/specs/2026-10-28-youth-training-design.md`. A base do clube do jogador treina nos dias de treino
+do clube (`trainAcademy`, `dailyTraining.ts`) com o plano `Squad.youthTraining` (intensidade leve/normal/pesado = DP ×
+0,7/1/1,3 e fôlego −1/−3/−6; foco do grupo; por jovem foco e posição de treino, `youthTraining.ts`). Quem jogou base
+no dia, está lesionado ou com fôlego < 40 descansa. A virada só envelhece a base (as 240 sessões de uma vez saíram).
+Ritmo do padrão = o de antes: `bun scripts/youth-training-pace.ts` (16 anos, um ano: antes +0,631, normal +0,631,
+leve +0,462, pesado +0,800, foco técnica leva o drible de 4 a 6,1). Toda segunda o overall vai para `youthTrend`; a
+tabela da Base mostra a variação de 4 semanas. Rotas: `GET /youth` traz `training`, `positions` e `trend`;
+`PUT /api/saves/:id/youth/training` (livre no lobby, como a tática). Some no `releaseHumanClub` e nos kits.

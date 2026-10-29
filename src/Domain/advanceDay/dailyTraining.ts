@@ -2,7 +2,10 @@ import { attributeBoost, youthAttributeMult } from "@/Domain/achievements/manage
 import { moraleDpMult } from "@/Domain/morale/morale";
 import { personalDpMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
-import type { Squad } from "@/types/playerTypes";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import type { AreaMults } from "@/GameEngine/PlayerDevelopment";
+import { professionalismDpMult } from "@/Domain/personality/personality";
+import { DEFAULT_YOUTH_PLAN, planDpWeights, trainYouthSession, withYouthTrend, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
 import type { TrainingEffect, TrainingEvent } from "@/types/dayLogTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import {
@@ -237,7 +240,7 @@ export function buildTrainingEvent(
           ),
         }
       : {}),
-    ...(squad.youth ? { youth: restAcademy(squad.youth, date, recoveryMult, skip) } : {}),
+    ...(squad.youth ? { youth: trainAcademy(squad, date, recoveryMult, injuryMult, staffFx.injuryDurationMult * ground.injuryDurationMult, areas, rng, skip) } : {}),
     players: squad.players.map((orig) => {
       const p = trainedById.get(String(orig.id));
       if (!p) return orig;
@@ -249,7 +252,11 @@ export function buildTrainingEvent(
       let next = p;
       if (trained) {
         const { updatedPlayer, levelChanges, dpGained } = applyTrainingDevelopment(
-          p, policy.intensity, dpWeightsFor(p),
+          p, policy.intensity,
+          // Individual training (4.39): the player's focus and training position, else his natural weights.
+          squad.playerTraining?.[String(p.id)]
+            ? planDpWeights(p, squad.playerTraining[String(p.id)]!.focus ?? "balanced", squad.playerTraining[String(p.id)]!.position)
+            : dpWeightsFor(p),
           devMult * ground.devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p))
             * youthAttributeMult(squad.managerAttributes, p.age),
           areas,
@@ -287,4 +294,39 @@ export function buildTrainingEvent(
   };
 
   return { event: { kind: "training", squadId, effects }, updatedSquad, healedPlayerIds, newInjuries };
+}
+
+/**
+ * The academy's training day (`docs/superpowers/specs/2026-10-28-youth-training-design.md`): every youngster who did not
+ * play a youth game today, is fit enough and not injured trains one session of the club's plan (`Squad.youthTraining`);
+ * the others recover like on a rest day. Heavy sessions carry the first team's heavy-training injury chance.
+ */
+function trainAcademy(
+  squad: Squad,
+  date: string,
+  recoveryMult: number,
+  injuryMult: number,
+  injuryDurationMult: number,
+  areas: AreaMults,
+  rng: () => number,
+  skip?: ReadonlySet<string>,
+): RosterPlayer[] {
+  const plan = squad.youthTraining ?? DEFAULT_YOUTH_PLAN;
+  const devMult = staffEffectsOf(squad).devMult;
+  const resting = new Set<string>();
+  const trained = (squad.youth ?? []).map((orig) => {
+    if (skip?.has(String(orig.id))) return orig;
+    const p = ensureSeasonLog(clearHealed(orig, date));
+    if (isInjured(p, date) || (p.seasonLog?.fitness ?? 0) < YOUTH_TRAINING.MIN_FITNESS) { resting.add(String(p.id)); return p; }
+    const mult = devMult * youthAttributeMult(squad.managerAttributes, p.age) * rebornDpMult(p) * professionalismDpMult(p);
+    let next = withYouthTrend(trainYouthSession(p, plan, mult, areas), date);
+    if (plan.intensity === "heavy" && rng() < trainingInjuryChance("heavy", injuryMult)) {
+      const severity = rollSeverity(rng);
+      next = { ...next, injury: { severity, returnDate: injuryReturnDate(date, severity, rng, injuryDurationMult) } };
+    }
+    return next;
+  });
+  const rested = restAcademy(trained.filter((p) => resting.has(String(p.id))), date, recoveryMult);
+  const byId = new Map(rested.map((p) => [String(p.id), p]));
+  return trained.map((p) => byId.get(String(p.id)) ?? p);
 }

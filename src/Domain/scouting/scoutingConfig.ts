@@ -55,6 +55,8 @@ export const SCOUTING = {
   GEM_MAX_AGE: 20,
   GEM_MARGIN: 0.3,
   GEMS_PER_WEEK: 2,
+  /** Players already announced as gems, remembered so each is news once (the newest kept). */
+  GEMS_REMEMBERED: 300,
   RECOMMENDATIONS: 3,
   RECOMMEND_MIN_K: 20,
   /** A pick with a report younger than this (days) reuses it; otherwise the chief writes one. */

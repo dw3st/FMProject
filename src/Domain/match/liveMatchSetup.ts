@@ -40,8 +40,11 @@ export interface LiveSideInput {
   tactics: LiveSideTactics;
   /** `staffEffectsOf(squad).injuryMult`; absent = no injury multiplier on this side at all (no own squad). */
   staffInjuryMult?: number;
-  /** "own": each player at his stored morale; "neutral": the team at `MORALE.NEUTRAL` (no own squad). */
-  morale: "own" | "neutral";
+  /**
+   * "own": each player at his stored morale; "neutral": the team at `MORALE.NEUTRAL` (no own squad); a number: the
+   * whole team at it (an AI club against a human one, `aiFormMorale`).
+   */
+  morale: "own" | "neutral" | number;
   /** A human manager: slot instructions, man-marking, set-piece takers, manual injury subs. */
   human: boolean;
   slotInstructions?: (SlotInstruction | null)[];
@@ -83,7 +86,10 @@ export function applyLiveSideConfigs(sides: Record<TeamId, Pick<LiveSideInput, "
     applyTeamTacticsConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity);
     applyTeamAttackConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity);
   }
-  for (const team of SIDES) setTeamMoraleOverride(team, sides[team].morale === "neutral" ? MORALE.NEUTRAL : undefined);
+  for (const team of SIDES) {
+    const m = sides[team].morale;
+    setTeamMoraleOverride(team, m === "neutral" ? MORALE.NEUTRAL : typeof m === "number" ? m : undefined);
+  }
 }
 
 /**

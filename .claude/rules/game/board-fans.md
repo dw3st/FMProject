@@ -154,3 +154,20 @@ As respostas das coletivas, as promessas cumpridas ou quebradas e ignorar um con
 ## Assentos (Etapa 43)
 
 Diretoria, torcida, meta e ultimato são do assento (`seat.json` → `board`); cada clube humano tem os seus. Ver `.claude/rules/game/multiplayer.md`.
+
+## Torcida do favorito (4.39)
+
+Análise do mundo dos testers: o Barça vice com 94 pontos ficou com a torcida em 37–40, e na simulação um clube grande
+que ganha quase tudo terminava perto de 68. Com expectativa e > 0 (favorito) valem números próprios: pontos esperados
+por jogo 1,4 + 0,6 e (2,0 no máximo, antes 2,5), vitória × (1 − 0,4 e), derrota × (1 + 0,35 e)
+(`FAVOURITE_FORM_SPAN`, `FAVOURITE_WIN_EXPECT`, `FAVOURITE_LOSS_EXPECT`). O azarão segue como antes.
+`bun scripts/fans-favourite-sim.ts [temporadas]` (50 jogos, deriva semanal), fim da temporada:
+
+| Caso | antes | depois |
+|---|---|---|
+| Favorito campeão (75/15/10) | 74 | 84 |
+| Favorito em 3º (62/15/23) | 49 | 65 |
+| Favorito no meio da tabela (45/25/30) | 27 | 41 |
+| Grande favorito em 3º (e = 1) | 35 | 57 |
+| Grande favorito campeão (78/14/8, e = 1) | 68 | 83 |
+| Clube médio / azarão | 59 / 67 | 61 / 67 |
