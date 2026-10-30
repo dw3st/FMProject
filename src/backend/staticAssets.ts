@@ -75,6 +75,9 @@ export const GAME_ART_FILES: Record<string, string> = {
   "frames/frame-silver.svg": "image/svg+xml",
   "frames/frame-gold.svg": "image/svg+xml",
   "frames/frame-legend.svg": "image/svg+xml",
+  // Facility items under works (4.41.20): painted construction overlays.
+  "facilities-works/works-outdoor.webp": "image/webp",
+  "facilities-works/works-indoor.webp": "image/webp",
   // Art phase 9: the rest of the pack.
   "ball/ball-atlas.json": "application/json",
   "ball/ball-atlas.png": "image/png",

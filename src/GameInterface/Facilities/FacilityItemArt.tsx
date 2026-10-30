@@ -1,4 +1,4 @@
-import { paintedFacility } from "@/Domain/art/paintedFaces";
+import { gameArtUrl, newVisualOn, paintedFacility } from "@/Domain/art/paintedFaces";
 import type { ReactNode } from "react";
 import type { FacilityItemId } from "@/types/facilityTypes";
 
@@ -14,6 +14,18 @@ const ACCENT: Record<ArtTone, { fill: string; stroke: string; solid: string }> =
 /** Neutral line work of every drawing. */
 const LINE = "fill-none stroke-foreground/45";
 
+/** Items inside a building: their works overlay has scaffolding on both sides and no tower crane. */
+const INDOOR: ReadonlySet<FacilityItemId> = new Set(["gym", "pool", "physio", "canteen"]);
+
+/**
+ * Painted construction overlay (scaffolding, safety netting, barriers, work lamp; a tower crane outdoors) laid over
+ * the painted facility while works run (4.41.20, `data_process/assets/facility_works.py`). Null without the new visual.
+ */
+export function facilityWorksOverlay(id: FacilityItemId): string | null {
+  if (!newVisualOn()) return null;
+  return gameArtUrl(`facilities-works/works-${INDOOR.has(id) ? "indoor" : "outdoor"}.webp`);
+}
+
 /**
  * Minimal line drawing of one facility item (#132): a 160×100 SVG in the theme colours, the accent
  * following the condition, hatched when the item is closed. Decorative (`aria-hidden`): the card
@@ -27,25 +39,27 @@ export function FacilityItemArt({
   level?: number;
   tone: ArtTone;
   closed?: boolean;
-  /** Works under way on the item: a small crane in the corner. */
+  /** Works under way on the item: the painted construction overlay (new visual), else a small crane in the corner. */
   works?: boolean;
   className?: string;
 }) {
   const a = ACCENT[tone];
   const hatch = `fac-hatch-${id}`;
   const painted = level !== undefined ? paintedFacility(id, level) : null;
+  const worksArt = works && painted ? facilityWorksOverlay(id) : null;
   if (painted) {
     return (
       <div className={`relative w-full aspect-[16/10] overflow-hidden rounded-[10px] bg-secondary/30 ${className}`} aria-hidden>
-        <img src={painted} alt="" loading="lazy" className={`absolute inset-0 w-full h-full object-cover ${closed ? "grayscale opacity-60" : ""}`} />
-        {(works || closed) && (
+        <img src={painted} alt="" loading="lazy" className={`absolute inset-0 w-full h-full object-cover ${closed ? "grayscale opacity-60" : works && worksArt ? "brightness-75" : ""}`} />
+        {works && worksArt && <img src={worksArt} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
+        {((works && !worksArt) || closed) && (
           <svg viewBox="0 0 160 100" className="absolute inset-0 w-full h-full">
             <defs>
               <pattern id={hatch} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
                 <line x1="0" y1="0" x2="0" y2="8" className="stroke-destructive/60" strokeWidth="3" />
               </pattern>
             </defs>
-            {works && <Crane />}
+            {works && !worksArt && <Crane />}
             {closed && <rect x="2" y="2" width="156" height="96" rx="10" fill={`url(#${hatch})`} />}
           </svg>
         )}
