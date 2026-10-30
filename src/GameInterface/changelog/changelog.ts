@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.14",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Rostos pintados também para os técnicos dos outros clubes, a comissão técnica e os árbitros.",
+        en: "Painted faces for the other clubs' managers, the coaching staff and the referees too.",
+      },
+    ],
+  },
+  {
     version: "4.41.13",
     date: "2026-10-30",
     items: [

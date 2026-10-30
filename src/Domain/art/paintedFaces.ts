@@ -124,6 +124,11 @@ export function coachCombo(face: ManagerFace): string | null {
   return `${face.skin}-${face.hairColor}-${face.hairLength}-${face.beard}-${face.glasses ? "g" : "n"}`;
 }
 
+/** Painted coach face standing for a person the game only draws (AI manager, staff, generated referee), or null. */
+export function paintedPersonFace(combo: string): string | null {
+  return painted.coaches.has(combo) ? artUrl(`faces/coaches/${combo}.webp`) : null;
+}
+
 /** Painted webp of the human manager's avatar, or null. */
 export function paintedCoachFace(face: ManagerFace): string | null {
   const combo = coachCombo(face);

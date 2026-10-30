@@ -6,7 +6,8 @@
  * whenever the face output changes (facesjs upgrade, new crop, different appearance mix, new `faceTraits.json`).
  */
 import { managerFaceQuery, type ManagerFace } from "@/Domain/faces/managerFace";
-import { paintedCoachFace, paintedPlayerFace, paintedRefereeFace } from "@/Domain/art/paintedFaces";
+import { paintedCoachFace, paintedPersonFace, paintedPlayerFace, paintedRefereeFace } from "@/Domain/art/paintedFaces";
+import { personCombo } from "@/Domain/art/personCombo";
 
 export const FACE_VERSION = 7;
 
@@ -67,7 +68,11 @@ export function personFaceUrl(
   nationality?: string | null,
   clubColors?: readonly string[],
   age?: number | null,
+  female = false,
 ): string {
+  // The painted coach faces are men's: a woman keeps the drawn face.
+  const painted = female ? null : paintedPersonFace(personCombo(personId, nationality, age));
+  if (painted) return painted;
   const params = new URLSearchParams();
   params.set("v", String(PERSON_FACE_VERSION));
   if (nationality) params.set("nat", nationality.slice(0, MAX_FACE_NATIONALITY));
@@ -113,6 +118,6 @@ export const REFEREE_FACE_COLORS = ["#111418", "#111418", "#f5d020"] as const;
 export function refereeFaceUrl(id: string, country?: string | null, age?: number | null, female = false): string {
   const painted = paintedRefereeFace(id);
   if (painted) return painted;
-  const url = personFaceUrl(id, country, REFEREE_FACE_COLORS, age);
+  const url = personFaceUrl(id, country, REFEREE_FACE_COLORS, age, female);
   return female ? `${url}&g=f` : url;
 }

@@ -199,3 +199,9 @@ para o repositório nem para o jogo).
 - `createPage` busca a lista antes do primeiro render (no máximo 1,5 s); `faceUrl`, `managerAvatarUrl` e `refereeFaceUrl`
   usam o webp quando o id está na lista, senão o SVG de sempre. Avatar com algum traço "Sorteado" fica no SVG.
 - Testes: `bun test src/Domain/art src/backend/artAssets.test.ts`.
+
+### Rostos pintados de quem só tem rosto gerado (4.41.14)
+
+Técnicos da IA, comissão e árbitros gerados (homens) usam um rosto pintado do avatar (`faces/coaches/<combo>.webp`):
+`personCombo(id, nacionalidade, idade)` (`src/Domain/art/personCombo.ts`) sorteia a combinação pelo id, a pele pela região
+da nacionalidade e cabelo, careca e óculos pela idade; `personFaceUrl` usa o pintado quando existe. Árbitras ficam no SVG.
