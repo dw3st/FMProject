@@ -110,7 +110,7 @@ describe("match crowd", () => {
     ] as unknown as ManagerRecord[];
     const seats = [{ seatId: "seat2", seat: { clubId: "opp", manager: { name: "B", nationalityIso: "br", face } } }] as unknown as { seatId: string; seat: SeatState }[];
     const m = matchManagers(meta, records, "opp", () => null, seats);
-    expect(m.opponent).toEqual({ id: "seat:seat2", face, nationality: "Brazil" });
+    expect(m.opponent).toEqual({ id: "seat:seat2", face, nationality: "Brazil", name: "B" });
   });
 });
 

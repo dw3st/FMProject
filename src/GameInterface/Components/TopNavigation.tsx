@@ -4,8 +4,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { Icon, type IconName, ArtIcon } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
-import { useCurrentUser } from "@/GameInterface/AuthGate";
-import { ReportModal } from "@/GameInterface/Components/ReportModal";
+import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import type { LeagueData } from "@/types/playerTypes";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { compactTabsFor, type TabsMode } from "@/GameInterface/Components/compactTabs";
@@ -27,8 +26,6 @@ const NAV_ICON = 18;
  */
 const TAB_GAP = 14;
 const TAB_GAP_TIGHT = 8;
-const ICON_GAP = 4;
-const ICON_GAP_TIGHT = 2;
 
 const navItems: NavItem[] = [
   { icon: "dashboard", tone: "text-primary", labelKey: "nav.dashboard", href: "/dashboard" },
@@ -65,9 +62,9 @@ function formatTopBarDate(date: string, lang: string): string {
 }
 
 /**
- * Tabs show their labels while the whole labelled row fits the space between the logo and the day
- * block; below that they collapse to icons (label kept for screen readers and as a tooltip), so
- * the bar never overflows the frame at any width (#65). The labelled row is measured on an
+ * Tabs are an icon above a small label (tester report, 4.41.20; before, the bar fell back to bare icons). While the
+ * whole row fits the space between the logo and the day block the labels are whole; below that each label is cut to a
+ * share of the bar (full name in the tooltip), so the bar never overflows the frame at any width (#65). The labelled row is measured on an
  * invisible copy (`measureRef`), so the answer never depends on the mode currently shown, and it is
  * measured again on every resize of the bar or of the copy (fonts, language), when the fonts
  * arrive, when the page becomes visible again and when it comes back from the back/forward cache
@@ -102,8 +99,7 @@ function useCompactTabs(tabCount: number, settled: boolean) {
     const fonts = typeof document !== "undefined" ? document.fonts : undefined;
     const check = () => {
       if (!alive || fonts?.status === "loading") return;
-      const tightSaving =
-        Math.max(0, tabCount - 1) * (TAB_GAP - TAB_GAP_TIGHT) + tabCount * (ICON_GAP - ICON_GAP_TIGHT);
+      const tightSaving = Math.max(0, tabCount - 1) * (TAB_GAP - TAB_GAP_TIGHT);
       const next = compactTabsFor(measure.offsetWidth, outer.clientWidth, tightSaving);
       if (next === null) return;
       setMode(next);
@@ -151,13 +147,11 @@ export function TopNavigation({
 
   const restDaySet = useMemo(() => new Set(restDays), [restDays]);
 
-  const currentUser = useCurrentUser();
-  const isTester = !!currentUser?.isTester;
-  const [reportOpen, setReportOpen] = useState(false);
   // The day block has its real width once the save is in (or there is no save to wait for).
   const settled = !session || !!currentDate || unemployed;
   const { outerRef, measureRef, mode } = useCompactTabs(navItems.length, settled);
-  const compact = mode === "icons";
+  // Not enough room even with the tight gaps: the labels stay, each tab an equal share of the bar, cut with an ellipsis (title = full name).
+  const narrow = mode === "icons";
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -189,8 +183,9 @@ export function TopNavigation({
     dayTitle = t("weekCalendar.switchToTraining");
   }
 
-  const tabClass = (active: boolean, tight = false) =>
-    `flex items-center ${tight ? "gap-0.5" : "gap-1"} border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
+  // Icon above a small label (the art preview's bar): the labels always show.
+  const tabClass = (active: boolean) =>
+    `flex flex-col items-center justify-center gap-1 min-w-0 border-b-2 bg-transparent px-0 font-display font-bold uppercase tracking-[0.08em] text-[13px] leading-none no-underline whitespace-nowrap transition-colors ${
       active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
     }`;
   const dayButton =
@@ -223,7 +218,7 @@ export function TopNavigation({
               </span>
             ))}
           </div>
-          <div className={`flex w-max items-stretch ${mode === "tight" ? "gap-2" : "gap-3.5"}`}>
+          <div className={`flex items-stretch ${narrow ? "w-full gap-1.5" : `w-max ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
             {navItems.map((item) => {
               const label = t(item.labelKey);
               const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
@@ -237,12 +232,12 @@ export function TopNavigation({
                 <a
                   key={item.labelKey}
                   href={href}
-                  className={tabClass(active, mode === "tight")}
+                  className={`${tabClass(active)} ${narrow ? "flex-1 basis-0" : ""}`}
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
                   <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
-                  <span className={compact ? "sr-only" : undefined}>{label}</span>
+                  <span className={narrow ? "block w-full truncate text-center tracking-normal" : undefined}>{label}</span>
                 </a>
               );
             })}
@@ -252,17 +247,7 @@ export function TopNavigation({
         {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
             costs no divider of its own), today's date and type, then the day controls (#65). */}
         <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
-          {isTester && (
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              title={t("nav.report")}
-              aria-label={t("nav.report")}
-              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-destructive cursor-pointer hover:bg-muted/50"
-            >
-              <Icon name="report" size={NAV_ICON} />
-            </button>
-          )}
+          <TesterReportButton />
           {save?.mode === "multi" && (
             <a
               href="/world"
@@ -323,10 +308,6 @@ export function TopNavigation({
           )}
         </div>
       </div>
-
-      {isTester && (
-        <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
-      )}
     </header>
   );
 }

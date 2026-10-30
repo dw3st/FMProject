@@ -1038,7 +1038,9 @@
     "effects": {
       "save": "DEFESA",
       "wide": "PRA FORA",
-      "offside": "IMPEDIMENTO"
+      "offside": "IMPEDIMENTO",
+      "cornerSave": "DEFESA · ESCANTEIO",
+      "cornerDeflect": "DESVIO · ESCANTEIO"
     },
     "playerEvents": {
       "banRisk": "Pendurado: o próximo amarelo suspende",
@@ -1122,7 +1124,10 @@
         "goalDisallowed": "Gol anulado — {{player}}",
         "managerYellow": "Amarelo para o técnico",
         "managerRed": "Técnico expulso"
-      }
+      },
+      "manager": "Técnico: {{name}}",
+      "managerNoName": "Técnico",
+      "managers": "Técnicos"
     },
     "led": {
       "goal": "GOL · {{name}} {{minute}}'"
@@ -1188,7 +1193,8 @@
       "figures": "Bonecos",
       "figuresOn": "Jogadores como bonecos (clique para discos com o rosto)",
       "figuresOff": "Jogadores como discos com o rosto (clique para bonecos)"
-    }
+    },
+    "replaySkip": "Pular"
   },
   "broadcast": {
     "teamLabel": "Time {{team}}",
@@ -1379,7 +1385,20 @@
       "Impedimento — {{name}} saiu cedo demais pelo {{team}}.",
       "Bandeira do auxiliar — {{name}} além do último zagueiro.",
       "{{name}} flagrado em impedimento pelo {{team}}."
-    ]
+    ],
+    "corner": {
+      "save": [
+        "O goleiro espalma para escanteio. Escanteio para {{team}}.",
+        "Defesa e a bola sai pela linha de fundo. Escanteio para {{team}}."
+      ],
+      "deflection": [
+        "Desvio na zaga e a bola sai. Escanteio para {{team}}.",
+        "A bola toca no zagueiro e sai. Escanteio para {{team}}."
+      ],
+      "other": [
+        "Escanteio para {{team}}."
+      ]
+    }
   },
   "transfers": {
     "staffTab": "Comissão",

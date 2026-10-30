@@ -204,6 +204,12 @@ gameBus.on('shotResolved', e => {
   broadcastLine(pickT('broadcast.shotSaved', { name }));
 });
 
+// A shot saved or deflected behind: the line after "wide" / "saved" says it went for a corner.
+gameBus.on('cornerAwarded', e => {
+  const kind = e.source === 'save' ? 'save' : e.source === 'deflection' ? 'deflection' : 'other';
+  broadcastLine(pickT(`broadcast.corner.${kind}`, { team: teamLabel(e.team) }));
+});
+
 gameBus.on('goalScored', e => {
   const scorer = pl(e.scorerId);
   const name = scorer?.name ?? String(e.scorerId);

@@ -1038,7 +1038,9 @@
     "effects": {
       "save": "SAVE",
       "wide": "WIDE",
-      "offside": "OFFSIDE"
+      "offside": "OFFSIDE",
+      "cornerSave": "SAVED · CORNER",
+      "cornerDeflect": "DEFLECTED · CORNER"
     },
     "playerEvents": {
       "banRisk": "One yellow from a ban",
@@ -1122,7 +1124,10 @@
         "goalDisallowed": "Goal ruled out — {{player}}",
         "managerYellow": "Yellow for the manager",
         "managerRed": "Manager sent off"
-      }
+      },
+      "manager": "Manager: {{name}}",
+      "managerNoName": "Manager",
+      "managers": "Managers"
     },
     "led": {
       "goal": "GOAL · {{name}} {{minute}}'"
@@ -1188,7 +1193,8 @@
       "figures": "Figures",
       "figuresOn": "Players drawn as figures (click for discs with the face)",
       "figuresOff": "Players drawn as discs with the face (click for figures)"
-    }
+    },
+    "replaySkip": "Skip"
   },
   "broadcast": {
     "teamLabel": "Team {{team}}",
@@ -1379,7 +1385,20 @@
       "Offside — {{name}} went too early for {{team}}.",
       "The assistant's flag — {{name}} beyond the last man.",
       "{{name}} caught offside in {{team}} colours."
-    ]
+    ],
+    "corner": {
+      "save": [
+        "Saved and pushed behind. Corner to {{team}}.",
+        "The keeper turns it round the post. Corner to {{team}}."
+      ],
+      "deflection": [
+        "Deflected behind. Corner to {{team}}.",
+        "It takes a touch off a defender. Corner to {{team}}."
+      ],
+      "other": [
+        "Corner to {{team}}."
+      ]
+    }
   },
   "transfers": {
     "staffTab": "Staff",

@@ -4,6 +4,7 @@ import { RefereeBadge, type RefereeBadgeData } from "@/GameInterface/Referees/Re
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import type { TeamMeta } from "@/GameInterface/ScoreBar";
 import { Icon } from "@/GameInterface/Icons";
 import { MatchFeedWindow } from "@/GameInterface/Components/MatchFeedWindow";
@@ -64,6 +65,20 @@ function StatRow({ label, a, b }: { label: string; a: string | number; b: string
   );
 }
 
+export interface SummaryManager { url: string; name: string | null }
+
+function ManagerFace({ manager }: { manager: SummaryManager | null }) {
+  const { t } = useTranslation();
+  if (!manager) return <span className="w-8 h-8 shrink-0" aria-hidden="true" />;
+  const label = manager.name ? t("match.summary.manager", { name: manager.name }) : t("match.summary.managerNoName");
+  return (
+    <span title={label} className="flex shrink-0">
+      <FaceImage src={manager.url} size={32} fallback={manager.name ? playerInitials(manager.name) : "?"} ringClassName="border border-border" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 function TeamCrest({ team, fallback }: { team?: TeamMeta; fallback: string }) {
   const name = team?.name ?? fallback;
   return (
@@ -115,6 +130,7 @@ export function MatchSummaryPanel({
   feed,
   extra,
   referee,
+  managers,
 }: {
   /** Displayed left (home) and right sides: crest, colours and name (tooltip / screen readers). */
   teamA?: TeamMeta;
@@ -128,6 +144,8 @@ export function MatchSummaryPanel({
   extra?: ReactNode;
   /** Referee of the match (`referees.md`): face, name and flag under the team names. */
   referee?: RefereeBadgeData | null;
+  /** Faces of the two managers, displayed left and right like the crests (tester report, 4.41.20). */
+  managers?: { left: SummaryManager | null; right: SummaryManager | null };
 }) {
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
@@ -148,6 +166,13 @@ export function MatchSummaryPanel({
           <h3 className="font-display font-black uppercase text-xl leading-none m-0 text-center">{t("match.summary.title")}</h3>
           <TeamCrest team={teamB} fallback="B" />
         </div>
+        {managers && (managers.left || managers.right) && (
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <ManagerFace manager={managers.left} />
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("match.summary.managers")}</span>
+            <ManagerFace manager={managers.right} />
+          </div>
+        )}
         {referee && (
           <div className="mt-2" title={t("referees.referee")}>
             <RefereeBadge referee={referee} size={32} compact />
