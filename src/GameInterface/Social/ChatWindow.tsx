@@ -7,6 +7,8 @@ import { worldRoomLabel } from "@/GameInterface/Social/socialState";
 import { EmojiPicker } from "@/GameInterface/Social/EmojiPicker";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
+import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
+import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 import type { FriendStatus, SocialErrorCode } from "@/types/socialTypes";
 
 const ICON_BUTTON =
@@ -25,7 +27,22 @@ export function useRoomTitle(room: string): string {
   return worldRoomLabel(room, lists.worlds, (owner) => t("world.leagueOf", { owner }), t("world.public.name")) ?? t("social.chat.world");
 }
 
-export function ChatWindow({ room }: { room: string }) {
+const CHAT_MIN: Size = { w: 280, h: 300 };
+const CHAT_MAX: Size = { w: 720, h: 1000 };
+const CHAT_W = 330;
+const CHAT_GAP = 12;
+
+/**
+ * First spot of a chat in a tab: above the status bar, left of the friends panel (when it is open), the `slot`-th
+ * from the right.
+ */
+export function chatDefaultRect(v: Size, slot: number, panelOpen: boolean): FloatRect {
+  const h = Math.min(540, Math.round(v.h * 0.75));
+  const right = v.w - 24 - (panelOpen ? 440 + CHAT_GAP : 0);
+  return { x: right - (slot + 1) * CHAT_W - slot * CHAT_GAP, y: v.h - 56 - h, w: CHAT_W, h };
+}
+
+export function ChatWindow({ room, slot = 0 }: { room: string; slot?: number }) {
   const { t, i18n } = useTranslation();
   const s = useSocial();
   const title = useRoomTitle(room);
@@ -38,6 +55,8 @@ export function ChatWindow({ room }: { room: string }) {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { loadMessages, markRoomRead } = s;
+  const panelOpen = s.panelOpen;
+  const defaultRect = (v: Size) => chatDefaultRect(v, slot, panelOpen);
 
   const friend = room.startsWith("dm:") ? s.lists.friends.find((f) => f.nickname === room.slice(3)) : undefined;
   const publicRoom = s.lists.worlds.some((w) => w.room === room && w.public);
@@ -98,26 +117,29 @@ export function ChatWindow({ room }: { room: string }) {
   const time = (at: number) => new Date(at).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <section
-      aria-label={title}
-      onKeyDown={(e) => {
-        if (e.key !== "Escape") return;
-        e.stopPropagation(); // the friends panel also closes on Escape: only this window closes
-        s.closeChat(room);
-      }}
-      className="pointer-events-auto w-[330px] h-[540px] max-h-[75vh] flex flex-col rounded-md border border-border bg-card"
+    <FloatingWindow
+      id={`chat:${room}`}
+      role="region"
+      ariaLabel={title}
+      defaultRect={defaultRect}
+      min={CHAT_MIN}
+      max={CHAT_MAX}
+      dockedHeight={480}
+      onClose={() => s.closeChat(room)}
+      header={
+        <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+          {friend && <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${DOT[friend.status]}`} aria-hidden="true" />}
+          {!friend && room.startsWith("world:") && <Icon name="globe" size={16} className="text-muted-foreground" />}
+          <span className="font-semibold text-foreground truncate flex-1">{title}</span>
+          <button type="button" className={ICON_BUTTON} onClick={() => s.toggleChat(room)} aria-label={t("social.chat.minimize")} title={t("social.chat.minimize")}>
+            <Icon name="minus" size={16} />
+          </button>
+          <button type="button" className={ICON_BUTTON} onClick={() => s.closeChat(room)} aria-label={t("social.chat.close")} title={t("social.chat.close")}>
+            <Icon name="close" size={16} />
+          </button>
+        </header>
+      }
     >
-      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        {friend && <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${DOT[friend.status]}`} aria-hidden="true" />}
-        {!friend && room.startsWith("world:") && <Icon name="globe" size={16} className="text-muted-foreground" />}
-        <span className="font-semibold text-foreground truncate flex-1">{title}</span>
-        <button type="button" className={ICON_BUTTON} onClick={() => s.toggleChat(room)} aria-label={t("social.chat.minimize")} title={t("social.chat.minimize")}>
-          <Icon name="minus" size={16} />
-        </button>
-        <button type="button" className={ICON_BUTTON} onClick={() => s.closeChat(room)} aria-label={t("social.chat.close")} title={t("social.chat.close")}>
-          <Icon name="close" size={16} />
-        </button>
-      </header>
 
       <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-3 py-2 flex flex-col gap-2">
         {loadError && !msgs ? (
@@ -192,6 +214,6 @@ export function ChatWindow({ room }: { room: string }) {
           <p className="text-sm text-muted-foreground">{t(publicRoom ? "social.publicRoom" : "social.chat.readOnly")}</p>
         )}
       </div>
-    </section>
+    </FloatingWindow>
   );
 }

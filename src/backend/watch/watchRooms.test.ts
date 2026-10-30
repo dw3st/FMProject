@@ -95,4 +95,20 @@ describe("watching a friend's live match", () => {
     expect(watcherCount(saveId, "p")).toBe(0);
     onSocketClose(f);
   });
+
+  test("a pause of the friend reaches the spectators, also who joins while paused", async () => {
+    goLive();
+    const p = sock(player.id);
+    const f = sock(fan.id);
+    await watchJoin(f, saveId, "p");
+    const st = { state: { players: [], benchA: [], benchB: [] } as never, stats: { teams: {} as never, goals: [], ratings: [] } };
+    relayFromPlayer(p, saveId, "f1", { kind: "state", ...st, paused: true });
+    expect(f.got.at(-1)).toMatchObject({ type: "watch_state", paused: true });
+    const g = sock(fan2.id);
+    await watchJoin(g, saveId, "p");
+    expect(g.got.at(-1)).toMatchObject({ type: "watch_state", paused: true });
+    relayFromPlayer(p, saveId, "f1", { kind: "state", ...st });
+    expect((f.got.at(-1) as { paused?: boolean }).paused).toBeUndefined();
+    for (const s of [p, f, g]) onSocketClose(s);
+  });
 });
