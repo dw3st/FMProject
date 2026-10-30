@@ -25,6 +25,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.18",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Conquistas com as medalhas maiores e a medalha das secretas. As molduras do perfil aparecem como cartões com o seu rosto.",
+        en: "Achievements with bigger medals and a medal for the secret ones. The profile frames show as cards with your face.",
+      },
+      {
+        pt: "Novo jogo com o fundo da prancheta mais visível e a barra de etapas.",
+        en: "New game with a more visible tactics board behind it and a step bar.",
+      },
+      {
+        pt: "O bandeirão gigante saiu da torcida e da escolha do estádio. As bandeirinhas dos torcedores continuam.",
+        en: "The giant flag is gone from the crowd and from the stadium choices. The fans' small flags stay.",
+      },
+    ],
+  },
+  {
     version: "4.41.17",
     date: "2026-10-30",
     items: [

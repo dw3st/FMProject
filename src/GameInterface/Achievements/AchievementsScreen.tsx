@@ -119,7 +119,9 @@ function ListTab({ data }: { data: AchievementsData }) {
           {data.secrets.map((s) => (
             <div key={s.id} className={`rounded-md border p-3 flex flex-col gap-1 ${s.unlocked ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
               <span className="flex items-center gap-2 font-display font-bold uppercase text-base leading-tight">
-                <Icon name={s.unlocked ? "sparkles" : "lock"} size={16} className={s.unlocked ? TIER_TEXT.secret : "text-muted-foreground"} />
+                {newVisualOn()
+                  ? <img src={gameArtUrl("medals/medal-secret.svg")} alt="" aria-hidden="true" className={`w-10 h-10 shrink-0 ${s.unlocked ? "drop-shadow" : "grayscale opacity-40"}`} />
+                  : <Icon name={s.unlocked ? "sparkles" : "lock"} size={16} className={s.unlocked ? TIER_TEXT.secret : "text-muted-foreground"} />}
                 {s.unlocked ? t(`achievements.secrets.${s.id}.name`) : t("achievements.secretLocked")}
               </span>
               <span className="text-sm text-muted-foreground">
@@ -166,7 +168,7 @@ function TrackCard({ track, lang }: { track: TrackView; lang: string }) {
           return (
             <div key={tier} className="flex flex-col items-center gap-0.5 text-center" title={on ? t("achievements.unlockedOn", { date: formatDate(on, lang) }) : t(`achievements.tiers.${tier}`)}>
               {newVisualOn()
-                ? <img src={gameArtUrl(`medals/medal-${tier}.svg`)} alt="" aria-hidden="true" className={`w-7 h-7 ${on ? "" : "grayscale opacity-30"}`} />
+                ? <img src={gameArtUrl(`medals/medal-${tier}.svg`)} alt="" aria-hidden="true" className={`w-12 h-12 ${on ? "drop-shadow" : "grayscale opacity-30"}`} />
                 : <Icon name="medal" size={20} className={on ? TIER_TEXT[tier] : "text-muted-foreground/40"} />}
               <span className={`text-sm tabular-nums leading-tight ${on ? "text-foreground" : "text-muted-foreground"}`}>{thresholdLabel(i)}</span>
             </div>
@@ -234,17 +236,52 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <Label>{t("achievements.profile.frame")}</Label>
-          <OptionChips
-            value={frame}
-            onChange={setFrame}
-            options={allFrames.map((f) => ({
-              key: f,
-              label: f === "none" || data.available.frames.includes(f)
-                ? t(`achievements.frames.${f}`)
-                : `${t(`achievements.frames.${f}`)} · ${t("achievements.profile.lockedAt", { n: data.thresholds.frames[f as Exclude<Frame, "none">] })}`,
-              disabled: !data.available.frames.includes(f),
-            }))}
-          />
+          {newVisualOn() ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2" role="radiogroup" aria-label={t("achievements.profile.frame")}>
+              {allFrames.map((f) => {
+                const open = data.available.frames.includes(f);
+                const sel = frame === f;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    role="radio"
+                    aria-checked={sel}
+                    disabled={!open}
+                    onClick={() => setFrame(f)}
+                    className={`flex flex-col items-center gap-2 rounded-md border bg-card px-2 pt-4 pb-2 transition-colors ${sel ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/60"} ${open ? "" : "cursor-not-allowed"}`}
+                  >
+                    <span className={open ? "" : "grayscale opacity-40"}>
+                      <ManagerFaceImage
+                        manager={{ id: session?.seatId ? seatManagerId(session.seatId) : "", name: manager?.name ?? session?.clubName ?? "", face: manager?.face ?? null }}
+                        clubColors={session?.clubColors}
+                        size={64}
+                        ringClassName={FRAME_RING[f]}
+                        frame={f}
+                      />
+                    </span>
+                    <span className="font-display font-bold uppercase text-sm tracking-[0.08em] text-foreground">{t(`achievements.frames.${f}`)}</span>
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground tabular-nums">
+                      {!open && <Icon name="lock" size={16} />}
+                      {f === "none" ? " " : open ? t("achievements.profile.frameOpen") : t("achievements.profile.lockedAt", { n: data.thresholds.frames[f as Exclude<Frame, "none">] })}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <OptionChips
+              value={frame}
+              onChange={setFrame}
+              options={allFrames.map((f) => ({
+                key: f,
+                label: f === "none" || data.available.frames.includes(f)
+                  ? t(`achievements.frames.${f}`)
+                  : `${t(`achievements.frames.${f}`)} · ${t("achievements.profile.lockedAt", { n: data.thresholds.frames[f as Exclude<Frame, "none">] })}`,
+                disabled: !data.available.frames.includes(f),
+              }))}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label>{t("achievements.profile.badges", { n: data.thresholds.maxBadges })}</Label>
@@ -282,7 +319,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
           <SectionTitle>{t("achievements.profile.stadium")}</SectionTitle>
           <p className="text-sm text-muted-foreground m-0">{t("achievements.profile.stadiumNote")}</p>
           <div className="flex flex-wrap gap-1.5">
-            {(["banner", "flag", "mosaic"] as const).map((k) => (
+            {(["banner", "mosaic"] as const).map((k) => (
               <Chip
                 key={k}
                 selected={decor[k]}

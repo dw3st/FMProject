@@ -558,7 +558,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
 
       <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
         <section className="flex-1 min-w-0 min-h-0 flex flex-col px-6 pt-5 md:pb-0 pb-5">
-          <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 2 })}</p>
+          <WizardSteps step={2} />
           <ScreenTitle subtitle={join ? (join.leagueName ? t("world.join.clubSubtitle", { world: join.worldName, league: join.leagueName }) : t("world.join.clubSubtitleNoLeague", { world: join.worldName })) : undefined}>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
             <div className="flex-1 min-h-0 overflow-y-auto pb-5">
@@ -698,10 +698,25 @@ function WizardFrame({ backdrop = false, children }: { backdrop?: boolean; child
       <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
       <div className="relative flex w-full max-w-[1600px] flex-1 min-h-0">
         {backdrop && <PitchBackdrop players={false} scene="new-game" />}
-        <div className="relative flex w-full flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90">
+        <div className="relative flex w-full flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/75 backdrop-blur-[2px] shadow-2xl">
           {children}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Step bars over the label, as in the art preview: done and current steps lit, the rest dim. */
+function WizardSteps({ step }: { step: 1 | 2 }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mb-3 flex flex-col gap-2">
+      <div className="flex gap-2 max-w-sm" aria-hidden="true">
+        {[1, 2].map((n) => (
+          <span key={n} className={`h-1 flex-1 rounded-full ${n <= step ? "bg-primary" : "bg-border"}`} />
+        ))}
+      </div>
+      <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("newGame.stepOf", { n: step })}</p>
     </div>
   );
 }
@@ -813,7 +828,7 @@ function ManagerForm({
 
   return (
     <div>
-      <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 1 })}</p>
+      <WizardSteps step={1} />
       <ScreenTitle subtitle={t("newGame.managerSubtitle")}>{t("newGame.createManagerTitle")}</ScreenTitle>
 
       <div className="grid gap-8 mt-8 md:grid-cols-[1fr_1.4fr]">

@@ -4738,7 +4738,8 @@
       "stadium": "Estádio",
       "stadiumNote": "Aparecem na torcida da casa nos seus jogos em casa.",
       "saveStadium": "Salvar estádio",
-      "stadiumPreview": "Prévia dos enfeites na torcida da casa"
+      "stadiumPreview": "Prévia dos enfeites na torcida da casa",
+      "frameOpen": "Liberada"
     },
     "frames": {
       "none": "Sem moldura",

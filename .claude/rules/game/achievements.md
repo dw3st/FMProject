@@ -160,3 +160,9 @@ bun test src/Domain/achievements src/backend/achievements.test.ts src/GameEngine
 `nationalWins`, lido do `StoredDayLog.nationalMatch` pelo passo do dia) e secretas `world_champion` (título `wc_*` no
 registro, Tática) e `against_homeland` (vencer a seleção da nacionalidade dele treinando outra, Motivação). Os jogos da
 seleção não contam nas outras trilhas. Ver `.claude/rules/game/national-teams.md` → "Técnico do jogador".
+
+## Bandeirão e telas (4.41.18)
+
+O bandeirão (`flag`, 400 pontos) não é mais desenhado na partida nem oferecido na aba Perfil (a pedido do usuário);
+faixa e mosaico continuam. Com o visual novo, as medalhas das trilhas têm 48px, as secretas usam `medal-secret` e as
+molduras são cartões com o rosto do técnico em cada moldura (bloqueadas em cinza, com os pontos).

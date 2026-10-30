@@ -17,7 +17,7 @@ export function PitchBackdrop({ players = true, scene = "landing", painted = rea
   if (painted) {
     return (
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <img src={gameArtUrl(`backgrounds/bg-${scene}.webp`)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+        <img src={gameArtUrl(`backgrounds/bg-${scene}.webp`)} alt="" className={`absolute inset-0 w-full h-full object-cover ${scene === "new-game" ? "opacity-60" : "opacity-35"}`} />
       </div>
     );
   }

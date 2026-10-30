@@ -14,8 +14,8 @@ const MOSAIC_STRIPES = 8;
 
 /**
  * Rectangles of the decorations in the home end (`homeSide`, the drawn side of the home club's end stand),
- * in drawing order: mosaic (the whole end in stripes), flag (a big block in the middle with a light band),
- * banner (a strip along the pitch edge). Empty with no decoration or no stand on that side.
+ * in drawing order: mosaic (the whole end in stripes), banner (a strip along the pitch edge). The giant flag is not
+ * drawn since 4.41.18. Empty with no decoration or no stand on that side.
  */
 export function decorRects(stand: StandGeometry, homeSide: "left" | "right", decor: StadiumDecor): DecorRect[] {
   const r: SideRect | undefined = standSideRects(stand).find((s) => s.side === homeSide);
@@ -27,14 +27,7 @@ export function decorRects(stand: StandGeometry, homeSide: "left" | "right", dec
       out.push({ x: r.x, y: r.y + i * step, w: r.w, h: step, tone: i % 2 === 0 ? "club" : "light", alpha: 0.85 });
     }
   }
-  if (decor.flag) {
-    const w = r.w * 0.7;
-    const h = r.h * 0.45;
-    const x = r.x + (r.w - w) / 2;
-    const y = r.y + (r.h - h) / 2;
-    out.push({ x, y, w, h, tone: "club", alpha: 1 });
-    out.push({ x, y: y + h / 3, w, h: h / 3, tone: "light", alpha: 1 });
-  }
+  // The giant flag is no longer drawn in the match (4.41.18, the user: it looked bad); the hand flags stay.
   if (decor.banner) {
     // Along the pitch edge: the right edge of the left end, the left edge of the right end.
     const w = Math.max(2, r.w * 0.18);

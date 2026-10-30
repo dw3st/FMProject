@@ -8,6 +8,8 @@ const stand = { outer: { x: 0, y: 0, w: 600, h: 400 }, inner: { x: 40, y: 30, w:
 describe("stadium decorations", () => {
   test("nothing without a decoration", () => {
     expect(decorRects(stand, "left", { banner: false, flag: false, mosaic: false })).toEqual([]);
+    // the giant flag is not drawn (4.41.18)
+    expect(decorRects(stand, "left", { banner: false, flag: true, mosaic: false })).toEqual([]);
   });
 
   test("every piece inside the home end, the banner along the pitch edge", () => {

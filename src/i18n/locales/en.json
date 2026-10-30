@@ -4738,7 +4738,8 @@
       "stadium": "Stadium",
       "stadiumNote": "Drawn in your home end in home games.",
       "saveStadium": "Save stadium",
-      "stadiumPreview": "Preview of the decorations in the home end"
+      "stadiumPreview": "Preview of the decorations in the home end",
+      "frameOpen": "Unlocked"
     },
     "frames": {
       "none": "No frame",
