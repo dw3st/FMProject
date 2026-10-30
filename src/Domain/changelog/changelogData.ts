@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.36",
+    date: "2026-10-30",
+    time: "13:54",
+    items: [
+      {
+        pt: "Fisioterapia e refeitório com teto de ripas de madeira e paredes em painéis, no mesmo estilo da piscina e da academia.",
+        en: "Physio room and canteen with a timber slatted ceiling and panelled walls, in the same style as the pool and the gym.",
+      },
+    ],
+  },
+  {
     version: "4.41.35",
     date: "2026-10-30",
     time: "13:43",
