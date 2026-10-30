@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.34",
+    date: "2026-10-30",
+    time: "15:35",
+    items: [
+      {
+        pt: "Amigos, conversas e a transmissão de um jogo abrem em janelas que você arrasta e redimensiona, e elas ficam onde você deixou. Dá para assistir enquanto mexe no seu time.",
+        en: "Friends, chats and a match broadcast open in windows you can drag and resize, and they stay where you left them. You can watch while you manage your team.",
+      },
+      {
+        pt: "Transmissão mais estável, sem engasgos, e mostra \"Pausado\" quando quem joga pausa a partida.",
+        en: "Smoother broadcast without stutters, and it shows \"Paused\" when the player pauses the match.",
+      },
+    ],
+  },
+  {
     version: "4.41.33",
     date: "2026-10-30",
     time: "15:20",
