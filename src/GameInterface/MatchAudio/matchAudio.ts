@@ -1,5 +1,11 @@
+import { gameArtUrl } from "@/Domain/art/paintedFaces";
+
+/** Recorded sounds (Stable Audio Open on the local ComfyUI, `data_process/assets/audio`); missing = synthesised. */
+const SAMPLES = ["crowd-bed", "crowd-rise", "goal-roar", "near-miss", "kick", "net", "whistle-short"] as const;
+type Sample = (typeof SAMPLES)[number];
+
 /**
- * Match sound (leva 3), synthesised with Web Audio: a crowd bed that swells near the goals, the referee's whistle,
+ * Match sound (leva 3), recorded samples with a synthesised fallback (Web Audio): a crowd bed that swells near the goals, the referee's whistle,
  * the strike of the ball, the net, the roar of a goal and the "ooh" of a near miss. No sound files. The context only
  * starts after a click on the page (browser rule) and is suspended while the tab is hidden.
  */
@@ -14,6 +20,9 @@ export class MatchAudio {
   private volume: number;
   private enabled: boolean;
   private excitement = 0;
+  private samples = new Map<Sample, AudioBuffer>();
+  private bedSource: AudioBufferSourceNode | null = null;
+  private lastRise = -100;
   private onVisibility = () => {
     if (!this.ctx) return;
     if (document.hidden) void this.ctx.suspend();
@@ -49,6 +58,44 @@ export class MatchAudio {
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     this.noise = buf;
     this.startBed();
+    void this.loadSamples();
+  }
+
+  private async loadSamples(): Promise<void> {
+    await Promise.all(SAMPLES.map(async (name) => {
+      try {
+        const res = await fetch(gameArtUrl(`audio/${name}.mp3`));
+        if (!res.ok || !this.ctx) return;
+        this.samples.set(name, await this.ctx.decodeAudioData(await res.arrayBuffer()));
+      } catch {
+        // keeps the synthesised sound
+      }
+    }));
+    // The recorded crowd replaces the synthesised murmur.
+    const bed = this.samples.get("crowd-bed");
+    if (bed && this.ctx && this.bed) {
+      this.bedSource?.stop();
+      const src = this.ctx.createBufferSource();
+      src.buffer = bed;
+      src.loop = true;
+      src.connect(this.bed);
+      src.start();
+      this.bedSource = src;
+    }
+  }
+
+  /** Plays a recorded sound; false when it is not loaded. */
+  private sample(name: Sample, gain: number, rate = 1, offset = 0): boolean {
+    const buf = this.samples.get(name);
+    if (!buf || !this.ctx || !this.master) return false;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const g = this.ctx.createGain();
+    g.gain.value = gain;
+    src.connect(g).connect(this.master);
+    src.start(this.ctx.currentTime, offset);
+    return true;
   }
 
   setEnabled(on: boolean): void {
@@ -64,14 +111,23 @@ export class MatchAudio {
 
   /** Crowd level 0..1 (the ball near a goal), eased. */
   setExcitement(x: number): void {
+    const before = this.excitement;
     this.excitement = x;
-    if (this.bed && this.ctx) this.bed.gain.setTargetAtTime(0.07 + 0.2 * x, this.ctx.currentTime, 0.6);
+    if (!this.bed || !this.ctx) return;
+    const recorded = this.bedSource !== null;
+    this.bed.gain.setTargetAtTime(recorded ? 0.25 + 0.35 * x : 0.07 + 0.2 * x, this.ctx.currentTime, 0.6);
+    // The ball comes close to a goal: the stands rise (not more than once every 8 s).
+    if (recorded && this.enabled && before < 0.6 && x >= 0.6 && this.ctx.currentTime - this.lastRise > 8) {
+      this.lastRise = this.ctx.currentTime;
+      this.sample("crowd-rise", 0.35);
+    }
   }
 
   dispose(): void {
     window.removeEventListener("pointerdown", this.onGesture);
     window.removeEventListener("keydown", this.onGesture);
     document.removeEventListener("visibilitychange", this.onVisibility);
+    this.bedSource = null;
     void this.ctx?.close();
     this.ctx = null;
   }
@@ -80,16 +136,19 @@ export class MatchAudio {
     const ctx = this.ctx;
     if (!ctx || !this.enabled || ctx.state !== "running" || !cueAllowed(this.last, cue, ctx.currentTime)) return;
     switch (cue) {
-      case "kick": this.thump(0.55 * strength, 130); break;
-      case "pass": this.thump(0.22, 160); break;
+      case "kick": if (!this.sample("kick", 0.7 * strength, 0.95 + Math.random() * 0.1)) this.thump(0.55 * strength, 130); break;
+      case "pass": if (!this.sample("kick", 0.28, 1.15 + Math.random() * 0.1)) this.thump(0.22, 160); break;
       case "save": this.thump(0.4, 90); this.swell(0.25, 500, 0.9); break;
-      case "whistleShort": this.whistle([0.22]); break;
+      case "whistleShort": if (!this.sample("whistle-short", 0.5)) this.whistle([0.22]); break;
       case "whistleLong": this.whistle([0.65]); break;
       case "card": this.whistle([0.2, 0.55]); break;
       case "whistleEnd": this.whistle([0.3, 0.3, 0.9]); break;
-      case "net": this.burst(0.35, 1800, 0.3); break;
-      case "nearMiss": this.swell(0.45 + 0.3 * this.excitement, 420, 1.4); break;
-      case "goal": this.roar(); break;
+      case "net": if (!this.sample("net", 0.6)) this.burst(0.35, 1800, 0.3); break;
+      case "nearMiss": if (!this.sample("near-miss", 0.55)) this.swell(0.45 + 0.3 * this.excitement, 420, 1.4); break;
+      case "goal":
+        if (this.sample("goal-roar", 0.9)) this.sample("net", 0.6);
+        else this.roar();
+        break;
     }
   }
 

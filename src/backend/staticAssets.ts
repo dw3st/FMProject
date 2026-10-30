@@ -86,6 +86,14 @@ export const GAME_ART_FILES: Record<string, string> = {
   "club/stadium-top.webp": "image/webp",
   "club/grass-plain.webp": "image/webp",
   "formation/pitch-board.webp": "image/webp",
+  // Match sounds (leva 3), made with Stable Audio Open on the local ComfyUI (data_process/assets/audio).
+  "audio/crowd-bed.mp3": "audio/mpeg",
+  "audio/crowd-rise.mp3": "audio/mpeg",
+  "audio/goal-roar.mp3": "audio/mpeg",
+  "audio/near-miss.mp3": "audio/mpeg",
+  "audio/kick.mp3": "audio/mpeg",
+  "audio/net.mp3": "audio/mpeg",
+  "audio/whistle-short.mp3": "audio/mpeg",
   // Live substitution panel: the same painted board, landscape (attack to the right).
   // Art phase 9: the rest of the pack.
   "ball/ball-atlas.json": "application/json",

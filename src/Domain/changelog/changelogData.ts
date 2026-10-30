@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.45",
+    date: "2026-10-30",
+    time: "16:26",
+    items: [
+      {
+        pt: "Som da partida com gravações: torcida de verdade ao fundo, coro quando a bola chega perto do gol, o grito do gol, o \"uh\" da chance perdida, chute, rede e apito.",
+        en: "Match sound with recordings: a real crowd in the background, a chant when the ball nears the goal, the goal roar, the crowd's groan at a near miss, ball strikes, the net and the whistle.",
+      },
+    ],
+  },
+  {
     version: "4.41.44",
     date: "2026-10-30",
     time: "16:05",

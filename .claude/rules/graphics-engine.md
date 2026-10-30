@@ -450,3 +450,15 @@ proporções dela.
   `SUB_WALK.S` e some no fim (`walkOffs`).
 - **Placa do quarto árbitro:** com a placa levantada, os números (`shirtNumbers`) de quem sai (vermelho) e de quem
   entra (verde) sobre ele.
+
+## Som da partida (4.41.44, gravações 4.41.45)
+
+`GameInterface/MatchAudio/matchAudio.ts` (Web Audio): torcida em loop que cresce com a bola perto do gol
+(`crowdExcitement`, `Domain/match/matchSound.ts`), coro quando ela chega perto, apito, chute e passe, rede, grito de gol e
+o "uh" da chance perdida, ligados a eventos do `gameBus` no `MatchScreen` (botão Som; volume em Configurações,
+`fm.match.sound` / `fm.match.soundVolume`). Começa no primeiro clique (regra do navegador), suspende com a aba escondida.
+As gravações (`src/example_data/assets/audio/*.mp3`, servidas por `GAME_ART_FILES`) vêm do Stable Audio Open 1.0 no
+ComfyUI local: `python data_process/assets/audio/gen_audio.py [nome] [--seed N]` (um pedido por vez) e
+`ConfyUI/python_embeded/python.exe -I data_process/assets/audio/finish_audio.py` (recorte, loop sem emenda, normalização;
+a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. O apito longo, o de cartão e o
+final continuam sintetizados (as gerações saíram como chiado). Só som: nada muda na simulação.
