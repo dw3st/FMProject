@@ -51,7 +51,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.34",
     date: "2026-10-30",
-    time: "15:35",
+    time: "12:05",
     items: [
       {
         pt: "Amigos, conversas e a transmissão de um jogo abrem em janelas que você arrasta e redimensiona, e elas ficam onde você deixou. Dá para assistir enquanto mexe no seu time.",
@@ -66,7 +66,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.33",
     date: "2026-10-30",
-    time: "15:20",
+    time: "12:02",
     items: [
       {
         pt: "Clube: gramado gasto dos primeiros níveis com falhas de verdade, banheira de gelo na fisioterapia a partir do nível 6 e alojamento da base com níveis 5, 6 e 7 diferentes.",
@@ -77,7 +77,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.32",
     date: "2026-10-30",
-    time: "15:05",
+    time: "11:54",
     items: [
       {
         pt: "Messi e Neymar com rosto novo, no mesmo traço do resto do elenco.",
