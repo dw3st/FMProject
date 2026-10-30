@@ -74,7 +74,7 @@ export function setPaintedScreens(facilities: string[] | null, news: string[] | 
  * Revision of the painted facility files: they were repainted in place (ten levels, 4.41.25), so their URLs carry it
  * as a query (the art route ignores the query) to skip the browsers' immutable cache without bumping every art URL.
  */
-export const FACILITY_ART_REVISION = 2;
+export const FACILITY_ART_REVISION = 3;
 
 /**
  * Painted facility (art phase 7) for an item (`stadiumPitch` → `facility-stadium-pitch`) at the game's level 1..10:

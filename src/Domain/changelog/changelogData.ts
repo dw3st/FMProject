@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.33",
+    date: "2026-10-30",
+    time: "15:20",
+    items: [
+      {
+        pt: "Clube: gramado gasto dos primeiros níveis com falhas de verdade, banheira de gelo na fisioterapia a partir do nível 6 e alojamento da base com níveis 5, 6 e 7 diferentes.",
+        en: "Club: the low-level pitch shows real worn patches, the physio room has an ice bath from level 6, and academy lodging levels 5, 6 and 7 look different.",
+      },
+    ],
+  },
+  {
     version: "4.41.32",
     date: "2026-10-30",
     time: "15:05",
