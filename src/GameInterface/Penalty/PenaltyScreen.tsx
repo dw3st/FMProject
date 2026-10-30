@@ -71,17 +71,22 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
     void choose(kick ? { kick: { area: a } } : { dive: a }).then(finish);
   }, [choose, finish, kick]);
 
-  // Clock: no pick in time = the AI's area for the taker, the middle for the keeper.
+  // Clock: no pick in time = the AI's area for the taker, the middle for the keeper. The deadline is fixed
+  // once (a ref): a parent re-render with a new `choose` must never restart the countdown.
+  const pickRef = useRef(pick);
+  pickRef.current = pick;
+  const endRef = useRef<number | null>(null);
   useEffect(() => {
     if (phase !== "pick") return;
-    const end = performance.now() + window_s * 1000;
+    endRef.current ??= performance.now() + window_s * 1000;
+    const end = endRef.current;
     const id = window.setInterval(() => {
       const s = Math.max(0, (end - performance.now()) / 1000);
       setLeft(s);
-      if (s <= 0) { window.clearInterval(id); pick(kick ? aiKick(Math.random).area : "low-mid"); }
+      if (s <= 0) { window.clearInterval(id); pickRef.current(kick ? aiKick(Math.random).area : "low-mid"); }
     }, 100);
     return () => window.clearInterval(id);
-  }, [phase, pick, kick, window_s]);
+  }, [phase, kick, window_s]);
 
   // Keyboard: arrows move the area, Enter or space confirms.
   useEffect(() => {
@@ -140,6 +145,8 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
           onAreaPick={pick}
         />
 
+        {phase === "pick" && <PickClock left={left} total={window_s} label={t(kick ? "penalty2d.clockKick" : "penalty2d.clockDive")} />}
+
         <div className="min-h-8 flex items-center justify-between gap-3">
           {phase === "result" && outcome ? (
             <span className={`font-display font-black uppercase text-2xl leading-none ${outcome.scored === kick ? "text-chart-2" : "text-destructive"}`}>
@@ -148,6 +155,25 @@ export function PenaltyScreen(props: PenaltyScreenProps) {
           ) : (
             <span className="text-sm text-muted-foreground">{hint}</span>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Time left to pick: big seconds and a draining bar, red in the last two seconds. */
+function PickClock({ left, total, label }: { left: number; total: number; label: string }) {
+  const urgent = left <= 2;
+  const pct = total > 0 ? Math.max(0, Math.min(1, left / total)) * 100 : 0;
+  return (
+    <div className="flex items-center gap-3" role="timer" aria-live="off">
+      <span className={`font-display font-black tabular-nums text-3xl leading-none w-10 text-center ${urgent ? "text-destructive" : "text-foreground"}`}>
+        {Math.ceil(left)}
+      </span>
+      <div className="flex-1 flex flex-col gap-1">
+        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
+        <div className="h-1.5 rounded bg-border overflow-hidden">
+          <div className={`h-full rounded ${urgent ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
     </div>

@@ -114,6 +114,7 @@ import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
 import { resolveComplaint } from "@/GameEngine/Domain/Var";
 import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
+import { assistantFollows } from "@/Domain/match/assistantOrders";
 import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
@@ -1326,11 +1327,30 @@ export function MatchScreen() {
     h2h.send(cmd);
   }
 
-  function handleMentalityChange(next: Mentality) {
+  /** Banned / sent-off manager: an order to the assistant, followed or not (`assistantFollows`). */
+  function orderMentality(next: Mentality) {
+    if (next === mentalityRef.current) return;
+    const label = t(`match.mentality.${next}`);
+    if (!assistantFollows(Math.random)) { showNotice(t("complaint.orderMentalityNo", { mentality: label }), "info"); return; }
+    handleMentalityChange(next, false);
+    showNotice(t("complaint.orderMentality", { mentality: label }), "info");
+  }
+
+  function orderSub(sub: PendingSub) {
+    const gs = gameStateRef.current;
+    const outName = gs?.players.find((p) => p.id === sub.outId)?.name ?? "";
+    const inName = (mySide === "A" ? gs?.benchA : gs?.benchB)?.find((p) => p.id === sub.inId)?.name ?? "";
+    if (!assistantFollows(Math.random)) { showNotice(t("complaint.orderSubNo", { in: inName, out: outName }), "info"); return; }
+    handleQueueSub(sub);
+    showNotice(t("complaint.orderSub", { in: inName, out: outName }), "info");
+  }
+
+  function handleMentalityChange(next: Mentality, cue = true) {
     setMentality(next);
     mentalityRef.current = next;
     if (h2hMode) sendH2H({ kind: "mentality", mentality: next });
     else applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
+    if (!cue) return;
     const kind = next === "attacking" ? "attack" : next === "defensive" ? "defend" : "balanced";
     setCoachCue((prev) => ({ team: mySideRef.current, kind, seq: (prev?.seq ?? 0) + 1 }));
   }
@@ -1442,8 +1462,10 @@ export function MatchScreen() {
         teamBMeta
           ? { primary: teamBMeta.primaryColor, secondary: teamBMeta.secondaryColor }
           : undefined,
+        // The home side keeps its shirt; the away side changes on a clash.
+        isAwayView(matchFixture, crestIds?.a) ? "B" : "A",
       ),
-    [teamAMeta, teamBMeta],
+    [teamAMeta, teamBMeta, matchFixture, crestIds],
   );
 
   // The marker border's second colour: the club's first colour that isn't the kit worn on the pitch.
@@ -1802,19 +1824,21 @@ export function MatchScreen() {
                 />
               </>
             )}
-            {managerOut ? (
-              <span className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm">
+            {managerOut && (
+              <span
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm"
+                title={t("complaint.ordersHint")}
+              >
                 <Icon name="alert" className="w-4 h-4" />
                 {t(managerOut === "banned" ? "complaint.banned" : "complaint.sentOff")}
               </span>
-            ) : (
-              <SegmentedTabs
-                compact
-                tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
-                active={mentality}
-                onChange={handleMentalityChange}
-              />
             )}
+            <SegmentedTabs
+              compact
+              tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
+              active={mentality}
+              onChange={(m) => (managerOut ? orderMentality(m as Mentality) : handleMentalityChange(m as Mentality))}
+            />
             {complaint && !managerOut && !h2hMode && (
               <button
                 type="button"
@@ -1825,7 +1849,7 @@ export function MatchScreen() {
                 {t("complaint.button")}
               </button>
             )}
-            {!managerOut && (
+            {(
             <button
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
@@ -2056,20 +2080,22 @@ export function MatchScreen() {
           gameState={gameState}
           playerTeam={mySide}
           ratings={ratings}
-          onQueueSub={handleQueueSub}
-          onUnqueueSub={handleUnqueueSub}
-          onSwapPositions={handleSwapPositions}
-          onFillVacancy={handleFillVacancy}
-          onChangeFormation={handleChangeFormation}
-          onInstruction={handleInstruction}
-          onManMarks={handleManMarks}
-          liveTactics={{
-            live: liveTactics,
-            saved: savedTacticsRef.current,
-            onStyle: (style) => setMyLiveTactics(withLiveStyle(style)),
-            onAxis: handleLiveAxis,
-            onReset: () => setMyLiveTactics({ ...savedTacticsRef.current }),
-          }}
+          onQueueSub={managerOut ? orderSub : handleQueueSub}
+          {...(managerOut ? {} : {
+            onUnqueueSub: handleUnqueueSub,
+            onSwapPositions: handleSwapPositions,
+            onFillVacancy: handleFillVacancy,
+            onChangeFormation: handleChangeFormation,
+            onInstruction: handleInstruction,
+            onManMarks: handleManMarks,
+            liveTactics: {
+              live: liveTactics,
+              saved: savedTacticsRef.current,
+              onStyle: (style: TacticalStyle) => setMyLiveTactics(withLiveStyle(style)),
+              onAxis: handleLiveAxis,
+              onReset: () => setMyLiveTactics({ ...savedTacticsRef.current }),
+            },
+          })}
           onClose={handleCloseSubPanel}
         />
       )}

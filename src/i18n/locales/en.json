@@ -4315,12 +4315,17 @@
     "red": "Manager sent off! The assistant takes over the changes",
     "banned": "Manager banned",
     "sentOff": "Manager sent off",
-    "previewBanned": "You are banned: you watch from the stands and your assistant makes the substitutions.",
+    "previewBanned": "You are banned: you watch from the stands, your assistant makes the substitutions and you can pass him orders.",
     "inbox": {
       "subject": "You were sent off",
       "body_one": "Banned for {{count}} match: you watch from the stands and your assistant makes the substitutions.",
       "body_other": "Banned for {{count}} matches: you watch from the stands and your assistant makes the substitutions."
-    }
+    },
+    "orderMentality": "The assistant follows your order: {{mentality}}",
+    "orderMentalityNo": "The assistant keeps his plan (you asked for {{mentality}})",
+    "orderSub": "The assistant makes your change: {{in}} for {{out}}",
+    "orderSubNo": "The assistant keeps {{out}} on (you asked for {{in}})",
+    "ordersHint": "From the stands you can still pass orders to the assistant: mentality and changes. He follows most of them."
   },
   "var": {
     "badge": "VAR",
@@ -5903,14 +5908,16 @@
     "kickTitle": "{{name}} to take",
     "saveTitle": "Save it: {{name}} to take",
     "keeper": "Keeper: {{name}}",
-    "hintDive": "Pick where the keeper dives ({{s}} s).",
+    "hintDive": "Pick where the keeper dives.",
     "result": {
       "goal": "Goal",
       "saved": "Saved",
       "miss": "Wide",
       "post": "Off the woodwork"
     },
-    "hintKick": "Pick where to shoot ({{s}} s)."
+    "hintKick": "Pick where to shoot.",
+    "clockKick": "Time to pick the corner. Out of time, your taker picks it himself.",
+    "clockDive": "Time to pick the dive. Out of time, he stays in the middle."
   },
   "starLimit": {
     "line": "World top {{top}}: you have {{count}} of {{max}}.",
