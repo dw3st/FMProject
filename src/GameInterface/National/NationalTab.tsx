@@ -38,7 +38,7 @@ interface TeamDetail {
   manager: { id: string; name: string; interim: boolean } | null;
   callUp: {
     from: string; until: string; active: boolean; competition: string | null;
-    players: { id: string; name: string; generated: boolean; squadId: string; clubName: string | null; league: string | null; role: string | null; overall: number | null; caps: number | null; goals: number | null }[];
+    players: { id: string; name: string; generated: boolean; squadId: string; clubName: string | null; league: string | null; role: string | null; overall: number | null; caps: number | null; goals: number | null; assists: number | null; age: number | null }[];
   } | null;
   recent: Fixture[]; upcoming: Fixture[]; names: Record<string, string>; titles: string[];
 }
@@ -426,9 +426,11 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
                   <StatsHead>{t("national.pos")}</StatsHead>
                   <StatsHead>{t("national.player")}</StatsHead>
                   <StatsHead>{t("national.club")}</StatsHead>
+                  <StatsHead align="center">{t("national.age")}</StatsHead>
                   <StatsHead align="center">{t("national.rating")}</StatsHead>
                   <StatsHead align="center">{t("national.caps")}</StatsHead>
                   <StatsHead align="center">{t("national.goals")}</StatsHead>
+                  <StatsHead align="center">{t("national.assists")}</StatsHead>
                 </>}
               >
                 {d.callUp.players.map((p) => (
@@ -441,9 +443,11 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
                       {p.generated && <span className="text-sm font-normal text-muted-foreground" title={t("national.localHint")}>{t("national.local")}</span>}
                     </NameCell>
                     <ClubCell>{p.clubName ?? "-"}</ClubCell>
+                    <NumberCell>{p.age ?? "-"}</NumberCell>
                     <NumberCell>{p.overall !== null ? Math.round(p.overall * 10) : "-"}</NumberCell>
                     <NumberCell>{p.caps ?? "-"}</NumberCell>
                     <NumberCell strong>{p.goals ?? "-"}</NumberCell>
+                    <NumberCell>{p.assists ?? "-"}</NumberCell>
                   </StatsRow>
                 ))}
               </StatsTable>

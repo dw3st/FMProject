@@ -4495,6 +4495,8 @@
     "scorers": "Artilharia",
     "player": "Jogador",
     "goals": "Gols",
+    "age": "Idade",
+    "assists": "Assist.",
     "results": "Últimos resultados",
     "vs": "x",
     "pens": "({{home}}–{{away}} nos pênaltis)",
@@ -5846,7 +5848,8 @@
       "end": "Fim de jogo",
       "yellow": "Amarelo no {{team}}",
       "sub": "Troca no {{team}}",
-      "subLine": "sai {{out}}, entra {{in}}"
+      "subLine": "sai {{out}}, entra {{in}}",
+      "short": {"goal": "Gol", "disallowed": "Gol anulado pelo VAR", "red": "Expulsão", "yellow": "Amarelo", "sub": "Troca"}
     },
     "liveBadge": "ao vivo",
     "liveLine": "ao vivo · {{score}} · {{minute}}'",

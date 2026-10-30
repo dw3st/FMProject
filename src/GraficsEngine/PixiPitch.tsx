@@ -1535,7 +1535,7 @@ export function PixiPitch({
       const labelStyle = new TextStyle({
         fontSize:   markerLabelFontSize(markerR),
         fontFamily: 'sans-serif',
-        fontWeight: '600',
+        fontWeight: '700',
         fill:       0xffffff,
         dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
       });

@@ -26,6 +26,14 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
     }
     return m.player ? `${text} · ${m.player}` : text;
   };
+  /** The same moment without the team name: the column already says whose it is. */
+  const shortLine = (m: LiveMoment) => {
+    const text = t(`rivals.moments.short.${m.kind}`);
+    if (m.kind === "sub") {
+      return m.player || m.playerIn ? `${text} · ${t("rivals.moments.subLine", { out: m.player ?? "?", in: m.playerIn ?? "?" })}` : text;
+    }
+    return m.player ? `${text} · ${m.player}` : text;
+  };
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 text-sm font-semibold tabular-nums">
@@ -44,15 +52,33 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
       {moments.length === 0 ? (
         <p className="m-0 text-sm text-muted-foreground">{t("rivals.moments.none")}</p>
       ) : (
+        // A timeline (tester report): each team's moments under its own name, the minute in the middle, newest first.
         <ul className="m-0 p-0 list-none flex flex-col gap-1 max-h-48 overflow-y-auto">
-          {moments.map((m, i) => (
-            <li key={`${m.minute}-${m.kind}-${i}`} className="flex items-start gap-2 text-sm">
-              <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground">{m.minute}'</span>
-              <MomentMark kind={m.kind} />
-              <ClubLogo logoUrl={squadLogoUrl(m.side === "against" ? live.opponentId : live.clubId)} className={`w-5 h-5 shrink-0 ${m.side ? "" : "invisible"}`} imgClassName="w-full h-full object-contain" />
-              <span className="min-w-0 break-words">{line(m)}</span>
-            </li>
-          ))}
+          {moments.map((m, i) => {
+            const key = `${m.minute}-${m.kind}-${i}`;
+            if (!m.side) {
+              return (
+                <li key={key} className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <span className="tabular-nums">{m.minute}'</span>
+                  <span>{line(m)}</span>
+                </li>
+              );
+            }
+            const isHome = (m.side === "for") === live.home;
+            const body = (
+              <span className={`min-w-0 flex items-start gap-2 ${isHome ? "" : "flex-row-reverse text-right"}`}>
+                <MomentMark kind={m.kind} />
+                <span className="min-w-0 break-words">{shortLine(m)}</span>
+              </span>
+            );
+            return (
+              <li key={key} className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 text-sm">
+                <span className="min-w-0 flex justify-end">{isHome ? body : null}</span>
+                <span className="w-10 text-center tabular-nums text-muted-foreground">{m.minute}'</span>
+                <span className="min-w-0 flex justify-start">{isHome ? null : body}</span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

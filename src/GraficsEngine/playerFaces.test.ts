@@ -32,11 +32,11 @@ describe("playerMarkerRadius", () => {
 
   test("the name label grows slowly with the dot", () => {
 
-    expect(markerLabelFontSize(13)).toBe(10);
+    expect(markerLabelFontSize(13)).toBe(13);
 
     expect(markerLabelFontSize(24)).toBeGreaterThan(markerLabelFontSize(18));
 
-    expect(markerLabelFontSize(24)).toBeLessThanOrEqual(14);
+    expect(markerLabelFontSize(24)).toBeLessThanOrEqual(17);
 
   });
 });

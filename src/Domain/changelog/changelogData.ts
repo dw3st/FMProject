@@ -27,6 +27,35 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.49",
+    date: "2026-10-30",
+    time: "17:03",
+    items: [
+      {
+        pt: "Na Formação, ao passar o mouse num jogador aparecem também os quatro atributos que contam na posição dele (finalização, velocidade, desarme...).",
+        en: "On the Formation screen, hovering a player also shows the four attributes that count in his position (finishing, speed, tackling...).",
+      },
+      {
+        pt: "Rivais no Painel: os lances do jogo ao vivo do amigo aparecem como linha do tempo, cada time do seu lado, com o minuto no meio.",
+        en: "Rivals on the Dashboard: a friend's live game moments show as a timeline, each team on its own side, the minute in the middle.",
+      },
+      {
+        pt: "Seleções: a convocação mostra idade e assistências.",
+        en: "National teams: the squad list shows age and assists.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Nome do jogador no campo maior e mais legível.",
+        en: "Player names on the pitch are bigger and easier to read.",
+      },
+      {
+        pt: "A tela da partida não muda mais de tamanho quando alguém começa ou para de assistir.",
+        en: "The match screen no longer resizes when someone starts or stops watching.",
+      },
+    ],
+  },
+  {
     version: "4.41.48",
     date: "2026-10-30",
     time: "16:49",

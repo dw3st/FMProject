@@ -68,6 +68,7 @@ import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Compo
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName } from "@/Domain/world/labels";
 import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
+import { hudAttributes } from "@/Domain/match/matchHud";
 import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 
@@ -1382,7 +1383,7 @@ function FormationPitch({
 
                   <div className={`opacity-0 ${dragging ? "" : "group-hover:opacity-100"} transition-opacity duration-200 pointer-events-none`}>
                     <div
-                      className={`absolute z-[100] bottom-full mb-2 w-48 p-3 rounded-md bg-card border  ${oop ? "border-chart-4/40" : "border-border"} ${tipPanelPos}`}
+                      className={`absolute z-[100] bottom-full mb-2 w-60 p-3 rounded-md bg-card border  ${oop ? "border-chart-4/40" : "border-border"} ${tipPanelPos}`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-foreground text-sm">{player.name}</span>
@@ -1421,6 +1422,15 @@ function FormationPitch({
                             <span className="font-bold text-sm text-foreground">{Math.round(energy)}%</span>
                             <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
                           </div>
+                        </div>
+                        {/* The four attributes that matter in this slot (tester report: show finishing etc. on hover). */}
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-2 border-t border-border/60">
+                          {hudAttributes(slot.role ?? player.positions[0] ?? "CM", player.stats).map((a) => (
+                            <div key={a.key} className="flex items-center justify-between gap-2 text-sm">
+                              <span className="text-muted-foreground truncate">{t(`attributeNames.${a.key}`)}</span>
+                              <span className="font-semibold tabular-nums text-foreground">{a.value}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                       <div

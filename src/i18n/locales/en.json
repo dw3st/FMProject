@@ -4495,6 +4495,8 @@
     "scorers": "Top scorers",
     "player": "Player",
     "goals": "Goals",
+    "age": "Age",
+    "assists": "Assists",
     "results": "Latest results",
     "vs": "vs",
     "pens": "({{home}}–{{away}} on penalties)",
@@ -5846,7 +5848,8 @@
       "end": "Full time",
       "yellow": "{{team}} booking",
       "sub": "{{team}} substitution",
-      "subLine": "{{out}} off, {{in}} on"
+      "subLine": "{{out}} off, {{in}} on",
+      "short": {"goal": "Goal", "disallowed": "Goal ruled out by VAR", "red": "Sent off", "yellow": "Booking", "sub": "Substitution"}
     },
     "liveBadge": "live",
     "liveLine": "live · {{score}} · {{minute}}'",

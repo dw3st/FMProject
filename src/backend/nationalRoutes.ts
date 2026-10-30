@@ -152,6 +152,7 @@ export const nationalRoutes = {
         players.push({
           id: pl.id, name: g?.name ?? pl.name, generated: true, squadId: "", clubName: null, league: null,
           role: g ? preferredRole(g) : null, overall: g ? Math.round(overallAvg(g) * 100) / 100 : null, caps, goals,
+          age: g?.age ?? null, assists: null,
         });
         continue;
       }
@@ -162,6 +163,7 @@ export const nationalRoutes = {
         id: pl.id, name: p?.name ?? pl.name, generated: false, squadId: pl.squadId, clubName: e?.name ?? null, league: e?.leagueSlug ?? null,
         role: p ? preferredRole(p) : null, overall: p ? Math.round(overallAvg(p) * 100) / 100 : null,
         caps: p?.national?.nation === team.nation ? p.national.caps : 0, goals: p?.national?.nation === team.nation ? p.national.goals : 0,
+        assists: p?.national?.nation === team.nation ? p.national.assists ?? 0 : 0, age: p?.age ?? null,
       });
     }
     const games: (Fixture & { competition: string })[] = [];
