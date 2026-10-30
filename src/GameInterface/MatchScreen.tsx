@@ -2145,6 +2145,7 @@ export function MatchScreen() {
           gameState={gameState}
           playerTeam={mySide}
           ratings={ratings}
+          faceUrls={faceUrls?.[mySide]}
           onQueueSub={managerOut ? orderSub : handleQueueSub}
           {...(managerOut ? {} : {
             onUnqueueSub: handleUnqueueSub,

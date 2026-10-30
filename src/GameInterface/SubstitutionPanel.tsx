@@ -37,6 +37,8 @@ export interface SubstitutionPanelProps {
   onManMarks?: (marks: { markerSlot: number; targetId: number }[]) => void;
   /** Live tactical style and axes (Etapa 35) — this match only. */
   liveTactics?: ComponentProps<typeof LiveTacticsPanel>;
+  /** Face URL per roster id of this side's players (the match's faces); absent = initials on the mini pitch. */
+  faceUrls?: Record<string, string>;
   onClose: () => void;
 }
 
@@ -56,6 +58,7 @@ export function SubstitutionPanel({
   onInstruction,
   onManMarks,
   liveTactics,
+  faceUrls,
   onClose,
 }: SubstitutionPanelProps) {
   const { t } = useTranslation();
@@ -184,6 +187,7 @@ export function SubstitutionPanel({
               ratings={ratings}
               onQueueSub={onQueueSub}
               onSwapPositions={onSwapPositions}
+              faceUrls={faceUrls}
             />
           )}
 

@@ -2599,7 +2599,8 @@
     "vacant": "Empty · injury",
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
-    "injured": "Injured"
+    "injured": "Injured",
+    "naturalRole": "Natural position: {{role}}"
   },
   "scoreBar": {},
   "matchOverlay": {

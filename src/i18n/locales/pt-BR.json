@@ -2599,7 +2599,8 @@
     "vacant": "Vaga · lesão",
     "pickStarter": "Escolha o titular que sai.",
     "booked": "Amarelo",
-    "injured": "Lesionado"
+    "injured": "Lesionado",
+    "naturalRole": "Posição de origem: {{role}}"
   },
   "scoreBar": {},
   "matchOverlay": {

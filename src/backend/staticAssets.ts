@@ -86,6 +86,8 @@ export const GAME_ART_FILES: Record<string, string> = {
   "club/stadium-top.webp": "image/webp",
   "club/grass-plain.webp": "image/webp",
   "formation/pitch-board.webp": "image/webp",
+  // Live substitution panel: the same painted board, landscape (attack to the right).
+  "formation/pitch-board-wide.webp": "image/webp",
   // Art phase 9: the rest of the pack.
   "ball/ball-atlas.json": "application/json",
   "ball/ball-atlas.png": "image/png",
