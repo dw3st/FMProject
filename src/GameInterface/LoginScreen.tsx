@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { safeNextPath } from "@/GameInterface/authRedirect";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 

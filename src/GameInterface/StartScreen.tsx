@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { loadGameSave, deleteGameSave, forgetSession } from "@/GameInterface/gameSession";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 

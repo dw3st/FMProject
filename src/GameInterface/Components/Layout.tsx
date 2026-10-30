@@ -12,7 +12,7 @@ import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { useAdvanceDay } from "@/GameInterface/useAdvanceDay";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import type { LeagueData } from "@/types/playerTypes";
 import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";

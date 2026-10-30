@@ -1,7 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import en from "@/i18n/locales/en.json";
-import ptBR from "@/i18n/locales/pt-BR.json";
+import { GAME_VERSION } from "@/Domain/saveVersion";
 
 export type SupportedLanguage = "en" | "pt-BR";
 
@@ -41,16 +40,42 @@ export function initI18n() {
   if (initialized) return i18n;
   initialized = true;
   i18n.use(initReactI18next).init({
-    resources: {
-      en: { translation: en },
-      "pt-BR": { translation: ptBR },
-    },
+    // The texts come from the server, the active language only (`loadLanguage`, perf audit 4.41.29).
+    resources: {},
+    partialBundledLanguages: true,
     lng: getStoredLanguage(),
     fallbackLng: "en",
     interpolation: { escapeValue: false },
     returnNull: false,
   });
   return i18n;
+}
+
+const loading = new Map<SupportedLanguage, Promise<void>>();
+
+/**
+ * Fetches a language's texts once (`/assets/i18n/<version>/<lang>.json`, cached forever by the browser) and adds
+ * them to i18next. Resolves even on failure (the keys then show until a reload).
+ */
+export function loadLanguage(lang: SupportedLanguage): Promise<void> {
+  initI18n();
+  if (i18n.hasResourceBundle(lang, "translation")) return Promise.resolve();
+  let p = loading.get(lang);
+  if (!p) {
+    p = fetch(`/assets/i18n/${GAME_VERSION}/${lang}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) i18n.addResourceBundle(lang, "translation", data, true, true); })
+      .catch(() => { loading.delete(lang); });
+    loading.set(lang, p);
+  }
+  return p;
+}
+
+/** The page's language before the first render, then English (the fallback) in the background. */
+export async function loadInitialLanguages(): Promise<void> {
+  const lang = getStoredLanguage();
+  await loadLanguage(lang);
+  if (lang !== "en") void loadLanguage("en");
 }
 
 export default i18n;

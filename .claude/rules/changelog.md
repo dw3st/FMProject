@@ -2,7 +2,7 @@
 
 ## Arquivo
 
-`src/GameInterface/changelog/changelog.ts` — array `changelog: ChangelogEntry[]`, mais recente
+`src/Domain/changelog/changelogData.ts` (reexportado em `src/GameInterface/changelog/changelog.ts`; o modal busca `GET /api/changelog`, fora do pacote das páginas) — array `changelog: ChangelogEntry[]`, mais recente
 primeiro. `CURRENT_VERSION` é sempre `changelog[0].version`. Cada entrada:
 
 ```ts

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DialogTitle } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
-import { changelog, upcoming } from "@/GameInterface/changelog/changelog";
+import type { ChangelogEntry, ChangelogText } from "@/Domain/changelog/changelogData";
 
 interface Props {
   open: boolean;
@@ -22,6 +22,19 @@ export function ChangelogModal({ open, onClose }: Props) {
   const lang: "pt" | "en" = i18n.language?.toLowerCase().startsWith("pt") ? "pt" : "en";
   const dateLocale = lang === "pt" ? "pt-BR" : "en-US";
   const [tab, setTab] = useState<"news" | "upcoming">("news");
+  // Fetched when opened (the text is not in the page bundle).
+  const [data, setData] = useState<{ changelog: ChangelogEntry[]; upcoming: ChangelogText[] } | null>(null);
+  useEffect(() => {
+    if (!open || data) return;
+    let cancelled = false;
+    fetch("/api/changelog")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setData(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, data]);
+  const changelog = data?.changelog ?? [];
+  const upcoming = data?.upcoming ?? [];
 
   return (
     <Modal open={open} onClose={onClose} size="md">

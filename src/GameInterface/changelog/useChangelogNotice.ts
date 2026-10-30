@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { shouldShowChangelogNotice } from "@/GameInterface/changelog/changelogNotice";
 
 const STORAGE_KEY = "fmproject.changelog.seenVersion";

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { loadInitialLanguages } from "@/i18n/i18n";
 import "@/index.css";
 import { installFontFaces } from "@/fontFaces";
 import { GameSaveProvider } from "@/GameInterface/GameSaveProvider";
@@ -48,7 +49,9 @@ export function createPage(Component: React.ComponentType, options: CreatePageOp
 
   // The painted faces (new art) are known before the first render, so a face never swaps from the SVG to the webp.
   // Up to 4 s (4.41.15): with 1,5 s a slow answer left the whole page on the old drawing without notice.
-  const ready = options.public && !options.art ? Promise.resolve() : loadPaintedFaces(4000, readNewVisual());
+  const faces = options.public && !options.art ? Promise.resolve() : loadPaintedFaces(4000, readNewVisual());
+  // The texts of the active language (fetched, not bundled: perf audit 4.41.29).
+  const ready = Promise.all([faces, loadInitialLanguages()]);
   const go = () => void ready.then(start);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", go);

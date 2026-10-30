@@ -176,9 +176,14 @@ export function WatchScreen() {
     const seatId = q.get("seat");
     return saveId && seatId ? { saveId, seatId } : null;
   }, []);
-  const back = () => { window.location.href = "/dashboard"; };
+  // Inside the dashboard's window (`embed=1`): closing tells the page around it.
+  const embed = useMemo(() => new URLSearchParams(window.location.search).get("embed") === "1", []);
+  const back = () => {
+    if (embed && window.parent !== window) window.parent.postMessage({ type: "watch-close" }, window.location.origin);
+    else window.location.href = "/dashboard";
+  };
   return (
-    <div className="h-screen bg-background flex flex-col px-6 py-4">
+    <div className={`h-screen bg-background flex flex-col ${embed ? "p-4" : "px-6 py-4"}`}>
       {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} /> : null}
     </div>
   );

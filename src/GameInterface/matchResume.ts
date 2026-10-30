@@ -26,7 +26,7 @@ export const MATCH_SNAPSHOT_VERSION = 1;
 /** Hard cap on the serialized snapshot (UTF-16 chars ≈ 2 bytes each in most browsers). */
 export const MAX_SNAPSHOT_CHARS = 1_500_000;
 /** Real-time interval between periodic snapshots. */
-export const SNAPSHOT_INTERVAL_MS = 2000;
+export const SNAPSHOT_INTERVAL_MS = 5000;
 
 type SnapshotStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 

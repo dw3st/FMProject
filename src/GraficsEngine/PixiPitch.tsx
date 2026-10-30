@@ -727,7 +727,8 @@ export function PixiPitch({
         height: canvasHeight,
         background: PITCH_COLOR,
         antialias: true,
-        resolution: window.devicePixelRatio || 1,
+        // At most 1.5× (light quality: 1×): a 2× display filled 4× the pixels for fog, light and crowd (perf audit 4.41.29).
+        resolution: qualityRef.current === "light" ? 1 : Math.min(1.5, window.devicePixelRatio || 1),
         // autoDensity is critical: without it, Pixi sets the canvas's HTML width/height attributes
         // to (logical × resolution) but leaves CSS unset — so the browser lays out the canvas at
         // backing-store size (e.g. 1376×886 instead of 688×443 on a HiDPI display).

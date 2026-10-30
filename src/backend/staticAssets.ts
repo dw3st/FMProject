@@ -13,6 +13,8 @@
  * Only whitelisted files are served (the font list below, the flag directory listing); the URL
  * carries a version segment, so the responses are `immutable`.
  */
+import enLocale from "@/i18n/locales/en.json";
+import ptLocale from "@/i18n/locales/pt-BR.json";
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { FLAG_ASSET_VERSION } from "@/Domain/world/flags";
@@ -135,7 +137,21 @@ function serveFile(path: string, contentType: string, extra: Record<string, stri
   });
 }
 
+/** Locale texts, fetched by the page for the active language only (perf audit 4.41.29: both were in every bundle). */
+const LOCALES: Record<string, unknown> = { "en.json": enLocale, "pt-BR.json": ptLocale };
+const localeBodies = new Map<string, string>();
+
 export const staticAssetRoutes = {
+  // The game version is in the path (`/assets/i18n/<version>/<lang>.json`), so the answer never changes for a URL.
+  "/assets/i18n/:ver/:file": (req: Request & { params: { ver: string; file: string } }) => {
+    const data = LOCALES[req.params.file];
+    if (!data) return notFound();
+    let body = localeBodies.get(req.params.file);
+    if (!body) { body = JSON.stringify(data); localeBodies.set(req.params.file, body); }
+    return new Response(body, {
+      headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": CACHE_FOREVER, "X-Content-Type-Options": "nosniff" },
+    });
+  },
   [`/assets/game/${GAME_ART_VERSION}/:dir/:file`]: (req: Request & { params: { dir: string; file: string } }) => {
     const path = `${req.params.dir}/${req.params.file}`;
     const type = GAME_ART_FILES[path];

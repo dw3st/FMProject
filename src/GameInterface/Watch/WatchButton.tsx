@@ -1,9 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Modal } from "@/GameInterface/Components/Modal";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { loadSession } from "@/GameInterface/gameSession";
-import { WatchPopup } from "@/GameInterface/Watch/WatchScreen";
 import type { LiveScoreView } from "@/types/rivalsTypes";
+
+/**
+ * The broadcast in a window: the `/watch` page in a frame, with its own bundle (Pixi and the engine). Importing it
+ * here put ~750 KB in every page with a rivals card (perf audit, 4.41.29: the page server does not split chunks).
+ */
+function WatchFrame({ saveId, seatId, onClose }: { saveId: string; seatId: string; onClose: () => void }) {
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin === window.location.origin && (e.data as { type?: string } | null)?.type === "watch-close") onClose();
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, [onClose]);
+  const src = `/watch?save=${encodeURIComponent(saveId)}&seat=${encodeURIComponent(seatId)}&embed=1`;
+  return (
+    <Modal open onClose={onClose} size="wide" panelClassName="h-[88vh] flex flex-col overflow-hidden">
+      <iframe src={src} title="watch" className="w-full h-full border-0 bg-background" />
+    </Modal>
+  );
+}
 
 const BUTTON = "ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground no-underline hover:border-primary cursor-pointer";
 
@@ -32,7 +52,7 @@ export function WatchButton({ live, saveId, newTab }: { live: LiveScoreView; sav
         <Icon name="play" size={16} />
         {t("watch.button")}
       </button>
-      {open && <WatchPopup saveId={save} seatId={live.seatId} onClose={() => setOpen(false)} />}
+      {open && <WatchFrame saveId={save} seatId={live.seatId} onClose={() => setOpen(false)} />}
     </>
   );
 }

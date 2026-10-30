@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import i18n, { initI18n, getStoredLanguage, setStoredLanguage, type SupportedLanguage } from "@/i18n/i18n";
+import i18n, { initI18n, getStoredLanguage, loadLanguage, setStoredLanguage, type SupportedLanguage } from "@/i18n/i18n";
 
 initI18n();
 
@@ -15,7 +15,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (i18n.language !== language) {
-      i18n.changeLanguage(language);
+      void loadLanguage(language).then(() => i18n.changeLanguage(language));
     }
     // #154: the page language follows the player's (screen readers, hyphenation, the browser's translate offer).
     if (typeof document !== "undefined") document.documentElement.lang = language;
@@ -23,8 +23,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = useCallback((lang: SupportedLanguage) => {
     setStoredLanguage(lang);
-    setLanguageState(lang);
-    i18n.changeLanguage(lang);
+    void loadLanguage(lang).then(() => {
+      setLanguageState(lang);
+      void i18n.changeLanguage(lang);
+    });
   }, []);
 
   return (

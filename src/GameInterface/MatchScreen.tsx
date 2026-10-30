@@ -805,7 +805,15 @@ export function MatchScreen() {
   }, [gameState]);
 
   useEffect(() => {
-    return gameBus.on("ratingsUpdated", (r) => setRatings({ ...r }));
+    // Every pass or tackle adjusts a rating: render the list at most 4 times a second (perf audit 4.41.29).
+    let latest: Record<number, number> | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const off = gameBus.on("ratingsUpdated", (r) => {
+      latest = r;
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; if (latest) setRatings({ ...latest }); }, 250);
+    });
+    return () => { off(); if (timer) clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -1311,7 +1319,10 @@ export function MatchScreen() {
       });
     };
     const onVisibility = () => { if (document.visibilityState === "hidden") writeSnapshot(); };
-    const id = setInterval(writeSnapshot, SNAPSHOT_INTERVAL_MS);
+    // Periodic snapshot when the browser is idle (the stringify of the whole state stalled a frame, perf audit 4.41.29).
+    const idle = (cb: () => void) =>
+      typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(cb, { timeout: 1500 }) : window.setTimeout(cb, 0);
+    const id = setInterval(() => idle(writeSnapshot), SNAPSHOT_INTERVAL_MS);
     window.addEventListener("pagehide", writeSnapshot);
     window.addEventListener("beforeunload", writeSnapshot);
     document.addEventListener("visibilitychange", onVisibility);

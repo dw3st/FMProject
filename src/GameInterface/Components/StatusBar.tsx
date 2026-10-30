@@ -3,7 +3,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
-import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { formatEuros } from "@/Domain/money";
 import { usePresence } from "@/GameInterface/usePresence";
