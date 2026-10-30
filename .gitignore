@@ -68,3 +68,4 @@ data_process/thesportsdb/cache/
 data_process/transfermarkt/cache/
 data_process/transfermarkt/trimmed.json
 data_process/assets/works_debug/
+data_process/assets/club_debug/

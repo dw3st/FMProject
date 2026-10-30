@@ -78,6 +78,9 @@ export const GAME_ART_FILES: Record<string, string> = {
   // Facility items under works (4.41.20): painted construction overlays.
   "facilities-works/works-outdoor.webp": "image/webp",
   "facilities-works/works-indoor.webp": "image/webp",
+  // Club screen (4.41.21): the painted stadium behind the stand map, plain grass for an unmown turf preview.
+  "club/stadium-top.webp": "image/webp",
+  "club/grass-plain.webp": "image/webp",
   // Art phase 9: the rest of the pack.
   "ball/ball-atlas.json": "application/json",
   "ball/ball-atlas.png": "image/png",
