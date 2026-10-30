@@ -2949,6 +2949,11 @@
       "loadFailed": "Could not load the awards."
     },
     "retired": {
+      "favorites": "Favourites",
+      "favorite": "Add to favourites",
+      "unfavorite": "Remove from favourites",
+      "favoritesFull": "Favourites list is full (100)",
+      "emptyFavorites": "No favourites yet: star a retired player to keep him here.",
       "tab": "Retired",
       "empty": "No retired players yet.",
       "age": "Age",
@@ -5976,6 +5981,7 @@
     "rule": "A club can sign until it has {{max}} of the world's top {{top}} players. A player of the club who climbs into the top stays; promoting an academy player is always allowed."
   },
   "watch": {
+    "popOut": "Open in its own window (drag it to another monitor)",
     "button": "Watch",
     "title": "Watching",
     "live": "Live",

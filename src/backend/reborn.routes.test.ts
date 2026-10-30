@@ -108,4 +108,40 @@ describe("reborn routes", () => {
     expect((await full.json() as any).error).toBe("youthFull");
     expect((await saveService.getRetired(saveId)).find((r) => r.id === "c")!.rebornOffer).toBe("pending");
   }, 60_000);
+
+  test("favourite retired players: star, filter, unstar, unknown id", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    const { user, session } = devAutoLogin("retired-fav@test.local");
+    await ownSolo(meta.id, user.id);
+    const call = (key: string, path: string, method: string, retiredId = "", body?: unknown) => {
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost${path}`, {
+          method, headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+        { params: { saveId: meta.id, retiredId } },
+      ));
+    };
+    const rec = (id: string) => ({
+      id, name: `Old ${id}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right", profile: { summary: "s", archetype: "a" },
+      retiredOn: "2027-06-01", squadId: "33", age: 38, wasWorldClass: false, appearances: 10, goals: 1,
+    }) as unknown as RetiredPlayer;
+    await saveService.writeRetired(meta.id, [rec("x"), rec("y")]);
+    const fKey = "/api/saves/:saveId/retired/:retiredId/favorite";
+    expect((await call(fKey, `/api/saves/${meta.id}/retired/x/favorite`, "POST", "x", { on: true })).status).toBe(200);
+    expect((await call(fKey, `/api/saves/${meta.id}/retired/zz/favorite`, "POST", "zz", { on: true })).status).toBe(404);
+    expect((await call(fKey, `/api/saves/${meta.id}/retired/x/favorite`, "POST", "x", {})).status).toBe(400);
+    const list = async (qs: string) => (await (await call("/api/saves/:saveId/retired", `/api/saves/${meta.id}/retired${qs}`, "GET")).json()) as {
+      items: (RetiredPlayer & { favorite?: boolean })[];
+    };
+    expect((await list("?favorites=1")).items.map((r) => r.id)).toEqual(["x"]);
+    expect((await list("")).items.find((r) => r.id === "x")?.favorite).toBe(true);
+    await call(fKey, `/api/saves/${meta.id}/retired/x/favorite`, "POST", "x", { on: false });
+    expect((await list("?favorites=1")).items).toEqual([]);
+    await saveService.deleteSave(meta.id);
+  }, 60_000);
 });

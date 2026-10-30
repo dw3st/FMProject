@@ -12,6 +12,8 @@ type Req = Request & { params: Record<string, string> };
 
 const RETIRED_PAGE_DEFAULT = 50;
 const RETIRED_PAGE_MAX = 100;
+/** Most retired players one manager can star. */
+export const RETIRED_FAVORITES_MAX = 100;
 
 /** Reborn offers (`.claude/rules/game/retirement.md`): world-class retirees of the human club. */
 export const rebornRoutes = {
@@ -41,6 +43,8 @@ export const rebornRoutes = {
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
     if (q.get("legends") === "1") retired = retired.filter(isLegend);
+    const favorites = new Set((await saveService.getSeat(saveId, auth.seatId))?.retiredFavorites ?? []);
+    if (q.get("favorites") === "1") retired = retired.filter((r) => favorites.has(r.id));
     // Name search, nationality and "highlights only" (tester reports); the nations offered are the list's before them.
     const nations = [...new Set(retired.map((r) => r.nationality).filter((n): n is string => !!n))].sort();
     const search = (q.get("q") ?? "").slice(0, 60);
@@ -59,7 +63,7 @@ export const rebornRoutes = {
             ? { via: "reborn" as const, mine: full.rebornSeatId === auth.seatId, manager: null, on: null }
             : null,
       } : null;
-      return { ...r, clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null, legend };
+      return { ...r, clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null, legend, favorite: favorites.has(r.id) };
     });
     const { season } = await nextSeasonEndOf(saveId, auth.seatId);
     const thisSeason = (await saveService.getAchievements(saveId, auth.seatId)).bought.legendMoneySeason === season;
@@ -114,6 +118,27 @@ export const rebornRoutes = {
       offers: retired.filter((r) => r.rebornSeatId === auth.seatId && r.rebornOffer === "pending").map((r) => ({
         id: r.id, name: r.name, positions: r.positions, age: r.age, nationality: r.nationality,
       })),
+    });
+  },
+
+  /** `POST { on }` - stars (or unstars) a retired player for this manager (tester report). 409 `favoritesFull`. */
+  "/api/saves/:saveId/retired/:retiredId/favorite": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const retiredId = req.params.retiredId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = (await req.json().catch(() => null)) as { on?: unknown } | null;
+    if (!body || typeof body.on !== "boolean") return Response.json({ error: "on required" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      if (!(await saveService.getRetired(saveId)).some((r) => r.id === retiredId)) {
+        return Response.json({ error: "not found" }, { status: 404 });
+      }
+      const current = (await saveService.getSeat(saveId, auth.seatId))?.retiredFavorites ?? [];
+      const next = body.on ? (current.includes(retiredId) ? current : [...current, retiredId]) : current.filter((id) => id !== retiredId);
+      if (next.length > RETIRED_FAVORITES_MAX) return Response.json({ error: "favoritesFull" }, { status: 409 });
+      await saveService.updateSeat(saveId, auth.seatId, { retiredFavorites: next });
+      return Response.json({ favorite: body.on });
     });
   },
 

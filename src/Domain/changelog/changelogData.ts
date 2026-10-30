@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.40",
+    date: "2026-10-30",
+    time: "15:00",
+    items: [
+      {
+        pt: "Aposentados favoritos: marque com a estrela em Estatísticas, Aposentados, e ache de novo na aba Favoritos.",
+        en: "Favourite retired players: star them in Stats, Retired, and find them again in the Favourites tab.",
+      },
+      {
+        pt: "Broadcast em janela própria: o botão no topo da janela abre o jogo do amigo numa janela do navegador, que dá para levar a outro monitor e que não recarrega ao trocar de tela.",
+        en: "Broadcast in its own window: the button at the top opens your friend's match in a browser window you can move to another monitor, and it never reloads when you change screen.",
+      },
+      {
+        pt: "As telas abrem mais rápido ao navegar, e a janela flutuante do broadcast volta quase na hora.",
+        en: "Screens open faster as you navigate, and the floating broadcast window comes back almost at once.",
+      },
+    ],
+  },
+  {
     version: "4.41.39",
     date: "2026-10-30",
     time: "14:46",

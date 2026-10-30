@@ -20,6 +20,18 @@ function watchDefaultRect(v: Size): FloatRect {
 const close = () => setWatchTarget(null);
 
 /**
+ * The broadcast in a browser window of its own (report: drag it to a second monitor): the floating window closes and
+ * the same `/watch` page opens as a popup the user moves anywhere. Blocked popup: the floating window stays.
+ */
+function popOut(saveId: string, seatId: string): void {
+  const url = `/watch?save=${encodeURIComponent(saveId)}&seat=${encodeURIComponent(seatId)}`;
+  const w = Math.min(1100, Math.round(window.screen.availWidth * 0.6));
+  const h = Math.round(w / 1.55);
+  const win = window.open(url, "fm-watch", `popup=yes,width=${w},height=${h}`);
+  if (win) close();
+}
+
+/**
  * The broadcast of a friend's match in a floating window: the `/watch` page in a frame (its own bundle: Pixi and the
  * engine stay out of the game pages, which the page server does not split). The window stays open on every screen of
  * this tab (moved, resized) and the frame reconnects; the user keeps managing his club meanwhile.
@@ -55,6 +67,9 @@ export function WatchWindowHost() {
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground flex-1 truncate">
             {t("watch.title")}
           </span>
+          <button type="button" className={ICON_BUTTON} onClick={() => popOut(target.saveId, target.seatId)} aria-label={t("watch.popOut")} title={t("watch.popOut")}>
+            <Icon name="external-link" size={16} />
+          </button>
           <button type="button" className={ICON_BUTTON} onClick={close} aria-label={t("watch.leave")} title={t("watch.leave")}>
             <Icon name="close" size={16} />
           </button>

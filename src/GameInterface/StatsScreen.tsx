@@ -166,8 +166,10 @@ type RetiredRow = RetiredPlayer & {
     fee: number | null;
     back: { via: "points" | "money" | "reborn"; mine: boolean; manager: string | null; on: string | null } | null;
   } | null;
+  /** Starred by this manager (tester report). */
+  favorite?: boolean;
 };
-type RetiredFilter = "mine" | "legends" | "all";
+type RetiredFilter = "mine" | "legends" | "favorites" | "all";
 
 const RETIRED_PAGE = 50;
 
@@ -201,7 +203,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const generation = useRef(0);
 
   const fetchPage = (offset: number) =>
-    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}${legends ? "&legends=1" : ""}`
+    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}${legends ? "&legends=1" : ""}${filter === "favorites" ? "&favorites=1" : ""}`
       + `${notable && !legends ? "&notable=1" : ""}${search ? `&q=${encodeURIComponent(search)}` : ""}${nation ? `&nation=${encodeURIComponent(nation)}` : ""}`)
       .then((r) => (r.ok
         ? (r.json() as Promise<{ total: number; items: RetiredRow[]; nations: string[]; legendHire: { thisSeason: boolean } }>)
@@ -221,6 +223,23 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveId, filter, reload, notable, search, nation]);
+
+  const toggleFavorite = async (id: string, on: boolean) => {
+    const res = await fetch(`/api/saves/${saveId}/retired/${encodeURIComponent(id)}/favorite`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const body = (await res?.json().catch(() => null)) as { error?: string } | null;
+      setHireMsg({ kind: "error", text: t(body?.error === "favoritesFull" ? "statsScreen.retired.favoritesFull" : "warnings.errors.loadFailed") });
+      return;
+    }
+    setRows((prev) => {
+      if (!prev) return prev;
+      // In the Favourites list an unstarred player leaves it.
+      if (!on && filter === "favorites") return prev.filter((r) => r.id !== id);
+      return prev.map((r) => (r.id === id ? { ...r, favorite: on } : r));
+    });
+  };
 
   const hire = async (r: RetiredRow) => {
     setHiring(true);
@@ -261,6 +280,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
           options={[
             { key: "mine", label: t("statsScreen.retired.mine") },
             { key: "legends", label: t("statsScreen.retired.legends") },
+            { key: "favorites", label: t("statsScreen.retired.favorites") },
             { key: "all", label: t("statsScreen.retired.all") },
           ]}
           value={filter}
@@ -325,7 +345,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   if (error) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p></>;
   if (!rows) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p></>;
   if (rows.length === 0) {
-    return <>{filters}<p className="text-sm text-muted-foreground">{t(search || nation ? "statsScreen.retired.emptyFiltered" : mine ? "statsScreen.retired.emptyMine" : legends ? "statsScreen.retired.emptyLegends" : "statsScreen.retired.empty")}</p></>;
+    return <>{filters}<p className="text-sm text-muted-foreground">{t(search || nation ? "statsScreen.retired.emptyFiltered" : mine ? "statsScreen.retired.emptyMine" : legends ? "statsScreen.retired.emptyLegends" : filter === "favorites" ? "statsScreen.retired.emptyFavorites" : "statsScreen.retired.empty")}</p></>;
   }
   return (
     <div className={legends ? "max-w-6xl" : "max-w-4xl"}>
@@ -352,7 +372,19 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
           return [
             <StatsRow key={r.id}>
               <CrestCell squadId={r.squadId} />
-              <NameCell><span className="truncate">{r.name}</span></NameCell>
+              <NameCell>
+                <button
+                  type="button"
+                  onClick={() => void toggleFavorite(r.id, !r.favorite)}
+                  aria-pressed={!!r.favorite}
+                  aria-label={t(r.favorite ? "statsScreen.retired.unfavorite" : "statsScreen.retired.favorite")}
+                  title={t(r.favorite ? "statsScreen.retired.unfavorite" : "statsScreen.retired.favorite")}
+                  className={`shrink-0 inline-flex items-center justify-center w-8 h-8 bg-transparent border-0 p-0 cursor-pointer ${r.favorite ? "text-chart-4" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Icon name={r.favorite ? "star-filled" : "star"} size={16} />
+                </button>
+                <span className="truncate">{r.name}</span>
+              </NameCell>
               <NumberCell>{r.age}</NumberCell>
               <ClubCell>{r.clubName ?? "-"}</ClubCell>
               <NumberCell>{apps}</NumberCell>

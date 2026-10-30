@@ -5,6 +5,7 @@ import {
   Rewind,
   Binoculars,
   Eye,
+  ExternalLink,
   Mic,
   LayoutDashboard,
   ClipboardList,
@@ -142,6 +143,7 @@ export type IconName =
   | "rewind"
   | "binoculars"
   | "eye"
+  | "external-link"
   | "mic"
   | "dashboard"
   | "tactics"
@@ -285,6 +287,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "rewind":       Rewind,
   "binoculars":   Binoculars,
   "eye":          Eye,
+  "external-link": ExternalLink,
   "mic":          Mic,
   "dashboard": LayoutDashboard,
   "tactics": ClipboardList,

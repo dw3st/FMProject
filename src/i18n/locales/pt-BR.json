@@ -2949,6 +2949,11 @@
       "loadFailed": "Não foi possível carregar os prêmios."
     },
     "retired": {
+      "favorites": "Favoritos",
+      "favorite": "Adicionar aos favoritos",
+      "unfavorite": "Tirar dos favoritos",
+      "favoritesFull": "A lista de favoritos está cheia (100)",
+      "emptyFavorites": "Nenhum favorito ainda: marque a estrela de um aposentado para guardá-lo aqui.",
       "tab": "Aposentados",
       "empty": "Nenhum jogador aposentado ainda.",
       "age": "Idade",
@@ -5976,6 +5981,7 @@
     "rule": "Cada clube pode contratar até ter {{max}} jogadores do top {{top}} do mundo. Quem já é do clube e entra no top fica; promover um jovem da base sempre vale."
   },
   "watch": {
+    "popOut": "Abrir em janela própria (arraste para outro monitor)",
     "button": "Assistir",
     "title": "Assistindo",
     "live": "Ao vivo",

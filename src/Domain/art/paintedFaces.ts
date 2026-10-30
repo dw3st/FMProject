@@ -160,32 +160,64 @@ export function paintedCoachFace(face: ManagerFace): string | null {
   return combo && painted.coaches.has(combo) ? artUrl(`faces/coaches/${combo}.webp`) : null;
 }
 
+const MANIFEST_CACHE_KEY = "fm.art.manifest.v1";
+
+function applyManifest(body: Partial<ArtManifest>, wantsNewVisual: boolean): void {
+  setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
+  setPaintedPenaltyBackdrops(wantsNewVisual && Array.isArray(body.penaltyBackdrops) ? body.penaltyBackdrops : []);
+  setPaintedScreens(
+    wantsNewVisual && Array.isArray(body.facilities) ? body.facilities : [],
+    wantsNewVisual && Array.isArray(body.news) ? body.news : [],
+  );
+  setNewVisual(wantsNewVisual && body.visual === true);
+  setPaintedFaces({
+    players: Array.isArray(body.players) ? body.players : [],
+    coaches: Array.isArray(body.coaches) ? body.coaches : [],
+    referees: Array.isArray(body.referees) ? body.referees : [],
+  });
+}
+
+function cachedManifest(): Partial<ArtManifest> | null {
+  try {
+    const raw = sessionStorage.getItem(MANIFEST_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<ArtManifest>) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Asks the server which painted faces and backdrops exist (empty while the art is switched off) before the page
  * renders, at most `timeoutMs`: a slow answer just leaves the SVG faces and the drawn turf. `newVisual` false (the
- * player's own switch, Settings) keeps the drawn turf.
+ * player's own switch, Settings) keeps the drawn turf. The answer is kept for the tab (`sessionStorage`): the next page
+ * renders at once with it and refreshes the copy in the background (tester report: the broadcast window took seconds
+ * to come back on every page change).
  */
 export async function loadPaintedFaces(timeoutMs = 1500, wantsNewVisual = true): Promise<void> {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    const res = await fetch("/api/art/faces", { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!res.ok) return;
-    const body = (await res.json()) as Partial<ArtManifest>;
-    setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
-    setPaintedPenaltyBackdrops(wantsNewVisual && Array.isArray(body.penaltyBackdrops) ? body.penaltyBackdrops : []);
-    setPaintedScreens(
-      wantsNewVisual && Array.isArray(body.facilities) ? body.facilities : [],
-      wantsNewVisual && Array.isArray(body.news) ? body.news : [],
-    );
-    setNewVisual(wantsNewVisual && body.visual === true);
-    setPaintedFaces({
-      players: Array.isArray(body.players) ? body.players : [],
-      coaches: Array.isArray(body.coaches) ? body.coaches : [],
-      referees: Array.isArray(body.referees) ? body.referees : [],
-    });
-  } catch {
-    // no painted faces: the SVG ones stay
+  const fetchManifest = async (): Promise<Partial<ArtManifest> | null> => {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const res = await fetch("/api/art/faces", { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const body = (await res.json()) as Partial<ArtManifest>;
+      try {
+        sessionStorage.setItem(MANIFEST_CACHE_KEY, JSON.stringify(body));
+      } catch {
+        // no storage: the next page asks again
+      }
+      return body;
+    } catch {
+      return null;
+    }
+  };
+  const cached = cachedManifest();
+  if (cached) {
+    applyManifest(cached, wantsNewVisual);
+    void fetchManifest();
+    return;
   }
+  const body = await fetchManifest();
+  if (body) applyManifest(body, wantsNewVisual);
 }
