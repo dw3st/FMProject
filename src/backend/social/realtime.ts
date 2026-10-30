@@ -328,6 +328,7 @@ function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
       type: "relay_state", ...at, state: state as never,
       stats: { teams: stats.teams as never, goals: stats.goals as never, ratings: stats.ratings as never },
       ...(look ? { look: look as never } : {}),
+      ...(e.paused === true ? { paused: true } : {}),
     };
   }
   if (e.type === "relay_event") {

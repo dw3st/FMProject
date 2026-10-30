@@ -26,6 +26,8 @@ export interface WatchSocket {
   closed: WatchCloseReason | null;
   /** How the friend's pitch is drawn (null until his first state with it). */
   look: WatchLook | null;
+  /** The friend paused his match. */
+  paused: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
   const [stats, setStats] = useState<WatchStats | null>(null);
   const [closed, setClosed] = useState<WatchCloseReason | null>(null);
   const [look, setLook] = useState<WatchLook | null>(null);
+  const [paused, setPaused] = useState(false);
   /** The last frames by the friend's clock: the drawing runs a little behind the newest, always between two frames. */
   const bufferRef = useRef<RemoteBuffer>(EMPTY_REMOTE_BUFFER);
   const feedRef = useRef<RemoteFeed>({
@@ -103,6 +106,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
           stateRef.current = next;
           setState(next);
           if (st) setStats(st);
+          setPaused(e.paused === true);
           if (e.look) {
             const clean = sanitizeWatchLook(e.look);
             if (clean) setLook(clean);
@@ -130,5 +134,5 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
     };
   }, [saveId, seatId]);
 
-  return { info, live, state, stats, feed: feedRef.current, closed, look };
+  return { info, live, state, stats, feed: feedRef.current, closed, look, paused };
 }

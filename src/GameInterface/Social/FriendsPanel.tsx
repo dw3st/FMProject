@@ -9,6 +9,8 @@ import { useSocial } from "@/GameInterface/Social/useSocial";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { TextField } from "@/GameInterface/ui/TextField";
+import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
+import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 import type { FriendStatus, FriendView, SearchResult, SocialErrorCode } from "@/types/socialTypes";
 
 type PanelTab = "friends" | "requests" | "add";
@@ -24,7 +26,16 @@ const DOT: Record<FriendStatus, string> = {
   offline: "bg-muted-foreground/50",
 };
 
-/** Friends panel above the status bar, bottom right (Steam style). Escape closes it. */
+const FRIENDS_MIN: Size = { w: 360, h: 360 };
+const FRIENDS_MAX: Size = { w: 760, h: 1100 };
+
+/** First spot in a tab: above the status bar, bottom right (Steam style). */
+export function friendsDefaultRect(v: Size): FloatRect {
+  const h = Math.min(640, Math.round(v.h * 0.85));
+  return { x: v.w - 24 - 440, y: v.h - 56 - h, w: 440, h };
+}
+
+/** Friends panel: a floating window (moved and resized, kept per tab), first above the status bar on the right. */
 export function FriendsPanel() {
   const { t } = useTranslation();
   const s = useSocial();
@@ -53,18 +64,24 @@ export function FriendsPanel() {
   const requestCount = s.lists.incoming.length + s.worldInvites.length;
 
   return (
-    <section
-      ref={panelRef}
-      role="dialog"
-      aria-label={t("social.panelTitle")}
-      className="fixed bottom-14 right-6 z-40 w-[440px] h-[640px] max-h-[85vh] flex flex-col rounded-md border border-border bg-card"
+    <FloatingWindow
+      id="friends"
+      sectionRef={panelRef}
+      ariaLabel={t("social.panelTitle")}
+      defaultRect={friendsDefaultRect}
+      min={FRIENDS_MIN}
+      max={FRIENDS_MAX}
+      dockedHeight={560}
+      onClose={() => setPanelOpen(false)}
+      header={
+        <header className="flex items-center justify-between gap-2 px-4 pt-3">
+          <h2 className="font-display font-black uppercase text-xl leading-none">{t("social.panelTitle")}</h2>
+          <button type="button" className={ICON_BUTTON} onClick={() => setPanelOpen(false)} aria-label={t("social.close")} title={t("social.close")}>
+            <Icon name="close" size={16} />
+          </button>
+        </header>
+      }
     >
-      <header className="flex items-center justify-between gap-2 px-4 pt-3">
-        <h2 className="font-display font-black uppercase text-xl leading-none">{t("social.panelTitle")}</h2>
-        <button type="button" className={ICON_BUTTON} onClick={() => setPanelOpen(false)} aria-label={t("social.close")} title={t("social.close")}>
-          <Icon name="close" size={16} />
-        </button>
-      </header>
       {me === null ? (
         <p className="px-4 py-3 text-sm text-muted-foreground">{t("social.loading")}</p>
       ) : !me.nickname ? (
@@ -91,7 +108,7 @@ export function FriendsPanel() {
           </div>
         </>
       )}
-    </section>
+    </FloatingWindow>
   );
 }
 

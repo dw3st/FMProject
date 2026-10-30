@@ -18,6 +18,7 @@ import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
+import { WatchWindowHost } from "@/GameInterface/Watch/WatchWindowHost";
 import { ReadyControl } from "@/GameInterface/World/ReadyControl";
 import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
@@ -94,6 +95,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <FriendsPanel />
         <ChatDock />
         <ChatPopups />
+        <WatchWindowHost />
 
         <Modal
           open={isInboxOpen}

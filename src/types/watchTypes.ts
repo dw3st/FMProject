@@ -56,5 +56,11 @@ export interface WatchLook {
   coaches?: Partial<Record<TeamId, { color: string; faceUrl?: string }>>;
 }
 
-export interface WatchStatePayload { state: H2HWireState; stats: WatchStats; look?: WatchLook }
+export interface WatchStatePayload {
+  state: H2HWireState;
+  stats: WatchStats;
+  look?: WatchLook;
+  /** The friend paused his match (frames stop; the state keeps coming while paused). */
+  paused?: boolean;
+}
 export interface WatchEventPayload { name: string; payload: unknown }
