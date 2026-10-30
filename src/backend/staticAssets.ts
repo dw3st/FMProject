@@ -91,6 +91,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "effects/smoke-atlas.png": "image/png",
   "stadium/floodlight-tower.png": "image/png",
   "stadium/led-board-frame.png": "image/png",
+  "led/led-frame.png": "image/png",
   "stadium/tunnel.png": "image/png",
   "stadium/bench.png": "image/png",
   "stadium/bench-roof.png": "image/png",

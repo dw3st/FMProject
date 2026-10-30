@@ -9,7 +9,7 @@ import type { SeatCell } from "@/GraficsEngine/crowd";
 
 export const ATMOSPHERE = {
   /** Tower: mast length and panel size in stand-corner sizes (the smaller of the two stand thicknesses there). */
-  TOWER: { INNER_YDS: 131.2, TOWER_YDS: 6.4, MAST: 0.55, PANEL_W: 0.62, PANEL_H: 0.24, MAST_COLOR: 0x56606b, PANEL_OFF: 0x8a929c, PANEL_ON: 0xfff4d6 },
+  TOWER: { INNER_YDS: 131.2, TOWER_YDS: 6.4, SET_BACK: 0.5, MAST: 0.55, PANEL_W: 0.62, PANEL_H: 0.24, MAST_COLOR: 0x56606b, PANEL_OFF: 0x8a929c, PANEL_ON: 0xfff4d6 },
   /** Floodlight level above which the panels are drawn on (and phones show). */
   LIGHTS_ON: 0.35,
   /** Share of the filled seats with a phone light at night; a home goal doubles it for GOAL_BOOST_S. */
@@ -53,7 +53,14 @@ export function towerSpots(stand: StandGeometry): TowerSpot[] {
   const size = Math.max(4, (inner.w / ATMOSPHERE.TOWER.INNER_YDS) * ATMOSPHERE.TOWER.TOWER_YDS);
   const right = inner.x + inner.w, bottom = inner.y + inner.h;
   const corners: [number, number][] = [[inner.x, inner.y], [right, inner.y], [inner.x, bottom], [right, bottom]];
-  return corners.map(([x, y]) => ({ x, y, angle: Math.atan2(cy - y, cx - x), size }));
+  // Set back into the stand's corner (tester report: the tower was cut at the corner): its lamp bank sits just behind
+  // the inner corner, the whole tower over the rounded corner of the stand.
+  const back = size * ATMOSPHERE.TOWER.SET_BACK * Math.SQRT1_2;
+  return corners.map(([x, y]) => {
+    const sx = x < cx ? -1 : 1, sy = y < cy ? -1 : 1;
+    const tx = x + sx * back, ty = y + sy * back;
+    return { x: tx, y: ty, angle: Math.atan2(cy - ty, cx - tx), size };
+  });
 }
 
 /** Where a tower's panel sits (the floodlight glow comes from there). */

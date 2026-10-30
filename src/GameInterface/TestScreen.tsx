@@ -542,7 +542,9 @@ export function TestScreen() {
   const [bigMatch, setBigMatch] = useState(false);
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
-      ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}) }
+      ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
+          // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
+          led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),
     [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch],
   );

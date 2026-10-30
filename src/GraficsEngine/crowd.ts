@@ -6,6 +6,7 @@ import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { contrastRatio } from "@/GraficsEngine/playerFaces";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import { outsideCornerBowl } from "@/GraficsEngine/stadiumExtras";
 import type { StandId } from "@/types/facilityTypes";
 
 export type StandSide = "top" | "bottom" | "left" | "right";
@@ -129,6 +130,8 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
       for (let c = 0; c < cols; c++) {
         const p = toXY(k, c);
         if (r.side === "bottom" && tunnel && p.x > tunnel.x - cell * 0.5 && p.x < tunnel.x + tunnel.w + cell * 0.5) continue;
+        // The corners are rounded into a bowl (tester report): no seat outside the curve.
+        if (outsideCornerBowl(stand, p.x, p.y)) continue;
         seats.push({ x: p.x, y: p.y, side: r.side, row, col: c, rowFrac });
       }
       row++;

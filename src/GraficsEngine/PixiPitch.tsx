@@ -2,12 +2,12 @@ import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Application, Assets, Spritesheet, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { Application, Assets, Spritesheet, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite, CanvasTextMetrics } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
-import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
+import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, LED, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -35,7 +35,8 @@ import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
-import { ledLang } from "@/GraficsEngine/ledAds";
+import { ledLang, type LedLang } from "@/GraficsEngine/ledAds";
+import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, standCorners, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
 import i18n from "@/i18n/i18n";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -59,11 +60,11 @@ import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
-import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
+import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { STAND_TILE_ROTATION, drawDecor, drawStandBase, drawStandDetails, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import { crowdSeats, seatCellPx, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
+import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
   ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
   type CelebrationBurst, type PhoneLight,
@@ -292,13 +293,41 @@ function drawPitch(
     g.circle(gx, goalYTop, L.POST_W * 0.9).fill(0xffffff);
     g.circle(gx, goalYBot, L.POST_W * 0.9).fill(0xffffff);
   }
-  // Corner flags.
-  const F = MATCH_LOOK.FLAG;
-  for (const [fx, fy] of [[x, y], [rx, y], [x, y + height], [rx, y + height]] as const) {
-    g.moveTo(fx, fy).lineTo(fx, fy - F.POLE).stroke({ width: 1.5, color: 0xe9e9e9 });
-    // The pennant points into the pitch (tester report): right at the left corners, left at the right ones.
-    const dir = fx === x ? 1 : -1;
-    g.moveTo(fx, fy - F.POLE).lineTo(fx + dir * F.W, fy - F.POLE + F.H / 2).lineTo(fx, fy - F.POLE + F.H).fill(F.COLOR);
+  // Corner flags: drawn on their own layer (`drawCornerFlags`), above the boards (tester report).
+}
+
+/**
+ * The stand corners rounded into a bowl (tester report): outside the quarter curve around each inner corner the dark
+ * concourse behind the stand, the curve edged like the roof (`standCorners`).
+ */
+function drawStandCorners(g: Graphics, stand: StandGeometry) {
+  const t = stand.thickness;
+  for (const c of standCorners(stand)) {
+    const tw = c.sx < 0 ? t.left : t.right, th = c.sy < 0 ? t.top : t.bottom;
+    if (c.r <= 1 || tw <= 0 || th <= 0) continue;
+    const pts: number[] = [c.cx + c.sx * c.r, c.cy, c.cx + c.sx * tw, c.cy, c.cx + c.sx * tw, c.cy + c.sy * th, c.cx, c.cy + c.sy * th, c.cx, c.cy + c.sy * c.r];
+    const N = 18;
+    for (let i = 1; i < N; i++) {
+      const a = (i / N) * (Math.PI / 2);
+      pts.push(c.cx + c.sx * c.r * Math.sin(a), c.cy + c.sy * c.r * Math.cos(a));
+    }
+    g.poly(pts).fill(0x0c1118);
+    // A few concentric steps of the concourse, then the curve's roof edge.
+    for (let k = 1; k <= 3; k++) {
+      const rr = c.r + (Math.min(tw, th) * 0.6 * k) / 3;
+      g.moveTo(c.cx + c.sx * rr, c.cy);
+      for (let i = 1; i <= N; i++) {
+        const a = (i / N) * (Math.PI / 2);
+        g.lineTo(c.cx + c.sx * rr * Math.cos(a), c.cy + c.sy * rr * Math.sin(a));
+      }
+      g.stroke({ width: 1, color: 0x1d2733, alpha: 0.9 });
+    }
+    g.moveTo(c.cx + c.sx * c.r, c.cy);
+    for (let i = 1; i <= N; i++) {
+      const a = (i / N) * (Math.PI / 2);
+      g.lineTo(c.cx + c.sx * c.r * Math.cos(a), c.cy + c.sy * c.r * Math.sin(a));
+    }
+    g.stroke({ width: 2, color: STADIUM.ROOF_EDGE });
   }
 }
 
@@ -530,7 +559,7 @@ export interface PitchStadium {
    * LED boards around the pitch (4.38.21): panels of made-up ads that flip now and then (`ledAdFor`), and after a goal
    * the goal text (`{name}` and `{minute}` replaced) on every panel. Absent: no boards.
    */
-  led?: { goal: string };
+  led?: { goal: string; lang?: LedLang };
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -757,6 +786,7 @@ export function PixiPitch({
       crowdLayer.eventMode = 'none';
       app.stage.addChildAt(crowdLayer, 0);
       let crowdBase: Graphics | null = null;
+      let crowdCorners: Graphics | null = null;
       // The art pack's stadium pieces (art phase 9): stand textures, tunnel, towers, benches, LED frame.
       let stadiumArt: StadiumArt | null = null;
       let fxArt: FxArt | null = null;
@@ -852,6 +882,12 @@ export function PixiPitch({
           crowdLayer.addChild(layer);
           crowdBaseArt = layer;
         }
+        // The stand corners rounded into a bowl (tester report: square stands): the corner outside the curve is the
+        // dark concourse behind the stand, the curve edged like the roof.
+        crowdCorners?.destroy();
+        crowdCorners = new Graphics();
+        drawStandCorners(crowdCorners, m.stand);
+        crowdLayer.addChild(crowdCorners);
         const seats = crowdSeats({
           stand: m.stand,
           fill: st.fill,
@@ -2361,7 +2397,8 @@ export function PixiPitch({
           const b = benchRect(coachSpot[side], side, m, markerR);
           const all = team === "A" ? st.benchA : st.benchB;
           const bench = benchShown(all.map((p) => p.role)).map((i) => all[i]!);
-          const L = benchLayout(bench.length, b.x + b.w / 2, b.w, laneEnd, runoffEnd - 1, 0, markerR);
+          // Every bench has the same seats (tester report): fewer substitutes leave empty seats, never a shorter bench.
+          const L = benchLayout(BENCH_VIEW.MAX_SHOWN, b.x + b.w / 2, b.w, laneEnd, runoffEnd - 1, 0, markerR);
           const box = L.box;
           if (stadiumArt) {
             let a = benchArt[side];
@@ -2387,8 +2424,13 @@ export function PixiPitch({
           const kits = benchKits(bench.map((p) => p.role), kit);
           const goalAge = benchGoal && benchGoal.team === team ? effectNow - benchGoal.at : null;
           const u = L.fig; // one unit: the shoulders' half width
+          // Empty seats (the art bench has its own seats).
+          if (!stadiumArt) for (const seat of L.seats) {
+            benchGfx.roundRect(seat.x - u * 0.85, seat.y - u * 0.25, u * 1.7, u * 1.15, u * 0.3).fill({ color: 0x2b3846, alpha: 0.9 });
+          }
           L.seats.forEach((seat, i) => {
-            const p = bench[i]!;
+            const p = bench[i];
+            if (!p) return;
             const look = benchLook(String(p.rosterId ?? p.id));
             const pose = benchPose(look.phase, effectNow, ballPx.x - seat.x, -1, goalAge);
             const x = seat.x, y = seat.y - pose.up * u * 0.7 + pose.bob * u * 0.1;
@@ -2511,36 +2553,114 @@ export function PixiPitch({
             }
         });
       };
-      // ── LED boards (4.38.21): panels of made-up ads that flip together now and then, Winning Eleven style; after
-      // a goal every panel shows the goal ──
+      // ── LED boards (4.38.21, reworked 4.42 after tester reports): a glowing dot-matrix screen in a metal housing,
+      // ads in the home club's language that change together with a transition running along the ground (slide, wipe
+      // or squeeze); after a goal every board shows the goal, fitted or scrolling inside the screen ──
       const ledLayer = new Container();
       ledLayer.zIndex = -0.68;
       ledLayer.eventMode = 'none';
       world.addChild(ledLayer);
-      type LedPanel = { panel: Container; bg: Graphics; text: Text; w: number; h: number; order: number; shown: string };
+      type LedSlot = { root: Container; bg: Graphics; text: Text; textW: number; scroll: boolean; since: number };
+      type LedPanel = {
+        panel: Container; screen: Container; slots: [LedSlot, LedSlot]; cur: 0 | 1;
+        scan: Graphics; wipe: Graphics; w: number; h: number; order: number; shown: string;
+        trans: { kind: ReturnType<typeof ledTransition>; at: number } | null; phase: number;
+      };
       const ledPanels: LedPanel[] = [];
       const ledSeed = stadiumRef.current?.seed ?? "match";
+      let ledFramed = false;
+      /** The dot-matrix grid laid over every screen: dark gaps between the LED pixels. */
+      let ledDots: Texture | null = null;
+      if (typeof document !== "undefined") {
+        const c = document.createElement("canvas");
+        c.width = c.height = 4;
+        const g2 = c.getContext("2d");
+        if (g2) {
+          g2.fillStyle = "rgba(0,0,0,0.62)";
+          g2.fillRect(0, 0, 4, 4);
+          g2.clearRect(0, 0, 3, 3);
+          g2.fillStyle = "rgba(255,255,255,0.10)";
+          g2.fillRect(0, 0, 1, 1);
+          ledDots = Texture.from(c);
+          ledDots.source.scaleMode = "nearest";
+        }
+      }
+      const ledTextStyle = (h: number) => new TextStyle({
+        fontSize: Math.round(h * 0.7), fontFamily: '"Barlow Condensed", "Arial Narrow", sans-serif', fontWeight: '700',
+        fill: 0xffffff, letterSpacing: Math.max(1, h * 0.06),
+        dropShadow: { color: 0xffffff, blur: Math.max(2, h * 0.3), distance: 0, alpha: 0.85, angle: 0 },
+      });
+      const makeSlot = (w: number, h: number): LedSlot => {
+        const root = new Container();
+        root.pivot.set(w / 2, h / 2);
+        root.position.set(w / 2, h / 2);
+        const bg = new Graphics();
+        const text = new Text({ text: "", style: ledTextStyle(h) });
+        text.anchor.set(0.5);
+        text.position.set(w / 2, h / 2);
+        root.addChild(bg, text);
+        return { root, bg, text, textW: 0, scroll: false, since: 0 };
+      };
       if (m.stand && stadiumRef.current?.led) {
         // Big framed boards on the apron (art preview, 4.41.15): four above the top touchline, two below the bottom
-        // one (beside the benches), one standing behind each goal. Positions in pitch yards (`ledBoards`).
+        // one (in the corners, kept clear of the benches and technical areas), one standing behind each goal.
         const h = Math.max(5, LED.SCREEN_YDS * m.scale);
+        // Bench and technical-area spans in pitch yards: the bottom boards never touch them (tester report).
+        const benchSpans: [number, number][] = (["left", "right"] as const).map((side) => {
+          const b = benchRect(coachSpot[side], side, m, markerR);
+          const a = techArea(b, coachSpot[side].x, m.width * COACH_WALK_FRAC, m.marginY + m.height, m.scale);
+          return [(a.x - m.marginX) / m.scale, (a.x + a.w - m.marginX) / m.scale];
+        });
         let order = 0;
-        for (const sp of ledBoards()) {
+        for (const sp0 of ledBoards()) {
+          let sp = sp0;
+          if (sp.y > PITCH_WIDTH) {
+            const c = clearOfBenches({ x: sp.x, len: LED.BOARD_YDS * (sp.len ?? 1) }, benchSpans);
+            if (!c) continue;
+            sp = { ...sp, x: c.x, len: c.len / LED.BOARD_YDS };
+          }
           const w = LED.BOARD_YDS * (sp.len ?? 1) * m.scale;
           const board = new Container();
           board.x = m.marginX + sp.x * m.scale; board.y = m.marginY + sp.y * m.scale; board.rotation = sp.rot;
           ledLayer.addChild(board);
-          {
-            const panel = new Container();
-            panel.x = -w / 2; panel.y = -h / 2;
-            const bg = new Graphics();
-            const text = new Text({ text: "", style: new TextStyle({ fontSize: Math.round(h * 0.72), fontFamily: 'sans-serif', fontWeight: '800', fill: 0xffffff, letterSpacing: 1 }) });
-            text.anchor.set(0.5);
-            text.x = w / 2; text.y = h / 2;
-            panel.addChild(bg, text);
-            board.addChild(panel);
-            ledPanels.push({ panel, bg, text, w, h, order: order++, shown: "" });
+          const panel = new Container();
+          panel.x = -w / 2; panel.y = -h / 2;
+          const screen = new Container();
+          const back = new Graphics().rect(0, 0, w, h).fill(0x05070a);
+          const slots: [LedSlot, LedSlot] = [makeSlot(w, h), makeSlot(w, h)];
+          const wipe = new Graphics();
+          wipe.blendMode = "add";
+          wipe.visible = false;
+          const scan = new Graphics().rect(0, 0, w, Math.max(1, h * 0.2)).fill({ color: 0xffffff, alpha: 0.07 });
+          scan.blendMode = "add";
+          screen.addChild(back, slots[0].root, slots[1].root, wipe);
+          if (ledDots) {
+            const dots = new TilingSprite({ texture: ledDots, width: w, height: h });
+            dots.tileScale.set(Math.max(0.5, h / 36));
+            screen.addChild(dots);
           }
+          // A soft gloss on the upper half of the glass, then the slow refresh band.
+          screen.addChild(new Graphics().rect(0, 0, w, h * 0.42).fill({ color: 0xffffff, alpha: 0.05 }), scan);
+          const mask = new Graphics().rect(0, 0, w, h).fill(0xffffff);
+          screen.mask = mask;
+          panel.addChild(screen, mask);
+          board.addChild(panel);
+          ledPanels.push({ panel, screen, slots, cur: 0, scan, wipe, w, h, order, shown: "", trans: null, phase: (order * 0.37) % 1 });
+          order++;
+        }
+        // The housing (FLUX-refined art): the new frame with the new visual; else the art pack's (in `drawLed`).
+        if (newVisualOn() && ledPanels.length > 0) {
+          ledFramed = true;
+          void Assets.load<Texture>(gameArtUrl(LED_FRAME.FILE)).then((tex) => {
+            if (!tex || ledPanels[0]!.panel.destroyed) return;
+            for (const p of ledPanels) {
+              const s = new Sprite(tex);
+              const sx = p.w / LED_FRAME.SCREEN.w, sy = p.h / LED_FRAME.SCREEN.h;
+              s.position.set(-LED_FRAME.SCREEN.x * sx, -LED_FRAME.SCREEN.y * sy);
+              s.scale.set(sx, sy);
+              p.panel.addChild(s);
+            }
+          }).catch(() => { ledFramed = false; });
         }
       }
       let ledGoal: { text: string; at: number } | null = null;
@@ -2551,7 +2671,19 @@ export function PixiPitch({
         const name = scorer ? shirtName(scorer.name).toUpperCase() : "";
         ledGoal = { text: tpl.replace("{name}", name).replace("{minute}", String(e.minute + 1)), at: effectNow };
       });
-      let ledFramed = false;
+      /** Puts a text on a slot: background, colour and glow, fitted to the screen or set to scroll. */
+      const fillSlot = (s: LedSlot, w: number, h: number, text: string, bg: number, fg: number) => {
+        s.bg.clear().rect(0, 0, w, h).fill(bg);
+        s.text.text = text;
+        s.text.style.fill = fg;
+        s.text.style.dropShadow = { color: fg, blur: Math.max(2, h * 0.3), distance: 0, alpha: 0.85, angle: 0 };
+        s.textW = CanvasTextMetrics.measureText(text, s.text.style).width;
+        const fit = ledFit(s.textW, w * 0.92);
+        s.scroll = fit.scroll;
+        s.text.scale.set(fit.scale, 1);
+        s.text.x = w / 2;
+        s.since = effectNow;
+      };
       const drawLed = () => {
         if (ledPanels.length === 0) return;
         if (stadiumArt && !ledFramed) {
@@ -2569,31 +2701,266 @@ export function PixiPitch({
         if (ledGoal && effectNow - ledGoal.at > LED.GOAL_S) ledGoal = null;
         const cycle = Math.floor(effectNow / LED.SWITCH_S);
         const into = effectNow - cycle * LED.SWITCH_S;
-        const lang = ledLang(i18n.language);
+        const lang: LedLang = stadiumRef.current?.led?.lang ?? ledLang(i18n.language);
+        const T = EXTRAS.LED.TRANSITION_S;
         for (const p of ledPanels) {
-          // The flip runs along the boards: each panel a moment after the one before it.
-          const delay = (p.order % 24) * LED.FLIP_STAGGER_S;
+          // The change runs along the boards: each panel a moment after the one before it.
+          const delay = (p.order % 24) * LED.FLIP_STAGGER_S * 3;
           const showCycle = into >= delay ? cycle : cycle - 1;
-          let key: string, text: string, bg: number, fg: number;
           if (ledGoal) {
+            // Goal: straight on the current slot, blinking, no transition; a long text scrolls through the blink.
+            const cur = p.slots[p.cur];
             const blink = Math.floor((effectNow - ledGoal.at) * 3) % 2 === 0;
-            key = `goal:${blink}`; text = ledGoal.text; bg = blink ? LED.GOAL : 0x06090d; fg = blink ? 0x06090d : LED.GOAL;
+            const key = `goal:${ledGoal.at}:${blink}`;
+            if (p.shown !== key) {
+              const same = p.shown.startsWith(`goal:${ledGoal.at}:`);
+              const since = cur.since;
+              fillSlot(cur, p.w, p.h, ledGoal.text, blink ? LED.GOAL : 0x06090d, blink ? 0x06090d : LED.GOAL);
+              if (same) cur.since = since;
+              p.shown = key;
+              p.trans = null;
+            }
           } else {
-            const ad = ledAdFor(ledSeed, showCycle, p.order, lang);
-            key = `ad:${showCycle}:${lang}`; text = ad.text; bg = ad.bg; fg = ad.fg;
+            const key = `ad:${showCycle}:${lang}`;
+            if (p.shown !== key) {
+              const ad = ledAdFor(ledSeed, showCycle, p.order, lang);
+              const instant = p.shown === "" || p.shown.startsWith("goal:") || calm();
+              p.shown = key;
+              if (instant) {
+                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg);
+                p.trans = null;
+              } else {
+                p.cur = p.cur === 0 ? 1 : 0;
+                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg);
+                p.trans = { kind: ledTransition(ledSeed, showCycle), at: effectNow };
+              }
+            }
           }
-          // The flip: the panel squeezes to a line and opens with the new ad.
-          const t = into - delay;
-          p.text.scale.y = !ledGoal && t >= 0 && t < LED.FLIP_S ? Math.abs(Math.cos((t / LED.FLIP_S) * Math.PI)) : 1;
-          if (p.shown !== key) {
-            p.shown = key;
-            p.bg.clear().rect(0, 0, p.w, p.h).fill(bg).rect(0, 0, 1, p.h).fill({ color: 0x000000, alpha: 0.5 });
-            p.text.text = text;
-            p.text.style.fill = fg;
-            const maxW = p.w * 0.9;
-            p.text.scale.x = p.text.width > maxW ? maxW / (p.text.width / p.text.scale.x) : 1;
+          // Transition between the old slot and the new one.
+          const now = p.slots[p.cur], old = p.slots[p.cur === 0 ? 1 : 0];
+          const k = p.trans ? Math.min(1, (effectNow - p.trans.at) / T) : 1;
+          const e = k * k * (3 - 2 * k);
+          now.root.visible = true;
+          old.root.visible = !!p.trans && k < 1;
+          now.root.alpha = old.root.alpha = 1;
+          now.root.scale.set(1); old.root.scale.set(1);
+          now.root.y = old.root.y = p.h / 2;
+          p.wipe.visible = false;
+          if (p.trans && k < 1) {
+            if (p.trans.kind === "slide") {
+              old.root.y = p.h / 2 - e * p.h;
+              now.root.y = p.h / 2 + (1 - e) * p.h;
+            } else if (p.trans.kind === "wipe") {
+              old.root.alpha = 1 - e;
+              now.root.alpha = e;
+              p.wipe.visible = true;
+              p.wipe.clear().rect(e * p.w - p.h * 0.6, 0, p.h * 1.2, p.h).fill({ color: 0xffffff, alpha: 0.55 * (1 - Math.abs(2 * k - 1)) });
+            } else {
+              old.root.scale.set(1, Math.max(0, 1 - 2 * e));
+              now.root.scale.set(1, Math.max(0, 2 * e - 1));
+              old.root.visible = e < 0.5;
+            }
+          } else if (p.trans) {
+            p.trans = null;
+          }
+          // A long text scrolls across the screen instead of spilling out of it (tester report).
+          for (const s of p.slots) if (s.scroll) s.text.x = ledMarqueeX(effectNow - s.since, p.w, s.textW, p.h);
+          // The slow refresh band and a faint breathing of the brightness.
+          if (!calm()) {
+            p.scan.y = ((effectNow / 2.6 + p.phase) % 1) * (p.h * 1.4) - p.h * 0.2;
+            p.screen.alpha = 0.95 + 0.05 * Math.sin((effectNow + p.phase * 6) * 1.7);
           }
         }
+      };
+      // ── Around the pitch (4.42, tester reports): the technical areas, a crest mat at the tunnel, the corner flags, TV
+      // cameras at the corners, a reporter behind a bottom board, stewards at the foot of the stands and vendors walking
+      // the stands. Seen from above, the figures at the bench unit (0.4 × the marker radius). Drawing only. ──
+      const unitPx = markerR * 0.4;
+      // Technical areas: dashed white lines on the grass around each bench and the manager's walk (static).
+      const techGfx = new Graphics();
+      techGfx.zIndex = -0.72;
+      techGfx.eventMode = 'none';
+      world.addChild(techGfx);
+      if (officialsOn) {
+        const touchY = m.marginY + m.height;
+        const laneEnd = touchY + STADIUM.AR_LANE_YDS * m.scale;
+        const runoffEnd = m.stand ? touchY + STADIUM.BENCH_END_YDS * m.scale : canvasHeight - 2;
+        const T = EXTRAS.TECH;
+        for (const side of ["left", "right"] as const) {
+          const b = benchRect(coachSpot[side], side, m, markerR);
+          const a = techArea({ x: b.x, y: laneEnd, w: b.w, h: runoffEnd - 1 - laneEnd }, coachSpot[side].x, m.width * COACH_WALK_FRAC, touchY, m.scale);
+          const lines: [number, number, number, number][] = [
+            [a.x, a.y + a.h, a.x, a.y], [a.x, a.y, a.x + a.w, a.y], [a.x + a.w, a.y, a.x + a.w, a.y + a.h],
+          ];
+          for (const [x0, y0, x1, y1] of lines) {
+            for (const [p, q, r2, s2] of dashes(x0, y0, x1, y1, T.DASH, T.GAP)) techGfx.moveTo(p, q).lineTo(r2, s2);
+          }
+          techGfx.stroke({ width: 1.4, color: 0xffffff, alpha: T.ALPHA });
+        }
+      }
+      // The home crest on a round mat where the tunnel meets the pitch (static; the crest arrives when loaded).
+      const crestMat = new Container();
+      crestMat.zIndex = -0.698;
+      crestMat.eventMode = 'none';
+      world.addChild(crestMat);
+      {
+        const st = stadiumRef.current;
+        const tunnel = m.stand ? standTunnel(m.stand) : null;
+        if (tunnel && st && !st.neutral) {
+          const touchY = m.marginY + m.height;
+          const laneEnd = touchY + STADIUM.AR_LANE_YDS * m.scale;
+          const cx = tunnel.x + tunnel.w / 2, cy = touchY + (tunnel.y - touchY) * 0.6;
+          const r = Math.max(4, Math.min(2.4 * m.scale, (tunnel.y - laneEnd) * 0.42));
+          const ring = st.homeColors ? cssColorToPixiHex(st.homeColors[0]) : st.homeTeam === "A" ? fillA : fillB;
+          const ring2 = st.homeColors ? cssColorToPixiHex(st.homeColors[1]) : 0xffffff;
+          const g = new Graphics();
+          g.circle(cx + 1, cy + 1.5, r).fill({ color: 0x000000, alpha: 0.3 });
+          g.circle(cx, cy, r).fill(ring);
+          g.circle(cx, cy, r * 0.86).fill(ring2);
+          g.circle(cx, cy, r * 0.8).fill(0x101820);
+          crestMat.addChild(g);
+          if (st.homeCrest) {
+            void loadCrestCanvas(st.homeCrest, 128).then((canvas) => {
+              if (!canvas || crestMat.destroyed) return;
+              const sp = new Sprite(Texture.from(canvas));
+              sp.anchor.set(0.5);
+              sp.position.set(cx, cy);
+              sp.width = sp.height = r * 1.25;
+              crestMat.addChild(sp);
+            });
+          }
+        }
+      }
+      // Corner flags: seen from above, the pole and the pennant pointing into the pitch, swaying a little.
+      const flagCornerGfx = new Graphics();
+      flagCornerGfx.zIndex = -0.66;
+      flagCornerGfx.eventMode = 'none';
+      world.addChild(flagCornerGfx);
+      const cornerFlagSpots = cornerFlags(m);
+      const flagColorOf = () => {
+        const st = stadiumRef.current;
+        return st?.homeColors && !st.neutral ? cssColorToPixiHex(st.homeColors[0]) : MATCH_LOOK.FLAG.COLOR;
+      };
+      const drawCornerFlags = () => {
+        const F = EXTRAS.FLAG;
+        const u = Math.max(1.6, unitPx);
+        const color = flagColorOf();
+        flagCornerGfx.clear();
+        cornerFlagSpots.forEach((f, i) => {
+          const sway = extrasRef.current && !calm() ? Math.sin(effectNow * F.HZ * Math.PI * 2 + i * 1.3) * F.SWAY : 0;
+          const a = Math.atan2(f.dy, f.dx) + sway;
+          const L = u * F.LEN;
+          const tipX = f.x + Math.cos(a) * L, tipY = f.y + Math.sin(a) * L;
+          // The pennant: a triangle from the pole, its free corner swinging; a short shadow under it.
+          const nx = -Math.sin(a) * L * 0.45, ny = Math.cos(a) * L * 0.45;
+          flagCornerGfx.poly([f.x + 1.5, f.y + 2, tipX + 1.5, tipY + 2, f.x + nx + 1.5, f.y + ny + 2]).fill({ color: 0x000000, alpha: 0.25 });
+          flagCornerGfx.poly([f.x, f.y, tipX, tipY, f.x + nx * 0.9, f.y + ny * 0.9]).fill(color).stroke({ width: 1, color: 0x101418, alpha: 0.7 });
+          flagCornerGfx.circle(f.x, f.y, u * F.POLE).fill(0xf4f4f4).stroke({ width: 1, color: 0x101418, alpha: 0.8 });
+        });
+      };
+      drawCornerFlags();
+      // People around the pitch.
+      const crewGfx = new Graphics();
+      crewGfx.zIndex = -0.689;
+      crewGfx.eventMode = 'none';
+      world.addChild(crewGfx);
+      let reporterAt: { x: number; y: number } | null = null;
+      {
+        const bottom = ledPanels.length > 0 ? ledBoards().filter((b) => b.y > PITCH_WIDTH) : [];
+        const st = stadiumRef.current;
+        if (bottom.length > 0 && st && m.stand) {
+          // Behind the first bottom board (between it and the stand), toward the corner.
+          const b0 = bottom[0]!;
+          const bx = m.marginX + Math.min(b0.x, 10) * m.scale;
+          const by = m.marginY + b0.y * m.scale + (LED.SCREEN_YDS * m.scale) / 2;
+          reporterAt = { x: bx, y: by + unitPx * 4.5 };
+        }
+      }
+      const crew = m.stand ? bystanders(m, unitPx, reporterAt) : [];
+      const walkways = m.stand ? standConcreteRows(m.stand) : [];
+      const sellers = m.stand ? vendors(stadiumRef.current?.seed ?? "match", walkways.length) : [];
+      /** One person seen from above: shoulders across the facing, the body, the head with its hair to the back. */
+      const person = (g: Graphics, x: number, y: number, face: number, body: number, u: number, look: { skin: number; hair: number }, cap?: number) => {
+        const fx = Math.cos(face), fy = Math.sin(face);
+        const px = -fy, py = fx;
+        g.ellipse(x + u * 0.2, y + u * 0.35, u * 1.05, u * 0.75).fill({ color: 0x000000, alpha: 0.28 });
+        g.circle(x + px * u * 0.6, y + py * u * 0.6, u * 0.45).fill(body);
+        g.circle(x - px * u * 0.6, y - py * u * 0.6, u * 0.45).fill(body);
+        g.circle(x, y, u * 0.62).fill(body);
+        g.circle(x + fx * u * 0.08, y + fy * u * 0.08, u * 0.46).fill(BENCH_SKIN[look.skin]!);
+        if (cap !== undefined) {
+          g.circle(x - fx * u * 0.06, y - fy * u * 0.06, u * 0.42).fill(cap);
+          g.circle(x + fx * u * 0.36, y + fy * u * 0.36, u * 0.22).fill(cap);
+        } else {
+          const hair = BENCH_HAIR[look.hair];
+          if (hair !== undefined) g.circle(x - fx * u * 0.12, y - fy * u * 0.12, u * 0.4).fill(hair);
+        }
+      };
+      const drawCrew = (ballPx: { x: number; y: number }) => {
+        crewGfx.clear();
+        const on = officialsOn && extrasRef.current && !!m.stand;
+        if (!on) return;
+        const u = unitPx;
+        crew.forEach((c, i) => {
+          const look = benchLook(`crew:${c.kind}:${i}`);
+          if (c.kind === "tv" || c.kind === "crew") {
+            // The camera follows the ball (TV), or looks at the reporter (crew).
+            const face = c.kind === "tv" ? Math.atan2(ballPx.y - c.y, ballPx.x - c.x) : c.face;
+            const fx = Math.cos(face), fy = Math.sin(face);
+            if (c.kind === "tv") {
+              for (const k of [0, 2.1, 4.2]) {
+                crewGfx.moveTo(c.x, c.y).lineTo(c.x + Math.cos(face + k + 0.5) * u * 1.3, c.y + Math.sin(face + k + 0.5) * u * 1.3);
+              }
+              crewGfx.stroke({ width: Math.max(1, u * 0.18), color: 0x2a2f36 });
+            }
+            person(crewGfx, c.x - fx * u * 0.9, c.y - fy * u * 0.9, face, 0x1d2630, u, look);
+            const cx2 = c.x + fx * u * 0.4, cy2 = c.y + fy * u * 0.4;
+            const len = c.kind === "tv" ? 1.5 : 1.0, wid = c.kind === "tv" ? 0.85 : 0.6;
+            const px = -fy, py = fx;
+            crewGfx.poly([
+              cx2 - fx * u * len / 2 - px * u * wid / 2, cy2 - fy * u * len / 2 - py * u * wid / 2,
+              cx2 + fx * u * len / 2 - px * u * wid / 2, cy2 + fy * u * len / 2 - py * u * wid / 2,
+              cx2 + fx * u * len / 2 + px * u * wid / 2, cy2 + fy * u * len / 2 + py * u * wid / 2,
+              cx2 - fx * u * len / 2 + px * u * wid / 2, cy2 - fy * u * len / 2 + py * u * wid / 2,
+            ]).fill(0x15191f);
+            crewGfx.circle(cx2 + fx * u * len / 2, cy2 + fy * u * len / 2, u * 0.26).fill(0x4a5b6e);
+            if (c.kind === "tv") crewGfx.circle(cx2 - fx * u * 0.2, cy2 - fy * u * 0.2, u * 0.12).fill({ color: 0xff3b30, alpha: Math.floor(effectNow * 1.5 + i) % 2 ? 1 : 0.3 });
+          } else if (c.kind === "reporter") {
+            person(crewGfx, c.x, c.y, c.face, 0x1f3a68, u, look);
+            const fx = Math.cos(c.face), fy = Math.sin(c.face);
+            crewGfx.circle(c.x + fx * u * 0.9 + fy * u * 0.4, c.y + fy * u * 0.9 - fx * u * 0.4, u * 0.22).fill(0x111111);
+          } else {
+            // Stewards face the crowd, now and then glancing at the play.
+            const glance = Math.sin(effectNow * 0.35 + i * 2.1) > 0.75;
+            const face = glance ? c.face + Math.PI : c.face;
+            person(crewGfx, c.x, c.y, face, EXTRAS.STEWARD_VEST, u, look);
+            const fx = Math.cos(face), fy = Math.sin(face);
+            crewGfx.moveTo(c.x + fy * u * 0.9, c.y - fx * u * 0.9).lineTo(c.x - fy * u * 0.9, c.y + fx * u * 0.9)
+              .stroke({ width: Math.max(1, u * 0.2), color: EXTRAS.STEWARD_STRIPE, alpha: 0.9 });
+          }
+        });
+        // Vendors walking the stand's walkways, a tray in front, a cap.
+        if (!m.stand) return;
+        const inner = m.stand.inner;
+        const tunnel = standTunnel(m.stand);
+        sellers.forEach((v, i) => {
+          const w = walkways[v.row];
+          if (!w) return;
+          const horizontal = w.side === "top" || w.side === "bottom";
+          const a0 = horizontal ? Math.max(w.x, inner.x) : Math.max(w.y, inner.y);
+          const a1 = horizontal ? Math.min(w.x + w.w, inner.x + inner.w) : Math.min(w.y + w.h, inner.y + inner.h);
+          const t = calm() ? 0 : effectNow;
+          const { at, dir } = vendorAlong(v, t, a1 - a0, m.scale);
+          let x = horizontal ? a0 + at : w.x + w.w / 2;
+          const y = horizontal ? w.y + w.h / 2 : a0 + at;
+          if (tunnel && w.side === "bottom" && x > tunnel.x - u && x < tunnel.x + tunnel.w + u) x = tunnel.x - u;
+          const face = horizontal ? (dir > 0 ? 0 : Math.PI) : (dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+          const bob = calm() ? 0 : Math.sin(effectNow * 6 + i) * u * 0.08;
+          const look = benchLook(`vendor:${i}`);
+          person(crewGfx, x, y + bob, face, v.shirt, u, look, 0xd8312b);
+          const fx = Math.cos(face), fy = Math.sin(face);
+          crewGfx.rect(x + fx * u * 0.95 - u * 0.45, y + fy * u * 0.95 - u * 0.45 + bob, u * 0.9, u * 0.9).fill(0xf2efe6).stroke({ width: 0.8, color: 0x6b5b3a });
+        });
       };
       const coachWalkHalf = m.width * COACH_WALK_FRAC;
 
@@ -3782,9 +4149,10 @@ export function PixiPitch({
         updateLight();
         drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);
-        { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); }
+        { const bp = toPixel(drawnB.x, drawnB.y); drawBenches({ x: bp.px, y: bp.py }); drawCrew({ x: bp.px, y: bp.py }); }
         drawPhotographers(drawnB);
         if (extrasRef.current) drawLed();
+        drawCornerFlags();
         drawStretchers();
         // Camera: the whole pitch, or zoomed on the ball (following, or during a replay).
         {
