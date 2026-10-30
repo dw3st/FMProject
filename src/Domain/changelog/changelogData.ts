@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.38",
+    date: "2026-10-30",
+    time: "14:42",
+    items: [],
+    fixes: [
+      {
+        pt: "Um rosto novo que podia aparecer só com as iniciais agora carrega.",
+        en: "A new face that could show only the initials now loads.",
+      },
+    ],
+  },
+  {
     version: "4.41.37",
     date: "2026-10-30",
     time: "14:38",
