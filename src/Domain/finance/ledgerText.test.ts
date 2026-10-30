@@ -5,6 +5,8 @@ describe("describeLedgerEntry", () => {
   test("fixed kinds need no ref", () => {
     expect(describeLedgerEntry({ kind: "wages" })).toEqual({ key: "wages" });
     expect(describeLedgerEntry({ kind: "broadcasting" })).toEqual({ key: "broadcasting" });
+    expect(describeLedgerEntry({ kind: "commercial" })).toEqual({ key: "commercial" });
+    expect(describeLedgerEntry({ kind: "wages", ref: { stage: "termination" } })).toEqual({ key: "playerTermination" });
     expect(describeLedgerEntry({ kind: "staff" })).toEqual({ key: "staff" });
     expect(describeLedgerEntry({ kind: "staff", ref: { stage: "severance" } })).toEqual({ key: "staffSeverance" });
   });

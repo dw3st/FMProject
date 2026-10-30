@@ -27,11 +27,11 @@ const ITEM_KEY: Record<string, string> = { repair: "facilityRepair", rebuild: "f
 export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): LedgerDescription | null {
   const ref = entry.ref;
   switch (entry.kind) {
-    case "broadcasting":
-    case "commercial":
     case "wages":
       // A friendly termination of a player's contract (tester suggestion).
       return { key: ref?.stage === "termination" ? "playerTermination" : "wages" };
+    case "broadcasting":
+    case "commercial":
     case "operational":
       return { key: entry.kind };
     case "staff":

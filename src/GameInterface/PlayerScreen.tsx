@@ -182,7 +182,7 @@ export function PlayerScreen({
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
                 {session && player.contract && (
-                  <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { window.location.href = "/squad"; }} />
+                  <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { window.location.href = backTo; }} />
                 )}
                 <button
                   type="button"
