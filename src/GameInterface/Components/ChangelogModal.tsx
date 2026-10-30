@@ -62,7 +62,7 @@ export function ChangelogModal({ open, onClose }: Props) {
                   {t("changelog.version", { version: entry.version })}
                 </h3>
                 <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
-                  {localizedDate(entry.date, dateLocale)}
+                  {localizedDate(entry.date, dateLocale)}{entry.time ? ` · ${entry.time}` : ""}
                 </span>
               </div>
 

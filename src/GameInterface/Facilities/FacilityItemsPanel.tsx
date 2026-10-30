@@ -218,7 +218,7 @@ function ItemDetail({
           <p className="text-sm text-muted-foreground m-0">{t("facilities.items.full")}</p>
         ) : (
           <>
-            {modes.length > 1 && (
+            {modes.length > 0 && (
               <OptionChips
                 options={modes.map((m) => ({ key: m, label: t(`facilities.items.${m}`) }))}
                 value={mode}
@@ -226,7 +226,7 @@ function ItemDetail({
                 aria-label={t("facilities.items.actions")}
               />
             )}
-            {mode === "repair" && steps.length > 1 && (
+            {mode === "repair" && steps.length > 0 && (
               <OptionChips
                 options={steps.map((s) => ({ key: s, label: t("facilities.items.to", { pct: item.quotes.repair[s]!.to }) }))}
                 value={step}

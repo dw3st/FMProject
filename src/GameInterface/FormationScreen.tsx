@@ -68,6 +68,11 @@ import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Compo
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName } from "@/Domain/world/labels";
 import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
+import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+
+/** Painted pitch behind the formation board (data_process/assets/formation_art.py, FLUX-refined). */
+const PITCH_BOARD = "formation/pitch-board.webp";
 
 interface FormationOption {
   id: string;
@@ -1209,6 +1214,7 @@ function FormationPitch({
   getOutOfPosition?: (player: RosterPlayer, slotRole: string) => boolean;
 }) {
   const { t } = useTranslation();
+  const shownSlots = spreadMarkers(slots);
 
   return (
     <div className="card-arcade rounded-md p-4">
@@ -1225,6 +1231,9 @@ function FormationPitch({
           whole pitch fits the window height (report: no scrolling to change a player). */}
       <div className="relative w-full mx-auto max-w-[max(22rem,calc((100vh-17rem)*0.75))] aspect-[3/4] rounded-md border border-chart-2/50">
         <div className="absolute inset-0 rounded-md overflow-hidden">
+          {newVisualOn() && (
+            <img src={gameArtUrl(PITCH_BOARD)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" />
+          )}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <rect x="5" y="5" width="90" height="90" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.3" />
             <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255,255,255,0.2)" strokeWidth="0.3" />
@@ -1260,10 +1269,10 @@ function FormationPitch({
           )}
 
         {slots.map((slot, i) => {
+          const pos = shownSlots[i] ?? slot;
           // slot.y is already a top offset with the attack end at the top (see getFormationSlots).
           // Inverting it drew the keeper at the top, so the team attacked downward and its left
           // side (LB/LWB/LW) appeared on the screen's right.
-          const topPct = slot.y;
           const player = players[i];
           const isSelected = selectedSlotIdx === i;
           const oop = player && getOutOfPosition ? getOutOfPosition(player, slot.role) : false;
@@ -1293,7 +1302,7 @@ function FormationPitch({
               className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-200 group select-none touch-none ${
                 isSelected ? " z-20" : " z-10 hover:z-[100]"
               }`}
-              style={{ left: `${slot.x}%`, top: `${topPct}%` }}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
             >
               <button
                 type="button"

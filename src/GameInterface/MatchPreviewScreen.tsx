@@ -1118,7 +1118,33 @@ export function MatchPreviewScreen() {
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
           style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
         />
-        <div className="flex items-center gap-3 flex-wrap justify-center pt-3">{playButtons}</div>
+        {/* Every action at the top, one start button (tester report, 4.41.25): penalties, tactics, last-minute
+            subs and the play buttons in one bar, so nothing needs a scroll. */}
+        <div className="flex flex-col items-center gap-3 pt-3">
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
+              <Icon name="settings" size={16} />
+              {t("matchPreview.editTactics")}
+            </Button>
+            <Button variant="secondary" onClick={() => setShowLastMinuteSubs(true)}>
+              <Icon name="arrow-right-left" size={16} />
+              {t("matchPreview.lastMinuteSubs")}
+            </Button>
+            {playButtons}
+          </div>
+          <PenaltyModeChips />
+          {seatOpponent && (
+            <p className="text-sm text-muted-foreground m-0 text-center">
+              {liveVsSeat ? (seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")) : t("matchPreview.seatSimulateNote")}
+            </p>
+          )}
+          {groupError && (
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(groupError))}</p>
+              <a href="/dashboard" className="text-primary font-bold text-sm no-underline hover:underline">{t("common.backToDashboard")}</a>
+            </div>
+          )}
+        </div>
         {isContinentalTie && fixture?.leg === 2 && fixture.aggregate && (
           <div className="pt-1 space-y-0.5">
             {/* fixture.home/away are this (2nd) leg's sides; the 1st leg had them swapped, and
@@ -1353,37 +1379,6 @@ export function MatchPreviewScreen() {
           </div>
         </div>
       )}
-
-      {/* Action buttons: the standard Button for all four (#65 follow-up) — secondary for the
-          side actions, primary for Start game, same font and height. */}
-      {groupError && (
-        <div className="shrink-0 flex items-center gap-4 flex-wrap justify-center">
-          <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(groupError))}</p>
-          <a href="/dashboard" className="text-primary font-bold text-sm no-underline hover:underline">{t("common.backToDashboard")}</a>
-        </div>
-      )}
-      {/* 2D penalties: kick and save them, or automatic (kept for the next matches). */}
-      <div className="flex shrink-0 justify-center">
-        <PenaltyModeChips />
-      </div>
-      <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
-        <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
-          <Icon name="settings" size={16} />
-          {t("matchPreview.editTactics")}
-        </Button>
-
-        <Button variant="secondary" onClick={() => setShowLastMinuteSubs(true)}>
-          <Icon name="arrow-right-left" size={16} />
-          {t("matchPreview.lastMinuteSubs")}
-        </Button>
-
-        {seatOpponent && (
-          <p className="text-sm text-muted-foreground m-0 basis-full text-center">
-            {liveVsSeat ? (seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")) : t("matchPreview.seatSimulateNote")}
-          </p>
-        )}
-        {playButtons}
-      </div>
 
       {showLastMinuteSubs && matchSetup && (
         <LastMinuteSubsModal

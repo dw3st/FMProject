@@ -83,6 +83,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   // Club screen (4.41.21): the painted stadium behind the stand map, plain grass for an unmown turf preview.
   "club/stadium-top.webp": "image/webp",
   "club/grass-plain.webp": "image/webp",
+  "formation/pitch-board.webp": "image/webp",
   // Art phase 9: the rest of the pack.
   "ball/ball-atlas.json": "application/json",
   "ball/ball-atlas.png": "image/png",

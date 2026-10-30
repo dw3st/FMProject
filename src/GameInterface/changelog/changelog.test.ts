@@ -49,6 +49,7 @@ describe("changelog data", () => {
   test("every entry has a valid ISO date", () => {
     for (const entry of changelog) {
       expect(entry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      if (entry.time !== undefined) expect(entry.time).toMatch(/^([01]\d|2[0-3]):[0-5]\d$/);
       expect(Number.isNaN(new Date(entry.date + "T00:00:00Z").getTime())).toBe(false);
     }
   });

@@ -19,14 +19,40 @@ export interface ChangelogEntry {
   version: string;
   /** ISO date, YYYY-MM-DD. */
   date: string;
+  /** Release time, HH:MM (Brasília), shown after the date; absent on old entries. */
+  time?: string;
   items: ChangelogText[];
   fixes?: ChangelogText[];
 }
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.25",
+    date: "2026-10-30",
+    time: "09:55",
+    items: [
+      {
+        pt: "Formação: o campo ganhou gramado pintado, e jogadores de posições próximas (como o meia do 4-3-1-2) não ficam mais um em cima do outro.",
+        en: "Formation: a painted pitch, and players in close positions (like the 4-3-1-2 attacking midfielder) no longer sit on top of each other.",
+      },
+      {
+        pt: "Prévia da partida: todas as opções no topo, com um botão só para iniciar o jogo.",
+        en: "Match preview: every option at the top, with a single button to start the match.",
+      },
+      {
+        pt: "Clube: com o item no nível máximo, a reforma aparece clara no painel.",
+        en: "Club: with an item at the top level, the repair option is shown clearly.",
+      },
+      {
+        pt: "Novidades: cada atualização mostra o horário em que saiu.",
+        en: "What's new: every update shows the time it came out.",
+      },
+    ],
+  },
+  {
     version: "4.41.24",
     date: "2026-10-30",
+    time: "09:39",
     items: [
       {
         pt: "Bandeirinhas de escanteio novas, com o pano na cor do mandante.",
@@ -41,6 +67,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.23",
     date: "2026-10-30",
+    time: "09:30",
     items: [
       {
         pt: "Caixa de entrada com a lista de mensagens do mesmo tamanho da leitura e os ícones na cor da categoria.",
@@ -55,6 +82,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.22",
     date: "2026-10-30",
+    time: "09:27",
     items: [
       {
         pt: "Tela do Clube com o estádio pintado visto de cima, arquibancadas coloridas pela ocupação, e o gramado com a mesma grama pintada da partida, também na prévia do jogo.",
@@ -65,6 +93,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.21",
     date: "2026-10-30",
+    time: "09:22",
     items: [
       {
         pt: "Caixa de entrada como na arte nova: a mensagem mais recente com a ilustração grande no Painel, ícones em quadrados neutros e a lista de mensagens mais larga.",
@@ -79,6 +108,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.20",
     date: "2026-10-30",
+    time: "09:08",
     items: [
       {
         pt: "Estádio mais vivo: placas de LED novas com propaganda na língua do mandante, bandeirinhas de escanteio, área técnica marcada, tapete com o escudo na saída do túnel, cantos da arquibancada curvos, câmeras de TV, repórter, seguranças e vendedores na torcida.",
@@ -115,6 +145,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.19",
     date: "2026-10-30",
+    time: "08:35",
     items: [
       {
         pt: "Na partida, botão Bonecos: os jogadores como bonecos ou como discos com o rosto, trocado a qualquer momento. O disco ganhou um aro novo na cor do time.",
@@ -137,6 +168,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.18",
     date: "2026-10-30",
+    time: "08:19",
     items: [
       {
         pt: "Conquistas com as medalhas maiores e a medalha das secretas. As molduras do perfil aparecem como cartões com o seu rosto.",
@@ -155,6 +187,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.17",
     date: "2026-10-30",
+    time: "08:03",
     items: [
       {
         pt: "Partida: botões de zoom e replay na barra para ligar e desligar na hora; cartões com a foto do jogador no estilo de transmissão; pênalti com corrida e paradinha.",
@@ -169,6 +202,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.16",
     date: "2026-10-30",
+    time: "07:26",
     items: [
       {
         pt: "Partida: o reserva entra pelo meio-campo, junto aos bancos, e corre até a posição; a maca leva o jogador lesionado até o túnel; o impedimento mostra a faixa entre a linha e o jogador.",
@@ -179,6 +213,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.15",
     date: "2026-10-30",
+    time: "07:21",
     items: [
       {
         pt: "Estádio da partida como na arte nova: espaço em volta do campo com placas de LED grandes, fotógrafos e bancos, arquibancada com as fileiras de cadeiras, torres de refletor nos cantos e o facho de luz sobre o campo à noite.",
@@ -189,6 +224,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.14",
     date: "2026-10-30",
+    time: "06:46",
     items: [
       {
         pt: "Rostos pintados também para os técnicos dos outros clubes, a comissão técnica e os árbitros.",
@@ -199,6 +235,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.13",
     date: "2026-10-30",
+    time: "06:39",
     items: [
       {
         pt: "Partida: sem o número embaixo dos jogadores, que passava para quem entrava na substituição.",
@@ -213,6 +250,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.12",
     date: "2026-10-29",
+    time: "23:28",
     items: [
       {
         pt: "Partida com o resto da arte nova: bola girando, traves e rede, arquibancada, túnel na cor do clube, torres de iluminação, bancos com cobertura, placas de LED com moldura, fogos, fumaça e flashes dos fotógrafos.",
@@ -239,6 +277,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.11",
     date: "2026-10-29",
+    time: "17:30",
     items: [
       {
         pt: "Visual novo também fora da partida: fundo pintado na tela inicial e no novo jogo, desenhos das instalações do clube, ilustração nas mensagens, medalhas das conquistas e moldura do rosto do técnico.",
@@ -253,6 +292,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.10",
     date: "2026-10-29",
+    time: "17:14",
     items: [
       {
         pt: "Pênalti com o visual novo: estádio pintado conforme o clima, batedor e goleiro de corpo inteiro (corrida, chute, mergulho, defesa com a bola nas mãos) e bola com gomos girando.",
@@ -263,6 +303,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.9",
     date: "2026-10-29",
+    time: "17:01",
     items: [
       {
         pt: "Gol com letreiro de TV na partida: foto de quem marcou, minuto, time e placar.",
@@ -281,6 +322,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.8",
     date: "2026-10-29",
+    time: "16:40",
     items: [
       {
         pt: "Torcida com o visual novo: cada torcedor tem roupa, cabelo, boné e cachecol próprios, e quem leva gol põe as mãos na cabeça. Os fotógrafos atrás dos gols também ganharam o visual novo.",
@@ -291,6 +333,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.7",
     date: "2026-10-29",
+    time: "16:32",
     items: [
       {
         pt: "Árbitro, bandeirinhas, técnicos e médicos também viraram bonecos animados. O quarto árbitro aparece entre os bancos e levanta a placa nas substituições.",
@@ -301,6 +344,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.6",
     date: "2026-10-29",
+    time: "16:16",
     items: [
       {
         pt: "Jogadores desenhados como bonecos animados na partida: andam, correm, chutam, cabeceiam, dão carrinho, caem e comemoram. O rosto aparece no nome de quem está com a bola.",
@@ -311,6 +355,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.5",
     date: "2026-10-29",
+    time: "15:55",
     items: [
       {
         pt: "Com uma proposta de renovação da diretoria pendente, é preciso responder antes de avançar os dias.",
@@ -331,6 +376,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.4",
     date: "2026-10-29",
+    time: "15:38",
     items: [
       {
         pt: "Gramado pintado na partida, com o padrão de corte do clube. Dá para voltar ao desenho antigo em Configurações, em Visual novo.",
@@ -355,6 +401,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.3",
     date: "2026-10-29",
+    time: "15:18",
     items: [
       {
         pt: "Assistir ao jogo de um amigo abre uma janela no estilo transmissão, com o campo igual ao da partida: estádio, torcida, uniformes, rostos, gramado e luz.",
@@ -371,6 +418,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.2",
     date: "2026-10-29",
+    time: "14:43",
     items: [
       {
         pt: "Quando a diretoria oferece a renovação do seu contrato, uma janela abre no Painel para você responder.",
@@ -385,6 +433,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.1",
     date: "2026-10-29",
+    time: "14:33",
     items: [
       {
         pt: "Sem clube, o \"Pronto até\" ganha \"Até as próximas propostas\": o jogo anda sozinho até chegarem propostas.",
@@ -405,6 +454,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41",
     date: "2026-10-29",
+    time: "14:11",
     items: [
       {
         pt: "Assista ao jogo de um amigo da liga: o botão Assistir, nos Rivais, abre o campo, o placar, os números e quem está em campo durante a partida ao vivo. No mundo público vale para qualquer técnico do mundo.",
@@ -433,6 +483,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.40",
     date: "2026-10-29",
+    time: "11:13",
     items: [
       { pt: "Cada clube pode ter no máximo 5 jogadores do top 25 do mundo. Quem já é seu e entra no top fica, e promover um jovem da base sempre vale; só não dá para contratar outro acima do limite.", en: "Each club can have at most 5 of the world's top 25 players. One of yours who climbs into the top stays, and promoting an academy player is always allowed; you just cannot sign another over the limit." },
     ],
@@ -440,6 +491,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39.5",
     date: "2026-10-29",
+    time: "10:47",
     items: [
       { pt: "Novo pênalti: o batedor escolhe um dos seis cantos do gol, como o goleiro escolhe o pulo. A finalização decide se a bola vai onde ele quis, a força dificulta a defesa.", en: "New penalties: the taker picks one of the six areas of the goal, just as the keeper picks his dive. Finishing decides whether the ball goes where he wanted, strength makes it harder to save." },
     ],
@@ -447,6 +499,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39.4",
     date: "2026-10-29",
+    time: "10:26",
     items: [
       { pt: "O cartão da liga no Painel mostra a tabela inteira, com rolagem, e abre no seu time.", en: "The dashboard's league card shows the whole table, scrollable, opened on your club." },
     ],
@@ -458,6 +511,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39.3",
     date: "2026-10-29",
+    time: "10:12",
     items: [
       { pt: "A aba Inscritos diz quem conta como estrangeiro em cada liga (na La Liga, quem é de fora da UE; latino-americanos com 23 anos ou mais não contam) e, no selo de cada jogador, o motivo.", en: "The Registration tab says who counts as foreign in each league (in La Liga, players from outside the EU; Latin Americans aged 23 or over don't count) and, on each player's tag, why." },
       { pt: "Na ficha e na negociação de um jogador de outro clube, uma linha avisa se ele ocuparia vaga de estrangeiro na sua liga e quantas já estão usadas.", en: "On another club's player's profile and in the negotiation, a line tells you whether he would take a foreign place in your league and how many are already used." },
@@ -469,6 +523,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39.2",
     date: "2026-10-29",
+    time: "08:41",
     items: [
       { pt: "As trocas na fila aparecem uma vez só no painel de substituições, com o botão de desfazer.", en: "Queued substitutions show once in the substitutions panel, with the undo button." },
       { pt: "A base não recebe mais vários jovens com o mesmo nome na mesma safra.", en: "An academy intake no longer brings several players with the same name." },
@@ -477,6 +532,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39.1",
     date: "2026-10-28",
+    time: "22:28",
     items: [
       { pt: "Barra de energia reta acima da cabeça dos jogadores, no lugar do arco em volta do marcador.", en: "Straight stamina bar above the players' heads, replacing the arc around the marker." },
       { pt: "Fogos de artifício mais variados e suaves: cada comemoração sorteia quantos fogos, estilos, cores e tamanhos, com faíscas redondas que somem aos poucos.", en: "More varied, smoother fireworks: every celebration draws its own number of shells, styles, colours and sizes, with round sparks that fade out gently." },
@@ -487,6 +543,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.39",
     date: "2026-10-28",
+    time: "21:39",
     items: [
       { pt: "Treino da base: escolha a intensidade e o foco do grupo, e por jovem um foco próprio e uma posição de treino. A base agora treina nos dias de treino do clube, e a tabela mostra a evolução das últimas 4 semanas.", en: "Academy training: pick the intensity and the group focus, and per youngster a focus and a training position. The academy now trains on the club's training days, and the table shows the last 4 weeks' growth." },
       { pt: "Treino individual no time principal: na tela Desenvolvimento, cada jogador pode ter um foco e uma posição de treino.", en: "Individual training for the first team: on the Development screen, each player can have a focus and a training position." },
@@ -499,6 +556,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.24",
     date: "2026-10-28",
+    time: "19:27",
     items: [
       { pt: "Resposta rápida no Painel: as mensagens da caixa de entrada abrem no próprio cartão, com os botões para aceitar, recusar, responder e os links.", en: "Quick answer on the dashboard: inbox messages open right in the card, with the buttons to accept, refuse, answer and the links." },
     ],
@@ -509,6 +567,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.23",
     date: "2026-10-28",
+    time: "19:19",
     items: [
       { pt: "Some o risco cinza que cruzava o rosto dos jogadores na partida.", en: "The grey line across the players' faces in the match is gone." },
     ],
@@ -519,6 +578,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.22",
     date: "2026-10-28",
+    time: "19:09",
     items: [
       { pt: "Mais de 100 patrocinadores fictícios nas placas de LED: marcas de camisa, lojas, comidas e empresas.", en: "Over 100 made-up sponsors on the LED boards: kit brands, shops, food and companies." },
     ],
@@ -530,6 +590,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.21",
     date: "2026-10-28",
+    time: "18:53",
     items: [
       { pt: "Jogadores com borda nas duas cores do uniforme e o número da posição; o nome aparece em quem está com a bola e em quem vai receber.", en: "Players with a border in the kit's two colours and their position number; the name shows on the player with the ball and on who receives it." },
       { pt: "Linha do passe até quem recebe, arco do chute e marca de impacto.", en: "A line from the pass to the receiver, the shot's arc and an impact mark." },
@@ -545,6 +606,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.20",
     date: "2026-10-28",
+    time: "18:09",
     items: [
       { pt: "Substituições na fila podem ser desfeitas antes da próxima parada.", en: "Queued substitutions can be undone before the next stoppage." },
       { pt: "Túnel dos jogadores no meio da arquibancada de baixo, com o caminho até o campo.", en: "The players' tunnel in the middle of the bottom stand, with the path to the pitch." },
@@ -554,6 +616,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.19",
     date: "2026-10-28",
+    time: "17:59",
     items: [
       { pt: "Campo um pouco maior que na versão anterior e arquibancada sem os dois anéis; os bandeirões da torcida saíram (as bandeirinhas na mão continuam).", en: "The pitch is a bit bigger than in the last version and the stand has no second tier; the fans' big banners are gone (hand flags stay)." },
     ],
@@ -561,6 +624,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.18",
     date: "2026-10-28",
+    time: "17:56",
     items: [
       { pt: "Estádio maior em volta do campo: a arquibancada tem dois anéis e a torcida aparece nos quatro lados, inclusive atrás do banco.", en: "A bigger stadium around the pitch: the stand has two tiers and the crowd shows on all four sides, behind the bench too." },
     ],
@@ -568,6 +632,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.17",
     date: "2026-10-28",
+    time: "17:53",
     items: [
       { pt: "Rivais no topo do Painel: o jogo de um amigo aparece ao vivo, com placar, minuto e os últimos lances.", en: "Rivals at the top of the Dashboard: a friend's game shows live, with the score, the minute and the latest moments." },
     ],
@@ -575,6 +640,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.16",
     date: "2026-10-28",
+    time: "17:44",
     items: [
       { pt: "Banco de reservas visto de cima, com os reservas pequenos numa fileira, como no mock escolhido.", en: "Bench seen from above, the substitutes small in one row, as in the chosen mock." },
       { pt: "O bandeirinha não passa mais por cima do banco: o campo foi medido de novo para abrir espaço embaixo.", en: "The assistant referee no longer runs over the bench: the pitch was resized to make room below it." },
@@ -583,6 +649,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.15",
     date: "2026-10-28",
+    time: "17:34",
     items: [
       { pt: "Pênalti: a mira corre sozinha pelo gol e você acerta o momento do chute junto com a força.", en: "Penalties: the aim moves across the goal on its own and you time the kick together with the power." },
       { pt: "Bandeirões da torcida numa cor só, a principal do clube, com o escudo.", en: "Fans' banners in one colour, the club's main one, with the crest." },
@@ -592,6 +659,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.14",
     date: "2026-10-28",
+    time: "17:23",
     items: [
       { pt: "Banco de reservas redesenhado: os reservas sentados em duas fileiras, olhando o lance e comemorando os gols do time.", en: "Redesigned bench: the substitutes sit in two rows, follow the play and celebrate their team's goals." },
       { pt: "Goleiros reservas com uniforme próprio, cada um de uma cor.", en: "Substitute keepers wear their own kit, each in a different colour." },
@@ -601,6 +669,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.13",
     date: "2026-10-28",
+    time: "17:07",
     items: [
       { pt: "Jogo ao vivo de um amigo: depois de uma atualização do servidor o placar volta sozinho no minuto seguinte, e reagir a ele não mostra mais a mensagem de convite inválido.", en: "A friend's live game: after a server update the score comes back by itself on the next minute, and reacting to it no longer shows the invalid invite message." },
     ],
@@ -608,6 +677,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.12",
     date: "2026-10-28",
+    time: "16:57",
     items: [
       { pt: "Torcida nova: cada torcedor é uma pessoa, com rosto, cabelo e a camisa do time, e se mexe de forma suave e independente.", en: "New crowd: every fan is a person, with a face, hair and the team shirt, moving smoothly on his own." },
       { pt: "Na ola e no gol os torcedores levantam os braços e os cachecóis; parte da torcida balança bandeirinhas e grupos seguram bandeirões que ondulam sobre a arquibancada.", en: "On the wave and on a goal the fans raise their arms and scarves; some wave small flags and groups hold up big banners rippling over the stand." },
@@ -616,6 +686,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.11",
     date: "2026-10-28",
+    time: "16:42",
     items: [
       { pt: "Partida: o fôlego aparece só nos seus jogadores.", en: "Match: stamina shows only on your players." },
       { pt: "Torcida mais animada: os setores pulam juntos no ritmo do canto, a ola passa mais vezes e bandeiras grandes tremulam nas arquibancadas da casa.", en: "Livelier crowd: sections jump together to the chant, the wave comes round more often and big flags wave over the home stands." },
@@ -624,6 +695,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.10",
     date: "2026-10-28",
+    time: "16:33",
     items: [
       { pt: "Visual da partida refinado: gramado com textura, linhas de cal mais finas, gols com rede e bandeirinhas de escanteio.", en: "Refined match look: textured grass, finer chalk lines, goals with nets and corner flags." },
       { pt: "Jogadores com volume, nome numa etiqueta com a cor do time, fôlego num arco em volta do jogador e uma seta mostrando para onde ele corre.", en: "Players with depth, the name on a tag in the team colour, stamina as an arc round the player and an arrow showing where he runs." },
@@ -634,6 +706,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.9",
     date: "2026-10-28",
+    time: "16:15",
     items: [
       { pt: "Fogos de artifício novos nos jogos grandes à noite: o foguete sobe com rastro, estoura com um clarão e abre em anéis de faíscas coloridas que piscam antes de sumir.", en: "New fireworks in big night games: the rocket climbs with a trail, bursts with a flash and opens into rings of coloured sparks that blink out." },
     ],
@@ -641,6 +714,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.8",
     date: "2026-10-28",
+    time: "16:02",
     items: [
       { pt: "Lendas: entram na lista os jogadores que se aposentam com nota 45 ou mais (antes a lista ficava vazia).", en: "Legends: the list now takes players who retire with a rating of 45 or more (it used to stay empty)." },
     ],
@@ -648,6 +722,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.7",
     date: "2026-10-28",
+    time: "15:59",
     items: [
       { pt: "Estatísticas → Aposentados: novo filtro Lendas, com quem já voltou e por quem.", en: "Stats → Retired: new Legends filter, showing who is back and with whom." },
       { pt: "Uma lenda por temporada pode voltar para a sua base com 17 anos pagando uma compensação em dinheiro, sem gastar pontos.", en: "One legend per season can come back to your academy at 17 for a cash fee, without spending points." },
@@ -656,6 +731,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.6",
     date: "2026-10-28",
+    time: "15:35",
     items: [
       { pt: "Instalações do clube: cada cartão mostra com nome o nível, a condição e a obra em andamento (quanto já foi feito e a entrega).", en: "Club facilities: each card labels the level, the condition and the works under way (how much is done and the due date)." },
       { pt: "Conquistas: a loja tem o histórico das lendas e dos jogadores criados que você comprou.", en: "Achievements: the shop lists the legends and created players you bought." },
@@ -665,6 +741,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.5",
     date: "2026-10-28",
+    time: "15:21",
     items: [
       {
         pt: "Jogadores vindos da base (e outros com a posição exata no cadastro) recusavam qualquer proposta com \"Elenco insuficiente para liberar o jogador\" mesmo em elencos cheios. Agora o clube vende normalmente.",
@@ -675,6 +752,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.4",
     date: "2026-10-28",
+    time: "15:08",
     items: [
       {
         pt: "Pênalti: o goleiro agacha, dá impulso com uma perna e levanta a outra, voa com o tronco e a cabeça indo para a bola e cai encolhendo as pernas.",
@@ -693,6 +771,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.3",
     date: "2026-10-28",
+    time: "15:00",
     items: [
       {
         pt: "Pênalti: o goleiro tem braços articulados, que descem no agacho e esticam no pulo, e o batedor balança os braços na corrida e abre para chutar. Os dois de chuteira e meião.",
@@ -706,6 +785,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.2",
     date: "2026-10-28",
+    time: "14:44",
     items: [
       {
         pt: "Pênalti em 2D com visual novo: torcida atrás do gol nas cores dos dois times, gramado em perspectiva, rede que estufa no gol e traves com volume.",
@@ -724,6 +804,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38.1",
     date: "2026-10-28",
+    time: "14:17",
     items: [
       {
         pt: "Torres de iluminação nos cantos do estádio: apagadas de dia, acesas no fim de tarde e à noite.",
@@ -742,6 +823,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.38",
     date: "2026-10-28",
+    time: "12:19",
     items: [
       {
         pt: "Pênaltis em 2D: você mira e solta a força para bater, e escolhe o canto para defender. Vale na disputa e nos pênaltis durante o jogo.",
@@ -760,6 +842,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.37.3",
     date: "2026-10-28",
+    time: "11:46",
     items: [
       {
         pt: "Na tela de formação, o fôlego de cada titular aparece embaixo dele no campo.",
@@ -770,6 +853,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.37.2",
     date: "2026-10-28",
+    time: "11:38",
     items: [
       {
         pt: "Pontos de conquistas também pela campanha: títulos, semifinal e final continental, meta da diretoria cumprida e prêmios de técnico.",
@@ -790,6 +874,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.37.1",
     date: "2026-10-28",
+    time: "11:21",
     items: [
       {
         pt: "Na partida, o jogador pendurado (a um amarelo da suspensão) aparece com um cartão amarelo vazado.",
@@ -830,6 +915,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.37",
     date: "2026-10-28",
+    time: "10:55",
     items: [
       {
         pt: "Goleiro mais ativo: sai da área para cortar bolas longas quando chega antes do atacante.",
@@ -902,6 +988,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.36",
     date: "2026-10-27",
+    time: "19:51",
     items: [
       {
         pt: "Jogo ao vivo entre dois amigos: quando o seu clube enfrenta o de outro técnico, os dois jogam a mesma partida ao mesmo tempo, cada um no comando do próprio time.",
@@ -934,6 +1021,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.35.4",
     date: "2026-10-27",
+    time: "19:37",
     items: [
       {
         pt: "Escudos para mais 449 clubes que ainda apareciam com o brasão de cores.",
@@ -944,6 +1032,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.35.3",
     date: "2026-10-27",
+    time: "17:31",
     items: [
       {
         pt: "Mundo público: quando todos os técnicos ativos ficam prontos, o mundo avança na hora, sem esperar o próximo horário.",
@@ -980,6 +1069,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.35.2",
     date: "2026-10-27",
+    time: "07:39",
     items: [
       {
         pt: "Na partida ao vivo, o botão Amigos fica na barra de controles, ao lado de Substituições.",
@@ -990,6 +1080,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.35.1",
     date: "2026-10-27",
+    time: "07:29",
     items: [
       {
         pt: "Amigos e chat também durante a partida ao vivo.",
@@ -1014,6 +1105,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.35",
     date: "2026-10-27",
+    time: "06:43",
     items: [
       {
         pt: "Mundo público: qualquer técnico pode entrar num clube das 10 principais ligas e jogar junto com os outros.",
@@ -1036,6 +1128,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.34.4",
     date: "2026-10-26",
+    time: "23:05",
     items: [
       {
         pt: "Partida: os técnicos à beira do campo agora parecem pessoas vistas de cima.",
@@ -1050,6 +1143,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.34.3",
     date: "2026-10-24",
+    time: "21:48",
     items: [
       {
         pt: "Chuva: a bola molhada escorrega um pouco menos, e os jogos com chuva têm quase o mesmo número de gols dos outros.",
@@ -1070,6 +1164,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.34.2",
     date: "2026-10-23",
+    time: "14:05",
     items: [
       {
         pt: "Liga de amigos: o selo com o apelido do outro técnico aparece também nos Jogos da liga, na tabela do Painel e no elenco do clube dele.",
@@ -1096,6 +1191,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.34.1",
     date: "2026-10-23",
+    time: "13:14",
     items: [
       {
         pt: "Liga de amigos: a liga aparece como \"Liga de <apelido do dono>\" em Amigos, no chat e no convite, em vez do clube do dono.",
