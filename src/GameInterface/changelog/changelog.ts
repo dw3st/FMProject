@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.28",
+    date: "2026-10-30",
+    time: "10:25",
+    items: [
+      {
+        pt: "Partida: jogadores maiores (bonecos e discos), movimento mais suave, e os bandeirinhas aceleram e freiam ao acompanhar a linha.",
+        en: "Match: bigger players (figures and discs), smoother movement, and the assistant referees speed up and brake along the line.",
+      },
+    ],
+  },
+  {
     version: "4.41.27",
     date: "2026-10-30",
     time: "10:15",

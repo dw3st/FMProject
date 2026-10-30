@@ -10,21 +10,21 @@ import {
 } from "@/GraficsEngine/playerFaces";
 
 describe("playerMarkerRadius", () => {
-  test("is bigger never below 13 px on any pitch size", () => {
-    for (const scale of [2, 4, 6, 7.5, 10, 15]) expect(playerMarkerRadius(scale)).toBeGreaterThanOrEqual(13);
+  test("is bigger never below 15 px on any pitch size", () => {
+    for (const scale of [2, 4, 6, 7.5, 10, 15]) expect(playerMarkerRadius(scale)).toBeGreaterThanOrEqual(15);
   });
 
-  test("follows the pitch scale between 13 and 24 px", () => {
+  test("follows the pitch scale between 15 and 28 px", () => {
 
-    expect(playerMarkerRadius(4)).toBe(13);
+    expect(playerMarkerRadius(4)).toBe(15);
 
-    expect(playerMarkerRadius(7.56)).toBe(14);
+    expect(playerMarkerRadius(7.56)).toBe(17);
 
-    expect(playerMarkerRadius(10)).toBe(19);
+    expect(playerMarkerRadius(10)).toBe(22);
 
-    expect(playerMarkerRadius(12)).toBe(22);
+    expect(playerMarkerRadius(12)).toBe(26);
 
-    expect(playerMarkerRadius(30)).toBe(24);
+    expect(playerMarkerRadius(30)).toBe(28);
 
   });
 

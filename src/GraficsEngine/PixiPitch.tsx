@@ -74,6 +74,7 @@ import {
   stretcherPose, type StretcherRun,
 } from "@/GraficsEngine/matchExtras";
 import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
+import { followAt, smoothDamp, smoothPlayers, SMOOTH_ASSISTANT_S, type Follow } from "@/GraficsEngine/smoothFollow";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
 import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
@@ -2264,7 +2265,8 @@ export function PixiPitch({
       // Just under the players' layer: a player is never covered by an official.
       for (const c of [referee, assistantC.top, assistantC.bottom]) if (c) { c.zIndex = -0.5; world.addChild(c); }
       let refPos: YdPos | null = null;
-      const arPos: Record<AssistantSide, YdPos | null> = { top: null, bottom: null };
+      const arPos: Record<AssistantSide, Follow | null> = { top: null, bottom: null };
+      const playerFollow = new Map<number, Follow>();
       let lastFoulSpot: YdPos | null = null;
       /** After a card the referee's target stays on the foul spot (passed to refereeTarget as the ball). */
       let refHold: { spot: YdPos; until: number } | null = null;
@@ -3030,7 +3032,9 @@ export function PixiPitch({
           if (!c) continue;
           const t = assistantTarget({ players: st.players, ball }, side);
           const cur = arPos[side];
-          const next = cur ? stepToward(cur, t, dtGame, OFFICIALS.AR_SPEED, false) : t;
+          // Eases into the run and brakes at the line (tester report: full speed on, full stop, looked stiff).
+          const next = !cur || Math.hypot(t.x - cur.x, t.y - cur.y) > OFFICIALS.SNAP_DIST
+            ? followAt(t) : smoothDamp(cur, t, SMOOTH_ASSISTANT_S, dtGame, OFFICIALS.AR_SPEED);
           arPos[side] = next;
           const { px, py } = toPixel(next.x, next.y);
           c.x = px;
@@ -3498,6 +3502,11 @@ export function PixiPitch({
             next.set(id, { x: w.from.x + (to.x - w.from.x) * k, y: w.from.y + (to.y - w.from.y) * k });
           }
           drawnPos = next;
+        }
+        // Eased drawing (tester report): continuous velocity across the 0.2 s sim steps, no kink at each step.
+        if (!replayRun) {
+          const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
+          drawnPos = smoothPlayers(playerFollow, drawnPos, dtS, gameSpeedRef.current, TELEPORT_YDS);
         }
         // In-match penalty: the taker's run-up with the stutter while the countdown runs, the ball on the spot.
         {
