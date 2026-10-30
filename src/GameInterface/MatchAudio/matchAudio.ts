@@ -1,7 +1,8 @@
 import { gameArtUrl } from "@/Domain/art/paintedFaces";
 
 /** Recorded sounds (Stable Audio Open on the local ComfyUI, `data_process/assets/audio`); missing = synthesised. */
-const SAMPLES = ["crowd-bed", "crowd-rise", "goal-roar", "near-miss", "kick", "net", "whistle-short"] as const;
+// The generated whistle warbled in pitch (a bird, tester report): the whistle is always the synthesised one.
+const SAMPLES = ["crowd-bed", "crowd-rise", "goal-roar", "near-miss", "kick", "net"] as const;
 type Sample = (typeof SAMPLES)[number];
 
 /**
@@ -139,7 +140,7 @@ export class MatchAudio {
       case "kick": if (!this.sample("kick", 0.7 * strength, 0.95 + Math.random() * 0.1)) this.thump(0.55 * strength, 130); break;
       case "pass": if (!this.sample("kick", 0.28, 1.15 + Math.random() * 0.1)) this.thump(0.22, 160); break;
       case "save": this.thump(0.4, 90); this.swell(0.25, 500, 0.9); break;
-      case "whistleShort": if (!this.sample("whistle-short", 0.5)) this.whistle([0.22]); break;
+      case "whistleShort": this.whistle([0.24]); break;
       case "whistleLong": this.whistle([0.65]); break;
       case "card": this.whistle([0.2, 0.55]); break;
       case "whistleEnd": this.whistle([0.3, 0.3, 0.9]); break;
@@ -281,27 +282,49 @@ export class MatchAudio {
     const ctx = this.ctx!;
     let t = ctx.currentTime;
     for (const len of blasts) {
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
-      g.gain.setValueAtTime(0.16, t + len - 0.04);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      g.connect(this.master!);
-      const trill = ctx.createOscillator();
-      trill.frequency.value = 32;
-      const depth = ctx.createGain();
-      depth.gain.value = 140;
-      trill.connect(depth);
-      for (const f of [2850, 3120]) {
+      // Envelope: a hard attack, held, a quick release.
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(0.14, t + 0.012);
+      env.gain.setValueAtTime(0.14, t + len - 0.03);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      env.connect(this.master!);
+      // The pea rattling: the loudness flutters fast (about 45 times a second); the pitch stays put. A pitch that
+      // wobbles is what made it sound like a bird.
+      const flutter = ctx.createGain();
+      flutter.gain.value = 0.7;
+      const rattle = ctx.createOscillator();
+      rattle.frequency.value = 44 + Math.random() * 6;
+      const rattleDepth = ctx.createGain();
+      rattleDepth.gain.value = 0.3;
+      rattle.connect(rattleDepth).connect(flutter.gain);
+      flutter.connect(env);
+      // Two close tones (a shrill beat) and a little of the octave, steady pitch with a tiny lift at the attack.
+      for (const [f, a] of [[3300, 0.55], [3380, 0.35], [6600, 0.08]] as const) {
         const o = ctx.createOscillator();
-        o.frequency.value = f;
-        depth.connect(o.frequency);
-        o.connect(g);
+        o.frequency.setValueAtTime(f * 0.97, t);
+        o.frequency.linearRampToValueAtTime(f, t + 0.03);
+        const og = ctx.createGain();
+        og.gain.value = a;
+        o.connect(og).connect(flutter);
         o.start(t);
         o.stop(t + len + 0.02);
       }
-      trill.start(t);
-      trill.stop(t + len + 0.02);
+      // Breath through the whistle: narrow noise around the tone.
+      const breath = this.noiseSource();
+      if (breath) {
+        const band = ctx.createBiquadFilter();
+        band.type = "bandpass";
+        band.frequency.value = 3300;
+        band.Q.value = 6;
+        const bg = ctx.createGain();
+        bg.gain.value = 0.25;
+        breath.connect(band).connect(bg).connect(env);
+        breath.start(t);
+        breath.stop(t + len + 0.02);
+      }
+      rattle.start(t);
+      rattle.stop(t + len + 0.02);
       t += len + 0.12;
     }
   }

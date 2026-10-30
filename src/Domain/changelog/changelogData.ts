@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.46",
+    date: "2026-10-30",
+    time: "16:33",
+    items: [
+      {
+        pt: "Apito do juiz refeito: tom firme e agudo com a vibração da bolinha, no lugar do som que parecia um passarinho.",
+        en: "The referee's whistle redone: a steady, shrill tone with the pea's rattle, instead of the sound that was like a bird.",
+      },
+    ],
+  },
+  {
     version: "4.41.45",
     date: "2026-10-30",
     time: "16:26",

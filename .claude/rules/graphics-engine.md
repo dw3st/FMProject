@@ -460,5 +460,5 @@ o "uh" da chance perdida, ligados a eventos do `gameBus` no `MatchScreen` (botã
 As gravações (`src/example_data/assets/audio/*.mp3`, servidas por `GAME_ART_FILES`) vêm do Stable Audio Open 1.0 no
 ComfyUI local: `python data_process/assets/audio/gen_audio.py [nome] [--seed N]` (um pedido por vez) e
 `ConfyUI/python_embeded/python.exe -I data_process/assets/audio/finish_audio.py` (recorte, loop sem emenda, normalização;
-a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. O apito longo, o de cartão e o
-final continuam sintetizados (as gerações saíram como chiado). Só som: nada muda na simulação.
+a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. Todo apito é sintetizado (4.41.46): o gerado variava de tom e soava como passarinho;
+o sintetizado tem tom fixo (3,3 kHz) e a vibração da bolinha no volume (~45 Hz), nunca no tom. Só som: nada muda na simulação.
