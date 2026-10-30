@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.30",
+    date: "2026-10-30",
+    time: "10:49",
+    items: [
+      {
+        pt: "Retratos novos do Messi e do Neymar.",
+        en: "New portraits of Messi and Neymar.",
+      },
+    ],
+  },
+  {
     version: "4.41.29",
     date: "2026-10-30",
     time: "10:38",
