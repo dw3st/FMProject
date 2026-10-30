@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.22",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Tela do Clube com o estádio pintado visto de cima, arquibancadas coloridas pela ocupação, e o gramado com a mesma grama pintada da partida, também na prévia do jogo.",
+        en: "The Club screen with a painted top-down stadium, stands shaded by occupancy, and the pitch with the same painted grass as the match, also in the match preview.",
+      },
+    ],
+  },
+  {
     version: "4.41.21",
     date: "2026-10-30",
     items: [
