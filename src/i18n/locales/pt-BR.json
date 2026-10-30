@@ -2180,7 +2180,7 @@
         "assists": "Assistências na temporada (todas as competições)",
         "rating": "Nota média das partidas na temporada",
         "morale": "Moral",
-        "status": "Apto, lesionado ou suspenso"
+        "status": "Pronto, precisa de ritmo (amarelo) ou indisponível: lesionado, suspenso ou na seleção (vermelho)"
       },
       "rating": "Nota",
       "status": "Estado",
@@ -2198,7 +2198,9 @@
       "sevSevere": "grave",
       "contract": "Contrato",
       "suspendedMatches_one": "Suspenso para o próximo jogo",
-      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos",
+      "nationalDuty": "Na seleção",
+      "needsRhythm": "Precisa de ritmo: fôlego {{fitness}}"
     },
     "home": {
       "nextMatch": "Próximo jogo",

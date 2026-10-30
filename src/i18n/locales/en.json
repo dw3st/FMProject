@@ -2180,7 +2180,7 @@
         "assists": "Assists this season (all competitions)",
         "rating": "Average match rating this season",
         "morale": "Morale",
-        "status": "Fit, injured or suspended"
+        "status": "Ready, short of rhythm (yellow) or unavailable: injured, suspended or with the national team (red)"
       },
       "rating": "Rating",
       "status": "Status",
@@ -2198,7 +2198,9 @@
       "sevSevere": "severe",
       "contract": "Contract",
       "suspendedMatches_one": "Suspended for the next match",
-      "suspendedMatches_other": "Suspended for the next {{count}} matches"
+      "suspendedMatches_other": "Suspended for the next {{count}} matches",
+      "nationalDuty": "With the national team",
+      "needsRhythm": "Short of rhythm: fitness {{fitness}}"
     },
     "home": {
       "nextMatch": "Next match",
