@@ -511,3 +511,11 @@ tackle range (the dribble target is left out of the tackle check), so front tack
 from behind with almost no chance. Tick-counted timers (`COMMIT_TICKS`, `justReceivedTicks`, the through-ball cache)
 also count time now (`dt / DECISION_REF_DT`), identical at 0.2 s. Measured with `scripts/step-goals.ts`,
 `scripts/step-diag.ts` (every event and stat by step) and `scripts/step-duels.ts` (tackles and dribbles by angle).
+
+# Kit clash (4.41.20)
+
+`resolveMatchKits` (`src/Domain/matchday/matchKits.ts`): the home side keeps its first colour; when the away shirt is
+closer than `KIT_CLASH_DISTANCE` (250, redmean distance) the away side wears the first of its other club colours that
+does not clash, else the change kit (`CHANGE_KITS`) farthest from the home shirt. `resolveMatchTeamKitColors(A, B, home)`
+(`matchTeamColors.ts`) wraps it for the preview, the result and the live match; the live match passes the home engine
+team (`isAwayView`), so the user's club changes kit when he is the away side. The watch broadcast reuses these colours.

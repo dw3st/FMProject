@@ -320,3 +320,10 @@ the art preview's `penalty-rig.js`: keeper front view with keyframed joints, bal
 ball; taker from behind with run-up, plant, strike, follow-through and reaction; panelled spinning ball; bulging net).
 `rigPlan` turns the decided `KickOutcome` into the animation (dive side and height, the ball's target, saved / post /
 miss); nothing about the outcome changes. Without the new visual or the backdrop, the drawn scene of 4.38.
+
+## Pick countdown (4.41.20)
+
+`PenaltyScreen` shows the time left to pick (`PickClock`: big seconds and a draining bar, red in the last 2 s) for the
+taker (`KICK_WINDOW_S` 6 s) and the keeper (`DIVE_WINDOW_S` 4 s); out of time the taker's area is the AI's (`aiKick`),
+the keeper stays in the middle. The deadline is fixed once per kick (a ref), so a parent re-render never restarts it.
+Same screen solo and between two managers (the server's `H2H.PENALTY_CHOICE_S` 20 s only covers an absent side).

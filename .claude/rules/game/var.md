@@ -53,6 +53,11 @@ versão **4.18**. Depende de `referees.md` (qualidade, rigor, escala), `game-eng
   com inbox `discipline`/`manager_banned` (tópico `injuries`, tema clube). Cada partida oficial do clube cumpre 1 jogo
   (`nextManagerBan`; a do próprio vermelho não conta). No jogo suspenso: `match-setup.managerBanned`, prévia com aviso,
   partida com "Técnico suspenso" e o auxiliar fazendo as trocas.
+- **Ordens da arquibancada (4.41.20, report de tester):** suspenso ou expulso, o técnico ainda escolhe a mentalidade e
+  sugere trocas (o painel abre só com a aba de troca; formação, posições, instruções e tática ficam fora). Cada ordem
+  passa pelo auxiliar: segue com `ASSISTANT_ORDERS.FOLLOW` (0,7, `src/Domain/match/assistantOrders.ts`), senão mantém o
+  plano dele; um aviso curto diz o que ele fez (`complaint.orderMentality*`, `complaint.orderSub*`). As trocas da regra da
+  IA (`autoSubs.A`) continuam valendo. Mesmo caminho na partida entre dois técnicos (os comandos vão pelo socket).
 - Técnicos da IA não reclamam.
 
 ## Telas

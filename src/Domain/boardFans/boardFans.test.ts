@@ -77,6 +77,18 @@ describe("applyMatchResult", () => {
     expect(s.record).toMatchObject({ played: 1, wins: 1 });
     expect(s.recent).toEqual(["W"]);
   });
+  test("a win never lowers the board, even as favourite far below the target late in the season", () => {
+    const title: SeasonObjective = { ...objective, kind: "title", target: 1 };
+    let s = base({ objective: title, recent: ["L", "L", "D", "L", "L"] });
+    for (let i = 0; i < 2; i++) {
+      const before = s.board;
+      s = applyMatchResult(s, {
+        goalsFor: 2, goalsAgainst: 1, home: true, derby: false, expectation: 1,
+        league: { position: 18, size: 20, played: 34, total: 38 },
+      });
+      expect(s.board).toBeGreaterThan(before);
+    }
+  });
   test("a home loss hurts the fans more than an away loss", () => {
     const home = applyMatchResult(base(), { goalsFor: 0, goalsAgainst: 1, home: true, derby: false });
     const away = applyMatchResult(base(), { goalsFor: 0, goalsAgainst: 1, home: false, derby: false });

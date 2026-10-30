@@ -4315,12 +4315,17 @@
     "red": "Técnico expulso! O auxiliar assume as substituições",
     "banned": "Técnico suspenso",
     "sentOff": "Técnico expulso",
-    "previewBanned": "Você está suspenso: assiste da arquibancada e o auxiliar faz as substituições.",
+    "previewBanned": "Você está suspenso: assiste da arquibancada, o auxiliar faz as substituições e você pode passar ordens a ele.",
     "inbox": {
       "subject": "Você foi expulso",
       "body_one": "Suspenso por {{count}} jogo: você assiste da arquibancada e o auxiliar faz as substituições.",
       "body_other": "Suspenso por {{count}} jogos: você assiste da arquibancada e o auxiliar faz as substituições."
-    }
+    },
+    "orderMentality": "O auxiliar segue sua ordem: {{mentality}}",
+    "orderMentalityNo": "O auxiliar mantém o plano dele (você pediu {{mentality}})",
+    "orderSub": "O auxiliar faz sua troca: {{in}} no lugar de {{out}}",
+    "orderSubNo": "O auxiliar mantém {{out}} em campo (você pediu {{in}})",
+    "ordersHint": "Da arquibancada você ainda passa ordens ao auxiliar: mentalidade e trocas. Ele segue a maioria."
   },
   "var": {
     "badge": "Com VAR",
@@ -5903,14 +5908,16 @@
     "kickTitle": "Cobrança de {{name}}",
     "saveTitle": "Defenda: {{name}} vai bater",
     "keeper": "Goleiro: {{name}}",
-    "hintDive": "Escolha para onde o goleiro pula ({{s}} s).",
+    "hintDive": "Escolha para onde o goleiro pula.",
     "result": {
       "goal": "Gol",
       "saved": "Defendeu",
       "miss": "Fora",
       "post": "Na trave"
     },
-    "hintKick": "Escolha onde chutar ({{s}} s)."
+    "hintKick": "Escolha onde chutar.",
+    "clockKick": "Tempo para escolher o canto. Se acabar, o batedor escolhe sozinho.",
+    "clockDive": "Tempo para escolher o pulo. Se acabar, ele fica no meio."
   },
   "starLimit": {
     "line": "Top {{top}} do mundo: você tem {{count}} de {{max}}.",
