@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.50",
+    date: "2026-10-30",
+    time: "17:22",
+    items: [
+      {
+        pt: "Na partida, cada banco ganhou uma caixa térmica e garrafinhas de água no gramado ao lado.",
+        en: "In the match, each bench now has a cooler box and water bottles on the grass beside it.",
+      },
+    ],
+  },
+  {
     version: "4.41.49",
     date: "2026-10-30",
     time: "17:03",

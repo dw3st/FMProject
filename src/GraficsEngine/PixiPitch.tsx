@@ -5,6 +5,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, Assets, Spritesheet, CanvasSource, Container, FillGradient, Graphics, Particle as FanParticle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite, CanvasTextMetrics } from "pixi.js";
 import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/crowdMotion";
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
+import { benchPropSpots } from "@/GraficsEngine/benchProps";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
@@ -2473,6 +2474,28 @@ export function PixiPitch({
       world.addChild(benchGfx);
       // The art pack's dugout (art phase 9): the bench under the substitutes, its translucent roof over them.
       const benchArt: Record<"left" | "right", { bench: Sprite; roof: Sprite } | null> = { left: null, right: null };
+      // Drinks by the benches (tester report, mock option B): a painted cooler box and bottles, only with the new visual.
+      let propTex: { cooler: Texture; bottle: Texture } | null = null;
+      const propSprites: Record<"left" | "right", Sprite[]> = { left: [], right: [] };
+      if (newVisualOn()) {
+        void Promise.all([Assets.load<Texture>(gameArtUrl("bench/cooler-box.png")), Assets.load<Texture>(gameArtUrl("bench/water-bottle.png"))])
+          .then(([cooler, bottle]) => { if (!facesDisposed && cooler && bottle) propTex = { cooler, bottle }; })
+          .catch(() => { /* no props */ });
+      }
+      const placeProps = (side: "left" | "right", box: { x: number; y: number; w: number; h: number } | null) => {
+        if (!box || !propTex) { for (const sp of propSprites[side]) sp.visible = false; return; }
+        const spots = benchPropSpots(box, side, markerR, stadiumRef.current?.seed ?? "match");
+        const all = [{ tex: propTex.cooler, s: spots.cooler }, ...spots.bottles.map((b) => ({ tex: propTex!.bottle, s: b }))];
+        all.forEach(({ tex, s: spot }, i) => {
+          let sp = propSprites[side][i];
+          if (!sp) {
+            sp = new Sprite(tex); sp.anchor.set(0.5); sp.zIndex = -0.695; sp.eventMode = 'none';
+            world.addChild(sp); propSprites[side][i] = sp;
+          }
+          sp.width = spot.w; sp.height = spot.h; sp.rotation = spot.rotation;
+          sp.position.set(spot.x, spot.y); sp.visible = true;
+        });
+      };
       /** Last goal per team (effects clock), for the bench celebration. */
       let benchGoal: { team: TeamId; at: number } | null = null;
       const unsubBenchGoal = gameBus.on("goalScored", (e) => { benchGoal = { team: e.team, at: effectNow }; });
@@ -2494,6 +2517,7 @@ export function PixiPitch({
         }
         if (!(officialsOn && extrasRef.current)) {
           for (const a of Object.values(benchArt)) if (a) a.bench.visible = a.roof.visible = false;
+          placeProps("left", null); placeProps("right", null);
           return;
         }
         const touchY = m.marginY + m.height;
@@ -2507,6 +2531,7 @@ export function PixiPitch({
           // Every bench has the same seats (tester report): fewer substitutes leave empty seats, never a shorter bench.
           const L = benchLayout(BENCH_VIEW.MAX_SHOWN, b.x + b.w / 2, b.w, laneEnd, runoffEnd - 1, 0, markerR);
           const box = L.box;
+          placeProps(side, box);
           if (stadiumArt) {
             let a = benchArt[side];
             if (!a) {

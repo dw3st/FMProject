@@ -462,3 +462,11 @@ ComfyUI local: `python data_process/assets/audio/gen_audio.py [nome] [--seed N]`
 `ConfyUI/python_embeded/python.exe -I data_process/assets/audio/finish_audio.py` (recorte, loop sem emenda, normalização;
 a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. Todo apito é sintetizado (4.41.46): o gerado variava de tom e soava como passarinho;
 o sintetizado tem tom fixo (3,3 kHz) e a vibração da bolinha no volume (~45 Hz), nunca no tom. Só som: nada muda na simulação.
+
+## Bebidas no banco (4.41.50)
+
+Report de tester, opção B do mock. `benchProps.ts` (`BENCH_PROPS`, `benchPropSpots`, puro, com teste): uma caixa térmica
+na ponta interna de cada banco (lado do túnel) e 3 garrafinhas deitadas na grama ao lado, sorteadas pela semente do
+jogo. Sprites pintados no FLUX (`data_process/assets/bench_props/build_bench_props.py`) em
+`assets/bench/cooler-box.png` e `water-bottle.png` (`GAME_ART_FILES`); só com o visual novo e com Officials e extras,
+como os bancos. Só desenho.
