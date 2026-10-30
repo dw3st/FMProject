@@ -30,6 +30,23 @@ function detailOf(p: PositionSortable): number {
   return DETAILED_INDEX.get(role) ?? 99;
 }
 
+/** Pitch order of a lineup: keeper, then each line from left to right (back, midfield, front). */
+const PITCH_ORDER = [
+  "GK",
+  "LWB", "LB", "CB", "RB", "RWB",
+  "CDM", "DM", "LM", "CM", "RM", "CAM", "AM",
+  "LW", "ST", "CF", "RW",
+] as const;
+const PITCH_INDEX = new Map<string, number>(PITCH_ORDER.map((r, i) => [r, i]));
+
+/** Players on the pitch in pitch order (tester report: the right winger sat in the middle of the list); ties keep their order. */
+export function sortByPitchPosition<T extends { role: string }>(players: readonly T[]): T[] {
+  return players
+    .map((p, i) => ({ p, i, k: PITCH_INDEX.get(p.role) ?? 99 }))
+    .sort((a, b) => a.k - b.k || a.i - b.i)
+    .map((x) => x.p);
+}
+
 /**
  * Squad-list position order (#71): line first (GK, DEF, MID, FWD), then the detailed position the
  * list shows (CB, LB, RB, LWB, RWB, CDM, CM, CAM, LM, RM, LW, RW, ST), then name. `desc` reverses

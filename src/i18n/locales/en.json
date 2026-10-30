@@ -4351,6 +4351,7 @@
     }
   },
   "complaint": {
+    "manager": "Manager",
     "button": "Complain",
     "calm": "The referee heard you out",
     "bias": "The referee is watching the opponent's fouls more closely",
@@ -6000,6 +6001,8 @@
       "yellowCards": "Yellow cards",
       "redCards": "Red cards"
     },
+    "viewers_one": "{{names}} is watching your match",
+    "viewers_other": "{{names}} are watching your match",
     "watching": "Watching {{name}}",
     "paused": "Paused"
   }

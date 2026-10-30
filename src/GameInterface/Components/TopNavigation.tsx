@@ -186,7 +186,7 @@ export function TopNavigation({
   // Icon above a small label (the art preview's bar): the labels always show.
   const tabClass = (active: boolean) =>
     `flex flex-col items-center justify-center gap-1 min-w-0 border-b-2 bg-transparent px-0 font-display font-bold uppercase tracking-[0.08em] text-[13px] leading-none no-underline whitespace-nowrap transition-colors ${
-      active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+      active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
     }`;
   const dayButton =
     "flex items-center justify-center gap-1.5 h-9 rounded-md border border-border bg-card text-sm font-semibold text-foreground whitespace-nowrap shrink-0 cursor-pointer hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60";

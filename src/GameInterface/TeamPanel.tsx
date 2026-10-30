@@ -1,3 +1,4 @@
+import { sortByPitchPosition } from "@/Domain/positions/positionSort";
 import { shirtName } from "@/Domain/shirtName";
 import { useTranslation } from "react-i18next";
 import type { GamePlayer } from "@/GameEngine/types";
@@ -255,7 +256,7 @@ export function TeamPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {players.map((p) => (
+        {sortByPitchPosition(players).map((p) => (
           <PlayerRow
             key={p.id}
             player={p}

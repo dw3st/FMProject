@@ -137,6 +137,8 @@ export type ServerEvent =
   // Watching a friend's live match. To who plays: someone watches (relay your match) / nobody any more.
   | { type: "watch_on"; saveId: string }
   | { type: "watch_off"; saveId: string }
+  /** Who is watching this seat's live match now (nicknames), sent to the player on every join and leave. */
+  | { type: "watch_viewers"; saveId: string; viewers: string[] }
   // To the spectator.
   | { type: "watch_info"; saveId: string; info: WatchInfo }
   | ({ type: "watch_frame"; saveId: string; seatId: string } & WatchFramePayload)

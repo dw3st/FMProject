@@ -151,6 +151,10 @@ export function parseServerEvent(raw: unknown): ServerEvent | null {
     case "watch_on":
     case "watch_off":
       return str(e.saveId) ? { type: e.type, saveId: e.saveId } : null;
+    case "watch_viewers":
+      return str(e.saveId) && Array.isArray(e.viewers)
+        ? { type: e.type, saveId: e.saveId, viewers: e.viewers.filter(str).slice(0, 16) }
+        : null;
     default:
       return null;
   }

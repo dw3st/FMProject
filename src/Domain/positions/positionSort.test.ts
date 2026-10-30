@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { compareSquadPositions, groupByPosition, type PositionSortable } from "@/Domain/positions/positionSort";
+import { compareSquadPositions, groupByPosition, sortByPitchPosition, type PositionSortable } from "@/Domain/positions/positionSort";
 
 const rows: PositionSortable[] = [
   { pos: "Forward", natural: "ST", name: "Kane" },
@@ -53,5 +53,14 @@ describe("groupByPosition", () => {
     const groups = groupByPosition(items, (i) => i.role);
     expect(groups.map((g) => g.role)).toEqual(["GK", "CB", "LB", "ST", "XX"]);
     expect(groups[1]!.items.map((i) => i.id)).toEqual(["b", "d"]);
+  });
+});
+
+describe("sortByPitchPosition", () => {
+  test("keeper, then each line left to right; ties keep their order", () => {
+    const ps = ["RWB", "GK", "RW", "CB", "LB", "CM", "CB", "ST", "LW", "RM", "CAM"].map((role, i) => ({ role, i }));
+    expect(sortByPitchPosition(ps).map((p) => p.role)).toEqual(["GK", "LB", "CB", "CB", "RWB", "CM", "RM", "CAM", "LW", "ST", "RW"]);
+    const cbs = sortByPitchPosition(ps).filter((p) => p.role === "CB").map((p) => p.i);
+    expect(cbs).toEqual([3, 6]);
   });
 });

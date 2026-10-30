@@ -4351,6 +4351,7 @@
     }
   },
   "complaint": {
+    "manager": "Técnico",
     "button": "Reclamar",
     "calm": "O árbitro ouviu a reclamação",
     "bias": "O árbitro ficou mais atento às faltas do adversário",
@@ -6000,6 +6001,8 @@
       "yellowCards": "Amarelos",
       "redCards": "Vermelhos"
     },
+    "viewers_one": "{{names}} está assistindo à sua partida",
+    "viewers_other": "{{names}} estão assistindo à sua partida",
     "watching": "Assistindo {{name}}",
     "paused": "Pausado"
   }

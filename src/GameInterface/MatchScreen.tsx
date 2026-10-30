@@ -1129,7 +1129,28 @@ export function MatchScreen() {
     managerCardsRef.current = [...managerCardsRef.current, { card: out.card, minute, complaint: made + 1 }];
     setCoachCard((prev) => ({ team: "A", card: out.card as "yellow" | "red", seq: (prev?.seq ?? 0) + 1 }));
     setEventFeed((f) => [...f, { minute: minute - 1, team: "A", kind: out.card === "red" ? "managerRed" : "managerYellow", player: "" }]);
-    showNotice(t(out.card === "red" ? "complaint.red" : "complaint.yellow"), out.card === "red" ? "danger" : "warn");
+    // With the new art the manager's card is the same TV lower third as a player's (his face, the card, the minute).
+    const me = touchline?.managers?.mine;
+    const photo = coaches[mySide]?.faceUrl;
+    if (newVisualOn() && me) {
+      const sc = gs.score ?? { A: 0, B: 0 };
+      const shown = toDisplayPair(sc, isAwayView(matchFixture, crestIds?.a));
+      showBanner({
+        kind: out.card === "red" ? "red" : "yellow",
+        title: me.name ?? t("complaint.manager"),
+        line: teamNamesRef.current[mySide],
+        ...crestOfRef.current(mySide),
+        goal: {
+          ...(photo ? { photo } : {}),
+          tag: t("match.banner.tvCardTag", { card: t(`match.banner.${out.card === "red" ? "red" : "yellow"}`), minute }),
+          score: `${shown.A}–${shown.B}`,
+          color: mySide === "A" ? matchKitColors.teamA : matchKitColors.teamB,
+          card: out.card as "yellow" | "red",
+        },
+      });
+    } else {
+      showNotice(t(out.card === "red" ? "complaint.red" : "complaint.yellow"), out.card === "red" ? "danger" : "warn");
+    }
     if (out.card === "red") {
       // Sent to the stands: the assistant makes the changes (AI rule), injuries included.
       setManagerOut("sentOff");
@@ -1959,6 +1980,14 @@ export function MatchScreen() {
       {h2hMode && h2h.closed && (
         <div role="status" className="flex items-center justify-center px-4 py-2 border-b border-border bg-destructive/10 text-sm font-semibold text-foreground">
           {t(`h2h.closed.${h2h.closed}`)}
+        </div>
+      )}
+
+      {/* Who is watching this broadcast now (multiplayer part 8). */}
+      {liveTarget && liveRivals.viewers.length > 0 && (
+        <div role="status" className="flex items-center justify-center gap-2 px-4 py-1.5 border-b border-border text-sm text-muted-foreground">
+          <Icon name="eye" size={16} className="text-primary" />
+          <span className="truncate">{t("watch.viewers", { count: liveRivals.viewers.length, names: liveRivals.viewers.join(", ") })}</span>
         </div>
       )}
 

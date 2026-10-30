@@ -11,6 +11,7 @@ import { saveService } from "@/backend/SaveService";
 import { memberBySeat, memberOf } from "@/backend/auth/saveOwnership";
 import { isServerOwnedLive, liveScoresOf } from "@/backend/rivals/liveScores";
 import { notifyUser, type SocialSocket } from "@/backend/social/realtime";
+import { validNicknameOf } from "@/backend/social/socialStore";
 import { WATCH } from "@/Domain/watch/watchConfig";
 import { watchInfoOf, withBenches } from "@/Domain/watch/watchState";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -50,6 +51,16 @@ function entryFor(saveId: string, seatId: string, userId: string): Entry {
   return e;
 }
 
+/** Tells the player who watches him now (nicknames, each once). */
+function tellViewers(e: Entry): void {
+  const names = new Set<string>();
+  for (const ws of e.watchers) {
+    const n = validNicknameOf(ws.data.userId);
+    if (n) names.add(n);
+  }
+  notifyUser(e.userId, { type: "watch_viewers", saveId: e.saveId, viewers: [...names].sort((a, b) => a.localeCompare(b)) });
+}
+
 function closeWatcher(ws: SocialSocket, e: Entry, reason: WatchCloseReason): void {
   send(ws, { type: "watch_closed", saveId: e.saveId, seatId: e.seatId, reason });
 }
@@ -62,6 +73,7 @@ export function watchLeave(ws: SocialSocket): void {
   const e = entries.get(key);
   if (!e) return;
   e.watchers.delete(ws);
+  tellViewers(e);
   if (e.watchers.size > 0) return;
   notifyUser(e.userId, { type: "watch_off", saveId: e.saveId });
   // A server-run match keeps its last state (the server relays it anyway); a solo one starts over next time.
@@ -100,6 +112,7 @@ export async function watchJoin(ws: SocialSocket, saveId: string, seatId: string
   send(ws, { type: "watch_info", saveId, info: watchInfoOf(live, kind, club, opponent) });
   if (e.last) send(ws, { type: "watch_state", saveId, seatId, ...e.last, ...(e.look ? { look: e.look } : {}) });
   if (kind === "solo" && e.watchers.size === 1) notifyUser(e.userId, { type: "watch_on", saveId });
+  tellViewers(e);
 }
 
 /** The friend's tab came back (`hello`): someone still watches him, so he relays again. */
@@ -107,7 +120,10 @@ export function watchResendOn(userId: string, saveId: string): void {
   const me = memberOf(saveId, userId);
   if (!me) return;
   const e = entries.get(keyOf(saveId, me.seatId));
-  if (e && e.watchers.size > 0) notifyUser(userId, { type: "watch_on", saveId });
+  if (e && e.watchers.size > 0) {
+    notifyUser(userId, { type: "watch_on", saveId });
+    tellViewers(e);
+  }
 }
 
 type Relay =
@@ -172,6 +188,8 @@ export function watchLiveGone(saveId: string, seatId: string): void {
     watching.delete(ws);
     closeWatcher(ws, e, "gone");
   }
+  e.watchers.clear();
+  tellViewers(e);
   entries.delete(key);
 }
 

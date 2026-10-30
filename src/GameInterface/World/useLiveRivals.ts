@@ -18,6 +18,8 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
   const [highlight, setHighlight] = useState<Record<string, true>>({});
   /** Someone watches this match (`watch_on`): the match screen relays it while true. */
   const [watched, setWatched] = useState(false);
+  /** Nicknames of who watches this match now (`watch_viewers`). */
+  const [viewers, setViewers] = useState<string[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const pending = useRef<ClientEvent[]>([]);
   const saveId = target?.saveId ?? null;
@@ -49,6 +51,11 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
         const ev = parseServerEvent(m.data);
         if (ev && (ev.type === "watch_on" || ev.type === "watch_off") && ev.saveId === saveId) {
           setWatched(ev.type === "watch_on");
+          if (ev.type === "watch_off") setViewers([]);
+          return;
+        }
+        if (ev && ev.type === "watch_viewers" && ev.saveId === saveId) {
+          setViewers(ev.viewers);
           return;
         }
         if (!ev || ev.type !== "friend_live" || ev.saveId !== saveId || ev.seatId === seatId) return;
@@ -103,5 +110,5 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
   }, []);
 
   const list = Object.values(live).sort((a, b) => a.nickname.localeCompare(b.nickname));
-  return { live: list, highlight, send, watched, relay };
+  return { live: list, highlight, send, watched, viewers, relay };
 }

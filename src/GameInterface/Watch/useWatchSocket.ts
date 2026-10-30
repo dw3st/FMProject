@@ -50,6 +50,8 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
     stepMs: REMOTE_BUFFER.STEP_MS,
   });
   const stateRef = useRef<GameState | null>(null);
+  /** The last close was "gone": the next live score of the friend re-joins. */
+  const goneRef = useRef(false);
   const saveId = target?.saveId ?? null;
   const seatId = target?.seatId ?? null;
 
@@ -79,8 +81,17 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
         }
         if (!e || e.saveId !== saveId) return;
         if (e.type === "friend_live" && e.seatId === seatId) {
-          if (e.live === null) setClosed((c) => c ?? "gone");
-          else if (isLiveScoreView(e.live)) setLive(e.live);
+          if (e.live === null) {
+            goneRef.current = true;
+            setClosed((c) => c ?? "gone");
+          } else if (isLiveScoreView(e.live)) {
+            setLive(e.live);
+            // The match came back (a server restart lost it, then the friend's tab sent it again): watch again.
+            if (goneRef.current && e.live.status !== "ended") {
+              goneRef.current = false;
+              sock.send(JSON.stringify({ type: "watch_join", saveId, seatId } satisfies ClientEvent));
+            }
+          }
           return;
         }
         if (e.type === "watch_info") {
@@ -88,6 +99,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
           if (i && i.seatId === seatId && i.teams?.A && i.teams?.B) {
             setInfo(i);
             setLive(i.live);
+            goneRef.current = false;
             setClosed(null);
           }
           return;
@@ -114,6 +126,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
         } else if (e.type === "watch_event" && typeof e.name === "string" && WATCH_EVENTS.has(e.name)) {
           gameBus.emit(e.name as keyof GameEvents, e.payload as never);
         } else if (e.type === "watch_closed" && CLOSE_REASONS.has(e.reason as WatchCloseReason)) {
+          if (e.reason === "gone") goneRef.current = true;
           setClosed(e.reason as WatchCloseReason);
           stopped = e.reason === "refused" || e.reason === "full" || stopped;
         }

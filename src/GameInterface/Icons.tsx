@@ -4,6 +4,7 @@ import {
   ZoomIn,
   Rewind,
   Binoculars,
+  Eye,
   Mic,
   LayoutDashboard,
   ClipboardList,
@@ -140,6 +141,7 @@ export type IconName =
   | "zoom-in"
   | "rewind"
   | "binoculars"
+  | "eye"
   | "mic"
   | "dashboard"
   | "tactics"
@@ -282,6 +284,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "zoom-in":      ZoomIn,
   "rewind":       Rewind,
   "binoculars":   Binoculars,
+  "eye":          Eye,
   "mic":          Mic,
   "dashboard": LayoutDashboard,
   "tactics": ClipboardList,
