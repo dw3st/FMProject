@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.16",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Partida: o reserva entra pelo meio-campo, junto aos bancos, e corre até a posição; a maca leva o jogador lesionado até o túnel; o impedimento mostra a faixa entre a linha e o jogador.",
+        en: "Match: the substitute comes on at the halfway line by the benches and runs to his position; the stretcher carries the injured player into the tunnel; offside shows the strip between the line and the player.",
+      },
+    ],
+  },
+  {
     version: "4.41.15",
     date: "2026-10-30",
     items: [

@@ -47,7 +47,8 @@ export function createPage(Component: React.ComponentType, options: CreatePageOp
   }
 
   // The painted faces (new art) are known before the first render, so a face never swaps from the SVG to the webp.
-  const ready = options.public && !options.art ? Promise.resolve() : loadPaintedFaces(1500, readNewVisual());
+  // Up to 4 s (4.41.15): with 1,5 s a slow answer left the whole page on the old drawing without notice.
+  const ready = options.public && !options.art ? Promise.resolve() : loadPaintedFaces(4000, readNewVisual());
   const go = () => void ready.then(start);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", go);

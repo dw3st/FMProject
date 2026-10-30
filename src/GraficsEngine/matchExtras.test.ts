@@ -20,6 +20,14 @@ describe("stretcher (#129)", () => {
     expect(out.y).toBeGreaterThan(600);
     expect(stretcherPose(near, 10 + STRETCHER_TOTAL_S + 0.01).done).toBe(true);
   });
+
+  test("with a tunnel it carries the player into it", () => {
+    const tunnel = { x: 520, y: 760 };
+    const run = startStretcher({ x: 200, y: 120 }, m, 0, tunnel);
+    expect(run.outS).toBeGreaterThanOrEqual(STRETCHER.OUT_S);
+    const end = stretcherPose(run, STRETCHER.IN_S + STRETCHER.HOLD_S + run.outS + 0.01);
+    expect(end).toMatchObject({ x: 520, y: 760, carrying: true, done: true });
+  });
 });
 
 describe("managers and benches", () => {

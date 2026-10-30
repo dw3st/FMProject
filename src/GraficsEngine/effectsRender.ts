@@ -93,6 +93,9 @@ export function drawEffect(g: Graphics, e: PitchEffect, now: number, ctx: Effect
       const { px, py } = ctx.toPixel(e.x, e.y);
       if (e.lineX !== null) {
         const t = ctx.toPixel(e.lineX, 0), b = ctx.toPixel(e.lineX, PITCH_WIDTH);
+        // The strip between the line and the man offside, shaded (art preview, 4.41.15).
+        const x0 = Math.min(t.px, px), y0 = Math.min(t.py, b.py);
+        g.rect(x0, y0, Math.abs(px - t.px), Math.abs(b.py - t.py)).fill({ color: EFFECT_COLOR.HIGHLIGHT, alpha: X.OFFSIDE_STRIP * a });
         dashed(g, t.px, t.py, b.px, b.py, EFFECT_COLOR.HIGHLIGHT, a);
       }
       g.circle(px, py, R * X.OFFSIDE_RING).stroke({ width: X.LINE_W, color: EFFECT_COLOR.HIGHLIGHT, alpha: a });

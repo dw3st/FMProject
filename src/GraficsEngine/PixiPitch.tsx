@@ -7,7 +7,7 @@ import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, LED, ledAdFor, ledBoards, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, LED, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -2005,7 +2005,9 @@ export function PixiPitch({
         const at = lastDrawnPos?.get(e.playerId) ?? playerPos(e.playerId);
         if (!at) return;
         const { px, py } = toPixel(at.x, at.y);
-        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow), color: e.team === "A" ? fillA : fillB }];
+        const tun = m.stand ? standTunnel(m.stand) : null;
+        const mouth = tun ? { x: tun.x + tun.w / 2, y: tun.y + Math.min(tun.h, tun.w * 1.5) } : undefined;
+        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: e.team === "A" ? fillA : fillB }];
       });
       const drawStretchers = () => {
         stretcherGfx.clear();
@@ -2178,10 +2180,14 @@ export function PixiPitch({
       const unsubCoachGoal = gameBus.on("goalScored", (e) => startGesture(e.team, "celebrate"));
 
       // The fourth official (art phase 3): between the technical areas, the board up on a substitution.
+      const walkOns = new Map<number, { from: Pos; at: number }>();
       let fourth: Container | null = null;
       let boardUntil = -1;
-      const unsubFourth = gameBus.on("playerSubstituted", () => {
+      const unsubFourth = gameBus.on("playerSubstituted", (e) => {
         if (officialsOn && framesShown()) boardUntil = effectNow + OFFICIAL_SPRITE.BOARD_S;
+        // The substitute comes on from the halfway line by the benches (drawn bottom touchline) instead of appearing
+        // in his slot (art preview, 4.41.15). Drawing only.
+        walkOns.set(e.inId, { from: { x: PITCH_LENGTH / 2, y: mirrorRef.current ? -SUB_WALK.OFF_YDS : PITCH_WIDTH + SUB_WALK.OFF_YDS }, at: effectNow });
       });
       onOfficialsReady = () => {
         if (!officialsOn) return;
@@ -2927,6 +2933,17 @@ export function PixiPitch({
           const k = transitionProgress(transition, transitionNow);
           drawnPos = blendPlayers(transition.fromPlayers, drawnPos, k);
           drawnB = blendBall(transition.fromBall, drawnB, k);
+        }
+        if (walkOns.size > 0) {
+          const next = new Map(drawnPos);
+          for (const [id, w] of walkOns) {
+            const t = (effectNow - w.at) / SUB_WALK.S;
+            const to = drawnPos.get(id);
+            if (t >= 1 || !to) { walkOns.delete(id); continue; }
+            const k = t <= 0 ? 0 : t * t * (3 - 2 * t);
+            next.set(id, { x: w.from.x + (to.x - w.from.x) * k, y: w.from.y + (to.y - w.from.y) * k });
+          }
+          drawnPos = next;
         }
         // Goal replay: record, or draw the recorded frames slowly.
         const dtReal = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;

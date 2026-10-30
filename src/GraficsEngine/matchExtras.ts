@@ -18,14 +18,27 @@ export interface StretcherRun {
   target: { x: number; y: number };
   /** Off the nearest touchline (drawn px). */
   entry: { x: number; y: number };
+  /** Where it carries the player (the tunnel with the stadium, 4.41.15; else back to `entry`) and how long it takes. */
+  exit: { x: number; y: number };
+  outS: number;
 }
 
-/** Starts a stretcher towards a player drawn at `target`, entering from the nearest touchline. */
-export function startStretcher(target: { x: number; y: number }, m: Pick<PitchMetrics, "marginY" | "height">, now: number): StretcherRun {
+/**
+ * Starts a stretcher towards a player drawn at `target`, entering from the nearest touchline. With a `tunnel` (the
+ * mouth of the players' tunnel, drawn px) it carries him off into it, as in the art preview, at the same pace.
+ */
+export function startStretcher(
+  target: { x: number; y: number }, m: Pick<PitchMetrics, "marginY" | "height">, now: number, tunnel?: { x: number; y: number },
+): StretcherRun {
   const top = m.marginY - STRETCHER_OUT_PX;
   const bottom = m.marginY + m.height + STRETCHER_OUT_PX;
   const y = target.y - m.marginY < m.marginY + m.height - target.y ? top : bottom;
-  return { startedAt: now, target: { ...target }, entry: { x: target.x, y } };
+  const entry = { x: target.x, y };
+  const exit = tunnel ? { ...tunnel } : entry;
+  const back = Math.hypot(entry.x - target.x, entry.y - target.y);
+  const away = Math.hypot(exit.x - target.x, exit.y - target.y);
+  const outS = tunnel && back > 0 ? Math.min(STRETCHER.OUT_S * 3, Math.max(STRETCHER.OUT_S, (STRETCHER.OUT_S * away) / Math.max(back, m.height * 0.25))) : STRETCHER.OUT_S;
+  return { startedAt: now, target: { ...target }, entry, exit, outS };
 }
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -41,11 +54,12 @@ export function stretcherPose(run: StretcherRun, now: number): { x: number; y: n
   }
   if (t < STRETCHER.IN_S + STRETCHER.HOLD_S) return { ...b, carrying: false, done: false };
   const out = t - STRETCHER.IN_S - STRETCHER.HOLD_S;
-  if (out < STRETCHER.OUT_S) {
-    const k = smooth(out / STRETCHER.OUT_S);
-    return { x: b.x + (a.x - b.x) * k, y: b.y + (a.y - b.y) * k, carrying: true, done: false };
+  const e = run.exit;
+  if (out < run.outS) {
+    const k = smooth(out / run.outS);
+    return { x: b.x + (e.x - b.x) * k, y: b.y + (e.y - b.y) * k, carrying: true, done: false };
   }
-  return { ...a, carrying: true, done: true };
+  return { ...e, carrying: true, done: true };
 }
 
 /** Half width (fraction of the drawn pitch length) a manager walks around his spot. */

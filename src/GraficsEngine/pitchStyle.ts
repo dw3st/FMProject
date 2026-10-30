@@ -46,6 +46,9 @@ export const HOLDER_GLOW = { RX: 1.7, RY: 1.4, ALPHA: 0.18 } as const;
 export const CARD_BADGE = { X: 0.45, Y: -1.15, W: 0.42, H: 0.58, YELLOW: 0xffd400 } as const;
 
 /** Stamina bar under each marker: width in marker radii, height/gap in px, colours by band. */
+/** A substitute walks on from the halfway line, OFF_YDS outside the bench-side touchline, in S seconds (4.41.15). */
+export const SUB_WALK = { S: 2.4, OFF_YDS: 3 } as const;
+
 export const FATIGUE_BAR = {
   W: 2.1, H: 4, GAP: 4, TRACK_ALPHA: 0.45,
   OK: 0x5ad16b, MID: 0xf2c94c, LOW: 0xff8a3d,
@@ -88,7 +91,7 @@ export const EFFECT_SHAPE = {
   CONFETTI: 12, CONFETTI_R: 2.5, CONFETTI_SPREAD: 0.9, CONFETTI_BASE: 2, CONFETTI_STEP: 0.8, CONFETTI_RINGS: 4, CONFETTI_Y: 1.2, CONFETTI_WHITE_EVERY: 3,
   FOUL_CROSS: 0.6,
   CARD_W: 0.7, CARD_H: 1, CARD_LIFT: 1.8, CARD_TILT: 0.35, CARD_OUTLINE_ALPHA: 0.4,
-  OFFSIDE_RING: 1.4,
+  OFFSIDE_RING: 1.4, OFFSIDE_STRIP: 0.16,
   TEXT_SHOT: 2.4, TEXT_CARD: 3, TEXT_OFFSIDE: 2.4,
 } as const;
 

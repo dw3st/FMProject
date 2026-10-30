@@ -404,3 +404,12 @@ proporções dela.
 - **Torres** (`towerSpots`): nos cantos internos da arquibancada, fora da máscara, `TOWER_YDS` 6,4 (sprite 1,5×).
   **Facho** (`floodCones.ts`): leque e poça de luz de cada torre pintados uma vez num canvas, aditivo sob os jogadores,
   pela força `coneStrength(flood)` (0 até 0,35, cheio em 0,75); sem torres com teto fechado.
+
+## Lances da prévia (4.41.16)
+
+- **Entrada do reserva** (`SUB_WALK`): no `playerSubstituted` o que entra é desenhado saindo do meio-campo, `OFF_YDS` fora
+  da lateral dos bancos, e chega à vaga em `S` segundos (só desenho, no relógio de efeitos). Quem sai some como antes.
+- **Maca até o túnel** (`startStretcher(..., tunnel)`): com o estádio leva o jogador até a boca do túnel, no mesmo ritmo
+  (`outS` pela distância, até 3 × `OUT_S`).
+- **Impedimento:** faixa sombreada entre a linha e o jogador (`EFFECT_SHAPE.OFFSIDE_STRIP`).
+- A página espera até 4 s pela lista da arte (`loadPaintedFaces`, antes 1,5 s).
