@@ -123,6 +123,8 @@ import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
+import { MatchHud } from "@/GameInterface/MatchHud";
+import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
@@ -1614,6 +1616,20 @@ export function MatchScreen() {
     return { A: side("A", matchKitColors.teamA), B: side("B", matchKitColors.teamB) };
   }, [faceRoster, matchKitColors]);
 
+  // HUD (FIFA style): the user's roster by id and a shirt number per player (starters by slot, then 12, 13... as
+  // substitutes come on), kept for the whole match.
+  const hudRoster = useMemo(
+    () => new Map(((faceRoster?.[mySide].players ?? []) as RosterPlayer[]).map((p) => [p.id, p] as const)),
+    [faceRoster, mySide],
+  );
+  const shirtNumbersRef = useRef<Map<number, number>>(new Map());
+  if (gameState) {
+    const nums = shirtNumbersRef.current;
+    const mine = gameState.players.filter((p) => p.team === mySide);
+    if (nums.size === 0 && mine.length > 0) for (const p of [...mine].sort((a, b) => a.slotIndex - b.slotIndex)) nums.set(p.id, nums.size + 1);
+    for (const p of mine) if (!nums.has(p.id)) nums.set(p.id, Math.max(11, ...nums.values()) + 1);
+  }
+
   // Stadium: the crowd of the match (the number the gate charges) or the default fill; the home
   // club's fans fill most of the stand. Engine team A is the human club.
   const stadium = useMemo<PitchStadium | null>(() => {
@@ -2185,6 +2201,18 @@ export function MatchScreen() {
               <span className="text-muted-foreground text-sm">{t("common.sizingPitch")}</span>
             )}
           </div>
+          {gameState && (
+            <MatchHud
+              players={gameState.players}
+              mySide={mySide}
+              holderId={gameState.ballHolderId}
+              roster={hudRoster}
+              faces={faceUrls?.[mySide]}
+              numbers={shirtNumbersRef.current}
+              ratings={ratings}
+              color={mySide === "A" ? matchKitColors.teamA : matchKitColors.teamB}
+            />
+          )}
           {/* Broadcast ticker */}
           <div className="px-4 py-2 border-t border-border bg-card/40">
             <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mr-2 font-display">{t("common.broadcast")}</span>

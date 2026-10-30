@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.48",
+    date: "2026-10-30",
+    time: "16:49",
+    items: [
+      {
+        pt: "HUD na partida, estilo FIFA: quando um jogador seu pega a bola, uma faixa embaixo do campo mostra rosto, número, nome, posição, nota geral, quatro atributos da posição dele, a nota no jogo, o fôlego e os números do dia.",
+        en: "A FIFA-style HUD in the match: when one of your players gets the ball, a band under the pitch shows his face, number, name, position, overall, four attributes for his position, his match rating, fitness and today's numbers.",
+      },
+    ],
+  },
+  {
     version: "4.41.47",
     date: "2026-10-30",
     time: "16:42",

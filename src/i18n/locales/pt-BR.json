@@ -1191,6 +1191,26 @@
       "inWindow": "Lances abertos numa janela."
     },
     "replay": "Replay",
+    "hud": {
+      "overall": "Geral",
+      "rating": "Nota",
+      "fitness": "Fôlego",
+      "today": "Hoje: {{passes}} passes · {{shots}} chutes · {{goals}} gols",
+      "attr": {
+        "reflex": "REF",
+        "jump": "SAL",
+        "pressing": "POS",
+        "passing": "PAS",
+        "tackling": "DES",
+        "heading": "CAB",
+        "strength": "FOR",
+        "speed": "VEL",
+        "stamina": "FÔL",
+        "vision": "VIS",
+        "dribbling": "DRI",
+        "finishing": "FIN"
+      }
+    },
     "view": {
       "label": "Visão da partida",
       "zoom": "Zoom",

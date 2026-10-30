@@ -1191,6 +1191,26 @@
       "inWindow": "Events open in a window."
     },
     "replay": "Replay",
+    "hud": {
+      "overall": "Overall",
+      "rating": "Rating",
+      "fitness": "Fitness",
+      "today": "Today: {{passes}} passes · {{shots}} shots · {{goals}} goals",
+      "attr": {
+        "reflex": "REF",
+        "jump": "JMP",
+        "pressing": "POS",
+        "passing": "PAS",
+        "tackling": "TAC",
+        "heading": "HEA",
+        "strength": "STR",
+        "speed": "PAC",
+        "stamina": "STA",
+        "vision": "VIS",
+        "dribbling": "DRI",
+        "finishing": "FIN"
+      }
+    },
     "view": {
       "label": "Match view",
       "zoom": "Zoom",
