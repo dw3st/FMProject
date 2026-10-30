@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.47",
+    date: "2026-10-30",
+    time: "16:42",
+    items: [
+      {
+        pt: "Painel de substituições: os cartões dos jogadores no campinho não ficam mais um por cima do outro em nenhuma formação.",
+        en: "Substitution panel: the players' cards on the small pitch never overlap any more, whatever the formation.",
+      },
+    ],
+  },
+  {
     version: "4.41.46",
     date: "2026-10-30",
     time: "16:33",

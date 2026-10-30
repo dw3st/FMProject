@@ -87,3 +87,14 @@ export function cardsOverlap(points: readonly { x: number; y: number }[], cardW:
   return points.some((a, i) =>
     points.some((b, j) => j > i && Math.abs(a.x - b.x) < cardW - 0.05 && Math.abs(a.y - b.y) < cardH - 0.05));
 }
+
+/**
+ * Live substitution panel (upright pitch, 3:4): a card is SUBS_CARD.W percent of the pitch wide (the name pill,
+ * `19cqw`) and SUBS_CARD.H percent tall (role tag, face, pill). Cards closer than W across are pushed H apart along
+ * the pitch (tester report: the CAM's tag under the striker's pill). Checked for every formation in the tests.
+ */
+export const SUBS_CARD = { W: 19, H: 20, MIN_Y: 7, MAX_Y: 93 } as const;
+
+export function spreadSubsMarkers<T extends { x: number; y: number }>(slots: readonly T[]): T[] {
+  return spreadAlongAxis(slots, { axis: "y", lanes: [{ cross: SUBS_CARD.W, gap: SUBS_CARD.H }], min: SUBS_CARD.MIN_Y, max: SUBS_CARD.MAX_Y, passes: 120 });
+}

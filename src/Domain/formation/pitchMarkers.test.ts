@@ -21,3 +21,14 @@ describe("spreadMarkers", () => {
     expect(spreadMarkers(slots)).toEqual(slots);
   });
 });
+
+describe("substitution panel cards", () => {
+  test("no two cards overlap in any formation", async () => {
+    const { spreadSubsMarkers, cardsOverlap, SUBS_CARD } = await import("@/Domain/formation/pitchMarkers");
+    const { FORMATION_IDS, formationForSimId } = await import("@/Domain/matchFormations");
+    const { getFormationSlots } = await import("@/types/formationSlots");
+    for (const id of FORMATION_IDS) {
+      expect([id, cardsOverlap(spreadSubsMarkers(getFormationSlots(formationForSimId(id))), SUBS_CARD.W, SUBS_CARD.H)]).toEqual([id, false]);
+    }
+  });
+});

@@ -11,7 +11,7 @@ import { tapSubsPlayer, type SubsAction, type SubsSelection } from "@/GameInterf
 import { isOneYellowFromBan } from "@/GameInterface/matchPlayerEvents";
 import { BanRiskMark } from "@/GameInterface/TeamPanel";
 import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace";
-import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
+import { spreadSubsMarkers } from "@/Domain/formation/pitchMarkers";
 import { getFormationSlots } from "@/types/formationSlots";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 
@@ -102,7 +102,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const formation = playerTeam === "A" ? gameState.formationA : gameState.formationB;
   const onPitch = gameState.players.filter((p) => p.team === playerTeam).sort((a, b) => a.slotIndex - b.slotIndex);
   // Same placement as the Formation pitch: attacking up, markers spread so names and bars never touch.
-  const slotPos = useMemo(() => spreadMarkers(getFormationSlots(formation)), [formation]);
+  const slotPos = useMemo(() => spreadSubsMarkers(getFormationSlots(formation)), [formation]);
   const roleAbbr = (role: string) => t(`roles.detailedAbbr.${role}`, { defaultValue: role });
   const vacantSlots = (gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex);
 
@@ -268,7 +268,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     )}
                   </span>
                   <span
-                    className={`flex flex-col gap-0.5 w-[min(7rem,22cqw)] rounded px-1.5 pt-0.5 pb-1 ${isSelected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}
+                    className={`flex flex-col gap-0.5 w-[19cqw] rounded px-1.5 pt-0.5 pb-1 ${isSelected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}
                     title={t("substitutionPanel.fitnessTitle", { value: Math.round(p.energy) })}
                   >
                     <span className="flex items-baseline gap-1 min-w-0">
