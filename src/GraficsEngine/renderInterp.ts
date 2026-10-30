@@ -9,7 +9,7 @@
 import { clamp } from "@/Domain/math";
 import { getBallPos } from "@/GameEngine/Domain/gameState";
 import type { GameState } from "@/GameEngine/types";
-import { ballHeight } from "@/GraficsEngine/ballHeight";
+import { ballHeight, ballHeightBetween } from "@/GraficsEngine/ballHeight";
 
 export interface Pos { x: number; y: number }
 export interface DrawnBall extends Pos { h: number }
@@ -31,18 +31,44 @@ function isTeleport(prev: Pos, cur: Pos, maxStep: number): boolean {
   return dx * dx + dy * dy > maxStep * maxStep;
 }
 
-/** Drawn position of every player of `cur` by id; a player missing from `prev` (substitute) is drawn as is. */
+/**
+ * Curved blend from `p1` to `p2` (Catmull-Rom with the step before, `p0`): the tangent at `p1` is the average of the
+ * last two steps and the one at `p2` the last step, so a run that turns is drawn round instead of a zigzag of straight
+ * pieces at each 0.2 s step. No extra delay: it still ends exactly at `p2`.
+ */
+export function curvePos(p0: Pos, p1: Pos, p2: Pos, alpha: number): Pos {
+  const t = clamp(alpha, 0, 1);
+  const t2 = t * t, t3 = t2 * t;
+  const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+  const m1x = (p2.x - p0.x) / 2, m1y = (p2.y - p0.y) / 2;
+  const m2x = p2.x - p1.x, m2y = p2.y - p1.y;
+  return {
+    x: h00 * p1.x + h10 * m1x + h01 * p2.x + h11 * m2x,
+    y: h00 * p1.y + h10 * m1y + h01 * p2.y + h11 * m2y,
+  };
+}
+
+/**
+ * Drawn position of every player of `cur` by id; a player missing from `prev` (substitute) is drawn as is. With the
+ * step before `prev` (`pprev`) the path is curved (`curvePos`); a jump on either step is drawn straight.
+ */
 export function drawnPlayerPositions(
   prev: Pick<GameState, "players">,
   cur: Pick<GameState, "players">,
   alpha: number,
   maxStep: number,
+  pprev?: Pick<GameState, "players">,
 ): Map<number, Pos> {
   const before = new Map(prev.players.map((p) => [p.id, p] as const));
+  const older = pprev && pprev !== prev ? new Map(pprev.players.map((p) => [p.id, p] as const)) : null;
   const out = new Map<number, Pos>();
   for (const p of cur.players) {
     const was = before.get(p.id);
-    out.set(p.id, was && prev !== cur ? lerpPos(was, p, alpha, maxStep) : { x: p.x, y: p.y });
+    if (!was || prev === cur) { out.set(p.id, { x: p.x, y: p.y }); continue; }
+    const o = older?.get(p.id);
+    out.set(p.id, o && !isTeleport(was, p, maxStep) && !isTeleport(o, was, maxStep)
+      ? curvePos(o, was, p, alpha)
+      : lerpPos(was, p, alpha, maxStep));
   }
   return out;
 }
@@ -54,8 +80,7 @@ export function drawnBall(prev: GameState, cur: GameState, alpha: number, maxSte
   if (prev === cur) return { x: c.x, y: c.y, h: hc };
   const p = getBallPos(prev);
   if (isTeleport(p, c, maxStep)) return { x: c.x, y: c.y, h: hc };
-  const hp = ballHeight(prev);
-  return { ...lerpPos(p, c, alpha, maxStep), h: hp + (hc - hp) * alpha };
+  return { ...lerpPos(p, c, alpha, maxStep), h: ballHeightBetween(prev, cur, alpha) };
 }
 
 /**
@@ -77,7 +102,12 @@ export function samePositions(a: GameState, b: GameState): boolean {
 }
 
 /** The two states the frame blends between: `prev` (step before) and `cur` (last step the pitch drew). */
-export interface RenderPair { prev: GameState; cur: GameState }
+export interface RenderPair {
+  prev: GameState;
+  cur: GameState;
+  /** The step before `prev`, when the last pump ran exactly one step from the pair on screen (curved paths). */
+  pprev?: GameState;
+}
 
 /**
  * The pair after a simulation pump. `prevState` is the state handed to `advanceSim`; `result` its new state and
@@ -97,7 +127,8 @@ export function nextRenderPair(
     const still = pump.prevState;
     return pair.prev === still && pair.cur === still ? pair : { prev: still, cur: still };
   }
-  return { prev: pump.result.prevState, cur: pump.result.state };
+  const pprev = pump.steps === 1 && pump.result.prevState === pair.cur && pair.prev !== pair.cur ? pair.prev : undefined;
+  return { prev: pump.result.prevState, cur: pump.result.state, ...(pprev ? { pprev } : {}) };
 }
 
 /**
@@ -106,6 +137,6 @@ export function nextRenderPair(
  */
 export function syncRenderPair(pair: RenderPair, drawState: GameState): RenderPair {
   if (drawState === pair.cur) return pair;
-  if (samePositions(drawState, pair.cur)) return { prev: pair.prev, cur: drawState };
+  if (samePositions(drawState, pair.cur)) return { prev: pair.prev, cur: drawState, ...(pair.pprev ? { pprev: pair.pprev } : {}) };
   return { prev: drawState, cur: drawState };
 }

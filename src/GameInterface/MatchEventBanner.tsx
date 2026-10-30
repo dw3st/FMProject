@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 
 /** A moment shown in the broadcast-style strip at the bottom of the pitch (4.38.21). */
@@ -21,6 +22,13 @@ const ACCENT: Record<MatchBannerItem["kind"], string> = {
   sub: "bg-chart-2",
 };
 
+/** The face on the card; a photo that fails to load is left out (no broken-image icon). */
+function TvPhoto({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={src} alt="" onError={() => setFailed(true)} className="w-20 h-20 shrink-0 object-cover bg-secondary" />;
+}
+
 /**
  * A goal (or a card, 4.41.17) as a TV lower third (art phase 5, from the art preview): bottom left, the team colour on the edge, the
  * scorer's face, the tag with the minute, the name, the crest and team, the score.
@@ -33,7 +41,7 @@ function GoalTvCard({ item, goal, bottom }: { item: MatchBannerItem; goal: NonNu
       className="absolute left-4 z-10 pointer-events-none flex items-stretch max-w-[92%] overflow-hidden rounded-lg bg-background/95 shadow-xl border-l-[6px] animate-[tvGoalIn_.45s_cubic-bezier(.2,.8,.2,1)] animate-tv-goal"
       style={{ borderLeftColor: goal.color, bottom: bottom ?? 16 }}
     >
-      {goal.photo ? <img src={goal.photo} alt="" className="w-20 h-20 shrink-0 object-cover bg-secondary" /> : null}
+      {goal.photo ? <TvPhoto key={goal.photo} src={goal.photo} /> : null}
       <div className="flex flex-col justify-center px-4 py-2 min-w-0">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] tabular-nums" style={{ color: goal.color }}>{goal.tag}</span>
         <span className="font-display font-bold uppercase text-2xl leading-tight truncate">{item.title}</span>

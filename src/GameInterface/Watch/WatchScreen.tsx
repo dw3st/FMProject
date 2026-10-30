@@ -41,16 +41,23 @@ function pitchPropsOf(info: WatchInfo, look: WatchLook | null, ledGoal: string):
  * A friend's live match as a broadcast (spec 2026-10-29-friend-match-broadcast-design): the score bar, the pitch drawn
  * exactly as on his screen (his kits, faces, stadium, turf and light) and the latest moments. Read only.
  */
-export function WatchBroadcast({ saveId, seatId, onClose, embed = false }: {
+export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow = false }: {
   saveId: string;
   seatId: string;
   onClose: () => void;
   /** Inside the floating window: it has its own close button, and a narrow window drops the side column. */
   embed?: boolean;
+  /** Own window following the friend: a finished match waits for his next one instead of closing. */
+  follow?: boolean;
 }) {
   const { t } = useTranslation();
   const target = useMemo(() => ({ saveId, seatId }), [saveId, seatId]);
-  const w = useWatchSocket(target);
+  const w = useWatchSocket(target, follow);
+  // The friend's nickname, kept between his matches for the waiting line.
+  const nickRef = useRef<string | null>(null);
+  if (w.info) nickRef.current = w.info.nickname;
+  const waiting = follow && (w.closed === "ended" || w.closed === "gone");
+  const waitingText = nickRef.current ? t("watch.waitingNext", { name: nickRef.current }) : t("watch.waitingNextAnon");
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
@@ -74,7 +81,7 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false }: {
   if (!w.info) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-64">
-        <p className="m-0 text-base text-muted-foreground">{w.closed ? t(`watch.closed.${w.closed}`) : t("watch.connecting")}</p>
+        <p className="m-0 text-base text-muted-foreground">{waiting ? waitingText : w.closed ? t(`watch.closed.${w.closed}`) : t("watch.connecting")}</p>
         <Button variant="secondary" onClick={onClose}>{t("watch.leave")}</Button>
       </div>
     );
@@ -158,7 +165,7 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false }: {
           )}
           {w.closed && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80">
-              <p className="m-0 text-base font-semibold">{t(`watch.closed.${w.closed}`)}</p>
+              <p className="m-0 text-base font-semibold text-center px-4">{waiting ? waitingText : t(`watch.closed.${w.closed}`)}</p>
               <Button onClick={onClose}>{t("watch.leave")}</Button>
             </div>
           )}
@@ -183,13 +190,16 @@ export function WatchScreen() {
   }, []);
   // Inside the dashboard's window (`embed=1`): closing tells the page around it.
   const embed = useMemo(() => new URLSearchParams(window.location.search).get("embed") === "1", []);
+  // Own window that follows the friend (opened by the floating window's "New window").
+  const follow = useMemo(() => new URLSearchParams(window.location.search).get("follow") === "1", []);
   const back = () => {
     if (embed && window.parent !== window) window.parent.postMessage({ type: "watch-close" }, window.location.origin);
+    else if (follow && window.opener) window.close();
     else window.location.href = "/dashboard";
   };
   return (
     <div className={`h-screen bg-background flex flex-col ${embed ? "p-3" : "px-6 py-4"}`}>
-      {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} embed={embed} /> : null}
+      {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} embed={embed} follow={follow && !embed} /> : null}
     </div>
   );
 }

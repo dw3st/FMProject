@@ -5981,7 +5981,10 @@
     "rule": "A club can sign until it has {{max}} of the world's top {{top}} players. A player of the club who climbs into the top stays; promoting an academy player is always allowed."
   },
   "watch": {
-    "popOut": "Open in its own window (drag it to another monitor)",
+    "popOut": "Open in its own window (drag it to another monitor). It never reloads when you change screen and follows your friend into his next matches.",
+    "popOutShort": "New window",
+    "waitingNext": "Waiting for {{name}}'s next match. It comes in here on its own.",
+    "waitingNextAnon": "Waiting for your friend's next match. It comes in here on its own.",
     "button": "Watch",
     "title": "Watching",
     "live": "Live",

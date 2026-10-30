@@ -25,10 +25,10 @@ describe("arcHeight", () => {
 });
 
 describe("ballHeight", () => {
-  test("ground passes and no ball in flight stay at 0", () => {
+  test("short ground passes and no ball in flight stay at 0 (a long one lifts a little, LOFT)", () => {
     expect(ballHeight({ pass: null, shot: null })).toBe(0);
-    expect(ballHeight({ pass: pass("regular", 0.5), shot: null })).toBe(0);
-    expect(ballHeight({ pass: pass("through", 0.5), shot: null })).toBe(0);
+    expect(ballHeight({ pass: { ...pass("regular", 0.5), distance: 12 }, shot: null })).toBe(0);
+    expect(ballHeight({ pass: { ...pass("through", 0.5), distance: 20 }, shot: null })).toBe(0);
   });
   test("high balls peak at their kind's height", () => {
     expect(ballHeight({ pass: pass("cross", 0.5), shot: null })).toBeCloseTo(BALL_HEIGHT.CROSS);

@@ -27,6 +27,35 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.41",
+    date: "2026-10-30",
+    time: "15:30",
+    items: [
+      {
+        pt: "Comemoração de gol em campo: quem marcou corre para a bandeirinha, para a torcida ou para os companheiros, o time chega junto e depois todos voltam andando para a saída de bola.",
+        en: "Goal celebrations on the pitch: the scorer runs to the corner flag, to the crowd or to his team-mates, the team joins him, then everyone walks back for the kickoff.",
+      },
+      {
+        pt: "Corrida mais fluida: os jogadores fazem curvas em vez de mudar de direção em linha reta.",
+        en: "Smoother running: players curve round instead of turning in straight lines.",
+      },
+      {
+        pt: "Bola mais real: passe longo sai um pouco do chão, lançamento e cruzamento fazem o arco completo e a bola que cai solta quica.",
+        en: "A truer ball: a long pass lifts off the ground a little, long balls and crosses make a full arc, and a ball that drops loose bounces.",
+      },
+      {
+        pt: "Broadcast na janela própria segue o amigo: quando o jogo dele acaba, ela espera o próximo e entra sozinha. O botão para abrir essa janela agora tem nome, Outra janela.",
+        en: "The broadcast in its own window follows your friend: when his match ends it waits for the next one and joins on its own. The button that opens it is now labelled New window.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O letreiro de gol não mostra mais uma imagem quebrada quando o jogador não tem foto.",
+        en: "The goal card no longer shows a broken image when the player has no photo.",
+      },
+    ],
+  },
+  {
     version: "4.41.40",
     date: "2026-10-30",
     time: "15:00",
@@ -70,8 +99,7 @@ export const changelog: ChangelogEntry[] = [
     version: "4.41.38",
     date: "2026-10-30",
     time: "14:42",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Um rosto novo que podia aparecer só com as iniciais agora carrega.",
         en: "A new face that could show only the initials now loads.",

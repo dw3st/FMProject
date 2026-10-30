@@ -35,7 +35,8 @@ export interface WatchSocket {
  * state and the position frames for the pitch in remote mode. Engine events are emitted on the local gameBus (the
  * pitch's effects read them); ratings take the friend's numbers.
  */
-export function useWatchSocket(target: { saveId: string; seatId: string } | null): WatchSocket {
+/** `follow`: after the match the socket stays and the friend's next match comes in on its own (own window). */
+export function useWatchSocket(target: { saveId: string; seatId: string } | null, follow = false): WatchSocket {
   const [info, setInfo] = useState<WatchInfo | null>(null);
   const [live, setLive] = useState<LiveScoreView | null>(null);
   const [state, setState] = useState<GameState | null>(null);
@@ -52,6 +53,16 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
   const stateRef = useRef<GameState | null>(null);
   /** The last close was "gone": the next live score of the friend re-joins. */
   const goneRef = useRef(false);
+  const closedRef = useRef<WatchCloseReason | null>(null);
+  /** A new match of the friend: the old one's drawing goes. */
+  const reset = () => {
+    bufferRef.current = EMPTY_REMOTE_BUFFER;
+    stateRef.current = null;
+    setState(null);
+    setStats(null);
+    setInfo(null);
+    setPaused(false);
+  };
   const saveId = target?.saveId ?? null;
   const seatId = target?.seatId ?? null;
 
@@ -81,6 +92,8 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
         }
         if (!e || e.saveId !== saveId) return;
         if (e.type === "friend_live" && e.seatId === seatId) {
+          // Following the friend (`follow`): his next match comes in on its own once this one is over.
+          if (follow && isLiveScoreView(e.live) && e.live.status !== "ended" && closedRef.current === "ended") goneRef.current = true;
           if (e.live === null) {
             goneRef.current = true;
             setClosed((c) => c ?? "gone");
@@ -89,6 +102,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
             // The match came back (a server restart lost it, then the friend's tab sent it again): watch again.
             if (goneRef.current && e.live.status !== "ended") {
               goneRef.current = false;
+              if (follow) reset();
               sock.send(JSON.stringify({ type: "watch_join", saveId, seatId } satisfies ClientEvent));
             }
           }
@@ -100,6 +114,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
             setInfo(i);
             setLive(i.live);
             goneRef.current = false;
+            closedRef.current = null;
             setClosed(null);
           }
           return;
@@ -127,6 +142,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
           gameBus.emit(e.name as keyof GameEvents, e.payload as never);
         } else if (e.type === "watch_closed" && CLOSE_REASONS.has(e.reason as WatchCloseReason)) {
           if (e.reason === "gone") goneRef.current = true;
+          closedRef.current = e.reason as WatchCloseReason;
           setClosed(e.reason as WatchCloseReason);
           stopped = e.reason === "refused" || e.reason === "full" || stopped;
         }
@@ -145,7 +161,7 @@ export function useWatchSocket(target: { saveId: string; seatId: string } | null
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "watch_leave" } satisfies ClientEvent));
       ws?.close();
     };
-  }, [saveId, seatId]);
+  }, [saveId, seatId, follow]);
 
   return { info, live, state, stats, feed: feedRef.current, closed, look, paused };
 }

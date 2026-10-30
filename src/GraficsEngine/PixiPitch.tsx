@@ -19,6 +19,8 @@ import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@
 import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
+import { bounceHeight } from "@/GraficsEngine/ballHeight";
+import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
 import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
@@ -1371,6 +1373,9 @@ export function PixiPitch({
       let transition: SetPieceTransition | null = null;
       let setPieceStartPending = false;
       let lastDrawnPos: Map<number, Pos> | null = null;
+      /** Bounce of a loose high ball: which landing it is (its start time) and when it was first drawn. */
+      let bounceKey: number | null = null;
+      let bounceAt = 0;
       let lastDrawnBall: DrawnBall | null = null;
       const framesVisible = () =>
         !(typeof document !== 'undefined' && document.hidden) && app.ticker.started;
@@ -1406,8 +1411,32 @@ export function PixiPitch({
         onReplayRef.current?.(false);
       };
       skipReplayFnRef.current = endReplay;
-      const unsubReplay = gameBus.on("goalScored", () => {
-        if (!remote && replayRef.current && !calm() && framesVisible()) replayPending = { goalAt: replayClock };
+      // Goal celebration (`goalCelebration.ts`): the scorer runs off and the team-mates join him while the match is
+      // held, then everyone walks back to the kickoff; the replay plays after it. Drawing only.
+      let celebration: {
+        plan: CelebrationPlan; started: number; ball: DrawnBall; arrived: Set<number>;
+        walkFrom: Map<number, Pos> | null; walkStarted: number; clip: ReplayFrame<Pos, DrawnBall>[] | null;
+      } | null = null;
+      const unsubReplay = gameBus.on("goalScored", (e) => {
+        if (remote || !framesVisible()) return;
+        // The celebration is cheap to draw: only reduced motion skips it (the replay also skips light quality).
+        if (reducedMotion) { if (replayRef.current && !calm()) replayPending = { goalAt: replayClock }; return; }
+        const clip = replayRef.current && !calm() ? replayClip(replayBuf, replayClock) : null;
+        const st = stateRef.current;
+        const scorer = st.players.find((p) => p.id === e.scorerId);
+        const plan = extrasRef.current && lastDrawnPos && lastDrawnBall && scorer
+          ? planCelebration({
+            scorerId: e.scorerId, positions: lastDrawnPos,
+            players: st.players.map((p) => ({ id: p.id, team: p.team, keeper: p.role === "GK" })),
+            attackDir: scorer.attackDir, seed: `${e.minute}:${e.scorerId}:${e.score.A}:${e.score.B}`,
+            gameSpeed: gameSpeedRef.current,
+          })
+          : null;
+        if (plan && lastDrawnBall) {
+          celebration = { plan, started: replayClock, ball: { ...lastDrawnBall }, arrived: new Set(), walkFrom: null, walkStarted: 0, clip };
+          return;
+        }
+        if (replayRef.current && !calm()) replayPending = { goalAt: replayClock };
       });
       // Reduced motion or light quality (art phase 8, `motionPrefs.ts`): a calm pitch.
       const reducedMotion = prefersReducedMotion();
@@ -1419,7 +1448,8 @@ export function PixiPitch({
         if (remote) return;
         // A replay holds the match; with the tab hidden there is no replay.
         if (replayRun && !framesVisible()) endReplay();
-        const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null);
+        if (celebration && !framesVisible()) celebration = null;
+        const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null);
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
@@ -2105,7 +2135,8 @@ export function PixiPitch({
       });
       // Goal celebration (#129): the scorer (and the assister) hop and turn.
       const unsubAnimCelebrate = gameBus.on("goalScored", (e) => {
-        if (!extrasRef.current || !framesShown()) return;
+        // A celebration on the pitch starts the poses on arrival instead (goalCelebration.ts).
+        if (!extrasRef.current || !framesShown() || celebration) return;
         for (const id of [e.scorerId, e.assistId]) {
           if (id === undefined || !playerPos(id)) continue;
           anims = addAnim(anims, { playerId: id, kind: "celebrate", dir: { x: 1, y: 0 }, side: id % 2 === 0 ? 1 : -1 }, effectNow);
@@ -2137,6 +2168,7 @@ export function PixiPitch({
         gameBus.on("gkClaim", (e) => act(e.keeperId, e.claimed ? "catch" : "punch")),
         gameBus.on("injury", (e) => act(e.playerId, "injured")),
         gameBus.on("goalScored", (e) => {
+          if (celebration) return;
           // Some goals are celebrated with a knee slide (stable per scorer and minute).
           const slide = mulberry32(seedFrom(`slide:${e.scorerId}:${e.minute}`))() < KNEE_SLIDE_SHARE;
           act(e.scorerId, slide ? "kneeSlide" : "celebrate");
@@ -3475,10 +3507,18 @@ export function PixiPitch({
           if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
           renderPair = syncRenderPair(renderPair, drawState);
           const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
-          drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+          drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS, renderPair.pprev);
           drawnB = drawnBall(renderPair.prev, drawState, alpha, BALL_TELEPORT_YDS);
         }
         const drawState = stateRef.current;
+        // A high ball that dropped loose bounces a few times (drawing only).
+        {
+          const lb = drawState.looseBall;
+          const aerial = lb && (lb.source === "cross" || lb.source === "long_ball" || lb.source === "clearance");
+          if (aerial && lb.startTime !== bounceKey) { bounceKey = lb.startTime; bounceAt = transitionNow; }
+          if (!aerial) bounceKey = null;
+          else if (!remote) drawnB = { ...drawnB, h: Math.max(drawnB.h, bounceHeight(transitionNow - bounceAt)) };
+        }
         transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);
         if (setPieceStartPending) {
           setPieceStartPending = false;
@@ -3528,6 +3568,45 @@ export function PixiPitch({
         // Goal replay: record, or draw the recorded frames slowly.
         const dtReal = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
         replayClock += dtReal;
+        if (celebration) {
+          const c = celebration;
+          const t = replayClock - c.started;
+          if (t < c.plan.duration) {
+            const pos = celebrationPositions(c.plan, t);
+            const next = new Map(drawnPos);
+            for (const [id, q] of pos) if (next.has(id)) next.set(id, q);
+            drawnPos = next;
+            drawnB = c.ball;
+            // Poses: the scorer celebrates on arrival (knee slide at the end of a long run), the team-mates as they reach him.
+            if (t >= c.plan.arrival && !c.arrived.has(c.plan.scorerId)) {
+              c.arrived.add(c.plan.scorerId);
+              act(c.plan.scorerId, c.plan.slide ? "kneeSlide" : "celebrate");
+              anims = addAnim(anims, { playerId: c.plan.scorerId, kind: "celebrate", dir: { x: 1, y: 0 }, side: 1 }, effectNow);
+            }
+            for (const id of arrivedMates(c.plan, t)) {
+              if (c.arrived.has(id)) continue;
+              c.arrived.add(id);
+              act(id, "celebrate");
+            }
+          } else {
+            if (!c.walkFrom) {
+              c.walkFrom = celebrationPositions(c.plan, c.plan.duration);
+              c.walkStarted = replayClock;
+            }
+            const k = (replayClock - c.walkStarted) / c.plan.walkBack;
+            if (k >= 1) {
+              celebration = null;
+              if (c.clip) {
+                replayRun = { clip: c.clip, started: replayClock };
+                onReplayRef.current?.(true);
+              }
+            } else {
+              drawnPos = walkBackPositions(c.walkFrom, drawnPos, k);
+              const e = k * k * (3 - 2 * k);
+              drawnB = { x: c.ball.x + (drawnB.x - c.ball.x) * e, y: c.ball.y + (drawnB.y - c.ball.y) * e, h: 0 };
+            }
+          }
+        }
         if (replayRun) {
           const at = replayAt(replayRun.clip, replayClock - replayRun.started);
           if (!at) endReplay();
@@ -3542,7 +3621,7 @@ export function PixiPitch({
             const ba = at.a.ball, bb = at.b.ball;
             drawnB = { x: ba.x + (bb.x - ba.x) * k, y: ba.y + (bb.y - ba.y) * k, h: ba.h + (bb.h - ba.h) * k };
           }
-        } else if (!remote && replayRef.current) {
+        } else if (!remote && replayRef.current && !celebration) {
           replayBuf = recordFrame(replayBuf, { t: replayClock, players: drawnPos, ball: drawnB });
           if (replayPending && replayClock - replayPending.goalAt >= REPLAY.DELAY_S) {
             const clip = replayClip(replayBuf, replayPending.goalAt);
