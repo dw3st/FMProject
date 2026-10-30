@@ -40,3 +40,19 @@ describe("foul and aerial animations", () => {
     expect(off("jump", 1).liftYds).toBe(0);
   });
 });
+
+describe("style animations", () => {
+  const at = (kind: "stepover" | "spin" | "flick", p: number) => {
+    const a = addAnim([], { playerId: 1, kind, dir: { x: 1, y: 0 }, side: 1 }, 0)[0]!;
+    return animOffset(a, a.duration * p);
+  };
+  test("a step-over feints across the run and ends at rest", () => {
+    expect(Math.abs(at("stepover", 0.125).dy)).toBeGreaterThan(0.1);
+    expect(at("stepover", 0.125).dx).toBeCloseTo(0);
+    expect(at("stepover", 1).dy).toBe(0);
+  });
+  test("a spin turns once; a first-time pass pops", () => {
+    expect(at("spin", 0.5).rotation).toBeCloseTo(Math.PI);
+    expect(at("flick", 0.5).scale).toBeGreaterThan(1.1);
+  });
+});

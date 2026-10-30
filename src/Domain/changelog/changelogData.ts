@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.44",
+    date: "2026-10-30",
+    time: "16:05",
+    items: [
+      {
+        pt: "Som na partida: torcida que cresce perto do gol, apito do juiz, chute, rede, o grito do gol e o \"uh\" da torcida na chance perdida. Liga e desliga no botão Som da partida; volume em Configurações. Começa no primeiro clique na tela.",
+        en: "Match sound: a crowd that rises near the goal, the referee's whistle, the strike of the ball, the net, the goal roar and the crowd's groan at a near miss. Switch it with the Sound button in the match; volume in Settings. It starts on your first click on the screen.",
+      },
+      {
+        pt: "Estilo dos craques: quem dribla bem passa pelo marcador com pedalada ou giro sobre a bola, e o passe de primeira ganha um toque rápido na tela.",
+        en: "Star style: a good dribbler beats his man with a step-over or a turn on the ball, and a first-time pass gets a quick flick on screen.",
+      },
+    ],
+  },
+  {
     version: "4.41.43",
     date: "2026-10-30",
     time: "15:51",

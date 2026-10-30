@@ -6,6 +6,7 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume } from "@/GameInterface/artPrefs";
 import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
@@ -22,6 +23,8 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [newVisual, setNewVisual] = useState(readNewVisual);
   const [matchCamera, setMatchCamera] = useState(readMatchCamera);
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
+  const [matchSound, setMatchSound] = useState(readMatchSound);
+  const [matchVolume, setMatchVolume] = useState(readMatchVolume);
   const [quality, setQuality] = useState<QualityPref>(readQuality);
   const [playerLook, setPlayerLook] = useState<PlayerLookPref>(readPlayerLook);
 
@@ -100,6 +103,26 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.goalReplayDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.matchSound")}</div>
+          <OptionChips
+            value={matchSound ? "on" : "off"}
+            onChange={(k) => { const on = k === "on"; setMatchSound(on); writeMatchSound(on); }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <label className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px]">{t("settings.matchVolume")}</span>
+            <input
+              type="range" min={0} max={100} step={5}
+              value={Math.round(matchVolume * 100)}
+              onChange={(e) => { const v = Number(e.target.value) / 100; setMatchVolume(v); writeMatchVolume(v); }}
+              className="flex-1 accent-primary"
+            />
+            <span className="tabular-nums w-10 text-right">{Math.round(matchVolume * 100)}%</span>
+          </label>
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.matchSoundDescription")}</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2">

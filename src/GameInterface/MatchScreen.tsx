@@ -45,7 +45,9 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume } from "@/GameInterface/artPrefs";
+import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
+import { crowdExcitement } from "@/Domain/match/matchSound";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
@@ -220,6 +222,15 @@ export function MatchScreen() {
     return next;
   }), []);
   const [markersPref, setMarkersPref] = useState(readMatchMarkers);
+  // Match sound (leva 3): synthesised, starts on the first click on the page (browser rule).
+  const [soundPref, setSoundPref] = useState(readMatchSound);
+  const audioRef = useRef<MatchAudio | null>(null);
+  const toggleSound = useCallback(() => setSoundPref((on) => {
+    writeMatchSound(!on);
+    audioRef.current?.setEnabled(!on);
+    if (!on) audioRef.current?.start();
+    return !on;
+  }), []);
   const toggleMarkers = useCallback(() => setMarkersPref((m) => {
     const next = m === "discs" ? "figures" : "discs";
     writeMatchMarkers(next);
@@ -396,6 +407,42 @@ export function MatchScreen() {
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matchEndFinalizeRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
+
+  // Match sound: engine events become sound cues; the crowd follows the ball (once a second).
+  useEffect(() => {
+    const audio = new MatchAudio(readMatchSound(), readMatchVolume());
+    audioRef.current = audio;
+    const offs = [
+      gameBus.on("shot", () => audio.play("kick")),
+      gameBus.on("passAttempted", (e) => audio.play((e.distance ?? 0) >= 25 ? "kick" : "pass", 0.6)),
+      gameBus.on("crossStarted", () => audio.play("kick", 0.7)),
+      gameBus.on("longBallStarted", () => audio.play("kick", 0.7)),
+      gameBus.on("goalScored", () => audio.play("goal")),
+      gameBus.on("shotResolved", (e) => {
+        if (e.isGoal) return;
+        if (e.inPosts) audio.play("save");
+        if (e.goalChance >= 0.25) audio.play("nearMiss");
+      }),
+      gameBus.on("foul", () => audio.play("whistleShort")),
+      gameBus.on("offsideCalled", () => audio.play("whistleShort")),
+      gameBus.on("card", () => audio.play("card")),
+      gameBus.on("penaltyAwarded", () => audio.play("whistleLong")),
+      gameBus.on("kickOff", () => audio.play("whistleLong")),
+      gameBus.on("halfTime", () => audio.play("whistleLong")),
+      gameBus.on("matchEnd", () => audio.play("whistleEnd")),
+    ];
+    const crowd = setInterval(() => {
+      const s = gameStateRef.current;
+      if (s && isLivePhase(s.matchPhase)) audio.setExcitement(crowdExcitement(getBallPos(s)));
+      else audio.setExcitement(0);
+    }, 1000);
+    return () => {
+      for (const off of offs) off();
+      clearInterval(crowd);
+      audio.dispose();
+      audioRef.current = null;
+    };
+  }, []);
   // Rivals (multiplayer part 6): in a friends' league the friends' live scores show above the pitch, and this
   // match's score goes to them (`live_score`). Never in solo, never in a national team's game.
   const liveTarget = useMemo(() => {
@@ -2019,6 +2066,8 @@ export function MatchScreen() {
               onReplay={toggleReplay}
               figures={markersPref === "figures"}
               onFigures={newVisualOn() ? toggleMarkers : undefined}
+              sound={soundPref}
+              onSound={toggleSound}
             />
           </div>
           <div className="flex-1 min-h-0 flex">

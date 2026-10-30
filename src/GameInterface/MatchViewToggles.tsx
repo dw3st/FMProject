@@ -40,12 +40,14 @@ function ViewSwitch({ icon, label, on, disabled, title, onClick, fill }: {
  * Live match view switches (4.41.17, tester request): the camera following the ball (zoom) and the goal replay, on
  * and off at any moment; the choice is saved for the next match. The replay does not exist between two managers.
  */
-export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onReplay, figures, onFigures, fill }: {
+export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onReplay, figures, onFigures, fill, sound, onSound }: {
   zoom: boolean; replay: boolean; replayAvailable: boolean; onZoom: () => void; onReplay: () => void;
   /** Spread over the full width (the block above the team list, 4.41.20). */
   fill?: boolean;
   /** Figures or discs (4.41.19); absent without the new visual (only discs then). */
   figures?: boolean; onFigures?: () => void;
+  /** Match sound on / off (leva 3). */
+  sound?: boolean; onSound?: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -60,6 +62,16 @@ export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onRepl
         onClick={onReplay}
         fill={fill}
       />
+      {onSound && (
+        <ViewSwitch
+          icon={sound ? "volume" : "volume-off"}
+          label={t("match.view.sound")}
+          on={!!sound}
+          title={t(sound ? "match.view.soundOn" : "match.view.soundOff")}
+          onClick={onSound}
+          fill={fill}
+        />
+      )}
       {onFigures && (
         <ViewSwitch
           icon="user"

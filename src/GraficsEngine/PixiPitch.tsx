@@ -80,7 +80,7 @@ import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
 import { followAt, smoothDamp, smoothPlayers, SMOOTH_ASSISTANT_S, type Follow } from "@/GraficsEngine/smoothFollow";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
-import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
+import { addAnim, animOffset, isLongShot, liveAnims, STYLE, type PlayerAnim } from "@/GraficsEngine/playerAnims";
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { TeamId } from "@/GameEngine/types";
@@ -2126,6 +2126,26 @@ export function PixiPitch({
         anims = addAnim(anims, { playerId: fouled.id, kind: "tumble", dir, side }, effectNow);
         anims = addAnim(anims, { playerId: offender.id, kind: "lunge", dir, side: 1 }, effectNow);
       });
+      // Styles (leva 3): a good dribbler beats his man with a step-over or a turn on the ball; a pass played first
+      // time (within a moment of receiving it) pops.
+      const unsubAnimDribble = gameBus.on("dribble", (e) => {
+        if (!e.success || !framesShown()) return;
+        const p = playerPos(e.player), d = playerPos(e.targetId);
+        if (!p || !d || p.runtimeStats.withBall.dribbling < STYLE.SKILL_DRIBBLING) return;
+        const roll = seedFrom(`skill:${e.player}:${Math.floor(stateRef.current.matchTime)}`) % 2;
+        anims = addAnim(anims, {
+          playerId: p.id, kind: roll === 0 ? "stepover" : "spin",
+          dir: { x: d.x - p.x || p.attackDir, y: d.y - p.y }, side: p.id % 2 === 0 ? 1 : -1,
+        }, effectNow);
+      });
+      const receivedAt = new Map<number, number>();
+      const unsubAnimReceived = gameBus.on("passCompleted", (e) => { receivedAt.set(e.toId, effectNow); });
+      const unsubAnimFirstTime = gameBus.on("passAttempted", (e) => {
+        const at = receivedAt.get(e.player);
+        receivedAt.delete(e.player);
+        if (at === undefined || effectNow - at > STYLE.FIRST_TIME_S || !framesShown()) return;
+        anims = addAnim(anims, { playerId: e.player, kind: "flick", dir: { x: 1, y: 0 }, side: 1 }, effectNow);
+      });
       // A contested high ball: both go up together; the loser sometimes ends on the ground.
       const unsubAnimAerial = gameBus.on("aerialDuel", (e) => {
         if (!framesShown()) return;
@@ -3777,6 +3797,11 @@ export function PixiPitch({
             markerShadow.y = liftPx / (off?.scale ?? 1);
             markerShadow.scale.set(Math.max(0.6, 1 - (off?.liftYds ?? 0) * 0.25));
           }
+          if (anim?.kind === "flick" && off) {
+            // A first-time pass: a quick ring around the player.
+            const k = (effectNow - anim.startedAt) / anim.duration;
+            animGfx.circle(g.x, g.y, markerR * (1.2 + 0.8 * k)).stroke({ width: 2, color: 0xffffff, alpha: 0.55 * (1 - k) });
+          }
           if (anim?.kind === "longShot" && off) {
             // Three short "force lines" behind the shooter.
             const k = (effectNow - anim.startedAt) / anim.duration;
@@ -4741,6 +4766,9 @@ export function PixiPitch({
         unsubAnimShot();
         unsubAnimHeader();
         unsubAnimFoul();
+        unsubAnimDribble();
+        unsubAnimReceived();
+        unsubAnimFirstTime();
         unsubAnimAerial();
         unsubAnimSave();
         unsubAnimPenalty();

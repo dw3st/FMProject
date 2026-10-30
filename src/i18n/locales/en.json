@@ -598,6 +598,9 @@
     "matchCameraFollow": "Follows the ball",
     "goalReplay": "Goal replay",
     "goalReplayDescription": "After every goal, the last seconds play again in slow motion.",
+    "matchSound": "Match sound",
+    "matchSoundDescription": "Crowd, whistle, ball strikes and the goal roar. It starts on your first click on the match screen.",
+    "matchVolume": "Volume",
     "quality": "Graphics quality",
     "qualityAuto": "Automatic",
     "qualityHigh": "High",
@@ -1199,7 +1202,10 @@
       "replayH2h": "No replay in a match between two managers.",
       "figures": "Figures",
       "figuresOn": "Players drawn as figures (click for discs with the face)",
-      "figuresOff": "Players drawn as discs with the face (click for figures)"
+      "figuresOff": "Players drawn as discs with the face (click for figures)",
+      "sound": "Sound",
+      "soundOn": "Sound on: crowd, whistle and ball (click to turn off)",
+      "soundOff": "Sound off (click to turn on)"
     },
     "replaySkip": "Skip"
   },

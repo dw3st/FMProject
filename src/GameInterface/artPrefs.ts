@@ -119,3 +119,41 @@ export function writePlayerLook(v: PlayerLookPref): void {
     // no storage: the default stays
   }
 }
+
+const SOUND_KEY = "fm.match.sound";
+const SOUND_VOLUME_KEY = "fm.match.soundVolume";
+
+/** Match sound on (default) or off. */
+export function readMatchSound(): boolean {
+  try {
+    return localStorage.getItem(SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function writeMatchSound(on: boolean): void {
+  try {
+    localStorage.setItem(SOUND_KEY, on ? "1" : "0");
+  } catch {
+    // no storage: the choice lasts this page
+  }
+}
+
+/** Match sound volume, 0..1 (default 0.6). */
+export function readMatchVolume(): number {
+  try {
+    const v = Number(localStorage.getItem(SOUND_VOLUME_KEY));
+    return localStorage.getItem(SOUND_VOLUME_KEY) !== null && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6;
+  } catch {
+    return 0.6;
+  }
+}
+
+export function writeMatchVolume(v: number): void {
+  try {
+    localStorage.setItem(SOUND_VOLUME_KEY, String(Math.min(1, Math.max(0, v))));
+  } catch {
+    // no storage
+  }
+}

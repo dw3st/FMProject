@@ -5,11 +5,14 @@
  */
 import { PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
-export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate" | "tumble" | "lunge" | "jump";
+export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate" | "tumble" | "lunge" | "jump" | "stepover" | "spin" | "flick";
 
 export const ANIM_DURATION: Record<PlayerAnimKind, number> = {
   longShot: 0.45, header: 0.5, save: 0.6, celebrate: 1.4, tumble: 1.3, lunge: 0.4, jump: 0.45,
+  stepover: 0.6, spin: 0.55, flick: 0.35,
 };
+/** Styles (leva 3): who shows skill moves (dribbling 0..1) and how soon after receiving a pass is "first time". */
+export const STYLE = { SKILL_DRIBBLING: 0.7, FIRST_TIME_S: 0.45 } as const;
 /** A shot from at least this far from the goal centre is a "long shot". */
 export const LONG_SHOT_YDS = 20;
 
@@ -21,6 +24,10 @@ const HEADER_LUNGE_YDS = 0.5;
 const TUMBLE = { YDS: 1.3, OUT: 0.3, BACK: 0.75, ROLL: 1.1 } as const;
 /** The offender steps into the challenge. */
 const LUNGE_YDS = 0.6;
+/** Skill moves of a good dribbler (leva 3): two feints side to side, or a full turn on the ball. */
+const STEPOVER_YDS = 0.45;
+/** First-time pass: a quick pop of the marker. */
+const FLICK_SCALE = 0.14;
 /** Both players go up for a high ball. */
 const JUMP_LIFT_YDS = 1.2;
 const SAVE = { DIVE_YDS: 1.5, ROTATION: (70 * Math.PI) / 180 } as const;
@@ -84,6 +91,17 @@ export function animOffset(a: PlayerAnim, now: number): AnimOffset {
       return { dx: a.dir.x * HEADER_LUNGE_YDS * bump, dy: a.dir.y * HEADER_LUNGE_YDS * bump, liftYds: HEADER_LIFT_YDS * bump, scale: 1, rotation: 0 };
     case "jump":
       return { dx: a.dir.x * 0.3 * bump, dy: a.dir.y * 0.3 * bump, liftYds: JUMP_LIFT_YDS * bump, scale: 1 + 0.08 * bump, rotation: 0 };
+    case "stepover": {
+      // Two feints across the run (dir is the run): left, right, then on.
+      const s = Math.sin(4 * Math.PI * p) * STEPOVER_YDS * bump;
+      return { dx: -a.dir.y * s, dy: a.dir.x * s, liftYds: 0, scale: 1, rotation: 0.35 * Math.sin(4 * Math.PI * p) * bump };
+    }
+    case "spin": {
+      const turn = p * p * (3 - 2 * p);
+      return { dx: 0, dy: 0, liftYds: 0, scale: 1 + 0.06 * bump, rotation: a.side * 2 * Math.PI * turn };
+    }
+    case "flick":
+      return { dx: 0, dy: 0, liftYds: 0, scale: 1 + FLICK_SCALE * bump, rotation: 0 };
     case "lunge":
       return { dx: a.dir.x * LUNGE_YDS * bump, dy: a.dir.y * LUNGE_YDS * bump, liftYds: 0, scale: 1, rotation: 0 };
     case "tumble": {

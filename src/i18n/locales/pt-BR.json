@@ -598,6 +598,9 @@
     "matchCameraFollow": "Segue a bola",
     "goalReplay": "Replay do gol",
     "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta.",
+    "matchSound": "Som da partida",
+    "matchSoundDescription": "Torcida, apito, chute e grito de gol. Começa no primeiro clique na tela da partida.",
+    "matchVolume": "Volume",
     "quality": "Qualidade gráfica",
     "qualityAuto": "Automática",
     "qualityHigh": "Alta",
@@ -1199,7 +1202,10 @@
       "replayH2h": "Sem replay no jogo entre técnicos.",
       "figures": "Bonecos",
       "figuresOn": "Jogadores como bonecos (clique para discos com o rosto)",
-      "figuresOff": "Jogadores como discos com o rosto (clique para bonecos)"
+      "figuresOff": "Jogadores como discos com o rosto (clique para bonecos)",
+      "sound": "Som",
+      "soundOn": "Som ligado: torcida, apito e bola (clique para desligar)",
+      "soundOff": "Som desligado (clique para ligar)"
     },
     "replaySkip": "Pular"
   },
