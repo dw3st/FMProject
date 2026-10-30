@@ -171,3 +171,13 @@ por jogo 1,4 + 0,6 e (2,0 no máximo, antes 2,5), vitória × (1 − 0,4 e), der
 | Grande favorito em 3º (e = 1) | 35 | 57 |
 | Grande favorito campeão (78/14/8, e = 1) | 68 | 83 |
 | Clube médio / azarão | 59 / 67 | 61 / 67 |
+
+## Vitória nunca baixa a diretoria (4.41.20)
+
+Report de tester (QPR no mundo dos amigos, duas vitórias depois de 5 jogos sem vencer e a diretoria caiu 50,1 → 48,1).
+Nesse dia a causa foi o vermelho do técnico por reclamação (diretoria −3, `applyManagerCard`, `var.md`; ele ficou
+suspenso), maior que a vitória fora (+~1). Mas a fórmula também deixava uma vitória baixar a diretoria sozinha: o termo
+de posição (`POSITION_WEIGHT × (meta − posição) / tamanho × peso`) de um clube muito abaixo da meta no fim da temporada
+(até −1,25 com meta no meio, −2 com meta de título) passava do bônus pequeno de um favorito (0,48). Agora a variação da
+diretoria de uma vitória é no mínimo `BOARD_WIN_FLOOR` (0,1). Cartão do técnico, imprensa e a segunda-feira continuam
+podendo baixá-la no mesmo dia (eventos à parte). Teste em `boardFans.test.ts`.

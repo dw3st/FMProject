@@ -173,6 +173,7 @@ export function applyMatchResult(state: BoardState, m: MatchForBoard): BoardStat
     const weight = cfg.SEASON_WEIGHT_MIN + (1 - cfg.SEASON_WEIGHT_MIN) * progress;
     board += (cfg.POSITION_WEIGHT * (state.objective.target - m.league.position) / m.league.size) * weight;
   }
+  if (result === "W") board = Math.max(board, cfg.BOARD_WIN_FLOOR);
 
   const record = {
     ...state.record,

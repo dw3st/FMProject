@@ -70,6 +70,11 @@ export const BOARD_FANS = {
     POSITION_WEIGHT: 2.5,
     /** Season weight = SEASON_WEIGHT_MIN + (1 − SEASON_WEIGHT_MIN) × played / total. */
     SEASON_WEIGHT_MIN: 0.4,
+    /**
+     * A win never lowers the board on its own (tester report): far below the target, the position term
+     * outweighed a favourite's small win bonus. The board change of a win is at least this.
+     */
+    BOARD_WIN_FLOOR: 0.1,
   },
 
   events: {
