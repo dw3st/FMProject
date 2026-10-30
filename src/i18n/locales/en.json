@@ -1184,7 +1184,10 @@
       "zoomOff": "Whole pitch. Click to follow the ball.",
       "replayOn": "Goal replays on. Click to turn them off.",
       "replayOff": "Goal replays off. Click to turn them on.",
-      "replayH2h": "No replay in a match between two managers."
+      "replayH2h": "No replay in a match between two managers.",
+      "figures": "Figures",
+      "figuresOn": "Players drawn as figures (click for discs with the face)",
+      "figuresOff": "Players drawn as discs with the face (click for figures)"
     }
   },
   "broadcast": {

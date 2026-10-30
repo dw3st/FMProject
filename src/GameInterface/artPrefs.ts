@@ -59,6 +59,26 @@ export function writeGoalReplay(on: boolean): void {
   }
 }
 
+/** Players drawn as figures (the art sprites, default) or as discs with the face (4.41.19), switched in the match. */
+const MARKERS_KEY = "fm.match.markers";
+export type MatchMarkers = "figures" | "discs";
+
+export function readMatchMarkers(): MatchMarkers {
+  try {
+    return localStorage.getItem(MARKERS_KEY) === "discs" ? "discs" : "figures";
+  } catch {
+    return "figures";
+  }
+}
+
+export function writeMatchMarkers(v: MatchMarkers): void {
+  try {
+    localStorage.setItem(MARKERS_KEY, v);
+  } catch {
+    // no storage: the default stays
+  }
+}
+
 /** Graphics quality of the live match (art phase 8): automatic (default), high or light. */
 const QUALITY_KEY = "fm.visual.quality";
 export type QualityPref = "auto" | "high" | "light";

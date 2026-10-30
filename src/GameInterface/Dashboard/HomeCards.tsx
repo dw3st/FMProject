@@ -821,6 +821,7 @@ export function InboxCard({
   previewOf,
   renderBody,
   onOpen,
+  iconOf,
 }: {
   messages: InboxMessage[];
   unread: number;
@@ -830,6 +831,8 @@ export function InboxCard({
   renderBody?: (m: InboxMessage) => ReactNode;
   /** Called when a message is opened in the card (marks it read). */
   onOpen?: (m: InboxMessage) => void;
+  /** The category tile of a row (the inbox's own). */
+  iconOf?: (m: InboxMessage) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -862,7 +865,8 @@ export function InboxCard({
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{t("dashboard.home.noMessages")}</p>
       ) : (
-        <ul className="list-none m-0 p-0 flex flex-col">
+        // Every recent message, scrolling in about four rows (4.41.19, the user: as in the league card).
+        <ul className="list-none m-0 p-0 flex flex-col max-h-[300px] overflow-y-auto pr-1">
           {shown.map((m) => {
             const open = openId === m.id;
             return (
@@ -871,10 +875,11 @@ export function InboxCard({
                   type="button"
                   onClick={() => toggle(m)}
                   aria-expanded={open}
-                  className={`w-full text-left flex items-start gap-3 py-2.5 bg-transparent cursor-pointer hover:text-primary border-0 border-l-2 pl-3 ${
+                  className={`w-full text-left flex items-center gap-3 py-2.5 bg-transparent cursor-pointer hover:text-primary border-0 border-l-2 pl-3 ${
                     m.read ? "border-l-transparent text-foreground/80" : "border-l-primary text-foreground"
                   }`}
                 >
+                  {iconOf?.(m)}
                   <div className="min-w-0 flex-1">
                     <div className={`text-sm truncate ${m.read ? "font-medium" : "font-bold"}`}>{subjectOf(m)}</div>
                     {!open && <div className="text-sm text-muted-foreground truncate">{previewOf(m)}</div>}

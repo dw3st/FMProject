@@ -805,11 +805,7 @@ function MessageRow({
         active ? "bg-primary/10" : "hover:bg-muted/30 bg-transparent"
       } ${unread ? "border-l-2 border-l-primary" : "border-l-2 border-l-transparent"}`}
     >
-      <div
-        className={`w-9 h-9 rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}
-      >
-        <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={16} className={meta.color} fallback={<MetaIcon className={`w-4 h-4 ${meta.color}`} />} />
-      </div>
+      <InboxCategoryTile message={message} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span
@@ -846,11 +842,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
       )}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3 mb-3">
-          <div
-            className={`w-10 h-10 rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}
-          >
-            <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={20} className={meta.color} fallback={<MetaIcon className={`w-5 h-5 ${meta.color}`} />} />
-          </div>
+          <InboxCategoryTile message={message} large />
           <div className="flex-1 min-w-0">
             <span
               className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${meta.color}`}
@@ -1571,4 +1563,16 @@ function DetailRow({
 /** Current UI language for helpers that only receive `t`. */
 function i18nLang(): string {
   return i18next.language ?? "en";
+}
+
+/** The category tile of a message: the art pack's icon (4.41.11) on the category colour, 20 px (24 px large). */
+export function InboxCategoryTile({ message, large = false }: { message: InboxMessage; large?: boolean }) {
+  const meta = CATEGORY_META[message.category];
+  const MetaIcon = meta.Icon;
+  const size = large ? 24 : 20;
+  return (
+    <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}>
+      <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={size} className={meta.color} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
+    </div>
+  );
 }

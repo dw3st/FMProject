@@ -23,6 +23,8 @@ export const PITCH_WEAR = {
  * under the ball holder. Sizes in px unless noted ("marker radii" for HOLDER).
  */
 export const MATCH_LOOK = {
+  /** The ball holder's face beside his name pill, × the marker diameter (4.41.19). */
+  HOLDER_FACE: 1.6,
   LINE_W: 1.8, LINE_GLOW_W: 5, LINE_GLOW_ALPHA: 0.16,
   GOAL: { POST_W: 3, MESH_ROWS: 6, MESH_COLS: 4, MESH_ALPHA: 0.3, NET_FILL: 0.06 },
   FLAG: { POLE: 11, W: 7, H: 6, COLOR: 0xf2c230 },

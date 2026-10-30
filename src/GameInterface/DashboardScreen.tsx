@@ -21,7 +21,7 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { InboxMessageBody, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
+import { InboxCategoryTile, InboxMessageBody, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
 import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
 import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
@@ -288,7 +288,7 @@ export function DashboardScreen() {
   });
   const highlights = seasonHighlights(players);
   // Unread first, then the newest read ones (the inbox is newest first).
-  const recentMessages = [...inbox.filter((m) => !m.read), ...inbox.filter((m) => m.read)].slice(0, 3);
+  const recentMessages = [...inbox.filter((m) => !m.read), ...inbox.filter((m) => m.read)].slice(0, 30);
   const week = latestWeekMoney(ledger?.entries ?? []);
 
   const squadHref = `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`;
@@ -394,6 +394,7 @@ export function DashboardScreen() {
           subjectOf={(m) => inboxSubject(m, t)}
           previewOf={(m) => inboxPreview(m, t)}
           renderBody={(m) => <InboxMessageBody message={m} leagues={leagues} />}
+          iconOf={(m) => <InboxCategoryTile message={m} />}
           onOpen={(m) => {
             if (m.read || !session) return;
             setInboxMessages((prev) => (prev ? prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)) : prev));

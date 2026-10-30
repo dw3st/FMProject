@@ -14,15 +14,21 @@ describe("painted turf", () => {
     const a = paintedTurfId({ ...base, seed: "fx1", ground: "33" });
     expect(a).toBe(paintedTurfId({ ...base, seed: "fx2", ground: "33" }));
     expect(PAINTED_TURF.TONES.map((t) => `match-backdrop-${t}`)).toContain(a!);
+    expect(paintedTurfId({ ...base, turf: "hybrid" })).toBe("match-backdrop-grass-c");
+    expect(paintedTurfId({ ...base, condition: 30 })).toBe("match-backdrop-grass-worn");
+    expect(paintedTurfId({ ...base, condition: 30, mowing: "none" })).toBe("match-backdrop-grass-worn");
+    expect(paintedTurfId({ ...base, condition: 8, turf: "hybrid" })).toBe("match-backdrop-grass-muddy");
+    expect(paintedTurfId({ ...base, condition: 8, turf: "synthetic" })).toBe("match-backdrop-synthetic");
   });
 
   test("no wash on a pristine pitch, more as it wears; the game's wear on top, never its mowing", () => {
     expect(paintedWash(base)).toBe(0);
     expect(paintedWash({ ...base, condition: 60 })).toBeGreaterThan(0);
-    expect(paintedWash({ ...base, condition: 20 })).toBeGreaterThan(paintedWash({ ...base, condition: 60 }));
-    expect(paintedWash({ ...base, condition: 5 })).toBeGreaterThan(paintedWash({ ...base, condition: 20 }));
+    expect(paintedWash({ ...base, condition: 45 })).toBeGreaterThan(paintedWash({ ...base, condition: 60 }));
+    expect(paintedWash({ ...base, condition: 20 })).toBe(PAINTED_TURF.WASH.PAINTED_WEAR);
     expect(paintedOverlay(base).shapes).toEqual([]);
-    const worn = paintedOverlay({ ...base, condition: 20 });
+    expect(paintedOverlay({ ...base, condition: 20 }).shapes).toEqual([]);
+    const worn = paintedOverlay({ ...base, condition: 45 });
     expect(worn.shapes.length).toBeGreaterThan(0);
     expect(worn.shapes.every((s) => s.layer === "wear")).toBe(true);
     expect(paintedOverlay({ ...base, condition: 5 }).dashedLines).toBe(true);

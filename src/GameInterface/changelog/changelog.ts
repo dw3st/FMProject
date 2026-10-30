@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.19",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Na partida, botão Bonecos: os jogadores como bonecos ou como discos com o rosto, trocado a qualquer momento. O disco ganhou um aro novo na cor do time.",
+        en: "In the match, a Figures switch: players as figures or as discs with the face, switched at any moment. The disc has a new rim in the team colour.",
+      },
+      {
+        pt: "O rosto de quem está com a bola aparece grande ao lado do nome.",
+        en: "The face of the player on the ball shows big beside his name.",
+      },
+      {
+        pt: "Gramado gasto, lamacento e híbrido com a pintura própria de cada um.",
+        en: "Worn, muddy and hybrid pitches with their own painted look.",
+      },
+      {
+        pt: "Caixa de entrada do Painel com todas as mensagens recentes em rolagem e os ícones de cada categoria, maiores também na caixa de entrada.",
+        en: "The Dashboard inbox lists every recent message in a scrolling box with each category's icon, also bigger in the inbox.",
+      },
+    ],
+  },
+  {
     version: "4.41.18",
     date: "2026-10-30",
     items: [

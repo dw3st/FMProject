@@ -497,6 +497,8 @@ interface Props {
   quality?: PitchQuality;
   /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
   realPlayers?: boolean;
+  /** Figures (the art sprites) or discs with the face (4.41.19); switched live. Absent: figures. */
+  markers?: "figures" | "discs";
 }
 
 export interface PitchOfficials {
@@ -574,6 +576,7 @@ export function PixiPitch({
   onReplay,
   quality = "high",
   realPlayers = false,
+  markers = "figures",
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -604,6 +607,7 @@ export function PixiPitch({
   const cameraRef                = useRef(camera);
   const qualityRef               = useRef(quality);
   const replayRef                = useRef(replay);
+  const markersRef               = useRef(markers);
   const onReplayRef              = useRef(onReplay);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
@@ -637,6 +641,7 @@ export function PixiPitch({
   useEffect(() => { coachesRef.current = coaches; }, [coaches]);
   useEffect(() => { extrasRef.current = extras; }, [extras]);
   useEffect(() => { cameraRef.current = camera; }, [camera]);
+  useEffect(() => { markersRef.current = markers; }, [markers]);
   useEffect(() => { qualityRef.current = quality; }, [quality]);
   useEffect(() => { replayRef.current = replay; }, [replay]);
   useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
@@ -1431,7 +1436,8 @@ export function PixiPitch({
       // Each marker is a container: team-colour disc, the player's face (once loaded) and a
       // team-colour ring on top. Without a face it reads as the old plain circle.
       const markerR = playerMarkerRadius(m.scale);
-      const faceSize = faceRasterSize(markerR - 1, app.renderer.resolution);
+      // Rasterised at the holder's big face size (4.41.19), so it stays sharp there; the disc scales it down.
+      const faceSize = faceRasterSize((markerR - 1) * MATCH_LOOK.HOLDER_FACE, app.renderer.resolution);
       const playerGraphics = new Map<number, Container>();
       const playerLabels   = new Map<number, Text>();
       /** Name pill behind each label (4.39): redrawn only when the name changes. */
@@ -1468,6 +1474,25 @@ export function PixiPitch({
       type PitchPlayer = (typeof stateRef.current.players)[0];
       const faceUrlOf = (p: PitchPlayer): string | undefined => faceUrlsRef.current?.[p.team]?.[p.rosterId];
 
+      /** The marker shows the sprite figure (it has one and the mode is figures), else the disc with the face. */
+      function figureShown(marker: Container): boolean {
+        return !!marker.getChildByLabel('body') && markersRef.current !== "discs";
+      }
+      // The disc's painted rim (4.41.19, vector layout refined with FLUX): tinted with the kit over the two-tone border.
+      let rimTexture: Texture | null = null;
+      function addRim(marker: Container, team: TeamId): void {
+        if (!rimTexture || marker.getChildByLabel('rim')) return;
+        const rim = new Sprite(rimTexture);
+        rim.label = 'rim';
+        rim.anchor.set(0.5);
+        // The rim's outer edge is at 0.49 of the image: it lands on the marker edge.
+        rim.width = rim.height = (markerR + 0.5) / 0.49;
+        rim.tint = team === "A" ? fillA : fillB;
+        const ring = marker.getChildByLabel('ring');
+        marker.addChildAt(rim, ring ? marker.getChildIndex(ring) + 1 : marker.children.length);
+        rim.visible = !figureShown(marker);
+      }
+
       /** Puts the face texture in the marker (replacing any previous one), under the ring. */
       function setMarkerFace(marker: Container, url: string, texture: Texture): void {
         const old = marker.getChildByLabel('face');
@@ -1476,7 +1501,7 @@ export function PixiPitch({
         face.label = 'face';
         face.anchor.set(0.5);
         face.width = face.height = (markerR - 1) * 2;
-        face.visible = !marker.getChildByLabel('body');
+        face.visible = !figureShown(marker);
         marker.addChildAt(face, 3); // above the light shadows, shadow + disc, below the ring
         marker.label = url;
       }
@@ -1645,9 +1670,12 @@ export function PixiPitch({
         }
         const ring = marker.getChildByLabel('ring');
         marker.addChildAt(body, ring ? marker.getChildIndex(ring) + 1 : marker.children.length);
-        for (const l of ['disc', 'gloss', 'face']) {
+        addRim(marker, player.team);
+        const fig = markersRef.current !== "discs";
+        body.visible = fig;
+        for (const l of ['disc', 'gloss', 'face', 'rim']) {
           const c = marker.getChildByLabel(l);
-          if (c) c.visible = false;
+          if (c) c.visible = !fig;
         }
         const { px, py } = toPixel(player.x, player.y);
         spriteMotion.set(player.id, newMotion(px / m.scale, py / m.scale));
@@ -1749,6 +1777,13 @@ export function PixiPitch({
             ? ({ textures: Object.fromEntries(Object.entries(player.textures).map(([k, t]) => [k.replace(/^player-real-/, "player-"), t])) } as unknown as Spritesheet)
             : player;
           spriteSheets = { player: sheet, keeper };
+          if (!rimTexture) {
+            void Assets.load<Texture>(gameArtUrl("player/disc-rim.png")).then((tex) => {
+              if (facesDisposed || !tex) return;
+              rimTexture = tex;
+              for (const p of stateRef.current.players) { const mk = playerGraphics.get(p.id); if (mk) addRim(mk, p.team); }
+            }).catch(() => { /* the drawn border stays */ });
+          }
           for (const p of stateRef.current.players) addBody(p);
         }).catch(() => { /* the discs stay */ });
         void (async () => {
@@ -3132,7 +3167,19 @@ export function PixiPitch({
           }
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
-          const body = g.getChildByLabel('body') as Container | null;
+          const bodyC = g.getChildByLabel('body') as Container | null;
+          if (bodyC) {
+            // Figures or discs, switched live (4.41.19).
+            const fig = markersRef.current !== "discs";
+            if (bodyC.visible !== fig) {
+              bodyC.visible = fig;
+              for (const l of ['disc', 'gloss', 'face', 'rim']) {
+                const c = g.getChildByLabel(l);
+                if (c) c.visible = !fig;
+              }
+            }
+          }
+          const body = bodyC?.visible ? bodyC : null;
           if (body) {
             const prevM = spriteMotion.get(player.id) ?? newMotion(px / m.scale, py / m.scale);
             const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
@@ -3205,10 +3252,12 @@ export function PixiPitch({
             if (pill) {
               // Sprite players: the face goes in the pill, left of the name (the marker has none).
               const P = MATCH_LOOK.PILL;
-              const faceUrl = g.getChildByLabel('body') ? faceUrlOf(player) : undefined;
+              const faceUrl = figureShown(g) ? faceUrlOf(player) : undefined;
               const faceTex = faceUrl ? faceTextures.get(faceUrl) : undefined;
-              const faceD = faceTex ? label.height + P.PAD_Y * 2 - 4 : 0;
-              const faceW = faceD > 0 ? faceD + 3 : 0;
+              // The ball holder's face is big, beside the pill (4.41.19, tester report: too small to see who it is).
+              const bigFace = !!faceTex && player.id === heldId;
+              const faceD = !faceTex ? 0 : bigFace ? markerR * 2 * MATCH_LOOK.HOLDER_FACE : label.height + P.PAD_Y * 2 - 4;
+              const faceW = faceD > 0 && !bigFace ? faceD + 3 : 0;
               const pillKey = `${label.text}|${faceW}`;
               if (pill.text !== pillKey) { drawPill(pill.g, label, player.team === "A" ? fillA : fillB, faceW); pill.text = pillKey; }
               if (faceTex && (!pill.face || pill.faceUrl !== faceUrl)) {
@@ -3224,9 +3273,11 @@ export function PixiPitch({
               pill.g.x = px;
               pill.g.y = label.y;
               if (pill.face) {
-                pill.face.visible = named && faceW > 0;
+                pill.face.visible = named && faceD > 0;
                 pill.face.width = pill.face.height = faceD;
-                pill.face.x = px - (label.width + P.PAD_X * 2 + faceW) / 2 + P.STRIP + faceD / 2 + 1;
+                pill.face.x = bigFace
+                  ? px - (label.width + P.PAD_X * 2) / 2 - faceD / 2 + 2
+                  : px - (label.width + P.PAD_X * 2 + faceW) / 2 + P.STRIP + faceD / 2 + 1;
                 pill.face.y = label.y - label.height / 2;
               }
             }

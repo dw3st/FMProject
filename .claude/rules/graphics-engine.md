@@ -429,3 +429,14 @@ proporções dela.
   `ALPHA` 0,5 sobre as faixas desenhadas, só quando o gramado pintado não é usado (corte sem padrão, sem o volume de
   arte); a textura pela grama (natural a, híbrida b, sintética c tingida) e pela condição (gasta abaixo de 40, lama
   abaixo de 15).
+
+## Bonecos ou discos, rosto do portador, gramado pintado (4.41.19)
+
+- **Bonecos / discos** (prop `markers`, `fm.match.markers`, botão Bonecos em `MatchViewToggles`): troca ao vivo. O
+  campo esconde o boneco e mostra o disco com o rosto (e o contrário) por quadro (`figureShown`). O disco ganhou o aro
+  pintado `player/disc-rim.png` (vetor refinado no FLUX, `data_process/assets/token/build_token.py`), tingido na cor do
+  time, sobre a borda de duas cores.
+- **Rosto do portador:** quem tem a bola mostra o rosto grande (`MATCH_LOOK.HOLDER_FACE` × o diâmetro do marcador) ao
+  lado da pílula do nome; os rostos são rasterizados nesse tamanho.
+- **Gramado pintado:** abaixo de 40% o fundo pintado `grass-worn` e abaixo de 15% `grass-muddy` (natural e híbrido, com
+  um véu leve e sem as falhas desenhadas); híbrido usa `grass-c`, natural `grass-a`/`grass-b` pelo estádio.

@@ -1184,7 +1184,10 @@
       "zoomOff": "Campo inteiro. Clique para a câmera acompanhar a bola.",
       "replayOn": "Replay dos gols ligado. Clique para desligar.",
       "replayOff": "Replay dos gols desligado. Clique para ligar.",
-      "replayH2h": "Sem replay no jogo entre técnicos."
+      "replayH2h": "Sem replay no jogo entre técnicos.",
+      "figures": "Bonecos",
+      "figuresOn": "Jogadores como bonecos (clique para discos com o rosto)",
+      "figuresOff": "Jogadores como discos com o rosto (clique para bonecos)"
     }
   },
   "broadcast": {

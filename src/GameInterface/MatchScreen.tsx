@@ -45,7 +45,7 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers } from "@/GameInterface/artPrefs";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
@@ -213,6 +213,12 @@ export function MatchScreen() {
   const toggleCamera = useCallback(() => setMatchCameraPref((c) => {
     const next = c === "follow" ? "fixed" : "follow";
     writeMatchCamera(next);
+    return next;
+  }), []);
+  const [markersPref, setMarkersPref] = useState(readMatchMarkers);
+  const toggleMarkers = useCallback(() => setMarkersPref((m) => {
+    const next = m === "discs" ? "figures" : "discs";
+    writeMatchMarkers(next);
     return next;
   }), []);
   const toggleReplay = useCallback(() => setGoalReplayPref((r) => {
@@ -1840,6 +1846,8 @@ export function MatchScreen() {
               replayAvailable={!h2hMode}
               onZoom={toggleCamera}
               onReplay={toggleReplay}
+              figures={markersPref === "figures"}
+              onFigures={newVisualOn() ? toggleMarkers : undefined}
             />
             <FriendsButton variant="toolbar" />
             {DEV_TOOLS && (
@@ -1964,6 +1972,7 @@ export function MatchScreen() {
                   onReplay={setReplayOn}
                   quality={pitchQuality}
                   realPlayers={realPlayers}
+                  markers={markersPref}
                   perfRef={pitchPerfRef}
                   effectLabels={effectLabels}
                   debugMode={DEV_TOOLS && debug}
