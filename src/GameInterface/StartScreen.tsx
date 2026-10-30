@@ -197,7 +197,7 @@ export function StartScreen() {
         {social.worldInvites.length > 0 && (
           <>
             <SectionTitle className="mt-8 mb-3">{t("world.invites.title")}</SectionTitle>
-            <ul className="m-0 list-none border-b border-border bg-background p-0">
+            <ul className="m-0 list-none border-b border-border bg-transparent p-0">
               {social.worldInvites.map((inv) => (
                 <li key={inv.saveId} className="flex items-center gap-3 border-t border-border py-3">
                   <Icon name="users" size={16} className="shrink-0 text-chart-2" />
@@ -238,7 +238,7 @@ export function StartScreen() {
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
-          <ul className="m-0 list-none border-b border-border bg-background p-0">
+          <ul className="m-0 list-none border-b border-border bg-transparent p-0">
             {saves.map((save) => (
               <li key={save.id} className="flex items-center gap-3 border-t border-border py-3">
                 <ClubLogo

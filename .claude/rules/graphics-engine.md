@@ -250,8 +250,8 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 ## Campo ao vivo refinado (4.38.21, mock escolhido: Jogadores B, Bola B, Estádio A, faixa de lance sem placar de TV)
 
 - Jogadores: borda nas duas cores do uniforme (`drawMarkerRing`; segunda cor `teamAColor2`/`teamBColor2`, a primeira cor do
-  clube diferente do uniforme usado, lida a cada quadro porque chega depois), número da posição (vaga + 1) numa etiqueta
-  embaixo; nome só do portador e de quem recebe o passe (todos no debug).
+  clube diferente do uniforme usado, lida a cada quadro porque chega depois) (sem número embaixo desde a 4.41.13: era o da vaga e o reserva herdava);
+  nome só do portador e de quem recebe o passe (todos no debug).
 - Lances (`playGfx`): linha tracejada do passe até quem recebe com um anel nele, arco do chute em voo, anel de impacto
   onde o chute termina.
 - Placas de LED (`LED`, `LED_ADS`, `ledAdFor`): no topo e atrás dos gols, painéis com propagandas fictícias sorteadas

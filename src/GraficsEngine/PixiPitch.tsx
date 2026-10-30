@@ -1505,22 +1505,11 @@ export function PixiPitch({
         disc.label = "disc";
         // Border in the kit's two colours (4.38.21, mock option B): the kit on the upper left half, the second
         // colour on the other, with a thin dark edge outside.
-        const color2 = player.team === "A" ? fillA2 : fillB2;
         const ring = new Graphics();
         ring.label = "ring";
         drawMarkerRing(ring, player.team);
-        // Number tag under the marker: the position number of the slot (1 = keeper … 11), in the kit.
-        const tagW = markerR * 1.15, tagH = markerR * 0.72;
-        const numTag = new Graphics()
-          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).fill(color)
-          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
-        const numText = new Text({
-          text: String(player.slotIndex + 1),
-          style: new TextStyle({ fontSize: Math.max(8, Math.round(markerR * 0.62)), fontFamily: 'sans-serif', fontWeight: '800', fill: color2 }),
-        });
-        numText.anchor.set(0.5);
-        numText.y = markerR * 0.62 + tagH / 2;
-        numText.label = "num";
+        // No number tag under the marker (tester report, 4.41.13): it was the slot's number, so a substitute took the
+        // number of the player he replaced; the game has no real shirt numbers.
         // Card: a small tilted card at the marker's top-right.
         const cw = markerR * CARD_BADGE.W, ch = markerR * CARD_BADGE.H;
         const cardBadge = new Graphics()
@@ -1544,7 +1533,7 @@ export function PixiPitch({
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
-        marker.addChild(lightShadow, shadow, disc, ring, gloss, numTag, numText, cardBadge);
+        marker.addChild(lightShadow, shadow, disc, ring, gloss, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -2983,8 +2972,6 @@ export function PixiPitch({
               const mk = playerGraphics.get(p.id);
               const ring = mk?.getChildByLabel("ring") as Graphics | null;
               if (ring) drawMarkerRing(ring, p.team);
-              const num = mk?.getChildByLabel("num") as Text | null;
-              if (num) num.style.fill = p.team === "A" ? fillA2 : fillB2;
             }
           }
         }
@@ -3090,9 +3077,6 @@ export function PixiPitch({
           } else {
             markerVel.set(player.id, { x: px, y: py, vx: 0, vy: 0 });
           }
-          // The number follows the slot (substitution, position swap).
-          const numText = g.getChildByLabel("num") as Text | null;
-          if (numText && numText.text !== String(player.slotIndex + 1)) numText.text = String(player.slotIndex + 1);
           if (label) {
             // Names only of the ball holder and of who the pass goes to (all of them in debug).
             const named = debugModeRef.current || player.id === heldId || player.id === st0.pass?.toId;

@@ -25,6 +25,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.13",
+    date: "2026-10-30",
+    items: [],
+    fixes: [
+      {
+        pt: "Partida: sem o número embaixo dos jogadores, que passava para quem entrava na substituição.",
+        en: "Match: no number under the players any more; a substitute used to take the number of the player he replaced.",
+      },
+      {
+        pt: "Tela inicial: a lista de jogos salvos com o mesmo fundo do cartão de cima.",
+        en: "Start screen: the saved games list has the same background as the card above it.",
+      },
+    ],
+  },
+  {
     version: "4.41.12",
     date: "2026-10-29",
     items: [
