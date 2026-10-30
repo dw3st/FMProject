@@ -20,6 +20,15 @@ export const FACE_COLOR_RE = /^#?[0-9a-fA-F]{3,8}$/;
 export const MAX_FACE_COLORS = 3;
 export const MAX_FACE_NATIONALITY = 64;
 
+/**
+ * The id whose painted face a player shows: a reborn player or a legend brought back (`reborn_<id>_<year>`,
+ * `legend_<id>_<year>`) keeps the original's portrait (report: Messi came back with a random red-haired face).
+ */
+export function paintedFaceIdOf(playerId: string): string {
+  const m = /^(?:reborn|legend)_(.+)_\d{4}$/.exec(playerId);
+  return m ? m[1]! : playerId;
+}
+
 export function faceUrl(
   playerId: string,
   nationality?: string | null,
@@ -27,7 +36,7 @@ export function faceUrl(
 ): string {
   // The painted face of the new art when there is one (the SVG face otherwise).
   // A player without his own portrait gets a painted face of the generic set, so a list never mixes the two styles.
-  const painted = paintedPlayerFace(playerId) ?? paintedPlayerStandIn(playerId, playerSkin(playerId, nationality));
+  const painted = paintedPlayerFace(paintedFaceIdOf(playerId)) ?? paintedPlayerStandIn(playerId, playerSkin(playerId, nationality));
   if (painted) return painted;
   const params = new URLSearchParams();
   params.set("v", String(FACE_VERSION));

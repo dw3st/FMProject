@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.39",
+    date: "2026-10-30",
+    time: "14:46",
+    items: [
+      {
+        pt: "Assistir ao jogo de um amigo durante a sua partida abre a janela flutuante, como no Painel.",
+        en: "Watching a friend's match during your own opens the floating window, as on the dashboard.",
+      },
+      {
+        pt: "Na Evolução, o campinho mostra onde o jogador joga naturalmente e onde precisa se adaptar, para escolher a posição de treino.",
+        en: "In Development, the little pitch shows where the player plays naturally and where he needs to adapt, to pick a training position.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Lendas e renascidos voltam com o rosto do jogador original.",
+        en: "Legends and reborn players come back with the original player's face.",
+      },
+    ],
+  },
+  {
     version: "4.41.38",
     date: "2026-10-30",
     time: "14:42",

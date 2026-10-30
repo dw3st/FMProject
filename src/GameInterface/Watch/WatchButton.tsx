@@ -9,22 +9,12 @@ const BUTTON = "ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bor
 /**
  * "Assistir": the friend's live match in a floating broadcast window (`WatchWindowHost`), only while it is played; the
  * window stays open while the user moves between screens.
- * `newTab`: from the user's own live match, the broadcast opens in another tab (his match keeps running in this one,
- * and one page never draws two pitches).
+ * In the user's own live match too (report): the window draws the broadcast in an iframe, so the page still runs one pitch.
  */
-export function WatchButton({ live, saveId, newTab }: { live: LiveScoreView; saveId?: string; newTab?: boolean }) {
+export function WatchButton({ live, saveId }: { live: LiveScoreView; saveId?: string }) {
   const { t } = useTranslation();
   const save = saveId ?? loadSession()?.saveId;
   if (!save || (live.status !== "live" && live.status !== "half")) return null;
-  if (newTab) {
-    const href = `/watch?save=${encodeURIComponent(save)}&seat=${encodeURIComponent(live.seatId)}`;
-    return (
-      <a href={href} target="_blank" rel="noopener" className={BUTTON}>
-        <Icon name="play" size={16} />
-        {t("watch.button")}
-      </a>
-    );
-  }
   return (
     <button type="button" className={BUTTON} onClick={() => setWatchTarget({ saveId: save, seatId: live.seatId })}>
       <Icon name="play" size={16} />

@@ -68,7 +68,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, excludeClubIds = [] }
               {open === l.seatId && (
                 <div className="absolute left-0 top-full mt-1 z-[60] w-[320px] rounded-md border border-border bg-card shadow-lg p-3 flex flex-col gap-3">
                   <LiveMoments live={l} />
-                  <div className="flex"><WatchButton live={l} saveId={saveId} newTab /></div>
+                  <div className="flex"><WatchButton live={l} saveId={saveId} /></div>
                   <div className="border-t border-border pt-2">
                     <TauntActions saveId={saveId} target={{ live: l.seatId }} groups={liveGroups(l)} />
                   </div>

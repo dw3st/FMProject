@@ -1,3 +1,5 @@
+import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
+import { positionAptitudes } from "@/Domain/positions/positionAptitude";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -239,6 +241,12 @@ export function DevelopmentScreen() {
                       initial={squad.playerTraining?.[player.id]}
                       onSaved={() => void refresh()}
                     />
+                  )}
+                  {/* Where he plays naturally and where he needs to adapt (tester report), to pick a training position. */}
+                  {player.stats && (
+                    <div className="card-arcade rounded-md p-4">
+                      <PositionPitch aptitudes={positionAptitudes(player)} />
+                    </div>
                   )}
                   <RecentTrend trend={recentForm} />
                   <DevelopmentWarnings warnings={warnings} />
