@@ -24,7 +24,9 @@ export interface AchievementsData {
     /** Purchases, newest first; `date`/`price` null for a legend bought before the history existed. */
     history: {
       item: "created" | "legend"; date: string | null; playerId: string; name: string; position: string;
-      price: number | null; where: "squad" | "youth" | "gone"; href: string | null;
+      price: number | null; where: "squad" | "youth" | "other" | "free" | "retired" | "gone"; href: string | null;
+      /** His club now, when he plays for another one. */
+      clubName: string | null;
     }[];
     legends: {
       id: string; name: string; positions: string[]; nationality: string | null; age: number;

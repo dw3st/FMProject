@@ -4818,7 +4818,11 @@
         "at": {
           "squad": "In the squad",
           "youth": "In the academy",
-          "gone": "Left the club"
+          "gone": "Left the club",
+          "other": "At another club",
+          "otherClub": "Now at {{club}}",
+          "free": "Free agent",
+          "retired": "Retired: he no longer plays"
         }
       }
     },

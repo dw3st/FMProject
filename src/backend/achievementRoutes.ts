@@ -74,7 +74,7 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       bought: state.bought,
       thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
-      history: shopHistory(state, retired, club, seatId),
+      history: await shopHistory(saveId, state, retired, club, seatId),
       legends: (state.legendOptions?.ids ?? []).flatMap((id) => {
         const r = retired.find((x) => x.id === id);
         return r ? [{
@@ -92,8 +92,8 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
  * The shop history, newest first: every purchase logged, plus the legends this seat brought back before the log
  * existed (from `retired.json`), with where the player is now.
  */
-function shopHistory(
-  state: AchievementsState, retired: RetiredPlayer[],
+async function shopHistory(
+  saveId: string, state: AchievementsState, retired: RetiredPlayer[],
   club: { squad: Squad; leagueSlug: string; clubSlug: string } | null, seatId: string,
 ) {
   const squad = club?.squad ?? null;
@@ -106,16 +106,40 @@ function shopHistory(
       const now = [...(squad?.players ?? []), ...(squad?.youth ?? [])].find((p) => p.id.startsWith(prefix));
       return { item: "legend" as const, date: null, playerId: now?.id ?? prefix, name: r.name, position: r.positions[0] ?? "", price: null, fromId: r.id };
     });
-  const where = (id: string): "squad" | "youth" | "gone" =>
-    squad?.players.some((p) => p.id === id) ? "squad" : squad?.youth?.some((p) => p.id === id) ? "youth" : "gone";
-  return [...logged.map((p) => ({ ...p, price: p.price as number | null, date: p.date as string | null })).reverse(), ...older]
-    .map((p) => {
-      const at = where(p.playerId);
-      const href = club && at !== "gone"
-        ? `/player/${encodeURIComponent(club.leagueSlug)}/${encodeURIComponent(club.clubSlug)}/${encodeURIComponent(p.playerId)}`
-        : null;
-      return { ...p, where: at, href };
-    });
+  const where = (id: string): "squad" | "youth" | null =>
+    squad?.players.some((p) => p.id === id) ? "squad" : squad?.youth?.some((p) => p.id === id) ? "youth" : null;
+  const entries = [...logged.map((p) => ({ ...p, price: p.price as number | null, date: p.date as string | null })).reverse(), ...older];
+  // Players who left the club (tester report): their current club (a link to the page), free or retired.
+  const away = entries.map((p) => p.playerId).filter((id) => !where(id));
+  const elsewhere = new Map<string, { at: "other" | "free" | "retired"; href: string | null; clubName: string | null }>();
+  if (away.length > 0) {
+    const wanted = new Set(away);
+    const [squads, free, index] = await Promise.all([
+      saveService.getAllSquads(saveId), saveService.getFreeAgents(saveId), saveService.getSquadIndex(saveId),
+    ]);
+    for (const sq of squads) {
+      for (const p of [...sq.players, ...(sq.youth ?? [])]) {
+        if (!wanted.has(p.id)) continue;
+        const entry = index.byId(sq.id);
+        elsewhere.set(p.id, {
+          at: "other",
+          href: entry ? `/player/${encodeURIComponent(entry.leagueSlug)}/${encodeURIComponent(entry.stem)}/${encodeURIComponent(p.id)}` : null,
+          clubName: sq.name,
+        });
+      }
+    }
+    for (const f of free) if (wanted.has(f.player.id) && !elsewhere.has(f.player.id)) elsewhere.set(f.player.id, { at: "free", href: null, clubName: null });
+    for (const r of retired) if (wanted.has(r.id) && !elsewhere.has(r.id)) elsewhere.set(r.id, { at: "retired", href: null, clubName: null });
+  }
+  return entries.map((p) => {
+    const at = where(p.playerId);
+    if (at && club) {
+      const href = `/player/${encodeURIComponent(club.leagueSlug)}/${encodeURIComponent(club.clubSlug)}/${encodeURIComponent(p.playerId)}`;
+      return { ...p, where: at, href, clubName: null as string | null };
+    }
+    const found = elsewhere.get(p.playerId);
+    return { ...p, where: found?.at ?? ("gone" as const), href: found?.href ?? null, clubName: found?.clubName ?? null };
+  });
 }
 
 const bad = (error: string, status = 400) => Response.json({ error }, { status });

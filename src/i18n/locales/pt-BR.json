@@ -4818,7 +4818,11 @@
         "at": {
           "squad": "No elenco",
           "youth": "Na base",
-          "gone": "Saiu do clube"
+          "gone": "Saiu do clube",
+          "other": "Em outro clube",
+          "otherClub": "Hoje: {{club}}",
+          "free": "Sem clube",
+          "retired": "Aposentado: não joga mais"
         }
       }
     },
