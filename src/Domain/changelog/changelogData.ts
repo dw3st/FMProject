@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.32",
+    date: "2026-10-30",
+    time: "15:05",
+    items: [
+      {
+        pt: "Messi e Neymar com rosto novo, no mesmo traço do resto do elenco.",
+        en: "Messi and Neymar have new faces, drawn like the rest of the squad.",
+      },
+    ],
+  },
+  {
     version: "4.41.31",
     date: "2026-10-30",
     time: "10:56",
