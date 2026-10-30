@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.35",
+    date: "2026-10-30",
+    time: "13:43",
+    items: [
+      {
+        pt: "Tela de substituições no visual novo: campo pintado, rosto de cada jogador e cartões que nunca ficam um em cima do outro.",
+        en: "Substitutions screen in the new look: a painted pitch, each player's face and cards that never sit on top of each other.",
+      },
+    ],
+  },
+  {
     version: "4.41.34",
     date: "2026-10-30",
     time: "15:35",
