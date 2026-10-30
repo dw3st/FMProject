@@ -7,7 +7,7 @@ import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { seedFrom } from "@/Domain/rng";
 
 /** Version segment of the art URLs (`/assets/art/v3/...`): bump it whenever the art files change. */
-export const ART_ASSET_VERSION = "v3";
+export const ART_ASSET_VERSION = "v4";
 
 export interface PaintedFaceIds {
   players: string[];

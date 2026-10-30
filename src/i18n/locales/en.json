@@ -2570,6 +2570,7 @@
     "secondYellow": "second yellow"
   },
   "substitutionPanel": {
+    "fitnessTitle": "Fitness {{value}}",
     "title": "Substitutions",
     "xiAvg": "XI avg",
     "benchAvg": "Bench avg",

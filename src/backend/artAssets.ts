@@ -2,7 +2,7 @@
  * The new art (`C:\projects\fmproject-art-handoff`, decisions 1–4): files on the persistent volume, in
  * `${RUNTIME_DATA_DIR}/art/`, never in the image nor the page bundle.
  *
- * - `GET /assets/art/v3/<path>`: only a path listed in `art/index.json` (a whitelist, never a free path), cached
+ * - `GET /assets/art/v4/<path>`: only a path listed in `art/index.json` (a whitelist, never a free path), cached
  *   forever (the version in the URL changes with the art).
  * - `GET /api/art/faces`: the ids that have a painted face (players, the human manager's combinations, referees),
  *   only when the painted faces are switched on (`ART_FACES=1`): they come from real players' features, so the owner

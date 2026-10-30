@@ -27,6 +27,39 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.37",
+    date: "2026-10-30",
+    time: "14:38",
+    items: [
+      {
+        pt: "Tela de substituições com o campo na vertical, igual ao da Formação: rosto, posição, nota e fôlego de cada jogador, sem nada um em cima do outro.",
+        en: "Substitutions screen with the pitch upright, as in Formation: each player's face, position, rating and fitness, nothing on top of anything else.",
+      },
+      {
+        pt: "Cartão para o técnico agora aparece no mesmo letreiro de TV do cartão de jogador, com a foto dele.",
+        en: "A card for the manager now shows in the same TV lower third as a player's card, with his photo.",
+      },
+      {
+        pt: "Na sua partida aparece quem está assistindo à transmissão.",
+        en: "Your match shows who is watching the broadcast.",
+      },
+      {
+        pt: "A lista de jogadores da partida segue a ordem do campo.",
+        en: "The match player list follows the pitch order.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Rostos quebrados (cabeça cortada, duas cabeças) refeitos, inclusive no resumo do dia.",
+        en: "Broken faces (cut-off head, two heads) repainted, the day summary included.",
+      },
+      {
+        pt: "A transmissão de um amigo volta sozinha quando a partida reaparece.",
+        en: "A friend's broadcast comes back on its own when the match is live again.",
+      },
+    ],
+  },
+  {
     version: "4.41.36",
     date: "2026-10-30",
     time: "13:54",

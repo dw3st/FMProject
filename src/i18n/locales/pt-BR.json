@@ -2570,6 +2570,7 @@
     "secondYellow": "segundo amarelo"
   },
   "substitutionPanel": {
+    "fitnessTitle": "Fôlego {{value}}",
     "title": "Substituições",
     "xiAvg": "Média XI",
     "benchAvg": "Média banco",
