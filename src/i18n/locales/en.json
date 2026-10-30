@@ -1913,6 +1913,17 @@
       },
       "transfer_in": "Signed {{player}}",
       "transfer_out": "Sold {{player}}"
+    },
+    "actions": {
+      "repair": "Repair in the Club screen",
+      "rebuild": "Rebuild in the Club screen",
+      "renew": "Renew the contract",
+      "contracts": "See the squad",
+      "staff": "Open the coaching staff",
+      "registration": "Open the registration",
+      "lineup": "Adjust the lineup",
+      "youth": "See the academy",
+      "finances": "See the finances"
     }
   },
   "finances": {

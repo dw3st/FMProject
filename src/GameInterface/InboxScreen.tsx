@@ -1,4 +1,5 @@
 import { paintedNews } from "@/Domain/art/paintedFaces";
+import { inboxAction } from "@/GameInterface/Inbox/inboxAction";
 import { AchievementInboxBody } from "@/GameInterface/Achievements/AchievementInboxBody";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
@@ -977,19 +978,29 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
         })}
       </p>
     )}
+    <InboxActionButton message={message} />
     </>
+  );
+}
+
+/** The task the message asks for, as a button (`inboxAction`). */
+function InboxActionButton({ message }: { message: InboxMessage }) {
+  const { t } = useTranslation();
+  const { session } = useGameSave();
+  const action = inboxAction(message, session && session.clubId ? { leagueSlug: session.leagueSlug, clubId: session.clubId } : null);
+  if (!action) return null;
+  return (
+    <a href={action.href} className="mt-4 inline-flex items-center h-10 px-5 rounded bg-primary text-primary-foreground text-sm font-semibold no-underline w-fit">
+      {t(`inbox.actions.${action.label}`)}
+    </a>
   );
 }
 
 /** Registration news: the list made, an arrival out of the list, the deadline closing (`registration.md`). */
 function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMessage, { category: "registration" }>; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
-  const { session } = useGameSave();
   const competition = competitionName(message.competition, leagues, i18n.language) || message.competitionName;
   const c = message.counts;
-  const href = session
-    ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}?tab=registration`
-    : undefined;
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="m-0 text-foreground">
@@ -1003,9 +1014,6 @@ function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMes
         <p className="m-0 text-muted-foreground tabular-nums">
           {t("inbox.registration.counts", { counted: c.counted, max: c.max ?? "—", foreign: c.foreign, formed: c.formed, free: c.free })}
         </p>
-      )}
-      {href && (
-        <a href={href} className="font-semibold text-primary hover:underline w-fit">{t("inbox.registration.open")}</a>
       )}
     </div>
   );
