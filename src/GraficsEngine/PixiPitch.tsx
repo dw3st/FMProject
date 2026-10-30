@@ -2576,7 +2576,7 @@ export function PixiPitch({
         c.width = c.height = 4;
         const g2 = c.getContext("2d");
         if (g2) {
-          g2.fillStyle = "rgba(0,0,0,0.62)";
+          g2.fillStyle = "rgba(0,0,0,0.28)";
           g2.fillRect(0, 0, 4, 4);
           g2.clearRect(0, 0, 3, 3);
           g2.fillStyle = "rgba(255,255,255,0.10)";
@@ -2586,9 +2586,9 @@ export function PixiPitch({
         }
       }
       const ledTextStyle = (h: number) => new TextStyle({
-        fontSize: Math.round(h * 0.7), fontFamily: '"Barlow Condensed", "Arial Narrow", sans-serif', fontWeight: '700',
+        fontSize: Math.round(h * 0.78), fontFamily: '"Barlow Condensed", "Arial Narrow", sans-serif', fontWeight: '700',
         fill: 0xffffff, letterSpacing: Math.max(1, h * 0.06),
-        dropShadow: { color: 0xffffff, blur: Math.max(2, h * 0.3), distance: 0, alpha: 0.85, angle: 0 },
+        dropShadow: { color: 0xffffff, blur: Math.max(1, h * 0.12), distance: 0, alpha: 0.55, angle: 0 },
       });
       const makeSlot = (w: number, h: number): LedSlot => {
         const root = new Container();
@@ -2596,6 +2596,8 @@ export function PixiPitch({
         root.position.set(w / 2, h / 2);
         const bg = new Graphics();
         const text = new Text({ text: "", style: ledTextStyle(h) });
+        // Crisp at the board's small size (tester report 4.41.20: the text was unreadable under the dot grid).
+        text.resolution = Math.max(2, app.renderer.resolution * 2);
         text.anchor.set(0.5);
         text.position.set(w / 2, h / 2);
         root.addChild(bg, text);
@@ -2636,7 +2638,7 @@ export function PixiPitch({
           screen.addChild(back, slots[0].root, slots[1].root, wipe);
           if (ledDots) {
             const dots = new TilingSprite({ texture: ledDots, width: w, height: h });
-            dots.tileScale.set(Math.max(0.5, h / 36));
+            dots.tileScale.set(Math.max(0.5, h / 24));
             screen.addChild(dots);
           }
           // A soft gloss on the upper half of the glass, then the slow refresh band.
@@ -2676,7 +2678,7 @@ export function PixiPitch({
         s.bg.clear().rect(0, 0, w, h).fill(bg);
         s.text.text = text;
         s.text.style.fill = fg;
-        s.text.style.dropShadow = { color: fg, blur: Math.max(2, h * 0.3), distance: 0, alpha: 0.85, angle: 0 };
+        s.text.style.dropShadow = { color: fg, blur: Math.max(1, h * 0.12), distance: 0, alpha: 0.55, angle: 0 };
         s.textW = CanvasTextMetrics.measureText(text, s.text.style).width;
         const fit = ledFit(s.textW, w * 0.92);
         s.scroll = fit.scroll;

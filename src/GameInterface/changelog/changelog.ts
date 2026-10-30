@@ -25,6 +25,42 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.20",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Estádio mais vivo: placas de LED novas com propaganda na língua do mandante, bandeirinhas de escanteio, área técnica marcada, tapete com o escudo na saída do túnel, cantos da arquibancada curvos, câmeras de TV, repórter, seguranças e vendedores na torcida.",
+        en: "A livelier stadium: new LED boards with ads in the home club's language, corner flags, marked technical areas, a crest mat at the tunnel, curved stand corners, TV cameras, a reporter, stewards and vendors in the crowd.",
+      },
+      {
+        pt: "Na partida, Zoom, Replay e Bonecos acima da lista do time, Amigos e Reportar acima do resumo, botão para pular o replay e os dois técnicos no resumo.",
+        en: "In the match, Zoom, Replay and Figures above the team list, Friends and Report above the summary, a button to skip the replay and both managers in the summary.",
+      },
+      {
+        pt: "Quando as camisas se confundem, o visitante joga com o segundo uniforme. Técnico suspenso ou expulso pode passar ordens ao auxiliar.",
+        en: "When the shirts clash, the away side wears its second kit. A banned or sent-off manager can give orders to his assistant.",
+      },
+      {
+        pt: "Escalação mais compacta, com titulares e reservas lado a lado. Cores no estado e na moral dos jogadores.",
+        en: "A more compact lineup screen with starters and bench side by side. Colours for the players' status and morale.",
+      },
+      {
+        pt: "Mensagens da caixa de entrada com o botão da ação (reformar, renovar e outras). Obras das instalações com arte nova.",
+        en: "Inbox messages with a button for the action (repair, renew and more). New art for facility works.",
+      },
+      {
+        pt: "Abas de cima com o ícone sobre o nome e o botão Reportar igual em todas as telas.",
+        en: "Top tabs with the icon above the name and the same Report button on every screen.",
+      },
+    ],
+    fixes: [
+      { pt: "Uma vitória não derruba mais a diretoria.", en: "A win no longer lowers the board." },
+      { pt: "Joias do olheiro sem nota.", en: "Scouting gems without a grade." },
+      { pt: "Contagem do pênalti visível e sem reiniciar.", en: "The penalty countdown is visible and no longer restarts." },
+      { pt: "Escanteio depois de defesa ou desvio não aparece mais como chute para fora.", en: "A corner after a save or deflection no longer shows as a shot wide." },
+    ],
+  },
+  {
     version: "4.41.19",
     date: "2026-10-30",
     items: [
