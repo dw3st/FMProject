@@ -65,7 +65,7 @@ export function emptyMarket(): MarketState {
 }
 
 /** The human's lists without `playerId` (sold / loaned / gone). */
-function marketWithoutPlayer(market: MarketState, playerId: string): MarketState {
+export function marketWithoutPlayer(market: MarketState, playerId: string): MarketState {
   return {
     ...market,
     playerSellList: (market.playerSellList ?? []).filter((c) => c.playerId !== playerId),

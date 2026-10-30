@@ -15,6 +15,7 @@ import type { TransferRecord } from "@/types/transferTypes";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
+import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { YouthSeasonLine } from "@/GameInterface/Components/YouthSeasonLine";
@@ -180,6 +181,9 @@ export function PlayerScreen({
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
+                {session && player.contract && (
+                  <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { window.location.href = "/squad"; }} />
+                )}
                 <button
                   type="button"
                   onClick={() => setRenewOpen(true)}

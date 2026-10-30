@@ -2728,6 +2728,7 @@
       "facilitiesUpkeep": "Manutenção do CT e da base",
       "managerWage": "Salário do técnico",
       "staffSeverance": "Multa rescisória da comissão",
+      "playerTermination": "Rescisão amigável",
       "managerSeverance": "Multa rescisória do técnico",
       "managerCompensation": "Compensação pelo técnico",
       "scoutingTravel": "Viagens de observação: {{competition}}",
@@ -3051,6 +3052,23 @@
     "help": "Enviamos um código de 6 dígitos. Sem senha."
   },
   "contracts": {
+    "terminate": {
+      "button": "Rescindir",
+      "hint": "Rescisão amigável: paga uma multa e o jogador sai livre.",
+      "title": "Rescindir com {{name}}?",
+      "body": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). Pela importância dele no elenco, a multa é {{share}}% disso: {{fee}}. Ele sai livre na hora.",
+      "bodyCapped": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). A multa fica no teto de metade do valor de mercado: {{fee}}. Ele sai livre na hora.",
+      "blocked": "Não dá para rescindir: a posição dele ficaria abaixo do mínimo do elenco.",
+      "confirm": "Rescindir",
+      "errors": {
+        "generic": "Não foi possível rescindir.",
+        "onLoan": "Jogador emprestado não pode ser rescindido.",
+        "noContract": "Ele não tem contrato em andamento.",
+        "squadDepth": "A posição dele ficaria abaixo do mínimo do elenco.",
+        "noClub": "Você está sem clube.",
+        "lobby": "A liga ainda não começou."
+      }
+    },
     "renew": "Renovar",
     "renewTitle": "Renovar contrato",
     "signTitle": "Contratar jogador livre",

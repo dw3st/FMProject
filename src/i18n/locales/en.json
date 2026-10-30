@@ -2728,6 +2728,7 @@
       "facilitiesUpkeep": "Training ground and academy upkeep",
       "managerWage": "Manager wage",
       "staffSeverance": "Staff severance",
+      "playerTermination": "Friendly termination",
       "managerSeverance": "Manager severance",
       "managerCompensation": "Manager compensation",
       "scoutingTravel": "Scouting travel: {{competition}}",
@@ -3051,6 +3052,23 @@
     "help": "We email you a 6-digit code. No password."
   },
   "contracts": {
+    "terminate": {
+      "button": "Terminate",
+      "hint": "Friendly termination: pay a fee and the player leaves as a free agent.",
+      "title": "Terminate {{name}}'s contract?",
+      "body": "{{weeks}} weeks are left on his contract ({{wages}} in wages). By how much he matters to the squad the fee is {{share}}% of that: {{fee}}. He leaves as a free agent at once.",
+      "bodyCapped": "{{weeks}} weeks are left on his contract ({{wages}} in wages). The fee stops at half his market value: {{fee}}. He leaves as a free agent at once.",
+      "blocked": "You can't terminate it: his position would drop below the squad minimum.",
+      "confirm": "Terminate",
+      "errors": {
+        "generic": "Could not terminate the contract.",
+        "onLoan": "A player on loan can't be terminated.",
+        "noContract": "He has no running contract.",
+        "squadDepth": "His position would drop below the squad minimum.",
+        "noClub": "You have no club.",
+        "lobby": "The league has not started yet."
+      }
+    },
     "renew": "Renew",
     "renewTitle": "Renew contract",
     "signTitle": "Sign free agent",

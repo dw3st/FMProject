@@ -104,7 +104,7 @@ function memberOffer(squad: Squad, m: StaffMember, ctx: { date: string; seasonEn
   };
 }
 
-async function ledgerSeason(service: SaveService, saveId: string, leagueSlug: string, date: string): Promise<number> {
+export async function ledgerSeason(service: SaveService, saveId: string, leagueSlug: string, date: string): Promise<number> {
   return (await service.getLeagueMeta(saveId, leagueSlug))?.year ?? parseInt(date.slice(0, 4), 10);
 }
 

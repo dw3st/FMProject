@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.43",
+    date: "2026-10-30",
+    time: "15:51",
+    items: [
+      {
+        pt: "Rescisão amigável: na ficha do seu jogador, Rescindir encerra o contrato pagando uma multa. A multa vai de metade a todo o salário que falta, conforme a importância dele no elenco, e nunca passa de metade do valor de mercado. Ele sai livre na hora.",
+        en: "Friendly termination: on your player's page, Terminate ends his contract for a fee. It runs from half to all of the wages left, by how much he matters to the squad, and never goes past half his market value. He leaves as a free agent at once.",
+      },
+    ],
+  },
+  {
     version: "4.41.42",
     date: "2026-10-30",
     time: "15:42",

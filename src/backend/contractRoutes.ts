@@ -9,7 +9,14 @@ import { loadViewer, viewFor } from "@/backend/scoutingWorld";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
-import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
+import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal, stripPlayerMorale } from "@/Domain/morale/morale";
+import { terminationBreaksDepth, terminationQuote } from "@/Domain/contracts/termination";
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
+import { toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { dropFromLineup, marketWithoutPlayer } from "@/backend/negotiationWorld";
+import { ledgerSeason } from "@/backend/staffRoutes";
+import { recordMoney } from "@/backend/FinancialService";
+import { closeOffersForPlayer } from "@/backend/seatOfferWorld";
 
 /** The last club of a free agent (his latest history row), for the smaller-club rule (`personality.md`). */
 async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad | null> {
@@ -28,6 +35,49 @@ async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad |
  * contract's end moves `years` seasons past its current end and the new wage applies at once.
  */
 export const contractRoutes = {
+  /**
+   * Friendly termination (tester suggestion). `GET` quotes it (`{ fee, weeksLeft, wagesLeft, share, status, capped,
+   * blocked }`), `POST` does it: the fee leaves the club's balance (ledger `wages`, stage `termination`) and the player
+   * leaves as a free agent. 400 `onLoan` / `noContract`, 409 `squadDepth` (his line would drop below the minimum).
+   */
+  "/api/saves/:saveId/players/:playerId/terminate": async (req: Request & { params: Record<string, string> }) => {
+    const saveId = req.params.saveId!;
+    const playerId = req.params.playerId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET" && req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const run = async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta?.clubId) return Response.json({ error: "noClub" }, { status: 409 });
+      const ref = await saveService.resolveSquadId(saveId, meta.clubId);
+      const squad = ref ? await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
+      const player = squad?.players.find((p) => p.id === playerId);
+      if (!ref || !squad || !player) return Response.json({ error: "notYourPlayer" }, { status: 404 });
+      if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
+      const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+      const quote = terminationQuote(player, squad, date, playerMarketValue(player));
+      if (!quote) return Response.json({ error: "noContract" }, { status: 400 });
+      const blocked = terminationBreaksDepth(squad, playerId);
+      if (req.method === "GET") return Response.json({ ...quote, blocked });
+      if (blocked) return Response.json({ error: "squadDepth" }, { status: 409 });
+      await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, { ...squad, players: squad.players.filter((p) => p.id !== playerId) });
+      if (quote.fee > 0) {
+        await recordMoney(saveService, saveId, await ledgerSeason(saveService, saveId, ref.leagueSlug, date), ref, {
+          date, kind: "wages", amount: -quote.fee, label: `Contract termination: ${player.name}`, ref: { stage: "termination" },
+        }, auth.seatId);
+      }
+      const free = await saveService.getFreeAgents(saveId);
+      await saveService.writeFreeAgents(saveId, [...free.filter((f) => f.player.id !== playerId), toFreeAgent(stripPlayerMorale(player), date)]);
+      const market = await saveService.getMarket(saveId, auth.seatId);
+      if (market) await saveService.saveMarket(saveId, marketWithoutPlayer(market, playerId), auth.seatId);
+      await saveService.writeSeatOffers(saveId, await closeOffersForPlayer(saveService, saveId, await saveService.getSeatOffers(saveId), playerId, date));
+      await dropFromLineup(saveService, saveId, auth.seatId, playerId);
+      await emitInboxMessage(saveId, buildContractMessage({ date, kind: "released", players: [{ id: player.id, name: player.name }] }), saveService, auth.seatId);
+      return Response.json({ fee: quote.fee });
+    };
+    return req.method === "GET" ? run() : withSaveLock(saveId, run);
+  },
+
   "/api/saves/:saveId/players/:playerId/renew": async (
     req: Request & { params: Record<string, string> },
   ) => {
