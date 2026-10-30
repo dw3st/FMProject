@@ -123,6 +123,12 @@ export const LED = {
   SWITCH_S: 9, FLIP_S: 0.3, FLIP_STAGGER_S: 0.03, GOAL_S: 10,
 } as const;
 
+/**
+ * The LED board housing (4.42, tester report): a vector frame refined by FLUX (`data_process/assets/led`), 1024 × 96,
+ * its screen rectangle transparent. Loaded with the new visual.
+ */
+export const LED_FRAME = { FILE: "led/led-frame.png", W: 1024, H: 96, SCREEN: { x: 12, y: 12, w: 1000, h: 64 } } as const;
+
 /** Where the LED boards stand (centre in pitch yards, rotation): the art preview's layout scaled to the pitch. */
 export function ledBoards(): { x: number; y: number; rot: number; len?: number }[] {
   const L = 115, Wd = 74;

@@ -50,6 +50,7 @@ import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngin
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import { ledLangOfNationalities, type LedLang } from "@/GraficsEngine/ledAds";
 import type { PitchLighting, PitchOfficials, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
 import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
@@ -269,6 +270,8 @@ export function MatchScreen() {
   /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
   /** Stadium of the home side (#149): name under the scoreboard, with the crowd. */
   const [venueName, setVenueName] = useState<string | null>(null);
+  /** Language of the LED ads: the home club's (its players' most common nationality). */
+  const [homeLedLang, setHomeLedLang] = useState<LedLang | null>(null);
   const [touchline, setTouchline] = useState<{
     crowd: MatchCrowd | null; managers: MatchManagers | null; referee: MatchSetupReferee | null; pitch: SetupPitch | null;
     conditions: { kickoff: string; weather: MatchWeather; sunset: string; date?: string } | null; sunSide: StadiumSun | null;
@@ -495,6 +498,7 @@ export function MatchScreen() {
           setMatchFixture(data.fixture);
           const homeSquad = side === "A" ? data.mySquad : opp;
           setVenueName(homeSquad.venue?.name ?? null);
+          setHomeLedLang(ledLangOfNationalities((homeSquad.players ?? []).map((p) => p.nationality)));
           setTouchline({
             crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,
             conditions: data.conditions ?? null, sunSide: data.sunSide ?? null,
@@ -682,6 +686,7 @@ export function MatchScreen() {
           });
         }
         setVenueName(homeSquad.venue?.name ?? null);
+        setHomeLedLang(ledLangOfNationalities((homeSquad.players ?? []).map((p) => p.nationality)));
         setTouchline({
           crowd: data.crowd ?? null, managers: data.managers ?? null, referee: data.referee ?? null, pitch: data.pitch ?? null,
           conditions: data.conditions ?? null, sunSide: data.sunSide ?? null,
@@ -1513,9 +1518,10 @@ export function MatchScreen() {
       // LED boards around the pitch: made-up ads that flip; the scorer after a goal.
       led: {
         goal: t("match.led.goal", { name: "{name}", minute: "{minute}" }),
+        ...(homeLedLang && !matchFixture.neutral ? { lang: homeLedLang } : {}),
       },
     };
-  }, [matchFixture, crestIds, touchline, faceRoster, t]);
+  }, [matchFixture, crestIds, touchline, faceRoster, t, homeLedLang]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
   const coaches = useMemo(() => {
