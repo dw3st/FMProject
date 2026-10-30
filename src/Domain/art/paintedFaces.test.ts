@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { coachCombo, paintedBackdrop, setPaintedBackdrops, setPaintedFaces } from "@/Domain/art/paintedFaces";
+import { coachCombo, paintedBackdrop, paintedPlayerStandIn, setPaintedBackdrops, setPaintedFaces } from "@/Domain/art/paintedFaces";
 import { faceUrl, managerAvatarUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 
 afterEach(() => { setPaintedFaces(null); setPaintedBackdrops(null); });
@@ -30,5 +30,15 @@ describe("painted faces", () => {
     expect(paintedBackdrop("match-backdrop-grass-a")).toBeNull();
     setPaintedBackdrops(["match-backdrop-grass-a"]);
     expect(paintedBackdrop("match-backdrop-grass-a")).toBe("/assets/art/v1/backdrops/match/match-backdrop-grass-a.webp");
+  });
+});
+
+describe("player stand-in faces", () => {
+  test("a player without a portrait gets a painted face of his skin tone, young-looking", () => {
+    setPaintedFaces({ players: [], coaches: ["2-brown-short-none-n", "2-grey-short-none-n", "2-black-short-none-g", "3-black-short-none-n"], referees: [] });
+    expect(paintedPlayerStandIn("x1", 2)).toBe("/assets/art/v1/faces/coaches/2-brown-short-none-n.webp");
+    expect(paintedPlayerStandIn("x1", 7)).toBeNull();
+    setPaintedFaces(null);
+    expect(paintedPlayerStandIn("x1", 2)).toBeNull();
   });
 });

@@ -312,7 +312,7 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
       ...state,
       missions,
       knowledge,
-      reports: [...reports, ...state.reports.filter((r) => !reportIds.has(r.id))].slice(0, S.MAX_REPORTS),
+      reports: capReports([...reports, ...state.reports.filter((r) => !reportIds.has(r.id))], state.prospects),
       ...(announced.size > 0 ? { gemsAnnounced: [...announced].slice(-S.GEMS_REMEMBERED) } : {}),
     },
     news,
@@ -397,7 +397,7 @@ export function recordRecommendations(
   if (written.length === 0) return { state, reports };
   const ids = new Set(written.map((r) => r.id));
   return {
-    state: { ...state, knowledge, reports: [...written, ...state.reports.filter((r) => !ids.has(r.id))].slice(0, S.MAX_REPORTS) },
+    state: { ...state, knowledge, reports: capReports([...written, ...state.reports.filter((r) => !ids.has(r.id))], state.prospects) },
     reports,
   };
 }
@@ -491,10 +491,23 @@ export function addProspects(
       ...state,
       knowledge,
       prospects: [...state.prospects, ...added],
-      reports: [...reports, ...state.reports].slice(0, S.MAX_REPORTS),
+      reports: capReports([...reports, ...state.reports], [...state.prospects, ...added]),
     },
     news,
   };
+}
+
+/**
+ * The newest `MAX_REPORTS` reports, plus the report of every prospect still on offer: a busy scouting department
+ * wrote 60 reports inside a prospect's 30 days, the prospect's report fell off and his card lost the grade (tester
+ * report).
+ */
+export function capReports(reports: ScoutReport[], prospects: { reportId: string }[]): ScoutReport[] {
+  if (reports.length <= S.MAX_REPORTS) return reports;
+  const live = new Set(prospects.map((p) => p.reportId));
+  const head = reports.slice(0, S.MAX_REPORTS);
+  const kept = new Set(head.map((r) => r.id));
+  return [...head, ...reports.slice(S.MAX_REPORTS).filter((r) => live.has(r.id) && !kept.has(r.id))];
 }
 
 /** Prospects whose offer ran out leave (with their reports' prospect flag kept for history). */
