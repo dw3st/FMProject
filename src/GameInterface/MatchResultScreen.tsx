@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
@@ -569,6 +570,8 @@ export function MatchResultScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+      {/* The tester's report, on every game screen (tester report, 4.41.20). */}
+      <TesterReportButton className="fixed bottom-4 right-4 z-40" />
       {pendingResult && <Notice className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">{t("world.advance.result.pending")}</Notice>}
       {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">

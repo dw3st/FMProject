@@ -39,8 +39,8 @@ async function homeDecor(service: SaveService, saveId: string, seatId: string): 
 }
 
 export interface MatchManagers {
-  mine: { id: string; face?: ManagerFace | null; nationality: string | null };
-  opponent: { id: string; face?: ManagerFace | null; nationality: string | null } | null;
+  mine: { id: string; face?: ManagerFace | null; nationality: string | null; name?: string };
+  opponent: { id: string; face?: ManagerFace | null; nationality: string | null; name?: string } | null;
 }
 
 /**
@@ -114,15 +114,24 @@ export function matchManagers(
   meta: SeatMeta, records: readonly ManagerRecord[], opponentId: string, countryOfClub: (squadId: string) => string | null,
   seats: readonly { seatId: string; seat: SeatState }[] = [],
 ): MatchManagers {
-  const mine = { id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) };
+  const mine = {
+    id: seatManagerId(meta.seatId), face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso),
+    ...(meta.manager?.name ? { name: meta.manager.name } : {}),
+  };
   const oppSeat = seats.find((s) => s.seatId !== meta.seatId && s.seat.clubId === opponentId && !s.seat.unemployed);
   if (oppSeat) {
     const m = oppSeat.seat.manager;
-    return { mine, opponent: { id: seatManagerId(oppSeat.seatId), face: m?.face ?? null, nationality: managerFaceCountry(m?.nationalityIso) } };
+    return {
+      mine,
+      opponent: {
+        id: seatManagerId(oppSeat.seatId), face: m?.face ?? null, nationality: managerFaceCountry(m?.nationalityIso),
+        ...(m?.name ? { name: m.name } : {}),
+      },
+    };
   }
   const opp = records.find((m) => m.squadId === opponentId && !m.seatId);
   return {
     mine,
-    opponent: opp ? { id: opp.id, nationality: countryOfClub(opp.clubs?.[0]?.squadId ?? opp.squadId) } : null,
+    opponent: opp ? { id: opp.id, nationality: countryOfClub(opp.clubs?.[0]?.squadId ?? opp.squadId), ...(opp.name ? { name: opp.name } : {}) } : null,
   };
 }

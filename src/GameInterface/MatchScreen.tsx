@@ -81,6 +81,7 @@ import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
+import { ReportButton } from "@/GameInterface/Components/ReportButton";
 
 // Dev-only: DebugPanel pulls in react-json-view-lite (and its CSS, a side-effect
 // import that prevents tree-shaking). Loading it via a lazy() guarded by
@@ -118,6 +119,7 @@ import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
+import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
 import {
@@ -240,6 +242,8 @@ export function MatchScreen() {
   }, [qualityPref]);
   const pitchQuality: PitchQuality = qualityPref === "auto" ? autoQuality.quality : qualityPref;
   const [replayOn, setReplayOn] = useState(false);
+  /** A new value ends the goal replay on the pitch (the Skip button). */
+  const [skipReplaySeq, setSkipReplaySeq] = useState(0);
   const [h2hTarget, setH2HTarget] = useState<{ saveId: string; fixtureId: string } | null>(null);
   const h2h = useH2HSocket(h2hTarget);
   const [mySide, setMySide] = useState<TeamId>("A");
@@ -1471,7 +1475,10 @@ export function MatchScreen() {
   };
 
   const effectLabels = useMemo(
-    () => ({ save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside") }),
+    () => ({
+      save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside"),
+      cornerSave: t("match.effects.cornerSave"), cornerDeflect: t("match.effects.cornerDeflect"),
+    }),
     [t],
   );
 
@@ -1576,6 +1583,20 @@ export function MatchScreen() {
   }, [matchKitColors, secondKitColors, faceUrls, stadium, touchline, matchFixture, matchLightingProp, officials, coaches]);
   watchLookRef.current = watchLook;
 
+  // Both managers in the summary, home side on the left (#98), shirt in the kit worn today.
+  const summaryManagers = useMemo(() => {
+    const mgr = touchline?.managers;
+    const of = (tm: TeamId) => {
+      const who = tm === mySide ? mgr?.mine : mgr?.opponent;
+      if (!who) return null;
+      const kit = tm === "A" ? matchKitColors.teamA : matchKitColors.teamB;
+      const club = faceRoster?.[tm].clubColors ?? [];
+      return { url: managerFaceUrl(who, [kit, ...club.filter((c) => c.toLowerCase() !== kit.toLowerCase())]), name: who.name ?? null };
+    };
+    const shown = displaySides(isAwayView(matchFixture, crestIds?.a));
+    return { left: of(shown.left), right: of(shown.right) };
+  }, [touchline, faceRoster, matchKitColors, mySide, matchFixture, crestIds]);
+
   if (loadError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -1614,6 +1635,7 @@ export function MatchScreen() {
   const mySubsRemaining = mySide === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
   const myPendingSubs = (mySide === "A" ? gameState.pendingSubsA : gameState.pendingSubsB).length;
   const sides = displaySides(awayView);
+
   const shownTeams = toDisplayPair({ A: teamAWithCrest, B: teamBWithCrest }, awayView);
   const shownKits = toDisplayPair({ A: matchKitColors.teamA, B: matchKitColors.teamB }, awayView);
   const passFromId = gameState.pass?.fromId;
@@ -1840,16 +1862,6 @@ export function MatchScreen() {
               {t("match.subs", { remaining: mySubsRemaining })}
             </button>
             )}
-            <MatchViewToggles
-              zoom={matchCameraPref === "follow"}
-              replay={!h2hMode && goalReplayPref}
-              replayAvailable={!h2hMode}
-              onZoom={toggleCamera}
-              onReplay={toggleReplay}
-              figures={markersPref === "figures"}
-              onFigures={newVisualOn() ? toggleMarkers : undefined}
-            />
-            <FriendsButton variant="toolbar" />
             {DEV_TOOLS && (
             <button
               onClick={() => setShowStats((s) => !s)}
@@ -1862,17 +1874,6 @@ export function MatchScreen() {
               <Icon name="stats" className="w-4 h-4" />
               {t("nav.stats")}
             </button>
-            )}
-            {isTester && (
-              <button
-                type="button"
-                onClick={handleOpenReport}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer bg-secondary/50 border-border hover:border-primary/50 text-foreground"
-                aria-label={t("nav.report")}
-              >
-                <Icon name="report" className="w-4 h-4" />
-                {t("nav.report")}
-              </button>
             )}
             {DEV_TOOLS && !h2hMode && (
             <button
@@ -1922,6 +1923,21 @@ export function MatchScreen() {
 
       {/* Main Match View */}
       <main className="flex-1 flex justify-center overflow-hidden min-h-0">
+        {/* View switches above the team list, apart from the match controls (tester report, 4.41.20). */}
+        <div className="w-72 shrink-0 flex flex-col min-h-0">
+          <div className="shrink-0 p-2 card-arcade border-r border-b border-border">
+            <MatchViewToggles
+              fill
+              zoom={matchCameraPref === "follow"}
+              replay={!h2hMode && goalReplayPref}
+              replayAvailable={!h2hMode}
+              onZoom={toggleCamera}
+              onReplay={toggleReplay}
+              figures={markersPref === "figures"}
+              onFigures={newVisualOn() ? toggleMarkers : undefined}
+            />
+          </div>
+          <div className="flex-1 min-h-0 flex">
         <TeamPanel
           team={panelTeam}
           side="left"
@@ -1947,6 +1963,8 @@ export function MatchScreen() {
             team: (panelTeam === "A" ? teamBWithCrest?.name : teamAWithCrest?.name) ?? (panelTeam === "A" ? "B" : "A"),
           })}
         />
+          </div>
+        </div>
 
         <div
           className={`flex flex-col min-w-0 ${pitchSize ? "shrink-0" : "flex-1"}`}
@@ -1970,6 +1988,7 @@ export function MatchScreen() {
                   camera={matchCameraPref}
                   replay={!h2hMode && goalReplayPref}
                   onReplay={setReplayOn}
+                  skipReplaySeq={skipReplaySeq}
                   quality={pitchQuality}
                   realPlayers={realPlayers}
                   markers={markersPref}
@@ -1993,10 +2012,29 @@ export function MatchScreen() {
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id, ground: matchFixture.home } : null}
                   lighting={matchLightingProp}
                 />
-                {banner && <MatchEventBanner item={banner} />}
+                {banner && (
+                  <MatchEventBanner
+                    item={banner}
+                    // Level with the bottom corner flags, over the stand instead of the bottom of the pitch.
+                    bottom={(() => {
+                      const m = buildMetrics(pitchSize.w, pitchSize.h, { stadium: !!stadium });
+                      return Math.max(8, pitchSize.h - (m.marginY + m.height));
+                    })()}
+                  />
+                )}
                 {replayOn && (
-                  <div className="absolute top-4 left-4 z-10 pointer-events-none rounded-md bg-background/90 border border-border px-3 py-1.5 font-display font-bold uppercase tracking-[0.08em] text-sm text-primary">
-                    {t("match.replay")}
+                  <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                    <span className="pointer-events-none rounded-md bg-background/90 border border-border px-3 py-1.5 font-display font-bold uppercase tracking-[0.08em] text-sm text-primary">
+                      {t("match.replay")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSkipReplaySeq((n) => n + 1)}
+                      className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-background/90 border border-border font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground cursor-pointer hover:border-primary/50"
+                    >
+                      <Icon name="fast-forward" size={16} />
+                      {t("match.replaySkip")}
+                    </button>
                   </div>
                 )}
                 {notice && (
@@ -2039,7 +2077,15 @@ export function MatchScreen() {
           )}
         </div>
 
+        {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
+        <div className="w-64 shrink-0 flex flex-col min-h-0">
+          <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
+            <FriendsButton variant="toolbar" />
+            {isTester && <ReportButton onClick={handleOpenReport} />}
+          </div>
+          <div className="flex-1 min-h-0 flex">
         <MatchSummaryPanel
+          managers={summaryManagers}
           teamA={shownTeams.A}
           teamB={shownTeams.B}
           statsA={summaryStats(sides.left)}
@@ -2049,6 +2095,8 @@ export function MatchScreen() {
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} />}
           referee={touchline?.referee ?? null}
         />
+          </div>
+        </div>
       </main>
 
       {showSubPanel && (

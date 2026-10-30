@@ -1,4 +1,5 @@
 import { weatherEffectKey } from "@/Domain/matchday/matchWeatherEffect";
+import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
 import type { MatchPitch } from "@/Domain/facilities/pitch";
@@ -1102,6 +1103,8 @@ export function MatchPreviewScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+      {/* The tester's report, on every game screen (tester report, 4.41.20). */}
+      <TesterReportButton className="fixed bottom-4 right-4 z-40" />
 
       {/* Match title */}
       <div className="text-center space-y-1 shrink-0">

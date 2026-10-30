@@ -16,7 +16,7 @@ export interface MatchBannerItem {
 
 const ACCENT: Record<MatchBannerItem["kind"], string> = {
   goal: "bg-primary",
-  yellow: "bg-chart-4",
+  yellow: "bg-card-yellow",
   red: "bg-destructive",
   sub: "bg-chart-2",
 };
@@ -25,13 +25,13 @@ const ACCENT: Record<MatchBannerItem["kind"], string> = {
  * A goal (or a card, 4.41.17) as a TV lower third (art phase 5, from the art preview): bottom left, the team colour on the edge, the
  * scorer's face, the tag with the minute, the name, the crest and team, the score.
  */
-function GoalTvCard({ item, goal }: { item: MatchBannerItem; goal: NonNullable<MatchBannerItem["goal"]> }) {
+function GoalTvCard({ item, goal, bottom }: { item: MatchBannerItem; goal: NonNullable<MatchBannerItem["goal"]>; bottom?: number }) {
   return (
     <div
       key={item.key}
       role="status"
-      className="absolute bottom-4 left-4 z-10 pointer-events-none flex items-stretch max-w-[92%] overflow-hidden rounded-lg bg-background/95 shadow-xl border-l-[6px] animate-[tvGoalIn_.45s_cubic-bezier(.2,.8,.2,1)] animate-tv-goal"
-      style={{ borderLeftColor: goal.color }}
+      className="absolute left-4 z-10 pointer-events-none flex items-stretch max-w-[92%] overflow-hidden rounded-lg bg-background/95 shadow-xl border-l-[6px] animate-[tvGoalIn_.45s_cubic-bezier(.2,.8,.2,1)] animate-tv-goal"
+      style={{ borderLeftColor: goal.color, bottom: bottom ?? 16 }}
     >
       {goal.photo ? <img src={goal.photo} alt="" className="w-20 h-20 shrink-0 object-cover bg-secondary" /> : null}
       <div className="flex flex-col justify-center px-4 py-2 min-w-0">
@@ -49,7 +49,7 @@ function GoalTvCard({ item, goal }: { item: MatchBannerItem; goal: NonNullable<M
       </div>
       {goal.card ? (
         <div className="grid place-items-center px-5 bg-primary/15">
-          <span className={`w-7 h-10 rounded-sm shadow ${goal.card === "yellow" ? "bg-chart-4" : "bg-destructive"}`} aria-hidden="true" />
+          <span className={`w-7 h-10 rounded-sm shadow ${goal.card === "yellow" ? "bg-card-yellow" : "bg-destructive"}`} aria-hidden="true" />
         </div>
       ) : (
         <div className="grid place-items-center px-4 bg-primary/15 font-display font-bold text-3xl tabular-nums">{goal.score}</div>
@@ -59,18 +59,23 @@ function GoalTvCard({ item, goal }: { item: MatchBannerItem; goal: NonNullable<M
 }
 
 /** Lower third of the live pitch: crest (or the card), the moment in big letters and one line below. */
-export function MatchEventBanner({ item }: { item: MatchBannerItem }) {
-  if (item.goal) return <GoalTvCard item={item} goal={item.goal} />;
+export function MatchEventBanner({ item, bottom }: {
+  item: MatchBannerItem;
+  /** Pixels from the bottom of the canvas (the live match: level with the bottom corner flags). Absent: 16. */
+  bottom?: number;
+}) {
+  if (item.goal) return <GoalTvCard item={item} goal={item.goal} {...(bottom !== undefined ? { bottom } : {})} />;
   return (
     <div
       key={item.key}
       role="status"
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-stretch max-w-[92%] min-w-72 overflow-hidden rounded-md border border-border bg-card/95 shadow-lg animate-[bannerIn_.3s_ease-out]"
+      style={{ bottom: bottom ?? 16 }}
+      className="absolute left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-stretch max-w-[92%] min-w-72 overflow-hidden rounded-md border border-border bg-card/95 shadow-lg animate-[bannerIn_.3s_ease-out]"
     >
       <div className={`w-1.5 shrink-0 ${ACCENT[item.kind]}`} aria-hidden="true" />
       <div className="flex items-center gap-3 px-3 py-2 min-w-0">
         {item.kind === "yellow" || item.kind === "red" ? (
-          <span className={`w-4 h-6 rounded-sm shrink-0 ${item.kind === "yellow" ? "bg-chart-4" : "bg-destructive"}`} aria-hidden="true" />
+          <span className={`w-4 h-6 rounded-sm shrink-0 ${item.kind === "yellow" ? "bg-card-yellow" : "bg-destructive"}`} aria-hidden="true" />
         ) : (
           <ClubLogo
             logoUrl={item.logoUrl}

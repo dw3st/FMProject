@@ -432,7 +432,7 @@ interface Props {
    */
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
-  effectLabels?: { save: string; wide: string; offside: string };
+  effectLabels?: { save: string; wide: string; offside: string; cornerSave?: string; cornerDeflect?: string };
   /**
    * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
@@ -493,6 +493,8 @@ interface Props {
   replay?: boolean;
   /** Told when a goal replay starts and ends (the page shows its tag). */
   onReplay?: (on: boolean) => void;
+  /** A new value ends the goal replay that is playing (the page's Skip button). */
+  skipReplaySeq?: number;
   /** Graphics quality (art phase 8): `light` draws a calm pitch (no fireworks, flashes, crowd motion, weather). */
   quality?: PitchQuality;
   /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
@@ -534,7 +536,7 @@ export interface PitchStadium {
 export interface PitchPerf { fps: number; drawMs: number }
 const PERF_SAMPLE_FRAMES = 30;
 
-const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
+const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
 
 export function PixiPitch({
   canvasWidth = 900,
@@ -574,6 +576,7 @@ export function PixiPitch({
   camera = "fixed",
   replay = false,
   onReplay,
+  skipReplaySeq = 0,
   quality = "high",
   realPlayers = false,
   markers = "figures",
@@ -609,6 +612,7 @@ export function PixiPitch({
   const replayRef                = useRef(replay);
   const markersRef               = useRef(markers);
   const onReplayRef              = useRef(onReplay);
+  const skipReplayFnRef          = useRef<(() => void) | null>(null);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
@@ -645,6 +649,7 @@ export function PixiPitch({
   useEffect(() => { qualityRef.current = quality; }, [quality]);
   useEffect(() => { replayRef.current = replay; }, [replay]);
   useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
+  useEffect(() => { if (skipReplaySeq > 0) skipReplayFnRef.current?.(); }, [skipReplaySeq]);
   // Stadium flags read at event time (big game): the ref follows every prop change.
   useEffect(() => { stadiumRef.current = stadium; }, [stadium]);
   // Crowd texture: re-baked only when what it shows changes (never per frame).
@@ -1362,6 +1367,7 @@ export function PixiPitch({
         replayRun = null;
         onReplayRef.current?.(false);
       };
+      skipReplayFnRef.current = endReplay;
       const unsubReplay = gameBus.on("goalScored", () => {
         if (!remote && replayRef.current && !calm() && framesVisible()) replayPending = { goalAt: replayClock };
       });
@@ -1969,13 +1975,24 @@ export function PixiPitch({
           playGfx.circle(px, py, markerR * (0.5 + k * 2.5)).stroke({ width: 2, color: 0xffffff, alpha: 1 - k });
         }
       };
+      // A shot saved or deflected behind for a corner (same tick): the label says so instead of "wide".
+      let lastShotFx: { at: number; effect: PitchEffect | undefined } | null = null;
       const unsubShotFx = gameBus.on("shotResolved", (e) => {
         if (e.isGoal) { pendingGoalShot = { toX: e.toX, toY: e.toY }; return; }
         const labels = labelsOf();
+        const before = effects.length;
         pushEffect(
           { kind: "shot", fromX: e.fromX, fromY: e.fromY, toX: e.toX, toY: e.toY, result: e.inPosts ? "save" : "wide" },
           e.inPosts ? labels.save : labels.wide,
         );
+        lastShotFx = { at: effectNow, effect: effects.length > before ? effects[effects.length - 1] : undefined };
+      });
+      const unsubCornerFx = gameBus.on("cornerAwarded", (e) => {
+        const text = lastShotFx && lastShotFx.at === effectNow && lastShotFx.effect ? effectTexts.get(lastShotFx.effect) : undefined;
+        const labels = labelsOf();
+        const label = e.source === "save" ? labels.cornerSave : e.source === "deflection" ? labels.cornerDeflect : undefined;
+        if (text && label) text.text = label;
+        lastShotFx = null;
       });
       const unsubGoalFx = gameBus.on("goalScored", (e) => {
         const dir = stateRef.current.players.find((p) => p.team === e.team)?.attackDir ?? 1;
@@ -4104,6 +4121,7 @@ export function PixiPitch({
         unsubTbScores();
         unsubCross();
         unsubShotFx();
+        unsubCornerFx();
         unsubGoalFx();
         unsubFoulFx();
         unsubCardFx();
