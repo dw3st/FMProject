@@ -27,8 +27,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "4.41.13",
     date: "2026-10-30",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Partida: sem o número embaixo dos jogadores, que passava para quem entrava na substituição.",
         en: "Match: no number under the players any more; a substitute used to take the number of the player he replaced.",
