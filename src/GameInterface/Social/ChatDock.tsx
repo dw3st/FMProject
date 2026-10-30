@@ -26,24 +26,30 @@ function MinimizedTab({ room }: { room: string }) {
   );
 }
 
-/** Chat windows above the status bar, left of the friends panel; minimized chats become tabs (Steam style). */
+/**
+ * Chat windows (floating: moved and resized, kept per tab; first left of the friends panel) and the minimized chats as
+ * tabs above the status bar (Steam style).
+ */
 export function ChatDock() {
   const s = useSocial();
   if (s.dock.length === 0) return null;
   const open = s.dock.filter((c) => !c.minimized);
   const minimized = s.dock.filter((c) => c.minimized);
   return (
-    <div className={`fixed bottom-14 ${s.panelOpen ? "right-[476px]" : "right-6"} z-40 flex items-end gap-3 pointer-events-none`}>
+    <>
       {minimized.length > 0 && (
-        <div className="pointer-events-auto flex flex-col gap-1">
+        <div
+          className="fixed bottom-14 z-40 flex flex-col gap-1"
+          style={{ right: Math.max(24, Math.min(24 + (s.panelOpen ? 452 : 0) + open.length * 342, window.innerWidth - 304)) }}
+        >
           {minimized.map((c) => (
             <MinimizedTab key={c.room} room={c.room} />
           ))}
         </div>
       )}
-      {open.map((c) => (
-        <ChatWindow key={c.room} room={c.room} />
+      {open.map((c, i) => (
+        <ChatWindow key={c.room} room={c.room} slot={open.length - 1 - i} />
       ))}
-    </div>
+    </>
   );
 }

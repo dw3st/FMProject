@@ -916,9 +916,24 @@ leva o relógio de quem joga (`t`); quem assiste guarda os últimos 16 (`remoteB
 `max(120 ms, 1,6 × intervalo médio)` atrás do mais novo, sempre entre dois quadros que já tem (`pairAt`); a diferença de
 relógio é o menor atraso visto, relaxado 0,5 ms por quadro. Os eventos (gol, cartão) chegam um pouco antes do desenho.
 
+### Janela flutuante, buffer e pausa
+
+- **Janela:** "Assistir" abre a transmissão numa `FloatingWindow` (`Watch/WatchWindowHost.tsx`, montada pelo `Layout`):
+  a página `/watch?…&embed=1` num iframe (o Pixi fica fora das páginas do jogo), arrastada, redimensionada, e o jogador
+  continua navegando e mexendo no time. Qual jogo está aberto fica por aba no `sessionStorage` (`fm.watch.window.v1`,
+  `watchWindow.ts`); posição e tamanho em `fm.window.watch`: em cada tela a janela volta e o iframe reconecta. A
+  página `/watch` é `responsive` e, embutida, esconde o próprio fechar, os nomes dos times abaixo de `md` e os lances
+  abaixo de `lg` (do iframe).
+- **Buffer:** `remoteBuffer.ts` desenha `max(1,6 × intervalo médio, intervalo + 3 × atraso médio)` atrás do quadro
+  mais novo, entre 250 e 900 ms; nunca à frente do mais novo (sem extrapolar). Um intervalo acima de 1,5 s (pausa, aba
+  escondida de quem joga) não entra na média.
+- **Pausa:** `relay_state` / `watch_state` levam `paused: true`. Quem joga manda um estado na hora em que pausa ou
+  retoma e um por segundo enquanto pausado (os quadros param); o servidor guarda no último estado (quem entra durante a
+  pausa já vê). A partida entre dois técnicos manda o mesmo na pausa e na retomada (`relayPause`, `h2hRooms.ts`). Quem
+  assiste vê "Pausado" sobre o campo; o desenho para no último quadro e segue sem salto.
+
 ### Limitações (parte 8)
 
-- A partida pausada por quem joga congela no espectador, sem aviso de pausa.
 - Um processo só (salas em memória). A partida entre dois técnicos vista por espectador foi testada só pelos testes do
   servidor.
 - Quem assiste vê o ritmo de quem joga (2×, 4×), com os quadros a 5 por segundo.

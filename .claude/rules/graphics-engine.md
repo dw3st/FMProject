@@ -351,7 +351,7 @@ atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do g
 Com o visual novo: fundos pintados nas telas de entrada (`PitchBackdrop` `scene`, `backgrounds/bg-landing|new-game.webp`),
 medalhas (`medals/medal-<tier>.svg`) e molduras do rosto do técnico (`ManagerFaceImage` `frame`, `frames/frame-<f>.svg`),
 servidos do repositório (`GAME_ART_FILES`); desenhos das instalações (`paintedFacility(item, nível)`,
-`facilities/facility-<id>-<1..5>.webp`) e ilustrações da caixa de entrada por categoria (`paintedNews`) do volume de arte,
+`facilities/facility-<id>-<1..10>.webp`, uma pintura por nível desde a 4.41.25) e ilustrações da caixa de entrada por categoria (`paintedNews`) do volume de arte,
 anunciados por `/api/art/faces` (`facilities`, `news`). Sem a arte, o desenho de antes. Ficaram para depois: ícones das
 abas e da caixa (seguem no lucide), og-image/favicon, fundo de neblina do pênalti.
 

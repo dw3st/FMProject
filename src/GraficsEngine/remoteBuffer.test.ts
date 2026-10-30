@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_REMOTE_BUFFER, pairAt, pushBuffered, REMOTE_BUFFER, type RemoteBuffer } from "@/GraficsEngine/remoteBuffer";
+import { bufferDelay, EMPTY_REMOTE_BUFFER, pairAt, pushBuffered, REMOTE_BUFFER, type RemoteBuffer } from "@/GraficsEngine/remoteBuffer";
 import { remotePositions, toRemoteFrame } from "@/GraficsEngine/remoteInterp";
 
 const fr = (x: number) => toRemoteFrame({ ball: [x, 0], players: [[1, x, 0]] }, 0);
@@ -16,10 +16,11 @@ const ballAt = (b: RemoteBuffer, now: number) => remotePositions(pairAt(b, now),
 describe("remote jitter buffer", () => {
   test("draws between two known frames, a fixed delay behind the newest", () => {
     const b = fill(10, 100, 30);
-    // The newest frame (x 90) arrived at 5000 + 900 + 30; with a 160 ms delay the drawing sits between x 70 and x 80.
+    expect(bufferDelay(b)).toBe(REMOTE_BUFFER.MIN_DELAY_MS);
+    // The newest frame (x 90) arrived at 5000 + 900 + 30; 250 ms behind it the drawing sits between x 60 and x 70.
     const x = ballAt(b, 5930);
-    expect(x).toBeGreaterThan(70);
-    expect(x).toBeLessThan(80);
+    expect(x).toBeGreaterThan(60);
+    expect(x).toBeLessThan(70);
   });
 
   test("moves smoothly with real time even when frames arrive bunched", () => {
@@ -38,5 +39,34 @@ describe("remote jitter buffer", () => {
 
   test("keeps the last MAX frames", () => {
     expect(fill(40, 100, 10).frames.length).toBe(REMOTE_BUFFER.MAX);
+  });
+
+  test("uneven arrivals make the delay longer, within its bounds", () => {
+    const even = fill(16, 100, 30);
+    const uneven = fill(16, 100, 30, (i) => (i % 2) * 180);
+    expect(bufferDelay(uneven)).toBeGreaterThan(bufferDelay(even));
+    expect(bufferDelay(uneven)).toBeLessThanOrEqual(REMOTE_BUFFER.MAX_DELAY_MS);
+  });
+
+  test("with uneven arrivals the drawing never runs out of frames (never stalls on the newest)", () => {
+    const b = fill(16, 100, 30, (i) => ((i * 7) % 5) * 40);
+    const newest = b.frames[b.frames.length - 1]!;
+    // At every instant after the last arrival the target is still behind the newest frame's sender time.
+    const now = 5000 + 15 * 100 + 30 + 160;
+    expect(now - b.offset! - bufferDelay(b)).toBeLessThan(newest.at);
+  });
+
+  test("a pause of the sender freezes the drawing and resumes without inflating the delay", () => {
+    let b = fill(8, 100, 30);
+    const gapBefore = b.gap;
+    const frozen = ballAt(b, 5000 + 700 + 30 + 5000);
+    expect(frozen).toBe(70);
+    // 20 s later the match goes on.
+    b = pushBuffered(b, fr(80), 1000 + 800 + 20000, 5000 + 800 + 20000 + 30);
+    b = pushBuffered(b, fr(90), 1000 + 900 + 20000, 5000 + 900 + 20000 + 30);
+    expect(b.gap).toBeLessThanOrEqual(gapBefore);
+    const x = ballAt(b, 5000 + 900 + 20000 + 30);
+    expect(x).toBeGreaterThanOrEqual(70);
+    expect(x).toBeLessThanOrEqual(90);
   });
 });

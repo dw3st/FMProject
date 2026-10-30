@@ -239,6 +239,16 @@ function onState(rec: Rec, state: GameState, stats: H2HStatsPayload, now = clock
   });
   relayFromServer(rec.room.saveId, seatsOf(rec), {
     kind: "state", state: out, stats: { teams: stats.teams, goals: stats.goals, ratings: stats.ratings },
+    ...(rec.room.pause ? { paused: true } : {}),
+  });
+}
+
+/** A pause or a resume: the spectators see it at once (the engine stops sending states while paused). */
+function relayPause(rec: Rec): void {
+  if (!rec.lastState || !rec.lastStats) return;
+  const { teams, goals, ratings } = rec.lastStats;
+  relayFromServer(rec.room.saveId, seatsOf(rec), {
+    kind: "state", state: rec.lastState, stats: { teams, goals, ratings }, ...(rec.room.pause ? { paused: true } : {}),
   });
 }
 
@@ -523,6 +533,7 @@ function resumeMatch(rec: Rec): void {
   armPauseTimer(rec);
   rec.engine?.post({ type: "resume" });
   toUsers(rec, pausedEvent(rec));
+  relayPause(rec);
   broadcastRoom(rec);
 }
 
@@ -534,6 +545,7 @@ function pause(ws: SocialSocket, now = clock()): void {
   rec.engine?.post({ type: "pause" });
   armPauseTimer(rec);
   toUsers(rec, pausedEvent(rec));
+  relayPause(rec);
   broadcastRoom(rec);
 }
 

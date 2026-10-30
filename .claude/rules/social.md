@@ -103,6 +103,13 @@ nem abre.
   falhar, "Tentar de novo"; Escape fecha a janela com o foco. Ao recarregar os amigos, as DMs com quem não é mais
   amigo (desfez a amizade) fecham. Estado por aba no `sessionStorage`
   (`fm.social.chats.v1`); o socket reconecta a cada tela.
+- **Janelas flutuantes:** o painel de amigos e cada janela de conversa são `FloatingWindow`
+  (`src/GameInterface/ui/FloatingWindow.tsx`, geometria pura em `ui/windowGeometry.ts`, com teste): arrastar pelo
+  cabeçalho, redimensionar pelas bordas e cantos (mínimo e máximo por janela), sempre inteira entre a barra superior
+  (56px) e a inferior (48px), a última tocada por cima (z 40–49, abaixo das barras e dos modais), Escape fecha.
+  Posição e tamanho por aba no `sessionStorage` (`fm.window.friends`, `fm.window.chat:<sala>`): voltam em toda tela.
+  Primeira vez: o painel embaixo à direita (440 × 640), as conversas à esquerda dele. Abaixo de 640px de largura
+  ficam presas embaixo, na largura toda, sem arrastar. As conversas minimizadas continuam como abas acima da barra.
 - A partida ao vivo não tem a barra: o botão "Amigos" fica na barra de controles, ao lado de Substituições (`MatchSocial`, `src/pages/match/entry.tsx`) e abre o mesmo painel e as janelas de chat.
 
 ## Testes

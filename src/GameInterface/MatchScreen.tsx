@@ -890,6 +890,7 @@ export function MatchScreen() {
     const saveId = liveTarget?.saveId;
     if (!liveRivals.watched || h2hModeRef.current || !saveId) return;
     let benchSig = "";
+    let lastStateAt = performance.now();
     let lookSent: WatchLook | null = null;
     let soon: ReturnType<typeof setTimeout> | null = null;
     const at = () => {
@@ -922,12 +923,24 @@ export function MatchScreen() {
         type: "relay_state", saveId, fixtureId: cur.fixtureId, state: wireState(cur.s, benches),
         stats: { teams: { A: getTeamStats("A"), B: getTeamStats("B") }, goals: getGoalLog(), ratings: exportRatings() },
         ...(sendLook && look ? { look } : {}),
+        ...(pausedRef.current ? { paused: true } : {}),
       });
     };
     sendState();
+    // A pause stops the steps (and the frames): the spectators hear it at once, and a state keeps coming while
+    // paused, so who joins then also sees "Paused".
+    let sentPaused = pausedRef.current;
+    const pauseWatch = setInterval(() => {
+      const p = pausedRef.current;
+      const now = performance.now();
+      if (p !== sentPaused || (p && now - lastStateAt >= WATCH.STATE_MS)) {
+        sentPaused = p;
+        lastStateAt = now;
+        sendState();
+      }
+    }, 250);
     // Frames and states follow the simulation's steps (they keep coming with the tab hidden, where timers slow down).
     let lastFrameAt = 0;
-    let lastStateAt = performance.now();
     const offStep = gameBus.on("stateChanged", () => {
       const now = performance.now();
       // Every simulation step (5 a second at 1x), never closer than FRAME_MIN_MS (2x / 4x).
@@ -942,6 +955,7 @@ export function MatchScreen() {
     }));
     return () => {
       offStep();
+      clearInterval(pauseWatch);
       if (soon) clearTimeout(soon);
       offs.forEach((off) => off());
     };

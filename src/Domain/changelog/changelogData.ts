@@ -27,6 +27,54 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.34",
+    date: "2026-10-30",
+    time: "15:35",
+    items: [
+      {
+        pt: "Amigos, conversas e a transmissão de um jogo abrem em janelas que você arrasta e redimensiona, e elas ficam onde você deixou. Dá para assistir enquanto mexe no seu time.",
+        en: "Friends, chats and a match broadcast open in windows you can drag and resize, and they stay where you left them. You can watch while you manage your team.",
+      },
+      {
+        pt: "Transmissão mais estável, sem engasgos, e mostra \"Pausado\" quando quem joga pausa a partida.",
+        en: "Smoother broadcast without stutters, and it shows \"Paused\" when the player pauses the match.",
+      },
+    ],
+  },
+  {
+    version: "4.41.33",
+    date: "2026-10-30",
+    time: "15:20",
+    items: [
+      {
+        pt: "Clube: gramado gasto dos primeiros níveis com falhas de verdade, banheira de gelo na fisioterapia a partir do nível 6 e alojamento da base com níveis 5, 6 e 7 diferentes.",
+        en: "Club: the low-level pitch shows real worn patches, the physio room has an ice bath from level 6, and academy lodging levels 5, 6 and 7 look different.",
+      },
+    ],
+  },
+  {
+    version: "4.41.32",
+    date: "2026-10-30",
+    time: "15:05",
+    items: [
+      {
+        pt: "Messi e Neymar com rosto novo, no mesmo traço do resto do elenco.",
+        en: "Messi and Neymar have new faces, drawn like the rest of the squad.",
+      },
+    ],
+  },
+  {
+    version: "4.41.31",
+    date: "2026-10-30",
+    time: "10:56",
+    items: [
+      {
+        pt: "Clube: cada nível das instalações (1 a 10) tem o próprio desenho, com céu e paisagem nas áreas externas, e fisioterapia, refeitório e piscina mais caprichados.",
+        en: "Club: every facility level (1 to 10) has its own painting, with sky and landscape outdoors, and richer physio room, canteen and pool.",
+      },
+    ],
+  },
+  {
     version: "4.41.30",
     date: "2026-10-30",
     time: "10:49",

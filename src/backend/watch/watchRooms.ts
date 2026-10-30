@@ -120,8 +120,11 @@ function fanOut(e: Entry, relay: Relay): void {
   let event: ServerEvent;
   if (relay.kind === "state") {
     if (relay.look) e.look = relay.look;
-    e.last = { state: withBenches(e.last?.state, relay.state), stats: relay.stats };
-    event = { type: "watch_state", ...base, state: relay.state, stats: relay.stats, ...(relay.look ? { look: relay.look } : {}) };
+    const paused = relay.paused === true ? { paused: true } : {};
+    e.last = { state: withBenches(e.last?.state, relay.state), stats: relay.stats, ...paused };
+    event = {
+      type: "watch_state", ...base, state: relay.state, stats: relay.stats, ...(relay.look ? { look: relay.look } : {}), ...paused,
+    };
   } else if (relay.kind === "frame") {
     const { kind: _k, ...frame } = relay;
     event = { type: "watch_frame", ...base, ...frame };

@@ -4,7 +4,6 @@ import { PixiPitch, type PitchLighting, type PitchOfficials, type PitchStadium }
 import { isLivePhase, matchMinute } from "@/GameEngine/Domain/gameState";
 import type { TeamId } from "@/GameEngine/types";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { Modal } from "@/GameInterface/Components/Modal";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
 import { Button } from "@/GameInterface/ui/Button";
 import { Icon } from "@/GameInterface/Icons";
@@ -42,7 +41,13 @@ function pitchPropsOf(info: WatchInfo, look: WatchLook | null, ledGoal: string):
  * A friend's live match as a broadcast (spec 2026-10-29-friend-match-broadcast-design): the score bar, the pitch drawn
  * exactly as on his screen (his kits, faces, stadium, turf and light) and the latest moments. Read only.
  */
-export function WatchBroadcast({ saveId, seatId, onClose }: { saveId: string; seatId: string; onClose: () => void }) {
+export function WatchBroadcast({ saveId, seatId, onClose, embed = false }: {
+  saveId: string;
+  seatId: string;
+  onClose: () => void;
+  /** Inside the floating window: it has its own close button, and a narrow window drops the side column. */
+  embed?: boolean;
+}) {
   const { t } = useTranslation();
   const target = useMemo(() => ({ saveId, seatId }), [saveId, seatId]);
   const w = useWatchSocket(target);
@@ -104,18 +109,19 @@ export function WatchBroadcast({ saveId, seatId, onClose }: { saveId: string; se
           <span className="text-sm text-muted-foreground truncate">{t("watch.watching", { name: info.nickname })}</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
-          <span className="font-display font-bold uppercase text-base truncate text-right flex-1">{info.teams[home].name}</span>
+          <span className={`font-display font-bold uppercase text-base truncate text-right flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[home].name}</span>
           <ClubLogo logoUrl={squadLogoUrl(info.teams[home].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
           <span className="font-display font-bold tabular-nums text-2xl px-3 py-0.5 rounded-md bg-card border border-border">
             {score[home]}–{score[away]}
           </span>
           <ClubLogo logoUrl={squadLogoUrl(info.teams[away].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
-          <span className="font-display font-bold uppercase text-base truncate flex-1">{info.teams[away].name}</span>
+          <span className={`font-display font-bold uppercase text-base truncate flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[away].name}</span>
           <span className="text-sm text-muted-foreground tabular-nums w-16">{clock}</span>
         </div>
         <button
           type="button"
           onClick={onClose}
+          hidden={embed}
           className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground"
           aria-label={t("watch.leave")}
           title={t("watch.leave")}
@@ -142,6 +148,14 @@ export function WatchBroadcast({ saveId, seatId, onClose }: { saveId: string; se
           ) : (
             <span className="text-sm text-muted-foreground">{t("watch.waitingFirst")}</span>
           )}
+          {w.paused && !w.closed && phase !== "matchEnd" && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-background/85 font-display font-bold uppercase tracking-[0.08em] text-base text-foreground">
+                <Icon name="pause" size={16} />
+                {t("watch.paused")}
+              </span>
+            </div>
+          )}
           {w.closed && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80">
               <p className="m-0 text-base font-semibold">{t(`watch.closed.${w.closed}`)}</p>
@@ -150,21 +164,12 @@ export function WatchBroadcast({ saveId, seatId, onClose }: { saveId: string; se
           )}
         </div>
         {w.live && (
-          <aside className="w-72 shrink-0 overflow-y-auto border border-border rounded-md p-3">
+          <aside className={`w-72 shrink-0 overflow-y-auto border border-border rounded-md p-3 ${embed ? "hidden lg:block" : ""}`}>
             <LiveMoments live={w.live} />
           </aside>
         )}
       </div>
     </div>
-  );
-}
-
-/** The broadcast in a window over the current screen (dashboard, world). */
-export function WatchPopup({ saveId, seatId, onClose }: { saveId: string; seatId: string; onClose: () => void }) {
-  return (
-    <Modal open onClose={onClose} size="wide" panelClassName="h-[88vh] flex flex-col p-4">
-      <WatchBroadcast saveId={saveId} seatId={seatId} onClose={onClose} />
-    </Modal>
   );
 }
 
@@ -183,8 +188,8 @@ export function WatchScreen() {
     else window.location.href = "/dashboard";
   };
   return (
-    <div className={`h-screen bg-background flex flex-col ${embed ? "p-4" : "px-6 py-4"}`}>
-      {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} /> : null}
+    <div className={`h-screen bg-background flex flex-col ${embed ? "p-3" : "px-6 py-4"}`}>
+      {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} embed={embed} /> : null}
     </div>
   );
 }

@@ -6000,6 +6000,7 @@
       "yellowCards": "Yellow cards",
       "redCards": "Red cards"
     },
-    "watching": "Watching {{name}}"
+    "watching": "Watching {{name}}",
+    "paused": "Paused"
   }
 }

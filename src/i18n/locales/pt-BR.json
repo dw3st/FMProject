@@ -6000,6 +6000,7 @@
       "yellowCards": "Amarelos",
       "redCards": "Vermelhos"
     },
-    "watching": "Assistindo {{name}}"
+    "watching": "Assistindo {{name}}",
+    "paused": "Pausado"
   }
 }
