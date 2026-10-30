@@ -79,3 +79,23 @@ export function writeQuality(v: QualityPref): void {
     // no storage: the default stays
   }
 }
+
+/** Proportions of the players in the live match (art phase 9): the current sprites or the slimmer "realistic" ones. */
+const PLAYER_LOOK_KEY = "fm.visual.players";
+export type PlayerLookPref = "current" | "real";
+
+export function readPlayerLook(): PlayerLookPref {
+  try {
+    return localStorage.getItem(PLAYER_LOOK_KEY) === "real" ? "real" : "current";
+  } catch {
+    return "current";
+  }
+}
+
+export function writePlayerLook(v: PlayerLookPref): void {
+  try {
+    localStorage.setItem(PLAYER_LOOK_KEY, v);
+  } catch {
+    // no storage: the default stays
+  }
+}

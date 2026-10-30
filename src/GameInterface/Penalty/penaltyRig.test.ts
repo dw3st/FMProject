@@ -43,3 +43,18 @@ describe("rig motion", () => {
     expect(penaltyBackdropId("rain")).toBe("penalty-bg-rain");
   });
 });
+
+describe("finishes (art phase 9)", () => {
+  test("a goal down the middle past a diving keeper can be a chip; a low goal in his corner is placed", () => {
+    const chips = [0, 0.05, 0.1, 0.15, 0.2, 0.25].map((x) =>
+      rigPlan(outcome({ dive: "low-left", result: "goal", scored: true, ball: { x, y: 0.5 } }), 0.42, 0.4));
+    expect(chips.some((p) => p.kind === "chip")).toBe(true);
+    const chip = chips.find((p) => p.kind === "chip")!;
+    expect(chip.arc).toBeGreaterThan(60);
+    expect(chip.dur).toBeGreaterThan(0.4);
+    const placed = rigPlan(outcome({ dive: "low-right", result: "goal", scored: true, ball: { x: 0.85, y: 0.15 } }), 0.42, 0.4);
+    expect(placed.kind).toBe("placed");
+    expect(placed.dive).toBeGreaterThan(placed.kick);
+    expect(rigPlan(outcome({ dive: "high-right", result: "saved", scored: false }), 0.42, 0.4).kind).toBe("shot");
+  });
+});

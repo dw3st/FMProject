@@ -12,7 +12,9 @@ import type { FinancialTier, Squad } from "@/types/playerTypes";
  */
 
 export const TURF_TYPES: readonly TurfType[] = ["natural", "hybrid", "synthetic"];
-export const MOWING_PATTERNS: readonly MowingPattern[] = ["stripes", "checker", "diagonal", "circles"];
+export const MOWING_PATTERNS: readonly MowingPattern[] = ["stripes", "checker", "diagonal", "circles", "none"];
+/** What an AI club mows (never a plain pitch: the AI rule predates the plain one, art phase 9). */
+const AI_MOWING: readonly MowingPattern[] = ["stripes", "checker", "diagonal", "circles"];
 
 export const isTurfType = (v: unknown): v is TurfType => typeof v === "string" && (TURF_TYPES as readonly string[]).includes(v);
 export const isMowingPattern = (v: unknown): v is MowingPattern =>
@@ -40,7 +42,7 @@ export function aiTurfOf(squadId: string, tier: FinancialTier): TurfType {
 /** The mowing pattern of an AI club: fixed by its id. */
 export function aiMowingOf(squadId: string): MowingPattern {
   const r = mulberry32(seedFrom(`mowing:${squadId}`))();
-  return MOWING_PATTERNS[Math.min(MOWING_PATTERNS.length - 1, Math.floor(r * MOWING_PATTERNS.length))]!;
+  return AI_MOWING[Math.min(AI_MOWING.length - 1, Math.floor(r * AI_MOWING.length))]!;
 }
 
 /** Grass of a club's stadium: the human club's pitch item, else the AI rule. */

@@ -9,7 +9,7 @@ export type StandId = "north" | "south" | "east" | "west";
 /** Grass of the stadium pitch (`docs/superpowers/specs/2026-10-16-pitch-types-design.md`). */
 export type TurfType = "natural" | "hybrid" | "synthetic";
 /** Mowing pattern of the stadium pitch: drawing only. */
-export type MowingPattern = "stripes" | "checker" | "diagonal" | "circles";
+export type MowingPattern = "stripes" | "checker" | "diagonal" | "circles" | "none";
 
 /** What a project builds. One project per kind (per item for item projects) at a time. */
 export type FacilityKind = "stand" | "comfort" | "training" | "academy" | "repair" | "rebuild" | "upgrade" | "turf";

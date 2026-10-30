@@ -40,6 +40,20 @@ function flags(): { dir: string; files: Set<string> } {
   return { dir: flagDir, files: flagFiles };
 }
 
+/** The pack's tab and inbox icons (art phase 9): `icons/tab-*.svg`, `icons/inbox-*.svg`. */
+function iconFiles(): string[] {
+  try {
+    return readdirSync(join(import.meta.dir, "..", "example_data", "assets", "icons"));
+  } catch {
+    return [];
+  }
+}
+const ICON_FILES: Record<string, string> = Object.fromEntries(
+  iconFiles()
+    .filter((f) => /^(tab|inbox)-[a-z0-9-]+\.svg$/.test(f))
+    .map((f) => [`icons/${f}`, "image/svg+xml"]),
+);
+
 /** The game art the pages load (art plan phase 2: the players' and keepers' sprite atlases). */
 export const GAME_ART_FILES: Record<string, string> = {
   "player/player-atlas.json": "application/json",
@@ -60,6 +74,33 @@ export const GAME_ART_FILES: Record<string, string> = {
   "frames/frame-silver.svg": "image/svg+xml",
   "frames/frame-gold.svg": "image/svg+xml",
   "frames/frame-legend.svg": "image/svg+xml",
+  // Art phase 9: the rest of the pack.
+  "ball/ball-atlas.json": "application/json",
+  "ball/ball-atlas.png": "image/png",
+  "goal/goal-frame.png": "image/png",
+  "goal/goal-net.png": "image/png",
+  "effects/firework-atlas.json": "application/json",
+  "effects/firework-atlas.png": "image/png",
+  "effects/flash-atlas.json": "application/json",
+  "effects/flash-atlas.png": "image/png",
+  "effects/smoke-atlas.json": "application/json",
+  "effects/smoke-atlas.png": "image/png",
+  "stadium/floodlight-tower.png": "image/png",
+  "stadium/led-board-frame.png": "image/png",
+  "stadium/tunnel.png": "image/png",
+  "stadium/bench.png": "image/png",
+  "stadium/bench-roof.png": "image/png",
+  "stadium/stand-block.png": "image/png",
+  "stadium/stand-block-empty.png": "image/png",
+  "stadium/stand-block-construction.png": "image/png",
+  "player/player-real-atlas.json": "application/json",
+  "player/player-real-atlas.png": "image/png",
+  "brand/wordmark.svg": "image/svg+xml",
+  "brand/icon.svg": "image/svg+xml",
+  "brand/favicon-32.png": "image/png",
+  "brand/favicon-512.png": "image/png",
+  "brand/og-image.png": "image/png",
+  ...ICON_FILES,
 };
 const GAME_ART_DIR = join(import.meta.dir, "..", "Data", "assets");
 

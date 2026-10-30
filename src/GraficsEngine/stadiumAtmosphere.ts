@@ -104,7 +104,7 @@ export interface CelebrationBurst {
   night: boolean;
 }
 
-export interface SmokePuff { x: number; y: number; r: number; alpha: number; color: number }
+export interface SmokePuff { x: number; y: number; r: number; alpha: number; color: number; /** Which smoke puff of the art pack (0..3). */ n: number }
 export interface FlareGlow { x: number; y: number; r: number; alpha: number }
 /** One round spark; `glow` (0..1) asks for a soft halo around it. */
 export interface Spark { x: number; y: number; r: number; alpha: number; color: number; glow?: number }
@@ -165,10 +165,26 @@ export function flareSmoke(b: CelebrationBurst, now: number): { glows: FlareGlow
         r: unit * (0.6 + 2.4 * life),
         alpha: F.PUFF_ALPHA * (1 - life) * Math.min(1, pa / 0.3),
         color: smokeColor,
+        n: (k + i) % 4,
       });
     }
   }
   return { glows, puffs };
+}
+
+/** One exploded shell drawn with the art pack's firework atlas (art phase 9). */
+export interface ShellSprite {
+  /** 0 peony, 1 ring, 2 willow, 3 crackle (the atlas order). */
+  style: number;
+  x: number; y: number;
+  /** Burst radius, px. */
+  radius: number;
+  color: number;
+  alpha: number;
+  /** Progress of the burst, 0..1 (the atlas frame). */
+  t: number;
+  rotation: number;
+  flip: 1 | -1;
 }
 
 /**
@@ -176,7 +192,7 @@ export function flareSmoke(b: CelebrationBurst, now: number): { glows: FlareGlow
  * glowing sparks in its own style (peony, ring, willow, crackle) that spread, drop and fade out smoothly. Pure; the same
  * burst always draws the same shells.
  */
-export function fireworks(b: CelebrationBurst, now: number): Spark[] {
+export function fireworks(b: CelebrationBurst, now: number, shellSprites?: ShellSprite[]): Spark[] {
   if (!b.night || b.sky.length === 0) return [];
   const W = ATMOSPHERE.FIREWORKS;
   const rng = mulberry32(seedFrom(`fireworks:${b.seed}:${b.at.toFixed(3)}`));
@@ -222,6 +238,19 @@ export function fireworks(b: CelebrationBurst, now: number): Spark[] {
 
     const a = age - rise;
     const t = a / life;
+    const fadeOut = 1 - smooth(Math.max(0, (t - W.FADE_FROM) / (1 - W.FADE_FROM)));
+    if (shellSprites) {
+      // The art pack's burst instead of the drawn sparks (same shell, same time); the flash stays drawn.
+      if (a < W.FLASH_S) {
+        const f = 1 - a / W.FLASH_S;
+        out.push({ x: cx, y: cy, r: radius * 0.3 * (0.5 + 0.5 * f), alpha: 0.7 * f * f, color: 0xffffff, glow: 1 });
+      }
+      shellSprites.push({
+        style, x: cx, y: cy + radius * gravity * t * t * 0.5, radius, color: outer, alpha: fadeOut, t,
+        rotation: (s * 2.399) % (Math.PI * 2), flip: s % 2 === 0 ? 1 : -1,
+      });
+      continue;
+    }
     if (a < W.FLASH_S) {
       const f = 1 - a / W.FLASH_S;
       out.push({ x: cx, y: cy, r: radius * 0.3 * (0.5 + 0.5 * f), alpha: 0.7 * f * f, color: 0xffffff, glow: 1 });

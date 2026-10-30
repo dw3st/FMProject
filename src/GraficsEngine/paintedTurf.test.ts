@@ -9,9 +9,11 @@ describe("painted turf", () => {
     expect(paintedTurfId({ ...base, mowing: "checker" })).toBe("match-backdrop-mow-check");
     expect(paintedTurfId({ ...base, mowing: "diagonal" })).toBe("match-backdrop-mow-diag");
     expect(paintedTurfId({ ...base, mowing: "circles" })).toBe("match-backdrop-mow-rings");
+    expect(paintedTurfId({ ...base, mowing: "none" })).toBeNull();
+    expect(paintedTurfId({ ...base, mowing: "none", turf: "synthetic" })).toBe("match-backdrop-synthetic");
     const a = paintedTurfId({ ...base, seed: "fx1", ground: "33" });
     expect(a).toBe(paintedTurfId({ ...base, seed: "fx2", ground: "33" }));
-    expect(PAINTED_TURF.TONES.map((t) => `match-backdrop-${t}`)).toContain(a);
+    expect(PAINTED_TURF.TONES.map((t) => `match-backdrop-${t}`)).toContain(a!);
   });
 
   test("no wash on a pristine pitch, more as it wears; the game's wear on top, never its mowing", () => {

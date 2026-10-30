@@ -602,7 +602,11 @@
     "qualityAuto": "Automatic",
     "qualityHigh": "High",
     "qualityLight": "Light",
-    "qualityDescription": "Light drops fireworks, flashes, crowd movement and rain in the match. Automatic switches to light when the match runs slowly."
+    "qualityDescription": "Light drops fireworks, flashes, crowd movement and rain in the match. Automatic switches to light when the match runs slowly.",
+    "playerLook": "Players",
+    "playerLookCurrent": "Current",
+    "playerLookReal": "More realistic",
+    "playerLookDescription": "Proportions of the players in the match: the current ones or more realistic (smaller head, narrower shoulders). Applies from the next match."
   },
   "reports": {
     "title": "Send a report",
@@ -3518,7 +3522,8 @@
       "stripes": "Stripes",
       "checker": "Checker",
       "diagonal": "Diagonal",
-      "circles": "Circles"
+      "circles": "Circles",
+      "none": "Plain"
     },
     "kpi": {
       "capacity": "Capacity",

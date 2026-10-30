@@ -25,9 +25,13 @@ export interface PaintedTurfInput extends PitchSurfaceInput {
   ground?: string;
 }
 
-/** The backdrop id for the match (`match-backdrop-…`). */
-export function paintedTurfId(p: PaintedTurfInput): string {
+/**
+ * The backdrop id for the match (`match-backdrop-…`). A plain (unmown) natural pitch has no painted backdrop (every
+ * painted grass is mown): null, the game draws its own grass.
+ */
+export function paintedTurfId(p: PaintedTurfInput): string | null {
   if (p.turf === "synthetic") return "match-backdrop-synthetic";
+  if (p.mowing === "none") return null;
   if (p.mowing === "checker") return "match-backdrop-mow-check";
   if (p.mowing === "diagonal") return "match-backdrop-mow-diag";
   if (p.mowing === "circles") return "match-backdrop-mow-rings";

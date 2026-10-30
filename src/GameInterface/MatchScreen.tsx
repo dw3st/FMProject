@@ -45,7 +45,7 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readQuality } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality } from "@/GameInterface/artPrefs";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
@@ -210,6 +210,7 @@ export function MatchScreen() {
   const goalReplayPref = useMemo(readGoalReplay, []);
   // Graphics quality (art phase 8): the setting, or automatic by the frame rate (light after a run of slow seconds).
   const qualityPref = useMemo(readQuality, []);
+  const realPlayers = useMemo(() => readPlayerLook() === "real", []);
   const pitchPerfRef = useRef<PitchPerf | null>(null);
   const [autoQuality, setAutoQuality] = useState<{ quality: PitchQuality; slow: number }>({ quality: "high", slow: 0 });
   useEffect(() => {
@@ -1933,6 +1934,7 @@ export function MatchScreen() {
                   replay={!h2hMode && goalReplayPref}
                   onReplay={setReplayOn}
                   quality={pitchQuality}
+                  realPlayers={realPlayers}
                   perfRef={pitchPerfRef}
                   effectLabels={effectLabels}
                   debugMode={DEV_TOOLS && debug}

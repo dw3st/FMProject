@@ -1,3 +1,4 @@
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import {
   Lock,
   Binoculars,
@@ -416,4 +417,21 @@ export function iconOf(name: IconName, size = 16, strokeWidth?: number): React.C
   return function IconOf({ className }) {
     return <Icon name={name} size={size} className={className} strokeWidth={strokeWidth} />;
   };
+}
+
+/**
+ * An icon of the art pack (art phase 9, `assets/icons/<art>.svg`: the 11 tabs and the 27 inbox categories), drawn in
+ * `currentColor` through a CSS mask so it takes the text colour like the lucide ones. With the new visual off it is
+ * the `fallback` (the lucide icon of before).
+ */
+export function ArtIcon({ art, size = 16, className, fallback }: { art: string; size?: number; className?: string; fallback: React.ReactNode }) {
+  if (!newVisualOn()) return <>{fallback}</>;
+  const url = `url(${gameArtUrl(`icons/${art}.svg`)})`;
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block shrink-0 bg-current ${className ?? ""}`}
+      style={{ width: size, height: size, maskImage: url, WebkitMaskImage: url, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" }}
+    />
+  );
 }

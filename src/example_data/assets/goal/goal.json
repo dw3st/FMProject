@@ -1,0 +1,15 @@
+{
+  "note": "Top-down goal at the top end of the pitch (net goes up, the pitch is below). Draw goal-net first or over the players as you prefer, goal-frame on top. Anchor the goal line midpoint.",
+  "w": 192,
+  "h": 64,
+  "posts": [
+    16,
+    176
+  ],
+  "goalLineY": 54,
+  "backY": 10,
+  "anchor": {
+    "x": 0.5,
+    "y": 0.84375
+  }
+}

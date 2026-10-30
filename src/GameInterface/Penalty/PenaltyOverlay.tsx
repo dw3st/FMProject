@@ -1,3 +1,4 @@
+import { matchHasFog } from "@/Domain/matchday/matchFog";
 import { aiDive, aiKick, resolveKick, type GoalArea, type KickInput, type KickOutcome } from "@/Domain/penalty/penaltyKick";
 import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { PenaltyScreen } from "@/GameInterface/Penalty/PenaltyScreen";
@@ -68,7 +69,8 @@ export function PenaltyOverlay({ state, mySide, kits, names, onOutcome, choose, 
       onDone={(o) => onOutcome({ scored: o.scored, result: o.result, chance: o.chance })}
       {...(keeperFace ? { keeperFace } : {})}
       night={night}
-      weather={lighting?.weather === "rain" || lighting?.weather === "wind_rain" ? "rain" : lighting?.weather === "snow" ? "snow" : night ? "night" : "day"}
+      weather={lighting?.weather === "rain" || lighting?.weather === "wind_rain" ? "rain" : lighting?.weather === "snow" ? "snow"
+        : lighting && matchHasFog(lighting.weather, lighting.seed, lighting.sun.covered) ? "fog" : night ? "night" : "day"}
       seed={seed ?? "penalty"}
     />
   );

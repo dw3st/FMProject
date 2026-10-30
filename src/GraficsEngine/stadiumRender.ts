@@ -29,7 +29,15 @@ export function drawStandBase(g: Graphics, stand: StandGeometry, worksSides?: Cr
   g.rect(outer.x, innerB, outer.w, outer.y + outer.h - innerB).fill(STADIUM.STAND_COLOR);
   g.rect(outer.x, inner.y, inner.x - outer.x, inner.h).fill(STADIUM.STAND_COLOR);
   g.rect(innerR, inner.y, outer.x + outer.w - innerR, inner.h).fill(STADIUM.STAND_COLOR);
-  for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill(STADIUM.CONCRETE);
+  drawStandDetails(g, stand, worksSides);
+}
+
+/**
+ * Walkways, the tunnel and the stands under works, over the band. With the art pack's stand texture (art phase 9)
+ * the walkways go lighter and the works keep only the hazard tape (the construction texture shows the site).
+ */
+export function drawStandDetails(g: Graphics, stand: StandGeometry, worksSides?: CrowdInput["works"], textured = false): void {
+  for (const c of standConcreteRows(stand)) g.rect(c.x, c.y, c.w, c.h).fill({ color: STADIUM.CONCRETE, alpha: textured ? 0.55 : 1 });
   // The players' tunnel: a dark floor between two light walls, a little light at the mouth.
   const t = standTunnel(stand);
   if (t) {
@@ -39,8 +47,13 @@ export function drawStandBase(g: Graphics, stand: StandGeometry, worksSides?: Cr
     g.rect(t.x + wall, t.y, t.w - wall * 2, Math.min(t.h, wall * 2)).fill({ color: 0xffffff, alpha: 0.12 });
   }
   const works = new Set<string>(worksSides ?? []);
-  for (const r of standSideRects(stand)) if (works.has(r.side)) drawWorks(g, r, seatCellPx(stand));
+  for (const r of standSideRects(stand)) if (works.has(r.side)) drawWorks(g, r, seatCellPx(stand), textured);
 }
+
+/** Tile rotation of a stand texture (pitch side at the bottom of the tile) for each side of the band. */
+export const STAND_TILE_ROTATION: Record<"top" | "bottom" | "left" | "right", number> = {
+  top: 0, bottom: Math.PI, left: -Math.PI / 2, right: Math.PI / 2,
+};
 
 /** One dot per filled seat. */
 export function drawFans(g: Graphics, stand: StandGeometry, seats: readonly CrowdSeat[]): void {
@@ -109,10 +122,12 @@ export function worksPieces(r: SideRect, cell: number): {
   return { scaffold, tape };
 }
 
-function drawWorks(g: Graphics, r: SideRect, cell: number): void {
-  g.rect(r.x, r.y, r.w, r.h).fill(STADIUM.WORKS_BASE);
+function drawWorks(g: Graphics, r: SideRect, cell: number, textured = false): void {
   const { scaffold, tape } = worksPieces(r, cell);
-  for (const p of scaffold) g.rect(p.x, p.y, p.w, p.h).fill(STADIUM.WORKS_SCAFFOLD);
+  if (!textured) {
+    g.rect(r.x, r.y, r.w, r.h).fill(STADIUM.WORKS_BASE);
+    for (const p of scaffold) g.rect(p.x, p.y, p.w, p.h).fill(STADIUM.WORKS_SCAFFOLD);
+  }
   for (const p of tape) g.rect(p.x, p.y, p.w, p.h).fill(p.dark ? STADIUM.WORKS_TAPE_DARK : STADIUM.WORKS_TAPE);
 }
 

@@ -602,7 +602,11 @@
     "qualityAuto": "Automática",
     "qualityHigh": "Alta",
     "qualityLight": "Leve",
-    "qualityDescription": "Leve tira fogos, flashes, movimento da torcida e chuva na partida. Automática passa para leve quando a partida fica lenta."
+    "qualityDescription": "Leve tira fogos, flashes, movimento da torcida e chuva na partida. Automática passa para leve quando a partida fica lenta.",
+    "playerLook": "Jogadores",
+    "playerLookCurrent": "Atual",
+    "playerLookReal": "Mais realista",
+    "playerLookDescription": "Proporção dos jogadores na partida: a atual ou mais realista (cabeça menor, ombros mais estreitos). Vale na próxima partida."
   },
   "reports": {
     "title": "Enviar um relatório",
@@ -3518,7 +3522,8 @@
       "stripes": "Listras",
       "checker": "Xadrez",
       "diagonal": "Diagonal",
-      "circles": "Círculos"
+      "circles": "Círculos",
+      "none": "Sem padrão"
     },
     "kpi": {
       "capacity": "Capacidade",

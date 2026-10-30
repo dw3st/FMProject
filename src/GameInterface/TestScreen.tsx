@@ -485,11 +485,13 @@ export function TestScreen() {
   const [lightTime, setLightTime] = useState<LightTimeOption>('off');
   const [lightWeather, setLightWeather] = useState<'off' | EngineWeather>('off');
   const [lightStadium, setLightStadium] = useState<LightStadiumOption>('lean');
+  // Fog (art phase 9, drawing only): forced on here; in a career it follows `matchHasFog`.
+  const [lightFog, setLightFog] = useState(false);
   const pitchLighting = useMemo<PitchLighting | null>(() => lightTime === 'off' ? null : {
     kickoff: lightTime === 'match' ? '17:30' : lightTime, sunset: testSunset(lightStadium), weather: lightWeather === 'off' ? 'sunny' : lightWeather,
-    sun: testStadium(lightStadium), seed: 'test', date: TEST_REAL_DATE[lightStadium],
+    sun: testStadium(lightStadium), seed: 'test', date: TEST_REAL_DATE[lightStadium], fog: lightFog,
     ...(lightTime === 'match' ? {} : { clockOverride: minutesOf(lightTime) }),
-  }, [lightTime, lightWeather, lightStadium]);
+  }, [lightTime, lightWeather, lightStadium, lightFog]);
   // Referee rigor of the match (`referees.md`): fouls and cards; null = no referee.
   const [refS, setRefS] = useState<number | null>(null);
   // The managers' Discipline (achievements.md): fouls and cards of a side; null = no attribute.
@@ -1310,6 +1312,10 @@ export function TestScreen() {
                   Weather (engine + light): {v}
                 </button>
               ))}
+              <button onClick={() => setLightFog((f) => !f)}
+                className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${lightFog ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'}`}>
+                Fog (visual): {lightFog ? 'on' : 'off'}
+              </button>
             </div>
             <div className="flex gap-1 flex-wrap">
               {LIGHT_STADIUMS.map(v => (

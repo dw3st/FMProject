@@ -108,7 +108,7 @@ function mowingShapes(mowing: MowingPattern, color: number, alpha: number): Surf
       const pts = clipToPitch([x0, W, x0 + band, W, x0 + band + shift, 0, x0 + shift, 0]);
       if (pts.length >= 6) out.push({ kind: "poly", layer: "mowing", points: pts, color, alpha });
     }
-  } else {
+  } else if (mowing === "circles") {
     for (let r = 9; r < 80; r += 14) out.push({ kind: "ring", layer: "mowing", cx: L / 2, cy: CY, r, width: 7, color, alpha });
   }
   return out;

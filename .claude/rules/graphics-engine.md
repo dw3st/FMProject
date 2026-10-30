@@ -363,3 +363,29 @@ movimento da torcida nem chuva/neve, a câmera fica no campo inteiro e não há 
 (`fm.visual.quality`: automática, alta, leve); a automática lê o FPS do campo (`perfRef`) a cada 2 s e passa para leve
 depois de 3 leituras abaixo de 40 (`AUTO_QUALITY`), sem voltar na mesma partida. O pênalti pintado com movimento reduzido
 não balança nem treme a tela. Só desenho.
+
+## O resto do pacote (arte nova, fase 9, 4.41.12)
+
+Tudo com o visual novo e só quando o arquivo carrega; sem ele, o desenho de antes. Só desenho.
+- **Bola** (`ball/ball-atlas`, `ballSpin.ts`: `nextBallRoll`, `ballSpriteFrame`): 8 quadros = 72° de rolagem, virada na
+  direção do movimento; laranja na neve (`BALL_SPRITE.SNOW_TINT`).
+- **Traves e rede** (`goal/goal-net.png` sob os jogadores, `goal/goal-frame.png` por cima, `GOAL_SPRITE`): com elas o
+  `drawPitch` não desenha o gol.
+- **Estádio** (`stadiumArt.ts`): textura da arquibancada vazia sob a torcida (escurecida 0,38, `STAND_TILE_ROTATION` por
+  lado) e a "em obra" no setor em obra (`drawStandDetails(..., textured)` mantém corredores, túnel e fita); túnel tingido
+  na cor do mandante; torres (`floodlight-tower`, cinza com os refletores apagados); banco e cobertura translúcida por cima
+  dos reservas; moldura do LED em cada painel.
+- **Efeitos** (`fxArt.ts`, `spritePool.ts`): fogos com o atlas (4 estilos × 12 quadros, dois quadros em fusão, aditivo;
+  `fireworks(b, now, shellSprites)`), fumaça em sprites tingidos (`SmokePuff.n`), ponta do sinalizador e flash dos
+  fotógrafos (4 quadros).
+- **Neve e neblina:** neve sem teto usa o fundo pintado `match-backdrop-snow`; neblina (`matchFog.ts`: 30% dos jogos
+  `cloudy`/`cold`, pelo id do jogo, nunca coberto; `PitchLighting.fog` força no `/test`) = duas camadas de `fog.webp`
+  (`fogArt.ts`) derivando; o pênalti desses jogos usa `penalty-bg-fog`.
+- **Pênalti** (`penaltyRig.ts` → `RigPlan.kind`): cavadinha (gol pelo meio com o goleiro caído, 1 em 3) e chapa (gol baixo no
+  canto do goleiro, mergulho atrasado). O resultado não muda.
+- **Corte "Sem padrão"** (`MowingPattern` `none`): sem fundo pintado (todos são cortados), o gramado desenhado sem listras;
+  a IA nunca escolhe.
+- **Proporção realista** (`player/player-real-atlas`, prop `realPlayers`, Configurações → Jogadores, `fm.visual.players`).
+- **Ícones** (`ArtIcon` em `Icons.tsx`, máscara CSS em `currentColor`): `tab-*` na barra superior, `inbox-*` na caixa.
+- **Marca:** `Wordmark` usa `brand/wordmark.svg`; favicon = `brand/icon.svg`; a landing tem `og:image`
+  (`brand/og-image.png`) e `apple-touch-icon`.

@@ -119,3 +119,8 @@ uma amostra de 50 jogos bate com `matchConditions`, contagem por clima (informat
 Ver a spec §8: o clima não muda a tática da IA nem as substituições; sem efeito por atributo do jogador (todos sentem
 igual); o horário e o pôr do sol continuam só desenho; o quickSim aplica o mesmo efeito em média, não lance a lance;
 seleções e base jogam sem clima.
+
+## Neblina (4.41.12, só visual)
+
+Não é um clima: `matchHasFog` (`src/Domain/matchday/matchFog.ts`) desenha neblina em 30% dos jogos `cloudy` e `cold`,
+pelo id do jogo, nunca com teto. Nada no motor, no quickSim nem no sorteio do clima muda. Ver `graphics-engine.md`.

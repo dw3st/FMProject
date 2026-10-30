@@ -376,3 +376,8 @@ Spec: `docs/superpowers/specs/2026-10-16-pitch-types-design.md`. Lógica em `src
 Medições (`bun scripts/facilities-wear.ts --turf natural,hybrid,synthetic --seasons 4`, gramado do estádio nível 6, temporadas até 40%; sem / 3★ / 5★ jardineiro): natural 0,43 / 0,71 / 1,09; híbrida 0,74 / 1,31 / 1,70; sintética 2,02 / 3,21 / não chega em 4 temporadas.
 
 Lesões (`bun scripts/injury-calibrate.ts 300 --pitch ai,aiturf --quicksim`): motor Premier + Championship, 600 jogos: 0,243 → 0,243 por jogo (×1,000; gramado médio 64,2 → 67,5, jogos abaixo de 40%: 9,3% → 7,5%); quickSim 26 ligas × 3000 pareado: 0,256 → 0,257 (+0,1%).
+
+## Corte sem padrão (4.41.12)
+
+`MowingPattern` ganhou `none` ("Sem padrão", cartão Gramado): o gramado sem listras. Sem fundo pintado (todos os pintados
+são cortados), o jogo desenha a grama lisa. A IA continua sorteando só os quatro padrões (`AI_MOWING`).

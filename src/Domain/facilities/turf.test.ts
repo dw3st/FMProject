@@ -9,7 +9,7 @@ import type { Squad } from "@/types/playerTypes";
 describe("turf", () => {
   test("guards", () => {
     expect(TURF_TYPES).toEqual(["natural", "hybrid", "synthetic"]);
-    expect(MOWING_PATTERNS).toEqual(["stripes", "checker", "diagonal", "circles"]);
+    expect(MOWING_PATTERNS).toEqual(["stripes", "checker", "diagonal", "circles", "none"]);
     expect(isTurfType("hybrid")).toBe(true);
     expect(isTurfType("grass")).toBe(false);
     expect(isMowingPattern("circles")).toBe(true);

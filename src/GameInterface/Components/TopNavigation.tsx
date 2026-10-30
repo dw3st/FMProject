@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
-import { Icon, type IconName } from "@/GameInterface/Icons";
+import { Icon, type IconName, ArtIcon } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
@@ -218,7 +218,7 @@ export function TopNavigation({
           >
             {navItems.map((item) => (
               <span key={item.labelKey} className={tabClass(false)}>
-                <Icon name={item.icon} size={NAV_ICON} className="shrink-0" />
+                <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className="shrink-0" fallback={<Icon name={item.icon} size={NAV_ICON} className="shrink-0" />} />
                 <span>{t(item.labelKey)}</span>
               </span>
             ))}
@@ -241,7 +241,7 @@ export function TopNavigation({
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />
+                  <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
                   <span className={compact ? "sr-only" : undefined}>{label}</span>
                 </a>
               );

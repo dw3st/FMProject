@@ -25,6 +25,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.12",
+    date: "2026-10-29",
+    items: [
+      {
+        pt: "Partida com o resto da arte nova: bola girando, traves e rede, arquibancada, túnel na cor do clube, torres de iluminação, bancos com cobertura, placas de LED com moldura, fogos, fumaça e flashes dos fotógrafos.",
+        en: "The match with the rest of the new art: a spinning ball, posts and net, the stands, a tunnel in the club colours, floodlight towers, covered benches, framed LED boards, fireworks, smoke and the photographers' flashes.",
+      },
+      {
+        pt: "Gramado com neve nos jogos de neve (com bola laranja) e neblina em parte dos jogos nublados e frios. A neblina é só visual e não muda o jogo.",
+        en: "A snowy pitch in snow matches (with an orange ball) and fog in some overcast and cold matches. The fog is only visual and does not change the game.",
+      },
+      {
+        pt: "Pênalti com cavadinha e com batida de chapa no canto.",
+        en: "Penalties with a chip down the middle and a placed side-foot finish into the corner.",
+      },
+      {
+        pt: "Corte do gramado sem padrão, em Clube. Em Configurações, os jogadores podem ficar com proporção mais realista.",
+        en: "A plain mowing pattern in Club. In Settings, the players can have more realistic proportions.",
+      },
+      {
+        pt: "Ícones novos nas abas e na caixa de entrada, logo e ícone do jogo novos, e imagem própria ao compartilhar o link.",
+        en: "New icons in the tabs and the inbox, a new logo and game icon, and a proper image when the link is shared.",
+      },
+    ],
+  },
+  {
     version: "4.41.11",
     date: "2026-10-29",
     items: [

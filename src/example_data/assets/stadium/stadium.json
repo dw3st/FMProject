@@ -1,0 +1,30 @@
+{
+  "stand-block": {
+    "size": 256,
+    "tiles": "x and y",
+    "rows": 8,
+    "seatsPerRow": 16,
+    "note": "Pitch side at the bottom. Seats are light grey: tint the tile (or draw it twice, masked) for club-coloured seats. Variants: full (baked heads), empty, construction."
+  },
+  "led-board-frame": {
+    "w": 512,
+    "h": 48,
+    "screen": {
+      "x": 6,
+      "y": 6,
+      "w": 500,
+      "h": 32
+    },
+    "note": "Transparent screen rectangle; draw the ad text behind/inside it."
+  },
+  "floodlight-tower": {
+    "size": 128,
+    "note": "Top-down, lamps face the pitch (down). Rotate per corner."
+  },
+  "tunnel": {
+    "note": "Mouth at the bottom (pitch side). Canopy light grey: tint with the club colour."
+  },
+  "bench": {
+    "note": "Seats and floor; bench-roof is the translucent roof drawn over the people."
+  }
+}

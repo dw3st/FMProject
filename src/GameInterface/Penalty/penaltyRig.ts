@@ -134,7 +134,21 @@ export interface RigPlan {
   /** A beaten keeper falls this much short of the ball. */
   short: number;
   catchAt: number;
+  /** How the goal looks (art phase 9): a normal shot, a side-foot placed low in the keeper's corner, or a chip. */
+  kind: "shot" | "placed" | "chip";
 }
+
+/** The two finishes of the art preview, picked from the decided outcome (they never change it). */
+export const RIG_FINISH = {
+  /** Share of the goals down the middle past a keeper who dived to a side that are drawn as a chip. */
+  CHIP_SHARE: 3,
+  CHIP_ARC: 80,
+  CHIP_SLOW: 1.6,
+  /** Placed low: the keeper goes the right way but gets down late. */
+  PLACED_LATE_S: 0.11,
+  PLACED_ARC: 8,
+  PLACED_SHORT: 40,
+} as const;
 
 export interface KeeperState { a: Angles; root: Pt; fk: KeeperFK }
 
@@ -397,6 +411,21 @@ export function rigPlan(o: KickOutcome, runUpS: number, flightS: number): RigPla
   const diveTo = goalToPx({ x: side * 0.72, y: row === "high" ? 0.75 : 0.25 });
   const saved = o.result === "saved";
   const bs = Math.sign(ballTo.x - SCENE.GX);
+  const F = RIG_FINISH;
+  // Picked from where the ball went, so the same kick always looks the same.
+  const pick = Math.floor(Math.abs(o.ball.x) * 997 + o.ball.y * 991) % F.CHIP_SHARE === 0;
+  if (o.scored && side !== 0 && Math.abs(o.ball.x) < 1 / 3 && pick) {
+    return {
+      kick: runUpS, dive: runUpS - 0.03, side, ballTo, diveTo, saved: false, post: false, miss: false,
+      dur: flightS * F.CHIP_SLOW, curve: 0, arc: F.CHIP_ARC, short: 0, catchAt: 0.7, kind: "chip",
+    };
+  }
+  if (o.scored && side !== 0 && side === bs && o.ball.y < 0.4) {
+    return {
+      kick: runUpS, dive: runUpS + F.PLACED_LATE_S, side, ballTo, diveTo, saved: false, post: false, miss: false,
+      dur: flightS, curve: bs * 6, arc: F.PLACED_ARC, short: F.PLACED_SHORT, catchAt: 0.7, kind: "placed",
+    };
+  }
   return {
     kick: runUpS,
     dive: runUpS + (saved ? -0.04 : 0.06),
@@ -411,6 +440,7 @@ export function rigPlan(o: KickOutcome, runUpS: number, flightS: number): RigPla
     arc: o.ball.y < 0.2 ? 8 : 26,
     short: saved ? 0 : 36,
     catchAt: 0.7,
+    kind: "shot",
   };
 }
 

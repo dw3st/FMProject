@@ -21,7 +21,13 @@ import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionP
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
 import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
-import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
+import { STADIUM_ART, loadStadiumArt, type StadiumArt } from "@/GraficsEngine/stadiumArt";
+import { FX_ART, loadFxArt, type FxArt } from "@/GraficsEngine/fxArt";
+import { matchHasFog } from "@/Domain/matchday/matchFog";
+import { FOG, fogTexture } from "@/GraficsEngine/fogArt";
+import { SpritePool } from "@/GraficsEngine/spritePool";
+import type { ShellSprite } from "@/GraficsEngine/stadiumAtmosphere";
+import { BALL_SPRITE, GOAL_SPRITE, ballSpriteFrame, nextBallRoll, nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
@@ -50,7 +56,7 @@ import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
-import { drawDecor, drawStandBase, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { STAND_TILE_ROTATION, drawDecor, drawStandBase, drawStandDetails, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, seatCellPx, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
@@ -332,6 +338,8 @@ export interface PitchLighting {
   seed: string;
   /** Minutes since midnight: fixes the time instead of following the match clock (/test). */
   clockOverride?: number;
+  /** Fog (art phase 9, drawing only): forced on or off (/test); absent = `matchHasFog`. */
+  fog?: boolean;
 }
 
 export interface DebugOverlays {
@@ -483,6 +491,8 @@ interface Props {
   onReplay?: (on: boolean) => void;
   /** Graphics quality (art phase 8): `light` draws a calm pitch (no fireworks, flashes, crowd motion, weather). */
   quality?: PitchQuality;
+  /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
+  realPlayers?: boolean;
 }
 
 export interface PitchOfficials {
@@ -559,6 +569,7 @@ export function PixiPitch({
   replay = false,
   onReplay,
   quality = "high",
+  realPlayers = false,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -641,7 +652,8 @@ export function PixiPitch({
   useEffect(() => {
     lightingRef.current = lighting;
     lightGenRef.current++;
-  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.stadiumId, lighting?.sun.side, lighting?.sun.lean, lighting?.sun.covered, lighting?.date, lighting?.seed, lighting?.clockOverride, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
+    redrawSurfaceRef.current?.();
+  }, [lighting?.kickoff, lighting?.sunset, lighting?.weather, lighting?.sun.stadiumId, lighting?.sun.side, lighting?.sun.lean, lighting?.sun.covered, lighting?.date, lighting?.seed, lighting?.clockOverride, lighting?.fog, lighting == null]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -731,6 +743,10 @@ export function PixiPitch({
       crowdLayer.eventMode = 'none';
       app.stage.addChildAt(crowdLayer, 0);
       let crowdBase: Graphics | null = null;
+      // The art pack's stadium pieces (art phase 9): stand textures, tunnel, towers, benches, LED frame.
+      let stadiumArt: StadiumArt | null = null;
+      let fxArt: FxArt | null = null;
+      let crowdBaseArt: Container | null = null;
       /** Each side's fans, baked in tiles that move on their own (`crowdMotion.ts`). */
       /** One fan: his seat, motion, and the particles he is made of (body, scarf, head). */
       type Fan = {
@@ -783,6 +799,45 @@ export function PixiPitch({
         drawStandBase(crowdBase, m.stand, works);
         drawStandEdges(crowdBase, m.stand);
         crowdLayer.addChild(crowdBase);
+        crowdBaseArt?.destroy({ children: true });
+        crowdBaseArt = null;
+        if (stadiumArt) {
+          // The empty stand texture under the fans (darkened, as in the art preview), the construction one where a
+          // stand is under works; then the walkways, the tunnel and the hazard tape over it.
+          const art = stadiumArt;
+          const layer = new Container();
+          const shade = new Graphics();
+          const cell = seatCellPx(m.stand);
+          const workSet = new Set<string>(works ?? []);
+          for (const r of standSideRects(m.stand)) {
+            if (r.w <= 0 || r.h <= 0) continue;
+            const site = workSet.has(r.side);
+            const tile = new TilingSprite({ texture: site ? art.standWorks : art.standEmpty, width: r.w, height: r.h });
+            tile.position.set(r.x, r.y);
+            tile.tileRotation = STAND_TILE_ROTATION[r.side];
+            tile.tileScale.set(cell / STADIUM_ART.SEAT_PX);
+            layer.addChild(tile);
+            if (!site) shade.rect(r.x, r.y, r.w, r.h).fill({ color: 0x0b0f1a, alpha: STADIUM_ART.SHADE });
+          }
+          layer.addChild(shade);
+          const details = new Graphics();
+          drawStandDetails(details, m.stand, works, true);
+          drawStandEdges(details, m.stand);
+          layer.addChild(details);
+          const t = standTunnel(m.stand);
+          if (t) {
+            // The canopy's mouth faces the pitch (the sprite's mouth is at its bottom).
+            const s = new Sprite(art.tunnel);
+            s.anchor.set(0.5);
+            s.rotation = Math.PI;
+            s.width = t.w; s.height = t.h;
+            s.position.set(t.x + t.w / 2, t.y + t.h / 2);
+            s.tint = st.homeColors ? cssColorToPixiHex(st.homeColors[0]) : st.homeTeam === "A" ? fillA : fillB;
+            layer.addChild(s);
+          }
+          crowdLayer.addChild(layer);
+          crowdBaseArt = layer;
+        }
         const seats = crowdSeats({
           stand: m.stand,
           fill: st.fill,
@@ -933,7 +988,10 @@ export function PixiPitch({
         surfaceGraphics.clear();
         ringsGraphics.clear();
         wearGraphics.clear();
-        const turfUrl = paintedBackdrop(paintedTurfId(input));
+        // Snow (art phase 9): the painted snowy pitch, unless the roof is closed.
+        const li = lightingRef.current;
+        const snowy = li?.weather === "snow" && !li.sun.covered;
+        const turfUrl = (snowy ? paintedBackdrop("match-backdrop-snow") : null) ?? (() => { const id = paintedTurfId(input); return id ? paintedBackdrop(id) : null; })();
         let lines: { lineAlpha: number; dashedLines: boolean };
         if (turfUrl && turfTexture?.url === turfUrl) {
           // Painted: base under the crop's edges, the painted grass, then the wash of the band and the game's wear.
@@ -970,11 +1028,15 @@ export function PixiPitch({
         }
         pitchGraphics.clear();
         drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha * MATCH_LOOK.LINE_GLOW_ALPHA, dashed: lines.dashedLines, width: MATCH_LOOK.LINE_GLOW_W, goals: false });
-        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha, dashed: lines.dashedLines });
+        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha, dashed: lines.dashedLines, goals: !goalArt });
       };
+      // The art pack's goals (art phase 9): the net under the players, the frame over them (`goal/goal.json`).
+      let goalArt: { net: Sprite[]; frame: Sprite[] } | null = null;
+      const goalNetLayer = new Container();
+      goalNetLayer.eventMode = 'none';
       drawSurfaceNow();
       redrawSurfaceRef.current = drawSurfaceNow;
-      app.stage.addChild(pitchGraphics);
+      app.stage.addChild(pitchGraphics, goalNetLayer);
 
       // Match light (time of day, weather): above the pitch, its lines and the stand, below the players.
       // Redrawn every 10 game-seconds (or when the light inputs / mirror change), never per frame.
@@ -1627,11 +1689,15 @@ export function PixiPitch({
       }
       if (newVisualOn()) {
         void Promise.all([
-          Assets.load<Spritesheet>(gameArtUrl("player/player-atlas.json")),
+          Assets.load<Spritesheet>(gameArtUrl(realPlayers ? "player/player-real-atlas.json" : "player/player-atlas.json")),
           Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas.json")),
         ]).then(([player, keeper]) => {
           if (facesDisposed || !player || !keeper) return;
-          spriteSheets = { player, keeper };
+          // The realistic atlas has the same frames named `player-real-…`: read them under the usual names.
+          const sheet = realPlayers
+            ? ({ textures: Object.fromEntries(Object.entries(player.textures).map(([k, t]) => [k.replace(/^player-real-/, "player-"), t])) } as unknown as Spritesheet)
+            : player;
+          spriteSheets = { player: sheet, keeper };
           for (const p of stateRef.current.players) addBody(p);
         }).catch(() => { /* the discs stay */ });
         void (async () => {
@@ -1641,6 +1707,12 @@ export function PixiPitch({
           crowdArt = { image, frames: Object.fromEntries(Object.entries(json.frames).map(([k, v]) => [k, v.frame])) };
           redrawCrowdRef.current?.();
         })().catch(() => { /* the drawn crowd stays */ });
+        void loadFxArt().then((art) => { if (!facesDisposed && art) fxArt = art; });
+        void loadStadiumArt().then((art) => {
+          if (facesDisposed || !art) return;
+          stadiumArt = art;
+          redrawCrowdRef.current?.();
+        });
         void Assets.load<Spritesheet>(gameArtUrl("officials/officials-atlas.json")).then((sheet) => {
           if (facesDisposed || !sheet) return;
           officialSheet = sheet;
@@ -1693,6 +1765,46 @@ export function PixiPitch({
           .circle(0, 0, ballR).stroke({ width: 1, color: 0x000000, alpha: BALL.OUTLINE_ALPHA }),
       );
       let seamAngle = 0;
+      // The art pack's ball (art phase 9): an 8-frame roll turned to the direction of travel, over the drawn ball.
+      let ballFrames: Texture[] | null = null;
+      const ballSprite = new Sprite();
+      ballSprite.anchor.set(0.5);
+      ballSprite.visible = false;
+      ballSprite.scale.set((ballR * 2) / BALL_SPRITE.SIZE);
+      ball.addChild(ballSprite);
+      let ballRoll = { roll: 0, heading: 0 };
+      if (newVisualOn()) {
+        void Assets.load<Spritesheet>(gameArtUrl("ball/ball-atlas.json")).then((sheet) => {
+          if (facesDisposed || !sheet) return;
+          const frames = Array.from({ length: BALL_SPRITE.FRAMES }, (_, i) => sheet.textures[`ball-spin-0${i + 1}.png`]);
+          if (frames.some((t) => !t)) return;
+          ballFrames = frames as Texture[];
+          for (const c of ball.children) c.visible = c === ballSprite;
+          ballSprite.visible = true;
+        }).catch(() => { /* the drawn ball stays */ });
+        void Promise.all([Assets.load<Texture>(gameArtUrl("goal/goal-net.png")), Assets.load<Texture>(gameArtUrl("goal/goal-frame.png"))])
+          .then(([netTex, frameTex]) => {
+            if (facesDisposed || !netTex || !frameTex) return;
+            const G = GOAL_SPRITE;
+            const scale = ((GOAL_Y_MAX - GOAL_Y_MIN) * m.scale) / (G.POSTS[1] - G.POSTS[0]);
+            const cy = m.marginY + m.height / 2;
+            const make = (tex: Texture, gx: number, left: boolean) => {
+              const s = new Sprite(tex);
+              s.anchor.set(0.5, G.GOAL_LINE_Y / G.H);
+              s.scale.set(scale);
+              s.position.set(gx, cy);
+              // The sprite's net points up (−y): to the left of the left goal line, to the right of the right one.
+              s.rotation = left ? -Math.PI / 2 : Math.PI / 2;
+              s.eventMode = 'none';
+              return s;
+            };
+            const ends: [number, boolean][] = [[m.marginX, true], [m.marginX + m.width, false]];
+            goalArt = { net: ends.map(([x, l]) => make(netTex, x, l)), frame: ends.map(([x, l]) => make(frameTex, x, l)) };
+            goalNetLayer.addChild(...goalArt.net);
+            for (const f of goalArt.frame) { f.zIndex = 11; world.addChild(f); }
+            redrawSurfaceRef.current?.();
+          }).catch(() => { /* the drawn goals stay */ });
+      }
       let prevBallPx: { x: number; y: number } | null = null;
       ball.zIndex = 10; // always render on top of player sprites
       world.addChild(ball);
@@ -2107,6 +2219,8 @@ export function PixiPitch({
       benchGfx.zIndex = -0.7;
       benchGfx.eventMode = 'none';
       world.addChild(benchGfx);
+      // The art pack's dugout (art phase 9): the bench under the substitutes, its translucent roof over them.
+      const benchArt: Record<"left" | "right", { bench: Sprite; roof: Sprite } | null> = { left: null, right: null };
       /** Last goal per team (effects clock), for the bench celebration. */
       let benchGoal: { team: TeamId; at: number } | null = null;
       const unsubBenchGoal = gameBus.on("goalScored", (e) => { benchGoal = { team: e.team, at: effectNow }; });
@@ -2126,7 +2240,10 @@ export function PixiPitch({
           benchGfx.rect(tunnel.x, top, tunnel.w, h).fill({ color: 0x232c37, alpha: 0.7 });
           benchGfx.rect(tunnel.x, top, 1, h).fill({ color: 0xdcecf7, alpha: 0.5 }).rect(tunnel.x + tunnel.w - 1, top, 1, h).fill({ color: 0xdcecf7, alpha: 0.5 });
         }
-        if (!(officialsOn && extrasRef.current)) return;
+        if (!(officialsOn && extrasRef.current)) {
+          for (const a of Object.values(benchArt)) if (a) a.bench.visible = a.roof.visible = false;
+          return;
+        }
         const touchY = m.marginY + m.height;
         const laneEnd = touchY + STADIUM.AR_LANE_YDS * m.scale;
         const runoffEnd = m.stand ? touchY + STADIUM.BENCH_RUNOFF_YDS * m.scale : canvasHeight;
@@ -2137,10 +2254,26 @@ export function PixiPitch({
           const bench = benchShown(all.map((p) => p.role)).map((i) => all[i]!);
           const L = benchLayout(bench.length, b.x + b.w / 2, b.w, laneEnd, runoffEnd - 1, 0, markerR);
           const box = L.box;
+          if (stadiumArt) {
+            let a = benchArt[side];
+            if (!a) {
+              a = { bench: new Sprite(stadiumArt.bench), roof: new Sprite(stadiumArt.benchRoof) };
+              a.bench.zIndex = -0.71; a.roof.zIndex = -0.699;
+              a.bench.eventMode = a.roof.eventMode = 'none';
+              world.addChild(a.bench, a.roof);
+              benchArt[side] = a;
+            }
+            for (const s of [a.bench, a.roof]) {
+              s.position.set(box.x - 3, box.y);
+              s.width = box.w + 6; s.height = box.h;
+              s.visible = true;
+            }
+          } else {
           // Dugout: dark floor, the bench along the back, side walls, a light roof edge toward the pitch.
           benchGfx.rect(box.x - 3, box.y, box.w + 6, box.h).fill({ color: 0x11171f, alpha: 0.95 });
           benchGfx.rect(box.x, box.y + box.h - box.h * 0.28, box.w, box.h * 0.22).fill(0x2b3846);
           benchGfx.rect(box.x - 3, box.y, 2, box.h).fill(0x3a4756).rect(box.x + box.w + 1, box.y, 2, box.h).fill(0x3a4756);
+          }
           const kit = team === "A" ? fillA : fillB;
           const kits = benchKits(bench.map((p) => p.role), kit);
           const goalAge = benchGoal && benchGoal.team === team ? effectNow - benchGoal.at : null;
@@ -2162,7 +2295,7 @@ export function PixiPitch({
             const hair = BENCH_HAIR[look.hair];
             if (hair !== undefined) benchGfx.circle(hx - pose.lookX * u * 0.3, y, u * 0.48).fill(hair);
           });
-          benchGfx.rect(box.x - 3, box.y, box.w + 6, Math.max(1, u * 0.28)).fill({ color: 0xdcecf7, alpha: 0.55 });
+          if (!stadiumArt) benchGfx.rect(box.x - 3, box.y, box.w + 6, Math.max(1, u * 0.28)).fill({ color: 0xdcecf7, alpha: 0.55 });
         }
       };
       /**
@@ -2179,6 +2312,11 @@ export function PixiPitch({
       photoLayer.eventMode = 'none';
       world.addChild(photoLayer);
       const photoFigures: Container[] = [];
+      const flashLayer = new Container();
+      flashLayer.zIndex = -0.685;
+      flashLayer.eventMode = 'none';
+      world.addChild(flashLayer);
+      const flashPool = new SpritePool(flashLayer, "add");
       const photoBurst: Record<"left" | "right", number> = { left: -99, right: -99 };
       const unsubPhotoShot = gameBus.on("shot", (e) => {
         const p = playerPos(e.player);
@@ -2189,6 +2327,7 @@ export function PixiPitch({
       const photoSpots = photographerSpots(stadiumRef.current?.seed ?? "match");
       const drawPhotographers = (lastBallForPhotos: YdPos) => {
         photoGfx.clear();
+        flashPool.begin();
         photoLayer.visible = officialsOn && extrasRef.current && !!m.stand;
         if (!(officialsOn && extrasRef.current && m.stand)) return;
         const u = markerR * 0.4; // the same unit as the benches
@@ -2228,8 +2367,15 @@ export function PixiPitch({
               if (ph0 < 0.09 && (burstAge < 2.2 || (Math.floor((effectNow + look.phase * 2) / period) + i) % 2 === 0)) {
                 const a = 1 - ph0 / 0.09;
                 const fx = camX0 + cx * u * 0.6, fy = camY0 + cy * u * 0.6;
-                photoGfx.circle(fx, fy, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
-                photoGfx.circle(fx, fy, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
+                if (fxArt) {
+                  // The art pack's flash: grow, peak, fade.
+                  const s = flashPool.next(fxArt.flash[Math.min(3, Math.floor((1 - a) * 4))]!);
+                  s.position.set(fx, fy);
+                  s.width = s.height = u * FX_ART.FLASH_SIZE;
+                } else {
+                  photoGfx.circle(fx, fy, u * 1.8).fill({ color: 0xffffff, alpha: 0.35 * a });
+                  photoGfx.circle(fx, fy, u * 0.7).fill({ color: 0xffffff, alpha: 0.9 * a });
+                }
               }
               return;
             }
@@ -2262,7 +2408,7 @@ export function PixiPitch({
       ledLayer.zIndex = -0.68;
       ledLayer.eventMode = 'none';
       world.addChild(ledLayer);
-      type LedPanel = { bg: Graphics; text: Text; w: number; h: number; order: number; shown: string };
+      type LedPanel = { panel: Container; bg: Graphics; text: Text; w: number; h: number; order: number; shown: string };
       const ledPanels: LedPanel[] = [];
       const ledSeed = stadiumRef.current?.seed ?? "match";
       if (m.stand && stadiumRef.current?.led) {
@@ -2288,7 +2434,7 @@ export function PixiPitch({
             text.x = w / 2; text.y = h / 2;
             panel.addChild(bg, text);
             board.addChild(panel);
-            ledPanels.push({ bg, text, w, h, order: order++, shown: "" });
+            ledPanels.push({ panel, bg, text, w, h, order: order++, shown: "" });
           }
         }
       }
@@ -2300,8 +2446,21 @@ export function PixiPitch({
         const name = scorer ? shirtName(scorer.name).toUpperCase() : "";
         ledGoal = { text: tpl.replace("{name}", name).replace("{minute}", String(e.minute + 1)), at: effectNow };
       });
+      let ledFramed = false;
       const drawLed = () => {
         if (ledPanels.length === 0) return;
+        if (stadiumArt && !ledFramed) {
+          // The art pack's LED frame around every panel (its screen rectangle over the panel).
+          ledFramed = true;
+          const F = STADIUM_ART.LED;
+          for (const p of ledPanels) {
+            const s = new Sprite(stadiumArt.ledFrame);
+            const sx = p.w / F.SCREEN.w, sy = p.h / F.SCREEN.h;
+            s.position.set(-F.SCREEN.x * sx, -F.SCREEN.y * sy);
+            s.scale.set(sx, sy);
+            p.panel.addChild(s);
+          }
+        }
         if (ledGoal && effectNow - ledGoal.at > LED.GOAL_S) ledGoal = null;
         const cycle = Math.floor(effectNow / LED.SWITCH_S);
         const into = effectNow - cycle * LED.SWITCH_S;
@@ -2412,6 +2571,11 @@ export function PixiPitch({
       const smokeLayer = new Container();
       smokeLayer.eventMode = 'none';
       smokeLayer.addChild(smokeG);
+      // The art pack's smoke puffs, flare sparks and firework bursts (art phase 9).
+      const smokePool = new SpritePool(smokeLayer);
+      const fireLayer = new Container();
+      fireLayer.eventMode = 'none';
+      const firePool = new SpritePool(fireLayer, "add");
       app.stage.addChildAt(smokeLayer, app.stage.getChildIndex(world));
       sparkG.eventMode = 'none';
       let atmosphereMask: Graphics | null = null;
@@ -2422,19 +2586,36 @@ export function PixiPitch({
         atmosphere.mask = atmosphereMask;
         app.stage.addChild(atmosphereMask);
       }
-      app.stage.addChild(atmosphere, sparkG);
+      app.stage.addChild(atmosphere, sparkG, fireLayer);
       const towers = m.stand && towersOn ? towerSpots(m.stand) : [];
       let towersLitKey = "";
       let phonesDrawnAt = -Infinity;
       let phoneBoostAt: number | null = null;
       let bursts: CelebrationBurst[] = [];
       const lightsOn = () => (currentLight?.flood ?? 0) >= ATMOSPHERE.LIGHTS_ON;
+      const towerSprites = new Container();
+      towerSprites.eventMode = 'none';
+      atmosphere.addChild(towerSprites);
       const drawTowers = () => {
         const lit = lightsOn();
-        const key = `${towers.length}|${lit}`;
+        const key = `${towers.length}|${lit}|${!!stadiumArt}`;
         if (key === towersLitKey) return;
         towersLitKey = key;
         towerG.clear();
+        towerSprites.removeChildren().forEach((c) => c.destroy());
+        if (stadiumArt) {
+          // The art pack's tower: lamps toward the pitch, greyed while the floodlights are off.
+          for (const t of towers) {
+            const s = new Sprite(stadiumArt.tower);
+            s.anchor.set(0.5);
+            s.position.set(t.x, t.y);
+            s.rotation = t.angle - Math.PI / 2;
+            s.width = s.height = t.size * STADIUM_ART.TOWER_SIZE;
+            s.tint = lit ? 0xffffff : STADIUM_ART.TOWER_OFF_TINT;
+            towerSprites.addChild(s);
+          }
+          return;
+        }
         const T = ATMOSPHERE.TOWER;
         for (const t of towers) {
           const p = towerPanel(t);
@@ -2469,13 +2650,61 @@ export function PixiPitch({
           phoneG.circle(p.x, p.y, r).fill({ color: ATMOSPHERE.PHONES.COLOR, alpha: a });
         }
       };
+      let burstsDrawn = false;
       const drawBursts = () => {
-        if (bursts.length === 0) return;
+        if (bursts.length === 0) {
+          if (burstsDrawn) { smokePool.begin(); firePool.begin(); smokeG.clear(); sparkG.clear(); burstsDrawn = false; }
+          return;
+        }
+        burstsDrawn = true;
         bursts = bursts.filter((b) => effectNow - b.at <= burstLength(b));
         smokeG.clear();
         sparkG.clear();
+        smokePool.begin();
+        firePool.begin();
+        const fx = fxArt;
         for (const b of bursts) {
           const { glows, puffs } = flareSmoke(b, effectNow);
+          if (fx) {
+            // Sprites: a grey puff tinted with the smoke, the burning tip of each flare (additive).
+            for (const q of puffs) {
+              const s = smokePool.next(fx.smoke[q.n]!);
+              s.position.set(q.x, q.y);
+              s.width = s.height = q.r * FX_ART.PUFF_SIZE;
+              s.tint = q.color;
+              s.alpha = Math.min(1, q.alpha * FX_ART.PUFF_ALPHA);
+            }
+            for (const g of glows) {
+              const s = firePool.next(fx.spark);
+              s.position.set(g.x, g.y);
+              s.width = s.height = g.r * FX_ART.SPARK_SIZE;
+              s.tint = ATMOSPHERE.FLARES.GLOW;
+              s.alpha = g.alpha;
+            }
+            const shells: ShellSprite[] = [];
+            for (const k of fireworks(b, effectNow, shells)) {
+              if (k.glow) sparkG.circle(k.x, k.y, k.r * 2.6).fill({ color: k.color, alpha: k.alpha * k.glow * 0.35 });
+              sparkG.circle(k.x, k.y, k.r).fill({ color: k.color, alpha: k.alpha });
+            }
+            for (const sh of shells) {
+              // Two neighbouring frames crossfaded, as the atlas asks.
+              const pos = Math.min(FX_ART.FIRE_FRAMES - 0.001, sh.t * FX_ART.FIRE_FRAMES);
+              const f = Math.floor(pos), fr = pos - f;
+              const frames = fx.fire[sh.style]!;
+              for (const [frame, w] of [[f, 1 - fr], [f + 1, fr]] as const) {
+                if (frame >= FX_ART.FIRE_FRAMES || w <= 0.01) continue;
+                const s = firePool.next(frames[frame]!);
+                s.position.set(sh.x, sh.y);
+                s.rotation = sh.rotation;
+                const size = sh.radius * FX_ART.FIRE_SIZE;
+                s.width = size; s.height = size;
+                s.scale.x *= sh.flip;
+                s.tint = sh.color;
+                s.alpha = sh.alpha * w;
+              }
+            }
+            continue;
+          }
           for (const q of puffs) smokeG.circle(q.x, q.y, q.r).fill({ color: q.color, alpha: q.alpha });
           for (const g of glows) {
             // Soft layered glow: wide halo, warm body, bright core.
@@ -2521,6 +2750,8 @@ export function PixiPitch({
           bursts = [];
           smokeG.clear();
           sparkG.clear();
+          smokePool.begin();
+          firePool.begin();
           return;
         }
         drawPhones();
@@ -2532,6 +2763,38 @@ export function PixiPitch({
       const particleGraphics = new Graphics();
       particleGraphics.eventMode = 'none';
       app.stage.addChild(particleGraphics);
+      // Fog (art phase 9, drawing only, `matchFog.ts`): two layers of the art pack's fog texture drifting at different
+      // speeds over the whole canvas. Frozen while paused (effects clock); still with reduced motion or light quality.
+      const fogLayers: TilingSprite[] = [];
+      let fogLoading = false;
+      const drawFog = () => {
+        const li = lightingRef.current;
+        const on = !!li && newVisualOn() && (li.fog ?? matchHasFog(li.weather, li.seed, li.sun.covered));
+        if (!on) { for (const f of fogLayers) f.visible = false; return; }
+        if (fogLayers.length === 0) {
+          const url = paintedBackdrop("fog");
+          if (!url || fogLoading) return;
+          fogLoading = true;
+          void fogTexture(url).then((tex) => {
+            if (turfDisposed || !tex) return;
+            for (const L of FOG.LAYERS) {
+              const t = new TilingSprite({ texture: tex, width: canvasWidth, height: canvasHeight });
+              t.tileScale.set(L.scale);
+              t.alpha = L.alpha;
+              t.eventMode = 'none';
+              app.stage.addChildAt(t, app.stage.getChildIndex(particleGraphics) + 1);
+              fogLayers.push(t);
+            }
+          });
+          return;
+        }
+        FOG.LAYERS.forEach((L, i) => {
+          const f = fogLayers[i]!;
+          f.visible = true;
+          if (calm()) return;
+          f.tilePosition.set(effectNow * L.drift, effectNow * L.drift * 0.3);
+        });
+      };
       let particles: Particle[] = [];
       let particleSeedKey = "";
       const drawParticles = () => {
@@ -3329,6 +3592,13 @@ export function PixiPitch({
         }
         const h = drawnB.h;
         seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
+        if (ballFrames) {
+          ballRoll = nextBallRoll(ballRoll, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
+          ballSprite.texture = ballFrames[ballSpriteFrame(ballRoll.roll)]!;
+          ballSprite.rotation = ballRoll.heading;
+          // In snow the ball is orange, as in real snow matches.
+          ballSprite.tint = lightingRef.current?.weather === "snow" ? BALL_SPRITE.SNOW_TINT : 0xffffff;
+        }
         prevBallPx = { x: bx, y: by };
         seams.rotation = seamAngle;
         ball.x = bx;
@@ -3342,6 +3612,7 @@ export function PixiPitch({
         // ── Pitch effects + trail (real-time clock, frozen while paused) ──
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
         drawParticles();
+        drawFog();
         updateLight();
         drawAtmosphere();
         drawOfficials(drawnB, [...drawnPos.values()]);

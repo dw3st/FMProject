@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
 import { NationalInboxBody } from "@/GameInterface/National/NationalInboxBody";
-import { Icon, iconOf } from "@/GameInterface/Icons";
+import { ArtIcon, Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
@@ -808,7 +808,7 @@ function MessageRow({
       <div
         className={`w-9 h-9 rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}
       >
-        <MetaIcon className={`w-4 h-4 ${meta.color}`} />
+        <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={16} className={meta.color} fallback={<MetaIcon className={`w-4 h-4 ${meta.color}`} />} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
@@ -849,7 +849,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           <div
             className={`w-10 h-10 rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}
           >
-            <MetaIcon className={`w-5 h-5 ${meta.color}`} />
+            <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={20} className={meta.color} fallback={<MetaIcon className={`w-5 h-5 ${meta.color}`} />} />
           </div>
           <div className="flex-1 min-w-0">
             <span

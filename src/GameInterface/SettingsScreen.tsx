@@ -6,7 +6,7 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -23,6 +23,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [matchCamera, setMatchCamera] = useState(readMatchCamera);
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
   const [quality, setQuality] = useState<QualityPref>(readQuality);
+  const [playerLook, setPlayerLook] = useState<PlayerLookPref>(readPlayerLook);
 
   useEffect(() => {
     if (!open) return;
@@ -109,6 +110,16 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "auto", label: t("settings.qualityAuto") }, { key: "high", label: t("settings.qualityHigh") }, { key: "light", label: t("settings.qualityLight") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.qualityDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.playerLook")}</div>
+          <OptionChips
+            value={playerLook}
+            onChange={(k) => { const v = k === "real" ? "real" : "current"; setPlayerLook(v); writePlayerLook(v); }}
+            options={[{ key: "current", label: t("settings.playerLookCurrent") }, { key: "real", label: t("settings.playerLookReal") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.playerLookDescription")}</p>
         </div>
 
         {onExitToMenu && (
