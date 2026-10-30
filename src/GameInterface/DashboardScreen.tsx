@@ -21,7 +21,7 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { InboxCategoryTile, InboxMessageBody, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
+import { InboxCategoryTile, InboxMessageBody, inboxIllustration, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
 import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
 import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
@@ -395,6 +395,7 @@ export function DashboardScreen() {
           previewOf={(m) => inboxPreview(m, t)}
           renderBody={(m) => <InboxMessageBody message={m} leagues={leagues} />}
           iconOf={(m) => <InboxCategoryTile message={m} />}
+          heroOf={inboxIllustration}
           onOpen={(m) => {
             if (m.read || !session) return;
             setInboxMessages((prev) => (prev ? prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)) : prev));

@@ -2111,7 +2111,7 @@ export function MatchScreen() {
         <div className="w-64 shrink-0 flex flex-col min-h-0">
           <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
             <FriendsButton variant="toolbar" />
-            {isTester && <ReportButton onClick={handleOpenReport} />}
+            {isTester && <ReportButton onClick={handleOpenReport} iconOnly />}
           </div>
           <div className="flex-1 min-h-0 flex">
         <MatchSummaryPanel

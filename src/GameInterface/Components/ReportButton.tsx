@@ -5,8 +5,22 @@ import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 
 /** The tester's report button: one look everywhere (top bar, live match, preview, result), red with the flag and the word. */
-export function ReportButton({ onClick, className = "" }: { onClick: () => void; className?: string }) {
+export function ReportButton({ onClick, className = "", iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
   const { t } = useTranslation();
+  if (iconOnly) {
+    // The live match (the user's report): just the red flag, in a fixed spot.
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={t("nav.report")}
+        aria-label={t("nav.report")}
+        className={`flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-destructive cursor-pointer hover:bg-destructive/10 ${className}`}
+      >
+        <Icon name="report" size={18} />
+      </button>
+    );
+  }
   return (
     <button
       type="button"

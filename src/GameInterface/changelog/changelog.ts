@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.21",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Caixa de entrada como na arte nova: a mensagem mais recente com a ilustração grande no Painel, ícones em quadrados neutros e a lista de mensagens mais larga.",
+        en: "The inbox as in the new art: the newest message with its big illustration on the Dashboard, icons on neutral tiles and a wider message list.",
+      },
+      {
+        pt: "Na partida, o Reportar é só a bandeira vermelha, sempre no mesmo lugar.",
+        en: "In the match, Report is just the red flag, always in the same spot.",
+      },
+    ],
+  },
+  {
     version: "4.41.20",
     date: "2026-10-30",
     items: [

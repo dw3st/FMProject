@@ -822,6 +822,7 @@ export function InboxCard({
   renderBody,
   onOpen,
   iconOf,
+  heroOf,
 }: {
   messages: InboxMessage[];
   unread: number;
@@ -833,6 +834,8 @@ export function InboxCard({
   onOpen?: (m: InboxMessage) => void;
   /** The category tile of a row (the inbox's own). */
   iconOf?: (m: InboxMessage) => ReactNode;
+  /** The painted illustration of a message (art preview: the newest message on top, big). */
+  heroOf?: (m: InboxMessage) => string | null;
 }) {
   const { t, i18n } = useTranslation();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -862,6 +865,20 @@ export function InboxCard({
       href="/inbox"
       linkLabel={t("dashboard.home.openInbox")}
     >
+      {shown.length > 0 && heroOf?.(shown[0]!) && (
+        // The newest message as a painted card on top (art preview); clicking opens it below.
+        <button
+          type="button"
+          onClick={() => toggle(shown[0]!)}
+          className="relative block w-full overflow-hidden rounded-md border border-border mb-2 p-0 bg-transparent cursor-pointer text-left"
+        >
+          <img src={heroOf(shown[0]!)!} alt="" className="block w-full aspect-[16/6] object-cover" />
+          <span className="absolute inset-x-0 bottom-0 px-3 py-2 bg-black/70 flex flex-col">
+            <span className="font-semibold text-white truncate">{subjectOf(shown[0]!)}</span>
+            <span className="text-sm text-white/80 truncate">{previewOf(shown[0]!)}</span>
+          </span>
+        </button>
+      )}
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{t("dashboard.home.noMessages")}</p>
       ) : (

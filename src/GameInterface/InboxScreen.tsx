@@ -1,4 +1,4 @@
-import { paintedNews } from "@/Domain/art/paintedFaces";
+import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import { inboxAction } from "@/GameInterface/Inbox/inboxAction";
 import { AchievementInboxBody } from "@/GameInterface/Achievements/AchievementInboxBody";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -431,8 +431,8 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
         ) : messages.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-            <div className="md:col-span-1 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-full">
+            <div className="md:col-span-2 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               <OptionChips<ThemeFilter>
                 aria-label={t("inbox.themes.label")}
                 className="shrink-0 p-3 border-b border-border"
@@ -471,7 +471,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
                 )}
               </div>
             </div>
-            <div className="md:col-span-2 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
+            <div className="md:col-span-3 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               {selected ? (
                 <MessageDetail message={selected} leagues={leagues} />
               ) : (
@@ -1578,9 +1578,18 @@ export function InboxCategoryTile({ message, large = false }: { message: InboxMe
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
   const size = large ? 24 : 20;
+  // New visual (art preview): a neutral raised tile with the pack icon in the accent colour; else the category colours.
+  const art = newVisualOn();
+  const tile = art ? "bg-secondary border-border" : `${meta.bg} ${meta.border}`;
+  const ink = art ? "text-primary" : meta.color;
   return (
-    <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${meta.bg} ${meta.border} border flex items-center justify-center shrink-0`}>
-      <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={size} className={meta.color} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
+    <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${tile} border flex items-center justify-center shrink-0`}>
+      <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
     </div>
   );
+}
+
+/** The painted illustration of a message's category (art phase 7), or null without the new visual / art. */
+export function inboxIllustration(message: InboxMessage): string | null {
+  return paintedNews(message.category);
 }
