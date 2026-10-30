@@ -59,6 +59,8 @@ export const GAME_ART_FILES: Record<string, string> = {
   "player/player-atlas.json": "application/json",
   "player/player-atlas.png": "image/png",
   "player/disc-rim.png": "image/png",
+  "flag/corner-cloth.png": "image/png",
+  "flag/corner-pole.png": "image/png",
   "keeper/keeper-atlas.json": "application/json",
   "keeper/keeper-atlas.png": "image/png",
   "officials/officials-atlas.json": "application/json",

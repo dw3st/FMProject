@@ -236,3 +236,9 @@ export const LIGHTING = {
 } as const;
 
 export { LED_ADS };
+
+/**
+ * The painted corner flag (4.41.24, `data_process/assets/flag`): 256 px sprites, the pole's centre at (40, 128), the
+ * cloth pointing to +x, CLOTH_PX long.
+ */
+export const FLAG_SPRITE = { POLE_X: 40 / 256, POLE_Y: 128 / 256, CLOTH_PX: 204 } as const;

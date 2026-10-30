@@ -440,3 +440,13 @@ proporções dela.
   lado da pílula do nome; os rostos são rasterizados nesse tamanho.
 - **Gramado pintado:** abaixo de 40% o fundo pintado `grass-worn` e abaixo de 15% `grass-muddy` (natural e híbrido, com
   um véu leve e sem as falhas desenhadas); híbrido usa `grass-c`, natural `grass-a`/`grass-b` pelo estádio.
+
+## Bandeirinha, saída na substituição, placa do quarto árbitro (4.41.24)
+
+- **Bandeirinha:** com o visual novo, `flag/corner-cloth.png` (pano em cinza, tingido na cor do mandante) e
+  `flag/corner-pole.png`, vetor refinado no FLUX (`data_process/assets/flag/build_corner_flag.py`); `FLAG_SPRITE`
+  (`pitchStyle.ts`) dá o ponto do mastro e o comprimento do pano. Sem a arte, o triângulo desenhado.
+- **Quem sai** numa substituição (menos lesão, que sai de maca) caminha até a lateral dos bancos no meio-campo em
+  `SUB_WALK.S` e some no fim (`walkOffs`).
+- **Placa do quarto árbitro:** com a placa levantada, os números (`shirtNumbers`) de quem sai (vermelho) e de quem
+  entra (verde) sobre ele.

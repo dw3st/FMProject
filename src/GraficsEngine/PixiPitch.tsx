@@ -7,7 +7,7 @@ import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -1781,7 +1781,12 @@ export function PixiPitch({
       /** Remove and destroy the marker + label for a player that left the pitch. */
       function removePlayerSprite(id: number): void {
         const g = playerGraphics.get(id);
-        if (g) { world.removeChild(g); g.destroy({ children: true }); playerGraphics.delete(id); }
+        if (g && subOuts.has(id)) {
+          // Substituted (4.41.24, art review): he walks off to the bench side instead of vanishing.
+          subOuts.delete(id);
+          playerGraphics.delete(id);
+          walkOffs.set(id, { g, fromX: g.x, fromY: g.y, at: effectNow });
+        } else if (g) { world.removeChild(g); g.destroy({ children: true }); playerGraphics.delete(id); }
         const lbl = playerLabels.get(id);
         if (lbl) { world.removeChild(lbl); lbl.destroy(); playerLabels.delete(id); }
         const pl = playerPills.get(id);
@@ -2330,6 +2335,12 @@ export function PixiPitch({
 
       // The fourth official (art phase 3): between the technical areas, the board up on a substitution.
       const walkOns = new Map<number, { from: Pos; at: number }>();
+      /** Players going off on a substitution (removed from the state, still drawn walking to the touchline). */
+      const subOuts = new Set<number>();
+      const walkOffs = new Map<number, { g: Container; fromX: number; fromY: number; at: number }>();
+      /** The fourth official's board: who goes off and who comes on (shirt numbers, 4.41.24). */
+      let boardNums: { out: number; in: number; team: TeamId } | null = null;
+      let boardTag: { c: Container; out: Text; inn: Text; key: string } | null = null;
       let fourth: Container | null = null;
       let boardUntil = -1;
       const unsubFourth = gameBus.on("playerSubstituted", (e) => {
@@ -2337,6 +2348,9 @@ export function PixiPitch({
         // The substitute comes on from the halfway line by the benches (drawn bottom touchline) instead of appearing
         // in his slot (art preview, 4.41.15). Drawing only.
         walkOns.set(e.inId, { from: { x: PITCH_LENGTH / 2, y: mirrorRef.current ? -SUB_WALK.OFF_YDS : PITCH_WIDTH + SUB_WALK.OFF_YDS }, at: effectNow });
+        // An injured player leaves on the stretcher (`matchExtras`), not walking.
+        if (e.reason !== 'injury') subOuts.add(e.outId);
+        boardNums = { out: e.outId, in: e.inId, team: e.team };
       });
       onOfficialsReady = () => {
         if (!officialsOn) return;
@@ -2843,6 +2857,22 @@ export function PixiPitch({
         const st = stadiumRef.current;
         return st?.homeColors && !st.neutral ? cssColorToPixiHex(st.homeColors[0]) : MATCH_LOOK.FLAG.COLOR;
       };
+      // The painted pennant (4.41.24, FLUX-refined, user report): cloth tinted with the home colour, its shadow, the pole.
+      type FlagSprites = { shadow: Sprite; cloth: Sprite; pole: Sprite };
+      let flagSprites: FlagSprites[] | null = null;
+      if (newVisualOn()) {
+        void Promise.all([Assets.load<Texture>(gameArtUrl("flag/corner-cloth.png")), Assets.load<Texture>(gameArtUrl("flag/corner-pole.png"))])
+          .then(([clothTex, poleTex]) => {
+            if (facesDisposed || !clothTex || !poleTex || flagCornerGfx.destroyed) return;
+            flagSprites = cornerFlagSpots.map(() => {
+              const mk = (tex: Texture) => { const sp = new Sprite(tex); sp.anchor.set(FLAG_SPRITE.POLE_X, FLAG_SPRITE.POLE_Y); sp.zIndex = -0.66; sp.eventMode = 'none'; world.addChild(sp); return sp; };
+              const shadow = mk(clothTex);
+              shadow.tint = 0x000000;
+              shadow.alpha = 0.28;
+              return { shadow, cloth: mk(clothTex), pole: mk(poleTex) };
+            });
+          }).catch(() => { /* the drawn flags stay */ });
+      }
       const drawCornerFlags = () => {
         const F = EXTRAS.FLAG;
         const u = Math.max(1.6, unitPx);
@@ -2852,6 +2882,14 @@ export function PixiPitch({
           const sway = extrasRef.current && !calm() ? Math.sin(effectNow * F.HZ * Math.PI * 2 + i * 1.3) * F.SWAY : 0;
           const a = Math.atan2(f.dy, f.dx) + sway;
           const L = u * F.LEN;
+          const fs = flagSprites?.[i];
+          if (fs) {
+            const k = L / FLAG_SPRITE.CLOTH_PX;
+            for (const sp of [fs.shadow, fs.cloth, fs.pole]) { sp.scale.set(k); sp.rotation = a; sp.position.set(f.x, f.y); }
+            fs.shadow.position.set(f.x + 1.5, f.y + 2);
+            fs.cloth.tint = color;
+            return;
+          }
           const tipX = f.x + Math.cos(a) * L, tipY = f.y + Math.sin(a) * L;
           // The pennant: a triangle from the pole, its free corner swinging; a short shadow under it.
           const nx = -Math.sin(a) * L * 0.45, ny = Math.cos(a) * L * 0.45;
@@ -3003,7 +3041,40 @@ export function PixiPitch({
         }
         if (fourth) {
           const ballPx = toPixel(ball.x, ball.y);
-          animateFigure(fourth, "fourth", { x: ballPx.px, y: ballPx.py }, { board: effectNow < boardUntil });
+          const up = effectNow < boardUntil;
+          animateFigure(fourth, "fourth", { x: ballPx.px, y: ballPx.py }, { board: up });
+          // The board's numbers over him: off in red, on in green.
+          if (up && boardNums) {
+            if (!boardTag) {
+              const c = new Container();
+              c.zIndex = -0.59;
+              c.eventMode = 'none';
+              const style = (fill: number) => new TextStyle({ fontSize: Math.max(10, Math.round(markerR * 0.85)), fontFamily: 'sans-serif', fontWeight: '800', fill });
+              const bg = new Graphics();
+              bg.label = "bg";
+              const out = new Text({ text: "", style: style(0xff4d4d) });
+              const inn = new Text({ text: "", style: style(0x4dff7a) });
+              out.anchor.set(0.5); inn.anchor.set(0.5);
+              c.addChild(bg, out, inn);
+              world.addChild(c);
+              boardTag = { c, out, inn, key: "" };
+            }
+            const inP = stateRef.current.players.find((p) => p.id === boardNums!.in);
+            const outN = shirtNumbers.get(boardNums.out);
+            const key = `${outN}|${inP ? shirtNumberOf(inP) : ""}`;
+            if (boardTag.key !== key) {
+              boardTag.key = key;
+              boardTag.out.text = outN !== undefined ? String(outN) : "";
+              boardTag.inn.text = inP ? String(shirtNumberOf(inP)) : "";
+              const w = Math.max(boardTag.out.width, boardTag.inn.width) + 8, h = boardTag.out.height + 2;
+              boardTag.out.position.set(-w / 2 - 1, 0);
+              boardTag.inn.position.set(w / 2 + 1, 0);
+              (boardTag.c.getChildByLabel("bg") as Graphics).clear()
+                .roundRect(-w - 2, -h / 2, w * 2 + 4, h, 3).fill({ color: 0x05070a, alpha: 0.92 }).stroke({ width: 1, color: 0x9aa3b2, alpha: 0.6 });
+            }
+            boardTag.c.visible = true;
+            boardTag.c.position.set(fourth.x, fourth.y - markerR * 2.4);
+          } else if (boardTag) boardTag.c.visible = false;
         }
         for (const side of ["left", "right"] as const) {
           const entry = coachSprites[side];
@@ -3489,6 +3560,20 @@ export function PixiPitch({
             if (!currentPlayerIds.has(id)) removePlayerSprite(id);
           }
           trackedPlayerIds = currentPlayerIds;
+        }
+        // Substituted players walking off (eased to the bench side of the halfway line, fading at the end).
+        for (const [id, w] of walkOffs) {
+          const t = (effectNow - w.at) / SUB_WALK.S;
+          if (t >= 1 || w.g.destroyed) {
+            if (!w.g.destroyed) { world.removeChild(w.g); w.g.destroy({ children: true }); }
+            walkOffs.delete(id);
+            continue;
+          }
+          const k = t <= 0 ? 0 : t * t * (3 - 2 * t);
+          const to = toPixel(PITCH_LENGTH / 2, mirrorRef.current ? -SUB_WALK.OFF_YDS : PITCH_WIDTH + SUB_WALK.OFF_YDS);
+          w.g.x = w.fromX + (to.px - w.fromX) * k;
+          w.g.y = w.fromY + (to.py - w.fromY) * k;
+          w.g.alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
         }
 
         // Players: game pos → pixels (exact position). Name must refresh every frame so

@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.24",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Bandeirinhas de escanteio novas, com o pano na cor do mandante.",
+        en: "New corner flags, the cloth in the home club's colour.",
+      },
+      {
+        pt: "Na substituição, quem sai caminha para fora do campo, e a placa do quarto árbitro mostra os números de quem sai e de quem entra.",
+        en: "On a substitution the player going off walks off the pitch, and the fourth official's board shows the numbers going off and coming on.",
+      },
+    ],
+  },
+  {
     version: "4.41.23",
     date: "2026-10-30",
     items: [
