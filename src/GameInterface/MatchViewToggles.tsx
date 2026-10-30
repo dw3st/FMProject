@@ -12,13 +12,26 @@ function ViewSwitch({ icon, label, on, disabled, title, onClick, fill }: {
       disabled={disabled}
       title={title}
       onClick={onClick}
-      className={`flex items-center gap-2 h-10 ${fill ? "flex-1 min-w-0 justify-center px-2" : "px-3"} font-display font-bold uppercase tracking-[0.08em] text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`flex items-center ${fill ? "flex-1 min-w-0 flex-col justify-center gap-1 py-1.5 px-1" : "gap-2 h-10 px-3"} font-display font-bold uppercase tracking-[0.08em] text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
         on ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
       }`}
     >
-      <Icon name={icon} size={16} />
-      <span className={fill ? "truncate" : undefined}>{label}</span>
-      <span className={`w-2 h-2 rounded-full ${on ? "bg-primary shadow-[0_0_6px] shadow-primary" : "bg-border"}`} aria-hidden="true" />
+      {fill ? (
+        // Narrow column (above the team list): icon and light on top, the label below, never cut.
+        <>
+          <span className="flex items-center gap-1.5">
+            <Icon name={icon} size={16} />
+            <span className={`w-2 h-2 rounded-full ${on ? "bg-primary shadow-[0_0_6px] shadow-primary" : "bg-border"}`} aria-hidden="true" />
+          </span>
+          <span className="text-sm leading-none">{label}</span>
+        </>
+      ) : (
+        <>
+          <Icon name={icon} size={16} />
+          <span>{label}</span>
+          <span className={`w-2 h-2 rounded-full ${on ? "bg-primary shadow-[0_0_6px] shadow-primary" : "bg-border"}`} aria-hidden="true" />
+        </>
+      )}
     </button>
   );
 }
