@@ -17,8 +17,19 @@ export type { ScoutFilterState };
 
 export type ScoutFilterOption = { value: string; label: string };
 
-/** Filter values: main roles only (matches `getMainRole` on each player’s primary position). */
-const MAIN_POSITION_FILTERS = ["all", "GK", "Defender", "Midfielder", "Forward"] as const;
+/**
+ * Filter values: a main role (every player of the line), or a detailed role under it (the player's natural position,
+ * tester report 4.41.27: full-backs apart from centre-backs, wingers apart from strikers).
+ */
+const POSITION_FILTERS: { value: string; detailed: boolean }[] = [
+  { value: "all", detailed: false }, { value: "GK", detailed: false },
+  { value: "Defender", detailed: false },
+  ...["CB", "LB", "RB", "LWB", "RWB"].map((value) => ({ value, detailed: true })),
+  { value: "Midfielder", detailed: false },
+  ...["CDM", "CM", "CAM", "LM", "RM"].map((value) => ({ value, detailed: true })),
+  { value: "Forward", detailed: false },
+  ...["LW", "RW", "ST"].map((value) => ({ value, detailed: true })),
+];
 
 const inputClass = formSelectBoxClass;
 
@@ -52,7 +63,10 @@ export function ScoutFilters({
     setFilters(createDefaultScoutFilters());
   };
 
-  const positionOptions = MAIN_POSITION_FILTERS.map((value) => ({ value, label: t(`scout.filters.positions.${value}`) }));
+  const positionOptions = POSITION_FILTERS.map(({ value, detailed }) => ({
+    value,
+    label: detailed ? `– ${t(`roles.detailed.${value}`)}` : t(`scout.filters.positions.${value}`),
+  }));
 
   return (
     <form

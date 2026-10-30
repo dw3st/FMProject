@@ -45,6 +45,16 @@ describe("filterScoutPlayers — each filter in isolation", () => {
     expect(ids(filterScoutPlayers(list, F({ position: "GK" }), none))).toEqual(["gk"]);
   });
 
+  test("a detailed position matches the natural position (full-backs apart from centre-backs)", () => {
+    const list = [
+      P({ id: "cb", pos: "Defender", natural: "CB" }), P({ id: "lb", pos: "Defender", natural: "LB" }),
+      P({ id: "lw", pos: "Forward", natural: "LW" }), P({ id: "st", pos: "Forward", natural: "ST" }),
+    ];
+    expect(ids(filterScoutPlayers(list, F({ position: "LB" }), none))).toEqual(["lb"]);
+    expect(ids(filterScoutPlayers(list, F({ position: "LW" }), none))).toEqual(["lw"]);
+    expect(ids(filterScoutPlayers(list, F({ position: "Defender" }), none))).toEqual(["cb", "lb"]);
+  });
+
   test("age range is inclusive", () => {
     const list = [P({ id: "a", age: 17 }), P({ id: "b", age: 20 }), P({ id: "c", age: 30 })];
     expect(ids(filterScoutPlayers(list, F({ minAge: 20, maxAge: 30 }), none))).toEqual(["b", "c"]);

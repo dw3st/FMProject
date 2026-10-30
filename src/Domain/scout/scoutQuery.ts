@@ -99,6 +99,14 @@ function seenAttributeValue(value: number, noise: number | undefined): number {
  * blurred players carry the middle of the shown overall/value/wage ranges in `avg`,
  * `valueMillions` and `wage` (`toDisplayPlayer`), never the real numbers.
  */
+const MAIN_ROLE_FILTERS = new Set(["GK", "Defender", "Midfielder", "Forward"]);
+
+/** A main role matches the line; a detailed role (LB, LW…) matches the player's natural position. */
+export function matchesPosition(player: { pos: string; natural?: string }, position: string): boolean {
+  if (MAIN_ROLE_FILTERS.has(position)) return getMainRole(player.pos) === position;
+  return (player.natural ?? player.pos) === position;
+}
+
 export function filterScoutPlayers(
   players: DisplayPlayer[],
   filters: ScoutFilterState,
@@ -117,7 +125,7 @@ export function filterScoutPlayers(
     // Rows without `knowledge` are exact (own squad).
     if ((filters.minKnowledge ?? 0) > 0 && (player.knowledge ?? 100) < filters.minKnowledge!) return false;
     if (name && !player.name.toLowerCase().includes(name)) return false;
-    if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;
+    if (filters.position !== "all" && !matchesPosition(player, filters.position)) return false;
     if (player.age < filters.minAge || player.age > filters.maxAge) return false;
     if (player.avg < filters.minAvg || player.avg > filters.maxAvg) return false;
     if (player.valueMillions < filters.minPriceM) return false;

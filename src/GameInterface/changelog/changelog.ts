@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.27",
+    date: "2026-10-30",
+    time: "10:15",
+    items: [
+      {
+        pt: "Olheiro: a busca filtra também por posição específica (zagueiro, laterais, alas, volante, meias, pontas, centroavante).",
+        en: "Scout: the search also filters by a specific position (centre-back, full-backs, wing-backs, midfield roles, wingers, striker).",
+      },
+    ],
+  },
+  {
     version: "4.41.26",
     date: "2026-10-30",
     time: "10:08",
