@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.23",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Caixa de entrada com a lista de mensagens do mesmo tamanho da leitura e os ícones na cor da categoria.",
+        en: "The inbox with the message list as wide as the reading pane and the icons in their category colour.",
+      },
+      {
+        pt: "O Reportar é só a bandeira vermelha em todas as telas.",
+        en: "Report is just the red flag on every screen.",
+      },
+    ],
+  },
+  {
     version: "4.41.22",
     date: "2026-10-30",
     items: [

@@ -4,11 +4,10 @@ import { Icon } from "@/GameInterface/Icons";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 
-/** The tester's report button: one look everywhere (top bar, live match, preview, result), red with the flag and the word. */
-export function ReportButton({ onClick, className = "", iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
+/** The tester's report button: one look everywhere (top bar, live match, preview, result): the red flag (user report 4.41.23); `iconOnly={false}` adds the word. */
+export function ReportButton({ onClick, className = "", iconOnly = true }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
   const { t } = useTranslation();
   if (iconOnly) {
-    // The live match (the user's report): just the red flag, in a fixed spot.
     return (
       <button
         type="button"

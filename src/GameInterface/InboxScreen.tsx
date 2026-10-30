@@ -431,8 +431,8 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
         ) : messages.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-full">
-            <div className="md:col-span-2 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+            <div className="card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               <OptionChips<ThemeFilter>
                 aria-label={t("inbox.themes.label")}
                 className="shrink-0 p-3 border-b border-border"
@@ -471,7 +471,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
                 )}
               </div>
             </div>
-            <div className="md:col-span-3 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
+            <div className="card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               {selected ? (
                 <MessageDetail message={selected} leagues={leagues} />
               ) : (
@@ -1578,10 +1578,10 @@ export function InboxCategoryTile({ message, large = false }: { message: InboxMe
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
   const size = large ? 24 : 20;
-  // New visual (art preview): a neutral raised tile with the pack icon in the accent colour; else the category colours.
+  // New visual (art preview): a neutral raised tile with the pack icon in its category colour (user report 4.41.23).
   const art = newVisualOn();
   const tile = art ? "bg-secondary border-border" : `${meta.bg} ${meta.border}`;
-  const ink = art ? "text-primary" : meta.color;
+  const ink = meta.color;
   return (
     <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${tile} border flex items-center justify-center shrink-0`}>
       <ArtIcon art={`inbox-${message.category.replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
