@@ -140,6 +140,8 @@ export const BOARD_FANS = {
     ULTIMATUM: 25,
     ULTIMATUM_MATCHES: 5,
     ULTIMATUM_POINTS: 7,
+    /** Fewer league matches left in the season than this: no ultimatum (the season review decides). */
+    ULTIMATUM_MIN_MATCHES: 3,
     /** Ultimatum met: the board relaxes a little. */
     ULTIMATUM_MET_BOARD: 5,
     /** Below: sacked (sacking enabled only). */

@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.51",
+    date: "2026-10-30",
+    time: "19:56",
+    items: [
+      {
+        pt: "O goleiro agora sai nos cruzamentos que caem até a marca do pênalti quando chega antes de todos: segura alguns, soca ou espalma os mais longe.",
+        en: "The keeper now comes for crosses dropping as far as the penalty spot when he gets there first: he holds some, punches or parries the deeper ones.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O ultimato da diretoria agora conta só os jogos de liga que restam na temporada e acaba junto com ela, sem pedir pontos impossíveis.",
+        en: "The board's ultimatum now counts only the league matches left in the season and ends with it, never asking for impossible points.",
+      },
+    ],
+  },
+  {
     version: "4.41.50",
     date: "2026-10-30",
     time: "17:22",

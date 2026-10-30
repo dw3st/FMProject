@@ -224,6 +224,25 @@ describe("reviewBoardStatus", () => {
     expect(met.messages).toEqual(["ultimatum_met"]);
     expect(met.state.board).toBe(35);
   });
+  test("an ultimatum fits the league matches left and never outlives the season (tester report: 4 pts in 1 match)", () => {
+    const review = (b: Parameters<typeof base>[0], left: number) =>
+      reviewBoardStatus(base({ warned: true, ...b }), { sackingEnabled: true, date: "d", leagueMatchesLeft: left });
+    expect(review({ board: 24 }, 4).state.ultimatum).toEqual({ since: "d", matchesLeft: 4, pointsNeeded: 6, points: 0 });
+    expect(review({ board: 24 }, 3).state.ultimatum).toEqual({ since: "d", matchesLeft: 3, pointsNeeded: 5, points: 0 });
+    const late = review({ board: 24 }, 2);
+    expect(late.state.ultimatum).toBeUndefined();
+    expect(late.messages).toEqual([]);
+    // QPR: 3 points in 4 matches, the season over: dropped, not sacked (the season review decides).
+    const over = review({ board: 18, ultimatum: { since: "x", matchesLeft: 1, pointsNeeded: 7, points: 3 } }, 0);
+    expect(over.sacked).toBeNull();
+    expect(over.state.ultimatum).toBeUndefined();
+    // 4 points short with one match left: out of reach, failed now.
+    expect(review({ board: 30, ultimatum: { since: "x", matchesLeft: 1, pointsNeeded: 7, points: 3 } }, 5).sacked).toBe("ultimatum");
+    // Fewer matches left than the ultimatum still counts: clamped (6 short in 2 is still reachable).
+    const clamped = review({ board: 30, ultimatum: { since: "x", matchesLeft: 4, pointsNeeded: 7, points: 1 } }, 2);
+    expect(clamped.sacked).toBeNull();
+    expect(clamped.state.ultimatum?.matchesLeft).toBe(2);
+  });
   test("praise once above 80", () => {
     const r = reviewBoardStatus(base({ board: 81 }), { sackingEnabled: true, date: "d" });
     expect(r.messages).toEqual(["praise"]);

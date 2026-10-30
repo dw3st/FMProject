@@ -3363,7 +3363,9 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         gameBus.emit('keeperSortie', { keeperId: gk.id, kind: 'high' });
         debugLog('keeper', `${gk.name} comes off his line for a high ball ${depth.toFixed(0)} yds out`, { playerId: gk.id });
       }
-      const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (wide ? wideClaimFactor(depth) : 1);
+      // Beyond the small box a catch gets harder with the depth, whichever rule brought him out.
+      const deep = !inSmall;
+      const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (deep ? wideClaimFactor(depth) : 1);
       logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance });
@@ -3383,7 +3385,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
           setPiece: { type: 'goal_kick', takerId: gk.id, countdown: 1 },
         }, prevHolderId));
       }
-      if (wide && rng() < KEEPER_CONFIG.HIGH_FLAP_SHARE) {
+      if (deep && rng() < KEEPER_CONFIG.HIGH_FLAP_SHARE) {
         // He gets a hand to it but drops it: the ball sits loose in the box.
         resolved(gk.id, false, 'loose');
         debugLog('keeper', `${gk.name} flaps at it — loose in the box`, { playerId: gk.id });

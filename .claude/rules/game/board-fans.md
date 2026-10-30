@@ -181,3 +181,12 @@ de posição (`POSITION_WEIGHT × (meta − posição) / tamanho × peso`) de um
 (até −1,25 com meta no meio, −2 com meta de título) passava do bônus pequeno de um favorito (0,48). Agora a variação da
 diretoria de uma vitória é no mínimo `BOARD_WIN_FLOOR` (0,1). Cartão do técnico, imprensa e a segunda-feira continuam
 podendo baixá-la no mesmo dia (eventos à parte). Teste em `boardFans.test.ts`.
+
+## Ultimato e o fim da temporada (4.41.51)
+
+Report de tester (QPR, "4 pts em 1 jogo" com a liga já encerrada). `reviewBoardStatus(..., { leagueMatchesLeft })`, os
+jogos de liga que o clube ainda tem (`totalRounds − mp`, lido no avanço do dia só com ultimato ou diretoria abaixo de 25):
+o ultimato novo vale os próximos min(5, restantes) jogos, com ⌈7 × jogos / 5⌉ pontos (4 → 6, 3 → 5); com menos de 3
+(`ULTIMATUM_MIN_MATCHES`) não há ultimato, a avaliação da virada decide. Um ultimato em curso é cortado aos jogos restantes
+e cai sem demissão quando a temporada acaba; quando os pontos que faltam passam de 3 × os jogos que sobram, ele falha na
+hora. Sem o número (a virada), a regra de antes.

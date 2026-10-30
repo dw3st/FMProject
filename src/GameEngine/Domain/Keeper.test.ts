@@ -101,19 +101,20 @@ describe('sweeper', () => {
 });
 
 describe('high balls beyond the small box', () => {
-  test('zone ends 10 yd out and near the goal width', () => {
+  test('zone ends 13 yd out (past the penalty spot) and near the goal width', () => {
     expect(isWideClaimZone(115 - 9, 37, 115)).toBe(true);
+    expect(isWideClaimZone(115 - 12, 37, 115)).toBe(true);   // the penalty-spot cross
     expect(isWideClaimZone(115 - 4, 37, 115)).toBe(false);   // small box: the old rule
-    expect(isWideClaimZone(115 - 12, 37, 115)).toBe(false);
+    expect(isWideClaimZone(115 - 14, 37, 115)).toBe(false);
     expect(isWideClaimZone(115 - 9, 52, 115)).toBe(false);
   });
 
   test('comes when close and not beaten to it; catching gets harder further out', () => {
     expect(keeperComesWide(8, true, 9)).toBe(true);
     expect(keeperComesWide(8, true, 7)).toBe(false);
-    expect(keeperComesWide(12, true, 20)).toBe(false);
+    expect(keeperComesWide(13, true, 20)).toBe(false);
     expect(wideClaimFactor(6)).toBe(1);
-    expect(wideClaimFactor(10)).toBeCloseTo(0.65);
+    expect(wideClaimFactor(12)).toBeCloseTo(1 - 0.7 * 6 / 7);
   });
 
   test('a cross dropping 9 yd out: the keeper comes for it (claim, punch or a loose ball)', () => {

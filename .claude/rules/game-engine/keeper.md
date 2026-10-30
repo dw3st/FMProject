@@ -60,3 +60,23 @@ Dentro de ±5% somando as ligas (ruído ~±2%): quickSim não recalibrado.
 - O líbero quase nunca dispara (~0,01 bola afastada por jogo): a linha de defesa costuma chegar antes.
 - O goleiro fora da área não tem regra de mão nem lançamento próprio: é um portador comum.
 - Sem chute por cobertura contra o goleiro adiantado.
+
+## Cruzamento na marca do pênalti (4.41.51)
+
+Report de tester: o goleiro esperava na linha bolas que ele pegaria antes de todos. Medido com `bun scripts/keeper-probe.ts
+[jogos] [liga] [semente]` (bolas em profundidade, altas e cortes; quem chega antes pelo sprint, se o goleiro persegue, quem
+fica com a bola): ~4,5 cruzamentos por jogo para a marca do pênalti (12 jardas), o alvo `penalty` de `crossTargetPoints`,
+com o goleiro o mais rápido de todos e sem sair, porque a zona de bola alta acabava em 10 jardas. As bolas em
+profundidade já eram dele.
+
+- `HIGH_CLAIM_DEPTH` 10 → 13, `HIGH_REACH` 10 → 12, `HIGH_DEPTH_PENALTY` 0,35 → 0,7, `HIGH_FLAP_SHARE` 0,3 → 0,5.
+- O desconto pela profundidade e a bola espalmada que fica solta valem em toda saída fora da pequena área
+  (`resolveAerialLanding`, `deep = !inSmall`). Antes, se ele chegasse primeiro pela regra de perto (`keeperComesFor`),
+  segurava com a chance cheia em qualquer distância. Sozinha, essa troca não muda os gols.
+- Por que não segurar mais: a pegada encerra o ataque, enquanto o corte do zagueiro deixa uma segunda bola viva. Premier,
+  600 jogos, 4-3-3, semente 9000: antes 2,11 gols; penalidade 0,85 / espalma 0,7: 2,01; 0,7 / 0,5 (o escolhido): 1,91;
+  0,5 / 0,3: 1,78. O goleiro sai em ~4,4 dessas bolas por jogo (antes 0,4).
+- Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, `KEEPER_OVERRIDES` no worker): Premier 2,155 → 1,901
+  gols, 5,47 → 5,09 chutes; Championship 1,639 → 1,581, 4,92 → 4,84; somadas −8,2% gols, −4,4% chutes. quickSim:
+  `BASE_GOALS` 0,795 → 0,73 e `SHOTS_PER_XG` 1,778 → 1,89 (a relação quickSim × motor fica a mesma: +9,3% nas duas ligas
+  somadas, antes e depois).

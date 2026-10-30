@@ -53,16 +53,19 @@ export const KEEPER_CONFIG = {
   SAVE_SCALE: 0.45,
 
   // ── High balls beyond the small box ───────────────────────────────────────
-  /** Deepest a high ball may drop (yards from the goal line) for him to come. */
-  HIGH_CLAIM_DEPTH: 10,
+  /**
+   * Deepest a high ball may drop (yards from the goal line) for him to come: past the penalty spot, where the
+   * spot cross lands (tester report 4.41.51: at 10 he waited on the line for balls he would reach first).
+   */
+  HIGH_CLAIM_DEPTH: 13,
   /** Lateral half-width from the goal centre. */
   HIGH_CLAIM_HALF_WIDTH: 10,
   /** Furthest he travels for it. */
-  HIGH_REACH: 10,
+  HIGH_REACH: 12,
   /** He comes when at most this much further from the point than the nearest other player. */
   HIGH_SLACK: 0,
   /** Claim chance × (1 − PENALTY × (depth − small box) / (claim depth − small box)). */
-  HIGH_DEPTH_PENALTY: 0.35,
+  HIGH_DEPTH_PENALTY: 0.7,
   /** Share of failed wide claims that drop loose at the point (the rest are punched). */
-  HIGH_FLAP_SHARE: 0.3,
+  HIGH_FLAP_SHARE: 0.5,
 };

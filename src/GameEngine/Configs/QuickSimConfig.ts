@@ -54,8 +54,10 @@ export const QUICK_SIM_CONFIG = {
    * engine's shooter effect is wide enough that conversion follows finishing. rms per league
    * 12.4% (old constants) → 5.0%, worst bundesliga −10.7%; leave-one-league-out rms 6.0%.
    * `.claude/rules/non-player-games.md` → "Recalibração geral 2026-10-04".
+   * 4.41.51: 0.795 → 0.73 (× 0.918), the engine's world goals after the keeper started coming for the
+   * penalty-spot cross (Premier + Championship, AI formations: 3.794 → 3.482 goals).
    */
-  BASE_GOALS: 0.795,
+  BASE_GOALS: 0.73,
   HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
@@ -153,9 +155,10 @@ export const QUICK_SIM_CONFIG = {
   /**
    * Non-goal shots per unit of (match-day) xG, at match level LEVEL_REF, scaled by
    * (matchLevel / LEVEL_REF)^SHOTS_LEVEL_EXPONENT: the engine's weak leagues shoot more per goal
-   * (they convert less).
+   * (they convert less). 4.41.51: 1.778 → 1.89, so the non-goal shots follow the engine (−2.2%) while
+   * BASE_GOALS took the xG down 8.2%.
    */
-  SHOTS_PER_XG: 1.778,
+  SHOTS_PER_XG: 1.89,
   SHOTS_LEVEL_EXPONENT: -0.8,
 
   /**

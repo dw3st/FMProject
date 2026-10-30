@@ -3,6 +3,10 @@ import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { loadLeagueAt88, pairAt, type Mode, type GoalTotals } from "@/../scripts/ai-formation-goals-shared";
+import { KEEPER_CONFIG } from "@/GameEngine/Configs/KeeperConfig";
+
+// Measurement switch: KEEPER_OVERRIDES='{"HIGH_REACH":10}' compares keeper settings without editing the config.
+if (process.env.KEEPER_OVERRIDES) Object.assign(KEEPER_CONFIG, JSON.parse(process.env.KEEPER_OVERRIDES));
 
 interface Input { league: string; mode: Mode; matches: number; offset: number }
 

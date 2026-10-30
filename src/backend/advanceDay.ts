@@ -10,6 +10,7 @@ import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard, applyPressEffect } from "@/Domain/boardFans/boardFans";
+import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { afterManagerComplaint, aiFormMorale } from "@/Domain/morale/morale";
 import { roundAttr } from "@/Domain/attributes";
@@ -2786,7 +2787,20 @@ export async function advanceOneDay(
       let b = ds.board;
       if (!b) continue;
       if (!ds.sackedReason) {
-        const review = reviewBoardStatus(b, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
+        // League matches the club still has: an ultimatum is sized to them and never outlives the season.
+        let leagueMatchesLeft: number | undefined;
+        if (ds.clubId && (b.ultimatum || b.board < BOARD_FANS.status.ULTIMATUM)) {
+          const seatLeague = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(ds.clubId!)?.leagueSlug ?? ds.meta.leagueSlug));
+          if (seatLeague && seatLeague.totalRounds > 0) {
+            const table = (await saveService.getLeagueStandings(saveId, seatLeague.leagueSlug)) ?? [];
+            const mp = table.find((r) => r.squadId === ds.clubId)?.mp ?? 0;
+            leagueMatchesLeft = Math.max(0, seatLeague.totalRounds - mp);
+          }
+        }
+        const review = reviewBoardStatus(b, {
+          sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate,
+          ...(leagueMatchesLeft !== undefined ? { leagueMatchesLeft } : {}),
+        });
         b = review.state;
         ds.sackedReason = review.sacked;
         for (const kind of review.messages) {

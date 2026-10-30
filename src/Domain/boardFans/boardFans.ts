@@ -284,18 +284,35 @@ export function applyWeekly(state: BoardState, money: { balance: number; weeklyR
 
 export function reviewBoardStatus(
   state: BoardState,
-  opts: { sackingEnabled: boolean; date: string },
+  opts: {
+    sackingEnabled: boolean;
+    date: string;
+    /** League matches the club still has this season; absent = unknown (no limit). */
+    leagueMatchesLeft?: number;
+  },
 ): { state: BoardState; messages: BoardMessageKind[]; sacked: SackReason | null } {
   const st = BOARD_FANS.status;
   const messages: BoardMessageKind[] = [];
   let s = state;
+  const left = opts.leagueMatchesLeft;
 
+  // An ultimatum never outlives the season: past the last league match the season review decides.
+  if (s.ultimatum && left !== undefined && s.ultimatum.points < s.ultimatum.pointsNeeded) {
+    if (left <= 0) {
+      const { ultimatum: _, ...rest } = s;
+      s = rest;
+    } else if (s.ultimatum.matchesLeft > left) {
+      s = { ...s, ultimatum: { ...s.ultimatum, matchesLeft: left } };
+    }
+  }
   if (s.ultimatum) {
-    if (s.ultimatum.points >= s.ultimatum.pointsNeeded) {
+    const short = s.ultimatum.pointsNeeded - s.ultimatum.points;
+    if (short <= 0) {
       const { ultimatum: _, ...rest } = s;
       s = moveMeters(rest, st.ULTIMATUM_MET_BOARD, 0);
       messages.push("ultimatum_met");
-    } else if (s.ultimatum.matchesLeft <= 0) {
+    } else if (s.ultimatum.matchesLeft <= 0 || short > 3 * s.ultimatum.matchesLeft) {
+      // Out of matches, or out of reach even winning every one left: failed now.
       if (opts.sackingEnabled) return { state: s, messages: ["sacked"], sacked: "ultimatum" };
       const { ultimatum: _, ...rest } = s;
       s = rest;
@@ -303,8 +320,13 @@ export function reviewBoardStatus(
   }
   if (opts.sackingEnabled && s.board < st.SACK) return { state: s, messages: ["sacked"], sacked: "board" };
 
-  if (opts.sackingEnabled && s.board < st.ULTIMATUM && !s.ultimatum && !messages.includes("ultimatum_met")) {
-    s = { ...s, ultimatum: { since: opts.date, matchesLeft: st.ULTIMATUM_MATCHES, pointsNeeded: st.ULTIMATUM_POINTS, points: 0 } };
+  // The deadline is the next ULTIMATUM_MATCHES league matches, fewer near the end of the season (the points scale
+  // with them); with fewer than ULTIMATUM_MIN_MATCHES left there is none: the season review decides.
+  const matches = Math.min(st.ULTIMATUM_MATCHES, left ?? st.ULTIMATUM_MATCHES);
+  if (opts.sackingEnabled && s.board < st.ULTIMATUM && !s.ultimatum && !messages.includes("ultimatum_met")
+    && matches >= st.ULTIMATUM_MIN_MATCHES) {
+    const pointsNeeded = Math.ceil(st.ULTIMATUM_POINTS * matches / st.ULTIMATUM_MATCHES);
+    s = { ...s, ultimatum: { since: opts.date, matchesLeft: matches, pointsNeeded, points: 0 } };
     messages.push("ultimatum");
   }
   if (s.board < st.WARNING && !s.warned) {
