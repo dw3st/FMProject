@@ -470,3 +470,12 @@ na ponta interna de cada banco (lado do túnel) e 3 garrafinhas deitadas na gram
 jogo. Sprites pintados no FLUX (`data_process/assets/bench_props/build_bench_props.py`) em
 `assets/bench/cooler-box.png` e `water-bottle.png` (`GAME_ART_FILES`); só com o visual novo e com Officials e extras,
 como os bancos. Só desenho.
+
+## Área de revisão do VAR (4.41.52)
+
+Report de tester, opção A do mock. `varArea.ts` (`VAR_AREA`, puro, com teste): uma área pintada de branco na linha
+lateral desenhada em cima, no meio-campo (no espaço da tela, como as placas de LED), com o monitor pintado no FLUX
+(`data_process/assets/var_booth/build_var_booth.py`, `assets/var/var-monitor.png` em `GAME_ART_FILES`). Durante uma
+revisão (`GameState.varReview`) o árbitro corre até o monitor (`reviewRunStep`: chega com `LOOK_S` 1,4 s da revisão
+sobrando, sem o salto de `SNAP_DIST`), olha para ele e depois volta ao jogo sem pular (`BACK_SPEED`). Só com estádio,
+Officials e o visual novo. A revisão continua com `REVIEW_SECONDS`; nada no motor muda.

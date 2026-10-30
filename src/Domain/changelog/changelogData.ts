@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.52",
+    date: "2026-10-30",
+    time: "20:11",
+    items: [
+      {
+        pt: "Na partida, a lateral de cima ganhou a área de revisão do VAR, com o monitor: numa revisão, o árbitro corre até ele, olha o lance e volta com a decisão. A revisão continua com a mesma duração.",
+        en: "In the match, the top touchline now has the VAR review area with its monitor: on a review the referee runs to it, watches the play and comes back with the decision. The review lasts as long as before.",
+      },
+    ],
+  },
+  {
     version: "4.41.51",
     date: "2026-10-30",
     time: "19:56",

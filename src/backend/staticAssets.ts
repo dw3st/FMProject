@@ -65,6 +65,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "flag/corner-pole.png": "image/png",
   "bench/cooler-box.png": "image/png",
   "bench/water-bottle.png": "image/png",
+  "var/var-monitor.png": "image/png",
   "keeper/keeper-atlas.json": "application/json",
   "keeper/keeper-atlas.png": "image/png",
   "officials/officials-atlas.json": "application/json",

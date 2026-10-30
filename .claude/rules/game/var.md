@@ -104,3 +104,8 @@ fixtures com VAR; gol anulado nunca no placar; suspensão forçada aparece no `m
 - Recarregar a página no meio da partida perde as reclamações e cartões do técnico daquele jogo (a expulsão em si fica
   no estado da partida: o auxiliar continua trocando).
 - Técnicos da IA não reclamam nem são expulsos.
+
+## Árbitro no monitor (4.41.52)
+
+Na partida ao vivo, toda revisão leva o árbitro até a área de revisão na lateral (só desenho, `graphics-engine.md` →
+"Área de revisão do VAR"); a duração da revisão não muda.

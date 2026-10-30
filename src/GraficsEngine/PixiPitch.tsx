@@ -80,6 +80,7 @@ import {
 import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
 import { followAt, smoothDamp, smoothPlayers, SMOOTH_ASSISTANT_S, type Follow } from "@/GraficsEngine/smoothFollow";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
+import { reviewRunStep, runStep, VAR_AREA, varMonitorSpot, varStandSpot, varZone } from "@/GraficsEngine/varArea";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
 import { addAnim, animOffset, isLongShot, liveAnims, STYLE, type PlayerAnim } from "@/GraficsEngine/playerAnims";
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
@@ -2343,6 +2344,31 @@ export function PixiPitch({
       // Just under the players' layer: a player is never covered by an official.
       for (const c of [referee, assistantC.top, assistantC.bottom]) if (c) { c.zIndex = -0.5; world.addChild(c); }
       let refPos: YdPos | null = null;
+      /** After a VAR review the referee runs back to the play (no jump) until this effects time. */
+      let varBackUntil = -1;
+      // VAR review area (tester report, mock option A): a white zone at the drawn top touchline's halfway line and the
+      // painted pitchside monitor; the referee runs there during a review. Stadium, officials and the new visual only.
+      const varAreaOn = officialsOn && !!stadiumRef.current && newVisualOn();
+      if (varAreaOn) {
+        const z = varZone();
+        const zone = new Graphics();
+        zone.zIndex = -0.7;
+        zone.eventMode = 'none';
+        zone.rect(m.marginX + z.x0 * m.scale, m.marginY + z.y0 * m.scale, (z.x1 - z.x0) * m.scale, (z.y1 - z.y0) * m.scale)
+          .stroke({ width: MATCH_LOOK.LINE_W, color: 0xf5f8f0, alpha: 0.85 });
+        world.addChild(zone);
+        void Assets.load<Texture>(gameArtUrl("var/var-monitor.png")).then((tex) => {
+          if (facesDisposed || !tex) return;
+          const mon = new Sprite(tex);
+          mon.anchor.set(0.5);
+          mon.zIndex = -0.69;
+          mon.eventMode = 'none';
+          mon.width = VAR_AREA.MONITOR_W * m.scale;
+          mon.height = mon.width * VAR_AREA.MONITOR_ASPECT;
+          mon.position.set(m.marginX + PITCH_LENGTH / 2 * m.scale, m.marginY + VAR_AREA.MONITOR_Y * m.scale);
+          world.addChild(mon);
+        }).catch(() => { /* no monitor: the zone alone */ });
+      }
       const arPos: Record<AssistantSide, Follow | null> = { top: null, bottom: null };
       const playerFollow = new Map<number, Follow>();
       let lastFoulSpot: YdPos | null = null;
@@ -3130,18 +3156,32 @@ export function PixiPitch({
         const holder = st.players.find((p) => p.id === st.ballHolderId);
         const attackDir: 1 | -1 = holder?.attackDir === -1 ? -1 : 1;
         if (refHold && effectNow >= refHold.until) refHold = null;
-        const target = refHold
-          ? refereeTarget({ ball: refHold.spot, attackDir, players, setPiece: true })
-          : refereeTarget({ ball, attackDir, players, setPiece: !!st.setPiece });
-        refPos = refPos ? stepToward(refPos, target, dtGame, OFFICIALS.REF_SPEED) : target;
+        const review = varAreaOn ? st.varReview ?? null : null;
+        if (review) {
+          // VAR review: he runs to the monitor and watches it (the review keeps its length).
+          const stand = varStandSpot(mirrorRef.current);
+          refPos = refPos ? reviewRunStep(refPos, stand, dtGame, review.countdown) : stand;
+          varBackUntil = effectNow + VAR_AREA.BACK_S;
+        } else {
+          const target = refHold
+            ? refereeTarget({ ball: refHold.spot, attackDir, players, setPiece: true })
+            : refereeTarget({ ball, attackDir, players, setPiece: !!st.setPiece });
+          if (refPos && effectNow < varBackUntil && Math.hypot(target.x - refPos.x, target.y - refPos.y) > 3) {
+            refPos = runStep(refPos, target, dtGame, VAR_AREA.BACK_SPEED);
+          } else {
+            varBackUntil = -1;
+            refPos = refPos ? stepToward(refPos, target, dtGame, OFFICIALS.REF_SPEED) : target;
+          }
+        }
         if (referee) {
           const { px, py } = toPixel(refPos.x, refPos.y);
           referee.x = px;
           referee.y = py;
           if (refCard && effectNow >= refCard.until) refCard = null;
           showCard(referee, refCard?.card ?? null);
-          const ballPx = toPixel(ball.x, ball.y);
-          animateFigure(referee, "referee", { x: ballPx.px, y: ballPx.py }, { card: !!refCard });
+          const look = review ? varMonitorSpot(mirrorRef.current) : ball;
+          const lookPx = toPixel(look.x, look.y);
+          animateFigure(referee, "referee", { x: lookPx.px, y: lookPx.py }, { card: !!refCard });
         }
         for (const side of ["top", "bottom"] as const) {
           const c = assistantC[side];
