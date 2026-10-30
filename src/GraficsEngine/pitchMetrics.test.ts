@@ -18,11 +18,16 @@ describe("pitch metrics", () => {
     });
   });
 
-  test("with stadium the pitch shrinks by PITCH_SHRINK and the stand fills all four sides", () => {
+  test("with stadium the pitch leaves the preview's aprons and a stand on all four sides", () => {
     for (const [w, h] of [[1100, 700], [900, 520]] as const) {
       const plain = buildMetrics(w, h, { stadium: false });
       const m = buildMetrics(w, h, { stadium: true });
-      expect(m.scale).toBeLessThanOrEqual(plain.scale * STADIUM.PITCH_SHRINK + 1e-9);
+      expect(m.scale).toBeLessThan(plain.scale);
+      // every stand keeps at least MIN_STAND_YDS
+      for (const side of ["top", "bottom", "left", "right"] as const) {
+        expect(m.stand!.thickness[side]).toBeGreaterThanOrEqual(Math.floor(STADIUM.MIN_STAND_YDS * m.scale) - 2);
+      }
+      expect(m.marginY - m.stand!.inner.y).toBeGreaterThanOrEqual(Math.round(STADIUM.RUNOFF_YDS * m.scale) - 1);
       // the bottom run-off holds the assistant's lane and the benches
       expect(s0(m)).toBeGreaterThanOrEqual(Math.round(STADIUM.BENCH_RUNOFF_YDS * m.scale) - 1);
       const s = m.stand!;

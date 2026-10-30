@@ -389,3 +389,18 @@ Tudo com o visual novo e só quando o arquivo carrega; sem ele, o desenho de ant
 - **Ícones** (`ArtIcon` em `Icons.tsx`, máscara CSS em `currentColor`): `tab-*` na barra superior, `inbox-*` na caixa.
 - **Marca:** `Wordmark` usa `brand/wordmark.svg`; favicon = `brand/icon.svg`; a landing tem `og:image`
   (`brand/og-image.png`) e `apple-touch-icon`.
+
+## Estádio da prévia (4.41.15)
+
+Revisão da arte (tester): o estádio do jogo estava longe da prévia. Decisão do usuário: diminuir o campo para ter as
+proporções dela.
+- **Geometria** (`pitchMetrics.ts`, `STADIUM`): sem `PITCH_SHRINK`; o campo é medido para caber o espaço em volta
+  (`RUNOFF_YDS` 7,9 em cima, `END_RUNOFF_YDS` 6,1 além da rede, `BENCH_RUNOFF_YDS` 10,5 embaixo) e pelo menos
+  `MIN_STAND_YDS` 5,6 de arquibancada. Bancos até `BENCH_END_YDS` 7,8; áreas técnicas a `TECH_AREA_YDS` 0,85.
+- **Placas de LED** (`ledBoards`): 4 em cima, 2 embaixo (dos lados dos bancos), uma em pé atrás de cada gol, com a moldura
+  do pacote; `LED.BOARD_YDS` × `SCREEN_YDS`. Ficam no espaço da tela (não espelham).
+- **Torcida:** fileiras com `ROW_DEPTH` 2 larguras de cadeira (a textura aparece entre elas) e enchimento por bloco de
+  `BLOCK_SEATS` 16 (peso 0,55..1,45; o total continua exato).
+- **Torres** (`towerSpots`): nos cantos internos da arquibancada, fora da máscara, `TOWER_YDS` 6,4 (sprite 1,5×).
+  **Facho** (`floodCones.ts`): leque e poça de luz de cada torre pintados uma vez num canvas, aditivo sob os jogadores,
+  pela força `coneStrength(flood)` (0 até 0,35, cheio em 0,75); sem torres com teto fechado.

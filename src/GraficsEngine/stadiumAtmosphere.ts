@@ -9,7 +9,7 @@ import type { SeatCell } from "@/GraficsEngine/crowd";
 
 export const ATMOSPHERE = {
   /** Tower: mast length and panel size in stand-corner sizes (the smaller of the two stand thicknesses there). */
-  TOWER: { MAST: 0.55, PANEL_W: 0.62, PANEL_H: 0.24, MAST_COLOR: 0x56606b, PANEL_OFF: 0x8a929c, PANEL_ON: 0xfff4d6 },
+  TOWER: { INNER_YDS: 131.2, TOWER_YDS: 6.4, MAST: 0.55, PANEL_W: 0.62, PANEL_H: 0.24, MAST_COLOR: 0x56606b, PANEL_OFF: 0x8a929c, PANEL_ON: 0xfff4d6 },
   /** Floodlight level above which the panels are drawn on (and phones show). */
   LIGHTS_ON: 0.35,
   /** Share of the filled seats with a phone light at night; a home goal doubles it for GOAL_BOOST_S. */
@@ -42,20 +42,18 @@ export interface TowerSpot {
   size: number;
 }
 
-/** One tower in each corner of the stand band, the panel turned to the pitch centre. */
+/**
+ * One tower at each inner corner of the stand (the art preview, 4.41.15), the panel turned to the pitch centre; its
+ * size follows the drawn pitch (TOWER_YDS yards, the stand's inner width standing for INNER_YDS).
+ */
 export function towerSpots(stand: StandGeometry): TowerSpot[] {
-  const { outer, inner, thickness: t } = stand;
+  const { inner } = stand;
   const cx = inner.x + inner.w / 2;
   const cy = inner.y + inner.h / 2;
-  const right = outer.x + outer.w;
-  const bottom = outer.y + outer.h;
-  const corners: [number, number, number, number][] = [
-    [outer.x + t.left / 2, outer.y + t.top / 2, t.left, t.top],
-    [right - t.right / 2, outer.y + t.top / 2, t.right, t.top],
-    [outer.x + t.left / 2, bottom - t.bottom / 2, t.left, t.bottom],
-    [right - t.right / 2, bottom - t.bottom / 2, t.right, t.bottom],
-  ];
-  return corners.map(([x, y, a, b]) => ({ x, y, angle: Math.atan2(cy - y, cx - x), size: Math.max(4, Math.min(a, b)) }));
+  const size = Math.max(4, (inner.w / ATMOSPHERE.TOWER.INNER_YDS) * ATMOSPHERE.TOWER.TOWER_YDS);
+  const right = inner.x + inner.w, bottom = inner.y + inner.h;
+  const corners: [number, number][] = [[inner.x, inner.y], [right, inner.y], [inner.x, bottom], [right, bottom]];
+  return corners.map(([x, y]) => ({ x, y, angle: Math.atan2(cy - y, cx - x), size }));
 }
 
 /** Where a tower's panel sits (the floodlight glow comes from there). */

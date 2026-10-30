@@ -44,11 +44,14 @@ export const GOAL_NET_DEPTH_YDS = 2;
 export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: boolean }): PitchMetrics {
   const totalLengthYds = PITCH_SPEC.lengthYds + 2 * GOAL_NET_DEPTH_YDS;
   const fullScale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
-  // With the stadium the pitch is measured with the deeper bottom run-off counted in (4.38.16), so the stands keep
-  // their depth on every side.
-  const extraYds = opts.stadium ? STADIUM.BENCH_RUNOFF_YDS - STADIUM.RUNOFF_YDS : 0;
+  // With the stadium the pitch is sized like the art preview (4.41.15): the aprons and at least MIN_STAND_YDS of stand
+  // on every side fit in the canvas.
+  const S = STADIUM;
   const scale = opts.stadium
-    ? Math.min(canvasW / totalLengthYds, canvasH / (PITCH_SPEC.widthYds + extraYds)) * STADIUM.PITCH_SHRINK
+    ? Math.min(
+        canvasW / (totalLengthYds + 2 * (S.END_RUNOFF_YDS + S.MIN_STAND_YDS)),
+        canvasH / (PITCH_SPEC.widthYds + S.RUNOFF_YDS + S.BENCH_RUNOFF_YDS + 2 * S.MIN_STAND_YDS),
+      )
     : fullScale;
 
   const netDepth = Math.round(GOAL_NET_DEPTH_YDS * scale);

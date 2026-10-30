@@ -7,7 +7,7 @@ import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { BENCH_HAIR, BENCH_SKIN, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, LED, ledAdFor, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, LED, ledAdFor, ledBoards, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -28,6 +28,7 @@ import { FOG, fogTexture } from "@/GraficsEngine/fogArt";
 import { SpritePool } from "@/GraficsEngine/spritePool";
 import type { ShellSprite } from "@/GraficsEngine/stadiumAtmosphere";
 import { BALL_SPRITE, GOAL_SPRITE, ballSpriteFrame, nextBallRoll, nextSpinAngle } from "@/GraficsEngine/ballSpin";
+import { coneStrength, paintFloodCones } from "@/GraficsEngine/floodCones";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
@@ -815,7 +816,7 @@ export function PixiPitch({
             const tile = new TilingSprite({ texture: site ? art.standWorks : art.standEmpty, width: r.w, height: r.h });
             tile.position.set(r.x, r.y);
             tile.tileRotation = STAND_TILE_ROTATION[r.side];
-            tile.tileScale.set(cell / STADIUM_ART.SEAT_PX);
+            tile.tileScale.set((cell * STADIUM.ROW_DEPTH) / STADIUM_ART.SEAT_PX);
             layer.addChild(tile);
             if (!site) shade.rect(r.x, r.y, r.w, r.h).fill({ color: 0x0b0f1a, alpha: STADIUM_ART.SHADE });
           }
@@ -2235,7 +2236,7 @@ export function PixiPitch({
         }
         const touchY = m.marginY + m.height;
         const laneEnd = touchY + STADIUM.AR_LANE_YDS * m.scale;
-        const runoffEnd = m.stand ? touchY + STADIUM.BENCH_RUNOFF_YDS * m.scale : canvasHeight;
+        const runoffEnd = m.stand ? touchY + STADIUM.BENCH_END_YDS * m.scale : canvasHeight;
         for (const side of ["left", "right"] as const) {
           const team = teamOfDrawnSide(side);
           const b = benchRect(coachSpot[side], side, m, markerR);
@@ -2401,22 +2402,17 @@ export function PixiPitch({
       const ledPanels: LedPanel[] = [];
       const ledSeed = stadiumRef.current?.seed ?? "match";
       if (m.stand && stadiumRef.current?.led) {
-        const inner = m.stand.inner, h = Math.max(5, Math.round(LED.HEIGHT_YDS * m.scale));
-        const specs = [
-          { x: inner.x, y: inner.y, len: inner.w, rot: 0 },
-          { x: inner.x + h, y: inner.y, len: inner.h, rot: Math.PI / 2 },
-          { x: inner.x + inner.w - h, y: inner.y + inner.h, len: inner.h, rot: -Math.PI / 2 },
-        ];
+        // Big framed boards on the apron (art preview, 4.41.15): four above the top touchline, two below the bottom
+        // one (beside the benches), one standing behind each goal. Positions in pitch yards (`ledBoards`).
+        const w = LED.BOARD_YDS * m.scale, h = Math.max(5, LED.SCREEN_YDS * m.scale);
         let order = 0;
-        for (const sp of specs) {
+        for (const sp of ledBoards()) {
           const board = new Container();
-          board.x = sp.x; board.y = sp.y; board.rotation = sp.rot;
+          board.x = m.marginX + sp.x * m.scale; board.y = m.marginY + sp.y * m.scale; board.rotation = sp.rot;
           ledLayer.addChild(board);
-          const n = Math.max(1, Math.round(sp.len / (h * LED.PANEL_H)));
-          const w = sp.len / n;
-          for (let k = 0; k < n; k++) {
+          {
             const panel = new Container();
-            panel.x = k * w;
+            panel.x = -w / 2; panel.y = -h / 2;
             const bg = new Graphics();
             const text = new Text({ text: "", style: new TextStyle({ fontSize: Math.round(h * 0.72), fontFamily: 'sans-serif', fontWeight: '800', fill: 0xffffff, letterSpacing: 1 }) });
             text.anchor.set(0.5);
@@ -2555,7 +2551,7 @@ export function PixiPitch({
       const phoneG = new Graphics();
       const smokeG = new Graphics();
       const sparkG = new Graphics();
-      atmosphere.addChild(towerG, phoneG);
+      atmosphere.addChild(phoneG);
       // Smoke drifts under the players and may spill over the touchline; fireworks burst over everything, briefly.
       const smokeLayer = new Container();
       smokeLayer.eventMode = 'none';
@@ -2577,6 +2573,22 @@ export function PixiPitch({
       }
       app.stage.addChild(atmosphere, sparkG, fireLayer);
       const towers = m.stand && towersOn ? towerSpots(m.stand) : [];
+      // The towers' light on the pitch at night (art preview): painted once, faded with the floodlight level, under
+      // the players. The towers stand at the stand's inner corners, outside the stand mask.
+      let coneSprite: Sprite | null = null;
+      if (towers.length > 0 && typeof document !== "undefined") {
+        const c = document.createElement("canvas");
+        c.width = canvasWidth; c.height = canvasHeight;
+        const g2 = c.getContext("2d");
+        if (g2) {
+          paintFloodCones(g2, towers, m);
+          coneSprite = new Sprite(Texture.from(c));
+          coneSprite.blendMode = "add";
+          coneSprite.eventMode = 'none';
+          coneSprite.alpha = 0;
+          app.stage.addChildAt(coneSprite, app.stage.getChildIndex(world));
+        }
+      }
       let towersLitKey = "";
       let phonesDrawnAt = -Infinity;
       let phoneBoostAt: number | null = null;
@@ -2584,8 +2596,13 @@ export function PixiPitch({
       const lightsOn = () => (currentLight?.flood ?? 0) >= ATMOSPHERE.LIGHTS_ON;
       const towerSprites = new Container();
       towerSprites.eventMode = 'none';
-      atmosphere.addChild(towerSprites);
+      app.stage.addChild(towerG, towerSprites);
       const drawTowers = () => {
+        if (coneSprite) {
+          const a = coneStrength(currentLight?.flood ?? 0);
+          coneSprite.alpha = a;
+          coneSprite.visible = a > 0.01;
+        }
         const lit = lightsOn();
         const key = `${towers.length}|${lit}|${!!stadiumArt}`;
         if (key === towersLitKey) return;

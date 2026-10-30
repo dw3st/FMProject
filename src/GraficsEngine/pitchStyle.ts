@@ -109,13 +109,25 @@ export const TELEPORT_YDS = 4;
 export const BALL_TELEPORT_YDS = 30;
 
 /**
- * LED boards around the pitch (4.38.21, Winning Eleven style): panels PANEL_H heights long, a made-up ad on each,
+ * LED boards around the pitch (4.38.21, Winning Eleven style): big framed boards on the apron (4.41.15, `ledBoards`), a made-up ad on each,
  * all flipping every SWITCH_S (a ripple of FLIP_STAGGER_S per panel, FLIP_S each); a goal shows on every panel for GOAL_S.
  */
 export const LED = {
-  HEIGHT_YDS: 0.7, PANEL_H: 11, GOAL: 0xf2c230,
+  /** Board screen in yards (art preview: 25.6 × 1.6 m), the frame around it. */
+  BOARD_YDS: 27.4, SCREEN_YDS: 1.75, GOAL: 0xf2c230,
   SWITCH_S: 9, FLIP_S: 0.3, FLIP_STAGGER_S: 0.03, GOAL_S: 10,
 } as const;
+
+/** Where the LED boards stand (centre in pitch yards, rotation): the art preview's layout scaled to the pitch. */
+export function ledBoards(): { x: number; y: number; rot: number }[] {
+  const L = 115, Wd = 74;
+  const xs = [12.9, 42.4, 71.8, 101.3].map((x) => (x * L) / 115);
+  return [
+    ...xs.map((x) => ({ x, y: -5.45, rot: 0 })),
+    { x: xs[0]!, y: Wd + 3.25, rot: 0 }, { x: xs[3]!, y: Wd + 3.25, rot: 0 },
+    { x: -5.7, y: Wd / 2, rot: -Math.PI / 2 }, { x: L + 5.7, y: Wd / 2, rot: Math.PI / 2 },
+  ];
+}
 
 /**
  * The ad of a panel in a flip cycle: random per match, cycle and panel, never the same as the panel before it. The text
@@ -135,19 +147,25 @@ export function ledAdFor(seed: string, cycle: number, panel: number, lang: LedLa
 
 /** Stadium band around the pitch (spec 2026-10-08-match-visual-design.md). */
 export const STADIUM = {
-  /** 0.85 since 4.38.19 (mock option A): the stand shows on every side, behind the benches too. */
-  PITCH_SHRINK: 0.85,
-  /** Run-off between the touchline and the stand (officials, technical areas). */
-  RUNOFF_YDS: 1.5,
-  /** Behind the goals: past the net. */
-  END_RUNOFF_YDS: 1,
   /**
-   * Below the bottom touchline (4.38.16): the assistant's lane (AR_LANE_YDS) and then the benches, so the assistant
-   * never runs over a bench. The pitch moves up to make room; the top keeps RUNOFF_YDS.
+   * The art preview's proportions (4.41.15, tester report): an apron between the pitch and the stand, where the LED
+   * boards, the photographers and the benches stand. Above the top touchline RUNOFF_YDS; behind each goal line
+   * GOAL_NET + END_RUNOFF_YDS; below the bottom touchline BENCH_RUNOFF_YDS (the assistant's lane AR_LANE_YDS, then the
+   * benches down to BENCH_END_YDS). The pitch is sized so that every stand keeps at least MIN_STAND_YDS.
    */
-  BENCH_RUNOFF_YDS: 4.7,
+  RUNOFF_YDS: 7.9,
+  END_RUNOFF_YDS: 6.1,
+  BENCH_RUNOFF_YDS: 10.5,
+  MIN_STAND_YDS: 5.6,
   AR_LANE_YDS: 1.8,
-  SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4,
+  BENCH_END_YDS: 7.8,
+  /** Technical areas: this far below the bottom touchline. */
+  TECH_AREA_YDS: 0.85,
+  /**
+   * Seats: SEAT_PX wide, ROW_DEPTH seat widths deep (the stand texture shows between the rows, as in the preview).
+   * Every BLOCK_SEATS seats along a row share a fill (some blocks fuller than others).
+   */
+  SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4, ROW_DEPTH: 2, BLOCK_SEATS: 16,
   /** The players' tunnel (tester report): mid bottom stand, TUNNEL_FRAC of the inner width, no fans in it. */
   TUNNEL_FRAC: 0.045, TUNNEL_FLOOR: 0x0b0f14, TUNNEL_WALL: 0x4a5664,
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,

@@ -99,13 +99,14 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
     const horizontal = r.side === "top" || r.side === "bottom";
     const depth = horizontal ? r.h : r.w;
     const length = horizontal ? r.w : r.h;
-    const depthCells = Math.floor(depth / cell);
+    const rowPx = cell * STADIUM.ROW_DEPTH;
+    const depthCells = Math.floor(depth / rowPx);
     const cols = Math.floor(length / cell);
     if (depthCells <= 0 || cols <= 0) continue;
     const seatRows = Array.from({ length: depthCells }, (_, k) => k).filter((k) => !isConcrete(k)).length;
     const lenStart = (length - cols * cell) / 2;
     // Distance (px) of cell k's centre from the pitch edge of this side.
-    const away = (k: number) => (k + 0.5) * cell;
+    const away = (k: number) => (k + 0.5) * rowPx;
     const toXY = (k: number, c: number) => {
       const along = (horizontal ? r.x : r.y) + lenStart + (c + 0.5) * cell;
       switch (r.side) {
@@ -120,8 +121,8 @@ function layout(stand: StandGeometry, cell: number): { seats: SeatCell[]; concre
       if (isConcrete(k)) {
         const p = toXY(k, 0);
         concrete.push(horizontal
-          ? { side: r.side, x: r.x, y: p.y - cell / 2, w: r.w, h: cell }
-          : { side: r.side, x: p.x - cell / 2, y: r.y, w: cell, h: r.h });
+          ? { side: r.side, x: r.x, y: p.y - rowPx / 2, w: r.w, h: rowPx }
+          : { side: r.side, x: p.x - rowPx / 2, y: r.y, w: rowPx, h: r.h });
         continue;
       }
       const rowFrac = seatRows > 1 ? row / (seatRows - 1) : 0;
@@ -190,8 +191,10 @@ export function crowdSeats(input: CrowdInput): CrowdSeat[] {
   const target = Math.round(fill * grid.length);
   if (target === 0) return [];
   const key = (s: SeatCell) => `${input.seed}:${s.side}:${s.row}:${s.col}`;
+  // Blocks of BLOCK_SEATS along a row fill unevenly (the art preview): a per-block weight 0.55..1.45.
+  const block = (s: SeatCell) => 0.55 + 0.9 * unitHash(`${input.seed}:${s.side}:b${Math.floor(s.col / STADIUM.BLOCK_SEATS)}`);
   const ranked = grid
-    .map((s) => ({ s, v: unitHash(key(s)) / (1.25 - 0.5 * s.rowFrac) }))
+    .map((s) => ({ s, v: unitHash(key(s)) / ((1.25 - 0.5 * s.rowFrac) * block(s)) }))
     .sort((a, b) => a.v - b.v);
   const filled = ranked.slice(0, target).map((r) => r.s);
 

@@ -32,7 +32,7 @@ const REST: CoachPose = { armL: 0, armR: 0, jumpPx: 0 };
  */
 export function coachSlots(m: PitchMetrics, canvasH?: number): { left: { x: number; y: number }; right: { x: number; y: number } } {
   const bottom = m.stand ? m.stand.outer.y + m.stand.outer.h : canvasH;
-  let y = m.marginY + m.height + STADIUM.RUNOFF_YDS * m.scale * RUNOFF_FRAC;
+  let y = m.marginY + m.height + (m.stand ? STADIUM.TECH_AREA_YDS : 1.5 * RUNOFF_FRAC) * m.scale;
   if (bottom !== undefined) y = Math.min(y, bottom - EDGE_PX);
   return {
     left: { x: m.marginX + COACH_X_FRAC.left * m.width, y },

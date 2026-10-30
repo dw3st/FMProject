@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.15",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Estádio da partida como na arte nova: espaço em volta do campo com placas de LED grandes, fotógrafos e bancos, arquibancada com as fileiras de cadeiras, torres de refletor nos cantos e o facho de luz sobre o campo à noite.",
+        en: "The match stadium as in the new art: room around the pitch with big LED boards, photographers and benches, stands with the rows of seats, floodlight towers in the corners and their light on the pitch at night.",
+      },
+    ],
+  },
+  {
     version: "4.41.14",
     date: "2026-10-30",
     items: [
