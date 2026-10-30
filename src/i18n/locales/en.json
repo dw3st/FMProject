@@ -944,7 +944,14 @@
     },
     "suspended": "Suspended",
     "suspendedMatches_one": "Suspended for the next match",
-    "suspendedMatches_other": "Suspended for the next {{count}} matches"
+    "suspendedMatches_other": "Suspended for the next {{count}} matches",
+    "cols": {
+      "pos": "Pos",
+      "ovr": "OVR",
+      "fitness": "Fit"
+    },
+    "swapHint": "Drag a player onto another to swap: starter for starter, or a substitute onto a starter",
+    "unregisteredShort": "Unreg."
   },
   "roles": {
     "groups": {

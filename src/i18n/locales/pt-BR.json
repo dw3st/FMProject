@@ -944,7 +944,14 @@
     },
     "suspended": "Suspenso",
     "suspendedMatches_one": "Suspenso para o próximo jogo",
-    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos",
+    "cols": {
+      "pos": "Pos",
+      "ovr": "OVR",
+      "fitness": "Fôl."
+    },
+    "swapHint": "Arraste um jogador sobre outro para trocar: entre titulares, ou um reserva sobre um titular",
+    "unregisteredShort": "N/I"
   },
   "roles": {
     "groups": {
