@@ -47,7 +47,7 @@ describe("painted facilities", () => {
   test("one painting per level 1..10, clamped, with the file revision", () => {
     const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lv) => `facility-stadium-pitch-${lv}`);
     setPaintedScreens(ids, null);
-    expect(paintedFacility("stadiumPitch", 1)).toBe(`/assets/art/v1/facilities/facility-stadium-pitch-1.webp?r=${FACILITY_ART_REVISION}`);
+    expect(paintedFacility("stadiumPitch", 1)).toBe(`/assets/art/v2/facilities/facility-stadium-pitch-1.webp?r=${FACILITY_ART_REVISION}`);
     expect(paintedFacility("stadiumPitch", 7)).toContain("facility-stadium-pitch-7.webp");
     expect(paintedFacility("stadiumPitch", 10)).toContain("facility-stadium-pitch-10.webp");
     expect(paintedFacility("stadiumPitch", 0)).toContain("facility-stadium-pitch-1.webp");

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.31",
+    date: "2026-10-30",
+    time: "10:56",
+    items: [
+      {
+        pt: "Clube: cada nível das instalações (1 a 10) tem o próprio desenho, com céu e paisagem nas áreas externas, e fisioterapia, refeitório e piscina mais caprichados.",
+        en: "Club: every facility level (1 to 10) has its own painting, with sky and landscape outdoors, and richer physio room, canteen and pool.",
+      },
+    ],
+  },
+  {
     version: "4.41.30",
     date: "2026-10-30",
     time: "10:49",
