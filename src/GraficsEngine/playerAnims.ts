@@ -5,14 +5,24 @@
  */
 import { PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
-export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate";
+export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate" | "tumble" | "lunge" | "jump";
 
-export const ANIM_DURATION: Record<PlayerAnimKind, number> = { longShot: 0.45, header: 0.5, save: 0.6, celebrate: 1.4 };
+export const ANIM_DURATION: Record<PlayerAnimKind, number> = {
+  longShot: 0.45, header: 0.5, save: 0.6, celebrate: 1.4, tumble: 1.3, lunge: 0.4, jump: 0.45,
+};
 /** A shot from at least this far from the goal centre is a "long shot". */
 export const LONG_SHOT_YDS = 20;
 
 const LONG_SHOT = { BACK: 0.4, FORWARD: 0.6, SCALE: 0.15 } as const;
 const HEADER_LIFT_YDS = 1.5;
+/** A header toward goal also lunges at the ball. */
+const HEADER_LUNGE_YDS = 0.5;
+/** Fouled player (leva 2): thrown on along the challenge and rolling, then up and back on his spot. */
+const TUMBLE = { YDS: 1.3, OUT: 0.3, BACK: 0.75, ROLL: 1.1 } as const;
+/** The offender steps into the challenge. */
+const LUNGE_YDS = 0.6;
+/** Both players go up for a high ball. */
+const JUMP_LIFT_YDS = 1.2;
 const SAVE = { DIVE_YDS: 1.5, ROTATION: (70 * Math.PI) / 180 } as const;
 /** Goal celebration (#129): two hops and one full turn. */
 const CELEBRATE = { HOP_YDS: 1.2, SCALE: 0.15 } as const;
@@ -71,7 +81,20 @@ export function animOffset(a: PlayerAnim, now: number): AnimOffset {
       return { dx: a.dir.x * along, dy: a.dir.y * along, liftYds: 0, scale: 1 + LONG_SHOT.SCALE * bump, rotation: 0 };
     }
     case "header":
-      return { dx: 0, dy: 0, liftYds: HEADER_LIFT_YDS * bump, scale: 1, rotation: 0 };
+      return { dx: a.dir.x * HEADER_LUNGE_YDS * bump, dy: a.dir.y * HEADER_LUNGE_YDS * bump, liftYds: HEADER_LIFT_YDS * bump, scale: 1, rotation: 0 };
+    case "jump":
+      return { dx: a.dir.x * 0.3 * bump, dy: a.dir.y * 0.3 * bump, liftYds: JUMP_LIFT_YDS * bump, scale: 1 + 0.08 * bump, rotation: 0 };
+    case "lunge":
+      return { dx: a.dir.x * LUNGE_YDS * bump, dy: a.dir.y * LUNGE_YDS * bump, liftYds: 0, scale: 1, rotation: 0 };
+    case "tumble": {
+      // Out fast along the challenge, a roll, down for a moment, then back up to his spot.
+      const out = p < TUMBLE.OUT ? 1 - (1 - p / TUMBLE.OUT) ** 2 : p < TUMBLE.BACK ? 1 : 1 - ((p - TUMBLE.BACK) / (1 - TUMBLE.BACK)) ** 2;
+      const roll = p < TUMBLE.OUT ? p / TUMBLE.OUT : 1;
+      return {
+        dx: a.dir.x * TUMBLE.YDS * out, dy: a.dir.y * TUMBLE.YDS * out, liftYds: 0, scale: 1,
+        rotation: a.side * TUMBLE.ROLL * Math.sin(Math.PI * roll) * (p < TUMBLE.BACK ? 1 : out),
+      };
+    }
     case "celebrate": {
       const turn = p * p * (3 - 2 * p);
       return {

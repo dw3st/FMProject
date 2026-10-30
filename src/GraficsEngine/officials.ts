@@ -30,6 +30,8 @@ export const OFFICIALS = {
   AR_Y_TOP: -0.3, AR_Y_BOTTOM: 74.3,
   /** After a card, the referee's target stays on the foul spot this long (real seconds). */
   CARD_HOLD_S: 1.5,
+  /** After any foul the referee runs to the spot for this long (leva 2). */
+  FOUL_HOLD_S: 1.0,
 } as const;
 
 export interface YdPos { x: number; y: number }

@@ -20,6 +20,7 @@ import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
+import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
@@ -1375,6 +1376,8 @@ export function PixiPitch({
       let lastDrawnPos: Map<number, Pos> | null = null;
       /** Bounce of a loose high ball: which landing it is (its start time) and when it was first drawn. */
       let bounceKey: number | null = null;
+      /** Box jostling of this frame (engine yards per player), drawn on the marker. */
+      let jostle: Map<number, Pos> | null = null;
       let bounceAt = 0;
       let lastDrawnBall: DrawnBall | null = null;
       const framesVisible = () =>
@@ -2112,6 +2115,27 @@ export function PixiPitch({
         if (!isLongShot(p, goalX)) return;
         anims = addAnim(anims, { playerId: p.id, kind: "longShot", dir: { x: goalX - p.x, y: PITCH_WIDTH / 2 - p.y }, side: 1 }, effectNow);
       });
+      // Fouls (leva 2): the fouled player is thrown on along the challenge and rolls, the offender steps into it.
+      const unsubAnimFoul = gameBus.on("foul", (e) => {
+        if (!framesShown()) return;
+        const fouled = playerPos(e.fouledId), offender = playerPos(e.offenderId);
+        if (!fouled || !offender) return;
+        const dir = { x: fouled.x - offender.x, y: fouled.y - offender.y };
+        if (Math.hypot(dir.x, dir.y) < 0.01) { dir.x = -fouled.attackDir; dir.y = 0; }
+        const side: 1 | -1 = seedFrom(`tumble:${e.fouledId}:${e.minute}`) % 2 === 0 ? 1 : -1;
+        anims = addAnim(anims, { playerId: fouled.id, kind: "tumble", dir, side }, effectNow);
+        anims = addAnim(anims, { playerId: offender.id, kind: "lunge", dir, side: 1 }, effectNow);
+      });
+      // A contested high ball: both go up together; the loser sometimes ends on the ground.
+      const unsubAnimAerial = gameBus.on("aerialDuel", (e) => {
+        if (!framesShown()) return;
+        const w = playerPos(e.winnerId), l = playerPos(e.loserId);
+        if (!w || !l) return;
+        anims = addAnim(anims, { playerId: w.id, kind: "jump", dir: { x: e.x - w.x, y: e.y - w.y }, side: 1 }, effectNow);
+        anims = addAnim(anims, { playerId: l.id, kind: "jump", dir: { x: e.x - l.x, y: e.y - l.y }, side: 1 }, effectNow);
+        act(w.id, "header");
+        act(l.id, seedFrom(`duel:${e.winnerId}:${e.loserId}:${Math.round(e.x * 10)}`) % 4 === 0 ? "fall" : "header");
+      });
       const unsubAnimHeader = gameBus.on("header", (e) => {
         if (!framesShown()) return;
         const p = playerPos(e.player);
@@ -2305,12 +2329,26 @@ export function PixiPitch({
       let refHold: { spot: YdPos; until: number } | null = null;
       let refCard: { card: "yellow" | "red"; until: number } | null = null;
       const flagUntil: Record<AssistantSide, number> = { top: -1, bottom: -1 };
-      const unsubRefFoul = gameBus.on("foul", (e) => { lastFoulSpot = { x: e.x, y: e.y }; });
+      const unsubRefFoul = gameBus.on("foul", (e) => {
+        lastFoulSpot = { x: e.x, y: e.y };
+        // The referee runs to where it happened (a card holds him there longer).
+        if (officialsOn && framesShown()) refHold = { spot: { x: e.x, y: e.y }, until: effectNow + OFFICIALS.FOUL_HOLD_S };
+      });
       const unsubRefCard = gameBus.on("card", (e) => {
         if (!officialsOn || !framesShown()) return;
         const spot = lastFoulSpot ?? playerPos(e.playerId) ?? null;
         if (spot) refHold = { spot: { x: spot.x, y: spot.y }, until: effectNow + OFFICIALS.CARD_HOLD_S };
         refCard = { card: e.card, until: effectNow + EFFECT_DURATION.card };
+        // The booked player's two nearest team-mates protest (leva 2).
+        const booked = playerPos(e.playerId);
+        if (!booked) return;
+        const mates = stateRef.current.players
+          .filter((q) => q.team === booked.team && q.id !== booked.id && q.role !== "GK")
+          .map((q) => ({ id: q.id, d: Math.hypot(q.x - booked.x, q.y - booked.y) }))
+          .filter((q) => q.d < 18)
+          .sort((a, b) => a.d - b.d)
+          .slice(0, 2);
+        for (const q of mates) act(q.id, "appeal");
       });
       const unsubArFlag = gameBus.on("offsideCalled", (e) => {
         if (!officialsOn || !framesShown()) return;
@@ -3552,6 +3590,31 @@ export function PixiPitch({
         // In-match penalty: the taker's run-up with the stutter while the countdown runs, the ball on the spot.
         {
           const sp = stateRef.current.setPiece;
+          jostle = null;
+          // A direct free kick: the taker places the ball and steps back, then runs in (leva 2).
+          if (sp?.type === 'free_kick' && sp.variant === 'direct' && sp.position && !replayRun) {
+            const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
+            if (taker) {
+              const k = 1 - sp.countdown / SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN;
+              const off = penaltyRunUp(k);
+              const next = new Map(drawnPos);
+              next.set(taker.id, { x: sp.position.x - taker.attackDir * off.back, y: sp.position.y + taker.attackDir * off.side });
+              drawnPos = next;
+              drawnB = { ...drawnB, x: sp.position.x, y: sp.position.y, h: 0 };
+            }
+          }
+          // Corner or crossed free kick: the pairs in the box push and pull while the taker waits.
+          if (sp && sp.variant === 'box' && sp.countdown > 0 && !replayRun && !reducedMotion) {
+            const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
+            if (taker) {
+              const offs = jostleOffsets(
+                stateRef.current.players.map((p) => ({ id: p.id, team: p.team, keeper: p.role === "GK" })),
+                drawnPos, taker.team, engineGoalX(taker.attackDir), effectNow,
+              );
+              // On the marker only (like the short animations): the figure's gait and facing never see it.
+              jostle = offs;
+            }
+          }
           if (sp?.type === 'penalty' && !replayRun) {
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             const spot = sp.position ?? (taker ? { x: taker.x, y: taker.y } : null);
@@ -3702,8 +3765,9 @@ export function PixiPitch({
           const anim = animOf.get(player.id);
           const off = anim ? animOffset(anim, effectNow) : null;
           const liftPx = off ? off.liftYds * m.scale * BALL.LIFT_PX_PER_YD : 0;
-          g.x = px + (off ? xSign() * off.dx * m.scale : 0);
-          g.y = py + (off ? xSign() * off.dy * m.scale : 0) - liftPx;
+          const jo = jostle?.get(player.id);
+          g.x = px + (off ? xSign() * off.dx * m.scale : 0) + (jo ? xSign() * jo.x * m.scale : 0);
+          g.y = py + (off ? xSign() * off.dy * m.scale : 0) + (jo ? xSign() * jo.y * m.scale : 0) - liftPx;
           g.scale.set(off ? off.scale : 1);
           // The mirror is a 180° turn (#142): the offset flips on both axes, an angle stays as is.
           g.rotation = off ? off.rotation : 0;
@@ -4676,6 +4740,8 @@ export function PixiPitch({
         unsubBurstGoal();
         unsubAnimShot();
         unsubAnimHeader();
+        unsubAnimFoul();
+        unsubAnimAerial();
         unsubAnimSave();
         unsubAnimPenalty();
         unsubRefFoul();

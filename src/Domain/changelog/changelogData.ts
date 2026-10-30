@@ -27,6 +27,33 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.42",
+    date: "2026-10-30",
+    time: "15:42",
+    items: [
+      {
+        pt: "Faltas com contato: quem sofre é jogado para a frente e rola no chão, quem comete entra na dividida, e o juiz corre até o local.",
+        en: "Fouls with contact: the fouled player is thrown forward and rolls, the offender steps into the challenge, and the referee runs to the spot.",
+      },
+      {
+        pt: "No cartão, dois companheiros do punido vão reclamar com o juiz.",
+        en: "On a card, two of the booked player's team-mates go and protest to the referee.",
+      },
+      {
+        pt: "Falta direta: o cobrador ajeita a bola, toma distância e corre para bater, como no pênalti.",
+        en: "Direct free kicks: the taker places the ball, steps back and runs in, as on a penalty.",
+      },
+      {
+        pt: "Bola alta disputada: os dois jogadores sobem juntos, e às vezes quem perde vai ao chão. A cabeçada para o gol vem com o corpo na bola.",
+        en: "Contested high balls: both players go up together, and the loser sometimes ends on the ground. A header at goal throws the body at the ball.",
+      },
+      {
+        pt: "Escanteio e falta cruzada: empurra-empurra na área enquanto o cobrador se prepara.",
+        en: "Corners and crossed free kicks: pushing and pulling in the box while the taker gets ready.",
+      },
+    ],
+  },
+  {
     version: "4.41.41",
     date: "2026-10-30",
     time: "15:30",
