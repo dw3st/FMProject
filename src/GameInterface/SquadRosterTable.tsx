@@ -1,4 +1,5 @@
 import { summaryOf } from "@/Domain/personality/personality";
+import { AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
 import { useState, useMemo } from "react";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
@@ -239,7 +240,7 @@ export function SquadRosterTable({
               </div>
             )}
             <div className="px-3 py-2.5 flex justify-center">
-              <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
+              <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
             <div className="px-3 py-2.5 flex justify-center">
               <button
@@ -283,25 +284,35 @@ function RatingBadge({ value }: { value: number }) {
 
 function FitStatusIcon({
   status,
+  energy,
   injury,
   suspendedMatches,
+  nationalDutyUntil,
 }: {
-  status: string;
+  status: "fit" | "injured" | "suspended";
+  energy: number;
   injury?: { severity: "light" | "medium" | "severe"; daysLeft: number };
   suspendedMatches?: number;
+  nationalDutyUntil?: string;
 }) {
   const { t } = useTranslation();
-  if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary" title={t("dashboard.squadRosterTable.fit")} />;
+  const state = availabilityOf({ status, energy, ...(nationalDutyUntil ? { nationalDutyUntil } : {}) });
+  let title: string;
   if (status === "injured") {
     const severity = injury ? t(`dashboard.squadRosterTable.sev${capitalizeSeverity(injury.severity)}` as never) : "";
-    const title = injury
+    title = injury
       ? injury.daysLeft > 0
         ? t("dashboard.squadRosterTable.injuredDays", { severity, days: injury.daysLeft })
         : t("dashboard.squadRosterTable.injuredToday", { severity })
       : t("dashboard.squadRosterTable.injured");
-    return <div className="w-3 h-3 rounded-full bg-destructive" title={title} />;
+  } else if (status === "suspended") {
+    title = t("dashboard.squadRosterTable.suspendedMatches", { count: suspendedMatches ?? 1 });
+  } else if (nationalDutyUntil) {
+    title = t("dashboard.squadRosterTable.nationalDuty");
+  } else if (state === "rhythm") {
+    title = t("dashboard.squadRosterTable.needsRhythm", { fitness: energy });
+  } else {
+    title = t("dashboard.squadRosterTable.fit");
   }
-  if (status === "suspended")
-    return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadRosterTable.suspendedMatches", { count: suspendedMatches ?? 1 })} />;
-  return null;
+  return <div role="img" aria-label={title} className={`w-3 h-3 rounded-full ${AVAILABILITY_DOT[state]}`} title={title} />;
 }

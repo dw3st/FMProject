@@ -523,7 +523,11 @@ function ShopHistory({ history }: { history: AchievementsData["shop"]["history"]
                   <td className={`${TABLE_CELL.body} text-sm`}>{t(`achievements.shop.history.kind.${h.item}`)}</td>
                   <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{h.date ? formatDate(h.date, i18n.language) : "–"}</td>
                   <td className={`${TABLE_CELL.body} ${TABLE_STYLE.key}`}>{h.price !== null ? t("achievements.shop.cost", { n: h.price }) : "–"}</td>
-                  <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>{t(`achievements.shop.history.at.${h.where}`)}</td>
+                  <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>
+                    {h.where === "other" && h.clubName
+                      ? t("achievements.shop.history.at.otherClub", { club: h.clubName })
+                      : t(`achievements.shop.history.at.${h.where}`)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  addProspects, advanceScoutingWeek, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
+  addProspects, advanceScoutingWeek, capReports, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
   missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, relativeNote,
   shortlistAlerts, starterLineAverages, type PoolEntry, type ViewerContext,
 } from "@/Domain/scouting/missions";
@@ -313,5 +313,20 @@ describe("country knowledge of the mission leader", () => {
     const hi = addProspects(emptyScoutingState(), [pr], ctx(), { missionId: "m", leaderRating: 5, countryK: 90 }).state.knowledge.pr!.k;
     expect(addProspects(emptyScoutingState(), [pr], ctx(), { missionId: "m", leaderRating: 5, countryK: 40 }).state.knowledge.pr!.k).toBe(n);
     expect(hi).toBe(Math.round(SCOUTING.REGION_GAIN * (1.2 - 0.2 * 10 / 60)));
+  });
+});
+
+describe("capReports", () => {
+  const rep = (id: string) => ({ id } as ScoutReport);
+  test("keeps the newest reports and the report of a live prospect beyond the cap", () => {
+    const reports = Array.from({ length: SCOUTING.MAX_REPORTS + 5 }, (_, i) => rep(`r${i}`));
+    const out = capReports(reports, [{ reportId: `r${SCOUTING.MAX_REPORTS + 3}` }]);
+    expect(out.length).toBe(SCOUTING.MAX_REPORTS + 1);
+    expect(out.some((r) => r.id === `r${SCOUTING.MAX_REPORTS + 3}`)).toBe(true);
+    expect(out.some((r) => r.id === `r${SCOUTING.MAX_REPORTS + 4}`)).toBe(false);
+  });
+  test("under the cap nothing changes", () => {
+    const reports = [rep("a"), rep("b")];
+    expect(capReports(reports, [])).toBe(reports);
   });
 });

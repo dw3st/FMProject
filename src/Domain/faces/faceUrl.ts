@@ -6,8 +6,8 @@
  * whenever the face output changes (facesjs upgrade, new crop, different appearance mix, new `faceTraits.json`).
  */
 import { managerFaceQuery, type ManagerFace } from "@/Domain/faces/managerFace";
-import { paintedCoachFace, paintedPersonFace, paintedPlayerFace, paintedRefereeFace } from "@/Domain/art/paintedFaces";
-import { personCombo } from "@/Domain/art/personCombo";
+import { paintedPlayerStandIn, paintedCoachFace, paintedPersonFace, paintedPlayerFace, paintedRefereeFace } from "@/Domain/art/paintedFaces";
+import { personCombo, playerSkin } from "@/Domain/art/personCombo";
 
 export const FACE_VERSION = 7;
 
@@ -26,7 +26,8 @@ export function faceUrl(
   clubColors?: readonly string[],
 ): string {
   // The painted face of the new art when there is one (the SVG face otherwise).
-  const painted = paintedPlayerFace(playerId);
+  // A player without his own portrait gets a painted face of the generic set, so a list never mixes the two styles.
+  const painted = paintedPlayerFace(playerId) ?? paintedPlayerStandIn(playerId, playerSkin(playerId, nationality));
   if (painted) return painted;
   const params = new URLSearchParams();
   params.set("v", String(FACE_VERSION));

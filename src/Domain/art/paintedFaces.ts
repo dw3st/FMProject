@@ -4,6 +4,7 @@
  * before. Pure module state, set once per page by `loadPaintedFaces`; nothing breaks without it.
  */
 import type { ManagerFace } from "@/Domain/faces/managerFace";
+import { seedFrom } from "@/Domain/rng";
 
 /** Version segment of the art URLs (`/assets/art/v1/...`): bump it whenever the art files change. */
 export const ART_ASSET_VERSION = "v1";
@@ -96,6 +97,7 @@ let painted: { players: Set<string>; coaches: Set<string>; referees: Set<string>
 };
 
 export function setPaintedFaces(ids: PaintedFaceIds | null): void {
+  standIns.clear();
   painted = {
     players: new Set(ids?.players ?? []),
     coaches: new Set(ids?.coaches ?? []),
@@ -127,6 +129,23 @@ export function coachCombo(face: ManagerFace): string | null {
 /** Painted coach face standing for a person the game only draws (AI manager, staff, generated referee), or null. */
 export function paintedPersonFace(combo: string): string | null {
   return painted.coaches.has(combo) ? artUrl(`faces/coaches/${combo}.webp`) : null;
+}
+
+const standIns = new Map<number, string[]>();
+
+/**
+ * A painted face of the generic set for a player without his own portrait (tester report: lists mixed painted and SVG
+ * faces): one of the painted faces of his skin tone, young-looking (no grey hair, no glasses), picked by the id. Null
+ * when the set has no face of that tone (the SVG face stays).
+ */
+export function paintedPlayerStandIn(playerId: string, skin: number): string | null {
+  let list = standIns.get(skin);
+  if (!list) {
+    list = [...painted.coaches].filter((c) => c.startsWith(`${skin}-`) && !c.includes("-grey-") && c.endsWith("-n")).sort();
+    standIns.set(skin, list);
+  }
+  if (list.length === 0) return null;
+  return artUrl(`faces/coaches/${list[seedFrom(`standin:${playerId}`) % list.length]}.webp`);
 }
 
 /** Painted webp of the human manager's avatar, or null. */

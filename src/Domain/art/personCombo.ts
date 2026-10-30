@@ -31,3 +31,9 @@ export function personCombo(id: string, nationality?: string | null, age?: numbe
   const glasses = rng() < (years >= 50 ? 0.4 : 0.15) ? "g" : "n";
   return `${skin}-${hair}-${length}-${beard}-${glasses}`;
 }
+
+/** Skin tone (1-7, the painted set's scale) of a player drawn from his id and nationality's region. */
+export function playerSkin(id: string, nationality?: string | null): number {
+  const rng = mulberry32(seedFrom(`plface:${id}`));
+  return pick(rng, SKIN_OF[pickFaceRace(nationality, rng)]);
+}

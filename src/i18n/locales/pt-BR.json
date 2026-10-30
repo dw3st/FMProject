@@ -944,7 +944,14 @@
     },
     "suspended": "Suspenso",
     "suspendedMatches_one": "Suspenso para o próximo jogo",
-    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos",
+    "cols": {
+      "pos": "Pos",
+      "ovr": "OVR",
+      "fitness": "Fôl."
+    },
+    "swapHint": "Arraste um jogador sobre outro para trocar: entre titulares, ou um reserva sobre um titular",
+    "unregisteredShort": "N/I"
   },
   "roles": {
     "groups": {
@@ -1932,6 +1939,17 @@
       },
       "transfer_in": "{{player}} contratado",
       "transfer_out": "{{player}} vendido"
+    },
+    "actions": {
+      "repair": "Reformar na tela do Clube",
+      "rebuild": "Reconstruir na tela do Clube",
+      "renew": "Renovar o contrato",
+      "contracts": "Ver o elenco",
+      "staff": "Abrir a equipe técnica",
+      "registration": "Abrir a inscrição",
+      "lineup": "Ajustar a escalação",
+      "youth": "Ver a base",
+      "finances": "Ver as finanças"
     }
   },
   "finances": {
@@ -2199,7 +2217,7 @@
         "assists": "Assistências na temporada (todas as competições)",
         "rating": "Nota média das partidas na temporada",
         "morale": "Moral",
-        "status": "Apto, lesionado ou suspenso"
+        "status": "Pronto, precisa de ritmo (amarelo) ou indisponível: lesionado, suspenso ou na seleção (vermelho)"
       },
       "rating": "Nota",
       "status": "Estado",
@@ -2217,7 +2235,9 @@
       "sevSevere": "grave",
       "contract": "Contrato",
       "suspendedMatches_one": "Suspenso para o próximo jogo",
-      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos",
+      "nationalDuty": "Na seleção",
+      "needsRhythm": "Precisa de ritmo: fôlego {{fitness}}"
     },
     "home": {
       "nextMatch": "Próximo jogo",
@@ -4840,7 +4860,11 @@
         "at": {
           "squad": "No elenco",
           "youth": "Na base",
-          "gone": "Saiu do clube"
+          "gone": "Saiu do clube",
+          "other": "Em outro clube",
+          "otherClub": "Hoje: {{club}}",
+          "free": "Sem clube",
+          "retired": "Aposentado: não joga mais"
         }
       }
     },

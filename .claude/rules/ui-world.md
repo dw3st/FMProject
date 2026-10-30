@@ -39,7 +39,7 @@ cada instância montada — cai no brasão gerado com as cores do clube. Ver `.c
 ### Escudos de traço escuro (4.41.4)
 
 `bun scripts/logoContrast.ts` mede os PNG do índice e grava `src/example_data/logoBacking.json` (pouca área pintada,
-traço escuro, quase nada claro: QPR, Bolton e outros 9); o `ClubLogo` desenha esses sobre um disco claro. Rodar de novo
+traço escuro, quase nada claro: QPR, Bolton e outros 9; ou contorno escuro em mais de 75% da borda, figura branca desenhada com traço fino: Millwall, Modena, Eibar, Albacete); o `ClubLogo` desenha esses sobre um disco claro. Rodar de novo
 quando o índice de escudos mudar.
 
 ## Ligas seguidas

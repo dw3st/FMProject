@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { moraleBand } from "@/Domain/morale/morale";
 import type { MoraleBand } from "@/types/moraleTypes";
+import { MORALE_TONE } from "@/GameInterface/statusColors";
 
 const BAND_ICON: Record<MoraleBand, IconName> = {
   very_happy: "face-very-happy",
@@ -9,15 +10,6 @@ const BAND_ICON: Record<MoraleBand, IconName> = {
   neutral: "face-neutral",
   unhappy: "face-unhappy",
   furious: "face-furious",
-};
-
-/** Text colour of each band (theme tokens only). */
-const BAND_TONE: Record<MoraleBand, string> = {
-  very_happy: "text-chart-2",
-  content: "text-primary",
-  neutral: "text-muted-foreground",
-  unhappy: "text-chart-4",
-  furious: "text-destructive",
 };
 
 /**
@@ -30,7 +22,7 @@ export function MoraleBadge({ morale, showValue = false, className = "" }: { mor
   return (
     <span
       title={t("morale.title", { value: Math.round(morale) })}
-      className={`inline-flex items-center gap-1.5 text-sm font-semibold whitespace-nowrap ${BAND_TONE[band]} ${className}`}
+      className={`inline-flex items-center gap-1.5 text-sm font-semibold whitespace-nowrap ${MORALE_TONE[band]} ${className}`}
     >
       <Icon name={BAND_ICON[band]} size={16} className="shrink-0" />
       {t(`morale.band.${band}`)}

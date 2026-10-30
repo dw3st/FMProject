@@ -9,7 +9,7 @@ import type { FormationSlot, FormationShape } from "@/types/formationSlots";
 import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 import { useDragDrop, DragGhost } from "@/GameInterface/Components/useDragDrop";
 import type { DragSource, DropTarget } from "@/GameInterface/Components/useDragDrop";
-import { dropOnLineup, tabUnderDrag } from "@/Domain/formation/lineupDrop";
+import { dropOnLineup } from "@/Domain/formation/lineupDrop";
 import {
   CUSTOM_FORMATION_ID,
   ZONE_COLS,
@@ -60,7 +60,6 @@ import {
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
-import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
@@ -142,7 +141,6 @@ export function FormationScreen() {
   const [tacticsUpdating, setTacticsUpdating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [selectedSlotIdx, setSelectedSlotIdx] = useState<number | null>(null);
-  const [benchTab, setBenchTab] = useState<"starting" | "bench">("starting");
   const [lineupReady, setLineupReady] = useState(false);
   /** Per-slot player instructions (role variant / pressing), index = slot. */
   const [slotInstructions, setSlotInstructions] = useState<(SlotInstruction | null)[]>([]);
@@ -183,11 +181,6 @@ export function FormationScreen() {
   }
 
   const { drag, dragProps, consumeClick } = useDragDrop(handleDrop);
-  // Hovering a squad-panel tab while dragging opens it (pitch -> bench without letting go, #72).
-  const dragOverTab = tabUnderDrag(drag?.over);
-  useEffect(() => {
-    if (dragOverTab) setBenchTab(dragOverTab);
-  }, [dragOverTab]);
 
   useEffect(() => {
     if (!saveLoading && !session) {
@@ -560,7 +553,6 @@ export function FormationScreen() {
     if (consumeClick()) return;
     if (selectedSlotIdx === null) {
       setSelectedSlotIdx(slotIdx);
-      setBenchTab("bench");
     } else if (selectedSlotIdx === slotIdx) {
       setSelectedSlotIdx(null);
     } else {
@@ -583,7 +575,6 @@ export function FormationScreen() {
     newLineup[selectedSlotIdx] = player.id;
     setLineup(newLineup);
     setSelectedSlotIdx(null);
-    setBenchTab("starting");
   }
 
   const activeStyle: TacticalStyle = session?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
@@ -671,12 +662,12 @@ export function FormationScreen() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Formation Selector — absolute inside cell so pitch dictates row height */}
-            <div className="lg:col-span-3 lg:relative">
+            <div className="lg:col-span-2 lg:relative">
               <div className="card-arcade rounded-md p-4 lg:absolute lg:inset-0 overflow-y-auto">
                 <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
                   {t("formations.selectFormation")}
                 </h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {formations.map((f) => {
                     const supported = FORMATION_IDS.includes(f.id);
                     const isActive = f.id === formationId;
@@ -753,7 +744,7 @@ export function FormationScreen() {
             </div>
 
             {/* Pitch Preview */}
-            <div className="lg:col-span-6">
+            <div className="lg:col-span-5">
               {editing && (
                 <div className="mb-3 rounded-md border border-primary/50 p-3 flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-48">
@@ -827,108 +818,93 @@ export function FormationScreen() {
               )}
             </div>
 
-            {/* Squad Panel — absolute inside cell so pitch dictates row height */}
-            <div className="lg:col-span-3 lg:relative">
+            {/* Squad Panel — absolute inside cell so pitch dictates row height. Starters and bench side by side
+                (tester report): drag one onto the other to swap, one line per player. */}
+            <div className="lg:col-span-5 lg:relative">
               <div className="card-arcade rounded-md p-4 flex flex-col lg:absolute lg:inset-0 overflow-hidden">
-                <SegmentedTabs
-                  fill
-                  compact
-                  className="mb-4 shrink-0"
-                  tabs={[
-                    { key: "starting", label: <><Icon name="staff" className="w-4 h-4" />{t("formations.starting11")}</> },
-                    { key: "bench", label: <><Icon name="user-plus" className="w-4 h-4" />{t("formations.bench")}</> },
-                  ]}
-                  active={benchTab}
-                  onChange={setBenchTab}
-                  tabProps={(key) => ({ "data-drop": `tab:${key}` })}
-                />
-
                 {selectedSlotIdx !== null ? (
                   <p className="text-sm text-primary mb-3 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/30 m-0 shrink-0">
                     {t("formations.selectPlayerForSlot")} <span className="font-bold">{slots[selectedSlotIdx]?.role ?? selectedSlotIdx + 1}</span>
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground mb-3 m-0 shrink-0">
-                    {benchTab === "starting" ? t("formations.dragStartingHint") : t("formations.clickSlotHint")}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-3 m-0 shrink-0">{t("formations.swapHint")}</p>
                 )}
 
-                <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-                  {benchTab === "starting" ? (
-                    startingBySlot.map((player, idx) =>
-                      player ? (
-                        <SquadPlayerRow
-                          key={player.id}
-                          player={player}
-                          slotLabel={slots[idx]?.role}
-                          ratingRole={slots[idx]?.role}
-                          showSlot
-                          rowProps={{
-                            "data-drop": `slot:${idx}`,
-                            ...dragProps({ kind: "slot", key: String(idx) }, player.name),
-                          }}
-                          dropHover={dropHover === `slot:${idx}`}
-                          selected={selectedSlotIdx === idx}
-                          outOfPosition={slots[idx] ? isPoorFit(aptitudeFor(player, slots[idx]!.role)) : false}
-                          aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
-                          onClick={() => handleSlotClick(idx)}
-                          injured={isUnavailable(player, currentDate)}
-                          unregisteredFor={unregisteredLabel(player.id)}
-                        />
-                      ) : (
-                        <button
-                          key={`empty-slot-${idx}`}
-                          type="button"
-                          data-drop={`slot:${idx}`}
-                          onClick={() => handleSlotClick(idx)}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg border text-left transition-colors cursor-pointer border-dashed ${
-                            dropHover === `slot:${idx}`
-                              ? "bg-primary/20 border-primary"
-                              : selectedSlotIdx === idx
-                              ? "bg-primary/20 border-primary/50"
-                              : "bg-muted/20 border-border/50 hover:bg-muted/40"
-                          }`}
-                        >
-                          <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground w-6 shrink-0 font-display">
-                            {slots[idx]?.role?.slice(0, 2) ?? "—"}
-                          </span>
-                          <span className="text-sm text-muted-foreground">{t("formations.emptySlotTapToFill")}</span>
-                        </button>
-                      ),
-                    )
-                  ) : (
-                    bench.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4 m-0">{t("formations.noBenchPlayers")}</p>
-                    ) : (
-                      benchOrderedForSlot.map((player) => {
-                        const injured = isUnavailable(player, currentDate);
-                        return (
+                <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col min-h-0">
+                    <SquadListHeader title={t("formations.starting11")} count={startingBySlot.filter(Boolean).length} />
+                    <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                      {startingBySlot.map((player, idx) =>
+                        player ? (
                           <SquadPlayerRow
                             key={player.id}
                             player={player}
-                            ratingRole={targetSlotRole}
+                            slotLabel={slots[idx]?.role}
+                            ratingRole={slots[idx]?.role}
+                            showSlot
                             rowProps={{
-                              "data-drop": `bench:${player.id}`,
-                              ...(injured ? {} : dragProps({ kind: "bench", key: player.id }, player.name)),
+                              "data-drop": `slot:${idx}`,
+                              ...dragProps({ kind: "slot", key: String(idx) }, player.name),
                             }}
-                            dropHover={dropHover === `bench:${player.id}`}
-                            onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
-                            highlight={selectedSlotIdx !== null && !injured}
-                            injured={injured}
+                            dropHover={dropHover === `slot:${idx}`}
+                            selected={selectedSlotIdx === idx}
+                            outOfPosition={slots[idx] ? isPoorFit(aptitudeFor(player, slots[idx]!.role)) : false}
+                            aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
+                            onClick={() => handleSlotClick(idx)}
+                            injured={isUnavailable(player, currentDate)}
                             unregisteredFor={unregisteredLabel(player.id)}
                           />
-                        );
-                      })
-                    )
-                  )}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border/30 shrink-0">
-                  <p className="text-sm text-muted-foreground text-center m-0">
-                    {benchTab === "starting"
-                      ? t("formations.playersInStartingLineup", { count: startingBySlot.filter(Boolean).length })
-                      : t("formations.playersOnBench", { count: bench.length })}
-                  </p>
+                        ) : (
+                          <button
+                            key={`empty-slot-${idx}`}
+                            type="button"
+                            data-drop={`slot:${idx}`}
+                            onClick={() => handleSlotClick(idx)}
+                            className={`flex w-full items-center gap-2 h-9 px-2 rounded-md border text-left transition-colors cursor-pointer border-dashed ${
+                              dropHover === `slot:${idx}`
+                                ? "bg-primary/20 border-primary"
+                                : selectedSlotIdx === idx
+                                ? "bg-primary/20 border-primary/50"
+                                : "bg-muted/20 border-border/50 hover:bg-muted/40"
+                            }`}
+                          >
+                            <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground w-9 shrink-0 font-display">
+                              {slots[idx]?.role ?? "—"}
+                            </span>
+                            <span className="text-sm text-muted-foreground truncate">{t("formations.emptySlotTapToFill")}</span>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col min-h-0">
+                    <SquadListHeader title={t("formations.bench")} count={bench.length} />
+                    <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                      {bench.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4 m-0">{t("formations.noBenchPlayers")}</p>
+                      ) : (
+                        benchOrderedForSlot.map((player) => {
+                          const injured = isUnavailable(player, currentDate);
+                          return (
+                            <SquadPlayerRow
+                              key={player.id}
+                              player={player}
+                              ratingRole={targetSlotRole}
+                              rowProps={{
+                                "data-drop": `bench:${player.id}`,
+                                ...(injured ? {} : dragProps({ kind: "bench", key: player.id }, player.name)),
+                              }}
+                              dropHover={dropHover === `bench:${player.id}`}
+                              onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
+                              highlight={selectedSlotIdx !== null && !injured}
+                              injured={injured}
+                              unregisteredFor={unregisteredLabel(player.id)}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1076,6 +1052,21 @@ const AXIS_CHOICES: { key: keyof TacticalAxes; values: string[] }[] = [
   { key: "build_up", values: ["direct", "balanced", "possession"] },
 ];
 
+/** Column labels of a squad list: position, player (with the count), rating, fitness. */
+function SquadListHeader({ title, count }: { title: string; count: number }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2 px-2 pb-1.5 mb-1 border-b border-border/50 shrink-0 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+      <span className="w-9 shrink-0">{t("formations.cols.pos")}</span>
+      <span className="flex-1 min-w-0 truncate text-foreground">
+        {title} <span className="tabular-nums text-muted-foreground">{count}</span>
+      </span>
+      <span className="w-9 text-right shrink-0">{t("formations.cols.ovr")}</span>
+      <span className="w-14 text-right shrink-0">{t("formations.cols.fitness")}</span>
+    </div>
+  );
+}
+
 function SquadPlayerRow({
   player,
   slotLabel,
@@ -1117,27 +1108,18 @@ function SquadPlayerRow({
   const badgeRole = showSlot && slotLabel ? slotLabel : preferredRole(player);
   const badgeLabel = positionLabel(t, badgeRole, badgeRole);
   const textColor = positionLabelColor(badgeRole, badgeRole);
+  // Why he cannot play: one red mark with the reason in its title (one line per player).
+  const unavailableTitle = injured && player.injury
+    ? `${t(`formations.injurySeverity.${player.injury.severity}` as never)} · ${t("formations.injuredUntil", { date: player.injury.returnDate })}`
+    : injured && isSuspended(player)
+    ? t("formations.suspendedMatches", { count: player.suspension!.matches })
+    : null;
 
   return (
     <div
-      className={`flex items-center gap-2 select-none ${onClick ? "cursor-pointer" : injured ? "opacity-60 cursor-not-allowed" : ""}`}
-      onClick={onClick}
-      {...rowProps}
-    >
-      {(showSlot && slotLabel) ? (
-        <div className="flex items-center justify-center shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
-            {badgeLabel}
-          </span>
-        </div>
-      ) : (
-        <div className="shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
-            {badgeLabel}
-          </span>
-        </div>
-      )}
-      <div className={`flex-1 flex items-center gap-3 p-2 rounded-lg border transition-colors ${
+      className={`flex items-center gap-2 h-9 px-2 rounded-md border select-none transition-colors ${
+        onClick ? "cursor-pointer" : injured ? "opacity-60 cursor-not-allowed" : ""
+      } ${
         dropHover
           ? "bg-primary/20 border-primary"
           : highlight
@@ -1147,67 +1129,44 @@ function SquadPlayerRow({
           : outOfPosition
           ? "bg-chart-4/10 border-chart-4/40"
           : "bg-secondary/30 border-border/30"
-      }`}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="font-semibold text-sm text-foreground truncate m-0">{player.name}</p>
-            {aptitude && (
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${APT_DOT[aptitude]}`}
-                title={t("roles.atSlot", { aptitude: t(`roles.aptitude.${aptitude}` as never), role: t(`roles.detailed.${ratingRole ?? slotLabel}` as never) })}
-              />
-            )}
-            {outOfPosition && (
-              <span title={t("formations.outOfPosition")}>
-                <Icon name="alert" className="w-3 h-3 text-chart-4 shrink-0" aria-hidden />
-              </span>
-            )}
-            {injured && player.injury && (
-              <span
-                className="text-sm font-black px-2 py-0.5 rounded bg-destructive/20 text-destructive border border-destructive/40 shrink-0"
-                title={t(`formations.injurySeverity.${player.injury.severity}` as never)}
-              >
-                {t("formations.injuredUntil", { date: player.injury.returnDate })}
-              </span>
-            )}
-            {unregisteredFor && (
-              <span
-                className="text-sm font-black px-2 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/40 shrink-0"
-                title={t("registration.notRegisteredFor", { competition: unregisteredFor })}
-              >
-                {t("registration.notRegistered")}
-              </span>
-            )}
-            {injured && isSuspended(player) && (
-              <span
-                className="text-sm font-black px-2 py-0.5 rounded bg-chart-4/20 text-chart-4 border border-chart-4/40 shrink-0"
-                title={t("formations.suspendedMatches", { count: player.suspension!.matches })}
-              >
-                {t("formations.suspended")}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-sm tabular-nums mt-0.5">
-            <div className="flex items-center gap-1">
-              <Icon name="star" className="w-3 h-3 text-muted-foreground" />
-              <span className={`font-bold ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
-            </div>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Icon name="zap" className="w-3 h-3" />
-              <span>{Math.round(energy)}%</span>
-              <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-            </div>
-          </div>
-        </div>
-        <div className="w-12 shrink-0">
-          <div className="h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
-            <div
-              className={`h-full rounded-full ${getEnergyColor(energy)}`}
-              style={{ width: `${energy}%` }}
-            />
-          </div>
-        </div>
-      </div>
+      }`}
+      onClick={onClick}
+      {...rowProps}
+    >
+      <span className={`w-9 shrink-0 touch-none text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`} data-drag-handle>
+        {badgeLabel}
+      </span>
+      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+        <span className="font-semibold text-sm text-foreground truncate">{player.name}</span>
+        {aptitude && (
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${APT_DOT[aptitude]}`}
+            title={t("roles.atSlot", { aptitude: t(`roles.aptitude.${aptitude}` as never), role: t(`roles.detailed.${ratingRole ?? slotLabel}` as never) })}
+          />
+        )}
+        {outOfPosition && (
+          <span title={t("formations.outOfPosition")} className="shrink-0 inline-flex">
+            <Icon name="alert" size={16} className="text-chart-4" aria-hidden />
+          </span>
+        )}
+        {unavailableTitle && (
+          <span role="img" aria-label={unavailableTitle} title={unavailableTitle} className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+        )}
+        {unregisteredFor && (
+          <span
+            className="text-sm font-bold text-destructive shrink-0"
+            title={t("registration.notRegisteredFor", { competition: unregisteredFor })}
+          >
+            {t("formations.unregisteredShort")}
+          </span>
+        )}
+      </span>
+      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+      <span className="w-14 shrink-0 flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
+        <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
+        <span className={`w-1.5 h-4 rounded-sm ${getEnergyColor(energy)}`} aria-hidden />
+        {Math.round(energy)}
+      </span>
     </div>
   );
 }
