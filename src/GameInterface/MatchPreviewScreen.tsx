@@ -1187,7 +1187,7 @@ export function MatchPreviewScreen() {
                 valueClass={pitch < FACILITIES.WEAR.WARN_BELOW ? "text-destructive" : undefined}
                 extra={matchSetup?.pitch && fixture ? (
                   <PitchSurfaceSvg condition={matchSetup.pitch.condition} turf={matchSetup.pitch.turf} mowing={matchSetup.pitch.mowing}
-                    seed={fixture.id} className="w-28 h-auto rounded border border-border" />
+                    seed={fixture.id} ground={fixture.home} className="w-28 h-auto rounded border border-border" />
                 ) : undefined} />
             )}
             {expectedCrowd && (

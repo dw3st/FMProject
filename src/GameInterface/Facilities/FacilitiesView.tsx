@@ -17,6 +17,7 @@ import { TurfCard } from "@/GameInterface/Facilities/TurfCard";
 import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 
 /**
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
@@ -116,7 +117,7 @@ export function FacilitiesView({
         </section>
       </div>
 
-      <TurfCard data={data} pending={pending} onAsk={(req) => void ask(req)} onMowing={(m) => void setMowing(m)} />
+      <TurfCard data={data} ground={squadId} pending={pending} onAsk={(req) => void ask(req)} onMowing={(m) => void setMowing(m)} />
 
       <AttendanceChart games={seasonGames} leagues={leagues} nf={nf} />
 
@@ -194,6 +195,12 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 
 /** Fill opacity of a stand from its occupancy (0..1). */
 const occOpacity = (occ: number) => 0.18 + 0.82 * Math.max(0, Math.min(1, occ));
+/** Over the painted stadium: a light primary tint that grows with the occupancy, empty seats darkened. */
+const paintedTint = (occ: number) => 0.06 + 0.4 * Math.max(0, Math.min(1, occ));
+const paintedShade = (occ: number) => 0.5 * (1 - Math.max(0, Math.min(1, occ)));
+
+/** The painted stadium seen from above (club_art.py, drawn from STAND_GEOM): new visual only. */
+export const PAINTED_STADIUM = "club/stadium-top.webp";
 
 /**
  * Per-stand occupancy for display: the season average spread over the stands with a mild
@@ -224,8 +231,14 @@ function StadiumMap({
 }) {
   const { t } = useTranslation();
   const occ = standOccupancy(data, avgOcc);
+  const [imgFailed, setImgFailed] = useState(false);
+  const painted = newVisualOn() && !imgFailed;
   return (
     <div className="relative w-full max-w-[420px] mx-auto aspect-[320/400]">
+      {painted && (
+        <img src={gameArtUrl(PAINTED_STADIUM)} alt="" aria-hidden onError={() => setImgFailed(true)}
+          className="absolute inset-0 w-full h-full rounded-[12%/9.5%] select-none pointer-events-none" draggable={false} />
+      )}
       <svg viewBox="0 0 320 400" className="absolute inset-0 w-full h-full" role="img" aria-label={t("facilities.stadium.title")}>
         <defs>
           <pattern id="fac-works" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
@@ -233,28 +246,39 @@ function StadiumMap({
             <line x1="0" y1="0" x2="0" y2="10" className="stroke-chart-4" strokeWidth="4" />
           </pattern>
         </defs>
-        {/* Bowl */}
-        <rect x="6" y="6" width="308" height="388" rx="38" className="fill-secondary/40 stroke-border" strokeWidth="2" />
-        {/* Pitch */}
-        <rect x="92" y="76" width="136" height="248" rx="4" className="fill-foreground/[0.04] stroke-foreground/25" strokeWidth="2" />
-        <line x1="92" y1="200" x2="228" y2="200" className="stroke-foreground/25" strokeWidth="2" />
-        <circle cx="160" cy="200" r="20" className="fill-none stroke-foreground/25" strokeWidth="2" />
-        <rect x="128" y="76" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
-        <rect x="128" y="294" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
+        {!painted && (
+          <>
+            {/* Bowl */}
+            <rect x="6" y="6" width="308" height="388" rx="38" className="fill-secondary/40 stroke-border" strokeWidth="2" />
+            {/* Pitch */}
+            <rect x="92" y="76" width="136" height="248" rx="4" className="fill-foreground/[0.04] stroke-foreground/25" strokeWidth="2" />
+            <line x1="92" y1="200" x2="228" y2="200" className="stroke-foreground/25" strokeWidth="2" />
+            <circle cx="160" cy="200" r="20" className="fill-none stroke-foreground/25" strokeWidth="2" />
+            <rect x="128" y="76" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
+            <rect x="128" y="294" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
+          </>
+        )}
         {/* Stands */}
         {data.facilities.stands.map((s) => {
           const g = STAND_GEOM[s.id];
           const on = selected === s.id;
           return (
             <g key={s.id} onClick={() => onSelect(s.id)} className="cursor-pointer">
-              <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={occOpacity(occ[s.id])} />
-              {/* Seat rows, parallel to the pitch. */}
-              {[0.25, 0.5, 0.75].map((k) => (g.w > g.h
+              {painted ? (
+                <>
+                  <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-background" fillOpacity={paintedShade(occ[s.id])} />
+                  <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={paintedTint(occ[s.id])} />
+                </>
+              ) : (
+                <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={occOpacity(occ[s.id])} />
+              )}
+              {/* Seat rows, parallel to the pitch (the painted stadium has its own). */}
+              {!painted && [0.25, 0.5, 0.75].map((k) => (g.w > g.h
                 ? <line key={k} x1={g.x + 6} x2={g.x + g.w - 6} y1={g.y + g.h * k} y2={g.y + g.h * k} className="stroke-background/30" strokeWidth="1" />
                 : <line key={k} y1={g.y + 6} y2={g.y + g.h - 6} x1={g.x + g.w * k} x2={g.x + g.w * k} className="stroke-background/30" strokeWidth="1" />))}
               {works === s.id && <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" fill="url(#fac-works)" />}
               <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8"
-                className={`fill-transparent ${on ? "stroke-foreground" : "stroke-border hover:stroke-muted-foreground"}`}
+                className={`fill-transparent ${on ? "stroke-foreground" : painted ? "stroke-transparent hover:stroke-muted-foreground" : "stroke-border hover:stroke-muted-foreground"}`}
                 strokeWidth={on ? 3 : 1.5} />
             </g>
           );

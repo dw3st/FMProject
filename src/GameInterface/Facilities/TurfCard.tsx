@@ -10,8 +10,10 @@ import type { FacilityRequest, MowingPattern } from "@/types/facilityTypes";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
 /** Club screen: the stadium pitch's grass and mowing, and the turf works (spec 2026-10-16-pitch-types §4). */
-export function TurfCard({ data, pending, onAsk, onMowing }: {
+export function TurfCard({ data, ground, pending, onAsk, onMowing }: {
   data: FacilitiesViewData;
+  /** The club (home ground): the same painted grass tone as its matches. */
+  ground?: string;
   pending: boolean;
   onAsk: (req: FacilityRequest) => void;
   onMowing: (m: MowingPattern) => void;
@@ -29,7 +31,7 @@ export function TurfCard({ data, pending, onAsk, onMowing }: {
         </span>
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
-        <PitchSurfaceSvg condition={condition} turf={data.turf} mowing={data.mowing} seed="club" className="w-full sm:w-56 h-auto rounded border border-border" />
+        <PitchSurfaceSvg condition={condition} turf={data.turf} mowing={data.mowing} seed="club" ground={ground} className="w-full sm:w-56 h-auto rounded border border-border" />
         <div className="flex flex-col gap-3 min-w-0">
           <p className="text-sm text-muted-foreground m-0">{t(`facilities.turf.about.${data.turf}`)}</p>
           <div className="flex flex-col gap-1">
