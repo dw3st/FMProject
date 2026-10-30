@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { coachCombo, paintedBackdrop, paintedPlayerStandIn, setPaintedBackdrops, setPaintedFaces } from "@/Domain/art/paintedFaces";
+import { coachCombo, FACILITY_ART_REVISION, paintedBackdrop, paintedFacility, paintedPlayerStandIn, setPaintedBackdrops, setPaintedFaces, setPaintedScreens } from "@/Domain/art/paintedFaces";
 import { faceUrl, managerAvatarUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 
-afterEach(() => { setPaintedFaces(null); setPaintedBackdrops(null); });
+afterEach(() => { setPaintedFaces(null); setPaintedBackdrops(null); setPaintedScreens(null, null); });
 
 describe("painted faces", () => {
   test("a player with a painted face gets the webp; one without keeps the SVG", () => {
@@ -40,5 +40,25 @@ describe("player stand-in faces", () => {
     expect(paintedPlayerStandIn("x1", 7)).toBeNull();
     setPaintedFaces(null);
     expect(paintedPlayerStandIn("x1", 2)).toBeNull();
+  });
+});
+
+describe("painted facilities", () => {
+  test("one painting per level 1..10, clamped, with the file revision", () => {
+    const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lv) => `facility-stadium-pitch-${lv}`);
+    setPaintedScreens(ids, null);
+    expect(paintedFacility("stadiumPitch", 1)).toBe(`/assets/art/v1/facilities/facility-stadium-pitch-1.webp?r=${FACILITY_ART_REVISION}`);
+    expect(paintedFacility("stadiumPitch", 7)).toContain("facility-stadium-pitch-7.webp");
+    expect(paintedFacility("stadiumPitch", 10)).toContain("facility-stadium-pitch-10.webp");
+    expect(paintedFacility("stadiumPitch", 0)).toContain("facility-stadium-pitch-1.webp");
+    expect(paintedFacility("stadiumPitch", 14)).toContain("facility-stadium-pitch-10.webp");
+  });
+
+  test("null without the painting of that level", () => {
+    setPaintedScreens(["facility-academy-lodging-3"], null);
+    expect(paintedFacility("academyLodging", 3)).toContain("facility-academy-lodging-3.webp");
+    expect(paintedFacility("academyLodging", 4)).toBeNull();
+    setPaintedScreens(null, null);
+    expect(paintedFacility("academyLodging", 3)).toBeNull();
   });
 });

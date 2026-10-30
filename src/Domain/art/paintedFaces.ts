@@ -71,14 +71,20 @@ export function setPaintedScreens(facilities: string[] | null, news: string[] | 
 }
 
 /**
+ * Revision of the painted facility files: they were repainted in place (ten levels, 4.41.25), so their URLs carry it
+ * as a query (the art route ignores the query) to skip the browsers' immutable cache without bumping every art URL.
+ */
+export const FACILITY_ART_REVISION = 2;
+
+/**
  * Painted facility (art phase 7) for an item (`stadiumPitch` → `facility-stadium-pitch`) at the game's level 1..10:
- * the painting has five levels (1–2 → 1 … 9–10 → 5); null without it.
+ * one painting per level (`facility-<id>-<1..10>`); null without it.
  */
 export function paintedFacility(itemId: string, level: number): string | null {
   const kebab = itemId.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-  const lv = Math.min(5, Math.max(1, Math.ceil(level / 2)));
+  const lv = Math.min(10, Math.max(1, Math.round(level)));
   const id = `facility-${kebab}-${lv}`;
-  return paintedFacilityIds.has(id) ? artUrl(`facilities/${id}.webp`) : null;
+  return paintedFacilityIds.has(id) ? `${artUrl(`facilities/${id}.webp`)}?r=${FACILITY_ART_REVISION}` : null;
 }
 
 /** Painted illustration of an inbox category (art phase 7), or null. */
