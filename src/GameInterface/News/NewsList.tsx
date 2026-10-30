@@ -1,4 +1,5 @@
 /** A list of world news items grouped by day (newest first): crest or flag, headline, one line. */
+import { Icon } from "@/GameInterface/Icons";
 import { useTranslation } from "react-i18next";
 import type { NewsItem } from "@/types/newsTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -33,6 +34,38 @@ export function NewsRow({ item, leagues, withLine = true }: { item: NewsItem; le
         <span className="font-semibold text-foreground">{newsHeadline(item, tf, leagues, i18n.language)}</span>
         {withLine && <span className="text-sm text-muted-foreground">{newsLine(item, tf, leagues, i18n.language)}</span>}
       </div>
+    </li>
+  );
+}
+
+/**
+ * Dashboard news (tester report, 4.41.25): the headline is a button that opens the story (its text and the day) in
+ * place, like the inbox card.
+ */
+export function NewsStoryRow({ item, leagues, open, onToggle }: {
+  item: NewsItem; leagues: LeagueData[]; open: boolean; onToggle: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const tf = (k: string, o?: Record<string, unknown>) => String(t(k, o ?? {}));
+  const big = item.importance === 3;
+  return (
+    <li className={big ? "border-l-2 border-primary pl-3" : ""}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="w-full min-h-10 flex items-start gap-3 py-2.5 text-left bg-transparent border-0 cursor-pointer text-foreground hover:bg-secondary/30 rounded-md"
+      >
+        <NewsMark item={item} />
+        <span className="min-w-0 flex-1 font-semibold">{newsHeadline(item, tf, leagues, i18n.language)}</span>
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="shrink-0 mt-1 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="pl-11 pb-3 flex flex-col gap-1">
+          <p className="m-0 text-sm text-foreground">{newsLine(item, tf, leagues, i18n.language)}</p>
+          <p className="m-0 text-sm text-muted-foreground">{dayLabel(item.date, i18n.language)}</p>
+        </div>
+      )}
     </li>
   );
 }

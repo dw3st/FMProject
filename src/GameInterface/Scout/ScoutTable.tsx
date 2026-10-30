@@ -49,6 +49,8 @@ interface Props {
   filtering?: boolean;
   mySquadId?: string;
   onOffer?: (player: DisplayPlayer) => void;
+  /** A free agent has no player page: his name opens a quick view of what the scouts know (tester report). */
+  onView?: (player: DisplayPlayer) => void;
   /**
    * Transfer window closed (Etapa 25): the reason a fee offer cannot be made, or null. A free agent
    * or a player whose contract is about to end (pre-contract) stays clickable.
@@ -67,7 +69,7 @@ interface Props {
 
 export function ScoutTable({
   rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
-  loading, filtering, mySquadId, onOffer, offerBlocked, sellListedIds = new Set(), error, onRetry,
+  loading, filtering, mySquadId, onOffer, onView, offerBlocked, sellListedIds = new Set(), error, onRetry,
   shortlistIds, onShortlistChange,
 }: Props) {
   const { t } = useTranslation();
@@ -183,6 +185,14 @@ export function ScoutTable({
                   >
                     {player.name}
                   </a>
+                ) : onView ? (
+                  <button
+                    type="button"
+                    onClick={() => onView(player)}
+                    className="min-w-0 truncate text-left text-foreground hover:text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer font-[inherit]"
+                  >
+                    {player.name}
+                  </button>
                 ) : (
                   <span className="text-foreground truncate">{player.name}</span>
                 )}

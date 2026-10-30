@@ -2879,7 +2879,10 @@
       "4": "Good",
       "5": "Top"
     },
-    "formHint": "Form: average rating of the last 5 matches"
+    "formHint": "Form: average rating of the last 5 matches",
+    "quickView": {
+      "freeAgent": "Free agent"
+    }
   },
   "fastForward": {
     "button": "To next match",

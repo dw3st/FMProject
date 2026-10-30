@@ -15,6 +15,7 @@ import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
+import { FreeAgentQuickView } from "@/GameInterface/Scout/FreeAgentQuickView";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ScoutQuery, ScoutSearchResponse, ScoutSortDir } from "@/Domain/scout/scoutQuery";
@@ -104,6 +105,7 @@ export function ScoutScreen() {
   // Shortlist stars toggled in the search table (until the next search refresh).
   const [starOverrides, setStarOverrides] = useState<Record<string, boolean>>({});
   const [signTarget, setSignTarget] = useState<DisplayPlayer | null>(null);
+  const [viewTarget, setViewTarget] = useState<DisplayPlayer | null>(null);
 
   const isFiltering = fetching;
   const dirty = useMemo(() => JSON.stringify(filters) !== JSON.stringify(appliedFilters), [filters, appliedFilters]);
@@ -331,6 +333,7 @@ export function ScoutScreen() {
           filtering={isFiltering}
           mySquadId={mySquadId}
           onOffer={handleOffer}
+          onView={setViewTarget}
           offerBlocked={offerBlocked}
           sellListedIds={sellListedIds}
           error={fetchError}
@@ -345,6 +348,12 @@ export function ScoutScreen() {
         player={offerTarget}
         onClose={() => setOfferTarget(null)}
         onTransferComplete={refreshAfterTransfer}
+      />
+
+      <FreeAgentQuickView
+        player={viewTarget}
+        onClose={() => setViewTarget(null)}
+        onSign={(p) => { setViewTarget(null); setSignTarget(p); }}
       />
 
       <ContractOfferModal

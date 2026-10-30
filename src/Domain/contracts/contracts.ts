@@ -148,9 +148,15 @@ export function evaluateContractOffer(
   if (!Number.isInteger(offer.years) || offer.years < C.MIN_YEARS || offer.years > C.MAX_YEARS) {
     return { accepted: false, reason: "invalidYears", demand };
   }
-  if (player.age + offer.years > C.MAX_CONTRACT_AGE) return { accepted: false, reason: "tooManyYears", demand };
+  // A single season (to the end of this one) is always on: a veteran free agent signs short (tester report, 4.41.25).
+  if (offer.years > 1 && player.age + offer.years > C.MAX_CONTRACT_AGE) return { accepted: false, reason: "tooManyYears", demand };
   if (!Number.isFinite(offer.wage) || offer.wage < demand) return { accepted: false, reason: "lowWage", demand };
   return { accepted: true, reason: "ok", demand };
+}
+
+/** Longest offer (years) the player accepts by age: at least one season. */
+export function maxOfferYears(age: number): number {
+  return Math.max(C.MIN_YEARS, Math.min(C.MAX_YEARS, C.MAX_CONTRACT_AGE - age));
 }
 
 /** Length (years) the AI offers on a renewal or free signing, by age. */

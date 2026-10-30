@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
+import { maxOfferYears } from "@/Domain/contracts/contracts";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import {
@@ -39,7 +40,9 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { setError(null); setDone(false); setYears(2); }, [player?.id]);
+  // A free agent near the age cap only takes a short deal: open on what he accepts (tester report, 4.41.25).
+  const maxYears = mode === "sign" && player ? maxOfferYears(player.age) : 5;
+  useEffect(() => { setError(null); setDone(false); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
 
   if (!player || !session) return null;
@@ -97,7 +100,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
             </div>
           ) : (
             <>
-              <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
+              <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} maxYears={maxYears} />
               {mode === "renew" && demandInfo?.renewableOn ? (
                 <p className="text-sm text-chart-4 m-0">{t("contracts.recentlyRenewed", { date: formatGameDate(demandInfo.renewableOn, i18n.language) })}</p>
               ) : mode === "renew" && demandInfo?.refuses ? (

@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData, StandingRow } from "@/types/playerTypes";
 import type { NewsItem } from "@/types/newsTypes";
-import { NewsRow } from "@/GameInterface/News/NewsList";
+import { NewsStoryRow } from "@/GameInterface/News/NewsList";
 import { RivalForm } from "@/GameInterface/World/RivalForm";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
 import { WatchButton } from "@/GameInterface/Watch/WatchButton";
@@ -1006,13 +1006,17 @@ export function recentlyCompleted(f: ClubFacilities, today: string) {
 /** Top world news of the last days (`/news`): crest + headline, the big ones first. */
 export function NewsCard({ items, leagues }: { items: NewsItem[] | null; leagues: LeagueData[] }) {
   const { t } = useTranslation();
+  const [openId, setOpenId] = useState<string | null>(null);
   return (
     <HomeCard title={t("dashboard.home.news")} href="/news" linkLabel={t("dashboard.home.newsAll")}>
       {items === null ? null : items.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{t("dashboard.home.newsEmpty")}</p>
       ) : (
-        <ul className="list-none m-0 p-0 flex flex-col divide-y divide-border/50">
-          {items.map((n) => <NewsRow key={n.id} item={n} leagues={leagues} withLine={false} />)}
+        <ul className="list-none m-0 p-0 flex flex-col divide-y divide-border/50 max-h-[300px] overflow-y-auto pr-1">
+          {items.map((n) => (
+            <NewsStoryRow key={n.id} item={n} leagues={leagues} open={openId === n.id}
+              onToggle={() => setOpenId((cur) => (cur === n.id ? null : n.id))} />
+          ))}
         </ul>
       )}
     </HomeCard>

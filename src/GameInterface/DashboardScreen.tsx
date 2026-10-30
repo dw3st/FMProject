@@ -177,8 +177,8 @@ export function DashboardScreen() {
   useEffect(() => {
     if (!saveId) return;
     let cancelled = false;
-    fetchNews(saveId, { scope: "all", limit: 20 })
-      .then((page) => { if (!cancelled) setNews(topNews(page.items, 5)); })
+    fetchNews(saveId, { scope: "all", limit: 40 })
+      .then((page) => { if (!cancelled) setNews(topNews(page.items, 20)); })
       .catch(() => { if (!cancelled) setNews([]); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);

@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.26",
+    date: "2026-10-30",
+    time: "10:08",
+    items: [
+      {
+        pt: "Painel: as notícias rolam como a caixa de entrada e abrem a matéria com um clique.",
+        en: "Dashboard: the news scroll like the inbox and open the story with a click.",
+      },
+      {
+        pt: "Olheiro: o nome de um jogador livre abre a ficha com os atributos que os olheiros conhecem.",
+        en: "Scout: a free agent's name opens his card with the attributes the scouts know.",
+      },
+      {
+        pt: "Jogador livre veterano aceita contrato até o fim da temporada, e a proposta já abre na duração que ele aceita.",
+        en: "A veteran free agent accepts a deal to the end of the season, and the offer opens on the length he accepts.",
+      },
+    ],
+  },
+  {
     version: "4.41.25",
     date: "2026-10-30",
     time: "09:55",

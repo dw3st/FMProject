@@ -2879,7 +2879,10 @@
       "4": "Boa",
       "5": "Ótima"
     },
-    "formHint": "Forma: nota média dos últimos 5 jogos"
+    "formHint": "Forma: nota média dos últimos 5 jogos",
+    "quickView": {
+      "freeAgent": "Jogador livre"
+    }
   },
   "fastForward": {
     "button": "Avançar até o próximo jogo",

@@ -90,10 +90,12 @@ interface Props {
   demand: number | null;
   /** Demand info: shows the personality lines under the asking wage. */
   info?: ContractDemandInfo | null;
+  /** Longest length the player accepts (`maxOfferYears`); absent = 5. */
+  maxYears?: number;
 }
 
 /** Wage + length inputs shared by the renew, offer and free-agent signing modals. */
-export function ContractTermsFields({ wage, years, onWage, onYears, demand, info }: Props) {
+export function ContractTermsFields({ wage, years, onWage, onYears, demand, info, maxYears = 5 }: Props) {
   const { t } = useTranslation();
   return (
     <div className="space-y-3">
@@ -131,7 +133,7 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
             onChange={(e) => onYears(Number(e.target.value))}
             className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-muted/20 text-foreground text-sm font-semibold"
           >
-            {[1, 2, 3, 4, 5].map((y) => <option key={y} value={y}>{y}</option>)}
+            {[1, 2, 3, 4, 5].filter((y) => y <= maxYears).map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </label>
       </div>

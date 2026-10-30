@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer, initialContract, isExpired, renewalContract,
+  addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer,
+  maxOfferYears, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import { initialFacilities } from "@/Domain/facilities/facilities";
@@ -70,6 +71,15 @@ describe("evaluateContractOffer", () => {
     const old = player("o", 34);
     const r = evaluateContractOffer({ wage: 1e9, years: 3 }, old, squad([old]), "2027-01-01");
     expect(r.reason).toBe("tooManyYears");
+  });
+  test("a single season is always on, even past 36 (tester report)", () => {
+    const old = player("o", 37);
+    expect(evaluateContractOffer({ wage: 1e9, years: 1 }, old, squad([old]), "2027-01-01").accepted).toBe(true);
+    expect(evaluateContractOffer({ wage: 1e9, years: 2 }, old, squad([old]), "2027-01-01").reason).toBe("tooManyYears");
+    expect(maxOfferYears(35)).toBe(1);
+    expect(maxOfferYears(34)).toBe(2);
+    expect(maxOfferYears(20)).toBe(5);
+    expect(maxOfferYears(40)).toBe(1);
   });
   test("refuses invalid years", () => {
     expect(evaluateContractOffer({ wage: 1e9, years: 0 }, p, s, "d").reason).toBe("invalidYears");
