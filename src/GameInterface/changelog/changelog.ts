@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.17",
+    date: "2026-10-30",
+    items: [
+      {
+        pt: "Partida: botões de zoom e replay na barra para ligar e desligar na hora; cartões com a foto do jogador no estilo de transmissão; pênalti com corrida e paradinha.",
+        en: "Match: zoom and replay buttons on the bar to switch on and off at any time; cards with the player's photo in broadcast style; penalties with a run-up and a stutter.",
+      },
+      {
+        pt: "Cada jogador tem o próprio número na partida (o reserva não herda mais o de quem saiu); as placas de LED de baixo saíram de cima dos bancos; grama com textura de foto quando o gramado pintado não é usado.",
+        en: "Every player has his own number in the match (a substitute no longer takes the number of the player he replaced); the bottom LED boards moved off the benches; photo grass texture when the painted pitch is not used.",
+      },
+    ],
+  },
+  {
     version: "4.41.16",
     date: "2026-10-30",
     items: [

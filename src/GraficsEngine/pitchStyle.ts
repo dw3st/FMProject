@@ -122,12 +122,13 @@ export const LED = {
 } as const;
 
 /** Where the LED boards stand (centre in pitch yards, rotation): the art preview's layout scaled to the pitch. */
-export function ledBoards(): { x: number; y: number; rot: number }[] {
+export function ledBoards(): { x: number; y: number; rot: number; len?: number }[] {
   const L = 115, Wd = 74;
   const xs = [12.9, 42.4, 71.8, 101.3].map((x) => (x * L) / 115);
   return [
     ...xs.map((x) => ({ x, y: -5.45, rot: 0 })),
-    { x: xs[0]!, y: Wd + 3.25, rot: 0 }, { x: xs[3]!, y: Wd + 3.25, rot: 0 },
+    // Below the bottom touchline: shorter and in the corners, clear of the benches (tester report, 4.41.17).
+    { x: 9, y: Wd + 3.25, rot: 0, len: 0.55 }, { x: L - 9, y: Wd + 3.25, rot: 0, len: 0.55 },
     { x: -5.7, y: Wd / 2, rot: -Math.PI / 2 }, { x: L + 5.7, y: Wd / 2, rot: Math.PI / 2 },
   ];
 }

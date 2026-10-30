@@ -45,7 +45,7 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera } from "@/GameInterface/artPrefs";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
@@ -117,6 +117,7 @@ import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
 import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
+import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
 import {
@@ -205,9 +206,19 @@ export function MatchScreen() {
    */
   const h2hMode = useMemo(() => new URLSearchParams(window.location.search).get("h2h") === "1", []);
   const h2hModeRef = useRef(h2hMode);
-  // Camera and goal replay (art phase 5): the player's settings, read when the page opens.
-  const matchCameraPref = useMemo(readMatchCamera, []);
-  const goalReplayPref = useMemo(readGoalReplay, []);
+  // Camera and goal replay (art phase 5): the player's settings; since 4.41.17 also switched live from the match bar
+  // (saved, so the next match starts the same way).
+  const [matchCameraPref, setMatchCameraPref] = useState(readMatchCamera);
+  const [goalReplayPref, setGoalReplayPref] = useState(readGoalReplay);
+  const toggleCamera = useCallback(() => setMatchCameraPref((c) => {
+    const next = c === "follow" ? "fixed" : "follow";
+    writeMatchCamera(next);
+    return next;
+  }), []);
+  const toggleReplay = useCallback(() => setGoalReplayPref((r) => {
+    writeGoalReplay(!r);
+    return !r;
+  }), []);
   // Graphics quality (art phase 8): the setting, or automatic by the frame rate (light after a run of slow seconds).
   const qualityPref = useMemo(readQuality, []);
   const realPlayers = useMemo(() => readPlayerLook() === "real", []);
@@ -961,11 +972,22 @@ export function MatchScreen() {
       }),
       gameBus.on("card", (e) => {
         const key = e.card === "yellow" ? "yellow" : e.secondYellow ? "secondYellow" : "red";
-        showBanner({
-          kind: e.card === "yellow" ? "yellow" : "red",
-          title: t(`match.banner.${key}`),
-          line: t("match.banner.cardLine", { player: shirtName(e.playerName), team: team(e.team), minute: minuteNow() + 1 }),
-        });
+        // With the new art, the card is a TV lower third too: the player's face, the card and the minute (4.41.17).
+        const score = gameStateRef.current?.score ?? { A: 0, B: 0 };
+        const tv = goalTvRef.current(e.team, e.playerId, score);
+        showBanner(tv
+          ? {
+              kind: e.card === "yellow" ? "yellow" : "red",
+              title: shirtName(e.playerName),
+              line: team(e.team),
+              ...crestOfRef.current(e.team),
+              goal: { ...tv, tag: t("match.banner.tvCardTag", { card: t(`match.banner.${key}`), minute: minuteNow() + 1 }), card: e.card },
+            }
+          : {
+              kind: e.card === "yellow" ? "yellow" : "red",
+              title: t(`match.banner.${key}`),
+              line: t("match.banner.cardLine", { player: shirtName(e.playerName), team: team(e.team), minute: minuteNow() + 1 }),
+            });
       }),
       gameBus.on("playerSubstituted", (e) => {
         const s = gameStateRef.current;
@@ -1812,6 +1834,13 @@ export function MatchScreen() {
               {t("match.subs", { remaining: mySubsRemaining })}
             </button>
             )}
+            <MatchViewToggles
+              zoom={matchCameraPref === "follow"}
+              replay={!h2hMode && goalReplayPref}
+              replayAvailable={!h2hMode}
+              onZoom={toggleCamera}
+              onReplay={toggleReplay}
+            />
             <FriendsButton variant="toolbar" />
             {DEV_TOOLS && (
             <button

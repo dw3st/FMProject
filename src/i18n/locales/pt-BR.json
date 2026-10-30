@@ -1138,7 +1138,8 @@
       "sub": "Substituição",
       "subLine": "Sai {{out}}, entra {{in}} · {{team}} · {{minute}}'",
       "tvTag": "GOL · {{minute}}'",
-      "tvLineAssist": "{{team}} · assistência de {{assist}}"
+      "tvLineAssist": "{{team}} · assistência de {{assist}}",
+      "tvCardTag": "{{card}} · {{minute}}'"
     },
     "notice": {
       "offside": "Impedimento: {{player}} ({{team}})",
@@ -1174,7 +1175,17 @@
       "drag": "Arraste para mover",
       "inWindow": "Lances abertos numa janela."
     },
-    "replay": "Replay"
+    "replay": "Replay",
+    "view": {
+      "label": "Visão da partida",
+      "zoom": "Zoom",
+      "replay": "Replay",
+      "zoomOn": "Câmera acompanhando a bola. Clique para ver o campo inteiro.",
+      "zoomOff": "Campo inteiro. Clique para a câmera acompanhar a bola.",
+      "replayOn": "Replay dos gols ligado. Clique para desligar.",
+      "replayOff": "Replay dos gols desligado. Clique para ligar.",
+      "replayH2h": "Sem replay no jogo entre técnicos."
+    }
   },
   "broadcast": {
     "teamLabel": "Time {{team}}",

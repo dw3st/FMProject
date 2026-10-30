@@ -250,7 +250,7 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 ## Campo ao vivo refinado (4.38.21, mock escolhido: Jogadores B, Bola B, Estádio A, faixa de lance sem placar de TV)
 
 - Jogadores: borda nas duas cores do uniforme (`drawMarkerRing`; segunda cor `teamAColor2`/`teamBColor2`, a primeira cor do
-  clube diferente do uniforme usado, lida a cada quadro porque chega depois) (sem número embaixo desde a 4.41.13: era o da vaga e o reserva herdava);
+  clube diferente do uniforme usado, lida a cada quadro porque chega depois) número próprio de cada jogador numa etiqueta embaixo (desde a 4.41.17: titulares pela vaga no início, reservas 12 em diante; antes era o da vaga e o reserva herdava);
   nome só do portador e de quem recebe o passe (todos no debug).
 - Lances (`playGfx`): linha tracejada do passe até quem recebe com um anel nele, arco do chute em voo, anel de impacto
   onde o chute termina.
@@ -413,3 +413,19 @@ proporções dela.
   (`outS` pela distância, até 3 × `OUT_S`).
 - **Impedimento:** faixa sombreada entre a linha e o jogador (`EFFECT_SHAPE.OFFSIDE_STRIP`).
 - A página espera até 4 s pela lista da arte (`loadPaintedFaces`, antes 1,5 s).
+
+## Pedidos da revisão (4.41.17)
+
+- **Números próprios:** `shirtNumberOf` (PixiPitch): titulares pela vaga no início, reservas 12 em diante na ordem do
+  banco, qualquer outro o próximo livre do time; o número fica com o jogador a partida toda.
+- **Pênalti com paradinha** (`penaltyRunUp.ts`): durante a contagem do pênalti o cobrador é desenhado recuando
+  `BACK_YDS`, esperando, correndo, parando a `STUTTER_YDS` e batendo; a bola fica na marca. Só desenho.
+- **Zoom e replay ao vivo** (`MatchViewToggles.tsx`): dois interruptores na barra da partida; gravam a preferência
+  (`writeMatchCamera`, `writeGoalReplay`). Sem replay no jogo entre técnicos.
+- **Cartão em estilo de transmissão:** com o visual novo o cartão usa o mesmo letreiro do gol (foto, "CARTÃO AMARELO ·
+  23'", o cartão no lugar do placar).
+- **Placas de baixo** (`ledBoards`, `len` 0,55): nos cantos, longe dos bancos.
+- **Grama de foto** (`grassPhoto.ts`, `assets/pitch/*.png` em `GAME_ART_FILES`): ladrilho de `TILE_YDS` jardas a
+  `ALPHA` 0,5 sobre as faixas desenhadas, só quando o gramado pintado não é usado (corte sem padrão, sem o volume de
+  arte); a textura pela grama (natural a, híbrida b, sintética c tingida) e pela condição (gasta abaixo de 40, lama
+  abaixo de 15).

@@ -1,6 +1,8 @@
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import {
   Lock,
+  ZoomIn,
+  Rewind,
   Binoculars,
   Mic,
   LayoutDashboard,
@@ -135,6 +137,8 @@ function StarHalfFilled(props: SVGProps<SVGSVGElement>) {
 }
 
 export type IconName =
+  | "zoom-in"
+  | "rewind"
   | "binoculars"
   | "mic"
   | "dashboard"
@@ -275,6 +279,8 @@ function SoccerBall(props: SVGProps<SVGSVGElement>) {
 }
 
 const ICON_MAP: Record<IconName, IconComponent> = {
+  "zoom-in":      ZoomIn,
+  "rewind":       Rewind,
   "binoculars":   Binoculars,
   "mic":          Mic,
   "dashboard": LayoutDashboard,

@@ -11,7 +11,7 @@ export interface MatchBannerItem {
   /** Changes on every new moment, so the strip animates in again. */
   key: number;
   /** A goal shown as the TV card (art phase 5): the scorer's face, the tag ("GOL · 23'"), the score after the goal. */
-  goal?: { photo?: string; tag: string; score: string; color: string };
+  goal?: { photo?: string; tag: string; score: string; color: string; card?: "yellow" | "red" };
 }
 
 const ACCENT: Record<MatchBannerItem["kind"], string> = {
@@ -22,7 +22,7 @@ const ACCENT: Record<MatchBannerItem["kind"], string> = {
 };
 
 /**
- * A goal as a TV lower third (art phase 5, from the art preview): bottom left, the team colour on the edge, the
+ * A goal (or a card, 4.41.17) as a TV lower third (art phase 5, from the art preview): bottom left, the team colour on the edge, the
  * scorer's face, the tag with the minute, the name, the crest and team, the score.
  */
 function GoalTvCard({ item, goal }: { item: MatchBannerItem; goal: NonNullable<MatchBannerItem["goal"]> }) {
@@ -47,14 +47,20 @@ function GoalTvCard({ item, goal }: { item: MatchBannerItem; goal: NonNullable<M
           <span className="truncate">{item.line}</span>
         </span>
       </div>
-      <div className="grid place-items-center px-4 bg-primary/15 font-display font-bold text-3xl tabular-nums">{goal.score}</div>
+      {goal.card ? (
+        <div className="grid place-items-center px-5 bg-primary/15">
+          <span className={`w-7 h-10 rounded-sm shadow ${goal.card === "yellow" ? "bg-chart-4" : "bg-destructive"}`} aria-hidden="true" />
+        </div>
+      ) : (
+        <div className="grid place-items-center px-4 bg-primary/15 font-display font-bold text-3xl tabular-nums">{goal.score}</div>
+      )}
     </div>
   );
 }
 
 /** Lower third of the live pitch: crest (or the card), the moment in big letters and one line below. */
 export function MatchEventBanner({ item }: { item: MatchBannerItem }) {
-  if (item.kind === "goal" && item.goal) return <GoalTvCard item={item} goal={item.goal} />;
+  if (item.goal) return <GoalTvCard item={item} goal={item.goal} />;
   return (
     <div
       key={item.key}

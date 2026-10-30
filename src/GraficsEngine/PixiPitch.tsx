@@ -16,6 +16,7 @@ import type { MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
+import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
 import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
@@ -29,6 +30,8 @@ import { SpritePool } from "@/GraficsEngine/spritePool";
 import type { ShellSprite } from "@/GraficsEngine/stadiumAtmosphere";
 import { BALL_SPRITE, GOAL_SPRITE, ballSpriteFrame, nextBallRoll, nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { coneStrength, paintFloodCones } from "@/GraficsEngine/floodCones";
+import { penaltyRunUp } from "@/GraficsEngine/penaltyRunUp";
+import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
@@ -943,7 +946,15 @@ export function PixiPitch({
       let turfTexture: { url: string; texture: Texture } | null = null;
       let turfLoading: string | null = null;
       let turfDisposed = false;
-      app.stage.addChild(surfaceGraphics, turfSprite, turfMask, ringsGraphics, ringsMask, wearGraphics);
+      // Photo grass (4.41.17): the art pack's texture over the drawn bands, when the painted pitch is not used.
+      const photoGrass = new TilingSprite({ texture: Texture.EMPTY, width: turfRect.w, height: turfRect.h });
+      photoGrass.position.set(turfRect.x, turfRect.y);
+      photoGrass.alpha = GRASS_PHOTO.ALPHA;
+      photoGrass.visible = false;
+      photoGrass.eventMode = 'none';
+      let photoLoading: string | null = null;
+      let photoShown: string | null = null;
+      app.stage.addChild(surfaceGraphics, photoGrass, turfSprite, turfMask, ringsGraphics, ringsMask, wearGraphics);
 
       // Grass grain and a soft centre light over the mowing (4.39): one tiling noise texture and one radial
       // gradient, baked once, under the lines.
@@ -1006,6 +1017,7 @@ export function PixiPitch({
           turfSprite.scale.set(pl.scaleX, pl.scaleY);
           turfSprite.rotation = pl.rotation;
           turfSprite.visible = true;
+          photoGrass.visible = false;
           grain.visible = false;
           if (o.washAlpha > 0) wearGraphics.rect(r.x, r.y, r.w, r.h).fill({ color: o.washColor, alpha: o.washAlpha });
           drawShapes(wearGraphics, ringsGraphics, m, o.shapes, mirrorRef.current);
@@ -1016,6 +1028,22 @@ export function PixiPitch({
           grain.visible = true;
           drawSurface(surfaceGraphics, ringsGraphics, m, s, mirrorRef.current);
           lines = s;
+          if (newVisualOn()) {
+            const ph = grassPhoto(input);
+            const url = gameArtUrl(`pitch/${ph.id}.png`);
+            photoGrass.tint = ph.tint;
+            if (photoShown === url) photoGrass.visible = true;
+            else if (photoLoading !== url) {
+              photoLoading = url;
+              void Assets.load<Texture>(url).then((tex) => {
+                if (turfDisposed || !tex) return;
+                photoGrass.texture = tex;
+                photoGrass.tileScale.set((GRASS_PHOTO.TILE_YDS * m.scale) / tex.width);
+                photoShown = url;
+                redrawSurfaceRef.current?.();
+              }).catch(() => { /* the drawn bands stay */ });
+            }
+          } else photoGrass.visible = false;
           if (turfUrl && turfLoading !== turfUrl) {
             turfLoading = turfUrl;
             void Assets.load<Texture>(turfUrl).then((tex) => {
@@ -1495,6 +1523,28 @@ export function PixiPitch({
           .roundRect(x0 + faceW / 2, -h + P.PAD_Y, P.STRIP, h, h / 2).fill({ color, alpha: 0.95 });
       }
 
+      // Shirt numbers (4.41.17): each player keeps his own for the whole match. Starters get their slot at kickoff
+      // (1 = keeper … 11), the bench 12 on in its order, anyone else the next free number of his team. Until 4.41.12
+      // the tag showed the slot, so a substitute took the number of the player he replaced (tester report).
+      const shirtNumbers = new Map<number, number>();
+      {
+        const s0 = stateRef.current;
+        for (const p of s0.players) shirtNumbers.set(p.id, p.slotIndex + 1);
+        for (const bench of [s0.benchA, s0.benchB]) {
+          bench.forEach((p, i) => { if (!shirtNumbers.has(p.id)) shirtNumbers.set(p.id, 12 + i); });
+        }
+      }
+      const shirtNumberOf = (p: PitchPlayer): number => {
+        const n = shirtNumbers.get(p.id);
+        if (n !== undefined) return n;
+        const used = new Set([...stateRef.current.players, ...stateRef.current.benchA, ...stateRef.current.benchB]
+          .filter((q) => q.team === p.team).map((q) => shirtNumbers.get(q.id)).filter((x): x is number => x !== undefined));
+        let k = 12;
+        while (used.has(k)) k++;
+        shirtNumbers.set(p.id, k);
+        return k;
+      };
+
       /** Create a marker + label for a player and register them in the maps. */
       function addPlayerSprite(player: PitchPlayer): void {
         const color = player.team === "A" ? fillA : fillB;
@@ -1509,8 +1559,19 @@ export function PixiPitch({
         const ring = new Graphics();
         ring.label = "ring";
         drawMarkerRing(ring, player.team);
-        // No number tag under the marker (tester report, 4.41.13): it was the slot's number, so a substitute took the
-        // number of the player he replaced; the game has no real shirt numbers.
+        const color2 = player.team === "A" ? fillA2 : fillB2;
+        // Number tag under the marker: the player's own shirt number (`shirtNumberOf`), in the kit.
+        const tagW = markerR * 1.15, tagH = markerR * 0.72;
+        const numTag = new Graphics()
+          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).fill(color)
+          .roundRect(-tagW / 2, markerR * 0.62, tagW, tagH, 3).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
+        const numText = new Text({
+          text: String(shirtNumberOf(player)),
+          style: new TextStyle({ fontSize: Math.max(8, Math.round(markerR * 0.62)), fontFamily: 'sans-serif', fontWeight: '800', fill: color2 }),
+        });
+        numText.anchor.set(0.5);
+        numText.y = markerR * 0.62 + tagH / 2;
+        numText.label = "num";
         // Card: a small tilted card at the marker's top-right.
         const cw = markerR * CARD_BADGE.W, ch = markerR * CARD_BADGE.H;
         const cardBadge = new Graphics()
@@ -1534,7 +1595,7 @@ export function PixiPitch({
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
-        marker.addChild(lightShadow, shadow, disc, ring, gloss, cardBadge);
+        marker.addChild(lightShadow, shadow, disc, ring, gloss, numTag, numText, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -2410,9 +2471,10 @@ export function PixiPitch({
       if (m.stand && stadiumRef.current?.led) {
         // Big framed boards on the apron (art preview, 4.41.15): four above the top touchline, two below the bottom
         // one (beside the benches), one standing behind each goal. Positions in pitch yards (`ledBoards`).
-        const w = LED.BOARD_YDS * m.scale, h = Math.max(5, LED.SCREEN_YDS * m.scale);
+        const h = Math.max(5, LED.SCREEN_YDS * m.scale);
         let order = 0;
         for (const sp of ledBoards()) {
+          const w = LED.BOARD_YDS * (sp.len ?? 1) * m.scale;
           const board = new Container();
           board.x = m.marginX + sp.x * m.scale; board.y = m.marginY + sp.y * m.scale; board.rotation = sp.rot;
           ledLayer.addChild(board);
@@ -2945,6 +3007,22 @@ export function PixiPitch({
           }
           drawnPos = next;
         }
+        // In-match penalty: the taker's run-up with the stutter while the countdown runs, the ball on the spot.
+        {
+          const sp = stateRef.current.setPiece;
+          if (sp?.type === 'penalty' && !replayRun) {
+            const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
+            const spot = sp.position ?? (taker ? { x: taker.x, y: taker.y } : null);
+            if (taker && spot) {
+              const k = 1 - sp.countdown / FOUL_CONFIG.PENALTY_COUNTDOWN;
+              const off = penaltyRunUp(k);
+              const next = new Map(drawnPos);
+              next.set(taker.id, { x: spot.x - taker.attackDir * off.back, y: spot.y + taker.attackDir * off.side });
+              drawnPos = next;
+              drawnB = { ...drawnB, x: spot.x, y: spot.y, h: 0 };
+            }
+          }
+        }
         // Goal replay: record, or draw the recorded frames slowly.
         const dtReal = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
         replayClock += dtReal;
@@ -3006,6 +3084,8 @@ export function PixiPitch({
               const mk = playerGraphics.get(p.id);
               const ring = mk?.getChildByLabel("ring") as Graphics | null;
               if (ring) drawMarkerRing(ring, p.team);
+              const num = mk?.getChildByLabel("num") as Text | null;
+              if (num) num.style.fill = p.team === "A" ? fillA2 : fillB2;
             }
           }
         }

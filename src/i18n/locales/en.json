@@ -1138,7 +1138,8 @@
       "sub": "Substitution",
       "subLine": "{{out}} off, {{in}} on · {{team}} · {{minute}}'",
       "tvTag": "GOAL · {{minute}}'",
-      "tvLineAssist": "{{team}} · assist by {{assist}}"
+      "tvLineAssist": "{{team}} · assist by {{assist}}",
+      "tvCardTag": "{{card}} · {{minute}}'"
     },
     "notice": {
       "offside": "Offside: {{player}} ({{team}})",
@@ -1174,7 +1175,17 @@
       "drag": "Drag to move",
       "inWindow": "Events open in a window."
     },
-    "replay": "Replay"
+    "replay": "Replay",
+    "view": {
+      "label": "Match view",
+      "zoom": "Zoom",
+      "replay": "Replay",
+      "zoomOn": "Camera following the ball. Click to see the whole pitch.",
+      "zoomOff": "Whole pitch. Click to follow the ball.",
+      "replayOn": "Goal replays on. Click to turn them off.",
+      "replayOff": "Goal replays off. Click to turn them on.",
+      "replayH2h": "No replay in a match between two managers."
+    }
   },
   "broadcast": {
     "teamLabel": "Team {{team}}",
