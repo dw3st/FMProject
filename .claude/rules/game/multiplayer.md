@@ -932,6 +932,10 @@ relógio é o menor atraso visto, relaxado 0,5 ms por quadro. Os eventos (gol, c
   pausa já vê). A partida entre dois técnicos manda o mesmo na pausa e na retomada (`relayPause`, `h2hRooms.ts`). Quem
   assiste vê "Pausado" sobre o campo; o desenho para no último quadro e segue sem salto.
 
+### Aviso de quem assiste (4.41.53)
+
+Os apelidos de quem assiste (`watch_viewers`) ficam na faixa de amigos da partida (`LiveRivalsStrip`, prop `viewers`), num espaço à direita sempre reservado; a faixa existe desde o início da partida (fica montada enquanto os rivais carregam). Entrar ou sair um espectador não move o campo.
+
 ### Limitações (parte 8)
 
 - Um processo só (salas em memória). A partida entre dois técnicos vista por espectador foi testada só pelos testes do

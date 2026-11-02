@@ -2603,6 +2603,7 @@
     "remaining": "{{remaining}}/5 remaining",
     "pending": "{{count}} pending",
     "queuedTitle": "Queued changes (made at the next stoppage)",
+    "queuedEmpty": "None",
     "undo": "Undo",
     "playerSwap": "Player swap",
     "injuredLabel": "Injured",

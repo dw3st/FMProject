@@ -96,10 +96,38 @@ const CONTINENTAL_NAMES: Record<string, { en: string; pt: string }> = {
   sud: { en: "Copa Sudamericana", pt: "Copa Sul-Americana" },
 };
 
-/** Display name of a competition slug: league name, national cup name, continental name, or a title-cased slug. */
+/** League names used by more than one country, per catalog array (read on every render of long lists). */
+const sharedNamesByCatalog = new WeakMap<LeagueData[], Set<string>>();
+
+function sharedLeagueNames(leagues: LeagueData[]): Set<string> {
+  const cached = sharedNamesByCatalog.get(leagues);
+  if (cached) return cached;
+  const seen = new Set<string>();
+  const shared = new Set<string>();
+  for (const l of leagues) (seen.has(l.name) ? shared : seen).add(l.name);
+  sharedNamesByCatalog.set(leagues, shared);
+  return shared;
+}
+
+/**
+ * Armenia's "Premier League" read as the English one (tester report): a name several countries share gets the country,
+ * "Premier League (Armênia)". The native leagues (England's Premier League, Germany's Bundesliga) keep the plain name.
+ */
+function homonymName(league: LeagueData, leagues: LeagueData[], lang: string): string {
+  if (!league.country || !league.slug.startsWith("of_") || !sharedLeagueNames(leagues).has(league.name)) return league.name;
+  let country = league.country;
+  if (league.iso2 && lang.toLowerCase().startsWith("pt")) {
+    try {
+      country = regionDisplayNames("pt-BR")?.of(league.iso2.toUpperCase()) ?? country;
+    } catch { /* keep the raw name */ }
+  }
+  return `${league.name} (${country})`;
+}
+
+/** Display name of a competition slug: league name (with the country when several share it), national cup name, continental name, or a title-cased slug. */
 export function competitionName(slug: string, leagues: LeagueData[], lang = "en"): string {
   const hit = leagues.find((l) => l.slug === slug);
-  if (hit) return hit.name;
+  if (hit) return homonymName(hit, leagues, lang);
   const cont = CONTINENTAL_NAMES[slug];
   if (cont) return lang.toLowerCase().startsWith("pt") ? cont.pt : cont.en;
   if (isCupSlug(slug)) return cupName(slug, leagues, lang) ?? titleCase(slug.replace(/^of_/, ""));

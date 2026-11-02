@@ -2052,20 +2052,13 @@ export function MatchScreen() {
           saveId={liveTarget.saveId}
           live={liveRivals.live.filter((l) => l.fixtureId !== matchFixture?.id)}
           highlight={liveRivals.highlight}
+          viewers={liveRivals.viewers}
           excludeClubIds={matchFixture ? [matchFixture.home, matchFixture.away] : []}
         />
       )}
       {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
       <div className="relative z-50">
         <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />
-        {/* Who is watching this broadcast now (multiplayer part 8): over the pitch corner, so the layout never moves
-            when someone joins or leaves (tester report). */}
-        {liveTarget && liveRivals.viewers.length > 0 && (
-          <div role="status" className="absolute right-3 top-2 max-w-[40%] flex items-center gap-2 px-3 py-1 rounded-md border border-border bg-card/90 text-sm text-muted-foreground pointer-events-none">
-            <Icon name="eye" size={16} className="text-primary shrink-0" />
-            <span className="truncate">{t("watch.viewers", { count: liveRivals.viewers.length, names: liveRivals.viewers.join(", ") })}</span>
-          </div>
-        )}
       </div>
 
       {/* Main Match View */}

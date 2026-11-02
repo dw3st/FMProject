@@ -151,17 +151,19 @@ export function SubstitutionPanel({
               onFill={onFillVacancy}
             />
           )}
-          {activeTab === "subs" && pendingQueue.length > 0 && (
-            <div className="px-4 py-2 border-b border-border flex flex-col gap-1.5 shrink-0">
-              <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+          {/* Always there, one line high: queueing a change never moves the pitch below (tester report). */}
+          {activeTab === "subs" && (
+            <div className="px-4 h-14 border-b border-border flex items-center gap-4 shrink-0">
+              <div className="shrink-0 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
                 {t("substitutionPanel.queuedTitle")}
               </div>
-              <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
+              {pendingQueue.length === 0 && <span className="text-sm text-muted-foreground">{t("substitutionPanel.queuedEmpty")}</span>}
+              <ul className="m-0 p-0 list-none flex-1 min-w-0 flex gap-2 overflow-x-auto">
                 {pendingQueue.map((s) => {
                   const out = onPitch.find((p) => p.id === s.outId);
                   const inn = bench.find((p) => p.id === s.inId);
                   return (
-                    <li key={s.outId} className="flex items-center gap-2 rounded-md border border-border bg-secondary/20 pl-3 pr-1 py-1 text-sm">
+                    <li key={s.outId} className="shrink-0 flex items-center gap-2 rounded-md border border-border bg-secondary/20 pl-3 pr-1 py-1 text-sm">
                       <span className="text-destructive">{out ? shirtName(out.name) : "?"}</span>
                       <Icon name="arrow-right-left" className="w-4 h-4 text-muted-foreground" />
                       <span className="text-primary">{inn ? shirtName(inn.name) : "?"}</span>

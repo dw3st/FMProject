@@ -149,7 +149,7 @@ async function buildOffer(args: {
     squadId,
     clubName: squad.name,
     leagueSlug: league,
-    leagueName: world.catalog.find((l) => l.slug === league)?.name ?? state?.leagueName ?? league,
+    leagueName: competitionName(league, world.catalog as unknown as LeagueData[], "en"),
     window: args.window,
     date: args.date,
     expires: args.expires,

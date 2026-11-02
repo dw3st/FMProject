@@ -19,6 +19,10 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 | `continentI18nKey(continent)` | Converte o nome do continente (`"South America"`) na chave i18n (`"south_america"`). |
 | `partitionDayMatches(matches, ownLeague, followed, isOwnMatch?)` | Separa as partidas do dia em `primary` (liga própria + seguidas) e `others` (o resto). `isOwnMatch` força a partida do usuário para `primary` mesmo com a liga da sessão ausente/obsoleta. |
 
+## Ligas com o mesmo nome (4.41.53)
+
+`competitionName` acrescenta o país quando mais de um país usa o nome no catálogo recebido: "Premier League (Armênia)" (`homonymName`; em português pelo `Intl.DisplayNames`, senão o nome cru do `leagueData`). As ligas nativas (slug sem `of_`: a Premier League inglesa, a Bundesliga alemã) ficam com o nome puro. O `league.name` do catálogo não muda; `leagueLabel` já traz o país e continua lendo o `name`.
+
 ## Nomes de país
 
 Chave i18n primeiro (`newGame.countries.{slug}.name`), depois `Intl.DisplayNames`. `GB` é tratado

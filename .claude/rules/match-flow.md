@@ -445,6 +445,9 @@ position (`compareSquadPositions`). Below `md` the pitch and the bench stack.
   Formation / Instructions tabs stay in `/test`'s own controls). No new statistic, nothing in `/lab`: a swap only
   moves players between existing slots.
 
+The "queued changes" block of the panel is always there, one line high (4.41.53, report): queueing a change never moves
+the mini pitch; more changes than fit scroll sideways.
+
 # Stadium, officials and managers (Etapa 38, #107/#99, 4.12)
 
 Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (`src/GraficsEngine`, see

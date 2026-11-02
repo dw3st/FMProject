@@ -16,30 +16,42 @@ import type { LiveScoreView, RivalRow } from "@/types/rivalsTypes";
  * away order); not playing, their next match "Fabio · next [home] × [away] · 3 Jan". A friend's goal lights his
  * line for a few seconds with the scorer; a click opens the banter actions without pausing the match.
  */
-export function LiveRivalsStrip({ saveId, live, highlight, excludeClubIds = [] }: {
+export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], excludeClubIds = [] }: {
   saveId: string;
   live: LiveScoreView[];
   highlight: Record<string, true>;
+  /** Who is watching this broadcast now (multiplayer part 8). */
+  viewers?: string[];
   /** Clubs of the match being played here: a friend in it is not listed as "next match". */
   excludeClubIds?: string[];
 }) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState<string | null>(null);
   const [rows, setRows] = useState<RivalRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
   // Friends who are not playing right now still show their next match (report): reloaded every minute.
   useEffect(() => {
     let cancelled = false;
-    const load = () => void rivalsApi.rivals(saveId).then((r) => { if (!cancelled && r.ok) setRows(r.data.rows); });
+    const load = () => void rivalsApi.rivals(saveId).then((r) => { if (cancelled) return; setLoaded(true); if (r.ok) setRows(r.data.rows); });
     load();
     const id = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(id); };
   }, [saveId]);
   const liveSeats = new Set(live.map((l) => l.seatId));
   const idle = rows.filter((r) => !r.me && !liveSeats.has(r.seatId) && !excludeClubIds.includes(r.clubId));
-  if (live.length === 0 && idle.length === 0) return null;
+  // Kept while loading: the strip showing up later would push the pitch down.
+  if (loaded && live.length === 0 && idle.length === 0 && viewers.length === 0) return null;
   return (
     <div className="shrink-0 border-b border-border bg-card/60 px-4 py-1.5" aria-label={t("rivals.stripLabel")} role="region">
-      <ul className="m-0 p-0 list-none max-w-7xl mx-auto flex flex-wrap items-center gap-x-4 gap-y-1">
+      {/* The space on the right is always kept: someone joining or leaving never moves the strip or the pitch below (tester report). */}
+      <div className="relative max-w-7xl mx-auto">
+      {viewers.length > 0 && (
+        <div role="status" title={viewers.join(", ")} className="absolute right-0 top-0 h-8 w-60 flex items-center justify-end gap-2 text-sm text-muted-foreground">
+          <Icon name="eye" size={16} className="text-primary shrink-0" />
+          <span className="truncate">{t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}</span>
+        </div>
+      )}
+      <ul className="m-0 p-0 pr-64 list-none flex flex-wrap items-center gap-x-4 gap-y-1">
         <li className={`flex items-center gap-1.5 ${live.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
           {live.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-destructive motion-safe:animate-pulse" aria-hidden="true" />}
           <Icon name="radio" size={16} />
@@ -103,6 +115,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, excludeClubIds = [] }
           );
         })}
       </ul>
+      </div>
     </div>
   );
 }

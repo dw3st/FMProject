@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.41.53",
+    date: "2026-11-02",
+    time: "18:24",
+    items: [
+      {
+        pt: "Ligas com o mesmo nome agora mostram o país: \"Premier League (Armênia)\", \"Bundesliga (Áustria)\".",
+        en: "Leagues that share a name now show the country: \"Premier League (Armenia)\", \"Bundesliga (Austria)\".",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O aviso de quem assiste à sua partida agora fica na faixa de amigos, acima do campo.",
+        en: "The notice of who is watching your match now sits in the friends strip, above the pitch.",
+      },
+      {
+        pt: "No painel de substituições, enfileirar uma troca não empurra mais o campo para baixo.",
+        en: "In the substitution panel, queueing a change no longer pushes the pitch down.",
+      },
+    ],
+  },
+  {
     version: "4.41.52",
     date: "2026-10-30",
     time: "20:11",

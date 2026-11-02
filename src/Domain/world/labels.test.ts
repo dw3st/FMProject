@@ -27,13 +27,31 @@ describe("countryDisplayName", () => {
   });
 });
 
+describe("competitionName: leagues with the same name", () => {
+  const catalog = [
+    { slug: "premier_league", name: "Premier League", country: "England", iso2: "GB" },
+    { slug: "of_armenian_premier_league", name: "Premier League", country: "Armenia", iso2: "AM" },
+    { slug: "of_liga_mx", name: "Liga MX", country: "Mexico", iso2: "MX" },
+  ] as unknown as LeagueData[];
+
+  test("the native league keeps the name, the other gets its country", () => {
+    expect(competitionName("premier_league", catalog, "pt-BR")).toBe("Premier League");
+    expect(competitionName("of_armenian_premier_league", catalog, "en")).toBe("Premier League (Armenia)");
+    expect(competitionName("of_armenian_premier_league", catalog, "pt-BR")).toBe("Premier League (Armênia)");
+  });
+
+  test("a name no other league uses stays as it is", () => {
+    expect(competitionName("of_liga_mx", catalog, "pt-BR")).toBe("Liga MX");
+  });
+});
+
 describe("leagueLabel / competitionName", () => {
   const leagues = [L("premier_league", "Premier League", "England"), L("of_armenian_premier_league", "Premier League", "Armenia")];
   test("rótulo inclui o país para desambiguar", () => {
     expect(leagueLabel(leagues[1]!, "Armênia")).toBe("Premier League · Armênia");
   });
   test("competitionName resolve pelo slug e cai para título legível", () => {
-    expect(competitionName("of_armenian_premier_league", leagues)).toBe("Premier League");
+    expect(competitionName("premier_league", leagues)).toBe("Premier League");
     expect(competitionName("of_unknown_cup", leagues)).toBe("Unknown Cup");
     expect(competitionName("brazil_serie_a", leagues)).toBe("Brazil Serie A");
   });
