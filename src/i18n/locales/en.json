@@ -2045,6 +2045,7 @@
     "matchday": "Matchday {{round}}",
     "vs": "vs",
     "selectLeague": "League",
+    "clubSearch": { "label": "Search team", "placeholder": "Team name", "none": "No team found" },
     "searchLeaguesPlaceholder": "Search leagues…",
     "loadingLeagues": "Loading leagues...",
     "loadingStandings": "Loading table…",
@@ -2934,6 +2935,23 @@
     "moves_one": "{{count}} club changed division in your country.",
     "moves_other": "{{count}} clubs changed division in your country.",
     "ok": "OK"
+  },
+  "champions": {
+    "tab": "Champions",
+    "filter": "Competitions",
+    "filters": { "main": "Main", "continents": "Continents" },
+    "groups": { "continental": "Continental", "national": "National teams", "leagues": "Leagues" },
+    "competition": "Competition",
+    "season": "Season",
+    "champion": "Champion",
+    "managerColumn": "Manager",
+    "manager": "Manager: {{name}}",
+    "humanManager": "Human manager: {{name}}",
+    "human": "Human",
+    "humanLegend": "Human manager",
+    "mostTitles": "Most titles",
+    "back": "Back to the board",
+    "empty": "The first champions appear when the competitions end."
   },
   "statsScreen": {
     "allLeagues": "All leagues",

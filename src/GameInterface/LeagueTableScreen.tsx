@@ -9,6 +9,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
+import { ClubSearch } from "@/GameInterface/Components/ClubSearch";
 import type { LeagueData, LeagueZone, LeagueZoneColor, StandingRow } from "@/types/playerTypes";
 import type { ContinentalSlug, Fixture } from "@/types/calendarTypes";
 import type { DayLog, MatchEvent } from "@/types/dayLogTypes";
@@ -75,11 +76,14 @@ function StandingsTable({
   onClickSquad,
   myClubId,
   humanClubs,
+  searchedClubId,
 }: {
   standings: StandingRow[];
   zones: LeagueZone[];
   onClickSquad: (row: StandingRow) => void;
   myClubId: string;
+  /** The club picked in the search field: its row is marked and scrolled into view. */
+  searchedClubId?: string | null;
   /** Friends' league: clubs run by another human → their nickname (badge next to the name). */
   humanClubs: Map<string, string>;
 }) {
@@ -106,12 +110,14 @@ function StandingsTable({
           const zone = getZone(rank, standings.length, zones);
           const mine = row.squadId === myClubId;
           const human = mine ? undefined : humanClubs.get(row.squadId);
+          const searched = row.squadId === searchedClubId;
 
           return (
             <div
               key={row.squadId}
+              ref={searched ? (el) => el?.scrollIntoView({ block: "center" }) : undefined}
               onClick={() => onClickSquad(row)}
-              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} ${mine ? TABLE_STYLE.rowHighlight : ""} border-l-4 ${
+              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} ${mine || searched ? TABLE_STYLE.rowHighlight : ""} ${searched ? "ring-1 ring-inset ring-primary" : ""} border-l-4 ${
                 zone ? ZONE_BORDER[zone.color] : "border-l-transparent"
               }`}
             >
@@ -125,7 +131,7 @@ function StandingsTable({
                   className={TABLE_STYLE.crest}
                   imgClassName="w-full h-full object-contain"
                 />
-                <span className={`truncate ${mine ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{row.name}</span>
+                <span className={`truncate ${mine || searched ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{row.name}</span>
                 {human && <HumanBadge nickname={human} />}
               </div>
 
@@ -563,6 +569,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [standingsLoading, setStandingsLoading] = useState(false);
   const [leagueFixtures, setLeagueFixtures] = useState<Fixture[]>([]);
   const [followBusy, setFollowBusy] = useState(false);
+  const [searchedClubId, setSearchedClubId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/leagues")
@@ -833,7 +840,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         </ScreenTitle>
 
         {leagues.length > 0 && (
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <SelectCombobox
               label={t("leagues.selectLeague")}
               labelId="league-table-league"
@@ -867,6 +874,19 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 {t("leagues.simulatedBadge")}
               </span>
             )}
+            {session?.saveId && (
+              <ClubSearch
+                saveId={session.saveId}
+                leagues={leagues}
+                homeCountry={active?.country ?? ""}
+                onPick={(club) => {
+                  setActiveSlug(club.league);
+                  setTab("table");
+                  setSearchedClubId(club.id);
+                }}
+                className="w-full max-w-sm"
+              />
+            )}
           </div>
         )}
 
@@ -898,6 +918,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                     zones={active?.zones ?? []}
                     onClickSquad={handleClickSquad}
                     myClubId={session?.clubId ?? ""}
+                    searchedClubId={searchedClubId}
                     humanClubs={humanClubs}
                   />
                 )}

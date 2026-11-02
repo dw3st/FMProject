@@ -23,6 +23,10 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 
 `competitionName` acrescenta o país quando mais de um país usa o nome no catálogo recebido: "Premier League (Armênia)" (`homonymName`; em português pelo `Intl.DisplayNames`, senão o nome cru do `leagueData`). As ligas nativas (slug sem `of_`: a Premier League inglesa, a Bundesliga alemã) ficam com o nome puro. O `league.name` do catálogo não muda; `leagueLabel` já traz o país e continua lendo o `name`.
 
+## Busca por time (Etapa 46, 4.42)
+
+Campo "Buscar time" da tela Ligas (`Components/ClubSearch.tsx`, lógica pura em `src/Domain/world/clubSearch.ts`, rota `GET /api/saves/:saveId/clubs`, buscada só quando o campo ganha foco). Os times vêm do índice de squads do save, não do `leagueData`. Vazio: os times do país da liga aberta; com texto: o mundo, começo do nome antes de começo de palavra antes do meio, até 30, agrupados por país (o da liga aberta primeiro). Escolher um time abre a aba Tabela da liga dele, com a linha marcada e rolada até a vista.
+
 ## Nomes de país
 
 Chave i18n primeiro (`newGame.countries.{slug}.name`), depois `Intl.DisplayNames`. `GB` é tratado

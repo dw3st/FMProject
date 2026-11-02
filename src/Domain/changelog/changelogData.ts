@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42",
+    date: "2026-11-02",
+    time: "19:05",
+    items: [
+      {
+        pt: "Busca por time na tela de ligas: digite o nome, veja os times agrupados por país e abra a liga com a linha do time destacada.",
+        en: "Team search on the leagues screen: type the name, see the teams grouped by country and open the league with the team's row highlighted.",
+      },
+      {
+        pt: "Histórico de campeões em Estatísticas: um quadro com os campeões de cada competição por temporada, com a marca de técnico humano. Clique numa competição para ver os técnicos e quem tem mais títulos.",
+        en: "Champions history in Stats: a board with each competition's champions by season, with the human manager mark. Click a competition to see the managers and who has the most titles.",
+      },
+    ],
+  },
+  {
     version: "4.41.53",
     date: "2026-11-02",
     time: "18:24",
@@ -3441,7 +3456,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Histórico de campeões de todas as competições do mundo", en: "Champions history of every competition in the world" },
-  { pt: "Busca por time na tela de ligas", en: "Search by team on the leagues screen" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

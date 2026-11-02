@@ -2045,6 +2045,7 @@
     "matchday": "Rodada {{round}}",
     "vs": "x",
     "selectLeague": "Liga",
+    "clubSearch": { "label": "Buscar time", "placeholder": "Nome do time", "none": "Nenhum time encontrado" },
     "searchLeaguesPlaceholder": "Pesquisar ligas…",
     "loadingLeagues": "Carregando ligas...",
     "loadingStandings": "Carregando tabela…",
@@ -2934,6 +2935,23 @@
     "moves_one": "{{count}} clube mudou de divisão no seu país.",
     "moves_other": "{{count}} clubes mudaram de divisão no seu país.",
     "ok": "OK"
+  },
+  "champions": {
+    "tab": "Campeões",
+    "filter": "Competições",
+    "filters": { "main": "Principais", "continents": "Continentes" },
+    "groups": { "continental": "Continentais", "national": "Seleções", "leagues": "Ligas" },
+    "competition": "Competição",
+    "season": "Temporada",
+    "champion": "Campeão",
+    "managerColumn": "Técnico",
+    "manager": "Técnico: {{name}}",
+    "humanManager": "Técnico humano: {{name}}",
+    "human": "Humano",
+    "humanLegend": "Técnico humano",
+    "mostTitles": "Mais títulos",
+    "back": "Voltar ao quadro",
+    "empty": "Os primeiros campeões aparecem quando as competições terminarem."
   },
   "statsScreen": {
     "allLeagues": "Geral (todas as ligas)",
