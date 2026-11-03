@@ -75,7 +75,7 @@ import {
 } from "@/GraficsEngine/stadiumAtmosphere";
 import {
   benchRect, COACH_WALK_FRAC, coachWalkOffset, startStretcher, STRETCHER,
-  stretcherPose, type StretcherRun,
+  stretcherPose, STRETCHER_LOOK, type StretcherRun,
 } from "@/GraficsEngine/matchExtras";
 import type { MowingPattern, StandId, TurfType } from "@/types/facilityTypes";
 import { followAt, smoothDamp, smoothPlayers, SMOOTH_ASSISTANT_S, type Follow } from "@/GraficsEngine/smoothFollow";
@@ -2233,7 +2233,8 @@ export function PixiPitch({
       stretcherGfx.zIndex = 6;
       stretcherGfx.eventMode = 'none';
       world.addChild(stretcherGfx);
-      let stretchers: { run: StretcherRun; color: number; medics?: Container[] }[] = [];
+      // `tints`: the injured player's kit for the lying figure, taken while he is still on the pitch.
+      let stretchers: { run: StretcherRun; color: number; tints: Record<string, number> | null; medics?: Container[]; patient?: Container }[] = [];
       const unsubStretcher = gameBus.on("injury", (e) => {
         if (!extrasRef.current || !framesShown()) return;
         const at = lastDrawnPos?.get(e.playerId) ?? playerPos(e.playerId);
@@ -2241,22 +2242,55 @@ export function PixiPitch({
         const { px, py } = toPixel(at.x, at.y);
         const tun = m.stand ? standTunnel(m.stand) : null;
         const mouth = tun ? { x: tun.x + tun.w / 2, y: tun.y + Math.min(tun.h, tun.w * 1.5) } : undefined;
-        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: e.team === "A" ? fillA : fillB }];
+        const teamKit = e.team === "A" ? fillA : fillB;
+        const who = playerPos(e.playerId);
+        const keeper = who?.role === "GK";
+        const kit = keeper ? benchKits(["GK"], teamKit)[0]! : teamKit;
+        const look = spriteLook(who?.rosterId ?? String(e.playerId));
+        const tints = { socks: kit, shirt: kit, trim: keeper ? PLAYER_SPRITE.KEEPER_TRIM : e.team === "A" ? fillA2 : fillB2, skin: look.skin, hair: look.hair };
+        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: teamKit, tints }];
       });
       const drawStretchers = () => {
         stretcherGfx.clear();
         if (stretchers.length === 0) return;
-        const w = markerR * 1.1, h = markerR * 2.6, medic = markerR * 0.55;
+        const L = STRETCHER_LOOK;
+        const w = markerR * L.W, h = markerR * L.H, medic = markerR * 0.55, poleW = markerR * L.POLE_W, poleOut = markerR * L.POLE_OUT;
+        const medicGap = markerR * L.MEDIC_GAP;
         for (const st of stretchers) {
           if (!stretcherPose(st.run, effectNow).done) continue;
           for (const c of st.medics ?? []) c.destroy({ children: true });
+          st.patient?.destroy({ children: true });
         }
         stretchers = stretchers.filter((st) => !stretcherPose(st.run, effectNow).done);
         for (const [si, st] of stretchers.entries()) {
           const pose = stretcherPose(st.run, effectNow);
           const showPatient = pose.carrying || effectNow - st.run.startedAt >= STRETCHER.IN_S;
-          stretcherGfx.roundRect(pose.x - w / 2, pose.y - h / 2, w, h, 2).fill(0xf2f2f2).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
-          if (showPatient) stretcherGfx.circle(pose.x, pose.y, markerR * 0.7).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+          for (const side of [-1, 1]) {
+            stretcherGfx.roundRect(pose.x + side * w / 2 - poleW / 2, pose.y - h / 2 - poleOut, poleW, h + poleOut * 2, poleW / 2).fill(L.POLE);
+          }
+          stretcherGfx.rect(pose.x - w / 2, pose.y - h / 2, w, h).fill(L.CANVAS).stroke({ width: 1, color: 0x000000, alpha: 0.25 });
+          // The player lying on it (mock option B); with the discs or without the art, a small disc inside the canvas.
+          const figures = !!spriteSheets && markersRef.current !== "discs" && !!st.tints;
+          if (showPatient && figures && !st.patient) {
+            const body = new Container();
+            body.zIndex = 6.05;
+            body.eventMode = 'none';
+            body.scale.set(spriteScale(markerR));
+            for (const layer of SPRITE_LAYERS) {
+              const sp = new Sprite(spriteSheets!.player.textures[`player-injured-${layer}.png`] ?? Texture.EMPTY);
+              sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
+              const tint = st.tints![layer];
+              if (tint !== undefined) sp.tint = tint;
+              body.addChild(sp);
+            }
+            world.addChild(body);
+            st.patient = body;
+          }
+          if (st.patient) {
+            st.patient.position.set(pose.x, pose.y);
+            st.patient.visible = showPatient && figures;
+          }
+          if (showPatient && !figures) stretcherGfx.circle(pose.x, pose.y, markerR * L.DISC_R).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
           // Sprite medics (art phase 3): run in, kneel by the player, carry him off.
           if (officialSheet) {
             if (!st.medics) {
@@ -2274,13 +2308,13 @@ export function PixiPitch({
             for (const [k, end] of [-1, 1].entries()) {
               const c = st.medics[k]!;
               c.x = pose.x;
-              c.y = pose.y + end * (h / 2 + medic * 0.8);
+              c.y = pose.y + end * (h / 2 + medicGap);
               animateFigure(c, "medic", null, { kneel }, kneel ? (end < 0 ? Math.PI / 2 : -Math.PI / 2) : undefined);
             }
             continue;
           }
           for (const end of [-1, 1]) {
-            const my = pose.y + end * (h / 2 + medic * 0.8);
+            const my = pose.y + end * (h / 2 + medicGap);
             stretcherGfx.circle(pose.x, my, medic).fill(0xffffff).stroke({ width: 1, color: 0x000000, alpha: 0.4 });
             stretcherGfx.rect(pose.x - medic * 0.55, my - medic * 0.16, medic * 1.1, medic * 0.32).fill(0xd62020);
             stretcherGfx.rect(pose.x - medic * 0.16, my - medic * 0.55, medic * 0.32, medic * 1.1).fill(0xd62020);

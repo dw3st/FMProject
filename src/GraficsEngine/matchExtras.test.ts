@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import {
   benchRect, benchSeats, coachWalkOffset, COACH_WALK_FRAC, crowdJumpPx, CROWD_JUMP_S, netShake,
-  startStretcher, stretcherPose, STRETCHER, STRETCHER_TOTAL_S,
+  startStretcher, stretcherPose, STRETCHER, STRETCHER_LOOK, STRETCHER_TOTAL_S,
 } from "@/GraficsEngine/matchExtras";
 
 const m = { marginX: 20, marginY: 30, width: 1000, height: 640 };
 
 describe("stretcher (#129)", () => {
+  test("the patient's disc fits inside the canvas (report: it looked like a lollipop)", () => {
+    expect(STRETCHER_LOOK.DISC_R * 2).toBeLessThan(STRETCHER_LOOK.W);
+  });
   test("comes from the nearest touchline, waits by the player, leaves carrying him", () => {
     const near = startStretcher({ x: 400, y: 600 }, m, 10);
     expect(near.entry.y).toBeGreaterThan(m.marginY + m.height);

@@ -9,6 +9,14 @@ import type { PitchMetrics } from "@/GraficsEngine/pitchMetrics";
 /** Phases of the stretcher (real seconds): in from the touchline, by the player, back out. */
 export const STRETCHER = { IN_S: 1.4, HOLD_S: 0.9, OUT_S: 1.6 } as const;
 export const STRETCHER_TOTAL_S = STRETCHER.IN_S + STRETCHER.HOLD_S + STRETCHER.OUT_S;
+/**
+ * The stretcher as drawn (mock option B, in marker radii): a light canvas between two dark poles with handles, the injured
+ * player lying on it (the art's frame), or a small disc inside the canvas without the art. Medics at each end.
+ */
+export const STRETCHER_LOOK = {
+  W: 1.4, H: 2.7, POLE_W: 0.18, POLE_OUT: 0.3, MEDIC_GAP: 0.8, DISC_R: 0.45,
+  CANVAS: 0xd9dde4, POLE: 0x2b3140,
+} as const;
 /** px beyond the touchline where the stretcher comes from and goes back to. */
 const STRETCHER_OUT_PX = 10;
 

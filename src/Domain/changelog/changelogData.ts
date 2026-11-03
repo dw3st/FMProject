@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.12",
+    date: "2026-11-03",
+    time: "17:58",
+    items: [
+      {
+        pt: "A maca da partida foi redesenhada: lona entre duas varas, com o jogador deitado no uniforme do time.",
+        en: "The match stretcher was redrawn: a canvas between two poles, with the player lying on it in his team kit.",
+      },
+    ],
+  },
+  {
     version: "4.42.11",
     date: "2026-11-03",
     time: "17:42",

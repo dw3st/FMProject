@@ -54,7 +54,7 @@ Prop `extras` of `PixiPitch` (read every frame; the live match passes it on, `/t
 only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
 
 - **Stretcher:** on `injury`, a stretcher with two medics comes from the nearest touchline to where the player was
-  drawn, waits, and leaves carrying a disc in the team colour (`STRETCHER` 1.4 / 0.9 / 1.6 s, effects clock).
+  drawn, waits, and leaves carrying the player (`STRETCHER` 1.4 / 0.9 / 1.6 s, effects clock). Since 4.42.12 (mock option B, `STRETCHER_LOOK`) a light canvas between two dark poles with the art's `player-injured` figure in his kit; with discs or without the art, a small disc inside the canvas.
 - **Managers** pace their technical area (`coachWalkOffset`, ±`COACH_WALK_FRAC` of the pitch length); **benches**
   (`benchRect`, outer side of each area) with one disc per substitute, redrawn only when a bench changes size (with
   Officials on).
