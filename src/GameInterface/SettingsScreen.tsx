@@ -6,7 +6,8 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume } from "@/GameInterface/artPrefs";
+import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound } from "@/GameInterface/artPrefs";
+import { playReadySound } from "@/GameInterface/readySound";
 import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
@@ -24,6 +25,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [matchCamera, setMatchCamera] = useState(readMatchCamera);
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
   const [matchSound, setMatchSound] = useState(readMatchSound);
+  const [readySound, setReadySound] = useState(readReadySound);
   const [matchVolume, setMatchVolume] = useState(readMatchVolume);
   const [quality, setQuality] = useState<QualityPref>(readQuality);
   const [playerLook, setPlayerLook] = useState<PlayerLookPref>(readPlayerLook);
@@ -123,6 +125,21 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             <span className="tabular-nums w-10 text-right">{Math.round(matchVolume * 100)}%</span>
           </label>
           <p className="m-0 text-sm text-muted-foreground">{t("settings.matchSoundDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.readySound")}</div>
+          <OptionChips
+            value={readySound ? "on" : "off"}
+            onChange={(k) => {
+              const on = k === "on";
+              setReadySound(on);
+              writeReadySound(on);
+              if (on) playReadySound();
+            }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.readySoundDescription")}</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2">

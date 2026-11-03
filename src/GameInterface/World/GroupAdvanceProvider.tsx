@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { othersNowReady } from "@/Domain/groupAdvance/readyNotice";
+import { armReadySound, playReadySound } from "@/GameInterface/readySound";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
@@ -43,7 +45,7 @@ export function useGroupAdvance(): GroupAdvanceContextValue {
 export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues: LeagueData[]; mySquadId: string; children: ReactNode }) {
   const { session, refresh: refreshSave } = useGameSave();
   const { t } = useTranslation();
-  const { subscribe, connected } = useSocial();
+  const { subscribe, connected, me } = useSocial();
   const enabled = !!session?.groupAdvance;
   const saveId = session?.saveId ?? "";
   const [view, setView] = useState<GroupAdvanceView | null>(null);
@@ -56,6 +58,10 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   const inFlight = useRef(false);
   /** Last date of the summary already shown (or dismissed): a late concurrent fetch never reopens it. */
   const shownKey = useRef<string | null>(null);
+  /** Who the world was waiting for, and my nickname: another manager leaving the list plays the chime. */
+  const waitingRef = useRef<string[] | null>(null);
+  const nickRef = useRef<string | null>(null);
+  nickRef.current = me?.nickname ?? null;
   const wasConnected = useRef(false);
   const everConnected = useRef(false);
 
@@ -99,6 +105,12 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   }, [refresh, showSummary]);
 
   useEffect(() => {
+    if (view) waitingRef.current = view.waitingFor;
+  }, [view]);
+
+  useEffect(() => (enabled ? armReadySound() : undefined), [enabled]);
+
+  useEffect(() => {
     if (!enabled) return;
     return subscribe((event) => {
       // Another manager touched an offer with this seat (part 4): inbox, squad and the open offer cards reload.
@@ -108,6 +120,8 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         return;
       }
       if (event.type !== "world_progress" || event.saveId !== saveId) return;
+      if (othersNowReady(waitingRef.current, event.waitingFor, nickRef.current).length > 0) playReadySound();
+      waitingRef.current = event.waitingFor;
       // The executor's failure lives in the view (a code, with the next retry); the action error stays the seat's own.
       setView((v) => (v
         ? { ...v, currentDate: event.date, target: event.target, running: event.running, waitingFor: event.waitingFor, error: event.error ?? null }

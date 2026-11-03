@@ -362,6 +362,10 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
   clube antigo); o jogo da seleção não entra.
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
 
+### Som de pronto (4.42.6)
+
+Pedido do usuário. Um toque curto de duas notas (`GameInterface/readySound.ts`, sintetizado) quando outro técnico sai da lista de espera do `world_progress` (`othersNowReady`, puro; o próprio técnico não conta) e, na sala do jogo entre técnicos, quando o outro aperta Começar. Toca com a aba em segundo plano; só depois de um clique no site (regra do navegador). Preferência `fm.world.readySound` em Configurações, volume o da partida. Não toca na partida ao vivo, onde o `GroupAdvanceProvider` não está montado.
+
 ## Parte 4: humano × humano
 
 Spec: `docs/superpowers/specs/2026-10-16-multiplayer-h2h-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-h2h.md`.

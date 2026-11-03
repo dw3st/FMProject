@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.6",
+    date: "2026-11-03",
+    time: "15:00",
+    items: [
+      {
+        pt: "Um toque curto avisa quando outro técnico da sua liga fica pronto, também na sala do jogo entre técnicos. Dá para desligar em Configurações.",
+        en: "A short chime tells you when another manager in your league is ready, also in the match room between managers. You can turn it off in Settings.",
+      },
+      {
+        pt: "O som da partida continua tocando quando você muda de aba.",
+        en: "The match sound keeps playing when you switch tabs.",
+      },
+    ],
+  },
+  {
     version: "4.42.5",
     date: "2026-11-03",
     time: "14:41",

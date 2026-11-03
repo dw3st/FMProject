@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
+import { armReadySound, playReadySound } from "@/GameInterface/readySound";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { writeH2HInvite } from "@/GameInterface/H2H/h2hInvite";
 import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
@@ -71,6 +72,15 @@ export function MatchRoomScreen() {
       window.location.href = "/match?h2h=1";
     }
   }, [room?.phase]);
+
+  // The other manager pressed Start in the room.
+  const themStatus = room && mySide ? room.sides[other(mySide)].status : null;
+  const lastThem = useRef(themStatus);
+  useEffect(() => {
+    if (themStatus === "ready" && lastThem.current !== "ready") playReadySound();
+    lastThem.current = themStatus;
+  }, [themStatus]);
+  useEffect(() => armReadySound(), []);
 
   useEffect(() => {
     if (!h2h.closed) return;

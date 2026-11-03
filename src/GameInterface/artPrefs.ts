@@ -120,6 +120,25 @@ export function writePlayerLook(v: PlayerLookPref): void {
   }
 }
 
+const READY_SOUND_KEY = "fm.world.readySound";
+
+/** Chime when another manager is ready: on (default) or off. */
+export function readReadySound(): boolean {
+  try {
+    return localStorage.getItem(READY_SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function writeReadySound(on: boolean): void {
+  try {
+    localStorage.setItem(READY_SOUND_KEY, on ? "1" : "0");
+  } catch {
+    // no storage: the choice lasts this page
+  }
+}
+
 const SOUND_KEY = "fm.match.sound";
 const SOUND_VOLUME_KEY = "fm.match.soundVolume";
 

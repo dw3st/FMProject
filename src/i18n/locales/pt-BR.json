@@ -600,6 +600,8 @@
     "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta.",
     "matchSound": "Som da partida",
     "matchSoundDescription": "Torcida, apito, chute e grito de gol. Começa no primeiro clique na tela da partida.",
+    "readySound": "Som de pronto",
+    "readySoundDescription": "Um toque curto quando outro técnico da sua liga marca que está pronto, mesmo com a aba em segundo plano.",
     "matchVolume": "Volume",
     "quality": "Qualidade gráfica",
     "qualityAuto": "Automática",

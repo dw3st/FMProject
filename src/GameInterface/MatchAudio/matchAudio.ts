@@ -7,8 +7,8 @@ type Sample = (typeof SAMPLES)[number];
 
 /**
  * Match sound (leva 3), recorded samples with a synthesised fallback (Web Audio): a crowd bed that swells near the goals, the referee's whistle,
- * the strike of the ball, the net, the roar of a goal and the "ooh" of a near miss. No sound files. The context only
- * starts after a click on the page (browser rule) and is suspended while the tab is hidden.
+ * the strike of the ball, the net, the roar of a goal and the "ooh" of a near miss. The context only starts after a
+ * click on the page (browser rule) and keeps playing with the tab in the background (the match goes on there too).
  */
 import { cueAllowed, type SoundCue } from "@/Domain/match/matchSound";
 
@@ -24,11 +24,6 @@ export class MatchAudio {
   private samples = new Map<Sample, AudioBuffer>();
   private bedSource: AudioBufferSourceNode | null = null;
   private lastRise = -100;
-  private onVisibility = () => {
-    if (!this.ctx) return;
-    if (document.hidden) void this.ctx.suspend();
-    else if (this.enabled) void this.ctx.resume();
-  };
   private onGesture = () => this.start();
 
   constructor(enabled: boolean, volume: number) {
@@ -36,14 +31,13 @@ export class MatchAudio {
     this.volume = volume;
     window.addEventListener("pointerdown", this.onGesture);
     window.addEventListener("keydown", this.onGesture);
-    document.addEventListener("visibilitychange", this.onVisibility);
   }
 
   /** Creates (or resumes) the context: must run from a user gesture the first time. */
   start(): void {
     if (!this.enabled) return;
     if (this.ctx) {
-      if (this.ctx.state === "suspended" && !document.hidden) void this.ctx.resume();
+      if (this.ctx.state === "suspended") void this.ctx.resume();
       return;
     }
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -127,7 +121,6 @@ export class MatchAudio {
   dispose(): void {
     window.removeEventListener("pointerdown", this.onGesture);
     window.removeEventListener("keydown", this.onGesture);
-    document.removeEventListener("visibilitychange", this.onVisibility);
     this.bedSource = null;
     void this.ctx?.close();
     this.ctx = null;
