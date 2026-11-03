@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.9",
+    date: "2026-11-03",
+    time: "17:32",
+    items: [
+      {
+        pt: "Configurações: a lista agora rola até o fim e o botão Salvar não fica mais em cima das opções.",
+        en: "Settings: the list now scrolls to the end and the Save button no longer sits on top of the options.",
+      },
+    ],
+  },
+  {
     version: "4.42.8",
     date: "2026-11-03",
     time: "17:26",

@@ -50,7 +50,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-background flex flex-col items-center justify-center px-6">
+    <div className="fixed inset-0 z-[200] bg-background flex flex-col">
       <button
         type="button"
         onClick={onClose}
@@ -60,7 +60,9 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
         <Icon name="close" size={16} />
       </button>
 
-      <div className="w-full max-w-md">
+      {/* The list scrolls on its own (centred while it fits); Save stays in its footer, never over the list. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-10 flex flex-col">
+      <div className="w-full max-w-md mx-auto my-auto">
         <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-center mb-6">
           {t("settings.language")}
         </h1>
@@ -223,14 +225,17 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
           </div>
         )}
       </div>
+      </div>
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 h-10 px-5 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0"
-      >
-        {t("common.save")}
-      </button>
+      <div className="shrink-0 border-t border-border py-4 flex justify-center">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-10 px-5 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0"
+        >
+          {t("common.save")}
+        </button>
+      </div>
     </div>
   );
 }
