@@ -31,4 +31,19 @@ describe("substitution panel cards", () => {
       expect([id, cardsOverlap(spreadSubsMarkers(getFormationSlots(formationForSimId(id))), SUBS_CARD.W, SUBS_CARD.H)]).toEqual([id, false]);
     }
   });
+
+  test("a line of four in neighbouring columns of the free formation stays a line (report)", async () => {
+    const { spreadSubsMarkers } = await import("@/Domain/formation/pitchMarkers");
+    const { getFormationSlots } = await import("@/types/formationSlots");
+    const attacking = [
+      [10, 37, "GK"], [36, 22, "CB"], [36, 52, "CB"], [54, 8, "LWB"], [54, 22, "CDM"], [54, 52, "CDM"], [54, 66, "RWB"],
+      [72, 37, "CM"], [98, 8, "LW"], [98, 37, "ST"], [98, 66, "RW"],
+    ].map(([x, y, role]) => ({ x: x as number, y: y as number, role: role as string }));
+    const out = spreadSubsMarkers(getFormationSlots({ attacking } as never));
+    const y = (i: number) => out[i]!.y;
+    // Left and right mirror each other: nobody is pushed up on one side and down on the other.
+    expect(y(3)).toBeCloseTo(y(6), 5);
+    expect(y(4)).toBeCloseTo(y(5), 5);
+    expect(Math.abs(y(3) - y(4))).toBeLessThan(4);
+  });
 });

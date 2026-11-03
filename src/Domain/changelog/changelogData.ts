@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.8",
+    date: "2026-11-03",
+    time: "17:26",
+    items: [
+      {
+        pt: "O campo das substituições mantém a linha de quatro reta nas formações livres, sem jogar um jogador para cima e outro para baixo.",
+        en: "The substitutions pitch keeps a line of four straight in free formations, with no player pushed up and another pushed down.",
+      },
+    ],
+  },
+  {
     version: "4.42.7",
     date: "2026-11-03",
     time: "17:16",

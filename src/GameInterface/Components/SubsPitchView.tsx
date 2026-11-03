@@ -268,7 +268,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     )}
                   </span>
                   <span
-                    className={`flex flex-col gap-0.5 w-[19cqw] rounded px-1.5 pt-0.5 pb-1 ${isSelected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}
+                    className={`flex flex-col gap-0.5 w-[18cqw] rounded px-1.5 pt-0.5 pb-1 ${isSelected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}
                     title={t("substitutionPanel.fitnessTitle", { value: Math.round(p.energy) })}
                   >
                     <span className="flex items-baseline gap-1 min-w-0">
