@@ -52,5 +52,6 @@ export const ACHIEVEMENTS = {
   /** Created player: age, level bonus over the line average − offset (the intake's promise + this). */
   CREATED_AGE: 16,
   CREATED_EXTRA_LEVEL: 0.3,
-  LEGEND_OPTIONS: 3,
+  /** The legend shop lists every legend, completed with the best retirees up to this many while the world has few. */
+  LEGEND_MIN_LIST: 12,
 } as const;

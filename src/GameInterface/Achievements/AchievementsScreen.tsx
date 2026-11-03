@@ -20,7 +20,7 @@ import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { formatEuros } from "@/Domain/money";
 import { nationalityFlagCode, NATIONALITY_NAMES } from "@/Domain/world/nationalityFlag";
-import { nationalityDisplayName } from "@/Domain/world/labels";
+import { nationalityDisplayName, normalizeForSearch } from "@/Domain/world/labels";
 import { formatEffect } from "@/GameInterface/Staff/staffApi";
 import { positionLabel } from "@/GameInterface/positionHelpers";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -380,6 +380,7 @@ function ManagerTab({ data }: { data: AchievementsData }) {
 function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: string; onChange: (d: AchievementsData) => void }) {
   const { t, i18n } = useTranslation();
   const [name, setName] = useState("");
+  const [legendSearch, setLegendSearch] = useState("");
   const [position, setPosition] = useState<string>("ST");
   const [nationality, setNationality] = useState<string>("Brazil");
   const [foot, setFoot] = useState<"left" | "right">("right");
@@ -399,6 +400,8 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
   }
 
   const { costs, bought, legends, thisSeason } = data.shop;
+  const legendQ = normalizeForSearch(legendSearch.trim());
+  const shownLegends = legendQ ? legends.filter((l) => normalizeForSearch(l.name).includes(legendQ)) : legends;
   const canCreated = !thisSeason.created && data.points.balance >= costs.created && data.hasClub;
   const canLegend = !thisSeason.legend && data.points.balance >= costs.legend && data.hasClub;
   const card = "rounded-md border border-border bg-card p-4 flex flex-col gap-3";
@@ -457,14 +460,12 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
           {thisSeason.legend && bought.legend
             ? <p className="text-sm m-0">{t("achievements.shop.bought", { date: formatDate(bought.legend, i18n.language) })}</p>
             : legends.length === 0
-              ? (
-                <div>
-                  <Button disabled={!canLegend || busy} onClick={() => void call("shop/legend/draw")}>{t("achievements.shop.legend.draw")}</Button>
-                </div>
-              )
+              ? <p className="text-sm text-muted-foreground m-0">{t("achievements.errors.noLegends")}</p>
               : (
                 <div className="flex flex-col gap-2">
-                  {legends.map((l) => (
+                  <TextField id="legend-search" variant="box" label={t("achievements.shop.legend.search")} value={legendSearch} maxLength={40} onChange={(e) => setLegendSearch(e.target.value)} />
+                  <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto pr-1">
+                  {shownLegends.map((l) => (
                     <div key={l.id} className="flex items-center justify-between gap-3 border-b border-border/50 py-2">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="flex items-center gap-2 font-semibold text-foreground truncate">
@@ -473,7 +474,7 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
                           {l.wasWorldClass && <span className="text-sm text-chart-4">{t("achievements.shop.legend.worldClass")}</span>}
                         </span>
                         <span className="text-sm text-muted-foreground tabular-nums">
-                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}
+                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {l.level.toFixed(1)} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}
                         </span>
                       </div>
                       <Button
@@ -484,6 +485,7 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
                       </Button>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
         </section>

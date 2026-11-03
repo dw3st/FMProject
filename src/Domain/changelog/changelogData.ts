@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.13",
+    date: "2026-11-03",
+    time: "18:10",
+    items: [
+      {
+        pt: "Loja de conquistas: a lenda aposentada agora sai de uma lista com todas as lendas, com busca pelo nome, e não mais de um sorteio de três.",
+        en: "Achievements shop: the retired legend now comes from a list of every legend, with a name search, instead of a draw of three.",
+      },
+    ],
+  },
+  {
     version: "4.42.12",
     date: "2026-11-03",
     time: "17:58",

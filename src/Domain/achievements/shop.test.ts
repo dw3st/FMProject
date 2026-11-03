@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { legendOptions } from "@/Domain/achievements/shop";
+import { legendPool } from "@/Domain/achievements/shop";
 import type { RetiredPlayer } from "@/types/playerTypes";
 
 const stats = (v: number): RetiredPlayer["statsAtRetirement"] => ({
@@ -13,17 +13,19 @@ const retired = (id: string, extra: Partial<RetiredPlayer> = {}): RetiredPlayer 
   ...extra,
 });
 
-describe("legend options", () => {
-  test("a legend already brought back by a seat is never offered again", () => {
-    const pool = [retired("a"), retired("b", { legendBy: "seat-1" }), retired("c"), retired("d")];
-    const ids = legendOptions(pool, "save", "2027-07-01");
-    expect(ids).not.toContain("b");
-    expect(ids.length).toBe(3);
+describe("legend pool", () => {
+  const ids = (list: RetiredPlayer[]) => legendPool(list).map((r) => r.id);
+  test("every legend is listed, not just three (report), best first", () => {
+    const pool = Array.from({ length: 30 }, (_, i) => retired(`r${String(i).padStart(2, "0")}`, { statsAtRetirement: stats(5 + i / 10) }));
+    expect(ids(pool)).toHaveLength(30);
+    expect(ids(pool)[0]).toBe("r29");
   });
-  test("solo draws as before; a seat draws with its own seed", () => {
-    const pool = Array.from({ length: 12 }, (_, i) => retired(`r${i}`));
-    expect(legendOptions(pool, "save", "2027-07-01", undefined)).toEqual(legendOptions(pool, "save", "2027-07-01"));
-    const bySeat = new Set(["s1", "s2", "s3", "s4", "s5"].map((s) => legendOptions(pool, "save", "2027-07-01", s).join(",")));
-    expect(bySeat.size).toBeGreaterThan(1);
+  test("one already brought back, a reborn or a free agent is never offered", () => {
+    const pool = [retired("a"), retired("b", { legendBy: "seat-1" }), retired("c", { rebornOffer: "accepted" }), retired("d", { freeAgent: true })];
+    expect(ids(pool)).toEqual(["a"]);
+  });
+  test("a young world with few legends still shows the best retirees", () => {
+    const pool = Array.from({ length: 20 }, (_, i) => retired(`r${i}`, { wasWorldClass: false, statsAtRetirement: stats(2) }));
+    expect(ids(pool)).toHaveLength(12);
   });
 });

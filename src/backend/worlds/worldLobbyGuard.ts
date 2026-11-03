@@ -29,7 +29,6 @@ export const LOBBY_GUARDED_PATHS = [
   "/api/saves/:saveId/youth/:playerId/promote",
   "/api/saves/:saveId/youth/:playerId/release",
   "/api/saves/:saveId/achievements/shop/created",
-  "/api/saves/:saveId/achievements/shop/legend/draw",
   "/api/saves/:saveId/achievements/shop/legend",
   "/api/saves/:saveId/legends/:retiredId/hire",
 ] as const;

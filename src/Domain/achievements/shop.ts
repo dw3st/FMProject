@@ -4,7 +4,6 @@ import { clamp } from "@/Domain/math";
 import { weightedScore } from "@/Domain/playerRating";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
-import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 import { getMainRole } from "@/Domain/roles";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { normalizeForSearch } from "@/Domain/world/labels";
@@ -77,17 +76,16 @@ export function retiredLevel(r: RetiredPlayer): number {
 }
 
 /**
- * Three retired stars to choose from: world class first, then the best level at retirement; never one
- * already brought back (reborn offer accepted, or a legend of any seat). Deterministic per save + date (+ the seat
- * in a world of seats, `.claude/rules/game/multiplayer.md`).
+ * The retired stars the shop offers, best first (world class, then level at retirement): every legend still available,
+ * completed with the next best retirees up to `LEGEND_MIN_LIST` while the world has few. Never one already brought back
+ * (reborn offer accepted, or a legend of any seat), never a free agent. The same list for every seat of a world.
  */
-export function legendOptions(retired: readonly RetiredPlayer[], saveId: string, date: string, seatId?: string): string[] {
-  const pool = retired.filter((r) => r.rebornOffer !== "accepted" && !r.legendBy && !r.freeAgent);
-  const ranked = [...pool].sort((a, b) =>
-    Number(b.wasWorldClass) - Number(a.wasWorldClass) || retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
-  const top = ranked.slice(0, Math.max(A.LEGEND_OPTIONS, 12));
-  const seed = seatId ? `legend:${saveId}:${seatId}:${date}` : `legend:${saveId}:${date}`;
-  return shuffle(top, mulberry32(seedFrom(seed))).slice(0, A.LEGEND_OPTIONS).map((r) => r.id);
+export function legendPool(retired: readonly RetiredPlayer[]): RetiredPlayer[] {
+  const ranked = retired
+    .filter((r) => r.rebornOffer !== "accepted" && !r.legendBy && !r.freeAgent)
+    .sort((a, b) => Number(b.wasWorldClass) - Number(a.wasWorldClass) || retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
+  const legends = ranked.filter(isLegend).length;
+  return ranked.slice(0, Math.max(legends, A.LEGEND_MIN_LIST));
 }
 
 /**

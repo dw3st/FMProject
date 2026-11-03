@@ -35,7 +35,7 @@ Visual: `.claude/rules/ui-standard.md`.
 | `src/Domain/achievements/day.ts` | `applyAchievementDay` (um dia, idempotente) |
 | `src/Domain/achievements/managerAttributes.ts` | Atributos 1..20: `attributeBoost` / `attributeReduce` (±5% no extremo, 1 em 10 ou ausente), `youthAttributeMult` |
 | `src/Domain/achievements/items.ts` | Molduras, selos, títulos, enfeites; validação do perfil e dos enfeites; visões da tela |
-| `src/Domain/achievements/shop.ts` | Jogador criado (`createdPlayer`), lendas (`legendOptions`, `legendPlayer`) |
+| `src/Domain/achievements/shop.ts` | Jogador criado (`createdPlayer`), lendas (`legendPool`, `legendPlayer`) |
 | `src/Domain/inbox/achievementMessage.ts` | Inbox `achievement` |
 | `src/backend/achievementsWorld.ts` | E/S do passo do dia; `achievementSnapshot`; cópia dos atributos no clube |
 | `src/backend/achievementRoutes.ts` | Rotas |
@@ -89,9 +89,10 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
 
 - **Jogador criado** (300 pontos): nome (2–30), posição (14), nacionalidade (com bandeira), pé; 16 anos, na base, nível
   = média da linha − 1,8 + 1,0 + 0,3, arquétipo "Wonderkid", formado no clube (`academyOf`), contrato de base.
-- **Lenda aposentada** (500): sorteio guardado de 3 aposentados (classe mundial primeiro, depois o nível ao se
-  aposentar; nunca um já renascido nem um livre aposentado); o escolhido volta com 17 anos pela regra do renascido
-  (`generateReborn`, id `legend_<id>_<ano>`).
+- **Lenda aposentada** (500): lista de todas as lendas disponíveis, com busca pelo nome (`legendPool`: classe mundial
+  primeiro, depois o nível ao se aposentar; completa com os melhores aposentados até 12 enquanto o mundo tem poucas; nunca um
+  já renascido, já trazido por outro técnico nem um livre aposentado). Até a 4.42.12 era um sorteio guardado de 3 (report de
+  tester). O escolhido volta com 17 anos pela regra do renascido (`generateReborn`, id `legend_<id>_<ano>`).
 - 409 `notEnoughPoints` / `alreadyBought` / `noClub`; 400 `youthFull` / `invalidPlayer` / `notOffered`.
 
 ## Rotas (dono do save; escrita com `withSaveLock`)
@@ -102,7 +103,6 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
 | `PUT …/achievements/profile { frame, badges, title }` | 400 `invalidProfile` / `locked` |
 | `PUT …/achievements/stadium { banner, flag, mosaic }` | 400 `invalidDecor` / `locked` |
 | `POST …/achievements/shop/created { name, position, nationality, foot }` | Jogador criado |
-| `POST …/achievements/shop/legend/draw` | Sorteia as 3 lendas (uma vez; guardado) |
 | `POST …/achievements/shop/legend { retiredId }` | Lenda escolhida |
 
 ## Telas

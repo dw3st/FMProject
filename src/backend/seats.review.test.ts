@@ -162,7 +162,7 @@ describe("seats: review fixes", () => {
     await saveService.writeRetired(id, [...(await saveService.getRetired(id)), legend]);
     for (const seatId of [meta.seatId, seatD.seatId]) {
       const state = await saveService.getAchievements(id, seatId);
-      await saveService.writeAchievements(id, { ...state, spent: -10_000, legendOptions: { date, ids: [legend.id] } }, seatId);
+      await saveService.writeAchievements(id, { ...state, spent: -10_000 }, seatId);
     }
     const buy = (who: Login) => call("/api/saves/:saveId/achievements/shop/legend", `/api/saves/${id}/achievements/shop/legend`, "POST",
       who.session.token, { saveId: id }, { retiredId: legend.id });

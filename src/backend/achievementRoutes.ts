@@ -10,7 +10,7 @@ import {
 import { attributeBoost, attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { achievementPoints, earnedPoints, pointsBalance, trackValues } from "@/Domain/achievements/progress";
 import {
-  boughtThisSeason, createdPlayer, legendOptions, legendPlayer, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
+  boughtThisSeason, createdPlayer, legendPlayer, legendPool, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
 } from "@/Domain/achievements/shop";
 import { weightedScore } from "@/Domain/playerRating";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -75,14 +75,11 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
       history: await shopHistory(saveId, state, retired, club, seatId),
-      legends: (state.legendOptions?.ids ?? []).flatMap((id) => {
-        const r = retired.find((x) => x.id === id);
-        return r ? [{
-          id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, age: r.age,
-          wasWorldClass: r.wasWorldClass, level: Math.round(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM") * 100) / 100,
-          appearances: r.appearances, goals: r.goals,
-        }] : [];
-      }),
+      legends: legendPool(retired).map((r) => ({
+        id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, age: r.age,
+        wasWorldClass: r.wasWorldClass, level: Math.round(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM") * 100) / 100,
+        appearances: r.appearances, goals: r.goals,
+      })),
     },
     hasClub: !!club,
   };
@@ -225,29 +222,7 @@ export const achievementRoutes = {
     });
   },
 
-  /** `POST`: draws the three legends to choose from (once; kept). */
-  "/api/saves/:saveId/achievements/shop/legend/draw": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSeat(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "POST") return bad("method not allowed", 405);
-    return withSaveLock(saveId, async () => {
-      const state = await saveService.getAchievements(saveId, auth.seatId);
-      const { date, season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
-      if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
-      if (pointsBalance(state) < shopPrice(state, "legend")) return bad("notEnoughPoints", 409);
-      if (state.legendOptions) return Response.json(await view(saveId, auth.seatId, state));
-      // A world of seats: each seat draws its own three (`.claude/rules/game/multiplayer.md`).
-      const multi = (await saveService.getMeta(saveId))?.mode === "multi";
-      const ids = legendOptions(await saveService.getRetired(saveId), saveId, date, multi ? auth.seatId : undefined);
-      if (ids.length === 0) return bad("noLegends", 409);
-      const next = { ...state, legendOptions: { date, ids } };
-      await saveService.writeAchievements(saveId, next, auth.seatId);
-      return Response.json(await view(saveId, auth.seatId, next));
-    });
-  },
-
-  /** `POST { retiredId }`: one of the drawn legends comes back as a 17-year-old academy player. */
+  /** `POST { retiredId }`: one of the shop's legends comes back as a 17-year-old academy player. */
   "/api/saves/:saveId/achievements/shop/legend": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
@@ -261,14 +236,13 @@ export const achievementRoutes = {
       const { season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
       if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
       if (pointsBalance(state) < shopPrice(state, "legend")) return bad("notEnoughPoints", 409);
-      if (!state.legendOptions?.ids.includes(retiredId)) return bad("notOffered");
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return bad("youthFull");
       const allRetired = await saveService.getRetired(saveId);
-      const retired = allRetired.find((r) => r.id === retiredId);
-      // Brought back already (by any seat, or as a reborn): one comeback per player in the world.
-      if (!retired || retired.legendBy || retired.rebornOffer === "accepted") return bad("notOffered");
+      // Brought back already (by any seat, or as a reborn) is off the list: one comeback per player in the world.
+      const retired = legendPool(allRetired).find((r) => r.id === retiredId);
+      if (!retired) return bad("notOffered");
       const season = await nextSeasonEndOf(saveId, auth.seatId);
       const player = legendPlayer({ retired, squad: club.squad, year: season.year, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
@@ -276,7 +250,7 @@ export const achievementRoutes = {
       await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
         ? { ...r, legendBy: auth.seatId, legendOn: season.date, legendVia: "points" as const, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
         : r)));
-      const next: AchievementsState = { ...recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId }), legendOptions: undefined };
+      const next: AchievementsState = recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId });
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });

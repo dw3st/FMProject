@@ -131,7 +131,6 @@ export interface AchievementsState {
   purchases?: ShopPurchase[];
   /** Points from the campaign (titles, stages, objective, awards): total and the events counted, by key. */
   campaign?: { points: number; seen: string[] };
-  legendOptions?: { date: string; ids: string[] };
   profile: ManagerProfile;
   decor: StadiumDecor;
 }

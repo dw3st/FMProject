@@ -4922,8 +4922,8 @@
       },
       "legend": {
         "title": "Retired legend",
-        "desc": "Three retired stars of the world: the one you pick comes back at 17, like a reborn star.",
-        "draw": "See the legends",
+        "desc": "The retired stars of the world: the one you pick comes back at 17, like a reborn star.",
+        "search": "Search by name",
         "pick": "Bring him back",
         "worldClass": "World class",
         "career": "{{apps}} games · {{goals}} goals",

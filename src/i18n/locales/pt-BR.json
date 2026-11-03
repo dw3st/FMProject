@@ -4922,8 +4922,8 @@
       },
       "legend": {
         "title": "Lenda aposentada",
-        "desc": "Três craques aposentados do mundo: o escolhido volta com 17 anos, como um craque renascido.",
-        "draw": "Ver as lendas",
+        "desc": "Os craques aposentados do mundo: o escolhido volta com 17 anos, como um craque renascido.",
+        "search": "Buscar pelo nome",
         "pick": "Trazer de volta",
         "worldClass": "Classe mundial",
         "career": "{{apps}} jogos · {{goals}} gols",

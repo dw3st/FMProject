@@ -127,19 +127,18 @@ describe("achievements", () => {
     expect(squad.youth?.some((y) => y.id === body.player.id && y.name === "Joe Test")).toBe(true);
     expect((await call("/shop/created", "POST", token, { name: "Joe Two", position: "ST", nationality: "England", foot: "left" })).status).toBe(409);
 
-    // The legend: three retired stars drawn once, one comes back at 17.
+    // The legend: every retired star is listed, the chosen one comes back at 17.
     const retired: RetiredPlayer[] = Array.from({ length: 5 }, (_, i) => ({
       id: `ret_${i}`, name: `Old Star ${i}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
       profile: { summary: "", archetype: "Poacher" }, retiredOn: "2026-12-01", squadId: "40", age: 37,
       wasWorldClass: i < 2, statsAtRetirement: squad.players[0]!.stats, appearances: 400, goals: 200,
     } as RetiredPlayer));
     await saveService.writeRetired(saveId, retired);
-    const draw = await call("/shop/legend/draw", "POST", token);
-    expect(draw.status).toBe(200);
-    const legends = ((await draw.json()) as any).shop.legends;
-    expect(legends).toHaveLength(3);
-    const again = await call("/shop/legend/draw", "POST", token);
-    expect(((await again.json()) as any).shop.legends.map((l: any) => l.id)).toEqual(legends.map((l: any) => l.id));
+    const shop = await call("", "GET", token);
+    expect(shop.status).toBe(200);
+    const legends = ((await shop.json()) as any).shop.legends;
+    expect(legends).toHaveLength(5);
+    expect(legends[0].wasWorldClass).toBe(true);
     expect((await call("/shop/legend", "POST", token, { retiredId: "not_offered" })).status).toBe(400);
     const pick = await call("/shop/legend", "POST", token, { retiredId: legends[0].id });
     expect(pick.status).toBe(200);
@@ -147,7 +146,7 @@ describe("achievements", () => {
     expect(picked.player.age).toBe(17);
     expect(picked.player.reborn.fromId).toBe(legends[0].id);
     expect(picked.points.spent).toBe(800);
-    expect((await call("/shop/legend/draw", "POST", token)).status).toBe(409);
+    expect((await call("/shop/legend", "POST", token, { retiredId: legends[1].id })).status).toBe(409);
 
     // A legend bought before the purchase log, now at another club: found by his id prefix (tester report).
     const other = (await saveService.getAllSquads(saveId)).find((s) => s.id !== HUMAN)!;
