@@ -1447,7 +1447,7 @@
     "complete": "Complete",
     "rejected": "Rejected",
     "offerRejected": "Offer rejected",
-    "fee": "Fee",
+    "fee": "Transfer fee",
     "feeDown": "Lower the fee",
     "feeUp": "Raise the fee",
     "rejectReasons": {
@@ -3132,6 +3132,9 @@
     "wageDown": "Lower the wage",
     "wageUp": "Raise the wage",
     "years": "Years",
+    "askingLine": "He asks for {{wage}} a week. He refuses anything below that.",
+    "belowRefuses": "Below {{wage}} a week, he refuses.",
+    "billLine": "Club wage bill: {{before}} → {{after}} a week.",
     "asking": "Asking",
     "perWeek": "per week",
     "loadingDemand": "Checking what the player asks…",
@@ -3375,6 +3378,28 @@
     }
   },
   "negotiation": {
+    "offer": {
+      "value": "Market value",
+      "valueScout": "Scout's estimate",
+      "valueMarket": "Market estimate",
+      "canPay": "Your club can pay",
+      "budgetToday": "Budget today",
+      "level": "Level",
+      "myLine": {
+        "gk": "Your keeper: {{level}}",
+        "def": "Your defence: {{level}}",
+        "mid": "Your midfield: {{level}}",
+        "fwd": "Your attack: {{level}}"
+      },
+      "asks": "Wage he asks for",
+      "lowKnowledge": "You know little about this player ({{k}} of 100): the value and the level may be wrong.",
+      "noBudget": "Your club's balance is {{balance}} and it can't pay a fee right now. Sell players or wait for income.",
+      "feeHint": "What you pay {{club}}. {{left}} left in the budget.",
+      "shareHint": "{{wage}} a week. {{club}} pays the rest. The more you pay, the easier they agree.",
+      "shareHintAbout": "About {{wage}} a week. {{club}} pays the rest. The more you pay, the easier they agree.",
+      "loanFeeHint": "One payment to {{club}}. Your club can pay up to {{budget}}.",
+      "loanFeeNoBudget": "Your club's balance is {{balance}} and it can't pay a fee right now."
+    },
     "title": "Negotiation",
     "tabs": {
       "transfer": "Transfer",
@@ -3383,12 +3408,12 @@
     "onLoan": "On loan",
     "loanBadgeTitle": "On loan from {{club}} until {{date}}",
     "sellOn": "Sell-on clause",
-    "sellOnHint": "Giving the club a share of a future sale lowers the fee it asks.",
+    "sellOnHint": "The share {{club}} gets if you sell him later. The bigger it is, the lower the fee they ask.",
     "wageShare": "Wage you pay",
     "loanFee": "Loan fee",
-    "loanDuration": "Until the end of the season (or the next one, if fewer than two months remain).",
+    "loanDuration": "He stays until the end of the season, or the next one if fewer than two months remain.",
     "returns": "Returns",
-    "patience": "Rounds left today: {{count}} of {{total}}",
+    "patience": "Tries left today: {{count}} of {{total}}. A very low offer ends the talks for 14 days.",
     "closedUntil": "The club broke off talks until {{date}}.",
     "counterReceived": "The club asks for {{fee}}.",
     "loanCounter": "The club wants {{share}}% of the wage paid and a {{fee}} loan fee.",

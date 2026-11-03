@@ -131,6 +131,8 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
   propostas; texto inválido ou abaixo do mínimo desliga Salvar com aviso); listado, o botão "Pedido €X" ou
   "No valor · €X" edita o preço. Na aba de transferências a lista de venda mostra o pedido e a % do valor (ou
   "No valor · €X", calculado na hora), com "Preço".
+- **Janela de oferta (4.42.16, report de tester):** na aba Transferência, quatro números no topo: valor de mercado, quanto o clube pode pagar, nível (com o nível da mesma linha do clube, `starterLineLevel`) e salário pedido. A taxa abre no valor estimado e vai até min(saldo, 3 × valor, no mínimo €10M) (`transferOfferRange`, `offerRange.ts`); até aqui saía de uma fórmula anterior à 4.5. A linha do contrato mostra a folha antes e depois.
+
 ## `/test`, `/lab`
 
 Sem efeito de partida: nada a exibir.

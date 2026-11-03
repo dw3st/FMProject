@@ -1447,7 +1447,7 @@
     "complete": "Concluída",
     "rejected": "Recusada",
     "offerRejected": "Proposta recusada",
-    "fee": "Valor",
+    "fee": "Taxa de transferência",
     "feeDown": "Baixar a taxa",
     "feeUp": "Aumentar a taxa",
     "rejectReasons": {
@@ -3132,6 +3132,9 @@
     "wageDown": "Baixar o salário",
     "wageUp": "Aumentar o salário",
     "years": "Anos",
+    "askingLine": "Ele pede {{wage}} por semana. Abaixo disso, recusa.",
+    "belowRefuses": "Abaixo de {{wage}} por semana, ele recusa.",
+    "billLine": "Folha do clube: {{before}} → {{after}} por semana.",
     "asking": "Pede",
     "perWeek": "por semana",
     "loadingDemand": "Verificando o que o jogador pede…",
@@ -3375,6 +3378,28 @@
     }
   },
   "negotiation": {
+    "offer": {
+      "value": "Valor de mercado",
+      "valueScout": "Estimativa do olheiro",
+      "valueMarket": "Estimativa do mercado",
+      "canPay": "Seu clube pode pagar",
+      "budgetToday": "Orçamento de hoje",
+      "level": "Nível",
+      "myLine": {
+        "gk": "Seu goleiro: {{level}}",
+        "def": "Sua defesa: {{level}}",
+        "mid": "Seu meio-campo: {{level}}",
+        "fwd": "Seu ataque: {{level}}"
+      },
+      "asks": "Salário que ele pede",
+      "lowKnowledge": "Você conhece pouco este jogador ({{k}} de 100): o valor e o nível podem estar errados.",
+      "noBudget": "Seu clube está com saldo de {{balance}} e não pode pagar taxa agora. Venda jogadores ou espere a receita entrar.",
+      "feeHint": "O que você paga ao {{club}}. Sobram {{left}} no orçamento.",
+      "shareHint": "{{wage}} por semana. O {{club}} paga o resto. Quanto mais você pagar, mais fácil eles aceitam.",
+      "shareHintAbout": "Cerca de {{wage}} por semana. O {{club}} paga o resto. Quanto mais você pagar, mais fácil eles aceitam.",
+      "loanFeeHint": "Pagamento único ao {{club}}. Seu clube pode pagar até {{budget}}.",
+      "loanFeeNoBudget": "Seu clube está com saldo de {{balance}} e não pode pagar taxa agora."
+    },
     "title": "Negociação",
     "tabs": {
       "transfer": "Transferência",
@@ -3383,12 +3408,12 @@
     "onLoan": "Emprestado",
     "loanBadgeTitle": "Emprestado pelo {{club}} até {{date}}",
     "sellOn": "Cláusula de venda futura",
-    "sellOnHint": "Dar ao clube uma parte de uma venda futura baixa a taxa que ele pede.",
+    "sellOnHint": "Parte que o {{club}} recebe se você vender ele depois. Quanto maior, menor a taxa que eles pedem.",
     "wageShare": "Salário que você paga",
     "loanFee": "Taxa de empréstimo",
-    "loanDuration": "Até o fim da temporada (ou da próxima, se faltarem menos de dois meses).",
+    "loanDuration": "Ele fica até o fim da temporada, ou da próxima se faltarem menos de dois meses.",
     "returns": "Volta em",
-    "patience": "Rodadas restantes hoje: {{count}} de {{total}}",
+    "patience": "Tentativas hoje: {{count}} de {{total}}. Uma oferta muito baixa encerra a conversa por 14 dias.",
     "closedUntil": "O clube encerrou a conversa até {{date}}.",
     "counterReceived": "O clube pede {{fee}}.",
     "loanCounter": "O clube quer {{share}}% do salário pago e uma taxa de {{fee}}.",

@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.16",
+    date: "2026-11-03",
+    time: "20:47",
+    items: [
+      {
+        pt: "Janela de oferta revisada: valor de mercado, quanto seu clube pode pagar, nível e salário pedido aparecem no topo, e os textos dizem o que cada campo faz.",
+        en: "Offer window reviewed: market value, what your club can pay, level and asking wage sit at the top, and the texts say what each field does.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A oferta agora abre no valor de mercado estimado do jogador, não em um valor antigo que podia ser muito mais alto.",
+        en: "An offer now opens at the player's estimated market value, not at an old figure that could be far higher.",
+      },
+    ],
+  },
+  {
     version: "4.42.15",
     date: "2026-11-03",
     time: "20:34",

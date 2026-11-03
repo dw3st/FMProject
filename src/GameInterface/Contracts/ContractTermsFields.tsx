@@ -2,7 +2,7 @@ import { stepWage } from "@/Domain/contracts/contracts";
 import { StepButton } from "@/GameInterface/ui/StepButton";
 import { useEffect, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { formatWageFull } from "@/Domain/money";
+import { formatFee as formatWage, formatWageFull } from "@/Domain/money";
 
 /** What the demand route answers: the wage, plus (own player) the morale behind it (`morale.md`). */
 export interface ContractDemandInfo {
@@ -94,20 +94,24 @@ interface Props {
   info?: ContractDemandInfo | null;
   /** Longest length the player accepts (`maxOfferYears`); absent = 5. */
   maxYears?: number;
+  /** The asking wage is already on screen: no line above the fields, only the refusal limit under them. */
+  askingShown?: boolean;
+  /** Weekly wage bill of the club today: shows it before and after this contract. */
+  wageBill?: number;
 }
 
 /** Wage + length inputs shared by the renew, offer and free-agent signing modals. */
-export function ContractTermsFields({ wage, years, onWage, onYears, demand, info, maxYears = 5 }: Props) {
+export function ContractTermsFields({ wage, years, onWage, onYears, demand, info, maxYears = 5, askingShown, wageBill }: Props) {
   const { t } = useTranslation();
   const wageId = useId();
   const shownWage = Number.isFinite(wage) ? wage : 0;
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground m-0">
-        {demand === null
-          ? t("contracts.loadingDemand")
-          : <>{t("contracts.asking")}: <span className="text-primary font-semibold tabular-nums">{formatWageFull(demand)}</span> {t("contracts.perWeek")}</>}
-      </p>
+      {!askingShown && (
+        <p className="text-sm text-muted-foreground m-0 tabular-nums">
+          {demand === null ? t("contracts.loadingDemand") : t("contracts.askingLine", { wage: formatWageFull(demand) })}
+        </p>
+      )}
       {demand !== null && info?.currentWage !== undefined && info.currentWage > 0 && (
         <p className="text-sm text-muted-foreground m-0 tabular-nums">
           {t("contracts.currentWage", { wage: formatWageFull(info.currentWage) })}
@@ -146,6 +150,13 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
           </select>
         </label>
       </div>
+      {((askingShown && demand !== null) || wageBill !== undefined) && (
+        <p className="text-sm text-muted-foreground m-0 tabular-nums">
+          {askingShown && demand !== null ? t("contracts.belowRefuses", { wage: formatWageFull(demand) }) : ""}
+          {askingShown && demand !== null && wageBill !== undefined ? " " : ""}
+          {wageBill !== undefined ? t("contracts.billLine", { before: formatWage(wageBill), after: formatWage(wageBill + shownWage) }) : ""}
+        </p>
+      )}
     </div>
   );
 }

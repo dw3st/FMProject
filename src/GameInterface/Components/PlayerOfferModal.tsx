@@ -12,7 +12,7 @@ import type { TransferRecord } from "@/types/transferTypes";
 import type { NegotiationTalk } from "@/types/transferMarketTypes";
 import { ContractTermsFields, useContractDemandInfo, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { Icon } from "@/GameInterface/Icons";
-import { formatFee } from "@/Domain/money";
+import { formatFee, formatWageFull } from "@/Domain/money";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -23,7 +23,10 @@ import { NegotiationHistory } from "@/GameInterface/Negotiation/NegotiationHisto
 import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
 import { Notice } from "@/GameInterface/ui/Notice";
-import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
+import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
+import { starterLineLevel, transferOfferRange } from "@/Domain/negotiation/offerRange";
+import { getMainRole, type MainRole } from "@/Domain/roles";
+import { positionLabel } from "@/GameInterface/positionHelpers";
 import { SeatOfferCard, type SeatOfferClosed } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { notifySeatOffersChanged, seatOfferApi, useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
@@ -34,30 +37,11 @@ const PRE_CONTRACT_DAYS = 183;
 interface RivalDto { clubId: string; clubName: string; fee: number; deadline: string; sellerAccepts: boolean }
 interface WindowDto { open: boolean; until?: string; opensOn?: string }
 
+const LINE_KEY: Record<MainRole, string> = { GK: "gk", Defender: "def", Midfielder: "mid", Forward: "fwd" };
+
 const LABEL = "block text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display";
 const ROUNDS_PER_DAY = 3;
 const SELL_ON_KEYS = ["0", "10", "20", "30"] as const;
-
-function rawTransferOfferValue(avg: number, age: number): number {
-  const base = avg * avg * 0.8;
-  const ageFactor = age <= 24 ? 1.3 : age <= 28 ? 1.0 : age <= 32 ? 0.7 : 0.4;
-  return Math.round(base * ageFactor) * 1_000_000;
-}
-
-function offerSliderConfig(budget: number, avg: number, age: number) {
-  const suggested = rawTransferOfferValue(avg, age);
-  const cap = Math.max(suggested * 3, 10_000_000);
-  const max = Math.min(budget, cap);
-  if (budget <= 0 || max <= 0) {
-    return { min: 0, max: 0, step: 500_000, canOffer: false as const };
-  }
-  if (max >= 1_000_000) {
-    return { min: 1_000_000, max, step: 100_000, canOffer: true as const };
-  }
-  const step = 50_000;
-  const min = Math.min(step, max);
-  return { min, max, step, canOffer: true as const };
-}
 
 type Tab = "transfer" | "loan" | "precontract";
 type Talk = NegotiationTalk | null;
@@ -115,13 +99,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (player) setYears(Math.min(3, Math.max(1, 36 - player.age)));
   }, [player?.id]);
 
-  const slider = useMemo(
-    () =>
-      player
-        ? offerSliderConfig(budget, player.avg, player.age)
-        : { min: 0, max: 0, step: 500_000, canOffer: false as const },
-    [player, budget],
-  );
+  const estimatedValue = player ? player.valueMillions * 1_000_000 : 0;
+  const slider = useMemo(() => transferOfferRange(budget, estimatedValue), [budget, estimatedValue]);
 
   const playerId = player?.id ?? null;
   const loadTalk = useCallback(async (kind: Tab) => {
@@ -159,11 +138,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   }, [playerId, loadTalk]);
 
   useEffect(() => {
-    if (!player) return;
-    const suggested = rawTransferOfferValue(player.avg, player.age);
-    if (!slider.canOffer) setOfferFee(0);
-    else setOfferFee(Math.min(slider.max, Math.max(slider.min, suggested)));
-  }, [player, budget, slider.canOffer, slider.min, slider.max]);
+    if (player) setOfferFee(slider.start);
+  }, [player, slider.start]);
 
   // Window closed: a target near the end of his contract opens on the pre-contract tab.
   const closedNow = buyWindow !== null && !buyWindow.open;
@@ -192,6 +168,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const roundsLeft = today ? Math.max(0, ROUNDS_PER_DAY - today.rounds) : ROUNDS_PER_DAY;
   const counter = today?.counter;
   const blocked = !isSeat && (!!closedUntil || roundsLeft === 0);
+  const wageBill = squad ? squadWeeklyWages(squad.players, wageFactorOf(squad)) : undefined;
+  const role = getMainRole(player.pos);
+  const myLine = squad ? starterLineLevel(squad.players, role) : null;
+  const money = (millions: number) => formatFee(millions * 1_000_000);
   const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" });
 
   function errorText(code: string | undefined): string {
@@ -364,7 +344,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
           <div>
             <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("negotiation.title")}</h2>
             <p className="text-sm text-muted-foreground m-0 mt-0.5">
-              {player.name} · {player.pos} · {t("common.ageYears", { age: player.age })} · {player.club}
+              {player.name} · {positionLabel(t, player.natural, player.pos)} · {t("common.ageYears", { age: player.age })} · {player.club}
             </p>
             {!done && <div className="mt-1"><ForeignCheckLine playerId={player.id} fromSquadId={player.squadId} /><StarLimitLine playerId={player.id} /></div>}
           </div>
@@ -461,13 +441,6 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               {isSeat && (
                 <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
               )}
-              {tab !== "precontract" && !isSeat && (
-                <p className="text-sm text-muted-foreground m-0 tabular-nums">
-                  {closedUntil
-                    ? t("negotiation.closedUntil", { date: fmtDate(closedUntil) })
-                    : t("negotiation.patience", { count: roundsLeft, total: ROUNDS_PER_DAY })}
-                </p>
-              )}
               {windowClosed && tab !== "precontract" && (
                 <p className="text-sm text-destructive m-0" role="status">
                   {windowClosedText(t, i18n.language, buyWindow?.opensOn)}
@@ -495,19 +468,47 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.explain", { date: fmtDate(player.contractEnd ?? currentDate) })}</p>
                   <label className={LABEL}>{t("contracts.terms")}</label>
-                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
+                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} wageBill={wageBill} />
                   {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
                 </div>
               ) : tab === "transfer" ? (
                 <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-md border border-border px-3 py-2">
+                      <p className={`${LABEL} mb-1`}>{t("negotiation.offer.value")}</p>
+                      <p className="m-0 font-display font-bold text-xl leading-tight tabular-nums">
+                        {player.valueRange ? `${money(player.valueRange[0])}–${money(player.valueRange[1])}` : money(player.valueMillions)}
+                      </p>
+                      <p className="m-0 text-sm text-muted-foreground">{t(player.valueRange ? "negotiation.offer.valueScout" : "negotiation.offer.valueMarket")}</p>
+                    </div>
+                    <div className="rounded-md border border-border px-3 py-2">
+                      <p className={`${LABEL} mb-1`}>{t("negotiation.offer.canPay")}</p>
+                      <p className={`m-0 font-display font-bold text-xl leading-tight tabular-nums ${budget > 0 ? "text-primary" : "text-destructive"}`}>{formatFee(budget)}</p>
+                      <p className="m-0 text-sm text-muted-foreground">{t("negotiation.offer.budgetToday")}</p>
+                    </div>
+                    <div className="rounded-md border border-border px-3 py-2">
+                      <p className={`${LABEL} mb-1`}>{t("negotiation.offer.level")}</p>
+                      <p className="m-0 font-display font-bold text-xl leading-tight tabular-nums">
+                        {player.avgRange ? `${Math.round(player.avgRange[0] * 10)}–${Math.round(player.avgRange[1] * 10)}` : Math.round(player.avg * 10)}
+                      </p>
+                      <p className="m-0 text-sm text-muted-foreground tabular-nums">
+                        {myLine !== null && t(`negotiation.offer.myLine.${LINE_KEY[role]}`, { level: Math.round(myLine * 10) })}
+                        {player.potentialRange && <> · {t("scouting.col.potential")} {Math.round(player.potentialRange[0] * 10)}–{Math.round(player.potentialRange[1] * 10)}</>}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-border px-3 py-2">
+                      <p className={`${LABEL} mb-1`}>{t("negotiation.offer.asks")}</p>
+                      <p className="m-0 font-display font-bold text-xl leading-tight tabular-nums">{demand === null ? "…" : formatWageFull(demand)}</p>
+                      <p className="m-0 text-sm text-muted-foreground">{t("contracts.perWeek")}</p>
+                    </div>
+                  </div>
+                  {player.knowledge !== undefined && player.knowledge < 60 && (
+                    <Notice kind="warning">{t("negotiation.offer.lowKnowledge", { k: player.knowledge })}</Notice>
+                  )}
                   <div>
                     <label className={LABEL}>{t("transfers.fee")}</label>
-                    <p className="text-sm text-muted-foreground mb-2 m-0">
-                      {t("transfers.availableBudget")}:{" "}
-                      <span className="text-primary font-semibold tabular-nums">{formatFee(budget)}</span>
-                    </p>
                     {!slider.canOffer ? (
-                      <p className="text-sm text-destructive m-0">{t("transfers.insufficientBudget")}</p>
+                      <p className="text-sm text-destructive m-0 tabular-nums">{t("negotiation.offer.noBudget", { balance: formatFee(budget) })}</p>
                     ) : (
                       <div className="flex items-center gap-3">
                         <StepButton
@@ -537,17 +538,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                         </span>
                       </div>
                     )}
-                    <p className="text-sm text-muted-foreground mt-1 m-0">
-                      {t("transfers.estValue")}: <span className="text-foreground/80 font-semibold tabular-nums">{valueText(player.value, player.valueRange)}</span>
-                      {player.avgRange && (
-                        <> · {t("scouting.col.overall")}: <span className="text-foreground/80 font-semibold tabular-nums">{Math.round(player.avgRange[0] * 10)}–{Math.round(player.avgRange[1] * 10)}</span></>
-                      )}
-                      {player.potentialRange && (
-                        <> · {t("scouting.col.potential")}: <span className="text-foreground/80 font-semibold tabular-nums">{Math.round(player.potentialRange[0] * 10)}–{Math.round(player.potentialRange[1] * 10)}</span></>
-                      )}
-                    </p>
-                    {player.knowledge !== undefined && player.knowledge < 60 && (
-                      <Notice kind="warning" className="mt-2">{t("scouting.lowKnowledge", { k: player.knowledge })}</Notice>
+                    {slider.canOffer && (
+                      <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
+                        {t("negotiation.offer.feeHint", { club: player.club, left: formatFee(budget - offerFee) })}
+                      </p>
                     )}
                   </div>
 
@@ -559,12 +553,12 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       value={sellOn}
                       onChange={setSellOn}
                     />
-                    <p className="text-sm text-muted-foreground mt-1 m-0">{t("negotiation.sellOnHint")}</p>
+                    <p className="text-sm text-muted-foreground mt-1 m-0">{t("negotiation.sellOnHint", { club: player.club })}</p>
                   </div>
 
                   <div>
                     <label className={LABEL}>{t("contracts.terms")}</label>
-                    <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
+                    <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} askingShown wageBill={wageBill} />
                     {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
                   </div>
                 </>
@@ -581,6 +575,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       />
                       <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{wageShare}%</span>
                     </div>
+                    <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
+                      {t(player.wageRange ? "negotiation.offer.shareHintAbout" : "negotiation.offer.shareHint", { wage: formatWageFull(player.wage * wageShare / 100), club: player.club })}
+                    </p>
                   </div>
                   <div>
                     <label className={LABEL}>{t("negotiation.loanFee")}</label>
@@ -594,11 +591,23 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       />
                       <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{formatFee(loanFee)}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1 m-0">{t("negotiation.loanDuration")}</p>
+                    <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
+                      {budget > 0
+                        ? t("negotiation.offer.loanFeeHint", { club: player.club, budget: formatFee(budget) })
+                        : t("negotiation.offer.loanFeeNoBudget", { balance: formatFee(budget) })}
+                    </p>
                   </div>
+                  <p className="text-sm text-muted-foreground m-0">{t("negotiation.loanDuration")}</p>
                 </>
               )}
 
+              {tab !== "precontract" && !isSeat && (
+                <p className="text-sm text-muted-foreground m-0 tabular-nums">
+                  {closedUntil
+                    ? t("negotiation.closedUntil", { date: fmtDate(closedUntil) })
+                    : t("negotiation.patience", { count: roundsLeft, total: ROUNDS_PER_DAY })}
+                </p>
+              )}
               {!isSeat && today && today.history.length > 0 && <NegotiationHistory talk={today} />}
               {message && <p className="text-sm text-foreground m-0" role="status">{message}</p>}
 
