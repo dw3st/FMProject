@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.14",
+    date: "2026-11-03",
+    time: "19:37",
+    items: [
+      {
+        pt: "Loja de conquistas: a lista de lendas mostra os jogos e os gols da carreira, não só os da última temporada.",
+        en: "Achievements shop: the legend list shows career games and goals, not just the last season's.",
+      },
+    ],
+  },
+  {
     version: "4.42.13",
     date: "2026-11-03",
     time: "18:10",

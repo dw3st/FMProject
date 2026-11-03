@@ -1,3 +1,4 @@
+import { careerTotals } from "@/Domain/history/history";
 import { saveService } from "@/backend/SaveService";
 import { achievementSnapshot } from "@/backend/achievementsWorld";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -36,6 +37,12 @@ export async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{
   const year = state?.year ?? Number(date.slice(0, 4));
   // The shop's season key (each item once per season of the manager's league).
   return { year, end: state?.end ?? `${year + 1}-05-31`, date, season: `${meta?.leagueSlug ?? ""}:${year}` };
+}
+
+/** A retiree with no history row (kept from before the rows) falls back to the season of the record. */
+function legendCareer(r: RetiredPlayer): { appearances: number; goals: number } {
+  const { apps, goals } = careerTotals(r.history);
+  return apps > 0 ? { appearances: apps, goals } : { appearances: r.appearances, goals: r.goals };
 }
 
 async function view(saveId: string, seatId: string, state: AchievementsState) {
@@ -78,7 +85,8 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       legends: legendPool(retired).map((r) => ({
         id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, age: r.age,
         wasWorldClass: r.wasWorldClass, level: Math.round(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM") * 100) / 100,
-        appearances: r.appearances, goals: r.goals,
+        // Career totals (tester question): the retirement record alone holds just his last season.
+        ...legendCareer(r),
       })),
     },
     hasClub: !!club,

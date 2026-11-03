@@ -4926,7 +4926,7 @@
         "search": "Buscar pelo nome",
         "pick": "Trazer de volta",
         "worldClass": "Classe mundial",
-        "career": "{{apps}} jogos · {{goals}} gols",
+        "career": "Carreira: {{apps}} jogos · {{goals}} gols",
         "done": "{{name}} voltou, na sua base."
       },
       "history": {

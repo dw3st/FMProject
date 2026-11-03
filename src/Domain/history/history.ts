@@ -14,6 +14,13 @@ export function seasonLabel(year: number, start: string, end: string): string {
   return String(year);
 }
 
+/** Games and goals of a whole career, all clubs and competitions: the rows split a season, never repeat it. */
+export function careerTotals(rows: readonly PlayerHistoryRow[] | undefined): { apps: number; goals: number } {
+  let apps = 0, goals = 0;
+  for (const r of rows ?? []) { apps += r.apps; goals += r.goals; }
+  return { apps, goals };
+}
+
 /** Season counters a history row is made of (also the shape of an open partial row's stats). */
 interface RowStats {
   apps: number; goals: number; assists: number; ratingSum: number;

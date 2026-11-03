@@ -1,3 +1,5 @@
+import type { PlayerHistoryRow } from "@/types/playerTypes";
+import { careerTotals } from "@/Domain/history/history";
 import { describe, expect, test } from "bun:test";
 import {
   addPendingTitle, closePartialSeason, closeSeasonForPlayers, historyRowFromLog, seasonLabel,
@@ -116,4 +118,14 @@ test("a transfer closes a partial row at the selling club", () => {
   expect(moved.history![0]!.apps).toBe(8);
   expect(moved.history![0]!.partial).toBe(true);
   expect(moved.seasonLog).toBe(p.seasonLog);
+});
+
+describe("careerTotals", () => {
+  test("sums every row, partial spells included", () => {
+    const rows = [{ apps: 30, goals: 10 }, { apps: 12, goals: 2 }, { apps: 25, goals: 5 }] as PlayerHistoryRow[];
+    expect(careerTotals(rows)).toEqual({ apps: 67, goals: 17 });
+  });
+  test("no history is zero", () => {
+    expect(careerTotals(undefined)).toEqual({ apps: 0, goals: 0 });
+  });
 });

@@ -4926,7 +4926,7 @@
         "search": "Search by name",
         "pick": "Bring him back",
         "worldClass": "World class",
-        "career": "{{apps}} games · {{goals}} goals",
+        "career": "Career: {{apps}} games · {{goals}} goals",
         "done": "{{name}} is back, in your academy."
       },
       "history": {

@@ -92,7 +92,7 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
 - **Lenda aposentada** (500): lista de todas as lendas disponíveis, com busca pelo nome (`legendPool`: classe mundial
   primeiro, depois o nível ao se aposentar; completa com os melhores aposentados até 12 enquanto o mundo tem poucas; nunca um
   já renascido, já trazido por outro técnico nem um livre aposentado). Até a 4.42.12 era um sorteio guardado de 3 (report de
-  tester). O escolhido volta com 17 anos pela regra do renascido (`generateReborn`, id `legend_<id>_<ano>`).
+  tester). A linha mostra jogos e gols da carreira (`careerTotals`, a soma das linhas do histórico, só o que ele jogou desde o começo do mundo). O escolhido volta com 17 anos pela regra do renascido (`generateReborn`, id `legend_<id>_<ano>`).
 - 409 `notEnoughPoints` / `alreadyBought` / `noClub`; 400 `youthFull` / `invalidPlayer` / `notOffered`.
 
 ## Rotas (dono do save; escrita com `withSaveLock`)
