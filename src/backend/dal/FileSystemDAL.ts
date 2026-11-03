@@ -27,6 +27,7 @@ import { mkdir, readdir, rm, unlink } from "fs/promises";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { runPool } from "@/backend/dal/pool";
 import { bumpSaveDataVersion } from "@/backend/dal/saveDataVersion";
+import { fixedPlayerName, withFixedPlayerNames } from "@/Domain/world/playerNames";
 
 const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
 
@@ -180,7 +181,8 @@ export class FileSystemDAL implements ISaveDAL {
   async readFreeAgents(saveId: string): Promise<FreeAgent[]> {
     const file = Bun.file(freeAgentsPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<FreeAgent[]>;
+    const agents = (await file.json()) as FreeAgent[];
+    return agents.map((a) => ({ ...a, player: fixedPlayerName(a.player) }));
   }
 
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
@@ -313,7 +315,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRetired(saveId: string): Promise<RetiredPlayer[]> {
     const file = Bun.file(retiredPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<RetiredPlayer[]>;
+    return ((await file.json()) as RetiredPlayer[]).map(fixedPlayerName);
   }
 
   async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
@@ -363,7 +365,7 @@ export class FileSystemDAL implements ISaveDAL {
     // Inject leagueSlug from the path — squad files don't store it, but downstream
     // (resolveSquadId, transfer persistence) relies on it. Mirrors listAllSquads.
     const raw = (await file.json()) as Squad;
-    return { ...raw, leagueSlug };
+    return { ...withFixedPlayerNames(raw), leagueSlug };
   }
 
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
@@ -442,7 +444,7 @@ export class FileSystemDAL implements ISaveDAL {
         if ((e as NodeJS.ErrnoException).code === "ENOENT") return;
         throw e;
       }
-      files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...raw, leagueSlug } };
+      files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...withFixedPlayerNames(raw), leagueSlug } };
     });
     return files.filter((f): f is SquadFile => f !== undefined);
   }
