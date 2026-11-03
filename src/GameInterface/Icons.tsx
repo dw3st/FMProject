@@ -37,6 +37,7 @@ import {
   Save,
   Upload,
   X,
+  Bell,
   Globe,
   Star,
   StarHalf,
@@ -178,6 +179,7 @@ export type IconName =
   | "save"
   | "upload"
   | "close"
+  | "bell"
   | "globe"
   | "star"
   | "star-filled"
@@ -324,6 +326,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "save":         Save,
   "upload":       Upload,
   "close":        X,
+  "bell":         Bell,
   "globe":        Globe,
   "star":         Star,
   "star-filled":  StarFilled,

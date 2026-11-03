@@ -366,6 +366,12 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
 
 Pedido do usuário. Um toque curto de duas notas (`GameInterface/readySound.ts`, sintetizado) quando outro técnico sai da lista de espera do `world_progress` (`othersNowReady`, puro; o próprio técnico não conta) e, na sala do jogo entre técnicos, quando o outro aperta Começar. Toca com a aba em segundo plano; só depois de um clique no site (regra do navegador). Preferência `fm.world.readySound` em Configurações, volume o da partida. Não toca na partida ao vivo, onde o `GroupAdvanceProvider` não está montado.
 
+### Só falta você (4.42.7)
+
+Report de tester. Quando o `world_progress` passa a esperar só este técnico (`myTurnNow`, puro, nunca no primeiro estado nem num mundo de um membro): o toque de pronto, um cartão abaixo do controle "Pronto até" (some ao fechar ou quando ele deixa de ser o único) e, com a aba em segundo plano, o título da aba e, se ligada em Configurações, a notificação do navegador (`World/turnNotice.ts`, `fm.world.turnNotification`; a permissão é pedida nesse clique; no Android Chrome, sem service worker, só o título e o toque).
+
+Simular um jogo entre dois assentos decide o jogo dos dois, mas só quem clicou fica pronto (`simulateSeatGame` grava só a decisão no outro): o outro não tem o dia rodado por um amigo e continua segurando o mundo, agora com o menu "Pronto até" (até a 4.42.6 a barra só mostrava "Jogo será simulado", sem pronto).
+
 ## Parte 4: humano × humano
 
 Spec: `docs/superpowers/specs/2026-10-16-multiplayer-h2h-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-h2h.md`.

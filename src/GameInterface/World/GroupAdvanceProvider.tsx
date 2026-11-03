@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { othersNowReady } from "@/Domain/groupAdvance/readyNotice";
+import { isOnlyMe, myTurnNow, othersNowReady } from "@/Domain/groupAdvance/readyNotice";
+import { Icon } from "@/GameInterface/Icons";
+import { announceTurn } from "@/GameInterface/World/turnNotice";
 import { armReadySound, playReadySound } from "@/GameInterface/readySound";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
@@ -54,6 +56,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   // The days that ran without the seat looking, as one summary.
   const [summary, setSummary] = useState<PendingSummaryAggregate | null>(null);
   const [notice, setNotice] = useState<SeasonNotice | null>(null);
+  const [turnCard, setTurnCard] = useState(false);
   const lastDate = useRef<string | null>(null);
   const inFlight = useRef(false);
   /** Last date of the summary already shown (or dismissed): a late concurrent fetch never reopens it. */
@@ -62,6 +65,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   const waitingRef = useRef<string[] | null>(null);
   const nickRef = useRef<string | null>(null);
   nickRef.current = me?.nickname ?? null;
+  const membersRef = useRef(0);
   const wasConnected = useRef(false);
   const everConnected = useRef(false);
 
@@ -105,7 +109,9 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   }, [refresh, showSummary]);
 
   useEffect(() => {
-    if (view) waitingRef.current = view.waitingFor;
+    if (!view) return;
+    waitingRef.current = view.waitingFor;
+    membersRef.current = view.members.length;
   }, [view]);
 
   useEffect(() => (enabled ? armReadySound() : undefined), [enabled]);
@@ -120,7 +126,12 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         return;
       }
       if (event.type !== "world_progress" || event.saveId !== saveId) return;
-      if (othersNowReady(waitingRef.current, event.waitingFor, nickRef.current).length > 0) playReadySound();
+      const myTurn = membersRef.current > 1 && myTurnNow(waitingRef.current, event.waitingFor, nickRef.current);
+      if (myTurn || othersNowReady(waitingRef.current, event.waitingFor, nickRef.current).length > 0) playReadySound();
+      if (myTurn) {
+        setTurnCard(true);
+        announceTurn(t("world.advance.turn.title"), t("world.advance.turn.body"));
+      }
       waitingRef.current = event.waitingFor;
       // The executor's failure lives in the view (a code, with the next retry); the action error stays the seat's own.
       setView((v) => (v
@@ -135,7 +146,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         }
       }
     });
-  }, [enabled, saveId, subscribe, refresh, refreshSave, showSummary]);
+  }, [enabled, saveId, subscribe, refresh, refreshSave, showSummary, t]);
 
   const markReady = useCallback(async (until: string | null) => {
     setBusy(true);
@@ -209,6 +220,23 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   return (
     <GroupAdvanceContext.Provider value={value}>
       {children}
+      {turnCard && !summary && !notice && isOnlyMe(view?.waitingFor, me?.nickname ?? null) && (
+        <div role="status" className="fixed top-16 right-6 z-50 w-[300px] rounded-md border border-primary bg-card shadow-lg flex items-start gap-2 p-3">
+          <Icon name="bell" size={16} className="shrink-0 text-primary mt-0.5" />
+          <span className="flex-1 min-w-0 text-sm text-muted-foreground">
+            <span className="block font-semibold text-foreground">{t("world.advance.turn.title")}</span>
+            {t("world.advance.turn.body")}
+          </span>
+          <button
+            type="button"
+            onClick={() => setTurnCard(false)}
+            aria-label={t("social.popup.dismiss")}
+            className="shrink-0 bg-transparent border-0 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+      )}
       {summary && (
         <DaySummaryModal
           dayLog={summary.log} range={summary.range} notices={summary.notices} matchReportDate={summary.matchReportDate}

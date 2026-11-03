@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.7",
+    date: "2026-11-03",
+    time: "17:16",
+    items: [
+      {
+        pt: "Quando só falta você na liga, aparece um aviso na tela e o título da aba muda. Em Configurações dá para ligar também a notificação do navegador.",
+        en: "When only you are left in your league, a notice shows on the screen and the tab title changes. In Settings you can also turn on a browser notification.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Quando o outro técnico simulava o jogo entre vocês, você ficava sem o botão de pronto e o mundo esperava até o prazo. Agora o botão aparece.",
+        en: "When the other manager simulated your game, you had no ready button and the world waited until the deadline. The button now shows.",
+      },
+    ],
+  },
+  {
     version: "4.42.6",
     date: "2026-11-03",
     time: "15:00",

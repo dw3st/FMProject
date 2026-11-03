@@ -602,6 +602,9 @@
     "matchSoundDescription": "Torcida, apito, chute e grito de gol. Começa no primeiro clique na tela da partida.",
     "readySound": "Som de pronto",
     "readySoundDescription": "Um toque curto quando outro técnico da sua liga marca que está pronto, mesmo com a aba em segundo plano.",
+    "turnNotification": "Notificação do navegador",
+    "turnNotificationDescription": "Uma notificação do navegador quando só faltar você na sua liga. Só aparece com a aba em segundo plano.",
+    "turnNotificationBlocked": "O navegador bloqueou as notificações. Libere nas configurações do site, no navegador, e tente de novo.",
     "matchVolume": "Volume",
     "quality": "Qualidade gráfica",
     "qualityAuto": "Automática",
@@ -5717,6 +5720,7 @@
     "advance": {
       "running": "Avançando… {{date}} de {{target}}",
       "runningShort": "{{date}} → {{target}}",
+      "turn": { "title": "Só falta você", "body": "Os outros técnicos estão prontos." },
       "simulate": "Simular",
       "simulateHint": "Simular: o jogo é decidido sem você assistir, quando o dia rodar",
       "simulated": "Jogo será simulado",

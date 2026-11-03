@@ -29,8 +29,10 @@ export function playReadySound(): void {
   if (!readReadySound()) return;
   const c = context();
   if (!c) return;
+  const asked = Date.now();
   void c.resume().then(() => {
-    if (c.state !== "running") return;
+    // Before any click the promise only resolves on that click: a chime that late means nothing.
+    if (c.state !== "running" || Date.now() - asked > 1000) return;
     const volume = 0.5 * readMatchVolume();
     [[659.25, 0], [880, 0.14]].forEach(([freq, delay]) => {
       const t = c.currentTime + delay!;

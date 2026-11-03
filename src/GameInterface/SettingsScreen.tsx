@@ -8,6 +8,7 @@ import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound } from "@/GameInterface/artPrefs";
 import { playReadySound } from "@/GameInterface/readySound";
+import { disableTurnNotification, enableTurnNotification, readTurnNotification, turnNotificationSupported } from "@/GameInterface/World/turnNotice";
 import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
@@ -26,6 +27,8 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
   const [matchSound, setMatchSound] = useState(readMatchSound);
   const [readySound, setReadySound] = useState(readReadySound);
+  const [turnNotification, setTurnNotification] = useState(readTurnNotification);
+  const [turnBlocked, setTurnBlocked] = useState(false);
   const [matchVolume, setMatchVolume] = useState(readMatchVolume);
   const [quality, setQuality] = useState<QualityPref>(readQuality);
   const [playerLook, setPlayerLook] = useState<PlayerLookPref>(readPlayerLook);
@@ -141,6 +144,31 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.readySoundDescription")}</p>
         </div>
+
+        {turnNotificationSupported() && (
+          <div className="mt-6 flex flex-col gap-2">
+            <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.turnNotification")}</div>
+            <OptionChips
+              value={turnNotification ? "on" : "off"}
+              onChange={(k) => {
+                if (k === "off") {
+                  disableTurnNotification();
+                  setTurnNotification(false);
+                  setTurnBlocked(false);
+                  return;
+                }
+                void enableTurnNotification().then((on) => {
+                  setTurnNotification(on);
+                  setTurnBlocked(!on);
+                });
+              }}
+              options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+            />
+            <p className={`m-0 text-sm ${turnBlocked ? "text-destructive" : "text-muted-foreground"}`}>
+              {t(turnBlocked ? "settings.turnNotificationBlocked" : "settings.turnNotificationDescription")}
+            </p>
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-2">
           <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.quality")}</div>

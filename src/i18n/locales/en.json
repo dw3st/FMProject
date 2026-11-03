@@ -602,6 +602,9 @@
     "matchSoundDescription": "Crowd, whistle, ball strikes and the goal roar. It starts on your first click on the match screen.",
     "readySound": "Ready sound",
     "readySoundDescription": "A short chime when another manager in your league marks himself ready, even with the tab in the background.",
+    "turnNotification": "Browser notification",
+    "turnNotificationDescription": "A browser notification when only you are left in your league. It only appears with the tab in the background.",
+    "turnNotificationBlocked": "The browser blocked notifications. Allow them in the site settings of the browser and try again.",
     "matchVolume": "Volume",
     "quality": "Graphics quality",
     "qualityAuto": "Automatic",
@@ -5717,6 +5720,7 @@
     "advance": {
       "running": "Advancing… {{date}} of {{target}}",
       "runningShort": "{{date}} → {{target}}",
+      "turn": { "title": "Only you left", "body": "The other managers are ready." },
       "simulate": "Simulate",
       "simulateHint": "Simulate: the match is decided without you watching, when the day runs",
       "simulated": "Match will be simulated",

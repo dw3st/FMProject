@@ -79,7 +79,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   // Shrinks first in the top bar's fixed slot: the action buttons keep their width.
   const errorLine = errorText && <span className="min-w-0 text-sm text-destructive whitespace-nowrap max-w-[220px] truncate" role="alert" title={errorText}>{errorText}</span>;
 
-  const { branch, canPlay } = readyBranch(view);
+  const { branch, canPlay, marked } = readyBranch(view);
   const unmarkButton = (
     <button
       type="button"
@@ -191,9 +191,11 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
     );
   }
 
-  // Today's game set to "Simulate" and the day not run yet: say so, with an undo that brings Play back.
+  // Today's game set to "Simulate" and the day not run yet: say so, with an undo that brings Play back. When the other
+  // manager simulated it, this seat is decided but not ready and still holds the world: it gets the ready menu below.
   const decided = view.me.decision;
-  if (today && decided?.mode === "simulate" && decided.date === view.currentDate) {
+  const simulatedToday = !!today && decided?.mode === "simulate" && decided.date === view.currentDate;
+  if (simulatedToday && marked) {
     const text = t("world.advance.simulated");
     return (
       <div className="flex items-center gap-2">
@@ -241,6 +243,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
         aria-expanded={open}
         aria-controls={MENU_ID}
         disabled={busy}
+        title={simulatedToday ? t("world.advance.simulatedHint") : undefined}
       >
         {t("world.advance.readyButton")}
         <Icon name="chevron-down" size={16} />
