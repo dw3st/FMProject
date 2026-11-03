@@ -254,6 +254,10 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     >
                       {roleAbbr(p.role)}
                     </span>
+                    {/* The rating sits on the face so the pill below has the whole width for the name. */}
+                    <span className={`absolute -bottom-1 -right-5 rounded border border-border bg-background/95 px-1 text-sm font-black tabular-nums leading-tight ${ratingTextClass10(r10)}`}>
+                      {r10.toFixed(1)}
+                    </span>
                     {(booked || banRisk || injured || isOut) && (
                       <span className="absolute -top-2 -right-3 flex items-center gap-0.5">
                         {booked && <span className="inline-block w-2.5 h-3.5 rounded-sm bg-card-yellow" title={t("substitutionPanel.booked")} aria-label={t("substitutionPanel.booked")} />}
@@ -271,10 +275,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     className={`flex flex-col gap-0.5 w-[18cqw] rounded px-1.5 pt-0.5 pb-1 ${isSelected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}
                     title={t("substitutionPanel.fitnessTitle", { value: Math.round(p.energy) })}
                   >
-                    <span className="flex items-baseline gap-1 min-w-0">
-                      <span className="flex-1 min-w-0 truncate text-sm font-semibold leading-tight">{shirtName(p.name)}</span>
-                      <span className={`shrink-0 text-sm font-black tabular-nums leading-tight ${isSelected ? "" : ratingTextClass10(r10)}`}>{r10.toFixed(1)}</span>
-                    </span>
+                    <span className="block min-w-0 truncate text-center text-sm font-semibold leading-tight">{shirtName(p.name)}</span>
                     <span className="block h-1.5 rounded-full bg-border/70 overflow-hidden">
                       <span className={`block h-full rounded-full ${energyBarClass(p.energy)}`} style={{ width: `${Math.max(0, Math.min(100, p.energy))}%` }} />
                     </span>

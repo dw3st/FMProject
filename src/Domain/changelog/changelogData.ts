@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.10",
+    date: "2026-11-03",
+    time: "17:35",
+    items: [
+      {
+        pt: "No campo das substituições, a nota do jogador foi para o rosto e o nome ganhou a largura toda.",
+        en: "On the substitutions pitch, the player rating moved onto the face and the name gets the full width.",
+      },
+    ],
+  },
+  {
     version: "4.42.9",
     date: "2026-11-03",
     time: "17:32",
