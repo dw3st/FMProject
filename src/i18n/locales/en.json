@@ -1197,7 +1197,7 @@
       "overall": "Overall",
       "rating": "Rating",
       "fitness": "Fitness",
-      "today": "Today: {{passes}} passes · {{shots}} shots · {{goals}} goals",
+      "today": "Today: passes {{passes}} · shots {{shots}} · goals {{goals}}",
       "attr": {
         "reflex": "REF",
         "jump": "JMP",

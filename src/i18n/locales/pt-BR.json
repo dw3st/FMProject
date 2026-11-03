@@ -1197,7 +1197,7 @@
       "overall": "Geral",
       "rating": "Nota",
       "fitness": "Fôlego",
-      "today": "Hoje: {{passes}} passes · {{shots}} chutes · {{goals}} gols",
+      "today": "Hoje: passes {{passes}} · chutes {{shots}} · gols {{goals}}",
       "attr": {
         "reflex": "REF",
         "jump": "SAL",

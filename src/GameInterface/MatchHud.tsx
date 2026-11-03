@@ -49,7 +49,7 @@ export function MatchHud({ players, mySide, holderId, roster, faces, numbers, ra
       {p && (
         <div
           key={p.id}
-          className="h-full flex items-center gap-4 px-4 border-l-[6px] animate-[tvGoalIn_.25s_ease-out]"
+          className="h-full flex items-center justify-center gap-8 px-4 border-l-[6px] animate-[tvGoalIn_.25s_ease-out]"
           style={{ borderLeftColor: color }}
         >
           <div className="flex items-center gap-3 min-w-0 w-64 shrink-0">

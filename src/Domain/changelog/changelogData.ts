@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.4",
+    date: "2026-11-03",
+    time: "14:10",
+    items: [
+      {
+        pt: "A faixa do jogador com a bola, embaixo do campo, agora fica centralizada.",
+        en: "The band of the player on the ball, under the pitch, is now centred.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A mesma faixa não escreve mais \"1 passes\".",
+        en: "The same band no longer says \"1 passes\".",
+      },
+    ],
+  },
+  {
     version: "4.42.3",
     date: "2026-11-03",
     time: "14:04",
