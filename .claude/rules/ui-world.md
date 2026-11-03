@@ -194,7 +194,9 @@ para o repositório nem para o jogo).
   `bun scripts/faces/labelQueue.ts --source thesportsdb` dá a fila. `mergeTraits` mescla: ESPN < TheSportsDB < Commons.
   `FACE_VERSION` 6.
 
-### Arte nova: rostos pintados (handoff `C:\projects\fmproject-art-handoff`)
+### Arte nova: rostos pintados (pacote `fmproject-art-handoff/`)
+
+O pacote fica na raiz do repositório, fora do git e da imagem Docker (`.gitignore`, `.dockerignore`): traz rostos pintados de pessoas reais e o repositório é público.
 
 - Os arquivos ficam no volume persistente, em `${RUNTIME_DATA_DIR}/art/` (produção: `persistent/art/`, copiado com
   `tar` pelo `docker compose exec`), nunca na imagem nem no bundle. `art/index.json` mapeia id → arquivo.

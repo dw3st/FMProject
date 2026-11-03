@@ -1,5 +1,5 @@
 /**
- * The new art (`C:\projects\fmproject-art-handoff`, decisions 1–4): files on the persistent volume, in
+ * The new art (`fmproject-art-handoff/`, decisions 1–4): files on the persistent volume, in
  * `${RUNTIME_DATA_DIR}/art/`, never in the image nor the page bundle.
  *
  * - `GET /assets/art/v5/<path>`: only a path listed in `art/index.json` (a whitelist, never a free path), cached

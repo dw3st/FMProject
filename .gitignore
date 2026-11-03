@@ -69,3 +69,6 @@ data_process/transfermarkt/cache/
 data_process/transfermarkt/trimmed.json
 data_process/assets/works_debug/
 data_process/assets/club_debug/
+
+# New art package: painted faces of real people, copied by hand to the server volume; never in the public repo
+fmproject-art-handoff/

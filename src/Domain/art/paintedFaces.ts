@@ -1,5 +1,5 @@
 /**
- * Painted faces of the new art (`C:\projects\fmproject-art-handoff`, decision 3): a face's URL points at the painted
+ * Painted faces of the new art (`fmproject-art-handoff/`, decision 3): a face's URL points at the painted
  * webp when its id is in the art index the server announced (`GET /api/art/faces`), otherwise at the SVG face as
  * before. Pure module state, set once per page by `loadPaintedFaces`; nothing breaks without it.
  */

@@ -3,6 +3,7 @@ dist
 .env*
 debug
 data_process
+fmproject-art-handoff
 results.json
 .claude
 .idea
