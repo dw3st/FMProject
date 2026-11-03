@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.5",
+    date: "2026-11-03",
+    time: "14:41",
+    items: [
+      {
+        pt: "Som novo para chutes e passes na partida ao vivo: uma bola de verdade, curto e no tempo do lance.",
+        en: "New sound for shots and passes in the live match: a real ball, short and in time with the play.",
+      },
+    ],
+  },
+  {
     version: "4.42.4",
     date: "2026-11-03",
     time: "14:10",

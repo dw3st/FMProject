@@ -479,3 +479,7 @@ lateral desenhada em cima, no meio-campo (no espaço da tela, como as placas de 
 revisão (`GameState.varReview`) o árbitro corre até o monitor (`reviewRunStep`: chega com `LOOK_S` 1,4 s da revisão
 sobrando, sem o salto de `SNAP_DIST`), olha para ele e depois volta ao jogo sem pular (`BACK_SPEED`). Só com estádio,
 Officials e o visual novo. A revisão continua com `REVIEW_SECONDS`; nada no motor muda.
+
+## Som do chute (4.42.5)
+
+Report do usuário. O `kick.mp3` gerado durava 1 s, começava 64 ms atrasado e tinha 95% da energia abaixo de 150 Hz. Agora é `audio/ball-strike.mp3`: gravação real ([Freesound 555042](https://freesound.org/people/bittermelonheart/sounds/555042/), bittermelonheart, CC0), escolhida de ouvido pelo usuário entre 34 golpes (`bun`/ComfyUI: `data_process/assets/audio/real_kicks.py` recorta os golpes das prévias). Chute: ganho 0,7 × força, velocidade 0,97–1,03. Passe: o mesmo som a 0,3, velocidade 1,09–1,15. Os arquivos em `/assets/game/v1/` têm cache `immutable`: um som alterado precisa de nome novo.

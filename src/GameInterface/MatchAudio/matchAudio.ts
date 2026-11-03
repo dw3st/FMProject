@@ -1,8 +1,8 @@
 import { gameArtUrl } from "@/Domain/art/paintedFaces";
 
-/** Recorded sounds (Stable Audio Open on the local ComfyUI, `data_process/assets/audio`); missing = synthesised. */
+/** Recorded sounds (Stable Audio Open on the local ComfyUI, `data_process/assets/audio`; the ball strike is a real recording, CC0); missing = synthesised. */
 // The generated whistle warbled in pitch (a bird, tester report): the whistle is always the synthesised one.
-const SAMPLES = ["crowd-bed", "crowd-rise", "goal-roar", "near-miss", "kick", "net"] as const;
+const SAMPLES = ["crowd-bed", "crowd-rise", "goal-roar", "near-miss", "ball-strike", "net"] as const;
 type Sample = (typeof SAMPLES)[number];
 
 /**
@@ -137,8 +137,8 @@ export class MatchAudio {
     const ctx = this.ctx;
     if (!ctx || !this.enabled || ctx.state !== "running" || !cueAllowed(this.last, cue, ctx.currentTime)) return;
     switch (cue) {
-      case "kick": if (!this.sample("kick", 0.7 * strength, 0.95 + Math.random() * 0.1)) this.thump(0.55 * strength, 130); break;
-      case "pass": if (!this.sample("kick", 0.28, 1.15 + Math.random() * 0.1)) this.thump(0.22, 160); break;
+      case "kick": if (!this.sample("ball-strike", 0.7 * strength, 0.97 + Math.random() * 0.06)) this.thump(0.55 * strength, 130); break;
+      case "pass": if (!this.sample("ball-strike", 0.3, 1.09 + Math.random() * 0.06)) this.thump(0.22, 160); break;
       case "save": this.thump(0.4, 90); this.swell(0.25, 500, 0.9); break;
       case "whistleShort": this.whistle([0.24]); break;
       case "whistleLong": this.whistle([0.65]); break;

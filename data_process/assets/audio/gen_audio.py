@@ -27,7 +27,6 @@ SOUNDS: dict[str, tuple[str, float]] = {
     "near-miss": ("football stadium crowd groans oooh in disappointment after a missed chance", 4.0),
     "whistle-short": ("a single short blast of a referee pea whistle, outdoors", 1.5),
     "whistle-end": ("referee blows the final whistle three times, outdoors stadium", 4.0),
-    "kick": ("a football kicked hard, single ball strike thud, close", 1.0),
     "net": ("a football hitting the goal net, swish of the net", 1.5),
 }
 
