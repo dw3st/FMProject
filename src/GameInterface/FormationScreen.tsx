@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type MouseEvent as ReactMouseEvent } from "react";
+import { createPortal } from "react-dom";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -1120,6 +1121,19 @@ function SquadPlayerRow({
   injured?: boolean;
 }) {
   const { t } = useTranslation();
+  const [tip, setTip] = useState<{ left: number; top: number } | null>(null);
+  useEffect(() => {
+    if (!tip) return;
+    const hide = () => setTip(null);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [tip]);
+  const showTip = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (e.buttons !== 0) return; // dragging
+    const r = e.currentTarget.getBoundingClientRect();
+    const left = r.left >= ROW_TIP_W + 16 ? r.left - ROW_TIP_W - 8 : r.right + 8;
+    setTip({ left, top: Math.max(64, Math.min(r.top, window.innerHeight - ROW_TIP_H - 48)) });
+  };
   // Without a slot: the rating at his natural position, the same number as on the pitch there and in the squad table.
   const natural = preferredRole(player);
   const scorePos = ratingRole ?? slotLabel ?? natural;
@@ -1155,13 +1169,25 @@ function SquadPlayerRow({
           : "bg-secondary/30 border-border/30"
       }`}
       onClick={onClick}
+      onMouseEnter={showTip}
+      onMouseLeave={() => setTip(null)}
+      onMouseDown={() => setTip(null)}
       {...rowProps}
     >
+      {tip && createPortal(
+        <div
+          className={`fixed z-[100] w-60 p-3 rounded-md bg-card border pointer-events-none ${outOfPosition ? "border-chart-4/40" : "border-border"}`}
+          style={{ left: tip.left, top: tip.top }}
+        >
+          <PlayerTipBody player={player} role={scorePos} avg={avg} energy={energy} oop={outOfPosition} note={ratingTitle} />
+        </div>,
+        document.body,
+      )}
       <span className={`w-9 shrink-0 touch-none text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`} data-drag-handle>
         {badgeLabel}
       </span>
       <span className="flex-1 min-w-0 flex items-center gap-1.5">
-        <span className="font-semibold text-sm text-foreground truncate" title={positionsText(t, player)}>{player.name}</span>
+        <span className="font-semibold text-sm text-foreground truncate">{player.name}</span>
         {aptitude && (
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${APT_DOT[aptitude]}`}
@@ -1185,7 +1211,7 @@ function SquadPlayerRow({
           </span>
         )}
       </span>
-      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`} title={ratingTitle}>{avg.toFixed(1)}</span>
+      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
       <span className="w-14 shrink-0 flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
         <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
         <span className={`w-1.5 h-4 rounded-sm ${getEnergyColor(energy)}`} aria-hidden />
@@ -1194,6 +1220,77 @@ function SquadPlayerRow({
     </div>
   );
 }
+
+/** What the hover card of a player says, on the pitch and in the lists (tester report: one style for both). */
+function PlayerTipBody({ player, role, avg, energy, oop, note }: {
+  player: RosterPlayer;
+  /** Slot the numbers are for. */
+  role: string;
+  avg: number;
+  energy: number;
+  oop?: boolean;
+  /** Extra line, e.g. the rating at the natural position. */
+  note?: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-bold text-foreground text-sm">{player.name}</span>
+        <span className={`text-sm px-2 py-0.5 rounded font-semibold ${oop ? "bg-chart-4/20 text-chart-4" : "bg-primary/20 text-primary"}`}>
+          {positionLabel(t, preferredRole(player), player.positions[0] ?? "CM")}
+        </span>
+      </div>
+      {oop && (
+        <div className="flex items-center gap-1 mb-2 text-sm text-chart-4">
+          <Icon name="alert" className="w-3 h-3" />
+          <span>
+            {t("formations.outOfPositionPrimary", {
+              position: positionLabel(t, preferredRole(player), player.positions[0] ?? "CM"),
+              role: MAIN_ROLE_ABBR[getMainRole(player.positions[0] ?? "CM")],
+            })}
+          </span>
+        </div>
+      )}
+      <p className="mb-2 text-sm text-muted-foreground">{positionsText(t, player)}</p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Icon name="star" className="w-3 h-3" />
+            <span>{t("formations.rating")}</span>
+          </div>
+          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+        </div>
+        {note && <p className="m-0 text-sm text-muted-foreground">{note}</p>}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Icon name="zap" className="w-3 h-3" />
+            <span>{t("formations.energy")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
+              <div className={`h-full rounded-full ${getEnergyColor(energy)}`} style={{ width: `${energy}%` }} />
+            </div>
+            <span className="font-bold text-sm text-foreground">{Math.round(energy)}%</span>
+            <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
+          </div>
+        </div>
+        {/* The four attributes that matter in this slot (tester report: show finishing etc. on hover). */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-2 border-t border-border/60">
+          {hudAttributes(role, player.stats).map((a) => (
+            <div key={a.key} className="flex items-center justify-between gap-2 text-sm">
+              <span className="text-muted-foreground truncate">{t(`attributeNames.${a.key}`)}</span>
+              <span className="font-semibold tabular-nums text-foreground">{a.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+const ROW_TIP_W = 240;
+const ROW_TIP_H = 280;
 
 function FormationPitch({
   slots,
@@ -1403,55 +1500,7 @@ function FormationPitch({
                     <div
                       className={`absolute z-[100] bottom-full mb-2 w-60 p-3 rounded-md bg-card border  ${oop ? "border-chart-4/40" : "border-border"} ${tipPanelPos}`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-foreground text-sm">{player.name}</span>
-                        <span className={`text-sm px-2 py-0.5 rounded font-semibold ${oop ? "bg-chart-4/20 text-chart-4" : "bg-primary/20 text-primary"}`}>
-                          {positionLabel(t, preferredRole(player), player.positions[0] ?? "CM")}
-                        </span>
-                      </div>
-                      {oop && (
-                        <div className="flex items-center gap-1 mb-2 text-sm text-chart-4">
-                          <Icon name="alert" className="w-3 h-3" />
-                          <span>
-                            {t("formations.outOfPositionPrimary", {
-                              position: positionLabel(t, preferredRole(player), player.positions[0] ?? "CM"),
-                              role: MAIN_ROLE_ABBR[getMainRole(player.positions[0] ?? "CM")],
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      <p className="mb-2 text-sm text-muted-foreground">{positionsText(t, player)}</p>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Icon name="star" className="w-3 h-3" />
-                            <span>{t("formations.rating")}</span>
-                          </div>
-                          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Icon name="zap" className="w-3 h-3" />
-                            <span>{t("formations.energy")}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
-                              <div className={`h-full rounded-full ${getEnergyColor(energy)}`} style={{ width: `${energy}%` }} />
-                            </div>
-                            <span className="font-bold text-sm text-foreground">{Math.round(energy)}%</span>
-                            <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-                          </div>
-                        </div>
-                        {/* The four attributes that matter in this slot (tester report: show finishing etc. on hover). */}
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-2 border-t border-border/60">
-                          {hudAttributes(slot.role ?? player.positions[0] ?? "CM", player.stats).map((a) => (
-                            <div key={a.key} className="flex items-center justify-between gap-2 text-sm">
-                              <span className="text-muted-foreground truncate">{t(`attributeNames.${a.key}`)}</span>
-                              <span className="font-semibold tabular-nums text-foreground">{a.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <PlayerTipBody player={player} role={slot.role ?? player.positions[0] ?? "CM"} avg={avg} energy={energy} oop={oop} />
                       <div
                         className={`absolute -bottom-2 w-4 h-4 bg-card border-r border-b rotate-45 ${oop ? "border-chart-4/40" : "border-border"} ${tipArrowPos}`}
                       />

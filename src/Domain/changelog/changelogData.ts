@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.11",
+    date: "2026-11-03",
+    time: "17:42",
+    items: [
+      {
+        pt: "Formação: passar o mouse num jogador das listas mostra o mesmo cartão do campo, com posições, nota, energia e atributos.",
+        en: "Formation: hovering a player in the lists shows the same card as on the pitch, with positions, rating, energy and attributes.",
+      },
+      {
+        pt: "Campeões: clique no time para abrir a página dele.",
+        en: "Champions: click a club to open its page.",
+      },
+    ],
+  },
+  {
     version: "4.42.10",
     date: "2026-11-03",
     time: "17:35",

@@ -31,6 +31,11 @@ function ChampionCrest({ title }: { title: ChampionTitle }) {
   return <ClubLogo logoUrl={squadLogoUrl(title.squadId)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />;
 }
 
+/** The club's page; a national team has none. */
+function clubHref(x: ChampionTitle): string | null {
+  return x.league && !x.nation ? `/squad/${encodeURIComponent(x.league)}/${encodeURIComponent(x.squadId)}` : null;
+}
+
 /**
  * Stats → Champions: the world's board (competitions by season), and the history of one competition with who won it most.
  * Spec `docs/superpowers/specs/2026-11-02-club-search-champions-design.md`.
@@ -95,8 +100,8 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
               <td className={TABLE_CELL.body}>
                 <div className="flex items-center gap-3 min-w-0">
                   <ChampionCrest title={x} />
-                  {x.league ? (
-                    <a href={`/squad/${encodeURIComponent(x.league)}/${encodeURIComponent(x.squadId)}`} className={`${nameClass(x)} no-underline hover:text-primary`}>{clubName(x)}</a>
+                  {clubHref(x) ? (
+                    <a href={clubHref(x)!} className={`${nameClass(x)} no-underline hover:text-primary`}>{clubName(x)}</a>
                   ) : (
                     <span className={nameClass(x)}>{clubName(x)}</span>
                   )}
@@ -122,7 +127,11 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
             {counts.map(({ title, count }) => (
               <div key={title.squadId} className="flex items-center gap-2 min-w-0">
                 <ChampionCrest title={title} />
-                <span className={nameClass(title)}>{clubName(title)}</span>
+                {clubHref(title) ? (
+                  <a href={clubHref(title)!} className={`${nameClass(title)} no-underline hover:text-primary`}>{clubName(title)}</a>
+                ) : (
+                  <span className={nameClass(title)}>{clubName(title)}</span>
+                )}
                 <span className="font-display font-bold text-primary tabular-nums">{count}</span>
               </div>
             ))}
@@ -179,8 +188,17 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
                       <td key={y} className={TABLE_CELL.body}>
                         {x && (
                           <div className="flex items-center gap-2 whitespace-nowrap" title={managerLabel(x)}>
-                            <ChampionCrest title={x} />
-                            <span className={nameClass(x)}>{clubName(x)}</span>
+                            {clubHref(x) ? (
+                              <a href={clubHref(x)!} className="flex items-center gap-2 min-h-8 no-underline group/club">
+                                <ChampionCrest title={x} />
+                                <span className={`${nameClass(x)} group-hover/club:text-primary`}>{clubName(x)}</span>
+                              </a>
+                            ) : (
+                              <>
+                                <ChampionCrest title={x} />
+                                <span className={nameClass(x)}>{clubName(x)}</span>
+                              </>
+                            )}
                             {x.human && <HumanDot label={managerLabel(x)} />}
                           </div>
                         )}
