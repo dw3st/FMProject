@@ -30,8 +30,7 @@ export const changelog: ChangelogEntry[] = [
     version: "4.42.1",
     date: "2026-11-03",
     time: "13:06",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Jogadores com o mesmo nome abreviado agora mostram o primeiro nome: Jude Bellingham no Real Madrid e Jobe Bellingham no Dortmund.",
         en: "Players with the same abbreviated name now show their first name: Jude Bellingham at Real Madrid and Jobe Bellingham at Dortmund.",
