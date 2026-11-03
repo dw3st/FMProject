@@ -5,10 +5,12 @@ import type {
   LineupPresetKey,
   LineupPresets,
   SlotInstruction,
+  TacticalAxes,
+  TacticalStyle,
 } from "@/types/tacticsTypes";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
-import { CUSTOM_FORMATION_ID, parseCustomFormation } from "@/Domain/formation/zones";
+import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { fitnessAdjustedValue, replaceUnavailableStarters } from "@/Domain/lineupHelpers";
@@ -20,12 +22,29 @@ import { isRealIsoDate } from "@/Domain/dates";
 /** The saved-lineup slots of the formation screen (#84). */
 export const LINEUP_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C"];
 
+const TACTICAL_STYLES: readonly TacticalStyle[] = ["counter_attack", "high_press", "possession", "balanced", "direct_play"];
+const MAX_CLUB_NAME = 80;
+
+/**
+ * The manager's saved tactics follow him to a new club (tester report): formation, instructions, style and axes stay,
+ * the XI goes (those players stayed behind; using the preset fills it from the new squad).
+ */
+export function presetsForNewClub(presets: LineupPresets | undefined, fromClub: string): LineupPresets | undefined {
+  const entries = Object.entries(presets ?? {}) as [LineupPresetKey, LineupPreset][];
+  if (entries.length === 0) return undefined;
+  const out: LineupPresets = {};
+  for (const [key, preset] of entries) out[key] = { ...preset, lineup: [], fromClub: (preset.fromClub ?? fromClub).slice(0, MAX_CLUB_NAME) };
+  return out;
+}
+
 /** What the formation screen holds when the manager saves a preset. */
 export interface LineupPresetSource {
   formation: string;
   customFormation?: CustomFormation | null;
   lineup: string[];
   slotInstructions?: (SlotInstruction | null)[];
+  tacticalStyle?: TacticalStyle;
+  axesOverride?: Partial<TacticalAxes>;
 }
 
 /**
@@ -44,6 +63,8 @@ export function buildLineupPreset(source: LineupPresetSource, savedOn: string): 
     lineup,
     ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
     savedOn,
+    ...(source.tacticalStyle ? { tacticalStyle: source.tacticalStyle } : {}),
+    ...(source.axesOverride && Object.keys(source.axesOverride).length > 0 ? { axesOverride: source.axesOverride } : {}),
   };
 }
 
@@ -71,7 +92,7 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, error: "invalid lineup preset" };
   const src = raw as Record<string, unknown>;
   for (const key of Object.keys(src)) {
-    if (!["formation", "customFormation", "lineup", "slotInstructions", "savedOn"].includes(key)) {
+    if (!["formation", "customFormation", "lineup", "slotInstructions", "savedOn", "tacticalStyle", "axesOverride", "fromClub"].includes(key)) {
       return { ok: false, error: "invalid lineup preset" };
     }
   }
@@ -91,6 +112,14 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   const ids = (lineup as string[]).filter(Boolean);
   if (new Set(ids).size !== ids.length) return { ok: false, error: "duplicate player in preset" };
   if (typeof savedOn !== "string" || !isRealIsoDate(savedOn)) return { ok: false, error: "invalid preset date" };
+  if (src.tacticalStyle !== undefined && !TACTICAL_STYLES.includes(src.tacticalStyle as TacticalStyle)) {
+    return { ok: false, error: "invalid preset style" };
+  }
+  const axesOverride = src.axesOverride === undefined ? {} : parseAxesOverride(src.axesOverride);
+  if (!axesOverride) return { ok: false, error: "invalid preset axes" };
+  if (src.fromClub !== undefined && (typeof src.fromClub !== "string" || src.fromClub.length > MAX_CLUB_NAME)) {
+    return { ok: false, error: "invalid preset club" };
+  }
   const playFormation = formationForTactics({ formation, customFormation });
   let slotInstructions: (SlotInstruction | null)[] = [];
   if (src.slotInstructions !== undefined) {
@@ -106,6 +135,9 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
       lineup: [...(lineup as string[])],
       ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
       savedOn,
+      ...(src.tacticalStyle !== undefined ? { tacticalStyle: src.tacticalStyle as TacticalStyle } : {}),
+      ...(Object.keys(axesOverride).length > 0 ? { axesOverride } : {}),
+      ...(src.fromClub !== undefined ? { fromClub: src.fromClub as string } : {}),
     },
   };
 }
@@ -126,6 +158,8 @@ export interface AppliedLineupPreset {
   customFormation?: CustomFormation;
   lineup: string[];
   slotInstructions: (SlotInstruction | null)[];
+  tacticalStyle?: TacticalStyle;
+  axesOverride?: Partial<TacticalAxes>;
   replaced: PresetReplacement[];
 }
 
@@ -178,6 +212,8 @@ export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[],
     ...(preset.customFormation ? { customFormation: preset.customFormation } : {}),
     lineup: swapped.lineup,
     slotInstructions: sanitizeSlotInstructions(formation, preset.slotInstructions),
+    ...(preset.tacticalStyle ? { tacticalStyle: preset.tacticalStyle } : {}),
+    ...(preset.axesOverride ? { axesOverride: preset.axesOverride } : {}),
     replaced,
   };
 }

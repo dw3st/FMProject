@@ -13,6 +13,8 @@ export interface SeasonObjective {
   leagueSize: number;
   /** Season label of the league ("2026-27" / "2027"). */
   season: string;
+  /** A big club's board: falling short costs more and is remembered longer (BOARD_FANS.demanding). */
+  demanding?: true;
 }
 
 export type ResultLetter = "W" | "D" | "L";

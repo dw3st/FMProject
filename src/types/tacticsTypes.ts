@@ -267,6 +267,11 @@ export interface LineupPreset {
   slotInstructions?: (SlotInstruction | null)[];
   /** Game date when it was saved (YYYY-MM-DD). */
   savedOn: string;
+  /** Style and axes on screen when it was saved; absent = using it keeps the current ones. */
+  tacticalStyle?: TacticalStyle;
+  axesOverride?: Partial<TacticalAxes>;
+  /** The club it came from, once the manager moved: it has no XI any more (`presetsForNewClub`). */
+  fromClub?: string;
 }
 
 export type LineupPresets = Partial<Record<LineupPresetKey, LineupPreset>>;

@@ -86,10 +86,12 @@ export function LineupPresetsPanel({
                 {preset ? (
                   <div className="min-w-0">
                     <div className="text-sm font-semibold tabular-nums truncate">
-                      {shape} · {t("formations.presets.starters", { count: starters })}
+                      {preset.fromClub && starters === 0 ? shape : <>{shape} · {t("formations.presets.starters", { count: starters })}</>}
                     </div>
-                    <div className="text-sm text-muted-foreground tabular-nums">
-                      {t("formations.presets.savedOn", { date: fmtDate(preset.savedOn) })}
+                    <div className="text-sm text-muted-foreground tabular-nums truncate" title={preset.fromClub}>
+                      {preset.fromClub && starters === 0
+                        ? t("formations.presets.fromClub", { club: preset.fromClub })
+                        : t("formations.presets.savedOn", { date: fmtDate(preset.savedOn) })}
                     </div>
                   </div>
                 ) : (

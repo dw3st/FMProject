@@ -76,8 +76,8 @@ Overwrite and delete ask for confirmation, and so does "Usar" over an unsaved XI
 under `withSaveLock`. The `PUT` takes the whole object (`null` slot = delete,
 `null` = clear all) and validates each preset with `parseLineupPresets` (`src/Domain/tactics/lineupPresets.ts`:
 known formation or a valid free formation, ≤ 11 unique string ids (≤ 64 chars), a real date (`isRealIsoDate`), instructions checked against the
-preset's own formation); 400 on any error. Presets are never read by a match; a club change (new
-`tactics.json`) drops them.
+preset's own formation); 400 on any error. Presets are never read by a match. Since 4.42.3 they keep the style and axes on screen and follow the
+manager to a new club (`presetsForNewClub`, tester report): the XI goes, `fromClub` labels them, and using one fills the XI from the new squad.
 
 `setPieceTakers` (Etapa 14; up to 3 per duty since 4.13, #116): three ordered selectors per duty on the
 tactics screen (`SetPieceTakersPanel`), "Automatic" when empty; the match uses the first one on the pitch,

@@ -274,7 +274,7 @@ export function FormationScreen() {
   function handleSavePreset(key: LineupPresetKey) {
     if (editing) return;
     const preset = buildLineupPreset(
-      { formation: formationId, customFormation, lineup, slotInstructions },
+      { formation: formationId, customFormation, lineup, slotInstructions, tacticalStyle: activeStyle, axesOverride },
       currentDate,
     );
     void putPresets({ ...lineupPresets, [key]: preset });
@@ -296,12 +296,15 @@ export function FormationScreen() {
     try {
       const updated = await saveFormationAndTactics(session.saveId, {
         formation: applied.formation,
-        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        tactical_style: applied.tacticalStyle ?? session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
         lineup: applied.lineup,
         slotInstructions: applied.slotInstructions,
+        // A preset that remembers its style brings its axes too ({} clears the ones on screen).
+        ...(applied.tacticalStyle ? { axesOverride: applied.axesOverride ?? {} } : {}),
         ...(applied.customFormation ? { customFormation: applied.customFormation } : {}),
       });
       if (applied.customFormation) setCustomFormation(applied.customFormation);
+      if (applied.tacticalStyle) setAxesOverride(applied.axesOverride);
       // Slots of the applied formation first, so the new XI never shows on the old shape.
       const appliedFormation = formationForTactics(applied);
       setAttacking(appliedFormation.attacking);

@@ -27,9 +27,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.3",
+    date: "2026-11-03",
+    time: "14:04",
+    items: [
+      {
+        pt: "Clube grande cobra mais: quem tem meta de título e fica longe da briga ouve da diretoria mais cedo, e uma temporada ruim pesa também na seguinte. Vale a partir da próxima temporada e aparece como \"diretoria exigente\" na meta.",
+        en: "Big clubs demand more: a title objective far out of the race brings the board down sooner, and a bad season also weighs on the next one. It applies from next season and shows as \"demanding board\" on the objective.",
+      },
+      {
+        pt: "Suas escalações salvas agora guardam o estilo e os eixos e vão com você ao trocar de clube, sem os titulares: ao usar uma no clube novo, o time é escalado com o elenco de lá.",
+        en: "Your saved line-ups now keep the style and axes and come with you when you change clubs, without the starters: using one at the new club picks the team from that squad.",
+      },
+    ],
+  },
+  {
     version: "4.42.2",
     date: "2026-11-03",
-    time: "14:20",
+    time: "13:53",
     items: [
       {
         pt: "Na Formação, ao passar o mouse num jogador aparecem as posições que ele faz: a natural, as que ele joga bem e as que precisam de treino.",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { applyLineupPreset, buildLineupPreset, parseLineupPresets, type PresetReplacement } from "@/Domain/tactics/lineupPresets";
+import { applyLineupPreset, buildLineupPreset, parseLineupPresets, type PresetReplacement, presetsForNewClub } from "@/Domain/tactics/lineupPresets";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, snapToZones } from "@/Domain/formation/zones";
 
@@ -27,6 +27,29 @@ const bench = [
 ];
 const squad = [...starters, ...bench];
 const xi = starters.map((p) => p.id);
+
+describe("presetsForNewClub", () => {
+  const preset = {
+    formation: "4-3-3", lineup: ["a", "b"], savedOn: "2027-03-01", tacticalStyle: "possession" as const,
+    axesOverride: { width: "wide" as const }, slotInstructions: [null, { press: "more" as const }],
+  };
+
+  test("keeps the tactic, drops the XI, remembers the first club", () => {
+    const moved = presetsForNewClub({ A: preset }, "Arsenal")!;
+    expect(moved.A).toEqual({ ...preset, lineup: [], fromClub: "Arsenal" });
+    expect(presetsForNewClub(moved, "Chelsea")!.A!.fromClub).toBe("Arsenal");
+    expect(presetsForNewClub(undefined, "Arsenal")).toBeUndefined();
+    expect(presetsForNewClub({}, "Arsenal")).toBeUndefined();
+  });
+
+  test("a moved preset passes validation and keeps style and axes through the PUT", () => {
+    const parsed = parseLineupPresets(presetsForNewClub({ A: preset }, "Arsenal"));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.value.A).toMatchObject({ tacticalStyle: "possession", axesOverride: { width: "wide" }, fromClub: "Arsenal", lineup: [] });
+    expect(parseLineupPresets({ A: { ...preset, tacticalStyle: "nope" } }).ok).toBe(false);
+    expect(parseLineupPresets({ A: { ...preset, fromClub: 5 } }).ok).toBe(false);
+  });
+});
 
 describe("buildLineupPreset", () => {
   test("keeps formation, XI (padded to 11) and sanitized instructions", () => {

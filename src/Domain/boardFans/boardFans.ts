@@ -125,7 +125,12 @@ export function objectiveFor(args: {
     const cap = relegation > 0 ? n - relegation - 1 : n;
     target = Math.max(half + 1, Math.min(Math.round(n * cfg.MID_TABLE_SHARE), cap));
   }
-  return { kind, target: Math.min(n, target), leagueSlug: args.leagueSlug, leagueSize: n, season: args.season };
+  const tier = args.clubs.find((c) => c.squadId === args.squadId)?.tier;
+  const demanding = (kind === "title" && (tier === "HIGH" || tier === "ELITE")) || (kind === "continental" && tier === "ELITE");
+  return {
+    kind, target: Math.min(n, target), leagueSlug: args.leagueSlug, leagueSize: n, season: args.season,
+    ...(demanding ? { demanding: true as const } : {}),
+  };
 }
 
 // ── Matches ───────────────────────────────────────────────────────────────────
@@ -171,7 +176,8 @@ export function applyMatchResult(state: BoardState, m: MatchForBoard): BoardStat
   if (m.league && state.objective && m.league.size > 0) {
     const progress = m.league.total > 0 ? Math.min(1, m.league.played / m.league.total) : 1;
     const weight = cfg.SEASON_WEIGHT_MIN + (1 - cfg.SEASON_WEIGHT_MIN) * progress;
-    board += (cfg.POSITION_WEIGHT * (state.objective.target - m.league.position) / m.league.size) * weight;
+    const term = (cfg.POSITION_WEIGHT * (state.objective.target - m.league.position) / m.league.size) * weight;
+    board += term < 0 && state.objective.demanding ? term * BOARD_FANS.demanding.POSITION_MULT : term;
   }
   if (result === "W") board = Math.max(board, cfg.BOARD_WIN_FLOOR);
 
@@ -325,7 +331,8 @@ export function reviewBoardStatus(
   const matches = Math.min(st.ULTIMATUM_MATCHES, left ?? st.ULTIMATUM_MATCHES);
   if (opts.sackingEnabled && s.board < st.ULTIMATUM && !s.ultimatum && !messages.includes("ultimatum_met")
     && matches >= st.ULTIMATUM_MIN_MATCHES) {
-    const pointsNeeded = Math.ceil(st.ULTIMATUM_POINTS * matches / st.ULTIMATUM_MATCHES);
+    const asked = s.objective?.demanding ? BOARD_FANS.demanding.ULTIMATUM_POINTS : st.ULTIMATUM_POINTS;
+    const pointsNeeded = Math.ceil(asked * matches / st.ULTIMATUM_MATCHES);
     s = { ...s, ultimatum: { since: opts.date, matchesLeft: matches, pointsNeeded, points: 0 } };
     messages.push("ultimatum");
   }
@@ -351,9 +358,10 @@ export function evaluateSeason(state: BoardState, r: { position: number | null }
   const o = state.objective;
   if (!o || r.position === null || o.leagueSize <= 0) return state;
   const c = BOARD_FANS.season;
+  const miss = o.demanding ? BOARD_FANS.demanding : c;
   const delta = r.position <= o.target
     ? Math.min(c.MET_MAX, c.MET_BASE + (c.MET_SCALE * (o.target - r.position)) / o.leagueSize)
-    : -Math.min(c.MISS_MAX, c.MISS_BASE + (c.MISS_SCALE * (r.position - o.target)) / o.leagueSize);
+    : -Math.min(miss.MISS_MAX, miss.MISS_BASE + (miss.MISS_SCALE * (r.position - o.target)) / o.leagueSize);
   return moveMeters(state, delta, 0);
 }
 
@@ -368,10 +376,11 @@ export function boardBonus(board: number, annualRevenue: number): number {
 /** New season: both meters keep CARRY of their distance to START, the ultimatum is dropped. */
 export function carryIntoNewSeason(state: BoardState, objective: SeasonObjective | null): BoardState {
   const k = BOARD_FANS.season.CARRY;
+  const kBoard = state.objective?.demanding && state.board < BOARD_FANS.START ? BOARD_FANS.demanding.CARRY_BELOW : k;
   const { ultimatum: _, ...rest } = state;
   return {
     ...rest,
-    board: clampMeter(BOARD_FANS.START + (state.board - BOARD_FANS.START) * k),
+    board: clampMeter(BOARD_FANS.START + (state.board - BOARD_FANS.START) * kBoard),
     fans: clampMeter(BOARD_FANS.START + (state.fans - BOARD_FANS.START) * k),
     objective,
   };

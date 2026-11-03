@@ -75,6 +75,11 @@ describe("jobs: sacking, offers, changing club", () => {
     const old = (await saveService.getSquadById(meta.id, "33"))!;
     const kid = { ...old.players.at(-1)!, id: "academy_kid", age: 17 };
     await saveService.saveSquadById(meta.id, { ...old, youth: [kid] });
+    // A saved tactic: it follows the manager, without the XI.
+    await saveService.saveTactics(meta.id, {
+      formation: "4-3-3", tactical_style: "balanced", lineup: [],
+      lineupPresets: { A: { formation: "3-5-2", lineup: ["a", "b"], savedOn: date, tacticalStyle: "possession" } },
+    }, meta.seatId);
 
     const index = await saveService.getSquadIndex(meta.id);
     const target = index.inLeague("la_liga")[0]!.squadId;
@@ -174,6 +179,7 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(ledger.totals.club_change).toBe(7_777_777 - compensation);
 
     const tactics = (await saveService.getTactics(meta.id, meta.seatId))!;
+    expect(tactics.lineupPresets?.A).toMatchObject({ formation: "3-5-2", tacticalStyle: "possession", lineup: [], fromClub: "Test" });
     expect(tactics.formation).toBe(after.formation!);
     expect(tactics.lineup.filter(Boolean).length).toBe(11);
     expect(tactics.lineup.every((id) => !id || mine.players.some((p) => p.id === id))).toBe(true);

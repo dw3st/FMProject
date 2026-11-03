@@ -190,3 +190,20 @@ o ultimato novo vale os próximos min(5, restantes) jogos, com ⌈7 × jogos / 5
 (`ULTIMATUM_MIN_MATCHES`) não há ultimato, a avaliação da virada decide. Um ultimato em curso é cortado aos jogos restantes
 e cai sem demissão quando a temporada acaba; quando os pontos que faltam passam de 3 × os jogos que sobram, ele falha na
 hora. Sem o número (a virada), a regra de antes.
+
+## Diretoria exigente (4.42.3)
+
+Report de tester (Barcelona ou Real fora da briga não sentiam nada). `SeasonObjective.demanding`: meta de título num clube HIGH ou ELITE, ou continental num ELITE (`objectiveFor`, o tier natural). Só o que falta muda (`BOARD_FANS.demanding`): termo de posição abaixo da meta × 1,6, meta falhada −(8 + 50 × distância/tamanho, até 30), ultimato de 9 pontos em 5 jogos e, abaixo de 60, 85% da distância mantida na virada (`CARRY_BELOW`, os demais 50%). Clube que cumpre a meta não muda. Vale a partir da meta seguinte (a meta da temporada em curso não ganha a marca). A meta aparece com "diretoria exigente" (`objectiveText`).
+
+`bun scripts/board-pressure-sim.ts 400 4` (a mesma temporada repetida; diretoria no fim de cada uma; % de demitidos até o fim de cada uma):
+
+| Caso | Antes | Depois |
+|---|---|---|
+| Gigante campeão | 87 · 91 · 92 · 0% | 86 · 90 · 91 · 0% |
+| Gigante 2º | 58 · 57 · 57 · 0% | 53 · 50 · 49 · 0% |
+| Gigante 3º | 51 · 49 · 49 · 0% | 45 · 40 · 38 · 0% |
+| Gigante 5º, sem Champions | 39 · 35 · 34 · 0% em 3 | 31 · 23 · 20 · 0 / 0 / 1 / 9% |
+| Gigante 8º | 29 · 23 · 23 · 0% em 3 | 19 · 16 · 6 / 99 / 100% |
+| Gigante 12º | 2 / 65 / 90% | 100% na primeira |
+
+Clube sem a marca: números iguais aos de antes.

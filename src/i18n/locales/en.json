@@ -866,11 +866,12 @@
     "presets": {
       "unknownPlayer": "A player",
       "title": "Saved lineups",
-      "hint": "Keep up to three line-ups (formation, starters and instructions) and switch between them in one click.",
+      "hint": "Keep up to three line-ups (formation, style, starters and instructions) and switch between them in one click. They come with you when you change clubs, without the starters.",
       "empty": "Empty",
       "starters_one": "{{count}} starter",
       "starters_other": "{{count}} starters",
       "savedOn": "Saved on {{date}}",
+      "fromClub": "Brought from {{club}}",
       "use": "Use",
       "save": "Save current",
       "overwrite": "Overwrite",
@@ -3228,6 +3229,7 @@
   },
   "board": {
     "objectiveLabel": "Season objective",
+    "demanding": "demanding board",
     "objective": {
       "title": "win the title",
       "continental": "continental place (top {{target}})",

@@ -45,6 +45,51 @@ describe("initial state", () => {
   });
 });
 
+describe("demanding board", () => {
+  const clubs = [
+    { squadId: "big", level: 6, tier: "ELITE" as const },
+    { squadId: "rich", level: 5.8, tier: "ELITE" as const },
+    { squadId: "third", level: 5.6, tier: "ELITE" as const },
+    { squadId: "small", level: 3, tier: "LOW" as const },
+    { squadId: "top_low", level: 7, tier: "LOW" as const },
+  ];
+  const zones = [{ id: "ucl", from: 1, to: 4 }] as never;
+  const obj = (squadId: string) => objectiveFor({ squadId, clubs, zones, leagueSlug: "x", season: "2027-28" });
+
+  test("a title objective at a big club, or a continental one at an ELITE club; nobody else", () => {
+    expect(obj("big").demanding).toBe(true);
+    expect(obj("third")).toMatchObject({ kind: "continental", demanding: true });
+    expect(obj("top_low")).toMatchObject({ kind: "title" });
+    expect(obj("top_low").demanding).toBeUndefined();
+    expect(obj("small").demanding).toBeUndefined();
+  });
+
+  const season = (demanding: boolean) => ({
+    kind: "title" as const, target: 1, leagueSlug: "x", leagueSize: 20, season: "2027-28", ...(demanding ? { demanding: true as const } : {}),
+  });
+
+  test("falling short costs more; a met objective is worth the same", () => {
+    const at = (demanding: boolean, position: number) => evaluateSeason(initialBoardState("2027-08-01", season(demanding)), { position }).board;
+    expect(at(true, 8)).toBeLessThan(at(false, 8));
+    expect(at(true, 1)).toBe(at(false, 1));
+    const after = (demanding: boolean, position: number) => applyMatchResult(initialBoardState("2027-08-01", season(demanding)), {
+      goalsFor: 0, goalsAgainst: 1, home: true, derby: false, league: { position, size: 20, played: 30, total: 38 },
+    }).board;
+    expect(after(true, 10)).toBeLessThan(after(false, 10));
+    expect(after(true, 1)).toBe(after(false, 1));
+  });
+
+  test("a bad season stays longer, a good one fades as usual, and the ultimatum asks for more", () => {
+    const low = (demanding: boolean) => ({ ...initialBoardState("2027-08-01", season(demanding)), board: 30 });
+    expect(carryIntoNewSeason(low(true), season(true)).board).toBeLessThan(carryIntoNewSeason(low(false), season(false)).board);
+    const high = (demanding: boolean) => ({ ...initialBoardState("2027-08-01", season(demanding)), board: 90 });
+    expect(carryIntoNewSeason(high(true), season(true)).board).toBe(carryIntoNewSeason(high(false), season(false)).board);
+    const ask = (demanding: boolean) => reviewBoardStatus({ ...low(demanding), board: 20 }, { sackingEnabled: true, date: "2028-01-01" }).state.ultimatum?.pointsNeeded;
+    expect(ask(false)).toBe(7);
+    expect(ask(true)).toBe(9);
+  });
+});
+
 describe("objectiveFor", () => {
   const args = (squadId: string) => ({ squadId, clubs: clubs(20), zones: ZONES, leagueSlug: "pl", season: "2026-27" });
   test("the strongest club must win the title", () => {

@@ -1,3 +1,4 @@
+import { presetsForNewClub } from "@/Domain/tactics/lineupPresets";
 import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
 import { getPyramids } from "@/backend/advanceDay";
 import { tierOfLeague } from "@/Domain/season/countryRollover";
@@ -346,6 +347,8 @@ export async function takeOverClub(
     squadId: string; date: string; activeLeagues: LeagueSeasonState[]; startBalance?: number;
     /** false: no `club_change` "arrive" entry (a seat added to a world, `addSeat`). Default true. */
     arriveEntry?: boolean;
+    /** The club he comes from: his saved tactics follow him, labelled with it. */
+    fromClubName?: string;
   },
 ): Promise<{
   board: BoardState; formation: string; leagueSlug: string; clubName: string; colors: [string, string];
@@ -393,11 +396,13 @@ export async function takeOverClub(
 
   // Tactic: the formation the AI played with this squad, balanced style, automatic XI.
   const formation = aiRecordFor(human, args.date).id;
+  const carried = presetsForNewClub((await service.getTactics(saveId, seatId))?.lineupPresets, args.fromClubName ?? "");
   await service.saveTactics(saveId, {
     formation,
     tactical_style: DEFAULT_TACTICAL_STYLE,
     lineup: autoLineupForFormationWithFitness(human, formationForSimId(formation), args.date),
     assistantRotation: false,
+    ...(carried ? { lineupPresets: carried } : {}),
   }, seatId);
 
   // The new club starts with an empty sell list.
@@ -477,7 +482,10 @@ export async function acceptJobOffer(
   delete vacancies[offer.squadId];
   if (employedAt) vacancies[employedAt] = { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${employedAt}:${date}:vacancy`))) };
 
-  const taken = await takeOverClub(service, saveId, seatId, { squadId: offer.squadId, date, activeLeagues, startBalance: Math.max(0, offer.budget - compensation) });
+  const taken = await takeOverClub(service, saveId, seatId, {
+    squadId: offer.squadId, date, activeLeagues, startBalance: Math.max(0, offer.budget - compensation),
+    fromClubName: meta.unemployed?.lastClubName ?? meta.clubName,
+  });
 
   // Inbox: the old club's news stays; every pending offer drops with its message.
   const catalog = await getLeagueData();

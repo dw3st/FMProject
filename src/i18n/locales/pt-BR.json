@@ -866,11 +866,12 @@
     "presets": {
       "unknownPlayer": "Um jogador",
       "title": "Escalações salvas",
-      "hint": "Guarde até três escalações (formação, titulares e instruções) e troque entre elas com um clique.",
+      "hint": "Guarde até três escalações (formação, estilo, titulares e instruções) e troque entre elas com um clique. Elas vão com você quando trocar de clube, sem os titulares.",
       "empty": "Vazio",
       "starters_one": "{{count}} titular",
       "starters_other": "{{count}} titulares",
       "savedOn": "Salva em {{date}}",
+      "fromClub": "Trazida de {{club}}",
       "use": "Usar",
       "save": "Salvar atual",
       "overwrite": "Sobrescrever",
@@ -3228,6 +3229,7 @@
   },
   "board": {
     "objectiveLabel": "Meta da temporada",
+    "demanding": "diretoria exigente",
     "objective": {
       "title": "ser campeão",
       "continental": "vaga continental (até {{target}}º)",

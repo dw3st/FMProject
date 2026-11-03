@@ -151,6 +151,22 @@ export const BOARD_FANS = {
     PRAISE_RESET: 70,
   },
 
+  /**
+   * A big club's board (tester report: Barcelona or Real Madrid out of the title race felt nothing): a title objective
+   * at a HIGH or ELITE club, or a continental one at an ELITE club. Only falling short changes: the table position
+   * below the target weighs more, a missed season costs more and stays longer, an ultimatum asks for more points.
+   * Measured by scripts/board-pressure-sim.ts (.claude/rules/game/board-fans.md).
+   */
+  demanding: {
+    POSITION_MULT: 1.6,
+    MISS_BASE: 8,
+    MISS_SCALE: 50,
+    MISS_MAX: 30,
+    /** Share of the distance to START kept into the next season, when below START. */
+    CARRY_BELOW: 0.85,
+    ULTIMATUM_POINTS: 9,
+  },
+
   objective: {
     /** Expected position ≤ this → title. */
     TITLE_RANK: 2,
