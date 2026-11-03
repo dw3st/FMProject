@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
@@ -38,7 +39,7 @@ import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
 import { getMainRole } from "@/Domain/roles";
 import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
-import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, playablePositions, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
 /** Aptitudes that deserve a warning on the formation screen. */
@@ -1073,6 +1074,15 @@ function SquadListHeader({ title, count }: { title: string; count: number }) {
   );
 }
 
+/** "Natural: ZAG · Apto: LE, LD · Precisa treinar: VOL" (the hover of a player on the formation screen). */
+function positionsText(t: TFunction, player: RosterPlayer): string {
+  const { natural, apt, training } = playablePositions(player);
+  const abbr = (r: string) => t(`roles.detailedAbbr.${r}` as never) as string;
+  const part = (key: "natural" | "apt" | "training", roles: string[]) =>
+    roles.length > 0 ? `${t(`roles.aptitude.${key}` as never)}: ${roles.map(abbr).join(", ")}` : null;
+  return [part("natural", [natural]), part("apt", apt), part("training", training)].filter(Boolean).join(" · ");
+}
+
 function SquadPlayerRow({
   player,
   slotLabel,
@@ -1107,8 +1117,13 @@ function SquadPlayerRow({
   injured?: boolean;
 }) {
   const { t } = useTranslation();
-  const scorePos = ratingRole ?? slotLabel ?? player.positions[0] ?? "CM";
+  // Without a slot: the rating at his natural position, the same number as on the pitch there and in the squad table.
+  const natural = preferredRole(player);
+  const scorePos = ratingRole ?? slotLabel ?? natural;
   const avg = slotValue(player, scorePos);
+  const ratingTitle = scorePos === natural
+    ? undefined
+    : t("formations.ratingAtSlot", { value: avg.toFixed(1), natural: slotValue(player, natural).toFixed(1), role: t(`roles.detailedAbbr.${natural}` as never) });
   const energy = player.seasonLog?.fitness ?? 100;
   // Slot rows show the slot's detailed role; bench rows show the player's natural one (#40).
   const badgeRole = showSlot && slotLabel ? slotLabel : preferredRole(player);
@@ -1143,7 +1158,7 @@ function SquadPlayerRow({
         {badgeLabel}
       </span>
       <span className="flex-1 min-w-0 flex items-center gap-1.5">
-        <span className="font-semibold text-sm text-foreground truncate">{player.name}</span>
+        <span className="font-semibold text-sm text-foreground truncate" title={positionsText(t, player)}>{player.name}</span>
         {aptitude && (
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${APT_DOT[aptitude]}`}
@@ -1167,7 +1182,7 @@ function SquadPlayerRow({
           </span>
         )}
       </span>
-      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`} title={ratingTitle}>{avg.toFixed(1)}</span>
       <span className="w-14 shrink-0 flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
         <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
         <span className={`w-1.5 h-4 rounded-sm ${getEnergyColor(energy)}`} aria-hidden />
@@ -1402,6 +1417,7 @@ function FormationPitch({
                           </span>
                         </div>
                       )}
+                      <p className="mb-2 text-sm text-muted-foreground">{positionsText(t, player)}</p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

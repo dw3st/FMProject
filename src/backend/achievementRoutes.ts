@@ -114,22 +114,32 @@ async function shopHistory(
   const elsewhere = new Map<string, { at: "other" | "free" | "retired"; href: string | null; clubName: string | null }>();
   if (away.length > 0) {
     const wanted = new Set(away);
+    // A legend bought before the purchase log is known only by the prefix of his id (`legend_<retiredId>_`).
+    const prefixes = away.filter((id) => id.endsWith("_"));
+    const keyOf = (id: string): string | null => (wanted.has(id) ? id : prefixes.find((pre) => id.startsWith(pre)) ?? null);
     const [squads, free, index] = await Promise.all([
       saveService.getAllSquads(saveId), saveService.getFreeAgents(saveId), saveService.getSquadIndex(saveId),
     ]);
     for (const sq of squads) {
       for (const p of [...sq.players, ...(sq.youth ?? [])]) {
-        if (!wanted.has(p.id)) continue;
+        const key = keyOf(p.id);
+        if (!key) continue;
         const entry = index.byId(sq.id);
-        elsewhere.set(p.id, {
+        elsewhere.set(key, {
           at: "other",
           href: entry ? `/player/${encodeURIComponent(entry.leagueSlug)}/${encodeURIComponent(entry.stem)}/${encodeURIComponent(p.id)}` : null,
           clubName: sq.name,
         });
       }
     }
-    for (const f of free) if (wanted.has(f.player.id) && !elsewhere.has(f.player.id)) elsewhere.set(f.player.id, { at: "free", href: null, clubName: null });
-    for (const r of retired) if (wanted.has(r.id) && !elsewhere.has(r.id)) elsewhere.set(r.id, { at: "retired", href: null, clubName: null });
+    for (const f of free) {
+      const key = keyOf(f.player.id);
+      if (key && !elsewhere.has(key)) elsewhere.set(key, { at: "free", href: null, clubName: null });
+    }
+    for (const r of retired) {
+      const key = keyOf(r.id);
+      if (key && !elsewhere.has(key)) elsewhere.set(key, { at: "retired", href: null, clubName: null });
+    }
   }
   return entries.map((p) => {
     const at = where(p.playerId);

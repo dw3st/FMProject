@@ -930,6 +930,7 @@
     "preview": "Preview",
     "clickPositionHint": "Click a position for its instructions; drag it onto another to swap",
     "outOfPosition": "Out of position",
+    "ratingAtSlot": "{{value}} in this slot · {{natural}} at {{role}}, his natural position",
     "outOfPositionPrimary": "Out of position — primary: {{position}} ({{role}})",
     "rating": "Rating",
     "fitness": "Fitness {{value}}",

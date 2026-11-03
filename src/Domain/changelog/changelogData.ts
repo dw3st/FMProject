@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.2",
+    date: "2026-11-03",
+    time: "14:20",
+    items: [
+      {
+        pt: "Na Formação, ao passar o mouse num jogador aparecem as posições que ele faz: a natural, as que ele joga bem e as que precisam de treino.",
+        en: "On the Formation screen, hovering a player shows the positions he can play: his natural one, those he plays well and those that need training.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O OVR do banco na Formação agora é o da posição natural do jogador, o mesmo do campo quando ele joga nela. Fora de posição, o número mostra as duas notas ao passar o mouse.",
+        en: "The bench rating on the Formation screen is now the one at the player's natural position, the same as on the pitch when he plays there. Out of position, hovering the number shows both ratings.",
+      },
+      {
+        pt: "A área de revisão do VAR não invade mais o campo; o árbitro assiste ao lado do monitor, fora da linha.",
+        en: "The VAR review area no longer covers the pitch; the referee watches beside the monitor, outside the line.",
+      },
+      {
+        pt: "Lendas compradas antes e que saíram do clube agora mostram o clube atual e o link para o perfil.",
+        en: "Legends bought earlier who left the club now show their current club and a link to their profile.",
+      },
+    ],
+  },
+  {
     version: "4.42.1",
     date: "2026-11-03",
     time: "13:06",

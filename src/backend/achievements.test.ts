@@ -148,5 +148,17 @@ describe("achievements", () => {
     expect(picked.player.reborn.fromId).toBe(legends[0].id);
     expect(picked.points.spent).toBe(800);
     expect((await call("/shop/legend/draw", "POST", token)).status).toBe(409);
+
+    // A legend bought before the purchase log, now at another club: found by his id prefix (tester report).
+    const other = (await saveService.getAllSquads(saveId)).find((s) => s.id !== HUMAN)!;
+    const oldLegend = { ...other.players[0]!, id: "legend_ret_old_2027", name: "Old Legend" };
+    await saveService.saveSquadById(saveId, { ...other, players: [oldLegend, ...other.players.slice(1)] });
+    const allRetired = await saveService.getRetired(saveId);
+    await saveService.writeRetired(saveId, [...allRetired, { ...retired[0]!, id: "ret_old", name: "Old Legend", legendBy: seatId }]);
+    const view = await (await call("", "GET", token)).json() as any;
+    const row = view.shop.history.find((h: any) => h.name === "Old Legend");
+    expect(row.where).toBe("other");
+    expect(row.clubName).toBe(other.name);
+    expect(row.href).toContain("legend_ret_old_2027");
   }, 120_000);
 });

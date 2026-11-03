@@ -930,6 +930,7 @@
     "preview": "Pré-visualização",
     "clickPositionHint": "Clique numa posição para ver as instruções; arraste sobre outra para trocar",
     "outOfPosition": "Fora de posição",
+    "ratingAtSlot": "{{value}} nesta vaga · {{natural}} em {{role}}, a posição natural",
     "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
     "rating": "Nota",
     "fitness": "Fôlego {{value}}",

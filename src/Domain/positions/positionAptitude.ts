@@ -178,6 +178,13 @@ export function preferredRole(player: RosterPlayer): DetailedRole {
   return profileOf(player).natural;
 }
 
+/** Where the player can play: the natural role, then the roles he is apt for and the ones that need training. */
+export function playablePositions(player: RosterPlayer): { natural: DetailedRole; apt: DetailedRole[]; training: DetailedRole[] } {
+  const { natural, aptitudes } = profileOf(player);
+  const of = (a: Aptitude) => DETAILED_ROLES.filter((r) => r !== natural && aptitudes[r] === a);
+  return { natural, apt: of("apt"), training: of("training") };
+}
+
 /** Aptitude for one role. Unknown role codes count as natural. */
 export function aptitudeFor(player: RosterPlayer, role: string): Aptitude {
   if (!isDetailedRole(role)) return "natural";

@@ -10,13 +10,15 @@ export const VAR_AREA = {
   /** Zone in drawn yards (y 0 = the drawn top touchline, negative = the run-off): ±HALF_W around the halfway line. */
   HALF_W: 4,
   TOP: -3.3,
-  BOTTOM: 2.6,
+  /** Stops short of the touchline: nothing of the area is drawn on the pitch (report: it invaded the field). */
+  BOTTOM: -0.4,
   /** Monitor centre (drawn yards off the touchline) and width; the painted monitor is 192 × 137. */
   MONITOR_Y: -1.9,
   MONITOR_W: 3.6,
   MONITOR_ASPECT: 137 / 192,
-  /** Where the referee stands to watch, inside the pitch. */
-  STAND_Y: 1.5,
+  /** Where the referee stands to watch: beside the monitor, inside the area. */
+  STAND_DX: 2.9,
+  STAND_Y: -1.9,
   /** He arrives with this much of the review left to look at the monitor (real seconds). */
   LOOK_S: 1.4,
   /** Running back to the play after the review: no jump, at least this fast (yd per game second). */
@@ -38,7 +40,7 @@ function engineOf(x: number, y: number, mirror: boolean): YdPos {
 
 /** Where the referee stands at the monitor, in engine yards. */
 export function varStandSpot(mirror: boolean): YdPos {
-  return engineOf(PITCH_MID_X, VAR_AREA.STAND_Y, mirror);
+  return engineOf(PITCH_MID_X + VAR_AREA.STAND_DX, VAR_AREA.STAND_Y, mirror);
 }
 
 /** The monitor, in engine yards (the referee looks at it). */
