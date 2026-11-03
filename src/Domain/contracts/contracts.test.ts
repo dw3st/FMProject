@@ -3,6 +3,7 @@ import {
   addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer,
   maxOfferYears, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
+import { stepWage } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
@@ -236,5 +237,19 @@ describe("facilities (`facilities.md` → contratação)", () => {
   test("what the AI pays (renewalContract) does not change", () => {
     const p = player("r", 26);
     expect(renewalContract(p, human(0), END, 2).wage).toBe(renewalContract(p, squad([player("x", 26)]), END, 2).wage);
+  });
+});
+
+describe("stepWage", () => {
+  test("lands on round numbers, in steps that grow with the wage", () => {
+    expect(stepWage(156_000, 1)).toBe(160_000);
+    expect(stepWage(156_000, -1)).toBe(155_000);
+    expect(stepWage(160_000, 1)).toBe(165_000);
+    expect(stepWage(12_300, 1)).toBe(12_500);
+    expect(stepWage(1_250, -1)).toBe(1_200);
+  });
+  test("never goes below zero", () => {
+    expect(stepWage(0, -1)).toBe(0);
+    expect(stepWage(50, -1)).toBe(0);
   });
 });

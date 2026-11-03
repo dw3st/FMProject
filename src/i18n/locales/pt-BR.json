@@ -1448,6 +1448,8 @@
     "rejected": "Recusada",
     "offerRejected": "Proposta recusada",
     "fee": "Valor",
+    "feeDown": "Baixar a taxa",
+    "feeUp": "Aumentar a taxa",
     "rejectReasons": {
       "squadDepth": "Elenco insuficiente para liberar o jogador",
       "playerImportant": "O jogador é importante para o time",
@@ -3127,6 +3129,8 @@
     "sign": "Contratar",
     "terms": "Contrato",
     "weeklyWage": "Salário semanal (€)",
+    "wageDown": "Baixar o salário",
+    "wageUp": "Aumentar o salário",
     "years": "Anos",
     "asking": "Pede",
     "perWeek": "por semana",

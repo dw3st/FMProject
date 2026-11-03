@@ -242,3 +242,10 @@ export function renewalAvailableOn(contract: { renewedOn?: string } | undefined,
   const on = addDays(contract.renewedOn, C.RENEW_COOLDOWN_DAYS);
   return on > date ? on : null;
 }
+
+/** The −/+ step of the weekly wage field: small wages move in small steps, and the buttons land on round numbers. */
+export function stepWage(wage: number, dir: 1 | -1): number {
+  const size = wage < 5_000 ? 100 : wage < 20_000 ? 500 : wage < 100_000 ? 1_000 : 5_000;
+  const next = dir > 0 ? (Math.floor(wage / size) + 1) * size : (Math.ceil(wage / size) - 1) * size;
+  return Math.max(0, next);
+}

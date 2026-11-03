@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { stepWage } from "@/Domain/contracts/contracts";
+import { StepButton } from "@/GameInterface/ui/StepButton";
+import { useEffect, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { formatWageFull } from "@/Domain/money";
 
@@ -97,6 +99,8 @@ interface Props {
 /** Wage + length inputs shared by the renew, offer and free-agent signing modals. */
 export function ContractTermsFields({ wage, years, onWage, onYears, demand, info, maxYears = 5 }: Props) {
   const { t } = useTranslation();
+  const wageId = useId();
+  const shownWage = Number.isFinite(wage) ? wage : 0;
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground m-0">
@@ -114,24 +118,29 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
         </p>
       )}
       <PersonalityDemandLines info={info} />
-      <div className="flex items-center gap-3">
-        <label className="flex-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
-          {t("contracts.weeklyWage")}
-          <input
-            type="number"
-            min={0}
-            step={500}
-            value={Number.isFinite(wage) ? wage : 0}
-            onChange={(e) => onWage(Number(e.target.value))}
-            className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-muted/20 text-foreground text-sm font-semibold"
-          />
-        </label>
+      <div className="flex items-end gap-3">
+        <div className="flex-1 min-w-0">
+          <label htmlFor={wageId} className="block mb-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
+            {t("contracts.weeklyWage")}
+          </label>
+          <div className="flex items-center gap-2">
+            <StepButton dir={-1} label={t("contracts.wageDown")} disabled={shownWage <= 0} onClick={() => onWage(stepWage(shownWage, -1))} />
+            <input
+              id={wageId}
+              inputMode="numeric"
+              value={shownWage}
+              onChange={(e) => onWage(Number(e.target.value.replace(/\D/g, "")))}
+              className="flex-1 min-w-0 h-10 px-3 rounded border border-border bg-muted/20 text-foreground text-sm font-semibold tabular-nums focus:outline-none focus:border-primary"
+            />
+            <StepButton dir={1} label={t("contracts.wageUp")} onClick={() => onWage(stepWage(shownWage, 1))} />
+          </div>
+        </div>
         <label className="w-24 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
           {t("contracts.years")}
           <select
             value={years}
             onChange={(e) => onYears(Number(e.target.value))}
-            className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-muted/20 text-foreground text-sm font-semibold"
+            className="mt-1 w-full h-10 px-3 rounded border border-border bg-muted/20 text-foreground text-sm font-semibold"
           >
             {[1, 2, 3, 4, 5].filter((y) => y <= maxYears).map((y) => <option key={y} value={y}>{y}</option>)}
           </select>

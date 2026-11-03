@@ -17,6 +17,8 @@ import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Button } from "@/GameInterface/ui/Button";
+import { StepButton } from "@/GameInterface/ui/StepButton";
+import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { NegotiationHistory } from "@/GameInterface/Negotiation/NegotiationHistory";
 import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
@@ -508,6 +510,12 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       <p className="text-sm text-destructive m-0">{t("transfers.insufficientBudget")}</p>
                     ) : (
                       <div className="flex items-center gap-3">
+                        <StepButton
+                          dir={-1}
+                          label={t("transfers.feeDown")}
+                          disabled={offerFee <= slider.min}
+                          onClick={() => setOfferFee(Math.max(slider.min, stepAskingPrice(offerFee, -1)))}
+                        />
                         <input
                           type="range"
                           min={slider.min}
@@ -517,6 +525,12 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                           onChange={(e) => setOfferFee(Number(e.target.value))}
                           className="flex-1 accent-primary"
                           aria-label={t("transfers.fee")}
+                        />
+                        <StepButton
+                          dir={1}
+                          label={t("transfers.feeUp")}
+                          disabled={offerFee >= slider.max}
+                          onClick={() => setOfferFee(Math.min(slider.max, stepAskingPrice(offerFee, 1)))}
                         />
                         <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">
                           {formatFee(offerFee)}

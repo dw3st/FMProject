@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.15",
+    date: "2026-11-03",
+    time: "20:34",
+    items: [
+      {
+        pt: "Oferta por jogador e contrato: botões de menos e mais para o salário e a taxa, no lugar das setinhas do campo.",
+        en: "Player offers and contracts: minus and plus buttons for the wage and the fee, instead of the field's tiny arrows.",
+      },
+    ],
+  },
+  {
     version: "4.42.14",
     date: "2026-11-03",
     time: "19:37",

@@ -1448,6 +1448,8 @@
     "rejected": "Rejected",
     "offerRejected": "Offer rejected",
     "fee": "Fee",
+    "feeDown": "Lower the fee",
+    "feeUp": "Raise the fee",
     "rejectReasons": {
       "squadDepth": "Squad depth is insufficient",
       "playerImportant": "Player is important to the team",
@@ -3127,6 +3129,8 @@
     "sign": "Sign",
     "terms": "Contract terms",
     "weeklyWage": "Weekly wage (€)",
+    "wageDown": "Lower the wage",
+    "wageUp": "Raise the wage",
     "years": "Years",
     "asking": "Asking",
     "perWeek": "per week",
