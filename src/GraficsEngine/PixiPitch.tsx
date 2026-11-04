@@ -3899,7 +3899,10 @@ export function PixiPitch({
           const jo = jostle?.get(player.id);
           g.x = px + (off ? xSign() * off.dx * m.scale : 0) + (jo ? xSign() * jo.x * m.scale : 0);
           g.y = py + (off ? xSign() * off.dy * m.scale : 0) + (jo ? xSign() * jo.y * m.scale : 0) - liftPx;
-          g.scale.set(off ? off.scale : 1);
+          // The discs are drawn bigger than the figures; what sits around the marker follows `drawnR`.
+          const discK = figureShown(g) ? 1 : MATCH_LOOK.DISC_SCALE;
+          const drawnR = markerR * discK;
+          g.scale.set((off ? off.scale : 1) * discK);
           // The mirror is a 180° turn (#142): the offset flips on both axes, an angle stays as is.
           g.rotation = off ? off.rotation : 0;
           const markerShadow = g.children[0];
@@ -3963,9 +3966,9 @@ export function PixiPitch({
             // A gold ring pulsing on the ground under the ball holder.
             const H = MATCH_LOOK.HOLDER;
             const pulse = Math.sin(effectNow * H.HZ * Math.PI * 2);
-            const rr = markerR * (H.R + H.PULSE * pulse);
+            const rr = drawnR * (H.R + H.PULSE * pulse);
             holderGlowGfx
-              .ellipse(px, py + markerR * 0.15, markerR * HOLDER_GLOW.RX, markerR * HOLDER_GLOW.RY)
+              .ellipse(px, py + drawnR * 0.15, drawnR * HOLDER_GLOW.RX, drawnR * HOLDER_GLOW.RY)
               .fill({ color: 0xffffff, alpha: HOLDER_GLOW.ALPHA * 0.5 })
               .ellipse(px, py + 1, rr, rr * 0.85)
               .stroke({ width: 2, color: H.COLOR, alpha: H.ALPHA + 0.2 * pulse });
@@ -3973,7 +3976,7 @@ export function PixiPitch({
           // Stamina as a straight bar above the head, filling left to right (only the user's players live).
           const B = MATCH_LOOK.STAMINA_BAR;
           const showStamina = !staminaTeamsRef.current || staminaTeamsRef.current.includes(player.team);
-          const bw = markerR * B.W, bx = px - bw / 2, by = py - markerR - B.GAP - B.H;
+          const bw = drawnR * B.W, bx = px - bw / 2, by = py - drawnR - B.GAP - B.H;
           if (showStamina) fatigueGfx.roundRect(bx - 1, by - 1, bw + 2, B.H + 2, B.R + 1).fill({ color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
           const fill = fatigueFill(player.energy);
           if (showStamina && fill > 0) {
@@ -3991,7 +3994,7 @@ export function PixiPitch({
             const sp = Math.hypot(prevV.vx, prevV.vy);
             if (sp > C.MIN_PX) {
               const a = Math.atan2(prevV.vy, prevV.vx);
-              const cxp = px + Math.cos(a) * (markerR + C.DIST), cyp = py + Math.sin(a) * (markerR + C.DIST);
+              const cxp = px + Math.cos(a) * (drawnR + C.DIST), cyp = py + Math.sin(a) * (drawnR + C.DIST);
               fatigueGfx.moveTo(cxp + Math.cos(a) * C.SIZE, cyp + Math.sin(a) * C.SIZE)
                 .lineTo(cxp + Math.cos(a + 2.4) * C.SIZE * 0.9, cyp + Math.sin(a + 2.4) * C.SIZE * 0.9)
                 .lineTo(cxp + Math.cos(a - 2.4) * C.SIZE * 0.9, cyp + Math.sin(a - 2.4) * C.SIZE * 0.9)
@@ -4009,7 +4012,7 @@ export function PixiPitch({
             { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
             // The name sits over the stamina bar when both show.
-            label.y = py - (markerR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
+            label.y = py - (drawnR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
             const pill = playerPills.get(player.id);
             if (pill) {
               // Sprite players: the face goes in the pill, left of the name (the marker has none).
@@ -4497,7 +4500,7 @@ export function PixiPitch({
             const v = markerVel.get(holder.id);
             const sp = v ? Math.hypot(v.vx, v.vy) : 0;
             const dx = sp > 0.15 ? v!.vx / sp : holder.attackDir * xSign(), dy = sp > 0.15 ? v!.vy / sp : 0;
-            const reach = markerR + ballR * 0.9;
+            const reach = markerR * (figureShown(hg) ? 1 : MATCH_LOOK.DISC_SCALE) + ballR * 0.9;
             bx = hg.x + dx * reach; by = hg.y + dy * reach;
           }
         }

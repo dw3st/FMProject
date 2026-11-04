@@ -487,3 +487,7 @@ Report do usuário. O `kick.mp3` gerado durava 1 s, começava 64 ms atrasado e t
 ## Sem anel nos bonecos (4.42.18)
 
 Pedido do usuário, opção K do mock. Com os bonecos, o marcador não desenha o anel de duas cores: uma sombra suave na cor do uniforme fica embaixo do corpo (`MATCH_LOOK.TEAM_GLOW`, sprite `teamGlow`). A chave Bonecos volta aos discos com o anel e o aro de sempre. A etiqueta, a barra de fôlego, a seta, o rosto e a bola não mudam.
+
+## Fichas redondas maiores (4.42.19)
+
+Pedido do usuário. No modo discos o marcador inteiro é desenhado × `MATCH_LOOK.DISC_SCALE` (1,3), com a etiqueta e o cartão junto; a barra de fôlego, a seta, o nome, o anel de quem tem a bola e a bola nos pés acompanham (`drawnR`). Os bonecos não mudam.

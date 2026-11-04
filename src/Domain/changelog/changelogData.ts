@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.19",
+    date: "2026-11-04",
+    time: "08:05",
+    items: [
+      {
+        pt: "Na partida, as fichas redondas dos jogadores ficaram maiores.",
+        en: "In the match, the round player tokens are bigger.",
+      },
+    ],
+  },
+  {
     version: "4.42.18",
     date: "2026-11-04",
     time: "07:59",
