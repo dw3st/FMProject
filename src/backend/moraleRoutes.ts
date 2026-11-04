@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { isMentoredTrait, mentoringRefusal } from "@/Domain/personality/mentoring";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { marketAfterRequests } from "@/backend/moraleWorld";
 import {
@@ -118,6 +119,39 @@ export const moraleRoutes = {
   },
 
   /** `PUT /api/saves/:saveId/players/:playerId/squad-status` `{ status }` — `null` = back to the suggestion. */
+  /** `PUT { trait: "professionalism" | "temperament" | null }` - the assistant's work on his mentality. */
+  "/api/saves/:saveId/players/:playerId/mentoring": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const playerId = req.params.playerId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    let body: unknown;
+    try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
+    const { trait } = (body ?? {}) as Record<string, unknown>;
+    if (trait !== null && !isMentoredTrait(trait)) return Response.json({ error: "invalidTrait" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const found = await loadHuman(saveId, auth.seatId);
+      if (found instanceof Response) return found;
+      const player = found.squad.players.find((p) => p.id === playerId);
+      if (!player) return Response.json({ error: "notYourPlayer" }, { status: 404 });
+      const updated = { ...player };
+      if (trait === null) {
+        delete updated.mentoring;
+      } else {
+        const refusal = mentoringRefusal(found.squad, player, trait);
+        if (refusal) return Response.json({ error: refusal }, { status: 409 });
+        // Changing the trait starts that work over; the same trait keeps its progress.
+        if (player.mentoring?.trait !== trait) {
+          const date = (await saveService.getMeta(saveId))?.currentDate ?? "";
+          updated.mentoring = { trait, since: date, progress: 0 };
+        }
+      }
+      await saveService.saveSquadById(saveId, { ...found.squad, players: found.squad.players.map((p) => (p.id === playerId ? updated : p)) });
+      return Response.json({ mentoring: updated.mentoring ?? null });
+    });
+  },
+
   "/api/saves/:saveId/players/:playerId/squad-status": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;

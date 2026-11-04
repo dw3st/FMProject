@@ -62,6 +62,7 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   // An offer from another human manager (multiplayer part 4): it may need an answer.
   "transfer:seat_offer": "actions",
   "season:negative_balance": "actions",
+  "player:mentality": "development",
   "retirement:reborn": "actions",
   "national_coach:offer": "actions",
   "national_coach:callup_soon": "actions",

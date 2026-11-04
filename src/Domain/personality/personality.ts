@@ -3,7 +3,8 @@
  *
  * Four traits (1..20) derived deterministically from the player's id — never stored, so no save
  * migration and the same player has the same personality in every career. A reborn player inherits
- * the original's (`reborn.fromId`); `RosterPlayer.personality` is only an override (tests).
+ * the original's (`reborn.fromId`); `RosterPlayer.personality` is only an override (tests). The one thing
+ * stored is what the assistant's work added (`personalityGrowth`, `mentoring.ts`).
  *
  * Nobody outside this file reads the raw traits: consumers call the multipliers below, each exactly
  * 1 (or 0) at the neutral value 10,5. The distribution is symmetric around it, so the world-average
@@ -20,7 +21,7 @@ import type {
 
 export const PERSONALITY_TRAITS: readonly PersonalityTrait[] = ["ambition", "loyalty", "professionalism", "temperament"];
 
-type PersonalityHolder = Pick<RosterPlayer, "id"> & Partial<Pick<RosterPlayer, "reborn" | "personality">>;
+type PersonalityHolder = Pick<RosterPlayer, "id"> & Partial<Pick<RosterPlayer, "reborn" | "personality" | "personalityGrowth">>;
 
 // ── Generation ───────────────────────────────────────────────────────────────
 
@@ -66,8 +67,15 @@ export function generatePersonality(id: string): Personality {
 
 /** A player's personality: the override, else derived from his id (a reborn player: the original's). */
 export function personalityOf(p: PersonalityHolder): Personality {
-  if (p.personality) return p.personality;
-  return generatePersonality(p.reborn?.fromId ?? p.id);
+  const base = p.personality ?? generatePersonality(p.reborn?.fromId ?? p.id);
+  const g = p.personalityGrowth;
+  if (!g) return base;
+  // Temperament: 20 is the hot head, so better is lower.
+  return {
+    ...base,
+    professionalism: clamp(base.professionalism + (g.professionalism ?? 0), P.MIN, P.MAX),
+    temperament: clamp(base.temperament - (g.temperament ?? 0), P.MIN, P.MAX),
+  };
 }
 
 // ── Scale, bands, summary ────────────────────────────────────────────────────

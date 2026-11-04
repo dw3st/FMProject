@@ -1500,6 +1500,23 @@
     },
     "worldTransfersCard": "Clubes de IA e outros"
   },
+  "mentoring": {
+    "label": "Trabalho de mentalidade com o auxiliar",
+    "none": "Nenhum",
+    "hint": "Até {{max}} jogadores por vez. Até {{young}} anos o traço melhora um ponto por temporada; até {{old}}, um a cada duas. Um auxiliar de 4 estrelas ou mais acelera.",
+    "tooOld": "Depois dos {{age}} anos a mentalidade não muda mais.",
+    "errors": {
+      "mentoringFull": "O auxiliar já acompanha {{max}} jogadores.",
+      "tooOld": "Ele já passou da idade.",
+      "onLoan": "Ele está emprestado.",
+      "atBest": "Esse traço já está no máximo.",
+      "generic": "Não foi possível salvar."
+    },
+    "inbox": {
+      "progress": "O trabalho com o auxiliar deu resultado: {{trait}} de {{player}} agora é {{band}}.",
+      "finished": "O trabalho com o auxiliar terminou: {{trait}} de {{player}} chegou ao melhor nível, {{band}}."
+    }
+  },
   "settling": {
     "badge": "Adaptação {{games}}/{{need}}",
     "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos oficiais pelo clube ou o fim da temporada."
@@ -3753,6 +3770,7 @@
       "subject": {
         "talk": "{{player}} quer conversar",
         "promise_kept": "Promessa cumprida: {{player}}",
+        "mentality": "Mentalidade: {{player}}",
         "promise_broken": "Promessa quebrada: {{player}}",
         "transfer_request": "{{player}} pediu para sair"
       },

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46",
+    date: "2026-11-04",
+    time: "19:38",
+    items: [
+      {
+        pt: "Mentalidade: na ficha do jogador, você pode pôr até 3 jogadores de até 29 anos em acompanhamento com o auxiliar para melhorar o profissionalismo ou o temperamento, aos poucos, temporada a temporada.",
+        en: "Mentality: on a player's page you can put up to 3 players aged up to 29 in work with the assistant to improve their professionalism or temperament, little by little, season by season.",
+      },
+    ],
+  },
+  {
     version: "4.45",
     date: "2026-11-04",
     time: "19:28",

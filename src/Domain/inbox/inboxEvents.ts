@@ -511,6 +511,22 @@ export function buildManagerNewsMessage(date: string, items: ManagerNewsInboxMes
  * League games of the human club moved off a clash (`.claude/rules/game/rescheduling.md`): one message per day.
  * English fallback subject/preview; the screen translates.
  */
+export function buildMentalityMessage(date: string, n: { playerId: string; playerName: string; trait: "professionalism" | "temperament"; band: string; finished: boolean }): PlayerInboxMessage {
+  return {
+    id: `mentality-${date}-${n.playerId}`,
+    date,
+    createdAt: date,
+    read: false,
+    category: "player",
+    kind: "mentality",
+    subject: `${n.playerName}'s mentality improved`,
+    preview: n.playerName,
+    playerId: n.playerId,
+    playerName: n.playerName,
+    mentality: { trait: n.trait, band: n.band, finished: n.finished },
+  };
+}
+
 export function buildFriendlyMessage(input: {
   date: string;
   clubName: string;

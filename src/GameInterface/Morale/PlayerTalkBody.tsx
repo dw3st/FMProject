@@ -21,6 +21,15 @@ export function PlayerTalkBody({ message }: { message: PlayerInboxMessage }) {
   const [answered, setAnswered] = useState(false);
   const vars = { player: message.playerName, club: message.clubName ?? "" };
 
+  if (message.kind === "mentality" && message.mentality) {
+    const m = message.mentality;
+    const text = t(m.finished ? "mentoring.inbox.finished" : "mentoring.inbox.progress", {
+      player: message.playerName,
+      trait: t(`personality.trait.${m.trait}`),
+      band: t(`personality.band.${m.trait}.${m.band}`),
+    });
+    return <p className="text-sm text-foreground m-0"><PlayerNameText text={text} players={[{ id: message.playerId, name: message.playerName }]} /></p>;
+  }
   if (message.kind !== "talk") {
     const key = message.kind === "transfer_request"
       ? "morale.inbox.transfer_request"

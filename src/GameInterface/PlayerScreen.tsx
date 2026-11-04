@@ -25,6 +25,7 @@ import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { ForeignCheckLine } from "@/GameInterface/Squad/ForeignCheckLine";
 import { StarLimitLine, useStarLimit } from "@/GameInterface/Squad/StarLimitLine";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
+import { MentoringPanel } from "@/GameInterface/Morale/MentoringPanel";
 import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
 import { personalityViewOf } from "@/Domain/personality/personality";
 import { historyRowFromLog, withArrival } from "@/Domain/history/history";
@@ -239,6 +240,7 @@ export function PlayerScreen({
         )}
 
         <PersonalityPanel player={player} />
+        {isOwnPlayer && !player.loan && session && <MentoringPanel key={player.id} saveId={session.saveId} player={player} />}
 
         {isOwnPlayer && !player.loan && session && (
           <PlayerMoralePanel

@@ -120,6 +120,9 @@ export interface PlayerContract {
   renewedOn?: string;
 }
 
+/** The two traits the assistant can work on (`.claude/rules/game/personality.md` → "Mentalidade"). */
+export type MentoredTrait = "professionalism" | "temperament";
+
 /** Official games played for the club against the games he needs. */
 export interface SettlingState {
   games: number;
@@ -162,6 +165,10 @@ export interface RosterPlayer {
   /** Reborn academy star (+30% DP while young). */
   reborn?: RebornMark;
   /** How he reached his current club (`.claude/rules/game/history.md`). */
+  /** In the assistant's work on his mentality (human club only). */
+  mentoring?: { trait: MentoredTrait; since: string; progress: number };
+  /** Points gained in that work: he keeps them wherever he goes. Positive = better. */
+  personalityGrowth?: Partial<Record<MentoredTrait, number>>;
   /** New signing still settling in (`.claude/rules/game/settling.md`); absent = settled. */
   settling?: SettlingState;
   arrival?: PlayerArrival;

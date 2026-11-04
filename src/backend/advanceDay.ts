@@ -140,7 +140,8 @@ import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { playFriendlyDay } from "@/backend/friendlyWorld";
 import { isFriendlyDay } from "@/Domain/friendlies/friendlies";
-import { buildFriendlyMessage } from "@/Domain/inbox/inboxEvents";
+import { buildFriendlyMessage, buildMentalityMessage } from "@/Domain/inbox/inboxEvents";
+import { advanceMentoring } from "@/Domain/personality/mentoring";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
@@ -2282,6 +2283,10 @@ export async function advanceOneDay(
           } else {
             const human = applyHumanSeasonReaction(next, outcome);
             next = human.squad;
+            // The assistant's work on the mentality moves on with the season (`personality.md` → "Mentalidade").
+            const mentored = advanceMentoring(next, currentDate);
+            next = mentored.squad;
+            ds.deferred.mentality.push(...mentored.news);
             // The fans' mood scales the followers gain (× 0.8..1.2, `.claude/rules/game/board-fans.md`).
             const followersAfter = ds.board
               ? followersAfterMood(human.followersBefore, human.followersAfter, ds.board.fans)
@@ -3229,6 +3234,7 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       for (const msg of ds.deferred.injury) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService, ds.seatId);
       for (const msg of ds.deferred.friendly) await emitInboxMessage(saveId, buildFriendlyMessage(msg), saveService, ds.seatId);
+      for (const n of ds.deferred.mentality) await emitInboxMessage(saveId, buildMentalityMessage(currentDate, n), saveService, ds.seatId);
       for (const msg of ds.deferred.contract) await emitInboxMessage(saveId, buildContractMessage(msg), saveService, ds.seatId);
       for (const msg of buildStaffContractMessages(currentDate, ds.staffNews)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       if (ds.director.outcomes.length > 0) {

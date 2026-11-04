@@ -329,7 +329,7 @@ export interface ManagerNewsInboxMessage extends InboxMessageBase {
  */
 export interface PlayerInboxMessage extends InboxMessageBase {
   category: "player";
-  kind: "talk" | "promise_kept" | "promise_broken" | "transfer_request";
+  kind: "talk" | "promise_kept" | "promise_broken" | "transfer_request" | "mentality";
   playerId: string;
   playerName: string;
   /** talk: why he asked. */
@@ -339,6 +339,8 @@ export interface PlayerInboxMessage extends InboxMessageBase {
   promiseKind?: "minutes" | "sale" | "renewal";
   /** wants_move: the club that bid for him. */
   clubName?: string;
+  /** mentality: the trait, its band now and whether the work is over. */
+  mentality?: { trait: "professionalism" | "temperament"; band: string; finished: boolean };
 }
 
 /**

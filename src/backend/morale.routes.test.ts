@@ -113,7 +113,21 @@ describe("morale routes", () => {
     const day = await human();
     expect(day.players.every((p) => p.morale! >= 0 && p.morale! <= 100 && (p.moraleLog?.trend.length ?? 0) >= 1)).toBe(true);
 
-    // Without a club: 409.
+    // The assistant works on a mentality: validation, the limit of 3, leaving it.
+    const mentor = (playerId: string, trait: unknown) =>
+      call("/api/saves/:saveId/players/:playerId/mentoring", `/api/saves/${saveId}/players/${playerId}/mentoring`, "PUT", session.token, { saveId, playerId }, { trait });
+    const youngs = (await human()).players.filter((p) => p.age <= 29 && !p.loan).slice(0, 4);
+    expect((await mentor(youngs[0]!.id, "ambition")).status).toBe(400);
+    expect((await mentor("nobody", "temperament")).status).toBe(404);
+    for (const p of youngs.slice(0, 3)) expect((await mentor(p.id, "professionalism")).status).toBe(200);
+    expect((await (await human()).players.find((p) => p.id === youngs[0]!.id)!.mentoring)?.trait).toBe("professionalism");
+    const full = await mentor(youngs[3]!.id, "temperament");
+    expect(full.status).toBe(409);
+    expect(((await full.json()) as { error: string }).error).toBe("mentoringFull");
+    expect((await mentor(youngs[0]!.id, null)).status).toBe(200);
+    expect((await human()).players.find((p) => p.id === youngs[0]!.id)!.mentoring).toBeUndefined();
+    expect((await mentor(youngs[3]!.id, "temperament")).status).toBe(200);
+
     await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await getMorale()).status).toBe(409);
   }, 120_000);

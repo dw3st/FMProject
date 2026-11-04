@@ -1500,6 +1500,23 @@
     },
     "worldTransfersCard": "AI and other clubs"
   },
+  "mentoring": {
+    "label": "Mentality work with the assistant",
+    "none": "None",
+    "hint": "Up to {{max}} players at a time. Up to age {{young}} the trait improves one point a season; up to {{old}}, one every two. An assistant of 4 stars or more speeds it up.",
+    "tooOld": "After {{age}} his mentality no longer changes.",
+    "errors": {
+      "mentoringFull": "The assistant already works with {{max}} players.",
+      "tooOld": "He is past the age.",
+      "onLoan": "He is on loan.",
+      "atBest": "This trait is already at its best.",
+      "generic": "It could not be saved."
+    },
+    "inbox": {
+      "progress": "The work with the assistant paid off: {{player}}'s {{trait}} is now {{band}}.",
+      "finished": "The work with the assistant is over: {{player}}'s {{trait}} reached its best, {{band}}."
+    }
+  },
   "settling": {
     "badge": "Settling {{games}}/{{need}}",
     "title": "Just arrived: plays a little below his level until {{need}} official games for the club or the end of the season."
@@ -3753,6 +3770,7 @@
       "subject": {
         "talk": "{{player}} wants to talk",
         "promise_kept": "Promise kept: {{player}}",
+        "mentality": "Mentality: {{player}}",
         "promise_broken": "Promise broken: {{player}}",
         "transfer_request": "{{player}} asked for a transfer"
       },
