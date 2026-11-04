@@ -36,6 +36,8 @@ export const MATCH_LOOK = {
   STAMINA_BAR: { GAP: 3, H: 3, W: 1.8, R: 1.5 },
   CHEVRON: { DIST: 6, SIZE: 4, MIN_PX: 0.35, SMOOTH: 0.15, ALPHA: 0.85 },
   HOLDER: { R: 1.55, PULSE: 0.18, HZ: 1, COLOR: 0xffec96, ALPHA: 0.55 },
+  /** Soft shadow in the kit under a sprite player, in place of the ring (4.42.18, mock option K): radius in marker radii, gradient stops. */
+  TEAM_GLOW: { R: 1.35, DY: 1, STOPS: [[0, 0.8], [0.22, 0.8], [1, 0]] as [number, number][] },
 } as const;
 
 /** Ground shadow under each marker (offsets/size in marker radii). */

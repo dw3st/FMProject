@@ -106,6 +106,8 @@ import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 
 /** Width of the team-colour ring around a player's face. */
 const MARKER_RING_W = 3;
+/** What only the disc marker shows; a figure hides them. */
+const MARKER_DISC_PARTS = ['disc', 'gloss', 'face', 'rim', 'ring'] as const;
 
 function drawYardReferences(g: Graphics, labels: Container, m: PitchMetrics) {
   const { marginX: ox, marginY: oy, scale, width, height } = m;
@@ -1180,6 +1182,7 @@ export function PixiPitch({
       const G = LIGHTING.GRADIENTS;
       const vignetteTexture = gradientTexture(G.VIGNETTE, '0,0,0');
       const glowTexture = gradientTexture(G.GLOW, '255,255,255');
+      const teamGlowTexture = gradientTexture(MATCH_LOOK.TEAM_GLOW.STOPS, '255,255,255');
       const vignetteSprite = new Sprite(vignetteTexture);
       vignetteSprite.eventMode = 'none';
       vignetteSprite.visible = false;
@@ -1750,9 +1753,18 @@ export function PixiPitch({
         const ring = marker.getChildByLabel('ring');
         marker.addChildAt(body, ring ? marker.getChildIndex(ring) + 1 : marker.children.length);
         addRim(marker, player.team);
+        // No ring around a figure (4.42.18, mock option K): a soft shadow in the kit under it.
+        const glow = new Sprite(teamGlowTexture);
+        glow.label = 'teamGlow';
+        glow.anchor.set(0.5);
+        glow.y = MATCH_LOOK.TEAM_GLOW.DY;
+        glow.width = glow.height = markerR * MATCH_LOOK.TEAM_GLOW.R * 2;
+        glow.tint = kit;
+        marker.addChildAt(glow, marker.getChildIndex(body));
         const fig = markersRef.current !== "discs";
         body.visible = fig;
-        for (const l of ['disc', 'gloss', 'face', 'rim']) {
+        glow.visible = fig;
+        for (const l of MARKER_DISC_PARTS) {
           const c = marker.getChildByLabel(l);
           if (c) c.visible = !fig;
         }
@@ -3921,7 +3933,9 @@ export function PixiPitch({
             const fig = markersRef.current !== "discs";
             if (bodyC.visible !== fig) {
               bodyC.visible = fig;
-              for (const l of ['disc', 'gloss', 'face', 'rim']) {
+              const glow = g.getChildByLabel('teamGlow');
+              if (glow) glow.visible = fig;
+              for (const l of MARKER_DISC_PARTS) {
                 const c = g.getChildByLabel(l);
                 if (c) c.visible = !fig;
               }
@@ -4901,6 +4915,7 @@ export function PixiPitch({
         shadeTexture = null;
         vignetteTexture.destroy(true);
         glowTexture.destroy(true);
+        teamGlowTexture.destroy(true);
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };

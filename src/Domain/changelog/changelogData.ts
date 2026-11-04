@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.18",
+    date: "2026-11-04",
+    time: "07:59",
+    items: [
+      {
+        pt: "Na partida, os jogadores perderam o anel em volta do boneco: agora uma sombra suave na cor do time marca cada um.",
+        en: "In the match, players lost the ring around them: a soft shadow in the team colour now marks each one.",
+      },
+    ],
+  },
+  {
     version: "4.42.17",
     date: "2026-11-03",
     time: "21:21",
