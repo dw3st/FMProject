@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.21",
+    date: "2026-11-04",
+    time: "08:30",
+    items: [
+      {
+        pt: "Na partida, ao trocar de formação, cada jogador agora vai para a vaga que combina com ele.",
+        en: "In the match, changing formation now moves each player to the slot that suits him.",
+      },
+      {
+        pt: "Loja de conquistas: a cada temporada você recebe uma lista nova de lendas, com jogadores raros e super raros que custam mais.",
+        en: "Achievements shop: every season brings you a new list of legends, with rare and super rare players that cost more.",
+      },
+    ],
+  },
+  {
     version: "4.42.20",
     date: "2026-11-04",
     time: "08:17",

@@ -1,4 +1,5 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
+import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
@@ -1604,9 +1605,10 @@ function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlaye
 // ── Formation change mid-match ────────────────────────────────────────────────
 
 /**
- * Swap one team's formation without substituting any players.
- * Each on-pitch player retains their current energy but gets a new role,
- * base position, bounds, and recomputed stats.
+ * Swap one team's formation without substituting any players. The team reorganises: each player goes
+ * to the slot of the new shape that suits him (`reorganizedSlots`), keeping his energy and pitch
+ * position, with the role, anchor, bounds and engine stats of that slot. Instructions stay with the
+ * slot; a man-marker keeps his target wherever he lands.
  */
 export function changeFormation(
   state: GameState,
@@ -1615,40 +1617,26 @@ export function changeFormation(
 ): GameState {
   const teamPlayers = state.players.filter(p => p.team === team);
   const instructions = state.slotInstructions?.[team];
-
-  const updated = teamPlayers.map((p, arrIndex) => {
-    const slotIndex = p.slotIndex >= 0 ? p.slotIndex : arrIndex;
-    const slotDef   = newFormation.attacking[slotIndex];
-    if (!slotDef) return p;
-    const role     = slotDef.role;
-    // The slot keeps its instruction; a variant the new role does not accept falls back to default.
-    // Mirroring follows the player's attackDir (correct after half-time too).
-    const setup = slotSetup(slotDef, slotIndex, p.attackDir, newFormation, instructions?.[slotIndex]);
-    const next: GamePlayer = {
-      ...p,
-      role,
-      slotIndex,
-      basePosition:    setup.basePosition,
-      bounds:          setup.bounds,
-      ballSupportScale: roleEngine(role).ballSupportScale,
-      runtimeStats:    getRuntimeLineup(p.baseStats, { energy: p.energy }),
-      fatigueBaselineEnergy: p.energy,
-    };
-    // Keep existing baseStats — we no longer have the raw PlayerStatsRecord post-lineup.
-    // The formation change adjusts movement bounds and base positions; stats stay as-is.
-    delete next.engine;
-    delete next.instruction;
-    if (setup.engine) next.engine = setup.engine;
-    if (setup.instruction) next.instruction = setup.instruction;
-    return next;
-  });
+  const current = team === 'A' ? state.formationA : state.formationB;
+  const slotOf = reorganizedSlots(
+    teamPlayers.map((p, i) => ({ id: p.id, role: p.role, slotIndex: p.slotIndex >= 0 ? p.slotIndex : i, aptitudes: p.fit?.aptitudes })),
+    current.attacking,
+    newFormation.attacking,
+    (state.injuryVacancies?.[team] ?? []).map(v => v.slotIndex),
+  );
+  const updated = teamPlayers.map((p, arrIndex) =>
+    placeInSlot(p, slotOf.get(p.id) ?? (p.slotIndex >= 0 ? p.slotIndex : arrIndex), newFormation, instructions));
 
   const otherPlayers = state.players.filter(p => p.team !== team);
+  const pairs = state.manMarks?.[team];
   return refreshManMarks({
     ...state,
     players:    [...otherPlayers, ...updated].sort((a, b) => a.id - b.id),
     formationA: team === 'A' ? newFormation : state.formationA,
     formationB: team === 'B' ? newFormation : state.formationB,
+    ...(pairs?.length
+      ? { manMarks: { ...state.manMarks, [team]: pairs.map(m => ({ ...m, markerSlot: slotOf.get(m.markerId) ?? m.markerSlot })) } }
+      : {}),
   });
 }
 

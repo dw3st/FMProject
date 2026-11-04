@@ -127,7 +127,7 @@ describe("achievements", () => {
     expect(squad.youth?.some((y) => y.id === body.player.id && y.name === "Joe Test")).toBe(true);
     expect((await call("/shop/created", "POST", token, { name: "Joe Two", position: "ST", nationality: "England", foot: "left" })).status).toBe(409);
 
-    // The legend: every retired star is listed, the chosen one comes back at 17.
+    // The legend: the season's list, the chosen one comes back at 17.
     const retired: RetiredPlayer[] = Array.from({ length: 5 }, (_, i) => ({
       id: `ret_${i}`, name: `Old Star ${i}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
       profile: { summary: "", archetype: "Poacher" }, retiredOn: "2026-12-01", squadId: "40", age: 37,
@@ -145,7 +145,7 @@ describe("achievements", () => {
     const picked = await pick.json() as any;
     expect(picked.player.age).toBe(17);
     expect(picked.player.reborn.fromId).toBe(legends[0].id);
-    expect(picked.points.spent).toBe(800);
+    expect(picked.points.spent).toBe(1300); // 300 + 500 + 500 extra of a super rare
     expect((await call("/shop/legend", "POST", token, { retiredId: legends[1].id })).status).toBe(409);
 
     // A legend bought before the purchase log, now at another club: found by his id prefix (tester report).

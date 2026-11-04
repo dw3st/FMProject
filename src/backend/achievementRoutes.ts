@@ -11,7 +11,7 @@ import {
 import { attributeBoost, attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { achievementPoints, earnedPoints, pointsBalance, trackValues } from "@/Domain/achievements/progress";
 import {
-  boughtThisSeason, createdPlayer, legendPlayer, legendPool, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
+  boughtThisSeason, createdPlayer, legendExtraPrice, legendOffer, legendPlayer, legendRarity, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
 } from "@/Domain/achievements/shop";
 import { weightedScore } from "@/Domain/playerRating";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -30,13 +30,13 @@ export async function humanClub(saveId: string, seatId: string): Promise<{ squad
 }
 
 /** Next season end of the human league (the academy contract), as the reborn route does. */
-export async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; end: string; date: string; season: string }> {
+export async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{ year: number; start: string; end: string; date: string; season: string }> {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   const state = (meta?.activeLeagues ?? []).find((l) => l.leagueSlug === meta?.leagueSlug);
   const date = meta?.currentDate ?? new Date().toISOString().slice(0, 10);
   const year = state?.year ?? Number(date.slice(0, 4));
   // The shop's season key (each item once per season of the manager's league).
-  return { year, end: state?.end ?? `${year + 1}-05-31`, date, season: `${meta?.leagueSlug ?? ""}:${year}` };
+  return { year, start: state?.start ?? date, end: state?.end ?? `${year + 1}-05-31`, date, season: `${meta?.leagueSlug ?? ""}:${year}` };
 }
 
 /** A retiree with no history row (kept from before the rows) falls back to the season of the record. */
@@ -47,7 +47,7 @@ function legendCareer(r: RetiredPlayer): { appearances: number; goals: number } 
 
 async function view(saveId: string, seatId: string, state: AchievementsState) {
   const club = await humanClub(saveId, seatId);
-  const { season } = await nextSeasonEndOf(saveId, seatId);
+  const { season, start: seasonStart } = await nextSeasonEndOf(saveId, seatId);
   const managers = await saveService.getManagers(saveId);
   const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId));
   const a = state.attributes;
@@ -82,7 +82,9 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
       history: await shopHistory(saveId, state, retired, club, seatId),
-      legends: legendPool(retired).map((r) => ({
+      legends: legendOffer(retired, { saveId, seatId, season, seasonStart }).map((r) => ({
+        rarity: legendRarity(r),
+        price: shopPrice(state, "legend") + legendExtraPrice(r),
         id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, age: r.age,
         wasWorldClass: r.wasWorldClass, level: Math.round(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM") * 100) / 100,
         // Career totals (tester question): the retirement record alone holds just his last season.
@@ -243,22 +245,23 @@ export const achievementRoutes = {
       const state = await saveService.getAchievements(saveId, auth.seatId);
       const { season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
       if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
-      if (pointsBalance(state) < shopPrice(state, "legend")) return bad("notEnoughPoints", 409);
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return bad("youthFull");
       const allRetired = await saveService.getRetired(saveId);
       // Brought back already (by any seat, or as a reborn) is off the list: one comeback per player in the world.
-      const retired = legendPool(allRetired).find((r) => r.id === retiredId);
-      if (!retired) return bad("notOffered");
       const season = await nextSeasonEndOf(saveId, auth.seatId);
+      const retired = legendOffer(allRetired, { saveId, seatId: auth.seatId, season: season.season, seasonStart: season.start }).find((r) => r.id === retiredId);
+      if (!retired) return bad("notOffered");
+      const extra = legendExtraPrice(retired);
+      if (pointsBalance(state) < shopPrice(state, "legend") + extra) return bad("notEnoughPoints", 409);
       const player = legendPlayer({ retired, squad: club.squad, year: season.year, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
       // Marked in the world's list: never a legend again, and a pending reborn offer for him closes.
       await saveService.writeRetired(saveId, allRetired.map((r) => (r.id === retiredId
         ? { ...r, legendBy: auth.seatId, legendOn: season.date, legendVia: "points" as const, ...(r.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) }
         : r)));
-      const next: AchievementsState = recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId });
+      const next: AchievementsState = recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId }, extra);
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });

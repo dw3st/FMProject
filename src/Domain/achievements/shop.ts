@@ -6,6 +6,7 @@ import { generateReborn } from "@/Domain/retirement/retirement";
 import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
 import { getMainRole } from "@/Domain/roles";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import { normalizeForSearch } from "@/Domain/world/labels";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { lineAverage, statsFor } from "@/Domain/youth/youth";
@@ -75,17 +76,47 @@ export function retiredLevel(r: RetiredPlayer): number {
   return weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM");
 }
 
+export type LegendRarity = "common" | "rare" | "super";
+
+/** Rarity of a retiree in the shop: super rare (world class or a very high level), rare (a legend), common. */
+export function legendRarity(r: RetiredPlayer): LegendRarity {
+  if (r.wasWorldClass || retiredLevel(r) >= A.LEGEND_OFFER.SUPER_LEVEL) return "super";
+  return isLegend(r) ? "rare" : "common";
+}
+
+/** Points on top of the shop's price for a retiree of this rarity. */
+export function legendExtraPrice(r: RetiredPlayer): number {
+  return A.LEGEND_OFFER.EXTRA[legendRarity(r)];
+}
+
 /**
- * The retired stars the shop offers, best first (world class, then level at retirement): every legend still available,
- * completed with the next best retirees up to `LEGEND_MIN_LIST` while the world has few. Never one already brought back
- * (reborn offer accepted, or a legend of any seat), never a free agent. The same list for every seat of a world.
+ * The legends this manager is offered this season (tester report): `SIZE` retirees drawn by a weighted
+ * draw from every notable one (completed with the best others while the world has few), rarest first.
+ * Only who had retired by the start of the season counts, so the list does not change as other
+ * countries turn over; one taken by another manager gives his place to the next. Never one already
+ * brought back or a free agent.
  */
-export function legendPool(retired: readonly RetiredPlayer[]): RetiredPlayer[] {
-  const ranked = retired
+export function legendOffer(
+  retired: readonly RetiredPlayer[],
+  o: { saveId: string; seatId: string; season: string; seasonStart: string },
+): RetiredPlayer[] {
+  const free = retired
     .filter((r) => r.rebornOffer !== "accepted" && !r.legendBy && !r.freeAgent)
-    .sort((a, b) => Number(b.wasWorldClass) - Number(a.wasWorldClass) || retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
-  const legends = ranked.filter(isLegend).length;
-  return ranked.slice(0, Math.max(legends, A.LEGEND_MIN_LIST));
+    .sort((a, b) => retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
+  const known = free.filter((r) => r.retiredOn <= o.seasonStart);
+  const pool = known.length >= A.LEGEND_OFFER.SIZE ? known : free;
+  const notable = pool.filter(isNotableRetiree);
+  const base = notable.length >= A.LEGEND_OFFER.SIZE ? notable : pool.slice(0, A.LEGEND_OFFER.SIZE);
+  // Weighted draw without replacement: the largest u^(1/weight), from each player's own stable number.
+  const key = (r: RetiredPlayer) =>
+    mulberry32(seedFrom(`legend:${o.saveId}:${o.seatId}:${o.season}:${r.id}`))() ** (1 / A.LEGEND_OFFER.WEIGHT[legendRarity(r)]);
+  const order: Record<LegendRarity, number> = { super: 0, rare: 1, common: 2 };
+  return base
+    .map((r) => ({ r, k: key(r) }))
+    .sort((a, b) => b.k - a.k)
+    .slice(0, A.LEGEND_OFFER.SIZE)
+    .map(({ r }) => r)
+    .sort((a, b) => order[legendRarity(a)] - order[legendRarity(b)] || retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
 }
 
 /**
@@ -150,9 +181,10 @@ export function boughtThisSeason(state: AchievementsState, item: ShopItem, seaso
 export function recordPurchase(
   state: AchievementsState, item: ShopItem, date: string, season: string,
   player?: { id: string; name: string; positions: string[]; fromId?: string },
+  extraPrice = 0,
 ): AchievementsState {
   const count = state.bought[`${item}Count`] ?? (state.bought[item] ? 1 : 0);
-  const price = shopPrice(state, item);
+  const price = shopPrice(state, item) + extraPrice;
   return {
     ...state,
     spent: state.spent + price,

@@ -166,3 +166,7 @@ seleção não contam nas outras trilhas. Ver `.claude/rules/game/national-teams
 O bandeirão (`flag`, 400 pontos) não é mais desenhado na partida nem oferecido na aba Perfil (a pedido do usuário);
 faixa e mosaico continuam. Com o visual novo, as medalhas das trilhas têm 48px, as secretas usam `medal-secret` e as
 molduras são cartões com o rosto do técnico em cada moldura (bloqueadas em cinza, com os pontos).
+
+## Rodízio das lendas na loja (4.42.21)
+
+Report de tester (substitui a lista completa da 4.42.12). A loja oferece a cada técnico e temporada `LEGEND_OFFER.SIZE` (12) aposentados sorteados de todos os notáveis (`legendOffer`, sorteio ponderado, peso comum 1, raro 3, super raro 2; só quem se aposentou até o início da temporada, para a lista não mudar quando outros países viram; quem outro técnico trouxe dá lugar ao próximo). Raro = lenda (nota 45+), super raro = classe mundial ou nota 55+, custando +200 e +500 pontos (`legendExtraPrice`, gravado no preço da compra). A lista de lendas em Estatísticas (trazer com dinheiro) não muda.

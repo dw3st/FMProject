@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { shirtName } from "@/Domain/shirtName";
 import { spreadSubsMarkers } from "@/Domain/formation/pitchMarkers";
+import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import { getFormationSlots } from "@/types/formationSlots";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import type { Formation } from "@/GameEngine/types";
@@ -11,29 +12,40 @@ import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace
 import { PITCH_BOARD, PitchLinesVertical } from "@/GameInterface/Components/SubsPitchView";
 
 /**
- * What a formation change would do: each player on the pitch stays in his slot index and takes the
- * role of that slot in the new formation (`changeFormation`). `outOfPosition` counts the ones who
- * would leave their natural position.
+ * What a formation change would do: the team reorganises by the same rule as `changeFormation`
+ * (the current formation itself shows everyone where he is). `outOfPosition` counts who would leave
+ * his natural position.
  */
-export function formationPreview(players: GamePlayer[], formation: Formation) {
+export function formationPreview(players: GamePlayer[], formation: Formation, current: Formation, blocked: readonly number[] = []) {
+  const slotOf = formation.id === current.id
+    ? new Map(players.map((p) => [p.id, p.slotIndex]))
+    : reorganizedSlots(
+      players.map((p) => ({ id: p.id, role: p.role, slotIndex: p.slotIndex, aptitudes: p.fit?.aptitudes })),
+      current.attacking, formation.attacking, blocked,
+    );
   const rows = players.flatMap((player) => {
-    const role = formation.attacking[player.slotIndex]?.role;
+    const slot = slotOf.get(player.id) ?? player.slotIndex;
+    const role = formation.attacking[slot]?.role;
     if (!role) return [];
     const natural = gamePlayerNaturalRole({ role: player.role, fit: player.fit });
-    return [{ player, role, natural, outOfPosition: natural !== role }];
+    return [{ player, slot, role, natural, outOfPosition: natural !== role }];
   });
   return { rows, outOfPosition: rows.filter((r) => r.outOfPosition).length };
 }
 
 /** Mini pitch of a formation with the current XI (attacking up), as in the substitutions tab. */
-export function FormationPreview({ players, formation, faceUrls }: {
+export function FormationPreview({ players, formation, current, blocked, faceUrls }: {
   players: GamePlayer[];
   formation: Formation;
+  /** The formation in use (the players' slots belong to it). */
+  current: Formation;
+  /** Slots waiting for an injured player's replacement. */
+  blocked?: readonly number[];
   faceUrls?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   const slotPos = useMemo(() => spreadSubsMarkers(getFormationSlots(formation)), [formation]);
-  const { rows, outOfPosition } = formationPreview(players, formation);
+  const { rows, outOfPosition } = formationPreview(players, formation, current, blocked);
   const abbr = (role: string) => t(`roles.detailedAbbr.${role}`, { defaultValue: role });
 
   return (
@@ -43,8 +55,8 @@ export function FormationPreview({ players, formation, faceUrls }: {
           {newVisualOn() && <img src={gameArtUrl(PITCH_BOARD)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" />}
           <PitchLinesVertical grass={!newVisualOn()} />
         </div>
-        {rows.map(({ player, role, natural, outOfPosition: off }) => {
-          const pos = slotPos[player.slotIndex] ?? { x: 50, y: 50 };
+        {rows.map(({ player, slot, role, natural, outOfPosition: off }) => {
+          const pos = slotPos[slot] ?? { x: 50, y: 50 };
           const roleClass = off ? "text-chart-4" : getDetailedPositionColor(role);
           const face = faceUrls?.[player.rosterId];
           return (

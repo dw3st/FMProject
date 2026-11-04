@@ -526,3 +526,7 @@ team (`isAwayView`), so the user's club changes kit when he is the away side. Th
 # Formation change preview (4.42.20)
 
 Tester report. The Formation tab of the live panel no longer applies a formation on click: the chip shows it on a mini pitch (`Components/FormationPreview.tsx`) with the current XI, each player in his slot with the role he would take (`formationPreview`, the same slot rule as `changeFormation`; out-of-position players in amber, counted below), and "Usar <formação>" applies it.
+
+# Formation change reorganises the team (4.42.21)
+
+Tester report. `changeFormation` no longer keeps each player in his slot number: `reorganizedSlots` (`Domain/formation/reorganize.ts`, Hungarian assignment over aptitudes, then the distance from where he plays) puts each one in the slot that suits him, the keeper in goal, and leaves an injury vacancy empty. Engine stats are rebuilt with the out-of-position factor, as on a position swap. A man-marker keeps his target. Reads only what the wire state carries, so the preview is right in a two-manager match too.

@@ -271,6 +271,8 @@ export function SubstitutionPanel({
                   formation={shownFormation === currentFormationId
                     ? (playerTeam === "A" ? gameState.formationA : gameState.formationB)
                     : formationForSimId(shownFormation)}
+                  current={playerTeam === "A" ? gameState.formationA : gameState.formationB}
+                  blocked={(gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex)}
                   {...(faceUrls ? { faceUrls } : {})}
                 />
               </div>

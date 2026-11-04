@@ -2628,7 +2628,7 @@
     "bench": "Bench",
     "noAvailable": "No bench players available.",
     "cancelSelection": "Cancel selection",
-    "changeFormationHint": "Pick a formation to see how the team lines up. Each player stays in his slot and takes its position.",
+    "changeFormationHint": "Pick a formation to see how the team lines up. On confirming, each player goes to the slot that suits him.",
     "useFormation": "Use {{formation}}",
     "currentFormation": "Current formation",
     "previewOffPosition_one": "1 player out of his natural position",
@@ -4958,10 +4958,13 @@
       },
       "legend": {
         "title": "Retired legend",
-        "desc": "The retired stars of the world: the one you pick comes back at 17, like a reborn star.",
-        "search": "Search by name",
-        "pick": "Bring him back",
-        "worldClass": "World class",
+        "desc": "A new list of retirees for you every season: the one you pick comes back at 17 as a reborn star. Rare ones cost more.",
+        "from": "From {{n}} pts",
+        "pick": "Bring back · {{n}} pts",
+        "rarity": {
+          "rare": "Rare",
+          "super": "Super rare"
+        },
         "career": "Career: {{apps}} games · {{goals}} goals",
         "done": "{{name}} is back, in your academy."
       },

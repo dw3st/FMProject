@@ -2628,7 +2628,7 @@
     "bench": "Banco",
     "noAvailable": "Nenhum jogador do banco disponível.",
     "cancelSelection": "Cancelar seleção",
-    "changeFormationHint": "Escolha uma formação para ver como o time fica. Cada jogador continua na sua vaga e assume a posição dela.",
+    "changeFormationHint": "Escolha uma formação para ver como o time fica. Ao confirmar, cada jogador vai para a vaga que combina com ele.",
     "useFormation": "Usar {{formation}}",
     "currentFormation": "Formação atual",
     "previewOffPosition_one": "1 jogador fora da posição natural",
@@ -4958,10 +4958,13 @@
       },
       "legend": {
         "title": "Lenda aposentada",
-        "desc": "Os craques aposentados do mundo: o escolhido volta com 17 anos, como um craque renascido.",
-        "search": "Buscar pelo nome",
-        "pick": "Trazer de volta",
-        "worldClass": "Classe mundial",
+        "desc": "A cada temporada, uma lista nova de aposentados para você: o escolhido volta com 17 anos, como um craque renascido. Os raros custam mais.",
+        "from": "A partir de {{n}} pts",
+        "pick": "Trazer · {{n}} pts",
+        "rarity": {
+          "rare": "Raro",
+          "super": "Super raro"
+        },
         "career": "Carreira: {{apps}} jogos · {{goals}} gols",
         "done": "{{name}} voltou, na sua base."
       },

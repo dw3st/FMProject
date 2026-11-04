@@ -29,7 +29,8 @@ export interface AchievementsData {
       clubName: string | null;
     }[];
     legends: {
-      id: string; name: string; positions: string[]; nationality: string | null; age: number;
+      id: string; rarity: "common" | "rare" | "super"; price: number;
+      name: string; positions: string[]; nationality: string | null; age: number;
       wasWorldClass: boolean; level: number; appearances: number; goals: number;
     }[];
   };
