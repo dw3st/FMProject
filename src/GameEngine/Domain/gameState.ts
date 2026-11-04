@@ -2757,6 +2757,7 @@ function resolveOOBSetPiece(
   const position = computeOOBRestartPosition(kind, exitX, exitY, awardedTeam, s.players);
   if (kind === 'corner') return awardCorner(s, awardedTeam, position, fromPasserId, source, cornerSource);
   const taker    = pickOOBTaker(kind, awardedTeam, position, s.players);
+  if (kind === 'throw_in') gameBus.emit('throwInAwarded', { team: awardedTeam, takerId: taker.id });
 
   // Layouts — awarded team plays the _Attack shape, opposite team plays _Defend.
   const awFmt = awardedTeam === 'A' ? s.formationA : s.formationB;
@@ -3154,7 +3155,13 @@ function clearanceBall(
 ): GameState {
   const a = (rng() * 2 - 1) * AERIAL_CONFIG.CLEARANCE_SPREAD;
   const toX = Math.max(1, Math.min(PITCH_LENGTH - 1, origin.x + player.attackDir * Math.cos(a) * dist));
-  const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, origin.y + Math.sin(a) * dist));
+  const rawY = origin.y + Math.sin(a) * dist;
+  // Sliced over the touchline: a throw-in to the other side.
+  if (rawY < 0 || rawY > PITCH_WIDTH) {
+    const other: TeamId = player.team === 'A' ? 'B' : 'A';
+    return resolveOOBSetPiece({ ...s, pass: null, looseBall: null }, 'throw_in', other, toX, rawY < 0 ? -1 : PITCH_WIDTH + 1, player.id, 'clearance').state;
+  }
+  const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, rawY));
   const prevHolderId = s.ballHolderId;
   // The clearing player is at the ball: the flight starts from him.
   const players = s.players.map(p => (p.id === player.id ? { ...p, x: origin.x, y: origin.y, targetPosition: { ...origin } } : p));
@@ -4399,6 +4406,13 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
             const r = resolveOOBSetPiece(s, 'corner', updatedHolder.team, exitX, updatedHolder.y, tackler.id, 'clearance', 'tackle');
             return { ...r, state: rollContactInjuries(r.state, [tackler.id, updatedHolder.id], matchMinute(r.state)), tackled: true };
           }
+          // Won by the touchline: it goes off the tackler for a throw-in sometimes.
+          const edge = Math.min(updatedHolder.y, PITCH_WIDTH - updatedHolder.y);
+          if (edge <= SET_PIECE_CONFIG.TACKLE_THROW_DEPTH && Math.random() < SET_PIECE_CONFIG.TACKLE_THROW_CHANCE) {
+            const exitY = updatedHolder.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;
+            const r = resolveOOBSetPiece(s, 'throw_in', updatedHolder.team, updatedHolder.x, exitY, tackler.id, 'clearance');
+            return { ...r, state: rollContactInjuries(r.state, [tackler.id, updatedHolder.id], matchMinute(r.state)), tackled: true };
+          }
           const prevHolderId = s.ballHolderId;
           s = onPossessionTransfer({
             ...s,
@@ -4762,6 +4776,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       };
     }
 
+    // Played to the feet by the touchline: a heavy touch runs out for a throw-in to the other side.
+    const passEdge = Math.min(receiver.y, PITCH_WIDTH - receiver.y);
+    if (passEdge <= SET_PIECE_CONFIG.PASS_OUT_EDGE
+      && Math.random() < SET_PIECE_CONFIG.PASS_OUT_CHANCE * (1 - SET_PIECE_CONFIG.PASS_OUT_TOUCH * receiver.runtimeStats.withBall.firstTouch)) {
+      gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
+      const exitY = receiver.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;
+      return resolveOOBSetPiece({ ...s, pass: null }, 'throw_in', receiver.team === 'A' ? 'B' : 'A', receiver.x, exitY, receiver.id, 'clearance');
+    }
     gameBus.emit('passCompleted', { player: activePass.fromId, toId: activePass.toId! });
     // Pass complete is same-team, so onPossessionTransfer would no-op — but the
     // new receiver may now be in a switch_play position (wide, far flank open),

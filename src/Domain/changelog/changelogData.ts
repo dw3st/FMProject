@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.1",
+    date: "2026-11-04",
+    time: "20:48",
+    items: [
+      {
+        pt: "Os laterais voltaram: a bola agora sai pela linha lateral em desarmes, domínios ruins e cortes perto da beira do campo.",
+        en: "Throw-ins are back: the ball now goes out over the touchline from tackles, heavy touches and clearances near the edge of the pitch.",
+      },
+    ],
+  },
+  {
     version: "4.46",
     date: "2026-11-04",
     time: "19:38",

@@ -744,6 +744,24 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'throw-in-tackle',
+    name:        '11v11 — Tackle by the touchline',
+    description: 'Team A holder on the touchline with a Team B defender on him: a won tackle knocks the ball out for a throw-in half of the time. The TI column of the stats counts them.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const holder = base.players.find(p => p.team === 'A' && p.role === 'LW')!;
+      const tackler = base.players.find(p => p.team === 'B' && p.role === 'RB')!;
+      return {
+        ...base,
+        setPiece: null,
+        ballHolderId: holder.id,
+        players: base.players.map(p => (p.id === holder.id ? { ...p, x: 70, y: 3 } : p.id === tackler.id ? { ...p, x: 71.5, y: 3 } : p)),
+      };
+    },
+  },
+
+  {
     id:          'corner-attack',
     name:        '11v11 — Corner (box layout)',
     description: 'Team A corner from the left flag: the two best aerial defenders, the centre-forward and the next best headers go up, a midfielder waits on the edge of the box, a short option by the flag; Team B marks every attacker goal-side, a man on the near post, its fastest forward left up. Turn on the "Set pieces" overlay to see the delivery options (near post / penalty spot / far post / short) and the "setPiece" / "aerial" debug log.',

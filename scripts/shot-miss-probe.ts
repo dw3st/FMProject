@@ -38,6 +38,8 @@ const band = (d: number) => (d <= 6 ? "00-06" : d <= 10 ? "06-10" : d <= 14 ? "1
 
 let goals = 0;
 let shots = 0;
+let throwIns = 0;
+let corners = 0;
 for (let i = 0; i < Number(N); i++) {
   const home = squads[Math.floor(rng() * squads.length)]!;
   let away = squads[Math.floor(rng() * squads.length)]!;
@@ -59,8 +61,10 @@ for (let i = 0; i < Number(N); i++) {
   });
   goals += m.score.A + m.score.B;
   shots += m.teamStats.A.shots + m.teamStats.B.shots;
+  throwIns += m.teamStats.A.throwIns + m.teamStats.B.throwIns;
+  corners += m.teamStats.A.corners + m.teamStats.B.corners;
 }
-console.log(`${LEAGUE} n=${N} goals/match ${(goals / Number(N)).toFixed(3)} shots/match ${(shots / Number(N)).toFixed(2)}`);
+console.log(`${LEAGUE} n=${N} goals/match ${(goals / Number(N)).toFixed(3)} shots/match ${(shots / Number(N)).toFixed(2)} throw-ins/match ${(throwIns / Number(N)).toFixed(2)} corners/match ${(corners / Number(N)).toFixed(2)}`);
 for (const k of [...table.keys()].sort()) {
   const r = table.get(k)!;
   console.log(`${k.padEnd(14)} shots/match ${(r.shots / Number(N)).toFixed(2).padStart(5)}  off target ${((100 * r.off) / r.shots).toFixed(0).padStart(3)}%`);

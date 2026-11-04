@@ -121,6 +121,7 @@ export interface GameEvents {
    * a keeper's save, a deflected shot, a blocked / headed-clear cross, a tackle, a loose ball.
    */
   cornerAwarded: { team: TeamId; takerId: number; source: CornerSource };
+  throwInAwarded: { team: TeamId; takerId: number };
   /** A direct free kick at goal: `xg` after the wall, `wallSize` men, `blocked` = it struck the wall. */
   directFreeKick: { player: number; xg: number; wallSize: number; blocked: boolean };
   /** Delivery chosen by a corner / crossed free-kick taker (/test set-piece overlay; debug only). */

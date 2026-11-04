@@ -280,6 +280,7 @@ export interface TeamRawStats {
   keeperSmothers: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
+  throwIns: number;
   freeKicks: number;
   directFreeKickShots: number;
   directFreeKickGoals: number;
@@ -442,6 +443,7 @@ export interface PerMatchView {
   avgKeeperSmothers: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
+  avgThrowIns: number;
   avgFreeKicks: number;
   avgDirectFreeKickShots: number;
   avgDirectFreeKickGoals: number;
@@ -562,6 +564,7 @@ export interface VariantSummary {
   avgKeeperSmothers: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
+  avgThrowIns: number;
   avgFreeKicks: number;
   avgDirectFreeKickShots: number;
   avgDirectFreeKickGoals: number;

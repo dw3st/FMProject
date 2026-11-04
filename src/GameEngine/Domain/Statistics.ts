@@ -103,6 +103,7 @@ export interface PlayerStats {
   // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
   /** Corners won by the team, credited to the taker. */
   corners:                  number;
+  throwIns:                 number;
   /** Free kicks won from fouls (not offside), credited to the taker. */
   freeKicks:                number;
   /** Direct free kicks at goal (also counted in `shots`). */
@@ -199,6 +200,7 @@ function emptyStats(): PlayerStats {
     keeperSweeps:             0,
     keeperSmothers:           0,
     corners:                  0,
+    throwIns:                 0,
     freeKicks:                0,
     directFreeKickShots:      0,
     directFreeKickGoals:      0,
@@ -436,6 +438,7 @@ gameBus.on('keeperSmother', e => { get(e.keeperId).keeperSmothers++; notify(); }
 
 // ── Set-piece stats ───────────────────────────────────────────────────────────
 gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
+gameBus.on('throwInAwarded',  e => { get(e.takerId).throwIns++; notify(); });
 gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });
 gameBus.on('directFreeKick',  e => { get(e.player).directFreeKickShots++; notify(); });
 
@@ -523,6 +526,7 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.keeperSweeps             += stats.keeperSweeps;
     result.keeperSmothers           += stats.keeperSmothers;
     result.corners                  += stats.corners;
+    result.throwIns                 += stats.throwIns;
     result.freeKicks                += stats.freeKicks;
     result.directFreeKickShots      += stats.directFreeKickShots;
     result.directFreeKickGoals      += stats.directFreeKickGoals;

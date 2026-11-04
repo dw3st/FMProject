@@ -210,6 +210,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgKeeperSweeps: r2(t.keeperSweeps / matches),
     avgKeeperSmothers: r2(t.keeperSmothers / matches),
     avgCorners: r2(t.corners / matches),
+    avgThrowIns: r2(t.throwIns / matches),
     avgFreeKicks: r2(t.freeKicks / matches),
     avgDirectFreeKickShots: r2(t.directFreeKickShots / matches),
     avgDirectFreeKickGoals: r2(t.directFreeKickGoals / matches),
@@ -245,7 +246,7 @@ function emptyTotals(): VariantTotals {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
-    corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
+    corners: 0, throwIns: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
@@ -313,6 +314,7 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.keeperSweeps          += src.keeperSweeps;
   dst.keeperSmothers        += src.keeperSmothers;
   dst.corners               += src.corners;
+  dst.throwIns              += src.throwIns;
   dst.freeKicks             += src.freeKicks;
   dst.directFreeKickShots   += src.directFreeKickShots;
   dst.directFreeKickGoals   += src.directFreeKickGoals;
@@ -394,6 +396,7 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgKeeperSweeps: r2(totals.keeperSweeps / games),
     avgKeeperSmothers: r2(totals.keeperSmothers / games),
     avgCorners: r2(totals.corners / games),
+    avgThrowIns: r2(totals.throwIns / games),
     avgFreeKicks: r2(totals.freeKicks / games),
     avgDirectFreeKickShots: r2(totals.directFreeKickShots / games),
     avgDirectFreeKickGoals: r2(totals.directFreeKickGoals / games),

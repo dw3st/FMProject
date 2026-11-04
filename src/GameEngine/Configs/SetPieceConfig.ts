@@ -114,6 +114,13 @@ export const SET_PIECE_CONFIG = {
   /** A tackle won near the byline (within TACKLE_CORNER_DEPTH yds, wide of the posts) puts the ball behind. */
   TACKLE_CORNER_CHANCE: 0.3,
   TACKLE_CORNER_DEPTH: 18,
+  /** A tackle won this close to a touchline knocks the ball out for a throw-in to the tackled side, sometimes. */
+  TACKLE_THROW_DEPTH: 14,
+  TACKLE_THROW_CHANCE: 0.6,
+  /** A pass to a player this close to a touchline runs out sometimes; a good first touch keeps it in. */
+  PASS_OUT_EDGE: 12,
+  PASS_OUT_CHANCE: 0.25,
+  PASS_OUT_TOUCH: 0.6,
 
   // ── Set-piece goal attribution ─────────────────────────────────────────────
   /** A goal within this many game-seconds of a corner / free kick in the attacking third / penalty, with the ball kept, is a set-piece goal. */

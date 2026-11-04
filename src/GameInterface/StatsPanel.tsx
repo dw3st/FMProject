@@ -50,6 +50,7 @@ const COLS: Col[] = [
   { label: "KW",   titleKey: "stats.headers.KW",    value: (s) => s.keeperSweeps },
   { label: "KM",   titleKey: "stats.headers.KM",    value: (s) => s.keeperSmothers },
   { label: "CK",   titleKey: "stats.headers.CK",    value: (s) => s.corners },
+  { label: "TI",   titleKey: "stats.headers.TI",    value: (s) => s.throwIns },
   {
     label: "DFK",
     titleKey: "stats.headers.DFK",
