@@ -491,3 +491,7 @@ Pedido do usuário, opção K do mock. Com os bonecos, o marcador não desenha o
 ## Fichas redondas maiores (4.42.19)
 
 Pedido do usuário. No modo discos o marcador inteiro é desenhado × `MATCH_LOOK.DISC_SCALE` (1,3), com a etiqueta e o cartão junto; a barra de fôlego, a seta, o nome, o anel de quem tem a bola e a bola nos pés acompanham (`drawnR`). Os bonecos não mudam.
+
+## Gramado ruim (4.42.25)
+
+Report do usuário ("casca de melão"): a textura de grama, feita para ver de perto, virava uma rede no campo inteiro, e as manchas eram coladas sobre as listras.  e  são agora montados (, sem commit): as texturas do FLUX reduzidas à escala do campo, desgaste nas áreas, no círculo central, no corredor e na faixa dos bandeirinhas, com a borda da terra quebrada em todas as escalas. Pintar o campo inteiro com o FLUX não serve: mesmo pedindo sem marcações, ele inventa linhas, traves e poças. Os gramados bons (, , ) continuam com a textura antiga.

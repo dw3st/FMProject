@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.25",
+    date: "2026-11-04",
+    time: "09:49",
+    items: [
+      {
+        pt: "Gramado ruim redesenhado: a grama gasta amarela e abre em terra nas áreas, no círculo central e na faixa dos bandeirinhas, e o campo enlameado mostra terra escura de verdade.",
+        en: "Bad pitches redrawn: worn grass turns yellow and opens into soil in the boxes, the centre circle and the assistants' strips, and a muddy pitch shows real dark soil.",
+      },
+    ],
+  },
+  {
     version: "4.42.24",
     date: "2026-11-04",
     time: "09:20",
