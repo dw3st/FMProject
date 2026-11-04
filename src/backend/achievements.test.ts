@@ -96,7 +96,7 @@ describe("achievements", () => {
   test("routes: owner only, locked items refused, shop", async () => {
     expect((await call("", "GET", otherToken)).status).toBe(404);
     const v = await (await call("", "GET", token)).json() as any;
-    expect(v.tracks).toHaveLength(27);
+    expect(v.tracks).toHaveLength(28);
     expect(v.secrets).toHaveLength(17);
     expect(v.secrets.every((s: any) => s.unlocked === undefined || typeof s.unlocked === "string")).toBe(true);
 

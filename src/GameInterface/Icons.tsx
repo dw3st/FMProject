@@ -1,3 +1,4 @@
+import { Car as CarIcon, Watch as WatchIcon } from "lucide-react";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import {
   Lock,
@@ -154,6 +155,8 @@ export type IconName =
   | "tactics"
   | "staff-coach"
   | "gem"
+  | "car"
+  | "watch"
   | "play"
   | "pause"
   | "debug"
@@ -301,6 +304,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "tactics": ClipboardList,
   "staff-coach": UserCog,
   "gem":          Gem,
+  "car": CarIcon,
+  "watch": WatchIcon,
   "play":         Play,
   "pause":        Pause,
   "debug":        Bug,

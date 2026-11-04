@@ -645,6 +645,8 @@
     "error429": "You've sent a lot of reports recently. Please wait a bit and try again."
   },
   "changelog": {
+    "versions_one": "{{count}} version",
+    "versions_other": "{{count}} versions",
     "title": "What's new",
     "subtitle": "Recent updates to the game",
     "version": "Version {{version}}",
@@ -2056,7 +2058,11 @@
     "matchday": "Matchday {{round}}",
     "vs": "vs",
     "selectLeague": "League",
-    "clubSearch": { "label": "Search team", "placeholder": "Team name", "none": "No team found" },
+    "clubSearch": {
+      "label": "Search team",
+      "placeholder": "Team name",
+      "none": "No team found"
+    },
     "searchLeaguesPlaceholder": "Search leagues…",
     "loadingLeagues": "Loading leagues...",
     "loadingStandings": "Loading table…",
@@ -2994,8 +3000,15 @@
   "champions": {
     "tab": "Champions",
     "filter": "Competitions",
-    "filters": { "main": "Main", "continents": "Continents" },
-    "groups": { "continental": "Continental", "national": "National teams", "leagues": "Leagues" },
+    "filters": {
+      "main": "Main",
+      "continents": "Continents"
+    },
+    "groups": {
+      "continental": "Continental",
+      "national": "National teams",
+      "leagues": "Leagues"
+    },
     "competition": "Competition",
     "season": "Season",
     "champion": "Champion",
@@ -3127,7 +3140,8 @@
         "contract": "contract ended",
         "interim": "interim spell",
         "left_world": "left the league"
-      }
+      },
+      "assets": "Assets: {{list}}"
     },
     "referees": {
       "tab": "Referees"
@@ -3424,7 +3438,10 @@
       "years_other": "{{count}} seasons",
       "compensation": "Compensation to {{club}}: {{amount}} (already deducted)",
       "tier": "Division {{tier}}",
-      "viewSquad": "View squad"
+      "viewSquad": "View squad",
+      "wageNow": "You earn {{wage}}/wk today",
+      "earningGoal_one": "Next goal {{goal}}: {{missing}} to go, about {{count}} season on this wage",
+      "earningGoal_other": "Next goal {{goal}}: {{missing}} to go, about {{count}} seasons on this wage"
     }
   },
   "negotiation": {
@@ -3956,6 +3973,17 @@
     }
   },
   "managerContract": {
+    "boardCounter": "The board won't go that far. This is the new offer.",
+    "noRounds": "The board will not discuss it any further: take it or leave it.",
+    "wageLabel": "Weekly wage",
+    "seasonsLabel": "Seasons",
+    "wageLess": "Ask for less",
+    "wageMore": "Ask for more",
+    "negotiateHint": "Ask for more than the board accepts and it answers with the most it will pay, and loses a little confidence in you.",
+    "sendProposal": "Send proposal",
+    "backToOffer": "Back to the offer",
+    "negotiate_one": "Negotiate ({{count}} attempt)",
+    "negotiate_other": "Negotiate ({{count}} attempts)",
     "accept": "Accept",
     "decline": "Decline",
     "renewed": "You renewed your contract.",
@@ -4666,7 +4694,8 @@
       "list": "Achievements",
       "profile": "Profile",
       "manager": "Manager",
-      "shop": "Shop"
+      "shop": "Shop",
+      "assets": "Assets"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",
@@ -4800,6 +4829,10 @@
       "national_wins": {
         "name": "National hero",
         "desc": "Wins with the national team you coach"
+      },
+      "career_earnings": {
+        "name": "Nest egg",
+        "desc": "What you earned over your career"
       }
     },
     "titles": {
@@ -4829,7 +4862,8 @@
       "manager_awards": "Manager of the world",
       "top_scorer": "Goal factory",
       "league_unbeaten": "The invincible",
-      "national_wins": "National hero"
+      "national_wins": "National hero",
+      "career_earnings": "Nest egg"
     },
     "secrets": {
       "fortress": {
@@ -5060,7 +5094,47 @@
     },
     "contractLine": "Your negotiation: {{value}}",
     "daySummary_one": "{{count}} achievement unlocked",
-    "daySummary_other": "{{count}} achievements unlocked"
+    "daySummary_other": "{{count}} achievements unlocked",
+    "assets": {
+      "wallet": "Money available",
+      "earned": "Career earnings",
+      "goals": "Career goals: {{goals}}",
+      "none": "Nothing bought yet",
+      "maxed": "Top level",
+      "buy": "Buy {{name}} · {{price}}",
+      "confirm": "Confirm · {{price}}",
+      "cancel": "Cancel",
+      "kind": {
+        "home": "Home",
+        "car": "Car",
+        "watch": "Watch"
+      },
+      "level": {
+        "home": {
+          "1": "Apartment",
+          "2": "House with a garden",
+          "3": "Mansion",
+          "4": "Seafront penthouse"
+        },
+        "car": {
+          "1": "Compact",
+          "2": "Executive saloon",
+          "3": "Sports car",
+          "4": "Supercar"
+        },
+        "watch": {
+          "1": "Steel watch",
+          "2": "Gold watch",
+          "3": "Swiss watch",
+          "4": "Collector's watch"
+        }
+      },
+      "errors": {
+        "noMoney": "You don't have the money for that yet.",
+        "maxLevel": "Already at the top level.",
+        "generic": "The purchase failed. Try again."
+      }
+    }
   },
   "nations": {
     "wales": "Wales",
@@ -5807,7 +5881,10 @@
     "advance": {
       "running": "Advancing… {{date}} of {{target}}",
       "runningShort": "{{date}} → {{target}}",
-      "turn": { "title": "Only you left", "body": "The other managers are ready." },
+      "turn": {
+        "title": "Only you left",
+        "body": "The other managers are ready."
+      },
       "simulate": "Simulate",
       "simulateHint": "Simulate: the match is decided without you watching, when the day runs",
       "simulated": "Match will be simulated",
@@ -5964,7 +6041,13 @@
       "yellow": "{{team}} booking",
       "sub": "{{team}} substitution",
       "subLine": "{{out}} off, {{in}} on",
-      "short": {"goal": "Goal", "disallowed": "Goal ruled out by VAR", "red": "Sent off", "yellow": "Booking", "sub": "Substitution"}
+      "short": {
+        "goal": "Goal",
+        "disallowed": "Goal ruled out by VAR",
+        "red": "Sent off",
+        "yellow": "Booking",
+        "sub": "Substitution"
+      }
     },
     "liveBadge": "live",
     "liveLine": "live · {{score}} · {{minute}}'",

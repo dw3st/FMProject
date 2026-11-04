@@ -645,6 +645,8 @@
     "error429": "Você enviou muitos relatórios recentemente. Espere um pouco e tente de novo."
   },
   "changelog": {
+    "versions_one": "{{count}} versão",
+    "versions_other": "{{count}} versões",
     "title": "Novidades",
     "subtitle": "Atualizações recentes do jogo",
     "version": "Versão {{version}}",
@@ -2056,7 +2058,11 @@
     "matchday": "Rodada {{round}}",
     "vs": "x",
     "selectLeague": "Liga",
-    "clubSearch": { "label": "Buscar time", "placeholder": "Nome do time", "none": "Nenhum time encontrado" },
+    "clubSearch": {
+      "label": "Buscar time",
+      "placeholder": "Nome do time",
+      "none": "Nenhum time encontrado"
+    },
     "searchLeaguesPlaceholder": "Pesquisar ligas…",
     "loadingLeagues": "Carregando ligas...",
     "loadingStandings": "Carregando tabela…",
@@ -2994,8 +3000,15 @@
   "champions": {
     "tab": "Campeões",
     "filter": "Competições",
-    "filters": { "main": "Principais", "continents": "Continentes" },
-    "groups": { "continental": "Continentais", "national": "Seleções", "leagues": "Ligas" },
+    "filters": {
+      "main": "Principais",
+      "continents": "Continentes"
+    },
+    "groups": {
+      "continental": "Continentais",
+      "national": "Seleções",
+      "leagues": "Ligas"
+    },
     "competition": "Competição",
     "season": "Temporada",
     "champion": "Campeão",
@@ -3127,7 +3140,8 @@
         "contract": "fim de contrato",
         "interim": "interino",
         "left_world": "saiu da liga"
-      }
+      },
+      "assets": "Bens: {{list}}"
     },
     "referees": {
       "tab": "Árbitros"
@@ -3424,7 +3438,10 @@
       "years_other": "{{count}} temporadas",
       "compensation": "Compensação ao {{club}}: {{amount}} (já descontada)",
       "tier": "{{tier}}ª divisão",
-      "viewSquad": "Ver elenco"
+      "viewSquad": "Ver elenco",
+      "wageNow": "Hoje você ganha {{wage}}/sem",
+      "earningGoal_one": "Próxima meta {{goal}}: faltam {{missing}}, cerca de {{count}} temporada com este salário",
+      "earningGoal_other": "Próxima meta {{goal}}: faltam {{missing}}, cerca de {{count}} temporadas com este salário"
     }
   },
   "negotiation": {
@@ -3956,6 +3973,17 @@
     }
   },
   "managerContract": {
+    "boardCounter": "A diretoria não chega a tanto. Esta é a nova oferta.",
+    "noRounds": "A diretoria não discute mais: é pegar ou largar.",
+    "wageLabel": "Salário semanal",
+    "seasonsLabel": "Temporadas",
+    "wageLess": "Pedir menos",
+    "wageMore": "Pedir mais",
+    "negotiateHint": "Se pedir mais do que a diretoria aceita, ela responde com o máximo que paga e perde um pouco de confiança em você.",
+    "sendProposal": "Enviar proposta",
+    "backToOffer": "Voltar à oferta",
+    "negotiate_one": "Negociar ({{count}} tentativa)",
+    "negotiate_other": "Negociar ({{count}} tentativas)",
     "accept": "Aceitar",
     "decline": "Recusar",
     "renewed": "Você renovou o contrato.",
@@ -4666,7 +4694,8 @@
       "list": "Conquistas",
       "profile": "Perfil",
       "manager": "Técnico",
-      "shop": "Loja"
+      "shop": "Loja",
+      "assets": "Patrimônio"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
@@ -4800,6 +4829,10 @@
       "national_wins": {
         "name": "Herói nacional",
         "desc": "Vitórias com a seleção que você treina"
+      },
+      "career_earnings": {
+        "name": "Pé-de-meia",
+        "desc": "Quanto você ganhou na carreira"
       }
     },
     "titles": {
@@ -4829,7 +4862,8 @@
       "manager_awards": "Técnico do mundo",
       "top_scorer": "Fábrica de gols",
       "league_unbeaten": "O invencível",
-      "national_wins": "Herói nacional"
+      "national_wins": "Herói nacional",
+      "career_earnings": "Pé-de-meia"
     },
     "secrets": {
       "fortress": {
@@ -5060,7 +5094,47 @@
     },
     "contractLine": "Sua negociação: {{value}}",
     "daySummary_one": "{{count}} conquista desbloqueada",
-    "daySummary_other": "{{count}} conquistas desbloqueadas"
+    "daySummary_other": "{{count}} conquistas desbloqueadas",
+    "assets": {
+      "wallet": "Dinheiro disponível",
+      "earned": "Ganho na carreira",
+      "goals": "Metas de carreira: {{goals}}",
+      "none": "Nada comprado ainda",
+      "maxed": "Nível máximo",
+      "buy": "Comprar {{name}} · {{price}}",
+      "confirm": "Confirmar · {{price}}",
+      "cancel": "Cancelar",
+      "kind": {
+        "home": "Casa",
+        "car": "Carro",
+        "watch": "Relógio"
+      },
+      "level": {
+        "home": {
+          "1": "Apartamento",
+          "2": "Casa com jardim",
+          "3": "Mansão",
+          "4": "Cobertura de frente para o mar"
+        },
+        "car": {
+          "1": "Compacto",
+          "2": "Sedã executivo",
+          "3": "Esportivo",
+          "4": "Superesportivo"
+        },
+        "watch": {
+          "1": "Relógio de aço",
+          "2": "Relógio de ouro",
+          "3": "Relógio suíço",
+          "4": "Relógio de coleção"
+        }
+      },
+      "errors": {
+        "noMoney": "Você ainda não tem dinheiro para isso.",
+        "maxLevel": "Já está no nível máximo.",
+        "generic": "Não foi possível comprar. Tente de novo."
+      }
+    }
   },
   "nations": {
     "wales": "País de Gales",
@@ -5807,7 +5881,10 @@
     "advance": {
       "running": "Avançando… {{date}} de {{target}}",
       "runningShort": "{{date}} → {{target}}",
-      "turn": { "title": "Só falta você", "body": "Os outros técnicos estão prontos." },
+      "turn": {
+        "title": "Só falta você",
+        "body": "Os outros técnicos estão prontos."
+      },
       "simulate": "Simular",
       "simulateHint": "Simular: o jogo é decidido sem você assistir, quando o dia rodar",
       "simulated": "Jogo será simulado",
@@ -5964,7 +6041,13 @@
       "yellow": "Amarelo no {{team}}",
       "sub": "Troca no {{team}}",
       "subLine": "sai {{out}}, entra {{in}}",
-      "short": {"goal": "Gol", "disallowed": "Gol anulado pelo VAR", "red": "Expulsão", "yellow": "Amarelo", "sub": "Troca"}
+      "short": {
+        "goal": "Gol",
+        "disallowed": "Gol anulado pelo VAR",
+        "red": "Expulsão",
+        "yellow": "Amarelo",
+        "sub": "Troca"
+      }
     },
     "liveBadge": "ao vivo",
     "liveLine": "ao vivo · {{score}} · {{minute}}'",

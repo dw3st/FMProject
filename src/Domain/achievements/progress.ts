@@ -66,6 +66,8 @@ export interface AchievementSnapshot {
   extraSeats: number;
   /** Facility levels built since the manager arrived (sum over the items of the levels above the arrival ones). */
   facilityLevels: number;
+  /** What the manager earned over his career (wages, severance). */
+  earnings?: number;
 }
 
 export function titleCounts(m: ManagerRecord | null): Record<"league" | "cup" | "continental" | "promotion", number> {
@@ -100,6 +102,7 @@ export function trackValues(state: AchievementsState, snap: AchievementSnapshot)
     shootout_wins: c.shootoutWins,
     derby_wins: c.derbyWins,
     national_wins: c.nationalWins ?? 0,
+    career_earnings: snap.earnings ?? 0,
     youth_promoted: state.promotedIds.length,
     young_award: c.youngAwards,
     sales_profit: c.salesProfit,

@@ -59,10 +59,14 @@ export const managerRoutes = {
     const mine = (m: { seatId?: string }) => m.seatId === auth.seatId;
     // The asking seat's manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
     const profile = page.items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;
+    // Human managers show the assets they bought.
+    const assetsBySeat = new Map(await Promise.all(page.items.filter((m) => m.seatId).map(async (m) =>
+      [m.seatId!, (await saveService.getSeat(saveId, m.seatId!))?.managerAssets] as const)));
     return Response.json({
       ...page,
       items: page.items.map((m) => ({
         ...m,
+        ...(m.seatId && assetsBySeat.get(m.seatId) ? { assets: assetsBySeat.get(m.seatId) } : {}),
         isPlayer: mine(m),
         clubName: m.squadId ? clubNameOf(m.squadId) : null,
         ...(m.squadId.startsWith("nat_") ? { national: true } : {}),

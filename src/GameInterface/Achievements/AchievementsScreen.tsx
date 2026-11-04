@@ -14,6 +14,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { AssetsTab } from "@/GameInterface/Achievements/AssetsTab";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
@@ -31,8 +32,8 @@ import {
   ACHIEVEMENT_CATEGORIES, MANAGER_ATTRIBUTES, type Badge, type Frame, type StadiumDecor, type TrackId, type TrackView,
 } from "@/types/achievementTypes";
 
-type Tab = "list" | "profile" | "manager" | "shop";
-const TABS: Tab[] = ["list", "profile", "manager", "shop"];
+type Tab = "list" | "profile" | "manager" | "shop" | "assets";
+const TABS: Tab[] = ["list", "profile", "manager", "shop", "assets"];
 const TIERS = ["bronze", "silver", "gold"] as const;
 
 function initialTab(): Tab {
@@ -94,6 +95,7 @@ export function AchievementsScreen() {
       {tab === "list" && <ListTab data={data} />}
       {tab === "profile" && <ProfileTab data={data} saveId={saveId} onChange={setData} />}
       {tab === "manager" && <ManagerTab data={data} />}
+      {tab === "assets" && <AssetsTab />}
       {tab === "shop" && <ShopTab data={data} saveId={saveId} onChange={(d) => { setData(d); void refresh(); }} />}
     </ScreenContainer>
   );

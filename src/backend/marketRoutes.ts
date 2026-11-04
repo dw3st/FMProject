@@ -1,3 +1,5 @@
+import { answerRenewalProposal, managerWeeklyWage as renewalWage, renewalLimits, MANAGER_CONTRACT } from "@/Domain/managers/managerContract";
+import { applyRenewalOverreach } from "@/Domain/boardFans/boardFans";
 import { saveService } from "@/backend/SaveService";
 import { starLimitResponse } from "@/backend/starLimitWorld";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -148,13 +150,39 @@ export const marketRoutes = {
       });
     }
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
-    const body = (await req.json().catch(() => null)) as { accept?: unknown } | null;
-    if (!body || typeof body.accept !== "boolean") return json({ error: "accept required" }, 400);
+    const body = (await req.json().catch(() => null)) as { accept?: unknown; wage?: unknown; seasons?: unknown } | null;
+    const proposing = !!body && body.wage !== undefined;
+    if (!body || (!proposing && typeof body.accept !== "boolean")) return json({ error: "accept required" }, 400);
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return json({ error: "save not found" }, 404);
       const offer = meta.managerRenewal;
       if (!offer || !meta.managerContract || offer.expires < meta.currentDate) return json({ error: "offerClosed" }, 409);
+      if (proposing) {
+        const squad = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
+        const limits = renewalLimits({
+          board: meta.board?.board ?? 60,
+          currentWage: meta.managerContract.wage,
+          reputationWage: renewalWage(squad ? wageRevenueBasisOf(squad) : 0, await reputationOf(saveService, saveId, meta)),
+        });
+        const answer = answerRenewalProposal(offer, { wage: body.wage, seasons: body.seasons }, limits);
+        if (answer.kind === "invalid") return json({ error: "invalidProposal" }, 400);
+        if (answer.kind === "noRounds") return json({ error: "noRounds", offer }, 409);
+        if (answer.kind === "countered") {
+          await saveService.updateSeat(saveId, auth.seatId, {
+            managerRenewal: answer.offer,
+            ...(meta.board ? { board: applyRenewalOverreach(meta.board, MANAGER_CONTRACT.COUNTER_BOARD) } : {}),
+          });
+          return json({ ok: true, status: "countered", offer: answer.offer, roundsLeft: MANAGER_CONTRACT.COUNTER_ROUNDS - (answer.offer.rounds ?? 0) });
+        }
+        const signed = renewedContract(meta.managerContract, { wage: answer.wage, seasons: answer.seasons }, meta.currentDate);
+        await saveService.updateSeat(saveId, auth.seatId, { managerContract: signed, managerRenewal: undefined });
+        await emitInboxMessage(saveId, buildBoardMessage({
+          date: meta.currentDate, kind: "contract_renewed",
+          contract: { wage: signed.wage, seasons: answer.seasons, until: signed.until },
+        }), saveService, auth.seatId);
+        return json({ ok: true, status: "renewed", contract: signed });
+      }
       if (!body.accept) {
         await saveService.updateSeat(saveId, auth.seatId, { managerRenewal: undefined });
         return json({ ok: true, status: "declined" });

@@ -57,7 +57,7 @@ export const QUICK_SIM_CONFIG = {
    * 4.41.51: 0.795 → 0.73 (× 0.918), the engine's world goals after the keeper started coming for the
    * penalty-spot cross (Premier + Championship, AI formations: 3.794 → 3.482 goals).
    */
-  BASE_GOALS: 0.73,
+  BASE_GOALS: 0.787,
   HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
@@ -158,7 +158,7 @@ export const QUICK_SIM_CONFIG = {
    * (they convert less). 4.41.51: 1.778 → 1.89, so the non-goal shots follow the engine (−2.2%) while
    * BASE_GOALS took the xG down 8.2%.
    */
-  SHOTS_PER_XG: 1.89,
+  SHOTS_PER_XG: 1.943,
   SHOTS_LEVEL_EXPONENT: -0.8,
 
   /**

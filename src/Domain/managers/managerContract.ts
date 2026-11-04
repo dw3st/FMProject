@@ -20,6 +20,15 @@ export const MANAGER_CONTRACT = {
   /** Board ≥ GOOD: 2 seasons at the new wage; ≥ OK: 1 season at the current wage; below: no renewal. */
   RENEWAL_GOOD: 60,
   RENEWAL_OK: 40,
+  /** Negotiating the renewal: proposals the board will discuss, each one above its limit costs COUNTER_BOARD. */
+  COUNTER_ROUNDS: 2,
+  COUNTER_BOARD: -1,
+  /** Board ≥ HIGH: up to 3 seasons and the reputation wage × 1,25; ≥ GOOD: 2 and × 1,1; below: 1 and the current wage × 1,05. */
+  COUNTER_BOARD_HIGH: 80,
+  COUNTER_WAGE_HIGH: 1.25,
+  COUNTER_WAGE_GOOD: 1.1,
+  COUNTER_WAGE_LOW: 1.05,
+  COUNTER_MAX_SEASONS: 3,
   /** Warning this many days before a contract that will not continue ends. */
   END_NOTICE_DAYS: 7,
   /** Sacked: SEVERANCE_SHARE × wage × weeks left (max MAX_WEEKS) to the manager. */
@@ -46,6 +55,8 @@ export interface ManagerRenewalOffer {
   expires: string;
   wage: number;
   seasons: number;
+  /** Proposals the manager already made on this offer. */
+  rounds?: number;
 }
 
 /** Weekly wage from the club's revenue basis (`wageRevenueBasis`) and the manager's reputation. */
@@ -178,4 +189,42 @@ export function renewedContract(contract: ManagerContract, offer: Pick<ManagerRe
  */
 export function renewalPending(offer: Pick<ManagerRenewalOffer, "expires"> | undefined | null, date: string | undefined): boolean {
   return !!offer && !!date && offer.expires >= date;
+}
+
+/** The most the board will sign, by its confidence in the manager. */
+export function renewalLimits(args: { board: number; currentWage: number; reputationWage: number }): { wage: number; seasons: number } {
+  const c = MANAGER_CONTRACT;
+  const best = Math.max(args.currentWage, args.reputationWage);
+  if (args.board >= c.COUNTER_BOARD_HIGH) return { wage: Math.round(best * c.COUNTER_WAGE_HIGH), seasons: c.COUNTER_MAX_SEASONS };
+  if (args.board >= c.RENEWAL_GOOD) return { wage: Math.round(best * c.COUNTER_WAGE_GOOD), seasons: 2 };
+  return { wage: Math.round(args.currentWage * c.COUNTER_WAGE_LOW), seasons: 1 };
+}
+
+export type RenewalAnswer =
+  | { kind: "agreed"; wage: number; seasons: number }
+  | { kind: "countered"; offer: ManagerRenewalOffer }
+  | { kind: "noRounds" }
+  | { kind: "invalid" };
+
+/**
+ * The manager proposes wage and seasons. Within the board's limits it is signed; above them the board answers with
+ * what it will pay (never less than it already offered), until the rounds run out and the offer on the table is final.
+ */
+export function answerRenewalProposal(
+  offer: ManagerRenewalOffer,
+  proposal: { wage: unknown; seasons: unknown },
+  limits: { wage: number; seasons: number },
+): RenewalAnswer {
+  const { wage, seasons } = proposal;
+  if (typeof wage !== "number" || !Number.isInteger(wage) || wage <= 0) return { kind: "invalid" };
+  if (typeof seasons !== "number" || !Number.isInteger(seasons) || seasons < 1 || seasons > MANAGER_CONTRACT.COUNTER_MAX_SEASONS) return { kind: "invalid" };
+  const maxWage = Math.max(limits.wage, offer.wage);
+  const maxSeasons = Math.max(limits.seasons, offer.seasons);
+  if (wage <= maxWage && seasons <= maxSeasons) return { kind: "agreed", wage, seasons };
+  const rounds = offer.rounds ?? 0;
+  if (rounds >= MANAGER_CONTRACT.COUNTER_ROUNDS) return { kind: "noRounds" };
+  return {
+    kind: "countered",
+    offer: { ...offer, wage: Math.max(offer.wage, Math.min(wage, maxWage)), seasons: Math.max(offer.seasons, Math.min(seasons, maxSeasons)), rounds: rounds + 1 },
+  };
 }

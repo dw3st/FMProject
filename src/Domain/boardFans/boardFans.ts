@@ -248,6 +248,11 @@ export function applyPurchase(state: BoardState, p: { balanceAfter: number }): B
   return p.balanceAfter < 0 ? moveMeters(state, BOARD_FANS.transfer.OVER_BUDGET_BOARD, 0) : state;
 }
 
+/** The manager asked for more than the board will pay. */
+export function applyRenewalOverreach(state: BoardState, delta: number): BoardState {
+  return moveMeters(state, delta, 0);
+}
+
 /** The club took a bank loan: the board does not like debt. */
 export function applyBankLoan(state: BoardState): BoardState {
   return moveMeters(state, BOARD_FANS.transfer.BANK_LOAN_BOARD, 0);

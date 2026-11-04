@@ -1,0 +1,106 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { formatFee } from "@/Domain/money";
+import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon, type IconName } from "@/GameInterface/Icons";
+import { Button } from "@/GameInterface/ui/Button";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+
+const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
+const ICON: Record<AssetKind, IconName> = { home: "home", car: "car", watch: "watch" };
+
+/** The manager's own money: what he earned over the career and the assets it buys. */
+export function AssetsTab() {
+  const { t } = useTranslation();
+  const { session, save, refresh } = useGameSave();
+  const [confirming, setConfirming] = useState<AssetKind | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const earned = save?.managerEarnings ?? 0;
+  const wallet = managerWallet(earned, save?.managerSpent);
+  const assets = save?.managerAssets;
+
+  async function buy(kind: AssetKind) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/saves/${session?.saveId}/manager-assets`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind }),
+      });
+      if (!res.ok) {
+        const code = ((await res.json().catch(() => ({}))) as { error?: string }).error;
+        setError(t(`achievements.assets.errors.${code}`, { defaultValue: t("achievements.assets.errors.generic") }));
+      }
+      setConfirming(null);
+      await refresh({ background: true });
+    } catch {
+      setError(t("achievements.assets.errors.generic"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="card-arcade rounded-md p-4">
+          <p className={LABEL}>{t("achievements.assets.wallet")}</p>
+          <p className="font-display font-bold tabular-nums text-2xl text-primary m-0 mt-1">{formatFee(wallet)}</p>
+        </div>
+        <div className="card-arcade rounded-md p-4">
+          <p className={LABEL}>{t("achievements.assets.earned")}</p>
+          <p className="font-display font-bold tabular-nums text-2xl m-0 mt-1">{formatFee(earned)}</p>
+          <p className="text-sm text-muted-foreground tabular-nums m-0 mt-1">
+            {t("achievements.assets.goals", { goals: EARNING_GOALS.map((g) => formatFee(g)).join(" · ") })}
+          </p>
+        </div>
+      </div>
+
+      {error && <p role="alert" className="text-sm text-destructive m-0">{error}</p>}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {ASSET_KINDS.map((kind) => {
+          const level = assets?.[kind] ?? 0;
+          const price = nextAssetPrice(assets, kind);
+          return (
+            <div key={kind} className="card-arcade rounded-md p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Icon name={ICON[kind]} size={18} className="text-primary" />
+                <SectionTitle>{t(`achievements.assets.kind.${kind}`)}</SectionTitle>
+              </div>
+              <p className="text-sm font-semibold text-foreground tabular-nums m-0">
+                {level > 0 ? t(`achievements.assets.level.${kind}.${level}`) : t("achievements.assets.none")}
+              </p>
+              <ul className="m-0 p-0 list-none space-y-1">
+                {ASSET_PRICES[kind].map((p, i) => (
+                  <li key={i} className={`flex justify-between gap-3 text-sm tabular-nums ${i < level ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className="flex items-center gap-1.5">
+                      {i < level && <Icon name="check" size={16} className="text-primary" />}
+                      {t(`achievements.assets.level.${kind}.${i + 1}`)}
+                    </span>
+                    <span>{formatFee(p)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-auto">
+                {price === null ? (
+                  <p className="text-sm text-muted-foreground tabular-nums m-0">{t("achievements.assets.maxed")}</p>
+                ) : confirming === kind ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button className="tabular-nums" disabled={busy} onClick={() => void buy(kind)}>{t("achievements.assets.confirm", { price: formatFee(price) })}</Button>
+                    <Button variant="secondary" disabled={busy} onClick={() => setConfirming(null)}>{t("achievements.assets.cancel")}</Button>
+                  </div>
+                ) : (
+                  <Button className="tabular-nums" disabled={busy || price > wallet} title={price > wallet ? t("achievements.assets.errors.noMoney") : undefined} onClick={() => setConfirming(kind)}>
+                    {t("achievements.assets.buy", { name: t(`achievements.assets.level.${kind}.${level + 1}`), price: formatFee(price) })}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

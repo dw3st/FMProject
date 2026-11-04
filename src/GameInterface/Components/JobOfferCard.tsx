@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { nextEarningGoal } from "@/Domain/managers/assets";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { countryDisplayName } from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
@@ -42,7 +43,11 @@ export function JobOfferCard({
 }) {
   const { t, i18n } = useTranslation();
   const [confirming, setConfirming] = useState(false);
-  const unpaidLoan = useGameSave().squad?.bankLoan?.remaining ?? 0;
+  const { squad: mySquad, save } = useGameSave();
+  const unpaidLoan = mySquad?.bankLoan?.remaining ?? 0;
+  const earned = save?.managerEarnings ?? 0;
+  const currentWage = save?.managerContract?.wage;
+  const goal = offer.wage !== undefined ? nextEarningGoal(earned, offer.wage) : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [declined, setDeclined] = useState(false);
@@ -123,6 +128,12 @@ export function JobOfferCard({
             <dt className={label}>{t("jobs.offer.wage")}</dt>
             <dd className="m-0 text-sm text-foreground tabular-nums">
               {t("jobs.offer.wageValue", { wage: formatFee(offer.wage) })} · {t("jobs.offer.years", { count: offer.seasons ?? 1 })}
+              {currentWage !== undefined && currentClubName && (
+                <span className="block text-muted-foreground">{t("jobs.offer.wageNow", { wage: formatFee(currentWage) })}</span>
+              )}
+              {goal && (
+                <span className="block text-muted-foreground">{t("jobs.offer.earningGoal", { goal: formatFee(goal.goal), missing: formatFee(goal.missing), count: goal.seasons })}</span>
+              )}
             </dd>
           </div>
         )}

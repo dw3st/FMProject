@@ -78,6 +78,10 @@ export interface SeatState {
   careerStart?: string;
   managerContract?: ManagerContract;
   managerEarnings?: number;
+  /** Spent on personal assets (`src/Domain/managers/assets.ts`); earnings never go down. */
+  managerSpent?: number;
+  /** Level bought of each personal asset. */
+  managerAssets?: import("@/Domain/managers/assets").ManagerAssets;
   managerRenewal?: ManagerRenewalOffer;
   managerContractNotices?: string[];
   inboxPrefs?: InboxPrefs;
@@ -96,7 +100,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];

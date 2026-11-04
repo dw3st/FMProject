@@ -209,3 +209,7 @@ contagem de convites novos do dia entra no `jobOffers` da resposta (o avanço r�
 ## Assentos (Etapa 43)
 
 Emprego, propostas, demissão e contrato do técnico são do assento (`seat.json`); nenhum clube com assento oferece emprego. "O clube do jogador" = o clube do assento. Ver `.claude/rules/game/multiplayer.md`.
+
+## Negociar a renovação e o dinheiro do técnico (4.44)
+
+Reports de tester. **Renovação:** `POST /manager-contract { wage, seasons }` (`answerRenewalProposal`, `renewalLimits`): diretoria ≥ 80 até 3 temporadas e o salário pela reputação × 1,25; ≥ 60 até 2 e × 1,1; abaixo 1 e o salário atual × 1,05 (a oferta na mesa nunca piora). Dentro do limite assina; acima, a diretoria devolve o máximo (`countered`) e perde 1 ponto; 2 tentativas, depois 409 `noRounds`. **Dinheiro:** `managerEarnings` nunca cai; `SeatState.managerSpent` e `managerAssets` (casa, carro, relógio, 4 níveis, `src/Domain/managers/assets.ts`, `POST /manager-assets`). Só prestígio: nada toca o clube. Trilha de conquistas `career_earnings` (€1M, €10M, €50M; 28 trilhas, 101 conquistas). A proposta de emprego mostra o salário de hoje e a próxima meta (`nextEarningGoal`). Aba Patrimônio em `/achievements`, bens no ranking de técnicos. Sem arte própria ainda (ícones).

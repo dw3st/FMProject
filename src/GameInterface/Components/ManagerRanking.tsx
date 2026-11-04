@@ -29,6 +29,7 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   /** The human manager: wages and severance received in the career. */
   earnings?: number;
   /** Bank loans he left unpaid at a club. */
+  assets?: Partial<Record<"home" | "car" | "watch", number>>;
   unpaidDebts?: { squadId: string; clubName: string; amount: number; date: string; penalty: number }[];
   /** Face (Etapa 31b): current club's colours, nationality, and the human manager's saved avatar. */
   clubColors?: [string, string] | null;
@@ -132,7 +133,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.unpaidDebts?.length ?? 0) > 0 || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.unpaidDebts?.length ?? 0) > 0 || !!m.assets || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
@@ -172,6 +173,13 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                 {m.isPlayer && m.earnings !== undefined && (
                   <p className="text-sm text-foreground m-0 mb-3 tabular-nums">
                     {t("statsScreen.managers.earnings", { amount: formatFee(m.earnings) })}
+                  </p>
+                )}
+                {m.assets && Object.keys(m.assets).length > 0 && (
+                  <p className="text-sm text-foreground m-0 mb-3">
+                    {t("statsScreen.managers.assets", {
+                      list: (["home", "car", "watch"] as const).filter((k) => m.assets![k]).map((k) => t(`achievements.assets.level.${k}.${m.assets![k]}`)).join(" · "),
+                    })}
                   </p>
                 )}
                 {m.unpaidDebts && m.unpaidDebts.length > 0 && (

@@ -16,6 +16,11 @@ export const THROUGH_BALL_CONFIG = {
   /** Cell must be at least this many yards ahead of the passer in attack dir. */
   MIN_FORWARD_PROGRESS: 5,
   /**
+   * Cell must be at least this far from a touchline: the ball keeps rolling about 4 yards after it lands
+   * and the aim has an error, so a ball aimed nearer than this runs out for the opponent's throw-in (tester report).
+   */
+  MIN_TOUCHLINE_MARGIN: 8,
+  /**
    * The intended runner must currently be at least this many yards BEHIND the
    * cell in attack direction — i.e. they must run *forward* onto it. A cell
    * that is level with or behind the attacker isn't a through ball; it's a

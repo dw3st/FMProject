@@ -1,0 +1,29 @@
+import { requireSeat } from "@/backend/auth/middleware";
+import { withSaveLock } from "@/backend/saveLock";
+import { saveService } from "@/backend/SaveService";
+import { assetRefusal, isAssetKind, managerWallet, nextAssetPrice } from "@/Domain/managers/assets";
+
+type Req = Request & { params: Record<string, string> };
+
+export const managerAssetRoutes = {
+  /** The manager buys the next level of a personal asset with his own money (never the club's). */
+  "/api/saves/:saveId/manager-assets": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await req.json().catch(() => null) as { kind?: unknown } | null;
+    const kind = body?.kind;
+    if (!isAssetKind(kind)) return Response.json({ error: "invalidAsset" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const seat = await saveService.getSeat(saveId, auth.seatId);
+      if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+      const refusal = assetRefusal(seat.managerAssets, kind, managerWallet(seat.managerEarnings, seat.managerSpent));
+      if (refusal) return Response.json({ error: refusal }, { status: 409 });
+      const managerAssets = { ...seat.managerAssets, [kind]: (seat.managerAssets?.[kind] ?? 0) + 1 };
+      const managerSpent = (seat.managerSpent ?? 0) + nextAssetPrice(seat.managerAssets, kind)!;
+      await saveService.updateSeat(saveId, auth.seatId, { managerAssets, managerSpent });
+      return Response.json({ managerAssets, managerSpent });
+    });
+  },
+};

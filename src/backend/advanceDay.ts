@@ -3323,6 +3323,7 @@ export async function advanceOneDay(
         managers: await managerTracker.list(),
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
+        earnings: (ds.meta.managerEarnings ?? 0) + ds.managerEarned,
         ...(ds.rollover.seasonEnded ? { rollover: { championOf: ds.rollover.championOf, moves: ds.rollover.moves, objectiveMet: ds.rollover.objectiveMet } } : {}),
         sacked: !!ds.job.ended && ds.job.ended.reason !== "contract",
         leftClub: !!ds.job.ended,

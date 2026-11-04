@@ -21,6 +21,7 @@ import { refereeRoutes } from "@/backend/refereeRoutes";
 import { registrationRoutes } from "@/backend/registrationRoutes";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { bankLoanRoutes } from "@/backend/bankLoanRoutes";
+import { managerAssetRoutes } from "@/backend/managerAssetRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
 import { awardsRoutes } from "@/backend/awardsRoutes";
@@ -111,6 +112,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...registrationRoutes,
   ...facilityRoutes,
   ...bankLoanRoutes,
+  ...managerAssetRoutes,
   ...rebornRoutes,
   ...managerRoutes,
   ...awardsRoutes,

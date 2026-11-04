@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44",
+    date: "2026-11-04",
+    time: "16:13",
+    items: [
+      {
+        pt: "Renovação do técnico negociável: proponha salário e temporadas. A diretoria aceita ou responde com o máximo que paga, conforme a confiança em você.",
+        en: "The manager's renewal can be negotiated: propose a wage and seasons. The board accepts or answers with the most it will pay, depending on its confidence in you.",
+      },
+      {
+        pt: "O dinheiro do técnico agora vale: metas de ganhos na carreira dão conquistas, a proposta de emprego mostra quanto falta para a próxima, e a aba Patrimônio compra casa, carro e relógio.",
+        en: "The manager's money now counts: career earnings goals give achievements, a job offer shows how far the next one is, and the Assets tab buys a home, a car and a watch.",
+      },
+      {
+        pt: "Novidades organizadas por mês: o mês atual aberto e os anteriores a um clique.",
+        en: "What's new sorted by month: the current month open and the earlier ones a click away.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Jogadores não lançam mais bolas para perto da lateral que só serviam para dar lateral ao adversário. Com menos jogadas jogadas fora, saem um pouco mais de chutes e gols.",
+        en: "Players no longer play balls next to the touchline that only gave the opponent a throw-in. With fewer moves thrown away, a few more shots and goals come.",
+      },
+    ],
+  },
+  {
     version: "4.43.1",
     date: "2026-11-04",
     time: "15:46",

@@ -22,7 +22,7 @@ import {
   computeCrowdGrid, sampleCellSum, type CrowdGrid, type GridMatrix,
 } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
-import { PITCH_LENGTH, PITCH_MID_X } from '@/GameEngine/Domain/pitch';
+import { PITCH_LENGTH, PITCH_MID_X, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { computeOpenAngle, MAX_OPEN_ANGLE } from '@/GameEngine/Infrastructure/ActionOutcomes';
@@ -289,6 +289,7 @@ export function enumerateCandidateCells(
       // Phase 1 cull — fast rejects
       const forwardOffset = (cx - holder.x) * holder.attackDir;
       if (forwardOffset < THROUGH_BALL_CONFIG.MIN_FORWARD_PROGRESS) continue;
+      if (Math.min(cy, PITCH_WIDTH - cy) < THROUGH_BALL_CONFIG.MIN_TOUCHLINE_MARGIN) continue;
 
       const inOpponentHalf = holder.attackDir === 1 ? cx > PITCH_MID_X : cx < PITCH_MID_X;
       if (!inOpponentHalf) continue;

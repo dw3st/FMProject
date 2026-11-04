@@ -38,6 +38,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   seasons:            { category: "career", attribute: "discipline", thresholds: [3, 10, 20] },
   clubs:              { category: "career", attribute: "discipline", thresholds: [2, 4, 6] },
   ranking:            { category: "career", attribute: "discipline", thresholds: [100, 20, 1], kind: "rank" },
+  career_earnings:    { category: "career", attribute: "negotiation", thresholds: [1_000_000, 10_000_000, 50_000_000] },
   manager_awards:     { category: "career", attribute: "discipline", thresholds: [1, 3, 1], goldRule: "world_manager" },
   top_scorer:         { category: "squad", attribute: "tactics", thresholds: [1, 3, 5] },
   league_unbeaten:    { category: "squad", attribute: "tactics", thresholds: [10, 19, 1], goldRule: "invincible" },
