@@ -2803,7 +2803,7 @@
     },
     "bankLoan": {
       "title": "Empréstimo do banco",
-      "intro": "Até 25% da receita anual, um empréstimo por vez, com juros de 8% por temporada. Se você sair do clube, a dívida fica com ele.",
+      "intro": "Até {{share}}% da receita anual, um empréstimo por vez, com juros de {{rate}}% por temporada. A diretoria não gosta: pedir custa confiança. Se você sair do clube devendo, a dívida entra na sua carreira e derruba sua reputação.",
       "amount": "Valor",
       "term": "Prazo",
       "seasons_one": "{{count}} temporada",
@@ -3118,6 +3118,8 @@
       "noClub": "Sem clube",
       "interim": "Interino",
       "earnings": "Ganhos na carreira: {{amount}}",
+      "unpaidDebts": "Dívidas deixadas",
+      "unpaidDebt": "{{club}} · {{amount}} em {{year}} · reputação −{{penalty}}",
       "pointsLine": "{{points}} pts",
       "leftReason": {
         "sacked": "demitido",
@@ -3401,6 +3403,7 @@
     "actionFailed": "Não foi possível responder à proposta. Tente de novo.",
     "confirmTitle": "Aceitar a proposta?",
     "confirmLeave": "Você vai deixar o {{from}} e assumir o {{to}}. Elenco, orçamento e diretoria recomeçam no clube novo.",
+    "confirmDebt": "O clube ainda deve {{amount}} ao banco. Saindo agora, a dívida entra na sua carreira e derruba sua reputação.",
     "confirmTake": "Você vai assumir o {{to}}.",
     "confirm": "Aceitar",
     "switching": "Trocando de clube...",

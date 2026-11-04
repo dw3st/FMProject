@@ -1,3 +1,5 @@
+import { recordUnpaidDebt, unpaidDebtPenalty } from "@/Domain/finance/bankLoan";
+import type { UnpaidDebt } from "@/types/managerTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { addDays } from "@/Domain/dates";
 import type { FinancialTier } from "@/types/playerTypes";
@@ -68,12 +70,12 @@ export function reputation(r: ReputationInput): number {
 /** A seat's manager's reputation from the ranking file, the board and the date's year. */
 export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string): number {
   const me = managers.find((m) => m.seatId === seatId);
-  return reputation({
+  return Math.max(0, reputation({
     rankPercentile: me ? rankPercentile(managers, me.id) : 0.5,
     board,
     titlePoints: me ? recentTitlePoints(me.titles, year) : 0,
     seasons: me?.seasons ?? 0,
-  });
+  }) - unpaidDebtPenalty(me));
 }
 
 // ── Club prestige ─────────────────────────────────────────────────────────────
@@ -300,13 +302,13 @@ export function mergeOffers(current: JobOffer[], incoming: JobOffer[]): JobOffer
  */
 export function moveHumanManager(
   managers: ManagerRecord[],
-  args: { seatId: string; toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string },
+  args: { seatId: string; toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string; unpaidDebt?: UnpaidDebt | null },
 ): ManagerRecord[] {
   const out: ManagerRecord[] = [];
   for (const m of managers) {
     if (m.seatId === args.seatId) {
       const clubs = closePassage(m.clubs, args.date, "moved");
-      out.push(cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] }));
+      out.push(recordUnpaidDebt(cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] }), args.unpaidDebt));
     } else if (!m.seatId && m.squadId === args.toSquadId) {
       // An interim with nothing to his name just disappears (as when an AI club hires).
       if (!(m.interim && m.points === 0 && m.titles.length === 0)) out.push(toFree(m, args.date, m.interim ? "interim" : "moved"));
@@ -326,12 +328,12 @@ export function moveHumanManager(
  */
 export function sackHumanManager(
   managers: ManagerRecord[],
-  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" | "left_world" },
+  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" | "left_world"; unpaidDebt?: UnpaidDebt | null },
 ): ManagerRecord[] {
   const me = managers.find((m) => m.seatId === args.seatId);
   if (!me || !me.squadId) return managers;
   const out = managers.map((m) =>
-    m.seatId === args.seatId ? cleanRecord({ ...m, squadId: "", freeSince: args.date, clubs: closePassage(m.clubs, args.date, args.left ?? "sacked") }) : m);
+    m.seatId === args.seatId ? recordUnpaidDebt(cleanRecord({ ...m, squadId: "", freeSince: args.date, clubs: closePassage(m.clubs, args.date, args.left ?? "sacked") }), args.unpaidDebt) : m);
   if (!out.some((m) => !m.seatId && m.squadId === me.squadId)) {
     out.push(makeInterim(me.squadId, args.clubName, args.date, new Set(out.map((m) => m.id))));
   }

@@ -28,6 +28,8 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   free?: boolean;
   /** The human manager: wages and severance received in the career. */
   earnings?: number;
+  /** Bank loans he left unpaid at a club. */
+  unpaidDebts?: { squadId: string; clubName: string; amount: number; date: string; penalty: number }[];
   /** Face (Etapa 31b): current club's colours, nationality, and the human manager's saved avatar. */
   clubColors?: [string, string] | null;
   nationality?: string | null;
@@ -130,7 +132,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.unpaidDebts?.length ?? 0) > 0 || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
@@ -171,6 +173,20 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                   <p className="text-sm text-foreground m-0 mb-3 tabular-nums">
                     {t("statsScreen.managers.earnings", { amount: formatFee(m.earnings) })}
                   </p>
+                )}
+                {m.unpaidDebts && m.unpaidDebts.length > 0 && (
+                  <div className="mb-3">
+                    <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-destructive m-0 mb-1">
+                      {t("statsScreen.managers.unpaidDebts")}
+                    </p>
+                    <ul className="m-0 p-0 list-none space-y-1">
+                      {m.unpaidDebts.map((d) => (
+                        <li key={d.squadId + d.date} className="text-sm text-foreground tabular-nums">
+                          {t("statsScreen.managers.unpaidDebt", { club: d.clubName, amount: formatFee(d.amount), year: d.date.slice(0, 4), penalty: d.penalty })}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 {m.clubs && m.clubs.length > 0 && (
                   <div className="mb-3">

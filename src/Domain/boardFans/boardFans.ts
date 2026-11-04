@@ -248,6 +248,11 @@ export function applyPurchase(state: BoardState, p: { balanceAfter: number }): B
   return p.balanceAfter < 0 ? moveMeters(state, BOARD_FANS.transfer.OVER_BUDGET_BOARD, 0) : state;
 }
 
+/** The club took a bank loan: the board does not like debt. */
+export function applyBankLoan(state: BoardState): BoardState {
+  return moveMeters(state, BOARD_FANS.transfer.BANK_LOAN_BOARD, 0);
+}
+
 /** Seasons (distinct history rows) a player spent at the club. */
 function seasonsAtClub(player: RosterPlayer, squadId: string): number {
   return new Set((player.history ?? []).filter((r) => r.squadId === squadId).map((r) => r.season)).size;

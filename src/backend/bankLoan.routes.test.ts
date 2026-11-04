@@ -58,6 +58,7 @@ describe("bank loan route", () => {
     const taken = (await saveService.getSquadById(saveId, "33"))!;
     expect(taken.bankLoan?.remaining).toBe(quote.total);
     expect(taken.finances!.budget).toBe(before.finances!.budget + amount);
+    expect((await saveService.getSeat(saveId, seatId))!.board!.board).toBe(57);
     expect((await call(session.token, { amount, seasons: 1 })).status).toBe(409);
 
     // Advance to the first Monday after the loan: one payment, in the ledger, and the debt goes down.
@@ -82,9 +83,10 @@ describe("bank loan route", () => {
     // The ledger still sums to the balance.
     expect(entries.reduce((t, e) => t + e.amount, 0)).toBe(after.finances!.budget);
 
-    // Leaving the club: an AI club has no cash, the debt stays behind with it and never follows the manager.
+    // Leaving the club: an AI club has no cash, so the loan ends and comes back as the mark for the manager's career.
     const ref = (await saveService.resolveSquadId(saveId, "33"))!;
-    await releaseHumanClub(saveService, saveId, seatId, { squadId: "33", date });
+    const debt = await releaseHumanClub(saveService, saveId, seatId, { squadId: "33", date });
+    expect(debt?.amount).toBe(after.bankLoan!.remaining);
     const { bankLoan } = (await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug))!;
     expect(bankLoan).toBeUndefined();
   }, 120_000);

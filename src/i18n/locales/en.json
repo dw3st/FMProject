@@ -2803,7 +2803,7 @@
     },
     "bankLoan": {
       "title": "Bank loan",
-      "intro": "Up to 25% of annual revenue, one loan at a time, with 8% interest per season. If you leave the club, the debt stays with it.",
+      "intro": "Up to {{share}}% of annual revenue, one loan at a time, with {{rate}}% interest per season. The board dislikes it: asking costs confidence. If you leave the club owing, the debt goes on your career and lowers your reputation.",
       "amount": "Amount",
       "term": "Term",
       "seasons_one": "{{count}} season",
@@ -3118,6 +3118,8 @@
       "noClub": "No club",
       "interim": "Interim",
       "earnings": "Career earnings: {{amount}}",
+      "unpaidDebts": "Debts left behind",
+      "unpaidDebt": "{{club}} · {{amount}} in {{year}} · reputation −{{penalty}}",
       "pointsLine": "{{points}} pts",
       "leftReason": {
         "sacked": "sacked",
@@ -3401,6 +3403,7 @@
     "actionFailed": "Could not answer the offer. Try again.",
     "confirmTitle": "Accept the offer?",
     "confirmLeave": "You will leave {{from}} and take over {{to}}. The squad, the budget and the board start over at the new club.",
+    "confirmDebt": "The club still owes the bank {{amount}}. Leaving now, the debt goes on your career and lowers your reputation.",
     "confirmTake": "You will take over {{to}}.",
     "confirm": "Accept",
     "switching": "Changing club...",

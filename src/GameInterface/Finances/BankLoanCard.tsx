@@ -75,7 +75,7 @@ export function BankLoanCard({ saveId, squad, board, onTaken }: { saveId: string
   return (
     <div className="card-arcade rounded-md p-4">
       <SectionTitle className="mb-1">{t("financesScreen.bankLoan.title")}</SectionTitle>
-      <p className="text-sm text-muted-foreground m-0 mb-4">{t("financesScreen.bankLoan.intro")}</p>
+      <p className="text-sm text-muted-foreground m-0 mb-4">{t("financesScreen.bankLoan.intro", { share: Math.round(BANK_LOAN.REVENUE_SHARE * 100), rate: Math.round(BANK_LOAN.ANNUAL_RATE * 100) })}</p>
 
       {blocked ? (
         <p className="text-sm text-muted-foreground m-0">{t("financesScreen.bankLoan.boardLow", { min: BANK_LOAN.MIN_BOARD })}</p>

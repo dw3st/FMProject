@@ -98,6 +98,8 @@ export const BOARD_FANS = {
     BIG_SALE_BOARD: 3,
     /** A purchase that leaves the balance negative. */
     OVER_BUDGET_BOARD: -4,
+    /** Asking the bank for money. */
+    BANK_LOAN_BOARD: -3,
     /** Selling the squad's best player, or one with at least IDOL_SEASONS seasons at the club. */
     IDOL_SALE_FANS: -8,
     IDOL_SEASONS: 4,

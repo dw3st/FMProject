@@ -27,6 +27,17 @@ export interface ManagerPassage {
   left?: ManagerLeftReason;
 }
 
+/** A bank loan the manager left unpaid when he left a club: a mark on his career (`src/Domain/finance/bankLoan.ts`). */
+export interface UnpaidDebt {
+  squadId: string;
+  clubName: string;
+  /** What was still to pay, EUR. */
+  amount: number;
+  date: string;
+  /** Reputation points this debt costs. */
+  penalty: number;
+}
+
 export interface ManagerRecord {
   id: string;
   name: string;
@@ -63,6 +74,8 @@ export interface ManagerRecord {
   target?: { season: string; target: number };
   /** Best manager of a league season / of the world (`.claude/rules/game/awards.md`). */
   awards?: ManagerAward[];
+  /** Bank loans left unpaid: they stay on his record and lower his reputation. */
+  unpaidDebts?: UnpaidDebt[];
 }
 
 /** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */

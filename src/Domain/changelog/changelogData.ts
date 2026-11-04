@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.43.1",
+    date: "2026-11-04",
+    time: "15:46",
+    items: [
+      {
+        pt: "Empréstimo do banco mais duro: até 15% da receita anual, juros de 15% por temporada, a diretoria só autoriza a partir de 40 e perde confiança em você ao pedir.",
+        en: "A tougher bank loan: up to 15% of annual revenue, 15% interest per season, the board only authorises it from 40 and loses confidence in you when you ask.",
+      },
+      {
+        pt: "Sair de um clube devendo ao banco marca a sua carreira: a dívida aparece no ranking de técnicos e derruba a sua reputação para sempre.",
+        en: "Leaving a club that still owes the bank marks your career: the debt shows in the manager ranking and lowers your reputation for good.",
+      },
+    ],
+  },
+  {
     version: "4.43",
     date: "2026-11-04",
     time: "15:35",

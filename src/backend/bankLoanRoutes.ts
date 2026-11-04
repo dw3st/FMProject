@@ -5,6 +5,7 @@ import { recordMoney } from "@/backend/FinancialService";
 import { withSaveLock } from "@/backend/saveLock";
 import { SaveService } from "@/backend/SaveService";
 import { ledgerSeason } from "@/backend/staffRoutes";
+import { applyBankLoan } from "@/Domain/boardFans/boardFans";
 import { bankLoanRefusal, newBankLoan } from "@/Domain/finance/bankLoan";
 
 type Req = Request & { params: Record<string, string> };
@@ -35,6 +36,7 @@ export const bankLoanRoutes = {
       await recordMoney(service, saveId, await ledgerSeason(service, saveId, ref.leagueSlug, date), ref, {
         date, kind: "loan_in", amount, label: "Bank loan",
       }, auth.seatId);
+      if (meta.board) await service.updateSeat(saveId, auth.seatId, { board: applyBankLoan(meta.board) });
       await buffer.flush();
       return Response.json({ loan: bankLoan });
     });

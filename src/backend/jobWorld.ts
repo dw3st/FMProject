@@ -45,6 +45,8 @@ import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 import { logError } from "@/Logger";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { unpaidDebtOf } from "@/Domain/finance/bankLoan";
+import type { UnpaidDebt } from "@/types/managerTypes";
 import { aiBudgetWithPrize } from "@/Domain/finance/prizes";
 import {
   compensationFee, contractUntil, MANAGER_CONTRACT, managerWeeklyWage, offerSeasons, type ManagerContract,
@@ -269,13 +271,15 @@ async function ledgerSeasonOf(service: SaveService, saveId: string, league: stri
 export async function releaseHumanClub(
   service: SaveService, saveId: string, seatId: string, args: { squadId: string; date: string; compensation?: number },
   defer?: { sink?: SeatOfferSink; nudges?: SeatNudges },
-): Promise<void> {
+): Promise<UnpaidDebt | null> {
   const index = await service.getSquadIndex(saveId);
   const entry = index.byId(args.squadId);
-  if (!entry) return;
+  if (!entry) return null;
   const ref = { leagueSlug: entry.leagueSlug, clubSlug: entry.stem };
   let squad = await service.getSquad(saveId, ref.leagueSlug, ref.clubSlug);
-  if (!squad) return;
+  if (!squad) return null;
+  // The club turns AI and has no cash: the loan ends here, as a mark on the manager's career.
+  const unpaidDebt = unpaidDebtOf(squad, args.date);
   const balance = squad.finances?.budget ?? 0;
   if (balance !== 0) {
     squad = await recordMoney(
@@ -333,6 +337,7 @@ export async function releaseHumanClub(
   if (retired.some((r) => r.rebornSeatId === seatId && r.rebornOffer === "pending")) {
     await service.writeRetired(saveId, expireOffers(retired, seatId));
   }
+  return unpaidDebt;
 }
 
 /**
@@ -469,12 +474,12 @@ export async function acceptJobOffer(
   // Friends' league standings (part 5a): the passage at the old club closes before it turns AI (its table position counts).
   const standings = await standingsOn(service, saveId);
   if (employedAt && standings) await closeSeatPassage(service, saveId, seatId, date, "club_change");
-  if (employedAt) await releaseHumanClub(service, saveId, seatId, { squadId: employedAt, date, compensation }, { nudges });
+  const unpaidDebt = employedAt ? await releaseHumanClub(service, saveId, seatId, { squadId: employedAt, date, compensation }, { nudges }) : null;
 
   const managers = await service.getManagers(saveId);
   if (managers.length > 0) {
     await service.writeManagers(saveId, moveHumanManager(managers, {
-      seatId, toSquadId: offer.squadId, fromSquadId: employedAt, fromClubName: employedAt ? meta.clubName : undefined, date,
+      seatId, toSquadId: offer.squadId, fromSquadId: employedAt, fromClubName: employedAt ? meta.clubName : undefined, date, unpaidDebt,
     }));
   }
   // The old club hires by the AI rule (interim + vacancy, D4); the new one is no longer vacant.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { countryDisplayName } from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
@@ -41,6 +42,7 @@ export function JobOfferCard({
 }) {
   const { t, i18n } = useTranslation();
   const [confirming, setConfirming] = useState(false);
+  const unpaidLoan = useGameSave().squad?.bankLoan?.remaining ?? 0;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [declined, setDeclined] = useState(false);
@@ -155,6 +157,9 @@ export function JobOfferCard({
               ? t("jobs.confirmLeave", { from: currentClubName, to: offer.clubName })
               : t("jobs.confirmTake", { to: offer.clubName })}
           </p>
+          {currentClubName && unpaidLoan > 0 && (
+            <p className="text-sm text-destructive m-0 tabular-nums">{t("jobs.confirmDebt", { amount: formatFee(unpaidLoan) })}</p>
+          )}
           <div className="flex justify-end gap-4">
             <Button variant="secondary" disabled={busy} onClick={() => setConfirming(false)}>{t("common.cancel")}</Button>
             <Button disabled={busy} onClick={() => void answer(true)}>{busy ? t("jobs.switching") : t("jobs.confirm")}</Button>

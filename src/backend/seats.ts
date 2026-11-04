@@ -243,9 +243,9 @@ export async function removeSeat(
     }
 
     if (seat.clubId && !seat.unemployed) {
-      await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date }, { nudges });
+      const unpaidDebt = await releaseHumanClub(service, saveId, seatId, { squadId: seat.clubId, date }, { nudges });
       await service.writeManagers(saveId, sackHumanManager(await service.getManagers(saveId), {
-        seatId, date, clubName: seat.clubName, left: "left_world",
+        seatId, date, clubName: seat.clubName, left: "left_world", unpaidDebt,
       }));
       const meta = (await service.getMeta(saveId))!;
       const rng = mulberry32(seedFrom(`${saveId}:${seat.clubId}:${date}:vacancy`));

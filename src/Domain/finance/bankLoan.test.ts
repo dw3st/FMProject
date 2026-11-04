@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
 import {
-  BANK_LOAN, bankLoanAmounts, bankLoanLimit, bankLoanPaymentDue, bankLoanQuote, bankLoanRefusal, newBankLoan, withBankLoanPayment,
+  BANK_LOAN, bankLoanAmounts, bankLoanLimit, bankLoanPaymentDue, bankLoanQuote, bankLoanRefusal, newBankLoan, recordUnpaidDebt,
+  unpaidDebtOf, unpaidDebtPenalty, withBankLoanPayment,
 } from "@/Domain/finance/bankLoan";
+import { managerReputation, moveHumanManager, sackHumanManager } from "@/Domain/jobs/jobs";
+import type { ManagerRecord } from "@/types/managerTypes";
 import type { Squad } from "@/types/playerTypes";
 
 const MONDAY = "2030-10-21";
@@ -14,16 +17,16 @@ const squad = (extra: Partial<Squad> = {}) => ({
 
 describe("bank loan", () => {
   test("limit and amounts follow the revenue", () => {
-    expect(bankLoanLimit(squad())).toBe(25_000_000);
-    expect(bankLoanAmounts(25_000_000)).toEqual([6_200_000, 12_500_000, 18_700_000, 25_000_000]);
+    expect(bankLoanLimit(squad())).toBe(15_000_000);
+    expect(bankLoanAmounts(15_000_000)).toEqual([3_700_000, 7_500_000, 11_200_000, 15_000_000]);
     expect(bankLoanAmounts(100_000)).toEqual([100_000]);
     expect(bankLoanAmounts(0)).toEqual([]);
   });
 
-  test("the quote adds 8% a season and the payments cover the total", () => {
+  test("the quote adds 15% a season and the payments cover the total", () => {
     const q = bankLoanQuote(10_000_000, 2);
-    expect(q.total).toBe(11_600_000);
-    expect(q.interest).toBe(1_600_000);
+    expect(q.total).toBe(13_000_000);
+    expect(q.interest).toBe(3_000_000);
     expect(q.weeks).toBe(104);
     expect(q.weekly * q.weeks).toBeGreaterThanOrEqual(q.total);
   });
@@ -33,7 +36,7 @@ describe("bank loan", () => {
     expect(bankLoanRefusal(squad(), undefined, 10_000_000, 2)).toBeNull();
     expect(bankLoanRefusal(squad(), BANK_LOAN.MIN_BOARD, 10_000_000, 1)).toBeNull();
     expect(bankLoanRefusal(squad(), BANK_LOAN.MIN_BOARD - 1, 10_000_000, 1)).toBe("boardLow");
-    expect(bankLoanRefusal(squad(), 60, 25_100_000, 1)).toBe("overLimit");
+    expect(bankLoanRefusal(squad(), 60, 15_100_000, 1)).toBe("overLimit");
     expect(bankLoanRefusal(squad(), 60, 50_000, 1)).toBe("invalidAmount");
     expect(bankLoanRefusal(squad(), 60, "5", 1)).toBe("invalidAmount");
     expect(bankLoanRefusal(squad(), 60, 10_000_000, 3)).toBe("invalidSeasons");
@@ -55,6 +58,26 @@ describe("bank loan", () => {
     expect(after.bankLoan?.remaining).toBe(loan.total - loan.weekly);
     expect(after.bankLoan?.lastPaid).toBe("2030-10-28");
     expect(withBankLoanPayment(squad({ bankLoan: { ...loan, remaining: loan.weekly } }), loan.weekly, "2030-10-28").bankLoan).toBeUndefined();
+  });
+
+  test("a debt left behind marks the career and lowers the reputation, once", () => {
+    const me: ManagerRecord = { id: "seat:s", name: "M", squadId: "c", seatId: "s", points: 0, seasons: 0, titles: [], clubs: [{ squadId: "c", from: "2030-01-01" }] };
+    const loan = newBankLoan(10_000_000, 2, MONDAY);
+    expect(unpaidDebtOf(squad(), MONDAY)).toBeNull();
+    const debt = unpaidDebtOf(squad({ name: "Club", bankLoan: loan }), "2030-11-01")!;
+    expect(debt.amount).toBe(13_000_000);
+    expect(debt.penalty).toBe(12); // 5 + 50 × 13%
+    expect(recordUnpaidDebt(recordUnpaidDebt(me, debt), debt).unpaidDebts).toHaveLength(1);
+    const before = managerReputation([me], 60, 2030, "s");
+    const moved = moveHumanManager([me], { seatId: "s", toSquadId: "d", fromSquadId: "c", fromClubName: "Club", date: debt.date, unpaidDebt: debt });
+    const sacked = sackHumanManager([me], { seatId: "s", date: debt.date, clubName: "Club", unpaidDebt: debt });
+    for (const list of [moved, sacked]) {
+      expect(list.find((m) => m.seatId === "s")!.unpaidDebts).toEqual([debt]);
+      expect(managerReputation(list, 60, 2030, "s")).toBeCloseTo(before - 12, 5);
+    }
+    expect(managerReputation(moveHumanManager([me], { seatId: "s", toSquadId: "d", fromSquadId: "c", date: debt.date }), 60, 2030, "s")).toBeCloseTo(before, 5);
+    const many = { ...me, unpaidDebts: [debt, { ...debt, date: "a" }, { ...debt, date: "b" }, { ...debt, date: "c" }] };
+    expect(unpaidDebtPenalty(many)).toBe(BANK_LOAN.DEBT_PENALTY_TOTAL_MAX);
   });
 
   test("the Monday bill carries the payment, with or without money; other days do not", () => {

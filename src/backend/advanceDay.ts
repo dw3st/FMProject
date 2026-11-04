@@ -2898,12 +2898,12 @@ export async function advanceOneDay(
           ds.standing = undefined;
         }
         // The other seats' "closed" messages are deferred past any `clearInbox` of the day, the nudges past the flush.
-        await releaseHumanClub(
+        const unpaidDebt = await releaseHumanClub(
           saveService, saveId, ds.seatId, { squadId: clubId, date: currentDate },
           { sink: (seatId, args) => { daySeats.find((d) => d.seatId === seatId)?.deferred.negotiation.push(args); }, nudges: seatOfferNudges },
         );
         await managerTracker.apply((ms) => sackHumanManager(ms, {
-          seatId: ds.seatId, date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked",
+          seatId: ds.seatId, date: currentDate, clubName: ds.meta.clubName, left: ended.reason === "contract" ? "contract" : "sacked", unpaidDebt,
         }));
         // The club hires by the AI rule (interim + vacancy).
         aiDesk?.openVacancy(clubId);
