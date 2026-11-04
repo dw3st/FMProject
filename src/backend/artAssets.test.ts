@@ -5,9 +5,9 @@ import { join } from "node:path";
 import { artAssetRoutes, setArtDirForTests } from "@/backend/artAssets";
 
 let dir = "";
-const route = artAssetRoutes["/assets/art/v7/*"] as (req: Request) => Response | Promise<Response>;
+const route = artAssetRoutes["/assets/art/v8/*"] as (req: Request) => Response | Promise<Response>;
 const faces = artAssetRoutes["/api/art/faces"] as () => Response;
-const get = (path: string) => route(new Request(`http://x/assets/art/v7/${path}`));
+const get = (path: string) => route(new Request(`http://x/assets/art/v8/${path}`));
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "art-"));

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.27",
+    date: "2026-11-04",
+    time: "10:04",
+    items: [
+      {
+        pt: "Grama sintética e campo com neve redesenhados: a sintética parece um tapete de verdade, e a neve abre até a grama onde os jogadores pisam mais.",
+        en: "Synthetic turf and snowy pitches redrawn: synthetic looks like a real carpet, and the snow opens down to the grass where the players tread most.",
+      },
+    ],
+  },
+  {
     version: "4.42.26",
     date: "2026-11-04",
     time: "09:56",
