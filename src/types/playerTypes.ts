@@ -176,6 +176,8 @@ export interface RosterPlayer {
    * of his league. Never read by the engine.
    */
   awardBoost?: { season: string; league: string; mult: number };
+  /** Best level of his career, updated at each rollover of his club (`withPeakLevel`). */
+  peakLevel?: number;
   /**
    * Morale 0..100 (`.claude/rules/game/morale.md`). Human club only; absent = the neutral start
    * (65). AI clubs never store it and play at the neutral value.
@@ -453,6 +455,8 @@ export interface RetiredPlayer {
   squadId: string;
   age: number;
   wasWorldClass: boolean;
+  /** Best level of his career (absent on who retired before it was tracked). */
+  peakLevel?: number;
   statsAtRetirement: PlayerStatsRecord;
   /** Last season's games / goals for the club (for the inbox line). */
   appearances: number;

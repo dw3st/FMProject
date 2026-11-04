@@ -55,12 +55,11 @@ export const ACHIEVEMENTS = {
   /** The legend shop lists every legend, completed with the best retirees up to this many while the world has few. */
   /**
    * The shop's legends (tester report): a list per manager and season, drawn from every notable retiree. Per-player
-   * draw weight and extra points by rarity; super rare = world class, or this level at retirement.
+   * draw weight and extra points by rarity.
    */
   LEGEND_OFFER: {
     SIZE: 12,
     WEIGHT: { common: 1, rare: 3, super: 2 },
     EXTRA: { common: 0, rare: 200, super: 500 },
-    SUPER_LEVEL: 5.5,
   },
 } as const;

@@ -71,16 +71,30 @@ export function createdPlayer(args: {
   return { ...player, contract: renewalContract(player, squad, nextSeasonEnd, YOUTH.CONTRACT_YEARS) };
 }
 
-/** Level of a retired player at retirement (his best position's weighted score). */
+/** Level of a retired player: the best of his career when known (`peakLevel`), at least the level he retired with. */
 export function retiredLevel(r: RetiredPlayer): number {
-  return weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM");
+  return Math.max(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM"), r.peakLevel ?? 0);
+}
+
+/** What he did in the game (only what is known from the start of the world on). */
+export function careerInGame(r: RetiredPlayer): { apps: number; titles: number; awards: number } {
+  const rows = r.history ?? [];
+  return {
+    apps: rows.reduce((n, h) => n + h.apps, 0),
+    titles: rows.reduce((n, h) => n + h.titles.length, 0) + (r.national?.titles.length ?? 0),
+    awards: rows.reduce((n, h) => n + (h.awards?.length ?? 0), 0),
+  };
+}
+
+function wonTopAward(r: RetiredPlayer): boolean {
+  return (r.history ?? []).some((h) => h.awards?.some((a) => a.kind === "best_player" || a.kind === "world_player"));
 }
 
 export type LegendRarity = "common" | "rare" | "super";
 
 /** Rarity of a retiree in the shop: super rare (world class or a very high level), rare (a legend), common. */
 export function legendRarity(r: RetiredPlayer): LegendRarity {
-  if (r.wasWorldClass || retiredLevel(r) >= A.LEGEND_OFFER.SUPER_LEVEL) return "super";
+  if (r.wasWorldClass || retiredLevel(r) >= RETIREMENT.SUPER_LEVEL[getMainRole(r.positions[0] ?? "CM")]) return "super";
   return isLegend(r) ? "rare" : "common";
 }
 
@@ -120,11 +134,19 @@ export function legendOffer(
 }
 
 /**
- * A legend of the retired list (`.claude/rules/game/retirement.md`): not a free agent, and world class or a level at
- * retirement of `LEGEND_MIN_LEVEL` or more.
+ * A legend of the retired list (`.claude/rules/game/retirement.md`), never a free agent: world class, the best of his
+ * line by career-best level, or a real career in the game (a top individual award, or titles, awards or games, with a
+ * decent level). The cut is by line because defenders and keepers keep their level far longer than attackers.
  */
 export function isLegend(r: RetiredPlayer): boolean {
-  return !r.freeAgent && (r.wasWorldClass || retiredLevel(r) >= RETIREMENT.LEGEND_MIN_LEVEL);
+  if (r.freeAgent) return false;
+  if (r.wasWorldClass) return true;
+  const level = retiredLevel(r);
+  if (level >= RETIREMENT.LEGEND_LEVEL[getMainRole(r.positions[0] ?? "CM")]) return true;
+  const C = RETIREMENT.LEGEND_CAREER;
+  if (level < C.MIN_LEVEL) return false;
+  const career = careerInGame(r);
+  return wonTopAward(r) || career.titles >= C.TITLES || career.awards >= C.AWARDS || career.apps >= C.APPS;
 }
 
 /** A retiree worth listing by default: a legend, or level at retirement >= `NOTABLE_MIN_LEVEL`. */

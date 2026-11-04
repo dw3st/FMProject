@@ -29,7 +29,15 @@ export const RETIREMENT = {
    * A legend of the retired list: level at retirement at least this (45 on the screen), or world class. Nobody
    * retires in the world's top 50 (they decline from 34), so world class alone left the list empty.
    */
-  LEGEND_MIN_LEVEL: 4.5,
+  /**
+   * Who is a legend (`isLegend`): the best of each line by career-best level, about the top 3% of each line measured on
+   * a four-season world (2026-11-04). Fixed numbers, so nobody stops being a legend as more players retire.
+   */
+  LEGEND_LEVEL: { GK: 4.5, Defender: 4.8, Midfielder: 4.3, Forward: 4.4 },
+  /** Super rare in the shop: about the top 1% of each line. */
+  SUPER_LEVEL: { GK: 5.0, Defender: 5.1, Midfielder: 4.65, Forward: 4.75 },
+  /** Or a career in the game: titles, individual awards or games, with this level at least. */
+  LEGEND_CAREER: { MIN_LEVEL: 4.0, TITLES: 3, AWARDS: 2, APPS: 300 },
   /**
    * "Highlights" filter of the retired list (tester report: average players fill it): level at retirement at least
    * this. Friends world of 2027-01: 250 of 1633 club retirees (the top ~15%).

@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { legendExtraPrice, legendOffer, legendRarity, recordPurchase, shopPrice } from "@/Domain/achievements/shop";
+import { careerInGame, isLegend, legendExtraPrice, legendOffer, legendRarity, recordPurchase, shopPrice } from "@/Domain/achievements/shop";
 import { ACHIEVEMENTS as A } from "@/Domain/achievements/achievementsConfig";
 import type { AchievementsState } from "@/types/achievementTypes";
-import type { RetiredPlayer } from "@/types/playerTypes";
+import { closeSeasonForPlayers, withPeakLevel } from "@/Domain/history/history";
+import type { RetiredPlayer, RosterPlayer } from "@/types/playerTypes";
 
 const stats = (v: number): RetiredPlayer["statsAtRetirement"] => ({
   passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
@@ -52,15 +53,61 @@ describe("legend offer", () => {
   });
 });
 
+describe("career-best level", () => {
+  const player = (v: number, peakLevel?: number) => ({
+    id: "p", name: "P", age: 30, positions: ["CM"], stats: stats(v), ...(peakLevel !== undefined ? { peakLevel } : {}),
+  }) as unknown as RosterPlayer;
+  test("grows with the player and never falls", () => {
+    expect(withPeakLevel(player(5)).peakLevel).toBe(5);
+    expect(withPeakLevel(player(6, 5)).peakLevel).toBe(6);
+    const declined = player(4, 5);
+    expect(withPeakLevel(declined)).toBe(declined);
+  });
+  test("the rollover writes it", () => {
+    const [p] = closeSeasonForPlayers([player(5)], {}, { squadId: "s", clubName: "c", league: "l" } as never, "2027", {});
+    expect(p!.peakLevel).toBe(5);
+  });
+});
+
+describe("who is a legend", () => {
+  const row = (titles: string[], awards: { kind: string }[] = [], apps = 30) =>
+    ({ season: "2027", squadId: "s", clubName: "c", league: "l", apps, goals: 0, assists: 0, avgRating: 6, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles, awards });
+  const at = (pos: string, v: number, extra: Partial<RetiredPlayer> = {}) => common(pos, { positions: [pos], statsAtRetirement: stats(v), ...extra });
+  test("the cut depends on the line: a level that makes an attacker a legend does not make a defender one", () => {
+    expect(isLegend(at("Forward", 4.45))).toBe(true);
+    expect(isLegend(at("Defender", 4.45))).toBe(false);
+    expect(isLegend(at("Defender", 4.85))).toBe(true);
+  });
+  test("the best level of his career counts, not only the one he retired with", () => {
+    expect(isLegend(at("Forward", 3.2))).toBe(false);
+    expect(isLegend(at("Forward", 3.2, { peakLevel: 5 }))).toBe(true);
+  });
+  test("a career in the game counts, with a decent level", () => {
+    const h = (rows: unknown[]) => ({ history: rows }) as Partial<RetiredPlayer>;
+    expect(isLegend(at("Defender", 4.2, h([row(["league:a", "cup:b", "league:c"])])))).toBe(true);
+    expect(isLegend(at("Defender", 4.2, h([row([], [{ kind: "team_of_season" }, { kind: "team_of_season" }])])))).toBe(true);
+    expect(isLegend(at("Defender", 4.2, h([row([], [{ kind: "best_player" }])])))).toBe(true);
+    expect(isLegend(at("Defender", 4.2, h([row([], [], 300)])))).toBe(true);
+    expect(isLegend(at("Defender", 4.2, h([row(["league:a"], [], 100)])))).toBe(false);
+    expect(isLegend(at("Defender", 3.5, h([row(["league:a", "cup:b", "league:c"])])))).toBe(false);
+  });
+  test("a national title counts as a title", () => {
+    expect(careerInGame(at("Defender", 4.2, { national: { nation: "x", caps: 1, goals: 0, assists: 0, titles: ["wc_2030"] } })).titles).toBe(1);
+  });
+  test("a free agent never is", () => {
+    expect(isLegend(at("Forward", 6, { freeAgent: true }))).toBe(false);
+  });
+});
+
 describe("legend rarity and price", () => {
   test("rarity by world class and level", () => {
     expect(legendRarity(retired("w"))).toBe("super");
     expect(legendRarity(common("t", { statsAtRetirement: stats(5.6) }))).toBe("super");
-    expect(legendRarity(common("l", { statsAtRetirement: stats(4.6) }))).toBe("rare");
+    expect(legendRarity(common("l", { statsAtRetirement: stats(4.5) }))).toBe("rare");
     expect(legendRarity(common("n", { statsAtRetirement: stats(3.6) }))).toBe("common");
   });
   test("a rare one costs more, and that is what the purchase spends", () => {
-    const rare = common("l", { statsAtRetirement: stats(4.6) });
+    const rare = common("l", { statsAtRetirement: stats(4.5) });
     expect(legendExtraPrice(rare)).toBe(A.LEGEND_OFFER.EXTRA.rare);
     const state = { spent: 0, bought: {} } as unknown as AchievementsState;
     const after = recordPurchase(state, "legend", "2030-09-01", O.season, { id: "x", name: "x", positions: ["CM"] }, legendExtraPrice(rare));

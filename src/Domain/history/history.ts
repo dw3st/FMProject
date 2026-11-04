@@ -1,4 +1,5 @@
 import type { PlayerHistoryRow, PlayerSeasonLog, RosterPlayer } from "@/types/playerTypes";
+import { weightedScore } from "@/Domain/playerRating";
 
 /** Pure player-history helpers (`.claude/rules/game/history.md`). No I/O. */
 
@@ -139,12 +140,19 @@ export function addPendingTitle(
  * open partials are then settled; one at a club of `titlesByClub` (same league, e.g. a player sold
  * by the champion to a rival) gets that club's titles too. A player without games here gets no row.
  */
+/** The player with his career-best level brought up to date (the same object when it did not grow). */
+export function withPeakLevel(p: RosterPlayer): RosterPlayer {
+  const level = Math.round(weightedScore(p.stats, p.positions[0] ?? "CM") * 100) / 100;
+  return level > (p.peakLevel ?? 0) ? { ...p, peakLevel: level } : p;
+}
+
 export function closeSeasonForPlayers(
   players: RosterPlayer[], logs: Record<string, PlayerSeasonLog>, club: HistoryClub, season: string,
   titlesByClub: Record<string, string[]>,
 ): RosterPlayer[] {
   const titles = titlesByClub[club.squadId] ?? [];
-  return players.map((p) => {
+  return players.map((before) => {
+    const p = withPeakLevel(before);
     const base = historyRowFromLog(logs[p.id], club, season, titles, p.history);
     // A player on loan at the rollover: his row at the borrowing club is a loan stint.
     const row = base && p.loan ? { ...base, loan: true as const } : base;

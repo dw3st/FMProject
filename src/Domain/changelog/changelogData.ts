@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.23",
+    date: "2026-11-04",
+    time: "08:57",
+    items: [
+      {
+        pt: "Lendas: agora são os melhores aposentados de cada posição, pela maior nota da carreira, e quem fez uma grande carreira no jogo, com títulos, prêmios ou muitos jogos.",
+        en: "Legends: now the best retirees of each position, by career-best rating, and those with a great career in the game, with titles, awards or many games.",
+      },
+    ],
+  },
+  {
     version: "4.42.22",
     date: "2026-11-04",
     time: "08:35",

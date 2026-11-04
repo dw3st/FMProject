@@ -3029,7 +3029,7 @@
       "legends": "Lendas",
       "emptyLegends": "Nenhuma lenda se aposentou ainda.",
       "legend": {
-        "about": "Lendas são os jogadores que se aposentaram com nota 45 ou mais. A cada temporada, algumas ficam disponíveis para você (a mesma lista da loja de conquistas): uma pode voltar para a sua base com 17 anos, pagando a compensação.",
+        "about": "Lendas são os melhores aposentados de cada posição, pela maior nota da carreira, e quem fez uma grande carreira no jogo: títulos, prêmios ou muitos jogos. A cada temporada, algumas ficam disponíveis para você (a mesma lista da loja de conquistas): uma pode voltar para a sua base com 17 anos, pagando a compensação.",
         "notThisSeason": "Fora da sua lista nesta temporada",
         "status": "Situação",
         "hire": "Trazer para a base · {{fee}}",
