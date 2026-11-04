@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.22",
+    date: "2026-11-04",
+    time: "08:35",
+    items: [
+      {
+        pt: "Lendas: trazer com dinheiro agora também segue a sua lista da temporada; as disponíveis aparecem primeiro.",
+        en: "Legends: bringing one back with money now also follows your list for the season; the available ones come first.",
+      },
+    ],
+  },
+  {
     version: "4.42.21",
     date: "2026-11-04",
     time: "08:30",

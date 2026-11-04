@@ -330,7 +330,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
         </span>
       );
     }
-    if (r.legend.fee === null) return null;
+    if (r.legend.fee === null) return <span className="text-sm text-muted-foreground">{t("statsScreen.retired.legend.notThisSeason")}</span>;
     const fee = formatEuros(r.legend.fee);
     if (hiredThisSeason) return <span className="text-sm text-muted-foreground">{t("statsScreen.retired.legend.oncePerSeason")}</span>;
     return confirming === r.id ? (

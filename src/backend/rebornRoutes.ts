@@ -3,7 +3,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { humanClub, nextSeasonEndOf } from "@/backend/achievementRoutes";
 import { recordMoney } from "@/backend/FinancialService";
-import { filterRetired, isLegend, legendAvailable, legendHireFee, legendPlayer } from "@/Domain/achievements/shop";
+import { filterRetired, isLegend, legendAvailable, legendHireFee, legendOffer, legendPlayer } from "@/Domain/achievements/shop";
 import { generateReborn } from "@/Domain/retirement/retirement";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -37,12 +37,19 @@ export const rebornRoutes = {
     if (!(offset >= 0) || !(limit >= 1 && limit <= RETIRED_PAGE_MAX)) {
       return Response.json({ error: "invalid offset/limit" }, { status: 400 });
     }
-    let retired = [...(await saveService.getRetired(saveId))].reverse();
+    const allRetired = await saveService.getRetired(saveId);
+    let retired = [...allRetired].reverse();
+    // Only the legends of this manager's list for the season can come back (the shop's rotation, tester report).
+    const { season, start: seasonStart } = await nextSeasonEndOf(saveId, auth.seatId);
+    const offered = new Set(legendOffer(allRetired, { saveId, seatId: auth.seatId, season, seasonStart }).map((r) => r.id));
     if (q.get("mine") === "1") {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       retired = retired.filter((r) => r.squadId === meta?.clubId);
     }
-    if (q.get("legends") === "1") retired = retired.filter(isLegend);
+    if (q.get("legends") === "1") {
+      retired = retired.filter(isLegend);
+      retired.sort((a, b) => Number(offered.has(b.id) && legendAvailable(b)) - Number(offered.has(a.id) && legendAvailable(a)));
+    }
     const favorites = new Set((await saveService.getSeat(saveId, auth.seatId))?.retiredFavorites ?? []);
     if (q.get("favorites") === "1") retired = retired.filter((r) => favorites.has(r.id));
     // Name search, nationality and "highlights only" (tester reports); the nations offered are the list's before them.
@@ -56,7 +63,7 @@ export const rebornRoutes = {
       const { statsAtRetirement: _, ...r } = full;
       // A legend of the list: who brought him back, or the fee to bring him back (tester report).
       const legend = isLegend(full) ? {
-        fee: legendAvailable(full) ? legendHireFee(full) : null,
+        fee: legendAvailable(full) && offered.has(full.id) ? legendHireFee(full) : null,
         back: full.legendBy
           ? { via: full.legendVia ?? "points", mine: full.legendBy === auth.seatId, manager: managerName(full.legendBy), on: full.legendOn ?? null }
           : full.rebornOffer === "accepted"
@@ -65,14 +72,13 @@ export const rebornRoutes = {
       } : null;
       return { ...r, clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null, legend, favorite: favorites.has(r.id) };
     });
-    const { season } = await nextSeasonEndOf(saveId, auth.seatId);
     const thisSeason = (await saveService.getAchievements(saveId, auth.seatId)).bought.legendMoneySeason === season;
     return Response.json({ total: retired.length, items, nations, legendHire: { thisSeason } });
   },
 
   /**
    * `POST` - brings a retired legend back to the academy for money, no points (tester report): one per season per
-   * manager, each legend once in the world. 409 `noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`.
+   * manager, each legend once in the world, only from this manager's list of the season (`legendOffer`). 409 `noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`.
    */
   "/api/saves/:saveId/legends/:retiredId/hire": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -89,6 +95,8 @@ export const rebornRoutes = {
       const all = await saveService.getRetired(saveId);
       const rec = all.find((r) => r.id === retiredId);
       if (!rec || !legendAvailable(rec)) return Response.json({ error: "offerClosed" }, { status: 409 });
+      const offer = legendOffer(all, { saveId, seatId: auth.seatId, season: season.season, seasonStart: season.start });
+      if (!offer.some((r) => r.id === retiredId)) return Response.json({ error: "offerClosed" }, { status: 409 });
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return Response.json({ error: "youthFull" }, { status: 400 });
       const fee = legendHireFee(rec);
       if ((club.squad.finances?.budget ?? 0) < fee) return Response.json({ error: "noMoney", fee }, { status: 409 });

@@ -100,3 +100,7 @@ Reports de tester. `GET /api/saves/:id/retired` aceita `q` (nome, sem acento nem
 3,5; no mundo dos testers, 250 de 1633), aplicados depois de `mine`/`legends` por `filterRetired` (`shop.ts`), e devolve
 `nations` (as nacionalidades da lista antes desses filtros). Tela: chip "Só destaques" (ligado por padrão; some na aba
 Lendas), busca por nome (300 ms) e seletor de país.
+
+## Rodízio também no dinheiro (4.42.22)
+
+Pedido do usuário. Trazer uma lenda com dinheiro só vale para quem está na lista da temporada do técnico (`legendOffer`, a mesma da loja, `achievements.md`; fora dela, 409 `offerClosed`). A aba Lendas continua listando todas, com as disponíveis primeiro e "Fora da sua lista nesta temporada" nas outras.

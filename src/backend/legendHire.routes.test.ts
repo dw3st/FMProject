@@ -78,5 +78,18 @@ describe("legend hire for money (retired list)", () => {
     expect(a.legend.fee).toBeNull();
     expect(a.legend.back).toMatchObject({ via: "money", mine: true });
     expect((await saveService.getRetired(saveId)).find((r) => r.id === "a")?.legendVia).toBe("money");
+
+    // The rotation: with more legends than the list, one outside it has no fee and cannot be hired.
+    await saveService.writeAchievements(saveId, { ...(await saveService.getAchievements(saveId, meta.seatId)), bought: {} }, meta.seatId);
+    const many = Array.from({ length: 40 }, (_, i) => mk(`m${i}`, true));
+    await saveService.writeRetired(saveId, many);
+    const crowded = await (await call(rKey, `/api/saves/${saveId}/retired?legends=1&limit=100`, "GET")).json() as { items: { id: string; legend: { fee: number | null } }[] };
+    const on = crowded.items.filter((r) => r.legend.fee !== null);
+    const off = crowded.items.filter((r) => r.legend.fee === null);
+    expect(on).toHaveLength(12);
+    expect(off).toHaveLength(28);
+    expect(crowded.items.slice(0, 12).every((r) => r.legend.fee !== null)).toBe(true); // the available ones first
+    expect((await call(hKey, `/api/saves/${saveId}/legends/${off[0]!.id}/hire`, "POST", off[0]!.id)).status).toBe(409);
+    expect((await call(hKey, `/api/saves/${saveId}/legends/${on[0]!.id}/hire`, "POST", on[0]!.id)).status).toBe(200);
   }, 60_000);
 });
