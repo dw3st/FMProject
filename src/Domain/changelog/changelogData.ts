@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.26",
+    date: "2026-11-04",
+    time: "09:56",
+    items: [
+      {
+        pt: "Gramado bom redesenhado: grama mais natural e cortes (listras, xadrez, diagonal e círculos) como diferença suave de tom.",
+        en: "Good pitches redrawn: more natural grass, with the mowing (stripes, checks, diagonals and circles) as a soft change of tone.",
+      },
+    ],
+  },
+  {
     version: "4.42.25",
     date: "2026-11-04",
     time: "09:49",
