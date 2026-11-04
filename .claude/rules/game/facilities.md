@@ -383,3 +383,7 @@ Lesões (`bun scripts/injury-calibrate.ts 300 --pitch ai,aiturf --quicksim`): mo
 
 `MowingPattern` ganhou `none` ("Sem padrão", cartão Gramado): o gramado sem listras. Sem fundo pintado (todos os pintados
 são cortados), o jogo desenha a grama lisa. A IA continua sorteando só os quatro padrões (`AI_MOWING`).
+
+## Corte na grama sintética (4.42.17)
+
+Report de tester. O fundo pintado da sintética só existe em listras (`paintedTurfId`): com outro corte, o gramado é desenhado (`pitchSurface`, na cor da sintética), no Clube e na partida. Antes o corte era gravado, mas o desenho não mudava.

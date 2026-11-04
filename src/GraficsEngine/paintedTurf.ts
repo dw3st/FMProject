@@ -30,10 +30,11 @@ export interface PaintedTurfInput extends PitchSurfaceInput {
 
 /**
  * The backdrop id for the match (`match-backdrop-…`). A plain (unmown) natural pitch has no painted backdrop (every
- * painted grass is mown): null, the game draws its own grass.
+ * painted grass is mown): null, the game draws its own grass. The painted synthetic pitch only comes in stripes (tester
+ * report: the chosen pattern did nothing): any other pattern is drawn too.
  */
 export function paintedTurfId(p: PaintedTurfInput): string | null {
-  if (p.turf === "synthetic") return "match-backdrop-synthetic";
+  if (p.turf === "synthetic") return p.mowing === "stripes" ? "match-backdrop-synthetic" : null;
   const band = pitchVisualBand(p.condition);
   if (band === "rotten") return "match-backdrop-grass-muddy";
   if (band === "worn") return "match-backdrop-grass-worn";

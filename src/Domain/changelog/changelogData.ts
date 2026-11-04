@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.17",
+    date: "2026-11-03",
+    time: "21:21",
+    items: [
+      {
+        pt: "Grama sintética: o padrão escolhido agora aparece no gramado.",
+        en: "Synthetic grass: the chosen pattern now shows on the pitch.",
+      },
+    ],
+  },
+  {
     version: "4.42.16",
     date: "2026-11-03",
     time: "20:47",
