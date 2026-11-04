@@ -5132,9 +5132,9 @@
         },
         "watch": {
           "1": "Steel watch",
-          "2": "Gold watch",
-          "3": "Swiss watch",
-          "4": "Collector's watch"
+          "2": "Chronograph",
+          "3": "Gold watch",
+          "4": "Collector watch"
         }
       },
       "errors": {

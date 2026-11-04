@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.5",
+    date: "2026-11-04",
+    time: "17:46",
+    items: [
+      {
+        pt: "A aba Patrimônio agora tem fotos: casa, carro e relógio mudam a cada nível que você compra, do apartamento à cobertura e do compacto ao superesportivo.",
+        en: "The Assets tab now has pictures: your home, car and watch change with every level you buy, from the flat to the penthouse and from the compact to the supercar.",
+      },
+    ],
+  },
+  {
     version: "4.44.4",
     date: "2026-11-04",
     time: "17:19",

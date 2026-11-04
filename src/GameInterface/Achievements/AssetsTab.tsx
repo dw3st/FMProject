@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
 import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
@@ -20,6 +21,7 @@ export function AssetsTab() {
   const earned = save?.managerEarnings ?? 0;
   const wallet = managerWallet(earned, save?.managerSpent);
   const assets = save?.managerAssets;
+  const art = newVisualOn();
 
   async function buy(kind: AssetKind) {
     setBusy(true);
@@ -63,8 +65,18 @@ export function AssetsTab() {
         {ASSET_KINDS.map((kind) => {
           const level = assets?.[kind] ?? 0;
           const price = nextAssetPrice(assets, kind);
+          // What he owns; before the first purchase, the first level still out of reach.
+          const shown = Math.max(1, level);
           return (
             <div key={kind} className="card-arcade rounded-md p-4 flex flex-col gap-3">
+              {art && (
+                <img
+                  src={gameArtUrl(`manager-assets/${kind}-${shown}.webp`)}
+                  alt={t(`achievements.assets.level.${kind}.${shown}`)}
+                  loading="lazy"
+                  className={`w-full aspect-[8/5] object-cover rounded ${level > 0 ? "" : "grayscale opacity-50"}`}
+                />
+              )}
               <div className="flex items-center gap-2">
                 <Icon name={ICON[kind]} size={18} className="text-primary" />
                 <SectionTitle>{t(`achievements.assets.kind.${kind}`)}</SectionTitle>
@@ -74,8 +86,16 @@ export function AssetsTab() {
               </p>
               <ul className="m-0 p-0 list-none space-y-1">
                 {ASSET_PRICES[kind].map((p, i) => (
-                  <li key={i} className={`flex justify-between gap-3 text-sm tabular-nums ${i < level ? "text-foreground" : "text-muted-foreground"}`}>
-                    <span className="flex items-center gap-1.5">
+                  <li key={i} className={`flex items-center justify-between gap-3 text-sm tabular-nums ${i < level ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className="flex items-center gap-2">
+                      {art && (
+                        <img
+                          src={gameArtUrl(`manager-assets/${kind}-${i + 1}.webp`)}
+                          alt=""
+                          loading="lazy"
+                          className={`w-16 aspect-[8/5] object-cover rounded shrink-0 ${i < level ? "" : "opacity-60"}`}
+                        />
+                      )}
                       {i < level && <Icon name="check" size={16} className="text-primary" />}
                       {t(`achievements.assets.level.${kind}.${i + 1}`)}
                     </span>
