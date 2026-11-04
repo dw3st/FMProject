@@ -13,7 +13,7 @@
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import {
   applyPenaltyOutcome, applyPlayerInstruction, changeFormation, fillInjuryVacancy, getBallPos, matchMinute, setManMarks,
-  swapPlayerPositions, tickState,
+  moveToEmptySlot, swapPlayerPositions, tickState,
 } from "@/GameEngine/Domain/gameState";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 // Statistics and PlayerRating subscribe to the gameBus when imported.
@@ -202,6 +202,9 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
         }
         case "swap":
           state = swapPlayerPositions(state, side, cmd.aId, cmd.bId);
+          break;
+        case "move":
+          state = moveToEmptySlot(state, side, cmd.id, cmd.slot);
           break;
         case "mentality":
           tactics[side] = { ...tactics[side], mentality: cmd.mentality };

@@ -27,7 +27,7 @@ function positionsText(t: TFunction, player: RosterPlayer): string {
 }
 
 /** What the hover card of a player says, on the pitch and in the lists (tester report: one style for both). */
-export function PlayerTipBody({ player, role, avg, energy, oop, note }: {
+export function PlayerTipBody({ player, role, avg, energy, oop, note, matchRating }: {
   player: RosterPlayer;
   /** Slot the numbers are for. */
   role: string;
@@ -36,6 +36,8 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note }: {
   oop?: boolean;
   /** Extra line, e.g. the rating at the natural position. */
   note?: string;
+  /** His rating in the match being played: shown apart from `avg`, his level (tester report: two numbers, one word). */
+  matchRating?: number;
 }) {
   const { t } = useTranslation();
   return (
@@ -62,10 +64,19 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note }: {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Icon name="star" className="w-3 h-3" />
-            <span>{t("formations.rating")}</span>
+            <span>{t(matchRating === undefined ? "formations.rating" : "formations.level")}</span>
           </div>
           <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
         </div>
+        {matchRating !== undefined && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Icon name="trophy" className="w-3 h-3" />
+              <span>{t("formations.matchRating")}</span>
+            </div>
+            <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(matchRating)}`}>{matchRating.toFixed(1)}</span>
+          </div>
+        )}
         {note && <p className="m-0 text-sm text-muted-foreground">{note}</p>}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

@@ -530,3 +530,7 @@ Tester report. The Formation tab of the live panel no longer applies a formation
 # Formation change reorganises the team (4.42.21)
 
 Tester report. `changeFormation` no longer keeps each player in his slot number: `reorganizedSlots` (`Domain/formation/reorganize.ts`, Hungarian assignment over aptitudes, then the distance from where he plays) puts each one in the slot that suits him, the keeper in goal, and leaves an injury vacancy empty. Engine stats are rebuilt with the out-of-position factor, as on a position swap. A man-marker keeps his target. Reads only what the wire state carries, so the preview is right in a two-manager match too.
+
+# A man down: moving a starter to the empty slot (4.42.28)
+
+Tester report. `moveToEmptySlot` (`gameState.ts`): an outfield starter takes a slot nobody holds (a sent-off player's, or an injury's, whose vacancy moves to the slot he left), with the same rebuild as a position swap and no substitution used. The substitutions mini pitch (`SubsPitchView`) draws every empty slot; a starter goes there by tap or drag. Between two managers it is the `move` command; in `/test` the `moveToSlot` command.

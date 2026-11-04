@@ -86,6 +86,8 @@ export interface SubsPitchViewProps {
   onQueueSub: (sub: PendingSub) => void;
   /** Two starters swap positions (no substitution used). */
   onSwapPositions?: (aId: number, bId: number) => void;
+  /** A starter moves to a slot nobody holds (after a red card or an injury), no substitution used. */
+  onMoveToSlot?: (id: number, slot: number) => void;
   /** Face URL per roster id (the match's faces, in the kit worn); absent = initials. */
   faceUrls?: Record<string, string>;
   /** The club's squad: the hover card of each player (the one of the Formation screen); absent = no card. */
@@ -98,7 +100,7 @@ export interface SubsPitchViewProps {
  * position. Tap a starter, then a bench player (or the other way) to queue a substitution; tap two
  * starters to swap their positions without using a substitution. Dragging works too.
  */
-export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSwapPositions, faceUrls, roster }: SubsPitchViewProps) {
+export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSwapPositions, onMoveToSlot, faceUrls, roster }: SubsPitchViewProps) {
   const { t } = useTranslation();
   const [selection, setSelection] = useState<SubsSelection>(null);
   const [tip, setTip] = useState<{ id: number; left: number; top: number } | null>(null);
@@ -128,6 +130,8 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const slotPos = useMemo(() => spreadSubsMarkers(getFormationSlots(formation)), [formation]);
   const roleAbbr = (role: string) => t(`roles.detailedAbbr.${role}`, { defaultValue: role });
   const vacantSlots = (gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex);
+  // Every slot nobody holds: an injury's, waiting for a replacement, or a sent-off player's, for good.
+  const emptySlots = formation.attacking.map((_, i) => i).filter((i) => !onPitch.some((p) => p.slotIndex === i));
 
   const queuedOutIds = new Set(pendingQueue.map((s) => s.outId));
   const queuedInIds = new Set(pendingQueue.map((s) => s.inId));
@@ -167,9 +171,19 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
     run(out.action);
   }
 
+  function moveTo(id: number, slot: number) {
+    if (onPitch.find((p) => p.id === id)?.role === "GK") return;
+    setSelection(null);
+    onMoveToSlot?.(id, slot);
+  }
+
   // Drag: a bench player onto a starter (or back) queues the substitution; a starter onto another
   // starter swaps them. `slot:<id>` and `bench:<id>` hold engine ids here.
   const { drag, dragProps, consumeClick } = useDragDrop((source, target) => {
+    if (target.kind === "empty") {
+      if (source.kind === "slot") moveTo(Number(source.key), target.slot);
+      return;
+    }
     const from = { kind: source.kind === "slot" ? ("starter" as const) : ("bench" as const), id: Number(source.key) };
     const to =
       target.kind === "slot" ? { kind: "starter" as const, id: target.index }
@@ -183,7 +197,10 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   });
 
   const selectedStarter = selection?.kind === "starter" ? onPitch.find((p) => p.id === selection.id) : undefined;
-  const hint = selectedStarter
+  const canMove = !!onMoveToSlot && emptySlots.length > 0;
+  const hint = canMove && (!selection || (selectedStarter && selectedStarter.role !== "GK"))
+    ? t(selectedStarter ? "substitutionPanel.pickEmptySlot" : "substitutionPanel.chooseStarterEmptySlot")
+    : selectedStarter
     ? canSub
       ? onSwapPositions && selectedStarter.role !== "GK" ? t("substitutionPanel.pickBenchOrSwap") : t("substitutionPanel.chooseBench")
       : onSwapPositions && selectedStarter.role !== "GK" ? t("substitutionPanel.pickSwap") : t("substitutionPanel.noSubsRemaining")
@@ -197,6 +214,14 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const tipPlayer = tip ? onPitch.find((p) => p.id === tip.id) ?? bench.find((p) => p.id === tip.id) : undefined;
   const tipRoster = tipPlayer ? roster?.find((p) => p.id === tipPlayer.rosterId) : undefined;
   const tipRole = tipPlayer ? (onPitch.includes(tipPlayer) ? tipPlayer.role : gamePlayerNaturalRole(tipPlayer)) : "";
+  const tipMatchRating = tipPlayer ? ratings?.[tipPlayer.id] : undefined;
+  // A substitute with no minutes has no match rating: his level at his position (the number of his card).
+  const benchNumber = (p: GamePlayer): number => {
+    const live = ratings?.[p.id];
+    if (live !== undefined && !Number.isNaN(live)) return live;
+    const r = roster?.find((x) => x.id === p.rosterId);
+    return r ? slotValue(r, gamePlayerNaturalRole(p)) : displayRating10(p, ratings);
+  };
 
   return (
     <>
@@ -206,7 +231,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
           className={`fixed z-[100] w-60 p-3 rounded-md bg-card border pointer-events-none ${tipRole !== gamePlayerNaturalRole(tipPlayer) ? "border-chart-4/40" : "border-border"}`}
           style={{ left: tip.left, top: tip.top }}
         >
-          <PlayerTipBody player={tipRoster} role={tipRole} avg={slotValue(tipRoster, tipRole)} energy={tipPlayer.energy} oop={tipRole !== gamePlayerNaturalRole(tipPlayer)} />
+          <PlayerTipBody player={tipRoster} role={tipRole} avg={slotValue(tipRoster, tipRole)} energy={tipPlayer.energy} oop={tipRole !== gamePlayerNaturalRole(tipPlayer)} {...(tipMatchRating !== undefined && !Number.isNaN(tipMatchRating) ? { matchRating: tipMatchRating } : {})} />
         </div>,
         document.body,
       )}
@@ -229,20 +254,30 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
               )}
               <PitchLinesVertical grass={!newVisualOn()} />
             </div>
-            {/* An injured player's empty slot (#140): a dashed circle until the manager picks the replacement. */}
-            {vacantSlots.map((slot) => {
+            {/* A slot nobody holds (#140, or a red card): a dashed circle; a starter can move there. */}
+            {emptySlots.map((slot) => {
               const pos = slotPos[slot] ?? { x: 50, y: 50 };
+              const injury = vacantSlots.includes(slot);
+              const open = !!onMoveToSlot && !!selectedStarter && selectedStarter.role !== "GK";
+              const over = drag?.over === `empty:${slot}`;
+              const color = open || over ? "border-primary text-primary" : injury ? "border-destructive/80 text-destructive" : "border-muted-foreground text-muted-foreground";
               return (
-                <div
+                <button
                   key={`vacant-${slot}`}
-                  className="absolute -translate-x-1/2 -translate-y-[30%] flex flex-col items-center gap-1 pointer-events-none"
+                  type="button"
+                  data-drop={`empty:${slot}`}
+                  disabled={!open}
+                  onClick={() => selectedStarter && moveTo(selectedStarter.id, slot)}
+                  className={`absolute -translate-x-1/2 -translate-y-[30%] flex flex-col items-center gap-1 bg-transparent border-0 p-0 ${open ? "cursor-pointer z-20" : "cursor-default"}`}
                   style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
                 >
-                  <span className="w-10 h-10 rounded-full border-2 border-dashed border-destructive/80 bg-background/70 flex items-center justify-center font-display font-bold uppercase tracking-[0.08em] text-[13px] text-destructive">
+                  <span className={`w-10 h-10 rounded-full border-2 border-dashed bg-background/70 flex items-center justify-center font-display font-bold uppercase tracking-[0.08em] text-[13px] ${color} ${over ? "ring-2 ring-primary" : ""}`}>
                     {roleAbbr(formation.attacking[slot]?.role ?? "")}
                   </span>
-                  <span className="rounded bg-background/85 px-2 py-0.5 text-sm text-destructive">{t("substitutionPanel.vacant")}</span>
-                </div>
+                  <span className={`rounded bg-background/85 px-2 py-0.5 text-sm ${open ? "text-primary" : injury ? "text-destructive" : "text-muted-foreground"}`}>
+                    {t(injury ? "substitutionPanel.vacant" : "substitutionPanel.emptySlot")}
+                  </span>
+                </button>
               );
             })}
             {onPitch.map((p) => {
@@ -336,7 +371,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
               <p className="text-sm text-muted-foreground px-2 py-4 text-center m-0">{t("substitutionPanel.noAvailable")}</p>
             ) : (
               availableBench.map((p) => {
-                const r10 = displayRating10(p, ratings);
+                const r10 = benchNumber(p);
                 const isSelected = selection?.kind === "bench" && selection.id === p.id;
                 const over = drag?.over === `bench:${p.id}`;
                 return (

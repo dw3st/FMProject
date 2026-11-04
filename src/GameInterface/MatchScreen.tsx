@@ -9,7 +9,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
 import { otherSide } from "@/GameInterface/H2H/h2hState";
@@ -1532,6 +1532,12 @@ export function MatchScreen() {
     setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
   }
 
+  /** A starter moves to an empty slot (after a red card or an injury): no substitution used, only this match. */
+  function handleMoveToSlot(id: number, slot: number) {
+    if (h2hMode) { sendH2H({ kind: "move", id, slot }); return; }
+    setGameState((prev) => (prev ? moveToEmptySlot(prev, "A", id, slot) : prev));
+  }
+
   /** #140: bench player `inId` takes the slot an injured player left (uses a substitution). */
   function handleFillVacancy(injuredId: number, inId: number) {
     // H2H: the server's queue fills the injury vacancy of that player.
@@ -2267,6 +2273,7 @@ export function MatchScreen() {
           {...(managerOut ? {} : {
             onUnqueueSub: handleUnqueueSub,
             onSwapPositions: handleSwapPositions,
+            onMoveToSlot: handleMoveToSlot,
             onFillVacancy: handleFillVacancy,
             onChangeFormation: handleChangeFormation,
             onInstruction: handleInstruction,

@@ -11,12 +11,14 @@ export interface DragSource {
 export type DropTarget =
   | { kind: "slot"; index: number }
   | { kind: "bench"; playerId: string }
+  | { kind: "empty"; slot: number }
   | { kind: "zone"; row: number; col: number };
 
 function parseDropTarget(value: string | null | undefined): DropTarget | null {
   if (!value) return null;
   const [kind, a, b] = value.split(":");
   if (kind === "slot" && a !== undefined) return { kind: "slot", index: Number(a) };
+  if (kind === "empty" && a !== undefined) return { kind: "empty", slot: Number(a) };
   if (kind === "bench" && a !== undefined) return { kind: "bench", playerId: value.slice("bench:".length) };
   if (kind === "zone" && a !== undefined && b !== undefined) return { kind: "zone", row: Number(a), col: Number(b) };
   return null;

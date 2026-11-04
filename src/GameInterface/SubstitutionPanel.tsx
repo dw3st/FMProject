@@ -30,6 +30,8 @@ export interface SubstitutionPanelProps {
   onUnqueueSub?: (outId: number) => void;
   /** Two starters swap positions on the pitch (no substitution used, #115). */
   onSwapPositions?: (aId: number, bId: number) => void;
+  /** A starter moves to an empty slot (after a red card or an injury). */
+  onMoveToSlot?: (id: number, slot: number) => void;
   /** A bench player takes the slot an injured player left (#140, manual injury substitutions). */
   onFillVacancy?: (injuredId: number, inId: number) => void;
   /** Live formation change; absent hides the Formation tab (`/test` has its own selector). */
@@ -58,6 +60,7 @@ export function SubstitutionPanel({
   onQueueSub,
   onUnqueueSub,
   onSwapPositions,
+  onMoveToSlot,
   onFillVacancy,
   onChangeFormation,
   onInstruction,
@@ -198,6 +201,7 @@ export function SubstitutionPanel({
               ratings={ratings}
               onQueueSub={onQueueSub}
               onSwapPositions={onSwapPositions}
+              {...(onMoveToSlot ? { onMoveToSlot } : {})}
               faceUrls={faceUrls}
               {...(roster ? { roster } : {})}
             />

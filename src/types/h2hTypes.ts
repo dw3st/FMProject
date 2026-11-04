@@ -38,6 +38,8 @@ export type H2HCommand =
   /** Takes a queued substitution back before it happens (by the player going off). */
   | { kind: "unsub"; outId: number }
   | { kind: "swap"; aId: number; bId: number }
+  /** A starter moves to a slot nobody holds (after a red card or an injury). */
+  | { kind: "move"; id: number; slot: number }
   | { kind: "mentality"; mentality: Mentality }
   | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes> }
   | { kind: "formation"; formation: string }

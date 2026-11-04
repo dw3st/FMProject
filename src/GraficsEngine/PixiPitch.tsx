@@ -7,7 +7,7 @@ import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { benchPropSpots } from "@/GraficsEngine/benchProps";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
-import { faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
+import { FACE_RETRY_S, faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
@@ -47,7 +47,7 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -1589,14 +1589,20 @@ export function PixiPitch({
       }
 
       /** Loads (or reuses) the face of `player` and shows it in its marker when ready. */
-      function applyFace(player: PitchPlayer): void {
+      function applyFace(player: PitchPlayer, attempt = 0): void {
         const marker = playerGraphics.get(player.id);
         const url = faceUrlOf(player);
         if (!marker || !url || marker.label === url) return;
         const ready = faceTextures.get(url);
         if (ready) { setMarkerFace(marker, url, ready); return; }
         void loadFaceCanvas(url, faceSize).then((canvas) => {
-          if (!canvas || facesDisposed) return;
+          if (facesDisposed) return;
+          if (!canvas) {
+            // A failed load is not cached: it tries again while the match goes on (a server restart, a network blip).
+            const wait = FACE_RETRY_S[attempt];
+            if (wait !== undefined) setTimeout(() => { if (!facesDisposed) applyFace(player, attempt + 1); }, wait * 1000);
+            return;
+          }
           let texture = faceTextures.get(url);
           if (!texture) {
             texture = new Texture({ source: new CanvasSource({ resource: canvas, transparent: true }) });
@@ -4779,6 +4785,16 @@ export function PixiPitch({
         } else if (cmd.type === 'swapPositions') {
           stateRef.current = swapPlayerPositions(stateRef.current, cmd.team, cmd.aId, cmd.bId);
           gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the new slots
+        } else if (cmd.type === 'sendOff') {
+          const st = stateRef.current;
+          const victim = st.players.find(p => p.team === cmd.team && p.role !== 'GK' && p.id !== st.ballHolderId);
+          if (victim) {
+            stateRef.current = bookPlayer(st, victim, 'red', matchMinute(st));
+            gameBus.emit('stateChanged', stateRef.current);
+          }
+        } else if (cmd.type === 'moveToSlot') {
+          stateRef.current = moveToEmptySlot(stateRef.current, cmd.team, cmd.id, cmd.slot);
+          gameBus.emit('stateChanged', stateRef.current);
         } else if (cmd.type === 'setPenaltyInteractive') {
           stateRef.current = { ...stateRef.current, penaltyInteractive: cmd.teams.length > 0 ? cmd.teams : undefined };
         } else if (cmd.type === 'penaltyOutcome') {

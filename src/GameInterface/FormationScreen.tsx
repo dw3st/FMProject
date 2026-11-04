@@ -497,6 +497,7 @@ export function FormationScreen() {
       if (editing && source.kind === "slot") moveDraftSlot(Number(source.key), target.row, target.col);
       return;
     }
+    if (target.kind === "empty") return;
     const from = source.kind === "slot" ? { kind: "slot" as const, index: Number(source.key) } : { kind: "bench" as const, playerId: source.key };
     const to = target.kind === "slot" ? { kind: "slot" as const, index: target.index } : { kind: "bench" as const, playerId: target.playerId };
     const next = dropOnLineup(lineup, from, to, (id) => {

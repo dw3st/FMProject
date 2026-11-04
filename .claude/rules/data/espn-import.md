@@ -441,3 +441,5 @@ escudo do TheSportsDB (licença incerta; uso aprovado pelo usuário):
   de ano corrige.
 - **API não oficial.** Sem contrato de formato. `fetchEspn` e `importEspn` falham alto (erro, não
   fallback silencioso) quando algo essencial muda de forma.
+
+**Pares revisados à mão (4.42.28, report de tester: Ludogorets sem escudo).** A regra estrita de nomes pulou clubes cujo nome no TheSportsDB tem a cidade ("Ludogorets Razgrad"). `data_process/thesportsdb/badgeOverrides.json` lista os pares revisados e `bun scripts/fetchTsdbBadgeOverrides.ts` baixa os escudos, conferindo esporte, país e time reserva ou feminino: de 93 pares, 79 passaram e 14 caíram (hóquei, basquete, outro país). Depois, `applyTsdbBadges.ts` e `logoContrast.ts`. Cobertura: 1160 de 1273 clubes.

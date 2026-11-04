@@ -66,6 +66,9 @@ export function needsLightOutline(teamColor: number, pitchColor: number = PITCH_
 
 const cache = new Map<string, Promise<HTMLCanvasElement | null>>();
 
+/** Seconds before each new try of a face that failed to load (tester report: a blank disc for the whole match). */
+export const FACE_RETRY_S = [3, 8, 20, 45] as const;
+
 /** Pixel size of the rasterised face for a marker of `radius` logical px at `resolution`. */
 export function faceRasterSize(radius: number, resolution: number): number {
   return Math.max(16, Math.round(radius * 2 * Math.max(1, resolution)));

@@ -1710,6 +1710,29 @@ export function swapPlayerPositions(state: GameState, team: TeamId, idA: number,
   return refreshManMarks({ ...state, players });
 }
 
+/**
+ * A starter moves to a slot nobody holds (one of ten after a red card, or an injury's empty slot), without using a
+ * substitution; the slot he left becomes the empty one. Goalkeepers stay in goal and the goalkeeper's slot is never a target.
+ */
+export function moveToEmptySlot(state: GameState, team: TeamId, id: number, slot: number): GameState {
+  const player = state.players.find(p => p.id === id && p.team === team);
+  const formation = team === 'A' ? state.formationA : state.formationB;
+  const def = formation.attacking[slot];
+  if (!player || player.role === 'GK' || player.slotIndex < 0 || !def || def.role === 'GK') return state;
+  if (state.players.some(p => p.team === team && p.slotIndex === slot)) return state;
+  const moved = placeInSlot(player, slot, formation, state.slotInstructions?.[team]);
+  debugLog('instruction', `${player.name} (${player.role}) -> empty ${def.role}`, { playerId: player.id, data: { from: player.slotIndex, to: slot } });
+  gameBus.emit('positionsSwapped', { team, aId: player.id, bId: player.id });
+  const vacancies = state.injuryVacancies?.[team];
+  return refreshManMarks({
+    ...state,
+    players: state.players.map(p => (p.id === id ? moved : p)),
+    ...(vacancies?.some(v => v.slotIndex === slot)
+      ? { injuryVacancies: { ...state.injuryVacancies, [team]: vacancies.map(v => (v.slotIndex === slot ? { ...v, slotIndex: player.slotIndex } : v)) } }
+      : {}),
+  });
+}
+
 // ── Player instructions (Etapa 27, `.claude/rules/game/player-instructions.md`) ──
 
 /**

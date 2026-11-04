@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.28",
+    date: "2026-11-04",
+    time: "11:37",
+    items: [
+      {
+        pt: "Com um jogador a menos, a vaga dele aparece no campinho das substituições: toque num titular e depois na vaga para mudá-lo de posição, sem gastar substituição.",
+        en: "A man down, his slot shows on the substitutions pitch: tap a starter, then the slot, to move him there without using a substitution.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "No cartão do jogador durante a partida, o nível e a nota do jogo aparecem separados. Reservas mostram o nível.",
+        en: "On a player's card during the match, his level and his match rating show apart. Substitutes show their level.",
+      },
+      {
+        pt: "Um rosto que falha ao carregar na partida tenta de novo, em vez de ficar em branco até o fim.",
+        en: "A face that fails to load in the match tries again instead of staying blank until the end.",
+      },
+      {
+        pt: "Mais 79 clubes ganharam escudo, como Ludogorets, Shakhtar, Lech e Persija.",
+        en: "79 more clubs got their crest, such as Ludogorets, Shakhtar, Lech and Persija.",
+      },
+    ],
+  },
+  {
     version: "4.42.27",
     date: "2026-11-04",
     time: "10:04",

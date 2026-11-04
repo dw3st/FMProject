@@ -1629,6 +1629,12 @@ export function TestScreen() {
             <Icon name="arrow-right-left" size={14} />Subs A
           </button>
         )}
+        {mode === '11v11' && liveGameState && (
+          <button onClick={() => gameBus.emit('testCommand', { type: 'sendOff', team: 'A' })} title="Team A gets a straight red card"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
+            Red A
+          </button>
+        )}
         {mode === '11v11' && (
           <button onClick={() => setManualInjA(v => !v)} title="Team A picks the replacement of an injured player (#140)"
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
@@ -2100,6 +2106,7 @@ export function TestScreen() {
           playerTeam="A"
           onQueueSub={sub => gameBus.emit('testCommand', { type: 'queueSub', team: 'A', outId: sub.outId, inId: sub.inId })}
           onSwapPositions={(aId, bId) => gameBus.emit('testCommand', { type: 'swapPositions', team: 'A', aId, bId })}
+          onMoveToSlot={(id, slot) => gameBus.emit('testCommand', { type: 'moveToSlot', team: 'A', id, slot })}
           onFillVacancy={(injuredId, inId) => gameBus.emit('testCommand', { type: 'fillVacancy', team: 'A', injuredId, inId })}
           onClose={() => setShowSubs(false)}
         />

@@ -338,6 +338,10 @@ export interface GameEvents {
     | { type: 'queueSub'; team: import('@/GameEngine/types').TeamId; outId: number; inId: number }
     /** Substitution panel (`/test`): two starters swap slots (`swapPlayerPositions`, no substitution used). */
     | { type: 'swapPositions'; team: import('@/GameEngine/types').TeamId; aId: number; bId: number }
+    /** `/test`: shows an outfield player of `team` a straight red card. */
+    | { type: 'sendOff'; team: import('@/GameEngine/types').TeamId }
+    /** Substitution panel (`/test`): a starter moves to an empty slot (`moveToEmptySlot`). */
+    | { type: 'moveToSlot'; team: import('@/GameEngine/types').TeamId; id: number; slot: number }
     /** Manual injury substitutions (`/test`, #140): the team picks the replacement of an injured player. */
     | { type: 'setManualInjurySubs'; team: import('@/GameEngine/types').TeamId; on: boolean }
     /** /test: 2D penalties for these teams (empty = automatic), and the answer to the pending one. */

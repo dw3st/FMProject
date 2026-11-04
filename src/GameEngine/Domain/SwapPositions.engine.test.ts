@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
-import { createMatchState, applyPlayerInstruction, setManMarks, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
+import { bookPlayer, createMatchState, applyPlayerInstruction, moveToEmptySlot, setManMarks, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { Formation, GamePlayer, GameState } from "@/GameEngine/types";
@@ -25,6 +25,36 @@ function freshState(): GameState {
 const slotOf = (role: string) => F433.attacking.findIndex(s => s.role === role);
 const at = (s: GameState, team: "A" | "B", slot: number): GamePlayer => s.players.find(p => p.team === team && p.slotIndex === slot)!;
 const byId = (s: GameState, id: number): GamePlayer => s.players.find(p => p.id === id)!;
+
+describe("moveToEmptySlot", () => {
+  test("after a red card a starter takes the empty slot and leaves his own empty", () => {
+    const s0 = freshState();
+    const cdm = at(s0, "A", slotOf("CM"));
+    const st = at(s0, "A", slotOf("ST"));
+    const s1 = bookPlayer(s0, cdm, "red", 30);
+    const s = moveToEmptySlot(s1, "A", st.id, cdm.slotIndex);
+    const moved = byId(s, st.id);
+    expect(moved.slotIndex).toBe(cdm.slotIndex);
+    expect(moved.role).toBe(cdm.role);
+    expect(moved.basePosition).toEqual(cdm.basePosition);
+    expect(moved.energy).toBe(st.energy);
+    expect(s.players.some(p => p.team === "A" && p.slotIndex === slotOf("ST"))).toBe(false);
+    expect(s.subsRemainingA).toBe(s1.subsRemainingA);
+  });
+
+  test("a slot somebody holds, the goalkeeper, an unknown slot and an opponent are refused (state unchanged)", () => {
+    const s0 = freshState();
+    const cm = at(s0, "A", slotOf("CM"));
+    const st = at(s0, "A", slotOf("ST"));
+    const gk = at(s0, "A", slotOf("GK"));
+    const s = bookPlayer(s0, cm, "red", 30);
+    expect(moveToEmptySlot(s, "A", st.id, slotOf("GK"))).toBe(s);
+    expect(moveToEmptySlot(s, "A", st.id, slotOf("LW"))).toBe(s);
+    expect(moveToEmptySlot(s, "A", gk.id, cm.slotIndex)).toBe(s);
+    expect(moveToEmptySlot(s, "A", st.id, 99)).toBe(s);
+    expect(moveToEmptySlot(s, "A", at(s, "B", slotOf("ST")).id, cm.slotIndex)).toBe(s);
+  });
+});
 
 describe("swapPlayerPositions", () => {
   test("two starters swap slot, role, anchor and bounds; energy, place and subs stay", () => {
