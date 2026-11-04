@@ -217,3 +217,7 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 
 Toda tela nova ou alterada deve sair com o relatório limpo (0 duras, 0 leves); quem precisar de uma
 exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.
+
+## Nomes na caixa de entrada (4.44.4)
+
+`PlayerNameText` (`Inbox/PlayerNameText.tsx`) troca o nome do jogador de uma linha por um link; a rota `GET /players/:id/where` diz onde ele joga na hora do clique. Quem não está em clube vira texto. Listas sem id (aposentados) ficam como texto.

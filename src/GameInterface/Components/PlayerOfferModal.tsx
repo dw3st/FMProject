@@ -95,6 +95,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const refusalText = useRefusalText();
   const demandInfo = useContractDemandInfo(saveId, player?.id ?? null, player?.squadId);
   const demand = demandInfo?.demand ?? null;
+  const [confirmClause, setConfirmClause] = useState(false);
   const [wage, setWage] = useState(0);
   const [years, setYears] = useState(3);
   const [contractError, setContractError] = useState<string | null>(null);
@@ -249,7 +250,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     }
   }
 
-  async function submitOffer(fee: number, pct: number) {
+  async function submitOffer(fee: number, pct: number, payClause = false) {
     if (submitting || seatListPending || !activePlayer.squadId) return;
     if (isSeat) {
       void submitSeatOffer({ kind: "transfer", fee, sellOnPct: pct, wage, years });
@@ -264,7 +265,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       const res = await fetch(`/api/saves/${session.saveId}/transfers`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, fee, wage, years, sellOnPct: pct }),
+        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, fee, wage, years, sellOnPct: pct, ...(payClause ? { payClause: true } : {}) }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string; opensOn?: string; record?: TransferRecord; talk?: NegotiationTalk;
@@ -625,6 +626,30 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </>
               )}
 
+              {tab === "transfer" && !isSeat && demandInfo?.clause !== undefined && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-muted-foreground m-0 tabular-nums flex-1 min-w-48">
+                    {t("negotiation.clause.line", { fee: formatFee(demandInfo.clause) })}
+                  </p>
+                  {confirmClause ? (
+                    <>
+                      <Button variant="danger" className="tabular-nums" disabled={submitting || seatListPending} onClick={() => { setConfirmClause(false); void submitOffer(demandInfo.clause!, 0, true); }}>
+                        {t("negotiation.clause.confirm", { fee: formatFee(demandInfo.clause) })}
+                      </Button>
+                      <Button variant="secondary" onClick={() => setConfirmClause(false)}>{t("common.cancel")}</Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      disabled={submitting || seatListPending || windowClosed || budget < demandInfo.clause}
+                      title={budget < demandInfo.clause ? t("negotiation.clause.noMoney") : undefined}
+                      onClick={() => setConfirmClause(true)}
+                    >
+                      {t("negotiation.clause.pay")}
+                    </Button>
+                  )}
+                </div>
+              )}
               {tab !== "precontract" && !isSeat && (
                 <p className="text-sm text-muted-foreground m-0 tabular-nums">
                   {closedUntil

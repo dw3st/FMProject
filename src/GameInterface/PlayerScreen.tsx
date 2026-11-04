@@ -27,7 +27,7 @@ import { StarLimitLine, useStarLimit } from "@/GameInterface/Squad/StarLimitLine
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
 import { personalityViewOf } from "@/Domain/personality/personality";
-import { historyRowFromLog } from "@/Domain/history/history";
+import { historyRowFromLog, withArrival } from "@/Domain/history/history";
 import { addDays } from "@/Domain/dates";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import type { LeagueData } from "@/types/playerTypes";
@@ -256,7 +256,7 @@ export function PlayerScreen({
           <CareerTable
             rows={player.history ?? []}
             current={(() => {
-              const row = historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history);
+              const row = withArrival(historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history), player);
               return row && player.loan ? { ...row, loan: true as const } : row;
             })()}
             leagues={leagues}

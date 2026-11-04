@@ -95,6 +95,30 @@ export const youthRoutes = {
     });
   },
 
+  /** `POST { ids }` - dismiss several academy players at once; they join the free-agent pool. 400 `invalidIds`. */
+  "/api/saves/:saveId/youth/release-many": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const ids = ((await req.json().catch(() => null)) as { ids?: unknown } | null)?.ids;
+    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 50 || !ids.every((i) => typeof i === "string")) {
+      return Response.json({ error: "invalidIds" }, { status: 400 });
+    }
+    return withSaveLock(saveId, async () => {
+      const found = await loadHumanSquad(saveId, auth.seatId);
+      if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
+      const { squad, meta } = found;
+      const chosen = new Set(ids as string[]);
+      const leaving = (squad.youth ?? []).filter((p) => chosen.has(p.id));
+      const next: Squad = { ...squad, youth: (squad.youth ?? []).filter((p) => !chosen.has(p.id)) };
+      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+      await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...leaving.map((p) => toFreeAgent(p, date))]);
+      return Response.json(youthView(next));
+    });
+  },
+
   /** `POST` - move an academy player into the squad (400 `squadFull` at `HUMAN_MAX_SQUAD`). New wage from the curve. */
   "/api/saves/:saveId/youth/:playerId/promote": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -113,6 +137,7 @@ export const youthRoutes = {
       const promoted: RosterPlayer = {
         ...player,
         contract: { until: player.contract.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
+        arrival: { squadId: squad.id, kind: "academy", on: found.meta.currentDate ?? "" },
       };
       const next: Squad = {
         ...squad,

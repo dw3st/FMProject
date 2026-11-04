@@ -1,3 +1,4 @@
+import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -35,6 +36,21 @@ async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad |
  * contract's end moves `years` seasons past its current end and the new wage applies at once.
  */
 export const contractRoutes = {
+  /** Where a player plays now, for a link to his page (inbox names). 404 when he is at no club. */
+  "/api/saves/:saveId/players/:playerId/where": async (req: Request & { params: Record<string, string> }) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const playerId = req.params.playerId!;
+    for (const squad of await saveService.getAllSquads(saveId)) {
+      if (!squad.players.some((p) => p.id === playerId) && !squad.youth?.some((p) => p.id === playerId)) continue;
+      const ref = await saveService.resolveSquadId(saveId, squad.id);
+      if (ref) return Response.json({ league: ref.leagueSlug, squadId: squad.id });
+    }
+    return Response.json({ error: "notFound" }, { status: 404 });
+  },
+
   /**
    * Friendly termination (tester suggestion). `GET` quotes it (`{ fee, weeksLeft, wagesLeft, share, status, capped,
    * blocked }`), `POST` does it: the fee leaves the club's balance (ledger `wages`, stage `termination`) and the player
@@ -216,9 +232,11 @@ export const contractRoutes = {
         };
       }
     }
+    const aiSeller = !!from && !renewal && from !== mine.id && !(await saveService.seatOfClub(saveId, from));
     return Response.json({
       demand: b.demand,
       ...parts,
+      ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
@@ -268,7 +286,7 @@ export const contractRoutes = {
       const contract = { until: addYearsIso(seasonEnd, years - 1), wage };
       await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
         ...squad,
-        players: [...squad.players, { ...agent.player, squadId: squad.id, contract }],
+        players: [...squad.players, { ...agent.player, squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],
       });
       await saveService.writeFreeAgents(saveId, pool.filter((f) => f.player.id !== playerId));
       // In the day log like every other move (achievements: free signings, `.claude/rules/game/achievements.md`).

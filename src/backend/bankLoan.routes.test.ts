@@ -8,6 +8,39 @@ import { ownSolo } from "@/backend/testing/seatFixtures";
 import { BANK_LOAN, bankLoanLimit, bankLoanQuote } from "@/Domain/finance/bankLoan";
 import { addDays } from "@/Domain/dates";
 
+describe("paying a bank loan off", () => {
+  test("pays what is left at once, needs the money, leaves no debt", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    try {
+      const { user, session } = devAutoLogin("bank-loan-payoff@test.local");
+      await ownSolo(meta.id, user.id);
+      const call = () => {
+        const handler = apiRoutes["/api/saves/:saveId/bank-loan/payoff" as keyof typeof apiRoutes] as unknown as (r: Request) => Promise<Response>;
+        return handler(Object.assign(
+          new Request(`http://localhost/api/saves/${meta.id}/bank-loan/payoff`, { method: "POST", headers: { cookie: `fs_session=${session.token}` } }),
+          { params: { saveId: meta.id } },
+        ));
+      };
+      expect(((await (await call()).json()) as { error: string }).error).toBe("noLoan");
+      const squad = (await saveService.getSquadById(meta.id, "33"))!;
+      const bankLoan = { principal: 1_000_000, total: 1_150_000, weekly: 22_116, remaining: 900_000, takenOn: "2026-08-01", seasons: 1 };
+      await saveService.saveSquadById(meta.id, { ...squad, bankLoan, finances: { ...squad.finances!, budget: 100_000 } });
+      expect(((await (await call()).json()) as { error: string }).error).toBe("noMoney");
+      const rich = (await saveService.getSquadById(meta.id, "33"))!;
+      await saveService.saveSquadById(meta.id, { ...rich, finances: { ...rich.finances!, budget: 1_000_000 } });
+      expect((await call()).status).toBe(200);
+      const after = (await saveService.getSquadById(meta.id, "33"))!;
+      expect(after.bankLoan).toBeUndefined();
+      expect(after.finances!.budget).toBe(100_000);
+    } finally {
+      await saveService.deleteSave(meta.id);
+    }
+  }, 120_000);
+});
+
 /** Bank loan: the route, the ledger, the Monday payment, and the debt staying behind when the manager leaves. */
 describe("bank loan route", () => {
   let saveId = "";

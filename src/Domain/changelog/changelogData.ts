@@ -27,6 +27,33 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.4",
+    date: "2026-11-04",
+    time: "17:19",
+    items: [
+      {
+        pt: "Multa rescisória: pague 3 vezes o valor do jogador e o clube não pode recusar. O jogador ainda precisa aceitar o contrato.",
+        en: "Release clause: pay 3 times the player's value and the club cannot refuse. The player still has to accept the contract.",
+      },
+      {
+        pt: "A carreira do jogador mostra como ele chegou a cada clube: o valor da transferência, livre, pré-contrato, multa ou base.",
+        en: "A player's career shows how he reached each club: the transfer fee, free, pre-contract, clause or academy.",
+      },
+      {
+        pt: "Empréstimo do banco pode ser quitado de uma vez em Finanças, pelo valor que falta.",
+        en: "A bank loan can be paid off at once in Finances, for what is left.",
+      },
+      {
+        pt: "Na base, dispense de uma vez quem tem potencial abaixo do valor que você escolher.",
+        en: "In the academy, release at once whoever has a potential below the value you choose.",
+      },
+      {
+        pt: "Nomes de jogadores na caixa de entrada abrem o perfil deles.",
+        en: "Player names in the inbox open their profile.",
+      },
+    ],
+  },
+  {
     version: "4.44.3",
     date: "2026-11-04",
     time: "16:59",

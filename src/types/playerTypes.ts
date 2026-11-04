@@ -155,6 +155,8 @@ export interface RosterPlayer {
   contract?: PlayerContract;
   /** Reborn academy star (+30% DP while young). */
   reborn?: RebornMark;
+  /** How he reached his current club (`.claude/rules/game/history.md`). */
+  arrival?: PlayerArrival;
   /** Academy players: Monday overall snapshots (newest last), for the trend column (`youthTraining.ts`). */
   youthTrend?: { date: string; overall: number }[];
   /** Closed seasons (and partial stints), oldest first (`.claude/rules/game/history.md`). */
@@ -481,6 +483,14 @@ export interface RetiredPlayer {
 }
 
 /** One closed season (or partial stint) of a player at one club. */
+/** How a player reached a club: shown in his career. `on` tells two spells at the same club apart. */
+export interface PlayerArrival {
+  squadId: string;
+  kind: "transfer" | "clause" | "free" | "pre_contract" | "academy";
+  fee?: number;
+  on: string;
+}
+
 export interface PlayerHistoryRow {
   /** League season label of the club ("2026-27" / "2027"). */
   season: string;
@@ -508,6 +518,8 @@ export interface PlayerHistoryRow {
   open?: true;
   /** Stint on loan (`.claude/rules/game/negotiation.md`). */
   loan?: true;
+  /** How he arrived, on the first row of a spell at the club. */
+  arrival?: PlayerArrival;
   /** Season awards won with this row (`.claude/rules/game/awards.md`). */
   awards?: PlayerAward[];
 }

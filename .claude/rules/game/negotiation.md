@@ -223,3 +223,7 @@ Numa compra do humano, o vendedor da IA só recusa por elenco com 14 ou menos ou
 (`humanBuyBlocked`); abaixo de um mínimo por linha ele vende e, no mesmo dia, contrata um substituto da linha
 (`replaceAfterSale`: o melhor livre que cabe na folha, senão um jovem). Entre clubes da IA os mínimos continuam valendo
 (`squadDepthBlocked`). Antes, como a reposição enche os elencos só até os mínimos, quase nenhum goleiro era comprável.
+
+## Multa rescisória (4.44.4)
+
+Report de tester. Todo jogador de clube da IA tem multa de 3 × o valor de mercado, no mínimo €1M (`releaseClause`, a rota `demand` devolve `clause`). `POST /transfers { payClause: true, fee }`: o clube não pode recusar, sem rodadas e sem rivais; janela aberta, saldo, limite do top 25 e contrato com o jogador continuam valendo (a recusa dele continua). 400 `belowClause`. Sem cláusula de venda futura. Não vale entre técnicos humanos.

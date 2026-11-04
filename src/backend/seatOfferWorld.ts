@@ -173,6 +173,7 @@ export async function completeSeatTransfer(
   const { selling, buying } = squadsAfterAcceptedTransfer(
     c.player, c.seller, c.buyer, c.buyer.id, c.player.id, contract,
     historyFromOf(buyerMeta.activeLeagues, sellerRef.leagueSlug), newClause,
+    { kind: "transfer", fee, on: date },
   );
   const owed = sellOnFor(c.player, c.seller.id, fee);
   await executeTransferFee(

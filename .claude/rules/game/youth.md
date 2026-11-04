@@ -148,3 +148,7 @@ Ritmo do padrão = o de antes: `bun scripts/youth-training-pace.ts` (16 anos, um
 leve +0,462, pesado +0,800, foco técnica leva o drible de 4 a 6,1). Toda segunda o overall vai para `youthTrend`; a
 tabela da Base mostra a variação de 4 semanas. Rotas: `GET /youth` traz `training`, `positions` e `trend`;
 `PUT /api/saves/:id/youth/training` (livre no lobby, como a tática). Some no `releaseHumanClub` e nos kits.
+
+## Dispensa em lote (4.44.4)
+
+Report de tester. Na aba Base, um campo com o potencial mínimo (o topo da faixa, padrão 7,0), a lista de quem fica abaixo e o botão com confirmação; `POST /youth/release-many { ids }` (até 50) leva todos aos livres.

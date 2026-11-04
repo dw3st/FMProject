@@ -2536,6 +2536,7 @@
     "promote": "Promote",
     "release": "Release",
     "confirmRelease": "Confirm release",
+    "bulk": { "label": "Release whoever has a top potential below", "release_one": "Release {{count}} player", "release_other": "Release {{count}} players" },
     "cancel": "Cancel"
   },
   "matchPreview": {
@@ -2808,6 +2809,9 @@
       "loan_payment": "Loan payment"
     },
     "bankLoan": {
+      "paidOnMondays": "The instalment leaves the balance every Monday.",
+      "payOff": "Pay off for {{amount}}",
+      "payOffConfirm": "Pay {{amount}} at once, with all the agreed interest?",
       "title": "Bank loan",
       "intro": "Up to {{share}}% of annual revenue, one loan at a time, with {{rate}}% interest per season. The board dislikes it: asking costs confidence. If you leave the club owing, the debt goes on your career and lowers your reputation.",
       "amount": "Amount",
@@ -2828,6 +2832,8 @@
       "boardLow": "The board only authorises it with its meter at {{min}} or more.",
       "noCredit": "The club's revenue is too small for a loan.",
       "errors": {
+        "noMoney": "The balance does not cover what is left to pay.",
+        "noLoan": "The club has no loan.",
         "loanActive": "The club already has a loan.",
         "boardLow": "The board did not authorise the loan.",
         "overLimit": "That amount is above the club's limit.",
@@ -3281,6 +3287,7 @@
     }
   },
   "career": {
+    "arrival": { "title": "Arrival", "free": "Free", "pre_contract": "Pre-contract", "academy": "Academy", "clause": "{{fee}} (clause)" },
     "title": "Career",
     "empty": "No seasons played yet.",
     "current": "Current",
@@ -3492,6 +3499,7 @@
     },
     "loanAgreed": "{{name}} joins on loan",
     "loanUntil": "Returns on {{date}}",
+    "clause": { "line": "Release clause: {{fee}}. If you pay it the club cannot refuse, but the player still has to accept the contract.", "pay": "Pay the clause", "confirm": "Pay {{fee}}", "noMoney": "The balance does not cover the clause." },
     "acceptCounter": "Accept {{fee}}",
     "acceptLoanCounter": "Accept {{share}}% + {{fee}}",
     "requestLoan": "Ask for loan",

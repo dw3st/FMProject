@@ -309,6 +309,7 @@ export async function completeHumanSale(
     aiContractFor(player, buyer, date, seasonEndOf(meta.activeLeagues, buyerRef.leagueSlug, date)),
     historyFromOf(meta.activeLeagues, sellerRef.leagueSlug),
     newClause,
+    { kind: "transfer", fee, on: date },
   );
   // The buyer will not sell him back to this club for a while (`Domain/transfer/formerClub.ts`).
   buying.players = buying.players.map((p) => (p.id === player.id ? withFormerClub(p, seller.id, date) : p));

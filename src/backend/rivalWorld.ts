@@ -113,6 +113,7 @@ export async function resolveRivalDeadlines(
     const contract = { wage: r.wage, until: contractEndFor(date, end, aiRenewalYears(player)) };
     const { selling, buying } = squadsAfterAcceptedTransfer(
       player, seller, buyer, buyer.id, player.id, contract, historyFromOf(meta.activeLeagues, sellerRef.leagueSlug),
+      null, { kind: "transfer", fee: r.fee, on: date },
     );
     const owed = sellOnFor(player, seller.id, r.fee);
     workingMeta = await executeTransferFee(
@@ -188,6 +189,7 @@ export async function applyDuePreContracts(
     const contract = { wage: pc.wage, until: contractEndFor(args.date, end, pc.years) };
     const { selling, buying } = squadsAfterAcceptedTransfer(
       player, from, human, human.id, player.id, contract, historyFromOf(meta.activeLeagues, from.leagueSlug),
+      null, { kind: "pre_contract", on: args.date },
     );
     await service.saveSquadById(saveId, selling);
     await service.saveSquadById(saveId, buying);

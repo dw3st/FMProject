@@ -28,9 +28,29 @@ export function BankLoanCard({ saveId, squad, board, onTaken }: { saveId: string
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function payOff() {
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/bank-loan/payoff`, { method: "POST" });
+      if (res.ok) {
+        setConfirming(false);
+        onTaken();
+        return;
+      }
+      const code = ((await res.json().catch(() => ({}))) as { error?: string }).error;
+      setError(t(`financesScreen.bankLoan.errors.${code}`, { defaultValue: t("financesScreen.bankLoan.errors.generic") }));
+    } catch {
+      setError(t("financesScreen.bankLoan.errors.generic"));
+    } finally {
+      setSending(false);
+    }
+  }
+
   const loan = squad.bankLoan;
   if (loan) {
     const weeks = Math.ceil(loan.remaining / loan.weekly);
+    const canPay = (squad.finances?.budget ?? 0) >= loan.remaining;
     return (
       <div className="card-arcade rounded-md p-4">
         <SectionTitle className="mb-4">{t("financesScreen.bankLoan.title")}</SectionTitle>
@@ -39,6 +59,21 @@ export function BankLoanCard({ saveId, squad, board, onTaken }: { saveId: string
           <Figure label={t("financesScreen.bankLoan.remaining")} value={formatEuros(loan.remaining)} tone="text-destructive" />
           <Figure label={t("financesScreen.bankLoan.weekly")} value={formatEuros(loan.weekly)} />
           <Figure label={t("financesScreen.bankLoan.weeksLeft")} value={String(weeks)} />
+        </div>
+        <p className="text-sm text-muted-foreground m-0 mt-4">{t("financesScreen.bankLoan.paidOnMondays")}</p>
+        {error && <p role="alert" className="text-sm text-destructive m-0 mt-2">{error}</p>}
+        <div className="flex flex-wrap items-center gap-3 mt-3">
+          {confirming ? (
+            <>
+              <p className="text-sm text-foreground tabular-nums m-0">{t("financesScreen.bankLoan.payOffConfirm", { amount: formatEuros(loan.remaining) })}</p>
+              <Button onClick={() => void payOff()} disabled={sending}>{t("financesScreen.bankLoan.confirm")}</Button>
+              <Button variant="secondary" onClick={() => setConfirming(false)} disabled={sending}>{t("financesScreen.bankLoan.cancel")}</Button>
+            </>
+          ) : (
+            <Button className="tabular-nums" disabled={!canPay} title={canPay ? undefined : t("financesScreen.bankLoan.errors.noMoney")} onClick={() => setConfirming(true)}>
+              {t("financesScreen.bankLoan.payOff", { amount: formatEuros(loan.remaining) })}
+            </Button>
+          )}
         </div>
       </div>
     );

@@ -25,6 +25,7 @@ import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
+import { PlayerNameText } from "@/GameInterface/Inbox/PlayerNameText";
 import { PressInboxBody } from "@/GameInterface/Press/PressInboxBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
@@ -878,6 +879,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     {message.category === "transfer_in" && (
       <TransferBody
         direction="in"
+        playerId={message.playerId}
         playerName={message.playerName}
         club={message.fromClub}
         fee={message.feeEuros}
@@ -887,6 +889,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     {message.category === "transfer_out" && (
       <TransferBody
         direction="out"
+        playerId={message.playerId}
         playerName={message.playerName}
         club={message.toClub}
         fee={message.feeEuros}
@@ -908,7 +911,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
               year: message.year, count: message.count,
               best: message.best?.name ?? "",
             })
-          : t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })}
+          : <PlayerNameText text={t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })} players={message.players ?? []} />}
       </p>
     )}
     {message.category === "retirement" && <RetirementBody message={message} />}
@@ -970,12 +973,15 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     {message.category === "contract" && message.kind === "director_summary" && <DirectorSummaryBody message={message} />}
     {message.category === "contract" && message.kind !== "director_summary" && (
       <p className="text-sm text-foreground m-0">
-        {t(`inbox.contract.${message.kind}`, {
-          players: message.staff
-            ? message.staff.map((m) => `${m.name} (${t(`staff.roles.${m.role}`)})`).join(", ")
-            : message.players.map((p) => p.name).join(", "),
-          until: formatInboxDate(message.until ?? ""),
-        })}
+        <PlayerNameText
+          text={t(`inbox.contract.${message.kind}`, {
+            players: message.staff
+              ? message.staff.map((m) => `${m.name} (${t(`staff.roles.${m.role}`)})`).join(", ")
+              : message.players.map((p) => p.name).join(", "),
+            until: formatInboxDate(message.until ?? ""),
+          })}
+          players={message.staff ? [] : message.players}
+        />
       </p>
     )}
     <InboxActionButton message={message} />
@@ -1278,28 +1284,32 @@ function InjuryBody({
   message: Extract<InboxMessage, { category: "injury" }>;
 }) {
   const { t } = useTranslation();
+  const named = [{ id: message.playerId, name: message.playerName }];
   if (message.kind === "suspended") {
     return (
       <p className="text-sm text-foreground m-0">
-        {t("inbox.injury.suspended", { player: message.playerName, count: message.matches ?? 1 })}
+        <PlayerNameText text={t("inbox.injury.suspended", { player: message.playerName, count: message.matches ?? 1 })} players={named} />
       </p>
     );
   }
   if (message.kind === "returned") {
     return (
       <p className="text-sm text-foreground m-0">
-        {t("inbox.injury.returned", { player: message.playerName })}
+        <PlayerNameText text={t("inbox.injury.returned", { player: message.playerName })} players={named} />
       </p>
     );
   }
   const severity = t(`inbox.injury.severity.${message.severity ?? "light"}`);
   return (
     <p className="text-sm text-foreground m-0">
-      {t("inbox.injury.injured", {
-        player: message.playerName,
-        severity,
-        date: formatInboxDate(message.returnDate ?? ""),
-      })}
+      <PlayerNameText
+        text={t("inbox.injury.injured", {
+          player: message.playerName,
+          severity,
+          date: formatInboxDate(message.returnDate ?? ""),
+        })}
+        players={named}
+      />
     </p>
   );
 }
@@ -1490,7 +1500,7 @@ function DevelopmentBody({
     : t("inbox.developmentLevelUpMany", { player: message.playerName, count: message.changes.length });
   return (
     <div className="space-y-4">
-      <p className="text-sm text-foreground m-0 leading-relaxed">{summary}</p>
+      <p className="text-sm text-foreground m-0 leading-relaxed"><PlayerNameText text={summary} players={[{ id: message.playerId, name: message.playerName }]} /></p>
       <div className="rounded-lg border border-border divide-y divide-border overflow-hidden">
         {message.changes.map((c) => (
           <div key={c.attribute} className="p-3 bg-muted/10">
@@ -1504,12 +1514,14 @@ function DevelopmentBody({
 
 function TransferBody({
   direction,
+  playerId,
   playerName,
   club,
   fee,
   date,
 }: {
   direction: "in" | "out";
+  playerId: string;
   playerName: string;
   club: string;
   fee: number;
@@ -1522,7 +1534,7 @@ function TransferBody({
     : t("inbox.transferOutBody", { player: playerName, date: formatFullDate(date) });
   return (
     <div className="space-y-4">
-      <p className="text-sm text-foreground m-0 leading-relaxed">{summary}</p>
+      <p className="text-sm text-foreground m-0 leading-relaxed"><PlayerNameText text={summary} players={[{ id: playerId, name: playerName }]} /></p>
       <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
         <DetailRow label={headline} value={club} />
         <DetailRow label={t("transfers.fee")} value={formatFee(fee)} accent />

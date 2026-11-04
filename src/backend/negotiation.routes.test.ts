@@ -9,6 +9,8 @@ import { returnDueLoans, emptyMarket } from "@/backend/negotiationWorld";
 import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { addDays } from "@/Domain/dates";
 import { roundFeeUp } from "@/Domain/negotiation/negotiation";
+import { releaseClause } from "@/Domain/negotiation/releaseClause";
+import { historyRowFromLog, withArrival } from "@/Domain/history/history";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { SeatMeta } from "@/backend/SaveService";
@@ -89,6 +91,25 @@ describe("negotiation routes", () => {
     const bought = (await human()).players.find((p) => p.id === player.id)!;
     expect(bought.sellOn).toEqual({ clubId: club.id, clubName: club.name, pct: 10 });
   }, 60_000);
+
+  test("the release clause: below it refused; paid, the club cannot say no; the career shows how he came", async () => {
+    const { club, player } = await aiTarget();
+    const clause = releaseClause(player);
+    await saveService.saveSquadById(saveId, { ...(await human()), finances: { ...(await human()).finances!, budget: clause * 2 } });
+    const post = (fee: number) => route("/api/saves/:saveId/transfers")(req(`/api/saves/${saveId}/transfers`, "POST", { saveId }, {
+      playerId: player.id, fromSquadId: club.id, fee, wage: 10_000_000, years: 2, payClause: true,
+    }));
+    const low = await post(clause - 1);
+    expect(low.status).toBe(400);
+    expect(((await low.json()) as { error: string }).error).toBe("belowClause");
+    const paid = await post(clause);
+    expect(paid.status).toBe(200);
+    expect(((await paid.json()) as { response: { kind: string } }).response.kind).toBe("accept");
+    const bought = (await human()).players.find((p) => p.id === player.id)!;
+    expect(bought.arrival).toMatchObject({ kind: "clause", fee: clause, squadId: meta.clubId });
+    expect(withArrival(historyRowFromLog({ ...bought.seasonLog!, appearances: 3 }, { squadId: meta.clubId, clubName: "T", league: "l" }, "2026", [], bought.history), bought)?.arrival?.kind).toBe("clause");
+    await saveService.saveSquadById(saveId, { ...(await human()), finances: { ...(await human()).finances!, budget: 2_000_000_000 } });
+  });
 
   test("three rounds a day, a lowball closes the talks; loaned players cannot be bought", async () => {
     const { club, player } = await aiTarget();

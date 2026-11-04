@@ -7,6 +7,8 @@ import { formatFee as formatWage, formatWageFull } from "@/Domain/money";
 /** What the demand route answers: the wage, plus (own player) the morale behind it (`morale.md`). */
 export interface ContractDemandInfo {
   demand: number;
+  /** What it costs to pay his release clause (a player of an AI club). */
+  clause?: number;
   moraleBand?: "very_happy" | "content" | "neutral" | "unhappy" | "furious";
   moraleDemandMult?: number;
   refuses?: boolean;

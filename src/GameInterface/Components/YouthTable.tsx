@@ -41,6 +41,9 @@ export function YouthTable() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmRelease, setConfirmRelease] = useState<string | null>(null);
+  /** Release by a criterion: the top of the potential range, on the 0-10 scale the table shows. */
+  const [minPotential, setMinPotential] = useState("7.0");
+  const [confirmMany, setConfirmMany] = useState(false);
 
   const saveId = session?.saveId;
 
@@ -73,6 +76,21 @@ export function YouthTable() {
     }
   }
 
+  async function releaseMany(ids: string[]) {
+    if (!saveId) return;
+    setBusy("many");
+    setError(null);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/youth/release-many`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }),
+      });
+      if (res.ok) { setData((await res.json()) as YouthData); void refresh(); } else setError(t("youth.actionFailed"));
+    } finally {
+      setBusy(null);
+      setConfirmMany(false);
+    }
+  }
+
   async function saveTraining(plan: YouthTrainingPlan) {
     if (!saveId) return;
     setData((d) => (d ? { ...d, training: plan } : d));
@@ -99,6 +117,8 @@ export function YouthTable() {
   }
 
   const full = data.squadSize >= data.squadLimit;
+  const cut = Number(minPotential.replace(",", "."));
+  const below = Number.isFinite(cut) ? data.youth.filter((r) => r.potential.high < cut) : [];
   const columns: DataTableColumn<YouthRow>[] = [
     {
       key: "name",
@@ -240,7 +260,32 @@ export function YouthTable() {
       {data.youth.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("youth.empty")}</p>
       ) : (
-        <DataTable columns={columns} rows={data.youth} rowKey={(r) => r.player.id} />
+        <>
+          <DataTable columns={columns} rows={data.youth} rowKey={(r) => r.player.id} />
+          <section className="flex flex-col gap-2">
+            <label htmlFor="youth-min-potential" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.bulk.label")}</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                id="youth-min-potential"
+                inputMode="decimal"
+                value={minPotential}
+                onChange={(e) => { setMinPotential(e.target.value); setConfirmMany(false); }}
+                className="w-20 rounded border border-border h-10 px-3 bg-transparent tabular-nums text-sm"
+              />
+              {confirmMany ? (
+                <>
+                  <Button variant="danger" disabled={busy !== null} onClick={() => void releaseMany(below.map((r) => r.player.id))}>{t("youth.confirmRelease")}</Button>
+                  <Button variant="secondary" onClick={() => setConfirmMany(false)}>{t("youth.cancel")}</Button>
+                </>
+              ) : (
+                <Button variant="danger" disabled={busy !== null || below.length === 0} onClick={() => setConfirmMany(true)}>
+                  {t("youth.bulk.release", { count: below.length })}
+                </Button>
+              )}
+            </div>
+            {below.length > 0 && <p className="text-sm text-muted-foreground m-0">{below.map((r) => r.player.name).join(", ")}</p>}
+          </section>
+        </>
       )}
     </div>
   );

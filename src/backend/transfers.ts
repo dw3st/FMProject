@@ -36,6 +36,7 @@ import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/n
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { parseAskingPrice, playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
+import { releaseClause } from "@/Domain/negotiation/releaseClause";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -112,7 +113,7 @@ export const transferRoutes = {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
-      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears, sellOnPct: rawSellOn } = body as Record<string, unknown>;
+      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears, sellOnPct: rawSellOn, payClause } = body as Record<string, unknown>;
       const sellOnPct = parseSellOnPct(rawSellOn);
       if (sellOnPct === null) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       if (typeof playerId !== "string" || playerId.length === 0) {
@@ -175,6 +176,9 @@ export const transferRoutes = {
         if (sellerSquad.id === buyerSquad.id) return Response.json({ error: "not for sale" }, { status: 400 });
         // On loan at that club: not its player to sell (`.claude/rules/game/negotiation.md`).
         if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
+        // Paying the release clause: the seller cannot refuse, no rounds and no rivals; the player still has to agree.
+        const clause = payClause === true ? releaseClause(player) : null;
+        if (clause !== null && fee < clause) return Response.json({ error: "belowClause", clause }, { status: 400 });
         const blockedUntil = rebuyBlockedUntil(player, buyerSquad.id, meta.currentDate ?? "");
         if (blockedUntil) return Response.json({ error: "recentlySold", until: blockedUntil }, { status: 409 });
 
@@ -213,13 +217,13 @@ export const transferRoutes = {
         const key = talkKey("transfer", playerId);
         const counter = activeCounter(talks[key], date0);
         const meetsCounter = !!counter && fee >= counter.fee && (counter.sellOnPct ?? 0) === sellOnPct;
-        const gate = talkGate(talks[key], date0, meetsCounter);
+        const gate = clause !== null ? "open" : talkGate(talks[key], date0, meetsCounter);
         if (gate === "closed") return Response.json({ error: "talksClosed", until: talks[key]?.closedUntil }, { status: 409 });
         if (gate === "noRounds") return Response.json({ error: "noRounds" }, { status: 409 });
         // Rivals (Etapa 25): the first offer of the day may bring another AI club in; the seller then
         // asks the human for at least the best rival fee it accepts x 1,05.
         let marketWithRivals = market;
-        if (market && talks[key]?.date !== date0) {
+        if (clause === null && market && talks[key]?.date !== date0) {
           const rolled = await rollRivalFor(saveService, saveId, {
             market, player, seller: sellerSquad, humanId: buyerSquad.id, date: date0, windows,
             // No club with a seat is ever a rival (`.claude/rules/game/multiplayer.md`).
@@ -228,9 +232,9 @@ export const transferRoutes = {
           marketWithRivals = rolled.market;
           if (rolled.news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(rolled.news), saveService, auth.seatId);
         }
-        const rivals = liveRivals(marketWithRivals?.rivalBids, playerId, date0);
+        const rivals = clause !== null ? [] : liveRivals(marketWithRivals?.rivalBids, playerId, date0);
         const floor = rivalFloor(rivals);
-        let answer: OfferResponse = meetsCounter && fee >= floor
+        let answer: OfferResponse = clause !== null || (meetsCounter && fee >= floor)
           ? { kind: "accept", reason: "financial" }
           : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee, sellOnPct, negotiation, ...(sellPriority !== undefined ? { sellPriority } : {}) });
         if (floor > 0 && answer.kind === "accept" && fee < floor) answer = { kind: "counter", counterFee: floor };
@@ -321,6 +325,7 @@ export const transferRoutes = {
               return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
             })(),
             sellOnPct > 0 ? { clubId: sellerSquad.id, clubName: sellerSquad.name, pct: sellOnPct } : null,
+            { kind: clause !== null ? "clause" : "transfer", fee, on: date },
           );
           // A clause the player already carried is paid out of this fee (the seller keeps the rest).
           const owed = sellOnFor(player, sellerSquad.id, fee);

@@ -2536,6 +2536,7 @@
     "promote": "Promover",
     "release": "Dispensar",
     "confirmRelease": "Confirmar dispensa",
+    "bulk": { "label": "Dispensar quem tem potencial máximo abaixo de", "release_one": "Dispensar {{count}} jogador", "release_other": "Dispensar {{count}} jogadores" },
     "cancel": "Cancelar"
   },
   "matchPreview": {
@@ -2808,6 +2809,9 @@
       "loan_payment": "Parcela do empréstimo"
     },
     "bankLoan": {
+      "paidOnMondays": "A parcela sai do saldo toda segunda-feira.",
+      "payOff": "Quitar por {{amount}}",
+      "payOffConfirm": "Pagar {{amount}} de uma vez, com todos os juros combinados?",
       "title": "Empréstimo do banco",
       "intro": "Até {{share}}% da receita anual, um empréstimo por vez, com juros de {{rate}}% por temporada. A diretoria não gosta: pedir custa confiança. Se você sair do clube devendo, a dívida entra na sua carreira e derruba sua reputação.",
       "amount": "Valor",
@@ -2828,6 +2832,8 @@
       "boardLow": "A diretoria só autoriza com o medidor em {{min}} ou mais.",
       "noCredit": "A receita do clube é pequena demais para um empréstimo.",
       "errors": {
+        "noMoney": "O saldo não cobre o que falta pagar.",
+        "noLoan": "O clube não tem empréstimo.",
         "loanActive": "O clube já tem um empréstimo.",
         "boardLow": "A diretoria não autorizou o empréstimo.",
         "overLimit": "Esse valor passa do limite do clube.",
@@ -3281,6 +3287,7 @@
     }
   },
   "career": {
+    "arrival": { "title": "Chegada", "free": "Livre", "pre_contract": "Pré-contrato", "academy": "Base", "clause": "{{fee}} (multa)" },
     "title": "Carreira",
     "empty": "Ainda sem temporadas jogadas.",
     "current": "Atual",
@@ -3492,6 +3499,7 @@
     },
     "loanAgreed": "{{name}} chega por empréstimo",
     "loanUntil": "Volta em {{date}}",
+    "clause": { "line": "Multa rescisória: {{fee}}. Pagando, o clube não pode recusar, mas o jogador ainda precisa aceitar o contrato.", "pay": "Pagar a multa", "confirm": "Pagar {{fee}}", "noMoney": "O saldo não cobre a multa." },
     "acceptCounter": "Aceitar {{fee}}",
     "acceptLoanCounter": "Aceitar {{share}}% + {{fee}}",
     "requestLoan": "Pedir empréstimo",

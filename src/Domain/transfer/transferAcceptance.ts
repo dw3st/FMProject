@@ -1,3 +1,4 @@
+import type { PlayerArrival } from "@/types/playerTypes";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { closePartialSeason } from "@/Domain/history/history";
 import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
@@ -171,6 +172,8 @@ export function squadsAfterAcceptedTransfer(
    * previous clause is dropped here: the caller has already paid it out of this fee.
    */
   sellOn?: SellOnClause | null,
+  /** How he joins, for his career (`.claude/rules/game/history.md`). */
+  arrival?: Omit<PlayerArrival, "squadId">,
 ): { selling: Squad; buying: Squad } {
   const closed = from
     ? closePartialSeason(player, { squadId: sellingSquad.id, clubName: sellingSquad.name, league: from.league }, from.season)
@@ -180,6 +183,7 @@ export function squadsAfterAcceptedTransfer(
   // Morale belongs to the human club he leaves (`.claude/rules/game/morale.md`): a new club starts fresh.
   const updatedPlayer: RosterPlayer = stripPlayerMorale({
     ...rest, squadId: buyerSquadId, ...(contract ? { contract } : {}), ...(sellOn ? { sellOn } : {}),
+    ...(arrival ? { arrival: { ...arrival, squadId: buyerSquadId } } : {}),
   });
   return {
     selling: {

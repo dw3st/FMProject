@@ -87,6 +87,14 @@ export function historyRowFromLog(
   return rowFromStats(remainingStats(log, history), club, season, titles);
 }
 
+/** The row with how he arrived, when it is the first one of this spell at the club. */
+export function withArrival(row: PlayerHistoryRow | null, player: RosterPlayer): PlayerHistoryRow | null {
+  const a = player.arrival;
+  if (!row || !a || a.squadId !== row.squadId) return row;
+  if ((player.history ?? []).some((r) => r.arrival?.squadId === a.squadId && r.arrival.on === a.on)) return row;
+  return { ...row, arrival: a };
+}
+
 /** Appends `row` (if any) to the player's history. Returns the same player when nothing changes. */
 function appendHistoryRow(player: RosterPlayer, row: PlayerHistoryRow | null): RosterPlayer {
   if (!row) return player;
@@ -102,7 +110,7 @@ function appendHistoryRow(player: RosterPlayer, row: PlayerHistoryRow | null): R
 export function closePartialSeason(
   player: RosterPlayer, club: HistoryClub, season: string, opts: { loan?: boolean } = {},
 ): RosterPlayer {
-  const row = historyRowFromLog(player.seasonLog, club, season, [], player.history);
+  const row = withArrival(historyRowFromLog(player.seasonLog, club, season, [], player.history), player);
   return row
     ? appendHistoryRow(player, { ...row, partial: true, open: true, ...(opts.loan ? { loan: true as const } : {}) })
     : player;
@@ -153,7 +161,7 @@ export function closeSeasonForPlayers(
   const titles = titlesByClub[club.squadId] ?? [];
   return players.map((before) => {
     const p = withPeakLevel(before);
-    const base = historyRowFromLog(logs[p.id], club, season, titles, p.history);
+    const base = withArrival(historyRowFromLog(logs[p.id], club, season, titles, p.history), p);
     // A player on loan at the rollover: his row at the borrowing club is a loan stint.
     const row = base && p.loan ? { ...base, loan: true as const } : base;
     const history = settleOpenPartials(p.history, titlesByClub);

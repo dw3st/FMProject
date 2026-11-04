@@ -251,6 +251,8 @@ export function dailyMarketTick(
       player.id,
       aiSigningContract(player, buyer, currentDate, options),
       options?.historyFrom?.(sellerSquad) ?? null,
+      null,
+      { kind: "transfer", fee, on: currentDate },
     );
 
     squads.set(sellerSquad.id, selling);

@@ -106,3 +106,7 @@ selos na coluna Títulos. Ver `.claude/rules/game/awards.md`.
 `RosterPlayer.national` (`NationalCareer`: nação, jogos, gols, assistências, títulos, prêmios de torneio) é a carreira
 pela seleção, permanente e copiada para o aposentado; `seasonLog.national` fica fora dos totais da temporada. A ficha
 mostra a linha "Seleção". Ver `.claude/rules/game/national-teams.md`.
+
+## Como ele chegou (4.44.4)
+
+Report de tester. `RosterPlayer.arrival` (`PlayerArrival`: clube, `transfer` / `clause` / `free` / `pre_contract` / `academy`, taxa, data) é gravado em toda chegada (`squadsAfterAcceptedTransfer`, livres, promoção da base); `withArrival` copia para a primeira linha daquela passagem, e a `CareerTable` mostra a coluna Chegada. Empréstimo não entra: a linha já diz. Passagens anteriores à 4.44.4 ficam em branco.

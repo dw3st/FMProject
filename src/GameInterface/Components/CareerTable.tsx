@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { competitionName } from "@/Domain/world/labels";
+import { formatFee } from "@/Domain/money";
 import type { LeagueData, PlayerHistoryRow } from "@/types/playerTypes";
 import { NumberCell, StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -26,10 +27,20 @@ export function CareerTable({
     { apps: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: 0 },
   );
   const titleName = (title: string) => competitionName(title.slice(title.indexOf(":") + 1), leagues, i18n.language);
+  const arrivalText = (r: PlayerHistoryRow) => {
+    const a = r.arrival;
+    if (!a) return "";
+    if (a.kind === "transfer" || a.kind === "clause") {
+      const fee = formatFee(a.fee ?? 0);
+      return a.kind === "clause" ? t("career.arrival.clause", { fee }) : fee;
+    }
+    return t(`career.arrival.${a.kind}`);
+  };
   const line = (r: PlayerHistoryRow, key: string, isCurrent: boolean) => (
     <StatsRow key={key} highlight={isCurrent}>
       <StatsCell className="tabular-nums whitespace-nowrap text-muted-foreground">{isCurrent ? t("career.current") : r.season}</StatsCell>
       <StatsCell className={`max-w-[12rem] truncate ${isCurrent ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{r.clubName}{r.loan ? ` ${t("career.loan")}` : ""}</StatsCell>
+      <StatsCell className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">{arrivalText(r)}</StatsCell>
       <NumberCell>{r.apps}</NumberCell>
       <NumberCell strong>{r.goals}</NumberCell>
       <NumberCell>{r.assists}</NumberCell>
@@ -59,6 +70,7 @@ export function CareerTable({
         <>
           <StatsHead>{t("career.season")}</StatsHead>
           <StatsHead>{t("career.club")}</StatsHead>
+          <StatsHead>{t("career.arrival.title")}</StatsHead>
           <StatsHead align="center">{t("career.apps")}</StatsHead>
           <StatsHead align="center">{t("career.goals")}</StatsHead>
           <StatsHead align="center">{t("career.assists")}</StatsHead>
@@ -75,6 +87,7 @@ export function CareerTable({
       {current && line(current, "current", true)}
       <StatsRow>
         <StatsCell className="font-semibold">{t("career.total")}</StatsCell>
+        <StatsCell />
         <StatsCell />
         <NumberCell>{total.apps}</NumberCell>
         <NumberCell strong>{total.goals}</NumberCell>

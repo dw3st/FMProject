@@ -1,3 +1,4 @@
+import { PlayerNameText } from "@/GameInterface/Inbox/PlayerNameText";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
@@ -24,13 +25,13 @@ export function PlayerTalkBody({ message }: { message: PlayerInboxMessage }) {
     const key = message.kind === "transfer_request"
       ? "morale.inbox.transfer_request"
       : `morale.inbox.${message.kind}.${message.promiseKind ?? "minutes"}`;
-    return <p className="text-sm text-foreground m-0">{t(key, vars)}</p>;
+    return <p className="text-sm text-foreground m-0"><PlayerNameText text={t(key, vars)} players={[{ id: message.playerId, name: message.playerName }]} /></p>;
   }
 
   const pending = !!data?.talks.some((x) => x.id === message.talkId) && !answered;
   return (
     <div className="space-y-4">
-      <p className="text-sm text-foreground m-0">{t(`morale.inbox.talk.${message.reason ?? "minutes"}`, vars)}</p>
+      <p className="text-sm text-foreground m-0"><PlayerNameText text={t(`morale.inbox.talk.${message.reason ?? "minutes"}`, vars)} players={[{ id: message.playerId, name: message.playerName }]} /></p>
       {pending && saveId ? (
         <Button onClick={() => setOpen(true)}>
           <Icon name="talk" size={16} />
