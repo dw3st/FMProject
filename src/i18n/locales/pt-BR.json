@@ -6041,7 +6041,9 @@
       "yellow": "Amarelo no {{team}}",
       "sub": "Troca no {{team}}",
       "subLine": "sai {{out}}, entra {{in}}",
+      "manager": { "yellow": "Amarelo para o técnico do {{team}}", "red": "Técnico do {{team}} expulso" },
       "short": {
+        "manager": { "yellow": "Amarelo para o técnico", "red": "Técnico expulso" },
         "goal": "Gol",
         "disallowed": "Gol anulado pelo VAR",
         "red": "Expulsão",

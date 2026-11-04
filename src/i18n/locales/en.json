@@ -6041,7 +6041,9 @@
       "yellow": "{{team}} booking",
       "sub": "{{team}} substitution",
       "subLine": "{{out}} off, {{in}} on",
+      "manager": { "yellow": "{{team}} manager booked", "red": "{{team}} manager sent off" },
       "short": {
+        "manager": { "yellow": "Manager booked", "red": "Manager sent off" },
         "goal": "Goal",
         "disallowed": "Goal ruled out by VAR",
         "red": "Sent off",

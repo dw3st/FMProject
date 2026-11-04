@@ -23,6 +23,14 @@ export const CONTRACT_CONFIG = {
   AI_RENEW_YEARS: { young: 3, prime: 2, veteran: 1 },
   /** Rollover treats a contract ending within this many days as expiring (calendar drift). */
   ROLLOVER_GRACE_DAYS: 60,
+  /** An AI club renews a key player (its 11 best) when his contract has this many days left or fewer. */
+  EARLY_RENEW_DAYS: 365,
+  /** How many of the squad's best count as key players. */
+  EARLY_RENEW_KEY_PLAYERS: 11,
+  /** A key player signs early this often; the others run the contract down and can be approached. */
+  EARLY_RENEW_CHANCE: 0.85,
+  /** Every AI club looks at its contracts once in this many days. */
+  EARLY_RENEW_CYCLE_DAYS: 28,
   /** A club that would drop below this many players keeps its best expiring ones. */
   MIN_SQUAD_AFTER_EXPIRY: 18,
   /** Inbox warning: days before the league's season end. */

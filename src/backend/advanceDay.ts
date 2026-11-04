@@ -104,6 +104,7 @@ import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeSeatedMatchLineups, type HumanMatchSide } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
+import { earlyRenewalDue, earlyRenewals } from "@/Domain/contracts/earlyRenewal";
 import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
@@ -1550,7 +1551,16 @@ export async function advanceOneDay(
         if (back.market !== seatMarket) await saveService.saveMarket(saveId, back.market, ds.seatId);
         ds.deferred.negotiation.push(...back.news);
       }
-      const allSquadsMarket = await saveService.getAllSquads(saveId);
+      // AI clubs tie their key players down before the last year (`.claude/rules/game/contracts.md`).
+      const preContracted = new Set<string>();
+      for (const ds of daySeats) for (const p of (await saveService.getMarket(saveId, ds.seatId))?.preContracts ?? []) preContracted.add(p.playerId);
+      const allSquadsMarket: Squad[] = [];
+      for (const squad of await saveService.getAllSquads(saveId)) {
+        if (humanClubs.has(squad.id) || !earlyRenewalDue(squad.id, currentDate)) { allSquadsMarket.push(squad); continue; }
+        const early = earlyRenewals(squad, currentDate, preContracted);
+        if (early.renewed.length > 0) await saveService.saveSquadById(saveId, early.squad);
+        allSquadsMarket.push(early.squad);
+      }
       // The world's rotation + AI profiles; a market written before the first tick (a seat's lists from a route)
       // has no rotation yet: give it one instead of crashing or never refreshing.
       const worldMarket = await saveService.getWorldMarket(saveId);

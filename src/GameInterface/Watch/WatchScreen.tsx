@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { useTranslation } from "react-i18next";
 import { PixiPitch, type PitchLighting, type PitchOfficials, type PitchStadium } from "@/GraficsEngine/PixiPitch";
 import { isLivePhase, matchMinute } from "@/GameEngine/Domain/gameState";
@@ -58,6 +59,10 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
   if (w.info) nickRef.current = w.info.nickname;
   const waiting = follow && (w.closed === "ended" || w.closed === "gone");
   const waitingText = nickRef.current ? t("watch.waitingNext", { name: nickRef.current }) : t("watch.waitingNextAnon");
+  const [coachCard, setCoachCard] = useState<{ team: "A" | "B"; card: "yellow" | "red"; seq: number } | null>(null);
+  useEffect(() => gameBus.on("managerCard", (e) => {
+    setCoachCard((prev) => ({ team: e.team, card: e.card, seq: (prev?.seq ?? 0) + 1 }));
+  }), []);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
@@ -150,6 +155,7 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
               mirror={info.mirror}
               extras
               staminaTeams={[]}
+              coachCard={coachCard}
               {...pitchProps}
             />
           ) : (

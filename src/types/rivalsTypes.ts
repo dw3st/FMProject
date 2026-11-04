@@ -55,6 +55,8 @@ export interface LiveScoreFrame {
   side?: "for" | "against";
   /** `sub`: the player coming on (`scorer` is the one going off). */
   playerIn?: string;
+  /** `red` / `yellow`: the card went to the manager, not to a player. */
+  manager?: true;
 }
 
 /** One line of a friend's live game ("últimos lances"): the server keeps the last `RIVALS.LIVE_MOMENTS_MAX`. */
@@ -65,6 +67,8 @@ export interface LiveMoment {
   player?: string | null;
   /** `sub`: the player coming on. */
   playerIn?: string | null;
+  /** `red` / `yellow`: shown to the manager. */
+  manager?: true;
 }
 
 /** The fixed part of a live game (who, against whom, which fixture). */

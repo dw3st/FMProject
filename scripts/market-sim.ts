@@ -32,7 +32,9 @@ import { freeAgentTick, refillSquad } from "@/Domain/contracts/freeAgents";
 import {
   carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill,
 } from "@/Domain/finance/wages";
+import { overallAvg } from "@/Domain/playerRating";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { earlyRenewalDue, earlyRenewals } from "@/Domain/contracts/earlyRenewal";
 import { mulberry32 } from "@/Domain/rng";
 import { windowStatus, isDeadlineRush, type SeasonDates } from "@/Domain/market/windows";
 import { LEAGUE_SCHEDULE_CONFIGS, leagueSeasonEnd, leagueSeasonStart } from "@/Domain/season/leagueScheduleConfig";
@@ -59,6 +61,9 @@ import type { RivalBid } from "@/types/transferMarketTypes";
 import type { Pyramids } from "@/types/pyramidTypes";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
+let topOpenSum = 0;
+let topOpenN = 0;
+process.on("exit", () => console.log(`Top 100 of the world open to a pre-contract: ${(topOpenSum / Math.max(1, topOpenN)).toFixed(1)} on average`));
 const DATA = join(ROOT, "src", "Data");
 const SQUADS_DIR = join(DATA, "squads");
 const args = process.argv.slice(2);
@@ -298,6 +303,7 @@ for (let season = 0; season < seasons; season++) {
   while (date < end) {
     const byId = new Map(squads.map((s, i) => [s.id, i] as const));
     const isMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1;
+    if (!process.env.NO_EARLY) squads = squads.map((s) => (earlyRenewalDue(s.id, date) ? earlyRenewals(s, date).squad : s));
     const { updatedMarket, completedTransfers } = !MARKET_ON ? { updatedMarket: market, completedTransfers: [] } : dailyMarketTick(market, squads, date, rng, WINDOWS_ON ? {
       windows: {
         isOpen: (sq) => statusOfLeague(sq.leagueSlug ?? "", date).open,
@@ -397,7 +403,12 @@ for (let season = 0; season < seasons; season++) {
     }
     hireDue(date);
     managers = retireStale(managers, date);
-    if (day % 30 === 0) { sample(seasonCounts); sample(total); }
+    if (day % 30 === 0) {
+      sample(seasonCounts); sample(total);
+      const top = squads.flatMap((s) => s.players).sort((a, b) => overallAvg(b) - overallAvg(a)).slice(0, 100);
+      topOpenSum += top.filter((p) => p.contract && p.contract.until >= date && p.contract.until <= addDays(date, 183)).length;
+      topOpenN++;
+    }
     date = addDays(date, 1);
     day++;
   }

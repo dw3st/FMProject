@@ -1180,6 +1180,14 @@ export function MatchScreen() {
     }
     managerCardsRef.current = [...managerCardsRef.current, { card: out.card, minute, complaint: made + 1 }];
     setCoachCard((prev) => ({ team: "A", card: out.card as "yellow" | "red", seq: (prev?.seq ?? 0) + 1 }));
+    // Friends see it too: on the pitch of the broadcast and in the last moments.
+    gameBus.emit("managerCard", { team: "A", card: out.card, minute });
+    if (liveFixtureRef.current) {
+      sendLiveRef.current({
+        fixtureId: liveFixtureRef.current, phase: out.card, minute: Math.max(0, Math.min(130, minute)),
+        score: { for: gs.score.A, against: gs.score.B }, side: "for", manager: true,
+      });
+    }
     setEventFeed((f) => [...f, { minute: minute - 1, team: "A", kind: out.card === "red" ? "managerRed" : "managerYellow", player: "" }]);
     // With the new art the manager's card is the same TV lower third as a player's (his face, the card, the minute).
     const me = touchline?.managers?.mine;

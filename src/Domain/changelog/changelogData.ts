@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.3",
+    date: "2026-11-04",
+    time: "16:59",
+    items: [
+      {
+        pt: "Clubes renovam com seus principais jogadores antes do último ano de contrato. Ainda dá para fechar pré-contrato com um craque de vez em quando, mas agora é raro.",
+        en: "Clubs renew their main players before the last year of the contract. You can still land a star on a pre-contract now and then, but now it is rare.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Ao assistir ao jogo de um amigo, o cartão do técnico aparece no campo e nos últimos lances.",
+        en: "When watching a friend's match, the manager's card shows on the pitch and in the last moments.",
+      },
+    ],
+  },
+  {
     version: "4.44.2",
     date: "2026-11-04",
     time: "16:46",

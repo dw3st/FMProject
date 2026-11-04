@@ -32,6 +32,7 @@ export function parseLiveFrame(e: Record<string, unknown>): LiveScoreFrame | nul
     saveId: e.saveId, fixtureId: e.fixtureId, phase: e.phase as LivePhase, minute: e.minute,
     score: { for: s.for, against: s.against }, ...(scorer ? { scorer } : {}), ...(side ? { side } : {}),
     ...(playerIn ? { playerIn } : {}),
+    ...(e.manager === true && (e.phase === "red" || e.phase === "yellow") ? { manager: true as const } : {}),
   };
 }
 
@@ -79,7 +80,7 @@ export function applyLiveFrame(
     : disallowed
       ? { minute: frame.minute, kind: "disallowed", side: frame.score.for < before.for ? "for" : "against" }
       : red || frame.phase === "yellow"
-        ? { minute: frame.minute, kind: frame.phase as "red" | "yellow", side: frame.side, player: named(frame.scorer) }
+        ? { minute: frame.minute, kind: frame.phase as "red" | "yellow", side: frame.side, player: named(frame.scorer), ...(frame.manager ? { manager: true as const } : {}) }
         : frame.phase === "sub"
           ? { minute: frame.minute, kind: "sub", side: frame.side, player: named(frame.scorer), playerIn: named(frame.playerIn) }
         : frame.phase === "half" || frame.phase === "end"

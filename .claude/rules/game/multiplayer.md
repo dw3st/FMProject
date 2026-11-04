@@ -951,3 +951,7 @@ Os apelidos de quem assiste (`watch_viewers`) ficam na faixa de amigos da partid
 - Um processo só (salas em memória). A partida entre dois técnicos vista por espectador foi testada só pelos testes do
   servidor.
 - Quem assiste vê o ritmo de quem joga (2×, 4×), com os quadros a 5 por segundo.
+
+### Cartão do técnico na transmissão (4.44.3)
+
+Report do usuário. A reclamação é resolvida no navegador de quem joga, sem passar pelo motor: o `MatchScreen` emite `managerCard` (em `WATCH_EVENTS`, chega a quem assiste e o `WatchScreen` desenha o cartão sobre o técnico) e manda um `live_score` `yellow`/`red` com `manager: true` (`LiveMoment.manager`, "Técnico expulso" nos últimos lances). A partida entre dois técnicos não repassa eventos do cliente: lá só os lances.

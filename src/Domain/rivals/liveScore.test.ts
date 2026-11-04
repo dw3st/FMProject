@@ -12,6 +12,12 @@ const frame = (over: Partial<LiveScoreFrame>): LiveScoreFrame => ({
 });
 const SCORERS = new Set(["Silva"]);
 
+test("a card to the manager keeps its mark, and only on a card frame", () => {
+  const base = { saveId: "s1", fixtureId: "f1", minute: 30, score: { for: 0, against: 0 }, side: "for", manager: true };
+  expect(parseLiveFrame({ ...base, phase: "yellow" })?.manager).toBe(true);
+  expect(parseLiveFrame({ ...base, phase: "sub" })?.manager).toBeUndefined();
+});
+
 describe("parseLiveFrame", () => {
   test("a good frame", () => {
     expect(parseLiveFrame({ saveId: "s1", fixtureId: "f1", phase: "goal", minute: 12, score: { for: 1, against: 0 }, scorer: " Silva " }))

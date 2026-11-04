@@ -20,7 +20,7 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
     if (m.kind === "half") return t("rivals.moments.half");
     if (m.kind === "end") return t("rivals.moments.end");
     const team = teamOf(m.side);
-    const text = t(`rivals.moments.${m.kind}`, { team });
+    const text = m.manager ? t(`rivals.moments.manager.${m.kind}`, { team }) : t(`rivals.moments.${m.kind}`, { team });
     if (m.kind === "sub") {
       return m.player || m.playerIn ? `${text} · ${t("rivals.moments.subLine", { out: m.player ?? "?", in: m.playerIn ?? "?" })}` : text;
     }
@@ -28,7 +28,7 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
   };
   /** The same moment without the team name: the column already says whose it is. */
   const shortLine = (m: LiveMoment) => {
-    const text = t(`rivals.moments.short.${m.kind}`);
+    const text = m.manager ? t(`rivals.moments.short.manager.${m.kind}`) : t(`rivals.moments.short.${m.kind}`);
     if (m.kind === "sub") {
       return m.player || m.playerIn ? `${text} · ${t("rivals.moments.subLine", { out: m.player ?? "?", in: m.playerIn ?? "?" })}` : text;
     }
