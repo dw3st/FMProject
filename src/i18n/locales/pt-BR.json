@@ -1500,6 +1500,13 @@
     },
     "worldTransfersCard": "Clubes de IA e outros"
   },
+  "friendlies": {
+    "subject": "Amistoso contra {{opponent}}",
+    "score": "{{home}} x {{away}}",
+    "intro": "O diretor marcou um amistoso contra o {{opponent}}.",
+    "scorers": "Gols: {{names}}",
+    "note": "Não vale para nenhuma competição. Quem jogou ganhou ritmo e um pouco de evolução, no lugar do treino do dia."
+  },
   "responsibilities": {
     "title": "Responsabilidades",
     "subtitle": "Quem cuida de cada área do clube.",
@@ -1509,6 +1516,11 @@
       "director": "Diretor: renova (ou deixa sair) os contratos que vencem e responde as conversas de contrato dos jogadores. Você ainda pode renovar qualquer um na ficha.",
       "manager": "Técnico: você recebe o aviso de 90 dias e as conversas de contrato, e renova na ficha do jogador."
     },
+    "friendlies": {
+      "label": "Amistosos",
+      "none": "Ninguém: sem amistosos.",
+      "director": "Diretor: nas seis semanas antes do próximo jogo oficial, marca um amistoso por sábado livre, alternando titulares e reservas. Dá ritmo e um pouco de evolução; os jogadores cansam e podem se lesionar."
+    },
     "scouting": {
       "label": "Missões dos olheiros",
       "manager": "Técnico: você cria e cancela as missões dos olheiros na central de olheiros.",
@@ -1517,7 +1529,8 @@
     "owner": {
       "director": "Diretor",
       "manager": "Técnico",
-      "chief": "Olheiro-chefe"
+      "chief": "Olheiro-chefe",
+      "none": "Ninguém"
     }
   },
   "awards": {
@@ -1673,6 +1686,7 @@
       "awards": "Prêmios",
       "registration": "Inscrição",
       "schedule": "Calendário",
+      "friendly": "Amistosos",
       "press": "Imprensa",
       "world": "Liga",
       "discipline": "Disciplina",

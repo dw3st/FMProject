@@ -30,6 +30,7 @@ export type InboxCategory =
   | "awards"
   | "registration"
   | "schedule"
+  | "friendly"
   | "discipline"
   | "national"
   | "national_coach"
@@ -439,6 +440,23 @@ export interface RescheduledGame {
   to:           string;
 }
 
+export interface FriendlyScorer {
+  playerId: string;
+  name: string;
+  goals: number;
+}
+
+/** A friendly the director arranged (`.claude/rules/game/responsibilities.md` → "Amistosos"). */
+export interface FriendlyInboxMessage extends InboxMessageBase {
+  category: "friendly";
+  kind: "result";
+  opponentId: string;
+  opponentName: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  scorers: FriendlyScorer[];
+}
+
 /** League games of the human club moved off a clash with a cup / continental game (one message per day). */
 export interface ScheduleInboxMessage extends InboxMessageBase {
   category: "schedule";
@@ -480,6 +498,7 @@ export type InboxMessage =
   | AwardsInboxMessage
   | RegistrationInboxMessage
   | ScheduleInboxMessage
+  | FriendlyInboxMessage
   | DisciplineInboxMessage
   | NationalInboxMessage
   | NationalCoachInboxMessage

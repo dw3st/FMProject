@@ -107,6 +107,8 @@ export function directorDecisions(args: {
 export interface Responsibilities {
   contracts: "director" | "manager";
   scouting?: "manager" | "chief";
+  /** Off-season friendlies: nobody arranges them (absent) or the director does. */
+  friendlies?: "none" | "director";
 }
 
 export function directorHandlesContracts(r: Responsibilities | undefined): boolean {
@@ -118,20 +120,24 @@ export function chiefHandlesScouting(r: Responsibilities | undefined): boolean {
   return r?.scouting === "chief";
 }
 
+export function friendliesByDirector(r: Responsibilities | undefined): boolean {
+  return r?.friendlies === "director";
+}
+
 /** A full view of the responsibilities with the defaults filled in. */
 export function responsibilitiesOf(r: Responsibilities | undefined): Required<Responsibilities> {
-  return { contracts: r?.contracts ?? "director", scouting: r?.scouting ?? "manager" };
+  return { contracts: r?.contracts ?? "director", scouting: r?.scouting ?? "manager", friendlies: r?.friendlies ?? "none" };
 }
 
 /**
- * A `PUT` body: one or both of `contracts` / `scouting` with a valid value and nothing else.
+ * A `PUT` body: any of `contracts` / `scouting` / `friendlies` with a valid value and nothing else.
  * Returns the fields to change, or null when invalid.
  */
 export function parseResponsibilitiesPatch(v: unknown): Partial<Responsibilities> | null {
   if (!v || typeof v !== "object" || Array.isArray(v)) return null;
   const o = v as Record<string, unknown>;
   const keys = Object.keys(o);
-  if (keys.length === 0 || keys.some((k) => k !== "contracts" && k !== "scouting")) return null;
+  if (keys.length === 0 || keys.some((k) => k !== "contracts" && k !== "scouting" && k !== "friendlies")) return null;
   const out: Partial<Responsibilities> = {};
   if ("contracts" in o) {
     if (o.contracts !== "director" && o.contracts !== "manager") return null;
@@ -140,6 +146,10 @@ export function parseResponsibilitiesPatch(v: unknown): Partial<Responsibilities
   if ("scouting" in o) {
     if (o.scouting !== "manager" && o.scouting !== "chief") return null;
     out.scouting = o.scouting;
+  }
+  if ("friendlies" in o) {
+    if (o.friendlies !== "none" && o.friendlies !== "director") return null;
+    out.friendlies = o.friendlies;
   }
   return out;
 }

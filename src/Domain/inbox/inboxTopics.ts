@@ -37,6 +37,7 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   awards: "competitions",
   registration: "competitions",
   schedule: "competitions",
+  friendly: "competitions",
   national: "competitions",
   // The human manager at a national team: news; the offer and the call-up notice ask for an answer.
   national_coach: "competitions",

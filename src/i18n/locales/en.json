@@ -1500,6 +1500,13 @@
     },
     "worldTransfersCard": "AI and other clubs"
   },
+  "friendlies": {
+    "subject": "Friendly against {{opponent}}",
+    "score": "{{home}} x {{away}}",
+    "intro": "The director arranged a friendly against {{opponent}}.",
+    "scorers": "Goals: {{names}}",
+    "note": "It counts for no competition. Those who played gained rhythm and a little development, instead of the day's training."
+  },
   "responsibilities": {
     "title": "Responsibilities",
     "subtitle": "Who handles each area of the club.",
@@ -1509,6 +1516,11 @@
       "director": "Director: renews (or lets go) the contracts about to end and answers the players' contract talks. You can still renew anyone on the player page.",
       "manager": "Manager: you get the 90-day warning and the contract talks, and renew on the player page."
     },
+    "friendlies": {
+      "label": "Friendlies",
+      "none": "Nobody: no friendlies.",
+      "director": "Director: in the six weeks before the next official game, arranges a friendly on each free Saturday, alternating starters and reserves. It gives rhythm and a little development; players tire and can get injured."
+    },
     "scouting": {
       "label": "Scouting missions",
       "manager": "Manager: you create and cancel the scouts' missions in the scouting centre.",
@@ -1517,7 +1529,8 @@
     "owner": {
       "director": "Director",
       "manager": "Manager",
-      "chief": "Chief scout"
+      "chief": "Chief scout",
+      "none": "Nobody"
     }
   },
   "awards": {
@@ -1673,6 +1686,7 @@
       "awards": "Awards",
       "registration": "Registration",
       "schedule": "Schedule",
+      "friendly": "Friendlies",
       "press": "Press",
       "world": "League",
       "discipline": "Discipline",

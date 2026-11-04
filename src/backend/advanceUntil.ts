@@ -179,6 +179,13 @@ export async function nextPlayerFixtureDate(
 }
 
 /** The competitions where the seat's club plays (league, national cup, continental). */
+/** The club's next unplayed official game (league, cup, continental) on or after `from`. */
+export async function nextClubOfficialDate(
+  service: SaveService, saveId: string, leagueSlug: string, clubId: string, from: string,
+): Promise<string | null> {
+  return nextPlayerFixtureDate(service, saveId, await seatCompetitions(service, saveId, leagueSlug, clubId), clubId, from);
+}
+
 async function seatCompetitions(service: SaveService, saveId: string, leagueSlug: string, clubId: string): Promise<string[]> {
   const cup = await playerCupSlug(leagueSlug);
   const continental = await playerContinentalSlug(service, saveId, clubId);

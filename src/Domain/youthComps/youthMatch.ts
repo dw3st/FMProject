@@ -9,6 +9,7 @@ import { personalDpMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { FRIENDLY } from "@/Domain/friendlies/friendlyConfig";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
@@ -59,9 +60,10 @@ export function youthDpMult(squad: Squad, p: RosterPlayer): number {
 export function applyYouthMatch(
   squad: Squad,
   recording: PlayedMatchRecording,
-  opts: { date: string; rng: Rng; trackMorale: boolean },
+  /** `friendly`: the director's friendly, off the youth totals and with its own DP (`FRIENDLY.DP_MULT`). */
+  opts: { date: string; rng: Rng; trackMorale: boolean; friendly?: boolean },
 ): YouthMatchApplied {
-  const { date, rng, trackMorale } = opts;
+  const { date, rng, trackMorale, friendly } = opts;
   const staffFx = staffEffectsOf(squad);
   const ground = trainingGroundEffectsOf(squad);
   const recoveryMult = staffFx.recoveryMult * ground.recoveryMult;
@@ -80,12 +82,14 @@ export function applyYouthMatch(
     const rating = recording.playerRatings[p0.id] ?? 6;
     const log = { ...pl.seasonLog! };
     const yc = log.youthCup ?? { appearances: 0, goals: 0, assists: 0, ratingSum: 0 };
-    log.youthCup = {
-      appearances: yc.appearances + 1,
-      goals: yc.goals + ps.goals,
-      assists: yc.assists + ps.assists,
-      ratingSum: +(yc.ratingSum + rating).toFixed(2),
-    };
+    if (!friendly) {
+      log.youthCup = {
+        appearances: yc.appearances + 1,
+        goals: yc.goals + ps.goals,
+        assists: yc.assists + ps.assists,
+        ratingSum: +(yc.ratingSum + rating).toFixed(2),
+      };
+    }
     const fit = applyMatchFitness(
       log,
       { age: pl.age, stamina: pl.stats.stamina ?? DEFAULT_STAMINA, recoveryMult },
@@ -109,7 +113,7 @@ export function applyYouthMatch(
       };
     }
     // Growth only: decayMult 0 (the age decline is charged by the club's own matches, not again here).
-    return applyDevelopment(out, rating, dpWeightsFor(out), youthDpMult(squad, out), 0, areas).updatedPlayer;
+    return applyDevelopment(out, rating, dpWeightsFor(out), friendly ? (youthDpMult(squad, out) / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT : youthDpMult(squad, out), 0, areas).updatedPlayer;
   };
 
   const next: Squad = {

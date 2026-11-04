@@ -24,7 +24,7 @@ import type {
   PlayerInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
-import type { ManagerNewsInboxMessage, PressInboxMessage, RescheduledGame, ScheduleInboxMessage } from "@/types/inboxTypes";
+import type { ManagerNewsInboxMessage, PressInboxMessage, RescheduledGame, FriendlyInboxMessage, ScheduleInboxMessage } from "@/types/inboxTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
@@ -511,6 +511,26 @@ export function buildManagerNewsMessage(date: string, items: ManagerNewsInboxMes
  * League games of the human club moved off a clash (`.claude/rules/game/rescheduling.md`): one message per day.
  * English fallback subject/preview; the screen translates.
  */
+export function buildFriendlyMessage(input: {
+  date: string;
+  opponentId: string;
+  opponentName: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  scorers: FriendlyInboxMessage["scorers"];
+}): FriendlyInboxMessage {
+  return {
+    ...input,
+    id: `friendly-${input.date}`,
+    createdAt: input.date,
+    read: false,
+    category: "friendly",
+    kind: "result",
+    subject: `Friendly against ${input.opponentName}`,
+    preview: `${input.goalsFor}-${input.goalsAgainst}`,
+  };
+}
+
 export function buildScheduleMessage(date: string, games: RescheduledGame[]): ScheduleInboxMessage {
   const sorted = [...games].sort((a, b) => a.to.localeCompare(b.to));
   const first = sorted[0];

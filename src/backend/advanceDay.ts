@@ -138,6 +138,9 @@ import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
+import { playFriendlyDay } from "@/backend/friendlyWorld";
+import { isFriendlyDay } from "@/Domain/friendlies/friendlies";
+import { buildFriendlyMessage } from "@/Domain/inbox/inboxEvents";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
@@ -909,7 +912,31 @@ export async function advanceOneDay(
       if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
     }
     for (const inj of nationalDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
-    const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants]);
+    // ── The director's friendlies (`.claude/rules/game/responsibilities.md` → "Amistosos") ──
+    // Quick games on free Saturdays before the season: only the human squad changes, nothing official counts.
+    const friendlies = options.marketFrozen || !isFriendlyDay(currentDate) ? [] : await playFriendlyDay({
+      service: saveService, saveId, date: currentDate, index,
+      seats: daySeats.flatMap((ds) => (ds.clubId
+        ? [{ seatId: ds.seatId, clubId: ds.clubId, leagueSlug: ds.meta.leagueSlug, responsibilities: ds.meta.responsibilities, tactics: ds.tactics }]
+        : [])),
+      humanClubs: new Set(daySeats.flatMap((ds) => (ds.clubId ? [ds.clubId] : []))),
+      teamsPlayingToday,
+      countryOfLeague: async (slug) => countryByLeague(await getLeagueData()).get(slug),
+      squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+    });
+    for (const f of friendlies) {
+      const e = index.byId(f.squad.id);
+      if (e) squadWrites.set(f.squad.id, { league: e.leagueSlug, club: e.stem, squad: f.squad });
+      for (const inj of f.injuries) {
+        injuryInboxEvents.push({ kind: "injured", squadId: inj.squadId, playerId: inj.playerId, playerName: inj.playerName, severity: inj.severity, returnDate: inj.returnDate });
+      }
+      for (const h of f.healed) injuryInboxEvents.push({ kind: "returned", ...h });
+      daySeats.find((ds) => ds.seatId === f.seatId)?.deferred.friendly.push({
+        date: currentDate, opponentId: f.opponentId, opponentName: f.opponentName,
+        goalsFor: f.goalsFor, goalsAgainst: f.goalsAgainst, scorers: f.scorers,
+      });
+    }
+    const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants, ...friendlies.flatMap((f) => f.participants)]);
 
     // ── Aggregate development messages for each seat's club ───────────────────
     // One message per player per day, merging stat changes across multiple matches.
@@ -3201,6 +3228,7 @@ export async function advanceOneDay(
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const ds of daySeats) {
       for (const msg of ds.deferred.injury) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService, ds.seatId);
+      for (const msg of ds.deferred.friendly) await emitInboxMessage(saveId, buildFriendlyMessage(msg), saveService, ds.seatId);
       for (const msg of ds.deferred.contract) await emitInboxMessage(saveId, buildContractMessage(msg), saveService, ds.seatId);
       for (const msg of buildStaffContractMessages(currentDate, ds.staffNews)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       if (ds.director.outcomes.length > 0) {

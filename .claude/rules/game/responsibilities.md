@@ -110,3 +110,7 @@ A categoria de inbox `awards` (prêmios da liga do jogador e cerimônia mundial)
 
 A categoria de inbox `achievement` tem tópico próprio, `achievements` (ligado por padrão; não pede ação). Ver
 `.claude/rules/game/achievements.md`.
+
+## Amistosos (4.44.7)
+
+Report de tester. `Responsibilities.friendlies` (`none`, padrão, ou `director`; terceiro bloco da aba). Com o diretor, no sábado sem jogo oficial, fora dos dias bloqueados do país, com o próximo jogo oficial do clube entre 6 e 42 dias (`FRIENDLY`, `src/Domain/friendlies/`; até 6 por pausa), o clube joga contra um clube da IA da mesma liga, sorteado (`playFriendlyDay`, `src/backend/friendlyWorld.ts`, depois da base e das seleções). É um quickSim: um sábado o elenco inteiro, o seguinte sem o XI salvo, para os reservas jogarem; fora quem está indisponível ou com fôlego abaixo de 60. Só o elenco humano muda (`applyYouthMatch(..., { friendly: true })`: fôlego e carga de 90 minutos, lesões, DP de crescimento × `DP_MULT` 0,5, sem declínio); quem jogou não treina no dia. Nada oficial conta: fora de `seasonLog`, `youthCup`, tabela, moral, diretoria, histórico e log do dia. Inbox `friendly` (tópico `competitions`), depois do `clearInbox`. Sem efeito no motor: nada em `/test` nem `/lab`. Limitações: só o mandante humano e adversário da própria liga; o jogo não aparece no calendário nem no resumo do dia.

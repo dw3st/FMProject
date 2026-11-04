@@ -228,6 +228,13 @@ const CATEGORY_META: Record<
     border: "border-chart-3/30",
     Icon: CalendarIcon,
   },
+  friendly: {
+    labelKey: "inbox.categories.friendly",
+    color: "text-chart-3",
+    bg: "bg-chart-3/15",
+    border: "border-chart-3/30",
+    Icon: CalendarIcon,
+  },
   discipline: {
     labelKey: "inbox.categories.discipline",
     color: "text-destructive",
@@ -754,6 +761,12 @@ function leaguePrizeTexts(
     const vars = { manager: message.managerName, club: message.clubName };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
   }
+  if (message.category === "friendly") {
+    return {
+      subject: t("friendlies.subject", { opponent: message.opponentName }),
+      preview: t("friendlies.score", { home: message.goalsFor, away: message.goalsAgainst }),
+    };
+  }
   if (message.category === "schedule") {
     const first = message.games[0];
     return {
@@ -925,6 +938,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     {message.category === "awards" && <AwardsInboxBody message={message} />}
     {message.category === "registration" && <RegistrationInboxBody message={message} leagues={leagues} />}
     {message.category === "schedule" && <ScheduleBody message={message} leagues={leagues} />}
+    {message.category === "friendly" && <FriendlyBody message={message} />}
     {message.category === "world" && message.kind === "auto_advanced" && (
       <p className="text-sm text-foreground m-0">
         {message.simulated
@@ -1026,6 +1040,24 @@ function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMes
 }
 
 /** League games of the club moved off a clash: competition, opponent (home/away), old → new date. */
+function FriendlyBody({ message }: { message: Extract<InboxMessage, { category: "friendly" }> }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <p className="m-0 text-foreground">{t("friendlies.intro", { opponent: message.opponentName })}</p>
+      <p className="m-0 font-display font-bold tabular-nums text-2xl text-foreground">
+        {t("friendlies.score", { home: message.goalsFor, away: message.goalsAgainst })}
+      </p>
+      {message.scorers.length > 0 && (
+        <p className="m-0 text-muted-foreground">
+          {t("friendlies.scorers", { names: message.scorers.map((s) => (s.goals > 1 ? `${s.name} (${s.goals})` : s.name)).join(", ") })}
+        </p>
+      )}
+      <p className="m-0 text-muted-foreground">{t("friendlies.note")}</p>
+    </div>
+  );
+}
+
 function ScheduleBody({ message, leagues }: { message: Extract<InboxMessage, { category: "schedule" }>; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
   return (

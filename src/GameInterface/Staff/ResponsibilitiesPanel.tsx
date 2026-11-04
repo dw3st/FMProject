@@ -6,7 +6,8 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 
 type ContractsOwner = "director" | "manager";
 type ScoutingOwner = "manager" | "chief";
-interface Owners { contracts: ContractsOwner; scouting: ScoutingOwner }
+type FriendliesOwner = "none" | "director";
+interface Owners { contracts: ContractsOwner; scouting: ScoutingOwner; friendlies: FriendliesOwner }
 
 /**
  * Responsibilities of the human club (`.claude/rules/game/responsibilities.md`): who handles the
@@ -86,6 +87,23 @@ export function ResponsibilitiesPanel({ saveId }: { saveId: string }) {
             <ul className="m-0 pl-0 list-none flex flex-col gap-1 text-sm">
               <li className={line(owners.scouting === "manager")}>{t("responsibilities.scouting.manager")}</li>
               <li className={line(owners.scouting === "chief")}>{t("responsibilities.scouting.chief")}</li>
+            </ul>
+          </div>
+          <div className="rounded-md border border-border p-3 flex flex-col gap-3 max-w-2xl">
+            <Label>{t("responsibilities.friendlies.label")}</Label>
+            <OptionChips<FriendliesOwner>
+              aria-label={t("responsibilities.friendlies.label")}
+              options={[
+                { key: "none", label: t("responsibilities.owner.none") },
+                { key: "director", label: t("responsibilities.owner.director") },
+              ]}
+              value={owners.friendlies}
+              onChange={(k) => { if (k !== owners.friendlies) void choose({ friendlies: k }); }}
+              disabled={busy}
+            />
+            <ul className="m-0 pl-0 list-none flex flex-col gap-1 text-sm">
+              <li className={line(owners.friendlies === "none")}>{t("responsibilities.friendlies.none")}</li>
+              <li className={line(owners.friendlies === "director")}>{t("responsibilities.friendlies.director")}</li>
             </ul>
           </div>
         </>

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.7",
+    date: "2026-11-04",
+    time: "18:09",
+    items: [
+      {
+        pt: "Amistosos na pré-temporada: em Equipe técnica, aba Responsabilidades, o diretor pode marcar um amistoso por sábado livre nas seis semanas antes do próximo jogo oficial, alternando titulares e reservas. O resultado chega na caixa de entrada.",
+        en: "Pre-season friendlies: in Coaching staff, Responsibilities tab, the director can arrange a friendly on each free Saturday in the six weeks before the next official game, alternating starters and reserves. The result reaches your inbox.",
+      },
+    ],
+  },
+  {
     version: "4.44.6",
     date: "2026-11-04",
     time: "17:55",

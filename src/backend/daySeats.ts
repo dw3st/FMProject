@@ -24,7 +24,7 @@ import type { StaffContractNews } from "@/Domain/staff/staffContracts";
 import type { ManagerBan } from "@/Domain/referees/managerBan";
 import type { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import type {
-  buildBoardMessage, buildContinentalMessage, buildContractMessage, buildInjuryMessage, buildRetirementMessage,
+  buildBoardMessage, buildContinentalMessage, buildContractMessage, buildFriendlyMessage, buildInjuryMessage, buildRetirementMessage,
   buildSeasonMessage, buildTransferNegotiationMessage, buildYouthMessage,
 } from "@/Domain/inbox/inboxEvents";
 import { metaForSeat } from "@/Domain/seats/seats";
@@ -62,6 +62,7 @@ export interface DaySeat {
   scouting: Awaited<ReturnType<typeof scoutingDay>> | null;
   deferred: {
     injury: Msg<typeof buildInjuryMessage>[];
+    friendly: Msg<typeof buildFriendlyMessage>[];
     contract: Msg<typeof buildContractMessage>[];
     youth: Msg<typeof buildYouthMessage>[];
     facility: Msg<typeof buildFacilityMessage>[];
@@ -140,7 +141,7 @@ export function newDaySeat(args: {
     ledgerSeason: null,
     scouting: null,
     deferred: {
-      injury: [], contract: [], youth: [], facility: [], retirement: [], clubRecords: [], awards: [],
+      injury: [], friendly: [], contract: [], youth: [], facility: [], retirement: [], clubRecords: [], awards: [],
       negotiation: [], continental: [], season: [], negativeBalance: null,
     },
     managerEarned: 0,
