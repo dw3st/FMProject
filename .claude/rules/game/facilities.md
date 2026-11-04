@@ -387,3 +387,7 @@ são cortados), o jogo desenha a grama lisa. A IA continua sorteando só os quat
 ## Corte na grama sintética (4.42.17)
 
 Report de tester. O fundo pintado da sintética só existe em listras (`paintedTurfId`): com outro corte, o gramado é desenhado (`pitchSurface`, na cor da sintética), no Clube e na partida. Antes o corte era gravado, mas o desenho não mudava.
+
+## Efeitos dobrados (4.44.1)
+
+Pedido do usuário: os efeitos eram pequenos demais para sentir. A tabela "CT e base" e as medições acima são de antes. Agora, por nível 1..5 (3 neutro): recuperação ×0,94 / 0,97 / 1 / 1,08 / 1,16; lesão no treino ×1,1 / 1,05 / 1 / 0,85 / 0,7; DP do treino ×0,9 / 0,95 / 1 / 1,1 / 1,2; safra ±0,30 por nível (−0,60 a +0,60); até 7 jovens; promessa 2 / 3,5 / 5 / 9 / 13%; ingresso +10% por nível de conforto (até +40%). Custos, prazos, manutenção e as penalidades de desgaste não mudaram. A IA também sente o CT pelo tier (LOW nível 2, ELITE 4); a base da IA segue neutra. Estimado pelas parcelas de tier: recuperação média ×0,995, lesão de treino ×1,0075, DP de treino ×0,991.

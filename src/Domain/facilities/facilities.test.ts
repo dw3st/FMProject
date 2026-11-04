@@ -79,13 +79,13 @@ describe("stadium", () => {
     expect(big.attendance).toBe(40000);
   });
 
-  test("comfort raises the price 6% per level", () => {
+  test("comfort raises the price 10% per level", () => {
     expect(comfortLevelPriceMult(1)).toBe(1);
-    expect(comfortLevelPriceMult(3)).toBeCloseTo(1.12, 10);
-    expect(comfortLevelPriceMult(5)).toBeCloseTo(1.24, 10);
+    expect(comfortLevelPriceMult(3)).toBeCloseTo(1.2, 10);
+    expect(comfortLevelPriceMult(5)).toBeCloseTo(1.4, 10);
     const f = initialFacilities(squad(), 1);
     expect(comfortPriceMult(f)).toBe(1);
-    expect(comfortPriceMult(withGroupLevel(f, "comfort", 3))).toBeCloseTo(1.12, 10);
+    expect(comfortPriceMult(withGroupLevel(f, "comfort", 3))).toBeCloseTo(1.2, 10);
   });
 
   test("worn seats and structure: demand × 0.9 × 0.95 and price × 0.95 at 0%", () => {
@@ -191,16 +191,16 @@ describe("costs", () => {
 describe("effects", () => {
   test("training ground: level 3 neutral, ends as specified", () => {
     expect(trainingEffectsAt(3)).toEqual({ recoveryMult: 1, injuryMult: 1, devMult: 1 });
-    expect(trainingEffectsAt(1)).toEqual({ recoveryMult: 0.97, injuryMult: 1.05, devMult: 0.95 });
-    expect(trainingEffectsAt(5)).toEqual({ recoveryMult: 1.08, injuryMult: 0.85, devMult: 1.1 });
+    expect(trainingEffectsAt(1)).toEqual({ recoveryMult: 0.94, injuryMult: 1.1, devMult: 0.9 });
+    expect(trainingEffectsAt(5)).toEqual({ recoveryMult: 1.16, injuryMult: 0.7, devMult: 1.2 });
   });
 
-  test("academy: quality ±0.15/level, size up to 6 at level 5, promise 5% → 9%", () => {
+  test("academy: quality ±0.3/level, size up to 7 at level 5, promise 5% → 13%", () => {
     expect(academyEffectsAt(3)).toEqual({ qualityBonus: 0, intakeMax: 5, promiseChance: 0.05 });
-    expect(academyEffectsAt(5).qualityBonus).toBeCloseTo(0.3, 10);
-    expect(academyEffectsAt(1).qualityBonus).toBeCloseTo(-0.3, 10);
-    expect(academyEffectsAt(5).intakeMax).toBe(6);
-    expect(academyEffectsAt(5).promiseChance).toBe(0.09);
+    expect(academyEffectsAt(5).qualityBonus).toBeCloseTo(0.6, 10);
+    expect(academyEffectsAt(1).qualityBonus).toBeCloseTo(-0.6, 10);
+    expect(academyEffectsAt(5).intakeMax).toBe(7);
+    expect(academyEffectsAt(5).promiseChance).toBe(0.13);
   });
 
   test("academy relative to the tier's implied level: AI neutral, the human club by what it built", () => {

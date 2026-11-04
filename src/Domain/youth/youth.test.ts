@@ -61,7 +61,7 @@ describe("youth intake", () => {
     }
   });
 
-  test("academy level (facilities): quality ±0.15/level, up to 6 players at level 5", () => {
+  test("academy level (facilities): quality ±0.3/level, up to 7 players at level 5", () => {
     const withAcademy = (level: number) => {
       const sq = squad();
       return squad({ facilities: withGroupLevel(initialFacilities(sq, 1), "academy", level) });
@@ -73,10 +73,10 @@ describe("youth intake", () => {
     };
     const lo = meanLevel(withAcademy(1));
     const hi = meanLevel(withAcademy(5));
-    expect(hi.mean - lo.mean).toBeGreaterThan(0.35);
-    expect(hi.mean - lo.mean).toBeLessThan(0.85);
+    expect(hi.mean - lo.mean).toBeGreaterThan(0.8);
+    expect(hi.mean - lo.mean).toBeLessThan(1.6);
     const sizes = Array.from({ length: 200 }, (_, y) => generateIntake({ ...base, squad: withAcademy(5), year: 5000 + y }).length);
-    expect(Math.max(...sizes)).toBe(6);
+    expect(Math.max(...sizes)).toBe(7);
     expect(Math.min(...sizes)).toBe(3);
   });
 

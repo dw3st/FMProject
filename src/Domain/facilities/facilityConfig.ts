@@ -31,7 +31,7 @@ export const FACILITIES = {
   /** League tier → cost factor (tier 4+ uses the last). */
   SEAT_COST_TIER: [1, 0.75, 0.55, 0.4],
   /** Comfort: ticket price × (1 + this × (level - 1)). */
-  COMFORT_PRICE_STEP: 0.06,
+  COMFORT_PRICE_STEP: 0.1,
   /** Comfort works: EUR per seat to reach the level, and weeks. */
   COMFORT_COST_PER_SEAT: [0, 100, 160, 240, 350],
   COMFORT_WEEKS: [0, 8, 12, 16, 20],
@@ -52,20 +52,20 @@ export const FACILITIES = {
   COMPLETED_KEEP: 10,
 
   // ── Training ground ───────────────────────────────────────────────────────
-  TRAINING_RECOVERY: [0.97, 0.985, 1, 1.04, 1.08],
-  TRAINING_INJURY: [1.05, 1.025, 1, 0.925, 0.85],
-  TRAINING_DEV: [0.95, 0.975, 1, 1.05, 1.1],
+  TRAINING_RECOVERY: [0.94, 0.97, 1, 1.08, 1.16],
+  TRAINING_INJURY: [1.1, 1.05, 1, 0.85, 0.7],
+  TRAINING_DEV: [0.9, 0.95, 1, 1.1, 1.2],
   /** Cost to reach the level as a share of annual revenue, and weeks of works. */
   TRAINING_COST_SHARE: [0, 0.03, 0.06, 0.12, 0.2],
   TRAINING_WEEKS: [0, 12, 20, 30, 40],
 
   // ── Academy ───────────────────────────────────────────────────────────────
   /** Intake level bonus per level away from 3. */
-  ACADEMY_QUALITY_STEP: 0.15,
+  ACADEMY_QUALITY_STEP: 0.3,
   /** Intake size upper bound (lower bound stays YOUTH.INTAKE_MIN). */
-  ACADEMY_INTAKE_MAX: [5, 5, 5, 5, 6],
+  ACADEMY_INTAKE_MAX: [5, 5, 5, 6, 7],
   /** Chance of a "Wonderkid" prospect. */
-  ACADEMY_PROMISE: [0.03, 0.04, 0.05, 0.07, 0.09],
+  ACADEMY_PROMISE: [0.02, 0.035, 0.05, 0.09, 0.13],
   ACADEMY_COST_SHARE: [0, 0.02, 0.045, 0.09, 0.15],
   ACADEMY_WEEKS: [0, 12, 18, 26, 36],
 

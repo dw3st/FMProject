@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.1",
+    date: "2026-11-04",
+    time: "16:24",
+    items: [
+      {
+        pt: "Instalações pesam o dobro: o CT recupera e evolui mais e machuca menos, a base traz safras melhores e mais promessas, e o conforto do estádio rende ingressos mais caros.",
+        en: "Facilities weigh twice as much: the training ground recovers and develops more and injures less, the academy brings better intakes and more prospects, and stadium comfort earns dearer tickets.",
+      },
+    ],
+  },
+  {
     version: "4.44",
     date: "2026-11-04",
     time: "16:13",
