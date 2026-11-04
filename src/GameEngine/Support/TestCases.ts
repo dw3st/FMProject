@@ -301,6 +301,21 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'keeper-shot-over',
+    name:        'Keeper — shot over an advanced keeper',
+    description: 'The keeper is 10 yd off his line when the striker shoots from 20 yd. He goes to the path of the ball, not back to the line: a save stops the ball where he is, and a shot he does not reach goes in (`Keeper.ts` → `ballMeetsKeeper`).',
+    createState() {
+      _nextId = 1;
+      const state = buildState([
+        makePlayer('Santos',   'A', 'ST',   95, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   90, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  105, 37, GOALKEEPER),
+      ], 1);
+      return { ...state, ballHolderId: 1, shot: { shooterId: 1, fromX: 95, fromY: 37, toX: 115, toY: 35, t: 0, xg: 0.5 } };
+    },
+  },
+
+  {
     id:          'keeper-attacking',
     name:        'Keeper — up with the play',
     description: 'Team B holds the ball in the attacking half; their keeper steps up between the penalty spot and the edge of his box, and drops back as the ball comes back (`Keeper.ts`).',

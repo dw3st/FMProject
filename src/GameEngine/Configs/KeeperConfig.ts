@@ -68,4 +68,6 @@ export const KEEPER_CONFIG = {
   HIGH_DEPTH_PENALTY: 0.7,
   /** Share of failed wide claims that drop loose at the point (the rest are punched). */
   HIGH_FLAP_SHARE: 0.5,
+  /** Yards from the ball's path he can still get a hand to it. Further than that, a shot on target beats him. */
+  SHOT_REACH: 4,
 };

@@ -3,7 +3,7 @@
  * team has the ball, the sweeper chase and the wider high-ball claims.
  * Spec: docs/superpowers/specs/2026-10-28-active-keeper-design.md.
  */
-import type { GamePlayer } from '@/GameEngine/types';
+import type { GamePlayer, ShotState } from '@/GameEngine/types';
 import { KEEPER_CONFIG as K } from '@/GameEngine/Configs/KeeperConfig';
 import { GOAL_Y_MAX, GOAL_Y_MIN, PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 
@@ -171,4 +171,28 @@ export function wideClaimFactor(depth: number): number {
 export function smotherBase(gk: Pick<GamePlayer, 'runtimeStats'>): number {
   const { gkPositioning, gkReflex } = gk.runtimeStats.withoutBall;
   return K.SMOTHER_BASE + K.SMOTHER_SKILL * (gkPositioning + gkReflex) / 2;
+}
+
+function shotBallAt(shot: Pick<ShotState, 'fromX' | 'fromY' | 'toX' | 'toY'>, t: number): Pos {
+  const eased = t * t * (3 - 2 * t);
+  return { x: shot.fromX + (shot.toX - shot.fromX) * eased, y: shot.fromY + (shot.toY - shot.fromY) * eased };
+}
+
+function closestOnSegment(p: Pos, a: Pos, b: Pos): Pos {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const len2 = abx * abx + aby * aby;
+  const t = len2 < 1e-9 ? 0 : clamp(((p.x - a.x) * abx + (p.y - a.y) * aby) / len2, 0, 1);
+  return { x: a.x + abx * t, y: a.y + aby * t };
+}
+
+/** Where the keeper goes while a shot flies: the nearest point of what is left of its path, never back to the line for its own sake. */
+export function shotInterceptPoint(gk: Pos, shot: Pick<ShotState, 'fromX' | 'fromY' | 'toX' | 'toY' | 't'>): Pos {
+  return closestOnSegment(gk, shotBallAt(shot, shot.t), { x: shot.toX, y: shot.toY });
+}
+
+/** Whether the ball, moving from flight progress t0 to t1, comes within the keeper's reach. */
+export function ballMeetsKeeper(gk: Pos, shot: Pick<ShotState, 'fromX' | 'fromY' | 'toX' | 'toY'>, t0: number, t1: number): boolean {
+  const p = closestOnSegment(gk, shotBallAt(shot, t0), shotBallAt(shot, Math.min(1, t1)));
+  return Math.hypot(p.x - gk.x, p.y - gk.y) <= K.SHOT_REACH;
 }

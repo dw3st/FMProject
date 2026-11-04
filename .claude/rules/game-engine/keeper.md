@@ -80,3 +80,7 @@ profundidade já eram dele.
   gols, 5,47 → 5,09 chutes; Championship 1,639 → 1,581, 4,92 → 4,84; somadas −8,2% gols, −4,4% chutes. quickSim:
   `BASE_GOALS` 0,795 → 0,73 e `SHOTS_PER_XG` 1,778 → 1,89 (a relação quickSim × motor fica a mesma: +9,3% nas duas ligas
   somadas, antes e depois).
+
+## Chute por cima do goleiro adiantado (4.44.2)
+
+Report do usuário: o resultado do chute era sorteado na linha do gol, sem olhar a distância do goleiro, então um goleiro a 10 jardas da linha "pegava" na linha a bola que já tinha passado por ele. Agora, com a bola no ar, ele corre para o ponto mais perto do que resta da trajetória (`shotInterceptPoint`), e o sorteio acontece quando a bola chega a até `SHOT_REACH` (4) jardas dele (`ballMeetsKeeper`, `ShotState.outcome`): defesa encerra o chute ali (o `shotResolved` leva esse ponto, para os efeitos não desenharem na linha); gol segue até a linha, sem novo sorteio. No alvo e fora do alcance o tempo todo: gol. Fora do alvo: como antes. Cenário `keeper-shot-over` no `/test`, debug `keeper`. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, 800 jogos por liga, contra a 4.44): Premier 2,060 → 2,109 gols, 5,54 → 5,49 chutes; Championship 1,686 → 1,732, 5,22 → 5,37; somadas +2,5% e +0,9%, quickSim não recalibrado. Com alcance 3: +6,0% (um chute no canto com o goleiro na linha virava gol direto).

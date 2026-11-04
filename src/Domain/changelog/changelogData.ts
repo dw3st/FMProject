@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.2",
+    date: "2026-11-04",
+    time: "16:46",
+    items: [
+      {
+        pt: "O goleiro adiantado não volta mais para pegar na linha o chute que já passou por ele: a defesa acontece onde a bola chega até ele, e a bola que passa fora do alcance entra.",
+        en: "An advanced keeper no longer runs back to catch on the line a shot that already went past him: the save happens where the ball reaches him, and a ball beyond his reach goes in.",
+      },
+    ],
+  },
+  {
     version: "4.44.1",
     date: "2026-11-04",
     time: "16:24",

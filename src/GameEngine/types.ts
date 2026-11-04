@@ -594,6 +594,11 @@ export interface ShotState {
   header?: boolean;
   /** A direct free kick (`set-pieces-play.md`): `xg` is the shot's xG before the wall. */
   freeKick?: boolean;
+  /**
+   * Decided when the ball reached the keeper (`Keeper.ts` → `ballMeetsKeeper`): a save ends the shot there, a goal
+   * flies on past him to the line. Absent until then.
+   */
+  outcome?: { isGoal: boolean; goalChance: number };
 }
 
 /** What the end of a VAR check does to the match (data only: `gameState.ts` applies it). */

@@ -40,7 +40,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { depthFrom, isWideClaimZone, keeperComesWide, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { ballMeetsKeeper, depthFrom, isWideClaimZone, keeperComesWide, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
@@ -4021,11 +4021,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId) return player;
 
-      // GK override: sprint to intercept the shot target
+      // GK override: sprint to the ball's path (an advanced keeper does not run back to the line)
       if (s.shot !== null && player.role === 'GK') {
         const shooter = s.players.find(p => p.id === s.shot!.shooterId);
         if (shooter && player.team !== shooter.team) {
-          const gkTarget = { x: s.shot.toX, y: s.shot.toY };
+          const gkTarget = shotInterceptPoint(player, s.shot);
           const dx = gkTarget.x - player.x;
           const dy = gkTarget.y - player.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -4195,27 +4195,45 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
 
   // ── Shot in flight ─────────────────────────────────────────────────────────
   if (s.shot) {
-    const newT = s.shot.t + dt * SHOT_SPEED;
+    let flying = s.shot;
+    const newT = flying.t + dt * SHOT_SPEED;
+    const { shooterId } = flying;
+    const shooter     = s.players.find(p => p.id === shooterId)!;
+    const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+    const onTarget    = flying.toY >= GOAL_Y_MIN && flying.toY <= GOAL_Y_MAX;
+    const longShot    = weatherEffectOf(s.weather).longShot;
 
-    if (newT >= 1) {
-      const { shooterId } = s.shot;
-      const shooter     = s.players.find(p => p.id === shooterId)!;
-      const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+    // The keeper decides it where the ball reaches him: a save stops it there, a goal flies on past him.
+    if (!flying.outcome && onTarget && defendingGK && ballMeetsKeeper(defendingGK, s.shot, flying.t, newT)) {
+      const { isGoal, goalChance } = resolveShot(shooter, defendingGK, flying, longShot);
+      flying = { ...flying, outcome: { isGoal, goalChance } };
+      s = { ...s, shot: flying };
+    }
+    const savedByKeeper = flying.outcome?.isGoal === false;
 
-      const { isGoal, inPosts, goalChance } = resolveShot(shooter, defendingGK, s.shot, weatherEffectOf(s.weather).longShot);
-      if (!s.shot.header && Math.abs(s.shot.toX - s.shot.fromX) > LONG_SHOT_DISTANCE) {
+    if (newT >= 1 || savedByKeeper) {
+      // On target and never within his reach: the keeper is beaten.
+      const beaten = onTarget && !!defendingGK && !flying.outcome;
+      if (beaten) debugLog('keeper', `${defendingGK!.name} beaten: the shot never came within his reach`, { playerId: defendingGK!.id });
+      const { isGoal, inPosts, goalChance } = flying.outcome
+        ? { ...flying.outcome, inPosts: true }
+        : beaten ? { isGoal: true, goalChance: 1, inPosts: true }
+        : resolveShot(shooter, defendingGK, flying, longShot);
+      if (!flying.header && Math.abs(flying.toX - flying.fromX) > LONG_SHOT_DISTANCE) {
         logWeather(s, 'longShot', `${shooter.name}'s long shot (${(goalChance * 100).toFixed(0)}%)`, shooter.id);
       }
-      gameBus.emit('shotResolved', { player: shooter.id, xg: s.shot.xg, goalChance, isGoal, inPosts, fromX: s.shot.fromX, fromY: s.shot.fromY, toX: s.shot.toX, toY: s.shot.toY });
+      // A save ends where the ball met the keeper, so the pitch effects draw there and not on the goal line behind him.
+      const endAt = savedByKeeper ? shotInterceptPoint(defendingGK!, flying) : { x: flying.toX, y: flying.toY };
+      gameBus.emit('shotResolved', { player: shooter.id, xg: flying.xg, goalChance, isGoal, inPosts, fromX: flying.fromX, fromY: flying.fromY, toX: endAt.x, toY: endAt.y });
 
       if (inPosts && isGoal) {
         const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
         const assistId = s.lastPasserId !== null && s.lastPasserId !== shooter.id ? s.lastPasserId : undefined;
-        const setPieceKind = s.shot.freeKick ? 'direct_free_kick' : setPieceGoalOf(s, shooter.team);
+        const setPieceKind = flying.freeKick ? 'direct_free_kick' : setPieceGoalOf(s, shooter.team);
         gameBus.emit('goalScored', {
-          team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: s.shot.header === true,
+          team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: flying.header === true,
           ...(setPieceKind ? { setPiece: setPieceKind } : {}),
-          fromX: s.shot.fromX, fromY: s.shot.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
+          fromX: flying.fromX, fromY: flying.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
         });
         const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
         const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
@@ -4223,7 +4241,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           state: s.missedOffside
             ? checkGoalForOffside(s, kicked, {
               team: shooter.team, scorerId: shooter.id, ...(assistId !== undefined ? { assistId } : {}),
-              header: s.shot.header === true, ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+              header: flying.header === true, ...(setPieceKind ? { setPiece: setPieceKind } : {}),
             })
             : kicked,
           passCompleted: false, tackled: false, goalScored: shooter.team,
@@ -4242,14 +4260,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           if (Math.random() < SET_PIECE_CONFIG.SAVE_CORNER_CHANCE) cornerSource = 'save';
         } else if (!inPosts) {
           const deflector = s.players.some(p => p.team !== shooter.team && p.role !== 'GK'
-            && Math.hypot(p.x - s.shot!.fromX, p.y - s.shot!.fromY) <= SET_PIECE_CONFIG.SHOT_DEFLECT_RADIUS);
+            && Math.hypot(p.x - flying.fromX, p.y - flying.fromY) <= SET_PIECE_CONFIG.SHOT_DEFLECT_RADIUS);
           if (deflector && Math.random() < SET_PIECE_CONFIG.OFF_TARGET_CORNER_CHANCE) cornerSource = 'deflection';
         }
         if (cornerSource) {
           const goalLineX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
           const exitX = goalLineX === 0 ? -1 : PITCH_LENGTH + 1;
           const saved = defendingGK && inPosts ? { ...s, players: applyStaminaCost(s.players, defendingGK.id, 'gkSave') } : s;
-          return resolveOOBSetPiece({ ...saved, shot: null }, 'corner', shooter.team, exitX, s.shot.toY,
+          return resolveOOBSetPiece({ ...saved, shot: null }, 'corner', shooter.team, exitX, flying.toY,
             defendingGK?.id ?? shooter.id, 'clearance', cornerSource);
         }
         // GK save or shot off target — apply goal kick positioning for GK's team
@@ -4279,7 +4297,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     }
 
     return {
-      state: { ...s, shot: { ...s.shot, t: newT } },
+      state: { ...s, shot: { ...flying, t: newT } },
       passCompleted: false, tackled: false, goalScored: null,
     };
   }
