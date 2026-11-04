@@ -37,6 +37,8 @@ export interface ScoutFilterState {
    * estimated asking wage within the wage cap (`fitsScoutBudget`, computed on the server).
    */
   onlyAffordable?: boolean;
+  /** Only players who can sign a pre-contract with the user's club now (`preContractEligible`, on the server). */
+  onlyPreContract?: boolean;
 }
 
 /** Attribute groups of the search filters (#147); every listed attribute (`ATTRIBUTE_LIST`) is in exactly one. */
@@ -101,5 +103,6 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     minKnowledge: 0,
     onlyAwarded: false,
     onlyAffordable: false,
+    onlyPreContract: false,
   };
 }

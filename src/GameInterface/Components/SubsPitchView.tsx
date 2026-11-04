@@ -15,7 +15,7 @@ import { spreadSubsMarkers } from "@/Domain/formation/pitchMarkers";
 import { getFormationSlots } from "@/types/formationSlots";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 
-const PITCH_BOARD = "formation/pitch-board.webp";
+export const PITCH_BOARD = "formation/pitch-board.webp";
 
 // ── Shared helpers (also used by the panel header) ─────────────────────────────
 
@@ -57,7 +57,7 @@ function EnergyBar({ energy, compact }: { energy: number; compact?: boolean }) {
 }
 
 /** Pitch lines of the vertical formation pitch (attack up), over the painted board or a plain grass. */
-function PitchLinesVertical({ grass }: { grass: boolean }) {
+export function PitchLinesVertical({ grass }: { grass: boolean }) {
   const line = { fill: "none", stroke: "rgba(255,255,255,0.22)", strokeWidth: 0.3 } as const;
   return (
     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>

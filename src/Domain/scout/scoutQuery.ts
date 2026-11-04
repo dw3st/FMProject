@@ -122,6 +122,7 @@ export function filterScoutPlayers(
     if (filters.onlyAwarded && !player.awarded) return false;
     // Set on the server for every player outside the user's squad (`scoutRowExtras`).
     if (filters.onlyAffordable && player.affordable !== true) return false;
+    if (filters.onlyPreContract && player.preContract !== true) return false;
     // Rows without `knowledge` are exact (own squad).
     if ((filters.minKnowledge ?? 0) > 0 && (player.knowledge ?? 100) < filters.minKnowledge!) return false;
     if (name && !player.name.toLowerCase().includes(name)) return false;

@@ -177,3 +177,7 @@ Report de tester. Com a janela do clube do jogador aberta, uma faixa verde (`Mar
 (`negotiationSummary`, `src/Domain/negotiation/summary.ts`: compra = conversas do dia abertas, alvos com rival vivo e
 propostas a outro assento; venda = propostas vivas da IA e de outro assento; cada jogador uma vez por lado). A linha
 "Janela aberta até…" saiu do cartão Atenção (fica só o aviso dos últimos dias).
+
+## Filtro de pré-contrato no olheiro (4.42.20)
+
+Report de tester. Chip "Só pré-contrato" na busca (`onlyPreContract`): só jogadores de clubes da IA que `preContractEligible` aceita hoje (contrato real, não a faixa do olheiro), calculado no índice da busca (`preContractIdsOf`, `scoutSearch.ts`).

@@ -104,6 +104,8 @@ export interface DisplayPlayer {
   interest?: ScoutInterest;
   /** Scout search (#123): estimated fee and asking wage fit the user's club (`fitsScoutBudget`). */
   affordable?: boolean;
+  /** Can sign a pre-contract with the user's club now (set on the server). */
+  preContract?: boolean;
 }
 
 /**

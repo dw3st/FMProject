@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.20",
+    date: "2026-11-04",
+    time: "08:17",
+    items: [
+      {
+        pt: "Na partida, ao trocar de formação, um mini campo mostra como o time vai ficar antes de você confirmar.",
+        en: "In the match, changing formation now shows a mini pitch with how the team will line up before you confirm.",
+      },
+      {
+        pt: "Olheiro: novo filtro para ver só os jogadores que podem assinar um pré-contrato.",
+        en: "Scouting: a new filter shows only the players who can sign a pre-contract.",
+      },
+    ],
+  },
+  {
     version: "4.42.19",
     date: "2026-11-04",
     time: "08:05",

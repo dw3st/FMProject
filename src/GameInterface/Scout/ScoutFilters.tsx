@@ -244,6 +244,14 @@ export function ScoutFilters({
           <Icon name="wallet" className="w-4 h-4" />
           {t("scout.filters.affordableOnly")}
         </Chip>
+        <Chip
+          selected={!!filters.onlyPreContract}
+          onClick={() => setFilters({ ...filters, onlyPreContract: !filters.onlyPreContract })}
+          title={t("scout.filters.preContractHint")}
+        >
+          <Icon name="calendar" className="w-4 h-4" />
+          {t("scout.filters.preContractOnly")}
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />

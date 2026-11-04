@@ -522,3 +522,7 @@ closer than `KIT_CLASH_DISTANCE` (250, redmean distance) the away side wears the
 does not clash, else the change kit (`CHANGE_KITS`) farthest from the home shirt. `resolveMatchTeamKitColors(A, B, home)`
 (`matchTeamColors.ts`) wraps it for the preview, the result and the live match; the live match passes the home engine
 team (`isAwayView`), so the user's club changes kit when he is the away side. The watch broadcast reuses these colours.
+
+# Formation change preview (4.42.20)
+
+Tester report. The Formation tab of the live panel no longer applies a formation on click: the chip shows it on a mini pitch (`Components/FormationPreview.tsx`) with the current XI, each player in his slot with the role he would take (`formationPreview`, the same slot rule as `changeFormation`; out-of-position players in amber, counted below), and "Usar <formação>" applies it.

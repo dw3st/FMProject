@@ -14,6 +14,7 @@ import { teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { wageFactorOf, weeklyWage } from "@/Domain/finance/wages";
+import { preContractEligible } from "@/Domain/negotiation/preContract";
 import type { Squad } from "@/types/playerTypes";
 
 interface ScoutIndex {
@@ -59,10 +60,12 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
   const rows = [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)];
   const buyer = viewer?.ownClubId ? buyerContext(squads, viewer.ownClubId) : null;
   // Interest and "fits the budget" (#123): computed here, on what the user sees of each player.
+  const preContractIds = buyer ? await preContractIdsOf(saveId, squads) : new Set<string>();
   const players = buyer
     ? rows.map((r) => {
       const extras = scoutRowExtras(r, buyer, weeklyWage);
-      return extras ? { ...r, ...extras } : r;
+      const row = extras ? { ...r, ...extras } : r;
+      return preContractIds.has(r.id) ? { ...row, preContract: true } : row;
     })
     : rows;
   const shortlistIds = new Set((await saveService.getScouting(saveId, seatId)).shortlist.map((e) => e.playerId));
@@ -81,6 +84,18 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
     cache.delete(oldest);
   }
   return entry;
+}
+
+/** Players of AI clubs who can sign a pre-contract today (real contracts, not the blurred rows; `POST /pre-contracts` takes no human club's player). */
+async function preContractIdsOf(saveId: string, squads: Squad[]): Promise<Set<string>> {
+  const [meta, humans] = await Promise.all([saveService.getMeta(saveId), saveService.humanClubIds(saveId)]);
+  const date = meta?.currentDate ?? "";
+  const ids = new Set<string>();
+  for (const squad of squads) {
+    if (humans.has(squad.id)) continue;
+    for (const p of squad.players) if (preContractEligible(p, date)) ids.add(p.id);
+  }
+  return ids;
 }
 
 /** The user's club as the scout rows need it (`scoutRowExtras`); null when it is not in the save. */
@@ -185,6 +200,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyShortlist: f.onlyShortlist === true,
       onlyAwarded: f.onlyAwarded === true,
       onlyAffordable: f.onlyAffordable === true,
+      onlyPreContract: f.onlyPreContract === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",

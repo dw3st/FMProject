@@ -2,7 +2,7 @@ import { shirtName } from "@/Domain/shirtName";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GameState, PendingSub, TeamId } from "@/GameEngine/types";
-import { FORMATION_IDS } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -11,6 +11,8 @@ import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Compo
 import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
 import { SubsPitchView, averageRating, displayRating10 } from "@/GameInterface/Components/SubsPitchView";
 import type { SlotInstruction } from "@/types/tacticsTypes";
+import { FormationPreview } from "@/GameInterface/Components/FormationPreview";
+import { Button } from "@/GameInterface/ui/Button";
 import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
 import { InjuryVacancyPanel } from "@/GameInterface/Components/InjuryVacancyPanel";
 import type { ComponentProps } from "react";
@@ -64,6 +66,8 @@ export function SubstitutionPanel({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"subs" | "formation" | "tactics" | "instructions">("subs");
   const [instrSlot, setInstrSlot] = useState<number | null>(null);
+  /** The formation being looked at in the Formation tab; null = the current one. */
+  const [previewFormation, setPreviewFormation] = useState<string | null>(null);
   const instructionShort = useInstructionShort();
 
   const subsRemaining =
@@ -79,6 +83,7 @@ export function SubstitutionPanel({
 
   const currentFormationId =
     playerTeam === "A" ? gameState.formationA.id : gameState.formationB.id;
+  const shownFormation = previewFormation ?? currentFormationId;
 
   const queuedInIds = new Set(pendingQueue.map((s) => s.inId));
   const availableBench = bench.filter((p) => !queuedInIds.has(p.id));
@@ -243,15 +248,31 @@ export function SubstitutionPanel({
               <p className="text-sm text-muted-foreground m-0">
                 {t("substitutionPanel.changeFormationHint")}
               </p>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {FORMATION_LIST.map((fid) => {
-                  const isActive = fid === currentFormationId;
-                  return (
-                    <Chip key={fid} selected={isActive} onClick={() => onChangeFormation(fid)} className="py-2.5 tabular-nums">
-                      {fid}
-                    </Chip>
-                  );
-                })}
+              <div className="flex flex-col md:flex-row gap-5 items-start justify-center">
+                <div className="flex flex-col gap-3 w-full md:w-72 shrink-0">
+                  <div className="grid grid-cols-3 gap-2">
+                    {FORMATION_LIST.map((fid) => (
+                      <Chip key={fid} selected={fid === shownFormation} onClick={() => setPreviewFormation(fid)} className="py-2.5 tabular-nums">
+                        {fid}
+                      </Chip>
+                    ))}
+                  </div>
+                  <Button
+                    disabled={shownFormation === currentFormationId}
+                    onClick={() => { onChangeFormation(shownFormation); setPreviewFormation(null); }}
+                  >
+                    {shownFormation === currentFormationId
+                      ? t("substitutionPanel.currentFormation")
+                      : t("substitutionPanel.useFormation", { formation: shownFormation })}
+                  </Button>
+                </div>
+                <FormationPreview
+                  players={gameState.players.filter((p) => p.team === playerTeam).sort((x, y) => x.slotIndex - y.slotIndex)}
+                  formation={shownFormation === currentFormationId
+                    ? (playerTeam === "A" ? gameState.formationA : gameState.formationB)
+                    : formationForSimId(shownFormation)}
+                  {...(faceUrls ? { faceUrls } : {})}
+                />
               </div>
             </div>
           )}
