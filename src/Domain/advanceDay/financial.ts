@@ -1,5 +1,6 @@
 import { gateFromAttendance, gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import { weeklyUpkeep } from "@/Domain/facilities/facilities";
+import { bankLoanPaymentDue } from "@/Domain/finance/bankLoan";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { squadStaffWages } from "@/Domain/staff/staff";
@@ -78,6 +79,10 @@ export function computeAdvanceDayMoney(args: {
     const upkeep = weeklyUpkeep(playerSquad, wageRevenueBasisOf(playerSquad));
     if (upkeep > 0) {
       entries.push({ date: currentDate, kind: "facilities_upkeep", amount: -upkeep, label: "Facilities upkeep" });
+    }
+    const loanPayment = bankLoanPaymentDue(playerSquad.bankLoan, currentDate);
+    if (loanPayment > 0) {
+      entries.push({ date: currentDate, kind: "loan_payment", amount: -loanPayment, label: "Bank loan payment" });
     }
   }
 

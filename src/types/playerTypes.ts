@@ -332,6 +332,8 @@ export interface Squad {
    * Human club only; AI clubs use the implied level of their financial tier.
    */
   facilities?: ClubFacilities;
+  /** The club's bank loan (`src/Domain/finance/bankLoan.ts`). Human club only; the debt never follows the manager. */
+  bankLoan?: import("@/types/bankLoanTypes").BankLoan;
   /**
    * Style familiarity 0..100 (`src/Domain/familiarity`). Human club only, set at career creation
    * and moved by daily training; AI clubs store none and follow the implicit rule.

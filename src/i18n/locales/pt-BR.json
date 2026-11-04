@@ -2774,6 +2774,8 @@
       "boardFunding": "Verba da diretoria: {{facility}}",
       "facilitiesUpkeep": "Manutenção do CT e da base",
       "managerWage": "Salário do técnico",
+      "bankLoanIn": "Empréstimo do banco recebido",
+      "bankLoanPayment": "Parcela do empréstimo do banco",
       "staffSeverance": "Multa rescisória da comissão",
       "playerTermination": "Rescisão amigável",
       "managerSeverance": "Multa rescisória do técnico",
@@ -2795,7 +2797,39 @@
     "facilitiesUpkeep": "Manutenção das instalações",
     "boardFunding": "Verba da diretoria",
     "kinds": {
-      "manager": "Salário do técnico"
+      "manager": "Salário do técnico",
+      "loan_in": "Empréstimo recebido",
+      "loan_payment": "Parcela do empréstimo"
+    },
+    "bankLoan": {
+      "title": "Empréstimo do banco",
+      "intro": "Até 25% da receita anual, um empréstimo por vez, com juros de 8% por temporada. Se você sair do clube, a dívida fica com ele.",
+      "amount": "Valor",
+      "term": "Prazo",
+      "seasons_one": "{{count}} temporada",
+      "seasons_other": "{{count}} temporadas",
+      "receive": "Você recebe",
+      "interest": "Juros",
+      "total": "Total a pagar",
+      "weekly": "Parcela semanal",
+      "borrowed": "Valor do empréstimo",
+      "remaining": "Falta pagar",
+      "weeksLeft": "Semanas restantes",
+      "take": "Pedir empréstimo",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "confirmText": "Você recebe {{amount}} agora e paga {{weekly}} por {{weeks}} semanas, mesmo com o saldo negativo.",
+      "boardLow": "A diretoria só autoriza com o medidor em {{min}} ou mais.",
+      "noCredit": "A receita do clube é pequena demais para um empréstimo.",
+      "errors": {
+        "loanActive": "O clube já tem um empréstimo.",
+        "boardLow": "A diretoria não autorizou o empréstimo.",
+        "overLimit": "Esse valor passa do limite do clube.",
+        "invalidAmount": "Valor inválido.",
+        "invalidSeasons": "Prazo inválido.",
+        "noClub": "Você está sem clube.",
+        "generic": "Não foi possível fazer o empréstimo. Tente de novo."
+      }
     },
     "scouting": "Olheiros"
   },

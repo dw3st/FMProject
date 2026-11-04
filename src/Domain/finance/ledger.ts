@@ -32,7 +32,11 @@ export type LedgerKind =
    */
   | "manager"
   /** Scouting travel (`.claude/rules/game/scouting.md`): weekly, one line per active mission. */
-  | "scouting";
+  | "scouting"
+  /** A bank loan received (`bankLoan.ts`): moves the balance, but is not income. */
+  | "loan_in"
+  /** The weekly payment of a bank loan. */
+  | "loan_payment";
 
 /** One line of the club's cash extract. `amount` is signed (income positive, expense negative). */
 export interface LedgerEntry {
@@ -77,6 +81,8 @@ const LEDGER_KINDS: LedgerKind[] = [
   "board_funding",
   "manager",
   "scouting",
+  "loan_in",
+  "loan_payment",
 ];
 
 /**

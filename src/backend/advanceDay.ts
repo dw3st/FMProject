@@ -95,6 +95,7 @@ import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/d
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
+import { withBankLoanPayment } from "@/Domain/finance/bankLoan";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
 import { matchPitch } from "@/Domain/facilities/pitch";
@@ -1981,6 +1982,11 @@ export async function advanceOneDay(
             balanceAfter = updated.finances?.budget ?? balanceAfter;
           }
           ds.managerEarned += moneyEntries.filter((e) => e.kind === "manager").reduce((t, e) => t - e.amount, 0);
+          const loanPayment = moneyEntries.find((e) => e.kind === "loan_payment");
+          if (loanPayment) {
+            const paying = await saveService.getSquad(saveId, seatEntry.leagueSlug, seatEntry.stem);
+            if (paying) await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, withBankLoanPayment(paying, -loanPayment.amount, currentDate));
+          }
           // Monday: the balance moves the board, then both meters drift towards 60.
           if (ds.board && isWeeklyTick) {
             ds.board = applyWeekly(ds.board, { balance: balanceAfter, weeklyRevenue: wageRevenueBasisOf(playerSquad) / 52 });

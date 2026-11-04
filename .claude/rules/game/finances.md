@@ -381,3 +381,7 @@ mensais (`facilityRebuild`/`facilityUpgrade`/`boardFundingItem`). Ver `facilitie
 ## Assentos (Etapa 43)
 
 O extrato é do assento (`seats/{seatId}/ledger/`); a invariante soma do extrato = saldo vale por assento. Ver `.claude/rules/game/multiplayer.md`.
+
+## Empréstimo do banco (4.43)
+
+Report de tester. `Squad.bankLoan` (só o clube humano; lógica pura em `src/Domain/finance/bankLoan.ts`, `BANK_LOAN`): até 25% de `wageRevenueBasisOf`, um por vez, 1 ou 2 temporadas, juros simples de 8% por temporada, diretoria em 25 ou mais. `POST /api/saves/:id/bank-loan { amount, seasons }` (409 `loanActive`, `boardLow`, `noClub`, `lobby`; 400 `overLimit`, `invalidAmount`, `invalidSeasons`) grava o elenco e o extrato juntos: `loan_in` (mexe no saldo, não conta como receita) e, a partir da segunda seguinte, `loan_payment` semanal, cobrada mesmo sem dinheiro. A dívida nunca segue o técnico: `releaseHumanClub` apaga o campo (o clube da IA não tem caixa), e o saldo sai junto. A IA não pega empréstimo. Tela: cartão em Finanças. Sem quitação antecipada.

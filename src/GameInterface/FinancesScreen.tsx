@@ -20,6 +20,7 @@ import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { formatEuros } from "@/Domain/money";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { facilitiesGate, seasonFraction } from "@/Domain/facilities/facilities";
+import { BankLoanCard } from "@/GameInterface/Finances/BankLoanCard";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -42,9 +43,9 @@ function formatWeekLabel(weekStart: string) {
 // ── Per-kind display metadata ────────────────────────────────────────────────
 
 const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in", "board_funding"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep", "scouting"];
-// `club_change` (the manager changed club) is a balance transfer, not income or expense.
-const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change"];
+const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep", "scouting", "loan_payment"];
+// `club_change` (the manager changed club) is a balance transfer, not income or expense; so is the money of a loan.
+const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change", "loan_in"];
 
 const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   broadcasting: { icon: "broadcast", labelKey: "financesScreen.broadcasting" },
@@ -62,6 +63,8 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   scouting: { icon: "binoculars", labelKey: "financesScreen.scouting" },
   board_funding: { icon: "handshake", labelKey: "financesScreen.boardFunding" },
   manager: { icon: "staff", labelKey: "financesScreen.kinds.manager" },
+  loan_in: { icon: "wallet", labelKey: "financesScreen.kinds.loan_in" },
+  loan_payment: { icon: "wallet", labelKey: "financesScreen.kinds.loan_payment" },
 };
 
 function fixtureGateKind(competitionSlug: string): GateKind {
@@ -72,7 +75,7 @@ function fixtureGateKind(competitionSlug: string): GateKind {
 
 export function FinancesScreen() {
   const { t, i18n } = useTranslation();
-  const { session, squad, save, loading: saveLoading, fixtures } = useGameSave();
+  const { session, squad, save, loading: saveLoading, fixtures, refresh } = useGameSave();
   // Stadium fill from the fans (`.claude/rules/game/board-fans.md`), the same rate the server uses.
   const fans = save?.board?.fans;
   const fillRate = fans === undefined ? undefined : stadiumFillRate(fans);
@@ -81,6 +84,7 @@ export function FinancesScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
+  const [ledgerVersion, setLedgerVersion] = useState(0);
   // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "facilities") window.location.replace("/club");
@@ -125,7 +129,7 @@ export function FinancesScreen() {
       .then((d) => { if (!cancelled) setLedger(d); })
       .catch(() => { if (!cancelled) setLedger(null); });
     return () => { cancelled = true; };
-  }, [session?.saveId, selectedSeason, session?.currentDate]);
+  }, [session?.saveId, selectedSeason, session?.currentDate, ledgerVersion]);
 
   // Weekly wage bill + operational cost via the exact same pure formulas the server uses.
   const weeklyProjection = useMemo(() => {
@@ -135,6 +139,7 @@ export function FinancesScreen() {
       staff: squadStaffWages(squad.staff),
       // The manager's own wage (`.claude/rules/game/jobs.md` → "Contrato do técnico").
       manager: save?.managerContract?.squadId === squad.id ? save.managerContract.wage : 0,
+      loan: squad.bankLoan ? Math.min(squad.bankLoan.weekly, squad.bankLoan.remaining) : 0,
       operational: weeklyOperationalCost(squad),
       commercial: Math.round((squad.finances?.commercial ?? 0) / 52),
     };
@@ -265,6 +270,15 @@ export function FinancesScreen() {
           </div>
         )}
 
+        {squad && (
+          <BankLoanCard
+            saveId={session.saveId}
+            squad={squad}
+            {...(save?.board ? { board: save.board.board } : {})}
+            onTaken={() => { void refresh({ background: true }); setLedgerVersion((v) => v + 1); }}
+          />
+        )}
+
         {/* Weekly net chart (real ledger data) */}
         <div className="card-arcade rounded-md p-4">
           <div className="flex items-center justify-between mb-4">
@@ -344,10 +358,13 @@ export function FinancesScreen() {
                   <ProjectionRow icon="staff" label={t("financesScreen.kinds.manager")} value={-weeklyProjection.manager} />
                 )}
                 <ProjectionRow icon="building" label={t("financesScreen.operational")} value={-weeklyProjection.operational} />
+                {weeklyProjection.loan > 0 && (
+                  <ProjectionRow icon="wallet" label={t("financesScreen.kinds.loan_payment")} value={-weeklyProjection.loan} />
+                )}
                 <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
                   <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.weeklyProfitLoss")}</span>
                   {(() => {
-                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.manager - weeklyProjection.operational;
+                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.manager - weeklyProjection.operational - weeklyProjection.loan;
                     return (
                       <span className={`tabular-nums text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
                         {net >= 0 ? "+" : ""}{formatEuros(net)}

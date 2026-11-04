@@ -16,7 +16,7 @@ type PrivatePlayerKey = "morale" | "moraleLog" | "squadStatus";
  */
 export function publicSeatSquad(squad: Squad): PublicSeatSquad {
   const {
-    moraleClub: _mc, staff: _s, facilities: _f, managerAttributes: _ma, styleFamiliarity: _sf, registrations: _r,
+    moraleClub: _mc, staff: _s, facilities: _f, managerAttributes: _ma, styleFamiliarity: _sf, registrations: _r, bankLoan: _bl,
     finances, players, ...rest
   } = squad;
   const pub: PublicSeatSquad = {

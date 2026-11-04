@@ -2774,6 +2774,8 @@
       "boardFunding": "Board funding: {{facility}}",
       "facilitiesUpkeep": "Training ground and academy upkeep",
       "managerWage": "Manager wage",
+      "bankLoanIn": "Bank loan received",
+      "bankLoanPayment": "Bank loan payment",
       "staffSeverance": "Staff severance",
       "playerTermination": "Friendly termination",
       "managerSeverance": "Manager severance",
@@ -2795,7 +2797,39 @@
     "facilitiesUpkeep": "Facilities upkeep",
     "boardFunding": "Board funding",
     "kinds": {
-      "manager": "Manager wage"
+      "manager": "Manager wage",
+      "loan_in": "Loan received",
+      "loan_payment": "Loan payment"
+    },
+    "bankLoan": {
+      "title": "Bank loan",
+      "intro": "Up to 25% of annual revenue, one loan at a time, with 8% interest per season. If you leave the club, the debt stays with it.",
+      "amount": "Amount",
+      "term": "Term",
+      "seasons_one": "{{count}} season",
+      "seasons_other": "{{count}} seasons",
+      "receive": "You receive",
+      "interest": "Interest",
+      "total": "Total to pay",
+      "weekly": "Weekly payment",
+      "borrowed": "Loan amount",
+      "remaining": "Still to pay",
+      "weeksLeft": "Weeks left",
+      "take": "Ask for a loan",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "confirmText": "You receive {{amount}} now and pay {{weekly}} for {{weeks}} weeks, even with a negative balance.",
+      "boardLow": "The board only authorises it with its meter at {{min}} or more.",
+      "noCredit": "The club's revenue is too small for a loan.",
+      "errors": {
+        "loanActive": "The club already has a loan.",
+        "boardLow": "The board did not authorise the loan.",
+        "overLimit": "That amount is above the club's limit.",
+        "invalidAmount": "Invalid amount.",
+        "invalidSeasons": "Invalid term.",
+        "noClub": "You have no club.",
+        "generic": "The loan could not be made. Try again."
+      }
     },
     "scouting": "Scouting"
   },

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.43",
+    date: "2026-11-04",
+    time: "15:35",
+    items: [
+      {
+        pt: "Empréstimo do banco em Finanças: até 25% da receita anual, pago em parcelas semanais por uma ou duas temporadas, com juros. Se você sair do clube, a dívida fica com ele.",
+        en: "Bank loan in Finances: up to 25% of annual revenue, paid weekly over one or two seasons, with interest. If you leave the club, the debt stays with it.",
+      },
+    ],
+  },
+  {
     version: "4.42.28",
     date: "2026-11-04",
     time: "11:37",
