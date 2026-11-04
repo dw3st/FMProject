@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { shirtName } from "@/Domain/shirtName";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
@@ -14,6 +15,9 @@ import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace
 import { spreadSubsMarkers } from "@/Domain/formation/pitchMarkers";
 import { getFormationSlots } from "@/types/formationSlots";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+import { slotValue } from "@/Domain/positions/positionAptitude";
+import { PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
+import type { RosterPlayer } from "@/types/playerTypes";
 
 export const PITCH_BOARD = "formation/pitch-board.webp";
 
@@ -84,6 +88,8 @@ export interface SubsPitchViewProps {
   onSwapPositions?: (aId: number, bId: number) => void;
   /** Face URL per roster id (the match's faces, in the kit worn); absent = initials. */
   faceUrls?: Record<string, string>;
+  /** The club's squad: the hover card of each player (the one of the Formation screen); absent = no card. */
+  roster?: RosterPlayer[];
 }
 
 /**
@@ -92,9 +98,26 @@ export interface SubsPitchViewProps {
  * position. Tap a starter, then a bench player (or the other way) to queue a substitution; tap two
  * starters to swap their positions without using a substitution. Dragging works too.
  */
-export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSwapPositions, faceUrls }: SubsPitchViewProps) {
+export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSwapPositions, faceUrls, roster }: SubsPitchViewProps) {
   const { t } = useTranslation();
   const [selection, setSelection] = useState<SubsSelection>(null);
+  const [tip, setTip] = useState<{ id: number; left: number; top: number } | null>(null);
+  useEffect(() => {
+    if (!tip) return;
+    const hide = () => setTip(null);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [tip]);
+  const tipProps = (id: number) => ({
+    onMouseEnter: (e: ReactMouseEvent<HTMLElement>) => {
+      if (e.buttons !== 0) return; // dragging
+      const r = e.currentTarget.getBoundingClientRect();
+      const left = r.left >= ROW_TIP_W + 16 ? r.left - ROW_TIP_W - 8 : r.right + 8;
+      setTip({ id, left, top: Math.max(64, Math.min(r.top, window.innerHeight - ROW_TIP_H - 48)) });
+    },
+    onMouseLeave: () => setTip(null),
+    onMouseDown: () => setTip(null),
+  });
 
   const subsRemaining = playerTeam === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
   const pendingQueue = playerTeam === "A" ? gameState.pendingSubsA : gameState.pendingSubsB;
@@ -170,9 +193,23 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
         ? t("substitutionPanel.chooseStarter")
         : t("substitutionPanel.noSubsRemaining");
 
+  // The numbers at the slot he plays; the bench at his natural position.
+  const tipPlayer = tip ? onPitch.find((p) => p.id === tip.id) ?? bench.find((p) => p.id === tip.id) : undefined;
+  const tipRoster = tipPlayer ? roster?.find((p) => p.id === tipPlayer.rosterId) : undefined;
+  const tipRole = tipPlayer ? (onPitch.includes(tipPlayer) ? tipPlayer.role : gamePlayerNaturalRole(tipPlayer)) : "";
+
   return (
     <>
       <DragGhost drag={drag} />
+      {tip && tipPlayer && tipRoster && createPortal(
+        <div
+          className={`fixed z-[100] w-60 p-3 rounded-md bg-card border pointer-events-none ${tipRole !== gamePlayerNaturalRole(tipPlayer) ? "border-chart-4/40" : "border-border"}`}
+          style={{ left: tip.left, top: tip.top }}
+        >
+          <PlayerTipBody player={tipRoster} role={tipRole} avg={slotValue(tipRoster, tipRole)} energy={tipPlayer.energy} oop={tipRole !== gamePlayerNaturalRole(tipPlayer)} />
+        </div>,
+        document.body,
+      )}
       <div className="shrink-0 px-4 pt-2 pb-1 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground m-0">{hint}</p>
         {selection && (
@@ -229,6 +266,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                   data-drop={`slot:${p.id}`}
                   {...dragProps({ kind: "slot", key: String(p.id) }, p.name)}
                   onClick={() => tap("starter", p.id)}
+                  {...tipProps(p.id)}
                   aria-pressed={isSelected}
                   aria-label={`${roleAbbr(p.role)} ${p.name}`}
                   className={`absolute -translate-x-1/2 -translate-y-[35%] flex flex-col items-center gap-1 bg-transparent border-0 p-0 cursor-pointer select-none touch-none ${
@@ -309,6 +347,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     data-drop={`bench:${p.id}`}
                     {...(canSub ? dragProps({ kind: "bench", key: String(p.id) }, p.name) : {})}
                     onClick={() => tap("bench", p.id)}
+                    {...tipProps(p.id)}
                     aria-pressed={isSelected}
                     className={`w-full min-h-10 flex items-center gap-2 px-2 py-1.5 rounded-lg border text-left transition-colors cursor-pointer ${
                       isSelected || over

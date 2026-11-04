@@ -60,7 +60,7 @@ export const marketRoutes = {
   /**
    * `POST { playerId, fromSquadId, wage, years }` - pre-contract (D2) with an AI player whose contract
    * ends within 183 days: no fee, no window. `{ accepted, preference }`; 400 `notEligible` and the
-   * contract refusals; 409 `squadFull`/`noClub`.
+   * contract refusals; 409 `squadFull`/`noClub`/`alreadySigned`.
    */
   "/api/saves/:saveId/pre-contracts": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -93,7 +93,7 @@ export const marketRoutes = {
       if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const signed = market.preContracts ?? [];
-      if (signed.some((p) => p.playerId === playerId)) return json({ error: "notEligible" }, 400);
+      if (signed.some((p) => p.playerId === playerId)) return json({ error: "alreadySigned" }, 409);
       // The human club's limit; only this club's pending pre-contracts count.
       const mine = signed.filter((p) => p.toClubId === human.id).length;
       if ((await humanRosterSize(saveService, saveId, auth.seatId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);

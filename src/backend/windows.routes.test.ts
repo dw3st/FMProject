@@ -106,7 +106,8 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     expect(await ok.json()).toMatchObject({ accepted: true });
     expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts!.map((p) => p.playerId)).toEqual([target.id]);
     const again = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
-    expect(again.status).toBe(400);
+    expect(again.status).toBe(409);
+    expect(await again.json()).toEqual({ error: "alreadySigned" });
 
     // The origin club's country rolls: he leaves for free, before the AI renewals.
     const res = await applyDuePreContracts(saveService, saveId, meta.seatId, (await saveService.getSeatMeta(saveId, meta.seatId))!, {

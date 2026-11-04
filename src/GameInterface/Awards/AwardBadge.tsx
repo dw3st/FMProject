@@ -19,7 +19,7 @@ export const AWARD_ICON: Record<AwardKind, IconName> = {
  * One award: icon + name (`awards.kind.<kind>`), `title` with the league/season. `iconOnly` keeps
  * just the 16px icon (career table), with the full text in `title` and `aria-label`.
  */
-export function AwardBadge({ kind, title, iconOnly = false }: { kind: AwardKind; title?: string; iconOnly?: boolean }) {
+export function AwardBadge({ kind, title, iconOnly = false, count = 1 }: { kind: AwardKind; title?: string; iconOnly?: boolean; /** The same award won this many times. */ count?: number }) {
   const { t } = useTranslation();
   const label = t(`awards.kind.${kind}`);
   const tip = title ? `${label} · ${title}` : label;
@@ -40,6 +40,7 @@ export function AwardBadge({ kind, title, iconOnly = false }: { kind: AwardKind;
     >
       <Icon name={AWARD_ICON[kind]} size={16} />
       {label}
+      {count > 1 && <span className="tabular-nums">{count}x</span>}
     </span>
   );
 }

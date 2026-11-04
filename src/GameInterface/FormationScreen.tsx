@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
@@ -37,10 +36,9 @@ import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomF
 import { applyLineupPreset, buildLineupPreset } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
-import { getMainRole } from "@/Domain/roles";
-import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
-import { aptitudeFor, playablePositions, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
 /** Aptitudes that deserve a warning on the formation screen. */
@@ -70,7 +68,7 @@ import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Compo
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName } from "@/Domain/world/labels";
 import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
-import { hudAttributes } from "@/Domain/match/matchHud";
+import { getEnergyColor, PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 
@@ -90,11 +88,6 @@ const FORMATION_BLURBS: Record<string, string> = {
   "3-5-2": "Five midfielders dominate possession with wing-backs providing width.",
 };
 
-function getEnergyColor(energy: number) {
-  if (energy >= 80) return "bg-chart-2";
-  if (energy >= 50) return "bg-chart-4";
-  return "bg-destructive";
-}
 
 export function FormationScreen() {
   const { t, i18n } = useTranslation();
@@ -1079,14 +1072,6 @@ function SquadListHeader({ title, count }: { title: string; count: number }) {
 }
 
 /** "Natural: ZAG · Apto: LE, LD · Precisa treinar: VOL" (the hover of a player on the formation screen). */
-function positionsText(t: TFunction, player: RosterPlayer): string {
-  const { natural, apt, training } = playablePositions(player);
-  const abbr = (r: string) => t(`roles.detailedAbbr.${r}` as never) as string;
-  const part = (key: "natural" | "apt" | "training", roles: string[]) =>
-    roles.length > 0 ? `${t(`roles.aptitude.${key}` as never)}: ${roles.map(abbr).join(", ")}` : null;
-  return [part("natural", [natural]), part("apt", apt), part("training", training)].filter(Boolean).join(" · ");
-}
-
 function SquadPlayerRow({
   player,
   slotLabel,
@@ -1220,77 +1205,6 @@ function SquadPlayerRow({
     </div>
   );
 }
-
-/** What the hover card of a player says, on the pitch and in the lists (tester report: one style for both). */
-function PlayerTipBody({ player, role, avg, energy, oop, note }: {
-  player: RosterPlayer;
-  /** Slot the numbers are for. */
-  role: string;
-  avg: number;
-  energy: number;
-  oop?: boolean;
-  /** Extra line, e.g. the rating at the natural position. */
-  note?: string;
-}) {
-  const { t } = useTranslation();
-  return (
-    <>
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-bold text-foreground text-sm">{player.name}</span>
-        <span className={`text-sm px-2 py-0.5 rounded font-semibold ${oop ? "bg-chart-4/20 text-chart-4" : "bg-primary/20 text-primary"}`}>
-          {positionLabel(t, preferredRole(player), player.positions[0] ?? "CM")}
-        </span>
-      </div>
-      {oop && (
-        <div className="flex items-center gap-1 mb-2 text-sm text-chart-4">
-          <Icon name="alert" className="w-3 h-3" />
-          <span>
-            {t("formations.outOfPositionPrimary", {
-              position: positionLabel(t, preferredRole(player), player.positions[0] ?? "CM"),
-              role: MAIN_ROLE_ABBR[getMainRole(player.positions[0] ?? "CM")],
-            })}
-          </span>
-        </div>
-      )}
-      <p className="mb-2 text-sm text-muted-foreground">{positionsText(t, player)}</p>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Icon name="star" className="w-3 h-3" />
-            <span>{t("formations.rating")}</span>
-          </div>
-          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
-        </div>
-        {note && <p className="m-0 text-sm text-muted-foreground">{note}</p>}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Icon name="zap" className="w-3 h-3" />
-            <span>{t("formations.energy")}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
-              <div className={`h-full rounded-full ${getEnergyColor(energy)}`} style={{ width: `${energy}%` }} />
-            </div>
-            <span className="font-bold text-sm text-foreground">{Math.round(energy)}%</span>
-            <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-          </div>
-        </div>
-        {/* The four attributes that matter in this slot (tester report: show finishing etc. on hover). */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-2 border-t border-border/60">
-          {hudAttributes(role, player.stats).map((a) => (
-            <div key={a.key} className="flex items-center justify-between gap-2 text-sm">
-              <span className="text-muted-foreground truncate">{t(`attributeNames.${a.key}`)}</span>
-              <span className="font-semibold tabular-nums text-foreground">{a.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-const ROW_TIP_W = 240;
-const ROW_TIP_H = 280;
 
 function FormationPitch({
   slots,

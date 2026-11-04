@@ -16,6 +16,7 @@ import { formatFee } from "@/Domain/money";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
+import { groupAwards } from "@/Domain/awards/awardGroups";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
@@ -192,13 +193,10 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                 )}
                 {m.awards && m.awards.length > 0 && (
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    {[...m.awards].reverse().map((a, i) => (
-                      <AwardBadge
-                        key={i}
-                        kind={a.kind}
-                        title={a.kind === "world_manager" ? String(a.year ?? a.season) : `${competitionName(a.competition, leagues, i18n.language)} ${a.season}`}
-                      />
-                    ))}
+                    {groupAwards([...m.awards].reverse().map((a) => ({
+                      kind: a.kind,
+                      title: a.kind === "world_manager" ? String(a.year ?? a.season) : `${competitionName(a.competition, leagues, i18n.language)} ${a.season}`,
+                    }))).map((g) => <AwardBadge key={g.kind} kind={g.kind} count={g.count} title={g.titles.join(", ")} />)}
                   </div>
                 )}
                 <ul className="m-0 p-0 list-none space-y-1">

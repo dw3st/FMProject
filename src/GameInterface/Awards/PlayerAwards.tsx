@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 import { competitionName } from "@/Domain/world/labels";
+import { groupAwards } from "@/Domain/awards/awardGroups";
 import type { AwardKind } from "@/types/awardTypes";
 import type { LeagueData, PlayerHistoryRow } from "@/types/playerTypes";
 
@@ -24,15 +25,15 @@ export function awardsOfHistory(rows: PlayerHistoryRow[] | undefined, leagueName
 /** Award badges on the player's page (up to six, the most recent first, then "+N"). */
 export function PlayerAwards({ history, leagues }: { history: PlayerHistoryRow[] | undefined; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
-  const all = awardsOfHistory(history, (slug) => competitionName(slug, leagues, i18n.language));
+  const all = groupAwards(awardsOfHistory(history, (slug) => competitionName(slug, leagues, i18n.language)));
   if (all.length === 0) return null;
   return (
     <section className="flex flex-col gap-2">
       <SectionTitle>{t("awards.title")}</SectionTitle>
       <div className="flex flex-wrap items-center gap-2">
-        {all.slice(0, SHOWN).map((a) => <AwardBadge key={a.key} kind={a.kind} title={a.title} />)}
+        {all.slice(0, SHOWN).map((a) => <AwardBadge key={a.kind} kind={a.kind} count={a.count} title={a.titles.join(", ")} />)}
         {all.length > SHOWN && (
-          <span className="text-sm text-muted-foreground tabular-nums" title={all.slice(SHOWN).map((a) => `${t(`awards.kind.${a.kind}`)} · ${a.title}`).join("\n")}>
+          <span className="text-sm text-muted-foreground tabular-nums" title={all.slice(SHOWN).map((a) => `${t(`awards.kind.${a.kind}`)} · ${a.titles.join(", ")}`).join("\n")}>
             {t("awards.more", { count: all.length - SHOWN })}
           </span>
         )}

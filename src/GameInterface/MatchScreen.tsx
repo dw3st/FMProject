@@ -267,6 +267,7 @@ export function MatchScreen() {
   const h2hStateAtRef = useRef(0);
   const [clockNow, setClockNow] = useState(0);
   /** Both match squads (starters + bench) for the faces on the pitch (#61). */
+  const [myRoster, setMyRoster] = useState<RosterPlayer[] | undefined>(undefined);
   const [faceRoster, setFaceRoster] = useState<Record<TeamId, {
     players: { id: string; nationality?: string | null }[];
     clubColors: readonly string[];
@@ -559,6 +560,7 @@ export function MatchScreen() {
           });
           if (data.managerBanned) setManagerOut("banned");
           const mineRoster = { players: data.mySquad.players, clubColors: data.save.clubColors };
+          setMyRoster(data.mySquad.players);
           const oppRoster = { players: opp.players, clubColors: opp.colors };
           setFaceRoster(side === "A" ? { A: mineRoster, B: oppRoster } : { A: oppRoster, B: mineRoster });
           const style = data.myTactics?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
@@ -746,6 +748,7 @@ export function MatchScreen() {
           conditions: data.conditions ?? null, sunSide: data.sunSide ?? null,
         });
         if (data.managerBanned) setManagerOut("banned");
+        setMyRoster(myEligiblePlayers);
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
           B: { players: opponentPlayers, clubColors: data.opponentSquad?.colors ?? data.save.clubColors },
@@ -2259,6 +2262,7 @@ export function MatchScreen() {
           playerTeam={mySide}
           ratings={ratings}
           faceUrls={faceUrls?.[mySide]}
+          roster={myRoster}
           onQueueSub={managerOut ? orderSub : handleQueueSub}
           {...(managerOut ? {} : {
             onUnqueueSub: handleUnqueueSub,

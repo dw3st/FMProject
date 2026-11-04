@@ -3550,10 +3550,15 @@
       "years": "Seasons",
       "explain": "His contract ends on {{date}}. Sign him now for free: he joins at the end of his season.",
       "send": "Offer pre-contract",
-      "signed": "{{name}} signed a pre-contract. He joins at the end of his season.",
-      "prefersCurrent": "He would rather renew with his club. Offer a better wage.",
+      "signed": "{{name}} accepted the pre-contract. He joins at the end of his season.",
+      "prefersCurrent": "He refused: he would rather renew with his club. Offer a better wage.",
       "notEligible": "His contract does not end in the next six months.",
-      "hint": "a pre-contract is possible"
+      "hint": "a pre-contract is possible",
+      "alreadySigned": "He has already signed a pre-contract with you.",
+      "signedOn": "Pre-contract signed on {{date}}",
+      "joins": "He joins at the end of his season, on {{date}}.",
+      "terms_one": "{{wage}} a week · {{count}} season",
+      "terms_other": "{{wage}} a week · {{count}} seasons"
     }
   },
   "morale": {

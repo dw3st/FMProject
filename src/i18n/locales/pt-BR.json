@@ -3550,10 +3550,15 @@
       "years": "Temporadas",
       "explain": "O contrato dele acaba em {{date}}. Assine agora, sem taxa: ele chega no fim da temporada dele.",
       "send": "Oferecer pré-contrato",
-      "signed": "{{name}} assinou um pré-contrato. Ele chega no fim da temporada dele.",
-      "prefersCurrent": "Ele prefere renovar com o clube dele. Ofereça um salário melhor.",
+      "signed": "{{name}} aceitou o pré-contrato. Ele chega no fim da temporada dele.",
+      "prefersCurrent": "Ele recusou: prefere renovar com o clube dele. Ofereça um salário melhor.",
       "notEligible": "O contrato dele não acaba nos próximos seis meses.",
-      "hint": "dá para assinar um pré-contrato"
+      "hint": "dá para assinar um pré-contrato",
+      "alreadySigned": "Ele já assinou um pré-contrato com você.",
+      "signedOn": "Pré-contrato assinado em {{date}}",
+      "joins": "Ele chega no fim da temporada dele, em {{date}}.",
+      "terms_one": "{{wage}} por semana · {{count}} temporada",
+      "terms_other": "{{wage}} por semana · {{count}} temporadas"
     }
   },
   "morale": {

@@ -31,6 +31,9 @@ import { SeatOfferCard, type SeatOfferClosed } from "@/GameInterface/Negotiation
 import { notifySeatOffersChanged, seatOfferApi, useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
 
+/** A pre-contract this club already has with the player. */
+interface SignedPreContract { wage: number; years: number; date: string }
+
 /** Pre-contract window (D2): the target's contract ends within this many days. */
 const PRE_CONTRACT_DAYS = 183;
 
@@ -86,6 +89,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [rivals, setRivals] = useState<RivalDto[]>([]);
   const [preference, setPreference] = useState<{ winner: string; clubName: string; reason: string } | null>(null);
   const [preDone, setPreDone] = useState(false);
+  const [preSigned, setPreSigned] = useState<SignedPreContract | null>(null);
+  const [preRefused, setPreRefused] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const refusalText = useRefusalText();
   const demandInfo = useContractDemandInfo(saveId, player?.id ?? null, player?.squadId);
@@ -108,10 +113,14 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     try {
       const res = await fetch(`/api/saves/${saveId}/negotiation/${encodeURIComponent(playerId)}?kind=${kind}`);
       if (!res.ok) return;
-      const body = (await res.json()) as { talk: Talk; window?: WindowDto; rivals?: RivalDto[] };
+      const body = (await res.json()) as { talk: Talk; window?: WindowDto; rivals?: RivalDto[]; preContract?: SignedPreContract | null };
       setTalks((cur) => ({ ...cur, [kind]: body.talk }));
       if (body.window) setBuyWindow(body.window);
-      if (kind === "transfer") setRivals(body.rivals ?? []);
+      if (kind === "transfer") {
+        setRivals(body.rivals ?? []);
+        setPreSigned(body.preContract ?? null);
+        if (body.preContract) setTab("precontract");
+      }
     } catch { /* the modal still works without the history */ }
   }, [saveId, playerId]);
 
@@ -129,6 +138,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     setRivals([]);
     setPreference(null);
     setPreDone(false);
+    setPreSigned(null);
+    setPreRefused(false);
     setSeatSent(null);
     setSeatClosed(null);
     if (playerId) {
@@ -184,6 +195,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (code === "Insufficient funds") return t("transfers.insufficientBudget");
     if (code === "noClub") return t("negotiation.errors.noClub");
     if (code === "notEligible") return t("negotiation.preContract.notEligible");
+    if (code === "alreadySigned") return t("negotiation.preContract.alreadySigned");
     return t("negotiation.errors.generic");
   }
 
@@ -213,6 +225,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     setSubmitting(true);
     setContractError(null);
     setMessage(null);
+    setPreRefused(false);
     try {
       const res = await fetch(`/api/saves/${saveId}/pre-contracts`, {
         method: "POST",
@@ -229,7 +242,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         setPreDone(true);
         void refresh();
       } else {
-        setMessage(t("negotiation.preContract.prefersCurrent"));
+        setPreRefused(true);
       }
     } finally {
       setSubmitting(false);
@@ -354,10 +367,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               tabs={[
                 { key: "transfer", label: t("negotiation.tabs.transfer") },
                 { key: "loan", label: t("negotiation.tabs.loan"), disabled: !!player.loan },
-                ...(preContractEligible ? [{ key: "precontract" as const, label: t("negotiation.preContract.tab") }] : []),
+                ...(preContractEligible || preSigned ? [{ key: "precontract" as const, label: t("negotiation.preContract.tab") }] : []),
               ]}
               active={tab}
-              onChange={(k) => { setTab(k); setMessage(null); }}
+              onChange={(k) => { setTab(k); setMessage(null); setPreRefused(false); }}
             />
           )}
         </div>
@@ -417,6 +430,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             <div className="text-center py-4">
               <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
               <p className="text-base font-black text-chart-2 m-0">{t("negotiation.preContract.signed", { name: player.name })}</p>
+              <p className="text-sm text-muted-foreground mt-2 mb-0 tabular-nums">{t("negotiation.preContract.terms", { wage: formatWageFull(wage), count: years })}</p>
               <Button className="mt-5" onClick={onClose}>{t("common.close")}</Button>
             </div>
           ) : loanDone !== null ? (
@@ -464,12 +478,22 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </div>
               )}
 
-              {tab === "precontract" ? (
+              {tab === "precontract" && preSigned ? (
+                <div className="rounded-md border border-chart-2/50 p-3 space-y-1">
+                  <p className="flex items-center gap-2 m-0 font-semibold text-chart-2">
+                    <Icon name="check-circle" size={16} aria-hidden />
+                    {t("negotiation.preContract.signedOn", { date: fmtDate(preSigned.date) })}
+                  </p>
+                  <p className="text-sm text-foreground m-0 tabular-nums">{t("negotiation.preContract.terms", { wage: formatWageFull(preSigned.wage), count: preSigned.years })}</p>
+                  <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.joins", { date: fmtDate(player.contractEnd ?? preSigned.date) })}</p>
+                </div>
+              ) : tab === "precontract" ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.explain", { date: fmtDate(player.contractEnd ?? currentDate) })}</p>
                   <label className={LABEL}>{t("contracts.terms")}</label>
                   <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} wageBill={wageBill} />
                   {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
+                  {preRefused && <Notice kind="error" className="mt-2">{t("negotiation.preContract.prefersCurrent")}</Notice>}
                 </div>
               ) : tab === "transfer" ? (
                 <>
@@ -614,7 +638,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
                 <span className="flex-1" />
-                {tab === "precontract" && (
+                {tab === "precontract" && !preSigned && (
                   <Button disabled={submitting || seatListPending} onClick={() => void submitPreContract()}>
                     {submitting ? t("transfers.sending") : t("negotiation.preContract.send")}
                   </Button>

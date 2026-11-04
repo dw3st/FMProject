@@ -81,6 +81,7 @@ export const negotiationRoutes = {
       rivals: liveRivals(market?.rivalBids, req.params.playerId!, date)
         .map((r) => ({ clubId: r.clubId, clubName: r.clubName, fee: r.fee, deadline: r.deadline, sellerAccepts: r.sellerAccepts })),
       lost: market?.lostTargets?.find((l) => l.playerId === req.params.playerId) ?? null,
+      preContract: market?.preContracts?.find((p) => p.playerId === req.params.playerId && p.toClubId === meta.clubId) ?? null,
     });
   },
 

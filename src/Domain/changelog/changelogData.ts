@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.42.24",
+    date: "2026-11-04",
+    time: "09:20",
+    items: [
+      {
+        pt: "Menu de substituições: passar o mouse num jogador mostra o mesmo cartão da tela de Formação, com nota, fôlego e atributos.",
+        en: "Substitutions menu: hovering a player shows the same card as the Formation screen, with rating, fitness and attributes.",
+      },
+      {
+        pt: "Prêmios repetidos aparecem uma vez só, com a quantidade (Melhor técnico do mundo 2x).",
+        en: "Repeated awards appear once, with the count (World manager of the year 2x).",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Pré-contrato: a negociação agora mostra quando o jogador já assinou, com salário e temporadas, e deixa claro quando ele recusa.",
+        en: "Pre-contract: the negotiation now shows when the player has already signed, with wage and seasons, and makes it clear when he refuses.",
+      },
+    ],
+  },
+  {
     version: "4.42.23",
     date: "2026-11-04",
     time: "08:57",

@@ -1,4 +1,5 @@
 import { shirtName } from "@/Domain/shirtName";
+import type { RosterPlayer } from "@/types/playerTypes";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GameState, PendingSub, TeamId } from "@/GameEngine/types";
@@ -41,6 +42,8 @@ export interface SubstitutionPanelProps {
   liveTactics?: ComponentProps<typeof LiveTacticsPanel>;
   /** Face URL per roster id of this side's players (the match's faces); absent = initials on the mini pitch. */
   faceUrls?: Record<string, string>;
+  /** The club's squad, for the hover card of the mini pitch and the bench. */
+  roster?: RosterPlayer[];
   onClose: () => void;
 }
 
@@ -61,6 +64,7 @@ export function SubstitutionPanel({
   onManMarks,
   liveTactics,
   faceUrls,
+  roster,
   onClose,
 }: SubstitutionPanelProps) {
   const { t } = useTranslation();
@@ -195,6 +199,7 @@ export function SubstitutionPanel({
               onQueueSub={onQueueSub}
               onSwapPositions={onSwapPositions}
               faceUrls={faceUrls}
+              {...(roster ? { roster } : {})}
             />
           )}
 
