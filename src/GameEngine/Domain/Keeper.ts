@@ -196,3 +196,10 @@ export function ballMeetsKeeper(gk: Pos, shot: Pick<ShotState, 'fromX' | 'fromY'
   const p = closestOnSegment(gk, shotBallAt(shot, t0), shotBallAt(shot, Math.min(1, t1)));
   return Math.hypot(p.x - gk.x, p.y - gk.y) <= K.SHOT_REACH;
 }
+
+/** Whether the keeper stands within reach of the line from the ball to the middle of the goal. */
+export function keeperReachesShot(gk: Pos, fromX: number, fromY: number, goalX: number): boolean {
+  const mid = { x: goalX, y: (GOAL_Y_MIN + GOAL_Y_MAX) / 2 };
+  const p = closestOnSegment(gk, { x: fromX, y: fromY }, mid);
+  return Math.hypot(p.x - gk.x, p.y - gk.y) <= K.SHOT_REACH + (GOAL_Y_MAX - GOAL_Y_MIN) / 2;
+}

@@ -431,6 +431,8 @@ export interface GamePlayer {
   seasonYellows?: number;
   /** Morale this player plays at (`.claude/rules/game/morale.md`); absent = neutral 65. Debug display only. */
   morale?: number;
+  /** New signing's attribute multiplier (`.claude/rules/game/settling.md`); absent = 1. Debug display only. */
+  settlingMult?: number;
   /**
    * Temperament t (−1 calm … +1 hot-headed, `.claude/rules/game/personality.md`), or the team
    * override (`PersonalityMatchConfig`). Absent = 0. Scales the foul and card chances.

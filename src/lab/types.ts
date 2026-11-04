@@ -101,6 +101,8 @@ export interface Variant {
    * engine, line strengths in the quickSim. Absent = neutral (65).
    */
   morale?: number;
+  /** Starters of this side who have just arrived (`src/Domain/settling`); absent = none. */
+  newcomers?: number;
   /**
    * Temperament 1..20 of this whole side (`src/Domain/personality`): fouls and cards in the engine
    * and the quickSim. Absent = each player's own (derived from his id).
@@ -234,6 +236,8 @@ export interface TeamRawStats {
   outOfPosition: number;
   /** Morale the side played at (`Variant.morale`, 65 when absent), summed across games. */
   morale: number;
+  /** New signings the side played with, summed across games. */
+  newcomers: number;
   /** Mean temperament (1..20) of the side's XI (the override, or each player's own), summed across games. */
   temperament: number;
   /** The manager's Discipline the side played with (10 when absent), summed across games. */
@@ -400,6 +404,7 @@ export interface PerMatchView {
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
+  avgNewcomers: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
   /** The manager's Discipline (1..20, 10 = neutral). */
@@ -519,6 +524,7 @@ export interface VariantSummary {
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
+  avgNewcomers: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
   /** The manager's Discipline (1..20, 10 = neutral). */

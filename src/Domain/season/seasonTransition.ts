@@ -1,3 +1,4 @@
+import { settled } from "@/Domain/settling/settling";
 import type { SeasonArchive, SeasonData, SeasonTitle, LeagueCalendarResult } from "@/types/calendarTypes";
 import type { LeagueTeam, PlayerSeasonLog, Squad } from "@/types/playerTypes";
 import { emptyDevelopmentProgress, emptySeasonLog } from "@/types/playerTypes";
@@ -65,8 +66,9 @@ function buildLeagueTitle(
 
 function resetSquadForNewSeason(squad: Squad, isPlayerClub: boolean): { squad: Squad; playerBroadcasting: number } {
   const broadcasting = squad.finances?.broadcasting ?? 0;
+  // A season at the club is enough to have settled in, however few games he played.
   const players = squad.players.map((p) => ({
-    ...p,
+    ...settled(p),
     age: p.age + 1,
     seasonLog: emptySeasonLog(),
     progress: emptyDevelopmentProgress(),

@@ -932,8 +932,8 @@ export async function advanceOneDay(
       }
       for (const h of f.healed) injuryInboxEvents.push({ kind: "returned", ...h });
       daySeats.find((ds) => ds.seatId === f.seatId)?.deferred.friendly.push({
-        date: currentDate, opponentId: f.opponentId, opponentName: f.opponentName,
-        goalsFor: f.goalsFor, goalsAgainst: f.goalsAgainst, scorers: f.scorers,
+        date: currentDate, clubName: f.clubName, opponentId: f.opponentId, opponentName: f.opponentName,
+        goalsFor: f.goalsFor, goalsAgainst: f.goalsAgainst, players: f.players,
       });
     }
     const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants, ...friendlies.flatMap((f) => f.participants)]);

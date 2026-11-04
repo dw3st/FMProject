@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";
 import {
-  computeHeaderEffect, computeShooterEffect, gkClaimChance, resolveAerialDuel, resolveShot,
+  computeHeaderEffect, computeShooterEffect, gkClaimChance, resolveAerialDuel, resolveShot, SHOT_AIM,
 } from "@/GameEngine/Infrastructure/ActionOutcomes";
 import { AERIAL_CONFIG as A } from "@/GameEngine/Configs/AerialConfig";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -70,7 +70,7 @@ describe("headers", () => {
     const shot: ShotState = { shooterId: shooter.id, fromX: 105, fromY: 37, toX: 115, toY: 37, t: 1, xg: 0.3 };
     const foot = resolveShot(shooter, null, shot);
     const head = resolveShot(shooter, null, { ...shot, header: true });
-    expect(foot.goalChance).toBeCloseTo(0.3 * computeShooterEffect(shooter), 6);
-    expect(head.goalChance).toBeCloseTo(0.3 * A.HEADER_EFFECT_MAX, 6);
+    expect(foot.goalChance).toBeCloseTo(0.3 * computeShooterEffect(shooter) * SHOT_AIM.CONVERSION, 6);
+    expect(head.goalChance).toBeCloseTo(0.3 * A.HEADER_EFFECT_MAX * SHOT_AIM.CONVERSION, 6);
   });
 });

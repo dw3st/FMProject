@@ -1,3 +1,4 @@
+import { arriving } from "@/Domain/settling/settling";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
@@ -115,7 +116,7 @@ export function refillSquad(args: {
         // Headroom: stay clear of the "tight" threshold so the refill never tips a club into it.
         if (fin.wageBill + contract.wage > fin.maxWageBudget * (AI_FINANCE_CONFIG.NEAR_LIMIT_RATIO - C.REFILL_HEADROOM)) continue;
         if (!passesWageGate(fin, contract.wage, 0)) continue;
-        added = { ...p, squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: nextSeasonEnd } };
+        added = { ...arriving(p, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: nextSeasonEnd } };
         taken.add(p.id);
         signed.push(added);
         break;
@@ -189,7 +190,7 @@ export function freeAgentTick(args: {
       if (!best) continue;
       const contract = renewalContract(best.player, squad, seasonEndOf(squad), aiRenewalYears(best.player));
       contract.until = contractEndFor(date, seasonEndOf(squad), aiRenewalYears(best.player));
-      squads[idx] = { ...squad, players: [...squad.players, { ...best.player, squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }] };
+      squads[idx] = { ...squad, players: [...squad.players, { ...arriving(best.player, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }] };
       signedIds.add(best.player.id);
       changedIds.add(squad.id);
       break;

@@ -98,7 +98,7 @@ export async function startLoan(
   seatId: string,
   meta: SeatMeta,
   market: MarketState,
-  args: { player: RosterPlayer; parent: Squad; borrower: Squad; wageShare: number; until: string; fee: number },
+  args: { player: RosterPlayer; parent: Squad; borrower: Squad; wageShare: number; until: string; fee: number; recall?: boolean },
 ): Promise<MarketState> {
   const { player, parent, borrower } = args;
   const date = meta.currentDate ?? "";
@@ -123,6 +123,7 @@ export async function startLoan(
     playerId: player.id, playerName: player.name,
     fromClubId: parent.id, fromClubName: parent.name, toClubId: borrower.id, toClubName: borrower.name,
     until, wageShare: args.wageShare, wage: currentWage(player, wageFactorOf(parent)), fee: args.fee, start: date,
+    startOverall: overallAvg(player), startStats: player.stats, ...(args.recall ? { recall: true as const } : {}),
   };
   if (parent.id === meta.clubId) await dropFromLineup(service, saveId, seatId, player.id);
   // The other side is another seat: the loan goes in its market too (wages line, return, screens). Only the
@@ -160,6 +161,8 @@ export async function returnDueLoans(
     onlyBorrowers?: ReadonlySet<string>;
     parentUnit?: ReadonlySet<string>;
     contractGraceDays?: number;
+    /** Called back before the date (the recall clause). */
+    recalled?: ReadonlySet<string>;
     /** Every seat's club (`service.humanClubIds`); read here when absent. */
     humanClubs?: ReadonlySet<string>;
   } = {},
@@ -167,6 +170,7 @@ export async function returnDueLoans(
   const dueIds = new Set(dueLoans(market.loans, date, opts.graceDays ?? 0)
     .filter((l) => !opts.onlyBorrowers || opts.onlyBorrowers.has(l.toClubId))
     .map((l) => l.playerId));
+  for (const id of opts.recalled ?? []) dueIds.add(id);
   if (opts.parentUnit) {
     for (const l of market.loans ?? []) {
       if (dueIds.has(l.playerId) || !opts.parentUnit.has(l.fromClubId)) continue;

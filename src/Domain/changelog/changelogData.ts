@@ -27,6 +27,35 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.45",
+    date: "2026-11-04",
+    time: "19:28",
+    items: [
+      {
+        pt: "Entrosamento: quem acabou de chegar rende um pouco abaixo do nível até completar 15 jogos oficiais pelo clube, ou 10 se tiver companheiros que falam a língua dele. Contratar muita gente de uma vez agora tem preço. O selo aparece no elenco e na ficha.",
+        en: "Settling in: a new signing plays a little below his level until he has 15 official games for the club, or 10 with team-mates who speak his language. Signing many players at once now has a price. The badge shows in the squad and on his page.",
+      },
+      {
+        pt: "Empréstimos: a aba Emprestados mostra jogos, gols, assistências, nota, cartões, lesões e a evolução de cada um. Ao aceitar uma proposta de empréstimo, você pode combinar a opção de retorno e chamá-lo de volta com a janela aberta.",
+        en: "Loans: the Loaned out tab shows each player's games, goals, assists, rating, cards, injuries and progress. When accepting a loan bid you can agree a recall option and call him back with your window open.",
+      },
+      {
+        pt: "Amistosos: a mensagem mostra os dois times, todos os jogadores, a nota, o fôlego e os atributos que subiram. Cinco reservas entram no segundo tempo.",
+        en: "Friendlies: the message shows both teams, every player, the rating, the fitness and the attributes that went up. Five reserves come on in the second half.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Chutes de perto e com o gol vazio não vão mais para fora com tanta frequência: a mira agora depende da distância, e os goleiros decidem mais lances.",
+        en: "Close-range and open-goal shots no longer go wide so often: the aim now depends on the distance, and keepers decide more of the chances.",
+      },
+      {
+        pt: "O melhor jogador do mundo vindo de um torneio de seleções agora mostra o clube.",
+        en: "A world player of the year coming from a national tournament now shows his club.",
+      },
+    ],
+  },
+  {
     version: "4.44.7",
     date: "2026-11-04",
     time: "18:09",

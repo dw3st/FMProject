@@ -1,3 +1,4 @@
+import { arriving, settled } from "@/Domain/settling/settling";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { addYearsIso } from "@/Domain/contracts/contracts";
@@ -147,7 +148,7 @@ export function squadsAfterLoanStart(
     ? closePartialSeason(player, { squadId: parent.id, clubName: parent.name, league: from.league }, from.season)
     : player;
   // Morale stays with the human club (`.claude/rules/game/morale.md`): the borrower starts fresh.
-  const moved: RosterPlayer = { ...stripPlayerMorale(closed), squadId: borrower.id, loan };
+  const moved: RosterPlayer = { ...arriving(stripPlayerMorale(closed), borrower), squadId: borrower.id, loan };
   return {
     parent: { ...parent, players: parent.players.filter((p) => p.id !== player.id) },
     borrower: { ...borrower, players: [...borrower.players, moved] },
@@ -166,7 +167,7 @@ export function squadsAfterLoanEnd(
     : player;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { loan: _loan, ...rest } = closed;
-  const back: RosterPlayer = { ...stripPlayerMorale(rest), squadId: parent.id };
+  const back: RosterPlayer = { ...settled(stripPlayerMorale(rest)), squadId: parent.id };
   return {
     borrower: { ...borrower, players: borrower.players.filter((p) => p.id !== player.id) },
     parent: { ...parent, players: [...parent.players.filter((p) => p.id !== player.id), back] },

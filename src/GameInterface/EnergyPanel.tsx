@@ -162,6 +162,11 @@ function EnergyTeamTable({
           </div>
         );
       })()}
+      {players.some((p) => p.settlingMult !== undefined) && (
+        <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">
+          Newcomers {players.filter((p) => p.settlingMult !== undefined).length}: attributes x{Math.min(...players.map((p) => p.settlingMult ?? 1)).toFixed(3)}
+        </div>
+      )}
       {players.length > 0 && (() => {
         // Temperament (`.claude/rules/game/personality.md`): foul chance x (1 + 0.45 t) per player.
         const t = players.reduce((a, p) => a + (p.temperament ?? 0), 0) / players.length;

@@ -1500,12 +1500,17 @@
     },
     "worldTransfersCard": "Clubes de IA e outros"
   },
+  "settling": {
+    "badge": "Adaptação {{games}}/{{need}}",
+    "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos oficiais pelo clube ou o fim da temporada."
+  },
   "friendlies": {
     "subject": "Amistoso contra {{opponent}}",
-    "score": "{{home}} x {{away}}",
+    "score": "{{club}} {{home}} x {{away}} {{opponent}}",
     "intro": "O diretor marcou um amistoso contra o {{opponent}}.",
-    "scorers": "Gols: {{names}}",
-    "note": "Não vale para nenhuma competição. Quem jogou ganhou ritmo e um pouco de evolução, no lugar do treino do dia."
+    "line": "Nota {{rating}} · fôlego {{fitness}} · gols {{count}}",
+    "lineSub": "Entrou no 2º tempo · fôlego {{fitness}}",
+    "note": "Não vale para nenhuma competição. Quem jogou deixou de treinar no dia; abaixo, o que cada um fez e os atributos que subiram."
   },
   "responsibilities": {
     "title": "Responsabilidades",
@@ -3495,6 +3500,25 @@
       "loan": "Empréstimo"
     },
     "onLoan": "Emprestado",
+    "report": {
+      "games": "J",
+      "goalsAssists": "G / A",
+      "rating": "Nota",
+      "cards": "CA / CV",
+      "injuries": "Les (dias)",
+      "overall": "OVR"
+    },
+    "recall": {
+      "chip": "Opção de retorno",
+      "hint": "Você pode chamá-lo de volta com a sua janela aberta; o outro clube paga {{pct}} pontos a menos do salário.",
+      "action": "Chamar de volta",
+      "done": "Ele voltou ao elenco.",
+      "errors": {
+        "windowClosed": "Sua janela de transferências está fechada.",
+        "squadFull": "Seu elenco está cheio.",
+        "generic": "Não foi possível chamá-lo de volta."
+      }
+    },
     "loanBadgeTitle": "Emprestado pelo {{club}} até {{date}}",
     "sellOn": "Cláusula de venda futura",
     "sellOnHint": "Parte que o {{club}} recebe se você vender ele depois. Quanto maior, menor a taxa que eles pedem.",

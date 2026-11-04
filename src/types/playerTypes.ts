@@ -120,6 +120,12 @@ export interface PlayerContract {
   renewedOn?: string;
 }
 
+/** Official games played for the club against the games he needs. */
+export interface SettlingState {
+  games: number;
+  need: number;
+}
+
 export interface RosterPlayer {
   id: string;
   name: string;
@@ -156,6 +162,8 @@ export interface RosterPlayer {
   /** Reborn academy star (+30% DP while young). */
   reborn?: RebornMark;
   /** How he reached his current club (`.claude/rules/game/history.md`). */
+  /** New signing still settling in (`.claude/rules/game/settling.md`); absent = settled. */
+  settling?: SettlingState;
   arrival?: PlayerArrival;
   /** Academy players: Monday overall snapshots (newest last), for the trend column (`youthTraining.ts`). */
   youthTrend?: { date: string; overall: number }[];

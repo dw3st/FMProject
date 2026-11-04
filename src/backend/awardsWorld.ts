@@ -9,7 +9,7 @@ import { addManagerAward, applyAwardBoost, awardKindsByPlayer, clearAwardBoost, 
 import { buildAwardsMessage } from "@/Domain/awards/awardMessages";
 import { appendGoals, goalCandidatesOfMatch, pickGoalOfSeason } from "@/Domain/awards/goalOfSeason";
 import { computeLeagueAwards } from "@/Domain/awards/leagueAwards";
-import { computeWorldAwards } from "@/Domain/awards/worldAwards";
+import { computeWorldAwards, withClubNames } from "@/Domain/awards/worldAwards";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { addDays, daysBetween } from "@/Domain/dates";
@@ -147,7 +147,8 @@ export async function runWorldCeremony(service: SaveService, saveId: string, dat
   const year = Number(date.slice(0, 4)) - 1;
   const file = await service.getAwardsYear(saveId, year);
   if (!file || file.leagues.length === 0 || file.world) return null;
-  const world = computeWorldAwards({ year, on: date, leagues: file.leagues, managers: await args.managers(), tournaments: file.national });
+  const index = await service.getSquadIndex(saveId);
+  const world = withClubNames(computeWorldAwards({ year, on: date, leagues: file.leagues, managers: await args.managers(), tournaments: file.national }), (id) => index.byId(id)?.name);
   await service.writeAwardsYear(saveId, { ...file, world });
 
   const wp = world.player[0];

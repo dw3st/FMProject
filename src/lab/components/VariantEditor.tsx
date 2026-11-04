@@ -215,6 +215,23 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20">New signings</span>
+        <input
+          type="range"
+          min={0}
+          max={11}
+          step={1}
+          value={variant.newcomers ?? 0}
+          onChange={(e) => {
+            const v = parseInt(e.target.value);
+            patch({ newcomers: v === 0 ? undefined : v });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.newcomers ?? 0}</span>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="Temperament of the whole side (personality); 0 = each player's own">Temper.</span>
         <input
           type="range"

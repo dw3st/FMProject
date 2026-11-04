@@ -76,11 +76,21 @@ export interface ShotAim {
  * Compute where a shot is aimed, given the shooter's accuracy.
  * Higher accuracy → tighter spread toward the centre of the goal.
  */
-export function computeShotAim(shooter: GamePlayer): ShotAim {
+/**
+ * How wide a shot can go: a close shot rarely misses the goal, from `FAR` yards on it has the full spread.
+ * `OPEN_GOAL`: the keeper cannot reach the shot. `CONVERSION`: the goal chance of a shot on target, set so
+ * the goal volume stays where it was now that more shots are on target (`.claude/rules/game-engine/keeper.md`).
+ */
+export const SHOT_AIM = { NEAR: 4, FAR: 22, MIN_FACTOR: 0.05, OPEN_GOAL: 0.3, CONVERSION: 0.78 };
+
+/** `fixedRange`: a direct free kick, calibrated with its own xG. */
+export function computeShotAim(shooter: GamePlayer, opts: { keeperOut?: boolean; fixedRange?: boolean } = {}): ShotAim {
   const { shootAccuracy } = shooter.runtimeStats.withBall;
   const toX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
 
-  const spread    = (GOAL_Y_MAX - GOAL_Y_MIN) * (1 - shootAccuracy);
+  const dist = Math.hypot(toX - shooter.x, (GOAL_Y_MIN + GOAL_Y_MAX) / 2 - shooter.y);
+  const range = opts.fixedRange ? 1 : clamp((dist - SHOT_AIM.NEAR) / (SHOT_AIM.FAR - SHOT_AIM.NEAR), SHOT_AIM.MIN_FACTOR, 1);
+  const spread    = (GOAL_Y_MAX - GOAL_Y_MIN) * (1 - shootAccuracy) * range * (opts.keeperOut ? SHOT_AIM.OPEN_GOAL : 1);
   const aimCenter = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
   const halfRange = (GOAL_Y_MAX - GOAL_Y_MIN) / 2 + spread;
   const toY       = aimCenter + (Math.random() * 2 - 1) * halfRange;
@@ -277,7 +287,7 @@ export function resolveShot(
   // Weather (wind): shots from beyond LONG_SHOT_DISTANCE lose a little accuracy.
   const fromGoalLine = Math.abs(shot.toX - shot.fromX);
   const weather = !shot.header && fromGoalLine > LONG_SHOT_DISTANCE ? longShotMult : 1;
-  const goalChance = clamp(shot.xg * shooterEffect * gkEffect * weather, 0, 1);
+  const goalChance = clamp(shot.xg * shooterEffect * gkEffect * weather * SHOT_AIM.CONVERSION, 0, 1);
   return { isGoal: Math.random() < goalChance, goalChance, inPosts };
 }
 

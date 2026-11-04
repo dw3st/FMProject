@@ -1,3 +1,4 @@
+import { arriving } from "@/Domain/settling/settling";
 import type { PlayerArrival } from "@/types/playerTypes";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { closePartialSeason } from "@/Domain/history/history";
@@ -182,7 +183,7 @@ export function squadsAfterAcceptedTransfer(
   const { sellOn: _paid, loan: _loan, ...rest } = closed;
   // Morale belongs to the human club he leaves (`.claude/rules/game/morale.md`): a new club starts fresh.
   const updatedPlayer: RosterPlayer = stripPlayerMorale({
-    ...rest, squadId: buyerSquadId, ...(contract ? { contract } : {}), ...(sellOn ? { sellOn } : {}),
+    ...arriving(rest, buyingSquad), squadId: buyerSquadId, ...(contract ? { contract } : {}), ...(sellOn ? { sellOn } : {}),
     ...(arrival ? { arrival: { ...arrival, squadId: buyerSquadId } } : {}),
   });
   return {

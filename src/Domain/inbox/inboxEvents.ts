@@ -513,11 +513,12 @@ export function buildManagerNewsMessage(date: string, items: ManagerNewsInboxMes
  */
 export function buildFriendlyMessage(input: {
   date: string;
+  clubName: string;
   opponentId: string;
   opponentName: string;
   goalsFor: number;
   goalsAgainst: number;
-  scorers: FriendlyInboxMessage["scorers"];
+  players: FriendlyInboxMessage["players"];
 }): FriendlyInboxMessage {
   return {
     ...input,
@@ -527,7 +528,7 @@ export function buildFriendlyMessage(input: {
     category: "friendly",
     kind: "result",
     subject: `Friendly against ${input.opponentName}`,
-    preview: `${input.goalsFor}-${input.goalsAgainst}`,
+    preview: `${input.clubName} ${input.goalsFor}-${input.goalsAgainst} ${input.opponentName}`,
   };
 }
 

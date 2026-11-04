@@ -1,3 +1,5 @@
+import type { LoanReport } from "@/Domain/negotiation/loanReport";
+import { useAttributeName } from "@/GameInterface/Components/AttributeChangeRow";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/GameInterface/ui/DataTable";
@@ -15,7 +17,7 @@ type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "pre
 interface Overview {
   clubId: string;
   bids: MarketBid[];
-  loans: ActiveLoan[];
+  loans: (ActiveLoan & { report?: LoanReport })[];
   loanList: string[];
   sellOnHeld: SellOnHeld[];
   /** Etapa 25: rivals on the human's targets, pre-contracts, targets lost to a rival. */
@@ -38,6 +40,23 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const [openOfferId, setOpenOfferId] = useState<string | null>(null);
   // How the last offer answered here ended (the card goes with it): kept on screen.
   const [closedNote, setClosedNote] = useState<string | null>(null);
+  const attrName = useAttributeName();
+  const [recalling, setRecalling] = useState(false);
+  const [recallNote, setRecallNote] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  async function callBack(playerId: string) {
+    setRecalling(true);
+    setRecallNote(null);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/loans/${encodeURIComponent(playerId)}/recall`, { method: "POST" });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setRecallNote(res.ok ? t("negotiation.recall.done") : t(`negotiation.recall.errors.${body.error === "windowClosed" || body.error === "squadFull" ? body.error : "generic"}`));
+      if (res.ok) setReloadTick((n) => n + 1);
+    } finally {
+      setRecalling(false);
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -46,7 +65,7 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
       .then((d: Overview) => { if (alive) setData(d); })
       .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [saveId]);
+  }, [saveId, reloadTick]);
 
   if (failed) return <p className="text-sm text-destructive m-0">{t("negotiation.errors.generic")}</p>;
   if (!data) return <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>;
@@ -155,9 +174,30 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
                 { key: "c", header: t("negotiation.overview.club"), cell: (l) => l.toClubName },
                 { key: "s", header: t("negotiation.overview.theyPay"), cell: (l) => share(l), className: "tabular-nums" },
                 { key: "u", header: t("negotiation.returns"), cell: (l) => fmtDate(l.until), className: "tabular-nums" },
+                { key: "g", header: t("negotiation.report.games"), cell: (l) => l.report?.apps ?? "—", className: "tabular-nums" },
+                { key: "ga", header: t("negotiation.report.goalsAssists"), cell: (l) => (l.report ? `${l.report.goals} / ${l.report.assists}` : "—"), className: "tabular-nums" },
+                { key: "r", header: t("negotiation.report.rating"), cell: (l) => l.report?.avgRating?.toFixed(2) ?? "—", className: "tabular-nums" },
+                { key: "cd", header: t("negotiation.report.cards"), cell: (l) => (l.report ? `${l.report.yellowCards} / ${l.report.redCards}` : "—"), className: "tabular-nums" },
+                { key: "i", header: t("negotiation.report.injuries"), cell: (l) => (l.report ? `${l.report.injuries} (${l.report.daysInjured})` : "—"), className: "tabular-nums" },
+                {
+                  key: "o", header: t("negotiation.report.overall"),
+                  cell: (l) => {
+                    const r = l.report;
+                    if (!r) return "—";
+                    const moved = r.changes.map((c) => `${attrName(c.attribute)} ${c.delta > 0 ? "+" : ""}${c.delta}`).join(", ");
+                    return <span title={moved || undefined}>{r.overallAtStart !== undefined ? `${r.overallAtStart} → ${r.overall}` : r.overall}</span>;
+                  },
+                  className: "tabular-nums",
+                },
+                {
+                  key: "b", header: "",
+                  cell: (l) => (l.recall
+                    ? <Button variant="secondary" flush disabled={recalling} onClick={() => void callBack(l.playerId)}>{t("negotiation.recall.action")}</Button>
+                    : null),
+                },
               ]}
             />
-          ), out.length === 0);
+          ), out.length === 0, recallNote);
         }
         if (s === "in") {
           return block(s, t("negotiation.overview.loanedIn"), (

@@ -60,8 +60,8 @@ export function youthDpMult(squad: Squad, p: RosterPlayer): number {
 export function applyYouthMatch(
   squad: Squad,
   recording: PlayedMatchRecording,
-  /** `friendly`: the director's friendly, off the youth totals and with its own DP (`FRIENDLY.DP_MULT`). */
-  opts: { date: string; rng: Rng; trackMorale: boolean; friendly?: boolean },
+  /** `friendly`: the director's friendly, off the youth totals and with its own DP (`FRIENDLY.DP_MULT`); `subs` came on later. */
+  opts: { date: string; rng: Rng; trackMorale: boolean; friendly?: { subs: ReadonlySet<string> } },
 ): YouthMatchApplied {
   const { date, rng, trackMorale, friendly } = opts;
   const staffFx = staffEffectsOf(squad);
@@ -93,7 +93,7 @@ export function applyYouthMatch(
     const fit = applyMatchFitness(
       log,
       { age: pl.age, stamina: pl.stats.stamina ?? DEFAULT_STAMINA, recoveryMult },
-      { endEnergy: recording.playerEnergy[p0.id], minutes: YOUTH_MATCH_MINUTES },
+      { endEnergy: recording.playerEnergy[p0.id], minutes: friendly?.subs.has(p0.id) ? FRIENDLY.SUB_MINUTES : YOUTH_MATCH_MINUTES },
     );
     log.fitness = fit.fitness;
     log.load = fit.load;
@@ -113,7 +113,7 @@ export function applyYouthMatch(
       };
     }
     // Growth only: decayMult 0 (the age decline is charged by the club's own matches, not again here).
-    return applyDevelopment(out, rating, dpWeightsFor(out), friendly ? (youthDpMult(squad, out) / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT : youthDpMult(squad, out), 0, areas).updatedPlayer;
+    return applyDevelopment(out, rating, dpWeightsFor(out), friendly ? (youthDpMult(squad, out) / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT * (friendly.subs.has(p0.id) ? FRIENDLY.SUB_DP : 1) : youthDpMult(squad, out), 0, areas).updatedPlayer;
   };
 
   const next: Squad = {

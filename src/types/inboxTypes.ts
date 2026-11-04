@@ -440,21 +440,28 @@ export interface RescheduledGame {
   to:           string;
 }
 
-export interface FriendlyScorer {
+export interface FriendlyPlayer {
   playerId: string;
   name: string;
   goals: number;
+  rating: number;
+  /** Fitness after the game. */
+  fitness: number;
+  /** Came on as a substitute. */
+  sub?: true;
+  changes: { attribute: string; from: number; to: number }[];
 }
 
 /** A friendly the director arranged (`.claude/rules/game/responsibilities.md` → "Amistosos"). */
 export interface FriendlyInboxMessage extends InboxMessageBase {
   category: "friendly";
   kind: "result";
+  clubName: string;
   opponentId: string;
   opponentName: string;
   goalsFor: number;
   goalsAgainst: number;
-  scorers: FriendlyScorer[];
+  players: FriendlyPlayer[];
 }
 
 /** League games of the human club moved off a clash with a cup / continental game (one message per day). */

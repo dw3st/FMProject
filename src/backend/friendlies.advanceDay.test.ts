@@ -46,7 +46,10 @@ describe("friendlies in advanceOneDay", () => {
     const [msg] = await inbox();
     expect(msg).toBeDefined();
     expect(rivalsBefore.has(msg!.opponentId)).toBe(true);
-    expect(msg!.scorers.reduce((n, s) => n + s.goals, 0)).toBeLessThanOrEqual(msg!.goalsFor);
+    expect(msg!.players.reduce((n, s) => n + s.goals, 0)).toBeLessThanOrEqual(msg!.goalsFor);
+    expect(msg!.clubName).toBeTruthy();
+    expect(msg!.players).toHaveLength(16);
+    expect(msg!.players.filter((p) => p.sub)).toHaveLength(5);
 
     const after = (await saveService.getSquadById(saveId, HUMAN))!;
     const played = after.players.filter((p, i) => p.seasonLog?.load !== before.players[i]?.seasonLog?.load && (p.seasonLog?.load ?? 0) >= 80);

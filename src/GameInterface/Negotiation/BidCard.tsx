@@ -1,3 +1,5 @@
+import { RECALL_WAGE_COST, shareWithRecall } from "@/Domain/negotiation/loanReport";
+import { Chip } from "@/GameInterface/ui/Chip";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
@@ -31,6 +33,7 @@ export function BidCard({
   const [countering, setCountering] = useState(false);
   const [fee, setFee] = useState(bid?.fee ?? 0);
   const [sellOn, setSellOn] = useState<(typeof SELL_ON_KEYS)[number]>("0");
+  const [recall, setRecall] = useState(false);
   useEffect(() => { setCurrent(bid); setFee(bid?.fee ?? 0); }, [bid]);
 
   if (!current) {
@@ -46,7 +49,7 @@ export function BidCard({
       const res = await fetch(`/api/saves/${saveId}/bids/${encodeURIComponent(b.id)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(action === "counter" ? { action, fee, sellOnPct: Number(sellOn) } : { action }),
+        body: JSON.stringify(action === "counter" ? { action, fee, sellOnPct: Number(sellOn) } : { action, ...(recall && b.kind !== "transfer" ? { recall: true } : {}) }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; status?: string; bid?: MarketBid };
       if (!res.ok) {
@@ -93,7 +96,7 @@ export function BidCard({
           <>
             <div>
               <dt className={LABEL}>{t("negotiation.wageShare")}</dt>
-              <dd className="m-0 text-sm text-foreground tabular-nums">{Math.round((b.wageShare ?? 1) * 100)}%</dd>
+              <dd className="m-0 text-sm text-foreground tabular-nums">{Math.round((recall ? shareWithRecall(b.wageShare ?? 1) : (b.wageShare ?? 1)) * 100)}%</dd>
             </div>
             <div>
               <dt className={LABEL}>{t("negotiation.returns")}</dt>
@@ -106,6 +109,12 @@ export function BidCard({
           <dd className="m-0 text-sm text-foreground tabular-nums">{fmtDate(b.expires)}</dd>
         </div>
       </dl>
+      {b.kind !== "transfer" && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Chip selected={recall} onClick={() => setRecall((r) => !r)}>{t("negotiation.recall.chip")}</Chip>
+          <span className="text-sm text-muted-foreground">{t("negotiation.recall.hint", { pct: Math.round(RECALL_WAGE_COST * 100) })}</span>
+        </div>
+      )}
       {b.countered && <p className="text-sm text-muted-foreground m-0">{t("negotiation.bid.finalOffer")}</p>}
 
       {countering && b.kind === "transfer" && (

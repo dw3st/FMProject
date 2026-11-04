@@ -1,3 +1,4 @@
+import { afterOfficialGame } from "@/Domain/settling/settling";
 import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import type { EngineReferee } from "@/types/refereeTypes";
 import { moraleDpMult } from "@/Domain/morale/morale";
@@ -334,9 +335,9 @@ function finalizeSquadsAfterMatch(
           const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult * ground.injuryDurationMult);
           injuriesApplied.push({ ...inj, returnDate: rd });
           const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
-          return { ...pl, seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };
+          return { ...(ps ? afterOfficialGame(pl) : pl), seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };
         }
-        return { ...pl, seasonLog: log };
+        return { ...(ps ? afterOfficialGame(pl) : pl), seasonLog: log };
       }),
     };
   }

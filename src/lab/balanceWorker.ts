@@ -10,6 +10,7 @@
 
 import { personalityOf } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { withNewcomers } from "@/Domain/settling/settling";
 import { simulateMatch, type TeamInstructions } from "@/GameEngine/Domain/SimulateMatch";
 import { addSlotRaws, createSlotCollector } from "@/lab/slotStats";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
@@ -107,7 +108,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -148,6 +149,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.ballCrowdTicks              += src.ballCrowdTicks;
   dst.outOfPosition               += src.outOfPosition;
   dst.morale                      += src.morale;
+  dst.newcomers                   += src.newcomers;
   dst.temperament                 += src.temperament;
   dst.managerDiscipline           += src.managerDiscipline;
   dst.pitchCondition              += src.pitchCondition;
@@ -230,6 +232,7 @@ interface LineupFit {
 let sideFamiliarity: { A?: number; B?: number } = {};
 /** Morale of each whole side (set per worker message): engine execution + quickSim strength. Absent = 65. */
 let sideMorale: { A?: number; B?: number } = {};
+let sideNewcomers: { A?: number; B?: number } = {};
 /** Temperament override (1..20) of each whole side (set per worker message). Absent = each player's own. */
 let sideTemperament: { A?: number; B?: number } = {};
 let sideMgrDiscipline: { A?: number; B?: number } = {};
@@ -276,6 +279,10 @@ function runOneMatch(
   const teamB = emptyTeamRaw();
   teamA.outOfPosition = fit.poorA;
   teamB.outOfPosition = fit.poorB;
+  squadA = withNewcomers(squadA, (simEngine === "quick" ? quickLineupA : fit.fullLineupA) ?? [], sideNewcomers.A);
+  squadB = withNewcomers(squadB, (simEngine === "quick" ? quickLineupB : fit.fullLineupB) ?? [], sideNewcomers.B);
+  teamA.newcomers = sideNewcomers.A ?? 0;
+  teamB.newcomers = sideNewcomers.B ?? 0;
   teamA.morale = sideMorale.A ?? MORALE.NEUTRAL;
   teamB.morale = sideMorale.B ?? MORALE.NEUTRAL;
   teamA.temperament = xiTemperament(squadA, simEngine === "quick" ? quickLineupA : fit.fullLineupA, sideTemperament.A);
@@ -481,6 +488,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
     sideMorale = { A: variantA.morale, B: variantB.morale };
+    sideNewcomers = { A: variantA.newcomers, B: variantB.newcomers };
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
     sideMgrDiscipline = { A: variantA.managerDiscipline, B: variantB.managerDiscipline };
     matchPitch = variantA.pitchCondition;

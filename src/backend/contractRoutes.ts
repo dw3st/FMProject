@@ -1,3 +1,4 @@
+import { arriving } from "@/Domain/settling/settling";
 import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -286,7 +287,7 @@ export const contractRoutes = {
       const contract = { until: addYearsIso(seasonEnd, years - 1), wage };
       await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
         ...squad,
-        players: [...squad.players, { ...agent.player, squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],
+        players: [...squad.players, { ...arriving(agent.player, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],
       });
       await saveService.writeFreeAgents(saveId, pool.filter((f) => f.player.id !== playerId));
       // In the day log like every other move (achievements: free signings, `.claude/rules/game/achievements.md`).

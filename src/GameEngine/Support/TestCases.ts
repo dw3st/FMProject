@@ -628,6 +628,17 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'newcomers',
+    name:        '11v11 — New signings',
+    description: 'Team A has six new signings who have just arrived (settling in, attributes below their level); Team B is settled. The Energy panel shows the multiplier.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const settling = (ps: RosterPlayer[]) => freshRoster(ps).map((p, i) => (i % 2 === 0 ? { ...p, settling: { games: 0, need: 15 } } : p));
+      return createMatchState(settling(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+    },
+  },
+
+  {
     id:          'inverted-fullbacks',
     name:        '11v11 — Inverted full-backs',
     description: 'Team A full-backs on the "Inverted" role variant (player instructions): they tuck into midfield (+14 yds toward the centre) when A has the ball. Turn on the Instructions overlay for the tags and compare the LB/RB width with Team B (default).',

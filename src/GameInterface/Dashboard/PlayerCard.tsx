@@ -12,6 +12,7 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
+import { SettlingBadge } from "@/GameInterface/Components/SettlingBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { attributeBarClass, attributeTextClass, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -177,6 +178,7 @@ export function PlayerCard({
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
               {player.reborn && <RebornBadge className="mt-0.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="mt-0.5" />}
+              {player.settling && <SettlingBadge games={player.settling.games} need={player.settling.need} className="mt-0.5" />}
               {nameBadge}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>

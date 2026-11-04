@@ -5,6 +5,7 @@
  * non-deterministic for production call sites. Produces a PlayedMatchRecording so the normal
  * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
+import { settlingMult } from "@/Domain/settling/settling";
 import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { temperamentFoulMult, temperamentRedMult, temperamentT, temperamentTOf, temperamentYellowMult } from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -180,7 +181,7 @@ interface XIPlayer {
 
 function xiPlayer(p: RosterPlayer, slotRole?: string): XIPlayer {
   const role = resolveRole(p, slotRole);
-  return { p, role, k: positionFactor(p, role) };
+  return { p, role, k: positionFactor(p, role) * settlingMult(p) };
 }
 
 /** Slot role if provided and known to ROLE_GROUP, else the roster's `positions[0]`. */

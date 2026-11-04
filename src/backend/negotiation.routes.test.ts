@@ -247,6 +247,39 @@ describe("negotiation routes", () => {
     expect(renewed.contract!.until > until0).toBe(true);
   }, 60_000);
 
+  test("recall clause: lower wage share, the report, called back; without it, refused", async () => {
+    const sq = await human();
+    const [p] = sq.players.filter((q) => !q.loan && q.positions[0] === "Midfielder");
+    const borrower = (await saveService.getSquadsInLeague(saveId, meta.leagueSlug)).find((s) => s.id !== meta.clubId && s.players.length < 29)!;
+    const bidOf = (id: string, q: typeof p): MarketBid => ({
+      id, kind: "loan", playerId: q!.id, playerName: q!.name, clubId: borrower.id, clubName: borrower.name,
+      date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee: 0, wageShare: 0.6, until: addDays(meta.currentDate!, 90),
+    });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bidOf("r1", p)] }, meta.seatId);
+    const accept = (id: string, extra = {}) => route("/api/saves/:saveId/bids/:bidId")(
+      req(`/api/saves/${saveId}/bids/${id}`, "POST", { saveId, bidId: id }, { action: "accept", ...extra }));
+    expect((await accept("r1", { recall: true })).status).toBe(200);
+    const there = (await saveService.getSquadById(saveId, borrower.id))!.players.find((q) => q.id === p!.id)!;
+    expect(there.loan!.wageShare).toBe(0.4);
+
+    const nego = await route("/api/saves/:saveId/negotiation")(req(`/api/saves/${saveId}/negotiation`, "GET", { saveId }));
+    const body = (await nego.json()) as { loans: { playerId: string; recall?: boolean; report?: { apps: number; overallAtStart?: number } }[] };
+    const l = body.loans.find((x) => x.playerId === p!.id)!;
+    expect(l.recall).toBe(true);
+    expect(l.report?.apps).toBe(0);
+    expect(l.report?.overallAtStart).toBeGreaterThan(0);
+
+    const call = (id: string) => route("/api/saves/:saveId/loans/:playerId/recall")(
+      req(`/api/saves/${saveId}/loans/${id}/recall`, "POST", { saveId, playerId: id }));
+    const noClause = (await saveService.getMarket(saveId, meta.seatId))!.loans!.find((x) => !x.recall)!;
+    expect((await call(noClause.playerId)).status).toBe(409);
+    expect((await call(p!.id)).status).toBe(200);
+    const home = (await human()).players.find((q) => q.id === p!.id)!;
+    expect(home.loan).toBeUndefined();
+    expect((await saveService.getMarket(saveId, meta.seatId))!.loans?.some((x) => x.playerId === p!.id)).toBe(false);
+  }, 60_000);
+
   test("an expired bid is closed; validation errors", async () => {
     const sq = await human();
     const p = sq.players.find((q) => !q.loan)!;

@@ -5,6 +5,7 @@ import { starLimitResponse } from "@/backend/starLimitWorld";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { loanReport, shareWithRecall } from "@/Domain/negotiation/loanReport";
 import { logError } from "@/Logger";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToHumanCounter, talkGate, talkKey,
@@ -18,7 +19,7 @@ import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
-  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, isOtherSeatClub, seasonEndOf, startLoan,
+  completeHumanSale, emptyMarket, returnDueLoans, findLiveBid, humanRosterSize, isOtherSeatClub, seasonEndOf, startLoan,
 } from "@/backend/negotiationWorld";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
@@ -91,7 +92,14 @@ export const negotiationRoutes = {
       rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
       lostTargets: market?.lostTargets ?? [],
       bids,
-      loans: (market?.loans ?? []).filter((l) => l.fromClubId === meta.clubId || l.toClubId === meta.clubId),
+      loans: await Promise.all((market?.loans ?? [])
+        .filter((l) => l.fromClubId === meta.clubId || l.toClubId === meta.clubId)
+        .map(async (l) => {
+          if (l.fromClubId !== meta.clubId) return l;
+          const holder = await saveService.getSquadById(saveId, l.toClubId);
+          const player = holder?.players.find((p) => p.id === l.playerId);
+          return player ? { ...l, report: loanReport(player, l) } : l;
+        })),
       loanList: market?.playerLoanList ?? [],
       sellOnHeld: market?.sellOnHeld ?? [],
     });
@@ -133,7 +141,7 @@ export const negotiationRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
-    const body = (await req.json().catch(() => null)) as { action?: unknown; fee?: unknown; sellOnPct?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as { action?: unknown; fee?: unknown; sellOnPct?: unknown; recall?: unknown } | null;
     const action = body?.action;
     if (action !== "accept" && action !== "reject" && action !== "counter") return json({ error: "action required" }, 400);
     const sellOnPct = parseSellOnPct(body?.sellOnPct);
@@ -202,13 +210,14 @@ export const negotiationRoutes = {
           await saveService.appendDayTransfers(saveId, date, [{ playerId: player.id, from: seller.id, to: buyer.id, fee, kind: "transfer", date }]);
           return json({ ok: true, status: "sold", record: done.record });
         }
-        const share = bid.wageShare ?? 1;
+        const recall = body?.recall === true;
+        const share = recall ? shareWithRecall(bid.wageShare ?? 1) : (bid.wageShare ?? 1);
         if (!passesWageGate(aiClubFinance(buyer), Math.round(currentWage(player, wageFactorOf(seller)) * share), 0)) {
           await saveService.saveMarket(saveId, withoutBid, auth.seatId);
           return json({ error: "offerClosed" }, 409);
         }
         const next = await startLoan(saveService, saveId, auth.seatId, meta, withoutBid, {
-          player, parent: seller, borrower: buyer, wageShare: bid.wageShare ?? 1,
+          player, parent: seller, borrower: buyer, wageShare: share, recall,
           until: bid.until ?? seasonEndOf(meta.activeLeagues, buyer.leagueSlug, date), fee: bid.fee,
         });
         await saveService.saveMarket(saveId, next, auth.seatId);
@@ -218,6 +227,29 @@ export const negotiationRoutes = {
         logError("negotiation", `save ${saveId}: failed to complete bid ${bidId}`, err);
         return json({ error: "failed to complete" }, 500);
       }
+    });
+  },
+
+  /** `POST` - calls back a player lent with the recall clause, with the human club's window open. */
+  "/api/saves/:saveId/loans/:playerId/recall": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const playerId = decodeURIComponent(req.params.playerId!);
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta) return json({ error: "save not found" }, 404);
+      if (!meta.clubId) return json({ error: "noClub" }, 409);
+      const market = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
+      const loan = (market.loans ?? []).find((l) => l.playerId === playerId && l.fromClubId === meta.clubId);
+      if (!loan?.recall) return json({ error: "notRecallable" }, 409);
+      const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
+      const today = windows.seat(auth.seatId).today;
+      if (!today.open) return windowClosedResponse(today);
+      const res = await returnDueLoans(saveService, saveId, auth.seatId, meta, market, meta.currentDate ?? "", { recalled: new Set([playerId]) });
+      await saveService.saveMarket(saveId, res.market, auth.seatId);
+      return json({ ok: true });
     });
   },
 

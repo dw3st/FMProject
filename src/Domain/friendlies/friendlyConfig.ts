@@ -13,4 +13,10 @@ export const FRIENDLY = {
   /** Neutral pitch condition. */
   PITCH: 90,
   XI_SIZE: 11,
+  /** Every substitution used: reserves come on for the second half, with half the load and half the DP. */
+  SUBS: 5,
+  SUB_MINUTES: 30,
+  SUB_DP: 0.5,
+  SUB_RATING: 6.5,
+  SUB_ENERGY_COST: 12,
 } as const;

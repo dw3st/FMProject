@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { computeWorldAwards } from "@/Domain/awards/worldAwards";
+import { withClubNames, computeWorldAwards } from "@/Domain/awards/worldAwards";
 import type { LeagueSeasonAwards } from "@/types/awardTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 
@@ -50,5 +50,14 @@ describe("computeWorldAwards", () => {
   });
   test("empty year", () => {
     expect(computeWorldAwards({ year: 2027, on: "2028-01-01", leagues: [], managers: [] })).toEqual({ year: 2027, on: "2028-01-01", player: [], manager: [] });
+  });
+});
+
+describe("withClubNames", () => {
+  test("fills only the blank club names", () => {
+    const entry = (squadId: string, clubName: string) => ({ id: squadId, name: "x", squadId, clubName, league: "wc_2030", score: 1 });
+    const world = { year: 2030, on: "2031-01-01", player: [entry("a", ""), entry("b", "Keep")], manager: [] };
+    const out = withClubNames(world, (id) => `Club ${id}`);
+    expect(out.player.map((p) => p.clubName)).toEqual(["Club a", "Keep"]);
   });
 });

@@ -764,7 +764,7 @@ function leaguePrizeTexts(
   if (message.category === "friendly") {
     return {
       subject: t("friendlies.subject", { opponent: message.opponentName }),
-      preview: t("friendlies.score", { home: message.goalsFor, away: message.goalsAgainst }),
+      preview: t("friendlies.score", { club: message.clubName, home: message.goalsFor, away: message.goalsAgainst, opponent: message.opponentName }),
     };
   }
   if (message.category === "schedule") {
@@ -1046,14 +1046,22 @@ function FriendlyBody({ message }: { message: Extract<InboxMessage, { category: 
     <div className="flex flex-col gap-2 text-sm">
       <p className="m-0 text-foreground">{t("friendlies.intro", { opponent: message.opponentName })}</p>
       <p className="m-0 font-display font-bold tabular-nums text-2xl text-foreground">
-        {t("friendlies.score", { home: message.goalsFor, away: message.goalsAgainst })}
+        {t("friendlies.score", { club: message.clubName, home: message.goalsFor, away: message.goalsAgainst, opponent: message.opponentName })}
       </p>
-      {message.scorers.length > 0 && (
-        <p className="m-0 text-muted-foreground">
-          {t("friendlies.scorers", { names: message.scorers.map((s) => (s.goals > 1 ? `${s.name} (${s.goals})` : s.name)).join(", ") })}
-        </p>
-      )}
       <p className="m-0 text-muted-foreground">{t("friendlies.note")}</p>
+      <ul className="m-0 p-0 list-none flex flex-col rounded-lg border border-border divide-y divide-border overflow-hidden">
+        {(message.players ?? []).map((p) => (
+          <li key={p.playerId} className="p-3 bg-muted/10 flex flex-col gap-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="font-semibold text-foreground"><PlayerNameText text={p.name} players={[{ id: p.playerId, name: p.name }]} /></span>
+              <span className="text-muted-foreground tabular-nums">
+                {t(p.sub ? "friendlies.lineSub" : "friendlies.line", { rating: p.rating.toFixed(1), fitness: p.fitness, count: p.goals })}
+              </span>
+            </div>
+            {p.changes.map((c) => <AttributeChangeRow key={c.attribute} stat={c.attribute} from={c.from} to={c.to} />)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

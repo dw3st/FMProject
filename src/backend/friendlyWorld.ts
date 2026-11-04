@@ -11,8 +11,8 @@ import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
 import { friendliesByDirector, type Responsibilities } from "@/Domain/responsibilities/director";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { applyYouthMatch, type YouthInjuryApplied } from "@/Domain/youthComps/youthMatch";
-import type { FriendlyScorer } from "@/types/inboxTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { FriendlyPlayer } from "@/types/inboxTypes";
+import type { PlayerStatsRecord, Squad } from "@/types/playerTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 
 /** I/O of the director's friendlies (`.claude/rules/game/responsibilities.md` → "Amistosos"). */
@@ -32,7 +32,8 @@ export interface FriendlyResult {
   opponentName: string;
   goalsFor: number;
   goalsAgainst: number;
-  scorers: FriendlyScorer[];
+  clubName: string;
+  players: FriendlyPlayer[];
   participants: string[];
   injuries: YouthInjuryApplied[];
   healed: { squadId: string; playerId: string; playerName: string }[];
@@ -84,10 +85,31 @@ export async function playFriendlyDay(args: {
       pitchCondition: FRIENDLY.PITCH,
     }, rng);
 
-    const applied = applyYouthMatch(squad, recording, { date, rng, trackMorale: false, friendly: true });
-    const scorers: FriendlyScorer[] = squad.players.flatMap((p) => {
-      const goals = recording.playerStats[p.id]?.goals ?? 0;
-      return goals > 0 ? [{ playerId: p.id, name: p.name, goals }] : [];
+    // Every substitution used: reserves of the pool, drawn, come on for the second half.
+    const onPitch = new Set(Object.keys(recording.playerStats));
+    const subs = pool.filter((p) => !onPitch.has(p.id))
+      .map((p) => ({ p, k: rng() })).sort((a, b) => a.k - b.k).slice(0, FRIENDLY.SUBS).map((x) => x.p);
+    const subIds = new Set(subs.map((p) => p.id));
+    for (const p of subs) {
+      recording.playerStats[p.id] = { goals: 0, assists: 0 } as (typeof recording.playerStats)[string];
+      recording.playerRatings[p.id] = FRIENDLY.SUB_RATING;
+      recording.playerEnergy[p.id] = Math.max(0, (p.seasonLog?.fitness ?? 100) - FRIENDLY.SUB_ENERGY_COST);
+    }
+
+    const applied = applyYouthMatch(squad, recording, { date, rng, trackMorale: false, friendly: { subs: subIds } });
+    const before = new Map(squad.players.map((p) => [p.id, p]));
+    const players: FriendlyPlayer[] = applied.squad.players.flatMap((p) => {
+      const ps = recording.playerStats[p.id];
+      const old = before.get(p.id);
+      if (!ps || !old) return [];
+      const was = old.stats as PlayerStatsRecord & Record<string, number>;
+      const now = p.stats as PlayerStatsRecord & Record<string, number>;
+      const changes = Object.keys(now).flatMap((attribute) =>
+        now[attribute] !== was[attribute] ? [{ attribute, from: was[attribute] ?? 0, to: now[attribute] ?? 0 }] : []);
+      return [{
+        playerId: p.id, name: p.name, goals: ps.goals, rating: recording.playerRatings[p.id] ?? 6,
+        fitness: Math.round(p.seasonLog?.fitness ?? 0), ...(subIds.has(p.id) ? { sub: true as const } : {}), changes,
+      }];
     });
     out.push({
       seatId: seat.seatId,
@@ -96,7 +118,8 @@ export async function playFriendlyDay(args: {
       opponentName: opponent.name,
       goalsFor: recording.score.home,
       goalsAgainst: recording.score.away,
-      scorers,
+      clubName: squad.name,
+      players,
       participants: applied.participants,
       injuries: applied.injuriesApplied,
       healed: applied.healedPlayerIds.map((id) => ({

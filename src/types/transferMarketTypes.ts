@@ -164,4 +164,9 @@ export interface ActiveLoan {
   wage: number;
   fee: number;
   start: string;
+  /** The parent club can call him back (agreed for a lower wage share). */
+  recall?: true;
+  /** Level when the loan started, for the report (absent on older loans). */
+  startOverall?: number;
+  startStats?: import("@/types/playerTypes").PlayerStatsRecord;
 }

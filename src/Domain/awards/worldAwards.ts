@@ -20,6 +20,12 @@ interface Acc {
   tie: number;
 }
 
+/** A national tournament has no club in its shortlist: the name comes from the entry's club id. */
+export function withClubNames(world: WorldAwards, nameOf: (squadId: string) => string | undefined): WorldAwards {
+  const fill = (e: WorldAwardEntry): WorldAwardEntry => (e.clubName || !e.squadId ? e : { ...e, clubName: nameOf(e.squadId) ?? "" });
+  return { ...world, player: world.player.map(fill), manager: world.manager.map(fill) };
+}
+
 export function computeWorldAwards(input: {
   year: number;
   on: string;

@@ -35,7 +35,8 @@ export function variantAutoLabel(v: Variant): string {
   const formation = v.customFormation ? `Free ${customShape(v.customFormation.slots)}` : v.formation;
   const label = generateVariantLabel(formation, v.tacticalStyle, v.mentality, v.axesOverride);
   const withFam = v.familiarity === undefined ? label : `${label} · fam ${v.familiarity}`;
-  const withMor0 = v.morale === undefined ? withFam : `${withFam} · mor ${v.morale}`;
+  const withNew = v.newcomers ? `${withFam} · new ${v.newcomers}` : withFam;
+  const withMor0 = v.morale === undefined ? withNew : `${withNew} · mor ${v.morale}`;
   const withMor1 = v.temperament === undefined ? withMor0 : `${withMor0} · tmp ${v.temperament}`;
   const withMor2 = v.managerDiscipline === undefined ? withMor1 : `${withMor1} · disc ${v.managerDiscipline}`;
   const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor2 : `${withMor2} · pitch ${v.pitchCondition}%`;

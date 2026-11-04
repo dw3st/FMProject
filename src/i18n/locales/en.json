@@ -1500,12 +1500,17 @@
     },
     "worldTransfersCard": "AI and other clubs"
   },
+  "settling": {
+    "badge": "Settling {{games}}/{{need}}",
+    "title": "Just arrived: plays a little below his level until {{need}} official games for the club or the end of the season."
+  },
   "friendlies": {
     "subject": "Friendly against {{opponent}}",
-    "score": "{{home}} x {{away}}",
+    "score": "{{club}} {{home}} x {{away}} {{opponent}}",
     "intro": "The director arranged a friendly against {{opponent}}.",
-    "scorers": "Goals: {{names}}",
-    "note": "It counts for no competition. Those who played gained rhythm and a little development, instead of the day's training."
+    "line": "Rating {{rating}} · fitness {{fitness}} · goals {{count}}",
+    "lineSub": "Came on in the second half · fitness {{fitness}}",
+    "note": "It counts for no competition. Those who played did not train that day; below, what each one did and the attributes that went up."
   },
   "responsibilities": {
     "title": "Responsibilities",
@@ -3495,6 +3500,25 @@
       "loan": "Loan"
     },
     "onLoan": "On loan",
+    "report": {
+      "games": "J",
+      "goalsAssists": "G / A",
+      "rating": "Nota",
+      "cards": "YC / RC",
+      "injuries": "Inj (days)",
+      "overall": "OVR"
+    },
+    "recall": {
+      "chip": "Recall option",
+      "hint": "You can call him back with your window open; the other club pays {{pct}} points less of the wage.",
+      "action": "Call back",
+      "done": "He is back in the squad.",
+      "errors": {
+        "windowClosed": "Your transfer window is closed.",
+        "squadFull": "Your squad is full.",
+        "generic": "He could not be called back."
+      }
+    },
     "loanBadgeTitle": "On loan from {{club}} until {{date}}",
     "sellOn": "Sell-on clause",
     "sellOnHint": "The share {{club}} gets if you sell him later. The bigger it is, the lower the fee they ask.",

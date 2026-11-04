@@ -1,5 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
+import { withClubNames } from "@/Domain/awards/worldAwards";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -38,7 +39,8 @@ export const awardsRoutes = {
     if (pick === undefined || !years.includes(pick)) return Response.json({ error: "no awards", years }, { status: 404 });
     const file = await saveService.getAwardsYear(saveId, pick);
     if (!file) return Response.json({ error: "no awards", years }, { status: 404 });
-    const body: AwardsResponse = { years, year: pick, leagues: file.leagues, world: file.world ?? null };
+    const index = await saveService.getSquadIndex(saveId);
+    const body: AwardsResponse = { years, year: pick, leagues: file.leagues, world: file.world ? withClubNames(file.world, (id) => index.byId(id)?.name) : null };
     return Response.json(body);
   },
 };

@@ -40,7 +40,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { ballMeetsKeeper, depthFrom, isWideClaimZone, keeperComesWide, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { ballMeetsKeeper, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
@@ -76,6 +76,7 @@ import { rollError, varChecksCorrect, varCorrects, type RefereeErrorKind } from 
 import { VAR_CONFIG } from '@/GameEngine/Configs/VarConfig';
 import type { VarApply, VarReviewState } from '@/GameEngine/types';
 import { withMoraleExecution } from '@/Domain/morale/morale';
+import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { getOffBallBias } from '@/GameEngine/Domain/OffBallMovement';
@@ -235,12 +236,12 @@ function buildGamePlayerForSlot(
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
   // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
   // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
-  const buffed = withMoraleExecution(withTeamExecution(computeBuffedStats(
+  const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-  ), team), matchMoraleOf(team, rp.morale));
+  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -295,6 +296,7 @@ function buildGamePlayerForSlot(
     injuryLoad:       rp.seasonLog?.load ?? 0,
     seasonYellows:    rp.seasonLog?.yellowCards ?? 0,
     morale:           matchMoraleOf(team, rp.morale),
+    ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
   };
 }
@@ -326,12 +328,12 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = withMoraleExecution(withTeamExecution(computeBuffedStats(
+    const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-    ), team), matchMoraleOf(team, rp.morale));
+    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -368,6 +370,7 @@ function buildTeam(
       injuryLoad:       rp.seasonLog?.load ?? 0,
       seasonYellows:    rp.seasonLog?.yellowCards ?? 0,
       morale:           matchMoraleOf(team, rp.morale),
+      ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
     });
   }
@@ -1275,7 +1278,7 @@ export function startDirectFreeKick(state: GameState, rng: () => number = Math.r
       },
     }, prevHolderId);
   }
-  const { toX, toY } = computeShotAim(taker);
+  const { toX, toY } = computeShotAim(taker, { fixedRange: true });
   return {
     ...state,
     setPiece: null,
@@ -2263,7 +2266,10 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
 function startShot(state: GameState): GameState {
   if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
-  const { toX, toY } = computeShotAim(shooter);
+  const shotKeeper = state.players.find((p) => p.team !== shooter.team && p.role === 'GK');
+  const { toX, toY } = computeShotAim(shooter, {
+    keeperOut: !shotKeeper || !keeperReachesShot(shotKeeper, shooter.x, shooter.y, shooter.attackDir === 1 ? PITCH_LENGTH : 0),
+  });
 
   // xG context: distance, open goal angle, and nearby defensive pressure
   const goalX     = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
