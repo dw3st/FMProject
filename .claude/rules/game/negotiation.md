@@ -227,3 +227,7 @@ Numa compra do humano, o vendedor da IA só recusa por elenco com 14 ou menos ou
 ## Multa rescisória (4.44.4)
 
 Report de tester. Todo jogador de clube da IA tem multa de 3 × o valor de mercado, no mínimo €1M (`releaseClause`, a rota `demand` devolve `clause`). `POST /transfers { payClause: true, fee }`: o clube não pode recusar, sem rodadas e sem rivais; janela aberta, saldo, limite do top 25 e contrato com o jogador continuam valendo (a recusa dele continua). 400 `belowClause`. Sem cláusula de venda futura. Não vale entre técnicos humanos.
+
+## Situação do jogador na proposta (4.44.6)
+
+Report de tester. Uma linha na negociação, na proposta recebida e na proposta entre técnicos: papel no elenco (o sugerido, `suggestedStatuses`; o escolhido só para o próprio técnico), à venda, disponível para empréstimo e, no próprio jogador, se pediu para sair. `GET /players/:id/situation?from=` (`playerSituation`, `situation.ts`). Clube da IA: a lista de venda do perfil e `loanAvailability`. Outro técnico: as listas do mercado dele. O papel sai da nota real, mesmo com o olheiro incerto: revela um pouco, como o pedido de salário.

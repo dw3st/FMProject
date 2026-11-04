@@ -5,6 +5,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { formatFee } from "@/Domain/money";
 import { notifySeatOffersChanged, seatOfferApi } from "@/GameInterface/Negotiation/seatOfferApi";
 import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
+import { PlayerSituationLine } from "@/GameInterface/Negotiation/PlayerSituationLine";
 import type { SeatOfferView } from "@/types/seatOfferTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -94,6 +95,7 @@ export function SeatOfferCard({ saveId, offer, onChanged }: {
 
   return (
     <div className="space-y-4">
+      <PlayerSituationLine saveId={saveId} playerId={o.playerId} squadId={o.seller.clubId} />
       <p className="text-sm text-foreground m-0">
         {t(o.kind === "transfer" ? "seatOffers.transfer" : "seatOffers.loan")} · {o.playerName} · {t("seatOffers.withClub", { club: otherClub, manager: o.otherManager })}
       </p>

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { formatFee } from "@/Domain/money";
+import { PlayerSituationLine } from "@/GameInterface/Negotiation/PlayerSituationLine";
 import type { MarketBid } from "@/types/transferMarketTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -75,6 +76,7 @@ export function BidCard({
 
   return (
     <div className="space-y-4">
+      <PlayerSituationLine saveId={saveId} playerId={b.playerId} />
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 m-0">
         {b.kind === "transfer" ? (
           <>

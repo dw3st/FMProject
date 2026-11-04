@@ -1,4 +1,6 @@
+import { loanAvailability } from "@/Domain/negotiation/loans";
 import { negotiationSummary } from "@/Domain/negotiation/summary";
+import { playerSituation } from "@/Domain/negotiation/situation";
 import { starLimitResponse } from "@/backend/starLimitWorld";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -29,6 +31,41 @@ const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 /** Negotiation, AI bids and loans (`.claude/rules/game/negotiation.md`). */
 export const negotiationRoutes = {
+  /**
+   * `GET ?from=<squadId>` - where a player stands at his club, for the line next to an offer. `from` omitted = the
+   * asking seat's own club. A human manager's lists come from his seat; an AI club's from its market profile.
+   */
+  "/api/saves/:saveId/players/:playerId/situation": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const playerId = req.params.playerId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    const from = new URL(req.url).searchParams.get("from") || meta?.clubId;
+    const squad = from ? await saveService.getSquadById(saveId, from) : null;
+    const player = squad?.players.find((p) => p.id === playerId);
+    if (!squad || !player) return Response.json({ error: "notFound" }, { status: 404 });
+    const seat = await saveService.seatOfClub(saveId, squad.id);
+    const own = squad.id === meta?.clubId;
+    if (seat) {
+      const market = await saveService.getMarket(saveId, seat);
+      const listed = market?.playerSellList?.find((c) => c.playerId === playerId);
+      return Response.json(playerSituation(player, squad, {
+        forSale: !!listed,
+        loanable: (market?.playerLoanList ?? []).includes(playerId),
+        // His morale and the role he was given stay with his own manager.
+        ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}) } : {}),
+      }));
+    }
+    const sellList = (await saveService.getWorldMarket(saveId))?.profiles?.[squad.id]?.sellList ?? [];
+    const forSale = sellList.some((c) => c.playerId === playerId);
+    return Response.json(playerSituation(player, squad, {
+      forSale,
+      loanable: loanAvailability(player, squad, { starterIds: new Set(autoLineupDefaultFormation(squad)), listed: forSale }) === null,
+    }));
+  },
+
   /** `GET` - pending AI bids, active loans, the loan list and the sell-on clauses held. */
   "/api/saves/:saveId/negotiation": async (req: Req) => {
     const saveId = req.params.saveId!;

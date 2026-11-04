@@ -11,6 +11,7 @@ import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { NegotiationTalk } from "@/types/transferMarketTypes";
 import { ContractTermsFields, useContractDemandInfo, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
+import { PlayerSituationLine } from "@/GameInterface/Negotiation/PlayerSituationLine";
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee, formatWageFull } from "@/Domain/money";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -453,6 +454,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               ) : seatListPending ? (
                 <p className="text-sm text-muted-foreground m-0" role="status">{t("seatOffers.listLoading")}</p>
               ) : null}
+              {saveId && player.squadId && <PlayerSituationLine saveId={saveId} playerId={player.id} squadId={player.squadId} />}
               {isSeat && (
                 <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
               )}

@@ -3452,6 +3452,7 @@
     }
   },
   "negotiation": {
+    "situation": {"label":"Situação","role":{"key":"Peça-chave","starter":"Titular","rotation":"Rodízio","backup":"Reserva","youth":"Jovem"},"forSale":"À venda","notForSale":"Não está à venda","loanable":"Disponível para empréstimo","notLoanable":"Não disponível para empréstimo","onLoan":"Emprestado a este clube","requested":"Pediu para sair"},
     "offer": {
       "value": "Valor de mercado",
       "valueScout": "Estimativa do olheiro",

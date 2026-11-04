@@ -3452,6 +3452,7 @@
     }
   },
   "negotiation": {
+    "situation": {"label":"Situation","role":{"key":"Key player","starter":"Starter","rotation":"Rotation","backup":"Backup","youth":"Youngster"},"forSale":"For sale","notForSale":"Not for sale","loanable":"Available on loan","notLoanable":"Not available on loan","onLoan":"On loan at this club","requested":"Asked to leave"},
     "offer": {
       "value": "Market value",
       "valueScout": "Scout's estimate",

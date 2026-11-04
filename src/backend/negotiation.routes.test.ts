@@ -111,6 +111,21 @@ describe("negotiation routes", () => {
     await saveService.saveSquadById(saveId, { ...(await human()), finances: { ...(await human()).finances!, budget: 2_000_000_000 } });
   });
 
+  test("the situation of a player: his club's lists and his role", async () => {
+    const { club, player } = await aiTarget();
+    const get = (id: string, from?: string) => route("/api/saves/:saveId/players/:playerId/situation")(req(`/api/saves/${saveId}/players/${id}/situation${from ? `?from=${from}` : ""}`, "GET", { saveId, playerId: id }));
+    const res = await get(player.id, club.id);
+    expect(res.status).toBe(200);
+    const s = (await res.json()) as { role: string; forSale: boolean; loanable: boolean };
+    expect(["key", "starter", "rotation", "backup", "youth"]).toContain(s.role);
+    expect(typeof s.forSale).toBe("boolean");
+    expect((await get("nobody", club.id)).status).toBe(404);
+    const own = (await human()).players[0]!;
+    await saveService.saveMarket(saveId, { ...((await saveService.getMarket(saveId, (await saveService.listSeats(saveId))[0]!.seatId)) ?? emptyMarket()), playerLoanList: [own.id] }, (await saveService.listSeats(saveId))[0]!.seatId);
+    expect(((await (await get(own.id)).json()) as { loanable: boolean }).loanable).toBe(true);
+    await saveService.saveMarket(saveId, { ...((await saveService.getMarket(saveId, (await saveService.listSeats(saveId))[0]!.seatId)) ?? emptyMarket()), playerLoanList: [] }, (await saveService.listSeats(saveId))[0]!.seatId);
+  });
+
   test("three rounds a day, a lowball closes the talks; loaned players cannot be bought", async () => {
     const { club, player } = await aiTarget();
     const value = valueOf(player);

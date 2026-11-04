@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.44.6",
+    date: "2026-11-04",
+    time: "17:55",
+    items: [
+      {
+        pt: "Ao fazer ou receber uma proposta, você vê a situação do jogador: papel no elenco, se está à venda e se está disponível para empréstimo.",
+        en: "When making or receiving an offer you see the player's situation: his role in the squad, whether he is for sale and whether he is available on loan.",
+      },
+    ],
+  },
+  {
     version: "4.44.5",
     date: "2026-11-04",
     time: "17:46",
