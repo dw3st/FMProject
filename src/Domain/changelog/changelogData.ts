@@ -30,8 +30,7 @@ export const changelog: ChangelogEntry[] = [
     version: "4.46.3",
     date: "2026-11-04",
     time: "22:17",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Os vendedores não andam mais na parte do estádio em obras.",
         en: "Vendors no longer walk through the part of the stadium under works.",
