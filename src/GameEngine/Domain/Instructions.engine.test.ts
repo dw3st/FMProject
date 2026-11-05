@@ -18,7 +18,7 @@ import formation4231Json from "@/Data/formations/4-2-3-1.json";
 
 const F433 = formation433Json as Formation;
 const F4231 = formation4231Json as Formation;
-const MARK_SEED = 3; // Six seeded matches, 4.45: 6.7 yd (7.1 with the old shot aim); the limit only catches a real break in the marking.
+const MARK_SEED = 3; // Six seeded matches, 4.45: 6.7 yd. One seed says little (one match: 2.6 to 14 yd): `bun scripts/marker-distance.ts`; the limit only catches a real break in the marking.
 
 function loadSquad(file: string): Squad {
   const path = fileURLToPath(new URL(`../../example_data/squads/premier_league/${file}`, import.meta.url));

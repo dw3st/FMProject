@@ -263,3 +263,7 @@ nenhum clube da IA joga ou grava instruções.
 - Sem instruções de bola (chutar mais, cruzar cedo) nem para o goleiro.
 - Bolas paradas ignoram as variantes.
 - A IA não usa nada disso.
+
+## Distância do marcador (medida em 2026-11-04)
+
+`bun scripts/marker-distance.ts 60` (meia marcando o centroavante, 4-3-3, Premier, 60 sementes, posse do adversário há 3+ s, fora de bola parada): 6,45 ± 0,27 jardas em 2026-10-06, 6,56 ± 0,32 na 4.36 e 7,12 ± 0,35 na 4.46; alvo com 1,27 / 1,05 / 1,22 chute e 0,30 / 0,32 / 0,30 gol por jogo. A diferença está no limite do ruído e os resultados não mudaram. O tempo se divide em dois: ~48% a menos de 3 jardas e ~25% a 10 ou mais, desde a primeira versão. Longe, ele quase nunca está do lado do gol (4%), mas corre para o alvo (destino certo em 95%, 5,3 × 5,1 jardas por segundo, fecha 1,4 por segundo): é a transição, porque com a bola ele joga a vaga e o atacante fica lá na frente. Uma partida só diz pouco: de 2,6 a 14,3 jardas.
