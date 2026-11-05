@@ -20,6 +20,8 @@ export interface ArtManifest extends PaintedFaceIds {
   backdrops: string[];
   /** Painted penalty backdrops (art phase 6). */
   penaltyBackdrops?: string[];
+  /** Painted surroundings of the real stadiums, by stadium id (4.47.1, `surroundArt.ts`). */
+  surround?: string[];
   /** Painted facilities and inbox illustrations (art phase 7). */
   facilities?: string[];
   news?: string[];
@@ -51,6 +53,17 @@ export function setPaintedBackdrops(ids: string[] | null): void {
 }
 
 let penaltyBackdrops = new Set<string>();
+let surroundIds = new Set<string>();
+
+/** Painted stadium surroundings on (empty = the drawn paving and trees). */
+export function setPaintedSurround(ids: string[] | null): void {
+  surroundIds = new Set(ids ?? []);
+}
+
+/** URL of a stadium's painted surroundings, or null. */
+export function paintedSurround(stadiumId: string): string | null {
+  return surroundIds.has(stadiumId) ? artUrl(`backdrops/surround/${encodeURIComponent(stadiumId)}.webp`) : null;
+}
 
 /** Painted penalty backdrops on (empty = the drawn penalty scene). */
 export function setPaintedPenaltyBackdrops(ids: string[] | null): void {
@@ -165,6 +178,7 @@ const MANIFEST_CACHE_KEY = "fm.art.manifest.v1";
 function applyManifest(body: Partial<ArtManifest>, wantsNewVisual: boolean): void {
   setPaintedBackdrops(wantsNewVisual && Array.isArray(body.backdrops) ? body.backdrops : []);
   setPaintedPenaltyBackdrops(wantsNewVisual && Array.isArray(body.penaltyBackdrops) ? body.penaltyBackdrops : []);
+  setPaintedSurround(wantsNewVisual && Array.isArray(body.surround) ? body.surround : []);
   setPaintedScreens(
     wantsNewVisual && Array.isArray(body.facilities) ? body.facilities : [],
     wantsNewVisual && Array.isArray(body.news) ? body.news : [],

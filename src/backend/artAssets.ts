@@ -26,6 +26,8 @@ interface ArtIndex {
   backdrops: string[];
   /** Painted penalty backdrops (`backdrops/penalty/<id>.webp`, art phase 6). */
   penalty: string[];
+  /** Painted surroundings of the real stadiums (`backdrops/surround/<stadium id>.webp`, 4.47.1). */
+  surround: string[];
   /** Painted facilities (`facilities/<id>.webp`) and inbox illustrations (`news/<id>.webp`, art phase 7). */
   facilities: string[];
   news: string[];
@@ -88,6 +90,7 @@ function loadIndex(): ArtIndex | null {
       },
       backdrops: idsAt(backdrops.match, "backdrops/match"),
       penalty: idsAt(backdrops.penalty, "backdrops/penalty"),
+      surround: idsAt(backdrops.surround, "backdrops/surround"),
       facilities: idsAt(raw.facilities, "facilities"),
       news: idsAt(raw.news, "news"),
     };
@@ -135,6 +138,7 @@ export const artAssetRoutes = {
       ...faces,
       backdrops: index && visual ? index.backdrops : [],
       penaltyBackdrops: index && visual ? index.penalty : [],
+      surround: index && visual ? index.surround : [],
       facilities: index && visual ? index.facilities : [],
       news: index && visual ? index.news : [],
       visual,

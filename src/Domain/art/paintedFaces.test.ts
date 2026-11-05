@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { coachCombo, FACILITY_ART_REVISION, paintedBackdrop, paintedFacility, paintedPlayerStandIn, setPaintedBackdrops, setPaintedFaces, setPaintedScreens } from "@/Domain/art/paintedFaces";
+import { coachCombo, FACILITY_ART_REVISION, paintedBackdrop, paintedFacility, paintedPlayerStandIn, setPaintedBackdrops, setPaintedFaces, setPaintedScreens, setPaintedSurround, paintedSurround } from "@/Domain/art/paintedFaces";
 import { faceUrl, managerAvatarUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 
 afterEach(() => { setPaintedFaces(null); setPaintedBackdrops(null); setPaintedScreens(null, null); });
@@ -60,5 +60,15 @@ describe("painted facilities", () => {
     expect(paintedFacility("academyLodging", 4)).toBeNull();
     setPaintedScreens(null, null);
     expect(paintedFacility("academyLodging", 3)).toBeNull();
+  });
+});
+
+describe("painted surroundings", () => {
+  test("only the announced stadiums have a painting", () => {
+    setPaintedSurround(["std_Q83457"]);
+    expect(paintedSurround("std_Q83457")).toContain("backdrops/surround/std_Q83457.webp");
+    expect(paintedSurround("std_Q1")).toBeNull();
+    setPaintedSurround(null);
+    expect(paintedSurround("std_Q83457")).toBeNull();
   });
 });

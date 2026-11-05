@@ -163,7 +163,7 @@ const LIGHT_STADIUMS = ['lean', 'both', 'none', 'covered', 'real-dec', 'real-jun
 type LightStadiumOption = typeof LIGHT_STADIUMS[number];
 // A real stadium (Old Trafford, numbers as `fetchStadiums.ts` writes them): the sun computed for the date.
 const TEST_REAL: RealStadium = {
-  id: 'std_Q18484', qid: 'Q18484', name: 'Old Trafford', lat: 53.4631, lon: -2.2913, axis: 70.6,
+  id: 'std_Q83457', qid: 'Q83457', name: 'Old Trafford', lat: 53.4631, lon: -2.2913, axis: 70.6,
   heights: { top: 36, bottom: 28, low: 34, high: 36 }, roof: 'open', tzStd: 0, dst: 'eu',
 };
 const TEST_REAL_DATE: Partial<Record<LightStadiumOption, string>> = { 'real-dec': '2027-12-15', 'real-jun': '2027-06-21' };
@@ -550,7 +550,8 @@ export function TestScreen() {
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
       ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
-          ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: "std_test" } : {}),
+          // Oval = Old Trafford, with its painted surroundings when the art has them.
+          ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: stadiumShape === "oval" ? TEST_REAL.id : "std_test" } : {}),
           // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
           led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),

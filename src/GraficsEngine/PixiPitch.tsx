@@ -1,3 +1,4 @@
+import { SURROUND_ART } from "@/Domain/art/surroundArt";
 import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
@@ -19,7 +20,7 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
 import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
-import { gameArtUrl, newVisualOn, paintedBackdrop } from "@/Domain/art/paintedFaces";
+import { gameArtUrl, newVisualOn, paintedBackdrop, paintedSurround } from "@/Domain/art/paintedFaces";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
 import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
@@ -809,6 +810,21 @@ export function PixiPitch({
         ground.eventMode = 'none';
         drawSurroundings(ground, { w: canvasWidth, h: canvasHeight }, m.stand, m.scale, stadiumRef.current?.stadiumId ?? stadiumRef.current?.seed ?? "test");
         app.stage.addChildAt(ground, 0);
+        // The real neighbourhood painted for this stadium (art, `surroundArt.ts`): in yards, centred on the pitch, over
+        // the drawn ground once loaded. Not mirrored: the stands it was painted around do not turn with the pitch.
+        const surroundUrl = stadiumRef.current?.stadiumId && newVisualOn() ? paintedSurround(stadiumRef.current.stadiumId) : null;
+        if (surroundUrl) {
+          const pitchCx = m.marginX + m.width / 2, pitchCy = m.marginY + m.height / 2;
+          void Assets.load<Texture>(surroundUrl).then((tex) => {
+            if (!app.stage || ground.destroyed) return;
+            const sp = new Sprite(tex);
+            sp.eventMode = 'none';
+            const k = m.scale / SURROUND_ART.PPY;
+            sp.scale.set(k);
+            sp.position.set(pitchCx - (tex.width * k) / 2, pitchCy - (tex.height * k) / 2);
+            app.stage.addChildAt(sp, app.stage.getChildIndex(ground) + 1);
+          }).catch(() => { /* the drawn ground stays */ });
+        }
         const footMask = new Graphics();
         for (const p of standFootprint(m.stand)) footMask.poly(p).fill(0xffffff);
         app.stage.addChild(footMask);
