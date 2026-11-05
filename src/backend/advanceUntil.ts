@@ -64,6 +64,9 @@ interface SeasonEvent {
   moves: ClubMove[];
   playerMove: ClubMove | null;
   playerChampionOf: string | null;
+  playerLeague?: string;
+  playerClubId?: string;
+  playerClubName?: string;
 }
 
 export interface AdvancePosition extends AdvanceTarget { currentDate: string }
@@ -103,6 +106,9 @@ function seasonEventOf(date: string, payload: Record<string, unknown>): SeasonEv
     moves: (payload.moves as ClubMove[] | undefined) ?? [],
     playerMove: (payload.playerMove as ClubMove | null | undefined) ?? null,
     playerChampionOf: (payload.playerChampionOf as string | null | undefined) ?? null,
+    playerLeague: payload.playerLeague as string | undefined,
+    playerClubId: payload.playerClubId as string | undefined,
+    playerClubName: payload.playerClubName as string | undefined,
   };
 }
 

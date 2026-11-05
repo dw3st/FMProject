@@ -234,7 +234,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         </div>
       )}
       {notice && (
-        <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} onDismiss={dismissNotice} />
+        <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} currentClubId={session?.clubId ?? ""} onDismiss={dismissNotice} />
       )}
     </GroupAdvanceContext.Provider>
   );

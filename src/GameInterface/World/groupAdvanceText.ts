@@ -36,6 +36,9 @@ export function summaryOutcome(days: readonly PendingDay[]): SummaryOutcome | nu
         moves: (season.moves as ClubMove[] | undefined) ?? [],
         playerMove: (season.playerMove as ClubMove | null | undefined) ?? null,
         playerChampionOf: (season.playerChampionOf as string | null | undefined) ?? null,
+        playerLeague: season.playerLeague as string | undefined,
+        playerClubId: season.playerClubId as string | undefined,
+        playerClubName: season.playerClubName as string | undefined,
       }
       : null,
   };

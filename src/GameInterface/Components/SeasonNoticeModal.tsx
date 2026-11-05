@@ -13,16 +13,20 @@ export function SeasonNoticeModal({
   notice,
   leagues,
   currentLeagueName,
+  currentClubId,
   onDismiss,
 }: {
   notice: SeasonNotice;
   leagues: LeagueData[];
   /** Shown when the club stayed in its division. */
   currentLeagueName: string;
+  /** The manager's club now: the notice names the old club when he has moved since that season. */
+  currentClubId: string;
   onDismiss: () => void;
 }) {
   const { t } = useTranslation();
   const move = notice.playerMove;
+  const formerClub = notice.playerClubName && notice.playerClubId !== currentClubId ? notice.playerClubName : null;
 
   return (
     <Modal open onClose={onDismiss} size="sm">
@@ -32,6 +36,8 @@ export function SeasonNoticeModal({
             ? t("seasonNotice.titleYear", { year: notice.archiveYear })
             : t("seasonNotice.title")}
         </h2>
+
+        {formerClub && <p className="text-sm font-semibold">{t("seasonNotice.formerClub", { club: formerClub })}</p>}
 
         {notice.playerChampionOf && (
           <p className="flex items-center gap-2 text-sm font-bold text-primary">
@@ -53,7 +59,7 @@ export function SeasonNoticeModal({
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {t("seasonNotice.stayed", { league: currentLeagueName })}
+            {t("seasonNotice.stayed", { league: notice.playerLeague ? leagueNameOf(notice.playerLeague, leagues) : currentLeagueName })}
           </p>
         )}
 

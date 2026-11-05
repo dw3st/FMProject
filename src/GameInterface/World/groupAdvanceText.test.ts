@@ -11,6 +11,13 @@ describe("deadlineLeft", () => {
   });
 });
 
+test("the notice keeps the club and league of the season", () => {
+  const out = summaryOutcome([{ date: "2031-05-24", newDate: "2031-05-25", seat: { seasonEnded: true, moves: [], playerMove: null, playerChampionOf: "la_liga", playerLeague: "la_liga", playerClubId: "529", playerClubName: "Barcelona" } }]);
+  expect(out?.notice?.playerLeague).toBe("la_liga");
+  expect(out?.notice?.playerClubName).toBe("Barcelona");
+  expect(out?.notice?.playerClubId).toBe("529");
+});
+
 describe("summaryOutcome", () => {
   test("last day, the last season notice, sacked and offers", () => {
     const out = summaryOutcome([

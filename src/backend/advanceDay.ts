@@ -3511,7 +3511,7 @@ export async function advanceOneDay(
       const offers = ds.job.newOffers.length + (nationalDay.bySeat[ds.seatId]?.offers ?? 0);
       seats[ds.seatId] = {
         ...(ds.rollover.seasonEnded
-          ? { seasonEnded: true as const, archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }
+          ? { seasonEnded: true as const, ...(ds.clubId ? { playerLeague: index.byId(ds.clubId)?.leagueSlug, playerClubId: ds.clubId, playerClubName: ds.meta.clubName } : {}), archiveYear: ds.rollover.archiveYear, moves: ds.rollover.moves, playerMove: ds.rollover.move, playerChampionOf: ds.rollover.championOf }
           : {}),
         ...(ds.job.ended ? { sacked: true as const } : {}),
         ...(offers > 0 ? { jobOffers: offers } : {}),

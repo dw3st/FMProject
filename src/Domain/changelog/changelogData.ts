@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.5",
+    date: "2026-11-05",
+    time: "08:49",
+    items: [
+      {
+        pt: "O aviso de fim de temporada mostra a liga e o clube daquela temporada, mesmo se você aceitou outra proposta antes de vê-lo.",
+        en: "The end of season notice shows the league and club of that season, even if you took another job before seeing it.",
+      },
+    ],
+  },
+  {
     version: "4.46.4",
     date: "2026-11-05",
     time: "08:45",

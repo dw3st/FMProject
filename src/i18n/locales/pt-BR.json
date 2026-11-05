@@ -2991,6 +2991,7 @@
     "error": "Avanço interrompido: {{error}}"
   },
   "seasonNotice": {
+    "formerClub": "Sua temporada no {{club}}:",
     "title": "Temporada encerrada",
     "titleYear": "Temporada {{year}} encerrada",
     "promoted": "Seu clube subiu para {{league}}!",

@@ -2991,6 +2991,7 @@
     "error": "Fast-forward stopped: {{error}}"
   },
   "seasonNotice": {
+    "formerClub": "Your season with {{club}}:",
     "title": "Season over",
     "titleYear": "Season {{year}} over",
     "promoted": "Your club was promoted to {{league}}!",

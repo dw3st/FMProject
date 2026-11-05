@@ -122,6 +122,7 @@ export function Layout({ children }: { children: ReactNode }) {
             notice={seasonNotice}
             leagues={leagues}
             currentLeagueName={session?.leagueName ?? ""}
+            currentClubId={session?.clubId ?? ""}
             onDismiss={dismissSeasonNotice}
           />
         )}

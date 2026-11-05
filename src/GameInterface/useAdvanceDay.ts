@@ -23,6 +23,10 @@ export interface SeasonNotice {
   moves: ClubMove[];
   playerMove: ClubMove | null;
   playerChampionOf: string | null;
+  /** League, id and name of the club the season was played with: the manager may have changed club since. */
+  playerLeague?: string;
+  playerClubId?: string;
+  playerClubName?: string;
 }
 
 export interface FastForwardProgress {
@@ -115,6 +119,9 @@ export function useAdvanceDay() {
           moves: log.moves ?? [],
           playerMove: log.playerMove ?? null,
           playerChampionOf: log.playerChampionOf ?? null,
+          playerLeague: log.playerLeague,
+          playerClubId: log.playerClubId,
+          playerClubName: log.playerClubName,
         });
       }
     } catch {

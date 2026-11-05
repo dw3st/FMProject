@@ -293,6 +293,9 @@ export interface AdvanceDayResponse extends DayLog {
   playerMove?: ClubMove | null;
   /** League the human club won, or null (seasonEnded days only). */
   playerChampionOf?: string | null;
+  playerLeague?: string;
+  playerClubId?: string;
+  playerClubName?: string;
   /** Achievements unlocked today (`.claude/rules/game/achievements.md`). */
   achievements?: number;
   /** Present (true) when a press conference invite went out today (`.claude/rules/game/press.md`). */
