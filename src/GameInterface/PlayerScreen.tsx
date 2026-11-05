@@ -273,6 +273,7 @@ export function PlayerScreen({
         player={renewOpen ? {
           id: player.id, name: player.name, age: player.age, squadId: player.squadId,
           contractUntil: player.contract?.until.slice(0, 4),
+          nationality: player.nationality, clubColors: squadColors,
         } : null}
         onClose={() => setRenewOpen(false)}
         onDone={() => void refresh()}

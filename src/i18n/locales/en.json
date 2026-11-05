@@ -2575,7 +2575,11 @@
     "promote": "Promote",
     "release": "Release",
     "confirmRelease": "Confirm release",
-    "bulk": { "label": "Release whoever has a top potential below", "release_one": "Release {{count}} player", "release_other": "Release {{count}} players" },
+    "bulk": {
+      "label": "Release whoever has a top potential below",
+      "release_one": "Release {{count}} player",
+      "release_other": "Release {{count}} players"
+    },
     "cancel": "Cancel"
   },
   "matchPreview": {
@@ -3224,6 +3228,14 @@
       "smallerClub": "Too ambitious for a club this size: he refuses.",
       "poorFacilities": "Too ambitious for a training ground in this state: he refuses.",
       "recentlyRenewed": "Renewed recently: no new renewal before {{date}}."
+    },
+    "result": {
+      "renewed": "Renewed",
+      "refused": "Did not renew",
+      "until": "Until {{date}} · {{wage}} a week",
+      "retry": "Try again",
+      "sceneHappy": "The player smiles and shakes the director's hand over the signed contract",
+      "sceneSad": "The player alone at the desk, head down, the contract pushed aside"
     }
   },
   "seatOffers": {
@@ -3289,7 +3301,13 @@
     }
   },
   "career": {
-    "arrival": { "title": "Arrival", "free": "Free", "pre_contract": "Pre-contract", "academy": "Academy", "clause": "{{fee}} (clause)" },
+    "arrival": {
+      "title": "Arrival",
+      "free": "Free",
+      "pre_contract": "Pre-contract",
+      "academy": "Academy",
+      "clause": "{{fee}} (clause)"
+    },
     "title": "Career",
     "empty": "No seasons played yet.",
     "current": "Current",
@@ -3454,7 +3472,22 @@
     }
   },
   "negotiation": {
-    "situation": {"label":"Situation","role":{"key":"Key player","starter":"Starter","rotation":"Rotation","backup":"Backup","youth":"Youngster"},"forSale":"For sale","notForSale":"Not for sale","loanable":"Available on loan","notLoanable":"Not available on loan","onLoan":"On loan at this club","requested":"Asked to leave"},
+    "situation": {
+      "label": "Situation",
+      "role": {
+        "key": "Key player",
+        "starter": "Starter",
+        "rotation": "Rotation",
+        "backup": "Backup",
+        "youth": "Youngster"
+      },
+      "forSale": "For sale",
+      "notForSale": "Not for sale",
+      "loanable": "Available on loan",
+      "notLoanable": "Not available on loan",
+      "onLoan": "On loan at this club",
+      "requested": "Asked to leave"
+    },
     "offer": {
       "value": "Market value",
       "valueScout": "Scout's estimate",
@@ -3521,7 +3554,12 @@
     },
     "loanAgreed": "{{name}} joins on loan",
     "loanUntil": "Returns on {{date}}",
-    "clause": { "line": "Release clause: {{fee}}. If you pay it the club cannot refuse, but the player still has to accept the contract.", "pay": "Pay the clause", "confirm": "Pay {{fee}}", "noMoney": "The balance does not cover the clause." },
+    "clause": {
+      "line": "Release clause: {{fee}}. If you pay it the club cannot refuse, but the player still has to accept the contract.",
+      "pay": "Pay the clause",
+      "confirm": "Pay {{fee}}",
+      "noMoney": "The balance does not cover the clause."
+    },
     "acceptCounter": "Accept {{fee}}",
     "acceptLoanCounter": "Accept {{share}}% + {{fee}}",
     "requestLoan": "Ask for loan",
@@ -6072,9 +6110,15 @@
       "yellow": "{{team}} booking",
       "sub": "{{team}} substitution",
       "subLine": "{{out}} off, {{in}} on",
-      "manager": { "yellow": "{{team}} manager booked", "red": "{{team}} manager sent off" },
+      "manager": {
+        "yellow": "{{team}} manager booked",
+        "red": "{{team}} manager sent off"
+      },
       "short": {
-        "manager": { "yellow": "Manager booked", "red": "Manager sent off" },
+        "manager": {
+          "yellow": "Manager booked",
+          "red": "Manager sent off"
+        },
         "goal": "Goal",
         "disallowed": "Goal ruled out by VAR",
         "red": "Sent off",

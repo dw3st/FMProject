@@ -7,6 +7,18 @@ import { formatGameDate } from "@/GameInterface/formatDate";
 import {
   ContractTermsFields, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
+import { RenewalResult, type RenewalOutcome } from "@/GameInterface/Contracts/RenewalResult";
+import { faceUrl } from "@/Domain/faces/faceUrl";
+import { formatWageFull } from "@/Domain/money";
+
+/** Refusals that are the player's own answer (shown as the refused scene); the others are rules, shown inline. */
+const PLAYER_REFUSALS = new Set(["lowWage", "unhappy", "smallerClub", "poorFacilities"]);
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0]!.charAt(0) + (parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "")).toUpperCase();
+}
 
 interface ContractTarget {
   id: string;
@@ -16,6 +28,9 @@ interface ContractTarget {
   squadId?: string;
   /** Year his current contract ends, when he has one. */
   contractUntil?: string;
+  /** His face on the renewal result. */
+  nationality?: string | null;
+  clubColors?: readonly string[];
 }
 
 interface Props {
@@ -38,11 +53,12 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
   const [years, setYears] = useState(2);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [outcome, setOutcome] = useState<RenewalOutcome | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // A free agent near the age cap only takes a short deal: open on what he accepts (tester report, 4.41.25).
   const maxYears = mode === "sign" && player ? maxOfferYears(player.age) : 5;
-  useEffect(() => { setError(null); setDone(false); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
+  useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
 
   if (!player || !session) return null;
@@ -62,14 +78,39 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(refusalText(err.error ?? "generic"));
+        const code = err.error ?? "generic";
+        if (mode === "renew" && PLAYER_REFUSALS.has(code)) setOutcome({ kind: "refused", detail: refusalText(code) });
+        else setError(refusalText(code));
         return;
       }
+      if (mode === "renew") {
+        const body = (await res.json().catch(() => ({}))) as { contract?: { until: string; wage: number } };
+        const c = body.contract;
+        setOutcome({
+          kind: "renewed",
+          detail: c ? t("contracts.result.until", { date: formatGameDate(c.until, i18n.language), wage: formatWageFull(c.wage) }) : t("contracts.renewed"),
+        });
+      }
       setDone(true);
-      onDone?.();
+      // A renewal refreshes the sheet when its result is closed: refreshing now remounts this window and loses it.
+      if (mode !== "renew") onDone?.();
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (mode === "renew" && outcome) {
+    const close = () => { if (outcome.kind === "renewed") onDone?.(); onClose(); };
+    return (
+      <Modal open onClose={close} size="sm">
+        <RenewalResult
+          outcome={outcome} name={player.name} fallback={initialsOf(player.name)}
+          faceSrc={faceUrl(player.id, player.nationality, player.clubColors)}
+          onClose={close}
+          {...(outcome.kind === "refused" ? { onRetry: () => setOutcome(null) } : {})}
+        />
+      </Modal>
+    );
   }
 
   return (

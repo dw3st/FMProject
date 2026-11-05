@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.3",
+    date: "2026-11-05",
+    time: "18:49",
+    items: [
+      {
+        pt: "Renovar um contrato mostra uma janela com o resultado: o jogador apertando a mão do diretor quando aceita, sozinho na mesa quando recusa, com o rosto e o nome dele.",
+        en: "Renewing a contract shows a window with the result: the player shaking the director's hand when he accepts, alone at the desk when he refuses, with his face and name.",
+      },
+    ],
+  },
+  {
     version: "4.47.2",
     date: "2026-11-05",
     time: "18:31",

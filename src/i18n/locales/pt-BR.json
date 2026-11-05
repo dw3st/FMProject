@@ -2575,7 +2575,11 @@
     "promote": "Promover",
     "release": "Dispensar",
     "confirmRelease": "Confirmar dispensa",
-    "bulk": { "label": "Dispensar quem tem potencial máximo abaixo de", "release_one": "Dispensar {{count}} jogador", "release_other": "Dispensar {{count}} jogadores" },
+    "bulk": {
+      "label": "Dispensar quem tem potencial máximo abaixo de",
+      "release_one": "Dispensar {{count}} jogador",
+      "release_other": "Dispensar {{count}} jogadores"
+    },
     "cancel": "Cancelar"
   },
   "matchPreview": {
@@ -3224,6 +3228,14 @@
       "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
       "poorFacilities": "Ambicioso demais para um CT neste estado: recusa.",
       "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}."
+    },
+    "result": {
+      "renewed": "Renovou",
+      "refused": "Não renovou",
+      "until": "Até {{date}} · {{wage}} por semana",
+      "retry": "Tentar de novo",
+      "sceneHappy": "O jogador sorri e aperta a mão do diretor sobre o contrato assinado",
+      "sceneSad": "O jogador sozinho na mesa, de cabeça baixa, com o contrato de lado"
     }
   },
   "seatOffers": {
@@ -3289,7 +3301,13 @@
     }
   },
   "career": {
-    "arrival": { "title": "Chegada", "free": "Livre", "pre_contract": "Pré-contrato", "academy": "Base", "clause": "{{fee}} (multa)" },
+    "arrival": {
+      "title": "Chegada",
+      "free": "Livre",
+      "pre_contract": "Pré-contrato",
+      "academy": "Base",
+      "clause": "{{fee}} (multa)"
+    },
     "title": "Carreira",
     "empty": "Ainda sem temporadas jogadas.",
     "current": "Atual",
@@ -3454,7 +3472,22 @@
     }
   },
   "negotiation": {
-    "situation": {"label":"Situação","role":{"key":"Peça-chave","starter":"Titular","rotation":"Rodízio","backup":"Reserva","youth":"Jovem"},"forSale":"À venda","notForSale":"Não está à venda","loanable":"Disponível para empréstimo","notLoanable":"Não disponível para empréstimo","onLoan":"Emprestado a este clube","requested":"Pediu para sair"},
+    "situation": {
+      "label": "Situação",
+      "role": {
+        "key": "Peça-chave",
+        "starter": "Titular",
+        "rotation": "Rodízio",
+        "backup": "Reserva",
+        "youth": "Jovem"
+      },
+      "forSale": "À venda",
+      "notForSale": "Não está à venda",
+      "loanable": "Disponível para empréstimo",
+      "notLoanable": "Não disponível para empréstimo",
+      "onLoan": "Emprestado a este clube",
+      "requested": "Pediu para sair"
+    },
     "offer": {
       "value": "Valor de mercado",
       "valueScout": "Estimativa do olheiro",
@@ -3521,7 +3554,12 @@
     },
     "loanAgreed": "{{name}} chega por empréstimo",
     "loanUntil": "Volta em {{date}}",
-    "clause": { "line": "Multa rescisória: {{fee}}. Pagando, o clube não pode recusar, mas o jogador ainda precisa aceitar o contrato.", "pay": "Pagar a multa", "confirm": "Pagar {{fee}}", "noMoney": "O saldo não cobre a multa." },
+    "clause": {
+      "line": "Multa rescisória: {{fee}}. Pagando, o clube não pode recusar, mas o jogador ainda precisa aceitar o contrato.",
+      "pay": "Pagar a multa",
+      "confirm": "Pagar {{fee}}",
+      "noMoney": "O saldo não cobre a multa."
+    },
     "acceptCounter": "Aceitar {{fee}}",
     "acceptLoanCounter": "Aceitar {{share}}% + {{fee}}",
     "requestLoan": "Pedir empréstimo",
@@ -6072,9 +6110,15 @@
       "yellow": "Amarelo no {{team}}",
       "sub": "Troca no {{team}}",
       "subLine": "sai {{out}}, entra {{in}}",
-      "manager": { "yellow": "Amarelo para o técnico do {{team}}", "red": "Técnico do {{team}} expulso" },
+      "manager": {
+        "yellow": "Amarelo para o técnico do {{team}}",
+        "red": "Técnico do {{team}} expulso"
+      },
       "short": {
-        "manager": { "yellow": "Amarelo para o técnico", "red": "Técnico expulso" },
+        "manager": {
+          "yellow": "Amarelo para o técnico",
+          "red": "Técnico expulso"
+        },
         "goal": "Gol",
         "disallowed": "Gol anulado pelo VAR",
         "red": "Expulsão",
