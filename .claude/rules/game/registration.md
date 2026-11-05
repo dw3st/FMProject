@@ -147,7 +147,8 @@ sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
   regra em uma linha, contadores (inscritos, estrangeiros, formados com vagas perdidas, livres), tabela padrão (na ordem
   das posições, como o Elenco, #146) com posição, idade, nação, selos (Inscrito/Não inscrito, Livre, Estrangeiro, Formado no clube/país), nota e
   Incluir/Tirar (desligado fora do prazo, com o motivo); "Automático" (confirmação quando editada à mão).
-- **Formação:** selo "Não inscrito" (competição do próximo jogo no `title`); o jogador continua escolhível.
+- **Formação:** quem não está inscrito na competição do próximo jogo sai da lista de reservas e do preenchimento automático (uma linha diz quantos ficaram fora). Um titular já salvo continua com o selo "Não inscrito" (o XI salvo vale para todas as competições) e a troca do dia o substitui. Report de tester, 4.46.7.
+- **Prévia:** os cartões dos times e as trocas de última hora só mostram quem pode jogar (inscrito e disponível).
 - **Prévia:** trocas `unregistered` / `foreignLimit` na lista de avisos.
 - **Inbox** `registration` (ícone `clipboard`, tópico `competitions`): `auto_list`, `not_fit`, `waiting`, `closing`,
   `exception`, com link para a aba.

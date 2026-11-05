@@ -13,6 +13,13 @@ export function isUnavailable(player: Pick<RosterPlayer, "injury" | "suspension"
   return isInjured(player, date) || isSuspended(player) || onNationalDuty(player, date);
 }
 
+/** The players who may play a match: not injured, suspended or away, and registered when a list is given. */
+export function eligibleLivePlayers<P extends Pick<RosterPlayer, "id" | "injury" | "suspension" | "nationalDuty">>(
+  players: P[], date: string, registered: Set<string> | null,
+): P[] {
+  return players.filter((p) => !isUnavailable(p, date) && (!registered || registered.has(p.id)));
+}
+
 /** With his national team on `date` (`.claude/rules/game/national-teams.md`). */
 export function onNationalDuty(player: Pick<RosterPlayer, "nationalDuty">, date: string): boolean {
   const d = player.nationalDuty;

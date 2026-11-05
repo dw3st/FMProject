@@ -92,8 +92,9 @@ const FORMATION_BLURBS: Record<string, string> = {
 export function FormationScreen() {
   const { t, i18n } = useTranslation();
   const { session, squad, save, loading: saveLoading, mergeSession, currentDate, fixtures } = useGameSave();
-  // Registration (`.claude/rules/game/registration.md`): players not registered for the competition of the next
-  // match carry a badge; they stay selectable (the match-day swap replaces them, with a warning).
+  // Registration (`.claude/rules/game/registration.md`): a player not registered for the competition of the next
+  // match is no option: out of the bench list and the auto-fill. A saved starter stays with a badge (the XI is shared
+  // by every competition) and the match-day swap replaces him, with a warning.
   const nextCompetition = useMemo(() => {
     const clubId = squad?.id;
     if (!clubId) return null;
@@ -123,6 +124,7 @@ export function FormationScreen() {
   }, [session?.saveId, nextCompetition]);
   const unregisteredLabel = (id: string) =>
     unregistered?.ids.has(id) ? competitionName(unregistered.competition, regLeagues, i18n.language) : undefined;
+  const registeredOnly = (players: RosterPlayer[]) => (unregistered ? players.filter((p) => !unregistered.ids.has(p.id)) : players);
   // Today's man-marking (chosen in the match preview): the marker slots show a target icon.
   const markedSlots = new Set(
     save?.matchMarking && save.matchMarking.date === currentDate ? save.matchMarking.marks.map((m) => m.slot) : [],
@@ -326,7 +328,7 @@ export function FormationScreen() {
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
     if (!lineupReady || !squad || baseSlots.length === 0 || savedLineup.length > 0) return;
-    commitLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
+    commitLineup(autoFillLineupWithFitness(baseSlots, registeredOnly(squad.players), currentDate));
   }, [lineupReady, baseSlots, squad, savedLineup.length, currentDate]);
 
   useEffect(() => {
@@ -528,7 +530,7 @@ export function FormationScreen() {
   function handleAutoFill() {
     if (!squad || slots.length === 0 || editing) return;
     setPresetSwaps(null);
-    setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
+    setLineup(autoFillLineupWithFitness(slots, registeredOnly(squad.players), currentDate));
     setSelectedSlotIdx(null);
   }
 
@@ -610,7 +612,9 @@ export function FormationScreen() {
   const usedInXi = new Set(
     startingBySlot.filter((p): p is RosterPlayer => p !== undefined).map((p) => p.id),
   );
-  const bench = squad ? sortBenchByPosition(squad.players.filter((p) => !usedInXi.has(p.id))) : [];
+  const notInXi = squad ? squad.players.filter((p) => !usedInXi.has(p.id)) : [];
+  const bench = sortBenchByPosition(registeredOnly(notInXi));
+  const hiddenFromBench = notInXi.length - bench.length;
 
   const targetSlotRole =
     selectedSlotIdx !== null && slots[selectedSlotIdx] ? slots[selectedSlotIdx]!.role : undefined;
@@ -884,6 +888,11 @@ export function FormationScreen() {
                   </div>
                   <div className="flex flex-col min-h-0">
                     <SquadListHeader title={t("formations.bench")} count={bench.length} />
+                    {hiddenFromBench > 0 && unregistered && (
+                      <p className="text-sm text-muted-foreground m-0 mb-1">
+                        {t("formations.unregisteredHidden", { count: hiddenFromBench, competition: competitionName(unregistered.competition, regLeagues, i18n.language) })}
+                      </p>
+                    )}
                     <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
                       {bench.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-4 m-0">{t("formations.noBenchPlayers")}</p>
@@ -903,7 +912,6 @@ export function FormationScreen() {
                               onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
                               highlight={selectedSlotIdx !== null && !injured}
                               injured={injured}
-                              unregisteredFor={unregisteredLabel(player.id)}
                             />
                           );
                         })

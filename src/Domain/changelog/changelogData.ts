@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.7",
+    date: "2026-11-05",
+    time: "10:11",
+    items: [
+      {
+        pt: "Jogador não inscrito na competição não aparece mais como opção na prévia do jogo nem nos reservas da Formação.",
+        en: "A player not registered for the competition is no longer an option in the match preview or on the Formation bench.",
+      },
+    ],
+  },
+  {
     version: "4.46.6",
     date: "2026-11-05",
     time: "08:58",

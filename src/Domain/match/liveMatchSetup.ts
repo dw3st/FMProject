@@ -15,7 +15,7 @@ import type { Formation, GameState, SetPieceTakers, TeamId } from "@/GameEngine/
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { pitchInjury } from "@/Domain/facilities/turf";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
-import { isUnavailable } from "@/Domain/discipline/discipline";
+export { eligibleLivePlayers } from "@/Domain/discipline/discipline";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
@@ -73,11 +73,6 @@ export interface LiveMatchInput {
 }
 
 const SIDES: TeamId[] = ["A", "B"];
-
-/** The players who may play a match: not injured or suspended, and registered when a list is given. */
-export function eligibleLivePlayers(players: RosterPlayer[], date: string, registered: Set<string> | null): RosterPlayer[] {
-  return players.filter((p) => !isUnavailable(p, date) && (!registered || registered.has(p.id)));
-}
 
 /** Per-team engine configs of a live match: tactics (style, mentality, axes, familiarity) and morale overrides. */
 export function applyLiveSideConfigs(sides: Record<TeamId, Pick<LiveSideInput, "tactics" | "morale">>): void {

@@ -8,6 +8,7 @@ import { RescheduledNote } from "@/GameInterface/Components/RescheduledNote";
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
+import { eligibleLivePlayers } from "@/Domain/discipline/discipline";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
@@ -325,12 +326,15 @@ function fitnessBarClass(v: number): string {
 
 function LastMinuteSubsModal({
   players,
+  candidates,
   lineup,
   formationSlots,
   onSwap,
   onClose,
 }: {
   players: RosterPlayer[];
+  /** Who may come in: available and registered for this competition. */
+  candidates: RosterPlayer[];
   lineup: string[];
   formationSlots: FormationSlotDef[];
   onSwap: (newLineup: string[]) => void;
@@ -347,7 +351,7 @@ function LastMinuteSubsModal({
     .map((id, i) => ({ player: byId.get(id), slotIndex: i, role: formationSlots[i]?.role ?? "CM" }))
     .filter((s): s is { player: RosterPlayer; slotIndex: number; role: string } => !!s.player);
 
-  const bench = players.filter((p) => !inLineupSet.has(p.id));
+  const bench = candidates.filter((p) => !inLineupSet.has(p.id));
   const selectedOut = selectedSlot !== null ? starters.find((s) => s.slotIndex === selectedSlot) : undefined;
 
   function handleSelectOut(slotIdx: number) {
@@ -594,6 +598,8 @@ interface MatchSetupData {
   oppFormation: { id: string; attacking: FormationSlotDef[] };
   myLineup: string[];
   myTactics?: TacticsSave;
+  /** Players each side may name for this competition (registration); null = everyone. */
+  registered?: { mine: string[]; opp: string[] } | null;
   /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
   injuredReplaced?: { out: string; in: string; reason?: "injured" | "suspended" | "unregistered" | "foreignLimit" }[];
   /** Tired-starter swaps the user can accept for this match. */
@@ -1034,6 +1040,16 @@ export function MatchPreviewScreen() {
   const awaySquadName    = isHome ? opponentName           : myName;
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
+  // The team sheets: a player out of this match (injured, suspended, not registered) is neither a starter nor a sub.
+  const sheetDate = fixture?.date ?? "";
+  const myCandidates = matchSetup
+    ? eligibleLivePlayers(matchSetup.mySquad.players, sheetDate, matchSetup.registered ? new Set(matchSetup.registered.mine) : null)
+    : [];
+  const sheetOf = (squad: Squad | null): Squad | null => {
+    if (!squad || !matchSetup) return squad;
+    if (squad === matchSetup.mySquad) return { ...squad, players: myCandidates };
+    return { ...squad, players: eligibleLivePlayers(squad.players, sheetDate, matchSetup.registered ? new Set(matchSetup.registered.opp) : null) };
+  };
   // The server's probable XI already respects the opponent's registration (`registration.md`).
   const oppAutoLineup = matchSetup?.oppLineup?.length
     ? matchSetup.oppLineup
@@ -1167,7 +1183,7 @@ export function MatchPreviewScreen() {
         <TeamCard
           side="home"
           squadName={homeSquadName}
-          squad={homeSquad}
+          squad={sheetOf(homeSquad)}
           lineup={homeLineup}
           formation={homeFormationId}
           formationSlots={homeSlots}
@@ -1191,7 +1207,7 @@ export function MatchPreviewScreen() {
         <TeamCard
           side="away"
           squadName={awaySquadName}
-          squad={awaySquad}
+          squad={sheetOf(awaySquad)}
           lineup={awayLineup}
           formation={awayFormationId}
           formationSlots={awaySlots}
@@ -1383,6 +1399,7 @@ export function MatchPreviewScreen() {
       {showLastMinuteSubs && matchSetup && (
         <LastMinuteSubsModal
           players={matchSetup.mySquad.players}
+          candidates={myCandidates}
           lineup={myLineup}
           formationSlots={myFormationSlots}
           onSwap={handleLastMinuteSub}
