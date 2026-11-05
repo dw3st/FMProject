@@ -8,6 +8,7 @@ import { leagueTierOf } from "@/backend/facilityWorld";
 import { homeMatchImportance } from "@/backend/matchImportance";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
+import { standDepths, type StandDepths } from "@/Domain/facilities/standDepth";
 import { managerFaceCountry, type ManagerFace } from "@/Domain/faces/managerFace";
 import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
@@ -32,6 +33,8 @@ export interface MatchCrowd {
   decor?: StadiumDecor;
   /** A big game (continental, cup from the quarter-finals, derby): flares and fireworks on the pitch. */
   bigMatch?: true;
+  /** Drawn depth of each stand by its seats (`standDepths`), home games of the human club only; absent = all full. */
+  depths?: StandDepths;
   /** The home ground seen from above (`stadiumLookOf`): its stable id and shape. */
   stadiumId: string;
   shape: StadiumShape;
@@ -87,9 +90,11 @@ export async function matchCrowd(
     ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
   });
   const works = standsUnderWorksOn(mySquad.facilities, fixture.date);
+  const depths = standDepths(mySquad.facilities.stands);
   return {
     attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true, ...look,
     ...(works.length > 0 ? { works } : {}),
+    ...(depths ? { depths } : {}),
     ...(await homeDecor(service, meta.id, meta.seatId)),
   };
 }

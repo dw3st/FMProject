@@ -524,3 +524,7 @@ Mock aprovado em 2026-11-05 (pintado no FLUX). Só desenho.
   desenhados uma vez no fundo do palco; a camada da torcida é recortada pelo contorno (máscara) e a borda da cobertura vai
   por cima. A luz da partida escurece tudo à noite. `/test`: chips Full / Oval / Rounded / Square / Blocks com Stadium.
 - Limitações: o entorno é genérico (o real de cada estádio é a próxima etapa); a faixa é fina em telas largas.
+
+## Arquibancadas pelo tamanho (4.47.2)
+
+Report de tester. `standDepths` (`src/Domain/facilities/standDepth.ts`): lugares de cada setor do clube humano contra a parte padrão do estádio (`FACILITIES.STAND_SHARE`); o setor com mais lugares para a parte dele fica na profundidade cheia e os outros em proporção, nunca abaixo de `MIN_DEPTH` (0,45). Estádio com a divisão padrão = null (nada muda). `MatchCrowd.depths` (jogos em casa do clube humano) → `PitchStadium.depths` → `buildMetrics({ depths })` (pelo lado desenhado, `drawnDepths`; só com forma): a borda de fora do setor entra, o campo não se mexe, e o calçamento ocupa o resto. Com `depths` o entorno pintado não é usado (foi pintado para o estádio inteiro). A forma e as profundidades estão na chave do campo (`MatchScreen`, `WatchScreen`): os dados da torcida chegam depois do estádio aparecer. `/test`: chip Big stand.

@@ -1,3 +1,4 @@
+import { stadiumMapGeom, type MapRect } from "@/GameInterface/Facilities/stadiumMapGeom";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
@@ -86,7 +87,10 @@ export function FacilitiesView({
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6">
         <section className="card-arcade rounded-md p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.stadium.title")}</h3>
+            <div className="flex flex-col gap-1 min-w-0">
+              <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.stadium.title")}</h3>
+              {data.stadium?.name && <span className="text-sm text-muted-foreground truncate">{data.stadium.name}</span>}
+            </div>
             <span className="text-sm text-muted-foreground">{t("facilities.stadium.hint")}</span>
           </div>
           <StadiumMap data={data} avgOcc={avgOcc} selected={selected} works={works} onSelect={setSelected} nf={nf} />
@@ -199,7 +203,7 @@ const occOpacity = (occ: number) => 0.18 + 0.82 * Math.max(0, Math.min(1, occ));
 const paintedTint = (occ: number) => 0.06 + 0.4 * Math.max(0, Math.min(1, occ));
 const paintedShade = (occ: number) => 0.5 * (1 - Math.max(0, Math.min(1, occ)));
 
-/** The painted stadium seen from above (club_art.py, drawn from STAND_GEOM): new visual only. */
+/** The painted stadium seen from above (club_art.py, drawn from STAND_FULL in stadiumMapGeom.ts): new visual only. */
 export const PAINTED_STADIUM = "club/stadium-top.webp";
 
 /**
@@ -216,12 +220,8 @@ function standOccupancy(data: FacilitiesViewData, avg: number): Record<StandId, 
   return out;
 }
 
-const STAND_GEOM: Record<StandId, { x: number; y: number; w: number; h: number; label: string }> = {
-  north: { x: 96, y: 14, w: 128, h: 54, label: "left-1/2 top-[10.25%] -translate-x-1/2 -translate-y-1/2" },
-  south: { x: 96, y: 332, w: 128, h: 54, label: "left-1/2 top-[89.75%] -translate-x-1/2 -translate-y-1/2" },
-  west: { x: 14, y: 80, w: 70, h: 240, label: "left-[15.5%] top-1/2 -translate-x-1/2 -translate-y-1/2" },
-  east: { x: 236, y: 80, w: 70, h: 240, label: "left-[84.5%] top-1/2 -translate-x-1/2 -translate-y-1/2" },
-};
+/** Label of a stand, in % of the drawing: the stand's centre. */
+const labelPos = (r: MapRect) => ({ left: `${((r.x + r.w / 2) / 320) * 100}%`, top: `${((r.y + r.h / 2) / 400) * 100}%` });
 
 function StadiumMap({
   data, avgOcc, selected, works, onSelect, nf,
@@ -232,7 +232,11 @@ function StadiumMap({
   const { t } = useTranslation();
   const occ = standOccupancy(data, avgOcc);
   const [imgFailed, setImgFailed] = useState(false);
-  const painted = newVisualOn() && !imgFailed;
+  // The ground as the live match draws it (tester report): its shape and each stand as deep as its seats.
+  const geom = stadiumMapGeom(data.stadium?.shape, data.stadium?.depths);
+  // The painted stadium is a rounded bowl with equal stands: only for such a ground.
+  const painted = newVisualOn() && !imgFailed && (!data.stadium || (data.stadium.shape === "rounded" && !data.stadium.depths));
+  const p = geom.stands;
   return (
     <div className="relative w-full max-w-[420px] mx-auto aspect-[320/400]">
       {painted && (
@@ -248,8 +252,11 @@ function StadiumMap({
         </defs>
         {!painted && (
           <>
-            {/* Bowl */}
-            <rect x="6" y="6" width="308" height="388" rx="38" className="fill-secondary/40 stroke-border" strokeWidth="2" />
+            {/* Bowl in the ground's shape (none for separate stands) */}
+            {geom.bowl && (
+              <rect x={geom.bowl.x} y={geom.bowl.y} width={geom.bowl.w} height={geom.bowl.h} rx={geom.bowl.rx} ry={geom.bowl.ry}
+                className="fill-secondary/40 stroke-border" strokeWidth="2" />
+            )}
             {/* Pitch */}
             <rect x="92" y="76" width="136" height="248" rx="4" className="fill-foreground/[0.04] stroke-foreground/25" strokeWidth="2" />
             <line x1="92" y1="200" x2="228" y2="200" className="stroke-foreground/25" strokeWidth="2" />
@@ -260,7 +267,7 @@ function StadiumMap({
         )}
         {/* Stands */}
         {data.facilities.stands.map((s) => {
-          const g = STAND_GEOM[s.id];
+          const g = p[s.id];
           const on = selected === s.id;
           return (
             <g key={s.id} onClick={() => onSelect(s.id)} className="cursor-pointer">
@@ -291,7 +298,8 @@ function StadiumMap({
           type="button"
           onClick={() => onSelect(s.id)}
           aria-pressed={selected === s.id}
-          className={`absolute ${STAND_GEOM[s.id].label} flex flex-col items-center gap-0 px-2 py-1 rounded bg-card/85 border-0 cursor-pointer min-h-8 ${
+          style={labelPos(p[s.id])}
+          className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0 px-2 py-1 rounded bg-card/85 border-0 cursor-pointer min-h-8 ${
             selected === s.id ? "ring-1 ring-foreground" : ""}`}
         >
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground leading-tight">

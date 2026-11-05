@@ -47,7 +47,12 @@ export interface PitchMetrics {
 
 export const GOAL_NET_DEPTH_YDS = 2;
 
-export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: boolean; shape?: StadiumShape }): PitchMetrics {
+/** Drawn depth (0..1) of each stand side; only with a stadium shape (the freed band shows the surroundings). */
+export type StandSideDepths = Partial<Record<"top" | "bottom" | "left" | "right", number>>;
+
+export function buildMetrics(
+  canvasW: number, canvasH: number, opts: { stadium: boolean; shape?: StadiumShape; depths?: StandSideDepths },
+): PitchMetrics {
   const totalLengthYds = PITCH_SPEC.lengthYds + 2 * GOAL_NET_DEPTH_YDS;
   const fullScale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
   // With the stadium the pitch is sized like the art preview (4.41.15): the aprons and at least MIN_STAND_YDS of stand
@@ -85,10 +90,17 @@ export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: 
     const right = Math.min(oR, marginX + pitchW + end);
     const bottom = Math.min(oB, marginY + pitchH + side + extraBottom);
     const inner = { x, y, w: right - x, h: bottom - y };
+    // A stand with fewer seats than the others is drawn thinner (tester report): its outer edge comes in.
+    const d = opts.shape ? opts.depths ?? {} : {};
+    const k = (v: number | undefined) => Math.min(1, Math.max(0, v ?? 1));
+    const thickness = {
+      top: Math.round((y - outer.y) * k(d.top)), bottom: Math.round((oB - bottom) * k(d.bottom)),
+      left: Math.round((x - outer.x) * k(d.left)), right: Math.round((oR - right) * k(d.right)),
+    };
     stand = {
-      outer,
+      outer: { x: x - thickness.left, y: y - thickness.top, w: inner.w + thickness.left + thickness.right, h: inner.h + thickness.top + thickness.bottom },
       inner,
-      thickness: { top: y - outer.y, bottom: oB - bottom, left: x - outer.x, right: oR - right },
+      thickness,
       ...(opts.shape ? { shape: opts.shape } : {}),
     };
   }

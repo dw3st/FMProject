@@ -64,3 +64,20 @@ describe("pitch metrics with a stadium shape (surroundings)", () => {
     }
   });
 });
+
+describe("stand depths", () => {
+  test("a thinner stand pulls its outer edge in; the pitch does not move", () => {
+    const full = buildMetrics(1056, 682, { stadium: true, shape: "oval" });
+    const m = buildMetrics(1056, 682, { stadium: true, shape: "oval", depths: { top: 0.5, left: 1 } });
+    expect(m.marginX).toBe(full.marginX);
+    expect(m.stand!.inner).toEqual(full.stand!.inner);
+    expect(m.stand!.thickness.top).toBe(Math.round(full.stand!.thickness.top * 0.5));
+    expect(m.stand!.outer.y).toBe(m.stand!.inner.y - m.stand!.thickness.top);
+    expect(m.stand!.thickness.left).toBe(full.stand!.thickness.left);
+  });
+
+  test("without a shape the stand keeps the full band", () => {
+    const full = buildMetrics(1056, 682, { stadium: true });
+    expect(buildMetrics(1056, 682, { stadium: true, depths: { top: 0.5 } }).stand).toEqual(full.stand);
+  });
+});

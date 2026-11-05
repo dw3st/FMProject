@@ -393,3 +393,7 @@ Report de tester. O fundo pintado da sintética só existe em listras (`paintedT
 ## Efeitos dobrados (4.44.1)
 
 Pedido do usuário: os efeitos eram pequenos demais para sentir. A tabela "CT e base" e as medições acima são de antes. Agora, por nível 1..5 (3 neutro): recuperação ×0,94 / 0,97 / 1 / 1,08 / 1,16; lesão no treino ×1,1 / 1,05 / 1 / 0,85 / 0,7; DP do treino ×0,9 / 0,95 / 1 / 1,1 / 1,2; safra ±0,30 por nível (−0,60 a +0,60); até 7 jovens; promessa 2 / 3,5 / 5 / 9 / 13%; ingresso +10% por nível de conforto (até +40%). Custos, prazos, manutenção e as penalidades de desgaste não mudaram. A IA também sente o CT pelo tier (LOW nível 2, ELITE 4); a base da IA segue neutra. Estimado pelas parcelas de tier: recuperação média ×0,995, lesão de treino ×1,0075, DP de treino ×0,991.
+
+## Estádio como ele é (4.47.2)
+
+Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths }` (`stadiumLookOf`, `standDepths`); o desenho do estádio em `/club` (`stadiumMapGeom`, `Facilities/stadiumMapGeom.ts`) usa a forma do contorno (oval, arredondado, quadrado, setores separados) e a profundidade de cada setor, como na partida. A pintura `club/stadium-top.webp` só aparece num estádio arredondado com setores iguais.

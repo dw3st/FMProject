@@ -1,3 +1,5 @@
+import { stadiumLookOf } from "@/backend/stadiumData";
+import { standDepths } from "@/Domain/facilities/standDepth";
 import { randomUUID } from "node:crypto";
 import { SaveService, saveService, type SeatMeta } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -230,6 +232,8 @@ async function facilitiesView(h: Human) {
       fans: h.meta.board?.fans ?? BOARD_FANS.START,
     },
     season: state ? { start: state.start, end: state.end } : null,
+    /** The ground as the live match draws it (tester report): its name, shape and each stand's depth by its seats. */
+    stadium: { name: h.squad.venue?.name ?? null, shape: stadiumLookOf(h.squad).shape, depths: standDepths(f.stands) },
     items: itemsView(f, h.date, money),
     /** Grass and mowing of the stadium pitch (spec 2026-10-16-pitch-types). */
     turf: f.items.stadiumPitch.turf ?? "natural",

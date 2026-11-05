@@ -1,3 +1,5 @@
+import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
+import type { StandDepths } from "@/Domain/facilities/standDepth";
 import { useCallback, useEffect, useState } from "react";
 import type { AcademyEffects, ProjectQuote, TrainingGroundEffects } from "@/Domain/facilities/facilities";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
@@ -56,6 +58,8 @@ export interface FacilitiesViewData {
   committed: number;
   demandInput: { followers: number; tier: number; fans: number };
   season: { start: string; end: string } | null;
+  /** The ground as the live match draws it: name, shape, each stand's depth (null = all full). */
+  stadium?: { name: string | null; shape: StadiumShape; depths: StandDepths | null };
   /** The ten items with their quotes. */
   items: FacilityItemView[];
   /** Big-match multiplier (derby, knockout) of each coming home game, by fixture id; absent = 1. */

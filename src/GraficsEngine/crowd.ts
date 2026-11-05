@@ -52,6 +52,14 @@ export function standSideOf(id: StandId, mirror: boolean): StandSide {
   }
 }
 
+/** Drawn depth of each stand side from the club stands' depths (`standDepths`); absent = all full. */
+export function drawnDepths(depths: Partial<Record<StandId, number>> | undefined, mirror: boolean): Partial<Record<StandSide, number>> | undefined {
+  if (!depths) return undefined;
+  const out: Partial<Record<StandSide, number>> = {};
+  for (const [id, v] of Object.entries(depths) as [StandId, number][]) out[standSideOf(id, mirror)] = v;
+  return out;
+}
+
 /** Drawn sides of the stands under works (none when absent). */
 export function worksSides(ids: readonly StandId[] | undefined, mirror: boolean): StandSide[] {
   return (ids ?? []).map((id) => standSideOf(id, mirror));
@@ -203,7 +211,7 @@ export function crowdSeats(input: CrowdInput): CrowdSeat[] {
 
   const away = new Set<SeatCell>();
   if (input.neutral) {
-    const mid = input.stand.outer.x + input.stand.outer.w / 2;
+    const mid = input.stand.inner.x + input.stand.inner.w / 2;
     for (const s of filled) if (s.x >= mid) away.add(s);
   } else {
     const end0: StandSide = input.homeSide === "left" ? "right" : "left";

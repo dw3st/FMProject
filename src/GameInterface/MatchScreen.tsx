@@ -1666,6 +1666,8 @@ export function MatchScreen() {
       // The ground seen from above: its shape and the ground around it (stadium mock of 2026-11-05).
       ...(crowd?.shape ? { shape: crowd.shape, stadiumId: crowd.stadiumId } : {}),
       ...(crowd?.works ? { works: crowd.works } : {}),
+      // A stand with more seats is drawn deeper (tester report: an enlarged stand must show).
+      ...(crowd?.depths ? { depths: crowd.depths } : {}),
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),
       ...(crowd?.bigMatch ? { bigMatch: true } : {}),
@@ -2141,7 +2143,7 @@ export function MatchScreen() {
               // the scoreboard or the control bar.
               <div className="relative shrink-0" style={{ width: pitchSize.w, height: pitchSize.h }}>
                 <PixiPitch
-                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? `s${stadium.shape ?? ""}` : ""}${touchline?.referee ? "r" : ""}`}
+                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? `s${stadium.shape ?? ""}${stadium.depths ? Object.values(stadium.depths).join(",") : ""}` : ""}${touchline?.referee ? "r" : ""}`}
                   canvasWidth={pitchSize.w}
                   canvasHeight={pitchSize.h}
                   paused={effectivePaused}
@@ -2179,7 +2181,7 @@ export function MatchScreen() {
                     item={banner}
                     // Level with the bottom corner flags, over the stand instead of the bottom of the pitch.
                     bottom={(() => {
-                      const m = buildMetrics(pitchSize.w, pitchSize.h, { stadium: !!stadium });
+                      const m = buildMetrics(pitchSize.w, pitchSize.h, { stadium: !!stadium, shape: stadium?.shape });
                       return Math.max(8, pitchSize.h - (m.marginY + m.height));
                     })()}
                   />

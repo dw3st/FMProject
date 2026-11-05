@@ -70,7 +70,7 @@ import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from 
 import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
+import { crowdSeats, drawnDepths, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
   ATMOSPHERE, burstAreas, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
   type CelebrationBurst, type PhoneLight,
@@ -557,6 +557,8 @@ export interface PitchStadium {
   seed: string;
   /** Club stands under works on the day (#137): drawn empty, as a building site. */
   works?: StandId[];
+  /** Drawn depth (0..1) of each club stand by its seats (`standDepths`): a bigger stand is deeper. Only with `shape`. */
+  depths?: Partial<Record<StandId, number>>;
   /** The manager's decorations in the home end (achievements), human club's home games only. */
   decor?: StadiumDecor;
   /** A big game: flares with smoke (and fireworks at night) at kickoff and at every home goal. */
@@ -778,7 +780,9 @@ export function PixiPitch({
         };
       }
 
-      const m = buildMetrics(canvasWidth, canvasHeight, { stadium: !!stadiumRef.current, shape: stadiumRef.current?.shape });
+      const m = buildMetrics(canvasWidth, canvasHeight, {
+        stadium: !!stadiumRef.current, shape: stadiumRef.current?.shape, depths: drawnDepths(stadiumRef.current?.depths, mirrorRef.current),
+      });
 
       // Converts game yards → canvas pixels (turned 180° when `mirror` is set — drawing only, #142)
       const toPixel = (x: number, y: number) => ({
@@ -812,7 +816,10 @@ export function PixiPitch({
         app.stage.addChildAt(ground, 0);
         // The real neighbourhood painted for this stadium (art, `surroundArt.ts`): in yards, centred on the pitch, over
         // the drawn ground once loaded. Not mirrored: the stands it was painted around do not turn with the pitch.
-        const surroundUrl = stadiumRef.current?.stadiumId && newVisualOn() ? paintedSurround(stadiumRef.current.stadiumId) : null;
+        // A ground with stands of different sizes (`depths`) keeps the drawn ground: the painting was made for the
+        // full footprint and would leave a grey ring where a stand got thinner.
+        const surroundUrl = stadiumRef.current?.stadiumId && !stadiumRef.current.depths && newVisualOn()
+          ? paintedSurround(stadiumRef.current.stadiumId) : null;
         if (surroundUrl) {
           const pitchCx = m.marginX + m.width / 2, pitchCy = m.marginY + m.height / 2;
           void Assets.load<Texture>(surroundUrl).then((tex) => {

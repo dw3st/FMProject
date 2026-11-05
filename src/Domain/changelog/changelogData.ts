@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.2",
+    date: "2026-11-05",
+    time: "18:31",
+    items: [
+      {
+        pt: "Na partida, cada arquibancada do seu estádio tem o tamanho dos lugares dela: um setor ampliado fica mais fundo que os outros.",
+        en: "In the match, each stand of your ground is drawn as big as its seats: an enlarged stand is deeper than the others.",
+      },
+      {
+        pt: "A tela Clube mostra o seu estádio como ele é: o nome, a forma e o tamanho de cada setor.",
+        en: "The Club screen shows your ground as it is: its name, shape and the size of each stand.",
+      },
+    ],
+  },
+  {
     version: "4.47.1",
     date: "2026-11-05",
     time: "18:15",

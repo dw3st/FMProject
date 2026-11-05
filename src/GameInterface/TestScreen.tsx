@@ -1,3 +1,4 @@
+import { standDepths } from "@/Domain/facilities/standDepth";
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { pitchInjury, TURF_TYPES, MOWING_PATTERNS } from '@/Domain/facilities/turf';
 import type { TurfType, MowingPattern } from '@/types/facilityTypes';
@@ -547,15 +548,18 @@ export function TestScreen() {
   const [bigMatch, setBigMatch] = useState(false);
   /** The stadium seen from above (stadium mock of 2026-11-05): "Full" = the old full-canvas band. */
   const [stadiumShape, setStadiumShape] = useState<"full" | StadiumShape>("full");
+  /** An enlarged stand (tester report): east 10 000 seats bigger than west, so the other three are drawn thinner. */
+  const [bigStand, setBigStand] = useState(false);
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
       ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
           // Oval = Old Trafford, with its painted surroundings when the art has them.
           ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: stadiumShape === "oval" ? TEST_REAL.id : "std_test" } : {}),
+          ...(bigStand ? { depths: standDepths([{ id: "north", seats: 6246 }, { id: "south", seats: 6246 }, { id: "east", seats: 21104 }, { id: "west", seats: 11104 }]) ?? {} } : {}),
           // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
           led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),
-    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape],
+    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape, bigStand],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1682,6 +1686,7 @@ export function TestScreen() {
             <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
             <Chip selected={standWorks} onClick={() => setStandWorks(v => !v)} title="North stand under works (#137)">Works</Chip>
             <OptionChips options={STADIUM_SHAPE_OPTIONS} value={stadiumShape} onChange={setStadiumShape} />
+            <Chip selected={bigStand} onClick={() => setBigStand(v => !v)} title="East stand 10 000 seats bigger than west (needs a shape)">Big stand</Chip>
             <Chip selected={bigMatch} onClick={() => setBigMatch(v => !v)} title="Big game: flares and smoke, fireworks at night (kickoff and home goals)">Big game</Chip>
             {bigMatch && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
           </>
@@ -1925,7 +1930,7 @@ export function TestScreen() {
           )}
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? `s${stadiumShape}` : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? `s${stadiumShape}${bigStand ? "b" : ""}` : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}
