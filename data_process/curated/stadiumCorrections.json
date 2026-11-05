@@ -39,5 +39,21 @@
  "of_us_vancouver_whitecaps": {
   "name": "Vancouver Whitecaps (BC Place: retractable roof)",
   "roof": "retractable"
+ },
+ "124": {
+  "name": "Flamengo (Maracanã: oval bowl, the outline on OSM is drawn with the forecourt)",
+  "shape": "oval"
+ },
+ "127": {
+  "name": "Fluminense (Maracanã: oval bowl, the outline on OSM is drawn with the forecourt)",
+  "shape": "oval"
+ },
+ "543": {
+  "name": "Real Betis (Benito Villamarín: box with rounded corners)",
+  "shape": "rounded"
+ },
+ "of_ar_river_plate": {
+  "name": "River Plate (Monumental: oval bowl)",
+  "shape": "oval"
  }
 }

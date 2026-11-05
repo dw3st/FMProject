@@ -503,3 +503,24 @@ Pedido do usuário. `stepMotion(..., backpedal)`: indo para longe da bola, o bon
 ## Festa fora da obra (4.46.4)
 
 Report de tester. `burstAreas` (`stadiumAtmosphere.ts`): sinalizadores na torcida da casa, ou, com ela em obra, no outro fundo e depois num lado aberto; fogos só sobre as arquibancadas abertas. Tudo em obra: sem festa.
+
+## Forma do estádio e entorno (4.47)
+
+Mock aprovado em 2026-11-05 (pintado no FLUX). Só desenho.
+- **Forma** (`src/Domain/matchday/stadiumShape.ts`): `oval`, `rounded`, `square` ou `blocks`. Estádio real: pelo contorno do
+  OpenStreetMap (quanto ele preenche do retângulo de menor área: abaixo de 0,86 oval, abaixo de 0,93 arredondado, senão
+  quadrado; `RealStadium.shape`, `bun scripts/stadiums/applyShapes.ts` sobre o cache, `fetchStadiums.ts` grava na
+  regeneração, `shape` em `stadiumCorrections.json` vence: Maracanã, Monumental, Villamarín). Capacidade abaixo de 15 mil:
+  `blocks`. Sem contorno: sorteada pelo id do estádio (45% oval, 40% arredondado, 15% quadrado). Hoje 83 / 74 / 26 dos 212.
+- **Servidor:** `stadiumLookOf` (`stadiumData.ts`) → `MatchCrowd.stadiumId` e `shape` → `PitchStadium.shape`, `stadiumId`.
+  Campo neutro: o id do jogo, nunca `blocks`.
+- **Geometria:** com `shape`, `buildMetrics` deixa `STADIUM.SURROUND_YDS` (4,5) em volta (o campo encolhe junto) e
+  `StandGeometry.outer` é o canvas menos essa faixa. `standCorners`: oval = quarto de elipse com as duas profundidades,
+  rounded = a profundidade da arquibancada mais fina, square = 0,3 dela (`SQUARE_CORNER`), sempre arredondando o canto de
+  fora; blocks = cantos abertos. Sem `shape`, o desenho de antes (arquibancada até a borda, círculo no canto do campo).
+  `standFootprint` dá o contorno (4 polígonos em `blocks`); nenhuma cadeira fica fora dele (teste).
+- **Entorno** (`surroundings.ts`, `drawSurroundings` / `drawRoofRim` em `stadiumRender.ts`): calçamento com juntas,
+  canteiros, sombra de contato do prédio e árvores de 3 a 5 lóbulos (soltas e em grupos, sorteadas pelo id do estádio),
+  desenhados uma vez no fundo do palco; a camada da torcida é recortada pelo contorno (máscara) e a borda da cobertura vai
+  por cima. A luz da partida escurece tudo à noite. `/test`: chips Full / Oval / Rounded / Square / Blocks com Stadium.
+- Limitações: o entorno é genérico (o real de cada estádio é a próxima etapa); a faixa é fina em telas largas.

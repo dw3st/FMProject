@@ -54,6 +54,8 @@ export interface RealStadium {
   roof: "open" | "retractable" | "closed";
   tzStd: number;
   dst: "eu" | "us" | "none";
+  /** Seen from above, from the OpenStreetMap outline (`stadiumShape.ts`); absent: no usable outline. */
+  shape?: "oval" | "rounded" | "square";
 }
 
 /** Share of covered stadiums (closed roof). */

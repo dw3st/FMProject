@@ -44,3 +44,23 @@ describe("pitch metrics", () => {
     }
   });
 });
+
+describe("pitch metrics with a stadium shape (surroundings)", () => {
+  test("the stands stop SURROUND_YDS short of every canvas edge, the rest as before", () => {
+    for (const [w, h] of [[1100, 700], [900, 520], [1440, 800]] as const) {
+      const plain = buildMetrics(w, h, { stadium: true });
+      const m = buildMetrics(w, h, { stadium: true, shape: "oval" });
+      const s = m.stand!;
+      expect(s.shape).toBe("oval");
+      expect(m.scale).toBeLessThan(plain.scale);
+      const inset = Math.round(STADIUM.SURROUND_YDS * m.scale);
+      expect(s.outer).toEqual({ x: inset, y: inset, w: w - 2 * inset, h: h - 2 * inset });
+      expect(s.thickness.top + s.inner.h + s.thickness.bottom).toBe(s.outer.h);
+      expect(s.thickness.left + s.inner.w + s.thickness.right).toBe(s.outer.w);
+      for (const side of ["top", "bottom", "left", "right"] as const) {
+        expect(s.thickness[side]).toBeGreaterThanOrEqual(Math.floor(STADIUM.MIN_STAND_YDS * m.scale) - 2);
+      }
+      expect(s0(m)).toBeGreaterThanOrEqual(Math.round(STADIUM.BENCH_RUNOFF_YDS * m.scale) - 1);
+    }
+  });
+});

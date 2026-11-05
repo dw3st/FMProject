@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47",
+    date: "2026-11-05",
+    time: "17:22",
+    items: [
+      {
+        pt: "O estádio da partida tem a forma do estádio de verdade: oval, de cantos arredondados ou quadrado. Os estádios pequenos têm arquibancadas separadas, com os cantos abertos.",
+        en: "The match stadium has the shape of the real ground: oval, with rounded corners or square. Small grounds have separate stands with open corners.",
+      },
+      {
+        pt: "Em volta do estádio aparecem calçamento, canteiros e árvores, e a cobertura tem borda.",
+        en: "Paving, flower beds and trees now show around the stadium, and the roof has a rim.",
+      },
+    ],
+  },
+  {
     version: "4.46.9",
     date: "2026-11-05",
     time: "14:27",
@@ -4155,5 +4170,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "O entorno de verdade de cada estádio: estacionamentos, ruas, trilhos e árvores", en: "Each stadium's real surroundings: car parks, roads, railways and trees" },
+  { pt: "Torres de iluminação novas, com mastro e sombra", en: "New floodlight towers, with a mast and a shadow" },
+  { pt: "Luz do estádio que melhora com a estrutura, e estádio desgastado quando ela está ruim", en: "Stadium lighting that improves with the structure, and a worn look when it is in poor shape" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

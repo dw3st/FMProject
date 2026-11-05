@@ -10,7 +10,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LEAGUES, curlText, sleep, sparql } from "@/../scripts/faces/wikidata";
-import { heightFromCapacity, heightFromDepth, minAreaRect, standHeight, polygonArea, standDepths, toLocal, type PitchRect, type Pt } from "@/../scripts/stadiums/geometry";
+import { heightFromCapacity, heightFromDepth, minAreaRect, outlineFill, standHeight, polygonArea, standDepths, toLocal, type PitchRect, type Pt } from "@/../scripts/stadiums/geometry";
+import { shapeFromFill } from "@/Domain/matchday/stadiumShape";
 import type { RealStadium } from "@/Domain/matchday/stadiumSun";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -54,7 +55,7 @@ const clubQids: Record<string, { qid: string }> = JSON.parse(readFileSync(join(R
  * `data_process/curated/stadiumCorrections.json`: `{ "<squadId>": { name: "<just for reading>", venue?: "<Wikidata
  * item of the right ground>", roof?, skip? } }`. `venue` replaces the club's P115 (a move Wikidata does not have yet).
  */
-const corrections: Record<string, { name?: string; venue?: string; lat?: number; lon?: number; roof?: RealStadium["roof"]; skip?: boolean }> = existsSync(CORRECTIONS)
+const corrections: Record<string, { name?: string; venue?: string; lat?: number; lon?: number; roof?: RealStadium["roof"]; shape?: RealStadium["shape"]; skip?: boolean }> = existsSync(CORRECTIONS)
   ? JSON.parse(readFileSync(CORRECTIONS, "utf8")) : {};
 
 // 1) Home grounds on Wikidata (current P115 statements: no end date; preferred rank first).
@@ -181,6 +182,10 @@ for (const { squad, league } of squads) {
     heights: { top: h("top"), bottom: h("bottom"), low: h("low"), high: h("high") },
     roof: fix?.roof ?? v.roof, tzStd: tz.std, dst: tz.dst,
   };
+  // Shape from the outline (not from one drawn tight around the pitch); a correction wins.
+  const fill = outline.length && !tight ? outlineFill(outline) : null;
+  const shape = fix?.shape ?? (fill !== null ? shapeFromFill(fill) : undefined);
+  if (shape) out[squad.id]!.shape = shape;
 }
 
 function centroid(p: Pt[]): Pt { return { x: p.reduce((s, q) => s + q.x, 0) / p.length, y: p.reduce((s, q) => s + q.y, 0) / p.length }; }

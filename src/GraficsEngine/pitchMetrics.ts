@@ -4,6 +4,7 @@
  */
 import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 
 export const PITCH_SPEC = {
   lengthYds: PITCH_LENGTH,
@@ -19,11 +20,16 @@ export const PITCH_SPEC = {
 
 export interface PxRect { x: number; y: number; w: number; h: number }
 
-/** Stand band: `outer` = the canvas, `inner` = pitch + run-off; the stand is `outer − inner`. */
+/**
+ * Stand band: `outer` = the canvas (inset by the surroundings when `shape` is set), `inner` = pitch + run-off; the stand
+ * is `outer − inner`, its corners cut by the shape (`standCorners`).
+ */
 export interface StandGeometry {
   outer: PxRect;
   inner: PxRect;
   thickness: { top: number; bottom: number; left: number; right: number };
+  /** The stadium seen from above; absent = the old full-canvas band with rounded corners. */
+  shape?: StadiumShape;
 }
 
 export interface PitchMetrics {
@@ -41,16 +47,18 @@ export interface PitchMetrics {
 
 export const GOAL_NET_DEPTH_YDS = 2;
 
-export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: boolean }): PitchMetrics {
+export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: boolean; shape?: StadiumShape }): PitchMetrics {
   const totalLengthYds = PITCH_SPEC.lengthYds + 2 * GOAL_NET_DEPTH_YDS;
   const fullScale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
   // With the stadium the pitch is sized like the art preview (4.41.15): the aprons and at least MIN_STAND_YDS of stand
   // on every side fit in the canvas.
   const S = STADIUM;
+  // With a stadium shape the surroundings take SURROUND_YDS on every side.
+  const around = opts.stadium && opts.shape ? S.SURROUND_YDS : 0;
   const scale = opts.stadium
     ? Math.min(
-        canvasW / (totalLengthYds + 2 * (S.END_RUNOFF_YDS + S.MIN_STAND_YDS)),
-        canvasH / (PITCH_SPEC.widthYds + S.RUNOFF_YDS + S.BENCH_RUNOFF_YDS + 2 * S.MIN_STAND_YDS),
+        canvasW / (totalLengthYds + 2 * (S.END_RUNOFF_YDS + S.MIN_STAND_YDS + around)),
+        canvasH / (PITCH_SPEC.widthYds + S.RUNOFF_YDS + S.BENCH_RUNOFF_YDS + 2 * (S.MIN_STAND_YDS + around)),
       )
     : fullScale;
 
@@ -69,15 +77,19 @@ export function buildMetrics(canvasW: number, canvasH: number, opts: { stadium: 
   if (opts.stadium) {
     const side = Math.round(STADIUM.RUNOFF_YDS * scale);
     const end  = netDepth + Math.round(STADIUM.END_RUNOFF_YDS * scale);
-    const x = Math.max(0, marginX - end);
-    const y = Math.max(0, marginY - side);
-    const right = Math.min(canvasW, marginX + pitchW + end);
-    const bottom = Math.min(canvasH, marginY + pitchH + side + extraBottom);
+    const inset = Math.round(around * scale);
+    const outer = { x: inset, y: inset, w: canvasW - 2 * inset, h: canvasH - 2 * inset };
+    const oR = outer.x + outer.w, oB = outer.y + outer.h;
+    const x = Math.max(outer.x, marginX - end);
+    const y = Math.max(outer.y, marginY - side);
+    const right = Math.min(oR, marginX + pitchW + end);
+    const bottom = Math.min(oB, marginY + pitchH + side + extraBottom);
     const inner = { x, y, w: right - x, h: bottom - y };
     stand = {
-      outer: { x: 0, y: 0, w: canvasW, h: canvasH },
+      outer,
       inner,
-      thickness: { top: y, bottom: canvasH - bottom, left: x, right: canvasW - right },
+      thickness: { top: y - outer.y, bottom: oB - bottom, left: x - outer.x, right: oR - right },
+      ...(opts.shape ? { shape: opts.shape } : {}),
     };
   }
 

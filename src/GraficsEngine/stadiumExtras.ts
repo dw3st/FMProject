@@ -104,30 +104,90 @@ export function cornerFlags(m: Pick<PitchMetrics, "marginX" | "marginY" | "width
   ];
 }
 
-/** A rounded stand corner: the inner (pitch) corner and the radius of the quarter bowl around it. */
-export interface StandCorner { cx: number; cy: number; r: number; sx: 1 | -1; sy: 1 | -1 }
+/**
+ * A stand corner. (`cx`, `cy`) is the centre of the quarter ellipse (radii `rx` along x, `ry` along y) the stand fills
+ * around it; `r` = min(rx, ry). Without a shape the centre is the inner (pitch) corner. With a shape the ellipse rounds
+ * the stand's OUTER corner, so (`ix`, `iy`) keeps the inner corner. `open`: no stand at all in the corner (blocks).
+ */
+export interface StandCorner {
+  cx: number; cy: number; r: number; rx: number; ry: number; sx: 1 | -1; sy: 1 | -1; ix: number; iy: number; open?: true;
+}
 
-/** The four stand corners rounded into a bowl (tester report: the stands were square). */
+/** Corner radius of a square stadium, x the thinner of the two stands. */
+export const SQUARE_CORNER = 0.3;
+
+/**
+ * The four stand corners (tester report: the stands were square; stadium mock of 2026-11-05). No shape: a quarter circle
+ * of the thinner stand around the inner corner (the old band). With a shape the outer corner is rounded: oval = both
+ * stands' depths (a quarter ellipse around the inner corner), rounded = the thinner stand's depth, square = a small
+ * rounding, blocks = open corners.
+ */
 export function standCorners(s: StandGeometry): StandCorner[] {
-  const { outer, inner } = s;
+  const { inner } = s;
   const t = s.thickness;
   const ir = inner.x + inner.w, ib = inner.y + inner.h;
-  void outer;
+  const make = (ix: number, iy: number, tw: number, th: number, sx: 1 | -1, sy: 1 | -1): StandCorner => {
+    const m = Math.min(tw, th);
+    const round = (rx: number, ry: number): StandCorner =>
+      ({ cx: ix + sx * (tw - rx), cy: iy + sy * (th - ry), r: Math.min(rx, ry), rx, ry, sx, sy, ix, iy });
+    switch (s.shape) {
+      case "oval": return round(tw, th);
+      case "rounded": return round(m, m);
+      case "square": return round(m * SQUARE_CORNER, m * SQUARE_CORNER);
+      case "blocks": return { cx: ix, cy: iy, r: 0, rx: 0, ry: 0, sx, sy, ix, iy, open: true };
+      default: return { cx: ix, cy: iy, r: m, rx: m, ry: m, sx, sy, ix, iy };
+    }
+  };
   return [
-    { cx: inner.x, cy: inner.y, r: Math.min(t.left, t.top), sx: -1, sy: -1 },
-    { cx: ir, cy: inner.y, r: Math.min(t.right, t.top), sx: 1, sy: -1 },
-    { cx: inner.x, cy: ib, r: Math.min(t.left, t.bottom), sx: -1, sy: 1 },
-    { cx: ir, cy: ib, r: Math.min(t.right, t.bottom), sx: 1, sy: 1 },
+    make(inner.x, inner.y, t.left, t.top, -1, -1),
+    make(ir, inner.y, t.right, t.top, 1, -1),
+    make(inner.x, ib, t.left, t.bottom, -1, 1),
+    make(ir, ib, t.right, t.bottom, 1, 1),
   ];
 }
 
-/** True when (x, y) lies in a corner square of the band but outside its rounded bowl (no seat there). */
+/** True when (x, y) lies in a corner square of the band but outside its bowl (no seat there). */
 export function outsideCornerBowl(s: StandGeometry, x: number, y: number): boolean {
   for (const c of standCorners(s)) {
+    if ((x - c.ix) * c.sx <= 0 || (y - c.iy) * c.sy <= 0) continue;
+    if (c.open) return true;
     const dx = (x - c.cx) * c.sx, dy = (y - c.cy) * c.sy;
-    if (dx > 0 && dy > 0) return Math.hypot(dx, dy) > c.r;
+    return dx > 0 && dy > 0 && (dx / Math.max(c.rx, 1e-6)) ** 2 + (dy / Math.max(c.ry, 1e-6)) ** 2 > 1;
   }
   return false;
+}
+
+/**
+ * The stadium footprint (px) as polygons [x0, y0, x1, y1, ...]: the band's outer box with the corners cut by the shape
+ * (one polygon), or the four separate stands of a "blocks" ground. The surroundings show outside it.
+ */
+export function standFootprint(s: StandGeometry, steps = 16): number[][] {
+  const { outer, inner } = s;
+  const oR = outer.x + outer.w, oB = outer.y + outer.h;
+  const iR = inner.x + inner.w, iB = inner.y + inner.h;
+  if (s.shape === "blocks") {
+    return [
+      [inner.x, outer.y, iR, outer.y, iR, inner.y, inner.x, inner.y],
+      [inner.x, iB, iR, iB, iR, oB, inner.x, oB],
+      [outer.x, inner.y, inner.x, inner.y, inner.x, iB, outer.x, iB],
+      [iR, inner.y, oR, inner.y, oR, iB, iR, iB],
+    ];
+  }
+  const [tl, tr, bl, br] = standCorners(s);
+  const pts: number[] = [];
+  // Clockwise: each corner's quarter ellipse, from the end that continues the previous edge.
+  const arc = (c: StandCorner, startAlongY: boolean) => {
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * (Math.PI / 2);
+      const u = startAlongY ? Math.sin(a) : Math.cos(a), v = startAlongY ? Math.cos(a) : Math.sin(a);
+      pts.push(c.cx + c.sx * c.rx * u, c.cy + c.sy * c.ry * v);
+    }
+  };
+  arc(tl!, false);
+  arc(tr!, true);
+  arc(br!, false);
+  arc(bl!, true);
+  return [pts];
 }
 
 /** A person standing around the pitch (px), facing `face` (radians, 0 = +x). */

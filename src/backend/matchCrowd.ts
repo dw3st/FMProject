@@ -1,3 +1,5 @@
+import { stadiumLookOf } from "@/backend/stadiumData";
+import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 import { shownDecor } from "@/Domain/achievements/items";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
@@ -30,6 +32,9 @@ export interface MatchCrowd {
   decor?: StadiumDecor;
   /** A big game (continental, cup from the quarter-finals, derby): flares and fireworks on the pitch. */
   bigMatch?: true;
+  /** The home ground seen from above (`stadiumLookOf`): its stable id and shape. */
+  stadiumId: string;
+  shape: StadiumShape;
 }
 
 /** The decorations to draw at home (only those chosen and unlocked; absent when none). */
@@ -54,16 +59,17 @@ export async function matchCrowd(
 ): Promise<MatchCrowd> {
   const home = fixture.home === mySquad.id ? mySquad : opponentSquad;
   const homeCapacity = home.venue?.capacity ?? 0;
+  const look = stadiumLookOf(home, fixture.neutral ? fixture.id : undefined);
   if (fixture.neutral) {
-    return { attendance: 0, capacity: homeCapacity, neutral: true, importance: 1, known: false };
+    return { attendance: 0, capacity: homeCapacity, neutral: true, importance: 1, known: false, ...look };
   }
   if (fixture.home !== mySquad.id) {
-    return { attendance: Math.round(homeCapacity * GATE.FILL_RATE), capacity: homeCapacity, neutral: false, importance: 1, known: true };
+    return { attendance: Math.round(homeCapacity * GATE.FILL_RATE), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...look };
   }
   const fans = meta.board?.fans;
   if (!mySquad.facilities) {
     const fill = fans === undefined ? GATE.FILL_RATE : stadiumFillRate(fans);
-    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...(await homeDecor(service, meta.id, meta.seatId)) };
+    return { attendance: Math.round(homeCapacity * fill), capacity: homeCapacity, neutral: false, importance: 1, known: true, ...look, ...(await homeDecor(service, meta.id, meta.seatId)) };
   }
   const index = await service.getSquadIndex(meta.id);
   const leagueSlug = index.byId(mySquad.id)?.leagueSlug ?? meta.leagueSlug;
@@ -82,7 +88,7 @@ export async function matchCrowd(
   });
   const works = standsUnderWorksOn(mySquad.facilities, fixture.date);
   return {
-    attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true,
+    attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: importance.mult, known: true, ...look,
     ...(works.length > 0 ? { works } : {}),
     ...(await homeDecor(service, meta.id, meta.seatId)),
   };

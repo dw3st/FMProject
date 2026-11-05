@@ -4,6 +4,7 @@ import { hhmm, sunsetUtcMinutes, utcOffsetMinutes } from "@/Domain/matchday/sola
 import { stadiumIdOf, stadiumSun, type RealStadium, type StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
 import { effectiveWeather, type WeatherOfMatch } from "@/Domain/matchday/matchWeatherEffect";
+import { stadiumShapeOf, type StadiumShape } from "@/Domain/matchday/stadiumShape";
 
 /**
  * Real stadiums of the main leagues (4.31, `bun scripts/fetchStadiums.ts`): world data, read once from
@@ -16,6 +17,20 @@ export function realStadiumOf(squadId: string): RealStadium | undefined {
     try { stadiums = JSON.parse(readFileSync(FILE, "utf8")) as Record<string, RealStadium>; } catch { stadiums = {}; }
   }
   return Object.hasOwn(stadiums, squadId) ? stadiums[squadId] : undefined;
+}
+
+/**
+ * How a match's ground looks from above (stadium mock of 2026-11-05): its stable id (the real one in the main leagues)
+ * and its shape (`stadiumShapeOf`: blocks for a small ground, the real outline, else drawn from the id). A neutral venue
+ * is the match's own.
+ */
+export function stadiumLookOf(
+  home: { id: string; venue?: { name?: string; city?: string; capacity?: number } | null }, neutralFixtureId?: string,
+): { stadiumId: string; shape: StadiumShape } {
+  const real = neutralFixtureId ? undefined : realStadiumOf(home.id);
+  const stadiumId = real?.id ?? stadiumIdOf(home, neutralFixtureId);
+  const capacity = neutralFixtureId ? 0 : home.venue?.capacity ?? 0;
+  return { stadiumId, shape: stadiumShapeOf({ id: stadiumId, capacity, ...(real?.shape ? { real: real.shape } : {}) }) };
 }
 
 /** A retractable roof is closed in rain, snow and the cold. */

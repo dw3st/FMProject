@@ -1662,6 +1662,8 @@ export function MatchScreen() {
     // A stand under works (only a home game of the human club) is drawn empty, as a building site.
     return {
       fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id,
+      // The ground seen from above: its shape and the ground around it (stadium mock of 2026-11-05).
+      ...(crowd?.shape ? { shape: crowd.shape, stadiumId: crowd.stadiumId } : {}),
       ...(crowd?.works ? { works: crowd.works } : {}),
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),

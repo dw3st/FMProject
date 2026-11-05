@@ -7,6 +7,7 @@ import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
 import type { DebugOverlays, PitchLighting, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 import { minutesOf } from "@/GraficsEngine/matchLighting";
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
 import { stadiumSun, type RealStadium, type StadiumSun } from "@/Domain/matchday/stadiumSun";
@@ -435,6 +436,10 @@ type Mode = '11v11' | 'scenario';
 
 type CrowdFillKey = "0" | "25" | "50" | "default" | "75" | "100";
 const CROWD_FILLS: Record<CrowdFillKey, number> = { "0": 0, "25": 0.25, "50": 0.5, default: 0.65, "75": 0.75, "100": 1 };
+const STADIUM_SHAPE_OPTIONS: { key: "full" | StadiumShape; label: string }[] = [
+  { key: "full", label: "Full" }, { key: "oval", label: "Oval" }, { key: "rounded", label: "Rounded" },
+  { key: "square", label: "Square" }, { key: "blocks", label: "Blocks" },
+];
 const CROWD_FILL_OPTIONS: { key: CrowdFillKey; label: string }[] = [
   { key: "0", label: "0%" }, { key: "25", label: "25%" }, { key: "50", label: "50%" },
   { key: "default", label: "Default" }, { key: "75", label: "75%" }, { key: "100", label: "100%" },
@@ -540,13 +545,16 @@ export function TestScreen() {
   const [standWorks, setStandWorks] = useState(false);
   /** Big game (4.39): flares with smoke, fireworks at night; "Celebrate" fires them now. */
   const [bigMatch, setBigMatch] = useState(false);
+  /** The stadium seen from above (stadium mock of 2026-11-05): "Full" = the old full-canvas band. */
+  const [stadiumShape, setStadiumShape] = useState<"full" | StadiumShape>("full");
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
       ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
+          ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: "std_test" } : {}),
           // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
           led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),
-    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch],
+    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1672,6 +1680,7 @@ export function TestScreen() {
             <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
             <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
             <Chip selected={standWorks} onClick={() => setStandWorks(v => !v)} title="North stand under works (#137)">Works</Chip>
+            <OptionChips options={STADIUM_SHAPE_OPTIONS} value={stadiumShape} onChange={setStadiumShape} />
             <Chip selected={bigMatch} onClick={() => setBigMatch(v => !v)} title="Big game: flares and smoke, fireworks at night (kickoff and home goals)">Big game</Chip>
             {bigMatch && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
           </>
@@ -1915,7 +1924,7 @@ export function TestScreen() {
           )}
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? `s${stadiumShape}` : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}

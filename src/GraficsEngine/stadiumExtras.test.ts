@@ -1,7 +1,8 @@
+import { inFootprint } from "@/GraficsEngine/surroundings";
 import { describe, expect, test } from "bun:test";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import {
-  bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, outsideCornerBowl, standCorners,
+  bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, outsideCornerBowl, standCorners, standFootprint,
   openWalkways, techArea, vendorAlong, vendors,
 } from "@/GraficsEngine/stadiumExtras";
 import { standSeatGrid } from "@/GraficsEngine/crowd";
@@ -99,6 +100,50 @@ describe("around the pitch", () => {
       const p = vendorAlong(v[0]!, t, 300, m.scale);
       expect(p.at).toBeGreaterThanOrEqual(0);
       expect(p.at).toBeLessThanOrEqual(300);
+    }
+  });
+});
+
+describe("stadium shapes (corners and footprint)", () => {
+  const stand = (shape: "oval" | "rounded" | "square" | "blocks") => buildMetrics(1100, 700, { stadium: true, shape }).stand!;
+  const area = (p: number[]) => {
+    let a = 0;
+    for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) a += p[j]! * p[i + 1]! - p[i]! * p[j + 1]!;
+    return Math.abs(a) / 2;
+  };
+  const total = (s: ReturnType<typeof stand>) => standFootprint(s).reduce((t, p) => t + area(p), 0);
+
+  test("an oval fills less of the box than rounded corners, rounded less than square", () => {
+    expect(total(stand("oval"))).toBeLessThan(total(stand("rounded")));
+    expect(total(stand("rounded"))).toBeLessThan(total(stand("square")));
+    const o = stand("square").outer;
+    expect(total(stand("square"))).toBeLessThan(o.w * o.h);
+  });
+
+  test("blocks: four stands, the corners open (no seat there)", () => {
+    const s = stand("blocks");
+    expect(standFootprint(s)).toHaveLength(4);
+    expect(outsideCornerBowl(s, s.outer.x + 2, s.outer.y + 2)).toBe(true);
+    expect(outsideCornerBowl(s, s.inner.x - 2, s.inner.y - 2)).toBe(true);
+  });
+
+  test("an oval corner is a quarter ellipse of both stands' depths", () => {
+    const s = stand("oval");
+    const c = standCorners(s)[0]!;
+    expect(c.rx).toBe(s.thickness.left);
+    expect(c.ry).toBe(s.thickness.top);
+    // On the ellipse's diagonal: just inside is a seat, the box corner is not.
+    expect(outsideCornerBowl(s, c.cx - c.rx * 0.6, c.cy - c.ry * 0.6)).toBe(false);
+    expect(outsideCornerBowl(s, s.outer.x + 1, s.outer.y + 1)).toBe(true);
+  });
+
+  test("seats never fall outside the footprint", () => {
+    for (const shape of ["oval", "rounded", "square", "blocks"] as const) {
+      const s = stand(shape);
+      const polys = standFootprint(s);
+      const seats = standSeatGrid(s);
+      expect(seats.length).toBeGreaterThan(100);
+      for (const seat of seats) expect(inFootprint(polys, seat.x, seat.y)).toBe(true);
     }
   });
 });

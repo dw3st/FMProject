@@ -14,7 +14,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "34": {
   "id": "std_Q191774",
@@ -31,7 +32,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "35": {
   "id": "std_Q619094",
@@ -48,7 +50,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "36": {
   "id": "std_Q318043",
@@ -65,7 +68,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "40": {
   "id": "std_Q45671",
@@ -82,7 +86,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "42": {
   "id": "std_Q163995",
@@ -99,7 +104,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "45": {
   "id": "std_Q29347805",
@@ -116,7 +122,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "47": {
   "id": "std_Q55074091",
@@ -133,7 +140,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "49": {
   "id": "std_Q171458",
@@ -150,7 +158,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "50": {
   "id": "std_Q48159",
@@ -167,7 +176,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "51": {
   "id": "std_Q619409",
@@ -184,7 +194,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "52": {
   "id": "std_Q1066373",
@@ -201,7 +212,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "55": {
   "id": "std_Q4961609",
@@ -218,7 +230,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "63": {
   "id": "std_Q619505",
@@ -235,7 +248,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "65": {
   "id": "std_Q593446",
@@ -252,7 +266,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "66": {
   "id": "std_Q175339",
@@ -269,7 +284,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "77": {
   "id": "std_Q387213",
@@ -286,7 +302,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "79": {
   "id": "std_Q1410402",
@@ -303,7 +320,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "80": {
   "id": "std_Q8507",
@@ -320,7 +338,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "81": {
   "id": "std_Q202150",
@@ -337,7 +356,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "84": {
   "id": "std_Q127372",
@@ -354,7 +374,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "85": {
   "id": "std_Q193431",
@@ -371,7 +392,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "91": {
   "id": "std_Q318851",
@@ -388,7 +410,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "94": {
   "id": "std_Q1121760",
@@ -439,7 +462,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "97": {
   "id": "std_Q39189",
@@ -456,7 +480,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "106": {
   "id": "std_Q1432517",
@@ -473,7 +498,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "108": {
   "id": "std_Q1347183",
@@ -490,7 +516,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "111": {
   "id": "std_Q219462",
@@ -507,7 +534,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "114": {
   "id": "std_Q541391",
@@ -524,7 +552,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "116": {
   "id": "std_Q854122",
@@ -541,7 +570,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "118": {
   "id": "std_Q6499360",
@@ -592,7 +622,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "121": {
   "id": "std_Q4788902",
@@ -609,7 +640,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "124": {
   "id": "std_Q155174",
@@ -626,7 +658,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "126": {
   "id": "std_Q821761",
@@ -643,7 +676,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "127": {
   "id": "std_Q155174",
@@ -660,7 +694,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "128": {
   "id": "std_Q741755",
@@ -677,7 +712,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "130": {
   "id": "std_Q655753",
@@ -694,7 +730,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "131": {
   "id": "std_Q1362236",
@@ -711,7 +748,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "132": {
   "id": "std_Q14928349",
@@ -728,7 +766,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "133": {
   "id": "std_Q721419",
@@ -745,7 +784,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "134": {
   "id": "std_Q606803",
@@ -762,7 +802,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "135": {
   "id": "std_Q910370",
@@ -779,7 +820,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "136": {
   "id": "std_Q176157",
@@ -796,7 +838,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "147": {
   "id": "std_Q1327235",
@@ -813,7 +856,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "157": {
   "id": "std_Q127429",
@@ -830,7 +874,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "160": {
   "id": "std_Q311458",
@@ -847,7 +892,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "162": {
   "id": "std_Q154475",
@@ -864,7 +910,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "163": {
   "id": "std_Q154074",
@@ -881,7 +928,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "164": {
   "id": "std_Q392494",
@@ -898,7 +946,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "165": {
   "id": "std_Q150928",
@@ -915,7 +964,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "167": {
   "id": "std_Q129870",
@@ -932,7 +982,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "168": {
   "id": "std_Q156630",
@@ -966,7 +1017,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "170": {
   "id": "std_Q167418",
@@ -983,7 +1035,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "172": {
   "id": "std_Q152349",
@@ -1000,7 +1053,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "173": {
   "id": "std_Q210466",
@@ -1017,7 +1071,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "175": {
   "id": "std_Q150933",
@@ -1034,7 +1089,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "182": {
   "id": "std_Q749172",
@@ -1051,7 +1107,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "192": {
   "id": "std_Q151893",
@@ -1068,7 +1125,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "487": {
   "id": "std_Q159884",
@@ -1085,7 +1143,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "488": {
   "id": "std_Q1887221",
@@ -1102,7 +1161,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "489": {
   "id": "std_Q133566",
@@ -1119,7 +1179,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "490": {
   "id": "std_Q30880646",
@@ -1136,7 +1197,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "492": {
   "id": "std_Q82709",
@@ -1153,7 +1215,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "494": {
   "id": "std_Q640031",
@@ -1170,7 +1233,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "495": {
   "id": "std_Q271568",
@@ -1187,7 +1251,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "496": {
   "id": "std_Q62149",
@@ -1221,7 +1286,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "499": {
   "id": "std_Q780526",
@@ -1238,7 +1304,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "500": {
   "id": "std_Q757182",
@@ -1255,7 +1322,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "502": {
   "id": "std_Q270474",
@@ -1272,7 +1340,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "503": {
   "id": "std_Q214629",
@@ -1289,7 +1358,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "505": {
   "id": "std_Q133566",
@@ -1306,7 +1376,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "523": {
   "id": "std_Q610546",
@@ -1323,7 +1394,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "529": {
   "id": "std_Q159848",
@@ -1340,7 +1412,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "530": {
   "id": "std_Q1369687",
@@ -1357,7 +1430,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "531": {
   "id": "std_Q182864",
@@ -1374,7 +1448,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "532": {
   "id": "std_Q202762",
@@ -1391,7 +1466,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "533": {
   "id": "std_Q741157",
@@ -1408,7 +1484,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "536": {
   "id": "std_Q275429",
@@ -1425,7 +1502,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "538": {
   "id": "std_Q1326578",
@@ -1442,7 +1520,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "539": {
   "id": "std_Q1122715",
@@ -1459,7 +1538,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "540": {
   "id": "std_Q473223",
@@ -1493,7 +1573,8 @@
   },
   "roof": "retractable",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "542": {
   "id": "std_Q1369390",
@@ -1510,7 +1591,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "543": {
   "id": "std_Q126844",
@@ -1527,7 +1609,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "546": {
   "id": "std_Q929109",
@@ -1544,7 +1627,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "548": {
   "id": "std_Q917845",
@@ -1561,7 +1645,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "727": {
   "id": "std_Q735783",
@@ -1578,7 +1663,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "728": {
   "id": "std_Q983806",
@@ -1595,7 +1681,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "746": {
   "id": "std_Q31969",
@@ -1612,7 +1699,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "794": {
   "id": "std_Q5402133",
@@ -1629,7 +1717,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "797": {
   "id": "std_Q953600",
@@ -1646,7 +1735,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "867": {
   "id": "std_Q684727",
@@ -1680,7 +1770,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "1062": {
   "id": "std_Q97177489",
@@ -1697,7 +1788,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "1198": {
   "id": "std_Q4841281",
@@ -1714,7 +1806,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "7848": {
   "id": "std_Q10277233",
@@ -1765,7 +1858,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "es_151": {
   "id": "std_Q668094",
@@ -1782,7 +1876,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_170": {
   "id": "std_Q2001732",
@@ -1816,7 +1911,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_2697": {
   "id": "std_Q1862372",
@@ -1833,7 +1929,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "es_3307": {
   "id": "std_Q567402",
@@ -1850,7 +1947,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_3472": {
   "id": "std_Q1370765",
@@ -1867,7 +1965,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "es_3696": {
   "id": "std_Q256588",
@@ -1901,7 +2000,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_3735": {
   "id": "std_Q1851894",
@@ -1918,7 +2018,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_10388": {
   "id": "std_Q474858",
@@ -1935,7 +2036,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "es_21607": {
   "id": "std_Q1369675",
@@ -1952,7 +2054,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "es_21610": {
   "id": "std_Q3059095",
@@ -1969,7 +2072,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "es_21613": {
   "id": "std_Q136001729",
@@ -1986,7 +2090,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_ar_aldosivi": {
   "id": "std_Q1369282",
@@ -2003,7 +2108,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_ar_argentinos_juniors": {
   "id": "std_Q1369186",
@@ -2037,7 +2143,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_banfield": {
   "id": "std_Q599468",
@@ -2054,7 +2161,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_barracas_central": {
   "id": "std_Q16564609",
@@ -2071,7 +2179,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_belgrano": {
   "id": "std_Q1369290",
@@ -2088,7 +2197,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_boca_juniors": {
   "id": "std_Q499855",
@@ -2105,7 +2215,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_central_cordoba_sde": {
   "id": "std_Q5847753",
@@ -2122,7 +2233,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_defensa_y_justicia": {
   "id": "std_Q5400433",
@@ -2139,7 +2251,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_estudiantes": {
   "id": "std_Q678824",
@@ -2190,7 +2303,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_ar_gimnasia_y_esgrima_de_mendoza": {
   "id": "std_Q5392228",
@@ -2224,7 +2338,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_independiente": {
   "id": "std_Q1192458",
@@ -2241,7 +2356,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_independiente_rivadavia": {
   "id": "std_Q5400104",
@@ -2258,7 +2374,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_instituto": {
   "id": "std_Q3495828",
@@ -2275,7 +2392,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_lanus": {
   "id": "std_Q533015",
@@ -2292,7 +2410,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_newells_old_boys": {
   "id": "std_Q1369357",
@@ -2309,7 +2428,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_ar_platense": {
   "id": "std_Q1159010",
@@ -2326,7 +2446,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_racing_club": {
   "id": "std_Q1196031",
@@ -2343,7 +2464,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_riestra": {
   "id": "std_Q18682950",
@@ -2377,7 +2499,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_ar_rosario_central": {
   "id": "std_Q713597",
@@ -2394,7 +2517,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_san_lorenzo": {
   "id": "std_Q1192472",
@@ -2428,7 +2552,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "square"
  },
  "of_ar_talleres": {
   "id": "std_Q1062157",
@@ -2445,7 +2570,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_ar_tigre": {
   "id": "std_Q1067384",
@@ -2462,7 +2588,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_union_de_santa_fe": {
   "id": "std_Q1369026",
@@ -2479,7 +2606,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "rounded"
  },
  "of_ar_velez_sarsfield": {
   "id": "std_Q1196603",
@@ -2496,7 +2624,8 @@
   },
   "roof": "open",
   "tzStd": -3,
-  "dst": "none"
+  "dst": "none",
+  "shape": "oval"
  },
  "of_es_deportivo": {
   "id": "std_Q22130",
@@ -2513,7 +2642,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "of_es_malaga": {
   "id": "std_Q695879",
@@ -2530,7 +2660,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_es_racing_santander": {
   "id": "std_Q195391",
@@ -2547,7 +2678,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_gb_hull_city": {
   "id": "std_Q630160",
@@ -2564,7 +2696,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_gb_ipswich_town": {
   "id": "std_Q619558",
@@ -2581,7 +2714,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_it_frosinone": {
   "id": "std_Q29655396",
@@ -2598,7 +2732,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_it_monza": {
   "id": "std_Q1851616",
@@ -2615,7 +2750,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_it_venezia": {
   "id": "std_Q588926",
@@ -2632,7 +2768,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "of_nl_ado_den_haag": {
   "id": "std_Q720978",
@@ -2649,7 +2786,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_nl_ajax": {
   "id": "std_Q207109",
@@ -2683,7 +2821,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_nl_cambuur": {
   "id": "std_Q1028392",
@@ -2717,7 +2856,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "of_nl_fc_groningen": {
   "id": "std_Q1374804",
@@ -2734,7 +2874,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_nl_fc_twente": {
   "id": "std_Q727389",
@@ -2751,7 +2892,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_nl_fc_utrecht": {
   "id": "std_Q1675996",
@@ -2768,7 +2910,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_nl_feyenoord": {
   "id": "std_Q330298",
@@ -2785,7 +2928,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_nl_nec": {
   "id": "std_Q720983",
@@ -2802,7 +2946,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_nl_pec_zwolle": {
   "id": "std_Q1141104",
@@ -2836,7 +2981,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_nl_sc_heerenveen": {
   "id": "std_Q318125",
@@ -2853,7 +2999,8 @@
   },
   "roof": "open",
   "tzStd": 1,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_nl_willem_ii": {
   "id": "std_Q1408176",
@@ -2904,7 +3051,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_pt_braga": {
   "id": "std_Q849239",
@@ -2921,7 +3069,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "of_pt_casa_pia": {
   "id": "std_Q116113161",
@@ -2938,7 +3087,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_pt_estoril": {
   "id": "std_Q1370647",
@@ -2955,7 +3105,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_pt_famalicao": {
   "id": "std_Q1293399",
@@ -2972,7 +3123,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "square"
  },
  "of_pt_gil_vicente": {
   "id": "std_Q1167583",
@@ -2989,7 +3141,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_pt_maritimo": {
   "id": "std_Q1272724",
@@ -3006,7 +3159,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_pt_porto": {
   "id": "std_Q271454",
@@ -3023,7 +3177,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_pt_rio_ave": {
   "id": "std_Q550041",
@@ -3040,7 +3195,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "rounded"
  },
  "of_pt_santa_clara": {
   "id": "std_Q3514858",
@@ -3057,7 +3213,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_pt_sporting_cp": {
   "id": "std_Q287359",
@@ -3074,7 +3231,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_pt_vitoria_guimaraes": {
   "id": "std_Q1057274",
@@ -3091,7 +3249,8 @@
   },
   "roof": "open",
   "tzStd": 0,
-  "dst": "eu"
+  "dst": "eu",
+  "shape": "oval"
  },
  "of_us_atlanta_united_fc": {
   "id": "std_Q7007552",
@@ -3108,7 +3267,8 @@
   },
   "roof": "retractable",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_austin_fc": {
   "id": "std_Q56278477",
@@ -3142,7 +3302,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_charlotte_football_club": {
   "id": "std_Q806673",
@@ -3159,7 +3320,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_chicago_fire": {
   "id": "std_Q1132413",
@@ -3176,7 +3338,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_colorado_rapids": {
   "id": "std_Q1210268",
@@ -3193,7 +3356,8 @@
   },
   "roof": "open",
   "tzStd": -7,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_columbus_crew": {
   "id": "std_Q65045869",
@@ -3210,7 +3374,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_dc_united": {
   "id": "std_Q5203387",
@@ -3227,7 +3392,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_fc_cincinnati": {
   "id": "std_Q54465634",
@@ -3244,7 +3410,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_fc_dallas": {
   "id": "std_Q1140457",
@@ -3261,7 +3428,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_houston_dynamo": {
   "id": "std_Q176460",
@@ -3295,7 +3463,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "square"
  },
  "of_us_la_galaxy": {
   "id": "std_Q200684",
@@ -3312,7 +3481,8 @@
   },
   "roof": "open",
   "tzStd": -8,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_los_angeles_football_club": {
   "id": "std_Q22096111",
@@ -3346,7 +3516,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_nashville_sc": {
   "id": "std_Q47528203",
@@ -3363,7 +3534,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_new_england_revolution": {
   "id": "std_Q373355",
@@ -3397,7 +3569,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_new_york_red_bulls": {
   "id": "std_Q761682",
@@ -3414,7 +3587,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_orlando_city": {
   "id": "std_Q16846942",
@@ -3448,7 +3622,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_portland_timbers": {
   "id": "std_Q262291",
@@ -3465,7 +3640,8 @@
   },
   "roof": "open",
   "tzStd": -8,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_real_salt_lake": {
   "id": "std_Q1514798",
@@ -3482,7 +3658,8 @@
   },
   "roof": "open",
   "tzStd": -7,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_san_diego_football_club": {
   "id": "std_Q100272042",
@@ -3499,7 +3676,8 @@
   },
   "roof": "open",
   "tzStd": -8,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_san_jose_earthquakes": {
   "id": "std_Q3046470",
@@ -3516,7 +3694,8 @@
   },
   "roof": "open",
   "tzStd": -8,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_seattle_sounders": {
   "id": "std_Q612736",
@@ -3550,7 +3729,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "oval"
  },
  "of_us_st_louis_city_sc": {
   "id": "std_Q30591730",
@@ -3567,7 +3747,8 @@
   },
   "roof": "open",
   "tzStd": -6,
-  "dst": "us"
+  "dst": "us",
+  "shape": "square"
  },
  "of_us_toronto_fc": {
   "id": "std_Q796351",
@@ -3584,7 +3765,8 @@
   },
   "roof": "open",
   "tzStd": -5,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  },
  "of_us_vancouver_whitecaps": {
   "id": "std_Q612227",
@@ -3601,6 +3783,7 @@
   },
   "roof": "retractable",
   "tzStd": -8,
-  "dst": "us"
+  "dst": "us",
+  "shape": "rounded"
  }
 }

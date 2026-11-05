@@ -171,6 +171,11 @@ export const STADIUM = {
    */
   RUNOFF_YDS: 7.9,
   END_RUNOFF_YDS: 6.1,
+  /**
+   * The ground around the stadium (stadium mock of 2026-11-05): with a stadium shape the stands stop SURROUND_YDS short
+   * of every canvas edge and the surroundings show around them.
+   */
+  SURROUND_YDS: 4.5,
   BENCH_RUNOFF_YDS: 10.5,
   MIN_STAND_YDS: 5.6,
   AR_LANE_YDS: 1.8,

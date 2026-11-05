@@ -139,3 +139,15 @@ export function standHeight(depth: number | null, capacity: number): number {
   if (depth === null) return byCapacity;
   return Math.min(heightFromDepth(depth), Math.round(byCapacity * CAP_FACTOR));
 }
+
+/**
+ * How much of its minimum-area rectangle a stadium outline fills (the biggest ring of a multipolygon): ~0.79 for an
+ * oval bowl, ~0.97 for a square box. `shapeFromFill` turns it into the drawn shape.
+ */
+export function outlineFill(outline: Pt[][]): number | null {
+  const ring = [...outline].sort((a, b) => polygonArea(b) - polygonArea(a))[0];
+  if (!ring || ring.length < 4) return null;
+  const r = minAreaRect(ring);
+  const box = r.length * r.width;
+  return box > 0 ? polygonArea(ring) / box : null;
+}

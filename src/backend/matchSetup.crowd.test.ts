@@ -1,3 +1,4 @@
+import { stadiumLookOf } from "@/backend/stadiumData";
 import { ownSolo } from "@/backend/testing/seatFixtures";
 import { afterAll, describe, expect, test } from "bun:test";
 import { matchCrowd, matchManagers } from "@/backend/matchCrowd";
@@ -51,7 +52,7 @@ describe("match crowd", () => {
       followers: 2_000_000, tier: await leagueTierOf("premier_league"), fans: 60,
       fraction: seasonFraction("2026-11-01", "2026-08-15", "2027-05-20"), date: "2026-11-01",
     });
-    expect(c).toEqual({ attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: 1, known: true });
+    expect(c).toEqual({ attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: 1, known: true, ...stadiumLookOf(me) });
     expect(c.attendance).toBeLessThanOrEqual(c.capacity);
   });
 
@@ -84,10 +85,13 @@ describe("match crowd", () => {
     const me = squad("me", "Town", 40000);
     const opp = squad("opp", "Elsewhere", 30000);
     expect(await matchCrowd(fakeService([me, opp]), meta, fixture({ home: "opp", away: "me" }), me, opp))
-      .toEqual({ attendance: Math.round(30000 * GATE.FILL_RATE), capacity: 30000, neutral: false, importance: 1, known: true });
+      .toEqual({ attendance: Math.round(30000 * GATE.FILL_RATE), capacity: 30000, neutral: false, importance: 1, known: true, ...stadiumLookOf(opp) });
     const n = await matchCrowd(fakeService([me, opp]), meta, fixture({ neutral: true }), me, opp);
     expect(n.known).toBe(false);
     expect(n.neutral).toBe(true);
+    // The neutral venue is the match's own ground, never blocks.
+    expect(n.stadiumId).toBe("std_neutral_fix_9");
+    expect(n.shape).not.toBe("blocks");
   });
 
   test("managers: the human and the opponent's record; none = null", () => {

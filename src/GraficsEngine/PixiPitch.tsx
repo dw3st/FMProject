@@ -1,3 +1,4 @@
+import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
@@ -40,7 +41,7 @@ import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePosit
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import { ledLang, type LedLang } from "@/GraficsEngine/ledAds";
-import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, openWalkways, standCorners, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
+import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, openWalkways, standCorners, standFootprint, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
 import i18n from "@/i18n/i18n";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -65,7 +66,7 @@ import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
-import { STAND_TILE_ROTATION, drawDecor, drawStandBase, drawStandDetails, drawStandEdges, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
@@ -568,6 +569,13 @@ export interface PitchStadium {
    * the goal text (`{name}` and `{minute}` replaced) on every panel. Absent: no boards.
    */
   led?: { goal: string; lang?: LedLang };
+  /**
+   * The stadium seen from above (stadium mock of 2026-11-05): the stands stop short of the canvas edges, cut by the
+   * shape at the corners, and the ground around them shows. Absent: the stand fills the canvas, as before.
+   */
+  shape?: StadiumShape;
+  /** Stable id of the stadium (`stadiumIdOf`): the trees around it are the same every game. */
+  stadiumId?: string;
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -769,7 +777,7 @@ export function PixiPitch({
         };
       }
 
-      const m = buildMetrics(canvasWidth, canvasHeight, { stadium: !!stadiumRef.current });
+      const m = buildMetrics(canvasWidth, canvasHeight, { stadium: !!stadiumRef.current, shape: stadiumRef.current?.shape });
 
       // Converts game yards → canvas pixels (turned 180° when `mirror` is set — drawing only, #142)
       const toPixel = (x: number, y: number) => ({
@@ -794,6 +802,22 @@ export function PixiPitch({
       const crowdLayer = new Container();
       crowdLayer.eventMode = 'none';
       app.stage.addChildAt(crowdLayer, 0);
+      // A shaped stadium (stadium mock of 2026-11-05): the ground around it under everything, the stand clipped to the
+      // footprint, and the roof rim over the stand. Static: drawn once per mount.
+      if (m.stand?.shape) {
+        const ground = new Graphics();
+        ground.eventMode = 'none';
+        drawSurroundings(ground, { w: canvasWidth, h: canvasHeight }, m.stand, m.scale, stadiumRef.current?.stadiumId ?? stadiumRef.current?.seed ?? "test");
+        app.stage.addChildAt(ground, 0);
+        const footMask = new Graphics();
+        for (const p of standFootprint(m.stand)) footMask.poly(p).fill(0xffffff);
+        app.stage.addChild(footMask);
+        crowdLayer.mask = footMask;
+        const rim = new Graphics();
+        rim.eventMode = 'none';
+        drawRoofRim(rim, m.stand, m.scale);
+        app.stage.addChildAt(rim, app.stage.getChildIndex(crowdLayer) + 1);
+      }
       let crowdBase: Graphics | null = null;
       let crowdCorners: Graphics | null = null;
       // The art pack's stadium pieces (art phase 9): stand textures, tunnel, towers, benches, LED frame.
@@ -894,9 +918,13 @@ export function PixiPitch({
         // The stand corners rounded into a bowl (tester report: square stands): the corner outside the curve is the
         // dark concourse behind the stand, the curve edged like the roof.
         crowdCorners?.destroy();
-        crowdCorners = new Graphics();
-        drawStandCorners(crowdCorners, m.stand);
-        crowdLayer.addChild(crowdCorners);
+        crowdCorners = null;
+        // A shaped stadium clips its corners with the footprint mask and draws its own roof rim.
+        if (!m.stand.shape) {
+          crowdCorners = new Graphics();
+          drawStandCorners(crowdCorners, m.stand);
+          crowdLayer.addChild(crowdCorners);
+        }
         const seats = crowdSeats({
           stand: m.stand,
           fill: st.fill,

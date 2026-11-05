@@ -7,6 +7,8 @@ import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect, standTunnel } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 import type { DecorRect } from "@/GraficsEngine/stadiumDecor";
+import { standFootprint } from "@/GraficsEngine/stadiumExtras";
+import { SURROUND, surroundLayout } from "@/GraficsEngine/surroundings";
 
 /** Light tone of the decorations (stripes, the flag's band). */
 const DECOR_LIGHT = 0xf2f2f2;
@@ -141,4 +143,54 @@ export function goalPulseAlpha(t: number): number {
 /** The manager's decorations (`stadiumDecor.ts`) in the club's colour and a light tone. */
 export function drawDecor(g: Graphics, rects: readonly DecorRect[], clubColor: number): void {
   for (const r of rects) g.rect(r.x, r.y, r.w, r.h).fill({ color: r.tone === "club" ? clubColor : DECOR_LIGHT, alpha: r.alpha });
+}
+
+/** Mixes `hex` towards white by `t`. */
+function lift(hex: number, t: number): number {
+  const r = (hex >> 16) & 0xff, g = (hex >> 8) & 0xff, b = hex & 0xff;
+  const m = (v: number) => Math.round(v + (255 - v) * t);
+  return (m(r) << 16) | (m(g) << 8) | m(b);
+}
+
+/**
+ * The ground around a shaped stadium (`surroundings.ts`): paving with slab joints, grass beds, the building's contact
+ * shadow, then the trees (shadow, overlapping lobes, a lit side). Drawn once; the light layer darkens it at night.
+ */
+export function drawSurroundings(g: Graphics, canvas: { w: number; h: number }, stand: StandGeometry, scale: number, seed: string): void {
+  const S = SURROUND;
+  g.rect(0, 0, canvas.w, canvas.h).fill(S.PAVING);
+  const step = S.SLAB_YDS * scale;
+  for (let x = step; x < canvas.w; x += step) g.moveTo(x, 0).lineTo(x, canvas.h);
+  for (let y = step; y < canvas.h; y += step) g.moveTo(0, y).lineTo(canvas.w, y);
+  g.stroke({ width: 1, color: S.SLAB, alpha: S.SLAB_ALPHA });
+  const { trees, beds } = surroundLayout(canvas, stand, scale, seed);
+  for (const b of beds) g.roundRect(b.x, b.y, b.w, b.h, Math.min(b.w, b.h) * 0.3).fill(S.BED);
+  // The building's contact shadow: the footprint pushed away from the sun, in three soft steps.
+  const [sx, sy] = S.SHADOW_DIR;
+  for (const k of [1, 0.66, 0.33]) {
+    for (const p of standFootprint(stand)) {
+      g.poly(p.map((v, i) => v + (i % 2 === 0 ? sx : sy) * scale * k)).fill({ color: 0x000000, alpha: S.SHADOW_ALPHA / 3 });
+    }
+  }
+  for (const t of trees) {
+    const off = t.r * 0.45;
+    g.circle(t.x + sx * off / 1.5, t.y + sy * off / 1.5, t.r * 1.02).fill({ color: 0x000000, alpha: 0.28 });
+  }
+  for (const t of trees) {
+    const tone = S.TREE_TONES[t.tone]!;
+    g.circle(t.x, t.y, t.r * 0.7).fill(tone);
+    for (const l of t.lobes) g.circle(t.x + l.dx, t.y + l.dy, l.r).fill(tone);
+    // The lit side (towards the sun) and a darker core.
+    for (const l of t.lobes) g.circle(t.x + l.dx - sx * l.r * 0.18, t.y + l.dy - sy * l.r * 0.18, l.r * 0.55).fill({ color: lift(tone, 0.22), alpha: 0.7 });
+    g.circle(t.x + sx * t.r * 0.12, t.y + sy * t.r * 0.12, t.r * 0.28).fill({ color: 0x000000, alpha: 0.18 });
+  }
+}
+
+/** The roof rim along the stadium's footprint (each stand's own roof on a blocks ground): a dark outer line and the rim. */
+export function drawRoofRim(g: Graphics, stand: StandGeometry, scale: number): void {
+  const w = Math.max(2, SURROUND.RIM_YDS * scale);
+  for (const p of standFootprint(stand)) {
+    g.poly(p).stroke({ width: w + 2, color: SURROUND.RIM_DARK, alignment: 1 });
+    g.poly(p).stroke({ width: w, color: SURROUND.RIM, alignment: 1 });
+  }
 }
