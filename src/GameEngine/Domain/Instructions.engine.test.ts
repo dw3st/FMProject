@@ -5,7 +5,8 @@ import {
   createMatchState, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot,
   performSubstitution, changeFormation, forceInjurySubstitution,
 } from "@/GameEngine/Domain/gameState";
-import { assignMarkTargets } from "@/GameEngine/Domain/DefensivePositioning";
+import { assignMarkTargets, stayHomeTarget } from "@/GameEngine/Domain/DefensivePositioning";
+import { MAN_MARK_CONFIG } from "@/GameEngine/Configs/DefenseConfig";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { roleEngine } from "@/GameEngine/Domain/roleEngineData";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -18,7 +19,7 @@ import formation4231Json from "@/Data/formations/4-2-3-1.json";
 
 const F433 = formation433Json as Formation;
 const F4231 = formation4231Json as Formation;
-const MARK_SEED = 3; // Six seeded matches, 4.45: 6.7 yd. One seed says little (one match: 2.6 to 14 yd): `bun scripts/marker-distance.ts`; the limit only catches a real break in the marking.
+const MARK_SEED = 3; // One seed says little (one match: 1.2 to 18 yd, mean 3.5 over 60 seeds): `bun scripts/marker-distance.ts`; the limit only catches a real break in the marking.
 
 function loadSquad(file: string): Squad {
   const path = fileURLToPath(new URL(`../../example_data/squads/premier_league/${file}`, import.meta.url));
@@ -98,6 +99,19 @@ describe("applying instructions", () => {
 });
 
 describe("man-marking", () => {
+  test("with his team on the ball the marker stays goal-side of his man", () => {
+    const gap = MAN_MARK_CONFIG.STAY_HOME_GAP;
+    // Attacking +x: a slot far past his man is capped; the y leans toward the man.
+    const capped = stayHomeTarget({ x: 80, y: 30 }, { attackDir: 1 }, { x: 40, y: 50 });
+    expect(capped.x).toBe(40 - gap);
+    expect(capped.y).toBeCloseTo(30 + 20 * MAN_MARK_CONFIG.STAY_HOME_Y_PULL, 5);
+    // Attacking -x: the mirror.
+    expect(stayHomeTarget({ x: 35, y: 30 }, { attackDir: -1 }, { x: 75, y: 30 }).x).toBe(75 + gap);
+    // A man deeper than the slot changes nothing: he never drags the marker up the pitch.
+    const free = { x: 30, y: 30 };
+    expect(stayHomeTarget(free, { attackDir: 1 }, { x: 80, y: 50 })).toBe(free);
+  });
+
   test("fixed pairs come first in the mark assignment", () => {
     const s0 = freshState();
     const star = s0.players.find(p => p.team === "B" && p.role === "LW")!;
@@ -174,7 +188,7 @@ describe("man-marking", () => {
     }
     for (const [, ps] of result.playerStats) shotsMarked += ps.markedTargetShots;
     expect(n).toBeGreaterThan(100);
-    expect(sum / n).toBeLessThanOrEqual(7.5);
+    expect(sum / n).toBeLessThanOrEqual(6);
     expect(result.teamStats.B.manMarked).toBeGreaterThan(30);
     expect(shotsMarked).toBe(result.teamStats.B.markedTargetShots);
   }, 30_000); // three headless matches: slow on a loaded machine

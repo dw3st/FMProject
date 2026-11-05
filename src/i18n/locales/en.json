@@ -4173,7 +4173,7 @@
     },
     "marking": {
       "title": "Man-marking",
-      "hint": "Up to 2 players follow a specific opponent while we defend.",
+      "hint": "Up to 2 players follow a specific opponent. When we attack, they push up less so they don't lose him.",
       "marker": "Marker",
       "target": "Target",
       "best": "Their best player",

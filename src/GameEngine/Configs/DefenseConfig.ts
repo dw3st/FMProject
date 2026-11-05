@@ -83,6 +83,13 @@ export const MAN_MARK_CONFIG = {
   BALL_SIDE: 0.3,
   /** Yards the marker reads ahead along his target's run (toward the target's own target position). */
   ANTICIPATION: 4,
+  /**
+   * With his team on the ball the marker never goes past a point this many yards goal-side of his
+   * target: he stays home for the turnover instead of joining the attack.
+   */
+  STAY_HOME_GAP: 12,
+  /** 0..1 — how far he leans across toward the target's y while capped by the stay-home point. */
+  STAY_HOME_Y_PULL: 0.7,
 };
 
 // ── Per-team storage ──────────────────────────────────────────────────────────

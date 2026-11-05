@@ -22,7 +22,7 @@ import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngin
 import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
 import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
-import { assignMarkTargets, resetDefensiveIntentCache } from '@/GameEngine/Domain/DefensivePositioning';
+import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/GameEngine/Domain/DefensivePositioning';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
   applyContinuousFatigue,
@@ -4148,6 +4148,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const committedMarkId = decision?.type === 'track_mark' ? decision.markTargetId : undefined;
         const markTargetId = committedMarkId ?? markAssignments.get(player.id);
         target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime);
+      }
+
+      // Man-marker with his team on the ball: he stays home on his man (`stayHomeTarget`).
+      if (phase === 'attacking' && player.manMarkTargetId !== undefined) {
+        const mark = s.players.find(p => p.id === player.manMarkTargetId);
+        if (mark) target = stayHomeTarget(target, player, mark);
       }
 
       // Man-marker tracking his target (player instructions): no separation from teammates, and he

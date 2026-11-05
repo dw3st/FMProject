@@ -4173,7 +4173,7 @@
     },
     "marking": {
       "title": "Marcação individual",
-      "hint": "Até 2 jogadores seguem um adversário específico quando defendemos.",
+      "hint": "Até 2 jogadores seguem um adversário específico. Quando atacamos, eles sobem menos para não perder o alvo.",
       "marker": "Marcador",
       "target": "Alvo",
       "best": "Melhor jogador deles",

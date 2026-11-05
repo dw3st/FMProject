@@ -230,6 +230,21 @@ function defensiveWeightsOf(player: GamePlayer): DefensiveIntentWeights {
   return { ...w, track_mark: MAN_MARK_CONFIG.TRACK_MARK_WEIGHT, hold_shape: MAN_MARK_CONFIG.HOLD_SHAPE_WEIGHT };
 }
 
+/**
+ * A man-marker's spot while his team has the ball: the slot's target, capped at `STAY_HOME_GAP` yards
+ * goal-side of his man and leaning toward his man's y. A target already deeper than that changes
+ * nothing, so a forward who drops off never drags the marker up the pitch.
+ */
+export function stayHomeTarget(
+  target: { x: number; y: number },
+  player: { attackDir: 1 | -1 },
+  mark: { x: number; y: number },
+): { x: number; y: number } {
+  const coverX = mark.x - player.attackDir * MAN_MARK_CONFIG.STAY_HOME_GAP;
+  if ((target.x - coverX) * player.attackDir <= 0) return target;
+  return { x: coverX, y: target.y + (mark.y - target.y) * MAN_MARK_CONFIG.STAY_HOME_Y_PULL };
+}
+
 /** Movement bounds while defending: a marker gets X ± `X_BOUNDS_EXTENSION` and the full width. */
 function defensiveBoundsOf(player: GamePlayer): GamePlayer['bounds'] {
   if (player.manMarkTargetId === undefined) return player.bounds;

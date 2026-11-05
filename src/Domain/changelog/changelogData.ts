@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.2",
+    date: "2026-11-04",
+    time: "22:14",
+    items: [
+      {
+        pt: "A marcação individual ficou mais forte: quando seu time ataca, o marcador sobe menos e continua perto do alvo. Um meia marcando agora tira cerca de 30% dos chutes do adversário marcado, e o marcador ajuda menos no ataque.",
+        en: "Man-marking got stronger: when your team attacks, the marker pushes up less and stays near his target. A midfielder marking now takes about 30% of the shots off the marked opponent, and the marker helps less in attack.",
+      },
+    ],
+  },
+  {
     version: "4.46.1",
     date: "2026-11-04",
     time: "20:48",
