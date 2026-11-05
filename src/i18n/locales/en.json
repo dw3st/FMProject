@@ -965,7 +965,6 @@
       "fitness": "Fit"
     },
     "swapHint": "Drag a player onto another to swap: starter for starter, or a substitute onto a starter",
-    "unregisteredShort": "Unreg.",
     "unregisteredHidden_one": "{{count}} not registered for {{competition}}, left out of the list",
     "unregisteredHidden_other": "{{count}} not registered for {{competition}}, left out of the list"
   },
@@ -4552,7 +4551,6 @@
       "failed": "Could not save the list."
     },
     "notRegistered": "Not registered",
-    "notRegisteredFor": "Not registered for {{competition}}",
     "basis": {
       "outsideEU": "{{nation}} is outside the EU: counts as non-EU",
       "nationality": "{{nation}} is not one of this league's countries: counts as foreign",

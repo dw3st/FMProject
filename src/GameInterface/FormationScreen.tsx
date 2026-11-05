@@ -54,6 +54,7 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import {
   autoFillLineupWithFitness,
+  withoutUnregisteredStarters,
   buildSlotAlignedLineup,
   slotRoleFitRank,
   remapLineupToFormation,
@@ -122,8 +123,6 @@ export function FormationScreen() {
       .catch(() => {});
     return () => { live = false; };
   }, [session?.saveId, nextCompetition]);
-  const unregisteredLabel = (id: string) =>
-    unregistered?.ids.has(id) ? competitionName(unregistered.competition, regLeagues, i18n.language) : undefined;
   const registeredOnly = (players: RosterPlayer[]) => (unregistered ? players.filter((p) => !unregistered.ids.has(p.id)) : players);
   // Today's man-marking (chosen in the match preview): the marker slots show a target icon.
   const markedSlots = new Set(
@@ -166,7 +165,13 @@ export function FormationScreen() {
     [draft],
   );
   const slots = editing && draftSlots ? draftSlots : baseSlots;
-  const lineup = editing && draft ? draft.map((d) => d.playerId) : savedLineup;
+  // A starter not registered for the next match is not shown in the XI: the match day would replace him anyway.
+  // The stored XI only changes when the manager saves, since it also serves the competitions he is registered for.
+  const shownLineup = useMemo(
+    () => squad && unregistered ? withoutUnregisteredStarters(baseSlots, savedLineup, squad.players, currentDate, unregistered.ids) : savedLineup,
+    [baseSlots, savedLineup, squad, currentDate, unregistered],
+  );
+  const lineup = editing && draft ? draft.map((d) => d.playerId) : shownLineup;
   const validation = editing && draft ? validateCustomFormation(draft.map((d) => d.slot)) : null;
 
   /** A lineup that is now the stored one (loaded, saved, or applied from a preset). */
@@ -176,7 +181,7 @@ export function FormationScreen() {
   }
 
   const pad11 = (ids: string[]) => Array.from({ length: 11 }, (_, i) => ids[i] ?? "");
-  const lineupDirty = pad11(lineup).join("|") !== pad11(persistedLineup).join("|");
+  const lineupDirty = pad11(editing && draft ? lineup : savedLineup).join("|") !== pad11(persistedLineup).join("|");
 
   function setLineup(next: string[]) {
     if (editing && draft) setDraft(draft.map((d, i) => ({ ...d, playerId: next[i] ?? "" })));
@@ -446,7 +451,7 @@ export function FormationScreen() {
       formationId === CUSTOM_FORMATION_ID && customFormation ? customFormation.slots : snapToZones(attacking);
     if (base.length !== 11) return;
     setPresetSwaps(null);
-    setDraft(base.map((slot, i) => ({ slot, playerId: savedLineup[i] ?? "" })));
+    setDraft(base.map((slot, i) => ({ slot, playerId: shownLineup[i] ?? "" })));
     setEditing(true);
     setSelectedSlotIdx(null);
   }
@@ -861,7 +866,6 @@ export function FormationScreen() {
                             aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
                             onClick={() => handleSlotClick(idx)}
                             injured={isUnavailable(player, currentDate)}
-                            unregisteredFor={unregisteredLabel(player.id)}
                           />
                         ) : (
                           <button
@@ -1094,10 +1098,7 @@ function SquadPlayerRow({
   injured,
   rowProps,
   dropHover,
-  unregisteredFor,
 }: {
-  /** Name of the next match's competition when the player is not registered for it. */
-  unregisteredFor?: string;
   rowProps?: Record<string, unknown>;
   /** A dragged item is hovering over this row. */
   dropHover?: boolean;
@@ -1195,14 +1196,6 @@ function SquadPlayerRow({
         )}
         {unavailableTitle && (
           <span role="img" aria-label={unavailableTitle} title={unavailableTitle} className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-        )}
-        {unregisteredFor && (
-          <span
-            className="text-sm font-bold text-destructive shrink-0"
-            title={t("registration.notRegisteredFor", { competition: unregisteredFor })}
-          >
-            {t("formations.unregisteredShort")}
-          </span>
         )}
       </span>
       <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>

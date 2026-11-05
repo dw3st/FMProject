@@ -382,25 +382,7 @@ export function replaceUnavailableStarters(
     const unregistered = !!registered && !!starter && !registered.has(starter.id);
     if (!starter || (!isUnavailable(starter, date) && !unregistered)) continue;
 
-    const role = slots[i]!.role;
-    const roleMain = getMainRole(role);
-    const eligible = players.filter(
-      (p) => !used.has(p.id) && !isUnavailable(p, date) && (!registered || registered.has(p.id)),
-    );
-    const sameRole = eligible.filter(
-      (p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain,
-    );
-    const pool = sameRole.length > 0 ? sameRole : eligible;
-
-    let best: RosterPlayer | null = null;
-    let bestValue = -Infinity;
-    for (const candidate of pool) {
-      const value = fitnessAdjustedValue(candidate, role);
-      if (value > bestValue) {
-        bestValue = value;
-        best = candidate;
-      }
-    }
+    const best = bestSlotReplacement(slots[i]!.role, players, date, used, registered);
     if (!best) continue;
 
     used.delete(starterId);
@@ -411,4 +393,58 @@ export function replaceUnavailableStarters(
   }
 
   return { lineup: result, replaced };
+}
+
+/** The best available player for a slot: same-role candidates first, then anyone left. */
+function bestSlotReplacement(
+  role: string,
+  players: RosterPlayer[],
+  date: string,
+  used: Set<string>,
+  registered?: Set<string>,
+): RosterPlayer | null {
+  const roleMain = getMainRole(role);
+  const eligible = players.filter(
+    (p) => !used.has(p.id) && !isUnavailable(p, date) && (!registered || registered.has(p.id)),
+  );
+  const sameRole = eligible.filter(
+    (p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain,
+  );
+  const pool = sameRole.length > 0 ? sameRole : eligible;
+
+  let best: RosterPlayer | null = null;
+  let bestValue = -Infinity;
+  for (const candidate of pool) {
+    const value = fitnessAdjustedValue(candidate, role);
+    if (value > bestValue) {
+      bestValue = value;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+/**
+ * The XI of the formation screen: a starter not registered for the next match leaves it, for the player the match day
+ * would field (the slot stays empty when nobody can). Injured and suspended starters stay, with their mark.
+ */
+export function withoutUnregisteredStarters(
+  slots: FormationSlot[],
+  lineupIds: string[],
+  players: RosterPlayer[],
+  date: string,
+  unregistered: Set<string>,
+): string[] {
+  const registered = new Set(players.filter((p) => !unregistered.has(p.id)).map((p) => p.id));
+  const used = new Set(lineupIds.filter(Boolean));
+  const result = [...lineupIds];
+  for (let i = 0; i < slots.length && i < lineupIds.length; i++) {
+    const id = lineupIds[i];
+    if (!id || !unregistered.has(id)) continue;
+    const best = bestSlotReplacement(slots[i]!.role, players, date, used, registered);
+    used.delete(id);
+    if (best) used.add(best.id);
+    result[i] = best?.id ?? "";
+  }
+  return result;
 }

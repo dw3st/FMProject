@@ -965,7 +965,6 @@
       "fitness": "Fôl."
     },
     "swapHint": "Arraste um jogador sobre outro para trocar: entre titulares, ou um reserva sobre um titular",
-    "unregisteredShort": "N/I",
     "unregisteredHidden_one": "{{count}} não inscrito em {{competition}} fora da lista",
     "unregisteredHidden_other": "{{count}} não inscritos em {{competition}} fora da lista"
   },
@@ -4552,7 +4551,6 @@
       "failed": "Não foi possível salvar a lista."
     },
     "notRegistered": "Não inscrito",
-    "notRegisteredFor": "Não inscrito na {{competition}}",
     "basis": {
       "outsideEU": "{{nation}} fica fora da UE: conta como extracomunitário",
       "nationality": "{{nation}} não é um país desta liga: conta como estrangeiro",

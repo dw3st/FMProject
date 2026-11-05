@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.8",
+    date: "2026-11-05",
+    time: "12:14",
+    items: [
+      {
+        pt: "Na Formação, o titular não inscrito na competição do próximo jogo sai da lista: a vaga mostra quem joga no lugar dele.",
+        en: "On the Formation screen, a starter not registered for the next match's competition leaves the list: the slot shows who plays instead.",
+      },
+    ],
+  },
+  {
     version: "4.46.7",
     date: "2026-11-05",
     time: "10:11",

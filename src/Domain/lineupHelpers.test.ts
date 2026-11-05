@@ -5,6 +5,7 @@ import {
   buildSlotAlignedLineup,
   replaceUnavailableStarters,
   suggestRotation,
+  withoutUnregisteredStarters,
 } from "@/Domain/lineupHelpers";
 import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
 import type { FormationSlot } from "@/types/formationSlots";
@@ -263,6 +264,23 @@ describe("injured players are never picked", () => {
     const squad = [injuredStarter, injuredBench, healthyBench];
 
     expect(autoFillLineupWithFitness(stSlot, squad, "2027-04-01")).toEqual(["healthy-bench"]);
+  });
+
+  test("withoutUnregisteredStarters takes an unregistered starter out of the XI, and only him", () => {
+    const out = makePlayer({ id: "out", name: "Out", positions: ["ST"], stats: statsAt(9) });
+    const injured = makePlayer({
+      id: "injured", name: "Injured", positions: ["ST"], stats: statsAt(8),
+      injury: { severity: "medium", returnDate: "2027-05-01" },
+    });
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(5) });
+    const alsoOut = makePlayer({ id: "also-out", name: "Also Out", positions: ["ST"], stats: statsAt(9) });
+    const two = [...stSlot, ...stSlot];
+    const ids = new Set(["out", "also-out"]);
+    expect(withoutUnregisteredStarters(two, ["injured", "out"], [injured, out, bench, alsoOut], "2027-04-15", ids)).toEqual(["injured", "bench"]);
+    // Nobody left to come in: the slot is empty, never the unregistered player.
+    expect(withoutUnregisteredStarters(stSlot, ["out"], [out, alsoOut], "2027-04-15", ids)).toEqual([""]);
+    // Registered for this match: the XI does not change.
+    expect(withoutUnregisteredStarters(stSlot, ["out"], [out, bench], "2027-04-15", new Set())).toEqual(["out"]);
   });
 
   test("replaceUnavailableStarters swaps out a saved-lineup starter injured on the match date", () => {
