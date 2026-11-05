@@ -45,7 +45,7 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS } from "@/GameInterface/artPrefs";
 import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
 import { crowdExcitement } from "@/Domain/match/matchSound";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
@@ -71,7 +71,7 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
  */
 const MATCH_END_TO_RESULT_MS = 3500;
 /** 1x / 2x / 4x — live match speed group (spec §4). */
-const GAME_SPEEDS = [1, 2, 4] as const;
+const GAME_SPEEDS = MATCH_SPEEDS;
 import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import { TeamPanel, type DepartedPlayer } from "@/GameInterface/TeamPanel";
@@ -283,7 +283,8 @@ export function MatchScreen() {
   const pausedRef = useRef(false);
   const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
   const deliveredStateRef = useRef<GameState | null>(null);
-  const [gameSpeed, setGameSpeed] = useState<number>(1);
+  // The speed the last match was left at (tester report); a match between two managers runs at a fixed 1x.
+  const [gameSpeed, setGameSpeed] = useState<number>(() => (h2hMode ? 1 : readMatchSpeed()));
   /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
   const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
   /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
@@ -1976,7 +1977,7 @@ export function MatchScreen() {
                   compact
                   tabs={GAME_SPEEDS.map((s) => ({ key: String(s), label: <span className="tabular-nums">{s}×</span> }))}
                   active={String(gameSpeed)}
-                  onChange={(k) => setGameSpeed(Number(k) as typeof gameSpeed)}
+                  onChange={(k) => { setGameSpeed(Number(k)); writeMatchSpeed(Number(k)); }}
                 />
               </>
             )}
@@ -2140,7 +2141,7 @@ export function MatchScreen() {
               // the scoreboard or the control bar.
               <div className="relative shrink-0" style={{ width: pitchSize.w, height: pitchSize.h }}>
                 <PixiPitch
-                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? "s" : ""}${touchline?.referee ? "r" : ""}`}
+                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? `s${stadium.shape ?? ""}` : ""}${touchline?.referee ? "r" : ""}`}
                   canvasWidth={pitchSize.w}
                   canvasHeight={pitchSize.h}
                   paused={effectivePaused}

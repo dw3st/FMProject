@@ -167,7 +167,7 @@ export function WatchBroadcast({ saveId, seatId, onClose, onChat, embed = false,
         <div ref={boxRef} className="flex-1 min-w-0 flex items-center justify-center relative">
           {size && state ? (
             <PixiPitch
-              key={`${size.w}x${size.h}${w.look?.stadium ? "s" : ""}${w.look ? "l" : ""}`}
+              key={`${size.w}x${size.h}${w.look?.stadium ? `s${w.look.stadium.shape ?? ""}` : ""}${w.look ? "l" : ""}`}
               canvasWidth={size.w}
               canvasHeight={size.h}
               keepTickerAlive

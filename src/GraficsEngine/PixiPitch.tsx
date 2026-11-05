@@ -3157,8 +3157,22 @@ export function PixiPitch({
         }
       }
       const crew = m.stand ? bystanders(m, unitPx, reporterAt) : [];
-      const walkways = m.stand ? openWalkways(standConcreteRows(m.stand), worksSides(stadiumRef.current?.works, mirrorRef.current)) : [];
-      const sellers = m.stand ? vendors(stadiumRef.current?.seed ?? "match", walkways.length) : [];
+      // The vendors' walkways skip a stand under works. The works can arrive after the mount (the crowd of
+      // match-setup comes after the stadium appears: tester report, vendors in a stand under works), so the
+      // walkways are worked out again whenever the works or the mirror change.
+      const allWalkways = m.stand ? standConcreteRows(m.stand) : [];
+      let walkways: typeof allWalkways = [];
+      let sellers: ReturnType<typeof vendors> = [];
+      let walkwaysKey: string | null = null;
+      const refreshWalkways = () => {
+        const closed = worksSides(stadiumRef.current?.works, mirrorRef.current);
+        const key = `${closed.join(",")}|${stadiumRef.current?.seed ?? "match"}`;
+        if (key === walkwaysKey) return;
+        walkwaysKey = key;
+        walkways = openWalkways(allWalkways, closed);
+        sellers = m.stand ? vendors(stadiumRef.current?.seed ?? "match", walkways.length) : [];
+      };
+      refreshWalkways();
       /** One person seen from above: shoulders across the facing, the body, the head with its hair to the back. */
       const person = (g: Graphics, x: number, y: number, face: number, body: number, u: number, look: { skin: number; hair: number }, cap?: number) => {
         const fx = Math.cos(face), fy = Math.sin(face);
@@ -3221,6 +3235,7 @@ export function PixiPitch({
         });
         // Vendors walking the stand's walkways, a tray in front, a cap.
         if (!m.stand) return;
+        refreshWalkways();
         const inner = m.stand.inner;
         const tunnel = standTunnel(m.stand);
         sellers.forEach((v, i) => {

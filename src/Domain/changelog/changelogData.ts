@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.1",
+    date: "2026-11-05",
+    time: "18:15",
+    items: [
+      {
+        pt: "A partida ao vivo começa na velocidade em que você deixou a anterior (1x, 2x ou 4x).",
+        en: "A live match starts at the speed you left the last one at (1x, 2x or 4x).",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Os vendedores não andam mais pela arquibancada em obra.",
+        en: "Vendors no longer walk through a stand under works.",
+      },
+    ],
+  },
+  {
     version: "4.47",
     date: "2026-11-05",
     time: "17:22",

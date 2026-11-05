@@ -176,3 +176,25 @@ export function writeMatchVolume(v: number): void {
     // no storage
   }
 }
+
+/** The live match speed (tester report): the next match starts at the speed the last one was left at. */
+const SPEED_KEY = "fm.match.speed";
+export const MATCH_SPEEDS = [1, 2, 4] as const;
+export type MatchSpeed = typeof MATCH_SPEEDS[number];
+
+export function readMatchSpeed(): MatchSpeed {
+  try {
+    const v = Number(localStorage.getItem(SPEED_KEY));
+    return (MATCH_SPEEDS as readonly number[]).includes(v) ? (v as MatchSpeed) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function writeMatchSpeed(v: number): void {
+  try {
+    if ((MATCH_SPEEDS as readonly number[]).includes(v)) localStorage.setItem(SPEED_KEY, String(v));
+  } catch {
+    // no storage: 1x next time
+  }
+}
