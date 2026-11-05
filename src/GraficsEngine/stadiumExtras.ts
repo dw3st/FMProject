@@ -164,6 +164,11 @@ export function bystanders(m: PitchMetrics, u: number, reporterAt: { x: number; 
   return out;
 }
 
+/** The walkways vendors may use: a stand under works has nobody selling in it. */
+export function openWalkways<W extends { side: string }>(rows: W[], closedSides: readonly string[]): W[] {
+  return rows.filter((w) => !closedSides.includes(w.side));
+}
+
 /** A vendor walking a walkway of the stand: his row and pace (stable per match). */
 export interface Vendor { row: number; speed: number; phase: number; shirt: number }
 

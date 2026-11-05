@@ -40,7 +40,7 @@ import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePosit
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import { ledLang, type LedLang } from "@/GraficsEngine/ledAds";
-import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, standCorners, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
+import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, openWalkways, standCorners, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
 import i18n from "@/i18n/i18n";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -3113,7 +3113,7 @@ export function PixiPitch({
         }
       }
       const crew = m.stand ? bystanders(m, unitPx, reporterAt) : [];
-      const walkways = m.stand ? standConcreteRows(m.stand) : [];
+      const walkways = m.stand ? openWalkways(standConcreteRows(m.stand), worksSides(stadiumRef.current?.works, mirrorRef.current)) : [];
       const sellers = m.stand ? vendors(stadiumRef.current?.seed ?? "match", walkways.length) : [];
       /** One person seen from above: shoulders across the facing, the body, the head with its hair to the back. */
       const person = (g: Graphics, x: number, y: number, face: number, body: number, u: number, look: { skin: number; hair: number }, cap?: number) => {

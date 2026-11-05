@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import {
   bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, outsideCornerBowl, standCorners,
-  techArea, vendorAlong, vendors,
+  openWalkways, techArea, vendorAlong, vendors,
 } from "@/GraficsEngine/stadiumExtras";
 import { standSeatGrid } from "@/GraficsEngine/crowd";
 import { towerSpots } from "@/GraficsEngine/stadiumAtmosphere";
@@ -81,6 +81,13 @@ describe("around the pitch", () => {
       expect(t.y < s.inner.y || t.y > s.inner.y + s.inner.h).toBe(true);
     }
   });
+  test("vendors keep out of a stand under works", () => {
+    const rows = [{ side: "top" }, { side: "left" }, { side: "bottom" }];
+    expect(openWalkways(rows, ["left"]).map((w) => w.side)).toEqual(["top", "bottom"]);
+    expect(openWalkways(rows, [])).toEqual(rows);
+    expect(vendors("fix", openWalkways(rows, ["top", "left", "bottom"]).length)).toEqual([]);
+  });
+
   test("bystanders: four TV cameras, the reporter with a camera, stewards; vendors walk inside their walkway", () => {
     const b = bystanders(m, 3, { x: 200, y: 760 });
     expect(b.filter((x) => x.kind === "tv")).toHaveLength(4);
