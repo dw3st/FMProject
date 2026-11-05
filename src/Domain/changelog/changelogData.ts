@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.9",
+    date: "2026-11-05",
+    time: "14:27",
+    items: [
+      {
+        pt: "No Elenco, quem está na última temporada de contrato tem um botão amarelo para renovar.",
+        en: "On the Squad screen, a player in the last season of his contract has a yellow button to renew.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Instalação com 100% de condição não oferece mais reforma.",
+        en: "A facility at 100% condition no longer offers a repair.",
+      },
+    ],
+  },
+  {
     version: "4.46.8",
     date: "2026-11-05",
     time: "12:14",

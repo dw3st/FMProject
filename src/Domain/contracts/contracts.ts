@@ -236,6 +236,19 @@ export function renewalWithinLimits(player: RosterPlayer, date: string, seasonEn
   return player.age + remaining - 1 + years <= C.MAX_CONTRACT_AGE;
 }
 
+/**
+ * The human squad's "Renew" call: in his last season (a year or less left), not on loan, young enough for one more
+ * season, and not renewed too recently.
+ */
+export function contractRenewalDue(
+  player: Pick<RosterPlayer, "age" | "contract" | "loan">,
+  date: string,
+): boolean {
+  if (!player.contract || player.loan) return false;
+  if (player.age + 1 > C.MAX_CONTRACT_AGE) return false;
+  return player.contract.until <= addDays(date, C.EARLY_RENEW_DAYS) && renewalAvailableOn(player.contract, date) === null;
+}
+
 /** First day a renewed player can be renewed again, or null when he can be now. */
 export function renewalAvailableOn(contract: { renewedOn?: string } | undefined, date: string): string | null {
   if (!contract?.renewedOn) return null;

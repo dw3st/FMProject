@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer,
-  maxOfferYears, initialContract, isExpired, renewalContract,
+  contractRenewalDue, maxOfferYears, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
 import { stepWage } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
@@ -248,6 +248,20 @@ describe("stepWage", () => {
     expect(stepWage(12_300, 1)).toBe(12_500);
     expect(stepWage(1_250, -1)).toBe(1_200);
   });
+  test("contractRenewalDue: the last season, not on loan, not too old, not just renewed", () => {
+    const date = "2031-10-19";
+    const withContract = (age: number, until: string, extra: Partial<RosterPlayer> = {}) =>
+      ({ ...player("p", age), contract: { until, wage: 1000 }, ...extra });
+    expect(contractRenewalDue(withContract(25, "2032-05-20"), date)).toBe(true);
+    expect(contractRenewalDue(withContract(25, "2033-05-20"), date)).toBe(false);
+    expect(contractRenewalDue(player("p", 25), date)).toBe(false);
+    expect(contractRenewalDue(withContract(36, "2032-05-20"), date)).toBe(false);
+    expect(contractRenewalDue(withContract(25, "2032-05-20", {
+      loan: { fromClubId: "x", fromClubName: "X", until: "2032-05-20", wageShare: 1 },
+    }), date)).toBe(false);
+    expect(contractRenewalDue({ ...player("p", 25), contract: { until: "2032-05-20", wage: 1000, renewedOn: "2031-09-01" } }, date)).toBe(false);
+  });
+
   test("never goes below zero", () => {
     expect(stepWage(0, -1)).toBe(0);
     expect(stepWage(50, -1)).toBe(0);

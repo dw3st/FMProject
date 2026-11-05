@@ -21,6 +21,9 @@ export const AVAILABILITY_DOT: Record<Availability, string> = {
   unavailable: "bg-red-500",
 };
 
+/** A call that deserves attention now (a contract to renew): the "watch" yellow, loud enough to spot in a list. */
+export const ATTENTION_BUTTON = "bg-yellow-400/15 text-yellow-300 border-yellow-400/60 hover:bg-yellow-400 hover:text-black";
+
 /** Text colour of a morale band: happy green, neutral yellow, unhappy red. */
 export const MORALE_TONE: Record<MoraleBand, string> = {
   very_happy: "text-green-400",

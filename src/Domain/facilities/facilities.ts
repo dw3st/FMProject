@@ -349,7 +349,8 @@ function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: numb
   const cond = conditionOf(it);
   if (req.kind === "repair") {
     const to = req.to;
-    if (it.condemned || !Number.isInteger(to) || to % F.REPAIR.STEP !== 0 || to > 100 || to <= cond) return null;
+    // The screen rounds the condition: an item that reads 100% has nothing to repair (tester report, 4.46.9).
+    if (it.condemned || !Number.isInteger(to) || to % F.REPAIR.STEP !== 0 || to > 100 || to <= Math.round(cond)) return null;
     const gain = (to - cond) / 100;
     const cost = Math.round(itemValue(revenue, req.item, it.level) * gain * F.REPAIR.COST_SHARE);
     return {

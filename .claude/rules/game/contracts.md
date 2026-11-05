@@ -142,6 +142,10 @@ compra, no livre e no pré-contrato). `renewalContract` (o que a IA paga) não m
 `demandBreakdown(..., { negotiation })`: o pedido de salário nas contratações, renovações e pré-contratos do jogador × (1 − 5% t)
 pela Negociação do técnico (`.claude/rules/game/achievements.md`; parte `negotiation` na rota `demand`, linha na tela).
 
+## Botão de renovar no Elenco (4.46.9)
+
+Report de tester. Na tabela do próprio elenco, quem está na última temporada (`contractRenewalDue`: 365 dias ou menos de contrato, não emprestado, com idade para mais uma temporada, fora da espera depois de uma renovação) troca o botão de oferta por **Renovar**, em amarelo (`ATTENTION_BUTTON`), que abre a renovação na ficha (`?action=renew`).
+
 ## Renovação antecipada da IA (4.44.3)
 
 Reports (Bellingham no Real Madrid, pré-contrato a €410K): a IA só renovava na virada, então todo craque entrava nos 183 dias do pré-contrato. Agora (`src/Domain/contracts/earlyRenewal.ts`, no começo do mercado do dia, fora dos clubes humanos) cada clube da IA olha os contratos uma vez a cada 28 dias: os 11 melhores do elenco com contrato a até 365 dias do fim renovam pela regra de sempre (`aiShouldRenew`, salário da curva, anos pela idade, somados ao `until`), com chance de 85% por contrato (um sorteio só: quem diz não fica no fim do contrato e pode receber pré-contrato). Quem já assinou pré-contrato não renova. Medido (`bun scripts/market-sim.ts 3`, com `NO_EARLY=1` para comparar): top 100 do mundo aberto a pré-contrato 12,0 → 2,5 em média; `open` nas 3 temporadas LOW 94,8 → 95,3%, MEDIUM 89,9 → 91,2%, HIGH 97,2 → 97,8%, ELITE 100 → 99,0%; contratações de livres 508 → 395 na última temporada.

@@ -1,5 +1,7 @@
 import { summaryOf } from "@/Domain/personality/personality";
-import { AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
+import { ATTENTION_BUTTON, AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
+import { contractRenewalDue } from "@/Domain/contracts/contracts";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import { useState, useMemo } from "react";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
@@ -25,7 +27,7 @@ import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
-type RosterRow = DisplayPlayer & { morale: number; flagCode?: string };
+type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean };
 
 /** Column key → the row field it sorts by (a text label sorts by the number behind it). */
 const SORT_FIELD: Record<string, string> = {
@@ -45,7 +47,7 @@ export function SquadRosterTable({
   mySquadId: string;
   onOffer: (player: DisplayPlayer) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentDate, session } = useGameSave();
   // Same star index as the player profile (`useStarPlayers`) — the list used to show none.
   const stars = useStarPlayers(session?.saveId, currentDate);
@@ -87,8 +89,9 @@ export function SquadRosterTable({
       clubSlug,
       morale: moraleOf(p),
       flagCode: nationalityFlagCode(p.nationality),
+      renewDue: showMorale && !!currentDate && contractRenewalDue(p, currentDate),
     }));
-  }, [squad, leagueSlug, clubSlug, currentDate]);
+  }, [squad, leagueSlug, clubSlug, currentDate, showMorale]);
   const players = useMemo(
     () => (showMorale && onlyUnhappy
       ? allPlayers.filter((p) => { const b = moraleBand(p.morale); return b === "unhappy" || b === "furious"; })
@@ -245,6 +248,17 @@ export function SquadRosterTable({
               <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
             <div className="px-3 py-2.5 flex justify-center">
+              {player.renewDue ? (
+                <a
+                  href={`${playerDetailHref(player)}?action=renew`}
+                  title={t("dashboard.squadRosterTable.renewDue", { date: player.contractEnd ? formatGameDate(player.contractEnd, i18n.language) : "" })}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg no-underline transition-all ${ATTENTION_BUTTON}`}
+                >
+                  <Icon name="file-signature" className="w-4 h-4" />
+                  {t("contracts.renew")}
+                </a>
+              ) : (
               <button
                 type="button"
                 disabled={!!mySquadId && player.squadId === mySquadId}
@@ -262,6 +276,7 @@ export function SquadRosterTable({
                 <Icon name="user-plus" className="w-3 h-3" />
                 {t("dashboard.squadRosterTable.offer")}
               </button>
+              )}
             </div>
           </div>
         ))}

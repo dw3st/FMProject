@@ -2306,6 +2306,7 @@
       "action": "Ação",
       "offer": "Oferta",
       "yourPlayer": "Seu jogador",
+      "renewDue": "Contrato acaba em {{date}}. Renovar agora",
       "makeOffer": "Fazer oferta",
       "players": "jogadores",
       "fit": "Apto",

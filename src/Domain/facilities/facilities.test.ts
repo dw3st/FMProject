@@ -403,6 +403,10 @@ describe("item projects: repair, rebuild, upgrade", () => {
     expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 72 }, ctx)).toBeNull();
     expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 25 }, ctx)).toBeNull();
     expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 105 }, ctx)).toBeNull();
+    // Reads 100% on the screen (99.6): nothing to repair, and level 10 has nothing to upgrade.
+    const worn = at("stadiumPitch", 99.6, { level: 10 });
+    expect(quoteProject(worn, { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)).toBeNull();
+    expect(quoteProject(worn, { kind: "upgrade", item: "stadiumPitch" }, ctx)).toBeNull();
     expect(quoteProject(at("stadiumPitch", 30, { condemned: true }), { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)).toBeNull();
     // A big repair is not small: seats at level 10, 0 → 100 = 3% of the revenue (all the starting
     // levels repair under the 2% line: value share × level / 6 × 0.6).

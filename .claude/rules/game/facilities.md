@@ -222,6 +222,8 @@ jardineiro ×1,6; campos da base com metade do desvio. Limite LOW 1 · MEDIUM 1 
 
 ### Reforma, reconstrução, melhoria (`POST .../facilities/request`)
 
+Um item que aparece com 100% (condição arredondada, a partir de 99,5) não tem reforma (4.46.9, report de tester: um item 10/10 ainda oferecia obra).
+
 | Pedido | Corpo | Regra |
 |---|---|---|
 | Reforma | `{ kind: "repair", item, to }` | `to` múltiplo de 5, acima da condição, ≤ 100; item não interditado |
