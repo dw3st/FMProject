@@ -2,6 +2,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
+import { useSocial } from "@/GameInterface/Social/useSocial";
+import { worldRoomParam } from "@/Domain/social/rooms";
 import { setWatchTarget, subscribeWatchTarget, watchTarget } from "@/GameInterface/Watch/watchWindow";
 import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 
@@ -39,15 +41,20 @@ function popOut(saveId: string, seatId: string): void {
 export function WatchWindowHost() {
   const { t } = useTranslation();
   const target = useSyncExternalStore(subscribeWatchTarget, watchTarget, () => null);
+  const { openChat } = useSocial();
 
   useEffect(() => {
     if (!target) return;
     const onMsg = (e: MessageEvent) => {
-      if (e.origin === window.location.origin && (e.data as { type?: string } | null)?.type === "watch-close") close();
+      if (e.origin !== window.location.origin) return;
+      const type = (e.data as { type?: string } | null)?.type;
+      if (type === "watch-close") close();
+      // The room is always the league of the window: nothing from the message is used.
+      if (type === "watch-chat") openChat(worldRoomParam(target.saveId));
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [target]);
+  }, [target, openChat]);
 
   if (!target) return null;
   const src = `/watch?save=${encodeURIComponent(target.saveId)}&seat=${encodeURIComponent(target.seatId)}&embed=1`;

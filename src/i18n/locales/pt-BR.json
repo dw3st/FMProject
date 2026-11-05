@@ -6258,6 +6258,7 @@
     "rule": "Cada clube pode contratar até ter {{max}} jogadores do top {{top}} do mundo. Quem já é do clube e entra no top fica; promover um jovem da base sempre vale."
   },
   "watch": {
+    "chat": "Chat da liga",
     "popOut": "Abrir em janela própria (arraste para outro monitor). Ela não recarrega ao trocar de tela e segue o amigo nas próximas partidas.",
     "popOutShort": "Outra janela",
     "waitingNext": "Esperando a próxima partida de {{name}}. Ela entra aqui sozinha.",

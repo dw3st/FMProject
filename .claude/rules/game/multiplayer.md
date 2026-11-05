@@ -952,3 +952,7 @@ Report do usuário. A reclamação é resolvida no navegador de quem joga, sem p
 ### Competição no jogo ao vivo do amigo (4.46.4)
 
 Reports de tester. `LiveBase.competition` (slug) e `stage` (`liveStageOf`, `src/Domain/rivals/liveStage.ts`: rodada, grupo e rodada, fase, ida ou volta), gravados pelo `defaultResolver`; a partida entre técnicos ainda só leva a competição. `LiveCompetitionLine` mostra a linha no cartão Rivais, na faixa da partida e na tela de assistir (`useLeagueCatalog`, `/api/leagues` uma vez por página).
+
+### Chat na transmissão (4.46.6)
+
+Pedido do usuário. A tela de assistir tem o botão "Chat da liga" e, na coluna dos lances, as reações e frases (`TauntActions`, alvo `live`). Em janela própria a página tem o `MatchSocial`; no iframe da janela flutuante o botão manda `watch-chat` por `postMessage` e o `WatchWindowHost` abre a sala da liga da janela, com as outras conversas da aba (o iframe não abre um segundo `SocialProvider`, que dividiria o `sessionStorage` do dock). No mundo público a sala só aceita a resenha.

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.6",
+    date: "2026-11-05",
+    time: "08:58",
+    items: [
+      {
+        pt: "Assistindo ao jogo de um amigo: botão do chat da liga, e reações e frases para mandar na hora, também depois do apito final.",
+        en: "Watching a friend's match: a league chat button, plus reactions and phrases to send on the spot, after the final whistle too.",
+      },
+    ],
+  },
+  {
     version: "4.46.5",
     date: "2026-11-05",
     time: "08:49",

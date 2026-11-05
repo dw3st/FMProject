@@ -10,6 +10,11 @@ import { LiveMoments } from "@/GameInterface/World/LiveMoments";
 import { Button } from "@/GameInterface/ui/Button";
 import { Icon } from "@/GameInterface/Icons";
 import { useWatchSocket } from "@/GameInterface/Watch/useWatchSocket";
+import { MatchSocial } from "@/GameInterface/Social/MatchSocial";
+import { useSocial } from "@/GameInterface/Social/useSocial";
+import { TauntActions } from "@/GameInterface/World/TauntActions";
+import { liveGroups } from "@/Domain/rivals/taunts";
+import { worldRoomParam } from "@/Domain/social/rooms";
 import type { WatchInfo, WatchLook } from "@/types/watchTypes";
 
 const PITCH_ASPECT = 1.62;
@@ -43,10 +48,12 @@ function pitchPropsOf(info: WatchInfo, look: WatchLook | null, ledGoal: string):
  * A friend's live match as a broadcast (spec 2026-10-29-friend-match-broadcast-design): the score bar, the pitch drawn
  * exactly as on his screen (his kits, faces, stadium, turf and light) and the latest moments. Read only.
  */
-export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow = false }: {
+export function WatchBroadcast({ saveId, seatId, onClose, onChat, embed = false, follow = false }: {
   saveId: string;
   seatId: string;
   onClose: () => void;
+  /** Opens the league chat, the room of the banter (report). */
+  onChat: () => void;
   /** Inside the floating window: it has its own close button, and a narrow window drops the side column. */
   embed?: boolean;
   /** Own window following the friend: a finished match waits for his next one instead of closing. */
@@ -136,6 +143,16 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
         </div>
         <button
           type="button"
+          onClick={onChat}
+          className="h-9 px-2.5 inline-flex items-center gap-1.5 shrink-0 rounded-md border border-border bg-card text-sm font-semibold text-foreground hover:border-primary cursor-pointer"
+          aria-label={t("watch.chat")}
+          title={t("watch.chat")}
+        >
+          <Icon name="message-square" size={16} />
+          <span className={embed ? "hidden md:inline" : ""}>{t("watch.chat")}</span>
+        </button>
+        <button
+          type="button"
           onClick={onClose}
           hidden={embed}
           className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground"
@@ -176,18 +193,32 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
           {w.closed && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80">
               <p className="m-0 text-base font-semibold text-center px-4">{waiting ? waitingText : t(`watch.closed.${w.closed}`)}</p>
-              <Button onClick={onClose}>{t("watch.leave")}</Button>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={onChat}>{t("watch.chat")}</Button>
+                <Button onClick={onClose}>{t("watch.leave")}</Button>
+              </div>
             </div>
           )}
         </div>
         {w.live && (
-          <aside className={`w-72 shrink-0 overflow-y-auto border border-border rounded-md p-3 ${embed ? "hidden lg:block" : ""}`}>
-            <LiveMoments live={w.live} />
+          <aside className={`w-72 shrink-0 min-h-0 flex-col gap-2 border border-border rounded-md p-3 ${embed ? "hidden lg:flex" : "flex"}`}>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <LiveMoments live={w.live} />
+            </div>
+            <div className="shrink-0 border-t border-border pt-2 max-h-[50%] overflow-y-auto">
+              <TauntActions saveId={saveId} target={{ live: seatId }} groups={liveGroups(w.live)} />
+            </div>
           </aside>
         )}
       </div>
     </div>
   );
+}
+
+/** The broadcast on its own page: the chat windows open here. */
+function StandaloneBroadcast({ saveId, seatId, onClose, follow }: { saveId: string; seatId: string; onClose: () => void; follow: boolean }) {
+  const { openChat } = useSocial();
+  return <WatchBroadcast saveId={saveId} seatId={seatId} onClose={onClose} onChat={() => openChat(worldRoomParam(saveId))} follow={follow} />;
 }
 
 /** `/watch?save=…&seat=…`: the broadcast on its own page (opened in a new tab from the user's own live match). */
@@ -209,7 +240,21 @@ export function WatchScreen() {
   };
   return (
     <div className={`h-screen bg-background flex flex-col ${embed ? "p-3" : "px-6 py-4"}`}>
-      {target ? <WatchBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} embed={embed} follow={follow && !embed} /> : null}
+      {target && embed && (
+        // In the frame the chat opens on the page around it, with the other chat windows of the tab.
+        <WatchBroadcast
+          saveId={target.saveId}
+          seatId={target.seatId}
+          onClose={back}
+          onChat={() => window.parent.postMessage({ type: "watch-chat" }, window.location.origin)}
+          embed
+        />
+      )}
+      {target && !embed && (
+        <MatchSocial>
+          <StandaloneBroadcast saveId={target.saveId} seatId={target.seatId} onClose={back} follow={follow} />
+        </MatchSocial>
+      )}
     </div>
   );
 }
