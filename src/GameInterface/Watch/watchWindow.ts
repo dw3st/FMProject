@@ -5,6 +5,8 @@
 export interface WatchTarget {
   saveId: string;
   seatId: string;
+  /** Opened by itself on the dashboard (`autoWatch.ts`): the corner window, and closing it hides that match for the day. */
+  auto?: { day: string };
 }
 
 export const WATCH_WINDOW_KEY = "fm.watch.window.v1";
@@ -16,7 +18,8 @@ export function parseWatchTarget(raw: string | null | undefined): WatchTarget | 
     const v = JSON.parse(raw) as Partial<WatchTarget> | null;
     if (!v || typeof v.saveId !== "string" || typeof v.seatId !== "string") return null;
     if (!ID_RE.test(v.saveId) || !ID_RE.test(v.seatId)) return null;
-    return { saveId: v.saveId, seatId: v.seatId };
+    const day = v.auto && typeof v.auto.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.auto.day) ? v.auto.day : null;
+    return { saveId: v.saveId, seatId: v.seatId, ...(day ? { auto: { day } } : {}) };
   } catch {
     return null;
   }

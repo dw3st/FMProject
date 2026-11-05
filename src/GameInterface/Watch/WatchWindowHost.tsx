@@ -4,7 +4,8 @@ import { Icon } from "@/GameInterface/Icons";
 import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { worldRoomParam } from "@/Domain/social/rooms";
-import { setWatchTarget, subscribeWatchTarget, watchTarget } from "@/GameInterface/Watch/watchWindow";
+import { setWatchTarget, subscribeWatchTarget, watchTarget, type WatchTarget } from "@/GameInterface/Watch/watchWindow";
+import { hiddenKey, hideAutoWatch } from "@/GameInterface/Watch/autoWatch";
 import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 
 const WATCH_MIN: Size = { w: 420, h: 300 };
@@ -19,7 +20,19 @@ function watchDefaultRect(v: Size): FloatRect {
   return { x: Math.round((v.w - w) / 2), y: 80, w, h };
 }
 
+/** Opened by itself (the dashboard): a smaller window in the bottom-right corner, above the status bar. */
+function cornerRect(v: Size): FloatRect {
+  const w = Math.min(560, Math.round(v.w * 0.4));
+  const h = Math.round(w / 1.45);
+  return { x: v.w - w - 24, y: Math.max(64, v.h - h - 64), w, h };
+}
+
 const close = () => setWatchTarget(null);
+/** "Hide": an auto window stays closed for that match today. */
+const hide = (target: WatchTarget) => {
+  if (target.auto) hideAutoWatch(hiddenKey(target.saveId, target.seatId, target.auto.day));
+  close();
+};
 
 /**
  * The broadcast in a browser window of its own (report: drag it to a second monitor): the floating window closes and
@@ -57,17 +70,18 @@ export function WatchWindowHost() {
   }, [target, openChat]);
 
   if (!target) return null;
+  const auto = !!target.auto;
   const src = `/watch?save=${encodeURIComponent(target.saveId)}&seat=${encodeURIComponent(target.seatId)}&embed=1`;
   return (
     <FloatingWindow
-      id="watch"
+      id={auto ? "watch-corner" : "watch"}
       ariaLabel={t("watch.title")}
-      defaultRect={watchDefaultRect}
+      defaultRect={auto ? cornerRect : watchDefaultRect}
       min={WATCH_MIN}
       max={WATCH_MAX}
       dockedHeight={320}
       hasFrame
-      onClose={close}
+      onClose={() => hide(target)}
       header={
         <header className="flex items-center gap-2 border-b border-border px-3 py-1.5">
           <Icon name="play" size={16} className="text-primary shrink-0" />
@@ -83,9 +97,16 @@ export function WatchWindowHost() {
             <Icon name="external-link" size={16} />
             {t("watch.popOutShort")}
           </button>
-          <button type="button" className={ICON_BUTTON} onClick={close} aria-label={t("watch.leave")} title={t("watch.leave")}>
-            <Icon name="close" size={16} />
-          </button>
+          {auto ? (
+            <button type="button" onClick={() => hide(target)} title={t("watch.hideTitle")}
+              className="h-8 px-2 rounded border-0 bg-transparent text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer">
+              {t("watch.hide")}
+            </button>
+          ) : (
+            <button type="button" className={ICON_BUTTON} onClick={close} aria-label={t("watch.leave")} title={t("watch.leave")}>
+              <Icon name="close" size={16} />
+            </button>
+          )}
         </header>
       }
     >

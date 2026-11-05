@@ -1,3 +1,5 @@
+import { autoWatchSeat, readHidden, stillPlaying } from "@/GameInterface/Watch/autoWatch";
+import { setWatchTarget, watchTarget } from "@/GameInterface/Watch/watchWindow";
 import type { AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import { RenewalPopup } from "@/GameInterface/Components/RenewalPopup";
 import { clubCardAchievements, type ClubCardAchievements } from "@/GameInterface/Dashboard/HomeCards";
@@ -171,6 +173,17 @@ export function DashboardScreen() {
     void rivalsApi.rivals(saveId).then((r) => { if (!cancelled) setRivals(r.ok ? r.data.rows : null); });
     return () => { cancelled = true; };
   }, [saveId, groupAdvance, currentDate, social.rivalsVersion]);
+
+  // A friend's live match opens by itself in the corner window when you have no match today (tester report, option B
+  // of the mock); it closes when his match ends, and "Hide" keeps it closed that day (`autoWatch.ts`).
+  useEffect(() => {
+    if (!saveId || !rivals || !currentDate) return;
+    const open = watchTarget();
+    if (open?.auto && open.saveId === saveId && !stillPlaying(rivals, open.seatId)) { setWatchTarget(null); return; }
+    if (open) return;
+    const seat = autoWatchSeat(rivals, currentDate, saveId, readHidden());
+    if (seat) setWatchTarget({ saveId, seatId: seat, auto: { day: currentDate } });
+  }, [saveId, rivals, currentDate]);
 
   // World news (`.claude/rules/game/press.md` → "Notícias"): the big ones of the last days first.
   const [news, setNews] = useState<NewsItem[] | null>(null);

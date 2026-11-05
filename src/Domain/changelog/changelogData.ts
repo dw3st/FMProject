@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.4",
+    date: "2026-11-05",
+    time: "18:57",
+    items: [
+      {
+        pt: "Na liga com amigos, quando você não tem jogo no dia e um amigo está jogando ao vivo, a partida dele abre sozinha numa janela no canto do Painel. Esconder fecha a janela até o próximo dia de jogos.",
+        en: "In a league with friends, when you have no match that day and a friend is playing live, his match opens by itself in a corner window of the Dashboard. Hide closes it until the next match day.",
+      },
+    ],
+  },
+  {
     version: "4.47.3",
     date: "2026-11-05",
     time: "18:49",

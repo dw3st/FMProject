@@ -956,3 +956,8 @@ Reports de tester. `LiveBase.competition` (slug) e `stage` (`liveStageOf`, `src/
 ### Chat na transmissão (4.46.6)
 
 Pedido do usuário. A tela de assistir tem o botão "Chat da liga" e, na coluna dos lances, as reações e frases (`TauntActions`, alvo `live`). Em janela própria a página tem o `MatchSocial`; no iframe da janela flutuante o botão manda `watch-chat` por `postMessage` e o `WatchWindowHost` abre a sala da liga da janela, com as outras conversas da aba (o iframe não abre um segundo `SocialProvider`, que dividiria o `sessionStorage` do dock). No mundo público a sala só aceita a resenha.
+
+### O jogo do amigo abre sozinho no Painel (4.47.4)
+
+Report de tester, opção B do mock. No Painel de um mundo em grupo, sem jogo seu no dia (`me.next.date` diferente de hoje e sem jogo seu ao vivo), o primeiro amigo jogando ao vivo abre na janela flutuante de assistir, no canto (`autoWatchSeat`, `Watch/autoWatch.ts`; `WatchTarget.auto = { day }`, janela `watch-corner`, menor, embaixo à direita). A janela fecha sozinha quando o jogo dele termina (`stillPlaying`, ao recarregar a lista de rivais). "Esconder" fecha e guarda `saveId:seatId:dia` em `localStorage` (`fm.watch.autoHidden.v1`, os últimos 20): aquele jogo não abre de novo no dia. Abrir pelo botão Assistir continua a janela grande de antes.
+

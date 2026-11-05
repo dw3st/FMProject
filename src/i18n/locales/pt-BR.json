@@ -6337,6 +6337,8 @@
     "viewers_one": "{{names}} está assistindo à sua partida",
     "viewers_other": "{{names}} estão assistindo à sua partida",
     "watching": "Assistindo {{name}}",
-    "paused": "Pausado"
+    "paused": "Pausado",
+    "hide": "Esconder",
+    "hideTitle": "Esconde este jogo até o próximo dia de jogos"
   }
 }

@@ -6337,6 +6337,8 @@
     "viewers_one": "{{names}} is watching your match",
     "viewers_other": "{{names}} are watching your match",
     "watching": "Watching {{name}}",
-    "paused": "Paused"
+    "paused": "Paused",
+    "hide": "Hide",
+    "hideTitle": "Hides this match until the next match day"
   }
 }
