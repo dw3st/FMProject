@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, nationalityDisplayName, groupCountriesByContinent, leagueLabel,
-  leaguesOfCountry, matchesCountryQuery, partitionDayMatches,
+  leaguesOfCountry, matchesCountryQuery,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -79,39 +79,6 @@ describe("continentI18nKey", () => {
     expect(continentI18nKey("South America")).toBe("south_america");
     expect(continentI18nKey("Europe")).toBe("europe");
     expect(continentI18nKey("Other")).toBe("other");
-  });
-});
-
-describe("partitionDayMatches", () => {
-  test("liga própria e seguida vão para primary; o resto vai para others", () => {
-    const matches = [
-      { fixtureId: "1", competition: "premier_league" },
-      { fixtureId: "2", competition: "of_eredivisie" },
-      { fixtureId: "3", competition: "of_liga_mx" },
-    ];
-    const { primary, others } = partitionDayMatches(matches, "premier_league", ["of_eredivisie"]);
-    expect(primary.map((m) => m.fixtureId)).toEqual(["1", "2"]);
-    expect(others.map((m) => m.fixtureId)).toEqual(["3"]);
-  });
-
-  test("isOwnMatch força a partida do usuário para primary mesmo com liga da sessão ausente/obsoleta", () => {
-    const matches = [
-      { fixtureId: "1", competition: "of_liga_mx", home: "my_squad", away: "other_squad" },
-      { fixtureId: "2", competition: "of_liga_mx", home: "x", away: "y" },
-    ];
-    const { primary, others } = partitionDayMatches(
-      matches, "", [],
-      (m) => m.home === "my_squad" || m.away === "my_squad",
-    );
-    expect(primary.map((m) => m.fixtureId)).toEqual(["1"]);
-    expect(others.map((m) => m.fixtureId)).toEqual(["2"]);
-  });
-
-  test("sem isOwnMatch continua o comportamento anterior", () => {
-    const matches = [{ fixtureId: "1", competition: "of_liga_mx" }];
-    const { primary, others } = partitionDayMatches(matches, "premier_league", []);
-    expect(primary).toEqual([]);
-    expect(others.map((m) => m.fixtureId)).toEqual(["1"]);
   });
 });
 

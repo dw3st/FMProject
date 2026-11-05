@@ -1,3 +1,4 @@
+import { RescheduledNote } from "@/GameInterface/Components/RescheduledNote";
 import { useTranslation } from "react-i18next";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 
@@ -51,6 +52,7 @@ export function CupBracket({ data, myClubId }: { data: CupBracketData; myClubId:
                         )}
                         {f.decider && !pens && <span className="block text-sm text-muted-foreground">{t("cups.aet")}</span>}
                         {f.neutral && <span className="block text-sm text-muted-foreground">{t("cups.neutral")}</span>}
+                        {f.rescheduledFrom && <span className="block"><RescheduledNote from={f.rescheduledFrom} /></span>}
                       </span>
                       <span className="truncate">{name(f.away)}</span>
                     </li>

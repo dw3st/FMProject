@@ -7,14 +7,14 @@ do `docs/ROADMAP.md`).
 
 - **Conflito:** um clube com dois jogos oficiais (liga, copa nacional, continental) no mesmo dia **ou em dias
   seguidos** (sempre ≥ 2 dias entre dois jogos de um clube).
-- **Quem cede:** o jogo da **liga** — só aquela partida, com os dois clubes; nunca a rodada inteira. Copa e
-  continental ficam nas datas sorteadas. Dois jogos de liga em conflito (raro): cede o mais tarde.
+- **Quem cede:** o jogo da **liga** — só aquela partida, com os dois clubes; nunca a rodada inteira. Dois jogos de liga
+  em conflito (raro): cede o mais tarde. Copa × continental: cede o jogo da **copa** (desde a 4.46.4). O continental
+  nunca muda.
 - **Nova data:** o **meio de semana** (terça, quarta, quinta) mais próximo da data original, dentro da janela da
   liga (`[início, fim]` da meta, nunca antes do primeiro dia jogável), em que nenhum dos dois clubes joga no dia,
   no anterior nem no seguinte. Empate de distância: a data mais tarde. Sem meio de semana livre: o dia livre mais
   próximo, qualquer dia da semana. Sem dia livre: o jogo fica e o par vai para `logError("calendar", …)`.
-- Conflito sem jogo de liga movível (copa × continental; jogo jogado ou antes do primeiro dia jogável) só é
-  contado, nunca mexido.
+- Conflito sem jogo movível (jogo jogado ou antes do primeiro dia jogável) só é contado, nunca mexido.
 - `Fixture.rescheduledFrom` guarda a data original (a primeira, se remarcado de novo). Rodadas e `date-index`
   ficam coerentes: a rodada sai da data antiga quando nenhum jogo dela sobra lá e entra na nova. Todo leitor de
   jogos já filtra por `fixture.date` (avanço do dia, `season.calendar`, avanço rápido, `match-setup`).
@@ -89,14 +89,18 @@ Passo do mundo inteiro sem nada a mover (só leitura): ~0,55–0,7 s.
 ## Smoke
 
 `scripts/season-rollover-smoke.ts`, seção "Remarcação": nenhum par no mesmo dia; pares em dias seguidos ≤ 15;
-houve jogos remarcados; só jogos de liga têm `rescheduledFrom`, sempre com data diferente, dentro da janela da
-liga e no `date-index`.
+houve jogos remarcados; só jogos de liga e de copa têm `rescheduledFrom`, sempre com data diferente, dentro da janela da
+competição e no `date-index`.
 
 ## Limitações
 
-- O par copa × continental em dias seguidos fica (nenhum dos dois se move).
+- Um jogo sem dia livre na janela fica como está.
 
 ## Datas FIFA (Etapa 41a)
 
 `ResolveInput.blocked` (por liga, `countryBlockedDays`): um jogo nunca é remarcado para uma data FIFA nem para o
 torneio de seleções do país. Ver `.claude/rules/game/national-teams.md`.
+
+## Copa × continental (4.46.4)
+
+Report de tester (Barcelona: semifinal da copa na quarta, volta da Liga Europa na quinta). Toda copa joga na quarta e a Liga Europa e a Sul-Americana na quinta, a Libertadores e a Champions na terça, então o par em dias seguidos era comum e nada se movia. Agora o jogo da copa cede pela mesma regra de busca, dentro de `cupTieWindows` (`cupDates.ts`): do início da copa até 2 dias antes da fase seguinte, a final até o fim da copa. A data da fase (`stage.date`) não muda: a chave mostra "Remarcado de" no confronto, e a fase seguinte só é sorteada quando o último jogo da fase termina, como já era. Os dias de descanso semeados seguem só os jogos de liga; a data nova de um jogo de copa só deixa de ser descanso.

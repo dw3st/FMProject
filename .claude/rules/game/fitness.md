@@ -313,8 +313,6 @@ um reserva em 100); 1,08 já trocaria esse titular. A razão mora em `ROTATION.B
 - **Formação, prévia, elenco:** barra de fôlego + `LoadIndicator` (ícone de carga alta, ≥ 70% de
   `LOAD_HIGH`). `MatchPreviewScreen` avisa quando um titular do próprio XI está com fôlego < 70
   (`LOW_FITNESS_THRESHOLD`), listando nome + fôlego numa linha de aviso acima dos botões de ação.
-- **Resumo do dia (`DaySummaryModal`):** eventos de treino e descanso mostram o fôlego recuperado
-  (ou gasto) do dia, rotulado por faixa (ex. "fatigado" abaixo de um limiar).
 
 ## 6. `/test`
 

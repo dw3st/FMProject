@@ -265,11 +265,6 @@ competição sozinho. `fixture.neutral` troca o texto de mando por "campo neutro
 `fixture.knockout` mostra uma nota fixa (`cups.knockoutNote`, "mata-mata: prorrogação e pênaltis se
 empatar").
 
-### Resumo do dia
-
-`DaySummaryModal.tsx` usa `isCupSlug(event.competition)` para rotular o jogo com o nome da
-competição (`competitionName`) em vez do texto genérico de liga (`daySummary.cupMatch`).
-
 ### Inbox `cup`
 
 Categoria nova em `InboxCategory` (`src/types/inboxTypes.ts`): `CupInboxMessage` com `kind: "draw"
@@ -318,7 +313,7 @@ país localizado por `Intl.DisplayNames` quando há `iso2`. Slug de copa desconh
 
 ## Remarcação da liga
 
-A copa nunca muda de data depois do sorteio. Um jogo de liga de um clube que caia no mesmo dia ou colado
+Um jogo de copa só muda de data contra um jogo continental do mesmo clube (4.46.4, `rescheduling.md`). Um jogo de liga de um clube que caia no mesmo dia ou colado
 num jogo de copa dele (a fase recém-sorteada, ou uma copa gerada depois da liga) é que é remarcado, no
 mesmo dia do sorteio — ver `.claude/rules/game/rescheduling.md`.
 

@@ -495,3 +495,11 @@ Pedido do usuário. No modo discos o marcador inteiro é desenhado × `MATCH_LOO
 ## Gramado ruim (4.42.25)
 
 Report do usuário ("casca de melão"): a textura de grama, feita para ver de perto, virava uma rede no campo inteiro, e as manchas eram coladas sobre as listras. `match-backdrop-grass-worn` e `-muddy` são agora montados (`data_process/assets/pitch_bad/`, sem commit): as texturas do FLUX reduzidas à escala do campo, desgaste nas áreas, no círculo central, no corredor e na faixa dos bandeirinhas, com a borda da terra quebrada em todas as escalas. Pintar o campo inteiro com o FLUX não serve: mesmo pedindo sem marcações, ele inventa linhas, traves e poças. Desde a 4.42.26 os gramados bons (`grass-a`, `-b`, `-c`, `mow-check`, `-diag`, `-rings`) também (`turf_good.py`), com o corte como diferença suave de tom. Desde a 4.42.27 a sintética e a neve também (`turf_special.py`); a neve é azul-acinzentada de propósito, porque num branco puro as linhas somem. As versões de dia, que o jogo não usa, continuam com a textura antiga.
+
+## Goleiro recua olhando a bola (4.46.4)
+
+Pedido do usuário. `stepMotion(..., backpedal)`: indo para longe da bola, o boneco do goleiro continua de frente para ela; indo em direção a ela, olha para onde vai. Só desenho. Jogadores de linha não mudam.
+
+## Festa fora da obra (4.46.4)
+
+Report de tester. `burstAreas` (`stadiumAtmosphere.ts`): sinalizadores na torcida da casa, ou, com ela em obra, no outro fundo e depois num lado aberto; fogos só sobre as arquibancadas abertas. Tudo em obra: sem festa.

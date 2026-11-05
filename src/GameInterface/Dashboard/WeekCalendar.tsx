@@ -168,6 +168,7 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
         outcome,
         youth: youthDayEntries(youthFixtures, dateStr, mySquadId),
         rescheduledFrom: myFixture?.rescheduledFrom,
+        played: !!myFixture?.played && !myFixture.cancelled,
       };
     });
   }, [fixtures, youthFixtures, mySquadId, currentDate, leagues, weekOffset, restSet, lang, t]);
@@ -249,7 +250,15 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
                   {day.date}
                 </span>
               </div>
-              {day.isToggleable ? (
+              {day.played ? (
+                <a
+                  href={`/match-result?date=${encodeURIComponent(day.dateStr)}`}
+                  title={t("weekCalendar.matchReport")}
+                  className={`${chip} no-underline cursor-pointer hover:opacity-80`}
+                >
+                  {content}
+                </a>
+              ) : day.isToggleable ? (
                 <button
                   type="button"
                   onClick={() => onToggleDayType(day.dateStr, day.eventType === "rest" ? "training" : "rest")}

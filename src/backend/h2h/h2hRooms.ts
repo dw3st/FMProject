@@ -696,7 +696,7 @@ async function startMatch(rec: Rec): Promise<void> {
     const them = rec.room.sides[side === "A" ? "B" : "A"];
     return {
       seatId: me.seatId, nickname: me.nickname ?? me.clubName, clubId: me.clubId, clubName: me.clubName,
-      opponentId: them.clubId, opponentName: them.clubName, home: side === "A", fixtureId, date: rec.room.date,
+      opponentId: them.clubId, opponentName: them.clubName, home: side === "A", fixtureId, date: rec.room.date, competition: rec.fixture.competition,
       ...(agg ? { aggregate: side === "A" ? { for: agg.home, against: agg.away } : { for: agg.away, against: agg.home } } : {}),
     };
   };

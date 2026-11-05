@@ -114,6 +114,35 @@ describe("resolveFixtureConflicts", () => {
     expect(r.unresolved.map((u) => u.reason)).toEqual(["fixed", "fixed", "fixed"]);
   });
 
+  test("a cup tie gives way to a continental game, inside its stage (the report: Wed cup, Thu Europa League)", () => {
+    const tie = fx("cup_x", "2031-04-23", "A", "B", 6);
+    const entries = [cup(tie), cont(fx("uel", "2031-04-24", "A", "C", 12)), cont(fx("uel", "2031-04-17", "A", "C", 11))];
+    const cupWindows = { cup_x: { 6: { start: "2030-08-01", end: "2031-05-05" } } };
+    const r = resolveFixtureConflicts({ entries, windows: {}, minDate: "2031-04-18", cupWindows });
+    expect(r.moves.map((m) => [m.competition, m.from])).toEqual([["cup_x", "2031-04-23"]]);
+    const moved = r.entries.find((e) => e.fixture.id === tie.id)!.fixture;
+    expect(moved.date).toBe("2031-04-22");
+    expect(moved.rescheduledFrom).toBe("2031-04-23");
+    expect(countConflicts(r.entries).adjacentPairs).toBe(0);
+    expect(r.unresolved).toEqual([]);
+  });
+
+  test("a cup tie stays inside its stage window, and a league game still gives way before a cup tie", () => {
+    const tight = cup(fx("cup_x", "2031-04-23", "A", "B", 6));
+    const noRoom = resolveFixtureConflicts({
+      entries: [tight, cont(fx("uel", "2031-04-24", "A", "C", 12))], windows: {}, minDate: "2031-04-23",
+      cupWindows: { cup_x: { 6: { start: "2030-08-01", end: "2031-04-24" } } },
+    });
+    expect(noRoom.moves).toEqual([]);
+    expect(noRoom.unresolved.map((u) => u.reason)).toEqual(["noFreeDate"]);
+    const lg = league(fx("lg", "2027-10-02", "A", "B"));
+    const r = resolveFixtureConflicts({
+      entries: [lg, cup(fx("cup_x", "2027-10-03", "A", "C", 2))], windows: WINDOW, minDate: "2027-09-01",
+      cupWindows: { cup_x: { 2: { start: "2027-08-01", end: "2028-05-01" } } },
+    });
+    expect(r.moves.map((m) => m.competition)).toEqual(["lg"]);
+  });
+
   test("two league games of a club on consecutive days: the later one moves", () => {
     const a = fx("lg", "2027-10-02", "A", "B");
     const b = fx("lg2", "2027-10-03", "A", "C");

@@ -4,7 +4,7 @@ import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { useKeybinds } from "@/GameInterface/useKeybinds";
 import type { AdvanceDayResponse } from "@/types/dayLogTypes";
-import { addDays, daysBetween } from "@/Domain/dates";
+import { daysBetween } from "@/Domain/dates";
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /** A board renewal offer waits for an answer: the dashboard opens it (4.41.4). */
@@ -54,7 +54,6 @@ export function useAdvanceDay() {
   const { session, squad, fixtures, currentDate: simDate, refresh } = useGameSave();
 
   const [advancing, setAdvancing] = useState(false);
-  const [dayLog, setDayLog] = useState<AdvanceDayResponse | null>(null);
   const [fastForward, setFastForward] = useState<FastForwardProgress | null>(null);
   const [seasonNotice, setSeasonNotice] = useState<SeasonNotice | null>(null);
   const stopRequested = useRef(false);
@@ -108,7 +107,8 @@ export function useAdvanceDay() {
         window.location.href = "/fired";
         return;
       }
-      setDayLog(log);
+      if (log.newDate) updateSessionCurrentDate(log.newDate);
+      void refresh();
       if (log.seasonEnded) {
         setSeasonNotice({
           archiveYear: log.archiveYear,
@@ -122,7 +122,7 @@ export function useAdvanceDay() {
     } finally {
       setAdvancing(false);
     }
-  }, [session, mySquadId, advancing, fastForward, fixtures, simDate]);
+  }, [session, mySquadId, advancing, fastForward, fixtures, simDate, refresh]);
 
   const handleFastForward = useCallback(async () => {
     if (session?.groupAdvance) return;
@@ -194,15 +194,8 @@ export function useAdvanceDay() {
       return;
     }
 
-    // Stopped early (Stop / error): day summary of the last simulated day, then the session.
-    if (progress.daysAdvanced > 0) {
-      try {
-        const res = await fetch(`/api/saves/${session.saveId}/days/${addDays(lastDate, -1)}`);
-        if (res.ok) setDayLog({ ...(await res.json()), newDate: lastDate } as AdvanceDayResponse);
-      } catch {
-        // the summary is optional
-      }
-    }
+    // Stopped early (Stop / error): the session catches up.
+    if (progress.daysAdvanced > 0) updateSessionCurrentDate(lastDate);
     if (notice) setSeasonNotice(notice);
     await refresh();
     setAdvancing(false);
@@ -216,14 +209,6 @@ export function useAdvanceDay() {
   }, []);
 
   const dismissFastForward = useCallback(() => setFastForward(null), []);
-
-  const dismissDayLog = useCallback(() => {
-    if (dayLog?.newDate) {
-      updateSessionCurrentDate(dayLog.newDate);
-    }
-    setDayLog(null);
-    void refresh();
-  }, [dayLog, refresh]);
 
   const dismissSeasonNotice = useCallback(() => {
     setSeasonNotice(null);
@@ -241,8 +226,6 @@ export function useAdvanceDay() {
   return {
     handleAdvanceDay,
     advancing,
-    dayLog,
-    dismissDayLog,
     canFastForward,
     handleFastForward,
     fastForward,

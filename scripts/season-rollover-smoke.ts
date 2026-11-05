@@ -1993,13 +1993,13 @@ try {
     const k = countConflicts(entries);
     const rescheduled = entries.filter((e) => e.fixture.rescheduledFrom);
     check(k.sameDayPairs === 0, `no club has two official games on the same day (${k.sameDayPairs} pairs)`);
-    // Left only when nothing can move: cup × continental, or a league game with no free day in its window.
+    // Left only when nothing can move: a league game or a cup tie with no free day in its window.
     const ADJACENT_LIMIT = 15;
     check(k.adjacentPairs <= ADJACENT_LIMIT,
       `official games on consecutive days: ${k.adjacentPairs} pairs (${k.adjacentClubs} clubs), limit ${ADJACENT_LIMIT}`);
     check(rescheduled.length > 0, `league games were rescheduled off a clash (${rescheduled.length} on the calendars at the end)`);
-    check(rescheduled.every((e) => e.kind === "league" && e.fixture.rescheduledFrom !== e.fixture.date),
-      "only league games carry rescheduledFrom, always with a different date");
+    check(rescheduled.every((e) => (e.kind === "league" || e.kind === "cup") && e.fixture.rescheduledFrom !== e.fixture.date),
+      "only league games and cup ties carry rescheduledFrom, always with a different date");
     const leagueMetas = new Map<string, { start: string; end: string }>();
     for (const slug of new Set(rescheduled.map((e) => e.competition))) {
       const m = await plain().getLeagueMeta(smokeSaveId, slug);

@@ -221,3 +221,7 @@ exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.
 ## Nomes na caixa de entrada (4.44.4)
 
 `PlayerNameText` (`Inbox/PlayerNameText.tsx`) troca o nome do jogador de uma linha por um link; a rota `GET /players/:id/where` diz onde ele joga na hora do clique. Quem não está em clube vira texto. Listas sem id (aposentados) ficam como texto.
+
+## Sem resumo do dia (4.46.4)
+
+Pedido do usuário: o `DaySummaryModal` saiu, solo e em grupo; o dia avança sem tela. Continuam as telas que pedem decisão: fim de temporada (`SeasonNoticeModal`) e demissão (`/fired`). O resultado de um jogo já jogado abre o relatório pelo cartão da semana (`/match-result?date=`); conquistas, propostas e coletivas ficam na caixa de entrada.

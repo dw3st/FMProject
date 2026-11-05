@@ -4,6 +4,7 @@ import { watchLiveGone } from "@/backend/watch/watchRooms";
 import { saveService } from "@/backend/SaveService";
 import { listSaveMembers, memberOf } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
+import { liveStageOf } from "@/Domain/rivals/liveStage";
 import { applyLiveFrame, liveStatusAt } from "@/Domain/rivals/liveScore";
 import type { LiveBase, LiveScoreFrame, LiveScoreView } from "@/types/rivalsTypes";
 import type { ServerEvent } from "@/types/socialTypes";
@@ -45,13 +46,16 @@ const defaultResolver: LiveResolver = async (saveId, userId, fixtureId) => {
   if (!fixture) return null;
   const home = fixture.home === seat.clubId;
   const opponentId = home ? fixture.away : fixture.home;
-  const [mine, opp] = await Promise.all([saveService.getSquadById(saveId, seat.clubId), saveService.getSquadById(saveId, opponentId)]);
+  const [mine, opp, compMeta] = await Promise.all([
+    saveService.getSquadById(saveId, seat.clubId), saveService.getSquadById(saveId, opponentId), saveService.getLeagueMeta(saveId, fixture.competition),
+  ]);
+  const stage = liveStageOf(compMeta, fixture);
   return {
     base: {
       seatId: member.seatId,
       nickname: getSocialUser(userId)?.nickname ?? seat.manager?.name ?? "?",
       clubId: seat.clubId, clubName: seat.clubName, opponentId, opponentName: opp?.name ?? opponentId,
-      home, fixtureId, date: meta.currentDate,
+      home, fixtureId, date: meta.currentDate, competition: fixture.competition, ...(stage ? { stage } : {}),
       ...(fixture.aggregate
         ? { aggregate: home ? { for: fixture.aggregate.home, against: fixture.aggregate.away } : { for: fixture.aggregate.away, against: fixture.aggregate.home } }
         : {}),

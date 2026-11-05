@@ -71,6 +71,13 @@ export interface LiveMoment {
   manager?: true;
 }
 
+/** Where a live game stands in its competition (`liveStageOf`). */
+export type LiveStage =
+  | { kind: "round"; round: number }
+  | { kind: "group"; group: string; round: number }
+  | { kind: "cup"; stage: string }
+  | { kind: "continental"; stage: string; leg?: number };
+
 /** The fixed part of a live game (who, against whom, which fixture). */
 export interface LiveBase {
   seatId: string;
@@ -82,6 +89,10 @@ export interface LiveBase {
   home: boolean;
   fixtureId: string;
   date: string;
+  /** Slug of the competition (liga, copa, continental). */
+  competition?: string;
+  /** Where the game stands in it: round, group, stage, leg. */
+  stage?: LiveStage;
   /** Two-legged tie: first-leg goals from this seat's side (absent in a single game). */
   aggregate?: { for: number; against: number };
 }

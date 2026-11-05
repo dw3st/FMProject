@@ -66,3 +66,20 @@ describe("set pieces and keeper extras (art phase 5)", () => {
     expect(poseOf(walk, null, 0, true).base).toBe("keeper-side-02");
   });
 });
+
+describe("keeper backpedal", () => {
+  const run = (backpedal: boolean, speedX: number, look: { x: number; y: number }) => {
+    let m = newMotion(50, 37, 0);
+    for (let i = 0; i < 120; i++) m = stepMotion(m, { x: m.x + speedX / 60, y: 37 }, 1 / 60, look, backpedal);
+    return Math.cos(m.angle);
+  };
+  test("moving away from the ball he keeps facing it; a field player turns his back", () => {
+    const ball = { x: 90, y: 37 };
+    expect(run(true, -5, ball)).toBeGreaterThan(0.9);
+    expect(run(false, -5, ball)).toBeLessThan(-0.9);
+  });
+  test("moving toward the ball he faces where he goes", () => {
+    expect(run(true, 5, { x: 200, y: 37 })).toBeGreaterThan(0.9);
+    expect(run(true, -5, { x: 0, y: 37 })).toBeLessThan(-0.9);
+  });
+});

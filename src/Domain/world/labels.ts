@@ -193,19 +193,3 @@ export function leaguesOfCountry(leagues: LeagueData[], countryName: string): Le
   return leagues.filter((l) => l.country === countryName);
 }
 
-/**
- * Splits day matches into the player's own league + followed leagues (primary) vs. the rest
- * (others). `isOwnMatch`, when given, forces a match into `primary` regardless of its
- * competition slug — used so the user's own match is never hidden under "others" when the
- * session's league slug is missing or stale.
- */
-export function partitionDayMatches<T extends { competition: string }>(
-  matches: T[], ownLeague: string, followed: string[], isOwnMatch?: (match: T) => boolean,
-): { primary: T[]; others: T[] } {
-  const keep = new Set([ownLeague, ...followed]);
-  const isPrimary = (m: T) => keep.has(m.competition) || !!isOwnMatch?.(m);
-  return {
-    primary: matches.filter(isPrimary),
-    others: matches.filter((m) => !isPrimary(m)),
-  };
-}

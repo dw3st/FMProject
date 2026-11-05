@@ -114,6 +114,21 @@ export interface FlareGlow { x: number; y: number; r: number; alpha: number }
 /** One round spark; `glow` (0..1) asks for a soft halo around it. */
 export interface Spark { x: number; y: number; r: number; alpha: number; color: number; glow?: number }
 
+type BurstRect = { side: string; x: number; y: number; w: number; h: number };
+
+/**
+ * Where a burst goes: flares in the home end, or the nearest open stand when it is under works (the other end, then
+ * the sides); fireworks over the open top and bottom stands, or any open one. Null when every stand is closed.
+ */
+export function burstAreas(sides: readonly BurstRect[], homeSide: string, closed: readonly string[]): { end: BurstRect; sky: BurstRect[] } | null {
+  const open = sides.filter((r) => !closed.includes(r.side));
+  if (open.length === 0) return null;
+  const otherEnd = homeSide === "left" ? "right" : "left";
+  const end = open.find((r) => r.side === homeSide) ?? open.find((r) => r.side === otherEnd) ?? open[0]!;
+  const lanes = open.filter((r) => r.side === "top" || r.side === "bottom");
+  return { end, sky: lanes.length > 0 ? lanes : open };
+}
+
 /** Whole length of a burst, seconds (after this nothing of it is drawn). An upper bound for the random shells. */
 export function burstLength(b: CelebrationBurst): number {
   const flares = ATMOSPHERE.FLARES.BURN_S + 1.6 + ATMOSPHERE.FLARES.PUFF_LIFE_S;

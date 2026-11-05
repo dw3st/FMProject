@@ -110,10 +110,8 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
 - **`/achievements`** ("SUAS **CONQUISTAS**"), tela própria sem aba na barra superior (é o perfil do técnico, não números
   de competição; a barra já está no limite): KPIs (desbloqueadas, pontos ganhos, para gastar) e abas Conquistas (por
   categoria: medalhas com o limiar, barra até o próximo, "37 / 50"; secretas "???") · Perfil (prévia, moldura, selos,
-  título, enfeites) · Técnico (5 atributos com o efeito) · Loja. Acesso pelo cartão do clube, pelo ranking, pela inbox e
-  pelo resumo do dia.
+  título, enfeites) · Técnico (5 atributos com o efeito) · Loja. Acesso pelo cartão do clube, pelo ranking e pela inbox.
 - **Inbox** `achievement` (`unlocked`, uma mensagem por dia), tópico `achievements` (ligado por padrão), tema Clube.
-- **Resumo do dia:** linha "N conquista(s) desbloqueada(s)" (`AdvanceDayResponse.achievements`).
 - **Renovação/contratação:** linha "Sua negociação: −N%" no pedido (`demand` devolve `negotiation`).
 - Partida ao vivo: não se aplica (verificadas no avanço do dia).
 

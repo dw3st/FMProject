@@ -1,3 +1,4 @@
+import { addDays } from "@/Domain/dates";
 import { spreadOnWeekday } from "@/Domain/calendar/spreadDates";
 
 const DAY = 86_400_000;
@@ -38,4 +39,20 @@ export function scheduleStageDates(
   return spreadOnWeekday(lo, hi, stages, WEDNESDAY, expandedBusy, MIN_GAP_DAYS, {
     fallbackAvoid: { never: blocked, hard: busy },
   });
+}
+
+/**
+ * Where the ties of each cup stage may be moved to, by round: from the start of the cup to two days before the next
+ * stage, so a moved tie is played and the next draw done before that stage. The final may go up to the end of the cup.
+ */
+export function cupTieWindows(
+  stages: ReadonlyArray<{ round: number; date: string }>, start: string, end: string,
+): Record<number, { start: string; end: string }> {
+  const sorted = [...stages].sort((a, b) => a.date.localeCompare(b.date));
+  const out: Record<number, { start: string; end: string }> = {};
+  sorted.forEach((s, i) => {
+    const next = sorted[i + 1];
+    out[s.round] = { start, end: next ? addDays(next.date, -2) : end };
+  });
+  return out;
 }

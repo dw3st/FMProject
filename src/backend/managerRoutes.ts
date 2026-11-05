@@ -1,3 +1,5 @@
+import { listSaveMembers } from "@/backend/auth/saveOwnership";
+import { getSocialUser } from "@/backend/social/socialStore";
 import { shownProfile } from "@/Domain/achievements/items";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -32,7 +34,7 @@ export const managerRoutes = {
     const offset = int(q.get("offset"), 0);
     const limit = int(q.get("limit"), PAGE_DEFAULT);
     const scope = q.get("scope") ?? "world";
-    if (!(offset >= 0) || !(limit >= 1 && limit <= PAGE_MAX) || (scope !== "world" && scope !== "country" && scope !== "free")) {
+    if (!(offset >= 0) || !(limit >= 1 && limit <= PAGE_MAX) || (scope !== "world" && scope !== "country" && scope !== "free" && scope !== "humans")) {
       return Response.json({ error: "invalid offset/limit/scope" }, { status: 400 });
     }
     const meta = await saveService.getSeatMeta(saveId, auth.seatId);
@@ -52,6 +54,7 @@ export const managerRoutes = {
     const page = rankingPage(
       rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired)),
       scope === "world" ? () => true
+        : scope === "humans" ? (m) => !!m.seatId && liveSeats.has(m.seatId)
         : scope === "free" ? (m) => !m.squadId && (!m.seatId || !liveSeats.has(m.seatId))
         : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
       offset, limit, auth.seatId,
@@ -62,10 +65,14 @@ export const managerRoutes = {
     // Human managers show the assets they bought.
     const assetsBySeat = new Map(await Promise.all(page.items.filter((m) => m.seatId).map(async (m) =>
       [m.seatId!, (await saveService.getSeat(saveId, m.seatId!))?.managerAssets] as const)));
+    // Another human's manager is marked in the ranking (the friends' league): his nickname.
+    const nicknames = new Map(listSaveMembers(saveId).map((x) => [x.seatId, getSocialUser(x.userId)?.nickname ?? null] as const));
     return Response.json({
       ...page,
+      humans: liveSeats.size,
       items: page.items.map((m) => ({
         ...m,
+        ...(m.seatId && liveSeats.has(m.seatId) && !mine(m) ? { human: nicknames.get(m.seatId) ?? m.name } : {}),
         ...(m.seatId && assetsBySeat.get(m.seatId) ? { assets: assetsBySeat.get(m.seatId) } : {}),
         isPlayer: mine(m),
         clubName: m.squadId ? clubNameOf(m.squadId) : null,

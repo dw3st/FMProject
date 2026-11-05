@@ -11,10 +11,9 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { notifySeatOffersChanged } from "@/GameInterface/Negotiation/seatOfferApi";
 import { summaryOutcome } from "@/GameInterface/World/groupAdvanceText";
 import { isDashboardPath } from "@/GameInterface/World/worldNav";
-import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
 import { SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
 import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
-import type { GroupAdvanceView, PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
+import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 import { RENEWAL_URL } from "@/GameInterface/useAdvanceDay";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -54,7 +53,6 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The days that ran without the seat looking, as one summary.
-  const [summary, setSummary] = useState<PendingSummaryAggregate | null>(null);
   const [notice, setNotice] = useState<SeasonNotice | null>(null);
   const [turnCard, setTurnCard] = useState(false);
   const lastDate = useRef<string | null>(null);
@@ -94,11 +92,14 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         window.location.href = "/fired";
         return;
       }
+      if (!out.notice) {
+        await groupAdvanceApi.clearSummary(saveId);
+        void refreshSave({ background: true });
+        return;
+      }
       if (!isDashboardPath(window.location.pathname) || shownKey.current === out.lastDate) return;
       shownKey.current = out.lastDate;
-      setSummary(r.data.aggregate);
-      if (out.notice) setNotice(out.notice);
-      if (!r.data.aggregate && !out.notice) await groupAdvanceApi.clearSummary(saveId);
+      setNotice(out.notice);
     } finally {
       inFlight.current = false;
     }
@@ -202,11 +203,6 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     wasConnected.current = connected;
   }, [connected, refresh, showSummary]);
 
-  const dismissDay = () => {
-    setSummary(null);
-    if (!notice) void groupAdvanceApi.clearSummary(saveId);
-    void refreshSave({ background: true });
-  };
   const dismissNotice = () => {
     setNotice(null);
     void groupAdvanceApi.clearSummary(saveId);
@@ -220,7 +216,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   return (
     <GroupAdvanceContext.Provider value={value}>
       {children}
-      {turnCard && !summary && !notice && isOnlyMe(view?.waitingFor, me?.nickname ?? null) && (
+      {turnCard && !notice && isOnlyMe(view?.waitingFor, me?.nickname ?? null) && (
         <div role="status" className="fixed top-16 right-6 z-50 w-[300px] rounded-md border border-primary bg-card shadow-lg flex items-start gap-2 p-3">
           <Icon name="bell" size={16} className="shrink-0 text-primary mt-0.5" />
           <span className="flex-1 min-w-0 text-sm text-muted-foreground">
@@ -237,13 +233,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
           </button>
         </div>
       )}
-      {summary && (
-        <DaySummaryModal
-          dayLog={summary.log} range={summary.range} notices={summary.notices} matchReportDate={summary.matchReportDate}
-          onDismiss={dismissDay} mySquadId={mySquadId} leagues={leagues}
-        />
-      )}
-      {notice && !summary && (
+      {notice && (
         <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} onDismiss={dismissNotice} />
       )}
     </GroupAdvanceContext.Provider>

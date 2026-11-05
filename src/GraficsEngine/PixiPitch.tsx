@@ -70,7 +70,7 @@ import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
-  ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
+  ATMOSPHERE, burstAreas, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
   type CelebrationBurst, type PhoneLight,
 } from "@/GraficsEngine/stadiumAtmosphere";
 import {
@@ -3501,11 +3501,11 @@ export function PixiPitch({
         const st = stadiumRef.current;
         if (!m.stand || !st?.bigMatch || !framesShown()) return;
         const homeLeft = (st.homeTeam === "A") !== mirrorRef.current;
-        const sides = standSideRects(m.stand);
-        const end = sides.find((r) => r.side === (homeLeft ? "left" : "right"))!;
+        const areas = burstAreas(standSideRects(m.stand), homeLeft ? "left" : "right", worksSides(st.works, mirrorRef.current));
+        if (!areas) return;
         bursts = [...bursts, {
-          at: effectNow, seed: `${st.seed}:${bursts.length}`, end,
-          sky: sides.filter((r) => r.side === "top" || r.side === "bottom"),
+          at: effectNow, seed: `${st.seed}:${bursts.length}`, end: areas.end,
+          sky: areas.sky,
           color: st.homeTeam === "A" ? fillA : fillB, night: lightsOn(),
         }];
       };
@@ -3955,7 +3955,7 @@ export function PixiPitch({
             const prevM = spriteMotion.get(player.id) ?? newMotion(px / m.scale, py / m.scale);
             const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
             const ballPx = toPixel(drawnB.x, drawnB.y);
-            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale });
+            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, player.role === "GK");
             spriteMotion.set(player.id, mo);
             const action = actionOf.get(player.id) ?? null;
             // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.

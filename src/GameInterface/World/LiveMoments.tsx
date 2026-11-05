@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
 import { homeAwayOf } from "@/Domain/rivals/homeAway";
+import { LiveCompetitionLine } from "@/GameInterface/World/LiveCompetitionLine";
 import type { LiveMoment, LiveScoreView } from "@/types/rivalsTypes";
 
 /** A friend's live game in the popup of the live strip: the score and the latest moments, newest first. */
@@ -36,6 +37,7 @@ export function LiveMoments({ live }: { live: LiveScoreView }) {
   };
   return (
     <div className="flex flex-col gap-2">
+      <LiveCompetitionLine live={live} className="text-center" />
       <div className="flex items-center gap-2 text-sm font-semibold tabular-nums">
         <ClubLogo logoUrl={squadLogoUrl(home.id)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
         <span className="truncate flex-1">{home.name}</span>

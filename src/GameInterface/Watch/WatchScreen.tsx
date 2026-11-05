@@ -1,3 +1,4 @@
+import { LiveCompetitionLine } from "@/GameInterface/World/LiveCompetitionLine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { useTranslation } from "react-i18next";
@@ -120,7 +121,8 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
           )}
           <span className="text-sm text-muted-foreground truncate">{t("watch.watching", { name: info.nickname })}</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
+        <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+        <div className="w-full flex items-center justify-center gap-3 min-w-0">
           <span className={`font-display font-bold uppercase text-base truncate text-right flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[home].name}</span>
           <ClubLogo logoUrl={squadLogoUrl(info.teams[home].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
           <span className="font-display font-bold tabular-nums text-2xl px-3 py-0.5 rounded-md bg-card border border-border">
@@ -129,6 +131,8 @@ export function WatchBroadcast({ saveId, seatId, onClose, embed = false, follow 
           <ClubLogo logoUrl={squadLogoUrl(info.teams[away].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
           <span className={`font-display font-bold uppercase text-base truncate flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[away].name}</span>
           <span className="text-sm text-muted-foreground tabular-nums w-16">{clock}</span>
+        </div>
+        <LiveCompetitionLine live={info.live} className="max-w-full text-center" />
         </div>
         <button
           type="button"

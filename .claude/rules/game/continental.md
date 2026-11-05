@@ -364,8 +364,8 @@ da semana com mais frequência que as europeias, deixando menos dias realmente l
 - **Vizinhança sul-americana e ligas europeias de ano civil.** O otimizador de datas continua só
   evitando o dia adjacente como custo (54/416 na Libertadores/Sul-Americana), mas desde a 4.16 o jogo
   da liga que cai colado (ou no mesmo dia) num jogo continental do clube é remarcado — na geração, na
-  virada e nos sorteios de mata-mata (`.claude/rules/game/rescheduling.md`). Sobra só o par copa ×
-  continental em dias seguidos (nenhum dos dois se move) e o raro jogo de liga sem dia livre na janela.
+  virada e nos sorteios de mata-mata (`.claude/rules/game/rescheduling.md`). Desde a 4.46.4 o par copa ×
+  continental também se resolve (o jogo da copa cede). Sobra o raro jogo sem dia livre na janela.
 - **Issue #2 (recalibração do quickSim entre ligas de força muito diferente)** ainda não foi
   medida/ajustada. A interface (aba Continental, inbox, prévia de partida, `seasonLog.continental`)
   foi implementada no Plano 3 — ver seção "Interface" abaixo.

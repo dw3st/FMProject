@@ -27,6 +27,37 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.46.4",
+    date: "2026-11-05",
+    time: "08:45",
+    items: [
+      {
+        pt: "Um jogo de copa colado num jogo continental agora é remarcado: seu time não joga mais em dias seguidos nesses casos.",
+        en: "A cup tie right next to a continental game is now moved: your team no longer plays on consecutive days in these cases.",
+      },
+      {
+        pt: "O jogo ao vivo do seu amigo agora mostra a competição, a rodada ou a fase, e se é ida ou volta, também ao assistir.",
+        en: "A friend's live game now shows the competition, the round or stage, and the leg, also when you watch it.",
+      },
+      {
+        pt: "No ranking de técnicos, os outros técnicos humanos aparecem destacados, e há um filtro só para eles.",
+        en: "In the managers' ranking, the other human managers stand out, and there is a filter just for them.",
+      },
+      {
+        pt: "Sinalizadores e fogos não saem mais da parte do estádio em obras: vão para outra parte.",
+        en: "Flares and fireworks no longer go off in a stand under works: they move to another part of the stadium.",
+      },
+      {
+        pt: "O goleiro recua olhando para o ataque, sem dar as costas para o jogo.",
+        en: "The keeper backs off facing the attack instead of turning his back on the play.",
+      },
+      {
+        pt: "O resumo do dia saiu: o dia avança direto. Para ver o relatório de uma partida, clique no resultado dela na semana, no Painel.",
+        en: "The day summary is gone: the day just moves on. To see a match report, click its result in the week on the dashboard.",
+      },
+    ],
+  },
+  {
     version: "4.46.3",
     date: "2026-11-04",
     time: "22:17",

@@ -62,11 +62,6 @@ válidos, nunca a própria liga, sem duplicata, no máximo 3. Não existe seçã
 Configurações — o `SettingsOverlay` não tem sessão de save; seguir é uma estrela no cabeçalho da
 Classificação (`LeagueTableScreen.tsx`), onde a liga já está selecionada.
 
-## Resumo do dia
-
-O `DaySummaryModal` usa `partitionDayMatches` para mostrar direto as partidas da liga do jogador
-e das ligas seguidas, e recolhe o resto atrás de um `OtherLeaguesSection` fechado por padrão.
-
 ## Mapa-múndi do novo jogo
 
 `src/GameInterface/NewGame/WorldMap.tsx` no passo de país do `NewGameWizard` (só a partir de `xl`,

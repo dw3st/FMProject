@@ -16,12 +16,15 @@ import { formatFee } from "@/Domain/money";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
+import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import { groupAwards } from "@/Domain/awards/awardGroups";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
   /** The asking seat's own manager (computed by the route). */
   isPlayer: boolean;
+  /** Another human's manager in this world: his nickname. */
+  human?: string;
   clubName: string | null;
   /** Every manager's passages through clubs, with the reason he left (Etapa 25). */
   clubs?: { squadId: string; from: string; to?: string; left?: string; clubName: string | null }[];
@@ -38,8 +41,9 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   /** The human manager's profile items (`achievements.md`): frame, title, badges. */
   profile?: ManagerProfile;
 };
-type Page = { total: number; playerRank: number | null; items: Row[] };
-type Scope = "world" | "country" | "free";
+type Page = {
+  humans?: number; total: number; playerRank: number | null; items: Row[] };
+type Scope = "world" | "country" | "free" | "humans";
 
 const PAGE = 50;
 
@@ -50,6 +54,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
   const [rows, setRows] = useState<Row[] | null>(null);
   const [total, setTotal] = useState(0);
   const [playerRank, setPlayerRank] = useState<number | null>(null);
+  const [humans, setHumans] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreFailed, setMoreFailed] = useState(false);
   const [error, setError] = useState(false);
@@ -70,7 +75,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
     setLoadingMore(false);
     setMoreFailed(false);
     fetchPage(0)
-      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setPlayerRank(d.playerRank); } })
+      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setPlayerRank(d.playerRank); setHumans(d.humans ?? 0); } })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,6 +99,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
           { key: "world", label: t("statsScreen.managers.world") },
           { key: "country", label: t("statsScreen.managers.country") },
           { key: "free", label: t("statsScreen.managers.free") },
+          ...(humans > 1 ? [{ key: "humans" as const, label: t("statsScreen.managers.humans") }] : []),
         ]}
         value={scope}
         onChange={setScope}
@@ -140,7 +146,8 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
               <CrestCell squadId={m.squadId} />
               <NameCell highlight={m.isPlayer}>
                 <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName={m.profile && m.profile.frame !== "none" ? FRAME_RING[m.profile.frame] : "border border-border"} className="mr-1.5" {...(m.profile ? { frame: m.profile.frame } : {})} />
-                <span className="truncate">{m.name}</span>
+                <span className={`truncate ${m.human ? "text-chart-2" : ""}`}>{m.name}</span>
+                {m.human && <span className="ml-1.5"><HumanBadge nickname={m.human} /></span>}
                 {m.profile?.title && <span className="text-sm font-semibold text-primary truncate ml-1.5">{t(`achievements.titles.${m.profile.title}`)}</span>}
               </NameCell>
               <ClubCell>

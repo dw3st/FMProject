@@ -78,7 +78,7 @@ Desvio do spec: o bônus de clássico (`isDerby`) ficou de fora (exigiria ler as
   bandeirinhas (`PixiPitch` `officials = { refereeFace, assistantFaces }`; `true` = sem rosto). Rosto:
   `refereeFaceUrl` (rota `GET /api/faces/person/:id.svg`, camisa preta com gola amarela, idade real; `g=f` = rosto
   feminino do `facesjs`).
-- **Resultado e resumo do dia:** "Árbitro: nome" com a bandeira (do day log).
+- **Resultado:** "Árbitro: nome" com a bandeira (do day log).
 - **Estatísticas → Árbitros** (`?tab=referees`): competição (o seletor das outras abas) e temporada (a atual ou um
   arquivo); tabela `StatsTable`: rosto, nome, bandeira, faixa, J, faltas/J, amarelos/J (destacada), vermelhos,
   pênaltis; o árbitro do próximo jogo do clube destacado. i18n `referees.*`, `statsScreen.referees.tab`.

@@ -289,7 +289,6 @@ em `world.phase === "running"`. O solo não muda.
 | `src/types/groupAdvanceTypes.ts` | `MatchDecision`, `PendingDay`, `MemberAdvanceStatus`, resposta de `GET …/advance` |
 | `src/Domain/groupAdvance/groupAdvanceConfig.ts` | Constantes (`GROUP_ADVANCE`) |
 | `src/Domain/groupAdvance/groupAdvance.ts` (+ teste) | Puro: `resolveReadyUntil`, `computeGroupTarget`, `memberStatus`, `deadlineAt`/`deadlinePassed`, `assistantPatches`, `seatStops`, `trimPendingSummary`, `errorRetryAt`/`errorRetryDue`/`errorGaveUp` |
-| `src/Domain/groupAdvance/pendingSummary.ts` (+ teste) | `aggregatePendingDays`: os dias pendentes num resumo só |
 | `src/Domain/inbox/worldAdvanceMessage.ts` | Mensagens `world` / `auto_advanced` e `live_refused` |
 | `src/backend/groupAdvance.ts` | Executor, relógio, retomada, `groupAdvanceView` |
 | `src/backend/groupAdvanceRoutes.ts` | Rotas |
@@ -308,7 +307,7 @@ em `world.phase === "running"`. O solo não muda.
 | `GET …/live-recording` | Resultado provisório (404 sem gravação do dia), com o árbitro da escala do dia (`officialsFor`) |
 | `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
 | `POST …/advance/retry` | "Tentar de novo", só depois de o relógio desistir: zera `errorTries` e dá kick (409 `noError` sem erro, 409 `notGaveUp` enquanto o relógio ainda tenta) |
-| `GET/DELETE …/summary` | Resumo pendente do assento: `{ days, aggregate }` (`aggregate` = os dias num resumo só, `PendingSummaryAggregate`; os logs lidos em lotes de 6) |
+| `GET/DELETE …/summary` | Dias pendentes do assento: `{ days }` (o cliente só usa para a demissão e o fim de temporada) |
 
 Evento de socket: `world_progress`.
 
@@ -317,11 +316,7 @@ Evento de socket: `world_progress`.
 - Barra superior: **Pronto até…** (amanhã, meu próximo jogo, uma data) no lugar do Continuar; marcado, "Pronto até 12/03 ·
   esperando 2" com desmarcar; no dia de jogo **Jogar** (prévia → partida) e **Simular**; durante o avanço "Avançando…
   14/03 de 20/03". `GroupAdvanceBand` no Painel e em `/world` (data, alvo, quem falta, prazo restante, status por membro:
-  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço, o Painel mostra **um** resumo para todos os dias que
-  rodaram (`DaySummaryModal` com `range`: os jogos do clube com resultados e lesões, as transferências do clube, o
-  treino e a folga de todos os dias somados por jogador ("5 dias de treino", "1 dia de folga"; os efeitos ficam em
-  `PendingDay.club`, porque o log gravado do dia não os guarda), as conquistas somadas, o convite de coletiva e, quando o "Pronto até" voltou por causa delas, as paradas: propostas novas,
-  demissão, fim da temporada), depois o fim de temporada; a demissão leva a `/fired`.
+  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço não há tela de resumo (4.46.4): só o fim de temporada e a demissão (`/fired`) aparecem; o resto fica na caixa de entrada e no cartão da semana.
 - Erro do executor (`GroupAdvanceBand`): o texto do código (`world.advance.errors.dayFailed`) com a hora da próxima
   tentativa; esgotadas as 5, "A liga parou de tentar" e o botão **Tentar de novo** (`POST …/advance/retry`). Gravação do
   jogo ao vivo que falha fica em `sessionStorage`, e o "Tentar de novo" dela só funciona na mesma aba.
@@ -358,8 +353,6 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
   jogo simulado), sem erro. A partida jogada se perde.
 - Com o executor rodando, as escritas dos membros (pronto, decisão, gravação, retry) esperam o dia em curso no
   `withSaveLock` (até ~14 s num dia com rodada no motor completo).
-- O resumo agregado lista os jogos e as transferências do clube atual do assento (uma troca de clube no meio esconde os do
-  clube antigo); o jogo da seleção não entra.
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
 
 ### Som de pronto (4.42.6)
@@ -955,3 +948,7 @@ Os apelidos de quem assiste (`watch_viewers`) ficam na faixa de amigos da partid
 ### Cartão do técnico na transmissão (4.44.3)
 
 Report do usuário. A reclamação é resolvida no navegador de quem joga, sem passar pelo motor: o `MatchScreen` emite `managerCard` (em `WATCH_EVENTS`, chega a quem assiste e o `WatchScreen` desenha o cartão sobre o técnico) e manda um `live_score` `yellow`/`red` com `manager: true` (`LiveMoment.manager`, "Técnico expulso" nos últimos lances). A partida entre dois técnicos não repassa eventos do cliente: lá só os lances.
+
+### Competição no jogo ao vivo do amigo (4.46.4)
+
+Reports de tester. `LiveBase.competition` (slug) e `stage` (`liveStageOf`, `src/Domain/rivals/liveStage.ts`: rodada, grupo e rodada, fase, ida ou volta), gravados pelo `defaultResolver`; a partida entre técnicos ainda só leva a competição. `LiveCompetitionLine` mostra a linha no cartão Rivais, na faixa da partida e na tela de assistir (`useLeagueCatalog`, `/api/leagues` uma vez por página).

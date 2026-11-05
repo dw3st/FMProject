@@ -110,9 +110,10 @@ function turn(angle: number, to: number, dt: number, rate: number): number {
 
 /**
  * The motion after a frame: `pos` the drawn position (yards, screen orientation: already mirrored), `dt` real
- * seconds (0 while paused), `look` where an idle player faces (the ball).
+ * seconds (0 while paused), `look` where an idle player faces (the ball). `backpedal` (the keeper): moving away
+ * from `look` he keeps facing it instead of turning his back on the play.
  */
-export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: number, look: { x: number; y: number } | null): SpriteMotion {
+export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: number, look: { x: number; y: number } | null, backpedal = false): SpriteMotion {
   const S = PLAYER_SPRITE;
   const dx = pos.x - m.x, dy = pos.y - m.y;
   if (Math.hypot(dx, dy) > S.JUMP_YDS) return { ...m, x: pos.x, y: pos.y, vx: 0, vy: 0, gait: "idle" };
@@ -124,7 +125,10 @@ export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: n
   const gait = sp < S.IDLE ? "idle" : m.gait === "run" ? (sp < S.RUN_DOWN ? "walk" : "run") : (sp > S.RUN_UP ? "run" : "walk");
   const rate = clamp(S.TURN_MAX - sp * S.TURN_SPEED, S.TURN_MIN, S.TURN_MAX);
   let angle = m.angle;
-  if (gait !== "idle") angle = turn(angle, Math.atan2(vy, vx), dt, rate);
+  const toLook = look ? { x: look.x - pos.x, y: look.y - pos.y } : null;
+  const retreating = backpedal && toLook !== null && Math.hypot(toLook.x, toLook.y) > 0.5 && vx * toLook.x + vy * toLook.y < 0;
+  if (retreating) angle = turn(angle, Math.atan2(toLook.y, toLook.x), dt, rate);
+  else if (gait !== "idle") angle = turn(angle, Math.atan2(vy, vx), dt, rate);
   else if (look && Math.hypot(look.x - pos.x, look.y - pos.y) > 0.5) angle = turn(angle, Math.atan2(look.y - pos.y, look.x - pos.x), dt, S.TURN_MIN);
   const cycle = gait === "run" ? S.RUN_CYCLE + S.RUN_CYCLE_PER_SPEED * sp : S.WALK_CYCLE;
   const phase = gait === "idle" ? m.phase : (m.phase + (sp / cycle) * dt) % 1;

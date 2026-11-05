@@ -12,9 +12,6 @@ import { isGroupWorld, laterDate, resolveReadyUntil } from "@/Domain/groupAdvanc
 import { buildMatchEventFromRecording, withWeatherLog } from "@/Domain/advanceDay/matches";
 import { matchWeatherOf } from "@/backend/stadiumData";
 import { officialsFor } from "@/backend/refereeWorld";
-import { aggregatePendingDays } from "@/Domain/groupAdvance/pendingSummary";
-import type { DayLog } from "@/types/dayLogTypes";
-import type { PendingSummaryAggregate } from "@/types/groupAdvanceTypes";
 
 type Req = Request & { params: Record<string, string> };
 type Handler = (req: Req) => Promise<Response>;
@@ -61,21 +58,6 @@ async function jsonBody(req: Request): Promise<Record<string, unknown> | Respons
 }
 
 const methodNotAllowed = () => Response.json({ error: "method not allowed" }, { status: 405 });
-
-/** Day logs read at once when building the summary. */
-const SUMMARY_READ_BATCH = 6;
-
-/** The seat's pending days and the one summary built from them (the day logs read in small batches). */
-async function pendingSummary(saveId: string, seatId: string) {
-  const days = await saveService.getPendingSummary(saveId, seatId);
-  if (days.length === 0) return { days, aggregate: null as PendingSummaryAggregate | null };
-  const logs: (DayLog | null)[] = [];
-  for (let i = 0; i < days.length; i += SUMMARY_READ_BATCH) {
-    logs.push(...(await Promise.all(days.slice(i, i + SUMMARY_READ_BATCH).map((d) => saveService.resolveDayLog(saveId, d.date, seatId)))));
-  }
-  const clubId = (await saveService.getSeat(saveId, seatId))?.clubId ?? "";
-  return { days, aggregate: aggregatePendingDays(days, logs, clubId) };
-}
 
 export const groupAdvanceRoutes = {
   "/api/worlds/:saveId/ready": safe("ready", async (req) => {
@@ -237,7 +219,7 @@ export const groupAdvanceRoutes = {
   "/api/worlds/:saveId/summary": safe("summary", async (req) => {
     const ctx = await worldSeat(req);
     if (ctx instanceof Response) return ctx;
-    if (req.method === "GET") return Response.json(await pendingSummary(ctx.saveId, ctx.auth.seatId));
+    if (req.method === "GET") return Response.json({ days: await saveService.getPendingSummary(ctx.saveId, ctx.auth.seatId) });
     if (req.method !== "DELETE") return methodNotAllowed();
     await withSaveLock(ctx.saveId, () => saveService.clearPendingSummary(ctx.saveId, ctx.auth.seatId));
     return Response.json({ ok: true });
