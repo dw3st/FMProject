@@ -77,6 +77,8 @@ export interface Lighting {
   covered: boolean;
   /** Every player's shadows: a soft contact shadow under the feet, plus the sun's or the floodlights' cast ones. */
   shadows: ShadowSpec[];
+  /** The sun's cast shadow (the floodlight towers' shadows follow it, 4.47.18), null without sun. */
+  sunShadow: ShadowSpec | null;
 }
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
@@ -166,5 +168,6 @@ export function matchLighting(input: { clock: number; sunset: number; weather: M
     },
     covered,
     shadows,
+    sunShadow: sun > 0.01 ? shadows[1]! : null,
   };
 }

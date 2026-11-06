@@ -532,3 +532,7 @@ Report de tester. `standDepths` (`src/Domain/facilities/standDepth.ts`): lugares
 ## A maca para o jogo (4.47.13)
 
 Pedido do usuário. Enquanto uma maca desenhada está em campo (`stretcherPose(...).done` falso), o `pumpSimulation` segura a simulação como na reprise do gol (`stretcherHolds`): relógio e jogadores param, a maca anda no relógio de efeitos. Só desenho e só com extras e a aba visível; o resultado não muda. No modo remoto (jogo entre técnicos, transmissão) o servidor não para.
+
+## Mastro e sombra das torres (4.47.18)
+
+Mock aprovado (opção C, concreto). Cada torre tem um mastro de concreto do pé (`towerFoot`, `MAST_CONCRETE.FOOT` tamanhos atrás do painel, para longe do campo) até o painel, desenhado sob a torre. A sombra (`towerShadow`, puro, com teste) vai do pé até onde cai o topo, na direção da sombra de sol dos jogadores (`Lighting.sunShadow`), mais longa com o sol baixo (`SHADOW_SHORT`..`SHADOW_LONG` da altura), com a sombra do painel na ponta; acima da arquibancada e da torcida, abaixo dos jogadores; nenhuma à noite. Só desenho.

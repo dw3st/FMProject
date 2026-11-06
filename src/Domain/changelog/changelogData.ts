@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.18",
+    date: "2026-11-06",
+    time: "11:48",
+    items: [
+      {
+        pt: "Partida: as torres de iluminação ganharam mastro de concreto e sombra no chão, que acompanha o sol e cresce no fim da tarde.",
+        en: "Match: the floodlight towers have a concrete mast and a shadow on the ground that follows the sun and grows late in the afternoon.",
+      },
+    ],
+  },
+  {
     version: "4.47.17",
     date: "2026-11-06",
     time: "11:39",
@@ -4430,7 +4441,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Torres de iluminação novas, com mastro e sombra", en: "New floodlight towers, with a mast and a shadow" },
   { pt: "Luz do estádio que melhora com a estrutura, e estádio desgastado quando ela está ruim", en: "Stadium lighting that improves with the structure, and a worn look when it is in poor shape" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

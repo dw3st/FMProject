@@ -72,7 +72,7 @@ import { decorRects } from "@/GraficsEngine/stadiumDecor";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, drawnDepths, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
-  ATMOSPHERE, burstAreas, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
+  ATMOSPHERE, burstAreas, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerFoot, towerPanel, towerShadow, towerSpots,
   type CelebrationBurst, type PhoneLight,
 } from "@/GraficsEngine/stadiumAtmosphere";
 import {
@@ -3447,7 +3447,44 @@ export function PixiPitch({
       const lightsOn = () => (currentLight?.flood ?? 0) >= ATMOSPHERE.LIGHTS_ON;
       const towerSprites = new Container();
       towerSprites.eventMode = 'none';
-      app.stage.addChild(towerG, towerSprites);
+      // Concrete masts (4.47.18): from a foot behind the stand corner to the lamp bank, under the tower sprite.
+      const mastG = new Graphics();
+      mastG.eventMode = 'none';
+      app.stage.addChild(mastG, towerG, towerSprites);
+      {
+        const C = ATMOSPHERE.MAST_CONCRETE;
+        for (const t of towers) {
+          const f = towerFoot(t);
+          mastG.moveTo(f.x, f.y).lineTo(t.x, t.y).stroke({ width: Math.max(2, t.size * C.WIDTH), color: C.COLOR, cap: "round" });
+          mastG.moveTo(f.x, f.y).lineTo(t.x, t.y).stroke({ width: Math.max(1, t.size * C.HIGHLIGHT), color: C.HIGHLIGHT_COLOR, cap: "round" });
+          mastG.circle(f.x, f.y, t.size * C.BASE).fill(C.BASE_COLOR);
+        }
+      }
+      // Their shadows follow the sun (none at night), over the stand and the fans, under the players.
+      const towerShadowG = new Graphics();
+      towerShadowG.eventMode = 'none';
+      if (towers.length > 0) app.stage.addChildAt(towerShadowG, app.stage.getChildIndex(world));
+      let towerShadowKey = "";
+      const drawTowerShadows = () => {
+        const sh = currentLight?.sunShadow ?? null;
+        const key = sh ? `${sh.angle.toFixed(3)}|${sh.length.toFixed(3)}|${sh.alpha.toFixed(3)}|${mirrorRef.current}` : "none";
+        if (key === towerShadowKey) return;
+        towerShadowKey = key;
+        towerShadowG.clear();
+        if (!sh || towers.length === 0) return;
+        const C = ATMOSPHERE.MAST_CONCRETE;
+        const S = LIGHTING.SUN_SHADOW;
+        const flip = mirrorRef.current ? -1 : 1;
+        const dir = { x: Math.cos(sh.angle) * flip, y: Math.sin(sh.angle) * flip };
+        const low = (sh.length - S.LEN) / (S.LEN_LOW - S.LEN);
+        const alpha = C.SHADOW_ALPHA * Math.min(1, sh.alpha / S.ALPHA);
+        for (const t of towers) {
+          const q = towerShadow(t, dir, low);
+          if (!q) continue;
+          towerShadowG.poly(q.mast).fill({ color: C.SHADOW_COLOR, alpha });
+          towerShadowG.poly(q.panel).fill({ color: C.SHADOW_COLOR, alpha });
+        }
+      };
       const drawTowers = () => {
         if (coneSprite) {
           const a = coneStrength(currentLight?.flood ?? 0);
@@ -3600,6 +3637,7 @@ export function PixiPitch({
       });
       const drawAtmosphere = () => {
         drawTowers();
+        drawTowerShadows();
         if (calm()) {
           // No phone lights, flares or fireworks: what was drawn goes.
           phoneG.clear();

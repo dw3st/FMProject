@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerPanel, towerSpots,
+  ATMOSPHERE, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerFoot, towerPanel, towerShadow, towerSpots,
   type CelebrationBurst,
 } from "@/GraficsEngine/stadiumAtmosphere";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
@@ -80,5 +80,22 @@ describe("stadium atmosphere", () => {
     const other = { ...b, seed: "other" };
     expect(JSON.stringify(fireworks(other, 11))).not.toBe(JSON.stringify(fireworks(b, 11)));
     expect(fireworks(b, 11)).toEqual(fireworks(b, 11));
+  });
+});
+
+describe("concrete tower mast and shadow (4.47.18)", () => {
+  const t = { x: 100, y: 100, angle: 0, size: 10 };
+  test("the foot sits behind the lamp bank, away from the pitch", () => {
+    const f = towerFoot(t);
+    expect(f.x).toBeLessThan(t.x);
+    expect(f.y).toBeCloseTo(t.y);
+  });
+  test("the shadow points along the sun and grows with a low sun", () => {
+    const high = towerShadow(t, { x: 0, y: 1 }, 0)!;
+    const low = towerShadow(t, { x: 0, y: 1 }, 1)!;
+    const endY = (q: number[]) => (q[3]! + q[5]!) / 2;
+    expect(endY(high.mast)).toBeGreaterThan(t.y);
+    expect(endY(low.mast)).toBeGreaterThan(endY(high.mast));
+    expect(towerShadow(t, { x: 0, y: 0 }, 0)).toBeNull();
   });
 });

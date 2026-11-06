@@ -10,6 +10,15 @@ import type { SeatCell } from "@/GraficsEngine/crowd";
 export const ATMOSPHERE = {
   /** Tower: mast length and panel size in stand-corner sizes (the smaller of the two stand thicknesses there). */
   TOWER: { INNER_YDS: 131.2, TOWER_YDS: 6.4, SET_BACK: 0.5, MAST: 0.55, PANEL_W: 0.62, PANEL_H: 0.24, MAST_COLOR: 0x56606b, PANEL_OFF: 0x8a929c, PANEL_ON: 0xfff4d6 },
+  /**
+   * Concrete mast and its shadow (4.47.18, mock option C): the foot FOOT tower sizes behind the lamp bank, away from
+   * the pitch; the shadow of a tower HEIGHT sizes tall, from the foot to where the top falls, longer with a low sun
+   * (SHADOW_SHORT .. SHADOW_LONG of the height), the lamp bank's shadow at its end.
+   */
+  MAST_CONCRETE: {
+    FOOT: 2.6, WIDTH: 0.24, HIGHLIGHT: 0.09, BASE: 0.3, COLOR: 0x8f8b85, HIGHLIGHT_COLOR: 0xb1ada6, BASE_COLOR: 0x6e6a65,
+    HEIGHT: 3.4, SHADOW_SHORT: 0.55, SHADOW_LONG: 2.2, SHADOW_ALPHA: 0.5, SHADOW_COLOR: 0x070a08, PANEL_SHADOW: 1.5,
+  },
   /** Floodlight level above which the panels are drawn on (and phones show). */
   LIGHTS_ON: 0.35,
   /** Share of the filled seats with a phone light at night; a home goal doubles it for GOAL_BOOST_S. */
@@ -67,6 +76,43 @@ export function towerSpots(stand: StandGeometry): TowerSpot[] {
 export function towerPanel(t: TowerSpot): { x: number; y: number } {
   const d = t.size * ATMOSPHERE.TOWER.MAST;
   return { x: t.x + Math.cos(t.angle) * d, y: t.y + Math.sin(t.angle) * d };
+}
+
+/** The concrete mast's foot: behind the lamp bank, on the line from the pitch centre through the tower. */
+export function towerFoot(t: TowerSpot): { x: number; y: number } {
+  const d = t.size * ATMOSPHERE.MAST_CONCRETE.FOOT;
+  return { x: t.x - Math.cos(t.angle) * d, y: t.y - Math.sin(t.angle) * d };
+}
+
+/**
+ * The tower's shadow on the ground for a sun shadow pointing `dir` (px, unit) with `low` 0..1 (0 = high sun, 1 = low):
+ * the mast from its foot to where the top falls, and the lamp bank's quad there. Null without a direction.
+ */
+export function towerShadow(t: TowerSpot, dir: { x: number; y: number }, low: number): { mast: number[]; panel: number[] } | null {
+  const n = Math.hypot(dir.x, dir.y);
+  if (n < 1e-6) return null;
+  const C = ATMOSPHERE.MAST_CONCRETE;
+  const dx = dir.x / n, dy = dir.y / n;
+  const l = Math.max(0, Math.min(1, low));
+  const len = t.size * C.HEIGHT * (C.SHADOW_SHORT + (C.SHADOW_LONG - C.SHADOW_SHORT) * l);
+  const foot = towerFoot(t);
+  const top = { x: t.x + dx * len, y: t.y + dy * len };
+  const quad = (a: { x: number; y: number }, b: { x: number; y: number }, w: number) => {
+    const ax = b.x - a.x, ay = b.y - a.y;
+    const m = Math.hypot(ax, ay) || 1;
+    const px = (-ay / m) * w / 2, py = (ax / m) * w / 2;
+    return [a.x + px, a.y + py, b.x + px, b.y + py, b.x - px, b.y - py, a.x - px, a.y - py];
+  };
+  const T = ATMOSPHERE.TOWER;
+  // The lamp bank lies across the line to the pitch centre, like the drawn one, larger as a soft shadow.
+  const ux = -Math.sin(t.angle), uy = Math.cos(t.angle);
+  const w = t.size * T.PANEL_W * C.PANEL_SHADOW / 2, h = t.size * T.PANEL_H * C.PANEL_SHADOW / 2;
+  const fx = Math.cos(t.angle) * h, fy = Math.sin(t.angle) * h;
+  const panel = [
+    top.x - ux * w - fx, top.y - uy * w - fy, top.x + ux * w - fx, top.y + uy * w - fy,
+    top.x + ux * w + fx, top.y + uy * w + fy, top.x - ux * w + fx, top.y - uy * w + fy,
+  ];
+  return { mast: quad(foot, top, t.size * C.WIDTH), panel };
 }
 
 export interface PhoneLight {
