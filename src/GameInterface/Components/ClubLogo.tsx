@@ -38,7 +38,10 @@ export function ClubLogo({
   secondaryColor = "#888",
   className = "w-8 h-8",
   imgClassName = "w-full h-full object-contain p-1",
+  title,
 }: {
+  /** Club name shown on hover (and read by screen readers) where the crest stands without the name. */
+  title?: string;
   logoUrl?: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -57,10 +60,10 @@ export function ClubLogo({
     // São Paulo's. The box keeps its size; the image is contained inside it.
     const backed = BACKED_URLS.has(logoUrl);
     return (
-      <div className={`${crestBoxClass(className)} flex items-center justify-center shrink-0${backed ? " rounded-full bg-white/90" : ""}`}>
+      <div title={title} className={`${crestBoxClass(className)} flex items-center justify-center shrink-0${backed ? " rounded-full bg-white/90" : ""}`}>
         <img
           src={logoUrl}
-          alt=""
+          alt={title ?? ""}
           draggable={false}
           // A thin light outline keeps dark crests (Juventus' black "J") readable on the dark
           // background; on light or coloured crests it is barely visible.
@@ -76,6 +79,7 @@ export function ClubLogo({
 
   return (
     <div
+      title={title}
       className={`${className} flex items-center justify-center overflow-hidden`}
       style={{ background: `linear-gradient(145deg, ${primaryColor} 0%, ${secondaryColor} 100%)` }}
     >

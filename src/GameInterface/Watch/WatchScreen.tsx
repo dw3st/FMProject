@@ -132,11 +132,11 @@ export function WatchBroadcast({ saveId, seatId, onClose, onChat, embed = false,
         <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
         <div className="w-full flex items-center justify-center gap-3 min-w-0">
           <span className={`font-display font-bold uppercase text-base truncate text-right flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[home].name}</span>
-          <ClubLogo logoUrl={squadLogoUrl(info.teams[home].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
+          <ClubLogo title={info.teams[home].name} logoUrl={squadLogoUrl(info.teams[home].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
           <span className="font-display font-bold tabular-nums text-2xl px-3 py-0.5 rounded-md bg-card border border-border">
             {score[home]}–{score[away]}
           </span>
-          <ClubLogo logoUrl={squadLogoUrl(info.teams[away].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
+          <ClubLogo title={info.teams[away].name} logoUrl={squadLogoUrl(info.teams[away].id)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
           <span className={`font-display font-bold uppercase text-base truncate flex-1 ${embed ? "hidden md:inline" : ""}`}>{info.teams[away].name}</span>
           <span className="text-sm text-muted-foreground tabular-nums w-16">{clock}</span>
         </div>

@@ -661,6 +661,8 @@
     "version": "Version {{version}}",
     "fixes": "Fixes",
     "notice": "New: v{{version}}",
+    "reloadText": "A new version of the game is out.",
+    "reload": "Reload",
     "tabNews": "What's new",
     "tabUpcoming": "Coming soon",
     "upcomingSubtitle": "What we are working on next"

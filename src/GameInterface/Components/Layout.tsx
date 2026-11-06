@@ -11,6 +11,8 @@ import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { useAdvanceDay } from "@/GameInterface/useAdvanceDay";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
+import { useNewVersion } from "@/GameInterface/changelog/useNewVersion";
+import { Button } from "@/GameInterface/ui/Button";
 import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import type { LeagueData } from "@/types/playerTypes";
 import { NoClubScreen } from "@/GameInterface/NoClubScreen";
@@ -61,6 +63,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const lobby = save?.world?.phase === "lobby";
+  const newVersion = useNewVersion();
 
   // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
   const redirectTo = typeof window === "undefined" ? null : worldRedirect(pathname, save);
@@ -96,6 +99,13 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
               : null
           }
         />}
+
+        {newVersion && chrome === "full" && (
+          <div role="status" className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 rounded-md border border-primary bg-card px-4 py-2 shadow-lg">
+            <span className="text-sm">{t("changelog.reloadText")}</span>
+            <Button onClick={() => window.location.reload()}>{t("changelog.reload")}</Button>
+          </div>
+        )}
 
         {chrome !== "match" && (
           <>

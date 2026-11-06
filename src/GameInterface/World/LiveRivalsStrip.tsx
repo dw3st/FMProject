@@ -71,9 +71,9 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
               >
                 <span className="font-semibold">{l.nickname}</span>
                 <span aria-hidden="true">·</span>
-                <ClubLogo logoUrl={squadLogoUrl(sides.homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                <ClubLogo title={sides.homeName} logoUrl={squadLogoUrl(sides.homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                 <span title={`${sides.homeName} ${sides.home}–${sides.away} ${sides.awayName}`}>{sides.home}–{sides.away}</span>
-                <ClubLogo logoUrl={squadLogoUrl(sides.awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                <ClubLogo title={sides.awayName} logoUrl={squadLogoUrl(sides.awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                 {sides.aggregate && <span className="text-muted-foreground">({t("rivals.aggregateShort", { home: sides.aggregate.home, away: sides.aggregate.away })})</span>}
                 <span className="text-muted-foreground">· {l.status === "live" ? t("rivals.liveMinute", { minute: l.minute }) : t(`rivals.${l.status}Status`)}</span>
                 {lit && <span className="font-display font-bold uppercase tracking-[0.08em]">· {l.lastGoal?.scorer ? t("rivals.scorer", { name: l.lastGoal.scorer }) : t("rivals.goalShort")}</span>}
@@ -104,14 +104,14 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
               ) : n && homeId && awayId ? (
                 <>
                   <span>{t("rivals.nextShort")}</span>
-                  <ClubLogo logoUrl={squadLogoUrl(homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                  <ClubLogo title={n.home ? r.clubName ?? undefined : n.opponentName} logoUrl={squadLogoUrl(homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                   <span title={n.home ? `${r.clubName} × ${n.opponentName}` : `${n.opponentName} × ${r.clubName}`}>×</span>
-                  <ClubLogo logoUrl={squadLogoUrl(awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                  <ClubLogo title={n.home ? n.opponentName : r.clubName ?? undefined} logoUrl={squadLogoUrl(awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                   <span>· {formatGameDate(n.date, i18n.language, "dayMonth")}</span>
                 </>
               ) : (
                 <>
-                  <ClubLogo logoUrl={squadLogoUrl(r.clubId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
+                  <ClubLogo title={r.clubName ?? undefined} logoUrl={squadLogoUrl(r.clubId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                   <span>{t("rivals.noNext")}</span>
                 </>
               )}

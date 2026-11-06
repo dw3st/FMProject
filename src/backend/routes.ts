@@ -1,5 +1,6 @@
 import { rivalsRoutes } from "@/backend/rivals/rivalsRoutes";
 import { changelog, upcoming } from "@/Domain/changelog/changelogData";
+import { GAME_VERSION } from "@/Domain/saveVersion";
 import { matchSetupFor } from "@/backend/matchSetup";
 import { withJsonErrors } from "@/backend/routeErrors";
 import { withLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
@@ -140,6 +141,9 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   },
 
   // "What's new" text, fetched by the modal (kept out of the page bundles, perf audit 4.41.29). Public, cached briefly.
+  // The running server's version: an open tab compares it with its own bundle and offers a reload (8.8.8).
+  "/api/version": () => Response.json({ version: GAME_VERSION }, { headers: { "Cache-Control": "no-store" } }),
+
   "/api/changelog": () => Response.json({ changelog, upcoming }, { headers: { "Cache-Control": "public, max-age=300" } }),
 
   "/api/logos/:league/:club": async (req: Request & { params: { league: string; club: string } }) => {

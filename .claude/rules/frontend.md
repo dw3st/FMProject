@@ -87,3 +87,7 @@ To swap icon libraries, change only `Icons.tsx`.
   Bandeira: sempre `<Flag code>` (`Components/Flag.tsx`), nunca as classes `fi fi-xx`.
 - Não usar `font-family` inline nem `font-mono` decorativo. `font-mono` só em telas de debug
   (`/test`, `DebugPanel`, heatmap) onde o dado é tabular de verdade; números alinhados: `tabular-nums`.
+
+## Aviso de versão nova (8.8.8)
+
+A moldura nunca recarrega sozinha, então uma aba aberta antes de um deploy ficava com o código antigo (reports de correção que "não funcionou"). `useNewVersion` (`changelog/useNewVersion.ts`) pergunta `GET /api/version` a cada 5 minutos com a aba visível e quando ela volta; com uma versão diferente da do bundle, o `Layout` mostra o aviso "Saiu uma versão nova do jogo" com Recarregar. `ClubLogo` aceita `title` (nome no hover) onde o escudo aparece sem o nome.

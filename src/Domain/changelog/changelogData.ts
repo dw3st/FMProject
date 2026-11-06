@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.8",
+    date: "2026-11-06",
+    time: "15:59",
+    items: [
+      {
+        pt: "Quando sai uma versão nova, o jogo avisa e oferece recarregar a página, sem precisar fechar a aba.",
+        en: "When a new version is out, the game says so and offers to reload the page, without closing the tab.",
+      },
+      {
+        pt: "O nome do time aparece ao passar o mouse sobre o escudo na janela de assistir e na faixa dos amigos.",
+        en: "The team name shows when you hover a crest in the watch window and in the friends strip.",
+      },
+    ],
+  },
+  {
     version: "8.8.7",
     date: "2026-11-06",
     time: "15:33",
