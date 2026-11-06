@@ -27,7 +27,7 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: "4.48",
+    version: "8.8",
     date: "2026-11-06",
     time: "13:48",
     items: [
@@ -42,7 +42,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.23",
+    version: "8.7.23",
     date: "2026-11-06",
     time: "12:43",
     items: [
@@ -57,7 +57,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.22",
+    version: "8.7.22",
     date: "2026-11-06",
     time: "12:33",
     items: [
@@ -68,7 +68,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.21",
+    version: "8.7.21",
     date: "2026-11-06",
     time: "12:25",
     items: [
@@ -87,7 +87,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.20",
+    version: "8.7.20",
     date: "2026-11-06",
     time: "12:12",
     items: [
@@ -98,7 +98,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.19",
+    version: "8.7.19",
     date: "2026-11-06",
     time: "12:00",
     items: [
@@ -109,7 +109,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.18",
+    version: "8.7.18",
     date: "2026-11-06",
     time: "11:48",
     items: [
@@ -120,7 +120,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.17",
+    version: "8.7.17",
     date: "2026-11-06",
     time: "11:39",
     items: [
@@ -137,7 +137,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.16",
+    version: "8.7.16",
     date: "2026-11-06",
     time: "11:19",
     items: [
@@ -148,7 +148,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.15",
+    version: "8.7.15",
     date: "2026-11-06",
     time: "11:15",
     items: [
@@ -163,7 +163,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.14",
+    version: "8.7.14",
     date: "2026-11-06",
     time: "11:12",
     items: [
@@ -174,7 +174,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.13",
+    version: "8.7.13",
     date: "2026-11-06",
     time: "11:05",
     items: [
@@ -185,7 +185,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.12",
+    version: "8.7.12",
     date: "2026-11-06",
     time: "10:58",
     items: [
@@ -200,7 +200,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.11",
+    version: "8.7.11",
     date: "2026-11-06",
     time: "10:41",
     items: [
@@ -219,7 +219,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.10",
+    version: "8.7.10",
     date: "2026-11-06",
     time: "10:30",
     items: [
@@ -238,7 +238,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.9",
+    version: "8.7.9",
     date: "2026-11-06",
     time: "10:10",
     items: [
@@ -253,7 +253,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.8",
+    version: "8.7.8",
     date: "2026-11-06",
     time: "09:50",
     items: [
@@ -272,7 +272,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.7",
+    version: "8.7.7",
     date: "2026-11-06",
     time: "09:26",
     items: [
@@ -283,7 +283,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.6",
+    version: "8.7.6",
     date: "2026-11-06",
     time: "09:18",
     items: [
@@ -304,7 +304,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.5",
+    version: "8.7.5",
     date: "2026-11-06",
     time: "08:52",
     items: [
@@ -325,7 +325,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.4",
+    version: "8.7.4",
     date: "2026-11-05",
     time: "18:57",
     items: [
@@ -336,7 +336,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.3",
+    version: "8.7.3",
     date: "2026-11-05",
     time: "18:49",
     items: [
@@ -347,7 +347,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.2",
+    version: "8.7.2",
     date: "2026-11-05",
     time: "18:31",
     items: [
@@ -362,7 +362,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47.1",
+    version: "8.7.1",
     date: "2026-11-05",
     time: "18:15",
     items: [
@@ -379,7 +379,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.47",
+    version: "8.7",
     date: "2026-11-05",
     time: "17:22",
     items: [
@@ -394,7 +394,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.9",
+    version: "8.6.9",
     date: "2026-11-05",
     time: "14:27",
     items: [
@@ -411,7 +411,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.8",
+    version: "8.6.8",
     date: "2026-11-05",
     time: "12:14",
     items: [
@@ -422,7 +422,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.7",
+    version: "8.6.7",
     date: "2026-11-05",
     time: "10:11",
     items: [
@@ -433,7 +433,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.6",
+    version: "8.6.6",
     date: "2026-11-05",
     time: "08:58",
     items: [
@@ -444,7 +444,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.5",
+    version: "8.6.5",
     date: "2026-11-05",
     time: "08:49",
     items: [
@@ -455,7 +455,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.4",
+    version: "8.6.4",
     date: "2026-11-05",
     time: "08:45",
     items: [
@@ -486,7 +486,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.3",
+    version: "8.6.3",
     date: "2026-11-04",
     time: "22:17",
     items: [
@@ -497,7 +497,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.2",
+    version: "8.6.2",
     date: "2026-11-04",
     time: "22:14",
     items: [
@@ -508,7 +508,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46.1",
+    version: "8.6.1",
     date: "2026-11-04",
     time: "20:48",
     items: [
@@ -519,7 +519,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.46",
+    version: "8.6",
     date: "2026-11-04",
     time: "19:38",
     items: [
@@ -530,7 +530,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.45",
+    version: "8.5",
     date: "2026-11-04",
     time: "19:28",
     items: [
@@ -559,7 +559,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.7",
+    version: "8.4.7",
     date: "2026-11-04",
     time: "18:09",
     items: [
@@ -570,7 +570,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.6",
+    version: "8.4.6",
     date: "2026-11-04",
     time: "17:55",
     items: [
@@ -581,7 +581,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.5",
+    version: "8.4.5",
     date: "2026-11-04",
     time: "17:46",
     items: [
@@ -592,7 +592,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.4",
+    version: "8.4.4",
     date: "2026-11-04",
     time: "17:19",
     items: [
@@ -619,7 +619,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.3",
+    version: "8.4.3",
     date: "2026-11-04",
     time: "16:59",
     items: [
@@ -636,7 +636,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.2",
+    version: "8.4.2",
     date: "2026-11-04",
     time: "16:46",
     items: [
@@ -647,7 +647,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44.1",
+    version: "8.4.1",
     date: "2026-11-04",
     time: "16:24",
     items: [
@@ -658,7 +658,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.44",
+    version: "8.4",
     date: "2026-11-04",
     time: "16:13",
     items: [
@@ -683,7 +683,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.43.1",
+    version: "8.3.1",
     date: "2026-11-04",
     time: "15:46",
     items: [
@@ -698,7 +698,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.43",
+    version: "8.3",
     date: "2026-11-04",
     time: "15:35",
     items: [
@@ -709,7 +709,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.28",
+    version: "8.2.28",
     date: "2026-11-04",
     time: "11:37",
     items: [
@@ -734,7 +734,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.27",
+    version: "8.2.27",
     date: "2026-11-04",
     time: "10:04",
     items: [
@@ -745,7 +745,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.26",
+    version: "8.2.26",
     date: "2026-11-04",
     time: "09:56",
     items: [
@@ -756,7 +756,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.25",
+    version: "8.2.25",
     date: "2026-11-04",
     time: "09:49",
     items: [
@@ -767,7 +767,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.24",
+    version: "8.2.24",
     date: "2026-11-04",
     time: "09:20",
     items: [
@@ -788,7 +788,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.23",
+    version: "8.2.23",
     date: "2026-11-04",
     time: "08:57",
     items: [
@@ -799,7 +799,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.22",
+    version: "8.2.22",
     date: "2026-11-04",
     time: "08:35",
     items: [
@@ -810,7 +810,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.21",
+    version: "8.2.21",
     date: "2026-11-04",
     time: "08:30",
     items: [
@@ -825,7 +825,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.20",
+    version: "8.2.20",
     date: "2026-11-04",
     time: "08:17",
     items: [
@@ -840,7 +840,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.19",
+    version: "8.2.19",
     date: "2026-11-04",
     time: "08:05",
     items: [
@@ -851,7 +851,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.18",
+    version: "8.2.18",
     date: "2026-11-04",
     time: "07:59",
     items: [
@@ -862,7 +862,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.17",
+    version: "8.2.17",
     date: "2026-11-03",
     time: "21:21",
     items: [
@@ -873,7 +873,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.16",
+    version: "8.2.16",
     date: "2026-11-03",
     time: "20:47",
     items: [
@@ -890,7 +890,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.15",
+    version: "8.2.15",
     date: "2026-11-03",
     time: "20:34",
     items: [
@@ -901,7 +901,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.14",
+    version: "8.2.14",
     date: "2026-11-03",
     time: "19:37",
     items: [
@@ -912,7 +912,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.13",
+    version: "8.2.13",
     date: "2026-11-03",
     time: "18:10",
     items: [
@@ -923,7 +923,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.12",
+    version: "8.2.12",
     date: "2026-11-03",
     time: "17:58",
     items: [
@@ -934,7 +934,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.11",
+    version: "8.2.11",
     date: "2026-11-03",
     time: "17:42",
     items: [
@@ -949,7 +949,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.10",
+    version: "8.2.10",
     date: "2026-11-03",
     time: "17:35",
     items: [
@@ -960,7 +960,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.9",
+    version: "8.2.9",
     date: "2026-11-03",
     time: "17:32",
     items: [
@@ -971,7 +971,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.8",
+    version: "8.2.8",
     date: "2026-11-03",
     time: "17:26",
     items: [
@@ -982,7 +982,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.7",
+    version: "8.2.7",
     date: "2026-11-03",
     time: "17:16",
     items: [
@@ -999,7 +999,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.6",
+    version: "8.2.6",
     date: "2026-11-03",
     time: "15:00",
     items: [
@@ -1014,7 +1014,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.5",
+    version: "8.2.5",
     date: "2026-11-03",
     time: "14:41",
     items: [
@@ -1025,7 +1025,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.4",
+    version: "8.2.4",
     date: "2026-11-03",
     time: "14:10",
     items: [
@@ -1042,7 +1042,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.3",
+    version: "8.2.3",
     date: "2026-11-03",
     time: "14:04",
     items: [
@@ -1057,7 +1057,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.2",
+    version: "8.2.2",
     date: "2026-11-03",
     time: "13:53",
     items: [
@@ -1082,7 +1082,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42.1",
+    version: "8.2.1",
     date: "2026-11-03",
     time: "13:06",
     items: [
@@ -1093,7 +1093,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.42",
+    version: "8.2",
     date: "2026-11-02",
     time: "19:05",
     items: [
@@ -1108,7 +1108,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.53",
+    version: "8.1.53",
     date: "2026-11-02",
     time: "18:24",
     items: [
@@ -1129,7 +1129,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.52",
+    version: "8.1.52",
     date: "2026-10-30",
     time: "20:11",
     items: [
@@ -1140,7 +1140,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.51",
+    version: "8.1.51",
     date: "2026-10-30",
     time: "19:56",
     items: [
@@ -1157,7 +1157,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.50",
+    version: "8.1.50",
     date: "2026-10-30",
     time: "17:22",
     items: [
@@ -1168,7 +1168,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.49",
+    version: "8.1.49",
     date: "2026-10-30",
     time: "17:03",
     items: [
@@ -1197,7 +1197,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.48",
+    version: "8.1.48",
     date: "2026-10-30",
     time: "16:49",
     items: [
@@ -1208,7 +1208,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.47",
+    version: "8.1.47",
     date: "2026-10-30",
     time: "16:42",
     items: [
@@ -1219,7 +1219,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.46",
+    version: "8.1.46",
     date: "2026-10-30",
     time: "16:33",
     items: [
@@ -1230,7 +1230,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.45",
+    version: "8.1.45",
     date: "2026-10-30",
     time: "16:26",
     items: [
@@ -1241,7 +1241,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.44",
+    version: "8.1.44",
     date: "2026-10-30",
     time: "16:05",
     items: [
@@ -1256,7 +1256,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.43",
+    version: "8.1.43",
     date: "2026-10-30",
     time: "15:51",
     items: [
@@ -1267,7 +1267,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.42",
+    version: "8.1.42",
     date: "2026-10-30",
     time: "15:42",
     items: [
@@ -1294,7 +1294,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.41",
+    version: "8.1.41",
     date: "2026-10-30",
     time: "15:30",
     items: [
@@ -1323,7 +1323,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.40",
+    version: "8.1.40",
     date: "2026-10-30",
     time: "15:00",
     items: [
@@ -1342,7 +1342,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.39",
+    version: "8.1.39",
     date: "2026-10-30",
     time: "14:46",
     items: [
@@ -1363,7 +1363,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.38",
+    version: "8.1.38",
     date: "2026-10-30",
     time: "14:42",
     items: [
@@ -1374,7 +1374,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.37",
+    version: "8.1.37",
     date: "2026-10-30",
     time: "14:38",
     items: [
@@ -1407,7 +1407,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.36",
+    version: "8.1.36",
     date: "2026-10-30",
     time: "13:54",
     items: [
@@ -1418,7 +1418,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.35",
+    version: "8.1.35",
     date: "2026-10-30",
     time: "13:43",
     items: [
@@ -1429,7 +1429,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.34",
+    version: "8.1.34",
     date: "2026-10-30",
     time: "12:05",
     items: [
@@ -1444,7 +1444,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.33",
+    version: "8.1.33",
     date: "2026-10-30",
     time: "12:02",
     items: [
@@ -1455,7 +1455,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.32",
+    version: "8.1.32",
     date: "2026-10-30",
     time: "11:54",
     items: [
@@ -1466,7 +1466,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.31",
+    version: "8.1.31",
     date: "2026-10-30",
     time: "10:56",
     items: [
@@ -1477,7 +1477,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.30",
+    version: "8.1.30",
     date: "2026-10-30",
     time: "10:49",
     items: [
@@ -1488,7 +1488,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.29",
+    version: "8.1.29",
     date: "2026-10-30",
     time: "10:38",
     items: [
@@ -1503,7 +1503,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.28",
+    version: "8.1.28",
     date: "2026-10-30",
     time: "10:25",
     items: [
@@ -1514,7 +1514,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.27",
+    version: "8.1.27",
     date: "2026-10-30",
     time: "10:15",
     items: [
@@ -1525,7 +1525,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.26",
+    version: "8.1.26",
     date: "2026-10-30",
     time: "10:08",
     items: [
@@ -1544,7 +1544,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.25",
+    version: "8.1.25",
     date: "2026-10-30",
     time: "09:55",
     items: [
@@ -1567,7 +1567,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.24",
+    version: "8.1.24",
     date: "2026-10-30",
     time: "09:39",
     items: [
@@ -1582,7 +1582,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.23",
+    version: "8.1.23",
     date: "2026-10-30",
     time: "09:30",
     items: [
@@ -1597,7 +1597,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.22",
+    version: "8.1.22",
     date: "2026-10-30",
     time: "09:27",
     items: [
@@ -1608,7 +1608,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.21",
+    version: "8.1.21",
     date: "2026-10-30",
     time: "09:22",
     items: [
@@ -1623,7 +1623,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.20",
+    version: "8.1.20",
     date: "2026-10-30",
     time: "09:08",
     items: [
@@ -1660,7 +1660,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.19",
+    version: "8.1.19",
     date: "2026-10-30",
     time: "08:35",
     items: [
@@ -1683,7 +1683,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.18",
+    version: "8.1.18",
     date: "2026-10-30",
     time: "08:19",
     items: [
@@ -1702,7 +1702,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.17",
+    version: "8.1.17",
     date: "2026-10-30",
     time: "08:03",
     items: [
@@ -1717,7 +1717,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.16",
+    version: "8.1.16",
     date: "2026-10-30",
     time: "07:26",
     items: [
@@ -1728,7 +1728,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.15",
+    version: "8.1.15",
     date: "2026-10-30",
     time: "07:21",
     items: [
@@ -1739,7 +1739,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.14",
+    version: "8.1.14",
     date: "2026-10-30",
     time: "06:46",
     items: [
@@ -1750,7 +1750,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.13",
+    version: "8.1.13",
     date: "2026-10-30",
     time: "06:39",
     items: [
@@ -1765,7 +1765,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.12",
+    version: "8.1.12",
     date: "2026-10-29",
     time: "23:28",
     items: [
@@ -1792,7 +1792,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.11",
+    version: "8.1.11",
     date: "2026-10-29",
     time: "17:30",
     items: [
@@ -1807,7 +1807,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.10",
+    version: "8.1.10",
     date: "2026-10-29",
     time: "17:14",
     items: [
@@ -1818,7 +1818,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.9",
+    version: "8.1.9",
     date: "2026-10-29",
     time: "17:01",
     items: [
@@ -1837,7 +1837,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.8",
+    version: "8.1.8",
     date: "2026-10-29",
     time: "16:40",
     items: [
@@ -1848,7 +1848,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.7",
+    version: "8.1.7",
     date: "2026-10-29",
     time: "16:32",
     items: [
@@ -1859,7 +1859,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.6",
+    version: "8.1.6",
     date: "2026-10-29",
     time: "16:16",
     items: [
@@ -1870,7 +1870,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.5",
+    version: "8.1.5",
     date: "2026-10-29",
     time: "15:55",
     items: [
@@ -1891,7 +1891,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.4",
+    version: "8.1.4",
     date: "2026-10-29",
     time: "15:38",
     items: [
@@ -1916,7 +1916,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.3",
+    version: "8.1.3",
     date: "2026-10-29",
     time: "15:18",
     items: [
@@ -1933,7 +1933,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.2",
+    version: "8.1.2",
     date: "2026-10-29",
     time: "14:43",
     items: [
@@ -1948,7 +1948,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41.1",
+    version: "8.1.1",
     date: "2026-10-29",
     time: "14:33",
     items: [
@@ -1969,7 +1969,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.41",
+    version: "8.1",
     date: "2026-10-29",
     time: "14:11",
     items: [
@@ -1998,7 +1998,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.40",
+    version: "8.0",
     date: "2026-10-29",
     time: "11:13",
     items: [
@@ -2006,7 +2006,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39.5",
+    version: "7.9.5",
     date: "2026-10-29",
     time: "10:47",
     items: [
@@ -2014,7 +2014,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39.4",
+    version: "7.9.4",
     date: "2026-10-29",
     time: "10:26",
     items: [
@@ -2026,7 +2026,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39.3",
+    version: "7.9.3",
     date: "2026-10-29",
     time: "10:12",
     items: [
@@ -2038,7 +2038,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39.2",
+    version: "7.9.2",
     date: "2026-10-29",
     time: "08:41",
     items: [
@@ -2047,7 +2047,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39.1",
+    version: "7.9.1",
     date: "2026-10-28",
     time: "22:28",
     items: [
@@ -2058,7 +2058,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.39",
+    version: "7.9",
     date: "2026-10-28",
     time: "21:39",
     items: [
@@ -2071,7 +2071,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.24",
+    version: "7.8.24",
     date: "2026-10-28",
     time: "19:27",
     items: [
@@ -2082,7 +2082,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.23",
+    version: "7.8.23",
     date: "2026-10-28",
     time: "19:19",
     items: [
@@ -2093,7 +2093,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.22",
+    version: "7.8.22",
     date: "2026-10-28",
     time: "19:09",
     items: [
@@ -2105,7 +2105,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.21",
+    version: "7.8.21",
     date: "2026-10-28",
     time: "18:53",
     items: [
@@ -2121,7 +2121,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.20",
+    version: "7.8.20",
     date: "2026-10-28",
     time: "18:09",
     items: [
@@ -2131,7 +2131,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.19",
+    version: "7.8.19",
     date: "2026-10-28",
     time: "17:59",
     items: [
@@ -2139,7 +2139,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.18",
+    version: "7.8.18",
     date: "2026-10-28",
     time: "17:56",
     items: [
@@ -2147,7 +2147,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.17",
+    version: "7.8.17",
     date: "2026-10-28",
     time: "17:53",
     items: [
@@ -2155,7 +2155,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.16",
+    version: "7.8.16",
     date: "2026-10-28",
     time: "17:44",
     items: [
@@ -2164,7 +2164,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.15",
+    version: "7.8.15",
     date: "2026-10-28",
     time: "17:34",
     items: [
@@ -2174,7 +2174,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.14",
+    version: "7.8.14",
     date: "2026-10-28",
     time: "17:23",
     items: [
@@ -2184,7 +2184,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.13",
+    version: "7.8.13",
     date: "2026-10-28",
     time: "17:07",
     items: [
@@ -2192,7 +2192,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.12",
+    version: "7.8.12",
     date: "2026-10-28",
     time: "16:57",
     items: [
@@ -2201,7 +2201,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.11",
+    version: "7.8.11",
     date: "2026-10-28",
     time: "16:42",
     items: [
@@ -2210,7 +2210,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.10",
+    version: "7.8.10",
     date: "2026-10-28",
     time: "16:33",
     items: [
@@ -2221,7 +2221,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.9",
+    version: "7.8.9",
     date: "2026-10-28",
     time: "16:15",
     items: [
@@ -2229,7 +2229,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.8",
+    version: "7.8.8",
     date: "2026-10-28",
     time: "16:02",
     items: [
@@ -2237,7 +2237,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.7",
+    version: "7.8.7",
     date: "2026-10-28",
     time: "15:59",
     items: [
@@ -2246,7 +2246,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.6",
+    version: "7.8.6",
     date: "2026-10-28",
     time: "15:35",
     items: [
@@ -2256,7 +2256,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.5",
+    version: "7.8.5",
     date: "2026-10-28",
     time: "15:21",
     items: [
@@ -2267,7 +2267,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.4",
+    version: "7.8.4",
     date: "2026-10-28",
     time: "15:08",
     items: [
@@ -2286,7 +2286,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.3",
+    version: "7.8.3",
     date: "2026-10-28",
     time: "15:00",
     items: [
@@ -2300,7 +2300,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.2",
+    version: "7.8.2",
     date: "2026-10-28",
     time: "14:44",
     items: [
@@ -2319,7 +2319,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38.1",
+    version: "7.8.1",
     date: "2026-10-28",
     time: "14:17",
     items: [
@@ -2338,7 +2338,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.38",
+    version: "7.8",
     date: "2026-10-28",
     time: "12:19",
     items: [
@@ -2357,7 +2357,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.37.3",
+    version: "7.7.3",
     date: "2026-10-28",
     time: "11:46",
     items: [
@@ -2368,7 +2368,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.37.2",
+    version: "7.7.2",
     date: "2026-10-28",
     time: "11:38",
     items: [
@@ -2389,7 +2389,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.37.1",
+    version: "7.7.1",
     date: "2026-10-28",
     time: "11:21",
     items: [
@@ -2430,7 +2430,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.37",
+    version: "7.7",
     date: "2026-10-28",
     time: "10:55",
     items: [
@@ -2503,7 +2503,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.36",
+    version: "7.6",
     date: "2026-10-27",
     time: "19:51",
     items: [
@@ -2536,7 +2536,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.35.4",
+    version: "7.5.4",
     date: "2026-10-27",
     time: "19:37",
     items: [
@@ -2547,7 +2547,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.35.3",
+    version: "7.5.3",
     date: "2026-10-27",
     time: "17:31",
     items: [
@@ -2584,7 +2584,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.35.2",
+    version: "7.5.2",
     date: "2026-10-27",
     time: "07:39",
     items: [
@@ -2595,7 +2595,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.35.1",
+    version: "7.5.1",
     date: "2026-10-27",
     time: "07:29",
     items: [
@@ -2620,7 +2620,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.35",
+    version: "7.5",
     date: "2026-10-27",
     time: "06:43",
     items: [
@@ -2643,7 +2643,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.34.4",
+    version: "7.4.4",
     date: "2026-10-26",
     time: "23:05",
     items: [
@@ -2658,7 +2658,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.34.3",
+    version: "7.4.3",
     date: "2026-10-24",
     time: "21:48",
     items: [
@@ -2679,7 +2679,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.34.2",
+    version: "7.4.2",
     date: "2026-10-23",
     time: "14:05",
     items: [
@@ -2706,7 +2706,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.34.1",
+    version: "7.4.1",
     date: "2026-10-23",
     time: "13:14",
     items: [
@@ -2729,7 +2729,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.34",
+    version: "7.4",
     date: "2026-10-19",
     items: [
       {
@@ -2751,7 +2751,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.33",
+    version: "7.3",
     date: "2026-10-19",
     items: [
       {
@@ -2773,7 +2773,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.32.1",
+    version: "7.2.1",
     date: "2026-10-19",
     items: [
       {
@@ -2793,7 +2793,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.32",
+    version: "7.2",
     date: "2026-10-18",
     items: [
       {
@@ -2803,21 +2803,21 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.31.4",
+    version: "7.1.4",
     date: "2026-10-18",
     items: [
       { pt: "Nos jogos à noite, o brilho dos refletores nos cantos do campo é um degradê suave, sem os arcos marcados.", en: "In night matches, the floodlight glow in the pitch's corners is a smooth fade, without the visible arcs." },
     ],
   },
   {
-    version: "4.31.3",
+    version: "7.1.3",
     date: "2026-10-17",
     items: [
       { pt: "A sombra dos jogadores ficou redonda e logo embaixo de cada um.", en: "Player shadows are now round and right under each player." },
     ],
   },
   {
-    version: "4.31.2",
+    version: "7.1.2",
     date: "2026-10-17",
     items: [
       { pt: "Os jogos começam nos horários típicos de cada liga (sábado às 15:00 na Inglaterra, 15:30 na Alemanha, noites de Champions às 21:00), então o sol e a sombra batem com o horário de verdade.", en: "Matches kick off at each league's usual times (Saturday 3 pm in England, 3:30 pm in Germany, Champions League nights at 9 pm), so the sun and the shadows match the real hour." },
@@ -2825,7 +2825,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.31.1",
+    version: "7.1.1",
     date: "2026-10-17",
     items: [
       { pt: "Todos os clubes das principais ligas agora têm o estádio real, e a altura das arquibancadas ficou mais realista em estádios que pareciam altos demais.", en: "Every club in the main leagues now has its real stadium, and the stands' height is more realistic in grounds that looked too tall." },
@@ -2833,7 +2833,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.31",
+    version: "7.1",
     date: "2026-10-17",
     items: [
       { pt: "Estádios reais nas principais ligas: a sombra segue a posição de verdade do sol sobre cada estádio, pela orientação do campo, a altura das arquibancadas, a data e o horário do jogo. No inverno à tarde ela cobre quase o campo; no verão ao meio-dia fica curta.", en: "Real stadiums in the main leagues: the shadow follows the sun's true position over each ground, from the pitch's orientation, the stands' height, the date and the kickoff time. On a winter afternoon it covers most of the pitch; at a summer midday it is short." },
@@ -2841,7 +2841,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.30",
+    version: "7.0",
     date: "2026-10-17",
     items: [
       { pt: "Cada estádio tem a sua sombra: o contorno da cobertura, o canto e, em alguns, a arquibancada do fundo também faz sombra. Estádios cobertos não têm sol nem chuva no gramado.", en: "Every stadium casts its own shadow: the roof line, the corner and, in some, the end stand too. Covered stadiums have no sun or rain on the pitch." },
@@ -2849,7 +2849,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.29.3",
+    version: "6.9.3",
     date: "2026-10-17",
     items: [
       { pt: "Sombra do estádio na partida como na TV: grande, de borda nítida, crescendo até o fim da tarde, com o lado ao sol mais claro.", en: "Stadium shadow in the match like on TV: large and crisp, growing toward sunset, with the sunlit side brighter." },
@@ -2859,7 +2859,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.29.2",
+    version: "6.9.2",
     date: "2026-10-17",
     items: [
       {
@@ -2869,17 +2869,17 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.29.1",
+    version: "6.9.1",
     date: "2026-10-17",
     items: [
       {
-        pt: "A partida ao vivo voltou a abrir (ficava com a tela preta na 4.29).",
-        en: "The live match opens again (it went black in 4.29).",
+        pt: "A partida ao vivo voltou a abrir (ficava com a tela preta na 6.9).",
+        en: "The live match opens again (it went black in 6.9).",
       },
     ],
   },
   {
-    version: "4.29",
+    version: "6.9",
     date: "2026-10-16",
     items: [
       {
@@ -2893,7 +2893,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.28",
+    version: "6.8",
     date: "2026-10-16",
     items: [
       {
@@ -2921,7 +2921,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.27",
+    version: "6.7",
     date: "2026-10-16",
     items: [
       {
@@ -2931,7 +2931,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.26",
+    version: "6.6",
     date: "2026-10-16",
     items: [
       {
@@ -2945,7 +2945,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.25.1",
+    version: "6.5.1",
     date: "2026-10-15",
     items: [
       {
@@ -2955,7 +2955,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.25",
+    version: "6.5",
     date: "2026-10-15",
     items: [
       {
@@ -2973,7 +2973,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.24.1",
+    version: "6.4.1",
     date: "2026-10-15",
     items: [
       {
@@ -2989,7 +2989,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.24",
+    version: "6.4",
     date: "2026-10-14",
     items: [
       {
@@ -3003,7 +3003,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.23",
+    version: "6.3",
     date: "2026-10-14",
     items: [
       {
@@ -3017,7 +3017,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.22.3",
+    version: "6.2.3",
     date: "2026-10-13",
     items: [
       {
@@ -3045,7 +3045,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.22.2",
+    version: "6.2.2",
     date: "2026-10-12",
     items: [
       {
@@ -3065,7 +3065,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.22.1",
+    version: "6.2.1",
     date: "2026-10-12",
     items: [
       {
@@ -3093,7 +3093,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.22",
+    version: "6.2",
     date: "2026-10-12",
     items: [
       {
@@ -3123,7 +3123,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.21.2",
+    version: "6.1.2",
     date: "2026-10-12",
     items: [
       {
@@ -3151,7 +3151,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.21.1",
+    version: "6.1.1",
     date: "2026-10-12",
     items: [
       {
@@ -3171,7 +3171,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.21",
+    version: "6.1",
     date: "2026-10-12",
     items: [
       {
@@ -3201,7 +3201,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.20",
+    version: "6.0",
     date: "2026-10-12",
     items: [
       {
@@ -3227,7 +3227,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.19.1",
+    version: "5.9.1",
     date: "2026-10-12",
     items: [
       {
@@ -3237,7 +3237,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.19",
+    version: "5.9",
     date: "2026-10-11",
     items: [
       {
@@ -3301,7 +3301,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.18",
+    version: "5.8",
     date: "2026-10-11",
     items: [
       {
@@ -3323,7 +3323,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.17.2",
+    version: "5.7.2",
     date: "2026-10-11",
     items: [
       {
@@ -3343,7 +3343,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.17.1",
+    version: "5.7.1",
     date: "2026-10-09",
     items: [
       {
@@ -3353,7 +3353,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.17",
+    version: "5.7",
     date: "2026-10-09",
     items: [
       { pt: "Árbitros com nome, rosto e nacionalidade em todos os jogos; nas principais ligas, os árbitros e árbitras de verdade", en: "Referees with a name, face and nationality in every match; in the main leagues, the real referees" },
@@ -3364,7 +3364,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.16",
+    version: "5.6",
     date: "2026-10-09",
     items: [
       { pt: "Jogo da liga que cairia no mesmo dia ou colado em um jogo de copa ou continental do clube é remarcado para o meio de semana livre mais próximo", en: "A league match that would fall on the same day as, or right next to, a club's cup or continental match is moved to the nearest free midweek day" },
@@ -3376,7 +3376,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.15",
+    version: "5.5",
     date: "2026-10-09",
     items: [
       { pt: "Inscrição por competição: cada clube tem uma lista de inscritos na liga, na copa e no torneio continental, com as regras de cada lugar (limite de estrangeiros, mínimo de formados no clube ou no país, sub-21 livres)", en: "Registration per competition: every club has a squad list for the league, the cup and the continental tournament, with each one's rules (foreign player limit, minimum of home-grown players, under-21s free)" },
@@ -3386,7 +3386,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.14.4",
+    version: "5.4.4",
     date: "2026-10-09",
     items: [
       { pt: "As abas da barra superior mostram de novo os nomes quando há espaço", en: "The top bar tabs show their names again when there is room" },
@@ -3394,7 +3394,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.14.3",
+    version: "5.4.3",
     date: "2026-10-09",
     items: [
       { pt: "Barra superior com ícones maiores e coloridos, mais fáceis de reconhecer", en: "Top bar with bigger, coloured icons that are easier to recognise" },
@@ -3409,7 +3409,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.14.2",
+    version: "5.4.2",
     date: "2026-10-09",
     items: [
       { pt: "As notas dos jogadores foram reajustadas posição por posição: goleiros, defensores, meias e atacantes mantêm o nível de cada setor da liga", en: "Player ratings were readjusted position by position: goalkeepers, defenders, midfielders and forwards keep the level of each line of their league" },
@@ -3419,7 +3419,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.14.1",
+    version: "5.4.1",
     date: "2026-10-09",
     items: [
       { pt: "Na partida, os lances do Resumo ficam sempre visíveis, com rolagem própria; o mapa de posse foi para baixo deles e pode ser recolhido", en: "In the match, the Summary's events are always visible, with their own scroll; the possession map moved below them and can be collapsed" },
@@ -3430,7 +3430,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.14",
+    version: "5.4",
     date: "2026-10-09",
     items: [
       { pt: "Torneios sub-21 e sub-19 em cada país, com os clubes da primeira divisão, jogados no meio da semana", en: "Under-21 and under-19 tournaments in every country, with the top-flight clubs, played midweek" },
@@ -3441,14 +3441,14 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.13.1",
+    version: "5.3.1",
     date: "2026-10-08",
     items: [
       { pt: "Nomes dos clubes do Brasil e de Portugal com acentos e sem sufixos (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)", en: "Brazilian and Portuguese club names now have their accents and no stray suffixes (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)" },
     ],
   },
   {
-    version: "4.13",
+    version: "5.3",
     date: "2026-10-08",
     items: [
       { pt: "Substituições num mini campo: toque num titular e num reserva para trocar, com o banco ordenado por posição", en: "Substitutions on a mini pitch: tap a starter and a substitute to swap them, with the bench sorted by position" },
@@ -3461,7 +3461,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.12",
+    version: "5.2",
     date: "2026-10-08",
     items: [
       { pt: "A partida ganhou árbitro e bandeirinhas, os técnicos à beira do campo e animações de chute de longe, cabeçada e defesa", en: "Matches now show the referee and assistants, both managers on the touchline and animations for long shots, headers and saves" },
@@ -3470,7 +3470,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.11",
+    version: "5.1",
     date: "2026-10-08",
     items: [
       { pt: "Nova aba Clube na barra superior com as instalações do clube (estádio, centro de treinamento e base); Finanças fica só com o dinheiro (#120)", en: "New Club tab in the top bar with the club's facilities (stadium, training ground and academy); Finances keeps only the money (#120)" },
@@ -3486,7 +3486,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "4.10",
+    version: "5.0",
     date: "2026-10-08",
     items: [
       { pt: "Cada olheiro conhece melhor alguns países: o dele, os vizinhos e os que visitou nas missões — e lá encontra mais e erra menos", en: "Each scout knows some countries better: his own, its neighbours and the ones he visited on missions — and there he finds more and errs less" },

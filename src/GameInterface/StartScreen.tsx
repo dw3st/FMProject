@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { loadGameSave, deleteGameSave, forgetSession } from "@/GameInterface/gameSession";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
-import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
+import { GAME_VERSION as CURRENT_VERSION, canonicalVersion } from "@/Domain/saveVersion";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
@@ -257,7 +257,7 @@ export function StartScreen() {
                     <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
                     {save.gameVersion && save.compatible !== false && (
                       <span className="shrink-0 whitespace-nowrap tabular-nums">
-                        &nbsp;· {t("startScreen.saveVersion", { version: save.gameVersion })}
+                        &nbsp;· {t("startScreen.saveVersion", { version: canonicalVersion(save.gameVersion) })}
                       </span>
                     )}
                   </div>
@@ -279,7 +279,7 @@ export function StartScreen() {
                       <Icon name="alert" size={16} />
                       <span className="truncate tabular-nums">
                         {save.gameVersion
-                          ? t("startScreen.outdatedVersion", { version: save.gameVersion })
+                          ? t("startScreen.outdatedVersion", { version: canonicalVersion(save.gameVersion) })
                           : t("startScreen.outdatedUnknown")}
                       </span>
                     </div>
@@ -388,7 +388,7 @@ export function StartScreen() {
           pendingOutdatedSave
             ? t("startScreen.outdatedBody", {
                 clubName: pendingOutdatedSave.clubName,
-                version: pendingOutdatedSave.gameVersion ?? t("startScreen.outdatedUnknownVersion"),
+                version: pendingOutdatedSave.gameVersion ? canonicalVersion(pendingOutdatedSave.gameVersion) : t("startScreen.outdatedUnknownVersion"),
               })
             : ""
         }

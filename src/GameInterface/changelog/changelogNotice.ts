@@ -1,3 +1,5 @@
+import { canonicalVersion } from "@/Domain/saveVersion";
+
 /**
  * Pure logic for the changelog "new version" notice — no DOM, no localStorage.
  * See `useChangelogNotice.ts` for the React hook that wraps this with persistence.
@@ -16,5 +18,5 @@ export function shouldShowChangelogNotice(
   currentVersion: string,
 ): boolean {
   if (storedVersion === null) return false;
-  return storedVersion !== currentVersion;
+  return canonicalVersion(storedVersion) !== canonicalVersion(currentVersion);
 }

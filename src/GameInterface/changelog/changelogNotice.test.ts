@@ -14,4 +14,8 @@ describe("shouldShowChangelogNotice", () => {
     expect(shouldShowChangelogNotice("1.3.0", "1.4.0")).toBe(true);
     expect(shouldShowChangelogNotice("1.0.0", "1.4.0")).toBe(true);
   });
+  test("an old name of the same release is already seen", () => {
+    expect(shouldShowChangelogNotice("4.48", "8.8")).toBe(false);
+    expect(shouldShowChangelogNotice("4.47.23", "8.8")).toBe(true);
+  });
 });
