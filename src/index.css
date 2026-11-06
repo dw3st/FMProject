@@ -87,6 +87,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  /* Star player colours, fixed (never the club hue): the same as the badge on the pitch (starBadge.ts). */
+  --color-star-gold: #ffd65c;
+  --color-star-blue: #76baff;
+  --color-star-green: #70e28c;
   /* Football card colours: a real yellow (chart-4 reads orange). */
   --color-card-yellow: oklch(0.88 0.18 98);
   --radius-sm: calc(var(--radius) - 2px);

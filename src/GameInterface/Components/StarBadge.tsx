@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import type { StarKind } from "@/Domain/world/stars";
 
+/** Fixed colours, the same as the badge on the pitch (`starBadge.ts`): never the club hue. */
 const COLOR: Record<StarKind, string> = {
-  gold: "text-chart-4",
-  blue: "text-chart-3",
-  green: "text-chart-2",
+  gold: "text-star-gold",
+  blue: "text-star-blue",
+  green: "text-star-green",
 };
 
 /** Small star next to a player's name: gold = world top 25, blue = great form, green = prodigy. */

@@ -543,4 +543,4 @@ Mock aprovado. `lightLook` (`src/Domain/matchday/stadiumLight.ts`, puro, com tes
 
 ## Estrela dos craques no campo (8.8.10)
 
-Mock aprovado (opção A, refinada). `starBadge.ts` (`STAR_BADGE`, `drawStarBadge`, com teste): moeda com borda de dois tons e estrela em relevo no canto de cima da ficha, na cor da estrela do jogador (ouro top 25 do mundo, azul em forma, verde promessa; `useStarPlayers`). Prop `stars` do `PixiPitch` (por `rosterId`), redesenhada só quando muda. Partida ao vivo e transmissão. Só desenho.
+Mock aprovado (opção A, refinada). `starBadge.ts` (`STAR_BADGE`, `drawStarBadge`, com teste): moeda com borda de dois tons e estrela em relevo no canto de cima da ficha, na cor da estrela do jogador (ouro top 25 do mundo, azul em forma, verde promessa; `useStarPlayers`). Prop `stars` do `PixiPitch` (por `rosterId`), redesenhada só quando muda. Partida ao vivo e transmissão. Só desenho. Desde a 8.8.12 o `StarBadge` das listas usa as mesmas cores fixas (`--color-star-gold/blue/green` em `index.css`), nunca a cor do clube.

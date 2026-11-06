@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.12",
+    date: "2026-11-06",
+    time: "18:23",
+    items: [
+      {
+        pt: "As estrelas dos jogadores têm a mesma cor nas listas e no campo (a verde aparecia roxa em alguns clubes).",
+        en: "Player stars have the same colour in the lists and on the pitch (the green one showed purple for some clubs).",
+      },
+    ],
+  },
+  {
     version: "8.8.11",
     date: "2026-11-06",
     time: "17:58",
