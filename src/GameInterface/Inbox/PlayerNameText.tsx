@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { navigate } from "@/GameInterface/router/navigation";
 
 export interface NamedPlayer { id: string; name: string }
 
@@ -33,7 +34,7 @@ function PlayerNameLink({ player }: { player: NamedPlayer }) {
     const res = await fetch(`/api/saves/${session!.saveId}/players/${encodeURIComponent(player.id)}/where`).catch(() => null);
     if (!res?.ok) { setGone(true); return; }
     const at = (await res.json()) as { league: string; squadId: string };
-    window.location.href = `/player/${encodeURIComponent(at.league)}/${encodeURIComponent(at.squadId)}/${encodeURIComponent(player.id)}`;
+    navigate(`/player/${encodeURIComponent(at.league)}/${encodeURIComponent(at.squadId)}/${encodeURIComponent(player.id)}`);
   }
   return <a href="#" onClick={(e) => { e.preventDefault(); void open(); }} className="font-semibold text-primary hover:underline">{player.name}</a>;
 }

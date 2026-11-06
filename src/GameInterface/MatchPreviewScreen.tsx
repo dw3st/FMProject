@@ -52,6 +52,7 @@ import {
   squadSecondaryColor,
   tacticPillStyle,
 } from "@/GameInterface/matchTeamColors";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const Clock = iconOf("clock");
 const Sprout = iconOf("sprout");
@@ -662,7 +663,7 @@ export function MatchPreviewScreen() {
   useEffect(() => {
     if (saveLoading) return;
     if (!session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
       return;
     }
 
@@ -705,7 +706,7 @@ export function MatchPreviewScreen() {
         if (!todayFixture) {
           setNoMatchDay(true);
           redirectTimer = setTimeout(() => {
-            window.location.href = "/dashboard";
+            navigate("/dashboard");
           }, 1500);
           return;
         }
@@ -838,7 +839,7 @@ export function MatchPreviewScreen() {
         return;
       }
       clearMatchSnapshot();
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
       return;
     }
     clearMatchSnapshot();
@@ -848,15 +849,15 @@ export function MatchPreviewScreen() {
       // continue even on error — match result may still load from day log
     }
     if (matchDate) {
-      window.location.href = `/match-result?date=${encodeURIComponent(matchDate)}`;
+      navigate(`/match-result?date=${encodeURIComponent(matchDate)}`);
     } else {
-      window.location.href = "/match-result";
+      navigate("/match-result");
     }
   }
 
   function handleStartGame() {
     void capture("match_played", { mode: "watch" });
-    window.location.href = "/match";
+    navigate("/match");
   }
 
   // ── Loading / guard states ────────────────────────────────────────────────
@@ -882,7 +883,7 @@ export function MatchPreviewScreen() {
           <p className="text-muted-foreground text-sm m-0">{t("matchPreview.seatOpponentText")}</p>
           {groupError && <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(groupError))}</p>}
           <div className="flex items-center justify-center gap-3">
-            <Button variant="secondary" onClick={() => { window.location.href = "/dashboard"; }}>{t("matchPreview.backToDashboard")}</Button>
+            <Button variant="secondary" onClick={() => { navigate("/dashboard"); }}>{t("matchPreview.backToDashboard")}</Button>
             <Button onClick={() => void handleSendAssistant()} disabled={commencing}>{t("matchPreview.simulateMatch")}</Button>
           </div>
         </div>
@@ -1088,7 +1089,7 @@ export function MatchPreviewScreen() {
           {commencing ? t("matchPreview.simulating") : t("matchPreview.seatSimulate")}
           {!commencing && <Icon name="chevron-right" size={16} />}
         </Button>
-        <Button variant="primary" onClick={() => { window.location.href = "/match-room"; }} disabled={commencing}>
+        <Button variant="primary" onClick={() => { navigate("/match-room"); }} disabled={commencing}>
           {seatInvite ? t("h2h.invite.join") : t("h2h.preview.playLive")}
           <Icon name="play" size={16} />
         </Button>
@@ -1138,7 +1139,7 @@ export function MatchPreviewScreen() {
             subs and the play buttons in one bar, so nothing needs a scroll. */}
         <div className="flex flex-col items-center gap-3 pt-3">
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <Button variant="secondary" onClick={() => { window.location.href = national ? "/leagues?tab=national&national=coach" : "/formation"; }}>
+            <Button variant="secondary" onClick={() => { navigate(national ? "/leagues?tab=national&national=coach" : "/formation"); }}>
               <Icon name="settings" size={16} />
               {t("matchPreview.editTactics")}
             </Button>

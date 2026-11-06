@@ -25,6 +25,7 @@ import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { useScouting, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
 import { MissionsTab } from "@/GameInterface/Scouting/MissionsTab";
 import { GemsTab, ReportsTab, ShortlistTab } from "@/GameInterface/Scouting/ReportTables";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type ScoutTab = "search" | "missions" | "reports" | "shortlist" | "gems";
 const SCOUT_TABS: ScoutTab[] = ["search", "missions", "reports", "shortlist", "gems"];
@@ -171,7 +172,7 @@ export function ScoutScreen() {
 
   // Static data: league list (filter options) and the user's squad id (disables offers on own players).
   useEffect(() => {
-    if (!session) { window.location.href = "/new-game"; return; }
+    if (!session) { navigate("/new-game"); return; }
     fetch("/api/leagues")
       .then((r) => r.json() as Promise<LeagueData[]>)
       .then((leagues) => setLeagueRows(Array.isArray(leagues) ? leagues : []))

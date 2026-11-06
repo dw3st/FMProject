@@ -21,6 +21,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
+import { navigate } from "@/GameInterface/router/navigation";
 
 interface SaveEntry {
   id: string;
@@ -92,7 +93,7 @@ export function StartScreen() {
     try {
       await loadGameSave(id);
       const save = saves.find((s) => s.id === id);
-      window.location.href = save?.world?.phase === "lobby" ? "/world" : "/dashboard";
+      navigate(save?.world?.phase === "lobby" ? "/world" : "/dashboard");
     } catch {
       setLoadingId(null);
     }
@@ -183,7 +184,7 @@ export function StartScreen() {
             ) : (
               <Button
                 className="w-24 shrink-0 px-0"
-                onClick={() => { window.location.href = "/new-game?mode=public"; }}
+                onClick={() => { navigate("/new-game?mode=public"); }}
                 disabled={publicWorld.members >= publicWorld.max}
               >
                 {publicWorld.members >= publicWorld.max ? t("startScreen.publicFull") : t("startScreen.publicJoin")}
@@ -209,7 +210,7 @@ export function StartScreen() {
                   </div>
                   <Button
                     className="w-24 shrink-0 px-0"
-                    onClick={() => { window.location.href = `/join/${inv.code}`; }}
+                    onClick={() => { navigate(`/join/${inv.code}`); }}
                     disabled={loadingId !== null}
                   >
                     {t("world.invites.accept")}

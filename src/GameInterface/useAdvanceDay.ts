@@ -6,6 +6,7 @@ import { useKeybinds } from "@/GameInterface/useKeybinds";
 import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 import { daysBetween } from "@/Domain/dates";
 import type { ClubMove } from "@/types/pyramidTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /** A board renewal offer waits for an answer: the dashboard opens it (4.41.4). */
 export const RENEWAL_URL = "/dashboard?renewal=1";
@@ -51,7 +52,7 @@ interface AdvanceUntilResponse {
 
 /** What Continuar does when today is the player's match day. */
 function openMatchPreview(): void {
-  window.location.href = "/match-preview";
+  navigate("/match-preview");
 }
 
 export function useAdvanceDay() {
@@ -100,7 +101,7 @@ export function useAdvanceDay() {
     try {
       const res = await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
       if (res.status === 409 && (await res.clone().json().catch(() => null))?.error === "renewalPending") {
-        window.location.href = RENEWAL_URL;
+        navigate(RENEWAL_URL);
         return;
       }
       if (!res.ok) throw new Error("Failed to advance day");
@@ -108,7 +109,7 @@ export function useAdvanceDay() {
       clearMatchSnapshot();
       const log = (await res.json()) as AdvanceDayResponse & { sacked?: boolean };
       if (log.sacked) {
-        window.location.href = "/fired";
+        navigate("/fired");
         return;
       }
       if (log.newDate) updateSessionCurrentDate(log.newDate);
@@ -166,11 +167,11 @@ export function useAdvanceDay() {
         setFastForward(progress);
         if (body.seasonEvents?.length) notice = body.seasonEvents[body.seasonEvents.length - 1]!;
         if ((body as { sacked?: boolean }).sacked) {
-          window.location.href = "/fired";
+          navigate("/fired");
           return;
         }
         if (body.error === "renewalPending" || (body as { renewalOffer?: boolean }).renewalOffer) {
-          window.location.href = RENEWAL_URL;
+          navigate(RENEWAL_URL);
           return;
         }
         if (!res.ok || body.error) throw new Error(body.error ?? `HTTP ${res.status}`);

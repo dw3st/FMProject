@@ -16,6 +16,7 @@ import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
 import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 import { RENEWAL_URL } from "@/GameInterface/useAdvanceDay";
 import type { LeagueData } from "@/types/playerTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 export interface GroupAdvanceContextValue {
   enabled: boolean;
@@ -89,7 +90,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
       if (!out) return;
       if (out.sacked) {
         await groupAdvanceApi.clearSummary(saveId);
-        window.location.href = "/fired";
+        navigate("/fired");
         return;
       }
       if (!out.notice) {
@@ -153,7 +154,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(true);
     setError(null);
     const r = await groupAdvanceApi.ready(saveId, until);
-    if (!r.ok && r.error === "renewalPending") { window.location.href = RENEWAL_URL; return; }
+    if (!r.ok && r.error === "renewalPending") { navigate(RENEWAL_URL); return; }
     if (!r.ok) setError(r.error);
     await refresh();
     setBusy(false);
@@ -165,7 +166,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     setBusy(true);
     setError(null);
     const r = await groupAdvanceApi.simulate(saveId, view.currentDate, today.fixtureId);
-    if (!r.ok && r.error === "renewalPending") { window.location.href = RENEWAL_URL; return; }
+    if (!r.ok && r.error === "renewalPending") { navigate(RENEWAL_URL); return; }
     if (!r.ok) setError(r.error);
     await refresh();
     setBusy(false);

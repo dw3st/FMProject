@@ -33,6 +33,7 @@ import { MarketWindowStrip } from "@/GameInterface/Transfers/transferWindow";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import type { WorldDeadline, WorldMemberView, WorldView } from "@/types/multiplayerTypes";
 import type { StandingsView } from "@/types/standingsTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type DeadlineKey = "12" | "24" | "48" | "none";
 const toKey = (d: WorldDeadline): DeadlineKey => (d === null ? "none" : (String(d) as DeadlineKey));
@@ -71,7 +72,7 @@ export function WorldScreen() {
     if (!saveId) return;
     const r = await worldApi.view(saveId);
     if (r.ok) { setView(r.data); setError(null); }
-    else if (r.error === "notMember" || r.error === "notFound") { forgetSession(saveId); window.location.href = "/start"; }
+    else if (r.error === "notMember" || r.error === "notFound") { forgetSession(saveId); navigate("/start"); }
     else setError(r.error);
   }, [saveId]);
 
@@ -138,7 +139,7 @@ export function WorldScreen() {
   async function start() {
     setStarting(true);
     const r = await worldApi.start(saveId);
-    if (r.ok) window.location.href = "/dashboard";
+    if (r.ok) navigate("/dashboard");
     else { setStarting(false); setError(r.error); }
   }
 
@@ -151,7 +152,7 @@ export function WorldScreen() {
       setBusy(true);
       const r = await worldApi.leave(saveId);
       setBusy(false);
-      if (r.ok) { forgetSession(saveId); window.location.href = "/start"; return; }
+      if (r.ok) { forgetSession(saveId); navigate("/start"); return; }
       setError(r.error);
     }
     setPending(null);

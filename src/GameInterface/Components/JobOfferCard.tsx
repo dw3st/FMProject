@@ -16,6 +16,7 @@ import { competitionName } from "@/Domain/world/labels";
 import { formatFee } from "@/Domain/money";
 import type { JobOffer } from "@/types/jobTypes";
 import type { LeagueData } from "@/types/playerTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
@@ -75,7 +76,7 @@ export function JobOfferCard({
         return;
       }
       if (accept) {
-        window.location.href = "/dashboard";
+        navigate("/dashboard");
         return;
       }
       setDeclined(true);

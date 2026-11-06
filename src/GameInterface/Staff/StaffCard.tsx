@@ -6,6 +6,7 @@ import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { contractEnd, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const LABEL = "block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
@@ -57,7 +58,7 @@ export function VacantStaffCard({ role, used, max, effect, disabled }: { role: S
         flush
         disabled={disabled}
         className="self-start"
-        onClick={() => { window.location.href = `/transfers?tab=staff&role=${role}`; }}
+        onClick={() => { navigate(`/transfers?tab=staff&role=${role}`); }}
       >
         {t("staff.search")}
       </Button>

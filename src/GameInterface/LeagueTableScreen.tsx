@@ -34,6 +34,7 @@ import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
 import countriesRaw from "@/Data/countries.json";
 import { RESULT_PILL } from "@/GameInterface/formColors";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
@@ -822,7 +823,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
 
   const handleClickSquad = (row: Pick<StandingRow, "squadId" | "slug">) => {
     const clubPart = row.slug ?? row.squadId;
-    window.location.href = `/squad/${activeSlug}/${clubPart}`;
+    navigate(`/squad/${activeSlug}/${clubPart}`);
   };
 
   return (

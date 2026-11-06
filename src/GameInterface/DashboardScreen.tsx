@@ -55,6 +55,7 @@ import {
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { rankOf } from "@/Domain/multiplayer/standings";
+import { navigate } from "@/GameInterface/router/navigation";
 
 interface LedgerApiResponse {
   entries: LedgerEntry[];
@@ -90,7 +91,7 @@ export function DashboardScreen() {
 
   useEffect(() => {
     if (!saveLoading && !session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
     }
   }, [saveLoading, session]);
 

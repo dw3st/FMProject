@@ -45,7 +45,7 @@ async function doInit(): Promise<PostHogLike | null> {
     if (!posthog) return null;
     posthog.init(cfg.posthog.key, {
       api_host: cfg.posthog.host,
-      capture_pageview: true,
+      capture_pageview: "history_change",
       person_profiles: "identified_only",
     });
     return posthog;

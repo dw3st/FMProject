@@ -16,6 +16,7 @@ import { TauntActions } from "@/GameInterface/World/TauntActions";
 import { liveGroups } from "@/Domain/rivals/taunts";
 import { worldRoomParam } from "@/Domain/social/rooms";
 import type { WatchInfo, WatchLook } from "@/types/watchTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const PITCH_ASPECT = 1.62;
 
@@ -236,7 +237,7 @@ export function WatchScreen() {
   const back = () => {
     if (embed && window.parent !== window) window.parent.postMessage({ type: "watch-close" }, window.location.origin);
     else if (follow && window.opener) window.close();
-    else window.location.href = "/dashboard";
+    else navigate("/dashboard");
   };
   return (
     <div className={`h-screen bg-background flex flex-col ${embed ? "p-3" : "px-6 py-4"}`}>

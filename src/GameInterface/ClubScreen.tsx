@@ -5,6 +5,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { FacilitiesView } from "@/GameInterface/Facilities/FacilitiesView";
 import type { LeagueData } from "@/types/playerTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /**
  * Club (#120): the club's facilities — stadium, training ground, academy and their items
@@ -16,7 +17,7 @@ export function ClubScreen() {
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
 
   useEffect(() => {
-    if (!loading && !session) window.location.href = "/new-game";
+    if (!loading && !session) navigate("/new-game");
   }, [loading, session]);
 
   useEffect(() => {

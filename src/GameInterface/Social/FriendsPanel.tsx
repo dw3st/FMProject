@@ -12,6 +12,7 @@ import { TextField } from "@/GameInterface/ui/TextField";
 import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
 import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 import type { FriendStatus, FriendView, SearchResult, SocialErrorCode } from "@/types/socialTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type PanelTab = "friends" | "requests" | "add";
 
@@ -324,7 +325,7 @@ function RequestsTab() {
             <div key={inv.saveId} className="flex items-center justify-between gap-2">
               <span className="text-sm text-foreground truncate">{t("world.invites.from", { from: inv.from })}</span>
               <div className="flex items-center gap-3">
-                <Button onClick={() => { window.location.href = `/join/${inv.code}`; }}>{t("world.invites.accept")}</Button>
+                <Button onClick={() => { navigate(`/join/${inv.code}`); }}>{t("world.invites.accept")}</Button>
                 <Button variant="secondary" flush onClick={() => void s.declineWorldInvite(inv.saveId)}>
                   {t("world.invites.decline")}
                 </Button>

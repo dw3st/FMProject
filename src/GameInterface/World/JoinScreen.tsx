@@ -10,6 +10,7 @@ import { loadGameSave } from "@/GameInterface/gameSession";
 import { ScreenSizeGate } from "@/GameInterface/ScreenSizeGate";
 import { worldApi, type WorldApiError, type WorldByCodeView } from "@/GameInterface/World/worldApi";
 import { joinCodeFromPath } from "@/GameInterface/World/worldNav";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type Stage =
   | { kind: "loading" }
@@ -56,7 +57,7 @@ export function JoinScreen() {
     setOpening(true);
     try {
       await loadGameSave(saveId);
-      window.location.href = "/world";
+      navigate("/world");
     } catch {
       setOpening(false);
     }
@@ -73,7 +74,7 @@ export function JoinScreen() {
           {stage.kind === "error" && (
             <>
               <Notice kind="error">{t(`world.errors.${stage.error}`)}</Notice>
-              <Button variant="secondary" flush onClick={() => { window.location.href = "/start"; }}>{t("world.join.toStart")}</Button>
+              <Button variant="secondary" flush onClick={() => { navigate("/start"); }}>{t("world.join.toStart")}</Button>
             </>
           )}
           {stage.kind === "member" && (
@@ -97,7 +98,7 @@ export function JoinScreen() {
                 </p>
               </div>
               <Button onClick={() => setStage({ kind: "wizard", world: stage.world })}>{t("world.join.choose")}</Button>
-              <Button variant="secondary" flush onClick={() => { window.location.href = "/start"; }}>{t("world.join.toStart")}</Button>
+              <Button variant="secondary" flush onClick={() => { navigate("/start"); }}>{t("world.join.toStart")}</Button>
             </>
           )}
         </div>

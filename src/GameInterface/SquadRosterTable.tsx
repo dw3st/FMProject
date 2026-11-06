@@ -29,6 +29,7 @@ import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { TalkModal } from "@/GameInterface/Morale/TalkModal";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean };
 
@@ -203,7 +204,7 @@ export function SquadRosterTable({
           <div
             key={player.id}
             onClick={() => {
-              window.location.href = playerDetailHref(player);
+              navigate(playerDetailHref(player));
             }}
             style={{ gridTemplateColumns }}
             className={`grid items-center text-sm tabular-nums border-b border-border/30 cursor-pointer transition-all ${
@@ -338,7 +339,7 @@ export function SquadRosterTable({
             if (r.openRenewal) {
               const target = talkWith;
               setTalkWith(null);
-              window.location.href = `${playerDetailHref(target)}?action=renew`;
+              navigate(`${playerDetailHref(target)}?action=renew`);
             }
           }}
         />

@@ -41,6 +41,7 @@ import {
 } from "@/GameInterface/World/groupAdvanceErrors";
 import { Button } from "@/GameInterface/ui/Button";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const Clock = iconOf("clock");
 const MapPin = iconOf("map-pin");
@@ -364,7 +365,7 @@ export function MatchResultScreen() {
           if (!cancelled) {
             setRedirectingToDashboard(true);
             setTimeout(() => {
-              window.location.href = "/dashboard";
+              navigate("/dashboard");
             }, 1500);
           }
           return;
@@ -399,7 +400,7 @@ export function MatchResultScreen() {
           if (!cancelled) {
             setRedirectingToDashboard(true);
             setTimeout(() => {
-              window.location.href = "/dashboard";
+              navigate("/dashboard");
             }, 1500);
           }
           return;
@@ -502,7 +503,7 @@ export function MatchResultScreen() {
                 if (r.ok) {
                   clearPendingRecording(session.saveId);
                   clearMatchSnapshot();
-                  window.location.href = `/match-result?date=${encodeURIComponent(stored.date)}&pending=1`;
+                  navigate(`/match-result?date=${encodeURIComponent(stored.date)}&pending=1`);
                   return;
                 }
                 if (isTerminalGroupError(r.error)) {
@@ -512,7 +513,7 @@ export function MatchResultScreen() {
                 if (r.error === "dayClosed") {
                   // The day ran meanwhile (the assistant simulated it): show the official result.
                   clearMatchSnapshot();
-                  window.location.href = liveSendFailureUrl(r.error, stored.date);
+                  navigate(liveSendFailureUrl(r.error, stored.date));
                   return;
                 }
                 setError(t(groupAdvanceErrorKey(r.error)));

@@ -9,6 +9,7 @@ import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
 import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import { useSocial } from "@/GameInterface/Social/useSocial";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
@@ -162,7 +163,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
           {t("world.advance.simulate")}
         </button>
         {canPlay && (
-          <button type="button" className={PRIMARY} onClick={() => { window.location.href = "/match-preview"; }} disabled={busy}>
+          <button type="button" className={PRIMARY} onClick={() => { navigate("/match-preview"); }} disabled={busy}>
             <Icon name="play" size={16} />
             {t("world.advance.play")}
           </button>
@@ -176,7 +177,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
             <button
               type="button"
               className={PRIMARY}
-              onClick={() => { window.location.href = invite ? "/match-room" : "/match-preview"; }}
+              onClick={() => { navigate(invite ? "/match-room" : "/match-preview"); }}
               disabled={busy}
               title={hint}
               aria-label={hint}

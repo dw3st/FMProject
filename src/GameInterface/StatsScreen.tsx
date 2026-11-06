@@ -30,6 +30,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { formatEuros } from "@/Domain/money";
 import { useFavoriteCompetitions } from "@/GameInterface/useFavoriteCompetitions";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
@@ -446,7 +447,7 @@ export function StatsScreen() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!saveLoading && !session) window.location.href = "/new-game";
+    if (!saveLoading && !session) navigate("/new-game");
   }, [saveLoading, session]);
 
   useEffect(() => {

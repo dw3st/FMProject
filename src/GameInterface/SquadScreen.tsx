@@ -22,6 +22,7 @@ import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOver
 import { MoralePromises } from "@/GameInterface/Morale/MoralePromises";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 export function SquadScreen({ league, club }: { league: string; club: string }) {
   const { t } = useTranslation();
@@ -78,7 +79,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   useEffect(() => {
     if (saveLoading) return;
     if (!session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
       return;
     }
     fetchSquadForRoute();

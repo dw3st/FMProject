@@ -73,6 +73,7 @@ import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
 import { getEnergyColor, PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /** Painted pitch behind the formation board (data_process/assets/formation_art.py, FLUX-refined). */
 const PITCH_BOARD = "formation/pitch-board.webp";
@@ -195,7 +196,7 @@ export function FormationScreen() {
 
   useEffect(() => {
     if (!saveLoading && !session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
     }
   }, [saveLoading, session]);
 

@@ -15,6 +15,7 @@ import type { NewsItem } from "@/types/newsTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 const PAGE = 40;
@@ -33,7 +34,7 @@ export function NewsScreen() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!saveLoading && !session) window.location.href = "/new-game";
+    if (!saveLoading && !session) navigate("/new-game");
   }, [saveLoading, session]);
 
   useEffect(() => {

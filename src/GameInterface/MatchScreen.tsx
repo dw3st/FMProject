@@ -137,6 +137,7 @@ import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from 
 import type { TacticalAxes } from "@/types/tacticsTypes";
 import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
 import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
+import { navigate } from "@/GameInterface/router/navigation";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -827,7 +828,7 @@ export function MatchScreen() {
     if (!h2h.done) return;
     const date = h2h.room?.date ?? matchFixture?.date;
     const id = setTimeout(() => {
-      window.location.href = date ? `/match-result?date=${encodeURIComponent(date)}&pending=1` : "/match-result?pending=1";
+      navigate(date ? `/match-result?date=${encodeURIComponent(date)}&pending=1` : "/match-result?pending=1");
     }, MATCH_END_TO_RESULT_MS);
     return () => clearTimeout(id);
   }, [h2h.done]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -835,7 +836,7 @@ export function MatchScreen() {
   // H2H: the room closed (simulated, the other left, the server lost it): back to the dashboard.
   useEffect(() => {
     if (!h2h.closed) return;
-    const id = setTimeout(() => { window.location.href = "/dashboard"; }, 3000);
+    const id = setTimeout(() => { navigate("/dashboard"); }, 3000);
     return () => clearTimeout(id);
   }, [h2h.closed]);
 
@@ -1319,7 +1320,7 @@ export function MatchScreen() {
                 // Group world (part 3): the recording waits for the executor; the day runs with the group.
                 // Never falls back to /api/advance-day: that would run the day for everyone.
                 if (!ctx?.matchDay || !recording) {
-                  window.location.href = `/match-result?error=generic`;
+                  navigate(`/match-result?error=generic`);
                   return;
                 }
                 const { date, fixtureId } = ctx.matchDay;
@@ -1332,13 +1333,13 @@ export function MatchScreen() {
                     recordedRef.current = true;
                     clearMatchSnapshot();
                   }
-                  window.location.href = liveSendFailureUrl(r.error, date);
+                  navigate(liveSendFailureUrl(r.error, date));
                   return;
                 }
                 clearPendingRecording(saveId);
                 recordedRef.current = true;
                 clearMatchSnapshot();
-                window.location.href = `/match-result?date=${encodeURIComponent(ctx.matchDay.date)}&pending=1`;
+                navigate(`/match-result?date=${encodeURIComponent(ctx.matchDay.date)}&pending=1`);
                 return;
               }
               const payload = recording ? JSON.stringify({ playedMatch: recording }) : null;
@@ -1352,7 +1353,7 @@ export function MatchScreen() {
                 const body = await res.json().catch(() => ({})) as { error?: string };
                 console.error("[MatchScreen] advance-day failed:", res.status, body.error);
                 // Surface the error so the result screen can show it
-                window.location.href = `/match-result?error=${encodeURIComponent(body.error ?? "advance-day failed")}`;
+                navigate(`/match-result?error=${encodeURIComponent(body.error ?? "advance-day failed")}`);
                 return;
               }
               // Recorded: nothing left to resume (#64).
@@ -1364,9 +1365,9 @@ export function MatchScreen() {
             }
           }
           if (matchDate) {
-            window.location.href = `/match-result?date=${encodeURIComponent(matchDate)}`;
+            navigate(`/match-result?date=${encodeURIComponent(matchDate)}`);
           } else {
-            window.location.href = "/match-result";
+            navigate("/match-result");
           }
         })();
       }, delayMs);
@@ -1764,7 +1765,7 @@ export function MatchScreen() {
         <div className="max-w-lg text-center space-y-3">
           <p className="text-destructive font-bold font-display uppercase tracking-[0.08em] text-sm">{t("common.cannotStartMatch")}</p>
           <p className="text-muted-foreground text-sm leading-relaxed m-0">{loadError}</p>
-          <Button variant="secondary" onClick={() => { window.location.href = "/dashboard"; }}>{t("matchPreview.backToDashboard")}</Button>
+          <Button variant="secondary" onClick={() => { navigate("/dashboard"); }}>{t("matchPreview.backToDashboard")}</Button>
         </div>
       </div>
     );

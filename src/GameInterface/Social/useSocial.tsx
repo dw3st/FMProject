@@ -39,6 +39,7 @@ import type {
   SocialErrorCode,
   SocialMe,
 } from "@/types/socialTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /** Close code the server uses when the session logged out: never reconnect. */
 const LOGOUT_CLOSE_CODE = 4001;
@@ -305,12 +306,12 @@ export function SocialProvider({
           }
           break;
         case "world_started":
-          if (event.saveId === saveId && window.location.pathname === "/world") window.location.replace("/dashboard");
+          if (event.saveId === saveId && window.location.pathname === "/world") navigate("/dashboard", { replace: true });
           break;
         case "world_removed":
         case "world_deleted":
           forgetSession(event.saveId);
-          if (event.saveId === saveId) window.location.replace("/start");
+          if (event.saveId === saveId) navigate("/start", { replace: true });
           break;
         case "world_results":
           if (event.saveId !== saveId) break;

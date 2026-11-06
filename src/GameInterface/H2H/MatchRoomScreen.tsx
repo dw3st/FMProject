@@ -15,6 +15,7 @@ import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import type { H2HSide, H2HSideView } from "@/types/h2hTypes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const STATUS_CLASS = { away: "text-muted-foreground", in: "text-foreground", ready: "text-primary" } as const;
 /** How long the reason a room closed stays on screen before the dashboard. */
@@ -69,7 +70,7 @@ export function MatchRoomScreen() {
   useEffect(() => {
     if (room?.phase === "live" && !goingLive.current) {
       goingLive.current = true;
-      window.location.href = "/match?h2h=1";
+      navigate("/match?h2h=1");
     }
   }, [room?.phase]);
 
@@ -84,7 +85,7 @@ export function MatchRoomScreen() {
 
   useEffect(() => {
     if (!h2h.closed) return;
-    const timer = setTimeout(() => { window.location.href = "/dashboard"; }, CLOSED_REDIRECT_MS);
+    const timer = setTimeout(() => { navigate("/dashboard"); }, CLOSED_REDIRECT_MS);
     return () => clearTimeout(timer);
   }, [h2h.closed]);
 
@@ -113,7 +114,7 @@ export function MatchRoomScreen() {
       return;
     }
     h2h.leave();
-    window.location.href = "/dashboard";
+    navigate("/dashboard");
   };
 
   const title = (
@@ -169,7 +170,7 @@ export function MatchRoomScreen() {
       {error && <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(error))}</p>}
       <PenaltyModeChips disabled={imReady || !lobby} />
       <div className="flex flex-wrap items-center gap-4">
-        <Button variant="secondary" onClick={() => { window.location.href = "/formation"; }}>
+        <Button variant="secondary" onClick={() => { navigate("/formation"); }}>
           <Icon name="settings" size={16} />
           {t("h2h.room.tactics")}
         </Button>

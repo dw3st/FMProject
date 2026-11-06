@@ -21,6 +21,7 @@ import { formatEuros } from "@/Domain/money";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { facilitiesGate, seasonFraction } from "@/Domain/facilities/facilities";
 import { BankLoanCard } from "@/GameInterface/Finances/BankLoanCard";
+import { navigate } from "@/GameInterface/router/navigation";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -87,7 +88,7 @@ export function FinancesScreen() {
   const [ledgerVersion, setLedgerVersion] = useState(0);
   // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "facilities") window.location.replace("/club");
+    if (new URLSearchParams(window.location.search).get("tab") === "facilities") navigate("/club", { replace: true });
   }, []);
   // Attendance-based gate of the coming home games (the same model the server uses).
   const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
@@ -108,7 +109,7 @@ export function FinancesScreen() {
   };
 
   useEffect(() => {
-    if (!saveLoading && !session) window.location.href = "/new-game";
+    if (!saveLoading && !session) navigate("/new-game");
   }, [saveLoading, session]);
 
   useEffect(() => {

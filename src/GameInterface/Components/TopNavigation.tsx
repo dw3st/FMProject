@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useRoute } from "@/GameInterface/router/navigation";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { Icon, type IconName, ArtIcon } from "@/GameInterface/Icons";
@@ -136,6 +137,7 @@ export function TopNavigation({
   dayAction,
 }: Props = {}) {
   const group = useGroupAdvance();
+  const { pathname } = useRoute();
   const advancing = advancingProp || (group.enabled && !!group.view?.running);
   const { t, i18n } = useTranslation();
   const { currentDate, session, squad, save, fixtures, restDays, toggleDayType } = useGameSave();
@@ -221,7 +223,7 @@ export function TopNavigation({
           <div className={`flex items-stretch ${narrow ? "w-full gap-1.5" : `w-max ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
             {navItems.map((item) => {
               const label = t(item.labelKey);
-              const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
+              const active = pathname.startsWith(item.href);
               const href =
                 item.href === "/squad"
                   ? session && !unemployed

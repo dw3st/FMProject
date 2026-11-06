@@ -44,6 +44,7 @@ import {
   MANAGER_NATIONALITIES,
   type ManagerBackground,
 } from "@/Data/managerBackgrounds";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type DatabaseEntry = {
   id:        string;
@@ -294,10 +295,10 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
         await loadGameSave(r.data.saveId);
       } catch {
         // The world screen reloads the session itself.
-        window.location.href = r.data.phase === "running" ? "/dashboard" : "/world";
+        navigate(r.data.phase === "running" ? "/dashboard" : "/world");
         return;
       }
-      window.location.href = r.data.phase === "lobby" ? "/world" : "/dashboard";
+      navigate(r.data.phase === "lobby" ? "/world" : "/dashboard");
       return;
     }
     try {
@@ -331,7 +332,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
 
       // A world of friends waits in the lobby: the owner starts it from the league screen.
       if (playMode === "multi") {
-        window.location.href = "/world";
+        navigate("/world");
         return;
       }
 
@@ -345,7 +346,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
         /* proceed anyway — standings just won't be pre-populated */
       }
 
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     } catch (err) {
       setStarting(false);
       setPreparing(false);
@@ -370,7 +371,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
     if (r.data.joined) {
       try {
         await loadGameSave(r.data.saveId);
-        window.location.href = "/dashboard";
+        navigate("/dashboard");
       } catch {
         setModeBusy(false);
         setModeError(t("world.errors.generic"));
@@ -434,7 +435,7 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
               </div>
               {modeError && <p role="alert" className="text-sm text-destructive mt-4">{modeError}</p>}
               <div className="flex items-center gap-2 mt-8">
-                <Button variant="secondary" className="px-3" onClick={() => { window.location.href = "/start"; }}>
+                <Button variant="secondary" className="px-3" onClick={() => { navigate("/start"); }}>
                   {t("newGame.back")}
                 </Button>
                 <Button className="flex-1" disabled={modeBusy} onClick={() => void continueFromMode()}>{t("newGame.mode.next")}</Button>
@@ -456,8 +457,8 @@ export function NewGameWizard({ join: friendsJoin }: { join?: JoinContext }) {
               <ManagerForm
                 initial={manager}
                 onCancel={() => {
-                  if (friendsJoin) window.location.href = `/join/${friendsJoin.code}`;
-                  else if (fromPublicLink) window.location.href = "/start";
+                  if (friendsJoin) navigate(`/join/${friendsJoin.code}`);
+                  else if (fromPublicLink) navigate("/start");
                   else {
                     setPublicJoin(null);
                     setStep("mode");

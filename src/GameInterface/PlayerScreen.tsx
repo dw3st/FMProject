@@ -35,6 +35,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePanel";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import type { IdentityFact } from "@/GameInterface/Components/FactCard";
+import { navigate } from "@/GameInterface/router/navigation";
 
 export function PlayerScreen({
   playerId,
@@ -71,7 +72,7 @@ export function PlayerScreen({
   useEffect(() => {
     if (saveLoading) return;
     if (!session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
       return;
     }
     const isMyClub = sessionMatchesClubRoute(session, league, club, mySquad);
@@ -140,7 +141,7 @@ export function PlayerScreen({
     setOfferTarget(null);
     if (result?.status === "accepted") {
       void refresh();
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     }
   }
 
@@ -183,7 +184,7 @@ export function PlayerScreen({
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
                 {session && player.contract && (
-                  <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { window.location.href = backTo; }} />
+                  <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { navigate(backTo); }} />
                 )}
                 <button
                   type="button"

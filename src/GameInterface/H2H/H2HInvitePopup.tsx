@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { useSocial } from "@/GameInterface/Social/useSocial";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /** The other manager opened the match room (multiplayer part 7): a card in the corner with "Join". */
 export function H2HInvitePopup() {
@@ -23,7 +24,7 @@ export function H2HInvitePopup() {
           <Icon name="close" size={16} />
         </button>
       </div>
-      <Button className="self-end" onClick={() => { window.location.href = "/match-room"; }}>
+      <Button className="self-end" onClick={() => { navigate("/match-room"); }}>
         {t("h2h.invite.join")}
       </Button>
     </div>

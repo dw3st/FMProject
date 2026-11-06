@@ -16,6 +16,7 @@ import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
 import { TrainingAreasPanel } from "@/GameInterface/Staff/TrainingAreasPanel";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { STAFF_GROUPS, formatEffect, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { navigate } from "@/GameInterface/router/navigation";
 
 /**
  * Coaching staff (`.claude/rules/game/staff.md`): one card per professional grouped by function,
@@ -157,7 +158,7 @@ export function StaffScreen() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm tabular-nums m-0">{t("staff.weeklyBill", { wage: formatWageFull(data.weeklyTotal) })}</p>
-            <Button onClick={() => { window.location.href = "/transfers?tab=staff"; }}>{t("staff.findProfessionals")}</Button>
+            <Button onClick={() => { navigate("/transfers?tab=staff"); }}>{t("staff.findProfessionals")}</Button>
           </div>
         </>
       )}

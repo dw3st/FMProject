@@ -23,6 +23,7 @@ import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
 import { countryBand, countryGainMult } from "@/Domain/scouting/countryKnowledge";
 import { formatEffect } from "@/GameInterface/Staff/staffApi";
 import countriesRaw from "@/Data/countries.json";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
 
@@ -149,7 +150,7 @@ export function MissionsTab({
         <Button
           variant="secondary"
           disabled={!data.employed || data.scouts.filter((x) => !x.chief).length >= data.maxFieldScouts}
-          onClick={() => { window.location.href = "/transfers?tab=staff&role=fieldScout"; }}
+          onClick={() => { navigate("/transfers?tab=staff&role=fieldScout"); }}
         >
           {t("scouting.findScouts")}
         </Button>

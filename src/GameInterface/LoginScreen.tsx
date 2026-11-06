@@ -4,6 +4,7 @@ import { safeNextPath } from "@/GameInterface/authRedirect";
 import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type Stage = "email" | "code";
 
@@ -61,7 +62,7 @@ export function LoginScreen() {
         setError(data.error ?? "Invalid code");
         return;
       }
-      window.location.href = safeNextPath(window.location.search);
+      navigate(safeNextPath(window.location.search));
     } finally {
       setSubmitting(false);
     }

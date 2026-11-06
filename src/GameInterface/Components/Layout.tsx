@@ -21,6 +21,7 @@ import { WatchWindowHost } from "@/GameInterface/Watch/WatchWindowHost";
 import { ReadyControl } from "@/GameInterface/World/ReadyControl";
 import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
+import { navigate, useRoute } from "@/GameInterface/router/navigation";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world"];
@@ -28,8 +29,9 @@ const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/wo
 export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { session, squad, save } = useGameSave();
+  const { pathname } = useRoute();
   const noClub = !!save?.unemployed
-    && !(typeof window !== "undefined" && NO_CLUB_PATHS.some((p) => window.location.pathname.startsWith(p)));
+    && !NO_CLUB_PATHS.some((p) => pathname.startsWith(p));
   const {
     handleAdvanceDay, advancing,
     canFastForward, handleFastForward, fastForward, stopFastForward, dismissFastForward,
@@ -57,9 +59,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const lobby = save?.world?.phase === "lobby";
 
   // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
-  const redirectTo = typeof window === "undefined" ? null : worldRedirect(window.location.pathname, save);
+  const redirectTo = typeof window === "undefined" ? null : worldRedirect(pathname, save);
   useEffect(() => {
-    if (redirectTo) window.location.replace(redirectTo);
+    if (redirectTo) navigate(redirectTo, { replace: true });
   }, [redirectTo]);
 
   return (
@@ -108,7 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <SettingsOverlay
           open={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
-          onExitToMenu={() => { window.location.href = "/start"; }}
+          onExitToMenu={() => { navigate("/start"); }}
         />
 
         <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />

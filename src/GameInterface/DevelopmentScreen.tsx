@@ -26,6 +26,7 @@ import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { overallAvg } from "@/Domain/playerRating";
 import { dpRequired } from "@/GameEngine/PlayerDevelopment";
+import { navigate } from "@/GameInterface/router/navigation";
 
 function getAgePhase(age: number): AgePhase {
   if (age <= 23) return "developing";
@@ -151,7 +152,7 @@ export function DevelopmentScreen() {
 
   useEffect(() => {
     if (!saveLoading && !session) {
-      window.location.href = "/new-game";
+      navigate("/new-game");
     }
   }, [saveLoading, session]);
 

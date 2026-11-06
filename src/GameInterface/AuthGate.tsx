@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { identifyUser, resetAnalytics } from "@/analytics";
 import { loginUrlFor } from "@/GameInterface/authRedirect";
 import { NicknameSetupScreen } from "@/GameInterface/NicknameSetupScreen";
+import { navigate } from "@/GameInterface/router/navigation";
 
 type GateState = "loading" | "authed" | "redirecting";
 
@@ -46,13 +47,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
           setState("authed");
         } else {
           setState("redirecting");
-          window.location.replace(loginUrlFor(window.location.pathname, window.location.search));
+          navigate(loginUrlFor(window.location.pathname, window.location.search), { replace: true });
         }
       })
       .catch(() => {
         if (cancelled) return;
         setState("redirecting");
-        window.location.replace(loginUrlFor(window.location.pathname, window.location.search));
+        navigate(loginUrlFor(window.location.pathname, window.location.search), { replace: true });
       });
     return () => { cancelled = true; };
   }, []);
@@ -83,6 +84,6 @@ export async function logout(): Promise<void> {
     try {
       localStorage.removeItem("fmproject:session");
     } catch {}
-    window.location.href = "/login";
+    navigate("/login");
   }
 }

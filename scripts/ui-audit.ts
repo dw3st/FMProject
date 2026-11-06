@@ -393,7 +393,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
 const SCREEN_WIDTH_WRAPPER = /(^|\s)max-w-(3xl|4xl|5xl|6xl|7xl|screen-\w+|\[\d+px\])(\s|$)/;
 
 /**
- * In-game screens: the components a `src/pages/<x>/entry.tsx` renders inside `<Layout>`.
+ * In-game screens: the components a `src/pages/<x>/entry.tsx` renders inside `<Layout>`, or a `case` of the frame (`AppShell.tsx`).
  * Each must use `<ScreenContainer>` (in the screen file or around it in the entry) and must not
  * re-create its own `max-w-* mx-auto` page wrapper.
  */
@@ -405,17 +405,27 @@ export function auditScreens(root = process.cwd()): Finding[] {
   } catch {
     return out;
   }
+  // The fixed frame renders every in-game screen from one switch (`AppShell.tsx`, one `case` per screen): each
+  // `case` line is audited like an old page entry (its imports are the shell's).
+  const units: { entryRel: string; entry: string; imports: string }[] = [];
+  const shellRel = "src/GameInterface/AppShell.tsx";
+  try {
+    const shell = readFileSync(join(root, shellRel), "utf8");
+    for (const line of shell.split("\n")) {
+      if (/^\s*case\s+"/.test(line)) units.push({ entryRel: shellRel, entry: `<Layout>${line}`, imports: shell });
+    }
+  } catch { /* no shell */ }
   for (const page of pages) {
     const entryRel = `src/pages/${page}/entry.tsx`;
-    let entry: string;
     try {
-      entry = readFileSync(join(root, entryRel), "utf8");
-    } catch {
-      continue;
-    }
+      const entry = readFileSync(join(root, entryRel), "utf8");
+      units.push({ entryRel, entry, imports: entry });
+    } catch { /* not a page */ }
+  }
+  for (const { entryRel, entry, imports: importSrc } of units) {
     if (!/<Layout[\s>]/.test(entry)) continue;
     const entryUses = /<ScreenContainer[\s>]/.test(entry);
-    const imports = [...entry.matchAll(/import\s*\{([^}]*)\}\s*from\s*"@\/GameInterface\/([\w/]+)"/g)];
+    const imports = [...importSrc.matchAll(/import\s*\{([^}]*)\}\s*from\s*"@\/GameInterface\/([\w/]+)"/g)];
     for (const [, names, mod] of imports) {
       if (mod!.startsWith("Components/")) continue;
       const used = names!.split(",").map((n) => n.trim()).filter((n) => n && new RegExp(`<${n}[\\s/>]`).test(entry));

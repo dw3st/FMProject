@@ -35,6 +35,7 @@ import { InboxPrefsPanel } from "@/GameInterface/Inbox/InboxPrefsPanel";
 import { formatEuros } from "@/Domain/money";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { attrDisplay } from "@/Domain/attributes";
+import { navigate } from "@/GameInterface/router/navigation";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -1595,7 +1596,7 @@ function H2HInviteJoin({ match }: { match: string }) {
   const { currentDate } = useGameSave();
   if (match !== currentDate) return null;
   return (
-    <Button className="w-fit" onClick={() => { window.location.href = "/match-room"; }}>
+    <Button className="w-fit" onClick={() => { navigate("/match-room"); }}>
       {t("h2h.invite.join")}
     </Button>
   );
