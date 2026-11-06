@@ -191,3 +191,7 @@ O técnico humano é `seat:<seatId>` com `seatId` (no lugar de `id: "player"`), 
 ## Técnicos humanos no ranking (4.46.4)
 
 Report de tester. A rota aceita `scope=humans` (assentos vivos) e devolve `human` (apelido) nos técnicos dos outros assentos e `humans` (assentos do mundo). A aba mostra o nome na cor dos técnicos humanos com o `HumanBadge` e o chip "Técnicos humanos" só com 2 ou mais assentos.
+
+## Títulos por passagem (8.8.5)
+
+Report de tester. Ao abrir um técnico, cada clube da carreira mostra os títulos ganhos lá (competição, ×N, pontos; temporadas no `title`), por `titlesByPassage` (`src/Domain/managers/careerTitles.ts`: a passagem do clube cujas datas contêm `on`; sem data, a última do clube). Só os títulos sem passagem (seleção) continuam na lista de baixo.

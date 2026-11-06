@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SelectListbox, formSelectBoxClass } from "@/GameInterface/Components/SelectListbox";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -126,48 +127,27 @@ export function ScoutFilters({
         />
 
         {/* Age Range */}
-        <div className="col-span-2">
-          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
-            {t("scout.filters.ageRange")}
-          </label>
-          <div className="flex items-center gap-2">
-            <StepperField value={filters.minAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minAge: Math.round(v) })} />
-            <span className="text-muted-foreground text-sm font-bold">-</span>
-            <StepperField value={filters.maxAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxAge: Math.round(v) })} />
-          </div>
-        </div>
+        <RangeBox label={t("scout.filters.ageRange")}
+          min={<StepperField value={filters.minAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minAge: Math.round(v) })} />}
+          max={<StepperField value={filters.maxAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxAge: Math.round(v) })} />} />
 
         {/* OVR range: shown 0–100 like the table, kept 0–10 in the filter (tester report, 8.8.3) */}
-        <div className="col-span-2">
-          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display" title={t("scout.filters.ovrHint")}>
-            {t("scout.filters.ovr")}
-          </label>
-          <div className="flex items-center gap-2">
-            <StepperField value={Math.round(filters.minAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minAvg: Math.round(v) / 10 })} />
-            <span className="text-muted-foreground text-sm font-bold">-</span>
-            <StepperField value={Math.round(filters.maxAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxAvg: Math.round(v) / 10 })} />
-          </div>
-        </div>
+        <RangeBox label={t("scout.filters.ovr")} title={t("scout.filters.ovrHint")}
+          min={<StepperField value={Math.round(filters.minAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minAvg: Math.round(v) / 10 })} />}
+          max={<StepperField value={Math.round(filters.maxAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxAvg: Math.round(v) / 10 })} />} />
 
         {/* Value (transfer price), millions of euros: two columns so "1000" fits (#154) */}
-        <div className="col-span-2">
-          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
-            {t("scout.filters.valueRange")}
-          </label>
-          <div className="flex items-center gap-2">
-            <StepperField value={filters.minPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={oneDecimal}
+        <RangeBox label={t("scout.filters.valueRange")}
+          min={<StepperField value={filters.minPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={oneDecimal}
               downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.min")}
-              onChange={(v) => setFilters({ ...filters, minPriceM: v })} />
-            <span className="text-muted-foreground text-sm font-bold">-</span>
-            <StepperField value={filters.maxPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={priceMax}
+              onChange={(v) => setFilters({ ...filters, minPriceM: v })} />}
+          max={<StepperField value={filters.maxPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={priceMax}
               downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.max")}
-              onChange={(v) => setFilters({ ...filters, maxPriceM: v })} />
-          </div>
-        </div>
+              onChange={(v) => setFilters({ ...filters, maxPriceM: v })} />} />
 
         {/* League — searchable: ~84 options labelled "League · Country" */}
         <SelectCombobox
@@ -185,18 +165,11 @@ export function ScoutFilters({
         />
 
         {/* Potential (0–100): the middle of the shown range, his overall past 23 */}
-        <div className="col-span-2">
-          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
-            {t("scout.filters.potential")}
-          </label>
-          <div className="flex items-center gap-2">
-            <StepperField value={filters.minPotential ?? 0} min={0} max={100} step={potStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minPotential: Math.round(v) })} />
-            <span className="text-muted-foreground text-sm font-bold">-</span>
-            <StepperField value={filters.maxPotential ?? 100} min={0} max={100} step={potStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxPotential: Math.round(v) })} />
-          </div>
-        </div>
+        <RangeBox label={t("scout.filters.potential")}
+          min={<StepperField value={filters.minPotential ?? 0} min={0} max={100} step={potStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minPotential: Math.round(v) })} />}
+          max={<StepperField value={filters.maxPotential ?? 100} min={0} max={100} step={potStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxPotential: Math.round(v) })} />} />
 
         {/* Grade of the scout's latest report: any of the ticked ones */}
         <div className="col-span-2">
@@ -291,5 +264,21 @@ export function ScoutFilters({
         </div>
       </div>
     </form>
+  );
+}
+
+/** One filter with a minimum and a maximum, in a box of its own (tester report, 8.8.5: the four steppers of a row read as one). */
+function RangeBox({ label, title, min, max }: { label: string; title?: string; min: ReactNode; max: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <fieldset className="col-span-2 m-0 min-w-0 rounded-md border border-border px-3 pb-3 pt-1">
+      <legend className="px-1 text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display" title={title}>{label}</legend>
+      <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2">
+        <span className="text-sm text-muted-foreground">{t("common.min")}</span>
+        {min}
+        <span className="text-sm text-muted-foreground">{t("common.max")}</span>
+        {max}
+      </div>
+    </fieldset>
   );
 }

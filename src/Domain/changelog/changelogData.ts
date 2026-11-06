@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.5",
+    date: "2026-11-06",
+    time: "14:53",
+    items: [
+      {
+        pt: "Olheiro: idade, OVR, valor e potencial ficam cada um na sua caixa, com mínimo e máximo escritos ao lado.",
+        en: "Scout: age, OVR, value and potential each sit in a box of their own, with the minimum and maximum written next to them.",
+      },
+      {
+        pt: "Ranking de técnicos: os títulos aparecem ao lado do clube em que foram ganhos, com quantas vezes e os pontos.",
+        en: "Manager ranking: the titles show next to the club where they were won, with how many times and the points.",
+      },
+    ],
+  },
+  {
     version: "8.8.4",
     date: "2026-11-06",
     time: "14:42",

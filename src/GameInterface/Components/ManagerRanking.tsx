@@ -1,3 +1,4 @@
+import { titlesByPassage } from "@/Domain/managers/careerTitles";
 import { Icon } from "@/GameInterface/Icons";
 import { BADGE_ICON, FRAME_RING } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
@@ -150,6 +151,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
       >
         {rows.map((m) => {
           const isOpen = open === m.id;
+          const career = isOpen ? titlesByPassage(m.clubs ?? [], m.titles) : { byPassage: [], rest: [] };
           return [
             <StatsRow
               key={m.id}
@@ -232,14 +234,29 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
                       {t("statsScreen.managers.career")}
                     </p>
                     <ul className="m-0 p-0 list-none space-y-1">
-                      {[...m.clubs].reverse().map((c, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm">
-                          <ClubLogo logoUrl={squadLogoUrl(c.squadId)} className="w-8 h-8" imgClassName="w-full h-full object-contain" />
-                          <span className="font-semibold">{c.clubName ?? "-"}</span>
-                          <span className="text-muted-foreground tabular-nums ml-auto">
-                            {formatDay(c.from, i18n.language, "year")} – {c.to ? formatDay(c.to, i18n.language, "year") : t("statsScreen.managers.current")}
-                            {c.left && <> · {t(`statsScreen.managers.leftReason.${c.left}`)}</>}
-                          </span>
+                      {m.clubs.map((c, i) => ({ c, groups: career.byPassage[i] ?? [] })).reverse().map(({ c, groups }, i) => (
+                        <li key={i} className="text-sm">
+                          <div className="flex items-center gap-2">
+                            <ClubLogo logoUrl={squadLogoUrl(c.squadId)} className="w-8 h-8" imgClassName="w-full h-full object-contain" />
+                            <span className="font-semibold">{c.clubName ?? "-"}</span>
+                            <span className="text-muted-foreground tabular-nums ml-auto">
+                              {formatDay(c.from, i18n.language, "year")} – {c.to ? formatDay(c.to, i18n.language, "year") : t("statsScreen.managers.current")}
+                              {c.left && <> · {t(`statsScreen.managers.leftReason.${c.left}`)}</>}
+                            </span>
+                          </div>
+                          {/* Titles won there, next to the club (tester report, 8.8.5) */}
+                          {groups.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-10 mt-0.5">
+                              {groups.map((g) => (
+                                <span key={g.kind + g.competition} className="inline-flex items-center gap-1 text-foreground" title={g.seasons.join(", ")}>
+                                  <Icon name="trophy" size={16} className="text-chart-4" />
+                                  {titleLabel(g.kind, g.competition)}
+                                  {g.count > 1 && <span className="font-semibold tabular-nums">×{g.count}</span>}
+                                  <span className="text-muted-foreground tabular-nums">+{g.points}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -254,7 +271,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
                   </div>
                 )}
                 <ul className="m-0 p-0 list-none space-y-1">
-                  {[...m.titles].reverse().map((ti, i) => (
+                  {[...career.rest].reverse().map((ti, i) => (
                     <li key={i} className="flex justify-between gap-4 text-sm">
                       <span>
                         <span className="text-muted-foreground tabular-nums mr-2">{ti.season}</span>
