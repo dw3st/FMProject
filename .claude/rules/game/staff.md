@@ -202,3 +202,7 @@ contratos; nenhum clube da IA com `staff`.
   o profissional para a lista de livres. `GET /staff` e `/staff/pool` trazem `strongCountry`; a coluna "Forte em" da
   aba Comissão e os cartões mostram o país forte; a ficha de um olheiro abre o mapa de países
   (`GET /api/saves/:id/staff/:memberId/countries`).
+
+## Trocar com a função cheia (4.47.10)
+
+Report do usuário. Com a função no limite, a janela de contratação lista quem está nela (estrelas, salário, fim do contrato, multa de hoje); escolher um troca os dois num passo só: `POST /staff/hire { memberId, years, replaceId }` dispensa o escolhido (multa no extrato, volta à lista de livres, áreas liberadas, missão cancelada se olheiro de campo) e contrata o novo no mesmo `BufferingSaveDAL`. `replaceId` de outra função ou fora da comissão: 404 `notYourStaff`.

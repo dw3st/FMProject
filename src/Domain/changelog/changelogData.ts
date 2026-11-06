@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.10",
+    date: "2026-11-06",
+    time: "10:30",
+    items: [
+      {
+        pt: "No ranking de técnicos, a ficha do técnico mostra quantos cartões amarelos e vermelhos ele já levou. A contagem começa agora.",
+        en: "In the manager ranking, a manager's profile shows how many yellow and red cards he has received. The count starts now.",
+      },
+      {
+        pt: "Comissão técnica: com a função cheia, a contratação mostra quem está nela, o contrato e a multa, e troca um pelo outro no mesmo passo.",
+        en: "Coaching staff: when a role is full, hiring shows who holds it, the contract and the severance, and swaps one for the other in one step.",
+      },
+      {
+        pt: "Elenco: os botões de conversar e renovar viraram ícones, e a tabela cabe sem rolar para o lado.",
+        en: "Squad: the talk and renew buttons are icons now, and the table fits without scrolling sideways.",
+      },
+    ],
+  },
+  {
     version: "4.47.9",
     date: "2026-11-06",
     time: "10:10",

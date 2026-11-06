@@ -209,7 +209,7 @@ export const staffRoutes = {
     });
   },
 
-  /** `POST { memberId, years }` - signs a professional of the pool (409 `roleFull` past the tier's limit). */
+  /** `POST { memberId, years, replaceId? }` - signs a professional of the pool (409 `roleFull` past the tier's limit); `replaceId` dismisses one of the same role first. */
   "/api/saves/:saveId/staff/hire": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
@@ -220,22 +220,46 @@ export const staffRoutes = {
     if (!validYears(body.years)) return Response.json({ error: "invalidYears" }, { status: 400 });
     const years = body.years;
     const memberId = body.memberId;
+    // `replaceId`: a professional of the same role dismissed in the same step (severance, back to the pool), for a
+    // full role (tester report, 4.47.10).
+    if (body.replaceId !== undefined && typeof body.replaceId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    const replaceId = body.replaceId as string | undefined;
     return withSaveLock(saveId, () => inUnit(saveId, "hire", async (service) => {
       const h = await human(saveId, auth.seatId, service);
       if (h instanceof Response) return h;
       const pool = await service.getStaffPool(saveId, h.date);
       const taken = takeFromPool(pool, memberId);
       if (!taken) return Response.json({ error: "notInPool" }, { status: 404 });
-      const staff = h.squad.staff ?? { members: [] };
+      let staff = h.squad.staff ?? { members: [] };
       const role = taken.member.role;
+      const out = replaceId ? staff.members.find((m) => m.id === replaceId && m.role === role) : undefined;
+      if (replaceId && !out) return Response.json({ error: "notYourStaff" }, { status: 404 });
+      if (out) {
+        const areaAssignments = staff.areaAssignments
+          ? Object.fromEntries(Object.entries(staff.areaAssignments).filter(([, id]) => id !== out.id))
+          : undefined;
+        staff = { members: staff.members.filter((m) => m.id !== out.id), ...(areaAssignments ? { areaAssignments } : {}) };
+      }
       if (staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
         return Response.json({ error: "roleFull" }, { status: 409 });
       }
       const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
-      const next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
+      let next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
       await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      await service.writeStaffPool(saveId, taken.pool);
-      return Response.json(staffView(next, h));
+      let nextPool = taken.pool;
+      let severance = 0;
+      if (out) {
+        severance = severanceOf(out, h.date);
+        if (severance > 0) {
+          next = await recordMoney(service, saveId, await ledgerSeason(service, saveId, h.ref.leagueSlug, h.date), h.ref, {
+            date: h.date, kind: "staff", amount: -severance, label: `Staff severance: ${out.name}`, ref: { stage: "severance" },
+          }, auth.seatId);
+        }
+        nextPool = returnToPool(nextPool, out, h.date);
+        if (out.role === "fieldScout") await cancelScoutMissions(service, saveId, auth.seatId, [out.id]);
+      }
+      await service.writeStaffPool(saveId, nextPool);
+      return Response.json({ ...staffView(next, h), ...(out ? { severance } : {}) });
     }));
   },
 

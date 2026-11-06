@@ -68,21 +68,22 @@ export function SquadRosterTable({
     title: t(`dashboard.squadRosterTable.titles.${key}`),
   });
   const columns: { key: string; label: string; title: string; width: string; align: "left" | "center" }[] = [
-    col("pos", "6rem", "left"),
-    col("name", "minmax(9rem,1fr)", "left"),
-    col("age", "4.5rem", "center"),
-    col("avg", "4.5rem", "center"),
-    col("salary", "7rem", "center"),
-    col("contract", "7rem", "center"),
-    col("value", "6rem", "center"),
+    col("pos", "5rem", "left"),
+    col("name", "minmax(8rem,1fr)", "left"),
+    col("age", "4rem", "center"),
+    col("avg", "4rem", "center"),
+    col("salary", "5.5rem", "center"),
+    col("contract", "5.5rem", "center"),
+    col("value", "5.5rem", "center"),
     col("apps", "3.5rem", "center"),
     col("goals", "3.5rem", "center"),
     col("assists", "3.5rem", "center"),
-    col("rating", "5rem", "center"),
+    col("rating", "4.5rem", "center"),
     ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "9rem", align: "left" as const }] : []),
   ];
-  // Own squad: Talk (or Answer, with an open request) beside Renew, so the action column is wider (tester report).
-  const gridTemplateColumns = [...columns.map((c) => c.width), "4.5rem", showMorale ? "15rem" : "7rem"].join(" ");
+  // Own squad: Talk (or Answer, with an open request) beside Renew, icon buttons so the table fits without a
+  // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
+  const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "6.5rem" : "7rem"].join(" ");
   const talkOf = (id: string) => squad.moraleClub?.talks.find((x) => x.playerId === id) ?? null;
 
   const allPlayers = useMemo<RosterRow[]>(() => {
@@ -256,13 +257,13 @@ export function SquadRosterTable({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setTalkWith(player); }}
-                  title={talkOf(player.id) ? t(`morale.reason.${talkOf(player.id)!.reason}`, { club: talkOf(player.id)!.clubName ?? "" }) : t("morale.talk.open")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg transition-all cursor-pointer ${
+                  title={talkOf(player.id) ? `${t("morale.talk.answerRequest")}: ${t(`morale.reason.${talkOf(player.id)!.reason}`, { club: talkOf(player.id)!.clubName ?? "" })}` : t("morale.talk.open")}
+                  aria-label={talkOf(player.id) ? t("morale.talk.answerRequest") : t("morale.talk.open")}
+                  className={`flex items-center justify-center w-9 h-8 border rounded-lg transition-all cursor-pointer ${
                     talkOf(player.id) ? ATTENTION_BUTTON : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground"
                   }`}
                 >
                   <Icon name="talk" className="w-4 h-4" />
-                  {talkOf(player.id) ? t("morale.talk.answerRequest") : t("morale.talk.open")}
                 </button>
               )}
               {player.renewDue ? (
@@ -270,10 +271,10 @@ export function SquadRosterTable({
                   href={`${playerDetailHref(player)}?action=renew`}
                   title={t("dashboard.squadRosterTable.renewDue", { date: player.contractEnd ? formatGameDate(player.contractEnd, i18n.language) : "" })}
                   onClick={(e) => e.stopPropagation()}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg no-underline transition-all ${ATTENTION_BUTTON}`}
+                  aria-label={t("contracts.renew")}
+                  className={`flex items-center justify-center w-9 h-8 border rounded-lg no-underline transition-all ${ATTENTION_BUTTON}`}
                 >
                   <Icon name="file-signature" className="w-4 h-4" />
-                  {t("contracts.renew")}
                 </a>
               ) : showMorale ? null : (
               <button

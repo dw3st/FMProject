@@ -38,3 +38,15 @@ export function toFree(m: ManagerRecord, date: string, left: ManagerLeftReason):
   });
 }
 
+
+/** Adds a day's cards to a manager's career totals (`ManagerRecord.cards`). */
+export function addManagerCards(
+  managers: ManagerRecord[], id: string, cards: readonly { card: "yellow" | "red" }[],
+): ManagerRecord[] {
+  if (cards.length === 0) return managers;
+  const yellow = cards.filter((c) => c.card === "yellow").length;
+  const red = cards.length - yellow;
+  return managers.map((m) => m.id !== id ? m : {
+    ...m, cards: { yellow: (m.cards?.yellow ?? 0) + yellow, red: (m.cards?.red ?? 0) + red },
+  });
+}

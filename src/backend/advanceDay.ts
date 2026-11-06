@@ -1,3 +1,4 @@
+import { addManagerCards } from "@/Domain/managers/managerRecords";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { worldTopIds } from "@/Domain/squad/starLimit";
 import { appendSeatSeasons, newPassage, positionOf, standingsOn, standingsView } from "@/backend/standingsWorld";
@@ -23,7 +24,7 @@ import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService, type SeatMeta, type SaveMeta } from "@/backend/SaveService";
-import { metaForSeat, seatIdOfManager } from "@/Domain/seats/seats";
+import { metaForSeat, seatIdOfManager, seatManagerId } from "@/Domain/seats/seats";
 import { humanClubSet, loadDaySeats, seatByClub, type DaySeat } from "@/backend/daySeats";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
@@ -1206,6 +1207,12 @@ export async function advanceOneDay(
       service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
       weights: world.managerWeights, date: currentDate,
     });
+    // The human managers' cards of the day go on their record (career totals, shown in the ranking).
+    for (const ds of daySeats) {
+      if (ds.managerCards.length === 0) continue;
+      const id = seatManagerId(ds.seatId);
+      await managerTracker.apply((ms) => addManagerCards(ms, id, ds.managerCards));
+    }
     // AI managers (`.claude/rules/game/managers.md` → "Técnicos da IA"): Monday review, rollover
     // sackings, vacancies and hirings. Not in the start-kit pre-simulation (no career yet).
     const aiDesk = options.marketFrozen ? null : createAiManagerDesk({

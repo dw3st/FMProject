@@ -33,6 +33,7 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   earnings?: number;
   /** Bank loans he left unpaid at a club. */
   assets?: Partial<Record<"home" | "car" | "watch", number>>;
+  cards?: { yellow: number; red: number };
   unpaidDebts?: { squadId: string; clubName: string; amount: number; date: string; penalty: number }[];
   /** Face (Etapa 31b): current club's colours, nationality, and the human manager's saved avatar. */
   clubColors?: [string, string] | null;
@@ -139,7 +140,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.unpaidDebts?.length ?? 0) > 0 || !!m.assets || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.unpaidDebts?.length ?? 0) > 0 || !!m.cards || !!m.assets || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
@@ -187,6 +188,14 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                     {t("statsScreen.managers.assets", {
                       list: (["home", "car", "watch"] as const).filter((k) => m.assets![k]).map((k) => t(`achievements.assets.level.${k}.${m.assets![k]}`)).join(" · "),
                     })}
+                  </p>
+                )}
+                {m.cards && (m.cards.yellow > 0 || m.cards.red > 0) && (
+                  <p className="flex items-center gap-2 text-sm text-foreground m-0 mb-3 tabular-nums">
+                    <span className="inline-block w-2.5 h-3.5 rounded-sm bg-chart-4" aria-hidden />
+                    {t("statsScreen.managers.yellowCards", { count: m.cards.yellow })}
+                    <span className="inline-block w-2.5 h-3.5 rounded-sm bg-destructive ml-2" aria-hidden />
+                    {t("statsScreen.managers.redCards", { count: m.cards.red })}
                   </p>
                 )}
                 {m.unpaidDebts && m.unpaidDebts.length > 0 && (

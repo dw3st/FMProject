@@ -76,6 +76,8 @@ export interface ManagerRecord {
   awards?: ManagerAward[];
   /** Bank loans left unpaid: they stay on his record and lower his reputation. */
   unpaidDebts?: UnpaidDebt[];
+  /** Cards shown to the human manager for complaining (`.claude/rules/game/var.md`), career totals. */
+  cards?: { yellow: number; red: number };
 }
 
 /** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */

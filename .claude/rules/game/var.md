@@ -109,3 +109,7 @@ fixtures com VAR; gol anulado nunca no placar; suspensão forçada aparece no `m
 
 Na partida ao vivo, toda revisão leva o árbitro até a área de revisão na lateral (só desenho, `graphics-engine.md` →
 "Área de revisão do VAR"); a duração da revisão não muda.
+
+## Cartões na ficha do técnico (4.47.10)
+
+Pedido do usuário. Os cartões de cada dia (`DaySeat.managerCards`) somam em `ManagerRecord.cards { yellow, red }` (`addManagerCards`, no avanço do dia); o ranking de técnicos mostra a linha ao abrir o técnico. Só conta daqui para a frente (os cartões antigos não eram guardados).

@@ -138,6 +138,19 @@ describe("staff routes", () => {
     expect((await call("/renew", "POST", session.token, { memberId: candidate.id, years: 3 })).status).toBe(400);
     expect((await call("/renew", "POST", session.token, { memberId: candidate.id, years: 1 })).status).toBe(200);
 
+    // A full role: hiring with `replaceId` dismisses the current one in the same step (severance, back to the pool).
+    const assistantNow = areaView.members.find((m: any) => m.role === "assistant");
+    const assistants = await (await call("/pool?role=assistant", "GET", session.token)).json() as any;
+    const newAssistant = assistants.items[0].id as string;
+    expect((await call("/hire", "POST", session.token, { memberId: newAssistant, years: 1 })).status).toBe(409);
+    expect((await call("/hire", "POST", session.token, { memberId: newAssistant, years: 1, replaceId: medicId })).status).toBe(404);
+    const replaced = await call("/hire", "POST", session.token, { memberId: newAssistant, years: 1, replaceId: assistantNow.id });
+    expect(replaced.status).toBe(200);
+    const replacedBody = await replaced.json() as any;
+    expect(replacedBody.severance).toBeGreaterThan(0);
+    expect((replacedBody.members as { id: string; role: string }[]).filter((m) => m.role === "assistant").map((m) => m.id)).toEqual([newAssistant]);
+    expect((await saveService.getStaffPool(saveId, meta.currentDate!)).members.some((m) => m.id === assistantNow.id)).toBe(true);
+
     // Firing by role leaves it vacant (2 stars = the old rating 3).
     const fitnessFired = await (await call("/fire", "POST", session.token, { role: "fitness" })).json() as any;
     expect((fitnessFired.members as { role: string }[]).some((m) => m.role === "fitness")).toBe(false);
