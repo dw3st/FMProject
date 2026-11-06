@@ -95,3 +95,5 @@ A moldura nunca recarrega sozinha, então uma aba aberta antes de um deploy fica
 ## Rádio e rodapé na partida (8.8.10)
 
 Pedido do usuário. A partida (chrome `match`) mostra o rodapé (`StatusBar`); o meio dele é o encaixe `fm-match-radio` (`MATCH_RADIO_SLOT`, `World/frameHost.ts`), onde a partida no iframe põe a faixa de amigos jogando (`LiveRivalsStrip footer`) por um portal no documento pai (`frameRadioSlot`). O botão Amigos saiu da partida; abrir uma conversa pelo aviso do iframe vai por `postMessage` (`OPEN_CHAT_MESSAGE`) ao chat da moldura. `RadioPlayer` (rodapé, opção B do mock desde a 8.8.11: pílula com o nome e um equalizador tocando): Mundo Livre FM ao vivo (StreamTheWorld), nunca toca sozinho, volume em `fm.radio.volume`; como o rodapé não desmonta, toca de tela em tela. O crédito westlab.dev ficou só no login e na tela inicial.
+
+Desde a 8.8.16 a rádio tem mais de uma estação (`radioStations.ts`: Mundo Livre FM e Ouro Verde FM, Curitiba; streams https e abertos ao navegador): a seta dentro da pílula passa para a próxima (tocando, ela começa na hora), lembrada em `fm.radio.station`.

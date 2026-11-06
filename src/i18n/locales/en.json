@@ -6441,6 +6441,7 @@
     "play": "Listen to {{name}} live",
     "stop": "Stop {{name}}",
     "error": "The radio did not answer. Try again.",
-    "volume": "Radio volume"
+    "volume": "Radio volume",
+    "next": "Next station: {{name}}"
   }
 }

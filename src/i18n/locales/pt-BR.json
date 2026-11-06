@@ -6441,6 +6441,7 @@
     "play": "Ouvir a {{name}} ao vivo",
     "stop": "Parar a {{name}}",
     "error": "A rádio não respondeu. Tente de novo.",
-    "volume": "Volume da rádio"
+    "volume": "Volume da rádio",
+    "next": "Próxima rádio: {{name}}"
   }
 }

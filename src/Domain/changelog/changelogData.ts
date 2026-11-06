@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.16",
+    date: "2026-11-06",
+    time: "18:50",
+    items: [
+      {
+        pt: "Rádio: agora também a Ouro Verde FM. A seta ao lado do nome troca de rádio, e tocando a próxima começa na hora.",
+        en: "Radio: Ouro Verde FM is in too. The arrow next to the name switches station, and while playing the next one starts at once.",
+      },
+    ],
+  },
+  {
     version: "8.8.15",
     date: "2026-11-06",
     time: "18:40",
