@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.23",
+    date: "2026-11-06",
+    time: "12:43",
+    items: [
+      {
+        pt: "Formação: ao escolher uma posição, os reservas que jogam nela aparecem primeiro, depois pela nota.",
+        en: "Formation: when you pick a position, the substitutes who play there come first, then by rating.",
+      },
+      {
+        pt: "Elenco: o limite mostra também os pré-contratos assinados, que ocupam vaga. Um pré-contrato recusado por falta de vaga explica a conta.",
+        en: "Squad: the limit also shows the signed pre-contracts, which keep places. A pre-contract refused for lack of room explains the count.",
+      },
+    ],
+  },
+  {
     version: "4.47.22",
     date: "2026-11-06",
     time: "12:33",

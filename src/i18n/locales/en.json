@@ -2421,7 +2421,9 @@
     "tabDepth": "Depth",
     "tabRegistration": "Registration",
     "squadLimit": "Squad: {{n}}/{{max}}",
-    "squadLimitHint": "Squad limit: {{max}} players. Players loaned out also count when signing."
+    "squadLimitHint": "Squad limit: {{max}} players. Players loaned out and signed pre-contracts also count when signing.",
+    "arriving_one": "+{{count}} pre-contract",
+    "arriving_other": "+{{count}} pre-contracts"
   },
   "squadDepth": {
     "loading": "Loading depth...",
@@ -3739,7 +3741,9 @@
       "signedOn": "Pre-contract signed on {{date}}",
       "joins": "He joins at the end of his season, on {{date}}.",
       "terms_one": "{{wage}} a week · {{count}} season",
-      "terms_other": "{{wage}} a week · {{count}} seasons"
+      "terms_other": "{{wage}} a week · {{count}} seasons",
+      "squadFull_one": "No room for one more: the squad has {{roster}} and {{count}} signed pre-contract keeps places, the limit is {{max}}. Release, sell or loan someone first.",
+      "squadFull_other": "No room for one more: the squad has {{roster}} and {{count}} signed pre-contracts keep places, the limit is {{max}}. Release, sell or loan someone first."
     }
   },
   "morale": {

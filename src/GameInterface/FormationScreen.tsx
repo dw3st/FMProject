@@ -56,7 +56,6 @@ import {
   autoFillLineupWithFitness,
   withoutUnregisteredStarters,
   buildSlotAlignedLineup,
-  slotRoleFitRank,
   remapLineupToFormation,
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
@@ -91,6 +90,8 @@ const FORMATION_BLURBS: Record<string, string> = {
   "3-5-2": "Five midfielders dominate possession with wing-backs providing width.",
 };
 
+
+const APT_RANK: Record<Aptitude, number> = { natural: 3, apt: 2, training: 1, unsuitable: 0 };
 
 export function FormationScreen() {
   const { t, i18n } = useTranslation();
@@ -629,7 +630,8 @@ export function FormationScreen() {
   const benchOrderedForSlot =
     targetSlotRole && bench.length > 0
       ? [...bench].sort((a, b) => {
-          const fit = slotRoleFitRank(b, targetSlotRole) - slotRoleFitRank(a, targetSlotRole);
+          // Who suits the position first (natural, then adapted), then the rating there (tester report, 4.47.23).
+          const fit = APT_RANK[aptitudeFor(b, targetSlotRole)] - APT_RANK[aptitudeFor(a, targetSlotRole)];
           if (fit !== 0) return fit;
           return (
             slotValue(b, targetSlotRole) - slotValue(a, targetSlotRole)

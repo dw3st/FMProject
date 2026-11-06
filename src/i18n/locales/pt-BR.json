@@ -2421,7 +2421,9 @@
     "tabDepth": "Profundidade",
     "tabRegistration": "Inscritos",
     "squadLimit": "Elenco: {{n}}/{{max}}",
-    "squadLimitHint": "Limite do elenco: {{max}} jogadores. Os emprestados a outros clubes também contam para contratar."
+    "squadLimitHint": "Limite do elenco: {{max}} jogadores. Os emprestados a outros clubes e os pré-contratos assinados também contam para contratar.",
+    "arriving_one": "+{{count}} pré-contrato",
+    "arriving_other": "+{{count}} pré-contratos"
   },
   "squadDepth": {
     "loading": "Carregando profundidade...",
@@ -3739,7 +3741,9 @@
       "signedOn": "Pré-contrato assinado em {{date}}",
       "joins": "Ele chega no fim da temporada dele, em {{date}}.",
       "terms_one": "{{wage}} por semana · {{count}} temporada",
-      "terms_other": "{{wage}} por semana · {{count}} temporadas"
+      "terms_other": "{{wage}} por semana · {{count}} temporadas",
+      "squadFull_one": "Não cabe mais um: o elenco tem {{roster}} e {{count}} pré-contrato já assinado ocupa vaga, o limite é {{max}}. Dispense, venda ou empreste alguém antes.",
+      "squadFull_other": "Não cabe mais um: o elenco tem {{roster}} e {{count}} pré-contratos já assinados ocupam vaga, o limite é {{max}}. Dispense, venda ou empreste alguém antes."
     }
   },
   "morale": {

@@ -244,10 +244,14 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wage, years, bonus }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string } };
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string }; roster?: number; preContracts?: number; max?: number;
+      };
       if (!res.ok) {
         if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) setContractError(refusalText(body.error));
-        else setMessage(errorText(body.error));
+        else if (body.error === "squadFull" && body.preContracts) {
+          setMessage(t("negotiation.preContract.squadFull", { roster: body.roster, count: body.preContracts, max: body.max }));
+        } else setMessage(errorText(body.error));
         return;
       }
       if (body.accepted) {

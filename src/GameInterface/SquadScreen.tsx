@@ -38,6 +38,17 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
   const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
+  // Pre-contracts already signed: they keep places under the squad limit (tester report, 4.47.23).
+  const [arriving, setArriving] = useState(0);
+  useEffect(() => {
+    if (!session?.saveId || !mySquadId) return;
+    let alive = true;
+    void fetch(`/api/saves/${session.saveId}/pre-contracts`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: { toClubId?: string }[]) => { if (alive) setArriving(list.filter((p) => p.toClubId === mySquadId).length); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [session?.saveId, mySquadId]);
 
   const fetchSquadForRoute = useCallback(() => {
     if (!session) return;
@@ -118,6 +129,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
                   title={t("squadScreen.squadLimitHint", { max: HUMAN_MAX_SQUAD })}
                 >
                   {t("squadScreen.squadLimit", { n: squad.players.length, max: HUMAN_MAX_SQUAD })}
+                  {arriving > 0 && <span className="text-muted-foreground font-normal">{" · "}{t("squadScreen.arriving", { count: arriving })}</span>}
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>

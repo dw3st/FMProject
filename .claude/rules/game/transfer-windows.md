@@ -191,3 +191,5 @@ Pedido do usuário. A aba Minhas transferências mostra no topo os pré-contrato
 Report de tester. Cada bloco de `NegotiationOverview` é um cartão como Entradas e Saídas de Minhas transferências (ícone colorido, título, contagem); em duas colunas, com propostas entre técnicos, pré-contratos e emprestados na largura toda (`WIDE`).
 
 Posição e bandeira nos pré-contratos (4.47.21, report de tester): `GET /negotiation` acrescenta `position` (natural) e `nationality` a cada pré-contrato, lidos do clube de origem na hora.
+
+Limite e pré-contratos (4.47.23, report de tester): o topo do Elenco mostra "Elenco: 33/36 · +3 pré-contratos"; o pré-contrato recusado por `squadFull` devolve `roster`, `preContracts` e `max`, e a janela explica a conta.

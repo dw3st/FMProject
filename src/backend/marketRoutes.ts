@@ -100,7 +100,9 @@ export const marketRoutes = {
       if (signed.some((p) => p.playerId === playerId)) return json({ error: "alreadySigned" }, 409);
       // The human club's limit; only this club's pending pre-contracts count.
       const mine = signed.filter((p) => p.toClubId === human.id).length;
-      if ((await humanRosterSize(saveService, saveId, auth.seatId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);
+      const roster = await humanRosterSize(saveService, saveId, auth.seatId, human);
+      // The pre-contracts already signed keep their places (tester report, 4.47.23: the answer says so).
+      if (roster + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull", roster, preContracts: mine, max: HUMAN_MAX_SQUAD }, 409);
       const starLimit = await starLimitResponse(saveId, human, playerId);
       if (starLimit) return starLimit;
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
