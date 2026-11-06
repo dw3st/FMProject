@@ -330,6 +330,10 @@ export function StartScreen() {
         </button>
         <LanguageSwitch />
         <FriendsButton />
+        <span className="flex items-center gap-1 h-10">
+          {t("landing.developedBy")}
+          <a href="https://westlab.dev" target="_blank" rel="noopener" className="text-inherit underline-offset-4 hover:text-foreground hover:underline">westlab.dev</a>
+        </span>
         <div className="flex items-center gap-3">
           <button
             type="button"

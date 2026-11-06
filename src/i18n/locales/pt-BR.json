@@ -6435,5 +6435,12 @@
     "paused": "Pausado",
     "hide": "Esconder",
     "hideTitle": "Esconde este jogo até o próximo dia de jogos"
+  },
+  "radio": {
+    "play": "Ouvir a {{name}} ao vivo",
+    "stop": "Parar a {{name}}",
+    "error": "A rádio não respondeu. Tente de novo.",
+    "volume": "Volume da rádio",
+    "live": "Ao vivo"
   }
 }

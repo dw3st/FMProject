@@ -9,6 +9,8 @@ import { formatEuros } from "@/Domain/money";
 import { usePresence } from "@/GameInterface/usePresence";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { useSocial } from "@/GameInterface/Social/useSocial";
+import { MATCH_RADIO_SLOT } from "@/GameInterface/World/frameHost";
+import { RadioPlayer } from "@/GameInterface/Components/RadioPlayer";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 const ICON_BTN =
@@ -43,7 +45,7 @@ export function StatusBar({
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
     <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-6`}>
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6`}>
         <div className="flex items-center gap-7">
           <span className={ITEM} title={t("status.budget")}>
             <Icon name="finances" size={18} />
@@ -69,19 +71,11 @@ export function StatusBar({
             </span>
           )}
         </div>
-        {/* Owner's credit, required in the footer of every public project (global rule). */}
-        <span className="hidden md:inline text-sm text-muted-foreground whitespace-nowrap">
-          {t("landing.developedBy")}{" "}
-          <a
-            href="https://westlab.dev"
-            target="_blank"
-            rel="noopener"
-            className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            westlab.dev
-          </a>
-        </span>
+        {/* The live match draws its friends' radio here (in the frame); the owner's credit lives on the login and start
+            screens (user's choice, 8.8.10). */}
+        <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-x-auto overflow-y-visible" />
         <div className="flex items-center justify-end gap-4">
+          <RadioPlayer />
           <FriendsButton />
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
               Today's date lives in the top bar's day block. */}

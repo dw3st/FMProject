@@ -104,6 +104,9 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { useLiveRivals } from "@/GameInterface/World/useLiveRivals";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { LiveRivalsStrip } from "@/GameInterface/World/LiveRivalsStrip";
+import { frameRadioSlot } from "@/GameInterface/World/frameHost";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { createPortal } from "react-dom";
 import { MATCH_POPUPS_ID } from "@/GameInterface/Social/ChatPopups";
 import type { LivePhase } from "@/types/rivalsTypes";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
@@ -209,6 +212,9 @@ export function MatchScreen() {
   /** The user's club (the heading's "home/away" and the result). */
   const [myClubId, setMyClubId] = useState<string | undefined>();
   const matchHeadingText = useMatchHeading(useMemo(() => loadSession()?.saveId, []), matchFixture, myClubId);
+  // Star badges on the pitch (world top 25, in form, prodigy), the same stars as the squad list (8.8.10).
+  const starSession = useMemo(() => loadSession(), []);
+  const starPlayers = useStarPlayers(starSession?.saveId, starSession?.currentDate);
   /**
    * Live match between two managers (multiplayer part 7, `/match?h2h=1`): the server runs the match, the page draws
    * it and sends commands. Engine team A is the home side there; `mySide` is the user's (always A in a solo match).
@@ -455,6 +461,8 @@ export function MatchScreen() {
     return s?.groupAdvance && s.saveId && s.seatId ? { saveId: s.saveId, seatId: s.seatId } : null;
   }, []);
   const liveRivals = useLiveRivals(liveTarget);
+  // The game frame's footer, when this page runs inside it (8.8.10): the radio goes there and the toolbar loses Friends.
+  const [radioSlot] = useState(() => frameRadioSlot());
   const sendLiveRef = useRef(liveRivals.send);
   sendLiveRef.current = liveRivals.send;
   const liveFixtureRef = useRef<string | null>(null);
@@ -2077,15 +2085,20 @@ export function MatchScreen() {
       )}
 
       {/* The match being played here (vs another manager) is never shown as a friend's game. */}
-      {liveTarget && (
-        <LiveRivalsStrip
-          saveId={liveTarget.saveId}
-          live={liveRivals.live.filter((l) => l.fixtureId !== matchFixture?.id)}
-          highlight={liveRivals.highlight}
-          viewers={liveRivals.viewers}
-          excludeClubIds={matchFixture ? [matchFixture.home, matchFixture.away] : []}
-        />
-      )}
+      {/* Inside the game frame the radio goes in the frame's footer (8.8.10); on its own page, above the pitch. */}
+      {liveTarget && (() => {
+        const strip = (
+          <LiveRivalsStrip
+            saveId={liveTarget.saveId}
+            live={liveRivals.live.filter((l) => l.fixtureId !== matchFixture?.id)}
+            highlight={liveRivals.highlight}
+            viewers={liveRivals.viewers}
+            excludeClubIds={matchFixture ? [matchFixture.home, matchFixture.away] : []}
+            footer={!!radioSlot}
+          />
+        );
+        return radioSlot ? createPortal(strip, radioSlot) : strip;
+      })()}
       {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
       <div className="relative z-50">
         <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />
@@ -2181,6 +2194,7 @@ export function MatchScreen() {
                   coachCard={coachCard}
                   extras
                   staminaTeams={[mySide]}
+                  stars={starPlayers}
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id, ground: matchFixture.home } : null}
                   lighting={matchLightingProp}
                 />
@@ -2263,10 +2277,12 @@ export function MatchScreen() {
 
         {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
         <div className="w-64 shrink-0 flex flex-col min-h-0">
+          {(!radioSlot || isTester) && (
           <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
-            <FriendsButton variant="toolbar" />
+            {!radioSlot && <FriendsButton variant="toolbar" />}
             {isTester && <ReportButton onClick={handleOpenReport} iconOnly />}
           </div>
+          )}
           <div className="flex-1 min-h-0 flex">
         <MatchSummaryPanel
           managers={summaryManagers}

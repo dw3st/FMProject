@@ -126,8 +126,12 @@ function writeDock(dock: DockChat[]): void {
 
 /** Friends, chat windows and the socket of one game page (`.claude/rules/social.md`). */
 export function SocialProvider({
-  saveId, seatId = null, children,
-}: { saveId: string | null; seatId?: string | null; children: ReactNode }) {
+  saveId, seatId = null, children, hostOpenChat,
+}: {
+  saveId: string | null; seatId?: string | null; children: ReactNode;
+  /** Opens a chat somewhere else (the live match inside the frame hands it to the frame's chat, 8.8.10). */
+  hostOpenChat?: (room: string) => void;
+}) {
   const [me, setMe] = useState<SocialMe | null>(null);
   const [lists, setLists] = useState<FriendsResponse>(EMPTY_LISTS);
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -477,7 +481,10 @@ export function SocialProvider({
     [sendWs],
   );
 
-  const openChat = useCallback((room: string) => setDock((d) => openInDock(d, room)), []);
+  const openChat = useCallback(
+    (room: string) => (hostOpenChat ? hostOpenChat(room) : setDock((d) => openInDock(d, room))),
+    [hostOpenChat],
+  );
   const closeChat = useCallback((room: string) => setDock((d) => closeInDock(d, room)), []);
   const toggleChat = useCallback((room: string) => setDock((d) => toggleInDock(d, room)), []);
 

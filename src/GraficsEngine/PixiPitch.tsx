@@ -41,6 +41,8 @@ import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
+import { drawStarBadge, STAR_BADGE } from "@/GraficsEngine/starBadge";
+import type { StarKind } from "@/Domain/world/stars";
 import { ledLang, type LedLang } from "@/GraficsEngine/ledAds";
 import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, openWalkways, standCorners, standFootprint, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
 import i18n from "@/i18n/i18n";
@@ -521,6 +523,8 @@ interface Props {
   extras?: boolean;
   /** Teams whose players show the stamina bar (absent = both; the live match passes only the user's side). */
   staminaTeams?: TeamId[];
+  /** Special players by roster id: a star badge on their marker (`starBadge.ts`, 8.8.10). Read every frame. */
+  stars?: ReadonlyMap<string, StarKind>;
   /**
    * Remote mode (multiplayer part 7): the server runs the match. The pitch never simulates; it draws the state it
    * gets through `matchStateSync` (adopted as is) and blends the players and the ball between the last two position
@@ -623,6 +627,7 @@ export function PixiPitch({
   coachCard = null,
   extras = false,
   staminaTeams,
+  stars,
   remote = null,
   camera = "fixed",
   replay = false,
@@ -666,6 +671,10 @@ export function PixiPitch({
   const skipReplayFnRef          = useRef<(() => void) | null>(null);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
+  const starsRef                 = useRef(stars);
+  starsRef.current = stars;
+  /** The star drawn on each marker (engine id), so a badge is redrawn only when it changes. */
+  const starDrawnRef             = useRef(new Map<number, StarKind | null>());
   /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
   const redrawCrowdRef           = useRef<(() => void) | null>(null);
   /** Set by the Pixi setup: redraws the pitch surface and lines from `pitchRef`. */
@@ -1793,7 +1802,13 @@ export function PixiPitch({
         const lightShadow = new Graphics();
         lightShadow.label = "lightShadow";
         drawLightShadows(lightShadow, currentLight, markerR, mirrorRef.current);
-        marker.addChild(lightShadow, shadow, disc, ring, gloss, numTag, numText, cardBadge);
+        // Star badge (world top 25, in form, prodigy): top-left, drawn by the frame loop when the player has one.
+        const starBadge = new Graphics();
+        starBadge.label = "star";
+        starBadge.x = markerR * STAR_BADGE.X;
+        starBadge.y = markerR * STAR_BADGE.Y;
+        starDrawnRef.current.delete(player.id);
+        marker.addChild(lightShadow, shadow, disc, ring, gloss, numTag, numText, cardBadge, starBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -4116,6 +4131,14 @@ export function PixiPitch({
           }
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
+          const starG = g.getChildByLabel("star") as Graphics | null;
+          if (starG) {
+            const kind = starsRef.current?.get(player.rosterId) ?? null;
+            if (starDrawnRef.current.get(player.id) !== kind) {
+              drawStarBadge(starG, markerR, kind);
+              starDrawnRef.current.set(player.id, kind);
+            }
+          }
           const bodyC = g.getChildByLabel('body') as Container | null;
           if (bodyC) {
             // Figures or discs, switched live (4.41.19).

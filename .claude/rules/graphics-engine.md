@@ -540,3 +540,7 @@ Mock aprovado (opção C, concreto). Cada torre tem um mastro de concreto do pé
 ## Luz pela estrutura (8.7.21)
 
 Mock aprovado. `lightLook` (`src/Domain/matchday/stadiumLight.ts`, puro, com teste) sobre `PitchStadium.light` (`{ level, condition }`, do `match-setup` → `crowd.light`, `homeLight`: o item Estrutura e iluminação do mandante; sem itens, o tier, LOW 3 · MEDIUM 5 · HIGH 7 · ELITE 9; campo neutro 7). O nível dá a força (`gain` 0,6..1,12 sobre o brilho dos cantos e os fachos), a cor (`tint`, amarelada a branca) e uma escuridão extra à noite (`dark`, até 0,16 no nível 1). Abaixo de 40% de condição uma torre fica apagada (sem facho, sem brilho, canto escuro, painel apagado; sorteada pelo id do estádio) e as arquibancadas ganham manchas encardidas (sprite mascarado, sob os jogadores); abaixo de 15%, duas torres. Só desenho. `/test`: chips Light (low, top, worn, broken).
+
+## Estrela dos craques no campo (8.8.10)
+
+Mock aprovado (opção A, refinada). `starBadge.ts` (`STAR_BADGE`, `drawStarBadge`, com teste): moeda com borda de dois tons e estrela em relevo no canto de cima da ficha, na cor da estrela do jogador (ouro top 25 do mundo, azul em forma, verde promessa; `useStarPlayers`). Prop `stars` do `PixiPitch` (por `rosterId`), redesenhada só quando muda. Partida ao vivo e transmissão. Só desenho.

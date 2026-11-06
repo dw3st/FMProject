@@ -17,7 +17,9 @@ import type { LiveScoreView, RivalRow } from "@/types/rivalsTypes";
  * away order); not playing, their next match "Fabio · next [home] × [away] · 3 Jan". A friend's goal lights his
  * line for a few seconds with the scorer; a click opens the banter actions without pausing the match.
  */
-export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], excludeClubIds = [] }: {
+export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], excludeClubIds = [], footer = false }: {
+  /** In the game frame's footer (8.8.10): one line, and each friend's moments open above the bar. */
+  footer?: boolean;
   saveId: string;
   live: LiveScoreView[];
   highlight: Record<string, true>;
@@ -28,6 +30,8 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
 }) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState<string | null>(null);
+  // In the footer the bar clips what overflows: the moments open fixed, just above it, at the friend's line.
+  const [openLeft, setOpenLeft] = useState(0);
   const [rows, setRows] = useState<RivalRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   // Friends who are not playing right now still show their next match (report): reloaded every minute.
@@ -43,16 +47,16 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   // Kept while loading: the strip showing up later would push the pitch down.
   if (loaded && live.length === 0 && idle.length === 0 && viewers.length === 0) return null;
   return (
-    <div className="shrink-0 border-b border-border bg-card/60 px-4 py-1.5" aria-label={t("rivals.stripLabel")} role="region">
+    <div className={footer ? "h-full flex items-center" : "shrink-0 border-b border-border bg-card/60 px-4 py-1.5"} aria-label={t("rivals.stripLabel")} role="region">
       {/* The space on the right is always kept: someone joining or leaving never moves the strip or the pitch below (tester report). */}
-      <div className="relative max-w-7xl mx-auto">
-      {viewers.length > 0 && (
+      <div className={footer ? "flex items-center gap-4" : "relative max-w-7xl mx-auto"}>
+      {viewers.length > 0 && !footer && (
         <div role="status" title={viewers.join(", ")} className="absolute right-0 top-0 h-8 w-60 flex items-center justify-end gap-2 text-sm text-muted-foreground">
           <Icon name="eye" size={16} className="text-primary shrink-0" />
           <span className="truncate">{t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}</span>
         </div>
       )}
-      <ul className="m-0 p-0 pr-64 list-none flex flex-wrap items-center gap-x-4 gap-y-1">
+      <ul className={footer ? "m-0 p-0 list-none flex flex-nowrap items-center gap-x-4 whitespace-nowrap" : "m-0 p-0 pr-64 list-none flex flex-wrap items-center gap-x-4 gap-y-1"}>
         <li className={`flex items-center gap-1.5 ${live.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
           {live.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-destructive motion-safe:animate-pulse" aria-hidden="true" />}
           <Icon name="radio" size={16} />
@@ -65,7 +69,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
             <li key={l.seatId} className="relative">
               <button
                 type="button"
-                onClick={() => setOpen(open === l.seatId ? null : l.seatId)}
+                onClick={(e) => { setOpenLeft(e.currentTarget.getBoundingClientRect().left); setOpen(open === l.seatId ? null : l.seatId); }}
                 aria-expanded={open === l.seatId}
                 className={`flex items-center gap-1.5 min-h-8 px-2 rounded border-0 cursor-pointer text-sm tabular-nums transition-colors ${lit ? "bg-primary/15 text-primary" : "bg-transparent text-foreground hover:bg-secondary/40"}`}
               >
@@ -79,7 +83,10 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                 {lit && <span className="font-display font-bold uppercase tracking-[0.08em]">· {l.lastGoal?.scorer ? t("rivals.scorer", { name: l.lastGoal.scorer }) : t("rivals.goalShort")}</span>}
               </button>
               {open === l.seatId && (
-                <div className="absolute left-0 top-full mt-1 z-[60] w-[320px] rounded-md border border-border bg-card shadow-lg p-3 flex flex-col gap-3">
+                <div
+                  className={`${footer ? "fixed bottom-14" : "absolute left-0 top-full mt-1"} z-[60] w-[320px] rounded-md border border-border bg-card shadow-lg p-3 flex flex-col gap-3 whitespace-normal`}
+                  style={footer ? { left: Math.max(8, Math.min(openLeft, window.innerWidth - 328)) } : undefined}
+                >
                   <LiveMoments live={l} />
                   <div className="flex"><WatchButton live={l} saveId={saveId} /></div>
                   <div className="border-t border-border pt-2">
@@ -119,6 +126,12 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
           );
         })}
       </ul>
+      {footer && viewers.length > 0 && (
+        <span role="status" title={viewers.join(", ")} className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
+          <Icon name="eye" size={16} className="text-primary shrink-0" />
+          {t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}
+        </span>
+      )}
       </div>
     </div>
   );

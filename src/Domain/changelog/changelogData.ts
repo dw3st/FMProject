@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.10",
+    date: "2026-11-06",
+    time: "17:50",
+    items: [
+      {
+        pt: "Partida: os craques aparecem no campo com uma estrela no canto da ficha (ouro, azul ou verde, como no elenco).",
+        en: "Match: star players show a star on the corner of their marker (gold, blue or green, as in the squad).",
+      },
+      {
+        pt: "Rádio no rodapé: ouça a Mundo Livre FM ao vivo enquanto joga, inclusive durante a partida.",
+        en: "Radio in the footer: listen to Mundo Livre FM live while you play, during the match too.",
+      },
+      {
+        pt: "A partida ao vivo mostra o rodapé do jogo, com os amigos jogando ao lado da rádio. O botão Amigos saiu de dentro da partida: fica no rodapé.",
+        en: "The live match shows the game footer, with friends' live games next to the radio. The Friends button left the match screen: it is in the footer.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O aviso de avanço (Dia 6 de 6) não fica mais por cima da prévia da partida.",
+        en: "The advance notice (Day 6 of 6) no longer stays over the match preview.",
+      },
+    ],
+  },
+  {
     version: "8.8.9",
     date: "2026-11-06",
     time: "17:03",

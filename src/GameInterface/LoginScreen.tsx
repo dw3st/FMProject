@@ -139,8 +139,12 @@ export function LoginScreen() {
         )}
       </div>
 
-      <div className="absolute bottom-4 text-sm text-muted-foreground">
-        {t("common.version", { version: CURRENT_VERSION })}
+      <div className="absolute bottom-4 flex flex-wrap items-center justify-center gap-x-5 text-sm text-muted-foreground">
+        <span>{t("common.version", { version: CURRENT_VERSION })}</span>
+        <span>
+          {t("landing.developedBy")}{" "}
+          <a href="https://westlab.dev" target="_blank" rel="noopener" className="text-inherit underline-offset-4 hover:text-foreground hover:underline">westlab.dev</a>
+        </span>
       </div>
     </div>
   );

@@ -91,3 +91,7 @@ To swap icon libraries, change only `Icons.tsx`.
 ## Aviso de versão nova (8.8.8)
 
 A moldura nunca recarrega sozinha, então uma aba aberta antes de um deploy ficava com o código antigo (reports de correção que "não funcionou"). `useNewVersion` (`changelog/useNewVersion.ts`) pergunta `GET /api/version` a cada 5 minutos com a aba visível e quando ela volta; com uma versão diferente da do bundle, o `Layout` mostra o aviso "Saiu uma versão nova do jogo" com Recarregar. `ClubLogo` aceita `title` (nome no hover) onde o escudo aparece sem o nome.
+
+## Rádio e rodapé na partida (8.8.10)
+
+Pedido do usuário. A partida (chrome `match`) mostra o rodapé (`StatusBar`); o meio dele é o encaixe `fm-match-radio` (`MATCH_RADIO_SLOT`, `World/frameHost.ts`), onde a partida no iframe põe a faixa de amigos jogando (`LiveRivalsStrip footer`) por um portal no documento pai (`frameRadioSlot`). O botão Amigos saiu da partida; abrir uma conversa pelo aviso do iframe vai por `postMessage` (`OPEN_CHAT_MESSAGE`) ao chat da moldura. `RadioPlayer` (rodapé, opção A do mock): Mundo Livre FM ao vivo (StreamTheWorld), nunca toca sozinho, volume em `fm.radio.volume`; como o rodapé não desmonta, toca de tela em tela. O crédito westlab.dev ficou só no login e na tela inicial.

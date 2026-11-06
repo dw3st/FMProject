@@ -20,6 +20,8 @@ import { SocialProvider } from "@/GameInterface/Social/useSocial";
 import { FriendsPanel } from "@/GameInterface/Social/FriendsPanel";
 import { ChatDock } from "@/GameInterface/Social/ChatDock";
 import { WatchWindowHost } from "@/GameInterface/Watch/WatchWindowHost";
+import { useSocial } from "@/GameInterface/Social/useSocial";
+import { OPEN_CHAT_MESSAGE } from "@/GameInterface/World/frameHost";
 import { ReadyControl } from "@/GameInterface/World/ReadyControl";
 import { GroupAdvanceProvider } from "@/GameInterface/World/GroupAdvanceProvider";
 import { worldRedirect } from "@/GameInterface/World/worldNav";
@@ -83,13 +85,14 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           dayAction={!lobby && session?.groupAdvance ? <ReadyControl publicWorld={save?.world?.kind === "public"} /> : undefined}
         />}
 
-        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : "h-full overflow-y-auto flex flex-col"}>
+        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 overflow-hidden flex flex-col" : "h-full overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}
         </main>
 
-        {chrome === "full" && <StatusBar
+        {/* The live match keeps the footer (8.8.10): its friends' radio goes in it, the friends and chat open from it. */}
+        {chrome !== "bare" && <StatusBar
           onOpenInbox={() => setIsInboxOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChangelog={openChangelog}
@@ -107,10 +110,10 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           </div>
         )}
 
-        {chrome !== "match" && (
+        <FriendsPanel />
+        <ChatDock />
+        {chrome === "match" ? <MatchChatBridge /> : (
           <>
-            <FriendsPanel />
-            <ChatDock />
             <ChatPopups />
             <WatchWindowHost />
           </>
@@ -150,4 +153,19 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
       </GroupAdvanceProvider>
     </SocialProvider>
   );
+}
+
+/** The live match page (in an iframe of the frame) asks to open a chat: it opens in the frame's chat windows (8.8.10). */
+function MatchChatBridge() {
+  const { openChat } = useSocial();
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const data = e.data as { type?: unknown; room?: unknown } | null;
+      if (data?.type === OPEN_CHAT_MESSAGE && typeof data.room === "string" && data.room.length <= 120) openChat(data.room);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, [openChat]);
+  return null;
 }

@@ -6435,5 +6435,12 @@
     "paused": "Paused",
     "hide": "Hide",
     "hideTitle": "Hides this match until the next match day"
+  },
+  "radio": {
+    "play": "Listen to {{name}} live",
+    "stop": "Stop {{name}}",
+    "error": "The radio did not answer. Try again.",
+    "volume": "Radio volume",
+    "live": "Live"
   }
 }

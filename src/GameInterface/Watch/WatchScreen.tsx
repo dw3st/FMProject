@@ -1,4 +1,5 @@
 import { LiveCompetitionLine } from "@/GameInterface/World/LiveCompetitionLine";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { useTranslation } from "react-i18next";
@@ -62,6 +63,8 @@ export function WatchBroadcast({ saveId, seatId, onClose, onChat, embed = false,
 }) {
   const { t } = useTranslation();
   const target = useMemo(() => ({ saveId, seatId }), [saveId, seatId]);
+  // The same star badges as on the player's own pitch (8.8.10): the stars of the world.
+  const starPlayers = useStarPlayers(saveId, null);
   const w = useWatchSocket(target, follow);
   // The friend's nickname, kept between his matches for the waiting line.
   const nickRef = useRef<string | null>(null);
@@ -177,6 +180,7 @@ export function WatchBroadcast({ saveId, seatId, onClose, onChat, embed = false,
               mirror={info.mirror}
               extras
               staminaTeams={[]}
+              stars={starPlayers}
               coachCard={coachCard}
               {...pitchProps}
             />

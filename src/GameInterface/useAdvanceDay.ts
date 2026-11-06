@@ -198,6 +198,9 @@ export function useAdvanceDay() {
         setAdvancing(false);
         return;
       }
+      // The frame stays mounted (8.8): close the panel, or "Day 6 of 6" stays over the preview (8.8.10).
+      setFastForward(null);
+      setAdvancing(false);
       openMatchPreview();
       return;
     }
