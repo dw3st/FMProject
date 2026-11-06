@@ -603,6 +603,8 @@
     "matchCameraFollow": "Segue a bola",
     "goalReplay": "Replay do gol",
     "goalReplayDescription": "Depois de cada gol, os últimos segundos passam de novo em câmera lenta.",
+    "matchInFrame": "Partida dentro do jogo",
+    "matchInFrameDescription": "Ligado, a partida abre sem sair da tela do jogo. Desligado, abre numa página própria, como antes.",
     "matchSound": "Som da partida",
     "matchSoundDescription": "Torcida, apito, chute e grito de gol. Começa no primeiro clique na tela da partida.",
     "readySound": "Som de pronto",

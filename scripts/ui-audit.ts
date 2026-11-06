@@ -32,6 +32,7 @@
 import ts from "typescript";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { APP_ROUTES } from "@/GameInterface/router/appRoutes";
 
 export type Severity = "hard" | "soft";
 
@@ -397,6 +398,8 @@ const SCREEN_WIDTH_WRAPPER = /(^|\s)max-w-(3xl|4xl|5xl|6xl|7xl|screen-\w+|\[\d+p
  * Each must use `<ScreenContainer>` (in the screen file or around it in the entry) and must not
  * re-create its own `max-w-* mx-auto` page wrapper.
  */
+const BARE_SCREENS = new Set<string>(APP_ROUTES.filter((r) => r.chrome && r.chrome !== "full").map((r) => r.screen));
+
 export function auditScreens(root = process.cwd()): Finding[] {
   const out: Finding[] = [];
   let pages: string[] = [];
@@ -412,7 +415,9 @@ export function auditScreens(root = process.cwd()): Finding[] {
   try {
     const shell = readFileSync(join(root, shellRel), "utf8");
     for (const line of shell.split("\n")) {
-      if (/^\s*case\s+"/.test(line)) units.push({ entryRel: shellRel, entry: `<Layout>${line}`, imports: shell });
+      const screen = /^\s*case\s+"(\w+)"/.exec(line)?.[1];
+      // Full-screen routes (preview, result, the match iframe) draw without the frame bars, like the old pages.
+      if (screen && !BARE_SCREENS.has(screen)) units.push({ entryRel: shellRel, entry: `<Layout>${line}`, imports: shell });
     }
   } catch { /* no shell */ }
   for (const page of pages) {

@@ -29,13 +29,30 @@ function emit() {
 /** Called once by the frame: from then on frame paths change without a page load. */
 export function activateFrame(): () => void {
   frameActive = true;
+  // The live match runs in an iframe of the frame (same origin): its navigations go to the frame.
+  (window as unknown as FrameWindow).__fmNavigate = navigate;
   current = read();
   const onPop = () => { counter++; emit(); };
   window.addEventListener("popstate", onPop);
   return () => {
     frameActive = false;
+    delete (window as unknown as FrameWindow).__fmNavigate;
     window.removeEventListener("popstate", onPop);
   };
+}
+
+interface FrameWindow {
+  __fmNavigate?: (to: string, opts?: { replace?: boolean }) => void;
+}
+
+/** The frame's navigate when this page runs in an iframe of the frame (the live match), else null. */
+function parentFrameNavigate(): FrameWindow["__fmNavigate"] | null {
+  try {
+    if (window.parent === window) return null;
+    return (window.parent as unknown as FrameWindow).__fmNavigate ?? null;
+  } catch {
+    return null; // another origin
+  }
 }
 
 export function isFrameActive(): boolean {
@@ -49,6 +66,8 @@ export function navigate(to: string, opts: { replace?: boolean } = {}): void {
   try { url = new URL(to, window.location.origin); } catch { return; }
   const internal = frameActive && url.origin === window.location.origin && !!matchAppPath(url.pathname);
   if (!internal) {
+    const parentNav = frameActive ? null : parentFrameNavigate();
+    if (parentNav) { parentNav(to, opts); return; }
     if (opts.replace) window.location.replace(to);
     else window.location.href = to;
     return;

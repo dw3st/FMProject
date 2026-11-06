@@ -23,12 +23,15 @@ import { WorldScreen } from "@/GameInterface/World/WorldScreen";
 import { SeasonEndScreen } from "@/GameInterface/SeasonEndScreen";
 import { MatchRoomScreen } from "@/GameInterface/H2H/MatchRoomScreen";
 import { ComingSoonScreen } from "@/GameInterface/ComingSoonScreen";
+import { MatchPreviewScreen } from "@/GameInterface/MatchPreviewScreen";
+import { MatchResultScreen } from "@/GameInterface/MatchResultScreen";
+import { MatchFrame } from "@/GameInterface/MatchFrame";
 
 // The fixed frame (`docs/superpowers/specs/2026-11-06-spa-shell-design.md`): the bars, friends, chat and the watch
 // window stay mounted; only the screen changes. Every navigation remounts the screen (key), so a screen that reads the
 // URL when it mounts behaves as after a page load.
 
-function screenFor({ route, params }: RouteMatch): ReactNode {
+function screenFor({ route, params }: RouteMatch, search: string): ReactNode {
   switch (route.screen) {
     case "dashboard": return <DashboardScreen />;
     case "squad": return <SquadScreen league={params.league!} club={params.club!} />;
@@ -49,6 +52,9 @@ function screenFor({ route, params }: RouteMatch): ReactNode {
     case "seasonEnd": return <SeasonEndScreen />;
     case "matchRoom": return <MatchRoomScreen />;
     case "comingSoon": return <ComingSoonScreen />;
+    case "matchPreview": return <MatchPreviewScreen />;
+    case "matchResult": return <MatchResultScreen />;
+    case "match": return <MatchFrame search={search} />;
   }
 }
 
@@ -91,9 +97,9 @@ export function AppShell() {
   }
 
   return (
-    <Layout>
+    <Layout chrome={match.route.chrome ?? "full"}>
       <Fragment key={`${route.key}:${route.pathname}${route.search}`}>
-        {screenFor(match)}
+        {screenFor(match, route.search)}
       </Fragment>
     </Layout>
   );

@@ -1,17 +1,25 @@
 // The screens that live inside the fixed frame (single page, `docs/superpowers/specs/2026-11-06-spa-shell-design.md`).
-// Pure: no React, no DOM. Every other path (landing, login, new game, match, preview, result, watch, fired) is a page
+// Pure: no React, no DOM. Every other path (landing, login, new game, watch, fired, the live match page `/match-live`) is a page
 // of its own and is reached by a normal page load.
 
 export type AppScreen =
   | "dashboard" | "squad" | "player" | "formation" | "club" | "development" | "finances" | "staff"
   | "leagues" | "transfers" | "scout" | "stats" | "inbox" | "achievements" | "news" | "world"
-  | "seasonEnd" | "matchRoom" | "comingSoon";
+  | "seasonEnd" | "matchRoom" | "comingSoon" | "matchPreview" | "matchResult" | "match";
+
+/**
+ * How the frame draws a screen: `full` with the top and bottom bars; `bare` on the whole screen (preview, result);
+ * `match` on the whole screen with the live match in an iframe, which brings its own friends and chat.
+ */
+export type AppChrome = "full" | "bare" | "match";
 
 export interface AppRoute {
   pattern: string;
   screen: AppScreen;
   /** Browser tab title (the old pages' `<title>`). */
   title: string;
+  /** Absent = `full`. */
+  chrome?: AppChrome;
 }
 
 export const APP_ROUTES: readonly AppRoute[] = [
@@ -35,6 +43,9 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { pattern: "/season-end", screen: "seasonEnd", title: "FMProject - Season End" },
   { pattern: "/match-room", screen: "matchRoom", title: "FMProject - Match Room" },
   { pattern: "/tactics", screen: "comingSoon", title: "FMProject - Coming Soon" },
+  { pattern: "/match-preview", screen: "matchPreview", title: "FMProject - Match Preview", chrome: "bare" },
+  { pattern: "/match-result", screen: "matchResult", title: "FMProject - Match Result", chrome: "bare" },
+  { pattern: "/match", screen: "match", title: "FMProject - Match", chrome: "match" },
 ];
 
 export interface RouteMatch {

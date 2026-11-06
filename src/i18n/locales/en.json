@@ -603,6 +603,8 @@
     "matchCameraFollow": "Follows the ball",
     "goalReplay": "Goal replay",
     "goalReplayDescription": "After every goal, the last seconds play again in slow motion.",
+    "matchInFrame": "Match inside the game",
+    "matchInFrameDescription": "On, the match opens without leaving the game screen. Off, it opens on a page of its own, as before.",
     "matchSound": "Match sound",
     "matchSoundDescription": "Crowd, whistle, ball strikes and the goal roar. It starts on your first click on the match screen.",
     "readySound": "Ready sound",

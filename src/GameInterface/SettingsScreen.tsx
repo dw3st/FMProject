@@ -9,7 +9,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound } from "@/GameInterface/artPrefs";
 import { playReadySound } from "@/GameInterface/readySound";
 import { disableTurnNotification, enableTurnNotification, readTurnNotification, turnNotificationSupported } from "@/GameInterface/World/turnNotice";
-import { readGoalReplay, readMatchCamera, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readMatchInFrame, writeMatchInFrame, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -25,6 +25,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [newVisual, setNewVisual] = useState(readNewVisual);
   const [matchCamera, setMatchCamera] = useState(readMatchCamera);
   const [goalReplay, setGoalReplay] = useState(readGoalReplay);
+  const [matchInFrame, setMatchInFrame] = useState(readMatchInFrame);
   const [matchSound, setMatchSound] = useState(readMatchSound);
   const [readySound, setReadySound] = useState(readReadySound);
   const [turnNotification, setTurnNotification] = useState(readTurnNotification);
@@ -110,6 +111,16 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.goalReplayDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.matchInFrame")}</div>
+          <OptionChips
+            value={matchInFrame ? "on" : "off"}
+            onChange={(k) => { const on = k === "on"; setMatchInFrame(on); writeMatchInFrame(on); }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.matchInFrameDescription")}</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2">

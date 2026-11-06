@@ -12,9 +12,7 @@ import matchPage from "./pages/match/index.html";
 import newGamePage from "./pages/new-game/index.html";
 import joinPage from "./pages/join/index.html";
 import firedPage from "./pages/fired/index.html";
-import matchPreviewPage from "./pages/match-preview/index.html";
 import watchPage from "./pages/watch/index.html";
-import matchResultPage from "./pages/match-result/index.html";
 
 const server = serve({
   routes: {
@@ -24,7 +22,9 @@ const server = serve({
     "/new-game": newGamePage,
     "/join/:code": joinPage,
     "/dashboard": appPage,
-    "/match": matchPage,
+    "/match": appPage,
+    // The live match page itself: the frame opens it in an iframe (spa-shell phase 2).
+    "/match-live": matchPage,
     "/scout": appPage,
     "/transfers": appPage,
     "/inbox": appPage,
@@ -38,10 +38,10 @@ const server = serve({
 
     "/tactics": appPage,
     "/formation": appPage,
-    "/match-preview": matchPreviewPage,
+    "/match-preview": appPage,
     "/match-room": appPage,
     "/watch": watchPage,
-    "/match-result": matchResultPage,
+    "/match-result": appPage,
     "/development": appPage,
     "/finances": appPage,
     "/club": appPage,

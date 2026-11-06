@@ -198,3 +198,22 @@ export function writeMatchSpeed(v: number): void {
     // no storage: 1x next time
   }
 }
+
+/** The live match inside the game frame (spa-shell phase 2): on by default; off opens the match page on its own. */
+const MATCH_IN_FRAME_KEY = "fm.match.inFrame";
+
+export function readMatchInFrame(): boolean {
+  try {
+    return localStorage.getItem(MATCH_IN_FRAME_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function writeMatchInFrame(on: boolean): void {
+  try {
+    localStorage.setItem(MATCH_IN_FRAME_KEY, on ? "1" : "0");
+  } catch {
+    // no storage: the default stays
+  }
+}

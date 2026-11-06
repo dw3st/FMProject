@@ -26,7 +26,11 @@ import { navigate, useRoute } from "@/GameInterface/router/navigation";
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world"];
 
-export function Layout({ children }: { children: ReactNode }) {
+/**
+ * `chrome` (spa-shell phase 2): `full` draws the bars; `bare` puts the screen on the whole page (preview, result);
+ * `match` also leaves friends and chat to the live match iframe, which has its own.
+ */
+export function Layout({ children, chrome = "full" }: { children: ReactNode; chrome?: "full" | "bare" | "match" }) {
   const { t } = useTranslation();
   const { session, squad, save } = useGameSave();
   const { pathname } = useRoute();
@@ -68,21 +72,21 @@ export function Layout({ children }: { children: ReactNode }) {
     <SocialProvider saveId={session?.saveId ?? null} seatId={session?.seatId ?? null}>
       <GroupAdvanceProvider leagues={leagues} mySquadId={mySquadId}>
       <div className="h-screen overflow-hidden bg-background">
-        <TopNavigation
+        {chrome === "full" && <TopNavigation
           onAdvanceDay={lobby || session?.groupAdvance ? undefined : handleAdvanceDay}
           onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
           dayAction={!lobby && session?.groupAdvance ? <ReadyControl publicWorld={save?.world?.kind === "public"} /> : undefined}
-        />
+        />}
 
-        <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
+        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : "h-full overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}
         </main>
 
-        <StatusBar
+        {chrome === "full" && <StatusBar
           onOpenInbox={() => setIsInboxOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChangelog={openChangelog}
@@ -91,12 +95,16 @@ export function Layout({ children }: { children: ReactNode }) {
               ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
               : null
           }
-        />
+        />}
 
-        <FriendsPanel />
-        <ChatDock />
-        <ChatPopups />
-        <WatchWindowHost />
+        {chrome !== "match" && (
+          <>
+            <FriendsPanel />
+            <ChatDock />
+            <ChatPopups />
+            <WatchWindowHost />
+          </>
+        )}
 
         <Modal
           open={isInboxOpen}

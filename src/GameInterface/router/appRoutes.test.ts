@@ -17,9 +17,16 @@ describe("matchAppPath", () => {
   });
 
   test("pages of their own are not frame routes", () => {
-    for (const p of ["/", "/login", "/start", "/new-game", "/join/AB", "/match", "/match-preview", "/match-result", "/watch", "/fired", "/api/leagues", "/squad/a", "/dashboardx"]) {
+    for (const p of ["/", "/login", "/start", "/new-game", "/join/AB", "/match-live", "/watch", "/fired", "/api/leagues", "/squad/a", "/dashboardx"]) {
       expect(matchAppPath(p)).toBeNull();
     }
+  });
+
+  test("the match screens draw without the bars", () => {
+    expect(matchAppPath("/dashboard")?.route.chrome).toBeUndefined();
+    expect(matchAppPath("/match-preview")?.route.chrome).toBe("bare");
+    expect(matchAppPath("/match-result")?.route.chrome).toBe("bare");
+    expect(matchAppPath("/match")?.route.chrome).toBe("match");
   });
 
   test("a broken escape is not a route", () => {
@@ -35,7 +42,8 @@ describe("appTarget", () => {
 
   test("leaves other origins and other pages to the browser", () => {
     expect(appTarget("https://westlab.dev/", ORIGIN)).toBeNull();
-    expect(appTarget("/match-preview", ORIGIN)).toBeNull();
+    expect(appTarget("/match-live", ORIGIN)).toBeNull();
+    expect(appTarget("/match-preview", ORIGIN)).toBe("/match-preview");
     expect(appTarget("mailto:x@y.z", ORIGIN)).toBeNull();
   });
 });
