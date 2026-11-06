@@ -16,7 +16,7 @@ import type { SeasonNotice } from "@/GameInterface/useAdvanceDay";
 import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 import { RENEWAL_URL } from "@/GameInterface/useAdvanceDay";
 import type { LeagueData } from "@/types/playerTypes";
-import { navigate } from "@/GameInterface/router/navigation";
+import { navigate, useRoute } from "@/GameInterface/router/navigation";
 
 export interface GroupAdvanceContextValue {
   enabled: boolean;
@@ -109,6 +109,13 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
   useEffect(() => {
     void refresh().then(() => showSummary());
   }, [refresh, showSummary]);
+
+  // The provider lives in the fixed frame (8.8): a summary held back off the dashboard shows when he gets there.
+  const { pathname } = useRoute();
+  const onDashboard = isDashboardPath(pathname);
+  useEffect(() => {
+    if (onDashboard) void showSummary();
+  }, [onDashboard, showSummary]);
 
   useEffect(() => {
     if (!view) return;

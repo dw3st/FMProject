@@ -296,9 +296,15 @@ describe("finance prizes — national cup runner-up (FA Cup final)", () => {
         finalAway = f.away;
         break;
       }
-      await saveService.updateMeta(saveId, { currentDate: stage.date });
-      const outcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
-      expect(outcome.ok).toBe(true);
+      // Every date the stage is played on: a tie can move off the stage date when it clashes with a continental
+      // game of the same club (8.6.4, `rescheduling.md`).
+      const round = await saveService.getRound(saveId, "cup_england", stage.round);
+      const dates = [...new Set([stage.date, ...(round?.fixtures ?? []).map((f) => f.date)])].sort();
+      for (const date of dates) {
+        await saveService.updateMeta(saveId, { currentDate: date });
+        const outcome = await advanceOneDay(saveService, saveId, {}, { marketFrozen: true });
+        expect(outcome.ok).toBe(true);
+      }
     }
     expect(finalHome).toBeTruthy();
     expect(finalAway).toBeTruthy();

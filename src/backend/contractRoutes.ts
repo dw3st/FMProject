@@ -296,6 +296,10 @@ export const contractRoutes = {
       if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
       const offered = typeof bonus === "number" ? Math.round(bonus) : 0;
       if (offered < free.ask) return Response.json({ error: "lowBonus", demand: check.demand, bonusAsk: free.ask }, { status: 400 });
+      // Paid now from the club's balance, like a fee: never above what the club has (code review 8.8.9).
+      if (offered > 0 && (squad.finances?.budget ?? 0) < offered) {
+        return Response.json({ error: "noMoney", demand: check.demand, bonusAsk: free.ask }, { status: 409 });
+      }
       if (free.rivals.length > 0) {
         const prestige = (await prestigeOf(saveService, saveId, date, [squad.id])).get(squad.id) ?? 0.5;
         const rival = preferredRival({

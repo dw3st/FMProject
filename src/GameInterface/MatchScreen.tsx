@@ -2001,11 +2001,16 @@ export function MatchScreen() {
               active={mentality}
               onChange={(m) => (managerOut ? orderMentality(m as Mentality) : handleMentalityChange(m as Mentality))}
             />
-            {complaint && !managerOut && !h2hMode && (
+            {!managerOut && !h2hMode && (
+              // Its place is always kept (tester report, 8.8.9: popping in, it pushed "Substitutions" aside and a click
+              // meant for it complained, red card included).
               <button
                 type="button"
                 onClick={handleComplain}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-chart-4/60 bg-chart-4/15 text-chart-4 font-semibold text-sm cursor-pointer hover:bg-chart-4/25"
+                disabled={!complaint}
+                aria-hidden={!complaint}
+                tabIndex={complaint ? 0 : -1}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-chart-4/60 bg-chart-4/15 text-chart-4 font-semibold text-sm cursor-pointer hover:bg-chart-4/25 ${complaint ? "" : "invisible"}`}
               >
                 <Icon name="message-square" className="w-4 h-4" />
                 {t("complaint.button")}

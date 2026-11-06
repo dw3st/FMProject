@@ -3739,6 +3739,9 @@ export const advanceDayRoutes = {
     if (auth instanceof Response) return auth;
     const body = (await req.json().catch(() => null)) as { eve?: string } | null;
     if (body?.eve !== "rest" && body?.eve !== "training") return Response.json({ error: "eve must be 'rest' or 'training'" }, { status: 400 });
+    const eve = body.eve;
+    // Read-modify-write of the seat's rest days: under the save lock, like the day itself (a rollover seeds them).
+    return withSaveLock(saveId, async () => {
     const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
@@ -3751,9 +3754,10 @@ export const advanceDayRoutes = {
         if (!f.played && (f.home === club || f.away === club)) dates.push(f.date);
       }
     }
-    const restDays = applyMatchEve(meta.restDays ?? [], dates, meta.currentDate ?? "", body.eve);
-    await saveService.updateSeat(saveId, auth.seatId, { restDays, matchEve: body.eve });
-    return Response.json({ restDays, matchEve: body.eve });
+    const restDays = applyMatchEve(meta.restDays ?? [], dates, meta.currentDate ?? "", eve);
+    await saveService.updateSeat(saveId, auth.seatId, { restDays, matchEve: eve });
+    return Response.json({ restDays, matchEve: eve });
+    });
   },
 
   "/api/saves/:saveId/day-type/:date": async (
@@ -3769,15 +3773,18 @@ export const advanceDayRoutes = {
     if (body.type !== "training" && body.type !== "rest") {
       return Response.json({ error: "type must be 'training' or 'rest'" }, { status: 400 });
     }
-    // The seat's own rest days (`.claude/rules/game/multiplayer.md`).
-    const seat = await saveService.getSeat(saveId!, auth.seatId);
-    if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
-    const current = new Set(seat.restDays ?? []);
-    if (body.type === "rest") current.add(date!);
-    else current.delete(date!);
-    const restDays = Array.from(current).sort();
-    await saveService.updateSeat(saveId!, auth.seatId, { restDays });
-    return Response.json({ restDays });
+    const type = body.type;
+    // The seat's own rest days (`.claude/rules/game/multiplayer.md`), read and written under the save lock.
+    return withSaveLock(saveId!, async () => {
+      const seat = await saveService.getSeat(saveId!, auth.seatId);
+      if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+      const current = new Set(seat.restDays ?? []);
+      if (type === "rest") current.add(date!);
+      else current.delete(date!);
+      const restDays = Array.from(current).sort();
+      await saveService.updateSeat(saveId!, auth.seatId, { restDays });
+      return Response.json({ restDays });
+    });
   },
 };
 

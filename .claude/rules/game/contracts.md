@@ -157,3 +157,7 @@ Report do usuário, opção C do mock. Depois de pedir a renovação na ficha, a
 ## Colocar à venda na renovação (8.8.2)
 
 Report de tester. A janela de renovação (`ContractOfferModal`, `onListForSale`) tem "Colocar à venda": fecha a renovação e abre o preço pedido da ficha (`ListToggles`, `priceRequest`).
+
+## Renovar pelo Elenco (8.8.9)
+
+Report de tester. O botão Renovar da tabela do Elenco abre a `ContractOfferModal` ali mesmo (e a promessa de renovação de uma conversa também), sem ir à ficha.

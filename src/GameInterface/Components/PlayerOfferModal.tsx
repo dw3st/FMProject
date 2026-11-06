@@ -248,7 +248,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string }; roster?: number; preContracts?: number; max?: number;
       };
       if (!res.ok) {
-        if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities", "noMoney"].includes(body.error)) setContractError(refusalText(body.error));
         else if (body.error === "squadFull" && body.preContracts) {
           setMessage(t("negotiation.preContract.squadFull", { roster: body.roster, count: body.preContracts, max: body.max }));
         } else setMessage(errorText(body.error));

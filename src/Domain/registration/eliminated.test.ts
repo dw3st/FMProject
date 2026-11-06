@@ -25,8 +25,9 @@ describe("outOfCompetition (4.47.19)", () => {
     expect(outOfCompetition(f, "a", null)).toBe(true);
     expect(outOfCompetition(f, "c", null)).toBe(true);
   });
-  test("the competition is over once it has a champion", () => {
+  test("once it has a champion, everyone but the champion is out", () => {
     const f = [fx({ knockout: true, played: true, result: { home: 1, away: 0 } })];
-    expect(outOfCompetition(f, "a", "a")).toBe(true);
+    expect(outOfCompetition(f, "a", "a")).toBe(false);
+    expect(outOfCompetition(f, "b", "a")).toBe(true);
   });
 });

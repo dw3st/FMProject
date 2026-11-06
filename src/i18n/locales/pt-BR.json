@@ -3281,7 +3281,8 @@
       "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
       "poorFacilities": "Ambicioso demais para um CT neste estado: recusa.",
       "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
-      "lowBonus": "As luvas estão abaixo do que ele pede."
+      "lowBonus": "As luvas estão abaixo do que ele pede.",
+      "noMoney": "O saldo do clube não cobre as luvas."
     },
     "result": {
       "renewed": "Renovou",

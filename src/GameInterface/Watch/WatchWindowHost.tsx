@@ -54,7 +54,17 @@ function popOut(saveId: string, seatId: string): void {
 export function WatchWindowHost() {
   const { t } = useTranslation();
   const target = useSyncExternalStore(subscribeWatchTarget, watchTarget, () => null);
-  const { openChat } = useSocial();
+  const { openChat, subscribe } = useSocial();
+
+  // A window opened by itself closes when the friend's match is over, on any screen (code review 8.8.9: only the
+  // dashboard checked, but the window lives in the fixed frame).
+  useEffect(() => {
+    if (!target?.auto) return;
+    return subscribe((event) => {
+      if (event.type !== "friend_live" || event.saveId !== target.saveId || event.seatId !== target.seatId) return;
+      if (!event.live || (event.live.status !== "live" && event.live.status !== "half")) close();
+    });
+  }, [target, subscribe]);
 
   useEffect(() => {
     if (!target) return;

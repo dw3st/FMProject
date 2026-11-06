@@ -6,6 +6,7 @@ import { contractRenewalDue } from "@/Domain/contracts/contracts";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { useState, useMemo, useEffect } from "react";
 import { AskingPriceModal } from "@/GameInterface/Negotiation/AskingPriceModal";
+import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import { formatFee } from "@/Domain/money";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
@@ -58,6 +59,8 @@ export function SquadRosterTable({
   const { currentDate, session, refresh } = useGameSave();
   const [talkWith, setTalkWith] = useState<DisplayPlayer | null>(null);
   const [selling, setSelling] = useState<DisplayPlayer | null>(null);
+  // Renewal opened right here (tester report, 8.8.9): no trip to the player page.
+  const [renewing, setRenewing] = useState<DisplayPlayer | null>(null);
   const [sellList, setSellList] = useState<SellCandidate[]>([]);
   const saleOf = (id: string) => sellList.find((c) => c.playerId === id);
   // Same star index as the player profile (`useStarPlayers`) — the list used to show none.
@@ -318,15 +321,15 @@ export function SquadRosterTable({
                 </button>
               )}
               {player.renewDue ? (
-                <a
-                  href={`${playerDetailHref(player)}?action=renew`}
+                <button
+                  type="button"
                   title={t("dashboard.squadRosterTable.renewDue", { date: player.contractEnd ? formatGameDate(player.contractEnd, i18n.language) : "" })}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setRenewing(player); }}
                   aria-label={t("contracts.renew")}
-                  className={`flex items-center justify-center w-9 h-8 border rounded-lg no-underline transition-all ${ATTENTION_BUTTON}`}
+                  className={`flex items-center justify-center w-9 h-8 border rounded-lg cursor-pointer transition-all ${ATTENTION_BUTTON}`}
                 >
                   <Icon name="file-signature" className="w-4 h-4" />
-                </a>
+                </button>
               ) : showMorale ? null : (
               <button
                 type="button"
@@ -365,6 +368,17 @@ export function SquadRosterTable({
           onSaved={(list) => setSellList(list)}
         />
       )}
+      <ContractOfferModal
+        mode="renew"
+        player={renewing ? {
+          id: renewing.id, name: renewing.name, age: renewing.age, squadId: squad.id,
+          contractUntil: renewing.contractEnd?.slice(0, 4),
+          nationality: renewing.ownNationality || null, clubColors: squad.colors,
+        } : null}
+        onClose={() => setRenewing(null)}
+        onDone={() => void refresh({ background: true })}
+        onListForSale={() => { const p = renewing; setRenewing(null); if (p) setSelling(p); }}
+      />
       {talkWith && session && (
         <TalkModal
           saveId={session.saveId}
@@ -377,7 +391,7 @@ export function SquadRosterTable({
             if (r.openRenewal) {
               const target = talkWith;
               setTalkWith(null);
-              navigate(`${playerDetailHref(target)}?action=renew`);
+              setRenewing(target);
             }
           }}
         />

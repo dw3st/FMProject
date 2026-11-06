@@ -109,6 +109,11 @@ export const marketRoutes = {
       // Signing bonus and the AI clubs after him (4.47.9).
       const free = await freeSigningContext(saveService, saveId, { player, kind: "pre", from: current, date });
       const offered = typeof bonus === "number" ? Math.round(bonus) : 0;
+      // The bonus is paid on arrival: the balance must cover it on top of the bonuses already promised (code review 8.8.9).
+      const promised = signed.filter((p) => p.toClubId === human.id).reduce((sum, p) => sum + (p.bonus ?? 0), 0);
+      if (offered > 0 && (human.finances?.budget ?? 0) < promised + offered) {
+        return json({ error: "noMoney", bonusAsk: free.ask }, 409);
+      }
       const answer = answerPreContract({
         offer: { wage, years, bonus: offered }, bonusAsk: free.ask, rivals: free.rivals, player, human, current, date,
         humanPrestige: prestige.get(human.id) ?? 0.5, currentPrestige: prestige.get(current.id) ?? 0.5,

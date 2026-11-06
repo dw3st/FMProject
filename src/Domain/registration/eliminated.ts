@@ -9,7 +9,8 @@ import type { Fixture } from "@/types/calendarTypes";
 export function outOfCompetition(fixtures: readonly Fixture[], clubId: string, championId: string | null | undefined): boolean {
   const mine = fixtures.filter((f) => f.home === clubId || f.away === clubId);
   if (mine.some((f) => !f.played)) return false;
-  if (championId) return true;
+  // The winner is not out of it (code review 8.8.9); everyone else is once the competition has a champion.
+  if (championId) return championId !== clubId;
   // Out in the group stage: the knockout draw is made and the club is not in it.
   const anyKnockout = fixtures.some((f) => f.knockout);
   const myKnockout = mine.filter((f) => f.knockout);

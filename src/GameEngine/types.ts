@@ -523,7 +523,7 @@ export interface PassState {
    * in this list who wins the ball at the landing point is flagged offside.
    */
   aerialOffsideIds?: number[];
-  /** High ball played by a set-piece taker (free kick / goal kick): the whistle waits for it to land. */
+  /** Played by a set-piece taker: a high ball makes the whistle wait for it to land; a pass is never rolled to run out (8.8.9). */
   fromSetPiece?: boolean;
   /**
    * The set piece's `variant` when it was played from one (`set-pieces-play.md`): only a `box`

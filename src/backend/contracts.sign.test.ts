@@ -68,13 +68,20 @@ describe("free agents: demand + sign routes and scout view", () => {
 
     // Well above what he asks, so no rival club beats it.
     const bonus = bonusAsk * 2;
+    // The bonus is paid from the balance: without the money it is refused (code review 8.8.9).
+    const club = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
+    await saveService.saveSquad(saveId, meta.leagueSlug, meta.clubId, { ...club, finances: { ...club.finances!, budget: 0 } });
+    const broke = await sign(demand * 2, bonus);
+    expect(broke.status).toBe(409);
+    expect(await broke.json()).toMatchObject({ error: "noMoney" });
+    await saveService.saveSquad(saveId, meta.leagueSlug, meta.clubId, { ...club, finances: { ...club.finances!, budget: bonus * 3 } });
     const ok = await sign(demand * 2, bonus);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const signed = after.players.find((p) => p.id === "free_test_1")!;
     expect(signed.contract!.wage).toBe(demand * 2);
     // No fee; the signing bonus leaves the balance on signing.
-    expect(after.finances?.budget).toBe((squad.finances?.budget ?? 0) - bonus);
+    expect(after.finances?.budget).toBe(bonus * 3 - bonus);
     expect(await saveService.getFreeAgents(saveId)).toEqual([]);
   }, 60_000);
 });

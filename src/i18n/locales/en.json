@@ -3281,7 +3281,8 @@
       "smallerClub": "Too ambitious for a club this size: he refuses.",
       "poorFacilities": "Too ambitious for a training ground in this state: he refuses.",
       "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
-      "lowBonus": "The signing bonus is below what he asks."
+      "lowBonus": "The signing bonus is below what he asks.",
+      "noMoney": "The club balance does not cover the signing bonus."
     },
     "result": {
       "renewed": "Renewed",

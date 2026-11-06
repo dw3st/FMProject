@@ -113,3 +113,5 @@ Na partida ao vivo, toda revisão leva o árbitro até a área de revisão na la
 ## Cartões na ficha do técnico (8.7.10)
 
 Pedido do usuário. Os cartões de cada dia (`DaySeat.managerCards`) somam em `ManagerRecord.cards { yellow, red }` (`addManagerCards`, no avanço do dia); o ranking de técnicos mostra a linha ao abrir o técnico. Só conta daqui para a frente (os cartões antigos não eram guardados).
+
+Lugar fixo do Reclamar (8.8.9): report de tester (vermelho sem ter reclamado). O botão aparecia entre a mentalidade e Substituições e empurrava Substituições; um clique nele virava reclamação. O lugar dele agora fica sempre reservado (invisível e desligado sem lance).

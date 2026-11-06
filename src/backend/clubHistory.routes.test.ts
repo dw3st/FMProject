@@ -70,17 +70,17 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
     expect(res.seasons[0]).toMatchObject({ position: 1, points: 80, titles: ["league:premier_league"] });
     expect(res.titles).toEqual([{ title: "league:premier_league", seasons: ["2026-27"] }]);
     expect(res.topScorers[0]).toMatchObject({ playerId: striker.id, goals: 30, current: true, retired: false });
-    // Idols and legends (#151): the striker (55 games, 30 goals) is an idol, still at the club.
-    expect(res.legends).toEqual([expect.objectContaining({ playerId: striker.id, tier: "idol", current: true })]);
+    // Idols and legends (#151): since 8.0 an idol needs 150 games (or 100 with 40 goals): one season of 55 is not enough.
+    expect(res.legends).toEqual([]);
     expect(res.facts).toMatchObject({ seasons: 1, titles: 1, leagueGoals: 60, topScorer: { playerId: striker.id, goals: 30 } });
 
-    // A legend who left: 210 games at the club, not in the squad any more.
+    // A legend who left: 310 games at the club (legend from 300 since 8.0), not in the squad any more.
     const histA = (await saveService.getClubHistory(saveId, squadA.id))!;
     await saveService.writeClubHistory(saveId, {
-      ...histA, scorers: { ...histA.scorers, gone_legend: { name: "Old Legend", goals: 12, apps: 210, assists: 30 } },
+      ...histA, scorers: { ...histA.scorers, gone_legend: { name: "Old Legend", goals: 12, apps: 310, assists: 30 } },
     });
     const res2 = (await (await call(squadA.id)).json()) as ClubHistoryResponse;
-    expect(res2.legends.map((l) => [l.playerId, l.tier, l.current])).toEqual([["gone_legend", "legend", false], [striker.id, "idol", true]]);
+    expect(res2.legends.map((l) => [l.playerId, l.tier, l.current])).toEqual([["gone_legend", "legend", false]]);
     expect(res.records.biggestWin).toMatchObject({ gf: 4, ga: 1, opponentId: squadB.id });
     expect(res.records.recordSigning).toMatchObject({ playerId: bought.id, fee: 12_000_000, clubId: squadB.id });
 

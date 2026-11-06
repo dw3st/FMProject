@@ -11,7 +11,7 @@ import type { RivalNextMatch, RivalRow, RivalsView } from "@/types/rivalsTypes";
 
 async function nextMatchOf(
   service: SaveService, saveId: string, seatId: string, from: string, nameOf: (id: string) => string,
-  nations: Map<string, string>, myNation: string | null,
+  nations: Map<string, string>, myNationId: string | null,
 ): Promise<RivalNextMatch | null> {
   try {
     const date = await seatNextMatchDate(service, saveId, seatId, from);
@@ -19,10 +19,10 @@ async function nextMatchOf(
     const seat = await service.getSeat(saveId, seatId);
     const f = await seatMatchOn(service, saveId, seatId, date);
     if (!f) return null;
-    if (f.home !== seat?.clubId && f.away !== seat?.clubId && myNation) {
+    if (f.home !== seat?.clubId && f.away !== seat?.clubId && myNationId) {
       // A game of his national team (tester report, 8.8.7: it showed the raw id of his own nation).
-      const myId = [...nations].find(([, n]) => n === myNation)?.[0];
-      const home = f.home === myId;
+      const myNation = nations.get(myNationId) ?? myNationId;
+      const home = f.home === myNationId;
       const opponentId = home ? f.away : f.home;
       return { date, opponentId, opponentName: nations.get(opponentId) ?? opponentId, home, competition: f.competition, national: myNation };
     }
@@ -66,7 +66,7 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
       leaguePosition: employed && seat ? await positionOf(service, saveId, seat.leagueSlug, seat.clubId) : null,
       form: formOf(feed, e.seatId),
       last: feed.find((r) => r.seatId === e.seatId) ?? null,
-      next: (employed || myNation) && today ? await nextMatchOf(service, saveId, e.seatId, today, nameOf, nations, myNation) : null,
+      next: (employed || myNation) && today ? await nextMatchOf(service, saveId, e.seatId, today, nameOf, nations, natId ?? null) : null,
       friendsRank: rankOf(standings.entries, e.seatId),
       friendsTotal: e.total,
       live: live.find((l) => l.seatId === e.seatId) ?? null,

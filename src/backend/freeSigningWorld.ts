@@ -27,10 +27,9 @@ export async function freeSigningContext(
   const humans = await service.humanClubIds(saveId);
   const ids = freeSigningProfileIds(player, profiles).filter((id) => !humans.has(id) && id !== from?.id);
   const squads = new Map<string, Squad>();
-  for (const id of ids) {
-    const s = await service.getSquadById(saveId, id);
-    if (s) squads.set(id, s);
-  }
+  // Read together, not one after another (code review 8.8.9).
+  const loaded = await Promise.all(ids.map((id) => service.getSquadById(saveId, id)));
+  ids.forEach((id, i) => { const s = loaded[i]; if (s) squads.set(id, s); });
   const rivals = freeSigningRivals({
     player, kind, date, fromId: from?.id ?? null, humanIds: humans, profiles, squadOf: (id) => squads.get(id),
     top: await topIdsOf(saveId),

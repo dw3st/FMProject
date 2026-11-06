@@ -34,6 +34,8 @@ export interface RoleVariant {
     defensiveIntentWeights?: Partial<RoleEngineTuning['defensiveIntentWeights']>;
   };
   anchor?: { attack?: AnchorOffset; defend?: AnchorOffset };
+  /** Stays back at attacking box set pieces too: never in the box, the edge or the short option (8.8.9). */
+  staysBack?: true;
 }
 
 export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
@@ -56,6 +58,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
       carryBias: 0.2,
     },
     anchor: { attack: { dx: -8, dyIn: 0 } },
+    staysBack: true,
   },
   fb_inverted: {
     roles: ['LB', 'RB'],
@@ -76,6 +79,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
     roles: ['LWB', 'RWB'],
     engine: { bounds: { maxX: 70 }, offBallIntentWeights: { make_run: 0.1, hold_space: 0.8 } },
     anchor: { attack: { dx: -11, dyIn: 0 } },
+    staysBack: true,
   },
   // ── Centre-backs ──────────────────────────────────────────────────────────
   cb_stopper: {

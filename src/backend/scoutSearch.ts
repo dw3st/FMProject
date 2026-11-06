@@ -142,13 +142,31 @@ async function preContractIdsOf(saveId: string, squads: Squad[]): Promise<Set<st
  * Players of AI clubs their club would loan out today (`loanAvailability`, the rule of `POST /loans`: not a starter of
  * the automatic XI, a young, listed or surplus player, the line minimums kept). Tester report, 4.47.12.
  */
+/**
+ * Automatic XI of each AI club, kept for the game day: the index is rebuilt on every squad or market write, and a
+ * lineup only changes with the roster (fitness and injuries move when the day does). Code review 8.8.9.
+ */
+const starterCache = { key: "", byClub: new Map<string, { roster: string; ids: Set<string> }>() };
+
+function startersOf(saveId: string, date: string, squad: Squad): Set<string> {
+  const key = `${saveId}:${date}`;
+  if (starterCache.key !== key) { starterCache.key = key; starterCache.byClub = new Map(); }
+  const roster = squad.players.map((p) => p.id).join(",");
+  const hit = starterCache.byClub.get(squad.id);
+  if (hit && hit.roster === roster) return hit.ids;
+  const ids = new Set(autoLineupDefaultFormation(squad));
+  starterCache.byClub.set(squad.id, { roster, ids });
+  return ids;
+}
+
 async function loanableIdsOf(saveId: string, squads: Squad[], market: { profiles?: Record<string, { sellList?: { playerId: string }[] }> } | null | undefined, ownClubId: string): Promise<Set<string>> {
-  const humans = await saveService.humanClubIds(saveId);
+  const [humans, meta] = await Promise.all([saveService.humanClubIds(saveId), saveService.getMeta(saveId)]);
+  const date = meta?.currentDate ?? "";
   const ids = new Set<string>();
   for (const squad of squads) {
     if (humans.has(squad.id) || squad.id === ownClubId) continue;
     const listed = new Set((market?.profiles?.[squad.id]?.sellList ?? []).map((c) => c.playerId));
-    const starterIds = new Set(autoLineupDefaultFormation(squad));
+    const starterIds = startersOf(saveId, date, squad);
     for (const p of squad.players) if (loanAvailability(p, squad, { starterIds, listed: listed.has(p.id) }) === null) ids.add(p.id);
   }
   return ids;

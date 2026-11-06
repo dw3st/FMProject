@@ -18,6 +18,10 @@ import { aerialAbility, crossTargetPoints, isInSmallBox, keeperComesFor, type Cr
 import { computeOpenAngle } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
+
+/** A player told to stay back (`staysBack` role variant): he is not sent forward at a box set piece. */
+const staysBack = (p: GamePlayer): boolean => !!(p.instruction?.variant && ROLE_VARIANTS[p.instruction.variant]?.staysBack);
 
 type Pos = { x: number; y: number };
 
@@ -185,10 +189,13 @@ export function attackingBoxPositions(
   positions.set(takerId, { ...ball });
 
   const outfield = players.filter(p => p.id !== takerId && p.role !== 'GK');
+  // Players told to stay back are only placed with the rest (8.8.9).
+  const keepBack = outfield.filter(staysBack);
+  const keepBackIds = new Set(keepBack.map(p => p.id));
   for (const gk of players.filter(p => p.id !== takerId && p.role === 'GK')) {
     positions.set(gk.id, { x: ownGoalX + attackDir * 18, y: CENTRE_Y });
   }
-  const used = new Set<number>();
+  const used = new Set<number>(keepBackIds);
   const take = (p: GamePlayer | undefined) => { if (p) used.add(p.id); return p; };
 
   // Box group: the two best aerial defenders, the centre-forward, then the best headers left.
@@ -242,7 +249,7 @@ export function attackingBoxPositions(
   // Short option next to the taker (only when at least two players are still left to stay back).
   let short: GamePlayer | undefined;
   const left = outfield.filter(p => !used.has(p.id));
-  if (left.length >= 3) {
+  if (left.length > 0 && left.length + keepBack.length >= 3) {
     const spot: Pos = kind === 'corner'
       ? { x: fromLine(C.SHORT_DEPTH), y: nearLow ? C.SHORT_WIDTH : PITCH_WIDTH - C.SHORT_WIDTH }
       : clampPos({ x: ball.x - attackDir * 3, y: ball.y + (nearLow ? 1 : -1) * C.SHORT_WIDTH });
@@ -251,11 +258,16 @@ export function attackingBoxPositions(
     positions.set(short!.id, clampPos(spot));
   }
 
-  // The rest stays back, spread across the pitch.
-  const rest = outfield.filter(p => !used.has(p.id)).sort((a, b) => a.y - b.y);
+  // The rest stays back, spread across the pitch; one told to stay back no further up than his own limit.
+  const rest = outfield.filter(p => !used.has(p.id) || keepBackIds.has(p.id)).sort((a, b) => a.y - b.y);
   rest.forEach((p, i) => {
     const y = rest.length === 1 ? CENTRE_Y : 18 + (i * (PITCH_WIDTH - 36)) / (rest.length - 1);
-    positions.set(p.id, { x: fromLine(C.REST_DEPTH), y });
+    let x = fromLine(C.REST_DEPTH);
+    if (keepBackIds.has(p.id)) {
+      const limit = attackDir === 1 ? p.bounds.maxX : p.bounds.minX;
+      if ((x - limit) * attackDir > 0) x = limit;
+    }
+    positions.set(p.id, { x, y });
   });
 
   return { positions, boxAttackers: box.map(p => p.id), edgeId: edge?.id ?? null, shortId: short?.id ?? null };

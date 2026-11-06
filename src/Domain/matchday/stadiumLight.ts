@@ -3,7 +3,7 @@
  * how warm the light is (weak and yellowish at 1, strong and white at 10); below 40% condition one tower is dark and
  * the stands look grimy, below 15% two towers. An AI club has the level of its tier, never worn. Drawing only. Pure.
  */
-import { mulberry32, seedFrom } from "@/Domain/rng";
+import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 
 export interface StadiumLight {
   /** Item level 1..10. */
@@ -57,7 +57,7 @@ export function lightLook(light: StadiumLight | undefined, seed: string): LightL
   const tint = warm >= 0 ? mixColor(0xffffff, 0xffd49a, warm) : mixColor(0xffffff, 0xdfe9ff, -warm / 0.4);
   const broken = cond < L.BROKEN ? 2 : cond < L.WORN ? 1 : 0;
   const rng = mulberry32(seedFrom(`towers-off:${seed}`));
-  const order = [0, 1, 2, 3].sort(() => rng() - 0.5);
+  const order = shuffle([0, 1, 2, 3], rng);
   return {
     gain: lerp(L.GAIN[0], L.GAIN[1], t),
     warm,

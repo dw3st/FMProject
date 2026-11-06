@@ -27,6 +27,51 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.9",
+    date: "2026-11-06",
+    time: "17:03",
+    items: [
+      {
+        pt: "Elenco: o botão Renovar abre a renovação ali mesmo, sem ir para a ficha do jogador.",
+        en: "Squad: the Renew button opens the renewal right there, without going to the player page.",
+      },
+      {
+        pt: "Laterais e alas com a instrução de ficar atrás não passam mais do limite deles nem sobem para a área nos escanteios.",
+        en: "Full-backs and wing-backs told to stay back no longer go past their limit or up into the box at corners.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Partida: o botão Reclamar tem lugar fixo e não empurra mais Substituições; antes um clique em Substituições podia virar reclamação e cartão.",
+        en: "Match: the Complain button has a fixed place and no longer pushes Substitutions aside; a click meant for Substitutions could become a complaint and a card.",
+      },
+      {
+        pt: "No grupo, o aviso de fim de temporada aparece quando você chega ao Painel, mesmo vindo de outra tela.",
+        en: "In a group, the end-of-season notice shows when you reach the Dashboard, even from another screen.",
+      },
+      {
+        pt: "A janela do jogo de um amigo aberta sozinha fecha quando o jogo termina, em qualquer tela.",
+        en: "A friend's match window that opened by itself closes when the match ends, on any screen.",
+      },
+      {
+        pt: "O campeão de uma copa não aparece mais como eliminado na aba Inscritos.",
+        en: "A cup winner no longer shows as eliminated in the Registration tab.",
+      },
+      {
+        pt: "As luvas de um livre ou de um pré-contrato só são aceitas se o saldo do clube cobrir.",
+        en: "A signing bonus for a free agent or a pre-contract is only accepted when the club balance covers it.",
+      },
+      {
+        pt: "Lateral cobrado direto para um companheiro perto da linha não sai mais pela lateral sozinho.",
+        en: "A throw-in played to a team-mate near the touchline no longer runs out by itself.",
+      },
+      {
+        pt: "A busca do olheiro ficou mais rápida depois de mexer no elenco ou no mercado.",
+        en: "The scout search is faster after a squad or market change.",
+      },
+    ],
+  },
+  {
     version: "8.8.8",
     date: "2026-11-06",
     time: "15:59",

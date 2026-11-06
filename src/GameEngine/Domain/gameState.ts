@@ -2,7 +2,7 @@ import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
-import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
+import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameEngine/Configs/WeatherConfig';
@@ -2373,6 +2373,8 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
       receiverOffside,
       offsideLineX: offsideLineAt(holder, state.players),
       intendedRunnerId: null,
+      // A restart pass (throw-in, short corner) is never rolled to run out for a throw-in on arrival.
+      ...(state.setPiece ? { fromSetPiece: true } : {}),
     },
     setPiece: null,
   };
@@ -4176,6 +4178,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           }
         }
 
+        // A role variant that sets how far up he goes (e.g. full-back "stays") is a wall for his runs, not just a
+        // penalty in the scoring: without it the stay-back full-back still overlapped (tester report, 8.8.9).
+        // Default players keep the penalty only (the world's calibration).
+        const variant = player.instruction?.variant;
+        if (variant && ROLE_VARIANTS[variant]?.engine.bounds) {
+          tx = Math.max(player.bounds.minX, Math.min(player.bounds.maxX, tx));
+        }
+
         // Only clamp to pitch boundary — bounds discipline is handled by getRoleFitPenalty
         // in scoring, so no hard wall here.
         target = {
@@ -4822,7 +4832,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
 
     // Played to the feet by the touchline: a heavy touch runs out for a throw-in to the other side.
     const passEdge = Math.min(receiver.y, PITCH_WIDTH - receiver.y);
-    if (passEdge <= SET_PIECE_CONFIG.PASS_OUT_EDGE
+    if (!activePass.fromSetPiece && passEdge <= SET_PIECE_CONFIG.PASS_OUT_EDGE
       && Math.random() < SET_PIECE_CONFIG.PASS_OUT_CHANCE * (1 - SET_PIECE_CONFIG.PASS_OUT_TOUCH * receiver.runtimeStats.withBall.firstTouch)) {
       gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
       const exitY = receiver.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;

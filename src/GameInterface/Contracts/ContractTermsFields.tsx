@@ -129,7 +129,7 @@ export function SigningBonusField({ ask, rivals, bonus, onBonus, paidOn }: {
 export function useRefusalText() {
   const { t } = useTranslation();
   return (error: string): string => {
-    const known = ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed"];
+    const known = ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed", "noMoney"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };
 }

@@ -227,3 +227,7 @@ conta, pênalti nunca). Ver `.claude/rules/game/awards.md`.
 A margem das bolas em profundidade (8.4) tirou quase todos os laterais do jogo. Três lances novos os trazem de volta (`SET_PIECE_CONFIG`), todos pelo `resolveOOBSetPiece`: desarme ganho a até `TACKLE_THROW_DEPTH` (14) jardas da lateral, com chance `TACKLE_THROW_CHANCE` (0,6), lateral para quem sofreu; passe para jogador a até `PASS_OUT_EDGE` (12) jardas, chance `PASS_OUT_CHANCE` (0,25) × (1 − 0,6 × domínio), conta como passe errado, lateral para o outro time; corte (`clearanceBall`) que passaria da linha, lateral para o outro time. Evento `throwInAwarded`, `Statistics.throwIns` (coluna TI do `StatsPanel`), cenário `throw-in-tackle` no `/test`, `avgThrowIns` e linha "Throw-ins" no `PairDetail` do `/lab`. O quickSim não conta laterais.
 
 Medido: cerca de 3 por jogo (Premier, 100 jogos, `bun scripts/shot-miss-probe.ts`). Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`), contra a 8.4.2: Premier 2,109 → 2,156 gols, 5,49 → 5,57 chutes; Championship 1,732 → 1,806, 5,37 → 5,29; somadas +2,9% e 0%, quickSim não recalibrado.
+
+## Passe de reposição (8.8.9)
+
+Revisão de código: o passe da cobrança (lateral, escanteio curto, falta curta) leva `PassState.fromSetPiece` e não passa pelo sorteio de "passe perto da linha sai pela lateral" da 8.6.1; antes um lateral curto podia sair de novo para o outro time.
