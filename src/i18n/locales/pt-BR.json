@@ -3680,7 +3680,7 @@
       "unlistLoan": "Tirar do empréstimo"
     },
     "overview": {
-      "tab": "Empréstimos",
+      "tab": "Negociações",
       "loanedOutTab": "Emprestados",
       "none": "Nenhum.",
       "loanedOut": "Emprestados",
@@ -3719,6 +3719,8 @@
     },
     "preContract": {
       "title": "Pré-contratos",
+      "signedColumn": "Assinado em",
+      "arriveNote": "Chegam no fim da temporada do clube de origem.",
       "tab": "Pré-contrato",
       "wage": "Salário",
       "years": "Temporadas",

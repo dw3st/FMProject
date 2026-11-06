@@ -3680,7 +3680,7 @@
       "unlistLoan": "Remove from loan list"
     },
     "overview": {
-      "tab": "Loans",
+      "tab": "Negotiations",
       "loanedOutTab": "On loan",
       "none": "None.",
       "loanedOut": "Out on loan",
@@ -3719,6 +3719,8 @@
     },
     "preContract": {
       "title": "Pre-contracts",
+      "signedColumn": "Signed on",
+      "arriveNote": "They arrive at the end of their club's season.",
       "tab": "Pre-contract",
       "wage": "Wage",
       "years": "Seasons",

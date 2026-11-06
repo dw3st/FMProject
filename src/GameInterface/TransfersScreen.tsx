@@ -93,7 +93,11 @@ export function TransfersScreen() {
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>
           </div>
         ) : activeTab === "my" ? (
-          <MyTransfers records={club} playerSquadId={playerSquadId} />
+          <>
+            {/* Pre-contracts signed (user request, 4.47.15): they only arrive at the season's end, so they show here too. */}
+            {loadSession() && <NegotiationOverview saveId={loadSession()!.saveId} sections={["preContracts"]} hideEmpty />}
+            <MyTransfers records={club} playerSquadId={playerSquadId} />
+          </>
         ) : activeTab === "world" ? (
           <WorldTransfers records={world} />
         ) : (

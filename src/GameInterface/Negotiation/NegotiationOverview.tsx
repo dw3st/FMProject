@@ -30,7 +30,11 @@ interface Overview {
  * Loans (out and in), the sell-on clauses the club holds and the pending AI bids
  * (`.claude/rules/game/negotiation.md`), from `GET /api/saves/:id/negotiation`.
  */
-export function NegotiationOverview({ saveId, sections }: { saveId: string; sections: Section[] }) {
+export function NegotiationOverview({ saveId, sections, hideEmpty }: {
+  saveId: string; sections: Section[];
+  /** Leaves out the sections with nothing in them (the pre-contracts on My transfers, 4.47.15). */
+  hideEmpty?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<Overview | null>(null);
   const [failed, setFailed] = useState(false);
@@ -74,7 +78,7 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   const inn = data.loans.filter((l) => l.toClubId === data.clubId);
   const share = (l: ActiveLoan) => `${Math.round(l.wageShare * 100)}%`;
 
-  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => (
+  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => (hideEmpty && empty && !note) ? null : (
     <section key={key} className="space-y-2">
       <SectionTitle>{title}</SectionTitle>
       {note && <p className="text-sm font-semibold text-foreground m-0" role="status">{note}</p>}
@@ -160,9 +164,11 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
                 { key: "c", header: t("negotiation.overview.from"), cell: (p) => p.fromClubName },
                 { key: "w", header: t("negotiation.preContract.wage"), cell: (p) => formatFee(p.wage), className: "tabular-nums" },
                 { key: "y", header: t("negotiation.preContract.years"), cell: (p) => p.years, className: "tabular-nums" },
+                { key: "b", header: t("contracts.bonus.label"), cell: (p) => (p.bonus ? formatFee(p.bonus) : "—"), className: "tabular-nums" },
+                { key: "d", header: t("negotiation.preContract.signedColumn"), cell: (p) => fmtDate(p.date), className: "tabular-nums" },
               ]}
             />
-          ), pcs.length === 0);
+          ), pcs.length === 0, pcs.length > 0 ? t("negotiation.preContract.arriveNote") : null);
         }
         if (s === "out") {
           return block(s, t("negotiation.overview.loanedOut"), (

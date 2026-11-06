@@ -181,3 +181,7 @@ propostas a outro assento; venda = propostas vivas da IA e de outro assento; cad
 ## Filtro de pré-contrato no olheiro (4.42.20)
 
 Report de tester. Chip "Só pré-contrato" na busca (`onlyPreContract`): só jogadores de clubes da IA que `preContractEligible` aceita hoje (contrato real, não a faixa do olheiro), calculado no índice da busca (`preContractIdsOf`, `scoutSearch.ts`).
+
+## Pré-contratos em Minhas transferências (4.47.16)
+
+Pedido do usuário. A aba Minhas transferências mostra no topo os pré-contratos assinados (`NegotiationOverview sections={["preContracts"]} hideEmpty`: jogador, clube, salário, temporadas, luvas, data), com a nota de que chegam no fim da temporada do clube de origem. A aba "Empréstimos" de Transferências passou a se chamar "Negociações" (já tinha propostas, rivais e pré-contratos).

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.16",
+    date: "2026-11-06",
+    time: "11:19",
+    items: [
+      {
+        pt: "Transferências: os pré-contratos assinados aparecem no topo de Minhas transferências, com salário, luvas e data. A aba Empréstimos virou Negociações.",
+        en: "Transfers: signed pre-contracts show at the top of My transfers, with wage, signing bonus and date. The Loans tab is now Negotiations.",
+      },
+    ],
+  },
+  {
     version: "4.47.15",
     date: "2026-11-06",
     time: "11:15",
