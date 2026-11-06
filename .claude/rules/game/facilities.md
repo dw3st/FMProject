@@ -397,3 +397,7 @@ Pedido do usuário: os efeitos eram pequenos demais para sentir. A tabela "CT e 
 ## Estádio como ele é (4.47.2)
 
 Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths }` (`stadiumLookOf`, `standDepths`); o desenho do estádio em `/club` (`stadiumMapGeom`, `Facilities/stadiumMapGeom.ts`) usa a forma do contorno (oval, arredondado, quadrado, setores separados) e a profundidade de cada setor, como na partida. A pintura `club/stadium-top.webp` só aparece num estádio arredondado com setores iguais.
+
+## Estádio pintado no topo do Clube (4.47.14)
+
+Report do usuário, opção B. Cinco pinturas genéricas (`club/stadium-level-{1..5}.webp`, `GAME_ART_FILES`; layout em PIL e FLUX img2img, `data_process/assets/club_stadium_levels.py`): do campo modesto de várzea ao estádio de elite com teto branco. Qual aparece: a média dos níveis de gramado, arquibancadas e estrutura (`stadiumArtLevel`, dois níveis por pintura). Só com o visual novo; o mapa dos setores continua abaixo. Não é o estádio real do clube.

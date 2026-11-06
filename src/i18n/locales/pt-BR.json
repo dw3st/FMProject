@@ -3880,6 +3880,10 @@
       "circles": "Círculos",
       "none": "Sem padrão"
     },
+    "hero": {
+      "level": "Estádio nível {{level}} de 5 · média dos itens {{mean}}",
+      "hint": "Muda com o gramado, as arquibancadas e a estrutura: melhore os itens para ele crescer."
+    },
     "kpi": {
       "capacity": "Capacidade",
       "duringWorks": "{{seats}} durante a obra",

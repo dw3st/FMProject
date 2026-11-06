@@ -19,6 +19,7 @@ import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPane
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+import { STADIUM_ART_ITEMS, stadiumArtFile, stadiumArtLevel } from "@/Domain/facilities/stadiumArt";
 
 /**
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
@@ -70,6 +71,7 @@ export function FacilitiesView({
 
   return (
     <div className="flex flex-col gap-6">
+      <StadiumHero data={data} />
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Kpi label={t("facilities.kpi.capacity")} value={nf(data.capacity)}
@@ -222,6 +224,30 @@ function standOccupancy(data: FacilitiesViewData, avg: number): Record<StandId, 
 
 /** Label of a stand, in % of the drawing: the stand's centre. */
 const labelPos = (r: MapRect) => ({ left: `${((r.x + r.w / 2) / 320) * 100}%`, top: `${((r.y + r.h / 2) / 400) * 100}%` });
+
+/**
+ * The painted ground on top of the Club screen (tester report, 4.47.14): one of five paintings by the mean level of the
+ * stadium items (pitch, seats, structure), new visual only. Generic, not the club's real stadium.
+ */
+function StadiumHero({ data }: { data: FacilitiesViewData }) {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+  const levels = data.items.filter((i) => STADIUM_ART_ITEMS.includes(i.id)).map((i) => i.level);
+  const level = stadiumArtLevel(levels);
+  if (!newVisualOn() || failed) return null;
+  const mean = levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : 0;
+  return (
+    <div className="relative w-full aspect-[960/330] max-h-[340px] overflow-hidden rounded-md border border-border bg-secondary/30">
+      <img src={gameArtUrl(stadiumArtFile(level))} alt="" aria-hidden onError={() => setFailed(true)}
+        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" draggable={false} />
+      <div className="absolute left-4 bottom-4 max-w-[calc(100%-2rem)] rounded-lg border border-border bg-background/85 px-4 py-3 flex flex-col gap-1">
+        <span className="font-display font-black uppercase text-xl leading-none truncate">{data.stadium?.name ?? t("facilities.stadium.title")}</span>
+        <span className="text-sm text-foreground tabular-nums">{t("facilities.hero.level", { level, mean: mean.toFixed(1) })}</span>
+        <span className="text-sm text-muted-foreground">{t("facilities.hero.hint")}</span>
+      </div>
+    </div>
+  );
+}
 
 function StadiumMap({
   data, avgOcc, selected, works, onSelect, nf,

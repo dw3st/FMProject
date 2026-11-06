@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.14",
+    date: "2026-11-06",
+    time: "11:12",
+    items: [
+      {
+        pt: "Clube: no topo da tela, uma pintura do estádio que muda em cinco níveis com o gramado, as arquibancadas e a estrutura do clube.",
+        en: "Club: at the top of the screen, a painting of the ground that changes over five levels with the club's pitch, seats and structure.",
+      },
+    ],
+  },
+  {
     version: "4.47.13",
     date: "2026-11-06",
     time: "11:05",
