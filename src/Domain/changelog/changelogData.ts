@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.14",
+    date: "2026-11-06",
+    time: "18:32",
+    items: [
+      {
+        pt: "Partida: o botão Reclamar fica depois de Substituições, então não sobra mais um buraco entre os botões quando não há o que reclamar.",
+        en: "Match: the Complain button sits after Substitutions, so there is no longer a gap between the buttons when there is nothing to complain about.",
+      },
+    ],
+  },
+  {
     version: "8.8.13",
     date: "2026-11-06",
     time: "18:29",
