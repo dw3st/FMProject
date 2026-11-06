@@ -100,11 +100,11 @@ export const GAME_ART_FILES: Record<string, string> = {
   // Club screen (4.41.21): the painted stadium behind the stand map, plain grass for an unmown turf preview.
   "club/stadium-top.webp": "image/webp",
   // Club screen (4.47.14): the painted ground by the stadium items' level, 1..5 (data_process/assets/club_stadium_levels.py).
-  "club/stadium-level-1.webp": "image/webp",
-  "club/stadium-level-2.webp": "image/webp",
-  "club/stadium-level-3.webp": "image/webp",
-  "club/stadium-level-4.webp": "image/webp",
-  "club/stadium-level-5.webp": "image/webp",
+  "club/stadium-lv-1.webp": "image/webp",
+  "club/stadium-lv-2.webp": "image/webp",
+  "club/stadium-lv-3.webp": "image/webp",
+  "club/stadium-lv-4.webp": "image/webp",
+  "club/stadium-lv-5.webp": "image/webp",
   "club/grass-plain.webp": "image/webp",
   "formation/pitch-board.webp": "image/webp",
   // Match sounds (leva 3), made with Stable Audio Open on the local ComfyUI (data_process/assets/audio); the ball strike

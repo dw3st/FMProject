@@ -401,3 +401,5 @@ Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths 
 ## Estádio pintado no topo do Clube (4.47.14)
 
 Report do usuário, opção B. Cinco pinturas genéricas (`club/stadium-level-{1..5}.webp`, `GAME_ART_FILES`; layout em PIL e FLUX img2img, `data_process/assets/club_stadium_levels.py`): do campo modesto de várzea ao estádio de elite com teto branco. Qual aparece: a média dos níveis de gramado, arquibancadas e estrutura (`stadiumArtLevel`, dois níveis por pintura). Só com o visual novo; o mapa dos setores continua abaixo. Não é o estádio real do clube.
+
+Report de tester (4.47.17): as pinturas saíam escuras demais. Exportadas de novo com o tom azul leve e mais brilho (`club_stadium_levels.py`), com o nome novo `club/stadium-lv-{1..5}.webp` (o cache é `immutable`).

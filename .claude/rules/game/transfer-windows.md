@@ -185,3 +185,7 @@ Report de tester. Chip "Só pré-contrato" na busca (`onlyPreContract`): só jog
 ## Pré-contratos em Minhas transferências (4.47.16)
 
 Pedido do usuário. A aba Minhas transferências mostra no topo os pré-contratos assinados (`NegotiationOverview sections={["preContracts"]} hideEmpty`: jogador, clube, salário, temporadas, luvas, data), com a nota de que chegam no fim da temporada do clube de origem. A aba "Empréstimos" de Transferências passou a se chamar "Negociações" (já tinha propostas, rivais e pré-contratos).
+
+## Negociações em cartões (4.47.17)
+
+Report de tester. Cada bloco de `NegotiationOverview` é um cartão como Entradas e Saídas de Minhas transferências (ícone colorido, título, contagem); em duas colunas, com propostas entre técnicos, pré-contratos e emprestados na largura toda (`WIDE`).

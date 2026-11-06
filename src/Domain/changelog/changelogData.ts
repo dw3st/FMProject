@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.17",
+    date: "2026-11-06",
+    time: "11:39",
+    items: [
+      {
+        pt: "Transferências: a aba Negociações tem o mesmo visual de Minhas transferências, um cartão por assunto com a contagem.",
+        en: "Transfers: the Negotiations tab looks like My transfers, one card per topic with its count.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Clube: a imagem do estádio estava escura demais.",
+        en: "Club: the stadium picture was too dark.",
+      },
+    ],
+  },
+  {
     version: "4.47.16",
     date: "2026-11-06",
     time: "11:19",

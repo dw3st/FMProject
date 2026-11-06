@@ -3,7 +3,7 @@ import { useAttributeName } from "@/GameInterface/Components/AttributeChangeRow"
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/GameInterface/ui/DataTable";
-import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { Icon, type IconName } from "@/GameInterface/Icons";
 import { formatFee } from "@/Domain/money";
 import { Button } from "@/GameInterface/ui/Button";
 import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
@@ -13,6 +13,19 @@ import type { SeatOfferView } from "@/types/seatOfferTypes";
 import type { ActiveLoan, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
 
 type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts";
+
+/** Sections whose table needs the full width. */
+const WIDE = new Set<Section>(["seatOffers", "preContracts", "out"]);
+
+const SECTION_LOOK: Record<Section, { icon: IconName; fg: string; bg: string }> = {
+  seatOffers: { icon: "handshake", fg: "text-primary", bg: "bg-primary/20" },
+  bids: { icon: "tag", fg: "text-chart-4", bg: "bg-chart-4/20" },
+  rivals: { icon: "users", fg: "text-destructive", bg: "bg-destructive/20" },
+  preContracts: { icon: "file-signature", fg: "text-primary", bg: "bg-primary/20" },
+  out: { icon: "arrow-up-right", fg: "text-chart-4", bg: "bg-chart-4/20" },
+  in: { icon: "arrow-down-left", fg: "text-chart-2", bg: "bg-chart-2/20" },
+  sellOn: { icon: "wallet", fg: "text-chart-2", bg: "bg-chart-2/20" },
+};
 
 interface Overview {
   clubId: string;
@@ -78,16 +91,33 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
   const inn = data.loans.filter((l) => l.toClubId === data.clubId);
   const share = (l: ActiveLoan) => `${Math.round(l.wageShare * 100)}%`;
 
-  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => (hideEmpty && empty && !note) ? null : (
-    <section key={key} className="space-y-2">
-      <SectionTitle>{title}</SectionTitle>
-      {note && <p className="text-sm font-semibold text-foreground m-0" role="status">{note}</p>}
-      {empty ? <p className="text-sm text-muted-foreground m-0">{t("negotiation.overview.none")}</p> : body}
-    </section>
-  );
+  // A card per section, like Incoming / Outgoing on My transfers (tester report, 4.47.17).
+  const counts: Record<Section, number> = {
+    seatOffers: seatOffers.data?.offers.length ?? 0, out: out.length, in: inn.length, sellOn: data.sellOnHeld.length,
+    bids: data.bids.length, rivals: data.rivals?.length ?? 0, preContracts: data.preContracts?.length ?? 0,
+  };
+  const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => {
+    if (hideEmpty && empty && !note) return null;
+    const look = SECTION_LOOK[key];
+    return (
+      <section key={key} className={`card-arcade rounded-md overflow-visible ${sections.length > 1 && WIDE.has(key) ? "lg:col-span-2" : ""}`}>
+        <div className="p-4 border-b border-border flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg ${look.bg} flex items-center justify-center`}>
+            <Icon name={look.icon} className={`w-4 h-4 ${look.fg}`} />
+          </div>
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{title}</h3>
+          <span className="ml-auto text-sm bg-muted px-2 py-1 rounded-full text-muted-foreground tabular-nums">{counts[key]}</span>
+        </div>
+        {note && <p className="px-4 pt-3 text-sm font-semibold text-foreground m-0" role="status">{note}</p>}
+        {empty
+          ? <div className="p-6 text-center text-muted-foreground text-sm">{t("negotiation.overview.none")}</div>
+          : <div className="px-2 pb-2">{body}</div>}
+      </section>
+    );
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={sections.length > 1 ? "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start" : "flex flex-col gap-6"}>
       {sections.map((s) => {
         if (s === "seatOffers") {
           if (!withSeats) return null;

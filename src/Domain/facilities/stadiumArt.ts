@@ -11,4 +11,4 @@ export function stadiumArtLevel(levels: readonly number[]): 1 | 2 | 3 | 4 | 5 {
 }
 
 /** The file of a painted ground (game art, `GAME_ART_FILES`). */
-export const stadiumArtFile = (level: number) => `club/stadium-level-${level}.webp`;
+export const stadiumArtFile = (level: number) => `club/stadium-lv-${level}.webp`;
