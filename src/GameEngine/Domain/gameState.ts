@@ -40,7 +40,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { ballMeetsKeeper, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { ballMeetsKeeper, defenderCovers, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
@@ -2393,6 +2393,38 @@ function nearestOutfieldTo(players: readonly GamePlayer[], exceptId: number, x: 
   return best;
 }
 
+/**
+ * A loose ball inside a keeper's penalty area, with him faster to it than everyone else: he chases it, every tick
+ * (the ball drifts and the commit at the start of the race may have left him out — e.g. the ball he flapped).
+ */
+function keeperClaimsLooseBall(s: GameState, lb: NonNullable<GameState['looseBall']>): GameState {
+  const etaTo = (p: GamePlayer) => {
+    const v = chaseSprintSpeed(p);
+    return v > 0.01 ? Math.hypot(p.x - lb.x, p.y - lb.y) / v : Infinity;
+  };
+  for (const gk of s.players) {
+    if (gk.role !== 'GK' || isPlayerInRecovery(gk)) continue;
+    const inBox = isInGoalScoreArea(lb.x, lb.y, gk.attackDir === 1 ? 0 : PITCH_LENGTH);
+    if (!inBox || defenderCovers(gk, lb, s.players)) continue;
+    const gkEta = etaTo(gk);
+    const bestOther = s.players.reduce((m, p) => (p.id === gk.id || isPlayerInRecovery(p) ? m : Math.min(m, etaTo(p))), Infinity);
+    if (!keeperTakesLoose(inBox, gkEta, bestOther)) continue;
+    if (gk.decisionMemory?.decision?.type === 'chase_loose_ball') return s;
+    gameBus.emit('keeperSortie', { keeperId: gk.id, kind: 'sweep' });
+    debugLog('keeper', `${gk.name} comes for the loose ball in his box`, { playerId: gk.id });
+    const chase: PlayerDecision = { type: 'chase_loose_ball', toX: lb.x, toY: lb.y };
+    const path: DecisionPath = gk.team === lb.fromTeamLastTouch ? 'TEAM_WITH_BALL' : 'TEAM_WITHOUT_BALL';
+    return {
+      ...s,
+      decisions: { ...s.decisions, [gk.id]: chase },
+      players: s.players.map(p => (p.id === gk.id
+        ? { ...p, decisionMemory: { path, decision: chase, commitTicks: COMMIT_TICKS.chase_loose_ball } }
+        : p)),
+    };
+  }
+  return s;
+}
+
 function chaseSprintSpeed(p: GamePlayer): number {
   const wb = p.runtimeStats.withoutBall;
   return (
@@ -2486,11 +2518,12 @@ function commitLooseBallChasers(
         const ownGoalX = p.attackDir === 1 ? 0 : PITCH_LENGTH;
         // High balls: his small box, or the wide claim zone up to the penalty spot. Ground balls: his box, or
         // further up as a sweeper when he wins the race to it (`Keeper.ts`).
+        const covered = !isAttacking && defenderCovers(p, { x: toX, y: toY }, state.players);
         let inReach = opts.keeperSmallBoxOnly
-          ? isInSmallBox(toX, toY, ownGoalX) || (!isAttacking && keeperComesWide(
+          ? isInSmallBox(toX, toY, ownGoalX) || (!isAttacking && !covered && keeperComesWide(
               Math.hypot(p.x - toX, p.y - toY), isWideClaimZone(toX, toY, ownGoalX), nearestOutfieldTo(state.players, p.id, toX, toY)))
-          : isInGoalScoreArea(toX, toY, ownGoalX);
-        if (!inReach && !opts.keeperSmallBoxOnly && !isAttacking && sweeperChases(p, toX, toY, etaOf(p), bestAttackerEta)) {
+          : isInGoalScoreArea(toX, toY, ownGoalX) && !covered;
+        if (!inReach && !covered && !opts.keeperSmallBoxOnly && !isAttacking && sweeperChases(p, toX, toY, etaOf(p), bestAttackerEta)) {
           inReach = true;
           sweepers.add(p.id);
         }
@@ -2936,6 +2969,9 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     });
   }
 
+  // ── 3c. A loose ball in a keeper's box is his when he gets there first (tester report) ──
+  s = keeperClaimsLooseBall(s, lb);
+
   // Sort players by distance to the loose ball
   const ranked = s.players
     .filter(p => !isPlayerInRecovery(p))
@@ -3378,9 +3414,11 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const dGk = dist(gk);
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
     const inSmall = isInSmallBox(point.x, point.y, gkGoalX);
-    const comesNear = keeperComesFor(dGk, inSmall, dGk < nearestOther);
-    // Beyond the small box, up to the penalty spot: harder to catch, a miss drops loose (`Keeper.ts`).
-    const wide = !comesNear && !inSmall && keeperComesWide(dGk, isWideClaimZone(point.x, point.y, gkGoalX), nearestOther);
+    // A defender near the ball and not beaten (goal-side or level) plays it instead (`defenderCovers`).
+    const covered = defenderCovers(gk, point, active);
+    const comesNear = keeperComesFor(dGk, inSmall, dGk < nearestOther) && !covered;
+    // Beyond the small box, anywhere in the box: harder to catch, a miss drops loose (`Keeper.ts`).
+    const wide = !comesNear && !inSmall && !covered && keeperComesWide(dGk, isWideClaimZone(point.x, point.y, gkGoalX), nearestOther);
     if (comesNear || wide) {
       const depth = depthFrom(gkGoalX, point.x);
       if (wide) {
@@ -3392,7 +3430,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
       const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (deep ? wideClaimFactor(depth) : 1);
       logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
-      gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance });
+      gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance, x: point.x, y: point.y });
       debugLog('aerial', `${gk.name} comes for it — ${claimed ? 'claims' : 'punches'} (${(chance * 100).toFixed(0)}%)`, { playerId: gk.id, data: { chance } });
       if (claimed) {
         resolved(gk.id, false, 'claim');

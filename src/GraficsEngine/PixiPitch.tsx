@@ -64,7 +64,7 @@ import { isAerialKind } from "@/GameEngine/types";
 import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
-import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
+import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, PENALTY_AREA_DEPTH, PENALTY_AREA_Y_MIN, PENALTY_AREA_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
@@ -2244,6 +2244,15 @@ export function PixiPitch({
         if (!gk) return;
         keeperSave(gk.id, e.toY >= gk.y ? 1 : -1);
       });
+      // The keeper reaches the high ball he comes for (the engine settles it with him a few yards short).
+      const unsubAnimClaim = gameBus.on("gkClaim", (e) => {
+        if (e.x === undefined || e.y === undefined || !framesShown()) return;
+        const gk = playerPos(e.keeperId);
+        if (!gk) return;
+        const dir = { x: e.x - gk.x, y: e.y - gk.y };
+        if (Math.hypot(dir.x, dir.y) < 0.5) return;
+        anims = addAnim(anims, { playerId: gk.id, kind: "claim", dir, side: 1 }, effectNow);
+      });
       const unsubAnimPenalty = gameBus.on("penaltyResolved", (e) => {
         if (e.scored || e.keeperId === null || !framesShown()) return;
         keeperSave(e.keeperId, seedFrom(`${Math.floor(stateRef.current.matchTime)}:${e.takerId}`) % 2 === 0 ? 1 : -1);
@@ -4286,7 +4295,7 @@ export function PixiPitch({
                 passLinesGfx.poly(pts.flatMap(q => [q.px, q.py])).stroke({ width: 1, color, alpha });
               };
               rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
-              rect(6, KEEPER_CONFIG.HIGH_CLAIM_DEPTH, KEEPER_CONFIG.HIGH_CLAIM_HALF_WIDTH, 0x5eead4, 0.5);
+              rect(6, PENALTY_AREA_DEPTH, (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.5);
               const c = toPixel(goalX, GOAL_CENTRE_Y);
               passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
               const { px: gx, py: gy } = toPixel(gk.x, gk.y);
@@ -4969,6 +4978,7 @@ export function PixiPitch({
         unsubAnimFirstTime();
         unsubAnimAerial();
         unsubAnimSave();
+        unsubAnimClaim();
         unsubAnimPenalty();
         unsubRefFoul();
         unsubRefCard();

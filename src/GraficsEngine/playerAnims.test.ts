@@ -44,6 +44,17 @@ describe("player animations", () => {
     expect(isLongShot({ x: 20, y: 37 }, 0)).toBe(true);
   });
 
+  test("keeper claim: reaches the ball (capped), up in the air, back at rest", () => {
+    const [a] = addAnim([], { playerId: 1, kind: "claim", dir: { x: -4.5, y: 0 }, side: 1 }, 0);
+    expect(animOffset(a!, 0)).toEqual(REST);
+    const mid = animOffset(a!, a!.duration * 0.55);
+    expect(mid.dx).toBeCloseTo(-4.5);
+    expect(mid.liftYds).toBeGreaterThan(1);
+    expect(animOffset(a!, a!.duration)).toEqual(REST);
+    const [far] = addAnim([], { playerId: 1, kind: "claim", dir: { x: 0, y: 20 }, side: 1 }, 0);
+    expect(animOffset(far!, far!.duration * 0.55).dy).toBeCloseTo(7);
+  });
+
   test("goal celebration: two hops and one full turn, at rest at both ends (#129)", () => {
     const [a] = addAnim([], { playerId: 9, kind: "celebrate", dir: { x: 1, y: 0 }, side: 1 }, 0);
     expect(animOffset(a!, 0).rotation).toBe(0);

@@ -5,12 +5,17 @@
  */
 import { PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 
-export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate" | "tumble" | "lunge" | "jump" | "stepover" | "spin" | "flick";
+export type PlayerAnimKind = "longShot" | "header" | "save" | "celebrate" | "tumble" | "lunge" | "jump" | "stepover" | "spin" | "flick" | "claim";
 
 export const ANIM_DURATION: Record<PlayerAnimKind, number> = {
   longShot: 0.45, header: 0.5, save: 0.6, celebrate: 1.4, tumble: 1.3, lunge: 0.4, jump: 0.45,
-  stepover: 0.6, spin: 0.55, flick: 0.35,
+  stepover: 0.6, spin: 0.55, flick: 0.35, claim: 0.7,
 };
+/**
+ * The keeper going for a high ball (tester report 4.47.5): the engine settles the claim with him a few yards
+ * short, so the drawing takes him the whole way to the ball (up to MAX yards), up in the air, and back.
+ */
+export const CLAIM = { MAX_YDS: 7, LIFT_YDS: 1.2, OUT: 0.45, HOLD: 0.65 } as const;
 /** Styles (leva 3): who shows skill moves (dribbling 0..1) and how soon after receiving a pass is "first time". */
 export const STYLE = { SKILL_DRIBBLING: 0.7, FIRST_TIME_S: 0.45 } as const;
 /** A shot from at least this far from the goal centre is a "long shot". */
@@ -43,6 +48,8 @@ export interface PlayerAnim {
   dir: { x: number; y: number };
   /** Dive side for the save rotation: +1 / −1. */
   side: 1 | -1;
+  /** `claim`: yards to the ball. */
+  reach?: number;
 }
 
 export interface AnimOffset {
@@ -66,6 +73,7 @@ export function addAnim(
   const anim: PlayerAnim = {
     playerId: a.playerId, kind: a.kind, startedAt: now, duration: ANIM_DURATION[a.kind],
     dir: { x: a.dir.x / len, y: a.dir.y / len }, side: a.side,
+    ...(a.kind === "claim" ? { reach: Math.min(CLAIM.MAX_YDS, Math.hypot(a.dir.x, a.dir.y)) } : {}),
   };
   return [...list.filter((x) => x.playerId !== a.playerId), anim];
 }
@@ -119,6 +127,13 @@ export function animOffset(a: PlayerAnim, now: number): AnimOffset {
         dx: 0, dy: 0, liftYds: CELEBRATE.HOP_YDS * Math.abs(Math.sin(2 * Math.PI * p)),
         scale: 1 + CELEBRATE.SCALE * bump, rotation: a.side * 2 * Math.PI * turn,
       };
+    }
+    case "claim": {
+      // Fast out to the ball, a moment up there, then back to where the engine has him.
+      const out = p < CLAIM.OUT ? 1 - (1 - p / CLAIM.OUT) ** 2 : p < CLAIM.HOLD ? 1 : 1 - ((p - CLAIM.HOLD) / (1 - CLAIM.HOLD)) ** 2;
+      const r = (a.reach ?? 0) * out;
+      const up = p < CLAIM.HOLD ? Math.sin((Math.PI / 2) * Math.min(1, p / CLAIM.OUT)) : out;
+      return { dx: a.dir.x * r, dy: a.dir.y * r, liftYds: CLAIM.LIFT_YDS * up, scale: 1 + 0.1 * up, rotation: 0 };
     }
     case "save":
       return {

@@ -69,7 +69,8 @@ export interface GameEvents {
   /** Two players contested a high ball in the air (best contestant of each team). */
   aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
-  gkClaim: { keeperId: number; claimed: boolean; chance: number };
+  /** `x`/`y`: where the ball drops (the drawing has the keeper reach it). */
+  gkClaim: { keeperId: number; claimed: boolean; chance: number; x?: number; y?: number };
   /** Active keeper (`Keeper.ts`): he comes off his line — sweeper chase, 1v1 rush, wide high ball. */
   keeperSortie: { keeperId: number; kind: 'sweep' | 'rush' | 'high' };
   /** A loose ball won by the keeper outside his box. */

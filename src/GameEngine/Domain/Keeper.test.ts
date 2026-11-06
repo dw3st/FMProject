@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { TEST_SCENARIOS } from '@/GameEngine/Support/TestCases';
 import {
-  arcComeOut, attackingAdvance, isOneOnOne, isWideClaimZone, keeperAttackingTarget, keeperComesWide,
-  keeperDefendingTarget, keeperPositionDeviation, rushComeOut, smotherBase, sweeperChases, wideClaimFactor,
+  arcComeOut, attackingAdvance, defenderCovers, isOneOnOne, isWideClaimZone, keeperAttackingTarget, keeperComesWide,
+  keeperDefendingTarget, keeperTakesLoose, keeperPositionDeviation, rushComeOut, smotherBase, sweeperChases, wideClaimFactor,
 } from '@/GameEngine/Domain/Keeper';
 import { resolveAerialLanding, startThroughBall } from '@/GameEngine/Domain/gameState';
 import { computeGKPositionQuality } from '@/GameEngine/Infrastructure/ActionOutcomes';
@@ -101,12 +101,32 @@ describe('sweeper', () => {
 });
 
 describe('high balls beyond the small box', () => {
-  test('zone ends 13 yd out (past the penalty spot) and near the goal width', () => {
+  test('zone is the whole penalty area beyond the small box', () => {
     expect(isWideClaimZone(115 - 9, 37, 115)).toBe(true);
     expect(isWideClaimZone(115 - 12, 37, 115)).toBe(true);   // the penalty-spot cross
     expect(isWideClaimZone(115 - 4, 37, 115)).toBe(false);   // small box: the old rule
-    expect(isWideClaimZone(115 - 14, 37, 115)).toBe(false);
-    expect(isWideClaimZone(115 - 9, 52, 115)).toBe(false);
+    expect(isWideClaimZone(115 - 16, 37, 115)).toBe(true);
+    expect(isWideClaimZone(115 - 9, 52, 115)).toBe(true);
+    expect(isWideClaimZone(115 - 19, 37, 115)).toBe(false);
+    expect(isWideClaimZone(115 - 9, 62, 115)).toBe(false);
+  });
+
+  test('a defender near the ball and goal-side of it has it; a beaten one does not', () => {
+    const gk = { id: 1, team: 'B' as const, attackDir: -1 as const };   // defends x = 115
+    const ball = { x: 103, y: 37 };
+    const mate = (x: number, y = 37, recoveryTime = 0) => ({ id: 2, team: 'B' as const, role: 'CB' as const, x, y, recoveryTime });
+    expect(defenderCovers(gk, ball, [mate(106)])).toBe(true);          // between ball and goal
+    expect(defenderCovers(gk, ball, [mate(103.5, 39)])).toBe(true);    // level
+    expect(defenderCovers(gk, ball, [mate(100)])).toBe(false);         // behind the ball: beaten
+    expect(defenderCovers(gk, ball, [mate(106, 37, 0.5)])).toBe(false); // in recovery
+    expect(defenderCovers(gk, ball, [mate(109, 30)])).toBe(false);     // too far
+    expect(defenderCovers(gk, { x: 111, y: 37 }, [mate(112)])).toBe(false); // small box: the keeper's
+  });
+
+  test('a loose ball in the box: his when he gets there before anyone', () => {
+    expect(keeperTakesLoose(true, 1.0, 1.2)).toBe(true);
+    expect(keeperTakesLoose(true, 1.3, 1.2)).toBe(false);
+    expect(keeperTakesLoose(false, 0.5, 3)).toBe(false);
   });
 
   test('comes when close and not beaten to it; catching gets harder further out', () => {
@@ -115,6 +135,7 @@ describe('high balls beyond the small box', () => {
     expect(keeperComesWide(13, true, 20)).toBe(false);
     expect(wideClaimFactor(6)).toBe(1);
     expect(wideClaimFactor(12)).toBeCloseTo(1 - 0.7 * 6 / 7);
+    expect(wideClaimFactor(17)).toBeCloseTo(0.3);   // past the spot: as hard as at the spot's edge
   });
 
   test('a cross dropping 9 yd out: the keeper comes for it (claim, punch or a loose ball)', () => {

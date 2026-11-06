@@ -88,3 +88,14 @@ Report do usuário: o resultado do chute era sorteado na linha do gol, sem olhar
 ## Mira do chute (4.45)
 
 Report do usuário: chutes errando com o gol vazio. A mira (`computeShotAim`, `SHOT_AIM`) sorteava o ponto numa faixa que dependia só da finalização: um jogador mediano errava metade dos chutes em qualquer distância. Agora o desvio cresce com a distância ao centro do gol (5% do desvio até 4 jardas, cheio a partir de 22) e cai a 30% quando o goleiro não alcança a linha do chute (`keeperReachesShot`). Falta direta segue como antes (`fixedRange`). Para o volume não subir, a chance de gol de um chute no alvo é × `CONVERSION` (0,78); o chute fora do alcance do goleiro continua gol certo. Sonda: `bun scripts/shot-miss-probe.ts`. Medição do mundo: Premier 120 jogos, chutes para fora 43% → 24%. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 4.44.2): Premier 2,109 → 2,085 gols, 5,49 → 5,67 chutes; Championship 1,732 → 1,768, 5,37 → 5,25; somadas +0,3% e +0,5%, quickSim não recalibrado.
+
+## Bola na área e o zagueiro na frente (4.47.5)
+
+Report de tester: bolas que caíam na área à frente do goleiro, com ele mais perto que todos, e ele não saía. Medido (`bun scripts/keeper-probe.ts 100` e uma sonda da queda da bola): a bola alta só valia até 13 jardas e ±10 do centro, a bola solta só era dele se ele tivesse sido escolhido perseguidor no começo da corrida, e a bola que ele espalmava ficava fora da corrida dele (`dropLooseAt` o marca como quem tocou por último). E, quando saía, a disputa se resolvia com ele a ~4,8 jardas da bola: 21% de pegadas, o resto soco ou bola solta.
+
+- **Zona da bola alta** (`isWideClaimZone`): a grande área inteira além da pequena área. `HIGH_CLAIM_DEPTH` (13) agora só marca onde a penalidade da pegada chega ao máximo; mais fundo ela fica igual.
+- **Bola solta na área** (`keeperClaimsLooseBall`, `keeperTakesLoose`): todo tick, uma bola solta na grande área de um goleiro é dele quando ele chega antes de todos (ETA de sprint), também a que ele espalmou.
+- **Zagueiro na frente** (`defenderCovers`, `DEFENDER_COVER` 4, `DEFENDER_LEVEL` 1): fora da pequena área, um companheiro de linha a até 4 jardas da bola e não atrás dela (entre a bola e o gol, ou na linha dela, com 1 jarda de folga), fora de recuperação, joga a bola: o goleiro não sai (bola alta, escolha de perseguidor, varredura, bola solta). Zagueiro batido não conta.
+- **Desenho** (`playerAnims.ts`, `claim`; `gkClaim` leva `x`/`y`): quando ele sai, o boneco vai até a bola (até 7 jardas), sobe e volta. O resultado não muda.
+
+Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 4.46.1): Premier 2,156 → 2,074 gols, 5,57 → 5,58 chutes; Championship 1,806 → 1,792, 5,29 → 5,40; somadas −2,4% e +1,0%, quickSim não recalibrado.

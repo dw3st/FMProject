@@ -54,14 +54,18 @@ export const KEEPER_CONFIG = {
 
   // ── High balls beyond the small box ───────────────────────────────────────
   /**
-   * Deepest a high ball may drop (yards from the goal line) for him to come: past the penalty spot, where the
-   * spot cross lands (tester report 4.41.51: at 10 he waited on the line for balls he would reach first).
+   * Depth (yards from the line) where the claim penalty reaches its full value; deeper balls in the box keep it.
+   * The zone he comes in is the whole penalty area (`isWideClaimZone`, tester report 4.47.5).
    */
   HIGH_CLAIM_DEPTH: 13,
-  /** Lateral half-width from the goal centre. */
-  HIGH_CLAIM_HALF_WIDTH: 10,
   /** Furthest he travels for it. */
   HIGH_REACH: 12,
+  /**
+   * Beyond the small box, a team-mate this close to the ball and not behind it (goal-side or level, within
+   * DEFENDER_LEVEL yards) plays it instead of the keeper (tester report 4.47.5). A beaten defender does not count.
+   */
+  DEFENDER_COVER: 4,
+  DEFENDER_LEVEL: 1,
   /** He comes when at most this much further from the point than the nearest other player. */
   HIGH_SLACK: 0,
   /** Claim chance × (1 − PENALTY × (depth − small box) / (claim depth − small box)). */

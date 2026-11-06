@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.5",
+    date: "2026-11-06",
+    time: "08:52",
+    items: [
+      {
+        pt: "O entorno real de cada estádio das ligas principais agora aparece pintado em volta das arquibancadas: ruas, prédios, parques e árvores.",
+        en: "The real surroundings of every stadium in the main leagues now appear painted around the stands: streets, buildings, parks and trees.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O goleiro sai em toda bola que cai na grande área quando chega antes de todos, inclusive a que ele mesmo espalmou. Se um zagueiro está perto e à frente da bola, a bola é dele.",
+        en: "The keeper comes for every ball that drops in the box when he gets there first, including one he parried himself. A defender close to the ball and goal-side of it plays it instead.",
+      },
+      {
+        pt: "Quando sai numa bola alta, o goleiro vai até a bola na pegada, no soco ou na espalmada.",
+        en: "Coming for a high ball, the keeper now reaches it for the catch, the punch or the parry.",
+      },
+    ],
+  },
+  {
     version: "4.47.4",
     date: "2026-11-05",
     time: "18:57",
@@ -4224,7 +4245,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "O entorno de verdade de cada estádio: estacionamentos, ruas, trilhos e árvores", en: "Each stadium's real surroundings: car parks, roads, railways and trees" },
   { pt: "Torres de iluminação novas, com mastro e sombra", en: "New floodlight towers, with a mast and a shadow" },
   { pt: "Luz do estádio que melhora com a estrutura, e estádio desgastado quando ela está ruim", en: "Stadium lighting that improves with the structure, and a worn look when it is in poor shape" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },

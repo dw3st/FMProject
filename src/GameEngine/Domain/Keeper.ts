@@ -5,7 +5,7 @@
  */
 import type { GamePlayer, ShotState } from '@/GameEngine/types';
 import { KEEPER_CONFIG as K } from '@/GameEngine/Configs/KeeperConfig';
-import { GOAL_Y_MAX, GOAL_Y_MIN, PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
+import { GOAL_Y_MAX, GOAL_Y_MIN, PITCH_LENGTH, PITCH_WIDTH, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 
 /** Minimum yards off the goal line (always slightly advanced). */
 export const GK_MIN_COME_OUT  = 0.5;
@@ -150,10 +150,32 @@ export function depthFrom(goalX: number, x: number): number {
   return Math.abs(x - goalX);
 }
 
-/** A high ball dropping beyond the small box, but not past the penalty spot (and near the goal's width). */
+/** A high ball dropping in the penalty area, beyond the small box (tester report: balls in front of him). */
 export function isWideClaimZone(x: number, y: number, goalX: number): boolean {
-  const depth = depthFrom(goalX, x);
-  return depth > SMALL_BOX_DEPTH && depth <= K.HIGH_CLAIM_DEPTH && Math.abs(y - GOAL_CENTRE_Y) <= K.HIGH_CLAIM_HALF_WIDTH;
+  return depthFrom(goalX, x) > SMALL_BOX_DEPTH && isInGoalScoreArea(x, y, goalX);
+}
+
+/** A loose ball in his penalty area is his when he gets there before anyone else (tester report). */
+export function keeperTakesLoose(inBox: boolean, keeperEta: number, bestOtherEta: number): boolean {
+  return inBox && keeperEta <= bestOtherEta;
+}
+
+/**
+ * A team-mate of the keeper covers the ball at `ball`: an outfield player close to it and not behind it (goal-side
+ * or level). Then the ball is his, not the keeper's. Inside the small box the keeper always has it.
+ */
+export function defenderCovers(
+  gk: Pick<GamePlayer, 'id' | 'team' | 'attackDir'>,
+  ball: Pos,
+  players: ReadonlyArray<Pick<GamePlayer, 'id' | 'team' | 'role' | 'x' | 'y' | 'recoveryTime'>>,
+): boolean {
+  const goalX = keeperGoalX(gk);
+  if (depthFrom(goalX, ball.x) <= SMALL_BOX_DEPTH) return false;
+  const ballDepth = depthFrom(goalX, ball.x);
+  return players.some(p =>
+    p.team === gk.team && p.id !== gk.id && p.role !== 'GK' && !(p.recoveryTime > 0)
+    && Math.hypot(p.x - ball.x, p.y - ball.y) <= K.DEFENDER_COVER
+    && depthFrom(goalX, p.x) <= ballDepth + K.DEFENDER_LEVEL);
 }
 
 /** The keeper comes for a high ball in the wide claim zone: close enough and not clearly beaten to it. */
