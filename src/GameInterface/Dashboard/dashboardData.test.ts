@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Fixture } from "@/types/calendarTypes";
-import type { RosterPlayer, StandingRow } from "@/types/playerTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";

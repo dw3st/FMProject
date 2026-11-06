@@ -1,7 +1,7 @@
 # Árbitros: quadro, escala, rigor e rosto
 
 Spec: `docs/superpowers/specs/2026-10-09-referees-design.md` (decisões do usuário de 2026-10-09 no §10). Etapa 38b do
-`docs/ROADMAP.md`, versão **4.17**. A Etapa 39 (VAR) vai usar a escala e a qualidade daqui. Visual: `ui-standard.md`.
+`docs/ROADMAP.md`, versão **5.7**. A Etapa 39 (VAR) vai usar a escala e a qualidade daqui. Visual: `ui-standard.md`.
 
 ## Regra
 
@@ -103,7 +103,7 @@ Desvio do spec: o bônus de clássico (`isDerby`) ficou de fora (exigiria ler as
 
 Ver a spec §7 (tabelas M1–M3 de 2026-10-09). Resultados em §11:
 
-- **M1** (motor, Premier + Championship, 2 sementes, 2 400 jogos por braço, mundo da 4.16): faltas +0,3%, amarelos +0,6%,
+- **M1** (motor, Premier + Championship, 2 sementes, 2 400 jogos por braço, mundo da 5.6): faltas +0,3%, amarelos +0,6%,
   vermelhos +13% (~200 eventos, ruído ±14%), pênaltis −0,6%, gols +0,9%; quickSim pareado com `CARD_NORM` 1,01: faltas
   −0,2%, amarelos −0,4%, vermelhos +0,3%.
 - **M2** (mesmo clube, 400 jogos): ±0,75 amarelos ×1,31, faltas ×1,06; ±1 amarelos ×1,55, faltas ×1,07.
@@ -134,7 +134,7 @@ ninguém com 51+.
 - Torneios de base sem árbitro. Uniforme sempre preto.
 - O cache local do Transfermarkt vem da página de perfil (a API local não tem rota de árbitro).
 
-## Erros e VAR (Etapa 39, 4.18)
+## Erros e VAR (Etapa 39, 5.8)
 
 A **qualidade** passa a ter efeito de partida: o árbitro erra (pênalti inventado ou não marcado, impedimento que passa,
 cartão errado) com chance × `1,5 − 0,8 × q/100`; nas fixtures com VAR a maioria é corrigida. `EngineReferee` ganhou

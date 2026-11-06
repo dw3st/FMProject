@@ -19,15 +19,15 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 | `continentI18nKey(continent)` | Converte o nome do continente (`"South America"`) na chave i18n (`"south_america"`). |
 | `partitionDayMatches(matches, ownLeague, followed, isOwnMatch?)` | Separa as partidas do dia em `primary` (liga própria + seguidas) e `others` (o resto). `isOwnMatch` força a partida do usuário para `primary` mesmo com a liga da sessão ausente/obsoleta. |
 
-## Ligas com o mesmo nome (4.41.53)
+## Ligas com o mesmo nome (8.1.53)
 
 `competitionName` acrescenta o país quando mais de um país usa o nome no catálogo recebido: "Premier League (Armênia)" (`homonymName`; em português pelo `Intl.DisplayNames`, senão o nome cru do `leagueData`). As ligas nativas (slug sem `of_`: a Premier League inglesa, a Bundesliga alemã) ficam com o nome puro. O `league.name` do catálogo não muda; `leagueLabel` já traz o país e continua lendo o `name`.
 
-## Jogadores com o mesmo nome abreviado (4.42.1)
+## Jogadores com o mesmo nome abreviado (8.2.1)
 
 Dois jogadores com o mesmo "J. Bellingham" mostram o primeiro nome inteiro (`src/Domain/world/playerNames.ts`): o nome do `fullName` que começa com a inicial. A tabela `playerNameFixes.json` (id → nome) sai do mundo base com `bun scripts/buildPlayerNameFixes.ts` (rodar depois de regenerar o mundo) e é aplicada na leitura do save (`FileSystemDAL`: elencos, livres, aposentados), então vale para mundos em andamento sem regenerar os kits. Limitações: nomes sem abreviação iguais ("Dudu") ficam como estão; o que já foi gravado com o nome antigo (histórico do clube, prêmios, logs do dia) não muda.
 
-## Busca por time (Etapa 46, 4.42)
+## Busca por time (Etapa 46, 8.2)
 
 Campo "Buscar time" da tela Ligas (`Components/ClubSearch.tsx`, lógica pura em `src/Domain/world/clubSearch.ts`, rota `GET /api/saves/:saveId/clubs`, buscada só quando o campo ganha foco). Os times vêm do índice de squads do save, não do `leagueData`. Vazio: os times do país da liga aberta; com texto: o mundo, começo do nome antes de começo de palavra antes do meio, até 30, agrupados por país (o da liga aberta primeiro). Escolher um time abre a aba Tabela da liga dele, com a linha marcada e rolada até a vista.
 
@@ -48,7 +48,7 @@ Cobertura (2026-10-27): 1081 de 1273 clubes (nativo/ESPN 632, TheSportsDB 449); 
 `ClubLogo` guarda em memória (`failedLogoUrls`) as URLs que já deram 404, para não pedir de novo a
 cada instância montada — cai no brasão gerado com as cores do clube. Ver `.claude/rules/data/espn-import.md`.
 
-### Escudos de traço escuro (4.41.4)
+### Escudos de traço escuro (8.1.4)
 
 `bun scripts/logoContrast.ts` mede os PNG do índice e grava `src/example_data/logoBacking.json` (pouca área pintada,
 traço escuro, quase nada claro: QPR, Bolton e outros 9; ou contorno escuro em mais de 75% da borda, figura branca desenhada com traço fino: Millwall, Modena, Eibar, Albacete); o `ClubLogo` desenha esses sobre um disco claro. Rodar de novo
@@ -75,7 +75,7 @@ grande o bastante ou tem ponto. O mapa é `aria-hidden`: a lista cobre teclado e
 com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` do script e regerar
 (`worldMapCountries.test.ts` falha se faltar).
 
-### Mapa do olheiro (4.10)
+### Mapa do olheiro (5.0)
 
 O mesmo `WorldMap` é o mapa de conhecimento por país do olheiro (`Scouting/ScoutCountriesPanel.tsx`): props opcionais
 `fillClassFor` (cor por país; aqui pela faixa), `captionFor` ("Inglaterra · 90"), `hint`, `outlinedSlug` (contorno da
@@ -127,7 +127,7 @@ Mesmo estilo `facesjs`, mesmo princípio (SVG gerado no servidor, o cliente só 
   novo jogo (editor 128px, resumo do passo do clube 40px). Componentes: `FaceImage` (`PlayerFace.tsx`, genérico por URL),
   `StaffFace` e `ManagerFaceImage` (`Components/PersonFace.tsx`).
 
-### Rostos dos árbitros (4.17)
+### Rostos dos árbitros (5.7)
 
 Mesma rota `GET /api/faces/person/:id.svg` (ids `ref_*`): `refereeFaceUrl` põe a camisa preta com gola amarela e a
 idade real; `g=f` desenha o rosto feminino do `facesjs` (árbitras do Wikidata). `PERSON_FACE_VERSION` não mudou (o rosto
@@ -209,7 +209,7 @@ O pacote fica na raiz do repositório, fora do git e da imagem Docker (`.gitigno
   usam o webp quando o id está na lista, senão o SVG de sempre. Avatar com algum traço "Sorteado" fica no SVG.
 - Testes: `bun test src/Domain/art src/backend/artAssets.test.ts`.
 
-### Rostos pintados de quem só tem rosto gerado (4.41.14)
+### Rostos pintados de quem só tem rosto gerado (8.1.14)
 
 Técnicos da IA, comissão e árbitros gerados (homens) usam um rosto pintado do avatar (`faces/coaches/<combo>.webp`):
 `personCombo(id, nacionalidade, idade)` (`src/Domain/art/personCombo.ts`) sorteia a combinação pelo id, a pele pela região

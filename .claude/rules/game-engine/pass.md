@@ -295,7 +295,7 @@ so `STRONG_RAW` sets how much raw quality an action needs to look "strong" (0.63
 
 | Action | `STRONG_RAW` |
 |---|---|
-| shoot | 1.6 (1.8 until #145, 4.19) |
+| shoot | 1.6 (1.8 until #145, 5.9) |
 | carry | 0.8 |
 | **pass** | **0.8** |
 | dribble | 0.8 |
@@ -525,6 +525,6 @@ Balanced/direct before the change (300 matches): 2.70 / 6.07 / 44.2 and 2.97 / 6
 quickSim has no build_up/style effect on goals (it uses team strength only), so its calibration is unaffected.
 
 **Volume do mundo (#156), `bun scripts/ai-formation-goals.ts --engine 800 --modes ai --quick 0`** (formações da IA, fôlego 88,
-800 jogos por liga; antes = main 4.22.2): Premier 2,250 → 2,243 gols (−0,3%), 5,40 → 5,46 chutes (+1,1%); Championship
+800 jogos por liga; antes = main 6.2.2): Premier 2,250 → 2,243 gols (−0,3%), 5,40 → 5,46 chutes (+1,1%); Championship
 1,779 → 1,774 gols (−0,3%), 4,90 → 5,15 chutes (+5,1%). Gols iguais: o quickSim (`BASE_GOALS`, `SHOTS_PER_XG`) não mudou.
 A sonda de lances (Premier, estilo equilibrado, 900 jogos) dava +8% de chutes; com as formações da IA o efeito é menor.

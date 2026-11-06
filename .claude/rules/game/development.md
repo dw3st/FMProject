@@ -383,7 +383,7 @@ Um jogo de base dá DP de crescimento com os fatores de uma partida × `YOUTH_CO
 O atributo Base do técnico (`.claude/rules/game/achievements.md`) multiplica o DP de crescimento de quem tem até 21 anos no
 clube do jogador (partida, treino, temporada da base, torneios de base) por 1 ± 5% (`youthAttributeMult`); em 10 ou na IA, × 1.
 
-## Treino individual (4.39)
+## Treino individual (7.9)
 
 `Squad.playerTraining[id] = { focus?, position? }` (clube do jogador): no treino diário os pesos de DP do jogador são os
 da posição de treino (ou a natural) com a área de foco × 1,8 e renormalizados (`planDpWeights`, `youthTraining.ts`): o

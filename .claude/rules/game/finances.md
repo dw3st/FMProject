@@ -371,7 +371,7 @@ receita/despesa do jogador por tipo, em todas as temporadas.
 - **Fase 1 do flush não é atômica entre o squad e o lançamento do extrato** de um mesmo
   `recordMoney` — ver a seção "Extrato" acima.
 
-## Reforma paga na hora (Etapa 34, 4.11)
+## Reforma paga na hora (Etapa 34, 5.1)
 
 A reforma pequena de um item das instalações (≤ 2% da receita anual) é paga pela rota na hora: uma linha
 `facilities` com `ref = { facility: "repair", item }` (`ledgerText` → `facilityRepair`), sem `board_funding`, gravada
@@ -382,8 +382,8 @@ mensais (`facilityRebuild`/`facilityUpgrade`/`boardFundingItem`). Ver `facilitie
 
 O extrato é do assento (`seats/{seatId}/ledger/`); a invariante soma do extrato = saldo vale por assento. Ver `.claude/rules/game/multiplayer.md`.
 
-## Empréstimo do banco (4.43)
+## Empréstimo do banco (8.3)
 
 Report de tester. `Squad.bankLoan` (só o clube humano; lógica pura em `src/Domain/finance/bankLoan.ts`, `BANK_LOAN`): até 15% de `wageRevenueBasisOf`, um por vez, 1 ou 2 temporadas, juros simples de 15% por temporada, diretoria em 40 ou mais, e pedir tira 3 da diretoria. `POST /api/saves/:id/bank-loan { amount, seasons }` (409 `loanActive`, `boardLow`, `noClub`, `lobby`; 400 `overLimit`, `invalidAmount`, `invalidSeasons`) grava o elenco e o extrato juntos: `loan_in` (mexe no saldo, não conta como receita) e, a partir da segunda seguinte, `loan_payment` semanal, cobrada mesmo sem dinheiro. Ao sair do clube com dívida (troca, demissão, fim de contrato, saída do mundo), `releaseHumanClub` apaga o campo (o clube da IA não tem caixa) e devolve a marca para `ManagerRecord.unpaidDebts`: permanente, aparece no ranking de técnicos e tira de `managerReputation` 5 + 50 × (dívida / receita) pontos, até 15 por dívida e 30 no total. Um empréstimo pago até o fim não deixa marca. A IA não pega empréstimo. Tela: cartão em Finanças. Sem quitação antecipada.
 
-Quitar (4.44.4): `POST /bank-loan/payoff` paga de uma vez o que falta, com todos os juros combinados, sem desconto; precisa ter o saldo (409 `noMoney`, `noLoan`). Linha `loan_payment` no extrato.
+Quitar (8.4.4): `POST /bank-loan/payoff` paga de uma vez o que falta, com todos os juros combinados, sem desconto; precisa ter o saldo (409 `noMoney`, `noLoan`). Linha `loan_payment` no extrato.

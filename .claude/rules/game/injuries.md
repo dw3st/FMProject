@@ -128,7 +128,7 @@ está apto). `clearHealed(player, date)` — pura, nunca muta — remove `injury
   energia final dele.
 - **`GameState.injuries: InjuryRecord[]`** — todas as lesões da partida, em ordem cronológica.
 
-### Troca manual na partida ao vivo (#140, 4.14.4)
+### Troca manual na partida ao vivo (#140, 5.4.4)
 
 - `GameState.manualInjurySubs?: { A?: true }` — só o `MatchScreen` liga, para o time do usuário. Com a opção, uma
   lesão do time com trocas e banco **não** troca sozinha: `leaveInjuryVacancy` tira o lesionado (o time joga com um a
@@ -330,7 +330,7 @@ na partida (`matches.ts`) e no treino (`dailyTraining.ts`). A IA usa as estrelas
 MEDIUM 3★ ×1, HIGH 3,4★ ×0,96, ELITE 3,8★ ×0,92; média do mundo ≈ ×1,005). O risco de lesão continua do preparador
 físico.
 
-## Gramado e fisioterapia (Etapa 34, 4.11)
+## Gramado e fisioterapia (Etapa 34, 5.1)
 
 Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
 
@@ -344,9 +344,9 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
   (`trainingGroundEffectsOf(squad).injuryDurationMult` = nível × condição: ×1,25 em 0%/interditada; nível
   ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15; neutra na largada). A IA não muda.
 - Medido (M1/M2): ver a tabela de medições em `facilities.md`.
-- **Grama sintética (4.28):** lesões dos dois times × 1,1 nos jogos em casa do clube com grama sintética (motor, quickSim e partida ao vivo; a partida ao vivo antes ignorava a condição do gramado). Ver `facilities.md` → "Tipos de grama e padrão de corte".
+- **Grama sintética (6.8):** lesões dos dois times × 1,1 nos jogos em casa do clube com grama sintética (motor, quickSim e partida ao vivo; a partida ao vivo antes ignorava a condição do gramado). Ver `facilities.md` → "Tipos de grama e padrão de corte".
 
-## Inscrição (Etapa 37, 4.15)
+## Inscrição (Etapa 37, 5.5)
 
 `replaceUnavailableStarters(..., registered)` também troca o titular não inscrito na competição (motivo
 `unregistered`; lesionado > suspenso > não inscrito), e o limite de estrangeiros por jogo do Brasileirão troca com
@@ -357,7 +357,7 @@ Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
 O quickSim de seleção rola lesões como o de clube; a duração usa o médico e a fisioterapia do clube do jogador, e a
 inbox do clube do jogador avisa. Ver `.claude/rules/game/national-teams.md`.
 
-## Lesões mais frequentes e mais longas (4.41)
+## Lesões mais frequentes e mais longas (8.1)
 
 Report de tester (lesões raras demais). `BASE` 0,0000874 → 0,000109 e `CONTACT_BASE` 0,002307 → 0,00288 (× 1,25),
 `HEAVY_TRAINING_CHANCE` 0,01 → 0,0125, `DURATION_DAYS` leve 4–10, média 10–35, grave 35–150 (média ~20 dias, era ~16).

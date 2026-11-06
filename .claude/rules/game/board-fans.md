@@ -155,7 +155,7 @@ As respostas das coletivas, as promessas cumpridas ou quebradas e ignorar um con
 
 Diretoria, torcida, meta e ultimato são do assento (`seat.json` → `board`); cada clube humano tem os seus. Ver `.claude/rules/game/multiplayer.md`.
 
-## Torcida do favorito (4.39)
+## Torcida do favorito (7.9)
 
 Análise do mundo dos testers: o Barça vice com 94 pontos ficou com a torcida em 37–40, e na simulação um clube grande
 que ganha quase tudo terminava perto de 68. Com expectativa e > 0 (favorito) valem números próprios: pontos esperados
@@ -172,7 +172,7 @@ por jogo 1,4 + 0,6 e (2,0 no máximo, antes 2,5), vitória × (1 − 0,4 e), der
 | Grande favorito campeão (78/14/8, e = 1) | 68 | 83 |
 | Clube médio / azarão | 59 / 67 | 61 / 67 |
 
-## Vitória nunca baixa a diretoria (4.41.20)
+## Vitória nunca baixa a diretoria (8.1.20)
 
 Report de tester (QPR no mundo dos amigos, duas vitórias depois de 5 jogos sem vencer e a diretoria caiu 50,1 → 48,1).
 Nesse dia a causa foi o vermelho do técnico por reclamação (diretoria −3, `applyManagerCard`, `var.md`; ele ficou
@@ -182,7 +182,7 @@ de posição (`POSITION_WEIGHT × (meta − posição) / tamanho × peso`) de um
 diretoria de uma vitória é no mínimo `BOARD_WIN_FLOOR` (0,1). Cartão do técnico, imprensa e a segunda-feira continuam
 podendo baixá-la no mesmo dia (eventos à parte). Teste em `boardFans.test.ts`.
 
-## Ultimato e o fim da temporada (4.41.51)
+## Ultimato e o fim da temporada (8.1.51)
 
 Report de tester (QPR, "4 pts em 1 jogo" com a liga já encerrada). `reviewBoardStatus(..., { leagueMatchesLeft })`, os
 jogos de liga que o clube ainda tem (`totalRounds − mp`, lido no avanço do dia só com ultimato ou diretoria abaixo de 25):
@@ -191,7 +191,7 @@ o ultimato novo vale os próximos min(5, restantes) jogos, com ⌈7 × jogos / 5
 e cai sem demissão quando a temporada acaba; quando os pontos que faltam passam de 3 × os jogos que sobram, ele falha na
 hora. Sem o número (a virada), a regra de antes.
 
-## Diretoria exigente (4.42.3)
+## Diretoria exigente (8.2.3)
 
 Report de tester (Barcelona ou Real fora da briga não sentiam nada). `SeasonObjective.demanding`: meta de título num clube HIGH ou ELITE, ou continental num ELITE (`objectiveFor`, o tier natural). Só o que falta muda (`BOARD_FANS.demanding`): termo de posição abaixo da meta × 1,6, meta falhada −(8 + 50 × distância/tamanho, até 30), ultimato de 9 pontos em 5 jogos e, abaixo de 60, 85% da distância mantida na virada (`CARRY_BELOW`, os demais 50%). Clube que cumpre a meta não muda. Vale a partir da meta seguinte (a meta da temporada em curso não ganha a marca). A meta aparece com "diretoria exigente" (`objectiveText`).
 

@@ -8,7 +8,7 @@ Spec: `docs/superpowers/specs/2026-10-05-player-instructions-design.md`. Etapa 2
 - Cada vaga da tática do jogador tem uma **variante de função** (ex. lateral invertido, pivô) e uma **pressão
   individual** (menos / normal / mais). Por **vaga**, não por jogador: quem entra na vaga herda a instrução.
 - **Marcação individual:** até 2 pares por partida (uma vaga de linha nossa marca um jogador de linha do adversário
-  do dia), escolhidos na prévia ou ao vivo. Sem a bola ele cola no alvo; com a bola joga a vaga, mas nunca passa de 12 jardas antes do alvo, do lado do próprio gol (4.46.2, seção "Marcador que fica").
+  do dia), escolhidos na prévia ou ao vivo. Sem a bola ele cola no alvo; com a bola joga a vaga, mas nunca passa de 12 jardas antes do alvo, do lado do próprio gol (8.6.2, seção "Marcador que fica").
 - Tudo sobre **alavancas que o motor já tem**: uma variante é um conjunto de valores alternativos para campos do
   bloco `engine` de `roles.json` (`bounds`, `carryBias`, `offBallBias`, `passBias`, `passTargetWeight`,
   `offBallIntentWeights`, `defensiveIntentWeights`) e um deslocamento da âncora da vaga (a mesma geometria do JSON
@@ -266,9 +266,9 @@ nenhum clube da IA joga ou grava instruções.
 
 ## Distância do marcador (medida em 2026-11-04)
 
-`bun scripts/marker-distance.ts 60` (meia marcando o centroavante, 4-3-3, Premier, 60 sementes, posse do adversário há 3+ s, fora de bola parada): 6,45 ± 0,27 jardas em 2026-10-06, 6,56 ± 0,32 na 4.36 e 7,12 ± 0,35 na 4.46; alvo com 1,27 / 1,05 / 1,22 chute e 0,30 / 0,32 / 0,30 gol por jogo. A diferença está no limite do ruído e os resultados não mudaram. O tempo se divide em dois: ~48% a menos de 3 jardas e ~25% a 10 ou mais, desde a primeira versão. Longe, ele quase nunca está do lado do gol (4%), mas corre para o alvo (destino certo em 95%, 5,3 × 5,1 jardas por segundo, fecha 1,4 por segundo): é a transição, porque com a bola ele joga a vaga e o atacante fica lá na frente. Uma partida só diz pouco: de 2,6 a 14,3 jardas.
+`bun scripts/marker-distance.ts 60` (meia marcando o centroavante, 4-3-3, Premier, 60 sementes, posse do adversário há 3+ s, fora de bola parada): 6,45 ± 0,27 jardas em 2026-10-06, 6,56 ± 0,32 na 7.6 e 7,12 ± 0,35 na 8.6; alvo com 1,27 / 1,05 / 1,22 chute e 0,30 / 0,32 / 0,30 gol por jogo. A diferença está no limite do ruído e os resultados não mudaram. O tempo se divide em dois: ~48% a menos de 3 jardas e ~25% a 10 ou mais, desde a primeira versão. Longe, ele quase nunca está do lado do gol (4%), mas corre para o alvo (destino certo em 95%, 5,3 × 5,1 jardas por segundo, fecha 1,4 por segundo): é a transição, porque com a bola ele joga a vaga e o atacante fica lá na frente. Uma partida só diz pouco: de 2,6 a 14,3 jardas.
 
-## Marcador que fica (4.46.2)
+## Marcador que fica (8.6.2)
 
 Pedido do usuário. Com o time na bola, o alvo de movimento do marcador passa por `stayHomeTarget` (`DefensivePositioning.ts`): limitado a `STAY_HOME_GAP` (12) jardas do alvo, do lado do próprio gol, e puxado `STAY_HOME_Y_PULL` (0,7) para o y dele. Alvo mais recuado que a vaga não muda nada. Com a bola nos pés ele joga normalmente; corrida atrás de bola solta não é limitada. A tabela de marcação acima é de antes.
 

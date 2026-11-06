@@ -160,13 +160,13 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
   recebe `world_removed`. `SeatError("ownerOrLast")` para o dono ou o último assento.
 - **Posse:** `POST /api/worlds/:saveId/owner` troca os papéis. O dono só sai depois de passar a posse (409
   `transferFirst`); sozinho, sair apaga o mundo (`deleteWorld`, os outros recebem `world_deleted`).
-- **Nome da liga (4.34.1):** toda tela mostra a liga como "Liga de <apelido do dono>" (`world.leagueOf`), nunca o
+- **Nome da liga (7.4.1):** toda tela mostra a liga como "Liga de <apelido do dono>" (`world.leagueOf`), nunca o
   nome do save (o clube do dono): painel Amigos, título da janela de chat e dos avisos, `/world`, entrada pelo código.
   O servidor manda só o apelido (`worldOwnerName`, `worldLifecycle.ts`: apelido do dono, senão o nome do técnico dele)
   em `WorldView.owner`, `WorldRoomView.owner` e `WorldByCode.owner`; o convite e o `world_invite` não levam nome.
   Duas ligas do mesmo dono no painel Amigos e no chat ganham o clube do próprio técnico ao lado ("Liga de Emy ·
-  Arsenal", `worldRoomLabel`, `WorldRoomView.myClub`, 4.34.2).
-- **Clubes de outros técnicos (4.34.2):** o selo com o apelido (`World/HumanBadge.tsx`, `useHumanClubs`) aparece na
+  Arsenal", `worldRoomLabel`, `WorldRoomView.myClub`, 7.4.2).
+- **Clubes de outros técnicos (7.4.2):** o selo com o apelido (`World/HumanBadge.tsx`, `useHumanClubs`) aparece na
   Classificação e nos Jogos de Ligas, na tabela do Painel e no cabeçalho do elenco do clube.
 - **Barra superior:** o controle "Pronto até…" fica numa faixa fixa de 184px (`TopNavigation`); cada estado cabe nela
   (textos cortados com o completo no `title`, "Avançando" curto `world.advance.runningShort`, sem "não estou pronto"
@@ -252,7 +252,7 @@ em `world.phase === "running"`. O solo não muda.
 - **Alvo** (`computeGroupTarget`, `src/Domain/groupAdvance/groupAdvance.ts`): `min(readyUntil)` de todos os assentos, e um
   jogo oficial do assento (clube ou seleção) sem `matchDecision` para o mundo **no** dia do jogo. Sem clube: só a data.
   Decidir o jogo (`live`/`simulate`) conta como pronto até o dia seguinte.
-- **Sem clube (4.41.1):** "meu próximo jogo" vira "Até as próximas propostas" (`readyNextOffers`): o `readyUntil` é
+- **Sem clube (8.1.1):** "meu próximo jogo" vira "Até as próximas propostas" (`readyNextOffers`): o `readyUntil` é
   `unemployed.nextOfferDate`; uma proposta antes disso para o assento (`seatStops`). `GET …/advance` → `me.unemployed`.
 - **Paradas do dia** (`seatStops`): demissão, proposta de emprego ou de seleção, fim da temporada do país do assento; o
   `readyUntil` dele volta a `null`. Técnico desempregado nunca para por jogo (o jogo da seleção dele é simulado).
@@ -302,7 +302,7 @@ em `world.phase === "running"`. O solo não muda.
 | Rota | Faz |
 |---|---|
 | `POST /api/worlds/:saveId/ready { until }` | Marca (ou `null` desmarca) e dá kick |
-| `POST …/match-decision { date, fixtureId, mode: "simulate" \| "undo" }` | Decide o jogo do dia; `undo` (4.35.3) desfaz um "Simular" do dia que ainda não rodou (sai o "Pronto até" D+1 que ele pôs; 409 `noDecision` sem nada a desfazer). A barra mostra "Jogo será simulado" com o botão de desfazer, e o Simular explica no `title` |
+| `POST …/match-decision { date, fixtureId, mode: "simulate" \| "undo" }` | Decide o jogo do dia; `undo` (7.5.3) desfaz um "Simular" do dia que ainda não rodou (sai o "Pronto até" D+1 que ele pôs; 409 `noDecision` sem nada a desfazer). A barra mostra "Jogo será simulado" com o botão de desfazer, e o Simular explica no `title` |
 | `POST …/live-recording { date, fixtureId, recording }` | Grava a partida ao vivo (409 `dayClosed`, 400 `notYourMatch`/`noWinner`/`invalidRecording`, 409 `seatOpponent`) |
 | `GET …/live-recording` | Resultado provisório (404 sem gravação do dia), com o árbitro da escala do dia (`officialsFor`) |
 | `GET …/advance` | Estado do grupo (data, alvo, quem falta, prazo, status por membro) e o erro do executor: `error` (código), `errorTries`, `nextRetryAt`, `gaveUp` |
@@ -316,7 +316,7 @@ Evento de socket: `world_progress`.
 - Barra superior: **Pronto até…** (amanhã, meu próximo jogo, uma data) no lugar do Continuar; marcado, "Pronto até 12/03 ·
   esperando 2" com desmarcar; no dia de jogo **Jogar** (prévia → partida) e **Simular**; durante o avanço "Avançando…
   14/03 de 20/03". `GroupAdvanceBand` no Painel e em `/world` (data, alvo, quem falta, prazo restante, status por membro:
-  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço não há tela de resumo (4.46.4): só o fim de temporada e a demissão (`/fired`) aparecem; o resto fica na caixa de entrada e no cartão da semana.
+  pronto, jogo a decidir, atrasado, sem clube). Depois de um avanço não há tela de resumo (8.6.4): só o fim de temporada e a demissão (`/fired`) aparecem; o resto fica na caixa de entrada e no cartão da semana.
 - Erro do executor (`GroupAdvanceBand`): o texto do código (`world.advance.errors.dayFailed`) com a hora da próxima
   tentativa; esgotadas as 5, "A liga parou de tentar" e o botão **Tentar de novo** (`POST …/advance/retry`). Gravação do
   jogo ao vivo que falha fica em `sessionStorage`, e o "Tentar de novo" dela só funciona na mesma aba.
@@ -355,20 +355,20 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
   `withSaveLock` (até ~14 s num dia com rodada no motor completo).
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
 
-### Som de pronto (4.42.6)
+### Som de pronto (8.2.6)
 
 Pedido do usuário. Um toque curto de duas notas (`GameInterface/readySound.ts`, sintetizado) quando outro técnico sai da lista de espera do `world_progress` (`othersNowReady`, puro; o próprio técnico não conta) e, na sala do jogo entre técnicos, quando o outro aperta Começar. Toca com a aba em segundo plano; só depois de um clique no site (regra do navegador). Preferência `fm.world.readySound` em Configurações, volume o da partida. Não toca na partida ao vivo, onde o `GroupAdvanceProvider` não está montado.
 
-### Só falta você (4.42.7)
+### Só falta você (8.2.7)
 
 Report de tester. Quando o `world_progress` passa a esperar só este técnico (`myTurnNow`, puro, nunca no primeiro estado nem num mundo de um membro): o toque de pronto, um cartão abaixo do controle "Pronto até" (some ao fechar ou quando ele deixa de ser o único) e, com a aba em segundo plano, o título da aba e, se ligada em Configurações, a notificação do navegador (`World/turnNotice.ts`, `fm.world.turnNotification`; a permissão é pedida nesse clique; no Android Chrome, sem service worker, só o título e o toque).
 
-Simular um jogo entre dois assentos decide o jogo dos dois, mas só quem clicou fica pronto (`simulateSeatGame` grava só a decisão no outro): o outro não tem o dia rodado por um amigo e continua segurando o mundo, agora com o menu "Pronto até" (até a 4.42.6 a barra só mostrava "Jogo será simulado", sem pronto).
+Simular um jogo entre dois assentos decide o jogo dos dois, mas só quem clicou fica pronto (`simulateSeatGame` grava só a decisão no outro): o outro não tem o dia rodado por um amigo e continua segurando o mundo, agora com o menu "Pronto até" (até a 8.2.6 a barra só mostrava "Jogo será simulado", sem pronto).
 
 ## Parte 4: humano × humano
 
 Spec: `docs/superpowers/specs/2026-10-16-multiplayer-h2h-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-h2h.md`.
-Versão **4.26**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entre dois técnicos é a parte 7.
+Versão **6.6**. Vale em qualquer mundo com 2+ assentos; a partida ao vivo entre dois técnicos é a parte 7.
 
 ### Regra
 
@@ -466,7 +466,7 @@ bun test src/Domain/seatOffers src/backend/dal/seatOffers.dal.test.ts src/backen
 ## Parte 5a: classificação dos técnicos
 
 Spec: `docs/superpowers/specs/2026-10-16-multiplayer-standings-design.md`. Plano: `docs/superpowers/plans/2026-10-16-multiplayer-standings.md`.
-Versão **4.27**. A parte 5 foi dividida: esta é a classificação dos técnicos de uma liga de amigos; o mundo público é a 5b.
+Versão **6.7**. A parte 5 foi dividida: esta é a classificação dos técnicos de uma liga de amigos; o mundo público é a 5b.
 
 ### Regra
 
@@ -561,12 +561,12 @@ bun test src/Domain/multiplayer src/backend/dal/seatSeasons.dal.test.ts src/back
 ## Parte 6: rivais
 
 Spec: `docs/superpowers/specs/2026-10-19-multiplayer-rivals-design.md`. Plano: `docs/superpowers/plans/2026-10-19-multiplayer-rivals.md`.
-Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. Sem efeito de partida (`/test`, `/lab`: nada).
+Versão **7.4**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. Sem efeito de partida (`/test`, `/lab`: nada).
 
 ### Regra
 
 - **Resultados do dia:** em cada dia que o executor roda (`stepWorld`, dentro do lock), `recordDayResults` grava no
-  serviço bufferizado do próprio dia, antes do `flush` (`runBufferedDay(..., beforeFlush)`, 4.34.3): o feed entra junto
+  serviço bufferizado do próprio dia, antes do `flush` (`runBufferedDay(..., beforeFlush)`, 7.4.3): o feed entra junto
   com o dia ou nada entra (uma falha ali falha o dia, que roda de novo; o feed é idempotente pelo id).
   `recordDayResults` (`src/backend/rivals/rivalsWorld.ts`) monta os jogos dos clubes humanos a partir de
   `outcome.payload.events` (`buildSeatResults`, `src/Domain/rivals/results.ts`) e grava em `saves/{id}/rivalsFeed.json`
@@ -577,11 +577,11 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
   `away_win`, `comeback_win`, `blown_lead`, `late_equalizer` / `late_winner` (88' ou depois, pelos minutos dos gols),
   `shootout_win`/`shootout_loss` (empate decidido nos pênaltis).
 - **Placar ao vivo:** o `MatchScreen` de um mundo em grupo manda `live_score { saveId, fixtureId, phase, minute, score:
-  { for, against }, scorer?, side? }` (`start`, `goal`, `disallowed`, `red` (4.35.3, com `side` e o expulso em `scorer`), `half`, `minute`, `end`; nada em jogo de seleção; desde a 4.34.1 um
+  { for, against }, scorer?, side? }` (`start`, `goal`, `disallowed`, `red` (7.5.3, com `side` e o expulso em `scorer`), `half`, `minute`, `end`; nada em jogo de seleção; desde a 7.4.1 um
   `minute` a cada `RIVALS.LIVE_MINUTE_STEP` (5) minutos de jogo, conferido a cada segundo: precisa adiantar o minuto,
   não muda o placar, volta o status a `live` depois do intervalo e não conta no limite de 40 eventos) por um socket próprio
   (`useLiveRivals`). O servidor (`src/backend/rivals/liveScores.ts`, em memória) aceita só de um membro, para o jogo não
-  jogado do clube do assento na data do mundo; um gol soma, um gol anulado pelo VAR (`disallowed`, 4.34.3, do evento
+  jogado do clube do assento na data do mundo; um gol soma, um gol anulado pelo VAR (`disallowed`, 7.4.3, do evento
   `goalDisallowed`) tira exatamente um de um lado e apaga o último gol, o resto não muda o placar; o minuto não volta,
   0..130, até 40 eventos por jogo, 30 frames por minuto por socket; o autor só fica se for nome de um dos dois elencos.
   Frame recusado: silêncio. Repasse `friend_live { saveId, seatId, live, goal? }` aos outros membros; `end` fica 10 min,
@@ -607,11 +607,11 @@ Versão **4.34**. Vale em mundos `mode: "multi"` com `world`; o solo não muda. 
 
 - `/world`: abas **Rivais** (`RivalsTable`, clicar abre os resultados do amigo) e **Resultados** (`ResultsFeed`, por
   dia, filtro por amigo, ações de resenha); `?tab=rivals|results`.
-- Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos, no topo (4.38.17): quem joga agora vem primeiro, com o placar, o minuto e os últimos lances (`LiveMoments`), atualizados pelo `friend_live`; sem jogo, o próximo jogo.
+- Painel: cartão **Rivais** (`RivalsCard`) com 2+ técnicos, no topo (7.8.17): quem joga agora vem primeiro, com o placar, o minuto e os últimos lances (`LiveMoments`), atualizados pelo `friend_live`; sem jogo, o próximo jogo.
 - Avisos no canto (`ChatPopups`): resultado de amigo ("Fabio · Vasco 0–3 Bahia", borda primária / neutra / destrutiva)
   e gol ao vivo, com as ações; 8 s, no máximo 3.
-- **Últimos lances (4.35.3):** `LiveScoreView.moments` guarda os últimos `RIVALS.LIVE_MOMENTS_MAX` (12) lances (gol com autor, gol anulado, expulsão, intervalo, fim); clicar no amigo na faixa abre o popup `LiveMoments` (placar + lances, mais novos primeiro) com a resenha embaixo.
-- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 4.35.3); desde a 4.37 a faixa lista sempre os amigos da liga (quem não joga: próximo jogo com os dois escudos em ordem casa/fora e a data, de `GET …/rivals` a cada minuto; o rótulo vira "Amigos" sem ninguém ao vivo) e nenhum aviso cobre o campo (report): o gol do amigo acende a linha dele por 8 s com "gol de X", mensagens só acendem o selo do botão Amigos, e só o convite do jogo entre técnicos aparece em `MATCH_POPUPS_ID`; clique abre as ações
+- **Últimos lances (7.5.3):** `LiveScoreView.moments` guarda os últimos `RIVALS.LIVE_MOMENTS_MAX` (12) lances (gol com autor, gol anulado, expulsão, intervalo, fim); clicar no amigo na faixa abre o popup `LiveMoments` (placar + lances, mais novos primeiro) com a resenha embaixo.
+- Partida ao vivo: faixa `LiveRivalsStrip` acima do campo (selo Ao vivo vermelho pulsando, 7.5.3); desde a 7.7 a faixa lista sempre os amigos da liga (quem não joga: próximo jogo com os dois escudos em ordem casa/fora e a data, de `GET …/rivals` a cada minuto; o rótulo vira "Amigos" sem ninguém ao vivo) e nenhum aviso cobre o campo (report): o gol do amigo acende a linha dele por 8 s com "gol de X", mensagens só acendem o selo do botão Amigos, e só o convite do jogo entre técnicos aparece em `MATCH_POPUPS_ID`; clique abre as ações
   sem pausar.
 - Chat: `TauntLine` (escudo 20px, placar, ícone ou frase em itálico no idioma de quem lê). i18n `rivals.*`.
 
@@ -625,7 +625,7 @@ bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.tes
 ### Limitações (parte 6)
 
 - Placar ao vivo depende do navegador de quem joga: aba fechada vira "interrompido" até o dia rodar. Recarregar a
-  página manda um `start` (ou `half` no intervalo) com o minuto e o placar atuais (4.34.2), que reconstrói o jogo no
+  página manda um `start` (ou `half` no intervalo) com o minuto e o placar atuais (7.4.2), que reconstrói o jogo no
   servidor mesmo se ele já o tinha descartado.
 - O placar ao vivo é do cliente (só validado por coerência).
 - Estado ao vivo em memória (um processo só).
@@ -633,7 +633,7 @@ bun test src/Domain/rivals src/backend/rivals src/backend/dal/rivalsFeed.dal.tes
 ## Parte 5b: mundo público
 
 Spec: `docs/superpowers/specs/2026-10-26-multiplayer-public-world-design.md`. Plano:
-`docs/superpowers/plans/2026-10-26-multiplayer-public-world.md`. Versão **4.35**. É o mesmo mundo `multi` com
+`docs/superpowers/plans/2026-10-26-multiplayer-public-world.md`. Versão **7.5**. É o mesmo mundo `multi` com
 `world.kind === "public"`: sem dono, sem convite, ritmo por relógio.
 
 ### Regra
@@ -649,7 +649,7 @@ Spec: `docs/superpowers/specs/2026-10-26-multiplayer-public-world-design.md`. Pl
   vencido e mais novo que `advance.lastSlot` dá **um** passo (vários perdidos = um). O passo (`publicStepTarget`) joga o dia
   parado e segue até o próximo dia com jogo de algum assento (sem assento: a próxima rodada das 10 ligas); jogo sem decisão
   é simulado pelo assistente. Prazo e paradas não seguram o mundo.
-- **Passo antecipado (4.35.3):** entre os horários, o mesmo passo começa na hora quando todo assento **ativo** (abriu o
+- **Passo antecipado (7.5.3):** entre os horários, o mesmo passo começa na hora quando todo assento **ativo** (abriu o
   mundo nas últimas `ACTIVE_HOURS` 24 h: `lastSeenAt` ou a memória do processo) com clube está pronto até o alvo do passo
   (`earlyStepDue`: a regra da liga de amigos, "Pronto até" ≥ alvo e o jogo de hoje decidido), há pelo menos um assento
   assim e o último passo começou há `EARLY_STEP_GAP_MIN` (20) minutos ou mais (`advance.lastStepAt`, gravado por todo
@@ -725,7 +725,7 @@ bun test src/Domain/multiplayer src/backend/publicWorld.create.test.ts src/backe
 ## Parte 7: humano × humano ao vivo
 
 Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
-`docs/superpowers/plans/2026-10-27-multiplayer-h2h-live.md`. Versão **4.36**. Vale em qualquer mundo em grupo
+`docs/superpowers/plans/2026-10-27-multiplayer-h2h-live.md`. Versão **7.6**. Vale em qualquer mundo em grupo
 (`mode: "multi"` com `world` em `running`); só o jogo de clube (o de seleção entre dois técnicos continua simulado).
 
 ### Regra
@@ -749,7 +749,7 @@ Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
   `buildLiveMatchState` da partida sozinha (`src/Domain/match/liveMatchSetup.ts`). Manda `frame` (posições, bola,
   relógio, um por passo de 0,2 s, `FRAME_MS` 200 ms), `state` (o `GameState` a cada `STATE_MS` 1 s e depois de cada lance), `event`
   (lances do `gameBus` que a tela usa, `H2H_FORWARDED_EVENTS`) e `done`.
-- **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada; `unsub` a tira da fila antes, 4.38.20), troca de
+- **Controles de cada um** (`h2h_cmd`, só no próprio lado): substituição (entra na próxima bola parada; `unsub` a tira da fila antes, 7.8.20), troca de
   posição, tática ao vivo, mentalidade, formação, instrução de vaga e marcação individual. Sem velocidade (fixa 1×).
 - **Pausas:** `H2H.PAUSES` (3) por técnico, de até `PAUSE_SECONDS` (30) s; durante a pausa os dois mexem no time; só
   quem pausou retoma antes do fim (`h2hRules.ts`: `canPause`, `canResume`, `pauseExpired`).
@@ -830,9 +830,9 @@ Gols por jogo (150 partidas cada, mesmos XIs; o worker com os dois lados no auxi
 | Worker (`createH2HMatch`) | 2,80 ± 0,13 | 6,76 |
 | `simulateMatch` | 2,92 ± 0,12 | 6,81 |
 
-Diferença −4% (0,12 gol, erro-padrão 0,17): ruído. Com o passo de 1/60 s (até a 4.35) o worker fazia 3,38 contra
+Diferença −4% (0,12 gol, erro-padrão 0,17): ruído. Com o passo de 1/60 s (até a 7.5) o worker fazia 3,38 contra
 2,65 (+27,5% numa rodada de 100; ~+13% somando 640 jogos) e +31% de chutes: ver `.claude/rules/match-flow.md` →
-"Live match step (4.36)".
+"Live match step (7.6)".
 
 ### Testes
 
@@ -849,7 +849,7 @@ bun test src/Domain/h2h src/Domain/match/liveMatchSetup.test.ts src/backend/h2h 
 - Um frame de atraso no desenho (interpolação entre os dois últimos frames); um frame atrasado congela no último.
 - A sala não tem prazo próprio: com o prazo do grupo vencido, o assistente simula e a sala fecha.
 
-### Pênaltis em 2D (4.38)
+### Pênaltis em 2D (7.8)
 
 Cada técnico escolhe na prévia ou na sala ("Pênaltis: Bater eu mesmo / Automático"); `h2h_ready { penalty2d? }` leva a
 escolha. O worker emite `penaltyPending`; o servidor (`h2hRooms.ts`, `PenaltyRound`) espera `h2h_penalty { choice }`
@@ -860,7 +860,7 @@ para os dois e, `H2H.PENALTY_APPLY_MS` (2,4 s) depois, o worker aplica (`{ type:
 
 ## Parte 8: assistir ao jogo de um amigo
 
-Spec: `docs/superpowers/specs/2026-10-29-friend-match-broadcast-design.md`. Versão **4.41**. Vale em mundos em grupo
+Spec: `docs/superpowers/specs/2026-10-29-friend-match-broadcast-design.md`. Versão **8.1**. Vale em mundos em grupo
 (liga de amigos e mundo público): qualquer membro do mundo assiste a partida ao vivo de outro assento.
 
 ### Regra
@@ -899,7 +899,7 @@ bun test src/Domain/watch src/backend/watch src/Domain/rivals src/backend/rivals
 Navegador (local, 2026-10-29): mundo de dois assentos, partida solo em 1× e 4×; o espectador recebeu campo, números,
 amarelos, trocas, gols, intervalo e fim; recarregar a aba de quem joga retomou a transmissão.
 
-### Transmissão igual à partida (4.41.3)
+### Transmissão igual à partida (8.1.3)
 
 - Report: "gráfico diferente e muito lag". Os quadros saíam a cada 400 ms (a checagem de 200 ms contra passos de ~199 ms
   pulava um passo sim, um não) e a interpolação fixa de 200 ms parava metade do tempo. Agora sai um quadro a cada passo
@@ -912,7 +912,7 @@ amarelos, trocas, gols, intervalo e fim; recarregar a aba de quem joga retomou a
 - **Janela:** `WatchButton` abre `WatchPopup` (`Modal` `size="wide"`) no Painel; da partida ao vivo continua em outra
   aba (`/watch`, a mesma `WatchBroadcast`), para uma página nunca desenhar dois campos.
 
-### Buffer de quadros (4.41.5)
+### Buffer de quadros (8.1.5)
 
 Report: a transmissão ainda engasgava em 2x e 4x (vários passos no mesmo quadro de tela, quadros em rajadas). Cada quadro
 leva o relógio de quem joga (`t`); quem assiste guarda os últimos 16 (`remoteBuffer.ts`, puro, com teste) e desenha
@@ -935,7 +935,7 @@ relógio é o menor atraso visto, relaxado 0,5 ms por quadro. Os eventos (gol, c
   pausa já vê). A partida entre dois técnicos manda o mesmo na pausa e na retomada (`relayPause`, `h2hRooms.ts`). Quem
   assiste vê "Pausado" sobre o campo; o desenho para no último quadro e segue sem salto.
 
-### Aviso de quem assiste (4.41.53)
+### Aviso de quem assiste (8.1.53)
 
 Os apelidos de quem assiste (`watch_viewers`) ficam na faixa de amigos da partida (`LiveRivalsStrip`, prop `viewers`), num espaço à direita sempre reservado; a faixa existe desde o início da partida (fica montada enquanto os rivais carregam). Entrar ou sair um espectador não move o campo.
 
@@ -945,19 +945,19 @@ Os apelidos de quem assiste (`watch_viewers`) ficam na faixa de amigos da partid
   servidor.
 - Quem assiste vê o ritmo de quem joga (2×, 4×), com os quadros a 5 por segundo.
 
-### Cartão do técnico na transmissão (4.44.3)
+### Cartão do técnico na transmissão (8.4.3)
 
 Report do usuário. A reclamação é resolvida no navegador de quem joga, sem passar pelo motor: o `MatchScreen` emite `managerCard` (em `WATCH_EVENTS`, chega a quem assiste e o `WatchScreen` desenha o cartão sobre o técnico) e manda um `live_score` `yellow`/`red` com `manager: true` (`LiveMoment.manager`, "Técnico expulso" nos últimos lances). A partida entre dois técnicos não repassa eventos do cliente: lá só os lances.
 
-### Competição no jogo ao vivo do amigo (4.46.4)
+### Competição no jogo ao vivo do amigo (8.6.4)
 
 Reports de tester. `LiveBase.competition` (slug) e `stage` (`liveStageOf`, `src/Domain/rivals/liveStage.ts`: rodada, grupo e rodada, fase, ida ou volta), gravados pelo `defaultResolver`; a partida entre técnicos ainda só leva a competição. `LiveCompetitionLine` mostra a linha no cartão Rivais, na faixa da partida e na tela de assistir (`useLeagueCatalog`, `/api/leagues` uma vez por página).
 
-### Chat na transmissão (4.46.6)
+### Chat na transmissão (8.6.6)
 
 Pedido do usuário. A tela de assistir tem o botão "Chat da liga" e, na coluna dos lances, as reações e frases (`TauntActions`, alvo `live`). Em janela própria a página tem o `MatchSocial`; no iframe da janela flutuante o botão manda `watch-chat` por `postMessage` e o `WatchWindowHost` abre a sala da liga da janela, com as outras conversas da aba (o iframe não abre um segundo `SocialProvider`, que dividiria o `sessionStorage` do dock). No mundo público a sala só aceita a resenha.
 
-### O jogo do amigo abre sozinho no Painel (4.47.4)
+### O jogo do amigo abre sozinho no Painel (8.7.4)
 
 Report de tester, opção B do mock. No Painel de um mundo em grupo, sem jogo seu no dia (`me.next.date` diferente de hoje e sem jogo seu ao vivo), o primeiro amigo jogando ao vivo abre na janela flutuante de assistir, no canto (`autoWatchSeat`, `Watch/autoWatch.ts`; `WatchTarget.auto = { day }`, janela `watch-corner`, menor, embaixo à direita). A janela fecha sozinha quando o jogo dele termina (`stillPlaying`, ao recarregar a lista de rivais). "Esconder" fecha e guarda `saveId:seatId:dia` em `localStorage` (`fm.watch.autoHidden.v1`, os últimos 20): aquele jogo não abre de novo no dia. Abrir pelo botão Assistir continua a janela grande de antes.
 

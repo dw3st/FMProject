@@ -80,7 +80,7 @@ O renascido herda a personalidade do original (`personalityOf` usa `reborn.fromI
 
 A oferta de renascido é do assento do clube (`rebornSeatId`). Ver `.claude/rules/game/multiplayer.md`.
 
-## Lendas da lista de aposentados (4.38.7)
+## Lendas da lista de aposentados (7.8.7)
 
 Report de tester. Estatísticas → Aposentados tem o filtro "Lendas" (`?legends=1`, `isLegend`: não livre e nota ao se aposentar
 ≥ 4,5 (`RETIREMENT.LEGEND_MIN_LEVEL`, 45 na tela) ou classe mundial — ninguém se aposenta no top 50 do mundo, então só
@@ -93,7 +93,7 @@ regra do renascido (`legendPlayer`, id `legend_<id>_<ano>`) pagando em **dinheir
 `noClub` / `alreadyBought` / `noMoney` / `offerClosed`, 400 `youthFull`; guarda de lobby. Teste:
 `src/backend/legendHire.routes.test.ts`.
 
-## Filtros da lista (4.39.3)
+## Filtros da lista (7.9.3)
 
 Reports de tester. `GET /api/saves/:id/retired` aceita `q` (nome, sem acento nem caixa, até 60 caracteres), `nation`
 (nacionalidade exata) e `notable=1` (`isNotableRetiree`: lenda, ou nível ao se aposentar ≥ `RETIREMENT.NOTABLE_MIN_LEVEL`
@@ -101,15 +101,15 @@ Reports de tester. `GET /api/saves/:id/retired` aceita `q` (nome, sem acento nem
 `nations` (as nacionalidades da lista antes desses filtros). Tela: chip "Só destaques" (ligado por padrão; some na aba
 Lendas), busca por nome (300 ms) e seletor de país.
 
-## Rodízio também no dinheiro (4.42.22)
+## Rodízio também no dinheiro (8.2.22)
 
 Pedido do usuário. Trazer uma lenda com dinheiro só vale para quem está na lista da temporada do técnico (`legendOffer`, a mesma da loja, `achievements.md`; fora dela, 409 `offerClosed`). A aba Lendas continua listando todas, com as disponíveis primeiro e "Fora da sua lista nesta temporada" nas outras.
 
-## Quem é lenda (4.42.23)
+## Quem é lenda (8.2.23)
 
 Report do usuário (Y. Mina, zagueiro de nota 47, era lenda). `isLegend` não usa mais um corte único de 45: nota (a maior da carreira, `peakLevel`, senão a da aposentadoria) acima do corte da linha (`LEGEND_LEVEL`, GOL 45, DEF 48, MEI 43, ATA 44, cerca dos 3% melhores de cada linha no mundo dos testers; fixo para ninguém deixar de ser lenda), classe mundial, ou carreira no jogo com nota de 40+ (`LEGEND_CAREER`: 3 títulos, seleção inclusive, 2 prêmios ou 300 jogos) ou um prêmio de melhor jogador. Super raro = `SUPER_LEVEL` por linha (cerca de 1%). `peakLevel` é atualizado na virada do país (`withPeakLevel`, `closeSeasonForPlayers`) e vai para o aposentado; quem se aposentou antes fica com a nota da aposentadoria.
 
-## Perfil do aposentado (4.47.6)
+## Perfil do aposentado (8.7.6)
 
 Report do usuário. `GET /api/saves/:id/retired/:retiredId` (dono, 404 sem o registro) devolve o registro inteiro com `clubName`; na lista, "Ver perfil" abre `RetiredProfile` (rosto, bandeira, posição, pé, idade e data da aposentadoria, nível no último jogo e auge, os 13 atributos de `statsAtRetirement`, seleção e a `CareerTable`). A lista ganhou a bandeira ao lado do nome.
 

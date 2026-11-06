@@ -103,7 +103,7 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
 - A prévia da mensagem na lista da inbox mostra o slug da liga em "melhor posição" (a lista não carrega o
   catálogo de ligas); o corpo da mensagem mostra o nome.
 
-## Ídolos, lendas e fatos (#151, 4.19)
+## Ídolos, lendas e fatos (#151, 5.9)
 
 - **Totais por jogador no clube:** `ClubScorer` ganhou `titles` (títulos das linhas de temporada dele no clube) e
   `awards` (prêmios de temporada), somados em `applySeason` junto de jogos/gols/assistências (as linhas parciais de
@@ -112,7 +112,7 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
   - **Lenda:** 300 jogos no clube, ou 200 jogos com 100 gols, 6 títulos ou 3 prêmios.
   - **Ídolo:** 150 jogos, ou 100 jogos com 40 gols, 4 títulos ou 2 prêmios.
   Um titular regular faz ~40–50 jogos por temporada: ídolo em 3–4 temporadas (antes com títulos/prêmios), lenda em
-  5–7. Até a 4.40 era 200/120 (60 gols, 3 títulos, 2 prêmios) e 100/50 (25, 2, 1): num clube grande dois títulos numa
+  5–7. Até a 8.0 era 200/120 (60 gols, 3 títulos, 2 prêmios) e 100/50 (25, 2, 1): num clube grande dois títulos numa
   temporada já faziam um ídolo (report de tester). `clubLegends` ordena lendas primeiro, depois jogos, gols e nome.
 - **Fatos (`clubFacts`):** temporadas, títulos (sem acessos), acessos/rebaixamentos, gols na liga, melhor campanha
   (mais pontos), mais gols numa temporada, maior artilheiro e quem mais jogou.

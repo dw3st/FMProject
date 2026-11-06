@@ -1,7 +1,7 @@
 # Amigos e chat
 
 Spec: `docs/superpowers/specs/2026-10-14-friends-chat-design.md`. Etapa 44 do `docs/ROADMAP.md` (#153), versão
-**4.24**. Visual: `.claude/rules/ui-standard.md`. Por **usuário**, não por save.
+**6.4**. Visual: `.claude/rules/ui-standard.md`. Por **usuário**, não por save.
 
 ## Regra
 
@@ -125,12 +125,12 @@ Navegador: `DEV_AUTO_LOGIN=1 bun run dev`; aba 1 `http://localhost:3000/api/auth
 ## Limitações
 
 - Um processo só (sockets e presença em memória); o mundo público vai precisar de um barramento entre processos.
-- Sem sala pública, denúncia ou moderação; sem anexos ou edição. Emojis (4.35.3): botão ao lado do contador abre uma grade fixa (`CHAT_EMOJIS`, `Social/EmojiPicker.tsx`) que insere no cursor; o servidor já aceita qualquer texto Unicode.
+- Sem sala pública, denúncia ou moderação; sem anexos ou edição. Emojis (7.5.3): botão ao lado do contador abre uma grade fixa (`CHAT_EMOJIS`, `Social/EmojiPicker.tsx`) que insere no cursor; o servidor já aceita qualquer texto Unicode.
 - A sala do mundo lê `save_members` (um membro por assento do mundo, multiplayer). A sala do mundo público só aceita resenha: texto livre dá 403 `publicRoom`.
 - Um participante de DM lê o histórico mesmo depois de a amizade acabar (só não escreve), salvo com bloqueio.
 - Os limites (mensagens, pedidos, buscas, socket) ficam em memória: reiniciar o servidor zera.
 
-## Partida ao vivo entre dois técnicos (multiplayer parte 7, 4.36)
+## Partida ao vivo entre dois técnicos (multiplayer parte 7, 7.6)
 
 Cliente → servidor: `h2h_join { saveId, fixtureId }`, `h2h_ready`, `h2h_cmd { cmd }`, `h2h_pause`, `h2h_resume`,
 `h2h_leave`. Servidor → cliente: `h2h_room { room, mySide }`, `h2h_invite { saveId, fixtureId, from }` (também
@@ -139,7 +139,7 @@ reenviado a cada `hello` enquanto a sala espera, `resendH2HInvites`), `h2h_frame
 `maxPayloadLength` do socket; maiores são ignorados); por socket `h2h_cmd` 20 a cada 10 s e os outros `h2h_*` 30 por
 minuto. Entrada recusada é silenciosa. Ver `.claude/rules/game/multiplayer.md` → "Parte 7".
 
-## Assistir ao jogo de um amigo (multiplayer parte 8, 4.41)
+## Assistir ao jogo de um amigo (multiplayer parte 8, 8.1)
 
 Cliente → servidor: `watch_join { saveId, seatId }`, `watch_leave`; de quem joga, só depois de `watch_on`:
 `relay_frame`, `relay_state`, `relay_event`. Servidor → cliente: `watch_on` / `watch_off` (a quem joga), `watch_info`,

@@ -1,7 +1,7 @@
 # Imprensa (coletivas) e notícias do mundo
 
 Spec: `docs/superpowers/specs/2026-10-14-press-news-design.md`. Plano: `docs/superpowers/plans/2026-10-14-press-news.md`.
-Etapa 42 do `docs/ROADMAP.md`, versão **4.23**. Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`; moral: `morale.md`.
+Etapa 42 do `docs/ROADMAP.md`, versão **6.3**. Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`; moral: `morale.md`.
 
 ## Regra
 

@@ -1,7 +1,7 @@
 # Seleções nacionais (IA), calendário FIFA, convocação e torneios
 
-Spec: `docs/superpowers/specs/2026-10-11-national-teams-design.md`. Etapa 41a do `docs/ROADMAP.md`, versão **4.21**.
-A 41b (o técnico do jogador numa seleção, 4.22) está no fim deste arquivo. Visual: `.claude/rules/ui-standard.md`.
+Spec: `docs/superpowers/specs/2026-10-11-national-teams-design.md`. Etapa 41a do `docs/ROADMAP.md`, versão **6.1**.
+A 41b (o técnico do jogador numa seleção, 6.2) está no fim deste arquivo. Visual: `.claude/rules/ui-standard.md`.
 
 ## Regra
 
@@ -126,12 +126,12 @@ Elo, só livres). Ranking de técnicos: a nação aparece como "clube".
 Ver a spec §14 e o relatório da etapa. M1 (`bun scripts/national-calendar-measure.ts`): todas as ligas cabem, nenhuma
 rodada em dia bloqueado; liga de 20 clubes que cruza o ano: ~3–5 rodadas fora dos dias de jogo por temporada. M2
 (`bun scripts/national-sim.ts 2030-07-20`): ciclo completo (Euro e Copa América 2028, eliminatórias e Copa 2030),
-2,48 gols por jogo desde a 4.22.1 (ver "Volume de gols" abaixo; antes 1,84 na main de 2026-10-12, 1,48–1,51 na 4.21);
+2,48 gols por jogo desde a 6.2.1 (ver "Volume de gols" abaixo; antes 1,84 na main de 2026-10-12, 1,48–1,51 na 6.1);
 topo do Elo com as fortes (França, Bélgica, Espanha, Holanda, Alemanha, Argentina, Brasil; a ordem muda a cada rodada),
 fundo Somália, Ilhas Salomão; 10–29 técnicos de seleção demitidos em 4 anos; ~0,8–1,3 s por dia nacional isolado. M3
 (bench, PL): dia de convocação +~1 s, dia de jogo de seleção +~0,2–0,4 s sobre um dia comum sem jogo de clube.
 
-## Volume de gols (4.22.1, `nationalGoalScale`)
+## Volume de gols (6.2.1, `nationalGoalScale`)
 
 O quickSim de seleção multiplica o xG dos dois lados por um fator que cai com o nível da partida
 (`src/Domain/national/nationalMatch.ts`, passado em `QuickSimInput.goalScale`; o de clubes nunca passa o campo, e
@@ -210,7 +210,7 @@ Jogos de seleção não entram nas trilhas de conquistas (elas leem os jogos ofi
 onde os jogos de seleção nunca aparecem); um título `kind: "national"` ainda não conta nas trilhas de títulos
 (`titleCounts` o ignora) — a 41b deu trilhas próprias (abaixo). Os start kits continuam sem `managerAttributes` (`stripHumanOnly`).
 
-## Técnico do jogador (Etapa 41b, 4.22)
+## Técnico do jogador (Etapa 41b, 6.2)
 
 Spec: `docs/superpowers/specs/2026-10-12-national-coach-design.md`. Pura em `src/Domain/national/nationalCoach.ts`
 (`NATIONAL_COACH`); E/S em `src/backend/nationalWorld.ts` (o dia) e `src/backend/nationalCoachWorld.ts` (rotas, calendário,

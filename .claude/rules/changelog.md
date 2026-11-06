@@ -39,8 +39,8 @@ igual à primeira entrada, todo item com `pt`/`en` não vazios, `upcoming` não 
 - Uma release só com correções, sem etapa nova do roadmap, pode usar um **patch**: 1.4 → 1.4.1.
 - `package.json` (`"version"`) acompanha `CURRENT_VERSION` — atualize os dois juntos.
 - **Renumeração (2026-11-06):** de 2026-10-08 a 2026-11-06 as versões passaram de 4.9 para 4.10 … 4.48, fora da regra.
-  Foram renomeadas: 4.(10 + k) = (5 + ⌊k/10⌋).(k mod 10), correções mantidas (4.41.53 = 8.1.53, 4.48 = 8.8). Saves,
-  navegadores e as regras em `.claude/rules` ainda citam os nomes antigos: toda comparação passa por `canonicalVersion`
+  Foram renomeadas: 4.(10 + k) = (5 + ⌊k/10⌋).(k mod 10), correções mantidas (4.41.53 = 8.1.53, 4.48 = 8.8). Saves e
+  navegadores ainda guardam os nomes antigos (as regras em `.claude/rules` e o roadmap já usam os novos): toda comparação passa por `canonicalVersion`
   (`src/Domain/saveVersion.ts`), e um "4.xx" com xx ≥ 10 num texto antigo é o nome antigo. Depois de 8.9 vem 9.0.
 
 ## Texto

@@ -138,7 +138,7 @@ fôlego e carga. Por isso a base recupera fôlego todo dia pela curva de descans
 treino anual da virada (`developYouthSeason`) não mudou. A aba Base do Elenco mostra os jogos e gols de base e o bloco de
 convocação.
 
-## Treino da base (4.39)
+## Treino da base (7.9)
 
 Spec `docs/superpowers/specs/2026-10-28-youth-training-design.md`. A base do clube do jogador treina nos dias de treino
 do clube (`trainAcademy`, `dailyTraining.ts`) com o plano `Squad.youthTraining` (intensidade leve/normal/pesado = DP ×
@@ -149,6 +149,6 @@ leve +0,462, pesado +0,800, foco técnica leva o drible de 4 a 6,1). Toda segund
 tabela da Base mostra a variação de 4 semanas. Rotas: `GET /youth` traz `training`, `positions` e `trend`;
 `PUT /api/saves/:id/youth/training` (livre no lobby, como a tática). Some no `releaseHumanClub` e nos kits.
 
-## Dispensa em lote (4.44.4)
+## Dispensa em lote (8.4.4)
 
 Report de tester. Na aba Base, um campo com o potencial mínimo (o topo da faixa, padrão 7,0), a lista de quem fica abaixo e o botão com confirmação; `POST /youth/release-many { ids }` (até 50) leva todos aos livres.

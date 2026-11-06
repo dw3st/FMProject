@@ -287,15 +287,15 @@ forfeit/coin-flip kick) — the engine's `/test` debug panel shows it per kick.
   own seeded `rng`, and reads only the final `score` — no kick-by-kick presentation. See
   `.claude/rules/non-player-games.md` → "quickSim (ligas não seguidas)".
 
-## Goleiro ativo (4.37)
+## Goleiro ativo (7.7)
 
 O arco e a qualidade de posição agora vêm de `Domain/Keeper.ts` (arco mais adiantado com a bola longe, saída no 1 contra
 1 sem punição na qualidade). Ver `.claude/rules/game-engine/keeper.md`.
 
-## 9. 2D penalties (4.38)
+## 9. 2D penalties (7.8)
 
 Spec: `docs/superpowers/specs/2026-10-28-penalty-2d-design.md`. Pure model in `src/Domain/penalty/penaltyKick.ts`
-(`PENALTY_2D`): since 4.39.5 the taker picks one of six areas of the goal (`KICK_WINDOW_S` 6 s, the AI's pick on
+(`PENALTY_2D`): since 7.9.5 the taker picks one of six areas of the goal (`KICK_WINDOW_S` 6 s, the AI's pick on
 timeout), like the keeper's dive. The ball goes to the area's target (`areaTarget`: corners near the woodwork) with a
 spread `AIM_SPREAD × (1.2 − finishing)`; strength (`POWER_SAVE`) and finishing (`FINISH_SAVE`) make it harder to save; a
 keeper who dived reaches a ball down the middle sometimes (`MID_REACH_LOW/HIGH`). Measured: average taker ~74%, finishing
@@ -306,12 +306,12 @@ keeper who dived reaches a ball down the middle sometimes (`MID_REACH_LOW/HIGH`)
   While `pendingPenalty` is set everything holds (clock included). `applyPenaltyOutcome(state, outcome)` answers it
   (shootout kick, early end and sudden death by `shootoutDecided`; a match penalty ends as an automatic one).
   Event `penaltyPending`. Without `penaltyInteractive` nothing changes (simulated matches, quickSim, `/lab`).
-- Screen: `GameInterface/Penalty/PenaltyScreen.tsx` (aim, power, choice) drawing `PenaltyPitch.tsx` (4.38.2: crowd in both kits, grass in perspective, a net mesh that bulges, posts with depth, the keeper's face, sway and three-beat dive, the run-up, the ball's curve and ground shadow, rebound on a save or the post, shake and confetti on a goal, floodlights and phones at night; geometry pure in `penaltyScene.ts`), the animation from one requestAnimationFrame loop writing attributes, `PenaltyOverlay.tsx` (solo: the other side is the AI and
+- Screen: `GameInterface/Penalty/PenaltyScreen.tsx` (aim, power, choice) drawing `PenaltyPitch.tsx` (7.8.2: crowd in both kits, grass in perspective, a net mesh that bulges, posts with depth, the keeper's face, sway and three-beat dive, the run-up, the ball's curve and ground shadow, rebound on a save or the post, shake and confetti on a goal, floodlights and phones at night; geometry pure in `penaltyScene.ts`), the animation from one requestAnimationFrame loop writing attributes, `PenaltyOverlay.tsx` (solo: the other side is the AI and
   the kick resolves in the browser; between two managers the server resolves it). Choice in the match preview and the
   match room (`PenaltyModeChips`, `localStorage` `fm.match.penaltyMode`).
 - `/test`: toggle "Penalties 2D A" and scenario `shootout-2d`.
 
-## 2D penalty in the new art (art phase 6, 4.41.10)
+## 2D penalty in the new art (art phase 6, 8.1.10)
 
 With the new visual and the painted backdrop on the server (`backdrops/penalty/penalty-bg-<day|night|rain|fog|snow>.webp`
 of the art volume, announced by `/api/art/faces` as `penaltyBackdrops`), `PenaltyPitch` draws `PenaltyArtScene`: the
@@ -319,9 +319,9 @@ backdrop of the match weather (rain, snow, else night or day) and the art's arti
 the art preview's `penalty-rig.js`: keeper front view with keyframed joints, ballistic dive, jump, getting up with the
 ball; taker from behind with run-up, plant, strike, follow-through and reaction; panelled spinning ball; bulging net).
 `rigPlan` turns the decided `KickOutcome` into the animation (dive side and height, the ball's target, saved / post /
-miss); nothing about the outcome changes. Without the new visual or the backdrop, the drawn scene of 4.38.
+miss); nothing about the outcome changes. Without the new visual or the backdrop, the drawn scene of 7.8.
 
-## Pick countdown (4.41.20)
+## Pick countdown (8.1.20)
 
 `PenaltyScreen` shows the time left to pick (`PickClock`: big seconds and a draining bar, red in the last 2 s) for the
 taker (`KICK_WINDOW_S` 6 s) and the keeper (`DIVE_WINDOW_S` 4 s); out of time the taker's area is the AI's (`aiKick`),

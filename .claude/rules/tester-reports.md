@@ -113,7 +113,7 @@ path.
   (if any) go to `POST /api/reports/:id/attachment` with the file's own `type` as `Content-Type`.
   The report is already "sent" at that point, so an attachment failure never blocks the success
   state — it shows a small non-blocking warning instead (`reports.attachmentUploadFailed`).
-- **Capture a screen area (#125, 4.19):** next to "Anexar imagem", "Capturar área da tela" (only when
+- **Capture a screen area (#125, 5.9):** next to "Anexar imagem", "Capturar área da tela" (only when
   `navigator.mediaDevices.getDisplayMedia` exists — `canCaptureScreen`) opens the browser's share picker (current tab
   first: `preferCurrentTab`, `displaySurface: "browser"`), hides the report window, takes one frame of the stream on a
   canvas and stops it (`grabFrame`), then a full-screen overlay (`ScreenAreaSelector`,

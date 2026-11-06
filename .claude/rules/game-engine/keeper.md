@@ -1,6 +1,6 @@
 # Goleiro ativo
 
-Spec: `docs/superpowers/specs/2026-10-28-active-keeper-design.md`. Versão **4.37**. Regras puras em
+Spec: `docs/superpowers/specs/2026-10-28-active-keeper-design.md`. Versão **7.7**. Regras puras em
 `src/GameEngine/Domain/Keeper.ts`, constantes em `src/GameEngine/Configs/KeeperConfig.ts` (`KEEPER_CONFIG`).
 
 ## Regra
@@ -61,7 +61,7 @@ Dentro de ±5% somando as ligas (ruído ~±2%): quickSim não recalibrado.
 - O goleiro fora da área não tem regra de mão nem lançamento próprio: é um portador comum.
 - Sem chute por cobertura contra o goleiro adiantado.
 
-## Cruzamento na marca do pênalti (4.41.51)
+## Cruzamento na marca do pênalti (8.1.51)
 
 Report de tester: o goleiro esperava na linha bolas que ele pegaria antes de todos. Medido com `bun scripts/keeper-probe.ts
 [jogos] [liga] [semente]` (bolas em profundidade, altas e cortes; quem chega antes pelo sprint, se o goleiro persegue, quem
@@ -81,15 +81,15 @@ profundidade já eram dele.
   `BASE_GOALS` 0,795 → 0,73 e `SHOTS_PER_XG` 1,778 → 1,89 (a relação quickSim × motor fica a mesma: +9,3% nas duas ligas
   somadas, antes e depois).
 
-## Chute por cima do goleiro adiantado (4.44.2)
+## Chute por cima do goleiro adiantado (8.4.2)
 
-Report do usuário: o resultado do chute era sorteado na linha do gol, sem olhar a distância do goleiro, então um goleiro a 10 jardas da linha "pegava" na linha a bola que já tinha passado por ele. Agora, com a bola no ar, ele corre para o ponto mais perto do que resta da trajetória (`shotInterceptPoint`), e o sorteio acontece quando a bola chega a até `SHOT_REACH` (4) jardas dele (`ballMeetsKeeper`, `ShotState.outcome`): defesa encerra o chute ali (o `shotResolved` leva esse ponto, para os efeitos não desenharem na linha); gol segue até a linha, sem novo sorteio. No alvo e fora do alcance o tempo todo: gol. Fora do alvo: como antes. Cenário `keeper-shot-over` no `/test`, debug `keeper`. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, 800 jogos por liga, contra a 4.44): Premier 2,060 → 2,109 gols, 5,54 → 5,49 chutes; Championship 1,686 → 1,732, 5,22 → 5,37; somadas +2,5% e +0,9%, quickSim não recalibrado. Com alcance 3: +6,0% (um chute no canto com o goleiro na linha virava gol direto).
+Report do usuário: o resultado do chute era sorteado na linha do gol, sem olhar a distância do goleiro, então um goleiro a 10 jardas da linha "pegava" na linha a bola que já tinha passado por ele. Agora, com a bola no ar, ele corre para o ponto mais perto do que resta da trajetória (`shotInterceptPoint`), e o sorteio acontece quando a bola chega a até `SHOT_REACH` (4) jardas dele (`ballMeetsKeeper`, `ShotState.outcome`): defesa encerra o chute ali (o `shotResolved` leva esse ponto, para os efeitos não desenharem na linha); gol segue até a linha, sem novo sorteio. No alvo e fora do alcance o tempo todo: gol. Fora do alvo: como antes. Cenário `keeper-shot-over` no `/test`, debug `keeper`. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, 800 jogos por liga, contra a 8.4): Premier 2,060 → 2,109 gols, 5,54 → 5,49 chutes; Championship 1,686 → 1,732, 5,22 → 5,37; somadas +2,5% e +0,9%, quickSim não recalibrado. Com alcance 3: +6,0% (um chute no canto com o goleiro na linha virava gol direto).
 
-## Mira do chute (4.45)
+## Mira do chute (8.5)
 
-Report do usuário: chutes errando com o gol vazio. A mira (`computeShotAim`, `SHOT_AIM`) sorteava o ponto numa faixa que dependia só da finalização: um jogador mediano errava metade dos chutes em qualquer distância. Agora o desvio cresce com a distância ao centro do gol (5% do desvio até 4 jardas, cheio a partir de 22) e cai a 30% quando o goleiro não alcança a linha do chute (`keeperReachesShot`). Falta direta segue como antes (`fixedRange`). Para o volume não subir, a chance de gol de um chute no alvo é × `CONVERSION` (0,78); o chute fora do alcance do goleiro continua gol certo. Sonda: `bun scripts/shot-miss-probe.ts`. Medição do mundo: Premier 120 jogos, chutes para fora 43% → 24%. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 4.44.2): Premier 2,109 → 2,085 gols, 5,49 → 5,67 chutes; Championship 1,732 → 1,768, 5,37 → 5,25; somadas +0,3% e +0,5%, quickSim não recalibrado.
+Report do usuário: chutes errando com o gol vazio. A mira (`computeShotAim`, `SHOT_AIM`) sorteava o ponto numa faixa que dependia só da finalização: um jogador mediano errava metade dos chutes em qualquer distância. Agora o desvio cresce com a distância ao centro do gol (5% do desvio até 4 jardas, cheio a partir de 22) e cai a 30% quando o goleiro não alcança a linha do chute (`keeperReachesShot`). Falta direta segue como antes (`fixedRange`). Para o volume não subir, a chance de gol de um chute no alvo é × `CONVERSION` (0,78); o chute fora do alcance do goleiro continua gol certo. Sonda: `bun scripts/shot-miss-probe.ts`. Medição do mundo: Premier 120 jogos, chutes para fora 43% → 24%. Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 8.4.2): Premier 2,109 → 2,085 gols, 5,49 → 5,67 chutes; Championship 1,732 → 1,768, 5,37 → 5,25; somadas +0,3% e +0,5%, quickSim não recalibrado.
 
-## Bola na área e o zagueiro na frente (4.47.5)
+## Bola na área e o zagueiro na frente (8.7.5)
 
 Report de tester: bolas que caíam na área à frente do goleiro, com ele mais perto que todos, e ele não saía. Medido (`bun scripts/keeper-probe.ts 100` e uma sonda da queda da bola): a bola alta só valia até 13 jardas e ±10 do centro, a bola solta só era dele se ele tivesse sido escolhido perseguidor no começo da corrida, e a bola que ele espalmava ficava fora da corrida dele (`dropLooseAt` o marca como quem tocou por último). E, quando saía, a disputa se resolvia com ele a ~4,8 jardas da bola: 21% de pegadas, o resto soco ou bola solta.
 
@@ -98,4 +98,4 @@ Report de tester: bolas que caíam na área à frente do goleiro, com ele mais p
 - **Zagueiro na frente** (`defenderCovers`, `DEFENDER_COVER` 4, `DEFENDER_LEVEL` 1): fora da pequena área, um companheiro de linha a até 4 jardas da bola e não atrás dela (entre a bola e o gol, ou na linha dela, com 1 jarda de folga), fora de recuperação, joga a bola: o goleiro não sai (bola alta, escolha de perseguidor, varredura, bola solta). Zagueiro batido não conta.
 - **Desenho** (`playerAnims.ts`, `claim`; `gkClaim` leva `x`/`y`): quando ele sai, o boneco vai até a bola (até 7 jardas), sobe e volta. O resultado não muda.
 
-Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 4.46.1): Premier 2,156 → 2,074 gols, 5,57 → 5,58 chutes; Championship 1,806 → 1,792, 5,29 → 5,40; somadas −2,4% e +1,0%, quickSim não recalibrado.
+Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 8.6.1): Premier 2,156 → 2,074 gols, 5,57 → 5,58 chutes; Championship 1,806 → 1,792, 5,29 → 5,40; somadas −2,4% e +1,0%, quickSim não recalibrado.

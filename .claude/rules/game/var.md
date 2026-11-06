@@ -1,7 +1,7 @@
 # Erros do juiz, VAR e reclamação do técnico
 
 Spec: `docs/superpowers/specs/2026-10-10-var-design.md` (decisões do usuário no §9). Etapa 39 do `docs/ROADMAP.md` (#109),
-versão **4.18**. Depende de `referees.md` (qualidade, rigor, escala), `game-engine/fouls.md` e `game-rules/offside.md`.
+versão **5.8**. Depende de `referees.md` (qualidade, rigor, escala), `game-engine/fouls.md` e `game-rules/offside.md`.
 
 ## Regra
 
@@ -53,7 +53,7 @@ versão **4.18**. Depende de `referees.md` (qualidade, rigor, escala), `game-eng
   com inbox `discipline`/`manager_banned` (tópico `injuries`, tema clube). Cada partida oficial do clube cumpre 1 jogo
   (`nextManagerBan`; a do próprio vermelho não conta). No jogo suspenso: `match-setup.managerBanned`, prévia com aviso,
   partida com "Técnico suspenso" e o auxiliar fazendo as trocas.
-- **Ordens da arquibancada (4.41.20, report de tester):** suspenso ou expulso, o técnico ainda escolhe a mentalidade e
+- **Ordens da arquibancada (8.1.20, report de tester):** suspenso ou expulso, o técnico ainda escolhe a mentalidade e
   sugere trocas (o painel abre só com a aba de troca; formação, posições, instruções e tática ficam fora). Cada ordem
   passa pelo auxiliar: segue com `ASSISTANT_ORDERS.FOLLOW` (0,7, `src/Domain/match/assistantOrders.ts`), senão mantém o
   plano dele; um aviso curto diz o que ele fez (`complaint.orderMentality*`, `complaint.orderSub*`). As trocas da regra da
@@ -105,11 +105,11 @@ fixtures com VAR; gol anulado nunca no placar; suspensão forçada aparece no `m
   no estado da partida: o auxiliar continua trocando).
 - Técnicos da IA não reclamam nem são expulsos.
 
-## Árbitro no monitor (4.41.52)
+## Árbitro no monitor (8.1.52)
 
 Na partida ao vivo, toda revisão leva o árbitro até a área de revisão na lateral (só desenho, `graphics-engine.md` →
 "Área de revisão do VAR"); a duração da revisão não muda.
 
-## Cartões na ficha do técnico (4.47.10)
+## Cartões na ficha do técnico (8.7.10)
 
 Pedido do usuário. Os cartões de cada dia (`DaySeat.managerCards`) somam em `ManagerRecord.cards { yellow, red }` (`addManagerCards`, no avanço do dia); o ranking de técnicos mostra a linha ao abrir o técnico. Só conta daqui para a frente (os cartões antigos não eram guardados).

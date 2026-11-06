@@ -76,10 +76,10 @@ Overwrite and delete ask for confirmation, and so does "Usar" over an unsaved XI
 under `withSaveLock`. The `PUT` takes the whole object (`null` slot = delete,
 `null` = clear all) and validates each preset with `parseLineupPresets` (`src/Domain/tactics/lineupPresets.ts`:
 known formation or a valid free formation, ≤ 11 unique string ids (≤ 64 chars), a real date (`isRealIsoDate`), instructions checked against the
-preset's own formation); 400 on any error. Presets are never read by a match. Since 4.42.3 they keep the style and axes on screen and follow the
+preset's own formation); 400 on any error. Presets are never read by a match. Since 8.2.3 they keep the style and axes on screen and follow the
 manager to a new club (`presetsForNewClub`, tester report): the XI goes, `fromClub` labels them, and using one fills the XI from the new squad.
 
-`setPieceTakers` (Etapa 14; up to 3 per duty since 4.13, #116): three ordered selectors per duty on the
+`setPieceTakers` (Etapa 14; up to 3 per duty since 5.3, #116): three ordered selectors per duty on the
 tactics screen (`SetPieceTakersPanel`), "Automatic" when empty; the match uses the first one on the pitch,
 none = automatic; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as
 `GameState.setPieceTakers` (simulated matches and the live match). The AI never sets it. See
@@ -94,7 +94,7 @@ per match (`SaveMeta.matchMarking`, `POST /api/saves/:id/match-marking`). The AI
 API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`. The file is written on the
 first `PUT`; until then the save's `formation`/`tactical_style` (`SaveMeta`) and an empty lineup
 stand in, and the lineup is filled automatically — the live match too (`match-setup` never refuses a
-missing or short saved lineup since 4.34.1; it used to send the manager to Formation first).
+missing or short saved lineup since 7.4.1; it used to send the manager to Formation first).
 
 ---
 

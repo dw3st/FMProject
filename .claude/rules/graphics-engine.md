@@ -30,31 +30,31 @@ alwaysApply: false
 - `ballHeight.ts` — illustrative ball height for high balls and shots (raised ball + ground shadow)
 - `pitchEffects.ts` — pure effect queue (shot, goal, foul, card, offside) and ball trail, on a real-time clock frozen while paused
 - `effectsRender.ts` — Pixi drawing of the effects and the trail
-- `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions. The step is `SIM_STEP` = 0.2 real s (4.36, the same step as `simulateMatch`), so the drawing at 60 FPS always runs one step behind the engine. A jump bigger than `TELEPORT_YDS` (4, players; they move at most ~1.5 yd per step) or `BALL_TELEPORT_YDS` (30, ball; passes ~9 yd, shots up to ~27 yd per step) is drawn at once
+- `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions. The step is `SIM_STEP` = 0.2 real s (7.6, the same step as `simulateMatch`), so the drawing at 60 FPS always runs one step behind the engine. A jump bigger than `TELEPORT_YDS` (4, players; they move at most ~1.5 yd per step) or `BALL_TELEPORT_YDS` (30, ball; passes ~9 yd, shots up to ~27 yd per step) is drawn at once
 - `ballSpin.ts` — pure seam-spin angle of the ball (distance rolled / radius; none paused or on a jump)
 - `GameInterface/uiStateThrottle.ts` — throttles React state echoes of the match so a fast simulation does not re-render every step
 - `pitchMirror.ts` — `mirrorX` / `mirrorY`: the live match draws the pitch turned 180° (x and y; a reflection on x alone would draw every left winger on his team's right, #142) when the user (engine team A) plays away (#98, `PixiPitch` `mirror` prop), so the home side attacks the way it is listed. Drawing only: `toPixel` and the click inverse go through it; nothing derived from yards may assume "x = 0 is drawn on the left" (the goal-net bulge reads the drawn side). The `GameState` never changes
 - `setPieceTransition.ts` — a restart that repositions the teams (corner, free kick, throw-in, goal kick, offside free kick, penalty; never a kickoff) is drawn as an eased walk from the last drawn positions to the layout instead of a jump (`TELEPORT_YDS`): `min(0.8 s, 80% of the real time left on the countdown)` (skipped under 0.12 s), so it always ends before the kick; clock frozen while paused, none with the tab hidden, cut by a /test state swap. Drawing only (debug overlays still read the engine positions); the engine, `CORNER_COUNTDOWN` and the layouts are unchanged
-- `pitchMetrics.ts` — pitch geometry in px (`buildMetrics(w, h, { stadium })`); with the stadium the pitch is drawn ×0.85 (`STADIUM.PITCH_SHRINK`, 0.9 until 4.38.17, 0.78 in 4.38.18) and `stand` describes the band (`outer` = canvas, `inner` = pitch + run-off)
+- `pitchMetrics.ts` — pitch geometry in px (`buildMetrics(w, h, { stadium })`); with the stadium the pitch is drawn ×0.85 (`STADIUM.PITCH_SHRINK`, 0.9 until 7.8.17, 0.78 in 7.8.18) and `stand` describes the band (`outer` = canvas, `inner` = pitch + run-off)
 - `crowd.ts` / `stadiumRender.ts` — stand seat grid and the filled seats (pure; fill = attendance / capacity, home fans on the drawn home side, away block ~12% in the opposite end, neutral venue split at the halfway line); the stand and every fan are drawn ONCE into a `Graphics`, baked with `renderer.generateTexture` into a single `Sprite` under the stripes, re-baked only when fill / home team / venue / mirror change. A home goal pulses its alpha (1 → 0.85 → 1, 0.6 s). A stand under works (#137, `PitchStadium.works`, club `StandId`s from `match-setup` → `crowd.works`) has no fans and is drawn as a building site (`worksPieces`: bare base, scaffolding, hazard tape on the pitch side); club stands map to drawn sides by `standSideOf` (north = the engine x = 0 end, south the other, west = bottom touchline, east = top; the mirror swaps the ends). The fill is spread over the open stands; an away end under works sends the away block to the top stand. `/test`: chip Works (north)
-- `officials.ts` / `coaches.ts` / `touchlineRender.ts` — referee (diagonal behind the play, ≥ 6 yd from the ball, smoothed, snaps past 30 yd; after a card its target is locked on the last foul spot for 1.5 s and the card shows over his head), assistants (level with the offside line of their half, flag raised on `offsideCalled`) and both managers (technical areas at 40% / 60% of the drawn pitch, below the bottom touchline; face from the server via `loadFaceCanvas`; drawn as a head only since 4.35.1, so the `coachCue` and goal gestures show nothing). Engine yards in, drawn through `toPixel` (mirror included). Props `officials`, `coaches`, `coachCue`, `stadium` of `PixiPitch` (read at mount: switching the stadium / officials on or off remounts — put it in the `key`)
+- `officials.ts` / `coaches.ts` / `touchlineRender.ts` — referee (diagonal behind the play, ≥ 6 yd from the ball, smoothed, snaps past 30 yd; after a card its target is locked on the last foul spot for 1.5 s and the card shows over his head), assistants (level with the offside line of their half, flag raised on `offsideCalled`) and both managers (technical areas at 40% / 60% of the drawn pitch, below the bottom touchline; face from the server via `loadFaceCanvas`; drawn as a head only since 7.5.1, so the `coachCue` and goal gestures show nothing). Engine yards in, drawn through `toPixel` (mirror included). Props `officials`, `coaches`, `coachCue`, `stadium` of `PixiPitch` (read at mount: switching the stadium / officials on or off remounts — put it in the `key`)
 - `playerAnims.ts` — long shot (≥ 20 yd), header and save animations: an offset / lift / scale / rotation on top of the interpolated marker, on the effects clock; nothing queued with the tab hidden
 - Draw meter (`/test`, `perfRef`): FPS and average frame-callback ms every 30 frames. Measured for the stadium + officials (Etapa 38): their per-frame logic costs ~6 µs (headless bench, 3600 frames of `11v11-classic`) and the crowd data for a bake ~8 ms once (4–5k fans); the crowd is one sprite, so no per-frame draw cost. The in-browser FPS before/after could not be read on the dev machine (the automated Chrome tab reports `document.hidden`, so the ticker never runs) — pending a manual read in `/test` (Stadium + Officials, crowd 100%)
 
-## Officials' faces (Etapa 38b, 4.17)
+## Officials' faces (Etapa 38b, 5.7)
 
 `officials` also takes `{ refereeFace?, assistantFaces? }` (server URLs, `refereeFaceUrl`): `makeOfficial` has a "head"
 container where the face sprite (rasterised once by `loadFaceCanvas`, like the managers) goes over the kit disc; `true`
 keeps the plain disc. Read at mount (the match screen puts the appointment in the pitch `key`). See
 `.claude/rules/game/referees.md`.
 
-## Visual 2 (#129, 4.19)
+## Visual 2 (#129, 5.9)
 
 Prop `extras` of `PixiPitch` (read every frame; the live match passes it on, `/test` has the chip **Extras**), drawing
 only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
 
 - **Stretcher:** on `injury`, a stretcher with two medics comes from the nearest touchline to where the player was
-  drawn, waits, and leaves carrying the player (`STRETCHER` 1.4 / 0.9 / 1.6 s, effects clock). Since 4.42.12 (mock option B, `STRETCHER_LOOK`) a light canvas between two dark poles with the art's `player-injured` figure in his kit; with discs or without the art, a small disc inside the canvas.
+  drawn, waits, and leaves carrying the player (`STRETCHER` 1.4 / 0.9 / 1.6 s, effects clock). Since 8.2.12 (mock option B, `STRETCHER_LOOK`) a light canvas between two dark poles with the art's `player-injured` figure in his kit; with discs or without the art, a small disc inside the canvas.
 - **Managers** pace their technical area (`coachWalkOffset`, ±`COACH_WALK_FRAC` of the pitch length); **benches**
   (`benchRect`, outer side of each area) with one disc per substitute, redrawn only when a bench changes size (with
   Officials on).
@@ -67,19 +67,19 @@ only, nothing in the `GameState`. Pure logic in `matchExtras.ts` (+ test):
 - Cost: the per-frame logic is ~2 µs (headless micro-bench, 3600 frames); the in-browser FPS was not read (no browser
   available on the dev machine at the time).
 
-## Enfeites do estádio (Etapa 40, 4.20)
+## Enfeites do estádio (Etapa 40, 6.0)
 
 `PitchStadium.decor` (faixa, bandeirão, mosaico; `stadiumDecor.ts` → `drawDecor`): desenhados na arquibancada de trás do gol
 da casa, na cor do clube, dentro da torcida assada (nenhum custo por quadro); nunca em campo neutro nem numa arquibancada em
 obra. Vêm do `match-setup` (`crowd.decor`) só nos jogos em casa do clube do jogador. Ver `.claude/rules/game/achievements.md`.
 
-## Superfície do gramado (4.28)
+## Superfície do gramado (6.8)
 
 `pitchSurface.ts`: faixas por condição (≥ 70 nítido, 70–40 desbotado, 40–15 gasto, < 15 terra e lama), formas em jardas, sintética nunca remenda; linhas tracejadas num gramado podre. Prop `pitch` do `PixiPitch` (tipo, corte, condição): desenhada uma vez em Graphics estático e refeita só quando o gramado muda. `PitchSurfaceSvg` desenha o mesmo na prévia e no Clube. Ver `.claude/rules/game/facilities.md`.
 
-## Luz e sombra (4.29)
+## Luz e sombra (6.9)
 
-Desde a 4.32 o clima também afeta a partida, ver `.claude/rules/game/weather.md`.
+Desde a 7.2 o clima também afeta a partida, ver `.claude/rules/game/weather.md`.
 
 Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: nada entra no `GameState`, no motor, no quickSim nem no `/lab`.
 
@@ -92,15 +92,15 @@ Spec `docs/superpowers/specs/2026-10-16-match-lighting-design.md`. Só desenho: 
 - FPS: não medido. A aba automatizada do Chrome limita os quadros (~1,3/s), então o medidor do `/test` não vale lá; a leitura manual numa janela normal está pendente (meta: queda ≤ 5 FPS com Hora 20:45 + chuva contra Hora Off).
 - Limitações: a orientação do estádio é desenhada, não real; a luz não afeta a simulação; sem sombra de jogador nas arquibancadas, sem reflexo em poças.
 
-## Sombras dos jogadores (4.29.2)
+## Sombras dos jogadores (6.9.2)
 
 `playerShadow.ts` (`shadowPolygons`, puro, com teste): com a luz ligada, cada jogador tem uma sombra de contato suave
 (elipse deslocada para baixo e para o lado) e a sombra projetada do sol (afinando dos pés até a ponta, clareando ao
-longo do comprimento; desde a 4.29.3 colada ao corpo: 1,35 raio de dia, 1,65 no fim da tarde, sempre um pouco de lado) ou, à noite, 4 sombras curtas
+longo do comprimento; desde a 6.9.3 colada ao corpo: 1,35 raio de dia, 1,65 no fim da tarde, sempre um pouco de lado) ou, à noite, 4 sombras curtas
 dos refletores. "Suave" = a mesma forma desenhada 4 vezes, cada uma maior e mais fraca (sem filtro), em verde-escuro
 (`LIGHTING.SHADOW_COLOR`). A sombra dura antiga (`MARKER_SHADOW`) só aparece sem luz. Constantes em `LIGHTING`.
 
-## Sombra do estádio (4.30)
+## Sombra do estádio (7.0)
 
 Como no FM (reports de tester com imagens): cada estádio tem um id único (`stadiumIdOf`, `src/Domain/matchday/stadiumSun.ts`:
 `std_<nome>_<cidade>` do `venue`; clubes que dividem o estádio dividem a sombra; sem estádio `std_club_<id>`; campo
@@ -116,7 +116,7 @@ amarelado, `LIT`), estica como sprite sobre o campo (filtro linear suaviza mais;
 10 segundos de jogo com a camada de luz (a sombra cresce sem saltos). `/test`: chips Stadium (cut lean · both · none ·
 covered).
 
-## Estádios reais (4.31)
+## Estádios reais (7.1)
 
 Nas 10 ligas principais (`LEAGUES` de `scripts/faces/wikidata.ts`) o estádio é real: `bun scripts/fetchStadiums.ts
 [--leagues a,b] [--refresh]` busca no **Wikidata** (CC0) o estádio de cada clube (P115 sem fim; rank preferido, depois
@@ -131,7 +131,7 @@ sem campo no mapa (campo de futebol americano), um de 105 × 68 m no centro do c
 Respostas em `data_process/stadiums/cache/` (gitignored); só os números derivados vão para
 `src/example_data/stadiums.json` (`squadId → RealStadium`: id `std_<item>`, coordenadas, eixo, alturas, teto, fuso).
 Correções à mão em `data_process/curated/stadiumCorrections.json` (`venue`: o item certo quando o Wikidata não tem a
-mudança de estádio ou o clube não tem item; `lat`/`lon`: o ponto do Wikidata longe do estádio; `roof`; `skip`). 4.31.1:
+mudança de estádio ou o clube não tem item; `lat`/`lon`: o ponto do Wikidata longe do estádio; `roof`; `skip`). 7.1.1:
 os 212 clubes das 10 ligas com estádio real (Brentford, Alverca, Casa Pia e Barracas Central pelo `venue`, Arouca pelas
 coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Veltins-Arena, Mercedes-Benz Stadium, BC Place). Copiar para `src/Data` como o resto do mundo.
 
@@ -146,7 +146,7 @@ coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Velti
   dos jogadores aponta na direção real. Contorno da cobertura e cantos continuam ilustrativos (do id).
 - `/test`: chips Stadium "Old Trafford, Dec 15 / Jun 21" (sol calculado, pôr do sol real) com a Hora.
 
-### Horários e sombra dos jogadores (4.31.2)
+### Horários e sombra dos jogadores (7.1.2)
 
 - `matchConditions` sorteia o horário pelos horários típicos do país do mandante (`kickoffSlots`: sábado, domingo e
   meio de semana para Inglaterra, Espanha, Itália, Alemanha, França, Portugal, Holanda, Brasil, Argentina e EUA, com
@@ -156,7 +156,7 @@ coordenadas) e 5 tetos retráteis à mão (Bernabéu, Johan Cruijff ArenA, Velti
 - Estádio real: a sombra de sol dos jogadores cresce de `SUN_SHADOW.LEN` (sol a `REAL.LOW_FROM` = 35° ou mais) até
   `LEN_LOW` (1,9 raio, sol a `REAL.LOW_TO` = 8° ou menos).
 
-### Sombra redonda dos jogadores (4.31.3)
+### Sombra redonda dos jogadores (7.1.3)
 
 A pedido do usuário a sombra de sol (e a dos refletores) deixou de ser uma faixa afinando: é um oval suave logo
 embaixo do jogador (`castPolygons`, `playerShadow.ts`), com o centro a `SUN_SHADOW.LEN` raio do centro do marcador na
@@ -164,7 +164,7 @@ direção oposta à luz, raios `WIDTH` ao longo e `TIP` através; com o sol baix
 1,25). À noite, 4 ovais fracos dos refletores. A sombra de contato some aos poucos quando há sol ou refletor
 (já fica tudo embaixo).
 
-### Vinheta e brilho dos refletores (4.31.4)
+### Vinheta e brilho dos refletores (7.1.4)
 
 Report de tester (todas as partidas noturnas com "arcos" claros nos cantos): o brilho era 5 círculos sobrepostos e a
 vinheta 6 faixas, que viravam degraus visíveis numa tela grande. Agora são degradês radiais assados uma vez em texturas
@@ -173,7 +173,7 @@ canto (raio `GLOW_RADIUS` × o lado maior). `updateLight` só muda a opacidade (
 desmontagem.
 
 
-## Remote mode (multiplayer part 7, 4.36)
+## Remote mode (multiplayer part 7, 7.6)
 
 `PixiPitch` prop `remote` (`RemoteFeed`, read at mount): the pitch never calls `advanceSim`; it draws the latest
 `GameState` from the server and the positions of the last two `h2h_frame`s blended by the real time since the newest
@@ -181,7 +181,7 @@ one (`remoteInterp.ts`: `remotePositions`, `remoteDrawnBall`, `withFramePosition
 limited to 1, so a late frame freezes on the last one instead of extrapolating. One frame of delay buys a smooth
 drawing whatever the network jitter. Drawing only; absent = the pitch runs the match itself, as always.
 
-## Atmosfera do estádio (4.38.1)
+## Atmosfera do estádio (7.8.1)
 
 `stadiumAtmosphere.ts` (puro, com teste): torres de iluminação nos quatro cantos da arquibancada (`towerSpots`, painel
 virado para o centro; acesas quando `flood ≥ LIGHTS_ON`; o brilho dos cantos sai dos painéis; sem torres com teto
@@ -193,14 +193,14 @@ quartas, clássico da mesma cidade; o `match-setup` devolve `crowd.bigMatch` (`m
 Torres e celulares numa camada com máscara da arquibancada; a fumaça sob os jogadores; os fogos por cima. Só desenho,
 no relógio de efeitos (nada com a aba escondida ou pausado). `/test`: chips Big game e Celebrate (com Stadium).
 
-### Fogos no estilo 16 bits (4.38.9)
+### Fogos no estilo 16 bits (7.8.9)
 
 `fireworks` (`stadiumAtmosphere.ts`): cada fogo sobe como um bloco com rastro (`RISE_S`), estoura com um clarão
 (`FLASH_S`) e abre em dois anéis de faíscas quadradas (`OUTER` 16, `INNER` 8) de cores da `PALETTE` (às vezes a do
 clube), que caem (`GRAVITY`) e piscam alternadas a partir de `BLINK_FROM` da vida. `Spark.square` desenha um bloco
 (`rect`) no `PixiPitch`.
 
-## Visual da partida refinado (4.38.10)
+## Visual da partida refinado (7.8.10)
 
 Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 - **Linhas:** `drawPitch` com um passe largo e fraco (brilho de cal, `LINE_GLOW_*`) sob a linha fina (`LINE_W`); marca do
@@ -212,7 +212,7 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
   (`STAMINA_ARC`, no lugar da barra); seta de direção pela velocidade desenhada suavizada (`CHEVRON`, some parado ou num
   salto); anel dourado pulsando sob o portador (`HOLDER`).
 - **Rastro da bola:** afinando da cauda para a bola (`drawTrail`).
-- **Torcida de pessoas** (4.38.12, mock aprovado): cada torcedor é uma pessoa (`crowdFigures.ts`: um atlas em canvas com
+- **Torcida de pessoas** (7.8.12, mock aprovado): cada torcedor é uma pessoa (`crowdFigures.ts`: um atlas em canvas com
   o corpo branco tingido na cor da camisa, braços para baixo e para cima, cachecol nas cores da casa e as cabeças —
   6 tons de pele × 7 cabelos, careca e boné), desenhada numa `ParticleContainer` por lado (2 ou 3 partículas por
   torcedor, posição e textura dinâmicas). `crowdMotion.ts` (com teste): `fanLooks` (aparência, fase por setor de
@@ -224,9 +224,9 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 - **Fôlego só do seu time:** prop `staminaTeams` (ausente = os dois, como no `/test`); a partida ao vivo passa
   `[mySide]`.
 
-## Banco de reservas e bandeiras do clube (4.38.14)
+## Banco de reservas e bandeiras do clube (7.8.14)
 
-- `benchView.ts` (puro, com teste; desde a 4.38.15 no estilo da torcida: as mesmas figuras do atlas `buildCrowdAtlas`, sprites tingidos no uniforme, num banco sempre abaixo da linha lateral, `benchLayout`): o banco mostra até 9 reservas (`benchShown`: até dois goleiros, depois os outros na
+- `benchView.ts` (puro, com teste; desde a 7.8.15 no estilo da torcida: as mesmas figuras do atlas `buildCrowdAtlas`, sprites tingidos no uniforme, num banco sempre abaixo da linha lateral, `benchLayout`): o banco mostra até 9 reservas (`benchShown`: até dois goleiros, depois os outros na
   ordem do elenco) em duas fileiras (`benchRows`) dentro de um banco visto de cima (piso, encosto, paredes, cobertura).
   Cada reserva é uma pessoa (ombros na cor do uniforme, cabeça com cabelo, `benchLook` pelo id) que olha a bola, se
   mexe e às vezes levanta (`benchPose`), e levanta com os braços para cima num gol do time. Goleiros com cores próprias
@@ -234,23 +234,23 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 - Bandeiras: `PitchStadium.homeColors` (as duas cores do mandante) e `homeCrest` (URL do escudo, `squadLogoUrl`). As
   bandeirinhas e os bandeirões ficam na cor principal com o escudo no meio (`loadCrestCanvas`, sprites na `crestLayer`
   que seguem o pano), uma cor só; cachecóis e bonés nas duas cores.
-- Pênalti 2D (4.38.15): a mira corre sozinha pelo gol (`aimAt`, períodos de 2,3 s e 1,7 s, fora de passo com a barra de força de 1,4 s); um clique (ou espaço) chuta com a mira e a força daquele instante.
-- Banco (4.38.16, opção A do mock): visto de cima, cabeça e ombros pequenos (unidade ≤ 0,4 do raio do jogador) numa
+- Pênalti 2D (7.8.15): a mira corre sozinha pelo gol (`aimAt`, períodos de 2,3 s e 1,7 s, fora de passo com a barra de força de 1,4 s); um clique (ou espaço) chuta com a mira e a força daquele instante.
+- Banco (7.8.16, opção A do mock): visto de cima, cabeça e ombros pequenos (unidade ≤ 0,4 do raio do jogador) numa
   fileira, sempre abaixo da faixa do bandeirinha. Com o estádio a faixa de baixo é mais funda
   (`STADIUM.BENCH_RUNOFF_YDS` 4,7: `AR_LANE_YDS` 1,8 para o bandeirinha, o resto para os bancos) e o campo é medido com
   ela (`buildMetrics`: a escala vem de `largura / comprimento` ou `altura / (74 + extra)`), então as arquibancadas
   mantêm a profundidade.
-- 4.38.19: campo a 0,85 (opção A do mock), sem os dois anéis da 4.38.18; os bandeirões da torcida saíram (`standBanners`
+- 7.8.19: campo a 0,85 (opção A do mock), sem os dois anéis da 7.8.18; os bandeirões da torcida saíram (`standBanners`
   removido); ficam as bandeirinhas na mão com o escudo.
-- 4.38.20 (reports): túnel dos jogadores no meio da arquibancada de baixo (`standTunnel`, `STADIUM.TUNNEL_FRAC`, sem torcida,
+- 7.8.20 (reports): túnel dos jogadores no meio da arquibancada de baixo (`standTunnel`, `STADIUM.TUNNEL_FRAC`, sem torcida,
   piso escuro entre paredes claras) e o caminho até a linha lateral (`benchGfx`); fotógrafos atrás dos dois gols
   (`PHOTOGRAPHERS`, mesma unidade do banco, câmera para o campo), flash de vez em quando e uma rajada depois de um chute
   para aquele gol. Padrão dos desenhos novos: vistos de cima, unidade = 0,4 do raio do jogador.
 
-## Campo ao vivo refinado (4.38.21, mock escolhido: Jogadores B, Bola B, Estádio A, faixa de lance sem placar de TV)
+## Campo ao vivo refinado (7.8.21, mock escolhido: Jogadores B, Bola B, Estádio A, faixa de lance sem placar de TV)
 
 - Jogadores: borda nas duas cores do uniforme (`drawMarkerRing`; segunda cor `teamAColor2`/`teamBColor2`, a primeira cor do
-  clube diferente do uniforme usado, lida a cada quadro porque chega depois) número próprio de cada jogador numa etiqueta embaixo (desde a 4.41.17: titulares pela vaga no início, reservas 12 em diante; antes era o da vaga e o reserva herdava);
+  clube diferente do uniforme usado, lida a cada quadro porque chega depois) número próprio de cada jogador numa etiqueta embaixo (desde a 8.1.17: titulares pela vaga no início, reservas 12 em diante; antes era o da vaga e o reserva herdava);
   nome só do portador e de quem recebe o passe (todos no debug).
 - Lances (`playGfx`): linha tracejada do passe até quem recebe com um anel nele, arco do chute em voo, anel de impacto
   onde o chute termina.
@@ -262,21 +262,21 @@ Mock aprovado em 2026-10-28. Constantes em `MATCH_LOOK` (`pitchStyle.ts`):
 - Fotógrafos sorteados por jogo (`photographerSpots`): 8 a 13, atrás dos gols (fora das traves) e junto da linha de cima.
 - Bandeirinha de escanteio aponta para dentro; textura e vinheta do gramado mais leves (`GRAIN` 0,045, `EDGE_DARK` 0,1).
 
-## Patrocinadores, bola e fotógrafos (4.38.22)
+## Patrocinadores, bola e fotógrafos (7.8.22)
 
 - `ledAds.ts`: 109 patrocinadores inventados (camisas, lojas, comida, empresas, mídia, futebol), nunca marca real; cor de cada um por índice nos 15 pares. `pitchStyle.ts` reexporta `LED_ADS`.
 - A bola com dono é desenhada nos pés do portador (borda do marcador, na direção em que ele anda ou ataca), nunca no centro do rosto (report).
 - Fotógrafos só atrás dos dois gols (`photographerSpots`: lados esquerdo e direito), nunca entre o bandeirinha e a torcida (report).
 
-## Caminhos no Pixi (4.38.23)
+## Caminhos no Pixi (7.8.23)
 
 Depois de `fill()`/`stroke()` o Pixi v8 continua o caminho do último ponto (`_initNextPathLocation`): um `arc()` sem `moveTo` antes começa com uma linha desde esse ponto. O brilho do marcador (elipse e depois o arco da borda) desenhava um risco cinza no rosto de todo jogador (report). Sempre `moveTo` até o início do arco depois de um preenchimento. O rastro da bola só começa fora do marcador de quem chutou.
 
-## Marcador sem brilho (4.38.24)
+## Marcador sem brilho (7.8.24)
 
 O brilho branco em meia-lua sobre o rosto saiu (report: "círculo branco dentro da cabeça"); fica só a borda escura embaixo (`MATCH_LOOK.RIM`).
 
-## Gramado pintado (arte nova, fase 1, 4.41.4)
+## Gramado pintado (arte nova, fase 1, 8.1.4)
 
 `paintedTurf.ts` (puro, com teste): a partida usa um fundo pintado de `art/backdrops/match/` (o mesmo volume e rota da arte
 nova, `src/backend/artAssets.ts`), escolhido pela grama e pelo corte (`paintedTurfId`: sintético; xadrez, diagonal e
@@ -289,13 +289,13 @@ tracejado de sempre. Sem a imagem (servidor sem arte, `ART_VISUAL=0`, chave "Vis
 `fm.visual.new`) ou enquanto ela carrega (`Assets.load`, ~350 KB), o gramado desenhado de antes. O `/test` carrega a
 arte (`createPage(..., { art: true })`) e mostra pelos chips de grama, corte e condição. Neve e neblina ficam para depois.
 
-## Bola com dono no modo remoto (4.41.4)
+## Bola com dono no modo remoto (8.1.4)
 
 `heldBallId` (`remoteInterp.ts`): no modo remoto (transmissão, jogo entre técnicos) o estado chega a cada segundo e as
 posições a cada passo; o dono do estado só conta (bola nos pés, brilho, nome) enquanto a bola desenhada está a até
 `REMOTE_HOLD_YDS` (2) dele. Antes, depois de um passe a bola voltava aos pés do dono antigo até o estado seguinte (report).
 
-## Jogadores em sprite (arte nova, fase 2, 4.41.6)
+## Jogadores em sprite (arte nova, fase 2, 8.1.6)
 
 `playerSprite.ts` (puro, com teste), no modelo da prévia de arte (`fmproject-art-handoff/reference/preview-template.html`):
 cada jogador é um boneco visto de cima em seis camadas tingidas (meias e camisa no uniforme, gola na segunda cor, pele e
@@ -309,7 +309,7 @@ quatro arquivos versionados), servidos em `/assets/game/v1/` (`GAME_ART_FILES`, 
 (`newVisualOn`: `ART_VISUAL` do servidor e a chave do jogador); sem ele, o disco com o rosto de antes. Os eventos de passe,
 carrinho e encaixe também seguem na transmissão e no jogo entre técnicos (`WATCH_EVENTS`, `H2H_FORWARDED_EVENTS`).
 
-## Arbitragem e equipe em sprite (arte nova, fase 3, 4.41.7)
+## Arbitragem e equipe em sprite (arte nova, fase 3, 8.1.7)
 
 `officialSprite.ts` (puro, com teste): árbitro, bandeirinhas, técnicos, médicos e quarto árbitro como bonecos do atlas
 `src/example_data/assets/officials` (seis camadas tingidas, mesmo andar e virada dos jogadores, `stepMotion`). Árbitro com
@@ -320,7 +320,7 @@ levantada por `BOARD_S` a cada `playerSubstituted`. `attachFigure` (PixiPitch) e
 desenhados; sem o atlas ou com o visual novo desligado, o desenho antigo. Os rostos reais dos árbitros não aparecem nos
 bonecos.
 
-## Torcida e fotógrafos da arte nova (fase 4, 4.41.8)
+## Torcida e fotógrafos da arte nova (fase 4, 8.1.8)
 
 `buildArtCrowdAtlas` (`crowdFigures.ts`): com o visual novo, o atlas da torcida é montado das peças de
 `src/example_data/assets/crowd` (24 px, `ART_FIGURE_FRAME`), no mesmo esquema de uma textura por lado (ParticleContainer):
@@ -329,7 +329,7 @@ cor pelo índice) ou boné. Três poses (`FanArms`): braços baixos, levantados 
 enquanto o outro comemora). Sem a arte, `buildCrowdAtlas` de antes (duas poses). Fotógrafos: bonecos `photographer` do
 atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do gol deles ou depois de um chute.
 
-## Lances, câmera e replay (arte nova, fase 5, 4.41.9)
+## Lances, câmera e replay (arte nova, fase 5, 8.1.9)
 
 - **Letreiro de gol** (`MatchEventBanner` → `GoalTvCard`): com o visual novo, o gol entra pela esquerda com a foto de quem
   marcou, `GOL · 23'`, o nome, escudo e time (e a assistência) e o placar na ordem da tela; 5,2 s. Sem o visual novo, a
@@ -346,16 +346,16 @@ atlas de oficiais (`officialSprite.ts`), câmera levantada com o jogo perto do g
   e arremessa (`throwGo`); o goleiro soca quando não agarra (`punch`) e anda de lado quando se move devagar
   (`keeper-side`); `KNEE_SLIDE_SHARE` (35%) dos gols com o joelho no chão.
 
-## Telas fora da partida (arte nova, fase 7, 4.41.11)
+## Telas fora da partida (arte nova, fase 7, 8.1.11)
 
 Com o visual novo: fundos pintados nas telas de entrada (`PitchBackdrop` `scene`, `backgrounds/bg-landing|new-game.webp`),
 medalhas (`medals/medal-<tier>.svg`) e molduras do rosto do técnico (`ManagerFaceImage` `frame`, `frames/frame-<f>.svg`),
 servidos do repositório (`GAME_ART_FILES`); desenhos das instalações (`paintedFacility(item, nível)`,
-`facilities/facility-<id>-<1..10>.webp`, uma pintura por nível desde a 4.41.25) e ilustrações da caixa de entrada por categoria (`paintedNews`) do volume de arte,
+`facilities/facility-<id>-<1..10>.webp`, uma pintura por nível desde a 8.1.25) e ilustrações da caixa de entrada por categoria (`paintedNews`) do volume de arte,
 anunciados por `/api/art/faces` (`facilities`, `news`). Sem a arte, o desenho de antes. Ficaram para depois: ícones das
 abas e da caixa (seguem no lucide), og-image/favicon, fundo de neblina do pênalti.
 
-## Qualidade e movimento reduzido (arte nova, fase 8, 4.41.11)
+## Qualidade e movimento reduzido (arte nova, fase 8, 8.1.11)
 
 `motionPrefs.ts` (+ teste): `prefersReducedMotion()` e `nextAutoQuality`. Prop `quality` do `PixiPitch` (`high` | `light`);
 com `light` ou movimento reduzido (`calm`) o campo não desenha celulares, sinalizadores, fogos, flashes dos fotógrafos,
@@ -364,7 +364,7 @@ movimento da torcida nem chuva/neve, a câmera fica no campo inteiro e não há 
 depois de 3 leituras abaixo de 40 (`AUTO_QUALITY`), sem voltar na mesma partida. O pênalti pintado com movimento reduzido
 não balança nem treme a tela. Só desenho.
 
-## O resto do pacote (arte nova, fase 9, 4.41.12)
+## O resto do pacote (arte nova, fase 9, 8.1.12)
 
 Tudo com o visual novo e só quando o arquivo carrega; sem ele, o desenho de antes. Só desenho.
 - **Bola** (`ball/ball-atlas`, `ballSpin.ts`: `nextBallRoll`, `ballSpriteFrame`): 8 quadros = 72° de rolagem, virada na
@@ -390,7 +390,7 @@ Tudo com o visual novo e só quando o arquivo carrega; sem ele, o desenho de ant
 - **Marca:** `Wordmark` usa `brand/wordmark.svg`; favicon = `brand/icon.svg`; a landing tem `og:image`
   (`brand/og-image.png`) e `apple-touch-icon`.
 
-## Estádio da prévia (4.41.15)
+## Estádio da prévia (8.1.15)
 
 Revisão da arte (tester): o estádio do jogo estava longe da prévia. Decisão do usuário: diminuir o campo para ter as
 proporções dela.
@@ -405,7 +405,7 @@ proporções dela.
   **Facho** (`floodCones.ts`): leque e poça de luz de cada torre pintados uma vez num canvas, aditivo sob os jogadores,
   pela força `coneStrength(flood)` (0 até 0,35, cheio em 0,75); sem torres com teto fechado.
 
-## Lances da prévia (4.41.16)
+## Lances da prévia (8.1.16)
 
 - **Entrada do reserva** (`SUB_WALK`): no `playerSubstituted` o que entra é desenhado saindo do meio-campo, `OFF_YDS` fora
   da lateral dos bancos, e chega à vaga em `S` segundos (só desenho, no relógio de efeitos). Quem sai some como antes.
@@ -414,7 +414,7 @@ proporções dela.
 - **Impedimento:** faixa sombreada entre a linha e o jogador (`EFFECT_SHAPE.OFFSIDE_STRIP`).
 - A página espera até 4 s pela lista da arte (`loadPaintedFaces`, antes 1,5 s).
 
-## Pedidos da revisão (4.41.17)
+## Pedidos da revisão (8.1.17)
 
 - **Números próprios:** `shirtNumberOf` (PixiPitch): titulares pela vaga no início, reservas 12 em diante na ordem do
   banco, qualquer outro o próximo livre do time; o número fica com o jogador a partida toda.
@@ -430,7 +430,7 @@ proporções dela.
   arte); a textura pela grama (natural a, híbrida b, sintética c tingida) e pela condição (gasta abaixo de 40, lama
   abaixo de 15).
 
-## Bonecos ou discos, rosto do portador, gramado pintado (4.41.19)
+## Bonecos ou discos, rosto do portador, gramado pintado (8.1.19)
 
 - **Bonecos / discos** (prop `markers`, `fm.match.markers`, botão Bonecos em `MatchViewToggles`): troca ao vivo. O
   campo esconde o boneco e mostra o disco com o rosto (e o contrário) por quadro (`figureShown`). O disco ganhou o aro
@@ -441,7 +441,7 @@ proporções dela.
 - **Gramado pintado:** abaixo de 40% o fundo pintado `grass-worn` e abaixo de 15% `grass-muddy` (natural e híbrido, com
   um véu leve e sem as falhas desenhadas); híbrido usa `grass-c`, natural `grass-a`/`grass-b` pelo estádio.
 
-## Bandeirinha, saída na substituição, placa do quarto árbitro (4.41.24)
+## Bandeirinha, saída na substituição, placa do quarto árbitro (8.1.24)
 
 - **Bandeirinha:** com o visual novo, `flag/corner-cloth.png` (pano em cinza, tingido na cor do mandante) e
   `flag/corner-pole.png`, vetor refinado no FLUX (`data_process/assets/flag/build_corner_flag.py`); `FLAG_SPRITE`
@@ -451,7 +451,7 @@ proporções dela.
 - **Placa do quarto árbitro:** com a placa levantada, os números (`shirtNumbers`) de quem sai (vermelho) e de quem
   entra (verde) sobre ele.
 
-## Som da partida (4.41.44, gravações 4.41.45)
+## Som da partida (8.1.44, gravações 8.1.45)
 
 `GameInterface/MatchAudio/matchAudio.ts` (Web Audio): torcida em loop que cresce com a bola perto do gol
 (`crowdExcitement`, `Domain/match/matchSound.ts`), coro quando ela chega perto, apito, chute e passe, rede, grito de gol e
@@ -460,10 +460,10 @@ o "uh" da chance perdida, ligados a eventos do `gameBus` no `MatchScreen` (botã
 As gravações (`src/example_data/assets/audio/*.mp3`, servidas por `GAME_ART_FILES`) vêm do Stable Audio Open 1.0 no
 ComfyUI local: `python data_process/assets/audio/gen_audio.py [nome] [--seed N]` (um pedido por vez) e
 `ConfyUI/python_embeded/python.exe -I data_process/assets/audio/finish_audio.py` (recorte, loop sem emenda, normalização;
-a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. Todo apito é sintetizado (4.41.46): o gerado variava de tom e soava como passarinho;
+a torcida sai de `crowd-bed-raw.mp3`, semente 37). Sem a gravação, o som sintetizado. Todo apito é sintetizado (8.1.46): o gerado variava de tom e soava como passarinho;
 o sintetizado tem tom fixo (3,3 kHz) e a vibração da bolinha no volume (~45 Hz), nunca no tom. Só som: nada muda na simulação.
 
-## Bebidas no banco (4.41.50)
+## Bebidas no banco (8.1.50)
 
 Report de tester, opção B do mock. `benchProps.ts` (`BENCH_PROPS`, `benchPropSpots`, puro, com teste): uma caixa térmica
 na ponta interna de cada banco (lado do túnel) e 3 garrafinhas deitadas na grama ao lado, sorteadas pela semente do
@@ -471,7 +471,7 @@ jogo. Sprites pintados no FLUX (`data_process/assets/bench_props/build_bench_pro
 `assets/bench/cooler-box.png` e `water-bottle.png` (`GAME_ART_FILES`); só com o visual novo e com Officials e extras,
 como os bancos. Só desenho.
 
-## Área de revisão do VAR (4.41.52)
+## Área de revisão do VAR (8.1.52)
 
 Report de tester, opção A do mock. `varArea.ts` (`VAR_AREA`, puro, com teste): uma área pintada de branco na linha
 lateral desenhada em cima, no meio-campo (no espaço da tela, como as placas de LED), com o monitor pintado no FLUX
@@ -480,31 +480,31 @@ revisão (`GameState.varReview`) o árbitro corre até o monitor (`reviewRunStep
 sobrando, sem o salto de `SNAP_DIST`), olha para ele e depois volta ao jogo sem pular (`BACK_SPEED`). Só com estádio,
 Officials e o visual novo. A revisão continua com `REVIEW_SECONDS`; nada no motor muda.
 
-## Som do chute (4.42.5)
+## Som do chute (8.2.5)
 
 Report do usuário. O `kick.mp3` gerado durava 1 s, começava 64 ms atrasado e tinha 95% da energia abaixo de 150 Hz. Agora é `audio/ball-strike.mp3`: gravação real ([Freesound 555042](https://freesound.org/people/bittermelonheart/sounds/555042/), bittermelonheart, CC0), escolhida de ouvido pelo usuário entre 34 golpes (`bun`/ComfyUI: `data_process/assets/audio/real_kicks.py` recorta os golpes das prévias). Chute: ganho 0,7 × força, velocidade 0,97–1,03. Passe: o mesmo som a 0,3, velocidade 1,09–1,15. Os arquivos em `/assets/game/v1/` têm cache `immutable`: um som alterado precisa de nome novo.
 
-## Sem anel nos bonecos (4.42.18)
+## Sem anel nos bonecos (8.2.18)
 
 Pedido do usuário, opção K do mock. Com os bonecos, o marcador não desenha o anel de duas cores: uma sombra suave na cor do uniforme fica embaixo do corpo (`MATCH_LOOK.TEAM_GLOW`, sprite `teamGlow`). A chave Bonecos volta aos discos com o anel e o aro de sempre. A etiqueta, a barra de fôlego, a seta, o rosto e a bola não mudam.
 
-## Fichas redondas maiores (4.42.19)
+## Fichas redondas maiores (8.2.19)
 
 Pedido do usuário. No modo discos o marcador inteiro é desenhado × `MATCH_LOOK.DISC_SCALE` (1,3), com a etiqueta e o cartão junto; a barra de fôlego, a seta, o nome, o anel de quem tem a bola e a bola nos pés acompanham (`drawnR`). Os bonecos não mudam.
 
-## Gramado ruim (4.42.25)
+## Gramado ruim (8.2.25)
 
-Report do usuário ("casca de melão"): a textura de grama, feita para ver de perto, virava uma rede no campo inteiro, e as manchas eram coladas sobre as listras. `match-backdrop-grass-worn` e `-muddy` são agora montados (`data_process/assets/pitch_bad/`, sem commit): as texturas do FLUX reduzidas à escala do campo, desgaste nas áreas, no círculo central, no corredor e na faixa dos bandeirinhas, com a borda da terra quebrada em todas as escalas. Pintar o campo inteiro com o FLUX não serve: mesmo pedindo sem marcações, ele inventa linhas, traves e poças. Desde a 4.42.26 os gramados bons (`grass-a`, `-b`, `-c`, `mow-check`, `-diag`, `-rings`) também (`turf_good.py`), com o corte como diferença suave de tom. Desde a 4.42.27 a sintética e a neve também (`turf_special.py`); a neve é azul-acinzentada de propósito, porque num branco puro as linhas somem. As versões de dia, que o jogo não usa, continuam com a textura antiga.
+Report do usuário ("casca de melão"): a textura de grama, feita para ver de perto, virava uma rede no campo inteiro, e as manchas eram coladas sobre as listras. `match-backdrop-grass-worn` e `-muddy` são agora montados (`data_process/assets/pitch_bad/`, sem commit): as texturas do FLUX reduzidas à escala do campo, desgaste nas áreas, no círculo central, no corredor e na faixa dos bandeirinhas, com a borda da terra quebrada em todas as escalas. Pintar o campo inteiro com o FLUX não serve: mesmo pedindo sem marcações, ele inventa linhas, traves e poças. Desde a 8.2.26 os gramados bons (`grass-a`, `-b`, `-c`, `mow-check`, `-diag`, `-rings`) também (`turf_good.py`), com o corte como diferença suave de tom. Desde a 8.2.27 a sintética e a neve também (`turf_special.py`); a neve é azul-acinzentada de propósito, porque num branco puro as linhas somem. As versões de dia, que o jogo não usa, continuam com a textura antiga.
 
-## Goleiro recua olhando a bola (4.46.4)
+## Goleiro recua olhando a bola (8.6.4)
 
 Pedido do usuário. `stepMotion(..., backpedal)`: indo para longe da bola, o boneco do goleiro continua de frente para ela; indo em direção a ela, olha para onde vai. Só desenho. Jogadores de linha não mudam.
 
-## Festa fora da obra (4.46.4)
+## Festa fora da obra (8.6.4)
 
 Report de tester. `burstAreas` (`stadiumAtmosphere.ts`): sinalizadores na torcida da casa, ou, com ela em obra, no outro fundo e depois num lado aberto; fogos só sobre as arquibancadas abertas. Tudo em obra: sem festa.
 
-## Forma do estádio e entorno (4.47)
+## Forma do estádio e entorno (8.7)
 
 Mock aprovado em 2026-11-05 (pintado no FLUX). Só desenho.
 - **Forma** (`src/Domain/matchday/stadiumShape.ts`): `oval`, `rounded`, `square` ou `blocks`. Estádio real: pelo contorno do
@@ -525,18 +525,18 @@ Mock aprovado em 2026-11-05 (pintado no FLUX). Só desenho.
   por cima. A luz da partida escurece tudo à noite. `/test`: chips Full / Oval / Rounded / Square / Blocks com Stadium.
 - Limitações: o entorno é genérico (o real de cada estádio é a próxima etapa); a faixa é fina em telas largas.
 
-## Arquibancadas pelo tamanho (4.47.2)
+## Arquibancadas pelo tamanho (8.7.2)
 
 Report de tester. `standDepths` (`src/Domain/facilities/standDepth.ts`): lugares de cada setor do clube humano contra a parte padrão do estádio (`FACILITIES.STAND_SHARE`); o setor com mais lugares para a parte dele fica na profundidade cheia e os outros em proporção, nunca abaixo de `MIN_DEPTH` (0,45). Estádio com a divisão padrão = null (nada muda). `MatchCrowd.depths` (jogos em casa do clube humano) → `PitchStadium.depths` → `buildMetrics({ depths })` (pelo lado desenhado, `drawnDepths`; só com forma): a borda de fora do setor entra, o campo não se mexe, e o calçamento ocupa o resto. Com `depths` o entorno pintado não é usado (foi pintado para o estádio inteiro). A forma e as profundidades estão na chave do campo (`MatchScreen`, `WatchScreen`): os dados da torcida chegam depois do estádio aparecer. `/test`: chip Big stand.
 
-## A maca para o jogo (4.47.13)
+## A maca para o jogo (8.7.13)
 
 Pedido do usuário. Enquanto uma maca desenhada está em campo (`stretcherPose(...).done` falso), o `pumpSimulation` segura a simulação como na reprise do gol (`stretcherHolds`): relógio e jogadores param, a maca anda no relógio de efeitos. Só desenho e só com extras e a aba visível; o resultado não muda. No modo remoto (jogo entre técnicos, transmissão) o servidor não para.
 
-## Mastro e sombra das torres (4.47.18)
+## Mastro e sombra das torres (8.7.18)
 
 Mock aprovado (opção C, concreto). Cada torre tem um mastro de concreto do pé (`towerFoot`, `MAST_CONCRETE.FOOT` tamanhos atrás do painel, para longe do campo) até o painel, desenhado sob a torre. A sombra (`towerShadow`, puro, com teste) vai do pé até onde cai o topo, na direção da sombra de sol dos jogadores (`Lighting.sunShadow`), mais longa com o sol baixo (`SHADOW_SHORT`..`SHADOW_LONG` da altura), com a sombra do painel na ponta; acima da arquibancada e da torcida, abaixo dos jogadores; nenhuma à noite. Só desenho.
 
-## Luz pela estrutura (4.47.21)
+## Luz pela estrutura (8.7.21)
 
 Mock aprovado. `lightLook` (`src/Domain/matchday/stadiumLight.ts`, puro, com teste) sobre `PitchStadium.light` (`{ level, condition }`, do `match-setup` → `crowd.light`, `homeLight`: o item Estrutura e iluminação do mandante; sem itens, o tier, LOW 3 · MEDIUM 5 · HIGH 7 · ELITE 9; campo neutro 7). O nível dá a força (`gain` 0,6..1,12 sobre o brilho dos cantos e os fachos), a cor (`tint`, amarelada a branca) e uma escuridão extra à noite (`dark`, até 0,16 no nível 1). Abaixo de 40% de condição uma torre fica apagada (sem facho, sem brilho, canto escuro, painel apagado; sorteada pelo id do estádio) e as arquibancadas ganham manchas encardidas (sprite mascarado, sob os jogadores); abaixo de 15%, duas torres. Só desenho. `/test`: chips Light (low, top, worn, broken).

@@ -276,7 +276,7 @@ seguinte:
 ## Choque entre a virada de liga de ano civil europeia e as datas continentais fixas
 
 As ligas europeias de ano civil viram em dezembro com as datas de UCL/UEL da temporada em curso já
-fixadas. Desde a 4.16 o jogo da liga de um clube que cai no mesmo dia ou colado num jogo continental
+fixadas. Desde a 5.6 o jogo da liga de um clube que cai no mesmo dia ou colado num jogo continental
 dele é **remarcado** (só aquela partida, para o meio de semana livre mais próximo): passo do mundo
 inteiro na virada, depois das continentais regeneradas. O antigo `logEuropeanCalendarClashes` (só
 logava) saiu. Ver `.claude/rules/game/rescheduling.md`.
@@ -362,9 +362,9 @@ da semana com mais frequência que as europeias, deixando menos dias realmente l
 ## Limitações conhecidas
 
 - **Vizinhança sul-americana e ligas europeias de ano civil.** O otimizador de datas continua só
-  evitando o dia adjacente como custo (54/416 na Libertadores/Sul-Americana), mas desde a 4.16 o jogo
+  evitando o dia adjacente como custo (54/416 na Libertadores/Sul-Americana), mas desde a 5.6 o jogo
   da liga que cai colado (ou no mesmo dia) num jogo continental do clube é remarcado — na geração, na
-  virada e nos sorteios de mata-mata (`.claude/rules/game/rescheduling.md`). Desde a 4.46.4 o par copa ×
+  virada e nos sorteios de mata-mata (`.claude/rules/game/rescheduling.md`). Desde a 8.6.4 o par copa ×
   continental também se resolve (o jogo da copa cede). Sobra o raro jogo sem dia livre na janela.
 - **Issue #2 (recalibração do quickSim entre ligas de força muito diferente)** ainda não foi
   medida/ajustada. A interface (aba Continental, inbox, prévia de partida, `seasonLog.continental`)

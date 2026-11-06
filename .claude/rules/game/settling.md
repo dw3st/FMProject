@@ -1,6 +1,6 @@
 # Entrosamento: o recém-chegado
 
-Report de tester, regra aprovada pelo usuário em 2026-11-04 (a alternativa por dupla de jogadores foi descartada: dados de 36 mil jogadores em todo save para uma diferença que quase não apareceria). Versão **4.45**.
+Report de tester, regra aprovada pelo usuário em 2026-11-04 (a alternativa por dupla de jogadores foi descartada: dados de 36 mil jogadores em todo save para uma diferença que quase não apareceria). Versão **8.5**.
 
 ## Regra
 

@@ -313,7 +313,7 @@ país localizado por `Intl.DisplayNames` quando há `iso2`. Slug de copa desconh
 
 ## Remarcação da liga
 
-Um jogo de copa só muda de data contra um jogo continental do mesmo clube (4.46.4, `rescheduling.md`). Um jogo de liga de um clube que caia no mesmo dia ou colado
+Um jogo de copa só muda de data contra um jogo continental do mesmo clube (8.6.4, `rescheduling.md`). Um jogo de liga de um clube que caia no mesmo dia ou colado
 num jogo de copa dele (a fase recém-sorteada, ou uma copa gerada depois da liga) é que é remarcado, no
 mesmo dia do sorteio — ver `.claude/rules/game/rescheduling.md`.
 

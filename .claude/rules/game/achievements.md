@@ -1,13 +1,13 @@
 # Conquistas
 
-Spec: `docs/superpowers/specs/2026-10-11-achievements-design.md`. Etapa 40 do `docs/ROADMAP.md` (#95), versão **4.20**.
+Spec: `docs/superpowers/specs/2026-10-11-achievements-design.md`. Etapa 40 do `docs/ROADMAP.md` (#95), versão **6.0**.
 Visual: `.claude/rules/ui-standard.md`.
 
 ## Regra
 
 - Conquistas **da carreira**, só do técnico do jogador: `saves/{id}/achievements.json` (`AchievementsState`,
   `src/types/achievementTypes.ts`). Ausente = nada desbloqueado, atributos em 10. A IA não tem nada. Sem migração.
-- **98 conquistas** (93 até a 4.21): 27 trilhas (bronze/prata/ouro) em 8 categorias + 17 secretas ("???" até desbloquear). Catálogo e
+- **98 conquistas** (93 até a 6.1): 27 trilhas (bronze/prata/ouro) em 8 categorias + 17 secretas ("???" até desbloquear). Catálogo e
   critérios em `src/Domain/achievements/catalog.ts` e na spec §2.
 - Seguem o **técnico**: trocar de clube não apaga nada. Sequências (vitórias, sem perder, sem sofrer gol, derrotas) são
   da carreira; a temporada da liga (casa, invencibilidade) recomeça na virada do país do clube e na troca de clube.
@@ -46,7 +46,7 @@ Visual: `.claude/rules/ui-standard.md`.
 ## Pontos e itens
 
 - Bronze 10, prata 25, ouro 50, secreta 40. Saldo = ganhos − gastos na loja (as molduras e os enfeites contam os ganhos).
-- **Pontos de campanha (4.37.2, report de tester: depois de todas as conquistas não havia mais pontos):** somados aos das
+- **Pontos de campanha (7.7.2, report de tester: depois de todas as conquistas não havia mais pontos):** somados aos das
   conquistas (`AchievementsState.campaign = { points, seen }`, uma vez por chave, `addCampaign`): título de liga 60, copa
   40, continental 80, acesso 25, torneio de seleção 60 (`applyCampaignRecord`, sobre os títulos e prêmios do registro do
   técnico, inclusive os de antes da regra), semifinal continental 15 e final 30 (primeiro jogo da fase, `continental:<slug>:<ano>:<fase>:<clube>`),
@@ -84,14 +84,14 @@ exatamente 1 (nenhum número muda, nenhum sorteio novo).
 
 ## Loja (uma de cada por temporada)
 
-- Desde a 4.37.2: cada item uma vez por temporada da liga do técnico (`bought.<item>Season` = `liga:ano`), o preço sobe
+- Desde a 7.7.2: cada item uma vez por temporada da liga do técnico (`bought.<item>Season` = `liga:ano`), o preço sobe
   `SHOP_STEP` (100) a cada compra (`shopPrice`, `recordPurchase`); uma compra de antes da regra conta como uma.
 
 - **Jogador criado** (300 pontos): nome (2–30), posição (14), nacionalidade (com bandeira), pé; 16 anos, na base, nível
   = média da linha − 1,8 + 1,0 + 0,3, arquétipo "Wonderkid", formado no clube (`academyOf`), contrato de base.
 - **Lenda aposentada** (500): lista de todas as lendas disponíveis, com busca pelo nome (`legendPool`: classe mundial
   primeiro, depois o nível ao se aposentar; completa com os melhores aposentados até 12 enquanto o mundo tem poucas; nunca um
-  já renascido, já trazido por outro técnico nem um livre aposentado). Até a 4.42.12 era um sorteio guardado de 3 (report de
+  já renascido, já trazido por outro técnico nem um livre aposentado). Até a 8.2.12 era um sorteio guardado de 3 (report de
   tester). A linha mostra jogos e gols da carreira (`careerTotals`, a soma das linhas do histórico, só o que ele jogou desde o começo do mundo). O escolhido volta com 17 anos pela regra do renascido (`generateReborn`, id `legend_<id>_<ano>`).
 - 409 `notEnoughPoints` / `alreadyBought` / `noClub`; 400 `youthFull` / `invalidPlayer` / `notOffered`.
 
@@ -152,19 +152,19 @@ bun test src/Domain/achievements src/backend/achievements.test.ts src/GameEngine
 - Conquistas de temporada contam só os jogos que o passo viu (um clube assumido no meio da temporada conta a parte dele).
 - A folha da "Milagre" é a da virada (depois das saídas de contrato do dia).
 
-## Seleção (Etapa 41b, 4.22)
+## Seleção (Etapa 41b, 6.2)
 
 98 conquistas: trilha `national_wins` (vitórias com a seleção que ele treina, 5 / 20 / 50, Partidas, Motivação; contador
 `nationalWins`, lido do `StoredDayLog.nationalMatch` pelo passo do dia) e secretas `world_champion` (título `wc_*` no
 registro, Tática) e `against_homeland` (vencer a seleção da nacionalidade dele treinando outra, Motivação). Os jogos da
 seleção não contam nas outras trilhas. Ver `.claude/rules/game/national-teams.md` → "Técnico do jogador".
 
-## Bandeirão e telas (4.41.18)
+## Bandeirão e telas (8.1.18)
 
 O bandeirão (`flag`, 400 pontos) não é mais desenhado na partida nem oferecido na aba Perfil (a pedido do usuário);
 faixa e mosaico continuam. Com o visual novo, as medalhas das trilhas têm 48px, as secretas usam `medal-secret` e as
 molduras são cartões com o rosto do técnico em cada moldura (bloqueadas em cinza, com os pontos).
 
-## Rodízio das lendas na loja (4.42.21)
+## Rodízio das lendas na loja (8.2.21)
 
-Report de tester (substitui a lista completa da 4.42.12). A loja oferece a cada técnico e temporada `LEGEND_OFFER.SIZE` (12) aposentados sorteados de todos os notáveis (`legendOffer`, sorteio ponderado, peso comum 1, raro 3, super raro 2; só quem se aposentou até o início da temporada, para a lista não mudar quando outros países viram; quem outro técnico trouxe dá lugar ao próximo). Raro = lenda (nota 45+), super raro = classe mundial ou nota 55+, custando +200 e +500 pontos (`legendExtraPrice`, gravado no preço da compra). A lista de lendas em Estatísticas (trazer com dinheiro) não muda.
+Report de tester (substitui a lista completa da 8.2.12). A loja oferece a cada técnico e temporada `LEGEND_OFFER.SIZE` (12) aposentados sorteados de todos os notáveis (`legendOffer`, sorteio ponderado, peso comum 1, raro 3, super raro 2; só quem se aposentou até o início da temporada, para a lista não mudar quando outros países viram; quem outro técnico trouxe dá lugar ao próximo). Raro = lenda (nota 45+), super raro = classe mundial ou nota 55+, custando +200 e +500 pontos (`legendExtraPrice`, gravado no preço da compra). A lista de lendas em Estatísticas (trazer com dinheiro) não muda.

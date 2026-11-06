@@ -27,7 +27,7 @@ Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, v
 | Analista de desempenho | `analyst` | `analysis` | Ganho de familiaridade ×0,8 / ×1 / ×1,25 (`style-training.md`) | 1 |
 | Olheiro-chefe | `scout` | `scouting` | Incerteza ×1,3 / ×1 / ×0,75; ganho das missões ×0,7 / ×1 / ×1,4 (`scouting.md`) | 1 |
 | Olheiro de campo | `fieldScout` | `scouting` | Uma missão cada | 4 (`STAFF.LIMITS.fieldScout`) |
-| Jardineiro | `groundskeeper` | `pitch` | Desgaste dos gramados do clube ×1,3 / ×1 / ×0,75 (× 0,9 por jardineiro a mais; sem nenhum ×1,6; base pela metade) — `StaffEffects.pitchWearMult`, `facilities.md` (4.11) | LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 |
+| Jardineiro | `groundskeeper` | `pitch` | Desgaste dos gramados do clube ×1,3 / ×1 / ×0,75 (× 0,9 por jardineiro a mais; sem nenhum ×1,6; base pela metade) — `StaffEffects.pitchWearMult`, `facilities.md` (5.1) | LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 |
 
 Limite pelo tier natural do clube (`roleLimit`, `financialTierOf`), lido na hora: acima dele, 409 `roleFull`; se o
 tier cair, ninguém é demitido.
@@ -189,7 +189,7 @@ contratos; nenhum clube da IA com `staff`.
 `obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
 ≥ 1). Ver `.claude/rules/game/personality.md`. Desde a 4.3 o ruído é o do jogador (conhecimento, `scouting.md`).
 
-## Nacionalidades e conhecimento por país (4.10)
+## Nacionalidades e conhecimento por país (5.0)
 
 - **Origem** (`src/Domain/staff/staffOrigin.ts`, `src/backend/staffNameBook.ts`): um livro de nomes por país dos 60 de
   `countries.json`, com nomes e sobrenomes dos jogadores do mundo base daquela nacionalidade (`Czechia`, `Türkiye`,
@@ -203,6 +203,6 @@ contratos; nenhum clube da IA com `staff`.
   aba Comissão e os cartões mostram o país forte; a ficha de um olheiro abre o mapa de países
   (`GET /api/saves/:id/staff/:memberId/countries`).
 
-## Trocar com a função cheia (4.47.10)
+## Trocar com a função cheia (8.7.10)
 
 Report do usuário. Com a função no limite, a janela de contratação lista quem está nela (estrelas, salário, fim do contrato, multa de hoje); escolher um troca os dois num passo só: `POST /staff/hire { memberId, years, replaceId }` dispensa o escolhido (multa no extrato, volta à lista de livres, áreas liberadas, missão cancelada se olheiro de campo) e contrata o novo no mesmo `BufferingSaveDAL`. `replaceId` de outra função ou fora da comissão: 404 `notYourStaff`.

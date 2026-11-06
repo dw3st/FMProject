@@ -131,7 +131,7 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
   propostas; texto inválido ou abaixo do mínimo desliga Salvar com aviso); listado, o botão "Pedido €X" ou
   "No valor · €X" edita o preço. Na aba de transferências a lista de venda mostra o pedido e a % do valor (ou
   "No valor · €X", calculado na hora), com "Preço".
-- **Janela de oferta (4.42.16, report de tester):** na aba Transferência, quatro números no topo: valor de mercado, quanto o clube pode pagar, nível (com o nível da mesma linha do clube, `starterLineLevel`) e salário pedido. A taxa abre no valor estimado e vai até min(saldo, 3 × valor, no mínimo €10M) (`transferOfferRange`, `offerRange.ts`); até aqui saía de uma fórmula anterior à 4.5. A linha do contrato mostra a folha antes e depois.
+- **Janela de oferta (8.2.16, report de tester):** na aba Transferência, quatro números no topo: valor de mercado, quanto o clube pode pagar, nível (com o nível da mesma linha do clube, `starterLineLevel`) e salário pedido. A taxa abre no valor estimado e vai até min(saldo, 3 × valor, no mínimo €10M) (`transferOfferRange`, `offerRange.ts`); até aqui saía de uma fórmula anterior à 4.5. A linha do contrato mostra a folha antes e depois.
 
 ## `/test`, `/lab`
 
@@ -217,26 +217,26 @@ Listas de venda e empréstimo, propostas, conversas, empréstimos e cláusulas d
 
 Entre dois técnicos humanos as propostas de transferência e empréstimo são `SeatOffer`s do mundo (`seatOffers.json`), não esta conversa: ver `.claude/rules/game/multiplayer.md` → "Parte 4: humano × humano".
 
-## Clube da IA no mínimo da posição (4.37, report)
+## Clube da IA no mínimo da posição (7.7, report)
 
 Numa compra do humano, o vendedor da IA só recusa por elenco com 14 ou menos ou sem outro jogador na posição
 (`humanBuyBlocked`); abaixo de um mínimo por linha ele vende e, no mesmo dia, contrata um substituto da linha
 (`replaceAfterSale`: o melhor livre que cabe na folha, senão um jovem). Entre clubes da IA os mínimos continuam valendo
 (`squadDepthBlocked`). Antes, como a reposição enche os elencos só até os mínimos, quase nenhum goleiro era comprável.
 
-## Multa rescisória (4.44.4)
+## Multa rescisória (8.4.4)
 
 Report de tester. Todo jogador de clube da IA tem multa de 3 × o valor de mercado, no mínimo €1M (`releaseClause`, a rota `demand` devolve `clause`). `POST /transfers { payClause: true, fee }`: o clube não pode recusar, sem rodadas e sem rivais; janela aberta, saldo, limite do top 25 e contrato com o jogador continuam valendo (a recusa dele continua). 400 `belowClause`. Sem cláusula de venda futura. Não vale entre técnicos humanos.
 
-## Situação do jogador na proposta (4.44.6)
+## Situação do jogador na proposta (8.4.6)
 
 Report de tester. Uma linha na negociação, na proposta recebida e na proposta entre técnicos: papel no elenco (o sugerido, `suggestedStatuses`; o escolhido só para o próprio técnico), à venda, disponível para empréstimo e, no próprio jogador, se pediu para sair. `GET /players/:id/situation?from=` (`playerSituation`, `situation.ts`). Clube da IA: a lista de venda do perfil e `loanAvailability`. Outro técnico: as listas do mercado dele. O papel sai da nota real, mesmo com o olheiro incerto: revela um pouco, como o pedido de salário.
 
-## Resumo dos emprestados e opção de retorno (4.45)
+## Resumo dos emprestados e opção de retorno (8.5)
 
 Reports de tester. `GET /negotiation`: cada empréstimo cedido traz `report` (`loanReport`, `src/Domain/negotiation/loanReport.ts`): jogos, gols, assistências, nota, cartões e lesões somando a temporada em curso e as linhas `loan` no clube, e o OVR no início e agora, com os atributos que mudaram (`ActiveLoan.startOverall`/`startStats`; empréstimo mais antigo só mostra o OVR atual). Tela: Elenco → Emprestados. **Opção de retorno:** ao aceitar uma proposta de empréstimo da IA, `{ recall: true }` reduz a parte do salário que o clube paga em 20 pontos (`RECALL_WAGE_COST`) e grava `ActiveLoan.recall`; `POST /loans/:playerId/recall` (409 `notRecallable`, `windowClosed` com a janela do jogador fechada) traz o jogador de volta na hora, pelo mesmo caminho da data (`returnDueLoans({ recalled })`). A taxa não é devolvida. Limitação: não vale nos empréstimos pedidos pelo jogador nem nas propostas entre técnicos.
 
-## Luvas e disputa de quem chega sem taxa (4.47.9)
+## Luvas e disputa de quem chega sem taxa (8.7.9)
 
 Pedido do usuário. Lógica pura em `src/Domain/negotiation/freeSigning.ts` (`NEGOTIATION.FREE_SIGNING`), E/S em `src/backend/freeSigningWorld.ts`.
 

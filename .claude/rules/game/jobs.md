@@ -167,19 +167,19 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
   `manager` (`ref.stage = "severance"`) antes do `club_change` "leave" (soma = saldo continua).
 - **Virada do país:** o `until` é reancorado no fim da temporada da liga nova (`reanchorContract`, mantém as
   temporadas restantes) — um rebaixamento para uma liga que acaba antes não trava a renovação nem o fim.
-- **Renovação não respondida (4.41.1):** uma oferta da diretoria pendente na virada (nem aceita nem recusada) é aceita
+- **Renovação não respondida (8.1.1):** uma oferta da diretoria pendente na virada (nem aceita nem recusada) é aceita
   ali (`renewedContract`, mensagem `contract_renewed`); só recusar no cartão deixa o contrato acabar. Report: o técnico
   do Real Madrid (2 Champions, diretoria 77) ficou sem clube por não clicar.
-- **Responder antes de avançar (4.41.5, pedido de tester):** com uma oferta da diretoria pendente (`renewalPending`),
+- **Responder antes de avançar (8.1.5, pedido de tester):** com uma oferta da diretoria pendente (`renewalPending`),
   o avanço do próprio técnico recusa com 409 `renewalPending`: `/advance-day` (salvo com uma partida ao vivo já jogada),
   `/advance-until`, e no grupo o "Pronto até" e o "Simular". A oferta nova para o avanço rápido (`renewalOffer`) e o
   avanço em grupo (parada do assento, `seatStops`). O cliente leva ao Painel com `?renewal=1`, que reabre a janela. A
   aceitação na virada continua só para quem estava ausente (o prazo do grupo avançou por ele).
-- **Janela da renovação (4.41.2):** com `managerRenewal` válida, o Painel abre `RenewalPopup` (o mesmo
+- **Janela da renovação (8.1.2):** com `managerRenewal` válida, o Painel abre `RenewalPopup` (o mesmo
   `ManagerRenewalCard`), uma vez por oferta e sessão do navegador ("Decidir depois" fecha; o cartão da inbox fica).
-- **Proposta com país e divisão (4.41.2):** `JobOffer.country` e `tier` (pirâmide do país; liga sem pirâmide = 1); o
+- **Proposta com país e divisão (8.1.2):** `JobOffer.country` e `tier` (pirâmide do país; liga sem pirâmide = 1); o
   `JobOfferCard` mostra bandeira, país e "Nª divisão" e o link Ver elenco (`/squad/<liga>/<clube>`).
-- **Desempregado com reputação (4.41.1):** `unemployedBand(último, reputação)`: teto = max(último − 0,05, reputação/100),
+- **Desempregado com reputação (8.1.1):** `unemployedBand(último, reputação)`: teto = max(último − 0,05, reputação/100),
   alvo = max(último − 0,12, reputação/100 − 0,12).
 - **Sem "Pode ser demitido":** a diretoria sempre oferece (no mínimo 1 temporada com o salário atual).
 - **Proposta aceita depois de 85% da temporada da liga nova:** o contrato conta a partir da próxima temporada.
@@ -198,7 +198,7 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
 Testes: `bun test src/Domain/managers src/backend/jobs.test.ts src/backend/windows.routes.test.ts`. Smoke: Convites
 (compensação e interim no clube antigo, renovação aceita antes da virada do clube novo).
 
-## Técnico de seleção (Etapa 41b, 4.22)
+## Técnico de seleção (Etapa 41b, 6.2)
 
 Convites de seleções são à parte das propostas de clube (`NationalState.offers`, inbox `national_coach`, rota
 `POST /api/saves/:id/national/coach/offers/:offerId`): chegam quando uma seleção demite o técnico da IA, pela mesma
@@ -210,10 +210,10 @@ contagem de convites novos do dia entra no `jobOffers` da resposta (o avanço r�
 
 Emprego, propostas, demissão e contrato do técnico são do assento (`seat.json`); nenhum clube com assento oferece emprego. "O clube do jogador" = o clube do assento. Ver `.claude/rules/game/multiplayer.md`.
 
-## Negociar a renovação e o dinheiro do técnico (4.44)
+## Negociar a renovação e o dinheiro do técnico (8.4)
 
 Reports de tester. **Renovação:** `POST /manager-contract { wage, seasons }` (`answerRenewalProposal`, `renewalLimits`): diretoria ≥ 80 até 3 temporadas e o salário pela reputação × 1,25; ≥ 60 até 2 e × 1,1; abaixo 1 e o salário atual × 1,05 (a oferta na mesa nunca piora). Dentro do limite assina; acima, a diretoria devolve o máximo (`countered`) e perde 1 ponto; 2 tentativas, depois 409 `noRounds`. **Dinheiro:** `managerEarnings` nunca cai; `SeatState.managerSpent` e `managerAssets` (casa, carro, relógio, 4 níveis, `src/Domain/managers/assets.ts`, `POST /manager-assets`). Só prestígio: nada toca o clube. Trilha de conquistas `career_earnings` (€1M, €10M, €50M; 28 trilhas, 101 conquistas). A proposta de emprego mostra o salário de hoje e a próxima meta (`nextEarningGoal`). Aba Patrimônio em `/achievements`, bens no ranking de técnicos.
 
-### Fotos do patrimônio (4.44.5)
+### Fotos do patrimônio (8.4.5)
 
 Pedido do usuário. Casa, carro e relógio têm 4 imagens cada (`src/example_data/assets/manager-assets/`, `GAME_ART_FILES`), feitas com `data_process/assets/manager_assets/build_manager_assets.py` (layout em Python, FLUX img2img). Os carros seguem silhuetas de modelos reais, como o GTA: sem logo, emblema nem nome na imagem. A aba Patrimônio mostra a foto do nível comprado e, na lista, a miniatura de cada nível (cinza até comprar); só com o visual novo. Ao trocar uma imagem, troque o nome do arquivo: o cache é `immutable`.

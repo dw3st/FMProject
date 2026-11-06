@@ -1,6 +1,6 @@
 # Clima que afeta a partida
 
-Spec: `docs/superpowers/specs/2026-10-18-weather-effects-design.md`. Versão **4.32**. O sorteio do clima (e o horário e
+Spec: `docs/superpowers/specs/2026-10-18-weather-effects-design.md`. Versão **7.2**. O sorteio do clima (e o horário e
 o pôr do sol, só desenho) continua em `src/Domain/matchday/matchConditions.ts`; a luz em `graphics-engine.md` → "Luz e sombra".
 
 ## Regra
@@ -30,9 +30,9 @@ o pôr do sol, só desenho) continua em `src/Domain/matchday/matchConditions.ts`
 ## Telas
 
 - Prévia e resultado: linha do efeito do clima quando ativo (`weatherEffect.*` em i18n); em campo neutro com um clima
-  sorteado que teria efeito, "o clima não afeta o jogo" (`weatherEffect.neutral`, 4.34.2).
+  sorteado que teria efeito, "o clima não afeta o jogo" (`weatherEffect.neutral`, 7.4.2).
 - `/test`: seletor **Weather** (motor + luz), cabeçalho do `EnergyPanel` com os multiplicadores, cenários `rain-cross` e
-  `heat-stamina`, categoria de debug `weather` (4.34.3: uma linha por lance afetado — erro do lançamento, saída do goleiro,
+  `heat-stamina`, categoria de debug `weather` (7.4.3: uma linha por lance afetado — erro do lançamento, saída do goleiro,
   bola alta que cai solta, domínio de bola alta, chute de longe, bola em profundidade — com a alavanca e o `weatherMult`;
   só com o debug ligado e clima ativo, nenhum sorteio novo).
 - `/lab`: `Variant.weather` (variante A vale para o jogo); `TeamRawStats.weatherActive` → `weatherShare` na linha do `PairDetail`.
@@ -82,7 +82,7 @@ escorrega (−20% de bolas soltas ganhas, −12% de lançamentos certos, −8% d
 Medição de 2026-10-18 com a chuva em looseDecel 0,7: gols −2,9% (meta ±3%, no limite), chutes −3,1%. Nos jogos
 neutros o resultado é idêntico (5/5 conferidos).
 
-**4.34.3: chuva em looseDecel 0,8** (a bola molhada escorrega um pouco menos), mesma medição pareada, 1200 jogos por liga:
+**7.4.3: chuva em looseDecel 0,8** (a bola molhada escorrega um pouco menos), mesma medição pareada, 1200 jogos por liga:
 
 | Liga | gols | chutes |
 |---|---|---|
@@ -120,7 +120,7 @@ Ver a spec §8: o clima não muda a tática da IA nem as substituições; sem ef
 igual); o horário e o pôr do sol continuam só desenho; o quickSim aplica o mesmo efeito em média, não lance a lance;
 seleções e base jogam sem clima.
 
-## Neblina (4.41.12, só visual)
+## Neblina (8.1.12, só visual)
 
 Não é um clima: `matchHasFog` (`src/Domain/matchday/matchFog.ts`) desenha neblina em 30% dos jogos `cloudy` e `cold`,
 pelo id do jogo, nunca com teto. Nada no motor, no quickSim nem no sorteio do clima muda. Ver `graphics-engine.md`.

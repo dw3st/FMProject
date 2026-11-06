@@ -202,6 +202,6 @@ da rota `demand` moldado pela personalidade; moral em 0..100.
 `demandBreakdown` ganhou `facilities` (só contratação no clube do jogador) e `refusesFacilities` (ambição ≥ 17 e CT
 < 25% → `poorFacilities`); a rota `demand` mostra a recusa só quando o olheiro vê a ambição. Ver `facilities.md`.
 
-## Mentalidade (4.46)
+## Mentalidade (8.6)
 
 Report de tester, regra aprovada pelo usuário. Só o clube do jogador: na ficha, o bloco "Trabalho de mentalidade com o auxiliar" põe o jogador em acompanhamento de profissionalismo ou temperamento (`PUT /players/:id/mentoring { trait | null }`; 409 `mentoringFull`, até 3 por vez, `tooOld` acima de 29, `onLoan`, `atBest`). `RosterPlayer.mentoring { trait, since, progress }`; o que ele ganha fica em `personalityGrowth`, a única parte gravada da personalidade, que `personalityOf` soma ao traço derivado (temperamento desce: 20 é o cabeça quente). Na virada do país do clube (`advanceMentoring`, `src/Domain/personality/mentoring.ts`), quem está há 90 dias ou mais ganha +1 por temporada até 23 anos e +0,5 até 29, × 1,5 com auxiliar de 4 estrelas ou mais; mensagem `player` / `mentality` (tópico `development`). Sair do clube encerra o trabalho (`stripPlayerMorale`) e ele leva o que ganhou. Trocar de traço recomeça o progresso. Efeitos: os mesmos multiplicadores de sempre, sem constante nova. IA e mundo não mudam. Ambição e lealdade ficam fora (mexeriam em contratos e mercado).

@@ -38,7 +38,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/GameInterface/StaffScreen.tsx`, `Transfers/StaffPoolTab.tsx` | Olheiros de campo: cartões na comissão; contratação pela aba Comissão de Transferências |
 | `src/GameInterface/Dashboard/*` | Cartão Atenção: joia e alertas da lista (7 dias) |
 | `scripts/scouting-index-bench.ts` | Custo do borrão por jogador × o uniforme antigo |
-| `src/Domain/scouting/countryKnowledge.ts` (+ teste) | Conhecimento de cada olheiro por país (4.10): base pela nacionalidade, leitura com queda, crescimento, multiplicadores, faixas, país forte |
+| `src/Domain/scouting/countryKnowledge.ts` (+ teste) | Conhecimento de cada olheiro por país (5.0): base pela nacionalidade, leitura com queda, crescimento, multiplicadores, faixas, país forte |
 | `src/GameInterface/Scouting/ScoutCountriesPanel.tsx`, `ScoutCountriesModal.tsx`, `StrongCountry.tsx` | Mapa-múndi e lista de países do olheiro, selo do país forte |
 | `scripts/scout-country-measure.ts` | Medição do ritmo por país |
 
@@ -202,7 +202,7 @@ da busca coerentes com k ("?" abaixo de 20, faixa a partir de ±0,5, exato em 10
 faixa vista (e não pela nota real: pelo menos uma inversão contra a nota real entre as linhas em faixa), o salário
 em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `src/Domain/scout/scoutSeen.test.ts`.
 
-## Conhecimento por país (4.10)
+## Conhecimento por país (5.0)
 
 Spec `docs/superpowers/specs/2026-10-08-scout-countries-design.md`. Cada olheiro (chefe e de campo) conhece cada país
 de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.ts`.
@@ -252,7 +252,7 @@ de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.
 - A personalidade não é revelada à parte pelos relatórios (usa o mesmo ruído dos atributos).
 - Sem rede de olheiros por região, empréstimo de olheiros ou regras FIFA de menores (16 anos em qualquer país).
 
-## Busca: botão, grupos, filtros salvos, interesse e orçamento (4.19, #147, #123)
+## Busca: botão, grupos, filtros salvos, interesse e orçamento (5.9, #147, #123)
 
 - **Botão Pesquisar:** a aba Busca guarda os filtros da tela (rascunho) e os da última busca (`appliedFilters`, em
   `localStorage` `scout_filters_v1`); só "Pesquisar" (ou Enter em qualquer campo, `<form onSubmit>`) busca. A primeira
@@ -324,31 +324,31 @@ Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da E
   missions (#157)": técnico não cria, o avanço do dia por uma segunda cria com o chefe, o cancelamento segura uma
   semana); `src/backend/responsibilities.routes.test.ts` (validação do `PUT`).
 
-## Joia uma vez por jogador (4.39)
+## Joia uma vez por jogador (7.9)
 
 Análise do mundo dos testers: 58 avisos de joia em 28 semanas, 26 jogadores (R. Navarro 8 vezes), com notas C e D. A
 joia vira notícia uma vez por jogador (`ScoutingState.gemsAnnounced`, os últimos `GEMS_REMEMBERED` 300) e só com nota A
 ou B; o relatório continua marcando a joia como antes.
 
-## Relatórios de quem mudou de clube (4.39.4)
+## Relatórios de quem mudou de clube (7.9.4)
 
 Report de tester. `GET /scouting` devolve os relatórios sem os de jogadores que hoje estão no clube do jogador (elenco ou
 base: comprados, contratados) e marca `ScoutReport.gone` (só na resposta) quem saiu do clube observado: a tabela mostra o
 nome sem link e "mudou de clube" (`reportsView`, `scoutingRoutes.ts`).
 
-## Filtros de disponibilidade, nota e potencial (4.47.6)
+## Filtros de disponibilidade, nota e potencial (8.7.6)
 
 Report do usuário. "Só livres", "Apenas à venda" e "Só pré-contrato" formam um grupo que soma (OU); sem nenhum marcado, os livres ficam fora como antes. Filtro de nota (`grades`, chips A–E): só jogadores com relatório, pela nota do relatório mais recente (`DisplayPlayer.grade`). Potencial (`minPotential`/`maxPotential`, 0–100): o meio da faixa vista (`potentialRange`), senão o nível. Jogadores com pré-contrato já assinado com o clube do jogador saem da busca.
 
-## Preço pedido na busca (4.47.7)
+## Preço pedido na busca (8.7.7)
 
 Report de tester. `askingPricesOf` (`src/Domain/scout/askingPrices.ts`, com teste): jogador na lista de venda de um clube da IA mostra a menor taxa que o clube aceita do comprador (`respondToOffer` sem cláusula: `feeForSaleScore` com a prioridade da lista e o comprador, piso de craque e de oferta baixa), sobre o jogador real; na lista de outro técnico, o preço pedido dele (senão o valor). `DisplayPlayer.askingPrice` (EUR), linha "Pede €X" abaixo do valor. Os jogadores à venda dos outros assentos também contam em "Apenas à venda". Revela um pouco do valor real, como o pedido de salário.
 
-## Ficha ao passar o mouse (4.47.8)
+## Ficha ao passar o mouse (8.7.8)
 
 Report do usuário, opção A do mock. Na busca, parar 280 ms sobre o nome abre `ScoutHoverCard` (fixa, sem clique): rosto, posição, idade, clube, nível e os atributos em barras por grupo (`ATTRIBUTE_GROUPS`; goleiro sem o grupo de ataque, os outros sem o de goleiro). Só o que o olheiro vê: atributo em faixa mostra a faixa e a barra no meio dela; oculto, "?". Conhecimento e nota do relatório no pé.
 
-## Observar até um nível e filtro de empréstimo (4.47.12)
+## Observar até um nível e filtro de empréstimo (8.7.12)
 
 Reports de tester. Missão de jogador com `target.knowledgeTarget` (25, 50, 75 ou 100, `S.PLAYER_LEVELS`): roda até o conhecimento chegar lá, no máximo `PLAYER_LEVEL_MAX_WEEKS` (8) semanas; a rota de criar ignora `weeks` nesse caso e recusa um nível já alcançado (400 `invalidTarget`). `GET /scouting/player/:id` devolve `plans`: por olheiro livre, as semanas (`playerMissionWeeks` sobre `playerWeeklyGain`, os fatores da semana) e o custo de viagem de cada nível. A ficha mostra os níveis em chips com "cerca de N semanas · viagens de €X". Busca: chip "Aceitam empréstimo" (`onlyLoanable`, no grupo OU de disponibilidade): jogadores de clubes da IA que `loanAvailability` libera hoje (fora do XI automático, jovem, à venda ou sobrando na linha), calculado no índice da busca (`loanableIdsOf`, ~0,2 s no mundo inteiro).
 

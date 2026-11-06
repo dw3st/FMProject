@@ -146,7 +146,7 @@ do multiplicador de DP do auxiliar. Com os dois em 3★ é a conta de antes. A I
 O ganho de familiaridade do treino do clube do jogador é × (1 ± 5%) pela Tática do técnico (`Squad.managerAttributes`,
 `.claude/rules/game/achievements.md`); em 10, nada muda.
 
-## IA mais entrosada (4.39)
+## IA mais entrosada (7.9)
 
 Análise do mundo dos testers (`bun scripts/seat-edge-measure.ts <pasta de elencos> <clube> <formação>`): com o mesmo
 elenco, o entrosamento de ~100 do clube humano contra 75 da IA valia de +0,2 a +0,25 ponto por jogo. Decisão do

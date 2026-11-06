@@ -202,7 +202,7 @@ passam por propostas na inbox. Ver `.claude/rules/game/negotiation.md`.
 
 O mercado da IA ignora o conjunto de clubes humanos (todos os assentos). Ver `.claude/rules/game/multiplayer.md`.
 
-## Limite do top 25 (4.40)
+## Limite do top 25 (8.0)
 
 Report de tester. Cada clube (humano e IA) tem no máximo `STAR_LIMIT.MAX` (5) jogadores do top `STAR_LIMIT.TOP` (25)
 do mundo no elenco profissional (`src/Domain/squad/starLimit.ts`); o top 25 é a mesma lista da estrela dourada

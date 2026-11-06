@@ -188,7 +188,7 @@ IA. Título de torneio com ele credita `kind: "national"` no registro do jogador
 
 O técnico humano é `seat:<seatId>` com `seatId` (no lugar de `id: "player"`), um por assento; a IA nunca o demite nem abre vaga no clube dele. Ver `.claude/rules/game/multiplayer.md`.
 
-## Técnicos humanos no ranking (4.46.4)
+## Técnicos humanos no ranking (8.6.4)
 
 Report de tester. A rota aceita `scope=humans` (assentos vivos) e devolve `human` (apelido) nos técnicos dos outros assentos e `humans` (assentos do mundo). A aba mostra o nome na cor dos técnicos humanos com o `HumanBadge` e o chip "Técnicos humanos" só com 2 ou mais assentos.
 

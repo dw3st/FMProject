@@ -1,7 +1,7 @@
 # Inscrição por competição
 
 Spec: `docs/superpowers/specs/2026-10-09-competition-registration-design.md`. Etapa 37 do `docs/ROADMAP.md` (#103),
-versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-windows.md`.
+versão **5.5**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-windows.md`.
 
 ## Regra
 
@@ -39,7 +39,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 
 - **Estrangeiro** (`isForeign`): nação (normalizada) fora dos domésticos (`país + rule.domestic + DOMESTIC_EXTRA`:
   Inglaterra + País de Gales; EUA + Canadá). `nonEU` (La Liga, Ligue 1): também fora da UE/EEE e das isenções — La Liga
-  isenta `ibero` (CONMEBOL + México/América Central/Caribe hispânico, a dupla nacionalidade espanhola, só a partir de 23 anos desde a 4.37: `IBERO_PASSPORT_MIN_AGE` aproxima o passaporte por residência; o Endrick, 20, ocupa vaga) e `acp` (Cotonou);
+  isenta `ibero` (CONMEBOL + México/América Central/Caribe hispânico, a dupla nacionalidade espanhola, só a partir de 23 anos desde a 7.7: `IBERO_PASSPORT_MIN_AGE` aproxima o passaporte por residência; o Endrick, 20, ocupa vaga) e `acp` (Cotonou);
   Ligue 1 só `acp`. Nacionalidade ausente = doméstico. Regra com `greenCard` (só a MLS): quem tem green card é
   doméstico (ver "Green card (MLS)").
 - **Formado no clube** (`clubTrained`): id `youth_<clube>_…` / `es_youth_<clube>_…`, `RosterPlayer.academyOf` (prospecto
@@ -61,7 +61,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 | Brasileirão (pirâmide) | elenco inteiro; **até 9 estrangeiros por jogo** (XI + banco) |
 | Argentina | elenco inteiro, até 6 estrangeiros |
 | Arábia Saudita · México | elenco inteiro, até 10 · 9 estrangeiros |
-| MLS (4.17.1) | elenco inteiro, até 8 internacionais (EUA + Canadá domésticos; green card = doméstico) |
+| MLS (5.7.1) | elenco inteiro, até 8 internacionais (EUA + Canadá domésticos; green card = doméstico) |
 | Champions / Europa League | 25, sub-21 formados livres, 8 formados |
 | Libertadores / Sul-Americana | 50, sem limite de estrangeiros nem de formados (a regra real) |
 | Copa nacional | a regra da liga do clube (lista própria) |
@@ -71,7 +71,7 @@ versão **4.15**. Visual: `.claude/rules/ui-standard.md`. Janelas: `transfer-win
 a lista (não formados contados ≤ teto − mínimo). Mínimos de linha da escolha automática (GK 2 · DEF 5 · MID 5 · FWD 3);
 piso de 18 inscritos completado ignorando os limites (`exception`).
 
-## Green card (MLS, 4.17.1)
+## Green card (MLS, 5.7.1)
 
 O jogo não sabe quem tem green card; ele é simulado (`formed.ts`, `GREEN_CARD` em `registrationConfig.ts`). Um
 estrangeiro pela nacionalidade num clube da MLS conta como **doméstico** quando (`hasGreenCard`):
@@ -100,7 +100,7 @@ Calibração do `ORIGIN` (`bun scripts/registration/greenCardProbe.ts [p,…]`, 
 | **0,6** | **2 / 6 / 11** | **26 (87%)** | **0,33** | **0** |
 | 0,7 | 0 / 4 / 9 | 29 | 0,03 | 0 |
 
-0,6: o menor com folga sobre as metas (nenhum dos 11 melhores fora, ≥ 80% dos clubes com ≤ 8). Antes (4.17, limite 10
+0,6: o menor com folga sobre as metas (nenhum dos 11 melhores fora, ≥ 80% dos clubes com ≤ 8). Antes (5.7, limite 10
 sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
 
 ## Prazo (`registrationStatus`)
@@ -147,7 +147,7 @@ sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
   regra em uma linha, contadores (inscritos, estrangeiros, formados com vagas perdidas, livres), tabela padrão (na ordem
   das posições, como o Elenco, #146) com posição, idade, nação, selos (Inscrito/Não inscrito, Livre, Estrangeiro, Formado no clube/país), nota e
   Incluir/Tirar (desligado fora do prazo, com o motivo); "Automático" (confirmação quando editada à mão).
-- **Formação:** quem não está inscrito na competição do próximo jogo sai da lista de reservas e do preenchimento automático (uma linha diz quantos ficaram fora). Um titular salvo também sai da lista (4.46.8, pedido do usuário): a vaga mostra quem jogaria no lugar dele (`withoutUnregisteredStarters`, a mesma escolha da troca do dia) e ele fica só no Elenco. É só exibição: o XI gravado muda quando o técnico salva, então, sem salvar, ele volta à lista quando o próximo jogo for de uma competição em que está inscrito. Report de tester, 4.46.7.
+- **Formação:** quem não está inscrito na competição do próximo jogo sai da lista de reservas e do preenchimento automático (uma linha diz quantos ficaram fora). Um titular salvo também sai da lista (8.6.8, pedido do usuário): a vaga mostra quem jogaria no lugar dele (`withoutUnregisteredStarters`, a mesma escolha da troca do dia) e ele fica só no Elenco. É só exibição: o XI gravado muda quando o técnico salva, então, sem salvar, ele volta à lista quando o próximo jogo for de uma competição em que está inscrito. Report de tester, 8.6.7.
 - **Prévia:** os cartões dos times e as trocas de última hora só mostram quem pode jogar (inscrito e disponível).
 - **Prévia:** trocas `unregistered` / `foreignLimit` na lista de avisos.
 - **Inbox** `registration` (ícone `clipboard`, tópico `competitions`): `auto_list`, `not_fit`, `waiting`, `closing`,
@@ -155,7 +155,7 @@ sem green card): 5,23 estrangeiros fora e 0,73 dos 11 melhores fora por clube.
 - i18n `registration.*`, `inbox.registration.*`, `matchPreview.unregisteredReplaced`/`foreignLimitReplaced`,
   `squadScreen.tabRegistration` (en, pt-BR).
 
-## Regra explicada nas telas (4.39.3)
+## Regra explicada nas telas (7.9.3)
 
 - `foreignBasis(p, rule, country, holder)` (`formed.ts`, tipo `ForeignBasis` em `registrationTypes.ts`): por que o jogador
   conta (`outsideEU`, `nationality`, `iberoUnderAge`) ou não conta (`ibero`, `acp`, `greenCard`) como estrangeiro; null
@@ -192,7 +192,7 @@ lista abaixo do teto por falta de formados):
 | la_liga | 42 | 29,1 | 28,3 | 1 | 0 | 0,19 | 0,05 |
 | ligue_1 | 36 | 28,8 | 28,3 | 0 | 0 | 0,50 | 0,17 |
 | saudi | 32 | 27,5 | 27,1 | 0 | 0 | 0,34 | 0,06 |
-| mls (4.17.1: 8 + green card; antes 10: lista 24,1, 5,23, 0,73) | 30 | 29,3 | 29,0 | 0 | 0 | 0,37 | 0,00 |
+| mls (5.7.1: 8 + green card; antes 10: lista 24,1, 5,23, 0,73) | 30 | 29,3 | 29,0 | 0 | 0 | 0,37 | 0,00 |
 | oceania | 22 | 28,3 | 27,7 | 0 | 2 | 0,59 | 0,00 |
 | bundesliga | 18 | 28,7 | 28,7 | 1 | 0 | 0,00 | 0,00 |
 | mexico | 18 | 29,2 | 28,0 | 0 | 0 | 1,17 | 0,00 |
@@ -225,6 +225,6 @@ da lista (`unregistered`).
 - O banco do motor é o elenco inteiro inscrito (fora do Brasil não há lista de 23 por jogo).
 - Libertadores e Sul-Americana sem trocas por fase além do prazo.
 
-## Eliminado da competição (4.47.19)
+## Eliminado da competição (8.7.19)
 
 Report do usuário. `outOfCompetition` (`src/Domain/registration/eliminated.ts`, com teste): sem jogo a disputar e com mata-mata perdido (jogo único ou ida e volta), fora do mata-mata já sorteado (fase de grupos) ou com campeão definido. `GET /registration` marca `out` na copa ou continental; a aba mostra "<competição> · eliminado", a linha "Eliminado desta competição" no lugar do prazo e desliga a edição.

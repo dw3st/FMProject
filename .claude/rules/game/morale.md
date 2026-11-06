@@ -236,7 +236,7 @@ gols, boa nota) por 1 ± 5% (`MoraleDayInput.motivation`, lida do `achievements.
 
 Uma resposta de coletiva mexe na moral do elenco inteiro (`defend_squad` +2, `demand_squad` −2, `confident` e `provocative` +1) ou de um jogador (`praise` +4, `criticize` −4, `protect` +2) por `afterPressAnswer`, com o `withEventDelta` (temperamento escala; um profissional leva só +1 do `criticize`). Ver `.claude/rules/game/press.md`.
 
-## Moral da IA contra um humano (4.39)
+## Moral da IA contra um humano (7.9)
 
 Análise do mundo dos testers: o elenco vencedor do humano fica com moral 90+ (atributos até × 1,02) e a IA sempre em 65;
 medido, +0,1 a +0,2 ponto por jogo. Decisão do usuário: a IA ganha um pouco. Num jogo contra um clube humano (avanço do
@@ -244,10 +244,10 @@ dia com um assento só, e a partida ao vivo pelo `match-setup` → `oppMorale`),
 `aiFormMorale(form)` = 65 + 2 × (pontos − 1,5 × jogos) dos últimos resultados da liga, entre 50 e 80 (`MORALE.AI_FORM_*`).
 Nada é gravado; IA × IA e humano × humano não mudam.
 
-## Conversar pelo Elenco e a janela nova (4.47.8)
+## Conversar pelo Elenco e a janela nova (8.7.8)
 
 Report do usuário, opção A do mock. Na tabela do próprio elenco (`SquadRosterTable`) cada jogador (fora os emprestados de outro clube) tem o botão Conversar, ou Responder em amarelo (`ATTENTION_BUTTON`) quando há pedido aberto em `squad.moraleClub.talks`; Renovar fica ao lado quando vale. O `TalkModal` tem uma cena pintada por motivo (`paintedNews("talk-<motivo|none>")`, `news/news-talk-*.webp` no volume de arte, pintadas com `data_process/assets/talk_mock.py`), com o rosto, a moral e a dica de personalidade por cima, e as respostas em cartões (`morale.answerHint` e o tom `morale.answerTone.up|mid|down`). Sem a arte, o mesmo cabeçalho numa faixa.
 
-## Já conversou (4.47.11)
+## Já conversou (8.7.11)
 
 Pedido do usuário. Sem pedido aberto e com `moraleLog.talkedOn` a menos de `PRAISE_EVERY_DAYS` (30) dias, o botão de conversa do Elenco vira um ícone apagado com um visto, sem clique, com a data da conversa e a da próxima no `title`.

@@ -20,11 +20,11 @@ calendário e todas as ligas do catálogo (rótulos só por `src/Domain/world/la
   para a liga (mínimo 5 jogos); copa e continental omitem essa tabela.
 - Não há minutos jogados no `seasonLog`, então "Meu time" mostra jogos/gols/assistências/nota.
 
-## Aba Campeões (Etapa 46, 4.42)
+## Aba Campeões (Etapa 46, 8.2)
 
 `/stats?tab=champions` (`Champions/ChampionsTab.tsx`, filtros em `championFilters.ts`, lógica pura em `src/Domain/champions/champions.ts`, rota `GET /api/saves/:saveId/champions`). A fonte são os títulos de `managers.json` (sem acessos), que todo técnico acumula desde o começo da carreira, então o técnico mostrado é o do dia do título e os mundos existentes já aparecem completos. Quadro: competições nas linhas, temporadas nas colunas (chave = ano de fim: "2026-27" e "2027" dividem a coluna), ponto em `chart-4` para técnico humano; um torneio de seleções é uma linha só (`wc`, `euro`, `copa`). Filtro: Principais (continentais, seleções, `PUBLIC_WORLD.LEAGUES`), Continentais, Seleções, continente, país. Clicar numa competição abre a lista com o técnico de cada título e "Mais títulos". Sem efeito de partida. Spec `docs/superpowers/specs/2026-11-02-club-search-champions-design.md`.
 
-## Competições favoritas (#150, 4.19)
+## Competições favoritas (#150, 5.9)
 
 Na aba Rankings, a estrela ao lado do seletor marca/desmarca a competição ativa; as favoritas (até 6, a mais antiga sai
 quando passa) viram `Chip`s ao lado do seletor e trocam a competição com um clique. Guardadas por navegador no

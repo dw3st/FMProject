@@ -208,7 +208,7 @@ grafia de dados (issue #121): sem acento ("Sao Paulo", "Gremio"), com sufixo ("C
 { "<squadId>": { "name": "São Paulo", "shortName"?: "SPFC" } }
 ```
 
-- Escopo: Brasil A/B/C e Portugal e, desde a 4.19, as ligas principais de Espanha, França, Itália, Argentina,
+- Escopo: Brasil A/B/C e Portugal e, desde a 5.9, as ligas principais de Espanha, França, Itália, Argentina,
   México, Turquia, Chile, Colômbia, Peru, Paraguai, Uruguai, Venezuela, Bélgica e Suíça (73 clubes no total):
   acentos ("Beşiktaş", "Peñarol", "Atlético Madrid"), sufixos de dado ("Boyacá Chicó FC"), abreviações ("Gijón" →
   "Sporting Gijón") e homônimos na mesma liga ("Estudiantes de Río Cuarto"). Só entra o que está errado; nome
@@ -273,7 +273,7 @@ valor de mercado reordena as notas dentro de cada liga.
   `data_process/transfermarkt/derived.json`: por jogador `targetOverall`, `naturalPosition`, `birthDate`, `heightCm`
   e `nationality` (só quando falta), mais o resumo por liga. Uma liga só é reordenada com cobertura ≥ 40% **e** pelo
   menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela o
-  valor de mercado só decide quem recebe qual nota **dentro de cada linha** (4.14.2, `reorderLeague`):
+  valor de mercado só decide quem recebe qual nota **dentro de cada linha** (5.4.2, `reorderLeague`):
   - a linha de um jogador é a final (a do Transfermarkt, ou `positions[0]` quando o Transfermarkt não tem posição);
   - os valorados da linha final L recebem as notas que os valorados da linha **antiga** L (`positions[0]` antes da
     recalibração) tinham, cada uma tirada na posição antiga (`computeOverallAvg` do mundo do `importEspn`), em ordem de
@@ -281,7 +281,7 @@ valor de mercado reordena as notas dentro de cada liga.
   - mesmo tamanho: a multiset da linha fica igual. Tamanho diferente (alguém trocou de linha pelo Transfermarkt): os n
     alvos são os quantis da multiset antiga, por interpolação linear entre os valores ordenados (`quantileTargets`;
     um alvo só = a mediana). Linha sem nenhum valorado antigo: quantis da multiset antiga da liga inteira;
-  - uma nota nunca passa de uma linha para outra. Até a 4.14.1 a multiset era a da liga inteira, e as notas mudavam de
+  - uma nota nunca passa de uma linha para outra. Até a 5.4.1 a multiset era a da liga inteira, e as notas mudavam de
     linha (Premier: goleiro médio 4,80 → 4,46, meio 5,00 → 5,10; Brasileirão: zagueiro 4,28 → 4,09), o que deixava a
     Premier com −13% de gols no motor e o Brasileirão com +16% (`.claude/rules/non-player-games.md`).
   Os não valorados ficam com a nota deles (salvo o teto dos jovens, `youthCaps`, sobre a mediana dos valorados do clube).
@@ -350,7 +350,7 @@ com orçamento de transferência de ~€149M só porque a mediana da Premier Lea
 `normalizeNationality` (`scripts/espn/normalize.ts`) leva a `citizenship` da ESPN para a grafia do mundo ("USA" →
 "United States", "Congo DR" → "DR Congo", "Ivory Coast" → "Côte d’Ivoire", "Republic of Ireland" → "Ireland"…) e aceita
 qualquer país com bandeira (`nationalityFlagCode`), mesmo que nenhum elenco do mundo base o tenha (País de Gales,
-Kosovo). Até a 4.17.1 os destinos eram as grafias da própria ESPN, que o mundo não usa: 82 atletas novos (`es_*`) com
+Kosovo). Até a 5.7.1 os destinos eram as grafias da própria ESPN, que o mundo não usa: 82 atletas novos (`es_*`) com
 nacionalidade na ESPN ficaram sem nenhuma (52 dos EUA, ex. três do Inter Miami). Vale na próxima regeneração do mundo.
 Outros 1256 `es_*` não têm `citizenship` na ESPN; continuam sem nacionalidade (sem bandeira).
 
@@ -442,4 +442,4 @@ escudo do TheSportsDB (licença incerta; uso aprovado pelo usuário):
 - **API não oficial.** Sem contrato de formato. `fetchEspn` e `importEspn` falham alto (erro, não
   fallback silencioso) quando algo essencial muda de forma.
 
-**Pares revisados à mão (4.42.28, report de tester: Ludogorets sem escudo).** A regra estrita de nomes pulou clubes cujo nome no TheSportsDB tem a cidade ("Ludogorets Razgrad"). `data_process/thesportsdb/badgeOverrides.json` lista os pares revisados e `bun scripts/fetchTsdbBadgeOverrides.ts` baixa os escudos, conferindo esporte, país e time reserva ou feminino: de 93 pares, 79 passaram e 14 caíram (hóquei, basquete, outro país). Depois, `applyTsdbBadges.ts` e `logoContrast.ts`. Cobertura: 1160 de 1273 clubes.
+**Pares revisados à mão (8.2.28, report de tester: Ludogorets sem escudo).** A regra estrita de nomes pulou clubes cujo nome no TheSportsDB tem a cidade ("Ludogorets Razgrad"). `data_process/thesportsdb/badgeOverrides.json` lista os pares revisados e `bun scripts/fetchTsdbBadgeOverrides.ts` baixa os escudos, conferindo esporte, país e time reserva ou feminino: de 93 pares, 79 passaram e 14 caíram (hóquei, basquete, outro país). Depois, `applyTsdbBadges.ts` e `logoContrast.ts`. Cobertura: 1160 de 1273 clubes.

@@ -1,6 +1,6 @@
 # Remarcação de jogos de liga em conflito
 
-Spec: `docs/superpowers/specs/2026-10-09-fixture-rescheduling-design.md`. Versão **4.16** (pendências técnicas 1 e 2
+Spec: `docs/superpowers/specs/2026-10-09-fixture-rescheduling-design.md`. Versão **5.6** (pendências técnicas 1 e 2
 do `docs/ROADMAP.md`).
 
 ## Regra
@@ -8,7 +8,7 @@ do `docs/ROADMAP.md`).
 - **Conflito:** um clube com dois jogos oficiais (liga, copa nacional, continental) no mesmo dia **ou em dias
   seguidos** (sempre ≥ 2 dias entre dois jogos de um clube).
 - **Quem cede:** o jogo da **liga** — só aquela partida, com os dois clubes; nunca a rodada inteira. Dois jogos de liga
-  em conflito (raro): cede o mais tarde. Copa × continental: cede o jogo da **copa** (desde a 4.46.4). O continental
+  em conflito (raro): cede o mais tarde. Copa × continental: cede o jogo da **copa** (desde a 8.6.4). O continental
   nunca muda.
 - **Nova data:** o **meio de semana** (terça, quarta, quinta) mais próximo da data original, dentro da janela da
   liga (`[início, fim]` da meta, nunca antes do primeiro dia jogável), em que nenhum dos dois clubes joga no dia,
@@ -101,6 +101,6 @@ competição e no `date-index`.
 `ResolveInput.blocked` (por liga, `countryBlockedDays`): um jogo nunca é remarcado para uma data FIFA nem para o
 torneio de seleções do país. Ver `.claude/rules/game/national-teams.md`.
 
-## Copa × continental (4.46.4)
+## Copa × continental (8.6.4)
 
 Report de tester (Barcelona: semifinal da copa na quarta, volta da Liga Europa na quinta). Toda copa joga na quarta e a Liga Europa e a Sul-Americana na quinta, a Libertadores e a Champions na terça, então o par em dias seguidos era comum e nada se movia. Agora o jogo da copa cede pela mesma regra de busca, dentro de `cupTieWindows` (`cupDates.ts`): do início da copa até 2 dias antes da fase seguinte, a final até o fim da copa. A data da fase (`stage.date`) não muda: a chave mostra "Remarcado de" no confronto, e a fase seguinte só é sorteada quando o último jogo da fase termina, como já era. Os dias de descanso semeados seguem só os jogos de liga; a data nova de um jogo de copa só deixa de ser descanso.

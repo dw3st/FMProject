@@ -135,12 +135,12 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
   jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
   Finanças da semana. Abaixo de `lg` os pares empilham.
-- **Liga do Painel (`LeagueMiniTable`, 4.39.4):** a tabela inteira numa caixa de ~5 linhas com rolagem própria
+- **Liga do Painel (`LeagueMiniTable`, 7.9.4):** a tabela inteira numa caixa de ~5 linhas com rolagem própria
   (`max-h-[262px]`), aberta com o clube do jogador no meio; o cabeçalho fica fora da rolagem.
-- **Atenção com ação (4.39.3):** cada linha do cartão Atenção tem à direita um botão pequeno com borda (`h-8`) que leva
+- **Atenção com ação (7.9.3):** cada linha do cartão Atenção tem à direita um botão pequeno com borda (`h-8`) que leva
   direto à ação: Renovar (contrato; a ficha com `?action=renew` abre a renovação), Escalar (lesionado, suspenso, cansado →
   Formação), Mercado (janela fechando), Conversar (`?action=talk` abre a conversa), Responder, Reformar, Ver.
-- **Caixa de entrada do Painel (resposta rápida, 4.38.24):** clicar numa mensagem do cartão abre o corpo dela ali mesmo
+- **Caixa de entrada do Painel (resposta rápida, 7.8.24):** clicar numa mensagem do cartão abre o corpo dela ali mesmo
   (`InboxMessageBody`, o mesmo da tela Caixa de entrada, com os botões e links) e a marca como lida; a ordem das linhas
   fica parada enquanto uma está aberta; "Abrir na caixa de entrada" leva à tela.
 
@@ -148,8 +148,8 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 `SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
 e o Continuar com a borda direita.
 
-- Abas (4.11, #120; ordem desde a 4.22.2): Painel, Elenco, Formação, **Clube** (instalações, `/club`), Desenvolvimento,
-  Finanças, Equipe técnica, Ligas, Transferências, Olheiro, Estatísticas (as Seleções, 4.21, são uma aba da tela Ligas:
+- Abas (5.1, #120; ordem desde a 6.2.2): Painel, Elenco, Formação, **Clube** (instalações, `/club`), Desenvolvimento,
+  Finanças, Equipe técnica, Ligas, Transferências, Olheiro, Estatísticas (as Seleções, 6.1, são uma aba da tela Ligas:
   não cabe uma 12ª aba). Com a aba a mais, a regra de encolher para só ícone continua
   valendo (`useCompactTabs`).
 - `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
@@ -218,14 +218,14 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 Toda tela nova ou alterada deve sair com o relatório limpo (0 duras, 0 leves); quem precisar de uma
 exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.
 
-## Nomes na caixa de entrada (4.44.4)
+## Nomes na caixa de entrada (8.4.4)
 
 `PlayerNameText` (`Inbox/PlayerNameText.tsx`) troca o nome do jogador de uma linha por um link; a rota `GET /players/:id/where` diz onde ele joga na hora do clique. Quem não está em clube vira texto. Listas sem id (aposentados) ficam como texto.
 
-## Sem resumo do dia (4.46.4)
+## Sem resumo do dia (8.6.4)
 
 Pedido do usuário: o `DaySummaryModal` saiu, solo e em grupo; o dia avança sem tela. Continuam as telas que pedem decisão: fim de temporada (`SeasonNoticeModal`) e demissão (`/fired`). O resultado de um jogo já jogado abre o relatório pelo cartão da semana (`/match-result?date=`); conquistas, propostas e coletivas ficam na caixa de entrada.
 
-## Não lidas na caixa de entrada (4.47.11)
+## Não lidas na caixa de entrada (8.7.11)
 
 Report do usuário. Mensagem não lida (tela Caixa de entrada e cartão do Painel): fundo `bg-primary/[0.09]`, barra de 4px em `primary`, ponto e data em `primary`, título em negrito; a lida fica apagada (título e prévia em `muted-foreground`, ícone a 60%). O rosto e o nome do técnico no cartão do clube levam à ficha dele (`/stats?tab=managers&open=me`; a rota `/managers?me=1` traz o técnico mesmo fora da página).

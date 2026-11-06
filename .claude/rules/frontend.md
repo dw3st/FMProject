@@ -15,7 +15,7 @@ alwaysApply: false
 - `src/pages/<page>/entry.tsx` calls `createPage(Component, options)` (`src/createPage.tsx`), which
   wraps the screen in `LanguageProvider` → `ScreenSizeGate` → `AuthGate` → `GameSaveProvider`
   (`public`, `noAuth` and `responsive` drop layers for landing, login, start and the lab).
-- **The fixed frame (4.48):** every in-game screen lives in one page, `src/pages/app/` → `AppShell.tsx`
+- **The fixed frame (8.8):** every in-game screen lives in one page, `src/pages/app/` → `AppShell.tsx`
   (`docs/superpowers/specs/2026-11-06-spa-shell-design.md`). The route table is `GameInterface/router/appRoutes.ts`
   (path → screen, tab title, `chrome`); a new in-game screen adds a route there, a `case` in `AppShell` and its path in
   `src/index.ts` (served by `appPage`). Pages of their own: landing, login, start, new game, join, fired, watch, and the

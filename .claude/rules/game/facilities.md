@@ -13,11 +13,11 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
   × 0,985 / 1,025 / 0,975; ELITE × 1,04 / 0,925 / 1,05). A base da IA é sempre neutra (o tier já está no
   `YOUTH.TIER_BONUS`): as safras da IA não mudam.
 - As instalações são **do clube**: criadas no `createSave` e no `takeOverClub` (`initialFacilities`: setores pela
-  capacidade; desde a 4.22.2 os itens pelo percentil de receita do clube, ver "Instalações vivas" → Criação), apagadas no `releaseHumanClub` (o estádio construído
+  capacidade; desde a 6.2.2 os itens pelo percentil de receita do clube, ver "Instalações vivas" → Criação), apagadas no `releaseHumanClub` (o estádio construído
   fica em `venue.capacity`, obras em andamento são abandonadas). O start kit não as carrega (`stripHumanOnly`) e
   `applyRandomStartKit` as restaura.
-- Aba **Clube** na barra superior (`/club`, #120, desde a 4.11; antes ficava em Finanças → Instalações); cartão
-  **Obras** no Painel. Desde a 4.11 os níveis de conforto, CT e base são derivados dos dez itens (seção "Instalações
+- Aba **Clube** na barra superior (`/club`, #120, desde a 5.1; antes ficava em Finanças → Instalações); cartão
+  **Obras** no Painel. Desde a 5.1 os níveis de conforto, CT e base são derivados dos dez itens (seção "Instalações
   vivas" no fim).
 
 ## Arquivos
@@ -155,7 +155,7 @@ a considerar o público e as parcelas do dia.
   (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo, por país e temporada.
 - A familiaridade de estilo e a evolução da base fora de jogo (`developYouthSeason`) usam só o auxiliar, não o CT.
 
-## Instalações vivas (Etapa 34, 4.11)
+## Instalações vivas (Etapa 34, 5.1)
 
 Spec: `docs/superpowers/specs/2026-10-08-living-facilities-design.md`. Plano: `docs/superpowers/plans/2026-10-08-living-facilities.md`.
 
@@ -185,7 +185,7 @@ condição = 100 × (1 − min(1, wear)²)          (interditado: 0)      40% �
             × jardineiro (só gramados)          sessão = leve 0,7 · normal 1 · pesado 1,3 (0 em jogo, folga, sem clube)
 ```
 
-Criação (4.22.2): cada item no nível `START_LEVEL.MIN + SPAN × percentil da receita do clube no mundo` (2 + 6 × p: ≈ 2 nos menores, ≈ 8 no topo, receita = TV + comercial contra o mundo base, `revenuePercentileOf`, `facilityWorld.ts`) ± `JITTER` 1,5 sorteado por clube e item (`facl:<clube>:<item>`), assentos incluídos. Medido no mundo de 2026-10-12: Premier 7–9, Brasileirão A 6–8, Championship 3–7, Quênia 3–5. A largada deixa de ser neutra: um clube com CT/base abaixo do implícito do tier começa com efeitos abaixo do neutro, e acima, acima. `ClubFacilities.startLevels` guarda os níveis de CT e base da largada: a manutenção só cobra acima de max(implícito, largada). Sem percentil (testes) vale a regra antiga (2 × implícito, assentos 2). Desgaste
+Criação (6.2.2): cada item no nível `START_LEVEL.MIN + SPAN × percentil da receita do clube no mundo` (2 + 6 × p: ≈ 2 nos menores, ≈ 8 no topo, receita = TV + comercial contra o mundo base, `revenuePercentileOf`, `facilityWorld.ts`) ± `JITTER` 1,5 sorteado por clube e item (`facl:<clube>:<item>`), assentos incluídos. Medido no mundo de 2026-10-12: Premier 7–9, Brasileirão A 6–8, Championship 3–7, Quênia 3–5. A largada deixa de ser neutra: um clube com CT/base abaixo do implícito do tier começa com efeitos abaixo do neutro, e acima, acima. `ClubFacilities.startLevels` guarda os níveis de CT e base da largada: a manutenção só cobra acima de max(implícito, largada). Sem percentil (testes) vale a regra antiga (2 × implícito, assentos 2). Desgaste
 inicial determinístico (`fac:<clube>:<item>`): gramados 0,05–0,25, demais 0,05–0,45 — nada abaixo de 40%.
 
 ### Efeitos abaixo de 40% (`itemEffects`, `FACILITIES.WEAR`)
@@ -222,7 +222,7 @@ jardineiro ×1,6; campos da base com metade do desvio. Limite LOW 1 · MEDIUM 1 
 
 ### Reforma, reconstrução, melhoria (`POST .../facilities/request`)
 
-Um item que aparece com 100% (condição arredondada, a partir de 99,5) não tem reforma (4.46.9, report de tester: um item 10/10 ainda oferecia obra).
+Um item que aparece com 100% (condição arredondada, a partir de 99,5) não tem reforma (8.6.9, report de tester: um item 10/10 ainda oferecia obra).
 
 | Pedido | Corpo | Regra |
 |---|---|---|
@@ -252,7 +252,7 @@ Numa contratação (não na renovação) o pedido ganha `facilities = 1 + 0,10 �
 livre, pré-contrato → 400); `preferenceScore` desconta até 0,10 (`preferredClub` pode responder `facilities`).
 A rota `demand` devolve `facilities` (e `refusesPoorFacilities` quando o olheiro vê a ambição).
 
-### Uma obra por área (#152, 4.19)
+### Uma obra por área (#152, 5.9)
 
 Decisão do usuário: **no máximo uma obra ao mesmo tempo por grupo** — estádio (setores, conforto, gramado, assentos,
 estrutura), CT e base: 3 no total. `projectGroup`/`requestGroup`/`groupBusy`/`busyGroups` (`facilities.ts`). A reforma
@@ -266,14 +266,14 @@ andamento". Os setores e as obras de grupo já cresciam com o tamanho (8..30 sem
 
 Aba **Clube** na barra superior (`/club`, `ClubScreen` → `FacilitiesView`), depois de Formação: as instalações saíram de
 Finanças (que fica só com o dinheiro; `/finances?tab=facilities` redireciona para `/club`). Seção **Instalações em
-detalhe** (`FacilityItemsPanel`, visual desde a 4.19, #132): por área (Estádio, CT, Base) uma grade de cartões, cada item
+detalhe** (`FacilityItemsPanel`, visual desde a 5.9, #132): por área (Estádio, CT, Base) uma grade de cartões, cada item
 com o desenho (`FacilityItemArt`: SVG inline 160×100 só com tokens do tema, a cor de destaque segue a condição —
 primária ≥ 40, âmbar 15–39, vermelha < 15 —, hachurado se interditado, guindaste com obra), "N de 10", barra de
 condição e o efeito abaixo de 40% ou a obra em andamento. Escolher um cartão abre o painel do item (desenho maior,
 Reformar até +25/+50/100% / Reconstruir / Melhorar em chips, custo, prazo, condição e nível antes → depois, "Pago pelo
 clube" ou a previsão da diretoria, e o aviso de área ocupada), com as cotações que a rota já devolve.
-Desenho pintado de cada item (4.41.25): uma pintura por nível, 1 a 10 (`paintedFacility(item, nível)`, `facility-<id>-<1..10>.webp` no volume de arte, `?r=` com `FACILITY_ART_REVISION` para furar o cache), do mais humilde ao de elite, cada cena com o entorno (céu, morros, cidade, janelas para a noite; madeira e cor na fisioterapia e no refeitório). Layout vetorial por nível em `data_process/assets/facilities.py`, pintado pelo FLUX img2img em `data_process/assets/paint_facilities.py`.
-Item em obra com o visual novo (4.41.20): sobre a pintura escurecida vai uma camada pintada de obra (andaimes com tela laranja, barreiras listradas, refletor de obra; grua por fora, lona pendurada por dentro: academia, piscina, fisioterapia, refeitório), `facilityWorksOverlay`, `facilities-works/works-<outdoor|indoor>.webp` (layout PIL + FLUX img2img, recortado pela máscara do layout, `data_process/assets/facility_works.py`). Sem o visual novo, a grua desenhada.
+Desenho pintado de cada item (8.1.25): uma pintura por nível, 1 a 10 (`paintedFacility(item, nível)`, `facility-<id>-<1..10>.webp` no volume de arte, `?r=` com `FACILITY_ART_REVISION` para furar o cache), do mais humilde ao de elite, cada cena com o entorno (céu, morros, cidade, janelas para a noite; madeira e cor na fisioterapia e no refeitório). Layout vetorial por nível em `data_process/assets/facilities.py`, pintado pelo FLUX img2img em `data_process/assets/paint_facilities.py`.
+Item em obra com o visual novo (8.1.20): sobre a pintura escurecida vai uma camada pintada de obra (andaimes com tela laranja, barreiras listradas, refletor de obra; grua por fora, lona pendurada por dentro: academia, piscina, fisioterapia, refeitório), `facilityWorksOverlay`, `facilities-works/works-<outdoor|indoor>.webp` (layout PIL + FLUX img2img, recortado pela máscara do layout, `data_process/assets/facility_works.py`). Sem o visual novo, a grua desenhada.
 Painel: Obras mostra as reformas (link para `/club`), Atenção lista itens desgastados/interditados da última semana.
 Prévia: "Gramado: N%" (vermelho abaixo de 40). Desempregado: `/club` vira a tela "Sem clube".
 
@@ -336,7 +336,7 @@ Smoke (`season-rollover-smoke.ts`, "Instalações"): condição em 0..100 e sem 
 45% → `worn`; reforma pequena pela rota (linha `repair` = custo, sem verba da diretoria) → `repaired` a ~100%; clubes
 da IA de liga virada começam a temporada nova num gramado melhor; rota `demand` com o CT a 20% → `facilities > 1`.
 
-## Jogos importantes (Etapa 38, 4.12)
+## Jogos importantes (Etapa 38, 5.2)
 
 Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clube do jogador** (a IA não muda).
 
@@ -350,7 +350,7 @@ Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clu
   líder de hoje para os jogos futuros — aproximação só de previsão).
 - Smoke (seção "Instalações"): no dia de cada jogo de copa em casa do clube do jogador, a demanda da linha ÷ a demanda do
   mesmo dia sem o multiplicador (mesma torcida, seguidores, tier e fase) = ×1,15 (×1,30 com clássico da cidade). Até a
-  4.21 a checagem comparava com o jogo de liga em casa mais próximo, o que não é comparável: a torcida move a demanda
+  6.1 a checagem comparava com o jogo de liga em casa mais próximo, o que não é comparável: a torcida move a demanda
   ±15% em poucas semanas e o jogo de liga pode ser um clássico (Man United × Man City, ×1,20, três dias depois da copa).
 - Medição (`bun scripts/match-importance-measure.ts`, temporada de jogos em casa: um por adversário da liga, o
   líder — o clube com mais seguidores — conta como clássico, 1,5 jogo de copa em mata-mata, torcida 60):
@@ -361,7 +361,7 @@ Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clu
 | brazil_serie_a | 20 | 14 | 1,85 | +3,0% | +4,0% | +4,0% |
 | of_championship | 24 | 0 | 0,96 | +1,7% | +1,7% | +1,7% |
 
-## Tipos de grama e padrão de corte (4.28)
+## Tipos de grama e padrão de corte (6.8)
 
 Spec: `docs/superpowers/specs/2026-10-16-pitch-types-design.md`. Lógica em `src/Domain/facilities/turf.ts` e `FACILITIES.TURF`; o gramado de cada jogo em `matchPitch` (`pitch.ts`).
 
@@ -381,25 +381,25 @@ Medições (`bun scripts/facilities-wear.ts --turf natural,hybrid,synthetic --se
 
 Lesões (`bun scripts/injury-calibrate.ts 300 --pitch ai,aiturf --quicksim`): motor Premier + Championship, 600 jogos: 0,243 → 0,243 por jogo (×1,000; gramado médio 64,2 → 67,5, jogos abaixo de 40%: 9,3% → 7,5%); quickSim 26 ligas × 3000 pareado: 0,256 → 0,257 (+0,1%).
 
-## Corte sem padrão (4.41.12)
+## Corte sem padrão (8.1.12)
 
 `MowingPattern` ganhou `none` ("Sem padrão", cartão Gramado): o gramado sem listras. Sem fundo pintado (todos os pintados
 são cortados), o jogo desenha a grama lisa. A IA continua sorteando só os quatro padrões (`AI_MOWING`).
 
-## Corte na grama sintética (4.42.17)
+## Corte na grama sintética (8.2.17)
 
 Report de tester. O fundo pintado da sintética só existe em listras (`paintedTurfId`): com outro corte, o gramado é desenhado (`pitchSurface`, na cor da sintética), no Clube e na partida. Antes o corte era gravado, mas o desenho não mudava.
 
-## Efeitos dobrados (4.44.1)
+## Efeitos dobrados (8.4.1)
 
 Pedido do usuário: os efeitos eram pequenos demais para sentir. A tabela "CT e base" e as medições acima são de antes. Agora, por nível 1..5 (3 neutro): recuperação ×0,94 / 0,97 / 1 / 1,08 / 1,16; lesão no treino ×1,1 / 1,05 / 1 / 0,85 / 0,7; DP do treino ×0,9 / 0,95 / 1 / 1,1 / 1,2; safra ±0,30 por nível (−0,60 a +0,60); até 7 jovens; promessa 2 / 3,5 / 5 / 9 / 13%; ingresso +10% por nível de conforto (até +40%). Custos, prazos, manutenção e as penalidades de desgaste não mudaram. A IA também sente o CT pelo tier (LOW nível 2, ELITE 4); a base da IA segue neutra. Estimado pelas parcelas de tier: recuperação média ×0,995, lesão de treino ×1,0075, DP de treino ×0,991.
 
-## Estádio como ele é (4.47.2)
+## Estádio como ele é (8.7.2)
 
 Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths }` (`stadiumLookOf`, `standDepths`); o desenho do estádio em `/club` (`stadiumMapGeom`, `Facilities/stadiumMapGeom.ts`) usa a forma do contorno (oval, arredondado, quadrado, setores separados) e a profundidade de cada setor, como na partida. A pintura `club/stadium-top.webp` só aparece num estádio arredondado com setores iguais.
 
-## Estádio pintado no topo do Clube (4.47.14)
+## Estádio pintado no topo do Clube (8.7.14)
 
 Report do usuário, opção B. Cinco pinturas genéricas (`club/stadium-level-{1..5}.webp`, `GAME_ART_FILES`; layout em PIL e FLUX img2img, `data_process/assets/club_stadium_levels.py`): do campo modesto de várzea ao estádio de elite com teto branco. Qual aparece: a média dos níveis de gramado, arquibancadas e estrutura (`stadiumArtLevel`, dois níveis por pintura). Só com o visual novo; o mapa dos setores continua abaixo. Não é o estádio real do clube.
 
-Report de tester (4.47.17): as pinturas saíam escuras demais. Exportadas de novo com o tom azul leve e mais brilho (`club_stadium_levels.py`), com o nome novo `club/stadium-lv-{1..5}.webp` (o cache é `immutable`).
+Report de tester (8.7.17): as pinturas saíam escuras demais. Exportadas de novo com o tom azul leve e mais brilho (`club_stadium_levels.py`), com o nome novo `club/stadium-lv-{1..5}.webp` (o cache é `immutable`).

@@ -425,7 +425,7 @@ Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
 
 ---
 
-# Substitution panel: mini pitch and position swaps (#115, 4.13)
+# Substitution panel: mini pitch and position swaps (#115, 5.3)
 
 The "Troca de jogador" tab of the live substitution panel (`SubstitutionPanel` → `Components/SubsPitchView.tsx`)
 shows the XI on a mini pitch (each starter in his slot of the current formation, attacking to the right: position
@@ -445,10 +445,10 @@ position (`compareSquadPositions`). Below `md` the pitch and the bench stack.
   Formation / Instructions tabs stay in `/test`'s own controls). No new statistic, nothing in `/lab`: a swap only
   moves players between existing slots.
 
-The "queued changes" block of the panel is always there, one line high (4.41.53, report): queueing a change never moves
+The "queued changes" block of the panel is always there, one line high (8.1.53, report): queueing a change never moves
 the mini pitch; more changes than fit scroll sideways.
 
-# Stadium, officials and managers (Etapa 38, #107/#99, 4.12)
+# Stadium, officials and managers (Etapa 38, #107/#99, 5.2)
 
 Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (`src/GraficsEngine`, see
 `graphics-engine.md`): nothing enters the `GameState`, the engine, the quickSim or `/lab`.
@@ -467,14 +467,14 @@ Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (
   each time); a goal makes the scoring team's manager celebrate. The AI never changes mentality.
 - `/test`: chips Stadium, Officials, the crowd (0/25/50/Default 65/75/100%) and Neutral; off by default.
 
-# Referee of the match (Etapa 38b, 4.17)
+# Referee of the match (Etapa 38b, 5.7)
 
 `POST /api/match-setup` returns `referee` (the appointment the day advance will use, `.claude/rules/game/referees.md`).
 `MatchScreen` puts `{ id, name, country, strictness }` on `GameState.referee` (fouls and cards scale with the rigor),
 shows him in the "Resumo" panel and draws the referee and the assistants with their faces. The day advance logs the
 same referee (`MatchEvent.referee`, never taken from the client's recording).
 
-# Match screen layout (#148, #149, 4.19)
+# Match screen layout (#148, #149, 5.9)
 
 - Under the scoreboard: the stadium of the home side (`venue.name`) and the crowd of `match-setup` (`crowd.attendance`,
   only when known); a neutral venue shows "Campo neutro".
@@ -487,11 +487,11 @@ same referee (`MatchEvent.referee`, never taken from the client's recording).
   clamped to the viewport). While open the panel keeps one line and the heat map gets the room.
 - Heat map: two `SegmentedTabs` (my team / opponent; last 10' / whole match), each with its two options side by side.
 
-# Luz da partida (4.29)
+# Luz da partida (6.9)
 
 `POST /api/match-setup` devolve `conditions` (`kickoff`, `weather`, `sunset`) e `sunSide`; o `MatchScreen` os passa ao `PixiPitch` como `lighting`. Só desenho. Ver `.claude/rules/graphics-engine.md` → "Luz e sombra".
 
-# Live match between two managers (multiplayer part 7, 4.36)
+# Live match between two managers (multiplayer part 7, 7.6)
 
 A live match against another seat (`/match?h2h=1`) is run by the server, not the browser: one Bun Worker per match
 (`src/backend/h2h/h2hWorker.ts` → `createH2HMatch`) steps `advanceSim` every 50 ms at a fixed 1× (the same phase
@@ -503,11 +503,11 @@ summary, notices, heat map and stats work unchanged. Each manager has 3 pauses o
 early. A manager without a socket is replaced by the assistant (`autoSubs`) until he is back. At full time both go to
 `/match-result?pending=1`. See `.claude/rules/game/multiplayer.md` → "Parte 7".
 
-# Live match step (4.36)
+# Live match step (7.6)
 
 The live match (`PixiPitch` → `advanceSim`) and the H2H worker run `tickState` in whole steps of `SIM_STEP` = 0.2 real
 seconds, the same step as `simulateMatch` (`DECISION_REF_DT`); the drawing interpolates between the last two steps
-(`renderInterp.ts`). Until 4.35 the live step was 1/60 s, and the engine's logic, calibrated sampled every 0.2 s,
+(`renderInterp.ts`). Until 7.5 the live step was 1/60 s, and the engine's logic, calibrated sampled every 0.2 s,
 behaved differently: ~13% more goals and ~15% more shots than the simulated match with the same teams. Main
 mechanism: the holder re-decided 12 times as often and picked the dribble against the front defender before he reached
 tackle range (the dribble target is left out of the tackle check), so front tackles halved and the remaining ones came
@@ -515,7 +515,7 @@ from behind with almost no chance. Tick-counted timers (`COMMIT_TICKS`, `justRec
 also count time now (`dt / DECISION_REF_DT`), identical at 0.2 s. Measured with `scripts/step-goals.ts`,
 `scripts/step-diag.ts` (every event and stat by step) and `scripts/step-duels.ts` (tackles and dribbles by angle).
 
-# Kit clash (4.41.20)
+# Kit clash (8.1.20)
 
 `resolveMatchKits` (`src/Domain/matchday/matchKits.ts`): the home side keeps its first colour; when the away shirt is
 closer than `KIT_CLASH_DISTANCE` (250, redmean distance) the away side wears the first of its other club colours that
@@ -523,19 +523,19 @@ does not clash, else the change kit (`CHANGE_KITS`) farthest from the home shirt
 (`matchTeamColors.ts`) wraps it for the preview, the result and the live match; the live match passes the home engine
 team (`isAwayView`), so the user's club changes kit when he is the away side. The watch broadcast reuses these colours.
 
-# Formation change preview (4.42.20)
+# Formation change preview (8.2.20)
 
 Tester report. The Formation tab of the live panel no longer applies a formation on click: the chip shows it on a mini pitch (`Components/FormationPreview.tsx`) with the current XI, each player in his slot with the role he would take (`formationPreview`, the same slot rule as `changeFormation`; out-of-position players in amber, counted below), and "Usar <formação>" applies it.
 
-# Formation change reorganises the team (4.42.21)
+# Formation change reorganises the team (8.2.21)
 
 Tester report. `changeFormation` no longer keeps each player in his slot number: `reorganizedSlots` (`Domain/formation/reorganize.ts`, Hungarian assignment over aptitudes, then the distance from where he plays) puts each one in the slot that suits him, the keeper in goal, and leaves an injury vacancy empty. Engine stats are rebuilt with the out-of-position factor, as on a position swap. A man-marker keeps his target. Reads only what the wire state carries, so the preview is right in a two-manager match too.
 
-# A man down: moving a starter to the empty slot (4.42.28)
+# A man down: moving a starter to the empty slot (8.2.28)
 
 Tester report. `moveToEmptySlot` (`gameState.ts`): an outfield starter takes a slot nobody holds (a sent-off player's, or an injury's, whose vacancy moves to the slot he left), with the same rebuild as a position swap and no substitution used. The substitutions mini pitch (`SubsPitchView`) draws every empty slot; a starter goes there by tap or drag. Between two managers it is the `move` command; in `/test` the `moveToSlot` command.
 
-# Match inside the frame (4.48)
+# Match inside the frame (8.8)
 
 The live match page is served at `/match-live`; `/match`, `/match-preview` and `/match-result` are routes of the game
 frame (`frontend.md` → Pages). The frame opens the match in an iframe (`MatchFrame.tsx`, `allow="autoplay; fullscreen"`)

@@ -1126,12 +1126,12 @@ gols de cabeça no mundo todo. Revertido antes da coleta; ver `formations.md` �
 (`TEMPERAMENT_FOUL_NORM` = 1, `TEMPERAMENT_CARD_NORM` = 1,04); `homeTemperament`/`awayTemperament` sobrepõem o lado
 (lab, `/test`). Medição em `.claude/rules/game/personality.md`.
 
-## Recalibração pelo valor de mercado (4.5) e reordenação por linha (4.14.2) — sem constante mexida
+## Recalibração pelo valor de mercado (4.5) e reordenação por linha (5.4.2) — sem constante mexida
 
 O mundo da 4.5 tem notas e posições reordenadas pelo valor do Transfermarkt e atributos com uma casa decimal
 (`.claude/rules/data/espn-import.md` → "Recalibração pelo valor de mercado"). Na 4.5 a reordenação mantinha a multiset de
 notas da **liga**, e as notas mudavam de linha (Premier: goleiro médio 4,80 → 4,46, meio 5,00 → 5,10; Brasileirão:
-zagueiro 4,28 → 4,09, goleiro 4,10 → 3,89). Decisão do usuário (4.14.2): reordenar **por linha** (cada linha mantém as
+zagueiro 4,28 → 4,09, goleiro 4,10 → 3,89). Decisão do usuário (5.4.2): reordenar **por linha** (cada linha mantém as
 notas que tinha antes; o valor só decide quem recebe qual), sem mexer em constante do motor nem do quickSim.
 
 **Motor** (`bun scripts/ai-formation-goals.ts --leagues premier_league,brazil_serie_a --engine 3200 --modes ai --quick 0`,
@@ -1141,8 +1141,8 @@ motor de 2026-10-09 em todas as linhas, trocando só os elencos das duas ligas e
 |---|---|---|---|---|---|---|---|---|
 | antes da 4.5 (referência) | 2,477 | — | 5,83 | — | 1,857 | — | 5,40 | — |
 | 4.5 sem recalibração (só `importEspn`) | 2,365 | −4,5% | 5,58 | −4,3% | 1,833 | −1,3% | 5,40 | 0% |
-| 4.5–4.14.1 (multiset da liga) | 2,242 | −9,5% | 5,45 | −6,5% | 2,192 | **+18,0%** | 5,92 | +9,6% |
-| **4.14.2 (por linha)**, 2 × 1600 | 2,276 | **−8,1%** | 5,43 | −6,9% | 1,892 | **+1,9%** | 5,29 | −2,0% |
+| 4.5–5.4.1 (multiset da liga) | 2,242 | −9,5% | 5,45 | −6,5% | 2,192 | **+18,0%** | 5,92 | +9,6% |
+| **5.4.2 (por linha)**, 2 × 1600 | 2,276 | **−8,1%** | 5,43 | −6,9% | 1,892 | **+1,9%** | 5,29 | −2,0% |
 
 Ruído ~±2% com 3200 jogos. O Brasileirão volta à faixa. A Premier quase não muda com a regra por linha (a troca de
 linha não era o que tirava gols dela): −4,5% vem do mundo da 4.5 antes de qualquer recalibração (atributos decimais,
@@ -1152,7 +1152,7 @@ mais de referência: o motor mudou depois (piso de goleiro, cache de intenções
 
 Média de nota por linha (`bun scripts/lineAverages.ts [pasta]`, `positions[0]`, elenco inteiro):
 
-| Liga | antes da 4.5 GK / DEF / MID / FWD | 4.14.1 | 4.14.2 |
+| Liga | antes da 4.5 GK / DEF / MID / FWD | 5.4.1 | 5.4.2 |
 |---|---|---|---|
 | premier_league | 4,80 / 5,26 / 5,00 / 5,29 | 4,46 / 5,13 / 5,09 / 5,24 | 4,82 / 5,28 / 4,94 / 5,28 |
 | la_liga | 4,55 / 5,01 / 4,79 / 4,95 | 4,43 / 4,83 / 4,85 / 4,95 | 4,56 / 5,00 / 4,73 / 4,97 |
@@ -1169,7 +1169,7 @@ motor 2,19 × quick 2,36 (+8%), Brasileirão 2,06 × 1,99 (−3,2%) — dentro d
 O quickSim não grava a lista de gols (`MatchEvent.goals` ausente, `compact`): as ligas no quickSim não têm gol da
 temporada. Os demais prêmios valem em todas as ligas. Ver `.claude/rules/game/awards.md`.
 
-## Gramado no quickSim (Etapa 34, 4.11)
+## Gramado no quickSim (Etapa 34, 5.1)
 
 `QuickSimInput.pitchCondition` (o gramado do mandante, `matchPitchCondition`) multiplica o `staffMult` das lesões dos
 dois lados por `pitchInjuryMult` (×1 a partir de 40%, até ×1,6). Ausente/90 = o sorteio de antes, idêntico. Medição
@@ -1180,17 +1180,17 @@ em `.claude/rules/game/facilities.md` → "Medições".
 Os jogos de base também rodam no quickSim (`playYouthDay`, 4-3-3, gramado 90, sem moral nem familiaridade), sem
 calibração própria: o volume do mundo não é medido contra o motor. Ver `.claude/rules/game/youth-competitions.md`.
 
-## Árbitros no quickSim (Etapa 38b, 4.17)
+## Árbitros no quickSim (Etapa 38b, 5.7)
 
 `QuickSimInput.refereeStrictness` (o árbitro da escala do dia): faltas, pênaltis e cartões dos dois lados; s = 0 /
 ausente sorteia exatamente o de antes. Medição do volume do mundo (26 ligas, pareado) em
 `.claude/rules/game/referees.md` → spec §7.
 
-## Seleções (4.22.1)
+## Seleções (6.2.1)
 
 `QuickSimInput.goalScale` multiplica o xG dos dois lados; só o quickSim de seleção passa (`nationalGoalScale`, que cai
 com o nível médio dos dois XIs: × 1,10 nos torneios, × 1,61 num jogo de nível 3,7). `xiLevel` dá o `teamLevel` de um XI. Ausente = × 1, o jogo de clube é idêntico. Ver `.claude/rules/game/national-teams.md` → "Volume de gols".
 
-## Clima no quickSim (4.32)
+## Clima no quickSim (7.2)
 
 `QUICK_SIM_CONFIG.WEATHER` aplica o clima efetivo do jogo ao quickSim. Ver `.claude/rules/game/weather.md`.

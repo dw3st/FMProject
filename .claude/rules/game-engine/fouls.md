@@ -157,14 +157,14 @@ sem barreira; o tiro livre perigoso usa o layout fixo da formação; o expulso �
 amarelo × (1 + 0,2 t), vermelho direto × (1 + 0,4 t) ÷ `TEMPERAMENT_CARD_NORM` (1,04). t = 0 / ausente devolve
 exatamente o de antes. Override por time em `PersonalityMatchConfig.ts`. Ver `.claude/rules/game/personality.md`.
 
-## Rigor do árbitro (Etapa 38b, 4.17)
+## Rigor do árbitro (Etapa 38b, 5.7)
 
 `FoulContext.strictness` / `CardContext.strictness` (s do árbitro, `GameState.referee`, `withReferee`): falta ×
 (1 + 0,08 s), amarelo × (1 + 0,15 s), vermelho direto × (1 + 0,25 s), os cartões ÷ `REFEREE.CARD_NORM` (1,01) com s ≠ 0.
 s = 0 / ausente devolve exatamente o de antes (nenhum sorteio novo). Logs `foul`/`card` com `refMult`. Ver
 `.claude/rules/game/referees.md`.
 
-## Erros do juiz e VAR (Etapa 39, 4.18)
+## Erros do juiz e VAR (Etapa 39, 5.8)
 
 `foulCheck` (o `maybeFoul` com o estado do lance não apitado) rola os erros do árbitro: pênalti inventado num desarme
 limpo na área, pênalti não marcado (o jogo segue), amarelo mostrado como vermelho e vermelho como amarelo; com VAR a

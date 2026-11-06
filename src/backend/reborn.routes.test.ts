@@ -70,7 +70,7 @@ describe("reborn routes", () => {
     // Filters (tester reports): name without accents, nationality, highlights only (a weak free retiree is hidden).
     const weak: RetiredPlayer = {
       ...mkRetired("w"), name: "José Fraco", nationality: "Portugal", wasWorldClass: false,
-      statsAtRetirement: Object.fromEntries(Object.keys(mkRetired("w").statsAtRetirement).map((k) => [k, 1])) as RosterPlayer["stats"],
+      statsAtRetirement: Object.fromEntries(Object.keys(mkRetired("w").statsAtRetirement).map((k) => [k, 1])) as unknown as RosterPlayer["stats"],
     };
     await saveService.writeRetired(saveId, [weak, mkRetired("a"), mkRetired("b"), mkRetired("c")]);
     expect((await list("?q=jose")).items.map((r) => r.id)).toEqual(["w"]);

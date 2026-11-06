@@ -194,7 +194,7 @@ Championship).
 vira `MatchEvent.goals` (cabeçada, bola parada, distância, fora da área). Só dado: nada muda no motor. Ver
 `.claude/rules/game/awards.md`.
 
-## Goleiro ativo (4.37)
+## Goleiro ativo (7.7)
 
 Além da pequena área, o goleiro sai em bola alta que cai a até 10 jardas quando é o primeiro (`keeperComesWide`), com
 chance de agarrar menor e, errando, bola solta em 30% das vezes. Ver `.claude/rules/game-engine/keeper.md`.

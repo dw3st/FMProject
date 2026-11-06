@@ -159,17 +159,17 @@ abrir, e Convites).
 - Rival só nas compras com taxa do humano; IA × IA não disputa (o primeiro que tenta compra).
 - Um jogador com pré-contrato ainda pode ser vendido pela IA antes da virada: o pré-contrato cai (inbox).
 
-## Instalações (Etapa 34, 4.11)
+## Instalações (Etapa 34, 5.1)
 
 `PreferenceInput.facilitiesAppeal` (só o clube do jogador): `preferenceScore` desconta até 0,10 com o CT abaixo de
 50%; `preferredClub` pode dar o motivo `facilities` (`prefers_rival` traduzido). Ver `facilities.md`.
 
-## Inscrição (Etapa 37, 4.15)
+## Inscrição (Etapa 37, 5.5)
 
 A lista de inscritos de cada competição só muda com a janela do país do clube aberta (na continental, também antes
 da fase seguinte); fora dela fica congelada e quem chega espera a próxima janela. Ver `.claude/rules/game/registration.md`.
 
-## Faixa da janela no Painel (4.39.3)
+## Faixa da janela no Painel (7.9.3)
 
 Report de tester. Com a janela do clube do jogador aberta, uma faixa verde (`MarketWindowStrip`,
 `Transfers/transferWindow.tsx`) no Painel e na tela do mundo: "Janela de transferências aberta até 31/01 · 2 compras e
@@ -178,18 +178,18 @@ Report de tester. Com a janela do clube do jogador aberta, uma faixa verde (`Mar
 propostas a outro assento; venda = propostas vivas da IA e de outro assento; cada jogador uma vez por lado). A linha
 "Janela aberta até…" saiu do cartão Atenção (fica só o aviso dos últimos dias).
 
-## Filtro de pré-contrato no olheiro (4.42.20)
+## Filtro de pré-contrato no olheiro (8.2.20)
 
 Report de tester. Chip "Só pré-contrato" na busca (`onlyPreContract`): só jogadores de clubes da IA que `preContractEligible` aceita hoje (contrato real, não a faixa do olheiro), calculado no índice da busca (`preContractIdsOf`, `scoutSearch.ts`).
 
-## Pré-contratos em Minhas transferências (4.47.16)
+## Pré-contratos em Minhas transferências (8.7.16)
 
 Pedido do usuário. A aba Minhas transferências mostra no topo os pré-contratos assinados (`NegotiationOverview sections={["preContracts"]} hideEmpty`: jogador, clube, salário, temporadas, luvas, data), com a nota de que chegam no fim da temporada do clube de origem. A aba "Empréstimos" de Transferências passou a se chamar "Negociações" (já tinha propostas, rivais e pré-contratos).
 
-## Negociações em cartões (4.47.17)
+## Negociações em cartões (8.7.17)
 
 Report de tester. Cada bloco de `NegotiationOverview` é um cartão como Entradas e Saídas de Minhas transferências (ícone colorido, título, contagem); em duas colunas, com propostas entre técnicos, pré-contratos e emprestados na largura toda (`WIDE`).
 
-Posição e bandeira nos pré-contratos (4.47.21, report de tester): `GET /negotiation` acrescenta `position` (natural) e `nationality` a cada pré-contrato, lidos do clube de origem na hora.
+Posição e bandeira nos pré-contratos (8.7.21, report de tester): `GET /negotiation` acrescenta `position` (natural) e `nationality` a cada pré-contrato, lidos do clube de origem na hora.
 
-Limite e pré-contratos (4.47.23, report de tester): o topo do Elenco mostra "Elenco: 33/36 · +3 pré-contratos"; o pré-contrato recusado por `squadFull` devolve `roster`, `preContracts` e `max`, e a janela explica a conta.
+Limite e pré-contratos (8.7.23, report de tester): o topo do Elenco mostra "Elenco: 33/36 · +3 pré-contratos"; o pré-contrato recusado por `squadFull` devolve `roster`, `preContracts` e `max`, e a janela explica a conta.

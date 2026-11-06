@@ -21,7 +21,7 @@ O posicionamento estático por formação (layouts de `SetPieceLayouts.ts`) cont
 ## Cobradores (§4)
 
 - `TacticsSave.setPieceTakers?: { corners?, freeKicks?, penalties? }`, cada função uma lista de **até 3**
-  ids de jogador em ordem de preferência (#116, 4.13). Tela de táticas (`SetPieceTakersPanel`): três
+  ids de jogador em ordem de preferência (#116, 5.3). Tela de táticas (`SetPieceTakersPanel`): três
   seletores por função (1, 2, 3; vazio = **Automático**; o 2º só abre com o 1º escolhido; um jogador já
   escolhido na função não aparece de novo). A rota `PUT /api/saves/:id/tactics` valida com
   `parseSetPieceTakers` (`MAX_TAKERS_PER_DUTY`): `null`/lista vazia = automático, `""` é descartado;
@@ -222,8 +222,8 @@ zagueiros que sobem marcam.
 O gol de bola parada leva o `setPiece` também em `MatchEvent.goals` (gol da temporada: falta direta de fora da área
 conta, pênalti nunca). Ver `.claude/rules/game/awards.md`.
 
-## Laterais (4.46.1)
+## Laterais (8.6.1)
 
-A margem das bolas em profundidade (4.44) tirou quase todos os laterais do jogo. Três lances novos os trazem de volta (`SET_PIECE_CONFIG`), todos pelo `resolveOOBSetPiece`: desarme ganho a até `TACKLE_THROW_DEPTH` (14) jardas da lateral, com chance `TACKLE_THROW_CHANCE` (0,6), lateral para quem sofreu; passe para jogador a até `PASS_OUT_EDGE` (12) jardas, chance `PASS_OUT_CHANCE` (0,25) × (1 − 0,6 × domínio), conta como passe errado, lateral para o outro time; corte (`clearanceBall`) que passaria da linha, lateral para o outro time. Evento `throwInAwarded`, `Statistics.throwIns` (coluna TI do `StatsPanel`), cenário `throw-in-tackle` no `/test`, `avgThrowIns` e linha "Throw-ins" no `PairDetail` do `/lab`. O quickSim não conta laterais.
+A margem das bolas em profundidade (8.4) tirou quase todos os laterais do jogo. Três lances novos os trazem de volta (`SET_PIECE_CONFIG`), todos pelo `resolveOOBSetPiece`: desarme ganho a até `TACKLE_THROW_DEPTH` (14) jardas da lateral, com chance `TACKLE_THROW_CHANCE` (0,6), lateral para quem sofreu; passe para jogador a até `PASS_OUT_EDGE` (12) jardas, chance `PASS_OUT_CHANCE` (0,25) × (1 − 0,6 × domínio), conta como passe errado, lateral para o outro time; corte (`clearanceBall`) que passaria da linha, lateral para o outro time. Evento `throwInAwarded`, `Statistics.throwIns` (coluna TI do `StatsPanel`), cenário `throw-in-tackle` no `/test`, `avgThrowIns` e linha "Throw-ins" no `PairDetail` do `/lab`. O quickSim não conta laterais.
 
-Medido: cerca de 3 por jogo (Premier, 100 jogos, `bun scripts/shot-miss-probe.ts`). Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`), contra a 4.44.2: Premier 2,109 → 2,156 gols, 5,49 → 5,57 chutes; Championship 1,732 → 1,806, 5,37 → 5,29; somadas +2,9% e 0%, quickSim não recalibrado.
+Medido: cerca de 3 por jogo (Premier, 100 jogos, `bun scripts/shot-miss-probe.ts`). Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`), contra a 8.4.2: Premier 2,109 → 2,156 gols, 5,49 → 5,57 chutes; Championship 1,732 → 1,806, 5,37 → 5,29; somadas +2,9% e 0%, quickSim não recalibrado.

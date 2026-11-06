@@ -92,7 +92,7 @@ screens (see `frontend.md`). Replacing React means re-subscribing those screens 
 
 ---
 
-## Realtime: WebSocket `/api/ws` (Etapa 44, 4.24)
+## Realtime: WebSocket `/api/ws` (Etapa 44, 6.4)
 The only server → browser push channel. `Bun.serve` in `src/index.ts` upgrades `/api/ws` in `fetch` (the fallback
 for paths no route matched) and hands the socket to `handleSocialUpgrade` (`src/backend/social/realtime.ts`). Auth is the
 session cookie at the upgrade; the payloads are typed in `src/types/socialTypes.ts` (`ClientEvent`, `ServerEvent`) and
@@ -106,7 +106,7 @@ in the server: `src/backend/h2h/h2hRooms.ts` keeps the rooms in memory and spawn
 (`src/backend/h2h/h2hWorker.ts`, isolating the engine globals), relaying its frames, states and events to the two
 managers' sockets. Its commands (`h2h_cmd`, pauses) are the one write that goes over the socket.
 
-## Save version (#155, 4.22)
+## Save version (#155, 6.2)
 `SaveMeta.gameVersion` is written by `createSave` from `GAME_VERSION` (`@/Domain/saveVersion`, read
 from `package.json`). `MIN_COMPATIBLE_SAVE_VERSION` in the same file is the oldest version whose saves
 still load: **raise it in the same branch whenever the save format changes**. `GET /api/saves` adds
@@ -123,13 +123,13 @@ format changed without a new version: saves from before have no members and leav
 ## Group advance (multiplayer part 3)
 In a `running` multi world only `src/backend/groupAdvance.ts` advances the day (in the background, one run per world, a deadline clock started by `startWorldClock()` in `src/index.ts`); `/advance-day` and `/advance-until` answer 409 `groupAdvance`. Pure rules in `src/Domain/groupAdvance/`, routes in `src/backend/groupAdvanceRoutes.ts`, push as the `world_progress` `ServerEvent`. See `.claude/rules/game/multiplayer.md`.
 
-## Day log compaction (4.39)
+## Day log compaction (7.9)
 Day logs older than `DAY_LOG_KEEP_FULL_DAYS` (60) are compacted by the day advance (`compactDayLog`,
 `src/Domain/advanceDay/dayLogCompaction.ts`): training/rest lines dropped (they never stored effects), matches of
 clubs without a seat reduced to the `compact` form (no player stats, ratings or development). At most 40 logs a day,
 from `SaveMeta.dayLogsCompactedTo` on. A two-season friends world had 170 MB of day logs (~130 MB a season).
 
-## Fixed frame (4.48)
+## Fixed frame (8.8)
 One page serves every in-game screen (`src/pages/app/` → `GameInterface/AppShell.tsx`, routes in
 `GameInterface/router/appRoutes.ts`, `navigate`/`useRoute` in `router/navigation.ts`): the bars, friends, chat, the
 watch window and the group advance stay mounted while the screen changes. The live match runs `/match-live` in an
