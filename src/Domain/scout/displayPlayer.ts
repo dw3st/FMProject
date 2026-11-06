@@ -111,6 +111,8 @@ export interface DisplayPlayer {
   preContract?: boolean;
   /** Grade of the user's scout's latest report on him (set on the server). */
   grade?: ScoutGrade;
+  /** What the club asks to sell him, EUR (listed players only, scout search). */
+  askingPrice?: number;
 }
 
 /**

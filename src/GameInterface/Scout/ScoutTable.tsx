@@ -14,6 +14,7 @@ import { Flag } from "@/GameInterface/Components/Flag";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { InterestBadge } from "@/GameInterface/Scout/InterestBadge";
+import { formatFee } from "@/Domain/money";
 
 /**
  * Columns (labels: `scout.table.columns.<key>`). #154: the old Train/Moral badges were dropped: the training
@@ -231,8 +232,13 @@ export function ScoutTable({
               <div className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground font-medium">
                 {player.salary}
               </div>
-              <div className={`px-3 py-2.5 font-bold ${ratingTextClass10(player.avg)}`}>
+              <div className={`px-3 py-2.5 font-bold tabular-nums ${ratingTextClass10(player.avg)}`}>
                 {valueText(player.value, player.valueRange)}
+                {player.askingPrice !== undefined && (
+                  <span className="block text-sm font-semibold text-primary whitespace-nowrap" title={t("scout.table.askingHint")}>
+                    {t("scout.table.asking", { price: formatFee(player.askingPrice) })}
+                  </span>
+                )}
               </div>
               <div className="px-3 py-2.5 flex justify-center">
                 <button

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.7",
+    date: "2026-11-06",
+    time: "09:26",
+    items: [
+      {
+        pt: "Olheiro: jogadores à venda mostram, abaixo do valor, quanto o clube pede para vendê-lo. Uma proposta nesse valor é aceita pelo clube. Os jogadores à venda dos seus amigos também aparecem.",
+        en: "Scout: players for sale show, under their value, what the club asks to sell him. An offer at that fee is accepted by the club. Your friends' players for sale appear too.",
+      },
+    ],
+  },
+  {
     version: "4.47.6",
     date: "2026-11-06",
     time: "09:18",

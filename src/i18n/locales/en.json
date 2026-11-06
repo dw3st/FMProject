@@ -2976,7 +2976,9 @@
         "phase": "Form",
         "salary": "Salary",
         "valueMillions": "Value"
-      }
+      },
+      "asking": "Asks {{price}}",
+      "askingHint": "What the club asks to sell him: an offer at this fee is accepted."
     },
     "form": {
       "1": "Bad",

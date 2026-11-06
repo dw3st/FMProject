@@ -339,3 +339,7 @@ nome sem link e "mudou de clube" (`reportsView`, `scoutingRoutes.ts`).
 ## Filtros de disponibilidade, nota e potencial (4.47.6)
 
 Report do usuário. "Só livres", "Apenas à venda" e "Só pré-contrato" formam um grupo que soma (OU); sem nenhum marcado, os livres ficam fora como antes. Filtro de nota (`grades`, chips A–E): só jogadores com relatório, pela nota do relatório mais recente (`DisplayPlayer.grade`). Potencial (`minPotential`/`maxPotential`, 0–100): o meio da faixa vista (`potentialRange`), senão o nível. Jogadores com pré-contrato já assinado com o clube do jogador saem da busca.
+
+## Preço pedido na busca (4.47.7)
+
+Report de tester. `askingPricesOf` (`src/Domain/scout/askingPrices.ts`, com teste): jogador na lista de venda de um clube da IA mostra a menor taxa que o clube aceita do comprador (`respondToOffer` sem cláusula: `feeForSaleScore` com a prioridade da lista e o comprador, piso de craque e de oferta baixa), sobre o jogador real; na lista de outro técnico, o preço pedido dele (senão o valor). `DisplayPlayer.askingPrice` (EUR), linha "Pede €X" abaixo do valor. Os jogadores à venda dos outros assentos também contam em "Apenas à venda". Revela um pouco do valor real, como o pedido de salário.

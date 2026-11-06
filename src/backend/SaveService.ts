@@ -272,6 +272,10 @@ export class SaveService {
     await this.dal.writeSeatMarket(saveId, seat, parts.seat);
   }
 
+  getSeatMarket(saveId: string, seatId: string): Promise<SeatMarketState | null> {
+    return this.dal.readSeatMarket(saveId, seatId);
+  }
+
   saveSeatMarket(saveId: string, seatId: string, market: SeatMarketState): Promise<void> {
     return this.dal.writeSeatMarket(saveId, seatId, market);
   }

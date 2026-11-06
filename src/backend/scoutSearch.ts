@@ -15,7 +15,9 @@ import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { wageFactorOf, weeklyWage } from "@/Domain/finance/wages";
 import { preContractEligible } from "@/Domain/negotiation/preContract";
+import { askingPricesOf } from "@/Domain/scout/askingPrices";
 import type { Squad } from "@/types/playerTypes";
+import type { SellCandidate } from "@/types/transferMarketTypes";
 import type { ScoutGrade } from "@/types/scoutingTypes";
 
 const GRADES: readonly ScoutGrade[] = ["A", "B", "C", "D", "E"];
@@ -80,12 +82,23 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
     const grade = gradeOf.get(r.id);
     return grade ? { ...row, grade } : row;
   });
+  // What each listed player's club asks (tester report), and other managers' lists, which are for sale too.
+  const seatLists = await otherSeatLists(saveId, seatId);
+  const asking = askingPricesOf({
+    squads,
+    aiLists: market?.profiles ?? {},
+    seatLists,
+    buyer: viewer?.ownClubId ? squads.find((s) => s.id === viewer.ownClubId) ?? null : null,
+    humanClubIds: await saveService.humanClubIds(saveId),
+  });
+  const priced = players.map((p) => (asking.has(p.id) ? { ...p, askingPrice: asking.get(p.id) } : p));
+  const sellListedIds = new Set([...collectSellListedIds(market), ...seatLists.flatMap((s) => s.list.map((c) => c.playerId))]);
   const shortlistIds = new Set(scouting.shortlist.map((e) => e.playerId));
   const entry: ScoutIndex = {
     key,
-    players,
-    nationalities: collectNationalities(players),
-    sellListedIds: new Set(collectSellListedIds(market)),
+    players: priced,
+    nationalities: collectNationalities(priced),
+    sellListedIds,
     shortlistIds,
   };
   cache.delete(cacheKey(saveId, seatId));
@@ -96,6 +109,17 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
     cache.delete(oldest);
   }
   return entry;
+}
+
+/** The sell lists of the other seats of the world, with their club (a jobless seat has none). */
+async function otherSeatLists(saveId: string, seatId: string): Promise<{ clubId: string; list: SellCandidate[] }[]> {
+  const out: { clubId: string; list: SellCandidate[] }[] = [];
+  for (const { seatId: other, seat } of await saveService.listSeats(saveId)) {
+    if (other === seatId || !seat.clubId || seat.unemployed) continue;
+    const m = await saveService.getSeatMarket(saveId, other);
+    if (m?.playerSellList?.length) out.push({ clubId: seat.clubId, list: m.playerSellList });
+  }
+  return out;
 }
 
 /** Players of AI clubs who can sign a pre-contract today (real contracts, not the blurred rows; `POST /pre-contracts` takes no human club's player). */

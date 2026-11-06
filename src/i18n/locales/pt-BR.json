@@ -2976,7 +2976,9 @@
         "phase": "Forma",
         "salary": "Salário",
         "valueMillions": "Valor"
-      }
+      },
+      "asking": "Pede {{price}}",
+      "askingHint": "O que o clube pede para vender: uma oferta com essa taxa é aceita."
     },
     "form": {
       "1": "Ruim",
