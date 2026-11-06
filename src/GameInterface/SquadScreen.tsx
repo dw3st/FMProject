@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/contractConfig";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { StarCount } from "@/GameInterface/Squad/StarLimitLine";
@@ -110,7 +111,17 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
           trailing={
             <div className="flex items-center gap-3">
               {squad.id !== mySquadId && humanClubs.get(squad.id) && <HumanBadge nickname={humanClubs.get(squad.id)!} />}
-              <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
+              {squad.id === mySquadId ? (
+                // The squad against its limit (tester report, 4.47.22).
+                <div
+                  className={`text-sm font-semibold tabular-nums ${squad.players.length >= HUMAN_MAX_SQUAD ? "text-chart-4" : "text-muted-foreground"}`}
+                  title={t("squadScreen.squadLimitHint", { max: HUMAN_MAX_SQUAD })}
+                >
+                  {t("squadScreen.squadLimit", { n: squad.players.length, max: HUMAN_MAX_SQUAD })}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
+              )}
               {squad.id === mySquadId && <StarCount />}
             </div>
           }

@@ -2419,7 +2419,9 @@
     "tabYouth": "Base",
     "tabHistory": "História",
     "tabDepth": "Profundidade",
-    "tabRegistration": "Inscritos"
+    "tabRegistration": "Inscritos",
+    "squadLimit": "Elenco: {{n}}/{{max}}",
+    "squadLimitHint": "Limite do elenco: {{max}} jogadores. Os emprestados a outros clubes também contam para contratar."
   },
   "squadDepth": {
     "loading": "Carregando profundidade...",

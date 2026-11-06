@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.22",
+    date: "2026-11-06",
+    time: "12:33",
+    items: [
+      {
+        pt: "Elenco: o topo mostra o elenco contra o limite, por exemplo 33/36, em destaque quando está cheio.",
+        en: "Squad: the header shows the squad against its limit, for example 33/36, highlighted when full.",
+      },
+    ],
+  },
+  {
     version: "4.47.21",
     date: "2026-11-06",
     time: "12:25",

@@ -50,3 +50,6 @@ export const CONTRACT_CONFIG = {
  * rollover refill): past it he is only waiting to retire.
  */
 export const AI_SIGN_MAX_AGE = CONTRACT_CONFIG.AI_RENEW_MAX_AGE + 2;
+
+/** The human club's cap: most clubs start the world at 30, so the human gets room to sign before selling. */
+export const HUMAN_MAX_SQUAD = 36;

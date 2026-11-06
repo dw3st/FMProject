@@ -807,8 +807,6 @@ function MessageRow({
   onClick: () => void;
 }) {
   const { t } = useTranslation();
-  const meta = CATEGORY_META[message.category];
-  const MetaIcon = meta.Icon;
   const unread = !message.read;
   const prizeTexts = leaguePrizeTexts(message, t);
 
@@ -845,7 +843,6 @@ function MessageRow({
 function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
   const { t } = useTranslation();
   const meta = CATEGORY_META[message.category];
-  const MetaIcon = meta.Icon;
   const prizeTexts = leaguePrizeTexts(message, t);
 
   // The painted illustration of the category over the message (art phase 7, new visual only).

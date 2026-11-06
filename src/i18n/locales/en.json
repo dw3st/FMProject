@@ -2419,7 +2419,9 @@
     "tabYouth": "Academy",
     "tabHistory": "History",
     "tabDepth": "Depth",
-    "tabRegistration": "Registration"
+    "tabRegistration": "Registration",
+    "squadLimit": "Squad: {{n}}/{{max}}",
+    "squadLimitHint": "Squad limit: {{max}} players. Players loaned out also count when signing."
   },
   "squadDepth": {
     "loading": "Loading depth...",
