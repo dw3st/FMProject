@@ -351,3 +351,7 @@ Report do usuário, opção A do mock. Na busca, parar 280 ms sobre o nome abre 
 ## Observar até um nível e filtro de empréstimo (4.47.12)
 
 Reports de tester. Missão de jogador com `target.knowledgeTarget` (25, 50, 75 ou 100, `S.PLAYER_LEVELS`): roda até o conhecimento chegar lá, no máximo `PLAYER_LEVEL_MAX_WEEKS` (8) semanas; a rota de criar ignora `weeks` nesse caso e recusa um nível já alcançado (400 `invalidTarget`). `GET /scouting/player/:id` devolve `plans`: por olheiro livre, as semanas (`playerMissionWeeks` sobre `playerWeeklyGain`, os fatores da semana) e o custo de viagem de cada nível. A ficha mostra os níveis em chips com "cerca de N semanas · viagens de €X". Busca: chip "Aceitam empréstimo" (`onlyLoanable`, no grupo OU de disponibilidade): jogadores de clubes da IA que `loanAvailability` libera hoje (fora do XI automático, jovem, à venda ou sobrando na linha), calculado no índice da busca (`loanableIdsOf`, ~0,2 s no mundo inteiro).
+
+## Filtros com − e + (8.8.2)
+
+Reports de tester. Idade, nota, valor e potencial usam `StepperField` (`ui/StepperField.tsx`: − e +, o texto digitado fica no campo até sair dele, então dá para apagar e digitar de novo; antes um campo vazio voltava na hora ao padrão e o valor máximo virava 1000 de novo). Valor: `stepPriceM` (passo 0,1 abaixo de €1M, 0,5 até 10, 1 até 50, 5 até 200, 25 acima) e `parsePriceM` (aceita "20,5", "20M" e euros: 100 000 ou mais é lido como euros); "1000+" é sem limite.

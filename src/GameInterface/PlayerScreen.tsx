@@ -59,6 +59,7 @@ export function PlayerScreen({
   // Transfer window of the human club (Etapa 25): closed = no offer, but a pre-contract when eligible.
   const windowsData = useTransferWindows();
   const [renewOpen, setRenewOpen] = useState(false);
+  const [priceRequest, setPriceRequest] = useState(0);
   // `?action=renew|talk` (dashboard Attention buttons): open the renewal or the conversation straight away.
   const [action] = useState(() => new URLSearchParams(window.location.search).get("action"));
   const actionDone = useRef(false);
@@ -182,7 +183,7 @@ export function PlayerScreen({
               </button>
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
+                {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} priceRequest={priceRequest} />}
                 {session && player.contract && (
                   <TerminateButton saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => { navigate(backTo); }} />
                 )}
@@ -278,6 +279,7 @@ export function PlayerScreen({
         } : null}
         onClose={() => setRenewOpen(false)}
         onDone={() => void refresh()}
+        onListForSale={!player.loan ? () => { setRenewOpen(false); setPriceRequest((n) => n + 1); } : undefined}
       />
 
       <PlayerOfferModal

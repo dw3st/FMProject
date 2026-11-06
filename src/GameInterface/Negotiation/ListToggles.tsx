@@ -10,13 +10,19 @@ import type { SellCandidate } from "@/types/transferMarketTypes";
  * (`.claude/rules/game/negotiation.md`): AI clubs then send bids to the inbox. Listing for sale asks
  * for an asking price (#88), editable while he is listed.
  */
-export function ListToggles({ saveId, playerId, playerName, value }: { saveId: string; playerId: string; playerName: string; value: number }) {
+export function ListToggles({ saveId, playerId, playerName, value, priceRequest = 0 }: {
+  saveId: string; playerId: string; playerName: string; value: number;
+  /** Bumped by the caller to open the asking price from elsewhere (the renewal window, tester report 8.8.2). */
+  priceRequest?: number;
+}) {
   const { t } = useTranslation();
   const [sale, setSale] = useState<SellCandidate | null | undefined>(undefined);
   const [forLoan, setForLoan] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [pricing, setPricing] = useState(false);
+
+  useEffect(() => { if (priceRequest > 0) setPricing(true); }, [priceRequest]);
 
   const pick = (list: SellCandidate[]) => list.find((c) => c.playerId === playerId) ?? null;
 

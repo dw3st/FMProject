@@ -39,6 +39,8 @@
     "jump": "Alcance e extensão do goleiro em bolas altas e chutes de longe."
   },
   "common": {
+    "decrease": "Diminuir",
+    "increase": "Aumentar",
     "continue": "Continuar",
     "save": "Salvar",
     "cancel": "Cancelar",

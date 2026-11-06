@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/GameInterface/ui/Button";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { maxOfferYears } from "@/Domain/contracts/contracts";
 import { loadSession } from "@/GameInterface/gameSession";
@@ -40,10 +41,12 @@ interface Props {
   onClose: () => void;
   /** Called after the server accepted the contract. */
   onDone?: () => void;
+  /** Renewal only: put him on the sale list instead (tester report, 8.8.2); the caller opens the asking price. */
+  onListForSale?: () => void;
 }
 
 /** Renewal of an own player, or signing of a free agent: wage + years against the player's demand. */
-export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
+export function ContractOfferModal({ mode, player, onClose, onDone, onListForSale }: Props) {
   const { t, i18n } = useTranslation();
   const session = loadSession();
   const refusalText = useRefusalText();
@@ -174,6 +177,11 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
                   {submitting ? t("transfers.sending") : mode === "renew" ? t("contracts.renew") : t("contracts.sign")}
                 </button>
               </div>
+              {mode === "renew" && onListForSale && (
+                <Button variant="secondary" className="w-full" onClick={onListForSale}>
+                  {t("negotiation.lists.listSale")}
+                </Button>
+              )}
             </>
           )}
         </div>

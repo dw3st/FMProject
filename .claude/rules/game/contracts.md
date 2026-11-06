@@ -153,3 +153,7 @@ Reports (Bellingham no Real Madrid, pré-contrato a €410K): a IA só renovava 
 ## Janela do resultado da renovação (4.47.3)
 
 Report do usuário, opção C do mock. Depois de pedir a renovação na ficha, a janela mostra o resultado (`Contracts/RenewalResult.tsx`): uma cena pintada (`news/news-renewal-happy|sad.webp` no volume de arte, `paintedNews`), aperto de mão quando ele aceita e o jogador sozinho na mesa quando recusa, com um cartão do rosto e do nome por cima; sem a arte, só o rosto com borda verde ou vermelha. Recusa do próprio jogador (`lowWage`, `unhappy`, `smallerClub`, `poorFacilities`) vira a cena triste com "Tentar de novo"; as outras recusas (regras) continuam na linha de erro. A ficha só é atualizada ao fechar o resultado (atualizar antes remontava a janela). Cenas pintadas no ComfyUI com `data_process/assets/renewal_mock.py`.
+
+## Colocar à venda na renovação (8.8.2)
+
+Report de tester. A janela de renovação (`ContractOfferModal`, `onListForSale`) tem "Colocar à venda": fecha a renovação e abre o preço pedido da ficha (`ListToggles`, `priceRequest`).

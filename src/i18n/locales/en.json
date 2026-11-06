@@ -39,6 +39,8 @@
     "jump": "Goalkeeper reach and extension for high balls and long-range efforts."
   },
   "common": {
+    "decrease": "Decrease",
+    "increase": "Increase",
     "continue": "Continue",
     "save": "Save",
     "cancel": "Cancel",

@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.2",
+    date: "2026-11-06",
+    time: "14:20",
+    items: [
+      {
+        pt: "Olheiro: idade, nota, valor e potencial têm botões − e +. O valor sobe em passos que crescem com o preço, e aceita o número em euros (20000000 vira €20M).",
+        en: "Scout: age, rating, value and potential have − and + buttons. Value steps grow with the price, and a number in euros works too (20000000 becomes €20M).",
+      },
+      {
+        pt: "Renovação: a janela também tem \"Colocar à venda\".",
+        en: "Renewal: the window also has \"List for sale\".",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Olheiro: apagar o valor máximo e digitar outro voltava sempre para 1000.",
+        en: "Scout: clearing the maximum value and typing another one always went back to 1000.",
+      },
+    ],
+  },
+  {
     version: "8.8.1",
     date: "2026-11-06",
     time: "14:10",

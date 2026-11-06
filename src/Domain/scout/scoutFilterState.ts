@@ -118,3 +118,22 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     maxPotential: 100,
   };
 }
+
+/** One − / + step of the price filter (M€): finer for cheap players (tester report, 8.8.2). */
+export function stepPriceM(v: number, dir: 1 | -1): number {
+  const grid = (x: number) => (x < 1 ? 0.1 : x < 10 ? 0.5 : x < 50 ? 1 : x < 200 ? 5 : 25);
+  const size = grid(dir > 0 ? v : Math.max(0, v - 1e-9));
+  const next = dir > 0 ? Math.floor(v / size + 1e-9) * size + size : Math.ceil(v / size - 1e-9) * size - size;
+  return Math.max(0, Math.min(PRICE_FILTER_NO_LIMIT_M, Math.round(next * 10) / 10));
+}
+
+/**
+ * A typed price (M€): "20", "20,5", "20M". A number of 100 000 or more is read as euros (the report typed 20000000
+ * for €20M). Null when it is not a number.
+ */
+export function parsePriceM(text: string): number | null {
+  const t = text.trim().replace(/\s/g, "").replace(/m$/i, "").replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const n = Number.parseFloat(t);
+  return n >= 100_000 ? n / 1_000_000 : n;
+}
