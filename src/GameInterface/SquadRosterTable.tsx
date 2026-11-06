@@ -1,4 +1,6 @@
 import { summaryOf } from "@/Domain/personality/personality";
+import { addDays } from "@/Domain/dates";
+import { MORALE } from "@/Domain/morale/moraleConfig";
 import { ATTENTION_BUTTON, AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
 import { contractRenewalDue } from "@/Domain/contracts/contracts";
 import { formatGameDate } from "@/GameInterface/formatDate";
@@ -85,6 +87,13 @@ export function SquadRosterTable({
   // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
   const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "6.5rem" : "7rem"].join(" ");
   const talkOf = (id: string) => squad.moraleClub?.talks.find((x) => x.playerId === id) ?? null;
+  // Already talked (praise / demand works once per `PRAISE_EVERY_DAYS`): the button rests until then (user request, 4.47.11).
+  const talkedRest = (id: string): { on: string; until: string } | null => {
+    const on = squad.players.find((p) => p.id === id)?.moraleLog?.talkedOn;
+    if (!on || !currentDate || talkOf(id)) return null;
+    const until = addDays(on, MORALE.PRAISE_EVERY_DAYS);
+    return currentDate < until ? { on, until } : null;
+  };
 
   const allPlayers = useMemo<RosterRow[]>(() => {
     const wageFactor = wageFactorOf(squad);
@@ -253,7 +262,22 @@ export function SquadRosterTable({
               <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
             <div className="px-3 py-2.5 flex justify-center gap-2">
-              {showMorale && !player.loan && (
+              {showMorale && !player.loan && talkedRest(player.id) && (
+                <span
+                  title={t("morale.talk.talkedRest", {
+                    on: formatGameDate(talkedRest(player.id)!.on, i18n.language),
+                    until: formatGameDate(talkedRest(player.id)!.until, i18n.language),
+                  })}
+                  aria-label={t("morale.talk.talked")}
+                  className="relative flex items-center justify-center w-9 h-8 border border-border rounded-lg text-muted-foreground/60 bg-transparent cursor-not-allowed"
+                >
+                  <Icon name="talk" className="w-4 h-4" />
+                  <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-chart-2 text-background">
+                    <Icon name="check" size={12} />
+                  </span>
+                </span>
+              )}
+              {showMorale && !player.loan && !talkedRest(player.id) && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setTalkWith(player); }}

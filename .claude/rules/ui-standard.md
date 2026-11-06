@@ -225,3 +225,7 @@ exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.
 ## Sem resumo do dia (4.46.4)
 
 Pedido do usuário: o `DaySummaryModal` saiu, solo e em grupo; o dia avança sem tela. Continuam as telas que pedem decisão: fim de temporada (`SeasonNoticeModal`) e demissão (`/fired`). O resultado de um jogo já jogado abre o relatório pelo cartão da semana (`/match-result?date=`); conquistas, propostas e coletivas ficam na caixa de entrada.
+
+## Não lidas na caixa de entrada (4.47.11)
+
+Report do usuário. Mensagem não lida (tela Caixa de entrada e cartão do Painel): fundo `bg-primary/[0.09]`, barra de 4px em `primary`, ponto e data em `primary`, título em negrito; a lida fica apagada (título e prévia em `muted-foreground`, ícone a 60%). O rosto e o nome do técnico no cartão do clube levam à ficha dele (`/stats?tab=managers&open=me`; a rota `/managers?me=1` traz o técnico mesmo fora da página).

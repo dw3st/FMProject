@@ -44,6 +44,8 @@ import { addDays } from "@/Domain/dates";
 import type { ClubFacilities, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
 import { RESULT_PILL } from "@/GameInterface/formColors";
 
+const MANAGER_PROFILE_HREF = "/stats?tab=managers&open=me";
+
 // ── Shared ───────────────────────────────────────────────────────────────────
 
 /** Card shell: title + "go to screen" link on top, content below. */
@@ -219,16 +221,21 @@ export function ClubCard({
 
       <div className="flex items-center gap-4 min-w-0">
         {managerName && (
-          <ManagerFaceImage
-            manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
-            clubColors={club.colors}
-            size={64}
-            ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}
-          />
+          // Face and name open the manager's profile in the ranking (user request, 4.47.11).
+          <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
+            <ManagerFaceImage
+              manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+              clubColors={club.colors}
+              size={64}
+              ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}
+            />
+          </a>
         )}
         <div className="flex flex-col gap-1 min-w-0">
           <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
-          <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
+          {managerName
+            ? <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} className="font-semibold text-foreground truncate no-underline hover:text-primary hover:underline">{managerName}</a>
+            : <span className="font-semibold text-foreground truncate">—</span>}
           {achievements?.profile.title && (
             <span className="text-sm font-semibold text-primary truncate">{t(`achievements.titles.${achievements.profile.title}`)}</span>
           )}
@@ -244,7 +251,7 @@ export function ClubCard({
           )}
           {managerRank !== null && (
             <a
-              href="/stats?tab=managers"
+              href={MANAGER_PROFILE_HREF}
               className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate"
             >
               {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
@@ -892,16 +899,19 @@ export function InboxCard({
                   type="button"
                   onClick={() => toggle(m)}
                   aria-expanded={open}
-                  className={`w-full text-left flex items-center gap-3 py-2.5 bg-transparent cursor-pointer hover:text-primary border-0 border-l-2 pl-3 ${
-                    m.read ? "border-l-transparent text-foreground/80" : "border-l-primary text-foreground"
+                  className={`w-full text-left flex items-center gap-3 py-2.5 cursor-pointer hover:text-primary border-0 border-l-4 pl-3 ${
+                    m.read ? "bg-transparent border-l-transparent text-muted-foreground" : "bg-primary/[0.09] border-l-primary text-foreground"
                   }`}
                 >
-                  {iconOf?.(m)}
+                  <span className={m.read ? "opacity-60" : ""}>{iconOf?.(m)}</span>
                   <div className="min-w-0 flex-1">
                     <div className={`text-sm truncate ${m.read ? "font-medium" : "font-bold"}`}>{subjectOf(m)}</div>
-                    {!open && <div className="text-sm text-muted-foreground truncate">{previewOf(m)}</div>}
+                    {!open && <div className={`text-sm truncate ${m.read ? "text-muted-foreground/70" : "text-foreground/80"}`}>{previewOf(m)}</div>}
                   </div>
-                  <span className="text-sm text-muted-foreground shrink-0">{formatDay(m.date, i18n.language)}</span>
+                  <span className={`flex items-center gap-1.5 text-sm shrink-0 ${m.read ? "text-muted-foreground" : "text-primary font-semibold"}`}>
+                    {!m.read && <span className="w-2 h-2 rounded-full bg-primary" aria-label={t("inbox.unreadMark")} />}
+                    {formatDay(m.date, i18n.language)}
+                  </span>
                   <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="shrink-0 mt-0.5 text-muted-foreground" />
                 </button>
                 {open && (

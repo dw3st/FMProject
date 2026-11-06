@@ -49,7 +49,11 @@ type Scope = "world" | "country" | "free" | "humans";
 const PAGE = 50;
 
 /** "Técnicos" tab of the Stats screen (`.claude/rules/game/managers.md`). */
-export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string; leagues: LeagueData[]; refreshKey?: string }) {
+export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
+  saveId: string; leagues: LeagueData[]; refreshKey?: string;
+  /** Opens the asking manager's profile on load (`/stats?tab=managers&open=me`, from the Dashboard). */
+  openMe?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const [scope, setScope] = useState<Scope>("world");
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -62,9 +66,10 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
   const [open, setOpen] = useState<string | null>(null);
   // Bumped on every scope change, so a "load more" answer for the old scope is dropped.
   const generation = useRef(0);
+  const meOpened = useRef(false);
 
   const fetchPage = (offset: number) =>
-    fetch(`/api/saves/${saveId}/managers?scope=${scope}&offset=${offset}&limit=${PAGE}`)
+    fetch(`/api/saves/${saveId}/managers?scope=${scope}&offset=${offset}&limit=${PAGE}${openMe && offset === 0 ? "&me=1" : ""}`)
       .then((r) => (r.ok ? (r.json() as Promise<Page>) : Promise.reject(new Error(String(r.status)))));
 
   useEffect(() => {
@@ -76,7 +81,16 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
     setLoadingMore(false);
     setMoreFailed(false);
     fetchPage(0)
-      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setPlayerRank(d.playerRank); setHumans(d.humans ?? 0); } })
+      .then((d) => {
+        if (cancelled) return;
+        setRows(d.items); setTotal(d.total); setPlayerRank(d.playerRank); setHumans(d.humans ?? 0);
+        const me = openMe && !meOpened.current ? d.items.find((m) => m.isPlayer) : undefined;
+        if (me) {
+          meOpened.current = true;
+          setOpen(me.id);
+          requestAnimationFrame(() => document.getElementById("manager-detail-open")?.scrollIntoView({ block: "center" }));
+        }
+      })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,7 +102,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
     setLoadingMore(true);
     setMoreFailed(false);
     fetchPage(rows.length)
-      .then((d) => { if (gen === generation.current) { setRows([...rows, ...d.items]); setTotal(d.total); } })
+      .then((d) => { if (gen === generation.current) { setRows([...rows, ...d.items.filter((m) => !rows.some((r) => r.id === m.id))]); setTotal(d.total); } })
       .catch(() => { if (gen === generation.current) setMoreFailed(true); })
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
@@ -161,7 +175,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             </StatsRow>,
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={7}>
-                <div className="flex items-center gap-3 mb-3">
+                <div id="manager-detail-open" className="flex items-center gap-3 mb-3 scroll-mt-24">
                   <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame], frame: m.profile.frame } : {})} />
                   <div className="min-w-0">
                     <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{m.name}</p>
@@ -190,12 +204,12 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                     })}
                   </p>
                 )}
-                {m.cards && (m.cards.yellow > 0 || m.cards.red > 0) && (
+                {(m.isPlayer || (m.cards && (m.cards.yellow > 0 || m.cards.red > 0))) && (
                   <p className="flex items-center gap-2 text-sm text-foreground m-0 mb-3 tabular-nums">
                     <span className="inline-block w-2.5 h-3.5 rounded-sm bg-chart-4" aria-hidden />
-                    {t("statsScreen.managers.yellowCards", { count: m.cards.yellow })}
+                    {t("statsScreen.managers.yellowCards", { count: m.cards?.yellow ?? 0 })}
                     <span className="inline-block w-2.5 h-3.5 rounded-sm bg-destructive ml-2" aria-hidden />
-                    {t("statsScreen.managers.redCards", { count: m.cards.red })}
+                    {t("statsScreen.managers.redCards", { count: m.cards?.red ?? 0 })}
                   </p>
                 )}
                 {m.unpaidDebts && m.unpaidDebts.length > 0 && (

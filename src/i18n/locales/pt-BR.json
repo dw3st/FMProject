@@ -1677,6 +1677,7 @@
     "selectMessage": "Selecione uma mensagem para ler.",
     "loadingMessages": "Carregando mensagens…",
     "emptyState": "Sem mensagens ainda — volte depois de avançar os dias.",
+    "unreadMark": "Não lida",
     "unread": "Não lidas",
     "themes": {
       "label": "Filtrar por tema",
@@ -2265,6 +2266,7 @@
       "sevSevere": "grave"
     },
     "clubSidebar": {
+      "managerProfile": "Ver a ficha do técnico",
       "managerRank": "Ranking de técnicos: Nº {{rank}}",
       "manager": "Técnico",
       "board": "Diretoria",
@@ -3769,6 +3771,8 @@
     },
     "talk": {
       "title": "Conversa",
+      "talked": "Já conversou",
+      "talkedRest": "Conversou em {{on}}. Nova conversa a partir de {{until}}.",
       "open": "Conversar",
       "answerRequest": "Responder",
       "answer": "Sua resposta",

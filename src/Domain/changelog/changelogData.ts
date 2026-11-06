@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.11",
+    date: "2026-11-06",
+    time: "10:41",
+    items: [
+      {
+        pt: "No Painel, o rosto e o nome do técnico abrem a ficha dele no ranking de técnicos, com os cartões que já levou.",
+        en: "On the Dashboard, the manager's face and name open his profile in the manager ranking, with the cards he has received.",
+      },
+      {
+        pt: "Elenco: depois de conversar com um jogador, o botão fica apagado com um visto até uma nova conversa ter efeito.",
+        en: "Squad: after a talk with a player, his button rests with a tick until a new talk has an effect.",
+      },
+      {
+        pt: "Caixa de entrada: as mensagens não lidas ficam destacadas, com fundo, barra e um ponto; as lidas ficam apagadas.",
+        en: "Inbox: unread messages stand out with a background, a bar and a dot; read ones are dimmed.",
+      },
+    ],
+  },
+  {
     version: "4.47.10",
     date: "2026-11-06",
     time: "10:30",

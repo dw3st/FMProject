@@ -247,3 +247,7 @@ Nada é gravado; IA × IA e humano × humano não mudam.
 ## Conversar pelo Elenco e a janela nova (4.47.8)
 
 Report do usuário, opção A do mock. Na tabela do próprio elenco (`SquadRosterTable`) cada jogador (fora os emprestados de outro clube) tem o botão Conversar, ou Responder em amarelo (`ATTENTION_BUTTON`) quando há pedido aberto em `squad.moraleClub.talks`; Renovar fica ao lado quando vale. O `TalkModal` tem uma cena pintada por motivo (`paintedNews("talk-<motivo|none>")`, `news/news-talk-*.webp` no volume de arte, pintadas com `data_process/assets/talk_mock.py`), com o rosto, a moral e a dica de personalidade por cima, e as respostas em cartões (`morale.answerHint` e o tom `morale.answerTone.up|mid|down`). Sem a arte, o mesmo cabeçalho numa faixa.
+
+## Já conversou (4.47.11)
+
+Pedido do usuário. Sem pedido aberto e com `moraleLog.talkedOn` a menos de `PRAISE_EVERY_DAYS` (30) dias, o botão de conversa do Elenco vira um ícone apagado com um visto, sem clique, com a data da conversa e a da próxima no `title`.

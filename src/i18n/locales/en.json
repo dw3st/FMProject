@@ -1677,6 +1677,7 @@
     "selectMessage": "Select a message to read it.",
     "loadingMessages": "Loading messages…",
     "emptyState": "No messages yet — check back after advancing days.",
+    "unreadMark": "Unread",
     "unread": "Unread",
     "themes": {
       "label": "Filter by topic",
@@ -2265,6 +2266,7 @@
       "sevSevere": "severe"
     },
     "clubSidebar": {
+      "managerProfile": "View the manager's profile",
       "managerRank": "Manager ranking: #{{rank}}",
       "manager": "Manager",
       "board": "Board",
@@ -3769,6 +3771,8 @@
     },
     "talk": {
       "title": "Talk",
+      "talked": "Already talked",
+      "talkedRest": "Talked on {{on}}. A new talk from {{until}}.",
       "open": "Talk",
       "answerRequest": "Answer",
       "answer": "Your answer",

@@ -816,25 +816,27 @@ function MessageRow({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left p-4 transition-colors cursor-pointer border-0 flex gap-3 items-start ${
-        active ? "bg-primary/10" : "hover:bg-muted/30 bg-transparent"
-      } ${unread ? "border-l-2 border-l-primary" : "border-l-2 border-l-transparent"}`}
+      // Unread rows stand apart (tester report, 4.47.11): tinted background, thick bar, a dot; read rows are muted.
+      className={`w-full text-left p-4 transition-colors cursor-pointer border-0 border-l-4 flex gap-3 items-start ${
+        active ? "bg-primary/15" : unread ? "bg-primary/[0.09] hover:bg-primary/15" : "hover:bg-muted/30 bg-transparent"
+      } ${unread ? "border-l-primary" : "border-l-transparent"}`}
     >
-      <InboxCategoryTile message={message} />
+      <span className={unread ? "" : "opacity-60"}><InboxCategoryTile message={message} /></span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span
             className={`text-sm truncate ${
-              unread ? "font-black text-foreground" : "font-medium text-foreground/80"
+              unread ? "font-bold text-foreground" : "font-medium text-muted-foreground"
             }`}
           >
             {prizeTexts?.subject ?? message.subject}
           </span>
-          <span className="text-sm text-muted-foreground shrink-0">
+          <span className={`flex items-center gap-1.5 text-sm shrink-0 ${unread ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+            {unread && <span className="w-2 h-2 rounded-full bg-primary" aria-label={t("inbox.unreadMark")} />}
             {formatInboxDate(message.date)}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground m-0 leading-snug truncate">{prizeTexts?.preview ?? message.preview}</p>
+        <p className={`text-sm m-0 leading-snug truncate ${unread ? "text-foreground/80" : "text-muted-foreground/70"}`}>{prizeTexts?.preview ?? message.preview}</p>
       </div>
     </button>
   );

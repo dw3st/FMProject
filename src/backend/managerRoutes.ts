@@ -59,6 +59,12 @@ export const managerRoutes = {
         : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
       offset, limit, auth.seatId,
     );
+    // `me=1`: the asking seat's manager comes along even off the page (the Dashboard opens his profile, 4.47.11).
+    if (q.get("me") === "1" && page.playerRank !== null && !page.items.some((m) => m.seatId === auth.seatId)) {
+      const ranked = rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired));
+      const self = ranked.find((m) => m.seatId === auth.seatId);
+      if (self) page.items.push({ ...self, rank: page.playerRank });
+    }
     const mine = (m: { seatId?: string }) => m.seatId === auth.seatId;
     // The asking seat's manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
     const profile = page.items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;

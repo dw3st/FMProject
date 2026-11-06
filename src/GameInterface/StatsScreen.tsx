@@ -538,7 +538,7 @@ export function StatsScreen() {
         ) : tab === "retired" ? (
           session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
         ) : tab === "managers" ? (
-          session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} /> : null
+          session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} openMe={new URLSearchParams(window.location.search).get("open") === "me"} /> : null
         ) : tab === "champions" ? (
           session?.saveId ? <ChampionsTab saveId={session.saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} myClubId={session.clubId ?? ""} refreshKey={currentDate ?? undefined} /> : null
         ) : tab === "referees" ? (
