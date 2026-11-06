@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.3",
+    date: "2026-11-06",
+    time: "14:31",
+    items: [
+      {
+        pt: "Olheiro: o filtro de habilidade virou OVR mínimo e máximo, de 0 a 100, como na tabela. Num jogador pouco conhecido vale o meio da faixa.",
+        en: "Scout: the skill filter is now a minimum and maximum OVR, 0 to 100, as in the table. For a little-known player the middle of the range counts.",
+      },
+      {
+        pt: "Olheiro: num jogador que seus olheiros ainda não conhecem, a ficha rápida explica por que os atributos não aparecem e como observá-lo.",
+        en: "Scout: for a player your scouts do not know yet, the quick card explains why the attributes do not show and how to watch him.",
+      },
+    ],
+  },
+  {
     version: "8.8.2",
     date: "2026-11-06",
     time: "14:20",

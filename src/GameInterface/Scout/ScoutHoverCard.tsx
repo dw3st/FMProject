@@ -37,7 +37,10 @@ export function ScoutHoverCard({ player, x, y }: { player: DisplayPlayer; x: num
         </div>
         <div className="ml-auto shrink-0"><AvgBadge value={player.avg} range={player.avgRange} /></div>
       </div>
-      {groups.map((g) => (
+      {player.hiddenAttrs ? (
+        // Knowledge under 20 hides every attribute: say why instead of a list of "?" (tester report, 8.8.3).
+        <p className="m-0 text-sm text-muted-foreground">{t("scout.hover.hidden")}</p>
+      ) : groups.map((g) => (
         <div key={g.id} className="flex flex-col gap-1">
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
             {t(`scout.attributeFilters.groups.${g.id}`)}

@@ -2928,6 +2928,8 @@
       "affordableOnly": "Fits the budget",
       "affordableHint": "Estimated fee within your balance and asking wage within your wage cap",
       "availabilityHint": "Free, for sale and pre-contract add up: anyone who is any of them shows",
+      "ovr": "OVR",
+      "ovrHint": "The OVR the table shows (the middle of the range while the scout does not know him well)",
       "grade": "Scout grade",
       "gradeHint": "By the grade of the scout's latest report; players without a report are left out",
       "potential": "Potential",
@@ -3017,6 +3019,7 @@
     "hover": {
       "age": "{{age}} years",
       "knowledge": "Knowledge {{value}}",
+      "hidden": "Your scouts do not know this player yet: the attributes show from 20 knowledge. Send a scout to watch him from his profile or on a mission to his region.",
       "grade": "Report grade {{grade}}"
     }
   },

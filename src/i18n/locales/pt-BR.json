@@ -2928,6 +2928,8 @@
       "affordableOnly": "Cabe no orçamento",
       "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
       "availabilityHint": "Livres, à venda e pré-contrato se somam: aparece quem for qualquer um deles",
+      "ovr": "OVR",
+      "ovrHint": "O OVR que a tabela mostra (o meio da faixa, quando o olheiro ainda não conhece o jogador)",
       "grade": "Nota do olheiro",
       "gradeHint": "Pela nota do último relatório do olheiro; quem não tem relatório fica de fora",
       "potential": "Potencial",
@@ -3017,6 +3019,7 @@
     "hover": {
       "age": "{{age}} anos",
       "knowledge": "Conhecimento {{value}}",
+      "hidden": "Seus olheiros ainda não conhecem este jogador: os atributos aparecem a partir de 20 de conhecimento. Mande um olheiro observá-lo pela ficha dele ou numa missão na região.",
       "grade": "Relatório nota {{grade}}"
     }
   },

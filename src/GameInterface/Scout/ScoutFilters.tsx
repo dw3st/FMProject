@@ -40,7 +40,6 @@ const POSITION_FILTERS: { value: string; detailed: boolean }[] = [
 const inputClass = formSelectBoxClass;
 
 const intStep = (v: number, dir: 1 | -1) => Math.round(v) + dir;
-const avgStep = (v: number, dir: 1 | -1) => Math.round((v + dir * 0.1) * 10) / 10;
 const potStep = (v: number, dir: 1 | -1) => (dir > 0 ? Math.floor(v / 5) * 5 + 5 : Math.ceil(v / 5) * 5 - 5);
 const oneDecimal = (v: number) => String(Math.round(v * 10) / 10);
 /** The top of the price filter: "1000+" means no upper limit. */
@@ -140,17 +139,17 @@ export function ScoutFilters({
           </div>
         </div>
 
-        {/* Avg Skill Range */}
+        {/* OVR range: shown 0–100 like the table, kept 0–10 in the filter (tester report, 8.8.3) */}
         <div className="col-span-2">
-          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
-            {t("common.avgSkill")}
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display" title={t("scout.filters.ovrHint")}>
+            {t("scout.filters.ovr")}
           </label>
           <div className="flex items-center gap-2">
-            <StepperField value={filters.minAvg} min={0} max={10} step={avgStep} format={oneDecimal} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minAvg: v })} />
+            <StepperField value={Math.round(filters.minAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minAvg: Math.round(v) / 10 })} />
             <span className="text-muted-foreground text-sm font-bold">-</span>
-            <StepperField value={filters.maxAvg} min={0} max={10} step={avgStep} format={oneDecimal} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxAvg: v })} />
+            <StepperField value={Math.round(filters.maxAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxAvg: Math.round(v) / 10 })} />
           </div>
         </div>
 

@@ -355,3 +355,7 @@ Reports de tester. Missão de jogador com `target.knowledgeTarget` (25, 50, 75 o
 ## Filtros com − e + (8.8.2)
 
 Reports de tester. Idade, nota, valor e potencial usam `StepperField` (`ui/StepperField.tsx`: − e +, o texto digitado fica no campo até sair dele, então dá para apagar e digitar de novo; antes um campo vazio voltava na hora ao padrão e o valor máximo virava 1000 de novo). Valor: `stepPriceM` (passo 0,1 abaixo de €1M, 0,5 até 10, 1 até 50, 5 até 200, 25 acima) e `parsePriceM` (aceita "20,5", "20M" e euros: 100 000 ou mais é lido como euros); "1000+" é sem limite.
+
+## Filtro de OVR (8.8.3)
+
+Report de tester ("o que é avg skill? parece que não funciona"). O antigo "Média de habilidade" era o filtro de nível na escala 0–10; virou "OVR" de 0 a 100, como a coluna da tabela (`minAvg`/`maxAvg` continuam 0–10 por dentro). Num jogador com faixa vale o meio dela (58-86 = 72).
