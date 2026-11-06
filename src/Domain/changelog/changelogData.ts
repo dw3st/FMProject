@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.15",
+    date: "2026-11-06",
+    time: "18:40",
+    items: [
+      {
+        pt: "Rodapé: quantas pessoas estão jogando agora aparece junto do botão Amigos.",
+        en: "Footer: how many people are playing right now shows next to the Friends button.",
+      },
+    ],
+  },
+  {
     version: "8.8.14",
     date: "2026-11-06",
     time: "18:32",

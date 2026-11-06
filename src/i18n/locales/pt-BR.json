@@ -669,6 +669,7 @@
   },
   "status": {
     "onlineShort": "{{count}} online",
+    "inGame": "{{count}} no jogo",
     "online_one": "{{count}} pessoa jogando agora",
     "online_other": "{{count}} pessoas jogando agora",
     "budget": "Orçamento",

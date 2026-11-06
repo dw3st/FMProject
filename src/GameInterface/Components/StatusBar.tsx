@@ -35,7 +35,7 @@ export function StatusBar({
   const budgetLabel = session != null && !noClub ? formatEuros(session.budget) : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
-  // People with the game open right now (#134): only the number, never who.
+  // People with the game open right now (#134): only the number, never who; shown in the Friends button (8.8.15).
   // The friends socket pings while open (and answers the count); the HTTP ping is the fallback.
   const social = useSocial();
   const httpOnline = usePresence(social.connected);
@@ -63,19 +63,13 @@ export function StatusBar({
             <Icon name="staff" size={18} />
             {playersLabel}
           </span>
-          {online !== null && (
-            <span className={ITEM} title={t("status.online", { count: online })} aria-label={t("status.online", { count: online })}>
-              <span className="w-2 h-2 rounded-full bg-chart-2 shrink-0" aria-hidden="true" />
-              {t("status.onlineShort", { count: online })}
-            </span>
-          )}
         </div>
         {/* The live match draws its friends' radio here (in the frame); the owner's credit lives on the login and start
             screens (user's choice, 8.8.10). */}
         <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-x-auto overflow-y-visible" />
         <div className="flex items-center justify-end gap-4">
           <RadioPlayer />
-          <FriendsButton />
+          <FriendsButton online={online} />
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
               Today's date lives in the top bar's day block. */}
           <button

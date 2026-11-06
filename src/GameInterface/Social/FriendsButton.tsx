@@ -16,12 +16,17 @@ const TOOLBAR =
  * "Amigos · 3" (friends online) with a badge of unread messages and pending requests: in the status
  * bar, or as a button of the live match toolbar (`variant="toolbar"`).
  */
-export function FriendsButton({ variant = "bar" }: { variant?: "bar" | "toolbar" }) {
+/**
+ * `online` (footer, 8.8.15): people with the game open right now (#134), shown after the friends count ("Amigos · 2
+ * ● 14 no jogo"); it used to be a separate item on the left of the footer.
+ */
+export function FriendsButton({ variant = "bar", online = null }: { variant?: "bar" | "toolbar"; online?: number | null }) {
   const { t } = useTranslation();
   const s = useSocial();
   const count = onlineFriendCount(s.lists.friends);
   const badge = s.totalUnread + s.lists.incoming.length + s.worldInvites.length;
-  const label = badge > 0 ? t("social.buttonUnread", { count, unread: badge }) : t("social.button", { count });
+  const base = badge > 0 ? t("social.buttonUnread", { count, unread: badge }) : t("social.button", { count });
+  const label = online !== null ? `${base} · ${t("status.online", { count: online })}` : base;
   return (
     <button
       type="button"
@@ -44,6 +49,12 @@ export function FriendsButton({ variant = "bar" }: { variant?: "bar" | "toolbar"
           aria-hidden="true"
         >
           {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+      {online !== null && (
+        <span className="flex items-center gap-2 ml-1" title={t("status.online", { count: online })}>
+          <span className="w-2 h-2 rounded-full bg-chart-2 shrink-0" aria-hidden="true" />
+          {t("status.inGame", { count: online })}
         </span>
       )}
     </button>
