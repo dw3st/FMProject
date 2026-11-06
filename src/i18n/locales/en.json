@@ -1724,6 +1724,9 @@
       "achievement": "Achievements",
       "national_coach": "National team job"
     },
+    "developmentLevelDownOne": "{{player}} dropped one attribute today.",
+    "developmentLevelDownMany": "{{player}} dropped {{count}} attributes today.",
+    "developmentLevelMixed": "{{player}} changed {{count}} attributes today.",
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
     "prizeAmount": "+ {{amount}}",

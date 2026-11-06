@@ -240,13 +240,13 @@ export function ClubCard({
             <span className="text-sm font-semibold text-primary truncate">{t(`achievements.titles.${achievements.profile.title}`)}</span>
           )}
           {achievements && (
-            <a href="/achievements" className="flex items-center gap-1.5 text-sm text-muted-foreground no-underline hover:text-foreground hover:underline tabular-nums">
+            <a href="/achievements" className="flex items-center gap-1.5 min-w-0 max-w-full text-sm text-muted-foreground no-underline hover:text-foreground hover:underline tabular-nums">
               {achievements.profile.badges.map((b) => (
                 <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="text-primary inline-flex">
                   <Icon name={BADGE_ICON[b]} size={16} />
                 </span>
               ))}
-              <span className="whitespace-nowrap">{t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}</span>
+              <span className="truncate" title={`${t("achievements.link")}: ${t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}`}>{t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}</span>
             </a>
           )}
           {managerRank !== null && (

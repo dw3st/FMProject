@@ -27,6 +27,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.15",
+    date: "2026-11-06",
+    time: "11:15",
+    items: [],
+    fixes: [
+      {
+        pt: "Caixa de entrada: a mensagem de um jogador que caiu de atributo não diz mais que ele subiu.",
+        en: "Inbox: the message about a player who dropped an attribute no longer says he levelled up.",
+      },
+      {
+        pt: "Painel: a linha de conquistas do técnico não passa mais por cima da coluna ao lado.",
+        en: "Dashboard: the manager's achievements line no longer runs over the next column.",
+      },
+    ],
+  },
+  {
     version: "4.47.14",
     date: "2026-11-06",
     time: "11:12",

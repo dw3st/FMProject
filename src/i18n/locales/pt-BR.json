@@ -1724,6 +1724,9 @@
       "achievement": "Conquistas",
       "national_coach": "Seleção (técnico)"
     },
+    "developmentLevelDownOne": "{{player}} caiu em um atributo hoje.",
+    "developmentLevelDownMany": "{{player}} caiu em {{count}} atributos hoje.",
+    "developmentLevelMixed": "{{player}} mudou {{count}} atributos hoje.",
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
     "prizeAmount": "+ {{amount}}",

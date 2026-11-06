@@ -1537,9 +1537,16 @@ function DevelopmentBody({
   message: Extract<InboxMessage, { category: "development" }>;
 }) {
   const { t } = useTranslation();
-  const summary = message.changes.length === 1
-    ? t("inbox.developmentLevelUpOne", { player: message.playerName })
-    : t("inbox.developmentLevelUpMany", { player: message.playerName, count: message.changes.length });
+  // Up, down or both (tester report, 4.47.14): a regression no longer reads as "levelled up".
+  const ups = message.changes.filter((c) => c.to > c.from).length;
+  const downs = message.changes.length - ups;
+  const n = message.changes.length;
+  const args = { player: message.playerName, count: n };
+  const summary = downs === 0
+    ? t(n === 1 ? "inbox.developmentLevelUpOne" : "inbox.developmentLevelUpMany", args)
+    : ups === 0
+      ? t(n === 1 ? "inbox.developmentLevelDownOne" : "inbox.developmentLevelDownMany", args)
+      : t("inbox.developmentLevelMixed", args);
   return (
     <div className="space-y-4">
       <p className="text-sm text-foreground m-0 leading-relaxed"><PlayerNameText text={summary} players={[{ id: message.playerId, name: message.playerName }]} /></p>
