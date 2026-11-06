@@ -528,3 +528,7 @@ Mock aprovado em 2026-11-05 (pintado no FLUX). Só desenho.
 ## Arquibancadas pelo tamanho (4.47.2)
 
 Report de tester. `standDepths` (`src/Domain/facilities/standDepth.ts`): lugares de cada setor do clube humano contra a parte padrão do estádio (`FACILITIES.STAND_SHARE`); o setor com mais lugares para a parte dele fica na profundidade cheia e os outros em proporção, nunca abaixo de `MIN_DEPTH` (0,45). Estádio com a divisão padrão = null (nada muda). `MatchCrowd.depths` (jogos em casa do clube humano) → `PitchStadium.depths` → `buildMetrics({ depths })` (pelo lado desenhado, `drawnDepths`; só com forma): a borda de fora do setor entra, o campo não se mexe, e o calçamento ocupa o resto. Com `depths` o entorno pintado não é usado (foi pintado para o estádio inteiro). A forma e as profundidades estão na chave do campo (`MatchScreen`, `WatchScreen`): os dados da torcida chegam depois do estádio aparecer. `/test`: chip Big stand.
+
+## A maca para o jogo (4.47.13)
+
+Pedido do usuário. Enquanto uma maca desenhada está em campo (`stretcherPose(...).done` falso), o `pumpSimulation` segura a simulação como na reprise do gol (`stretcherHolds`): relógio e jogadores param, a maca anda no relógio de efeitos. Só desenho e só com extras e a aba visível; o resultado não muda. No modo remoto (jogo entre técnicos, transmissão) o servidor não para.

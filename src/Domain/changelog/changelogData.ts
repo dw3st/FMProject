@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.13",
+    date: "2026-11-06",
+    time: "11:05",
+    items: [
+      {
+        pt: "Partida ao vivo: quando um jogador se lesiona, o jogo para enquanto a maca entra e sai do campo.",
+        en: "Live match: when a player is injured, play stops while the stretcher comes on and goes off.",
+      },
+    ],
+  },
+  {
     version: "4.47.12",
     date: "2026-11-06",
     time: "10:58",

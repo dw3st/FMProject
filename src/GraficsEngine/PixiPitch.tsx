@@ -1502,13 +1502,15 @@ export function PixiPitch({
       const calm = () => reducedMotion || qualityRef.current === "light";
       let cam: CameraView = { zoom: 1, x: canvasWidth / 2, y: canvasHeight / 2 };
 
+      // The stretcher stops the match (user request, 4.47.13): set once the stretchers exist, below.
+      let stretcherHolds: () => boolean = () => false;
       const pumpSimulation = () => {
         // Remote mode: the server simulates; nothing to pump here.
         if (remote) return;
         // A replay holds the match; with the tab hidden there is no replay.
         if (replayRun && !framesVisible()) endReplay();
         if (celebration && !framesVisible()) celebration = null;
-        const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null);
+        const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null || stretcherHolds());
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
@@ -2328,6 +2330,8 @@ export function PixiPitch({
         const tints = { socks: kit, shirt: kit, trim: keeper ? PLAYER_SPRITE.KEEPER_TRIM : e.team === "A" ? fillA2 : fillB2, skin: look.skin, hair: look.hair };
         stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: teamKit, tints }];
       });
+      // While a stretcher is on the pitch the match waits (only drawn ones: none with the tab hidden or without extras).
+      stretcherHolds = () => framesVisible() && stretchers.some((st) => !stretcherPose(st.run, effectNow).done);
       const drawStretchers = () => {
         stretcherGfx.clear();
         if (stretchers.length === 0) return;
