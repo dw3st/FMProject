@@ -975,7 +975,10 @@
     },
     "swapHint": "Drag a player onto another to swap: starter for starter, or a substitute onto a starter",
     "unregisteredHidden_one": "{{count}} not registered for {{competition}}, left out of the list",
-    "unregisteredHidden_other": "{{count}} not registered for {{competition}}, left out of the list"
+    "unregisteredHidden_other": "{{count}} not registered for {{competition}}, left out of the list",
+    "seasonRating": "Season rating",
+    "seasonGames_one": "{{count}} game",
+    "seasonGames_other": "{{count}} games"
   },
   "roles": {
     "groups": {

@@ -975,7 +975,10 @@
     },
     "swapHint": "Arraste um jogador sobre outro para trocar: entre titulares, ou um reserva sobre um titular",
     "unregisteredHidden_one": "{{count}} não inscrito em {{competition}} fora da lista",
-    "unregisteredHidden_other": "{{count}} não inscritos em {{competition}} fora da lista"
+    "unregisteredHidden_other": "{{count}} não inscritos em {{competition}} fora da lista",
+    "seasonRating": "Nota na temporada",
+    "seasonGames_one": "{{count}} jogo",
+    "seasonGames_other": "{{count}} jogos"
   },
   "roles": {
     "groups": {

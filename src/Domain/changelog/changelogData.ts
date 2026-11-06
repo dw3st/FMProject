@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.6",
+    date: "2026-11-06",
+    time: "15:00",
+    items: [
+      {
+        pt: "Ficha do jogador na Formação e na partida: o OVR e a nota média da temporada aparecem juntos, com o fôlego logo abaixo.",
+        en: "Player card in Formation and in the match: the OVR and the season's average rating show together, with the fitness right below.",
+      },
+    ],
+  },
+  {
     version: "8.8.5",
     date: "2026-11-06",
     time: "14:53",

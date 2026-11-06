@@ -11,7 +11,7 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 export const ROW_TIP_W = 240;
-export const ROW_TIP_H = 280;
+export const ROW_TIP_H = 310;
 
 export function getEnergyColor(energy: number) {
   if (energy >= 80) return "bg-chart-2";
@@ -41,6 +41,8 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note, matchRatin
   matchRating?: number;
 }) {
   const { t } = useTranslation();
+  const seasonApps = player.seasonLog?.appearances ?? 0;
+  const seasonAvg = player.seasonLog?.avgRating ?? 0;
   return (
     <>
       <div className="flex items-center justify-between mb-2">
@@ -65,9 +67,19 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note, matchRatin
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Icon name="star" className="w-3 h-3" />
-            <span>{t(matchRating === undefined ? "formations.rating" : "formations.level")}</span>
+            <span>{t("formations.rating")}</span>
           </div>
           <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{attrDisplay(avg)}</span>
+        </div>
+        {/* Level and form side by side (tester report, 8.8.6: both matter) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Icon name="activity" className="w-3 h-3" />
+            <span>{t("formations.seasonRating")}</span>
+          </div>
+          {seasonApps > 0
+            ? <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(seasonAvg)}`}>{seasonAvg.toFixed(1)}<span className="font-normal text-muted-foreground"> · {t("formations.seasonGames", { count: seasonApps })}</span></span>
+            : <span className="text-sm text-muted-foreground">—</span>}
         </div>
         {matchRating !== undefined && (
           <div className="flex items-center justify-between">

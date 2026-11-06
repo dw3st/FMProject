@@ -89,3 +89,5 @@ casou segue a regra dos atributos e do pé acima.
 ## Testes
 
 `bun test src/Domain/positions src/Domain/advanceDay/quickSim.test.ts src/Domain/lineupHelpers.test.ts`.
+
+Ficha do jogador (8.8.6, report do usuário): `PlayerTipBody` mostra o OVR (0–100) e a nota média da temporada (`seasonLog.avgRating`, com os jogos) juntos, com o fôlego abaixo; na partida, a nota do jogo vem a seguir.
