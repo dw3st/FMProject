@@ -3729,8 +3729,12 @@ try {
             const pl = other.players.find((p) => !p.loan && p.age <= 30 && p.positions[0] !== "GK");
             if (!pl) continue;
             await plain().saveSquadById(saveId, { ...other, players: other.players.map((p) => (p.id === pl.id ? { ...p, contract: { until: st0.end, wage: p.contract?.wage ?? 1000 } } : p)) });
-            const r = await callC("/api/saves/:saveId/pre-contracts", `/api/saves/${saveId}/pre-contracts`, { saveId },
-              { playerId: pl.id, fromSquadId: other.id, wage: Math.max(50_000, (pl.contract?.wage ?? 0) * 5), years: 2 });
+            const offer = { playerId: pl.id, fromSquadId: other.id, wage: Math.max(50_000, (pl.contract?.wage ?? 0) * 5), years: 2 };
+            let r = await callC("/api/saves/:saveId/pre-contracts", `/api/saves/${saveId}/pre-contracts`, { saveId }, offer);
+            // Since 8.7.9 a pre-contract needs a signing bonus: pay what he asks.
+            if (r.status === 400 && r.body.error === "lowBonus") {
+              r = await callC("/api/saves/:saveId/pre-contracts", `/api/saves/${saveId}/pre-contracts`, { saveId }, { ...offer, bonus: r.body.bonusAsk });
+            }
             last = `${r.status} ${JSON.stringify(r.body).slice(0, 80)}`;
             if (r.status === 200 && r.body.accepted === true) { preSigned = { id: pl.id, from: other.id }; break; }
           }
