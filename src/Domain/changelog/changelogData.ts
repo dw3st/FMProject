@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.8",
+    date: "2026-11-06",
+    time: "09:50",
+    items: [
+      {
+        pt: "Elenco: cada jogador seu tem o botão Conversar na tabela. Quem pediu conversa aparece com Responder, em amarelo.",
+        en: "Squad: each of your players has a Talk button in the table. Players who asked for a talk show Answer, in yellow.",
+      },
+      {
+        pt: "Nova janela de conversa, com uma cena do assunto, a moral do jogador e as respostas em cartões que dizem o que cada uma faz.",
+        en: "New talk window, with a scene of the subject, the player's morale and the answers as cards that say what each one does.",
+      },
+      {
+        pt: "Olheiro: parar o mouse sobre o nome de um jogador na busca mostra a ficha dele, com os atributos que o olheiro conhece.",
+        en: "Scout: resting the mouse on a player's name in the search shows his card, with the attributes your scout knows.",
+      },
+    ],
+  },
+  {
     version: "4.47.7",
     date: "2026-11-06",
     time: "09:26",

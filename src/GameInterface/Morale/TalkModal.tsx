@@ -4,13 +4,22 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Label } from "@/GameInterface/ui/Label";
-import { answersFor } from "@/Domain/morale/morale";
+import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
+import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
+import { answersFor, moraleOf } from "@/Domain/morale/morale";
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import type { TalkAnswer, TalkReason } from "@/types/moraleTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { summaryTrait } from "@/Domain/personality/personality";
 
 const SALE_DAYS = [30, 60, 90] as const;
+
+/** How the answer usually moves his morale, for the card's colored line. */
+const ANSWER_TONE: Record<TalkAnswer, "up" | "mid" | "down"> = {
+  promise_minutes: "up", promise_sale: "up", promise_renewal: "up", praise: "mid", demand: "mid", refuse: "down",
+};
+const TONE_CLASS = { up: "text-chart-2", mid: "text-chart-4", down: "text-destructive" } as const;
 
 interface Props {
   saveId: string;
@@ -25,7 +34,11 @@ interface Props {
   onDone: (result: { change: number; noEffect?: boolean; openRenewal?: boolean }) => void;
 }
 
-/** Talk with a human-club player (`.claude/rules/game/morale.md`): the answers his reason allows. */
+/**
+ * Talk with a human-club player (`.claude/rules/game/morale.md`): a painted scene of the talk's reason with his face and
+ * morale over it, the answers his reason allows as cards (what each does, and how it tends to move his morale).
+ * Tester report, option A of the mock of 2026-11-06. Without the art, the same header on a plain band.
+ */
 export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }: Props) {
   const { t } = useTranslation();
   const { squad } = useGameSave();
@@ -39,6 +52,7 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ change: number; noEffect?: boolean } | null>(null);
+  const [sceneFailed, setSceneFailed] = useState(false);
 
   useEffect(() => {
     setAnswer(answersFor(reason)[0]!);
@@ -47,6 +61,8 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
   }, [player?.id, reason]);
 
   if (!player) return null;
+  const scene = newVisualOn() && !sceneFailed ? paintedNews(`talk-${reason ?? "none"}`) : null;
+  const reasonText = reason ? t(`morale.reason.${reason}`, { club: clubName ?? "" }) : t("morale.reason.none");
 
   async function submit() {
     if (busy || !player) return;
@@ -75,21 +91,34 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
     }
   }
 
+  const header = (
+    <div className="flex items-end gap-3">
+      <PlayerFace playerId={player.id} nationality={own?.nationality} size={64} fallback={player.name.slice(0, 1)} />
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+          {t("morale.talk.title")} · {reasonText}
+        </span>
+        <span className="font-display font-black uppercase text-2xl leading-none truncate">{player.name}</span>
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          {own && <MoraleBadge morale={moraleOf(own)} showValue />}
+          {summary !== "balanced" && <span>{t(`personality.summary.${summary}`)}: {t(`personality.talkHint.${summary}`)}</span>}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <Modal open onClose={onClose} size="sm">
+    <Modal open onClose={onClose} size="lg">
       <div className="flex flex-col">
-        <div className="px-6 py-4 border-b border-border bg-card/50">
-          <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("morale.talk.title")}</h2>
-          <p className="text-sm text-muted-foreground m-0 mt-1">
-            {player.name} · {reason ? t(`morale.reason.${reason}`, { club: clubName ?? "" }) : t("morale.reason.none")}
-          </p>
-          {summary !== "balanced" && (
-            <p className="text-sm text-muted-foreground m-0 mt-1">
-              {t(`personality.summary.${summary}`)}: {t(`personality.talkHint.${summary}`)}
-            </p>
-          )}
-        </div>
-        <div className="p-6 space-y-5">
+        {scene ? (
+          <div className="relative">
+            <img src={scene} alt="" onError={() => setSceneFailed(true)} className="block w-full max-w-full aspect-[720/300] object-cover" />
+            <div className="absolute left-4 right-4 bottom-3.5 rounded-lg border border-border bg-background/85 px-3 py-2.5">{header}</div>
+          </div>
+        ) : (
+          <div className="px-6 py-5 border-b border-border bg-card/50">{header}</div>
+        )}
+        <div className="px-6 pb-6 pt-4 space-y-5">
           {result ? (
             <div className="space-y-4">
               <p className="text-sm text-foreground m-0">
@@ -103,13 +132,28 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
             <>
               <div className="space-y-2">
                 <Label>{t("morale.talk.answer")}</Label>
-                <OptionChips
-                  aria-label={t("morale.talk.answer")}
-                  options={answers.map((a) => ({ key: a, label: t(`morale.answer.${a}`) }))}
-                  value={answer}
-                  onChange={setAnswer}
-                />
-                <p className="text-sm text-muted-foreground m-0">{t(`morale.answerHint.${answer}`)}</p>
+                <div role="radiogroup" aria-label={t("morale.talk.answer")} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {answers.map((a) => {
+                    const on = a === answer;
+                    const tone = ANSWER_TONE[a];
+                    return (
+                      <button
+                        key={a}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setAnswer(a)}
+                        className={`flex flex-col items-start gap-1 rounded-md border p-3 text-left cursor-pointer transition-colors ${
+                          on ? "border-primary ring-1 ring-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="font-display font-black uppercase text-base leading-none text-foreground">{t(`morale.answer.${a}`)}</span>
+                        <span className="text-sm text-muted-foreground">{t(`morale.answerHint.${a}`)}</span>
+                        <span className={`text-sm font-semibold ${TONE_CLASS[tone]}`}>{t(`morale.answerTone.${tone}`)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {answer === "promise_minutes" && (
                 <div className="space-y-2">
@@ -134,9 +178,9 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
                 </div>
               )}
               {error && <p className="text-sm text-destructive m-0" role="alert">{error}</p>}
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" className="flex-1" onClick={onClose}>{t("common.cancel")}</Button>
-                <Button className="flex-1" onClick={submit} disabled={busy}>{t("morale.talk.confirm")}</Button>
+              <div className="flex justify-end gap-3 pt-1">
+                <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+                <Button onClick={submit} disabled={busy}>{t("morale.talk.confirm")}</Button>
               </div>
             </>
           )}

@@ -2990,6 +2990,11 @@
     "formHint": "Form: average rating of the last 5 matches",
     "quickView": {
       "freeAgent": "Free agent"
+    },
+    "hover": {
+      "age": "{{age}} years",
+      "knowledge": "Knowledge {{value}}",
+      "grade": "Report grade {{grade}}"
     }
   },
   "fastForward": {
@@ -3814,6 +3819,11 @@
       "promiseMinutes": "Promise to {{name}}: {{target}} of 5 matches ({{played}} so far)",
       "promise_sale": "Promise to {{name}}: move by {{date}}",
       "promise_renewal": "Promise to {{name}}: renewal by {{date}}"
+    },
+    "answerTone": {
+      "up": "Morale goes up",
+      "mid": "Small effect",
+      "down": "Morale goes down"
     }
   },
   "facilities": {

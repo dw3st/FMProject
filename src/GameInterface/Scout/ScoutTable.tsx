@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HOVER_CARD_WIDTH, ScoutHoverCard } from "@/GameInterface/Scout/ScoutHoverCard";
 import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { StatusLevel } from "@/Domain/Player";
@@ -74,6 +76,23 @@ export function ScoutTable({
   shortlistIds, onShortlistChange,
 }: Props) {
   const { t } = useTranslation();
+  // Floating card on the player's name (tester report): shown after a short pause, beside the pointer, inside the window.
+  const [hover, setHover] = useState<{ player: DisplayPlayer; x: number; y: number } | null>(null);
+  const hoverTimer = useRef<number | null>(null);
+  const clearHover = () => { if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current); hoverTimer.current = null; setHover(null); };
+  useEffect(() => () => { if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current); }, []);
+  const hoverProps = (player: DisplayPlayer) => ({
+    onMouseEnter: (e: React.MouseEvent) => {
+      const { clientX, clientY } = e;
+      if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current);
+      hoverTimer.current = window.setTimeout(() => {
+        const x = clientX + 18 + HOVER_CARD_WIDTH > window.innerWidth ? Math.max(8, clientX - 18 - HOVER_CARD_WIDTH) : clientX + 18;
+        const y = Math.max(64, Math.min(clientY - 40, window.innerHeight - 520));
+        setHover({ player, x, y });
+      }, 280);
+    },
+    onMouseLeave: clearHover,
+  });
   const { session, currentDate } = useGameSave();
   const starIds = useStarPlayers(session?.saveId, currentDate);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -183,6 +202,7 @@ export function ScoutTable({
                   <a
                     href={`/player/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}/${encodeURIComponent(player.id)}`}
                     className="text-foreground hover:text-primary hover:underline no-underline truncate"
+                    {...hoverProps(player)}
                   >
                     {player.name}
                   </a>
@@ -190,6 +210,7 @@ export function ScoutTable({
                   <button
                     type="button"
                     onClick={() => onView(player)}
+                    {...hoverProps(player)}
                     className="min-w-0 truncate text-left text-foreground hover:text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer font-[inherit]"
                   >
                     {player.name}
@@ -287,6 +308,7 @@ export function ScoutTable({
           <Icon name="chevron-right" size={12} />
         </button>
       </div>
+      {hover && <ScoutHoverCard player={hover.player} x={hover.x} y={hover.y} />}
     </div>
   );
 }

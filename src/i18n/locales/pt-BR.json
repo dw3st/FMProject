@@ -2990,6 +2990,11 @@
     "formHint": "Forma: nota média dos últimos 5 jogos",
     "quickView": {
       "freeAgent": "Jogador livre"
+    },
+    "hover": {
+      "age": "{{age}} anos",
+      "knowledge": "Conhecimento {{value}}",
+      "grade": "Relatório nota {{grade}}"
     }
   },
   "fastForward": {
@@ -3814,6 +3819,11 @@
       "promiseMinutes": "Promessa a {{name}}: {{target}} de 5 jogos ({{played}} até agora)",
       "promise_sale": "Promessa a {{name}}: saída até {{date}}",
       "promise_renewal": "Promessa a {{name}}: renovação até {{date}}"
+    },
+    "answerTone": {
+      "up": "A moral sobe",
+      "mid": "Efeito pequeno",
+      "down": "A moral cai"
     }
   },
   "facilities": {

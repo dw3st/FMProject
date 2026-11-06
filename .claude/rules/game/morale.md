@@ -243,3 +243,7 @@ medido, +0,1 a +0,2 ponto por jogo. Decisão do usuário: a IA ganha um pouco. N
 dia com um assento só, e a partida ao vivo pelo `match-setup` → `oppMorale`), o lado IA joga com
 `aiFormMorale(form)` = 65 + 2 × (pontos − 1,5 × jogos) dos últimos resultados da liga, entre 50 e 80 (`MORALE.AI_FORM_*`).
 Nada é gravado; IA × IA e humano × humano não mudam.
+
+## Conversar pelo Elenco e a janela nova (4.47.8)
+
+Report do usuário, opção A do mock. Na tabela do próprio elenco (`SquadRosterTable`) cada jogador (fora os emprestados de outro clube) tem o botão Conversar, ou Responder em amarelo (`ATTENTION_BUTTON`) quando há pedido aberto em `squad.moraleClub.talks`; Renovar fica ao lado quando vale. O `TalkModal` tem uma cena pintada por motivo (`paintedNews("talk-<motivo|none>")`, `news/news-talk-*.webp` no volume de arte, pintadas com `data_process/assets/talk_mock.py`), com o rosto, a moral e a dica de personalidade por cima, e as respostas em cartões (`morale.answerHint` e o tom `morale.answerTone.up|mid|down`). Sem a arte, o mesmo cabeçalho numa faixa.

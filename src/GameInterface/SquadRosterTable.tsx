@@ -26,6 +26,7 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 
 type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean };
 
@@ -48,7 +49,8 @@ export function SquadRosterTable({
   onOffer: (player: DisplayPlayer) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const { currentDate, session } = useGameSave();
+  const { currentDate, session, refresh } = useGameSave();
+  const [talkWith, setTalkWith] = useState<DisplayPlayer | null>(null);
   // Same star index as the player profile (`useStarPlayers`) — the list used to show none.
   const stars = useStarPlayers(session?.saveId, currentDate);
   const [sortKey, setSortKey] = useState<string>("pos");
@@ -79,7 +81,9 @@ export function SquadRosterTable({
     col("rating", "5rem", "center"),
     ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "9rem", align: "left" as const }] : []),
   ];
-  const gridTemplateColumns = [...columns.map((c) => c.width), "4.5rem", "7rem"].join(" ");
+  // Own squad: Talk (or Answer, with an open request) beside Renew, so the action column is wider (tester report).
+  const gridTemplateColumns = [...columns.map((c) => c.width), "4.5rem", showMorale ? "15rem" : "7rem"].join(" ");
+  const talkOf = (id: string) => squad.moraleClub?.talks.find((x) => x.playerId === id) ?? null;
 
   const allPlayers = useMemo<RosterRow[]>(() => {
     const wageFactor = wageFactorOf(squad);
@@ -247,7 +251,20 @@ export function SquadRosterTable({
             <div className="px-3 py-2.5 flex justify-center">
               <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
-            <div className="px-3 py-2.5 flex justify-center">
+            <div className="px-3 py-2.5 flex justify-center gap-2">
+              {showMorale && !player.loan && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setTalkWith(player); }}
+                  title={talkOf(player.id) ? t(`morale.reason.${talkOf(player.id)!.reason}`, { club: talkOf(player.id)!.clubName ?? "" }) : t("morale.talk.open")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg transition-all cursor-pointer ${
+                    talkOf(player.id) ? ATTENTION_BUTTON : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground"
+                  }`}
+                >
+                  <Icon name="talk" className="w-4 h-4" />
+                  {talkOf(player.id) ? t("morale.talk.answerRequest") : t("morale.talk.open")}
+                </button>
+              )}
               {player.renewDue ? (
                 <a
                   href={`${playerDetailHref(player)}?action=renew`}
@@ -258,7 +275,7 @@ export function SquadRosterTable({
                   <Icon name="file-signature" className="w-4 h-4" />
                   {t("contracts.renew")}
                 </a>
-              ) : (
+              ) : showMorale ? null : (
               <button
                 type="button"
                 disabled={!!mySquadId && player.squadId === mySquadId}
@@ -284,6 +301,23 @@ export function SquadRosterTable({
       </div>
       </div>
       <p className="m-0 px-4 py-2.5 border-t border-border text-sm text-muted-foreground">{t("dashboard.squadRosterTable.legend")}</p>
+      {talkWith && session && (
+        <TalkModal
+          saveId={session.saveId}
+          player={{ id: talkWith.id, name: talkWith.name }}
+          reason={talkOf(talkWith.id)?.reason ?? null}
+          clubName={talkOf(talkWith.id)?.clubName}
+          onClose={() => setTalkWith(null)}
+          onDone={(r) => {
+            void refresh({ background: true });
+            if (r.openRenewal) {
+              const target = talkWith;
+              setTalkWith(null);
+              window.location.href = `${playerDetailHref(target)}?action=renew`;
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

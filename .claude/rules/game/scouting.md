@@ -343,3 +343,7 @@ Report do usuário. "Só livres", "Apenas à venda" e "Só pré-contrato" formam
 ## Preço pedido na busca (4.47.7)
 
 Report de tester. `askingPricesOf` (`src/Domain/scout/askingPrices.ts`, com teste): jogador na lista de venda de um clube da IA mostra a menor taxa que o clube aceita do comprador (`respondToOffer` sem cláusula: `feeForSaleScore` com a prioridade da lista e o comprador, piso de craque e de oferta baixa), sobre o jogador real; na lista de outro técnico, o preço pedido dele (senão o valor). `DisplayPlayer.askingPrice` (EUR), linha "Pede €X" abaixo do valor. Os jogadores à venda dos outros assentos também contam em "Apenas à venda". Revela um pouco do valor real, como o pedido de salário.
+
+## Ficha ao passar o mouse (4.47.8)
+
+Report do usuário, opção A do mock. Na busca, parar 280 ms sobre o nome abre `ScoutHoverCard` (fixa, sem clique): rosto, posição, idade, clube, nível e os atributos em barras por grupo (`ATTRIBUTE_GROUPS`; goleiro sem o grupo de ataque, os outros sem o de goleiro). Só o que o olheiro vê: atributo em faixa mostra a faixa e a barra no meio dela; oculto, "?". Conhecimento e nota do relatório no pé.
