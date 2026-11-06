@@ -5,7 +5,6 @@ import { Icon } from "@/GameInterface/Icons";
 /** Rádio Mundo Livre FM (Curitiba, 93.9), the station's public stream (StreamTheWorld), the user's pick (8.8.10). */
 export const RADIO_STATION = {
   name: "Mundo Livre FM",
-  place: "93,9 · Curitiba",
   stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/MUNDOLIVRE_CWBAAC_64.aac",
 } as const;
 
@@ -64,27 +63,24 @@ export function RadioPlayer() {
         title={title}
         aria-label={title}
         aria-pressed={playing}
-        className="group flex items-center gap-2.5 h-10 px-1 border-0 bg-transparent cursor-pointer whitespace-nowrap text-left"
+        className={`flex items-center gap-2 h-8 px-3 rounded-full border cursor-pointer whitespace-nowrap text-sm font-semibold transition-colors ${
+          playing
+            ? "border-primary bg-primary/15 text-primary"
+            : state === "error"
+              ? "border-destructive bg-transparent text-destructive"
+              : "border-border bg-transparent text-muted-foreground hover:border-primary hover:text-foreground"
+        }`}
       >
-        <span
-          className={`flex items-center justify-center w-8 h-8 rounded-full border transition-colors ${
-            playing
-              ? "bg-primary border-primary text-primary-foreground"
-              : state === "error"
-                ? "border-destructive text-destructive"
-                : "border-border text-muted-foreground group-hover:border-primary group-hover:text-foreground"
-          }`}
-        >
-          <Icon name={playing ? "pause" : "play"} size={16} className={state === "loading" ? "motion-safe:animate-pulse" : undefined} />
-        </span>
-        <span className="flex flex-col leading-tight">
-          <span className={`text-sm font-semibold ${playing ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
-            {RADIO_STATION.name}
+        {state === "on" ? (
+          <span className="flex items-end gap-[2px] h-3.5 w-4" aria-hidden="true">
+            <span className="radio-eq-bar w-[3px] h-full rounded-sm bg-primary" />
+            <span className="radio-eq-bar w-[3px] h-full rounded-sm bg-primary" />
+            <span className="radio-eq-bar w-[3px] h-full rounded-sm bg-primary" />
           </span>
-          <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${playing ? "text-primary" : "text-muted-foreground"}`}>
-            {playing ? t("radio.live") : RADIO_STATION.place}
-          </span>
-        </span>
+        ) : (
+          <Icon name="radio" size={16} className={state === "loading" ? "motion-safe:animate-pulse" : undefined} />
+        )}
+        {RADIO_STATION.name}
       </button>
       {playing && (
         <input

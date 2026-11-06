@@ -177,3 +177,12 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Equalizer of the footer radio (RadioPlayer, 8.8.11): three bars rising and falling out of step. */
+@keyframes eqBar {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.radio-eq-bar { transform-origin: bottom; animation: eqBar 0.9s ease-in-out infinite; }
+.radio-eq-bar:nth-child(2) { animation-duration: 0.7s; animation-delay: -0.3s; }
+.radio-eq-bar:nth-child(3) { animation-duration: 1.1s; animation-delay: -0.5s; }

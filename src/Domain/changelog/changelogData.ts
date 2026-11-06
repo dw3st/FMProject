@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.11",
+    date: "2026-11-06",
+    time: "17:58",
+    items: [
+      {
+        pt: "Rádio: botão novo no rodapé, uma pílula com o nome da rádio que mostra um equalizador enquanto toca.",
+        en: "Radio: new footer button, a pill with the station name that shows an equalizer while playing.",
+      },
+    ],
+  },
+  {
     version: "8.8.10",
     date: "2026-11-06",
     time: "17:50",
