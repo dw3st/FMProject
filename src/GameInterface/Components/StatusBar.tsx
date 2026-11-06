@@ -4,7 +4,6 @@ import { Icon } from "@/GameInterface/Icons";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import { GAME_VERSION as CURRENT_VERSION } from "@/Domain/saveVersion";
-import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { formatEuros } from "@/Domain/money";
 import { usePresence } from "@/GameInterface/usePresence";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
@@ -96,7 +95,6 @@ export function StatusBar({
               onDismiss={changelogNotice.onDismiss}
             />
           )}
-          <LanguageSwitch className="!p-0.5" />
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
             <Icon name="settings" size={18} />
           </button>

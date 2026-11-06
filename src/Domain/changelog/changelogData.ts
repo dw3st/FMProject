@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.13",
+    date: "2026-11-06",
+    time: "18:29",
+    items: [
+      {
+        pt: "O idioma fica só em Configurações: o seletor saiu do rodapé e da tela inicial.",
+        en: "The language is only in Settings: the switch left the footer and the start screen.",
+      },
+    ],
+  },
+  {
     version: "8.8.12",
     date: "2026-11-06",
     time: "18:23",

@@ -14,7 +14,6 @@ import { worldApi } from "@/GameInterface/World/worldApi";
 import { WORLD } from "@/Domain/multiplayer/worldConfig";
 import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import type { PublicWorldInfo } from "@/types/multiplayerTypes";
-import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Button } from "@/GameInterface/ui/Button";
@@ -328,7 +327,6 @@ export function StartScreen() {
         >
           {t("startScreen.settings")}
         </button>
-        <LanguageSwitch />
         <FriendsButton />
         <span className="flex items-center gap-1 h-10">
           {t("landing.developedBy")}
