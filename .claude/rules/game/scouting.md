@@ -347,3 +347,7 @@ Report de tester. `askingPricesOf` (`src/Domain/scout/askingPrices.ts`, com test
 ## Ficha ao passar o mouse (4.47.8)
 
 Report do usuário, opção A do mock. Na busca, parar 280 ms sobre o nome abre `ScoutHoverCard` (fixa, sem clique): rosto, posição, idade, clube, nível e os atributos em barras por grupo (`ATTRIBUTE_GROUPS`; goleiro sem o grupo de ataque, os outros sem o de goleiro). Só o que o olheiro vê: atributo em faixa mostra a faixa e a barra no meio dela; oculto, "?". Conhecimento e nota do relatório no pé.
+
+## Observar até um nível e filtro de empréstimo (4.47.12)
+
+Reports de tester. Missão de jogador com `target.knowledgeTarget` (25, 50, 75 ou 100, `S.PLAYER_LEVELS`): roda até o conhecimento chegar lá, no máximo `PLAYER_LEVEL_MAX_WEEKS` (8) semanas; a rota de criar ignora `weeks` nesse caso e recusa um nível já alcançado (400 `invalidTarget`). `GET /scouting/player/:id` devolve `plans`: por olheiro livre, as semanas (`playerMissionWeeks` sobre `playerWeeklyGain`, os fatores da semana) e o custo de viagem de cada nível. A ficha mostra os níveis em chips com "cerca de N semanas · viagens de €X". Busca: chip "Aceitam empréstimo" (`onlyLoanable`, no grupo OU de disponibilidade): jogadores de clubes da IA que `loanAvailability` libera hoje (fora do XI automático, jovem, à venda ou sobrando na linha), calculado no índice da busca (`loanableIdsOf`, ~0,2 s no mundo inteiro).

@@ -1,3 +1,4 @@
+import { playerMissionWeeks, playerWeeklyGain } from "@/Domain/scouting/missions";
 import { describe, expect, test } from "bun:test";
 import {
   addProspects, advanceScoutingWeek, capReports, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
@@ -123,6 +124,25 @@ describe("missions", () => {
     }
     expect(weeks).toEqual([35, 70, 100]);
     expect(state.missions).toHaveLength(0);
+  });
+  test("player mission to a level: stops there, and a weak scout may run past 3 weeks", () => {
+    const target = entry(player("t", 6));
+    const run = (level: number, rating: number) => {
+      let state = { ...emptyScoutingState(), missions: [mission({ target: { kind: "player", playerId: "t", knowledgeTarget: level }, weeks: 8 })] };
+      let n = 0;
+      while (state.missions.length > 0 && n < 10) {
+        state = advanceScoutingWeek(state, [{ mission: state.missions[0]!, leaderRating: rating, pool: [target] }], ctx()).state;
+        n++;
+      }
+      return { weeks: n, k: state.knowledge.t!.k };
+    };
+    expect(run(50, 5)).toEqual({ weeks: 2, k: 70 });
+    const slow = run(100, 1);
+    expect(slow.weeks).toBeGreaterThan(3);
+    expect(slow.k).toBe(100);
+    expect(playerMissionWeeks(0, 50, playerWeeklyGain(5, 1))).toBe(2);
+    expect(playerMissionWeeks(60, 50, 35)).toBe(0);
+    expect(playerMissionWeeks(0, 100, 1)).toBe(8);
   });
   test("travel cost by distance, player missions half", () => {
     expect(missionCost("country", "world", 200_000_000)).toBe(5769);

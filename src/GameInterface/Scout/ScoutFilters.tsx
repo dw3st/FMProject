@@ -309,6 +309,14 @@ export function ScoutFilters({
           <Icon name="calendar" className="w-4 h-4" />
           {t("scout.filters.preContractOnly")}
         </Chip>
+        <Chip
+          selected={!!filters.onlyLoanable}
+          onClick={() => setFilters({ ...filters, onlyLoanable: !filters.onlyLoanable })}
+          title={t("scout.filters.loanableHint")}
+        >
+          <Icon name="handshake" className="w-4 h-4" />
+          {t("scout.filters.loanableOnly")}
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />

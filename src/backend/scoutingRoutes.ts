@@ -7,9 +7,9 @@ import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import {
   continentMissionCountries, continentOf, loadViewer, missionDistance, missionLeagues, viewFor,
 } from "@/backend/scoutingWorld";
-import { countryKnowledgeMap, meanKnowledge, strongCountry } from "@/Domain/scouting/countryKnowledge";
+import { countryKnowledgeMap, countryKnowledgeOf, meanKnowledge, strongCountry } from "@/Domain/scouting/countryKnowledge";
 import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
-import { allowedWeeks, missionCost, seenProfile } from "@/Domain/scouting/missions";
+import { allowedWeeks, missionCost, playerMissionWeeks, playerWeeklyGain, seenProfile } from "@/Domain/scouting/missions";
 import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { effectiveRating, effectiveStars, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
@@ -111,7 +111,12 @@ async function validTarget(saveId: string, raw: unknown, ownClubId: string): Pro
   if (!found) return null;
   // The club's own players (and those it loaned out) are already fully known.
   if (found.squad?.id === ownClubId || found.player.loan?.fromClubId === ownClubId) return null;
-  return { kind, playerId: found.player.id, playerName: found.player.name, squadId: found.squad?.id ?? "" };
+  const level = t.knowledgeTarget;
+  if (level !== undefined && !(S.PLAYER_LEVELS as readonly number[]).includes(level as number)) return null;
+  return {
+    kind, playerId: found.player.id, playerName: found.player.name, squadId: found.squad?.id ?? "",
+    ...(level !== undefined ? { knowledgeTarget: level as number } : {}),
+  };
 }
 
 function validFocus(raw: unknown): ScoutFocus | undefined | null {
@@ -129,6 +134,33 @@ function validFocus(raw: unknown): ScoutFocus | undefined | null {
   }
   if (f.improves !== undefined) out.improves = f.improves === true;
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * For each free scout, the weeks and the travel money a player mission needs to reach each knowledge level (tester
+ * report, 4.47.12). Levels he already reached are left out.
+ */
+async function levelPlans(saveId: string, seatId: string, state: ScoutingState, current: number, country: string, squadId: string) {
+  const meta = await saveService.getSeatMeta(saveId, seatId);
+  const own = meta?.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
+  if (!own) return [];
+  const date = meta?.currentDate ?? "";
+  const viewer = await loadViewer(saveService, saveId, seatId);
+  const distance = await missionDistance(saveService, saveId, { target: { kind: "player", squadId } }, viewer?.ownCountry ?? "");
+  const weekly = missionCost("player", distance, wageRevenueBasisOf(own));
+  const chiefGain = scoutMultipliersOf(effectiveRating(own, "scout")).gain;
+  return scoutsOf(own, date)
+    .filter((s) => !state.missions.some((m) => m.scoutId === s.id))
+    .map((s) => {
+      const gain = playerWeeklyGain(s.rating, chiefGain, s.member && country ? countryKnowledgeOf(s.member, country, date) : undefined);
+      return {
+        scoutId: s.id,
+        levels: S.PLAYER_LEVELS.filter((level) => level > current).map((level) => {
+          const weeks = playerMissionWeeks(current, level, gain);
+          return { level, weeks, cost: weeks * weekly, reaches: current + gain * weeks >= level };
+        }),
+      };
+    });
 }
 
 /** The screen's view of the scouting department. */
@@ -274,9 +306,18 @@ export const scoutingRoutes = {
       if (!target) return Response.json({ error: "invalidTarget" }, { status: 400 });
       const focus = validFocus(body.focus);
       if (focus === null) return Response.json({ error: "invalidFocus" }, { status: 400 });
-      const weeks = body.weeks;
-      if (typeof weeks !== "number" || !allowedWeeks(target.kind).includes(weeks)) {
+      // A player mission to a knowledge level runs until it gets there (at most `PLAYER_LEVEL_MAX_WEEKS`).
+      const weeks = target.knowledgeTarget ? S.PLAYER_LEVEL_MAX_WEEKS : body.weeks;
+      if (typeof weeks !== "number" || (!target.knowledgeTarget && !allowedWeeks(target.kind).includes(weeks))) {
         return Response.json({ error: "invalidWeeks" }, { status: 400 });
+      }
+      if (target.knowledgeTarget) {
+        const viewer = await loadViewer(saveService, saveId, auth.seatId);
+        const found = await findPlayer(saveId, target.playerId ?? "", target.squadId || undefined);
+        const league = found?.squad ? ((await saveService.getSquadIndex(saveId)).byId(found.squad.id)?.leagueSlug ?? "") : "";
+        if (viewer && found && viewFor(viewer, found.player, league).knowledge >= target.knowledgeTarget) {
+          return Response.json({ error: "invalidTarget" }, { status: 400 });
+        }
       }
       const scoutId = typeof body.scoutId === "string" ? body.scoutId : "";
       if (!scoutsOf(h.squad).some((s) => s.id === scoutId)) return Response.json({ error: "scout not found" }, { status: 404 });
@@ -416,10 +457,13 @@ export const scoutingRoutes = {
     if (!viewer) return Response.json({ error: "save not found" }, { status: 404 });
     const league = found.squad ? ((await saveService.getSquadIndex(saveId)).byId(found.squad.id)?.leagueSlug ?? "") : "";
     const state = await saveService.getScouting(saveId, auth.seatId);
+    const view = viewFor(viewer, found.player, league);
+    const country = viewer.leagueCountry.get(league) ?? "";
     return Response.json({
-      view: viewFor(viewer, found.player, league),
+      view,
+      plans: await levelPlans(saveId, auth.seatId, state, view.knowledge, country, found.squad?.id ?? ""),
       // Country of his club's league (free agent: ""): the scouts' knowledge of it on the screen.
-      country: viewer.leagueCountry.get(league) ?? "",
+      country,
       report: state.reports.find((r) => r.playerId === found.player.id) ?? null,
       shortlisted: state.shortlist.some((e) => e.playerId === found.player.id),
       mission: state.missions.find((m) => m.target.kind === "player" && m.target.playerId === found.player.id) ?? null,

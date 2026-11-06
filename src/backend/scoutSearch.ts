@@ -1,3 +1,5 @@
+import { loanAvailability } from "@/Domain/negotiation/loans";
+import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { loadViewer, obscurePlayerForViewer, obscureSquadForViewer } from "@/backend/scoutingWorld";
@@ -66,6 +68,7 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
   const buyer = viewer?.ownClubId ? buyerContext(squads, viewer.ownClubId) : null;
   // Interest and "fits the budget" (#123): computed here, on what the user sees of each player.
   const preContractIds = buyer ? await preContractIdsOf(saveId, squads) : new Set<string>();
+  const loanableIds = buyer ? await loanableIdsOf(saveId, squads, market, viewer?.ownClubId ?? "") : new Set<string>();
   const scouting = await saveService.getScouting(saveId, seatId);
   // Grade of the latest report on each player (tester report: filter by grade).
   const gradeOf = new Map<string, ScoutGrade>();
@@ -78,6 +81,7 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
       const extras = scoutRowExtras(r, buyer, weeklyWage);
       if (extras) row = { ...row, ...extras };
       if (preContractIds.has(r.id)) row = { ...row, preContract: true };
+      if (loanableIds.has(r.id)) row = { ...row, loanable: true };
     }
     const grade = gradeOf.get(r.id);
     return grade ? { ...row, grade } : row;
@@ -130,6 +134,22 @@ async function preContractIdsOf(saveId: string, squads: Squad[]): Promise<Set<st
   for (const squad of squads) {
     if (humans.has(squad.id)) continue;
     for (const p of squad.players) if (preContractEligible(p, date)) ids.add(p.id);
+  }
+  return ids;
+}
+
+/**
+ * Players of AI clubs their club would loan out today (`loanAvailability`, the rule of `POST /loans`: not a starter of
+ * the automatic XI, a young, listed or surplus player, the line minimums kept). Tester report, 4.47.12.
+ */
+async function loanableIdsOf(saveId: string, squads: Squad[], market: { profiles?: Record<string, { sellList?: { playerId: string }[] }> } | null | undefined, ownClubId: string): Promise<Set<string>> {
+  const humans = await saveService.humanClubIds(saveId);
+  const ids = new Set<string>();
+  for (const squad of squads) {
+    if (humans.has(squad.id) || squad.id === ownClubId) continue;
+    const listed = new Set((market?.profiles?.[squad.id]?.sellList ?? []).map((c) => c.playerId));
+    const starterIds = new Set(autoLineupDefaultFormation(squad));
+    for (const p of squad.players) if (loanAvailability(p, squad, { starterIds, listed: listed.has(p.id) }) === null) ids.add(p.id);
   }
   return ids;
 }
@@ -237,6 +257,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyAwarded: f.onlyAwarded === true,
       onlyAffordable: f.onlyAffordable === true,
       onlyPreContract: f.onlyPreContract === true,
+      onlyLoanable: f.onlyLoanable === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
       grades: Array.isArray(f.grades) ? [...new Set(f.grades.filter((g): g is ScoutGrade => GRADES.includes(g as ScoutGrade)))] : [],
       minPotential: Math.min(100, Math.max(0, asFiniteNumber(f.minPotential, 0))),

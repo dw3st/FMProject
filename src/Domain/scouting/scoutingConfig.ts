@@ -32,6 +32,9 @@ export const SCOUTING = {
   CONTINENT_WEEKS: [8, 12] as const,
   YOUTH_WEEKS: [4, 8] as const,
   PLAYER_MAX_WEEKS: 3,
+  /** Player mission to a knowledge level (tester report, 4.47.12): the levels offered and the most weeks it may run. */
+  PLAYER_LEVELS: [25, 50, 75, 100] as const,
+  PLAYER_LEVEL_MAX_WEEKS: 8,
   /** Region mission: players observed per week = BASE + scout rating, at most MAX. */
   OBSERVED_BASE: 6,
   OBSERVED_MAX: 16,

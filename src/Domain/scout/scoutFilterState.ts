@@ -40,6 +40,8 @@ export interface ScoutFilterState {
   onlyAffordable?: boolean;
   /** Only players who can sign a pre-contract with the user's club now (`preContractEligible`, on the server). */
   onlyPreContract?: boolean;
+  /** Only AI clubs' players their club would loan out (`loanAvailability`, on the server; tester report, 4.47.12). */
+  onlyLoanable?: boolean;
   /** Grades of the scout's latest report to keep (empty / absent = any, players without a report included). */
   grades?: ScoutGrade[];
   /** Potential range on the 0–100 screen scale (the middle of the shown range; his overall past 23). */
@@ -110,6 +112,7 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     onlyAwarded: false,
     onlyAffordable: false,
     onlyPreContract: false,
+    onlyLoanable: false,
     grades: [],
     minPotential: 0,
     maxPotential: 100,

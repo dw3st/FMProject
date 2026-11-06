@@ -336,6 +336,7 @@ describe("filterScoutPlayers — fits the budget (#123)", () => {
     const list = [P({ id: "a", affordable: true }), P({ id: "b", affordable: false }), P({ id: "c" })];
     expect(ids(filterScoutPlayers(list, F({ onlyAffordable: true }), new Set()))).toEqual(["a"]);
     expect(ids(filterScoutPlayers([{ ...list[0]!, preContract: true }, list[1]!], F({ onlyPreContract: true }), new Set()))).toEqual([list[0]!.id]);
+    expect(ids(filterScoutPlayers([{ ...list[0]!, loanable: true }, list[1]!], F({ onlyLoanable: true }), new Set()))).toEqual([list[0]!.id]);
     expect(ids(filterScoutPlayers(list, F(), new Set()))).toEqual(["a", "b", "c"]);
   });
 });

@@ -109,6 +109,8 @@ export interface DisplayPlayer {
   affordable?: boolean;
   /** Can sign a pre-contract with the user's club now (set on the server). */
   preContract?: boolean;
+  /** His AI club would loan him out (`loanAvailability`, scout search only). */
+  loanable?: boolean;
   /** Grade of the user's scout's latest report on him (set on the server). */
   grade?: ScoutGrade;
   /** What the club asks to sell him, EUR (listed players only, scout search). */

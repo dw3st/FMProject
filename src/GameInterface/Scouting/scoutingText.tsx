@@ -12,7 +12,7 @@ type T = (key: string, opts?: Record<string, unknown>) => string;
 /** A mission target as text (country, league name, continent, player). */
 export function targetLabel(target: ScoutTarget | undefined, t: T, leagues: LeagueData[], lang: string): string {
   if (!target) return "";
-  if (target.kind === "player") return target.playerName ?? "";
+  if (target.kind === "player") return `${target.playerName ?? ""}${target.knowledgeTarget ? ` · ${target.knowledgeTarget}%` : ""}`;
   if (target.kind === "league") return competitionName(target.league ?? "", leagues, lang);
   if (target.kind === "continent") return t(`scouting.continents.${target.continent ?? ""}`, { defaultValue: target.continent ?? "" });
   const country = target.country ?? "";

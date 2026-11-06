@@ -114,7 +114,7 @@ export function filterScoutPlayers(
   shortlistIds: Set<string> = new Set(),
 ): DisplayPlayer[] {
   const name = filters.name ? filters.name.toLowerCase() : "";
-  const anyAvailability = !!(filters.onlyFree || filters.onlyForSale || filters.onlyPreContract);
+  const anyAvailability = !!(filters.onlyFree || filters.onlyForSale || filters.onlyPreContract || filters.onlyLoanable);
   const grades = filters.grades && filters.grades.length > 0 ? new Set(filters.grades) : null;
   const minPot = filters.minPotential ?? 0;
   const maxPot = filters.maxPotential ?? 100;
@@ -124,7 +124,8 @@ export function filterScoutPlayers(
     if (anyAvailability) {
       const ok = (filters.onlyFree && player.free === true)
         || (filters.onlyForSale && !player.free && sellListedIds.has(player.id))
-        || (filters.onlyPreContract && player.preContract === true);
+        || (filters.onlyPreContract && player.preContract === true)
+        || (filters.onlyLoanable && player.loanable === true);
       if (!ok) return false;
     } else if (player.free) return false;
     if (filters.onlyShortlist && !shortlistIds.has(player.id)) return false;

@@ -273,7 +273,9 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
         knowledge[e.player.id] = gainKnowledge(known(e.player.id), S.PLAYER_GAIN * gain * countryGainMult(countryK(e)), ctx.date);
       }
       const k = observed[0] ? known(observed[0].player.id) : 100;
-      done = observed.length === 0 || k >= 100 || mission.weeksDone + 1 >= Math.min(mission.weeks, S.PLAYER_MAX_WEEKS);
+      const goal = mission.target.knowledgeTarget ?? 100;
+      const cap = mission.target.knowledgeTarget ? S.PLAYER_LEVEL_MAX_WEEKS : S.PLAYER_MAX_WEEKS;
+      done = observed.length === 0 || k >= goal || mission.weeksDone + 1 >= Math.min(mission.weeks, cap);
     } else {
       observed = pickObserved(input.pool, observedPerWeek(input.leaderRating), `${ctx.saveId}:${mission.id}:${ctx.date}`, known);
       for (const e of observed) {
@@ -339,6 +341,18 @@ export function missionsWithLeaders<M extends { scoutId: string }>(missions: M[]
 export function missionCost(kind: ScoutTargetKind, distance: TravelDistance, annualRevenue: number): number {
   const share = S.TRAVEL_SHARE[distance] * (kind === "player" ? S.PLAYER_TRAVEL_MULT : 1);
   return Math.round((share * Math.max(0, annualRevenue)) / 52);
+}
+
+/** Knowledge a player mission adds in a week: the same factors as `advanceScoutingWeek`. */
+export function playerWeeklyGain(leaderRating: number, chiefGain: number, countryK?: number): number {
+  return S.PLAYER_GAIN * ratingGain(leaderRating) * chiefGain * countryGainMult(countryK ?? S.COUNTRY.NEUTRAL);
+}
+
+/** Weeks a player mission needs to take him from `current` to `level` (at most `PLAYER_LEVEL_MAX_WEEKS`), 0 if he is there. */
+export function playerMissionWeeks(current: number, level: number, weeklyGain: number): number {
+  if (current >= level) return 0;
+  if (weeklyGain <= 0) return S.PLAYER_LEVEL_MAX_WEEKS;
+  return Math.min(S.PLAYER_LEVEL_MAX_WEEKS, Math.max(1, Math.ceil((level - current) / weeklyGain - 1e-9)));
 }
 
 /** Weeks a mission of `kind` may last (player: up to 3). */

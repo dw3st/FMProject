@@ -65,6 +65,26 @@ describe("scouting routes and the weekly step", () => {
     const ownClub = (await saveService.getSquadById(saveId, "33"))!;
     await saveService.saveSquadById(saveId, { ...ownClub, staff: { ...ownClub.staff!, members: [...ownClub.staff!.members, field] } });
 
+    // Observing a player to a level (4.47.12): each free scout's weeks and cost per level; a level not offered is a 400.
+    {
+      const idx = await saveService.getSquadIndex(saveId);
+      const sq = (await saveService.getSquadById(saveId, idx.inLeague("la_liga")[1]!.squadId))!;
+      const p = sq.players[0]!;
+      const playerRoute = "/api/saves/:saveId/scouting/player/:playerId";
+      const playerHandler = apiRoutes[playerRoute as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      const infoRes = await playerHandler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/scouting/player/${p.id}?squad=${sq.id}`, { headers: { cookie: `fs_session=${session.token}` } }),
+        { params: { saveId, playerId: p.id } },
+      ));
+      const info = await infoRes.json() as any;
+      if (!info.plans) throw new Error(`player route ${infoRes.status} ${JSON.stringify(info).slice(0, 200)}`);
+      expect(info.plans.map((x: any) => x.scoutId).sort()).toEqual(["chief", field.id].sort());
+      const levels = info.plans[0].levels as { level: number; weeks: number; cost: number }[];
+      expect(levels.every((l) => l.level > info.view.knowledge && l.weeks >= 1 && l.weeks <= 8 && l.cost > 0)).toBe(true);
+      for (let i = 1; i < levels.length; i++) expect(levels[i]!.weeks).toBeGreaterThanOrEqual(levels[i - 1]!.weeks);
+      expect((await call(MISSIONS, "POST", session.token, { scoutId: field.id, target: { kind: "player", playerId: p.id, squadId: sq.id, knowledgeTarget: 60 } })).status).toBe(400);
+    }
+
     // Missions: country (chief), youth (field scout); the chief is then busy.
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 4 })).status).toBe(200);
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "league", league: "la_liga" }, weeks: 4 })).status).toBe(409);

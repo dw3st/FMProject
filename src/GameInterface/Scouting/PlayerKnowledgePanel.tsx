@@ -11,6 +11,7 @@ import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 import { GemBadge, GradeBadge } from "@/GameInterface/Scouting/Badges";
 import { scoutingCall, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
 import { nationalityDisplayName } from "@/Domain/world/labels";
+import { formatFee } from "@/Domain/money";
 
 interface PlayerScouting {
   view: ScoutView;
@@ -19,6 +20,8 @@ interface PlayerScouting {
   mission: ScoutAssignment | null;
   /** Country of his club's league (free agent: ""). */
   country: string;
+  /** Per free scout: weeks and travel cost to reach each knowledge level (4.47.12). */
+  plans: { scoutId: string; levels: { level: number; weeks: number; cost: number; reaches: boolean }[] }[];
 }
 
 /** "Knowledge" block of the player sheet (players outside the user's club, `scouting.md`). */
@@ -27,6 +30,7 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
   const [info, setInfo] = useState<PlayerScouting | null>(null);
   const [scouting, setScouting] = useState<ScoutingData | null>(null);
   const [scoutId, setScoutId] = useState<string | null>(null);
+  const [level, setLevel] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -42,12 +46,15 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
   if (!info) return null;
   const free = (scouting?.scouts ?? []).filter((s) => !s.busy);
   const chosen = scoutId ?? free[0]?.id ?? null;
+  const levels = info.plans?.find((p) => p.scoutId === chosen)?.levels ?? [];
+  const plan = levels.find((l) => l.level === level) ?? levels[levels.length - 1] ?? null;
 
   async function observe() {
     if (!chosen || !scouting) return;
     setError(null);
     const r = await scoutingCall(`/api/saves/${saveId}/scouting/missions`, "POST", {
-      scoutId: chosen, target: { kind: "player", playerId, squadId }, weeks: scouting.weeks.player,
+      scoutId: chosen, target: { kind: "player", playerId, squadId, ...(plan ? { knowledgeTarget: plan.level } : {}) },
+      weeks: scouting.weeks.player,
     });
     if (r.ok) await load();
     else setError(t(`scouting.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("scouting.errors.generic") }));
@@ -75,13 +82,15 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
       {info.view.knowledge < 60 && <Notice kind="warning">{t("scouting.lowKnowledge", { k: info.view.knowledge })}</Notice>}
       {info.mission ? (
         <p className="text-sm text-muted-foreground m-0 tabular-nums">
-          {t("scouting.beingObserved", { done: info.mission.weeksDone, total: info.mission.weeks })}
+          {info.mission.target.knowledgeTarget
+            ? t("scouting.beingObservedTo", { done: info.mission.weeksDone, level: info.mission.target.knowledgeTarget })
+            : t("scouting.beingObserved", { done: info.mission.weeksDone, total: info.mission.weeks })}
         </p>
       ) : info.view.knowledge < 100 && scouting?.employed && (
         free.length === 0 ? (
           <p className="text-sm text-muted-foreground m-0">{t("scouting.noFreeScout")}</p>
         ) : (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-3">
             <OptionChips<string>
               value={chosen}
               onChange={setScoutId}
@@ -91,10 +100,27 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
                 return { key: s.id, label: `${s.chief ? t("scouting.chief") : s.name} · ${k}` };
               })}
             />
-            <Button onClick={() => void observe()}>
-              <Icon name="binoculars" size={16} />
-              {t("scouting.observe")}
-            </Button>
+            {levels.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scouting.observeTo")}</span>
+                <OptionChips<string>
+                  value={plan ? String(plan.level) : null}
+                  onChange={(v) => setLevel(Number(v))}
+                  options={levels.map((l) => ({ key: String(l.level), label: `${l.level}%` }))}
+                />
+                {plan && (
+                  <p className="text-sm text-muted-foreground m-0 tabular-nums">
+                    {t(plan.reaches ? "scouting.levelPlan" : "scouting.levelPlanShort", { count: plan.weeks, cost: formatFee(plan.cost), level: plan.level })}
+                  </p>
+                )}
+              </div>
+            )}
+            <div>
+              <Button onClick={() => void observe()}>
+                <Icon name="binoculars" size={16} />
+                {t("scouting.observe")}
+              </Button>
+            </div>
           </div>
         )
       )}

@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.12",
+    date: "2026-11-06",
+    time: "10:58",
+    items: [
+      {
+        pt: "Na ficha de um jogador de fora, você escolhe até quanto quer conhecê-lo (25, 50, 75 ou 100%). O olheiro fica até chegar lá, e a ficha mostra quantas semanas e quanto de viagem isso deve custar.",
+        en: "On another club's player, you choose how well you want to know him (25, 50, 75 or 100%). The scout stays until he gets there, and the profile shows how many weeks and how much travel it should cost.",
+      },
+      {
+        pt: "Olheiro: novo filtro \"Aceitam empréstimo\", com os jogadores que o clube deles emprestaria.",
+        en: "Scouting: new \"Loan available\" filter, with the players their club would loan out.",
+      },
+    ],
+  },
+  {
     version: "4.47.11",
     date: "2026-11-06",
     time: "10:41",

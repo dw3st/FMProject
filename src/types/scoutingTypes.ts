@@ -19,6 +19,8 @@ export interface ScoutTarget {
   playerId?: string;
   playerName?: string;
   squadId?: string;
+  /** player: the knowledge level the mission runs to (25, 50, 75 or 100); absent = the planned weeks or 100. */
+  knowledgeTarget?: number;
 }
 
 type ScoutFocusLine = "GK" | "Defender" | "Midfielder" | "Forward";
