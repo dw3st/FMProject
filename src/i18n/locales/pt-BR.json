@@ -2904,6 +2904,10 @@
       "awardedOnly": "Só premiados",
       "affordableOnly": "Cabe no orçamento",
       "affordableHint": "Taxa estimada dentro do saldo e salário pedido dentro do teto da folha",
+      "availabilityHint": "Livres, à venda e pré-contrato se somam: aparece quem for qualquer um deles",
+      "grade": "Nota do olheiro",
+      "gradeHint": "Pela nota do último relatório do olheiro; quem não tem relatório fica de fora",
+      "potential": "Potencial",
       "search": "Pesquisar",
       "changed": "Filtros alterados",
       "positions": {
@@ -3083,8 +3087,14 @@
       "empty": "Nenhum jogador aposentado ainda.",
       "age": "Idade",
       "lastClub": "Último clube",
-      "show": "Ver carreira",
-      "hide": "Ocultar carreira",
+      "show": "Ver perfil",
+      "hide": "Ocultar perfil",
+      "profile": {
+        "retiredAt": "Aposentou com {{age}} anos em {{date}}",
+        "lastLevel": "Último jogo",
+        "peak": "Auge",
+        "national": "Seleção: {{apps}} jogos, {{goals}} gols"
+      },
       "mine": "Do meu clube",
       "all": "Todos",
       "emptyMine": "Nenhum jogador do seu clube se aposentou ainda.",

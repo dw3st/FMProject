@@ -33,6 +33,25 @@ describe("filterScoutPlayers — each filter in isolation", () => {
     expect(ids(filterScoutPlayers(list, F(), none))).toEqual(["a", "b"]);
   });
 
+  test("free, for sale and pre-contract add up: any of the ticked ones passes (tester report)", () => {
+    const list = [
+      P({ id: "free", free: true }), P({ id: "sale" }), P({ id: "pre", preContract: true }), P({ id: "plain" }),
+    ];
+    const sale = new Set(["sale"]);
+    expect(ids(filterScoutPlayers(list, F({ onlyFree: true, onlyForSale: true }), sale))).toEqual(["free", "sale"]);
+    expect(ids(filterScoutPlayers(list, F({ onlyForSale: true, onlyPreContract: true }), sale))).toEqual(["sale", "pre"]);
+    expect(ids(filterScoutPlayers(list, F(), sale))).toEqual(["sale", "pre", "plain"]);   // no free agents by default
+  });
+
+  test("report grade and potential range (tester report)", () => {
+    const list = [
+      P({ id: "a", grade: "A", potentialRange: [7, 8] }), P({ id: "b", grade: "C", avg: 6.5 }), P({ id: "none", avg: 5 }),
+    ];
+    expect(ids(filterScoutPlayers(list, F({ grades: ["A", "B"] }), none))).toEqual(["a"]);
+    expect(ids(filterScoutPlayers(list, F({ minPotential: 70, maxPotential: 80 }), none))).toEqual(["a"]);
+    expect(ids(filterScoutPlayers(list, F({ minPotential: 60 }), none))).toEqual(["a", "b"]);   // no range: his overall
+  });
+
   test("name is a case-insensitive substring match", () => {
     const list = [P({ id: "a", name: "Lionel Messi" }), P({ id: "b", name: "Cristiano Ronaldo" })];
     expect(ids(filterScoutPlayers(list, F({ name: "MESS" }), none))).toEqual(["a"]);

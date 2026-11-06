@@ -2904,6 +2904,10 @@
       "awardedOnly": "Award winners only",
       "affordableOnly": "Fits the budget",
       "affordableHint": "Estimated fee within your balance and asking wage within your wage cap",
+      "availabilityHint": "Free, for sale and pre-contract add up: anyone who is any of them shows",
+      "grade": "Scout grade",
+      "gradeHint": "By the grade of the scout's latest report; players without a report are left out",
+      "potential": "Potential",
       "search": "Search",
       "changed": "Filters changed",
       "positions": {
@@ -3083,8 +3087,14 @@
       "empty": "No retired players yet.",
       "age": "Age",
       "lastClub": "Last club",
-      "show": "Show career",
-      "hide": "Hide career",
+      "show": "Show profile",
+      "hide": "Hide profile",
+      "profile": {
+        "retiredAt": "Retired at {{age}} on {{date}}",
+        "lastLevel": "Last game",
+        "peak": "Peak",
+        "national": "National team: {{apps}} games, {{goals}} goals"
+      },
       "mine": "My club",
       "all": "All",
       "emptyMine": "No player of your club has retired yet.",

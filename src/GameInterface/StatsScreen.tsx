@@ -14,7 +14,9 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { ALL_COMPETITIONS, type CompetitionRankings, type RankingRow } from "@/Domain/stats/rankings";
 import { statsCompetitionOptions } from "@/GameInterface/statsCompetitionOptions";
 import type { LeagueData, RetiredPlayer } from "@/types/playerTypes";
-import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { RetiredProfile } from "@/GameInterface/Components/RetiredProfile";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
@@ -384,6 +386,11 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
                 >
                   <Icon name={r.favorite ? "star-filled" : "star"} size={16} />
                 </button>
+                {r.nationality && nationalityFlagCode(r.nationality) && (
+                  <span title={nationalityDisplayName(r.nationality, i18n.language, t)} className="shrink-0 inline-flex">
+                    <Flag code={nationalityFlagCode(r.nationality)!} />
+                  </span>
+                )}
                 <span className="truncate">{r.name}</span>
               </NameCell>
               <NumberCell>{r.age}</NumberCell>
@@ -404,7 +411,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
             </StatsRow>,
             isOpen && (
               <StatsDetailRow key={`${r.id}-career`} colSpan={legends ? 8 : 7}>
-                <CareerTable rows={hist} leagues={leagues} />
+                <RetiredProfile saveId={saveId} retiredId={r.id} leagues={leagues} />
               </StatsDetailRow>
             ),
           ];

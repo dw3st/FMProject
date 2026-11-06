@@ -11,6 +11,7 @@ import { daysBetween } from "@/Domain/dates";
 import { formatWageShort } from "@/Domain/money";
 import { weeklyWage } from "@/Domain/finance/wages";
 import { attributesHidden } from "@/Domain/scouting/knowledge";
+import type { ScoutGrade } from "@/types/scoutingTypes";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { rangeMid, seenOverallRange, seenValueRange, seenWageRange, wageRangeLabel } from "@/Domain/scouting/seen";
 import { potentialBand } from "@/Domain/youth/potential";
@@ -108,6 +109,8 @@ export interface DisplayPlayer {
   affordable?: boolean;
   /** Can sign a pre-contract with the user's club now (set on the server). */
   preContract?: boolean;
+  /** Grade of the user's scout's latest report on him (set on the server). */
+  grade?: ScoutGrade;
 }
 
 /**

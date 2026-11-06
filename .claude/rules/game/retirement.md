@@ -108,3 +108,7 @@ Pedido do usuário. Trazer uma lenda com dinheiro só vale para quem está na li
 ## Quem é lenda (4.42.23)
 
 Report do usuário (Y. Mina, zagueiro de nota 47, era lenda). `isLegend` não usa mais um corte único de 45: nota (a maior da carreira, `peakLevel`, senão a da aposentadoria) acima do corte da linha (`LEGEND_LEVEL`, GOL 45, DEF 48, MEI 43, ATA 44, cerca dos 3% melhores de cada linha no mundo dos testers; fixo para ninguém deixar de ser lenda), classe mundial, ou carreira no jogo com nota de 40+ (`LEGEND_CAREER`: 3 títulos, seleção inclusive, 2 prêmios ou 300 jogos) ou um prêmio de melhor jogador. Super raro = `SUPER_LEVEL` por linha (cerca de 1%). `peakLevel` é atualizado na virada do país (`withPeakLevel`, `closeSeasonForPlayers`) e vai para o aposentado; quem se aposentou antes fica com a nota da aposentadoria.
+
+## Perfil do aposentado (4.47.6)
+
+Report do usuário. `GET /api/saves/:id/retired/:retiredId` (dono, 404 sem o registro) devolve o registro inteiro com `clubName`; na lista, "Ver perfil" abre `RetiredProfile` (rosto, bandeira, posição, pé, idade e data da aposentadoria, nível no último jogo e auge, os 13 atributos de `statsAtRetirement`, seleção e a `CareerTable`). A lista ganhou a bandeira ao lado do nome.

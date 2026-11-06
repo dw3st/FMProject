@@ -16,6 +16,9 @@ import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { wageFactorOf, weeklyWage } from "@/Domain/finance/wages";
 import { preContractEligible } from "@/Domain/negotiation/preContract";
 import type { Squad } from "@/types/playerTypes";
+import type { ScoutGrade } from "@/types/scoutingTypes";
+
+const GRADES: readonly ScoutGrade[] = ["A", "B", "C", "D", "E"];
 
 interface ScoutIndex {
   key: string;
@@ -61,14 +64,23 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
   const buyer = viewer?.ownClubId ? buyerContext(squads, viewer.ownClubId) : null;
   // Interest and "fits the budget" (#123): computed here, on what the user sees of each player.
   const preContractIds = buyer ? await preContractIdsOf(saveId, squads) : new Set<string>();
-  const players = buyer
-    ? rows.map((r) => {
+  const scouting = await saveService.getScouting(saveId, seatId);
+  // Grade of the latest report on each player (tester report: filter by grade).
+  const gradeOf = new Map<string, ScoutGrade>();
+  for (const r of [...scouting.reports].sort((a, b) => a.date.localeCompare(b.date))) gradeOf.set(r.playerId, r.grade);
+  // A player who already signed a pre-contract with the user's club is his: out of the search (tester report).
+  const signedPre = new Set((market?.preContracts ?? []).filter((p) => p.toClubId === viewer?.ownClubId).map((p) => p.playerId));
+  const players = rows.filter((r) => !signedPre.has(r.id)).map((r) => {
+    let row: DisplayPlayer = r;
+    if (buyer) {
       const extras = scoutRowExtras(r, buyer, weeklyWage);
-      const row = extras ? { ...r, ...extras } : r;
-      return preContractIds.has(r.id) ? { ...row, preContract: true } : row;
-    })
-    : rows;
-  const shortlistIds = new Set((await saveService.getScouting(saveId, seatId)).shortlist.map((e) => e.playerId));
+      if (extras) row = { ...row, ...extras };
+      if (preContractIds.has(r.id)) row = { ...row, preContract: true };
+    }
+    const grade = gradeOf.get(r.id);
+    return grade ? { ...row, grade } : row;
+  });
+  const shortlistIds = new Set(scouting.shortlist.map((e) => e.playerId));
   const entry: ScoutIndex = {
     key,
     players,
@@ -202,6 +214,9 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyAffordable: f.onlyAffordable === true,
       onlyPreContract: f.onlyPreContract === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
+      grades: Array.isArray(f.grades) ? [...new Set(f.grades.filter((g): g is ScoutGrade => GRADES.includes(g as ScoutGrade)))] : [],
+      minPotential: Math.min(100, Math.max(0, asFiniteNumber(f.minPotential, 0))),
+      maxPotential: Math.min(100, Math.max(0, asFiniteNumber(f.maxPotential, 100))),
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",
     sortDir: b.sortDir === "asc" ? "asc" : "desc",

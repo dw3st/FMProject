@@ -27,6 +27,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.6",
+    date: "2026-11-06",
+    time: "09:18",
+    items: [
+      {
+        pt: "Olheiro: filtros de potencial e de nota do relatório (A a E). \"Só jogadores livres\", \"Apenas à venda\" e \"Só pré-contrato\" podem ser marcados juntos e somam os resultados.",
+        en: "Scout: filters for potential and for the report grade (A to E). \"Free agents only\", \"For sale only\" and \"Pre-contract only\" can be ticked together and add up their results.",
+      },
+      {
+        pt: "Aposentados: \"Ver perfil\" mostra o jogador como ele estava no último jogo, com bandeira, posição, nível, auge, atributos, seleção e carreira.",
+        en: "Retired players: \"Show profile\" shows the player as he was in his last game, with flag, position, level, peak, attributes, national team and career.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A busca do olheiro não mostra mais jogadores com quem você já assinou pré-contrato.",
+        en: "The scout search no longer lists players who already signed a pre-contract with you.",
+      },
+    ],
+  },
+  {
     version: "4.47.5",
     date: "2026-11-06",
     time: "08:52",

@@ -12,6 +12,9 @@ import { Chip } from "@/GameInterface/ui/Chip";
 import { Button } from "@/GameInterface/ui/Button";
 import { SavedScoutFilters } from "@/GameInterface/Scout/SavedScoutFilters";
 import type { SavedScoutFilter } from "@/Domain/scout/savedFilters";
+import type { ScoutGrade } from "@/types/scoutingTypes";
+
+const SCOUT_GRADES: readonly ScoutGrade[] = ["A", "B", "C", "D", "E"];
 
 export type { ScoutFilterState };
 
@@ -209,15 +212,69 @@ export function ScoutFilters({
           onChange={(v) => setFilters({ ...filters, nationality: v })}
           options={nationalityOptions}
         />
+
+        {/* Potential (0–100): the middle of the shown range, his overall past 23 */}
+        <div>
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
+            {t("scout.filters.potential")}
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={filters.minPotential ?? 0}
+              onChange={(e) => setFilters({ ...filters, minPotential: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
+              className={inputClass}
+            />
+            <span className="text-muted-foreground text-sm font-bold">-</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={filters.maxPotential ?? 100}
+              onChange={(e) => setFilters({ ...filters, maxPotential: Math.min(100, Math.max(0, parseInt(e.target.value) || 100)) })}
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        {/* Grade of the scout's latest report: any of the ticked ones */}
+        <div className="col-span-2">
+          <label
+            className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display"
+            title={t("scout.filters.gradeHint")}
+          >
+            {t("scout.filters.grade")}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {SCOUT_GRADES.map((g) => {
+              const on = (filters.grades ?? []).includes(g);
+              return (
+                <Chip
+                  key={g}
+                  selected={on}
+                  title={t("scout.filters.gradeHint")}
+                  onClick={() => setFilters({
+                    ...filters,
+                    grades: on ? (filters.grades ?? []).filter((x) => x !== g) : [...(filters.grades ?? []), g],
+                  })}
+                >
+                  {g}
+                </Chip>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* For Sale Only toggle */}
       <div className="mt-4 pt-4 border-t border-border/40 flex flex-wrap gap-2">
-        <Chip selected={!!filters.onlyForSale} onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}>
+        <Chip selected={!!filters.onlyForSale} title={t("scout.filters.availabilityHint")} onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}>
           <Icon name="tag" className="w-4 h-4" />
           {t("scout.filters.forSaleOnly")}
         </Chip>
-        <Chip selected={!!filters.onlyFree} onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}>
+        <Chip selected={!!filters.onlyFree} title={t("scout.filters.availabilityHint")} onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}>
           <Icon name="tag" className="w-4 h-4" />
           {t("scout.filters.freeAgentsOnly")}
         </Chip>

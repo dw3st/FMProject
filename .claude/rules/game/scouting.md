@@ -335,3 +335,7 @@ ou B; o relatório continua marcando a joia como antes.
 Report de tester. `GET /scouting` devolve os relatórios sem os de jogadores que hoje estão no clube do jogador (elenco ou
 base: comprados, contratados) e marca `ScoutReport.gone` (só na resposta) quem saiu do clube observado: a tabela mostra o
 nome sem link e "mudou de clube" (`reportsView`, `scoutingRoutes.ts`).
+
+## Filtros de disponibilidade, nota e potencial (4.47.6)
+
+Report do usuário. "Só livres", "Apenas à venda" e "Só pré-contrato" formam um grupo que soma (OU); sem nenhum marcado, os livres ficam fora como antes. Filtro de nota (`grades`, chips A–E): só jogadores com relatório, pela nota do relatório mais recente (`DisplayPlayer.grade`). Potencial (`minPotential`/`maxPotential`, 0–100): o meio da faixa vista (`potentialRange`), senão o nível. Jogadores com pré-contrato já assinado com o clube do jogador saem da busca.

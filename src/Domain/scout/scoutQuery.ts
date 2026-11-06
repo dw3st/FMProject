@@ -114,15 +114,30 @@ export function filterScoutPlayers(
   shortlistIds: Set<string> = new Set(),
 ): DisplayPlayer[] {
   const name = filters.name ? filters.name.toLowerCase() : "";
+  const anyAvailability = !!(filters.onlyFree || filters.onlyForSale || filters.onlyPreContract);
+  const grades = filters.grades && filters.grades.length > 0 ? new Set(filters.grades) : null;
+  const minPot = filters.minPotential ?? 0;
+  const maxPot = filters.maxPotential ?? 100;
   return players.filter((player) => {
-    // Free agents only show in the "free agents" view; every other search is club players only.
-    if (filters.onlyFree ? !player.free : player.free) return false;
-    if (filters.onlyForSale && !sellListedIds.has(player.id)) return false;
+    // Availability (tester report): free, for sale and pre-contract add up — any ticked one passes. With none
+    // ticked the search is club players only (free agents only show when "free" is ticked).
+    if (anyAvailability) {
+      const ok = (filters.onlyFree && player.free === true)
+        || (filters.onlyForSale && !player.free && sellListedIds.has(player.id))
+        || (filters.onlyPreContract && player.preContract === true);
+      if (!ok) return false;
+    } else if (player.free) return false;
     if (filters.onlyShortlist && !shortlistIds.has(player.id)) return false;
     if (filters.onlyAwarded && !player.awarded) return false;
     // Set on the server for every player outside the user's squad (`scoutRowExtras`).
     if (filters.onlyAffordable && player.affordable !== true) return false;
-    if (filters.onlyPreContract && player.preContract !== true) return false;
+    // Grade of the scout's latest report on him (set on the server); no report = no grade.
+    if (grades && (!player.grade || !grades.has(player.grade))) return false;
+    // Potential as the screen shows it (the middle of the range), else his overall; 0..100.
+    if (minPot > 0 || maxPot < 100) {
+      const pot = (player.potentialRange ? rangeMid(player.potentialRange) : player.avg) * 10;
+      if (pot < minPot || pot > maxPot) return false;
+    }
     // Rows without `knowledge` are exact (own squad).
     if ((filters.minKnowledge ?? 0) > 0 && (player.knowledge ?? 100) < filters.minKnowledge!) return false;
     if (name && !player.name.toLowerCase().includes(name)) return false;

@@ -1,4 +1,5 @@
 import { ATTRIBUTE_LIST, type AttributeId } from "@/Domain/attributes";
+import type { ScoutGrade } from "@/types/scoutingTypes";
 
 /**
  * Default top of the price filter (Mâ‚¬). A value at or above it means no upper limit: the market value grows
@@ -39,6 +40,11 @@ export interface ScoutFilterState {
   onlyAffordable?: boolean;
   /** Only players who can sign a pre-contract with the user's club now (`preContractEligible`, on the server). */
   onlyPreContract?: boolean;
+  /** Grades of the scout's latest report to keep (empty / absent = any, players without a report included). */
+  grades?: ScoutGrade[];
+  /** Potential range on the 0–100 screen scale (the middle of the shown range; his overall past 23). */
+  minPotential?: number;
+  maxPotential?: number;
 }
 
 /** Attribute groups of the search filters (#147); every listed attribute (`ATTRIBUTE_LIST`) is in exactly one. */
@@ -104,5 +110,8 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     onlyAwarded: false,
     onlyAffordable: false,
     onlyPreContract: false,
+    grades: [],
+    minPotential: 0,
+    maxPotential: 100,
   };
 }

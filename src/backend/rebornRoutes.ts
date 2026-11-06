@@ -129,6 +129,22 @@ export const rebornRoutes = {
     });
   },
 
+  /**
+   * `GET` - one retired player as he was in his last game (tester report): the whole record, attributes included,
+   * with his last club's name. 404 when he is not in the list.
+   */
+  "/api/saves/:saveId/retired/:retiredId": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const retiredId = req.params.retiredId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const rec = (await saveService.getRetired(saveId)).find((r) => r.id === retiredId);
+    if (!rec) return Response.json({ error: "not found" }, { status: 404 });
+    const index = await saveService.getSquadIndex(saveId);
+    return Response.json({ ...rec, clubName: index.byId(rec.squadId)?.name ?? rec.history?.at(-1)?.clubName ?? null });
+  },
+
   /** `POST { on }` - stars (or unstars) a retired player for this manager (tester report). 409 `favoritesFull`. */
   "/api/saves/:saveId/retired/:retiredId/favorite": async (req: Req) => {
     const saveId = req.params.saveId!;
