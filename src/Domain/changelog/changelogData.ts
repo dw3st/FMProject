@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.20",
+    date: "2026-11-06",
+    time: "12:12",
+    items: [
+      {
+        pt: "Formação: a bandeira da nacionalidade aparece ao lado do nome nas listas de titulares e reservas.",
+        en: "Formation: the nationality flag shows next to the name in the starters and bench lists.",
+      },
+    ],
+  },
+  {
     version: "4.47.19",
     date: "2026-11-06",
     time: "12:00",

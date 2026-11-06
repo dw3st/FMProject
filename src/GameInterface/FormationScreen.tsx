@@ -67,7 +67,9 @@ import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPa
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
-import { competitionName } from "@/Domain/world/labels";
+import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { Flag } from "@/GameInterface/Components/Flag";
 import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
 import { getEnergyColor, PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
@@ -1115,7 +1117,8 @@ function SquadPlayerRow({
   onClick?: () => void;
   injured?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const flagCode = player.nationality ? nationalityFlagCode(player.nationality) : null;
   const [tip, setTip] = useState<{ left: number; top: number } | null>(null);
   useEffect(() => {
     if (!tip) return;
@@ -1182,6 +1185,11 @@ function SquadPlayerRow({
         {badgeLabel}
       </span>
       <span className="flex-1 min-w-0 flex items-center gap-1.5">
+        {flagCode && (
+          <span title={nationalityDisplayName(player.nationality ?? "", i18n.language, t)} className="shrink-0 inline-flex">
+            <Flag code={flagCode} className="w-[18px] h-[13px]" />
+          </span>
+        )}
         <span className="font-semibold text-sm text-foreground truncate">{player.name}</span>
         {aptitude && (
           <span
