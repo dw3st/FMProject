@@ -6,6 +6,7 @@
  *
  *   bun scripts/fetchTsdbBadgeOverrides.ts
  */
+import { sameCountry } from "@/../scripts/thesportsdb/badgeMatch";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -21,7 +22,6 @@ const countryOf = new Map<string, string>();
 for (const league of Object.values(leagues)) {
   for (const row of league.standings ?? []) if (league.country) countryOf.set(row.squadId, league.country);
 }
-const SAME_COUNTRY: Record<string, string> = { Czechia: "Czech Republic", "Türkiye": "Turkey" };
 const NOT_FIRST_TEAM = /\b(women|ladies|u\d\d|youth|b\.?c\.?|ii|reserves?)\b/i;
 
 let ok = 0;
@@ -38,7 +38,7 @@ for (const [squadId, idTeam] of Object.entries(pairs)) {
     : team.strSport !== "Soccer" ? `sport ${team.strSport}`
       : !team.strBadge ? "no crest"
         : NOT_FIRST_TEAM.test(team.strTeam ?? "") ? `name ${team.strTeam}`
-          : country && team.strCountry !== country && team.strCountry !== SAME_COUNTRY[country] ? `country ${team.strCountry} x ${country}`
+          : country && !sameCountry(country, team.strCountry ?? "") ? `country ${team.strCountry} x ${country}`
             : null;
   if (reason) { dropped.push(`${squadId} (${idTeam}): ${reason}`); console.log("DROP", squadId, reason); continue; }
   if (await curlFile(`${team!.strBadge}/small`, file) || await curlFile(team!.strBadge!, file)) { ok++; console.log("ok", squadId, team!.strTeam); }

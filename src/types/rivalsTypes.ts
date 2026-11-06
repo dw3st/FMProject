@@ -133,6 +133,8 @@ export interface RivalNextMatch {
   opponentName: string;
   home: boolean;
   competition: string;
+  /** A game of the national team he coaches: his nation (data spelling); the opponent's name is a nation too. */
+  national?: string;
 }
 
 export interface RivalRow {
@@ -144,6 +146,8 @@ export interface RivalRow {
   clubId: string;
   clubName: string;
   clubColors: [string, string];
+  /** The national team he also coaches (nation, data spelling), or null. */
+  nationalTeam?: string | null;
   leagueSlug: string;
   leaguePosition: number | null;
   form: ("W" | "D" | "L")[];

@@ -11,6 +11,7 @@ import type { RivalNextMatch, RivalRow, RivalsView } from "@/types/rivalsTypes";
 
 async function nextMatchOf(
   service: SaveService, saveId: string, seatId: string, from: string, nameOf: (id: string) => string,
+  nations: Map<string, string>, myNation: string | null,
 ): Promise<RivalNextMatch | null> {
   try {
     const date = await seatNextMatchDate(service, saveId, seatId, from);
@@ -18,6 +19,13 @@ async function nextMatchOf(
     const seat = await service.getSeat(saveId, seatId);
     const f = await seatMatchOn(service, saveId, seatId, date);
     if (!f) return null;
+    if (f.home !== seat?.clubId && f.away !== seat?.clubId && myNation) {
+      // A game of his national team (tester report, 8.8.7: it showed the raw id of his own nation).
+      const myId = [...nations].find(([, n]) => n === myNation)?.[0];
+      const home = f.home === myId;
+      const opponentId = home ? f.away : f.home;
+      return { date, opponentId, opponentName: nations.get(opponentId) ?? opponentId, home, competition: f.competition, national: myNation };
+    }
     const home = f.home === seat?.clubId;
     const opponentId = home ? f.away : f.home;
     return { date, opponentId, opponentName: nameOf(opponentId), home, competition: f.competition };
@@ -36,10 +44,14 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
   const live = liveScoresOf(saveId, now);
   const index = await service.getSquadIndex(saveId);
   const nameOf = (id: string) => index.byId(id)?.name ?? id;
+  const national = await service.getNationalState(saveId);
+  const nations = new Map(Object.values(national?.teams ?? {}).map((tm) => [tm.id, tm.nation] as const));
   const rows: RivalRow[] = [];
   for (const e of standings.entries) {
     const seat = await service.getSeat(saveId, e.seatId);
     const employed = !!seat?.clubId && !seat.unemployed;
+    const natId = national?.human?.[e.seatId]?.teamId;
+    const myNation = natId ? nations.get(natId) ?? null : null;
     rows.push({
       seatId: e.seatId,
       nickname: e.nickname,
@@ -49,11 +61,12 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
       clubId: employed ? e.clubId : "",
       clubName: employed ? e.clubName : "",
       clubColors: e.clubColors,
+      nationalTeam: myNation,
       leagueSlug: seat?.leagueSlug ?? "",
       leaguePosition: employed && seat ? await positionOf(service, saveId, seat.leagueSlug, seat.clubId) : null,
       form: formOf(feed, e.seatId),
       last: feed.find((r) => r.seatId === e.seatId) ?? null,
-      next: employed && today ? await nextMatchOf(service, saveId, e.seatId, today, nameOf) : null,
+      next: (employed || myNation) && today ? await nextMatchOf(service, saveId, e.seatId, today, nameOf, nations, myNation) : null,
       friendsRank: rankOf(standings.entries, e.seatId),
       friendsTotal: e.total,
       live: live.find((l) => l.seatId === e.seatId) ?? null,

@@ -27,6 +27,29 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.7",
+    date: "2026-11-06",
+    time: "15:33",
+    items: [
+      {
+        pt: "Elenco: botão de pôr à venda na própria lista, com o preço pedido, sem abrir a ficha do jogador.",
+        en: "Squad: a for-sale button in the list itself, with the asking price, without opening the player's page.",
+      },
+      {
+        pt: "Rivais: o técnico que treina uma seleção aparece com o clube e a seleção, e o jogo da seleção mostra os países.",
+        en: "Rivals: a manager who coaches a national team shows the club and the nation, and the national game shows the countries.",
+      },
+      {
+        pt: "Seleção: botão para usar a formação e o estilo do clube, e atalho para a tática da seleção na tela de Formação.",
+        en: "National team: a button to use the club's formation and style, and a shortcut to the national tactics in Formation.",
+      },
+      {
+        pt: "Jihlava ganhou o escudo.",
+        en: "Jihlava now has its crest.",
+      },
+    ],
+  },
+  {
     version: "8.8.6",
     date: "2026-11-06",
     time: "15:00",

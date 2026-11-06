@@ -656,6 +656,16 @@ export function FormationScreen() {
             accent={t("screenTitles.formation.accent")}
             trailing={
               <div className="flex items-center gap-2">
+                {/* His national team's tactics live in the national team screen (tester report, 8.8.7) */}
+                {save?.season?.nationalTeamId && (
+                  <a
+                    href="/leagues?tab=national&national=coach"
+                    className="flex items-center gap-2 h-10 px-4 rounded-md border border-border text-sm font-semibold text-muted-foreground no-underline hover:text-foreground hover:border-primary"
+                  >
+                    <Icon name="globe" className="w-4 h-4" />
+                    {t("formations.nationalTactics")}
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={handleAutoFill}

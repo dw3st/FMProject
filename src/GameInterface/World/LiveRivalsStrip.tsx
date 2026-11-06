@@ -1,3 +1,4 @@
+import { rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
@@ -97,7 +98,10 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
             <li key={r.seatId} className="flex items-center gap-1.5 min-h-8 px-2 text-sm tabular-nums text-muted-foreground">
               <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
               <span aria-hidden="true">·</span>
-              {n && homeId && awayId ? (
+              {n?.national ? (
+                // A game of his national team: names, no club crests (tester report, 8.8.7)
+                <span>{t("rivals.nextShort")} {rivalNextOpponent(n, i18n.language, t)} · {formatGameDate(n.date, i18n.language, "dayMonth")}</span>
+              ) : n && homeId && awayId ? (
                 <>
                   <span>{t("rivals.nextShort")}</span>
                   <ClubLogo logoUrl={squadLogoUrl(homeId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />

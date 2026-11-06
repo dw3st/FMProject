@@ -1,3 +1,4 @@
+import { rivalNation, rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { useTranslation } from "react-i18next";
 import {
   ClubCell, CrestCell, NameCell, NumberCell, RankCell, StatsCell, StatsHead, StatsRow, StatsTable,
@@ -49,7 +50,7 @@ export function RivalsTable({ rows, onSelect }: { rows: RivalRow[]; onSelect: (s
             </span>
           </NameCell>
           <CrestCell squadId={r.clubId || null} />
-          <ClubCell>{r.clubId ? r.clubName : t("world.members.unemployed")}</ClubCell>
+          <ClubCell>{[r.clubId ? r.clubName : t("world.members.unemployed"), rivalNation(r.nationalTeam, i18n.language, t)].filter(Boolean).join(" · ")}</ClubCell>
           <NumberCell>{r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}</NumberCell>
           <StatsCell><RivalForm form={r.form} /></StatsCell>
           <StatsCell>
@@ -57,7 +58,7 @@ export function RivalsTable({ rows, onSelect }: { rows: RivalRow[]; onSelect: (s
           </StatsCell>
           <StatsCell>
             <span className="text-sm tabular-nums">
-              {r.next ? t("rivals.nextValue", { date: formatDay(r.next.date, i18n.language), opponent: r.next.opponentName }) : "—"}
+              {r.next ? t("rivals.nextValue", { date: formatDay(r.next.date, i18n.language), opponent: rivalNextOpponent(r.next, i18n.language, t) }) : "—"}
             </span>
           </StatsCell>
           <StatsCell>

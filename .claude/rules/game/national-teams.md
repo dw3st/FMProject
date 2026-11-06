@@ -264,3 +264,5 @@ seleção; nomes das nações nas telas da partida no idioma do carregamento da 
 ## Assentos (Etapa 43)
 
 `NationalState.human` e `offers` são por assento; a seleção de um humano tem `managerId = "seat:<seatId>"`. Aceitar fecha as ofertas daquela seleção para todos os assentos. Ver `.claude/rules/game/multiplayer.md`.
+
+Tática da seleção (8.8.7, report de tester): atalho "Tática da seleção" na Formação para quem treina uma; "Usar a tática do clube" copia formação e estilo de `tactics.json` (formação livre: só o estilo), sem gravar até Salvar.

@@ -249,3 +249,5 @@ Pedido do usuário. Lógica pura em `src/Domain/negotiation/freeSigning.ts` (`NE
 ## Contraproposta com − e + (8.8.4)
 
 Report do usuário. A contraproposta de uma proposta da IA (`BidCard`) e a de uma proposta entre técnicos (`SeatOfferCard`) têm os botões − e + em volta da barra, no passo do preço pedido (`stepAskingPrice`); a taxa de empréstimo entre técnicos desce até 0. A Formação mostra o OVR de 0 a 100 (`attrDisplay`) na lista, na ficha e na nota da vaga.
+
+Vender pelo Elenco (8.8.7, report de tester): na tabela do próprio elenco, a etiqueta (âmbar quando já está à venda) abre o `AskingPriceModal` ali mesmo, com a lista de venda de `GET /sell-list`.

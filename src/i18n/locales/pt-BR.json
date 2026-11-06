@@ -978,7 +978,8 @@
     "unregisteredHidden_other": "{{count}} não inscritos em {{competition}} fora da lista",
     "seasonRating": "Nota na temporada",
     "seasonGames_one": "{{count}} jogo",
-    "seasonGames_other": "{{count}} jogos"
+    "seasonGames_other": "{{count}} jogos",
+    "nationalTactics": "Tática da seleção"
   },
   "roles": {
     "groups": {
@@ -3693,7 +3694,8 @@
       "listSale": "Colocar à venda",
       "unlistSale": "Tirar da venda",
       "listLoan": "Colocar para empréstimo",
-      "unlistLoan": "Tirar do empréstimo"
+      "unlistLoan": "Tirar do empréstimo",
+      "askingShort": "À venda · {{price}}"
     },
     "overview": {
       "tab": "Negociações",
@@ -5376,7 +5378,10 @@
         "resigned": "Você deixou o cargo na seleção ({{nation}}). O seu clube não muda."
       },
       "open": "Abrir Minha seleção"
-    }
+    },
+    "useClubTactics": "Usar a tática do clube",
+    "clubTacticsCopied": "Formação e estilo do clube copiados. Salve para manter.",
+    "clubTacticsCustom": "Seu clube usa formação livre: só o estilo foi copiado. Salve para manter."
   },
   "press": {
     "closed": "Esta coletiva já foi encerrada.",

@@ -961,3 +961,7 @@ Pedido do usuário. A tela de assistir tem o botão "Chat da liga" e, na coluna 
 
 Report de tester, opção B do mock. No Painel de um mundo em grupo, sem jogo seu no dia (`me.next.date` diferente de hoje e sem jogo seu ao vivo), o primeiro amigo jogando ao vivo abre na janela flutuante de assistir, no canto (`autoWatchSeat`, `Watch/autoWatch.ts`; `WatchTarget.auto = { day }`, janela `watch-corner`, menor, embaixo à direita). A janela fecha sozinha quando o jogo dele termina (`stillPlaying`, ao recarregar a lista de rivais). "Esconder" fecha e guarda `saveId:seatId:dia` em `localStorage` (`fm.watch.autoHidden.v1`, os últimos 20): aquele jogo não abre de novo no dia. Abrir pelo botão Assistir continua a janela grande de antes.
 
+
+### Seleção na linha do rival (8.8.7)
+
+Report do usuário. `RivalRow.nationalTeam` (a seleção que ele treina, grafia dos dados) aparece ao lado do clube; um próximo jogo da seleção traz `RivalNextMatch.national` e o adversário pelo nome do país (`rivalNextOpponent`, `World/rivalNext.ts`), sem escudos na faixa da partida.

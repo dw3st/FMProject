@@ -4,7 +4,10 @@ import { MORALE } from "@/Domain/morale/moraleConfig";
 import { ATTENTION_BUTTON, AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
 import { contractRenewalDue } from "@/Domain/contracts/contracts";
 import { formatGameDate } from "@/GameInterface/formatDate";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { AskingPriceModal } from "@/GameInterface/Negotiation/AskingPriceModal";
+import type { SellCandidate } from "@/types/transferMarketTypes";
+import { formatFee } from "@/Domain/money";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
 import { SettlingBadge } from "@/GameInterface/Components/SettlingBadge";
@@ -54,12 +57,21 @@ export function SquadRosterTable({
   const { t, i18n } = useTranslation();
   const { currentDate, session, refresh } = useGameSave();
   const [talkWith, setTalkWith] = useState<DisplayPlayer | null>(null);
+  const [selling, setSelling] = useState<DisplayPlayer | null>(null);
+  const [sellList, setSellList] = useState<SellCandidate[]>([]);
+  const saleOf = (id: string) => sellList.find((c) => c.playerId === id);
   // Same star index as the player profile (`useStarPlayers`) — the list used to show none.
   const stars = useStarPlayers(session?.saveId, currentDate);
   const [sortKey, setSortKey] = useState<string>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   // Morale (`.claude/rules/game/morale.md`) exists only for the human club's own squad.
   const showMorale = !!mySquadId && squad.id === mySquadId;
+  useEffect(() => {
+    if (!showMorale || !session) return;
+    let alive = true;
+    fetch(`/api/saves/${session.saveId}/sell-list`).then((r) => (r.ok ? r.json() : [])).then((l: SellCandidate[]) => { if (alive) setSellList(l); }).catch(() => {});
+    return () => { alive = false; };
+  }, [showMorale, session?.saveId]);
   const [onlyUnhappy, setOnlyUnhappy] = useState(false);
 
   // One grid template shared by the header and every row, so each label sits over its values.
@@ -86,7 +98,7 @@ export function SquadRosterTable({
   ];
   // Own squad: Talk (or Answer, with an open request) beside Renew, icon buttons so the table fits without a
   // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
-  const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "6.5rem" : "7rem"].join(" ");
+  const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "9.5rem" : "7rem"].join(" ");
   const talkOf = (id: string) => squad.moraleClub?.talks.find((x) => x.playerId === id) ?? null;
   // Already talked (praise / demand works once per `PRAISE_EVERY_DAYS`): the button rests until then (user request, 4.47.11).
   const talkedRest = (id: string): { on: string; until: string } | null => {
@@ -263,6 +275,20 @@ export function SquadRosterTable({
               <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
             <div className="px-3 py-2.5 flex justify-center gap-2">
+              {/* Put him up for sale without leaving the squad (tester report, 8.8.7) */}
+              {showMorale && session && !player.loan && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelling(player); }}
+                  title={saleOf(player.id) ? t("negotiation.lists.askingShort", { price: formatFee(saleOf(player.id)!.askingPrice ?? player.valueMillions * 1_000_000) }) : t("negotiation.lists.listSale")}
+                  aria-label={t("negotiation.lists.listSale")}
+                  className={`flex items-center justify-center w-9 h-8 border rounded-lg transition-all cursor-pointer ${
+                    saleOf(player.id) ? "bg-chart-4/20 text-chart-4 border-chart-4/50 hover:bg-chart-4 hover:text-background" : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-primary"
+                  }`}
+                >
+                  <Icon name="tag" className="w-4 h-4" />
+                </button>
+              )}
               {showMorale && !player.loan && talkedRest(player.id) && (
                 <span
                   title={t("morale.talk.talkedRest", {
@@ -327,6 +353,18 @@ export function SquadRosterTable({
       </div>
       </div>
       <p className="m-0 px-4 py-2.5 border-t border-border text-sm text-muted-foreground">{t("dashboard.squadRosterTable.legend")}</p>
+      {selling && session && (
+        <AskingPriceModal
+          saveId={session.saveId}
+          playerId={selling.id}
+          playerName={selling.name}
+          value={selling.valueMillions * 1_000_000}
+          {...(saleOf(selling.id)?.askingPrice !== undefined ? { current: saleOf(selling.id)!.askingPrice! } : {})}
+          listed={!!saleOf(selling.id)}
+          onClose={() => setSelling(null)}
+          onSaved={(list) => setSellList(list)}
+        />
+      )}
       {talkWith && session && (
         <TalkModal
           saveId={session.saveId}

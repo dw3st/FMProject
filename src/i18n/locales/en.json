@@ -978,7 +978,8 @@
     "unregisteredHidden_other": "{{count}} not registered for {{competition}}, left out of the list",
     "seasonRating": "Season rating",
     "seasonGames_one": "{{count}} game",
-    "seasonGames_other": "{{count}} games"
+    "seasonGames_other": "{{count}} games",
+    "nationalTactics": "National team tactics"
   },
   "roles": {
     "groups": {
@@ -3693,7 +3694,8 @@
       "listSale": "List for sale",
       "unlistSale": "Remove from sale",
       "listLoan": "Offer on loan",
-      "unlistLoan": "Remove from loan list"
+      "unlistLoan": "Remove from loan list",
+      "askingShort": "For sale · {{price}}"
     },
     "overview": {
       "tab": "Negotiations",
@@ -5376,7 +5378,10 @@
         "resigned": "You left the {{nation}} job. Your club is not affected."
       },
       "open": "Open My national team"
-    }
+    },
+    "useClubTactics": "Use the club tactics",
+    "clubTacticsCopied": "Club formation and style copied. Save to keep them.",
+    "clubTacticsCustom": "Your club uses a free formation: only the style was copied. Save to keep it."
   },
   "press": {
     "closed": "This press conference is already over.",

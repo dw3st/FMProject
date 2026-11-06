@@ -2,6 +2,7 @@
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
  * (`dashboardData.ts`); each card links to the screen it summarises.
  */
+import { rivalNation, rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
@@ -1052,7 +1053,7 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                 <ClubLogo logoUrl={squadLogoUrl(r.clubId)} primaryColor={r.clubColors[0]} secondaryColor={r.clubColors[1]} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
                 <span className="min-w-0 flex-1 truncate">
                   <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
-                  <span className="text-sm text-muted-foreground"> · {r.clubName}</span>
+                  <span className="text-sm text-muted-foreground"> · {[r.clubName, rivalNation(r.nationalTeam, i18n.language, t)].filter(Boolean).join(" · ")}</span>
                 </span>
                 <span className="text-sm text-muted-foreground tabular-nums">
                   {r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}
@@ -1073,7 +1074,7 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                 </div>
               ) : r.next ? (
                 <p className="m-0 text-sm text-muted-foreground pl-11">
-                  {t("rivals.card.next", { date: formatDay(r.next.date, i18n.language), opponent: r.next.opponentName })}
+                  {t("rivals.card.next", { date: formatDay(r.next.date, i18n.language), opponent: rivalNextOpponent(r.next, i18n.language, t) })}
                 </p>
               ) : null}
             </li>

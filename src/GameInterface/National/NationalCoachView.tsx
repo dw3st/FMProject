@@ -250,6 +250,23 @@ function TacticsBlock({ saveId, data, onSaved }: { saveId: string; data: CoachDa
     value: p.id, label: `${t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role })} · ${p.name} · ${Math.round(p.overall * 10)}`,
   }))];
 
+  async function copyClub() {
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/tactics`);
+      if (!res.ok) throw new Error();
+      const club = await res.json() as { formation?: string; tactical_style?: TacticalStyle };
+      if (club.formation && FORMATION_IDS.includes(club.formation)) {
+        if (club.formation !== formation) setLineup([]);
+        setFormation(club.formation);
+      }
+      if (club.tactical_style) setStyle(club.tactical_style);
+      setMsg({ ok: true, text: club.formation && !FORMATION_IDS.includes(club.formation) ? t("nationalCoach.clubTacticsCustom") : t("nationalCoach.clubTacticsCopied") });
+    } catch {
+      setMsg({ ok: false, text: t("nationalCoach.error.generic") });
+    }
+  }
+
   async function save() {
     setBusy(true);
     setMsg(null);
@@ -301,6 +318,8 @@ function TacticsBlock({ saveId, data, onSaved }: { saveId: string; data: CoachDa
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <Button disabled={busy} onClick={() => void save()}>{t("nationalCoach.saveTactics")}</Button>
+        {/* The club's formation and style as a starting point (tester report, 8.8.7); the XI stays: other players */}
+        <Button variant="secondary" disabled={busy} onClick={() => void copyClub()}>{t("nationalCoach.useClubTactics")}</Button>
         {msg && <span className={`text-sm ${msg.ok ? "text-primary" : "text-destructive"}`}>{msg.text}</span>}
       </div>
     </section>
