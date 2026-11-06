@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.19",
+    date: "2026-11-06",
+    time: "12:00",
+    items: [],
+    fixes: [
+      {
+        pt: "Inscritos: uma copa ou competição continental de que o clube já foi eliminado aparece como eliminada, sem edição, em vez de mostrar titulares como não inscritos.",
+        en: "Registration: a cup or continental competition the club is already out of shows as out, with no editing, instead of listing starters as unregistered.",
+      },
+    ],
+  },
+  {
     version: "4.47.18",
     date: "2026-11-06",
     time: "11:48",

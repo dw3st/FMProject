@@ -4671,7 +4671,9 @@
       "exemptIbero": "{{competition}}: doesn't take a non-EU place (Latin American aged {{age}} or over).",
       "exemptAcp": "{{competition}}: doesn't take a non-EU place (ACP country).",
       "greenCard": "{{competition}}: counts as domestic through the green card."
-    }
+    },
+    "out": "Knocked out of this competition: the list counts for no more matches.",
+    "outTab": "{{name}} · out"
   },
   "complaint": {
     "manager": "Manager",

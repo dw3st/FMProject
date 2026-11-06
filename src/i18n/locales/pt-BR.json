@@ -4671,7 +4671,9 @@
       "exemptIbero": "{{competition}}: não ocupa vaga de extracomunitário (latino-americano com {{age}} anos ou mais).",
       "exemptAcp": "{{competition}}: não ocupa vaga de extracomunitário (país ACP).",
       "greenCard": "{{competition}}: conta como doméstico pelo green card."
-    }
+    },
+    "out": "Eliminado desta competição: a lista não vale para mais nenhum jogo.",
+    "outTab": "{{name}} · eliminado"
   },
   "complaint": {
     "manager": "Técnico",

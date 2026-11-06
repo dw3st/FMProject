@@ -122,8 +122,11 @@ export function RegistrationView() {
   if (!comp) return <p className="text-sm text-muted-foreground m-0">{t("registration.none")}</p>;
 
   const { status, counts, rule } = comp;
-  const open = status.open;
-  const deadline = open
+  // Knocked out (or the competition is over): nothing to edit, the list counts for no match (4.47.19).
+  const open = status.open && !comp.out;
+  const deadline = comp.out
+    ? t("registration.out")
+    : open
     ? t("registration.openUntil", { date: formatDay(status.until ?? "", i18n.language) })
     : status.stageStarted && !status.opensOn
       ? t("registration.stageStarted")
@@ -154,7 +157,7 @@ export function RegistrationView() {
       <SegmentedTabs
         compact
         wrap
-        tabs={comps.map((c) => ({ key: c.slug, label: nameOf(c.slug) }))}
+        tabs={comps.map((c) => ({ key: c.slug, label: c.out ? t("registration.outTab", { name: nameOf(c.slug) }) : nameOf(c.slug) }))}
         active={active}
         onChange={setActive}
         aria-label={t("registration.competitions")}

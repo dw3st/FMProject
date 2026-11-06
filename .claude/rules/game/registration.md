@@ -224,3 +224,7 @@ da lista (`unregistered`).
 - A IA compra sem olhar a inscrição (o mercado não mudou); ver a medição do mercado.
 - O banco do motor é o elenco inteiro inscrito (fora do Brasil não há lista de 23 por jogo).
 - Libertadores e Sul-Americana sem trocas por fase além do prazo.
+
+## Eliminado da competição (4.47.19)
+
+Report do usuário. `outOfCompetition` (`src/Domain/registration/eliminated.ts`, com teste): sem jogo a disputar e com mata-mata perdido (jogo único ou ida e volta), fora do mata-mata já sorteado (fase de grupos) ou com campeão definido. `GET /registration` marca `out` na copa ou continental; a aba mostra "<competição> · eliminado", a linha "Eliminado desta competição" no lugar do prazo e desliga a edição.

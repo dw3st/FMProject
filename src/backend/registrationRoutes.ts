@@ -13,6 +13,7 @@ import { clubTrained, domesticNations, foreignBasis, isForeign, isFree, isGreenC
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { overallAvg } from "@/Domain/playerRating";
+import { outOfCompetition } from "@/Domain/registration/eliminated";
 import type { Squad } from "@/types/playerTypes";
 import type { ForeignCheckView, RegistrationCompView, RegistrationRowView } from "@/types/registrationTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -125,7 +126,17 @@ export const registrationRoutes = {
     const h = await humanCtx(saveId, auth.seatId);
     if (h instanceof Response) return h;
     const infos = await h.dctx.infosFor(h.squad, h.leagueSlug);
-    return Response.json({ date: h.date, competitions: infos.map((i) => compView(h.squad, i, h.date)) });
+    const competitions = await Promise.all(infos.map(async (i) => {
+      const view = compView(h.squad, i, h.date);
+      if (i.kind === "league") return view;
+      const [meta, fixtures] = await Promise.all([
+        saveService.getLeagueMeta(saveId, i.slug).catch(() => null),
+        saveService.getAllFixturesForLeague(saveId, i.slug).catch(() => []),
+      ]);
+      const champion = meta?.cup?.championId ?? meta?.continental?.championId ?? null;
+      return outOfCompetition(fixtures, h.squad.id, champion) ? { ...view, out: true } : view;
+    }));
+    return Response.json({ date: h.date, competitions });
   },
 
   /** `PUT { ids }`: a hand-edited list (manual mode). */

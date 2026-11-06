@@ -139,4 +139,6 @@ export interface RegistrationCompView {
   exception: boolean;
   counts: RegCounts;
   rows: RegistrationRowView[];
+  /** Cup or continental with no more matches for the club (knocked out, or over): the list counts for nothing. */
+  out?: boolean;
 }
