@@ -96,6 +96,9 @@ export interface PreContract {
   date: string;
   /** Signing bonus agreed, EUR, paid on arrival (4.47.9). */
   bonus?: number;
+  /** Only in the `/negotiation` response (4.47.21): his natural position and nationality, read from his club today. */
+  position?: string;
+  nationality?: string;
 }
 
 export interface SellOnHeld {

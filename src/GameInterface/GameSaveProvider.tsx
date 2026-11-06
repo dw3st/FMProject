@@ -47,6 +47,9 @@ export interface GameSaveContextValue {
   mergeSession: (patch: Partial<GameSession>) => void;
   /** Toggle a future non-game day between "training" and "rest". Optimistically updates local state. */
   toggleDayType: (date: string, type: "training" | "rest") => Promise<void>;
+  /** Rest or train on the eve of every coming match (4.47.21). */
+  setMatchEve: (eve: "rest" | "training") => Promise<void>;
+  matchEve: "rest" | "training";
   /** Update inbox messages locally (after mark-read calls) without refetching. */
   setInboxMessages: (updater: (prev: InboxMessage[] | null) => InboxMessage[] | null) => void;
 }
@@ -123,6 +126,25 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       setRestDaysOverride(null);
     }
   }, [save?.season?.restDays]);
+
+  const [matchEveOverride, setMatchEveOverride] = useState<"rest" | "training" | null>(null);
+  const setMatchEve = useCallback(async (eve: "rest" | "training") => {
+    const s = loadSession();
+    if (!s) return;
+    setMatchEveOverride(eve);
+    try {
+      const res = await fetch(`/api/saves/${s.saveId}/match-eve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eve }),
+      });
+      if (res.ok) setRestDaysOverride(((await res.json()) as { restDays: string[] }).restDays);
+      else setMatchEveOverride(null);
+    } catch {
+      setMatchEveOverride(null);
+    }
+  }, []);
+  const matchEve = matchEveOverride ?? save?.matchEve ?? "rest";
 
   const refreshInbox = useCallback(async () => {
     const s = loadSession();
@@ -238,6 +260,8 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       refreshInbox,
       mergeSession,
       toggleDayType,
+      setMatchEve,
+      matchEve,
       setInboxMessages,
     }),
     [
@@ -254,6 +278,8 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       refreshInbox,
       mergeSession,
       toggleDayType,
+      setMatchEve,
+      matchEve,
       setInboxMessages,
     ],
   );

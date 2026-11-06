@@ -9,6 +9,9 @@ import { homeMatchImportance } from "@/backend/matchImportance";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { standDepths, type StandDepths } from "@/Domain/facilities/standDepth";
+import { conditionOf } from "@/Domain/facilities/facilityItems";
+import { STADIUM_LIGHT, tierLight, type StadiumLight } from "@/Domain/matchday/stadiumLight";
+import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { managerFaceCountry, type ManagerFace } from "@/Domain/faces/managerFace";
 import { GATE } from "@/Domain/finance/gate";
 import type { Fixture } from "@/types/calendarTypes";
@@ -38,6 +41,16 @@ export interface MatchCrowd {
   /** The home ground seen from above (`stadiumLookOf`): its stable id and shape. */
   stadiumId: string;
   shape: StadiumShape;
+  /** The home ground's floodlights (Structure and lighting item, or the tier for an AI club): drawing only. */
+  light: StadiumLight;
+}
+
+/** The home club's floodlights: its Structure and lighting item, else the level of its tier; neutral = a good ground. */
+export function homeLight(home: Squad, neutral: boolean): StadiumLight {
+  if (neutral) return { level: STADIUM_LIGHT.NEUTRAL_LEVEL, condition: 100 };
+  const it = home.facilities?.items?.stadiumStructure;
+  if (it) return { level: it.level, condition: Math.round(conditionOf(it)) };
+  return tierLight(financialTierOf(home));
 }
 
 /** The decorations to draw at home (only those chosen and unlocked; absent when none). */
@@ -62,7 +75,7 @@ export async function matchCrowd(
 ): Promise<MatchCrowd> {
   const home = fixture.home === mySquad.id ? mySquad : opponentSquad;
   const homeCapacity = home.venue?.capacity ?? 0;
-  const look = stadiumLookOf(home, fixture.neutral ? fixture.id : undefined);
+  const look = { ...stadiumLookOf(home, fixture.neutral ? fixture.id : undefined), light: homeLight(home, !!fixture.neutral) };
   if (fixture.neutral) {
     return { attendance: 0, capacity: homeCapacity, neutral: true, importance: 1, known: false, ...look };
   }

@@ -74,7 +74,7 @@ function colorsOf(squadId: string, leagues: LeagueData[], standings: StandingRow
 export function DashboardScreen() {
   const { t, i18n } = useTranslation();
   const {
-    session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType,
+    session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType, setMatchEve, matchEve,
     inboxMessages, unreadInboxCount, setInboxMessages, refresh,
   } = useGameSave();
   const windowsData = useTransferWindows();
@@ -378,6 +378,8 @@ export function DashboardScreen() {
         currentDate={currentDate}
         leagues={leagues}
         onToggleDayType={toggleDayType}
+        matchEve={matchEve}
+        onMatchEve={setMatchEve}
       />
 
       {squad?.facilities && currentDate

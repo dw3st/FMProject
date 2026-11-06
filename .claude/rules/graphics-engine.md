@@ -536,3 +536,7 @@ Pedido do usuário. Enquanto uma maca desenhada está em campo (`stretcherPose(.
 ## Mastro e sombra das torres (4.47.18)
 
 Mock aprovado (opção C, concreto). Cada torre tem um mastro de concreto do pé (`towerFoot`, `MAST_CONCRETE.FOOT` tamanhos atrás do painel, para longe do campo) até o painel, desenhado sob a torre. A sombra (`towerShadow`, puro, com teste) vai do pé até onde cai o topo, na direção da sombra de sol dos jogadores (`Lighting.sunShadow`), mais longa com o sol baixo (`SHADOW_SHORT`..`SHADOW_LONG` da altura), com a sombra do painel na ponta; acima da arquibancada e da torcida, abaixo dos jogadores; nenhuma à noite. Só desenho.
+
+## Luz pela estrutura (4.47.21)
+
+Mock aprovado. `lightLook` (`src/Domain/matchday/stadiumLight.ts`, puro, com teste) sobre `PitchStadium.light` (`{ level, condition }`, do `match-setup` → `crowd.light`, `homeLight`: o item Estrutura e iluminação do mandante; sem itens, o tier, LOW 3 · MEDIUM 5 · HIGH 7 · ELITE 9; campo neutro 7). O nível dá a força (`gain` 0,6..1,12 sobre o brilho dos cantos e os fachos), a cor (`tint`, amarelada a branca) e uma escuridão extra à noite (`dark`, até 0,16 no nível 1). Abaixo de 40% de condição uma torre fica apagada (sem facho, sem brilho, canto escuro, painel apagado; sorteada pelo id do estádio) e as arquibancadas ganham manchas encardidas (sprite mascarado, sob os jogadores); abaixo de 15%, duas torres. Só desenho. `/test`: chips Light (low, top, worn, broken).

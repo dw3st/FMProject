@@ -1,4 +1,5 @@
 import { loanAvailability } from "@/Domain/negotiation/loans";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { negotiationSummary } from "@/Domain/negotiation/summary";
 import { playerSituation } from "@/Domain/negotiation/situation";
 import { starLimitResponse } from "@/backend/starLimitWorld";
@@ -88,7 +89,11 @@ export const negotiationRoutes = {
       clubId: meta.clubId,
       window: windows.seat(auth.seatId).today,
       summary,
-      preContracts: market?.preContracts ?? [],
+      // Position and nationality for the table (tester report, 4.47.21), read from his club today.
+      preContracts: await Promise.all((market?.preContracts ?? []).map(async (pc) => {
+        const p = (await saveService.getSquadById(saveId, pc.fromClubId))?.players.find((x) => x.id === pc.playerId);
+        return p ? { ...pc, position: preferredRole(p), ...(p.nationality ? { nationality: p.nationality } : {}) } : pc;
+      })),
       rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
       lostTargets: market?.lostTargets ?? [],
       bids,

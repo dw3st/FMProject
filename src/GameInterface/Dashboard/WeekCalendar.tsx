@@ -11,6 +11,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { HomeCard } from "@/GameInterface/Dashboard/HomeCards";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { RESULT_CHIP } from "@/GameInterface/formColors";
 import { youthCompAgeOf } from "@/Domain/youthComps/youthCompIds";
 import type { YouthCompAge } from "@/types/youthCompTypes";
@@ -104,6 +105,9 @@ interface Props {
   currentDate:     string;
   leagues:         LeagueData[];
   onToggleDayType: (date: string, type: "training" | "rest") => void;
+  /** The eve of every coming match: rest or train (4.47.21). */
+  matchEve?:       "rest" | "training";
+  onMatchEve?:     (eve: "rest" | "training") => void;
 }
 
 const EVENT_ICON: Record<DayEventType, IconName> = { match: "trophy", training: "training", rest: "rest" };
@@ -115,7 +119,7 @@ function eventClass(type: DayEventType, outcome: MatchOutcome | null): string {
   return "bg-primary/20 text-primary border-primary/40";
 }
 
-export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, currentDate, leagues, onToggleDayType }: Props) {
+export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, currentDate, leagues, onToggleDayType, matchEve, onMatchEve }: Props) {
   const { t, i18n } = useTranslation();
   const [weekOffset, setWeekOffset] = useState(0);
   const restSet = useMemo(() => new Set(restDays), [restDays]);
@@ -293,6 +297,17 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
           );
         })}
       </ol>
+      {onMatchEve && (
+        <div className="flex flex-wrap items-center gap-3 mt-3">
+          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("weekCalendar.matchEve")}</span>
+          <OptionChips
+            options={[{ key: "rest", label: t("weekCalendar.restDay") }, { key: "training", label: t("weekCalendar.training") }]}
+            value={matchEve ?? "rest"}
+            onChange={(v) => onMatchEve(v as "rest" | "training")}
+          />
+          <span className="text-sm text-muted-foreground">{t("weekCalendar.matchEveHint")}</span>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">

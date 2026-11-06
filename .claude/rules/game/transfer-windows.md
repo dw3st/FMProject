@@ -189,3 +189,5 @@ Pedido do usuário. A aba Minhas transferências mostra no topo os pré-contrato
 ## Negociações em cartões (4.47.17)
 
 Report de tester. Cada bloco de `NegotiationOverview` é um cartão como Entradas e Saídas de Minhas transferências (ícone colorido, título, contagem); em duas colunas, com propostas entre técnicos, pré-contratos e emprestados na largura toda (`WIDE`).
+
+Posição e bandeira nos pré-contratos (4.47.21, report de tester): `GET /negotiation` acrescenta `position` (natural) e `nationality` a cada pré-contrato, lidos do clube de origem na hora.

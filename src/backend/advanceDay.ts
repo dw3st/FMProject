@@ -145,6 +145,8 @@ import { isFriendlyDay } from "@/Domain/friendlies/friendlies";
 import { buildFriendlyMessage, buildMentalityMessage } from "@/Domain/inbox/inboxEvents";
 import { advanceMentoring } from "@/Domain/personality/mentoring";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { applyMatchEve } from "@/Domain/season/generateRestDays";
 import { engineReferee, ensureAssignments, ensureTomorrow, recordRefereeDay, rolloverReferees, varLookup } from "@/backend/refereeWorld";
 import { fixtureKey } from "@/Domain/referees/assign";
 import { withRefereeLog, withWeatherLog } from "@/Domain/advanceDay/matches";
@@ -2444,7 +2446,13 @@ export async function advanceOneDay(
         };
         // A seat whose club plays this league next season gets its seeded rest days.
         for (const ds of daySeats) {
-          if (ds.clubId && index.byId(ds.clubId)?.leagueSlug === slug) ds.patch.restDays = cal.meta.restDays ?? [];
+          if (ds.clubId && index.byId(ds.clubId)?.leagueSlug === slug) {
+            const seeded = cal.meta.restDays ?? [];
+            // A manager who trains on match eves keeps that choice next season (4.47.21).
+            ds.patch.restDays = ds.meta.matchEve === "training"
+              ? applyMatchEve(seeded, cal.rounds.flatMap((r) => r.fixtures).filter((f) => f.home === ds.clubId || f.away === ds.clubId).map((f) => f.date), currentDate, "training")
+              : seeded;
+          }
         }
       }
 
@@ -3721,6 +3729,31 @@ export const advanceDayRoutes = {
     const resolved = await saveService.resolveDayLog(saveId!, date!, auth.seatId);
     if (!resolved) return Response.json({ error: "day log not found" }, { status: 404 });
     return Response.json(resolved);
+  },
+
+  /** `PATCH { eve: "rest" | "training" }`: the eve of every coming match of the seat's club (4.47.21). */
+  "/api/saves/:saveId/match-eve": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "PATCH") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    const body = (await req.json().catch(() => null)) as { eve?: string } | null;
+    if (body?.eve !== "rest" && body?.eve !== "training") return Response.json({ error: "eve must be 'rest' or 'training'" }, { status: 400 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
+    const club = meta.clubId;
+    const slugs = [meta.leagueSlug, await playerCupSlug(meta.leagueSlug), await playerContinentalSlug(saveService, saveId, club)]
+      .filter((x): x is string => !!x);
+    const dates: string[] = [];
+    for (const slug of slugs) {
+      for (const f of await saveService.getAllFixturesForLeague(saveId, slug)) {
+        if (!f.played && (f.home === club || f.away === club)) dates.push(f.date);
+      }
+    }
+    const restDays = applyMatchEve(meta.restDays ?? [], dates, meta.currentDate ?? "", body.eve);
+    await saveService.updateSeat(saveId, auth.seatId, { restDays, matchEve: body.eve });
+    return Response.json({ restDays, matchEve: body.eve });
   },
 
   "/api/saves/:saveId/day-type/:date": async (

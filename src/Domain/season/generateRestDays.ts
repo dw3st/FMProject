@@ -16,3 +16,19 @@ export function generateRestDays(fixtures: Fixture[]): string[] {
   }
   return Array.from(restSet).sort();
 }
+
+/**
+ * The manager's choice for the eve of every match (Fabio's report, 4.47.21): rest or train. Every eve after `from`
+ * that is not itself a match day is set to it; the other days stay as they are.
+ */
+export function applyMatchEve(restDays: readonly string[], matchDates: readonly string[], from: string, eve: "rest" | "training"): string[] {
+  const matches = new Set(matchDates);
+  const out = new Set(restDays);
+  for (const d of matches) {
+    const before = addDays(d, -1);
+    if (before <= from || matches.has(before)) continue;
+    if (eve === "rest") out.add(before);
+    else out.delete(before);
+  }
+  return Array.from(out).sort();
+}

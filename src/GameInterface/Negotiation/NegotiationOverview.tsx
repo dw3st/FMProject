@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/GameInterface/ui/DataTable";
 import { Icon, type IconName } from "@/GameInterface/Icons";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { nationalityDisplayName } from "@/Domain/world/labels";
+import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { formatFee } from "@/Domain/money";
 import { Button } from "@/GameInterface/ui/Button";
 import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
@@ -190,7 +194,22 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={pcs}
               rowKey={(p) => p.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (p) => <span className="font-semibold text-foreground">{p.playerName}</span> },
+                {
+                  key: "pos", header: t("negotiation.overview.position"),
+                  cell: (p) => (p.position ? <span className={`font-display font-bold uppercase ${getDetailedPositionColor(p.position)}`}>{t(`roles.detailedAbbr.${p.position}` as never)}</span> : "—"),
+                },
+                {
+                  key: "p", header: t("negotiation.overview.player"),
+                  cell: (p) => {
+                    const code = p.nationality ? nationalityFlagCode(p.nationality) : undefined;
+                    return (
+                      <span className="inline-flex items-center gap-2">
+                        {code && <span title={nationalityDisplayName(p.nationality ?? "", i18n.language, t)} className="inline-flex"><Flag code={code} /></span>}
+                        <span className="font-semibold text-foreground">{p.playerName}</span>
+                      </span>
+                    );
+                  },
+                },
                 { key: "c", header: t("negotiation.overview.from"), cell: (p) => p.fromClubName },
                 { key: "w", header: t("negotiation.preContract.wage"), cell: (p) => formatFee(p.wage), className: "tabular-nums" },
                 { key: "y", header: t("negotiation.preContract.years"), cell: (p) => p.years, className: "tabular-nums" },

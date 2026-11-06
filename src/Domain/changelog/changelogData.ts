@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.21",
+    date: "2026-11-06",
+    time: "12:25",
+    items: [
+      {
+        pt: "Partida: a luz do estádio segue o item Estrutura e iluminação. Fraca e amarelada no nível baixo, branca e forte no alto; desgastada, uma torre apaga e as arquibancadas ficam encardidas.",
+        en: "Match: the stadium lighting follows the Structure and lighting item. Weak and yellowish at a low level, strong and white at a high one; when worn, a tower goes dark and the stands look grimy.",
+      },
+      {
+        pt: "Painel: uma chave no calendário da semana escolhe folga ou treino na véspera de todos os próximos jogos.",
+        en: "Dashboard: a switch on the week calendar picks rest or training on the eve of every coming match.",
+      },
+      {
+        pt: "Transferências: a tabela de pré-contratos mostra a posição e a bandeira da nacionalidade.",
+        en: "Transfers: the pre-contracts table shows the position and the nationality flag.",
+      },
+    ],
+  },
+  {
     version: "4.47.20",
     date: "2026-11-06",
     time: "12:12",
@@ -41,8 +60,7 @@ export const changelog: ChangelogEntry[] = [
     version: "4.47.19",
     date: "2026-11-06",
     time: "12:00",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Inscritos: uma copa ou competição continental de que o clube já foi eliminado aparece como eliminada, sem edição, em vez de mostrar titulares como não inscritos.",
         en: "Registration: a cup or continental competition the club is already out of shows as out, with no editing, instead of listing starters as unregistered.",
@@ -92,8 +110,7 @@ export const changelog: ChangelogEntry[] = [
     version: "4.47.15",
     date: "2026-11-06",
     time: "11:15",
-    items: [],
-    fixes: [
+    items: [
       {
         pt: "Caixa de entrada: a mensagem de um jogador que caiu de atributo não diz mais que ele subiu.",
         en: "Inbox: the message about a player who dropped an attribute no longer says he levelled up.",
@@ -4464,6 +4481,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Luz do estádio que melhora com a estrutura, e estádio desgastado quando ela está ruim", en: "Stadium lighting that improves with the structure, and a worn look when it is in poor shape" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

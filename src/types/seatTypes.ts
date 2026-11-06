@@ -63,6 +63,8 @@ export interface SeatState {
   followedLeagues?: string[];
   /** Rest days of the seat's club (pre-seeded around its matches, toggled by the player). */
   restDays?: string[];
+  /** The eve of every match (4.47.21): rest or train; kept for the next seasons. Absent = rest (the seeded days). */
+  matchEve?: "rest" | "training";
   rotationOverride?: RotationOverride;
   /** Man-marking chosen for the match on `date`; cleared by the next advance. */
   matchMarking?: MatchMarking;
@@ -98,7 +100,7 @@ export interface SeatState {
 /** Every key of `SeatState` (the split of a merged patch, `splitSeatPatch`). */
 export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
-  "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "rotationOverride",
+  "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",

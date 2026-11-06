@@ -1668,6 +1668,8 @@ export function MatchScreen() {
       ...(crowd?.works ? { works: crowd.works } : {}),
       // A stand with more seats is drawn deeper (tester report: an enlarged stand must show).
       ...(crowd?.depths ? { depths: crowd.depths } : {}),
+      // The ground's floodlights by its Structure and lighting item (4.47.21).
+      ...(crowd?.light ? { light: crowd.light } : {}),
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),
       ...(crowd?.bigMatch ? { bigMatch: true } : {}),

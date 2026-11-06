@@ -2736,7 +2736,9 @@
     "thisWeek": "This week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
-    "switchHint": "Click a training or rest day to switch it"
+    "switchHint": "Click a training or rest day to switch it",
+    "matchEve": "Match eves",
+    "matchEveHint": "Applies to every coming match. You can still change a single day above."
   },
   "financesScreen": {
     "budget": "Budget",
@@ -3696,7 +3698,8 @@
       "date": "Date",
       "offer": "Offer",
       "loanOffer": "Loan, {{share}}% of wage",
-      "rivals": "Competition for your targets"
+      "rivals": "Competition for your targets",
+      "position": "Pos"
     },
     "rival": {
       "title": "Competition",

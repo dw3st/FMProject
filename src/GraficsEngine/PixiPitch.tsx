@@ -87,6 +87,7 @@ import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } fro
 import { addAnim, animOffset, isLongShot, liveAnims, STYLE, type PlayerAnim } from "@/GraficsEngine/playerAnims";
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { lightLook, type StadiumLight } from "@/Domain/matchday/stadiumLight";
 import type { TeamId } from "@/GameEngine/types";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
@@ -579,6 +580,8 @@ export interface PitchStadium {
   shape?: StadiumShape;
   /** Stable id of the stadium (`stadiumIdOf`): the trees around it are the same every game. */
   stadiumId?: string;
+  /** Floodlights of the ground (Structure and lighting item, 4.47.21): absent = level 7 in good condition. */
+  light?: StadiumLight;
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -1243,6 +1246,13 @@ export function PixiPitch({
       vignetteSprite.width = canvasWidth * Math.SQRT2;
       vignetteSprite.height = canvasHeight * Math.SQRT2;
       app.stage.addChild(vignetteSprite);
+      // The ground's floodlights by its Structure and lighting item (4.47.21): strength, warmth, dark towers.
+      const lightLk = lightLook(stadiumRef.current?.light, stadiumRef.current?.stadiumId ?? stadiumRef.current?.seed ?? "match");
+      const extraDark = new Graphics();
+      extraDark.eventMode = 'none';
+      extraDark.rect(0, 0, canvasWidth, canvasHeight).fill(0x050810);
+      extraDark.alpha = 0;
+      app.stage.addChild(extraDark);
       const glowRadius = Math.max(canvasWidth, canvasHeight) * G.GLOW_RADIUS;
       const glowSprites = ([[0, 0], [canvasWidth, 0], [0, canvasHeight], [canvasWidth, canvasHeight]] as const).map(([x, y]) => {
         const sp = new Sprite(glowTexture);
@@ -1256,18 +1266,40 @@ export function PixiPitch({
       });
       // With the stadium, the glow comes from the floodlight towers in the corners (none under a closed roof).
       const towersOn = !!m.stand && !lightingRef.current?.sun.covered;
+      // A dark tower leaves its corner of the pitch in the dark.
+      const darkCorners: Sprite[] = [];
       if (m.stand && towersOn) {
         towerSpots(m.stand).forEach((t, i) => {
           const p = towerPanel(t);
           glowSprites[i]!.position.set(p.x, p.y);
+          if (lightLk.off.includes(i)) {
+            const d = new Sprite(glowTexture);
+            d.eventMode = 'none';
+            d.anchor.set(0.5);
+            d.position.set(p.x, p.y);
+            d.width = d.height = glowRadius * 2.4;
+            d.tint = 0x000000;
+            d.visible = false;
+            app.stage.addChild(d);
+            darkCorners.push(d);
+          }
         });
       }
+      for (const sp of glowSprites) sp.tint = lightLk.tint;
       const drawGradients = (l: Lighting | null) => {
         const v = l ? l.vignette * G.VIGNETTE_STRENGTH : 0;
         vignetteSprite.visible = v > 0.005;
         vignetteSprite.alpha = v;
-        const f = l ? LIGHTING.NIGHT.FLOOD * l.flood * G.GLOW_STRENGTH : 0;
-        for (const sp of glowSprites) { sp.visible = f > 0.005; sp.alpha = f; }
+        const f = l ? LIGHTING.NIGHT.FLOOD * l.flood * G.GLOW_STRENGTH * lightLk.gain : 0;
+        glowSprites.forEach((sp, i) => {
+          const off = !!m.stand && towersOn && lightLk.off.includes(i);
+          sp.visible = !off && f > 0.005;
+          sp.alpha = Math.min(1, f);
+        });
+        const night = l ? l.flood : 0;
+        extraDark.alpha = lightLk.dark * night;
+        extraDark.visible = extraDark.alpha > 0.005;
+        for (const d of darkCorners) { d.alpha = 0.55 * night; d.visible = night > 0.05; }
       };
       let currentLight: Lighting | null = null;
       let lastLightKey = "";
@@ -3423,6 +3455,35 @@ export function PixiPitch({
         app.stage.addChild(atmosphereMask);
       }
       app.stage.addChild(atmosphere, sparkG, fireLayer);
+      // A worn structure (4.47.21): grimy blotches over the stands and their fans, under the players.
+      if (m.stand && lightLk.grime > 0 && typeof document !== "undefined") {
+        const gc = document.createElement("canvas");
+        gc.width = Math.max(1, Math.round(canvasWidth / 4));
+        gc.height = Math.max(1, Math.round(canvasHeight / 4));
+        const g3 = gc.getContext("2d");
+        if (g3) {
+          const rng = mulberry32(seedFrom(`grime:${stadiumRef.current?.stadiumId ?? stadiumRef.current?.seed ?? "match"}`));
+          for (let i = 0; i < 220; i++) {
+            const x = rng() * gc.width, y = rng() * gc.height, r = 2 + rng() * 9;
+            const grd = g3.createRadialGradient(x, y, 0, x, y, r);
+            grd.addColorStop(0, `rgba(36,30,22,${0.35 + rng() * 0.45})`);
+            grd.addColorStop(1, "rgba(36,30,22,0)");
+            g3.fillStyle = grd;
+            g3.fillRect(x - r, y - r, r * 2, r * 2);
+          }
+          const grime = new Sprite(Texture.from(gc));
+          grime.eventMode = 'none';
+          grime.width = canvasWidth;
+          grime.height = canvasHeight;
+          grime.alpha = lightLk.grime / 0.55;
+          const gm = new Graphics();
+          for (const r of standSideRects(m.stand)) gm.rect(r.x, r.y, r.w, r.h);
+          gm.fill(0xffffff);
+          grime.mask = gm;
+          app.stage.addChildAt(gm, app.stage.getChildIndex(world));
+          app.stage.addChildAt(grime, app.stage.getChildIndex(world));
+        }
+      }
       const towers = m.stand && towersOn ? towerSpots(m.stand) : [];
       // The towers' light on the pitch at night (art preview): painted once, faded with the floodlight level, under
       // the players. The towers stand at the stand's inner corners, outside the stand mask.
@@ -3432,9 +3493,10 @@ export function PixiPitch({
         c.width = canvasWidth; c.height = canvasHeight;
         const g2 = c.getContext("2d");
         if (g2) {
-          paintFloodCones(g2, towers, m);
+          paintFloodCones(g2, towers.filter((_, i) => !lightLk.off.includes(i)), m);
           coneSprite = new Sprite(Texture.from(c));
           coneSprite.blendMode = "add";
+          coneSprite.tint = lightLk.tint;
           coneSprite.eventMode = 'none';
           coneSprite.alpha = 0;
           app.stage.addChildAt(coneSprite, app.stage.getChildIndex(world));
@@ -3487,7 +3549,7 @@ export function PixiPitch({
       };
       const drawTowers = () => {
         if (coneSprite) {
-          const a = coneStrength(currentLight?.flood ?? 0);
+          const a = Math.min(1, coneStrength(currentLight?.flood ?? 0) * lightLk.gain);
           coneSprite.alpha = a;
           coneSprite.visible = a > 0.01;
         }
@@ -3499,19 +3561,20 @@ export function PixiPitch({
         towerSprites.removeChildren().forEach((c) => c.destroy());
         if (stadiumArt) {
           // The art pack's tower: lamps toward the pitch, greyed while the floodlights are off.
-          for (const t of towers) {
+          for (const [ti, t] of towers.entries()) {
             const s = new Sprite(stadiumArt.tower);
             s.anchor.set(0.5);
             s.position.set(t.x, t.y);
             s.rotation = t.angle - Math.PI / 2;
             s.width = s.height = t.size * STADIUM_ART.TOWER_SIZE;
-            s.tint = lit ? 0xffffff : STADIUM_ART.TOWER_OFF_TINT;
+            s.tint = lit && !lightLk.off.includes(ti) ? 0xffffff : STADIUM_ART.TOWER_OFF_TINT;
             towerSprites.addChild(s);
           }
           return;
         }
         const T = ATMOSPHERE.TOWER;
-        for (const t of towers) {
+        for (const [ti, t] of towers.entries()) {
+          const on = lit && !lightLk.off.includes(ti);
           const p = towerPanel(t);
           towerG.moveTo(t.x, t.y).lineTo(p.x, p.y).stroke({ width: Math.max(1.5, t.size * 0.08), color: T.MAST_COLOR });
           const w = t.size * T.PANEL_W, h = t.size * T.PANEL_H;
@@ -3523,7 +3586,7 @@ export function PixiPitch({
             p.x + ux * w / 2 - fx, p.y + uy * w / 2 - fy,
             p.x + ux * w / 2 + fx, p.y + uy * w / 2 + fy,
             p.x - ux * w / 2 + fx, p.y - uy * w / 2 + fy,
-          ]).fill({ color: lit ? T.PANEL_ON : T.PANEL_OFF, alpha: lit ? 1 : 0.85 });
+          ]).fill({ color: on ? T.PANEL_ON : T.PANEL_OFF, alpha: on ? 1 : 0.85 });
         }
       };
       const drawPhones = () => {

@@ -441,6 +441,15 @@ const STADIUM_SHAPE_OPTIONS: { key: "full" | StadiumShape; label: string }[] = [
   { key: "full", label: "Full" }, { key: "oval", label: "Oval" }, { key: "rounded", label: "Rounded" },
   { key: "square", label: "Square" }, { key: "blocks", label: "Blocks" },
 ];
+
+/** Floodlights by the Structure and lighting item (4.47.21). */
+const LIGHT_TESTS = {
+  low: { level: 2, condition: 100 }, top: { level: 10, condition: 100 }, worn: { level: 6, condition: 30 }, broken: { level: 6, condition: 8 },
+} as const;
+const LIGHT_TEST_OPTIONS: { key: "default" | "low" | "top" | "worn" | "broken"; label: string }[] = [
+  { key: "default", label: "Light: default" }, { key: "low", label: "Light: low" }, { key: "top", label: "Light: top" },
+  { key: "worn", label: "Light: worn" }, { key: "broken", label: "Light: broken" },
+];
 const CROWD_FILL_OPTIONS: { key: CrowdFillKey; label: string }[] = [
   { key: "0", label: "0%" }, { key: "25", label: "25%" }, { key: "50", label: "50%" },
   { key: "default", label: "Default" }, { key: "75", label: "75%" }, { key: "100", label: "100%" },
@@ -550,16 +559,19 @@ export function TestScreen() {
   const [stadiumShape, setStadiumShape] = useState<"full" | StadiumShape>("full");
   /** An enlarged stand (tester report): east 10 000 seats bigger than west, so the other three are drawn thinner. */
   const [bigStand, setBigStand] = useState(false);
+  /** Floodlights by the Structure item (4.47.21). */
+  const [lightTest, setLightTest] = useState<"default" | "low" | "top" | "worn" | "broken">("default");
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
       ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
           // Oval = Old Trafford, with its painted surroundings when the art has them.
           ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: stadiumShape === "oval" ? TEST_REAL.id : "std_test" } : {}),
+          ...(lightTest !== "default" ? { light: LIGHT_TESTS[lightTest] } : {}),
           ...(bigStand ? { depths: standDepths([{ id: "north", seats: 6246 }, { id: "south", seats: 6246 }, { id: "east", seats: 21104 }, { id: "west", seats: 11104 }]) ?? {} } : {}),
           // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
           led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),
-    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape, bigStand],
+    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape, bigStand, lightTest],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1687,6 +1699,7 @@ export function TestScreen() {
             <Chip selected={standWorks} onClick={() => setStandWorks(v => !v)} title="North stand under works (#137)">Works</Chip>
             <OptionChips options={STADIUM_SHAPE_OPTIONS} value={stadiumShape} onChange={setStadiumShape} />
             <Chip selected={bigStand} onClick={() => setBigStand(v => !v)} title="East stand 10 000 seats bigger than west (needs a shape)">Big stand</Chip>
+            <OptionChips options={LIGHT_TEST_OPTIONS} value={lightTest} onChange={setLightTest} />
             <Chip selected={bigMatch} onClick={() => setBigMatch(v => !v)} title="Big game: flares and smoke, fireworks at night (kickoff and home goals)">Big game</Chip>
             {bigMatch && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
           </>
@@ -1930,7 +1943,7 @@ export function TestScreen() {
           )}
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? `s${stadiumShape}${bigStand ? "b" : ""}` : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? `s${stadiumShape}${bigStand ? "b" : ""}${lightTest}` : ""}${officialsOn ? "o" : ""}${refS !== null ? "r" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}

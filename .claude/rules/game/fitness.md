@@ -403,3 +403,7 @@ recupera pela curva de descanso nos dias da concentração (`nationalCampDay`). 
 ## Assentos (Etapa 43)
 
 Cada assento folga nos próprios `restDays`; um clube da IA folga na véspera e no dia seguinte dos próprios jogos (`aiRestingClubs`). Medido (Premier, 28 dias): fôlego médio da IA 82,07 → 82,15, lesões por partida 0,267 → 0,272. Ver `.claude/rules/game/multiplayer.md`.
+
+## Véspera dos jogos (4.47.21)
+
+Report de tester. `SeatState.matchEve` ("rest" padrão, "training"): chave no calendário da semana do Painel; `PATCH /api/saves/:id/match-eve { eve }` aplica `applyMatchEve` (`generateRestDays.ts`, com teste) às vésperas de todos os jogos futuros do clube (liga, copa, continental), sem mexer nos outros dias. Na virada, um assento com "training" recebe as folgas semeadas sem as vésperas.

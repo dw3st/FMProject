@@ -2736,7 +2736,9 @@
     "thisWeek": "Esta semana",
     "previousWeek": "Semana anterior",
     "nextWeek": "Próxima semana",
-    "switchHint": "Clique num dia de treino ou descanso para trocar"
+    "switchHint": "Clique num dia de treino ou descanso para trocar",
+    "matchEve": "Véspera dos jogos",
+    "matchEveHint": "Vale para todos os próximos jogos. Dá para mudar um dia só no calendário acima."
   },
   "financesScreen": {
     "budget": "Orçamento",
@@ -3696,7 +3698,8 @@
       "date": "Data",
       "offer": "Oferta",
       "loanOffer": "Empréstimo, {{share}}% do salário",
-      "rivals": "Concorrência pelos seus alvos"
+      "rivals": "Concorrência pelos seus alvos",
+      "position": "Pos"
     },
     "rival": {
       "title": "Concorrência",
