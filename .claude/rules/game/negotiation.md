@@ -245,3 +245,7 @@ Pedido do usuário. Lógica pura em `src/Domain/negotiation/freeSigning.ts` (`NE
 - **Disputa:** `freeSigningRivals`: clubes da IA com necessidade na linha e faixa dele, vaga no elenco e na folha, verba para 90% das luvas, abaixo do limite do top 25; cada um entra com 60% × urgência, no máximo 2; ofertas sorteadas por jogador, tipo e semana (a mesma semana, os mesmos rivais). Ele escolhe por `freeSigningScore` = `preferenceScore` + 0,2 × luvas / pedido (até 1,5): perdendo, o pré-contrato responde `prefersRival` com o clube, e o livre 400 `prefersRival`. O rival não contrata o jogador sozinho.
 - **IA:** ao contratar um livre (`freeAgentTick`), paga as luvas de livre da verba de transferências (nunca abaixo de 0). A reposição da virada não paga.
 - Tela: `SigningBonusField` (`ContractTermsFields.tsx`) na aba de pré-contrato e na janela do livre.
+
+## Contraproposta com − e + (8.8.4)
+
+Report do usuário. A contraproposta de uma proposta da IA (`BidCard`) e a de uma proposta entre técnicos (`SeatOfferCard`) têm os botões − e + em volta da barra, no passo do preço pedido (`stepAskingPrice`); a taxa de empréstimo entre técnicos desce até 0. A Formação mostra o OVR de 0 a 100 (`attrDisplay`) na lista, na ficha e na nota da vaga.

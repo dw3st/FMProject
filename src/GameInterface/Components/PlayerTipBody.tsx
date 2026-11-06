@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getMainRole } from "@/Domain/roles";
 import { hudAttributes } from "@/Domain/match/matchHud";
 import { playablePositions, preferredRole } from "@/Domain/positions/positionAptitude";
+import { attrDisplay } from "@/Domain/attributes";
 import { Icon } from "@/GameInterface/Icons";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { MAIN_ROLE_ABBR, positionLabel } from "@/GameInterface/positionHelpers";
@@ -66,7 +67,7 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note, matchRatin
             <Icon name="star" className="w-3 h-3" />
             <span>{t(matchRating === undefined ? "formations.rating" : "formations.level")}</span>
           </div>
-          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{attrDisplay(avg)}</span>
         </div>
         {matchRating !== undefined && (
           <div className="flex items-center justify-between">

@@ -951,7 +951,7 @@
     "level": "Nível",
     "matchRating": "Nota no jogo",
     "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
-    "rating": "Nota",
+    "rating": "OVR",
     "fitness": "Fôlego {{value}}",
     "energy": "Energia",
     "blurbs": {

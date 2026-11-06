@@ -1,3 +1,5 @@
+import { StepButton } from "@/GameInterface/ui/StepButton";
+import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
@@ -162,12 +164,16 @@ export function SeatOfferCard({ saveId, offer, onChanged }: {
           <div>
             <p className={`${LABEL} m-0 mb-2`}>{t(o.kind === "transfer" ? "transfers.fee" : "negotiation.loanFee")}</p>
             <div className="flex items-center gap-3">
+              <StepButton dir={-1} label={t("transfers.feeDown")} disabled={fee <= 0}
+                onClick={() => setFee(fee <= 100_000 ? 0 : stepAskingPrice(fee, -1, 0))} />
               <input
                 type="range" min={0} max={feeMax} step={100_000} value={fee}
                 onChange={(e) => setFee(Number(e.target.value))}
                 className="flex-1 accent-primary"
                 aria-label={t(o.kind === "transfer" ? "transfers.fee" : "negotiation.loanFee")}
               />
+              <StepButton dir={1} label={t("transfers.feeUp")} disabled={fee >= feeMax}
+                onClick={() => setFee(Math.min(feeMax, stepAskingPrice(fee, 1)))} />
               <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{formatFee(fee)}</span>
             </div>
           </div>

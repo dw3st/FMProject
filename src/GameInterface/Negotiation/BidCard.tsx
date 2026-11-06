@@ -1,3 +1,5 @@
+import { StepButton } from "@/GameInterface/ui/StepButton";
+import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { RECALL_WAGE_COST, shareWithRecall } from "@/Domain/negotiation/loanReport";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { useEffect, useState } from "react";
@@ -122,12 +124,16 @@ export function BidCard({
           <div>
             <p className={`${LABEL} m-0 mb-2`}>{t("negotiation.bid.yourPrice")}</p>
             <div className="flex items-center gap-3">
+              <StepButton dir={-1} label={t("transfers.feeDown")} disabled={fee <= b.fee}
+                onClick={() => setFee(Math.max(b.fee, stepAskingPrice(fee, -1, 0)))} />
               <input
                 type="range" min={b.fee} max={Math.max(b.fee * 2, b.fee + 1_000_000)} step={100_000} value={fee}
                 onChange={(e) => setFee(Number(e.target.value))}
                 className="flex-1 accent-primary"
                 aria-label={t("negotiation.bid.yourPrice")}
               />
+              <StepButton dir={1} label={t("transfers.feeUp")} disabled={fee >= Math.max(b.fee * 2, b.fee + 1_000_000)}
+                onClick={() => setFee(Math.min(Math.max(b.fee * 2, b.fee + 1_000_000), stepAskingPrice(fee, 1)))} />
               <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{formatFee(fee)}</span>
             </div>
           </div>

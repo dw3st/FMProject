@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.4",
+    date: "2026-11-06",
+    time: "14:42",
+    items: [
+      {
+        pt: "Formação: a ficha e a lista mostram o OVR de 0 a 100, como no Elenco, no lugar da nota de 0 a 10.",
+        en: "Formation: the card and the list show the OVR from 0 to 100, as in the Squad, instead of the 0 to 10 rating.",
+      },
+      {
+        pt: "Contraproposta: botões de menos e mais para ajustar o valor, como na oferta de compra.",
+        en: "Counter-offer: minus and plus buttons to adjust the fee, as in the transfer offer.",
+      },
+    ],
+  },
+  {
     version: "8.8.3",
     date: "2026-11-06",
     time: "14:31",

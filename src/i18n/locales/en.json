@@ -951,7 +951,7 @@
     "level": "Level",
     "matchRating": "Match rating",
     "outOfPositionPrimary": "Out of position — primary: {{position}} ({{role}})",
-    "rating": "Rating",
+    "rating": "OVR",
     "fitness": "Fitness {{value}}",
     "energy": "Energy",
     "blurbs": {

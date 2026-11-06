@@ -1,3 +1,4 @@
+import { attrDisplay } from "@/Domain/attributes";
 import { useState, useEffect, useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -1141,7 +1142,7 @@ function SquadPlayerRow({
   const avg = slotValue(player, scorePos);
   const ratingTitle = scorePos === natural
     ? undefined
-    : t("formations.ratingAtSlot", { value: avg.toFixed(1), natural: slotValue(player, natural).toFixed(1), role: t(`roles.detailedAbbr.${natural}` as never) });
+    : t("formations.ratingAtSlot", { value: attrDisplay(avg), natural: attrDisplay(slotValue(player, natural)), role: t(`roles.detailedAbbr.${natural}` as never) });
   const energy = player.seasonLog?.fitness ?? 100;
   // Slot rows show the slot's detailed role; bench rows show the player's natural one (#40).
   const badgeRole = showSlot && slotLabel ? slotLabel : preferredRole(player);
@@ -1209,7 +1210,7 @@ function SquadPlayerRow({
           <span role="img" aria-label={unavailableTitle} title={unavailableTitle} className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
         )}
       </span>
-      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+      <span className={`w-9 text-right shrink-0 text-sm font-bold tabular-nums ${ratingTextClass10(avg)}`}>{attrDisplay(avg)}</span>
       <span className="w-14 shrink-0 flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
         <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
         <span className={`w-1.5 h-4 rounded-sm ${getEnergyColor(energy)}`} aria-hidden />
