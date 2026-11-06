@@ -4,7 +4,7 @@ Spec: `docs/superpowers/specs/2026-10-01-stats-screen-design.md`. Versão 1.8.
 
 ## Tela (`/stats`)
 
-`src/pages/stats` + `src/GameInterface/StatsScreen.tsx`. Duas abas: **Rankings** (artilheiros,
+Rota `/stats` da moldura (`AppShell`) + `src/GameInterface/StatsScreen.tsx`. Duas abas: **Rankings** (artilheiros,
 assistências, nota média, mais jogos; 20 linhas) e **Meu time** (elenco ordenável por jogos, gols,
 assistências, nota). O seletor lista a liga do jogador, a copa nacional, as continentais do
 calendário e todas as ligas do catálogo (rótulos só por `src/Domain/world/labels.ts`).

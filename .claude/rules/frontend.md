@@ -15,7 +15,18 @@ alwaysApply: false
 - `src/pages/<page>/entry.tsx` calls `createPage(Component, options)` (`src/createPage.tsx`), which
   wraps the screen in `LanguageProvider` → `ScreenSizeGate` → `AuthGate` → `GameSaveProvider`
   (`public`, `noAuth` and `responsive` drop layers for landing, login, start and the lab).
-- In-game screens render inside `<Layout>` (`GameInterface/Components/Layout.tsx`) and wrap their
+- **The fixed frame (4.48):** every in-game screen lives in one page, `src/pages/app/` → `AppShell.tsx`
+  (`docs/superpowers/specs/2026-11-06-spa-shell-design.md`). The route table is `GameInterface/router/appRoutes.ts`
+  (path → screen, tab title, `chrome`); a new in-game screen adds a route there, a `case` in `AppShell` and its path in
+  `src/index.ts` (served by `appPage`). Pages of their own: landing, login, start, new game, join, fired, watch, and the
+  live match page `/match-live`.
+- **Navigation:** always `navigate(to, { replace })` (`router/navigation.ts`), never `window.location.href = …`: inside
+  the frame a frame path changes in place, anything else loads the page. `<a href>` to a frame path is intercepted by
+  the frame. Read the route with `useRoute()`; the screen remounts on every navigation (a screen that reads the URL on
+  mount works as after a page load) and the save refreshes in the background.
+- In-game screens render inside `<Layout>` (`chrome`: `full` with the bars; `bare` on the whole page for the preview and
+  the result; `match` for the live match, which runs `/match-live` in an iframe so the engine's globals live and die
+  with it; the preference "Partida dentro do jogo", `fm.match.inFrame`, opens the match page on its own) and wrap their
   content in `<ScreenContainer>`; see `ui-standard.md`.
 - Session and save state come from `GameSaveProvider` (`useGameSave()`). There is no `App.tsx`.
 - Lab tools (`/lab`, `/test`, `/simulate`, `/matrix`, `/promo`) are separate pages served by

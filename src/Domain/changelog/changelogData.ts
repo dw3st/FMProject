@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.48",
+    date: "2026-11-06",
+    time: "13:48",
+    items: [
+      {
+        pt: "As telas do jogo trocam sem recarregar o site: as barras, os amigos e o chat ficam abertos de uma tela para a outra.",
+        en: "The game screens change without reloading the site: the bars, friends and chat stay open from one screen to the next.",
+      },
+      {
+        pt: "A prévia, a partida e o resultado abrem dentro do jogo. Em Configurações, \"Partida dentro do jogo\" volta a abrir a partida numa página própria.",
+        en: "The preview, the match and the result open inside the game. In Settings, \"Match inside the game\" opens the match on a page of its own again.",
+      },
+    ],
+  },
+  {
     version: "4.47.23",
     date: "2026-11-06",
     time: "12:43",

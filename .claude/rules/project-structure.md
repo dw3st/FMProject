@@ -16,7 +16,7 @@ FMProject/
 ├── src/
 │   ├── index.ts            # Bun.serve(): page bundles + API routes (backend/routes.ts and friends)
 │   ├── createPage.tsx      # Mounts a page: LanguageProvider → ScreenSizeGate → AuthGate → GameSaveProvider
-│   ├── pages/<page>/       # index.html + entry.tsx per screen (dashboard, match, squad, …)
+│   ├── pages/<page>/       # index.html + entry.tsx: app (every in-game screen, AppShell), match (/match-live), landing, login, start, …
 │   ├── GameEngine/         # Match engine: pure TS, no Pixi/DOM/React (see game-engine.md)
 │   │   ├── Configs/        # Tunable constants per system (pass, carry, defense, aerial, fouls, …)
 │   │   ├── Domain/         # gameState (tick), DecisionTree, positioning, outcomes callers, SimulateMatch, Statistics
@@ -128,3 +128,9 @@ Day logs older than `DAY_LOG_KEEP_FULL_DAYS` (60) are compacted by the day advan
 `src/Domain/advanceDay/dayLogCompaction.ts`): training/rest lines dropped (they never stored effects), matches of
 clubs without a seat reduced to the `compact` form (no player stats, ratings or development). At most 40 logs a day,
 from `SaveMeta.dayLogsCompactedTo` on. A two-season friends world had 170 MB of day logs (~130 MB a season).
+
+## Fixed frame (4.48)
+One page serves every in-game screen (`src/pages/app/` → `GameInterface/AppShell.tsx`, routes in
+`GameInterface/router/appRoutes.ts`, `navigate`/`useRoute` in `router/navigation.ts`): the bars, friends, chat, the
+watch window and the group advance stay mounted while the screen changes. The live match runs `/match-live` in an
+iframe of the frame and navigates the frame through `window.parent.__fmNavigate`. See `frontend.md` → Pages.

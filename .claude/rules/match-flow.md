@@ -534,3 +534,11 @@ Tester report. `changeFormation` no longer keeps each player in his slot number:
 # A man down: moving a starter to the empty slot (4.42.28)
 
 Tester report. `moveToEmptySlot` (`gameState.ts`): an outfield starter takes a slot nobody holds (a sent-off player's, or an injury's, whose vacancy moves to the slot he left), with the same rebuild as a position swap and no substitution used. The substitutions mini pitch (`SubsPitchView`) draws every empty slot; a starter goes there by tap or drag. Between two managers it is the `move` command; in `/test` the `moveToSlot` command.
+
+# Match inside the frame (4.48)
+
+The live match page is served at `/match-live`; `/match`, `/match-preview` and `/match-result` are routes of the game
+frame (`frontend.md` → Pages). The frame opens the match in an iframe (`MatchFrame.tsx`, `allow="autoplay; fullscreen"`)
+without the bars; the match page's `navigate` goes to the frame (result, dashboard), and removing the iframe (back
+button) fires `pagehide`, which writes the resume snapshot. With "Partida dentro do jogo" off (`fm.match.inFrame`) the
+frame sends the browser to `/match-live`, as before.
