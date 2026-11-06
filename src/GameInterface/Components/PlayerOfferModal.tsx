@@ -10,7 +10,7 @@ import { translateTransferReason } from "@/GameInterface/Transfers/transferShare
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { NegotiationTalk } from "@/types/transferMarketTypes";
-import { ContractTermsFields, useContractDemandInfo, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
+import { ContractTermsFields, SigningBonusField, useContractDemandInfo, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { PlayerSituationLine } from "@/GameInterface/Negotiation/PlayerSituationLine";
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee, formatWageFull } from "@/Domain/money";
@@ -33,7 +33,7 @@ import { notifySeatOffersChanged, seatOfferApi, useSeatOffers } from "@/GameInte
 import { seatOfferErrorText } from "@/GameInterface/Negotiation/seatOfferErrors";
 
 /** A pre-contract this club already has with the player. */
-interface SignedPreContract { wage: number; years: number; date: string }
+interface SignedPreContract { wage: number; years: number; date: string; bonus?: number }
 
 /** Pre-contract window (D2): the target's contract ends within this many days. */
 const PRE_CONTRACT_DAYS = 183;
@@ -101,6 +101,15 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [years, setYears] = useState(3);
   const [contractError, setContractError] = useState<string | null>(null);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
+  // Pre-contract: a fee-free arrival asks more wage and a signing bonus, with other clubs after him (4.47.9).
+  const preInfo = useContractDemandInfo(saveId, tab === "precontract" ? player?.id ?? null : null, player?.squadId, true);
+  const [bonus, setBonus] = useState(0);
+  const [preRival, setPreRival] = useState<string | null>(null);
+  useEffect(() => {
+    if (!preInfo) return;
+    setWage(preInfo.demand);
+    setBonus(preInfo.bonusAsk ?? 0);
+  }, [preInfo]);
   // Default length the player accepts at his age (age + years <= 36), as the server's default.
   useEffect(() => {
     if (player) setYears(Math.min(3, Math.max(1, 36 - player.age)));
@@ -228,21 +237,24 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     setContractError(null);
     setMessage(null);
     setPreRefused(false);
+    setPreRival(null);
     try {
       const res = await fetch(`/api/saves/${saveId}/pre-contracts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wage, years }),
+        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wage, years, bonus }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; accepted?: boolean; reason?: string };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string } };
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) setContractError(refusalText(body.error));
         else setMessage(errorText(body.error));
         return;
       }
       if (body.accepted) {
         setPreDone(true);
         void refresh();
+      } else if (body.reason === "prefersRival" && body.rival) {
+        setPreRival(body.rival.clubName);
       } else {
         setPreRefused(true);
       }
@@ -488,15 +500,18 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                     {t("negotiation.preContract.signedOn", { date: fmtDate(preSigned.date) })}
                   </p>
                   <p className="text-sm text-foreground m-0 tabular-nums">{t("negotiation.preContract.terms", { wage: formatWageFull(preSigned.wage), count: preSigned.years })}</p>
+                  {preSigned.bonus ? <p className="text-sm text-foreground m-0 tabular-nums">{t("contracts.bonus.agreed", { amount: formatFee(preSigned.bonus) })}</p> : null}
                   <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.joins", { date: fmtDate(player.contractEnd ?? preSigned.date) })}</p>
                 </div>
               ) : tab === "precontract" ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.explain", { date: fmtDate(player.contractEnd ?? currentDate) })}</p>
                   <label className={LABEL}>{t("contracts.terms")}</label>
-                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} wageBill={wageBill} />
+                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={preInfo?.demand ?? null} info={preInfo} wageBill={wageBill} />
+                  <SigningBonusField ask={preInfo?.bonusAsk} rivals={preInfo?.rivals} bonus={bonus} onBonus={setBonus} paidOn="arrival" />
                   {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
                   {preRefused && <Notice kind="error" className="mt-2">{t("negotiation.preContract.prefersCurrent")}</Notice>}
+                  {preRival && <Notice kind="error" className="mt-2">{t("contracts.bonus.prefersRival", { club: preRival })}</Notice>}
                 </div>
               ) : tab === "transfer" ? (
                 <>

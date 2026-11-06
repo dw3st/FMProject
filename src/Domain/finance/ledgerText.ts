@@ -46,6 +46,7 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
         return { key: entry.kind === "transfer_in" ? "sellOnIn" : "sellOnOut", club: ref.clubName, ...(ref.playerName ? { player: ref.playerName } : {}) };
       }
       if (ref?.stage === "legend" && entry.kind === "transfer_out") return { key: "legendHire", player: ref.playerName ?? "" };
+      if (ref?.stage === "signing_bonus") return { key: "signingBonus", player: ref.playerName ?? "" };
       if (ref?.stage === "loan_fee" && ref.clubName) {
         return { key: entry.kind === "transfer_in" ? "loanFeeIn" : "loanFeeOut", club: ref.clubName, ...(ref.playerName ? { player: ref.playerName } : {}) };
       }

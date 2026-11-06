@@ -7,7 +7,7 @@ import { topIdsOf } from "@/backend/starLimitWorld";
 import { randomUUID } from "crypto";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { WindowContext } from "@/backend/marketWindowWorld";
-import { executeTransferFee } from "@/backend/FinancialService";
+import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import { historyFromOf, humanRosterSize, seasonEndOf, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { worldPrestige } from "@/backend/managerWorld";
@@ -193,6 +193,17 @@ export async function applyDuePreContracts(
     );
     await service.saveSquadById(saveId, selling);
     await service.saveSquadById(saveId, buying);
+    // The signing bonus agreed (4.47.9) leaves the human club's balance on arrival.
+    if (pc.bonus && pc.bonus > 0) {
+      const ref = await service.resolveSquadId(saveId, human.id);
+      if (ref) {
+        const season = (await service.getLeagueMeta(saveId, ref.leagueSlug))?.year ?? parseInt(args.date.slice(0, 4), 10);
+        await recordMoney(service, saveId, season, ref, {
+          date: args.date, kind: "transfer_out", amount: -pc.bonus, label: `Signing bonus: ${player.name}`,
+          ref: { stage: "signing_bonus", playerName: player.name },
+        }, seatId);
+      }
+    }
     moves.push({ playerId: player.id, from: from.id, to: human.id, fee: 0, kind: "pre_contract", date: args.date });
     news.push({ date: args.date, kind: "pre_contract_joined", playerId: player.id, playerName: player.name, clubName: from.name });
   }

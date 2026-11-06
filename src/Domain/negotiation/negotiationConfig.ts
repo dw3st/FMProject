@@ -74,6 +74,30 @@ export const NEGOTIATION = {
     MAX_PRICE: 2_000_000_000,
   },
 
+  /**
+   * A player who arrives without a fee (pre-contract, free agent; tester report, 4.47.9): he keeps part of the saved fee
+   * as a signing bonus (luvas), asks a little more wage, and other clubs compete for him.
+   */
+  FREE_SIGNING: {
+    /** Signing bonus asked: market value × share (pre-contract / free agent), × (1 + PER_RIVAL × clubs competing). */
+    BONUS_SHARE_PRE: 0.25,
+    BONUS_SHARE_FREE: 0.15,
+    PER_RIVAL: 0.15,
+    /** Wage demand × this for a free arrival. */
+    WAGE_PREMIUM: 1.1,
+    /** Weight of the bonus (offered / asked, capped at 1,5) in his choice between clubs, beside `PREFERENCE`. */
+    BONUS_WEIGHT: 0.2,
+    /** Each fitting AI club enters with this chance × need urgency; at most MAX_RIVALS. */
+    RIVAL_CHANCE: 0.6,
+    MAX_RIVALS: 2,
+    /** A rival offers wage = its own demand × (1 + rng × WAGE_SPREAD) and bonus = ask × (BONUS_MIN + rng × BONUS_SPREAD). */
+    WAGE_SPREAD: 0.12,
+    BONUS_MIN: 0.95,
+    BONUS_SPREAD: 0.25,
+    /** A rival needs transfer budget for this share of the bonus. */
+    BUDGET_RATIO: 0.9,
+  },
+
   /** Rivals for the same target (Etapa 25, `.claude/rules/game/negotiation.md`). */
   RIVAL: {
     /** One candidate a day (drawn by urgency) enters with BASE × need urgency × (0,5 + 0,5 × relative rating of the target). */

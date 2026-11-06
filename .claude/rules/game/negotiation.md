@@ -235,3 +235,13 @@ Report de tester. Uma linha na negociação, na proposta recebida e na proposta 
 ## Resumo dos emprestados e opção de retorno (4.45)
 
 Reports de tester. `GET /negotiation`: cada empréstimo cedido traz `report` (`loanReport`, `src/Domain/negotiation/loanReport.ts`): jogos, gols, assistências, nota, cartões e lesões somando a temporada em curso e as linhas `loan` no clube, e o OVR no início e agora, com os atributos que mudaram (`ActiveLoan.startOverall`/`startStats`; empréstimo mais antigo só mostra o OVR atual). Tela: Elenco → Emprestados. **Opção de retorno:** ao aceitar uma proposta de empréstimo da IA, `{ recall: true }` reduz a parte do salário que o clube paga em 20 pontos (`RECALL_WAGE_COST`) e grava `ActiveLoan.recall`; `POST /loans/:playerId/recall` (409 `notRecallable`, `windowClosed` com a janela do jogador fechada) traz o jogador de volta na hora, pelo mesmo caminho da data (`returnDueLoans({ recalled })`). A taxa não é devolvida. Limitação: não vale nos empréstimos pedidos pelo jogador nem nas propostas entre técnicos.
+
+## Luvas e disputa de quem chega sem taxa (4.47.9)
+
+Pedido do usuário. Lógica pura em `src/Domain/negotiation/freeSigning.ts` (`NEGOTIATION.FREE_SIGNING`), E/S em `src/backend/freeSigningWorld.ts`.
+
+- **Luvas:** `signingBonusAsk` = valor de mercado × 25% (pré-contrato) ou 15% (livre), × (1 + 15% por clube rival), na grade de taxas. Proposta abaixo: 400 `lowBonus`. Pré-contrato: `PreContract.bonus`, pago na chegada (`applyDuePreContracts`); livre: pago na assinatura. Extrato `transfer_out` com `ref.stage = "signing_bonus"` ("Luvas: <nome>").
+- **Salário:** `DemandContext.freeArrival` multiplica o pedido por 1,1 (`WAGE_PREMIUM`); a rota `demand` usa com `?pre=1` (pré-contrato) e para livres, e devolve `bonusAsk` e `rivals` (nomes).
+- **Disputa:** `freeSigningRivals`: clubes da IA com necessidade na linha e faixa dele, vaga no elenco e na folha, verba para 90% das luvas, abaixo do limite do top 25; cada um entra com 60% × urgência, no máximo 2; ofertas sorteadas por jogador, tipo e semana (a mesma semana, os mesmos rivais). Ele escolhe por `freeSigningScore` = `preferenceScore` + 0,2 × luvas / pedido (até 1,5): perdendo, o pré-contrato responde `prefersRival` com o clube, e o livre 400 `prefersRival`. O rival não contrata o jogador sozinho.
+- **IA:** ao contratar um livre (`freeAgentTick`), paga as luvas de livre da verba de transferências (nunca abaixo de 0). A reposição da virada não paga.
+- Tela: `SigningBonusField` (`ContractTermsFields.tsx`) na aba de pré-contrato e na janela do livre.

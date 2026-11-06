@@ -94,6 +94,8 @@ export interface PreContract {
   wage: number;
   years: number;
   date: string;
+  /** Signing bonus agreed, EUR, paid on arrival (4.47.9). */
+  bonus?: number;
 }
 
 export interface SellOnHeld {

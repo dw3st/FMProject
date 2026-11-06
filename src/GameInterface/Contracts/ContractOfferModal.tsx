@@ -5,7 +5,7 @@ import { maxOfferYears } from "@/Domain/contracts/contracts";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import {
-  ContractTermsFields, useContractDemandInfo, useRefusalText,
+  ContractTermsFields, SigningBonusField, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
 import { RenewalResult, type RenewalOutcome } from "@/GameInterface/Contracts/RenewalResult";
 import { faceUrl } from "@/Domain/faces/faceUrl";
@@ -60,6 +60,9 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
   const maxYears = mode === "sign" && player ? maxOfferYears(player.age) : 5;
   useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
+  // A free agent asks a signing bonus, paid on signing, with other clubs after him (4.47.9).
+  const [bonus, setBonus] = useState(0);
+  useEffect(() => { setBonus(demandInfo?.bonusAsk ?? 0); }, [demandInfo]);
 
   if (!player || !session) return null;
 
@@ -74,12 +77,13 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
       const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ wage, years }),
+        body: JSON.stringify(mode === "sign" ? { wage, years, bonus } : { wage, years }),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string; rival?: { clubName: string } };
         const code = err.error ?? "generic";
         if (mode === "renew" && PLAYER_REFUSALS.has(code)) setOutcome({ kind: "refused", detail: refusalText(code) });
+        else if (code === "prefersRival" && err.rival) setError(t("contracts.bonus.prefersRival", { club: err.rival.clubName }));
         else setError(refusalText(code));
         return;
       }
@@ -142,6 +146,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} maxYears={maxYears} />
+              {mode === "sign" && <SigningBonusField ask={demandInfo?.bonusAsk} rivals={demandInfo?.rivals} bonus={bonus} onBonus={setBonus} paidOn="now" />}
               {mode === "renew" && demandInfo?.renewableOn ? (
                 <p className="text-sm text-chart-4 m-0">{t("contracts.recentlyRenewed", { date: formatGameDate(demandInfo.renewableOn, i18n.language) })}</p>
               ) : mode === "renew" && demandInfo?.refuses ? (

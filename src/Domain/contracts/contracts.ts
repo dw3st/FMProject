@@ -1,3 +1,4 @@
+import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { moraleDemandMult } from "@/Domain/morale/morale";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
@@ -28,6 +29,8 @@ export interface DemandContext {
   renewal?: boolean;
   /** The human manager's Negotiation attribute (`.claude/rules/game/achievements.md`); absent = neutral. */
   negotiation?: number;
+  /** He arrives without a fee (pre-contract, free agent): the wage demand × `FREE_SIGNING.WAGE_PREMIUM`. */
+  freeArrival?: boolean;
 }
 
 /** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
@@ -46,6 +49,8 @@ export interface DemandBreakdown {
   facilities: number;
   /** The human manager's Negotiation attribute (×0,95..×1,05; 1 for the AI). */
   negotiation: number;
+  /** A free arrival (pre-contract, free agent): `FREE_SIGNING.WAGE_PREMIUM`, else 1. */
+  freeArrival: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
   /** Signing only: ambition ≥ 17 and the training ground below 25%. */
@@ -120,11 +125,13 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   const base = playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player);
   const parts = personalityParts(player, squad, ctx);
   const negotiation = attributeReduce(ctx.negotiation);
+  const freeArrival = ctx.freeArrival ? NEGOTIATION.FREE_SIGNING.WAGE_PREMIUM : 1;
   return {
-    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * negotiation),
+    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * negotiation * freeArrival),
     base: Math.round(base),
     ...parts,
     negotiation,
+    freeArrival,
   };
 }
 

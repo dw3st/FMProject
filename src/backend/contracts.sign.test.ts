@@ -49,24 +49,32 @@ describe("free agents: demand + sign routes and scout view", () => {
     const demandRes = await apiRoutes["/api/saves/:saveId/players/:playerId/demand"](
       req(`/api/saves/${saveId}/players/free_test_1/demand`, { method: "GET" }, { saveId, playerId: "free_test_1" }),
     );
-    const { demand } = (await demandRes.json()) as { demand: number };
-    expect(demand).toBe(contractDemand(free, squad, meta.currentDate!));
+    const { demand, bonusAsk } = (await demandRes.json()) as { demand: number; bonusAsk: number };
+    // A free arrival asks the wage premium and a signing bonus (4.47.9).
+    expect(demand).toBe(contractDemand(free, squad, meta.currentDate!, { freeArrival: true }));
+    expect(bonusAsk).toBeGreaterThan(0);
 
-    const sign = (wage: number) => apiRoutes["/api/saves/:saveId/free-agents/:playerId/sign"](
+    const sign = (wage: number, bonus?: number) => apiRoutes["/api/saves/:saveId/free-agents/:playerId/sign"](
       req(`/api/saves/${saveId}/free-agents/free_test_1/sign`, {
-        method: "POST", body: JSON.stringify({ wage, years: 2 }),
+        method: "POST", body: JSON.stringify({ wage, years: 2, ...(bonus !== undefined ? { bonus } : {}) }),
       }, { saveId, playerId: "free_test_1" }),
     );
     const low = await sign(1);
     expect(low.status).toBe(400);
     expect(await low.json()).toMatchObject({ error: "lowWage" });
+    const noBonus = await sign(demand);
+    expect(noBonus.status).toBe(400);
+    expect(await noBonus.json()).toMatchObject({ error: "lowBonus", bonusAsk });
 
-    const ok = await sign(demand);
+    // Well above what he asks, so no rival club beats it.
+    const bonus = bonusAsk * 2;
+    const ok = await sign(demand * 2, bonus);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const signed = after.players.find((p) => p.id === "free_test_1")!;
-    expect(signed.contract!.wage).toBe(demand);
-    expect(after.finances?.budget).toBe(squad.finances?.budget);
+    expect(signed.contract!.wage).toBe(demand * 2);
+    // No fee; the signing bonus leaves the balance on signing.
+    expect(after.finances?.budget).toBe((squad.finances?.budget ?? 0) - bonus);
     expect(await saveService.getFreeAgents(saveId)).toEqual([]);
   }, 60_000);
 });

@@ -113,6 +113,7 @@ import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
+import { signingBonusAsk } from "@/Domain/negotiation/freeSigning";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
@@ -124,7 +125,7 @@ import { clubRolloverOutcome, findDueRollovers, planCountryRollover, tierOfLeagu
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
-  aiTransferBudgetOf, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
+  aiTransferBudgetOf, applyAITransferSpend, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
 } from "@/Domain/aiFinance/aiClubFinance";
 import {
   aiBudgetWithPrize, continentalPrize, continentalStagePrizesFromEvents, cupRunnerUpPrize, cupStagePrize, leaguePrize,
@@ -1847,8 +1848,10 @@ export async function advanceOneDay(
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
         });
         if (fa.signedIds.size > 0) {
-          for (const sq of fa.squads) {
+          for (let sq of fa.squads) {
             if (!fa.changedIds.has(sq.id)) continue;
+            // The AI pays the free agent's signing bonus from its transfer budget too (4.47.9, never below 0).
+            for (const p of sq.players) if (fa.signedIds.has(p.id)) sq = applyAITransferSpend(sq, signingBonusAsk(p, "free", 0));
             await saveService.saveSquadById(saveId, sq);
             for (const p of sq.players) {
               if (fa.signedIds.has(p.id)) dayMoves.push({ playerId: p.id, from: "", to: sq.id, fee: 0, kind: "free", date: currentDate });

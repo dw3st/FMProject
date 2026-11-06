@@ -89,7 +89,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     await saveService.writeFreeAgents(saveId, [{ player: free, since: "2026-10-01" }]);
     const demand = contractDemand(free, await human(), "2026-10-10");
     const sign = await route("/api/saves/:saveId/free-agents/:playerId/sign")(req(`/api/saves/${saveId}/free-agents/free_window_1/sign`, "POST",
-      { saveId, playerId: "free_window_1" }, { wage: demand, years: 2 }));
+      { saveId, playerId: "free_window_1" }, { wage: demand * 2, years: 2, bonus: 1_000_000_000 }));
     expect(sign.status).toBe(200);
   }, 60_000);
 
@@ -101,20 +101,27 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
 
     const tooLow = await post({ playerId: target.id, fromSquadId: club.id, wage: 1, years: 2 });
     expect(tooLow.status).toBe(400);
-    const ok = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
+    // A signing bonus below what he asks (4.47.9).
+    const noBonus = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
+    expect(noBonus.status).toBe(400);
+    expect(await noBonus.json()).toMatchObject({ error: "lowBonus" });
+    const bonus = 900_000_000;
+    const ok = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2, bonus });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ accepted: true });
     expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts!.map((p) => p.playerId)).toEqual([target.id]);
-    const again = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
+    const again = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2, bonus });
     expect(again.status).toBe(409);
     expect(await again.json()).toEqual({ error: "alreadySigned" });
 
-    // The origin club's country rolls: he leaves for free, before the AI renewals.
+    // The origin club's country rolls: he leaves for free, before the AI renewals; the bonus is paid on arrival.
+    const budgetBefore = (await human()).finances?.budget ?? 0;
     const res = await applyDuePreContracts(saveService, saveId, meta.seatId, (await saveService.getSeatMeta(saveId, meta.seatId))!, {
       unitIds: new Set([club.id]), date: "2027-05-20", humanClubId: meta.clubId,
     });
     expect(res.moves).toEqual([{ playerId: target.id, from: club.id, to: meta.clubId, fee: 0, kind: "pre_contract", date: "2027-05-20" }]);
     expect((await human()).players.find((p) => p.id === target.id)?.contract?.wage).toBe(5_000_000);
+    expect((await human()).finances?.budget).toBe(budgetBefore - bonus);
     expect((await saveService.getSquadById(saveId, club.id))!.players.some((p) => p.id === target.id)).toBe(false);
     expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts).toEqual([]);
   }, 60_000);

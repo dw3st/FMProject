@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.47.9",
+    date: "2026-11-06",
+    time: "10:10",
+    items: [
+      {
+        pt: "Pré-contrato e jogador livre agora pedem luvas: uma parte do valor de mercado, paga quando o pré-contrato se cumpre ou na assinatura do livre. O salário pedido também é um pouco maior.",
+        en: "Pre-contracts and free agents now ask a signing bonus: part of the market value, paid when the pre-contract completes or when the free agent signs. The asked wage is a little higher too.",
+      },
+      {
+        pt: "Outros clubes disputam quem chega sem taxa: a janela mostra quem também quer o jogador, e ele escolhe a melhor proposta, contando salário, luvas, tamanho do clube e chance de jogar.",
+        en: "Other clubs compete for players who arrive without a fee: the window shows who else wants him, and he picks the best offer, counting wage, signing bonus, club size and chance to play.",
+      },
+    ],
+  },
+  {
     version: "4.47.8",
     date: "2026-11-06",
     time: "09:50",

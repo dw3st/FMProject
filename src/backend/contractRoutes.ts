@@ -17,6 +17,11 @@ import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { dropFromLineup, marketWithoutPlayer } from "@/backend/negotiationWorld";
 import { ledgerSeason } from "@/backend/staffRoutes";
+import { freeSigningContext } from "@/backend/freeSigningWorld";
+import { prestigeOf } from "@/backend/rivalWorld";
+import { preferredRival } from "@/Domain/negotiation/freeSigning";
+import { starterChance } from "@/Domain/negotiation/rivals";
+import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { recordMoney } from "@/backend/FinancialService";
 import { closeOffersForPlayer } from "@/backend/seatOfferWorld";
 
@@ -210,7 +215,10 @@ export const contractRoutes = {
     // last club of a free agent.
     const fromSquad = renewal ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
     const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
-    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation });
+    // A fee-free arrival (pre-contract: `?pre=1`; free agent: no `from`) asks more wage, a signing bonus and has rivals (4.47.9).
+    const freeKind = renewal ? null : !from ? "free" as const : new URL(req.url).searchParams.get("pre") === "1" ? "pre" as const : null;
+    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation, freeArrival: !!freeKind });
+    const freeCtx = freeKind ? await freeSigningContext(saveService, saveId, { player, kind: freeKind, from: fromSquad ?? null, date }) : null;
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
     // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
     let parts: Record<string, number | boolean | string> = {};
@@ -239,6 +247,7 @@ export const contractRoutes = {
       ...parts,
       ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
+      ...(freeCtx ? { bonusAsk: freeCtx.ask, rivals: freeCtx.rivals.map((r) => r.rival.clubName) } : {}),
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
         : {}),
@@ -260,8 +269,9 @@ export const contractRoutes = {
 
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { wage, years } = (body ?? {}) as Record<string, unknown>;
-    if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number") {
+    const { wage, years, bonus } = (body ?? {}) as Record<string, unknown>;
+    if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number"
+      || (bonus !== undefined && (typeof bonus !== "number" || !Number.isFinite(bonus) || bonus < 0 || bonus > 2_000_000_000))) {
       return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     }
 
@@ -279,8 +289,21 @@ export const contractRoutes = {
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: await lastClubOf(saveId, agent.player), negotiation });
-      if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
+      const lastClub = await lastClubOf(saveId, agent.player);
+      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, freeArrival: true });
+      // Signing bonus and the AI clubs after him (4.47.9).
+      const free = await freeSigningContext(saveService, saveId, { player: agent.player, kind: "free", from: lastClub, date });
+      if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
+      const offered = typeof bonus === "number" ? Math.round(bonus) : 0;
+      if (offered < free.ask) return Response.json({ error: "lowBonus", demand: check.demand, bonusAsk: free.ask }, { status: 400 });
+      if (free.rivals.length > 0) {
+        const prestige = (await prestigeOf(saveService, saveId, date, [squad.id])).get(squad.id) ?? 0.5;
+        const rival = preferredRival({
+          human: { pref: { wage, demand: check.demand, prestige, starter: starterChance(agent.player, squad), facilitiesAppeal: facilitiesAppeal(squad, agent.player) }, bonus: offered },
+          rivals: free.rivals, ask: free.ask,
+        });
+        if (rival) return Response.json({ error: "prefersRival", rival: { clubName: rival.clubName }, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
+      }
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
@@ -290,6 +313,12 @@ export const contractRoutes = {
         players: [...squad.players, { ...arriving(agent.player, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],
       });
       await saveService.writeFreeAgents(saveId, pool.filter((f) => f.player.id !== playerId));
+      if (offered > 0) {
+        await recordMoney(saveService, saveId, await ledgerSeason(saveService, saveId, ref.leagueSlug, date), ref, {
+          date, kind: "transfer_out", amount: -offered, label: `Signing bonus: ${agent.player.name}`,
+          ref: { stage: "signing_bonus", playerName: agent.player.name },
+        }, auth.seatId);
+      }
       // In the day log like every other move (achievements: free signings, `.claude/rules/game/achievements.md`).
       await saveService.appendDayTransfers(saveId, date, [{ playerId, from: "", to: squad.id, fee: 0, kind: "free", date }]);
       return Response.json({ contract });

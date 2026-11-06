@@ -11,6 +11,7 @@ import { prestigeOf } from "@/backend/rivalWorld";
 import { reputationOf } from "@/backend/jobWorld";
 import { emitInboxMessage, buildBoardMessage, buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { answerPreContract } from "@/Domain/negotiation/preContract";
+import { freeSigningContext } from "@/backend/freeSigningWorld";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { addYearsIso } from "@/Domain/contracts/contracts";
 import { renewedContract } from "@/Domain/managers/managerContract";
@@ -73,9 +74,10 @@ export const marketRoutes = {
     }
     if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    const { playerId, fromSquadId, wage, years } = body ?? {};
+    const { playerId, fromSquadId, wage, years, bonus } = body ?? {};
     if (typeof playerId !== "string" || !playerId || typeof fromSquadId !== "string" || !fromSquadId
-      || typeof wage !== "number" || !Number.isFinite(wage) || wage <= 0 || typeof years !== "number") {
+      || typeof wage !== "number" || !Number.isFinite(wage) || wage <= 0 || typeof years !== "number"
+      || (bonus !== undefined && (typeof bonus !== "number" || !Number.isFinite(bonus) || bonus < 0 || bonus > 2_000_000_000))) {
       return json({ error: "missing or invalid fields" }, 400);
     }
     return withSaveLock(saveId, async () => {
@@ -102,23 +104,29 @@ export const marketRoutes = {
       const starLimit = await starLimitResponse(saveId, human, playerId);
       if (starLimit) return starLimit;
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
+      // Signing bonus and the AI clubs after him (4.47.9).
+      const free = await freeSigningContext(saveService, saveId, { player, kind: "pre", from: current, date });
+      const offered = typeof bonus === "number" ? Math.round(bonus) : 0;
       const answer = answerPreContract({
-        offer: { wage, years }, player, human, current, date,
+        offer: { wage, years, bonus: offered }, bonusAsk: free.ask, rivals: free.rivals, player, human, current, date,
         humanPrestige: prestige.get(human.id) ?? 0.5, currentPrestige: prestige.get(current.id) ?? 0.5,
         nextSeasonEnd: addYearsIso(seasonEndOf(meta.activeLeagues, current.leagueSlug, date), 1),
         negotiation: (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation,
       });
       if (!answer.accepted) {
+        if (answer.reason === "prefersRival") {
+          return json({ accepted: false, reason: "prefersRival", rival: { clubName: answer.rival.clubName }, demand: answer.demand, bonusAsk: free.ask });
+        }
         const status = answer.reason === "prefersCurrent" ? 200 : 400;
         return json(status === 200
-          ? { accepted: false, reason: answer.reason, preference: answer.preference, demand: answer.demand }
-          : { error: answer.reason, demand: answer.demand }, status);
+          ? { accepted: false, reason: answer.reason, preference: answer.preference, demand: answer.demand, bonusAsk: free.ask }
+          : { error: answer.reason, demand: answer.demand, bonusAsk: free.ask }, status);
       }
       await saveService.saveMarket(saveId, {
         ...market,
         preContracts: [...signed, {
           playerId, playerName: player.name, fromClubId: current.id, fromClubName: current.name, toClubId: human.id,
-          wage, years, date,
+          wage, years, date, ...(offered > 0 ? { bonus: offered } : {}),
         }],
       }, auth.seatId);
       await emitInboxMessage(saveId, buildTransferNegotiationMessage({

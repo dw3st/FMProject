@@ -2798,7 +2798,8 @@
       "facilityRebuild": "Reconstrução: {{item}}",
       "facilityUpgrade": "Melhoria: {{item}}",
       "boardFundingItem": "Verba da diretoria: {{item}}",
-      "legendHire": "Lenda de volta à base: {{player}}"
+      "legendHire": "Lenda de volta à base: {{player}}",
+      "signingBonus": "Luvas: {{player}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -3244,7 +3245,8 @@
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
       "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
       "poorFacilities": "Ambicioso demais para um CT neste estado: recusa.",
-      "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}."
+      "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
+      "lowBonus": "As luvas estão abaixo do que ele pede."
     },
     "result": {
       "renewed": "Renovou",
@@ -3253,6 +3255,18 @@
       "retry": "Tentar de novo",
       "sceneHappy": "O jogador sorri e aperta a mão do diretor sobre o contrato assinado",
       "sceneSad": "O jogador sozinho na mesa, de cabeça baixa, com o contrato de lado"
+    },
+    "bonus": {
+      "label": "Luvas",
+      "asks": "Ele pede {{amount}}",
+      "paidOnArrival": "pagas quando ele chegar",
+      "paidNow": "pagas na assinatura",
+      "down": "Diminuir as luvas",
+      "up": "Aumentar as luvas",
+      "rivals_one": "O {{clubs}} também quer ele.",
+      "rivals_other": "{{clubs}} também querem ele.",
+      "prefersRival": "Ele prefere a proposta do {{club}}. Aumente o salário ou as luvas.",
+      "agreed": "Luvas de {{amount}}, pagas quando ele chegar"
     }
   },
   "seatOffers": {

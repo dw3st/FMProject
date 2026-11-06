@@ -2798,7 +2798,8 @@
       "facilityRebuild": "Rebuild: {{item}}",
       "facilityUpgrade": "Upgrade: {{item}}",
       "boardFundingItem": "Board funding: {{item}}",
-      "legendHire": "Legend back to the academy: {{player}}"
+      "legendHire": "Legend back to the academy: {{player}}",
+      "signingBonus": "Signing bonus: {{player}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -3244,7 +3245,8 @@
       "unhappy": "He is furious and will not renew without a renewal promise.",
       "smallerClub": "Too ambitious for a club this size: he refuses.",
       "poorFacilities": "Too ambitious for a training ground in this state: he refuses.",
-      "recentlyRenewed": "Renewed recently: no new renewal before {{date}}."
+      "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
+      "lowBonus": "The signing bonus is below what he asks."
     },
     "result": {
       "renewed": "Renewed",
@@ -3253,6 +3255,18 @@
       "retry": "Try again",
       "sceneHappy": "The player smiles and shakes the director's hand over the signed contract",
       "sceneSad": "The player alone at the desk, head down, the contract pushed aside"
+    },
+    "bonus": {
+      "label": "Signing bonus",
+      "asks": "He asks {{amount}}",
+      "paidOnArrival": "paid when he joins",
+      "paidNow": "paid on signing",
+      "down": "Lower the signing bonus",
+      "up": "Raise the signing bonus",
+      "rivals_one": "{{clubs}} is also after him.",
+      "rivals_other": "{{clubs}} are also after him.",
+      "prefersRival": "He prefers the offer of {{club}}. Raise the wage or the signing bonus.",
+      "agreed": "Signing bonus {{amount}}, paid when he joins"
     }
   },
   "seatOffers": {
