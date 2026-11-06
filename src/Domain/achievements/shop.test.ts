@@ -73,14 +73,22 @@ describe("who is a legend", () => {
   const row = (titles: string[], awards: { kind: string }[] = [], apps = 30) =>
     ({ season: "2027", squadId: "s", clubName: "c", league: "l", apps, goals: 0, assists: 0, avgRating: 6, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles, awards });
   const at = (pos: string, v: number, extra: Partial<RetiredPlayer> = {}) => common(pos, { positions: [pos], statsAtRetirement: stats(v), ...extra });
+  const played = (apps: number, titles: string[] = []) => ({ history: [row(titles, [], apps)] }) as Partial<RetiredPlayer>;
   test("the cut depends on the line: a level that makes an attacker a legend does not make a defender one", () => {
-    expect(isLegend(at("Forward", 4.45))).toBe(true);
-    expect(isLegend(at("Defender", 4.45))).toBe(false);
-    expect(isLegend(at("Defender", 4.85))).toBe(true);
+    expect(isLegend(at("Forward", 4.45, played(150)))).toBe(true);
+    expect(isLegend(at("Defender", 4.45, played(150)))).toBe(false);
+    expect(isLegend(at("Defender", 4.85, played(150)))).toBe(true);
   });
   test("the best level of his career counts, not only the one he retired with", () => {
-    expect(isLegend(at("Forward", 3.2))).toBe(false);
-    expect(isLegend(at("Forward", 3.2, { peakLevel: 5 }))).toBe(true);
+    expect(isLegend(at("Forward", 3.2, played(150)))).toBe(false);
+    expect(isLegend(at("Forward", 3.2, { peakLevel: 5, ...played(150) }))).toBe(true);
+  });
+  test("by level he also needs a career in the game: 150 games or a title (report: level 50, 33 games)", () => {
+    expect(isLegend(at("Defender", 5.0, played(33)))).toBe(false);
+    expect(isLegend(at("Defender", 5.0))).toBe(false);
+    expect(isLegend(at("Defender", 5.0, played(33, ["league:a"])))).toBe(true);
+    expect(isLegend(at("Defender", 5.0, played(149)))).toBe(false);
+    expect(isLegend(at("Defender", 5.0, { wasWorldClass: true }))).toBe(true);
   });
   test("a career in the game counts, with a decent level", () => {
     const h = (rows: unknown[]) => ({ history: rows }) as Partial<RetiredPlayer>;
@@ -102,12 +110,14 @@ describe("who is a legend", () => {
 describe("legend rarity and price", () => {
   test("rarity by world class and level", () => {
     expect(legendRarity(retired("w"))).toBe("super");
-    expect(legendRarity(common("t", { statsAtRetirement: stats(5.6) }))).toBe("super");
-    expect(legendRarity(common("l", { statsAtRetirement: stats(4.5) }))).toBe("rare");
+    const career = { history: [{ season: "2027", squadId: "s", clubName: "c", league: "l", apps: 150, goals: 0, assists: 0, avgRating: 6, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }] } as unknown as Partial<RetiredPlayer>;
+    expect(legendRarity(common("t", { statsAtRetirement: stats(5.6), ...career }))).toBe("super");
+    expect(legendRarity(common("t", { statsAtRetirement: stats(5.6) }))).toBe("common");
+    expect(legendRarity(common("l", { statsAtRetirement: stats(4.5), ...career }))).toBe("rare");
     expect(legendRarity(common("n", { statsAtRetirement: stats(3.6) }))).toBe("common");
   });
   test("a rare one costs more, and that is what the purchase spends", () => {
-    const rare = common("l", { statsAtRetirement: stats(4.5) });
+    const rare = common("l", { statsAtRetirement: stats(4.5), history: [{ season: "2027", squadId: "s", clubName: "c", league: "l", apps: 150, goals: 0, assists: 0, avgRating: 6, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }] } as unknown as Partial<RetiredPlayer>);
     expect(legendExtraPrice(rare)).toBe(A.LEGEND_OFFER.EXTRA.rare);
     const state = { spent: 0, bought: {} } as unknown as AchievementsState;
     const after = recordPurchase(state, "legend", "2030-09-01", O.season, { id: "x", name: "x", positions: ["CM"] }, legendExtraPrice(rare));

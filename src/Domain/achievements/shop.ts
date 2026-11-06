@@ -94,8 +94,9 @@ export type LegendRarity = "common" | "rare" | "super";
 
 /** Rarity of a retiree in the shop: super rare (world class or a very high level), rare (a legend), common. */
 export function legendRarity(r: RetiredPlayer): LegendRarity {
-  if (r.wasWorldClass || retiredLevel(r) >= RETIREMENT.SUPER_LEVEL[getMainRole(r.positions[0] ?? "CM")]) return "super";
-  return isLegend(r) ? "rare" : "common";
+  if (r.wasWorldClass) return "super";
+  if (!isLegend(r)) return "common";
+  return retiredLevel(r) >= RETIREMENT.SUPER_LEVEL[getMainRole(r.positions[0] ?? "CM")] ? "super" : "rare";
 }
 
 /** Points on top of the shop's price for a retiree of this rarity. */
@@ -135,17 +136,18 @@ export function legendOffer(
 
 /**
  * A legend of the retired list (`.claude/rules/game/retirement.md`), never a free agent: world class, the best of his
- * line by career-best level, or a real career in the game (a top individual award, or titles, awards or games, with a
+ * line by career-best level with a career in the game (150 games or a title), or a real career in the game (a top individual award, or titles, awards or games, with a
  * decent level). The cut is by line because defenders and keepers keep their level far longer than attackers.
  */
 export function isLegend(r: RetiredPlayer): boolean {
   if (r.freeAgent) return false;
   if (r.wasWorldClass) return true;
   const level = retiredLevel(r);
-  if (level >= RETIREMENT.LEGEND_LEVEL[getMainRole(r.positions[0] ?? "CM")]) return true;
+  const career = careerInGame(r);
+  const L = RETIREMENT.LEGEND_LEVEL_CAREER;
+  if (level >= RETIREMENT.LEGEND_LEVEL[getMainRole(r.positions[0] ?? "CM")] && (career.apps >= L.APPS || career.titles >= L.TITLES)) return true;
   const C = RETIREMENT.LEGEND_CAREER;
   if (level < C.MIN_LEVEL) return false;
-  const career = careerInGame(r);
   return wonTopAward(r) || career.titles >= C.TITLES || career.awards >= C.AWARDS || career.apps >= C.APPS;
 }
 

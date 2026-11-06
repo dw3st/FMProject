@@ -112,3 +112,7 @@ Report do usuário (Y. Mina, zagueiro de nota 47, era lenda). `isLegend` não us
 ## Perfil do aposentado (4.47.6)
 
 Report do usuário. `GET /api/saves/:id/retired/:retiredId` (dono, 404 sem o registro) devolve o registro inteiro com `clubName`; na lista, "Ver perfil" abre `RetiredProfile` (rosto, bandeira, posição, pé, idade e data da aposentadoria, nível no último jogo e auge, os 13 atributos de `statsAtRetirement`, seleção e a `CareerTable`). A lista ganhou a bandeira ao lado do nome.
+
+## Lenda pela nota precisa de carreira (8.8.1)
+
+Report de tester (um zagueiro de nota 50, 33 jogos e nenhum título era lenda). Pela nota da posição (`LEGEND_LEVEL`) só é lenda quem também tem carreira no jogo: 150 jogos ou um título (`LEGEND_LEVEL_CAREER`, `careerInGame`). Classe mundial continua automática. Super raro (`legendRarity`) também precisa ser lenda; sem isso é comum.

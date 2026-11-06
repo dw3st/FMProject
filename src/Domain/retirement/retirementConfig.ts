@@ -39,6 +39,11 @@ export const RETIREMENT = {
   /** Or a career in the game: titles, individual awards or games, with this level at least. */
   LEGEND_CAREER: { MIN_LEVEL: 4.0, TITLES: 3, AWARDS: 2, APPS: 300 },
   /**
+   * A legend by level also needs a career in the game: this many games, or a title (tester report, 8.9: a defender of
+   * level 50 with 33 games and no title was a legend).
+   */
+  LEGEND_LEVEL_CAREER: { APPS: 150, TITLES: 1 },
+  /**
    * "Highlights" filter of the retired list (tester report: average players fill it): level at retirement at least
    * this. Friends world of 2027-01: 250 of 1633 club retirees (the top ~15%).
    */

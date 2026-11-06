@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.1",
+    date: "2026-11-06",
+    time: "14:10",
+    items: [
+      {
+        pt: "Lendas: pela nota da carreira, o aposentado também precisa ter jogado no jogo, com 150 jogos ou um título.",
+        en: "Legends: by career rating, the retiree also needs a career in the game, with 150 games or a title.",
+      },
+    ],
+  },
+  {
     version: "8.8",
     date: "2026-11-06",
     time: "13:48",

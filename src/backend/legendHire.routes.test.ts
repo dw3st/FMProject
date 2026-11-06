@@ -28,7 +28,7 @@ describe("legend hire for money (retired list)", () => {
         { params: { saveId, retiredId } },
       ));
     };
-    // Only a strong career counts (level at retirement >= 4.5); the weak one stays out of the list.
+    // Only a strong career counts (level and a career in the game); the weak one stays out of the list.
     const mk = (id: string, worldClass: boolean): RetiredPlayer => ({
       id, name: `Legend ${id}`, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
       profile: { summary: "s", archetype: "a" }, retiredOn: "2027-06-01", squadId: "other", age: 38,
@@ -37,6 +37,8 @@ describe("legend hire for money (retired list)", () => {
         passing: worldClass ? 6 : 3, vision: worldClass ? 7 : 3, finishing: worldClass ? 9 : 3, dribbling: worldClass ? 8 : 3, speed: worldClass ? 6 : 3, acceleration: worldClass ? 6 : 3, tackling: 2,
         pressing: 3, stamina: 5, heading: 7, strength: 7, reflex: 0, jump: 0,
       } as RosterPlayer["stats"],
+      // A legend by level also needs a career in the game (150 games or a title).
+      history: [{ season: "2026-27", squadId: "other", clubName: "Other", league: "l", apps: 150, goals: 60, assists: 0, avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }],
     });
     await saveService.writeRetired(saveId, [mk("a", true), mk("b", true), mk("n", false)]);
 
