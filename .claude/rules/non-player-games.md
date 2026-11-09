@@ -1194,3 +1194,12 @@ com o nível médio dos dois XIs: × 1,10 nos torneios, × 1,61 num jogo de nív
 ## Clima no quickSim (7.2)
 
 `QUICK_SIM_CONFIG.WEATHER` aplica o clima efetivo do jogo ao quickSim. Ver `.claude/rules/game/weather.md`.
+
+## Recalibração geral 2026-11-09 (8.8.31)
+
+Mesmo processo da 3.4.1 (26 ligas, 400 jogos do motor cada, formações da IA, fôlego 88; `debug/recal/`, não versionado). O motor mudou muito desde então e as ligas se aproximaram: as fortes marcam menos (Premier 2,46 → 2,21) e as fracas mais (Quênia 1,01 → 1,08).
+
+- **Gols (`analyze`, seção 8, "ratio+level+pace"):** `BASE_GOALS` 0,787 → 0,798, `HOME_ADVANTAGE` 1,03 → 1,026, `STRENGTH_EXPONENT` 0,29 → 0,37, `LEVEL_EXPONENT` 0,07 → 0,3, `PACE_EDGE_WEIGHT` 0,25 → 0,3, `FINISHING_WEIGHT` 0,089 → 0 (o termo de finalização já não ganha: 4,5% contra 4,3% dentro da amostra, pior liga 11,8% contra 8,9%). Erro por liga: rms 7,8% → 4,2% (piso de ruído 3,9%), pior liga −16,9% → −8,1%.
+- **Eventos (`events --apply`, 3 rodadas):** partilhas, chutes, passes, desarmes, interceptações e notas. `NO_ASSIST_RATE` 0,151 à mão (assist./gol 0,670 × 0,679). `PASS_COMPLETION_BASE` 0,949 e `SKILL` 0 à mão (o ajuste deu um peso negativo): o motor acerta 94,9% desde que passes saem pela lateral. Notas por linha: diferença rms GK 0,041, DEF 0,017, MID 0,022, FWD 0,032.
+- **`extras`:** todas as taxas a ±2% do motor (por partida, motor × quick: faltas 10,57 × 10,55, amarelos 2,32 × 2,31, vermelhos 0,074 × 0,073, pênaltis 0,347 × 0,349, cruzamentos 13,0 × 13,0, certos 1,31 × 1,32, disputas aéreas 22,5 × 22,4, lançamentos 2,52 × 2,52, escanteios 5,68 × 5,69, gols de bola parada 26,5% × 26,9%), salvo chutes de falta direta (−6%) e lesões (−3%).
+- **Seleções:** `NATIONAL_MATCH.SLOPE` 0,3 → 0,2. Sem isso as confederações fracas subiam (CAF 3,23, CONCACAF 3,09); ciclo completo 2,50 gols por jogo (antes 2,48).

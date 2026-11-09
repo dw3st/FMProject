@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.31",
+    date: "2026-11-09",
+    time: "20:14",
+    items: [],
+    fixes: [
+      {
+        pt: "Os jogos das ligas que você não acompanha ficaram mais parecidos com os jogos de verdade em gols, cartões e estatísticas.",
+        en: "Matches in the leagues you do not follow are now closer to real matches in goals, cards and stats.",
+      },
+    ],
+  },
+  {
     version: "8.8.30",
     date: "2026-11-09",
     time: "18:24",

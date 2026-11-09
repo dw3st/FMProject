@@ -187,6 +187,8 @@ Com |ΔElo| > 200 o favorito vence 66% (× 1), 72% (× 1,4) e 77% (por nível). 
 dos dois lados (a zebra quase não muda); como o fator é maior nos jogos de nível baixo, onde estão os maiores
 desníveis de Elo (eliminatórias da AFC, CAF, OFC), o favorito ganha um pouco mais neles.
 
+Desde a 8.8.31 `SLOPE` é 0,2 (a recalibração do quickSim mudou o peso do nível; `non-player-games.md`): ciclo 2,50 gols, CAF 2,97, AFC 2,78, CONCACAF 2,73, UEFA 2,60, OFC 2,10.
+
 ## Testes e smoke
 
 ```

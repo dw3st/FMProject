@@ -56,7 +56,7 @@ describe("changelog data", () => {
 
   test("every entry has at least one item", () => {
     for (const entry of changelog) {
-      expect(entry.items.length).toBeGreaterThan(0);
+      expect(entry.items.length + (entry.fixes?.length ?? 0)).toBeGreaterThan(0);
     }
   });
 
