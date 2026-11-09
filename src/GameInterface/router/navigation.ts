@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { matchAppPath } from "@/GameInterface/router/appRoutes";
+import type { MouseEvent as ReactMouseEvent } from "react";
+import { interceptedTarget, matchAppPath } from "@/GameInterface/router/appRoutes";
 
 // Navigation inside the fixed frame (`docs/superpowers/specs/2026-11-06-spa-shell-design.md`). On a page of its own
 // (match, preview, landing…) the frame is not running and `navigate` is a normal page load, so every caller can use it.
@@ -77,6 +78,20 @@ export function navigate(to: string, opts: { replace?: boolean } = {}): void {
   else window.history.pushState(null, "", target);
   counter++;
   emit();
+}
+
+/**
+ * onClick of a link inside something clickable (a table row): keeps the click from the row. React's stopPropagation
+ * also stops the native event, so the frame's link listener never sees it and the page would reload (8.8.26).
+ */
+export function followLinkOnly(e: ReactMouseEvent<HTMLAnchorElement>): void {
+  e.stopPropagation();
+  if (!frameActive) return;
+  const a = e.currentTarget;
+  const to = interceptedTarget(e, { href: a.href, target: a.target, hasDownload: a.hasAttribute("download") }, window.location.origin);
+  if (!to) return;
+  e.preventDefault();
+  navigate(to);
 }
 
 function subscribe(l: () => void): () => void {

@@ -1,3 +1,4 @@
+import { followLinkOnly } from "@/GameInterface/router/navigation";
 import { summaryOf } from "@/Domain/personality/personality";
 import { addDays } from "@/Domain/dates";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -262,9 +263,7 @@ export function SquadRosterTable({
                 href={playerDetailHref(player)}
                 title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}
                 className="text-foreground hover:text-primary hover:underline no-underline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
+                onClick={followLinkOnly}
               >
                 {player.name}
               </a>

@@ -97,8 +97,12 @@ export const GAME_ART_FILES: Record<string, string> = {
   // Facility items under works (4.41.20): painted construction overlays.
   "facilities-works/works-outdoor.webp": "image/webp",
   "facilities-works/works-indoor.webp": "image/webp",
-  // Club screen (4.41.21): the painted stadium behind the stand map, plain grass for an unmown turf preview.
-  "club/stadium-top.webp": "image/webp",
+  // Club screen: plain grass for an unmown turf preview; the stand map, seen from above, by phase (8.8.26).
+  "club/stadium-map-1.webp": "image/webp",
+  "club/stadium-map-2.webp": "image/webp",
+  "club/stadium-map-3.webp": "image/webp",
+  "club/stadium-map-4.webp": "image/webp",
+  "club/stadium-map-5.webp": "image/webp",
   // Club screen (4.47.14): the painted ground by the stadium items' level, 1..5 (data_process/assets/club_stadium_levels.py).
   "club/stadium-lv-1.webp": "image/webp",
   "club/stadium-lv-2.webp": "image/webp",

@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.26",
+    date: "2026-11-09",
+    time: "16:16",
+    items: [
+      {
+        pt: "Clube: o mapa do estádio agora é pintado e muda em cinco fases, do campo de bairro à arena de elite, conforme as obras.",
+        en: "Club: the stadium map is now painted and changes in five phases, from a local ground to an elite arena, as you build.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Abrir um jogador pelas tabelas de Estatísticas ou pelo Elenco não recarrega mais a página nem corta a rádio.",
+        en: "Opening a player from the Stats or Squad tables no longer reloads the page or cuts the radio.",
+      },
+    ],
+  },
+  {
     version: "8.8.25",
     date: "2026-11-09",
     time: "16:03",

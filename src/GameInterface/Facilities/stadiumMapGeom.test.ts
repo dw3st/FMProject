@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { STAND_FULL, stadiumMapGeom } from "@/GameInterface/Facilities/stadiumMapGeom";
+import { STAND_FULL, STAND_RING, paintedStands, stadiumMapGeom } from "@/GameInterface/Facilities/stadiumMapGeom";
 
 describe("club stadium drawing", () => {
   test("full depth without depths, bowl around all stands", () => {
@@ -15,6 +15,12 @@ describe("club stadium drawing", () => {
     expect(g.stands.north.y + g.stands.north.h).toBe(STAND_FULL.north.y + STAND_FULL.north.h);
     expect(g.bowl!.x).toBe(g.stands.west.x - 8);
     expect(g.bowl!.rx).toBeGreaterThan(100);
+  });
+
+  test("the painted map uses separate stands up to phase 3 and the ring after it", () => {
+    expect(paintedStands(3)).toBe(STAND_FULL);
+    expect(paintedStands(4)).toBe(STAND_RING);
+    expect(paintedStands(5)).toBe(STAND_RING);
   });
 
   test("separate stands have no bowl", () => {

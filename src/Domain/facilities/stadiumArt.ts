@@ -10,5 +10,8 @@ export function stadiumArtLevel(levels: readonly number[]): 1 | 2 | 3 | 4 | 5 {
   return Math.min(5, Math.max(1, Math.ceil(mean / 2))) as 1 | 2 | 3 | 4 | 5;
 }
 
+/** The ground seen from above, phase 1..5 by the same level (the stand map of the Club screen, 8.8.26). */
+export const stadiumMapFile = (level: number) => `club/stadium-map-${level}.webp`;
+
 /** The file of a painted ground (game art, `GAME_ART_FILES`). */
 export const stadiumArtFile = (level: number) => `club/stadium-lv-${level}.webp`;

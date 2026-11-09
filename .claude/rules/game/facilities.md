@@ -396,7 +396,11 @@ Pedido do usuário: os efeitos eram pequenos demais para sentir. A tabela "CT e 
 
 ## Estádio como ele é (8.7.2)
 
-Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths }` (`stadiumLookOf`, `standDepths`); o desenho do estádio em `/club` (`stadiumMapGeom`, `Facilities/stadiumMapGeom.ts`) usa a forma do contorno (oval, arredondado, quadrado, setores separados) e a profundidade de cada setor, como na partida. A pintura `club/stadium-top.webp` só aparece num estádio arredondado com setores iguais.
+Report do usuário. `GET .../facilities` devolve `stadium { name, shape, depths }` (`stadiumLookOf`, `standDepths`); o desenho do estádio em `/club` (`stadiumMapGeom`, `Facilities/stadiumMapGeom.ts`) usa a forma do contorno (oval, arredondado, quadrado, setores separados) e a profundidade de cada setor, como na partida. Desde a 8.8.26 isso vale só sem o visual novo.
+
+## Mapa pintado por fase (8.8.26)
+
+Report do usuário, mock aprovado. Com o visual novo, o mapa dos setores em `/club` é uma pintura genérica vista de cima, igual para todos os clubes, em cinco fases (`club/stadium-map-{1..5}.webp`, `stadiumMapFile`; layout em PIL e FLUX img2img, `data_process/assets/club_stadium_top.py`), pela mesma média de gramado, arquibancadas e estrutura (`stadiumArtLevel`). Setores clicáveis por fase (`paintedStands`: separados até a 3, anel nas fases 4 e 5). As etiquetas mostram os lugares e a ocupação reais do clube; a forma do contorno e a profundidade por setor (8.7.2) só valem no mapa desenhado, sem o visual novo.
 
 ## Estádio pintado no topo do Clube (8.7.14)
 

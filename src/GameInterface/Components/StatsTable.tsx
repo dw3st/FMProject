@@ -1,3 +1,4 @@
+import { followLinkOnly } from "@/GameInterface/router/navigation";
 import type { KeyboardEvent, ReactNode } from "react";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -91,7 +92,7 @@ export function NameCell({ children, href, highlight }: { children: ReactNode; h
   return (
     <td className={`${TABLE_CELL.body} max-w-[16rem]`}>
       {href
-        ? <a href={href} className={`${cls} no-underline hover:underline`} onClick={(e) => e.stopPropagation()}>{children}</a>
+        ? <a href={href} className={`${cls} no-underline hover:underline`} onClick={followLinkOnly}>{children}</a>
         : <span className={cls}>{children}</span>}
     </td>
   );

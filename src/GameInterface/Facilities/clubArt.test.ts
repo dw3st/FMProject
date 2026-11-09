@@ -3,14 +3,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { setNewVisual, setPaintedBackdrops } from "@/Domain/art/paintedFaces";
 import { PLAIN_GRASS, paintedSurfaceOf } from "@/GameInterface/Components/PitchSurfaceSvg";
-import { PAINTED_STADIUM } from "@/GameInterface/Facilities/FacilitiesView";
+import { stadiumMapFile } from "@/Domain/facilities/stadiumArt";
 import { GAME_ART_FILES } from "@/backend/staticAssets";
 
 describe("club screen art", () => {
   afterEach(() => { setNewVisual(false); setPaintedBackdrops(null); });
 
-  test("the painted stadium and the plain grass are whitelisted and in the repo", () => {
-    for (const path of [PAINTED_STADIUM, PLAIN_GRASS]) {
+  test("the five phases of the stand map and the plain grass are whitelisted and in the repo", () => {
+    for (const path of [1, 2, 3, 4, 5].map(stadiumMapFile).concat(PLAIN_GRASS)) {
       expect(GAME_ART_FILES[path]).toBe("image/webp");
       expect(existsSync(join(import.meta.dir, "..", "..", "example_data", "assets", path))).toBe(true);
     }

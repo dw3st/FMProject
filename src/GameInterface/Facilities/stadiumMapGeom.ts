@@ -17,6 +17,17 @@ export const STAND_FULL: Record<StandId, MapRect> = {
   east: { x: 236, y: 80, w: 70, h: 240 },
 };
 
+/** Where the seats are in the two closed bowls of the painted map (phases 4 and 5): a narrower ring under the roof. */
+export const STAND_RING: Record<StandId, MapRect> = {
+  north: { x: 96, y: 40, w: 128, h: 28 },
+  south: { x: 96, y: 332, w: 128, h: 28 },
+  west: { x: 40, y: 85, w: 43, h: 230 },
+  east: { x: 237, y: 85, w: 43, h: 230 },
+};
+
+/** The clickable stands over the painting of a phase (1..3 separate stands, 4..5 a closed bowl). */
+export const paintedStands = (level: number): Record<StandId, MapRect> => (level >= 4 ? STAND_RING : STAND_FULL);
+
 const BOWL_PAD = 8;
 
 export interface StadiumMapGeom {

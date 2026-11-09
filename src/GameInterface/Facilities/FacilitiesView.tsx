@@ -1,4 +1,4 @@
-import { stadiumMapGeom, type MapRect } from "@/GameInterface/Facilities/stadiumMapGeom";
+import { paintedStands, stadiumMapGeom, type MapRect } from "@/GameInterface/Facilities/stadiumMapGeom";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
@@ -19,7 +19,7 @@ import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPane
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
-import { STADIUM_ART_ITEMS, stadiumArtFile, stadiumArtLevel } from "@/Domain/facilities/stadiumArt";
+import { STADIUM_ART_ITEMS, stadiumArtFile, stadiumArtLevel, stadiumMapFile } from "@/Domain/facilities/stadiumArt";
 
 /**
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
@@ -96,7 +96,6 @@ export function FacilitiesView({
             <span className="text-sm text-muted-foreground">{t("facilities.stadium.hint")}</span>
           </div>
           <StadiumMap data={data} avgOcc={avgOcc} selected={selected} works={works} onSelect={setSelected} nf={nf} />
-          <OccupancyLegend />
         </section>
 
         <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
@@ -202,12 +201,6 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 /** Fill opacity of a stand from its occupancy (0..1). */
 const occOpacity = (occ: number) => 0.18 + 0.82 * Math.max(0, Math.min(1, occ));
 /** Over the painted stadium: a light primary tint that grows with the occupancy, empty seats darkened. */
-const paintedTint = (occ: number) => 0.06 + 0.4 * Math.max(0, Math.min(1, occ));
-const paintedShade = (occ: number) => 0.5 * (1 - Math.max(0, Math.min(1, occ)));
-
-/** The painted stadium seen from above (club_art.py, drawn from STAND_FULL in stadiumMapGeom.ts): new visual only. */
-export const PAINTED_STADIUM = "club/stadium-top.webp";
-
 /**
  * Per-stand occupancy for display: the season average spread over the stands with a mild
  * preference for the main (west) stand, the seat-weighted mean equal to the average, capped at 100%.
@@ -222,6 +215,8 @@ function standOccupancy(data: FacilitiesViewData, avg: number): Record<StandId, 
   return out;
 }
 
+const stadiumItemLevels = (data: FacilitiesViewData) => data.items.filter((i) => STADIUM_ART_ITEMS.includes(i.id)).map((i) => i.level);
+
 /** Label of a stand, in % of the drawing: the stand's centre. */
 const labelPos = (r: MapRect) => ({ left: `${((r.x + r.w / 2) / 320) * 100}%`, top: `${((r.y + r.h / 2) / 400) * 100}%` });
 
@@ -232,7 +227,7 @@ const labelPos = (r: MapRect) => ({ left: `${((r.x + r.w / 2) / 320) * 100}%`, t
 function StadiumHero({ data }: { data: FacilitiesViewData }) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
-  const levels = data.items.filter((i) => STADIUM_ART_ITEMS.includes(i.id)).map((i) => i.level);
+  const levels = stadiumItemLevels(data);
   const level = stadiumArtLevel(levels);
   if (!newVisualOn() || failed) return null;
   const mean = levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : 0;
@@ -260,14 +255,16 @@ function StadiumMap({
   const [imgFailed, setImgFailed] = useState(false);
   // The ground as the live match draws it (tester report): its shape and each stand as deep as its seats.
   const geom = stadiumMapGeom(data.stadium?.shape, data.stadium?.depths);
-  // The painted stadium is a rounded bowl with equal stands: only for such a ground.
-  const painted = newVisualOn() && !imgFailed && (!data.stadium || (data.stadium.shape === "rounded" && !data.stadium.depths));
-  const p = geom.stands;
+  // New visual: one generic painted ground per phase of the stadium items (8.8.26); the numbers on the labels are the club's.
+  const painted = newVisualOn() && !imgFailed;
+  const level = stadiumArtLevel(stadiumItemLevels(data));
+  const p = painted ? paintedStands(level) : geom.stands;
   return (
-    <div className="relative w-full max-w-[420px] mx-auto aspect-[320/400]">
+    <>
+    <div className="relative w-full max-w-[480px] mx-auto aspect-[320/400]">
       {painted && (
-        <img src={gameArtUrl(PAINTED_STADIUM)} alt="" aria-hidden onError={() => setImgFailed(true)}
-          className="absolute inset-0 w-full h-full rounded-[12%/9.5%] select-none pointer-events-none" draggable={false} />
+        <img src={gameArtUrl(stadiumMapFile(level))} alt="" aria-hidden onError={() => setImgFailed(true)}
+          className="absolute inset-0 w-full h-full rounded-lg select-none pointer-events-none" draggable={false} />
       )}
       <svg viewBox="0 0 320 400" className="absolute inset-0 w-full h-full" role="img" aria-label={t("facilities.stadium.title")}>
         <defs>
@@ -297,14 +294,7 @@ function StadiumMap({
           const on = selected === s.id;
           return (
             <g key={s.id} onClick={() => onSelect(s.id)} className="cursor-pointer">
-              {painted ? (
-                <>
-                  <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-background" fillOpacity={paintedShade(occ[s.id])} />
-                  <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={paintedTint(occ[s.id])} />
-                </>
-              ) : (
-                <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={occOpacity(occ[s.id])} />
-              )}
+              {!painted && <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={occOpacity(occ[s.id])} />}
               {/* Seat rows, parallel to the pitch (the painted stadium has its own). */}
               {!painted && [0.25, 0.5, 0.75].map((k) => (g.w > g.h
                 ? <line key={k} x1={g.x + 6} x2={g.x + g.w - 6} y1={g.y + g.h * k} y2={g.y + g.h * k} className="stroke-background/30" strokeWidth="1" />
@@ -338,6 +328,8 @@ function StadiumMap({
         </button>
       ))}
     </div>
+    {!painted && <OccupancyLegend />}
+    </>
   );
 }
 
