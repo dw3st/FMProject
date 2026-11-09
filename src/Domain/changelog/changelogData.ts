@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.30",
+    date: "2026-11-09",
+    time: "18:24",
+    items: [],
+    fixes: [
+      {
+        pt: "Vermelho direto na primeira reclamação do técnico agora é raríssimo.",
+        en: "A straight red on the manager's first complaint is now extremely rare.",
+      },
+    ],
+  },
+  {
     version: "8.8.29",
     date: "2026-11-09",
     time: "18:21",

@@ -46,7 +46,9 @@ export const VAR_CONFIG = {
   COMPLAINT_YELLOW_BASE: 0.2,
   COMPLAINT_YELLOW_PER_COMPLAINT: 0.6,
   COMPLAINT_YELLOW_RIGOR: 0.3,
-  /** Straight red chance: `RED_BASE × n`, n = complaints already made: never on the first one (tester report, 8.8.28). */
+  /** Straight red on the first complaint of a match: 1 in 400 (user's choice, 8.8.30). */
+  COMPLAINT_RED_FIRST: 0.0025,
+  /** Straight red chance from the second complaint on: `RED_BASE × n`, n = complaints already made. */
   COMPLAINT_RED_BASE: 0.02,
   /** Chance a card-free complaint makes the referee stricter on the opponent. */
   COMPLAINT_BIAS_CHANCE: 0.15,

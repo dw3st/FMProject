@@ -58,12 +58,13 @@ describe("complaint", () => {
     const a = complaintChances({ made: 0, onYellow: false });
     const b = complaintChances({ made: 2, strictness: 1, onYellow: false });
     expect(a.yellow).toBeCloseTo(0.2, 6);
-    expect(a.red).toBe(0);
+    expect(a.red).toBeCloseTo(0.0025, 6);
     expect(b.yellow).toBeCloseTo(0.2 * 2.2 * 1.3, 6);
     expect(b.red).toBeCloseTo(0.04, 6);
   });
   test("red first, yellow on a yellow is red, bias only card-free", () => {
-    expect(resolveComplaint({ made: 0, onYellow: false }, counting([0, 0.9, 0.9]).rng).card).toBe("none");
+    expect(resolveComplaint({ made: 0, onYellow: false }, counting([0.001]).rng).card).toBe("red");
+    expect(resolveComplaint({ made: 0, onYellow: false }, counting([0.01, 0.9, 0.9]).rng).card).toBe("none");
     expect(resolveComplaint({ made: 1, onYellow: false }, counting([0]).rng).card).toBe("red");
     expect(resolveComplaint({ made: 0, onYellow: false }, counting([0.9, 0.1]).rng).card).toBe("yellow");
     expect(resolveComplaint({ made: 0, onYellow: true }, counting([0.9, 0.1]).rng).card).toBe("red");
