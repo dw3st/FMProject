@@ -80,7 +80,7 @@ export function complaintChances(input: ComplaintInput): ComplaintChances {
   const s = input.strictness ?? 0;
   return {
     yellow: clamp(C.COMPLAINT_YELLOW_BASE * (1 + C.COMPLAINT_YELLOW_PER_COMPLAINT * input.made) * (1 + C.COMPLAINT_YELLOW_RIGOR * s), 0, 1),
-    red: clamp(C.COMPLAINT_RED_BASE * (1 + input.made), 0, 1),
+    red: clamp(C.COMPLAINT_RED_BASE * input.made, 0, 1),
   };
 }
 

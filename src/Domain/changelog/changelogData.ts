@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.28",
+    date: "2026-11-09",
+    time: "17:19",
+    items: [],
+    fixes: [
+      {
+        pt: "A primeira reclamação do técnico na partida não dá mais vermelho direto; o amarelo continua possível.",
+        en: "A manager's first complaint in a match no longer brings a straight red; a yellow is still possible.",
+      },
+    ],
+  },
+  {
     version: "8.8.27",
     date: "2026-11-09",
     time: "16:32",

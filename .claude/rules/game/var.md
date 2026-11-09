@@ -42,7 +42,7 @@ versão **5.8**. Depende de `referees.md` (qualidade, rigor, escala), `game-engi
 
 - Botão **Reclamar** por `COMPLAINT_WINDOW` 6 s reais depois de um lance contra o time (falta marcada contra, cartão,
   pênalti contra, impedimento contra, revisão do VAR contra); uma reclamação por lance; só com árbitro.
-- `resolveComplaint`: vermelho `0,02 × (1 + n)`, amarelo `0,20 × (1 + 0,6 n) × (1 + 0,3 s)` (amarelo com amarelo =
+- `resolveComplaint`: vermelho `0,02 × n` (n = reclamações já feitas no jogo: nunca na primeira, 8.8.28, report do usuário), amarelo `0,20 × (1 + 0,6 n) × (1 + 0,3 s)` (amarelo com amarelo =
   vermelho); sem cartão, 15% de chance de `refereeBias` (+0,25 de rigor nas faltas/cartões do adversário até o fim) e
   +1 de moral no elenco uma vez por jogo (`complaintMorale` na gravação → `afterManagerComplaint`).
 - Cartão: amarelo = diretoria −1, vermelho = diretoria −3 (`applyManagerCard`), técnico expulso: sem tática,
