@@ -12,7 +12,8 @@ export type StatementMode = "season" | "month";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 const TABLE = "w-full border-collapse font-display text-base tabular-nums";
-const HEAD_CELL = `${TABLE_STYLE.head} sticky top-0 bg-card px-3 py-2 text-right whitespace-nowrap first:pl-4 first:text-left last:pr-4`;
+// Stays on top of the rows while the journal scrolls: `bg-card!` beats the translucent background of `TABLE_STYLE.head`.
+const HEAD_CELL = `${TABLE_STYLE.head} sticky top-0 z-10 bg-card! px-3 py-2 text-right whitespace-nowrap first:pl-4 first:text-left last:pr-4`;
 const CELL = "px-3 py-1 text-right whitespace-nowrap font-bold first:pl-4 first:text-left last:pr-4";
 
 /** Season or month, and the arrows that walk through them. */

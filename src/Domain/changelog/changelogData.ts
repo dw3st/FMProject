@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.21",
+    date: "2026-11-09",
+    time: "14:48",
+    items: [
+      {
+        pt: "Finanças: ao rolar o extrato, as linhas não aparecem mais por trás do cabeçalho.",
+        en: "Finances: when scrolling the journal, the rows no longer show through the header.",
+      },
+    ],
+  },
+  {
     version: "8.8.20",
     date: "2026-11-09",
     time: "14:36",
