@@ -1,5 +1,5 @@
 import { rivalNextOpponent } from "@/GameInterface/World/rivalNext";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -46,6 +46,8 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   const idle = rows.filter((r) => !r.me && !liveSeats.has(r.seatId) && !excludeClubIds.includes(r.clubId));
   // Kept while loading: the strip showing up later would push the pitch down.
   if (loaded && live.length === 0 && idle.length === 0 && viewers.length === 0) return null;
+  // In the footer each friend is set apart like everything else on the bar (8.8.27).
+  const sep = footer ? <li aria-hidden="true" className="w-px h-5 bg-border shrink-0" /> : null;
   return (
     <div className={footer ? "h-full flex items-center" : "shrink-0 border-b border-border bg-card/60 px-4 py-1.5"} aria-label={t("rivals.stripLabel")} role="region">
       {/* The space on the right is always kept: someone joining or leaving never moves the strip or the pitch below (tester report). */}
@@ -66,7 +68,9 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
           const lit = !!highlight[l.seatId];
           const sides = homeAwayOf(l);
           return (
-            <li key={l.seatId} className="relative">
+            <Fragment key={l.seatId}>
+            {sep}
+            <li className="relative">
               <button
                 type="button"
                 onClick={(e) => { setOpenLeft(e.currentTarget.getBoundingClientRect().left); setOpen(open === l.seatId ? null : l.seatId); }}
@@ -95,6 +99,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                 </div>
               )}
             </li>
+            </Fragment>
           );
         })}
         {idle.map((r) => {
@@ -102,7 +107,9 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
           const homeId = n ? (n.home ? r.clubId : n.opponentId) : null;
           const awayId = n ? (n.home ? n.opponentId : r.clubId) : null;
           return (
-            <li key={r.seatId} className="flex items-center gap-1.5 min-h-8 px-2 text-sm tabular-nums text-muted-foreground">
+            <Fragment key={r.seatId}>
+            {sep}
+            <li className="flex items-center gap-1.5 min-h-8 px-2 text-sm tabular-nums text-muted-foreground">
               <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
               <span aria-hidden="true">·</span>
               {n?.national ? (
@@ -123,9 +130,11 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                 </>
               )}
             </li>
+            </Fragment>
           );
         })}
       </ul>
+      {footer && viewers.length > 0 && <span aria-hidden="true" className="w-px h-5 bg-border shrink-0" />}
       {footer && viewers.length > 0 && (
         <span role="status" title={viewers.join(", ")} className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
           <Icon name="eye" size={16} className="text-primary shrink-0" />

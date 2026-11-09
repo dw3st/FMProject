@@ -15,6 +15,11 @@ const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nu
 const ICON_BTN =
   "flex items-center justify-center w-10 h-10 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
 
+/** Between two things of the bar (tester report, 8.8.27). */
+function Divider() {
+  return <span aria-hidden="true" className="w-px h-5 bg-border shrink-0" />;
+}
+
 export function StatusBar({
   onOpenInbox,
   onOpenSettings,
@@ -45,11 +50,12 @@ export function StatusBar({
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
     <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
       <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6`}>
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-4">
           <span className={ITEM} title={t("status.budget")}>
             <Icon name="finances" size={18} />
             {budgetLabel}
           </span>
+          <Divider />
           <button
             type="button"
             onClick={onOpenInbox}
@@ -59,6 +65,7 @@ export function StatusBar({
             <Icon name="news" size={18} />
             {unreadLabel}
           </button>
+          <Divider />
           <span className={ITEM} title={t("status.players")}>
             <Icon name="staff" size={18} />
             {playersLabel}
@@ -66,10 +73,12 @@ export function StatusBar({
         </div>
         {/* The live match draws its friends' radio here (in the frame); the owner's credit lives on the login and start
             screens (user's choice, 8.8.10). */}
-        <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-x-auto overflow-y-visible" />
+        <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-x-auto overflow-y-visible px-6 bg-[linear-gradient(var(--color-border),var(--color-border)),linear-gradient(var(--color-border),var(--color-border))] bg-no-repeat bg-[length:1px_20px] bg-[position:left_center,right_center] empty:bg-none" />
         <div className="flex items-center justify-end gap-4">
           <RadioPlayer />
+          <Divider />
           <FriendsButton online={online} />
+          <Divider />
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
               Today's date lives in the top bar's day block. */}
           <button
@@ -89,6 +98,7 @@ export function StatusBar({
               onDismiss={changelogNotice.onDismiss}
             />
           )}
+          <Divider />
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
             <Icon name="settings" size={18} />
           </button>

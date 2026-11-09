@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.27",
+    date: "2026-11-09",
+    time: "16:32",
+    items: [
+      {
+        pt: "Barra de baixo com divisórias entre cada item, inclusive entre os amigos na partida.",
+        en: "The bottom bar now has dividers between its items, including between friends during a match.",
+      },
+    ],
+  },
+  {
     version: "8.8.26",
     date: "2026-11-09",
     time: "16:16",
