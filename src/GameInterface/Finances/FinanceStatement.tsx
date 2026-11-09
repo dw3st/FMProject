@@ -11,10 +11,12 @@ import type { LedgerEntry } from "@/Domain/finance/ledger";
 export type StatementMode = "season" | "month";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
-const TABLE = "w-full border-collapse font-display text-base tabular-nums";
+const TABLE = "w-full border-collapse font-sans text-sm tabular-nums";
 // Stays on top of the rows while the journal scrolls: `bg-card!` beats the translucent background of `TABLE_STYLE.head`.
 const HEAD_CELL = `${TABLE_STYLE.head} sticky top-0 z-10 bg-card! px-3 py-2 text-right whitespace-nowrap first:pl-4 first:text-left last:pr-4`;
-const CELL = "px-3 py-1 text-right whitespace-nowrap font-bold first:pl-4 first:text-left last:pr-4";
+const CELL = "px-3 py-1 text-right whitespace-nowrap first:pl-4 first:text-left last:pr-4";
+/** The big result rows are the only ones in the heavy condensed type. */
+const BIG = "py-2 font-display font-bold text-xl leading-tight";
 
 /** Season or month, and the arrows that walk through them. */
 export function PeriodControl({ mode, onMode, label, canPrev, canNext, onStep }: {
@@ -80,9 +82,9 @@ function Amount({ value, className = "" }: { value: number; className?: string }
 function TotalRow({ label, value, share }: { label: string; value: number; share?: string }) {
   return (
     <tr className="bg-secondary/40 border-y border-border">
-      <td className={`${CELL} py-2 text-xl leading-tight`}>{label}</td>
-      <Amount value={value} className="py-2 text-xl leading-tight" />
-      <td className={`${CELL} py-2 text-xl leading-tight`}>{share}</td>
+      <td className={`${CELL} ${BIG}`}>{label}</td>
+      <Amount value={value} className={BIG} />
+      <td className={`${CELL} ${BIG}`}>{share}</td>
     </tr>
   );
 }
@@ -93,7 +95,7 @@ export function StatementCard({ statement, month }: { statement: Statement; mont
   const share = (value: number) => statement.revenue === 0
     ? "–"
     : new Intl.NumberFormat(i18n.language, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(value) / statement.revenue);
-  const rest = `${CELL} text-muted-foreground font-semibold`;
+  const rest = `${CELL} text-muted-foreground`;
   return (
     <section className={`${TABLE_STYLE.shell} min-w-0`}>
       <SectionTitle className="px-4 py-3 border-b border-border">{t("financesScreen.statement.title")}</SectionTitle>
@@ -115,12 +117,12 @@ export function StatementCard({ statement, month }: { statement: Statement; mont
                     <tr><td colSpan={3} className={`${LABEL} pl-4 pt-3 pb-1`}>{t(`financesScreen.statement.groups.${group.id}`)}</td></tr>
                     {group.accounts.map(({ account, amount }) => (
                       <tr key={account} className={TABLE_STYLE.row}>
-                        <td className={`${CELL} pl-7! text-left font-semibold text-foreground/90`}>{t(`financesScreen.statement.accounts.${account}`)}</td>
+                        <td className={`${CELL} pl-7! text-foreground/90`}>{t(`financesScreen.statement.accounts.${account}`)}</td>
                         <Amount value={amount} />
                         <td className={rest}>{share(amount)}</td>
                       </tr>
                     ))}
-                    <tr className="border-t border-border">
+                    <tr className="border-t border-border font-semibold">
                       <td className={CELL}>{t(`financesScreen.statement.totals.${group.id}`)}</td>
                       <Amount value={group.total} />
                       <td className={rest}>{share(group.total)}</td>
@@ -171,8 +173,8 @@ export function JournalCard({ rows, describe, dateOf, filter }: {
               <tbody className={TABLE_STYLE.body}>
                 {rows.map(({ entry, balance }, i) => (
                   <tr key={`${entry.date}-${entry.kind}-${i}`} className={TABLE_STYLE.row}>
-                    <td className={`${CELL} text-left text-muted-foreground font-semibold`}>{dateOf(entry.date)}</td>
-                    <td className={`${CELL} text-left! font-semibold whitespace-normal`}>{describe(entry)}</td>
+                    <td className={`${CELL} text-muted-foreground`}>{dateOf(entry.date)}</td>
+                    <td className={`${CELL} text-left! whitespace-normal`}>{describe(entry)}</td>
                     <td className={`${CELL} text-destructive`}>{entry.amount < 0 ? money(-entry.amount) : ""}</td>
                     <td className={CELL}>{entry.amount > 0 ? money(entry.amount) : ""}</td>
                     <Amount value={balance} />
@@ -205,17 +207,17 @@ export function WeekCard({ lines, avgGate }: { lines: { label: string; value: nu
           <tbody>
             {lines.map((l) => (
               <tr key={l.label} className={TABLE_STYLE.row}>
-                <td className={`${CELL} pl-7! text-left font-semibold text-foreground/90`}>{l.label}</td>
+                <td className={`${CELL} pl-7! text-foreground/90`}>{l.label}</td>
                 <Amount value={l.value} />
               </tr>
             ))}
             <tr className="bg-secondary/40 border-y border-border">
-              <td className={`${CELL} py-2 text-xl leading-tight`}>{t("financesScreen.statement.weekResult")}</td>
-              <Amount value={result} className="py-2 text-xl leading-tight" />
+              <td className={`${CELL} ${BIG}`}>{t("financesScreen.statement.weekResult")}</td>
+              <Amount value={result} className={BIG} />
             </tr>
             {avgGate !== null && (
               <tr>
-                <td className={`${CELL} pl-7! text-left font-semibold text-foreground/90`}>{t("financesScreen.statement.avgGate")}</td>
+                <td className={`${CELL} pl-7! text-foreground/90`}>{t("financesScreen.statement.avgGate")}</td>
                 <Amount value={avgGate} />
               </tr>
             )}

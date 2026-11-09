@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.22",
+    date: "2026-11-09",
+    time: "14:52",
+    items: [
+      {
+        pt: "Finanças: letra mais leve nas linhas do demonstrativo e do extrato.",
+        en: "Finances: lighter type in the statement and journal rows.",
+      },
+    ],
+  },
+  {
     version: "8.8.21",
     date: "2026-11-09",
     time: "14:48",
