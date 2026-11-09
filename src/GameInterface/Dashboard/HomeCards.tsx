@@ -203,119 +203,123 @@ export function ClubCard({
   squadHref: string;
 }) {
   const { t } = useTranslation();
-  const label = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
+  const summary = achievements && t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points });
+  const reputationShown = reputation === null ? null : Math.round(reputation);
+  const standingsLabel = t(publicWorld ? "dashboard.clubSidebar.publicWorld" : "dashboard.clubSidebar.friendsLeague");
   return (
-    <section className="card-arcade rounded-md p-4 grid gap-6 items-center min-w-0 md:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-      <div className="flex items-center gap-4 min-w-0">
-        <ClubLogo
-          logoUrl={squadLogoUrl(club.id)}
-          primaryColor={club.colors[0]}
-          secondaryColor={club.colors[1]}
-          className="w-16 h-16 rounded-full shrink-0"
-          imgClassName="w-full h-full object-contain"
-        />
-        <div className="min-w-0 flex flex-col gap-1.5">
-          <SectionTitle className="truncate">{club.name}</SectionTitle>
-          <span className="text-sm text-muted-foreground truncate">{leagueName}</span>
+    <section className="card-arcade rounded-md min-w-0">
+      <div className="p-4 grid gap-6 items-center min-w-0 md:grid-cols-2 lg:grid-cols-3">
+        <div className="flex items-center gap-4 min-w-0">
+          <ClubLogo
+            logoUrl={squadLogoUrl(club.id)}
+            primaryColor={club.colors[0]}
+            secondaryColor={club.colors[1]}
+            className="w-16 h-16 rounded-full shrink-0"
+            imgClassName="w-full h-full object-contain"
+          />
+          <div className="min-w-0 flex flex-col gap-1.5">
+            <SectionTitle className="truncate">{club.name}</SectionTitle>
+            <span className="text-sm text-muted-foreground truncate">{leagueName}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-4 min-w-0">
-        {managerName && (
-          // Face and name open the manager's profile in the ranking (user request, 4.47.11).
-          <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
-            <ManagerFaceImage
-              manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
-              clubColors={club.colors}
-              size={64}
-              ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}
-            />
-          </a>
-        )}
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
-          {managerName
-            ? <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} className="font-semibold text-foreground truncate no-underline hover:text-primary hover:underline">{managerName}</a>
-            : <span className="font-semibold text-foreground truncate">—</span>}
-          {achievements?.profile.title && (
-            <span className="text-sm font-semibold text-primary truncate">{t(`achievements.titles.${achievements.profile.title}`)}</span>
-          )}
-          {achievements && (
-            <a href="/achievements" className="flex items-center gap-1.5 min-w-0 max-w-full text-sm text-muted-foreground no-underline hover:text-foreground hover:underline tabular-nums">
-              {achievements.profile.badges.map((b) => (
-                <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="text-primary inline-flex">
-                  <Icon name={BADGE_ICON[b]} size={16} />
-                </span>
-              ))}
-              <span className="truncate" title={`${t("achievements.link")}: ${t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}`}>{t("achievements.link")}: {t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points })}</span>
+        <div className="flex items-center gap-4 min-w-0">
+          {managerName && (
+            // Face and name open the manager's profile in the ranking (user request, 4.47.11).
+            <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
+              <ManagerFaceImage
+                manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+                clubColors={club.colors}
+                size={64}
+                ringClassName={FRAME_RING[achievements?.profile.frame ?? "none"]}
+              />
             </a>
           )}
-          {managerRank !== null && (
-            <a
-              href={MANAGER_PROFILE_HREF}
-              className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate"
-            >
-              {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
-            </a>
+          <div className="flex flex-col gap-1 min-w-0">
+            {managerName
+              ? <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} className="font-semibold text-foreground truncate no-underline hover:text-primary hover:underline">{managerName}</a>
+              : <span className="font-semibold text-foreground truncate">—</span>}
+            {achievements && (achievements.profile.title || achievements.profile.badges.length > 0) && (
+              <a href="/achievements" className="flex items-center gap-1.5 min-w-0 text-sm font-semibold text-primary no-underline hover:underline">
+                {achievements.profile.title && <span className="truncate">{t(`achievements.titles.${achievements.profile.title}`)}</span>}
+                {achievements.profile.badges.map((b) => (
+                  <span key={b} title={t(`achievements.badges.${b}`)} aria-label={t(`achievements.badges.${b}`)} className="inline-flex shrink-0">
+                    <Icon name={BADGE_ICON[b]} size={16} />
+                  </span>
+                ))}
+              </a>
+            )}
+            {contract && (
+              <span className="text-sm text-muted-foreground tabular-nums truncate">
+                {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
+              </span>
+            )}
+            {pendingOffers > 0 && (
+              <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
+                {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 min-w-0">
+          <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
+          <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} trend={fansTrend} />
+          {objective && (
+            <p className="text-sm text-muted-foreground m-0 truncate" title={objectiveText(objective, t)}>
+              {t("board.objectiveLabel")}: <span className="text-foreground">{objectiveText(objective, t)}</span>
+            </p>
           )}
-          {friendsRank && (
-            <a
-              href="/world?tab=standings"
-              className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate tabular-nums"
-            >
-              {t(publicWorld ? "world.standings.dashboardLinePublic" : "world.standings.dashboardLine", { rank: friendsRank.rank, of: friendsRank.of })}
-            </a>
-          )}
-          {reputation !== null && (
-            <span className="text-sm text-muted-foreground tabular-nums truncate">
-              {t("dashboard.clubSidebar.reputation", { value: Math.round(reputation) })}
-            </span>
-          )}
-          {contract && (
-            <span className="text-sm text-muted-foreground tabular-nums truncate">
-              {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
-            </span>
-          )}
-          {pendingOffers > 0 && (
-            <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
-              {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
-            </a>
+          {ultimatum && (
+            <p className="text-sm text-destructive m-0">
+              {t("board.ultimatumActive", { points: Math.max(0, ultimatum.pointsNeeded - ultimatum.points), matches: ultimatum.matchesLeft })}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 min-w-0">
-        <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
-        <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} trend={fansTrend} />
-        {objective && (
-          <p className="text-sm text-muted-foreground m-0 truncate" title={objectiveText(objective, t)}>
-            {t("board.objectiveLabel")}: <span className="text-foreground">{objectiveText(objective, t)}</span>
-          </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-4 px-4 py-3 border-t border-border bg-secondary/30 rounded-b-md">
+        <ClubStat href="/finances" label={t("dashboard.clubSidebar.budget")} negative={(budget ?? 0) < 0}>
+          <span className="tabular-nums">{budget == null ? "—" : formatEuros(budget)}</span>
+        </ClubStat>
+        <ClubStat href={squadHref} label={t("dashboard.clubSidebar.squad")} note={t("dashboard.clubSidebar.players")}>{squadSize}</ClubStat>
+        {managerRank !== null && (
+          <ClubStat href={MANAGER_PROFILE_HREF} label={t("dashboard.clubSidebar.ranking")}>{t("dashboard.clubSidebar.rankingValue", { rank: managerRank })}</ClubStat>
         )}
-        {ultimatum && (
-          <p className="text-sm text-destructive m-0">
-            {t("board.ultimatumActive", { points: Math.max(0, ultimatum.pointsNeeded - ultimatum.points), matches: ultimatum.matchesLeft })}
-          </p>
+        {friendsRank && (
+          <ClubStat href="/world?tab=standings" label={standingsLabel} note={t("dashboard.clubSidebar.ofTotal", { total: friendsRank.of })}>{friendsRank.rank}</ClubStat>
         )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 min-w-0">
-        <a href="/finances" className="flex flex-col gap-1 min-w-0 no-underline">
-          <span className={label}>{t("dashboard.clubSidebar.budget")}</span>
-          <span className={`font-display font-bold text-2xl tabular-nums leading-none ${(budget ?? 0) < 0 ? "text-destructive" : "text-foreground"}`}>
-            {budget == null ? "—" : formatEuros(budget)}
-          </span>
-        </a>
-        <a href={squadHref} className="flex flex-col gap-1 min-w-0 no-underline">
-          <span className={label}>{t("dashboard.clubSidebar.squad")}</span>
-          <span className="font-display font-bold text-2xl tabular-nums leading-none text-foreground">
-            {squadSize}
-            <span className="font-sans font-normal text-sm text-muted-foreground ml-1.5">{t("dashboard.clubSidebar.players")}</span>
-          </span>
-        </a>
+        {reputationShown !== null && <ClubStat label={t("dashboard.clubSidebar.reputationLabel")}>{reputationShown}</ClubStat>}
+        {achievements && (
+          <ClubStat href="/achievements" label={t("achievements.link")} note={t("dashboard.clubSidebar.ofTotal", { total: achievements.total })} title={summary ?? undefined}>{achievements.unlocked}</ClubStat>
+        )}
       </div>
     </section>
   );
+}
+
+/** One number of the strip at the foot of the club card; a link when it has somewhere to go. */
+function ClubStat({ label, note, href, title, negative = false, children }: {
+  label: string;
+  note?: string;
+  href?: string;
+  title?: string;
+  negative?: boolean;
+  children: ReactNode;
+}) {
+  const body = (
+    <>
+      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground truncate">{label}</span>
+      <span className={`font-display font-bold text-2xl tabular-nums leading-none whitespace-nowrap ${negative ? "text-destructive" : "text-foreground"}`}>
+        {children}
+        {note && <span className="font-sans font-normal text-sm text-muted-foreground ml-1.5">{note}</span>}
+      </span>
+    </>
+  );
+  const box = "flex flex-col gap-1 min-w-0";
+  return href
+    ? <a href={href} title={title} className={`${box} no-underline`}>{body}</a>
+    : <div title={title} className={box}>{body}</div>;
 }
 
 /** What the club card shows of the achievements. */

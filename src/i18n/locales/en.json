@@ -2295,6 +2295,12 @@
       "away": "Away",
       "reputation": "Reputation: {{value}}",
       "pendingOffers_one": "{{count}} job offer",
+      "ranking": "Ranking",
+      "rankingValue": "#{{rank}}",
+      "friendsLeague": "Friends' league",
+      "publicWorld": "Public world",
+      "reputationLabel": "Reputation",
+      "ofTotal": "of {{total}}",
       "pendingOffers_other": "{{count}} job offers"
     },
     "squadRosterTable": {

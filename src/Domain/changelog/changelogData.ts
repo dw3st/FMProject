@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.19",
+    date: "2026-11-09",
+    time: "14:17",
+    items: [
+      {
+        pt: "Painel: o cartão do clube foi reorganizado, com clube, técnico e situação em cima e os números numa faixa embaixo.",
+        en: "Dashboard: the club card was reorganised, with the club, the manager and the situation on top and the numbers in a strip below.",
+      },
+    ],
+  },
+  {
     version: "8.8.18",
     date: "2026-11-09",
     time: "09:38",

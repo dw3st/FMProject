@@ -2295,6 +2295,12 @@
       "away": "Visitante",
       "reputation": "Reputação: {{value}}",
       "pendingOffers_one": "{{count}} proposta",
+      "ranking": "Ranking",
+      "rankingValue": "Nº {{rank}}",
+      "friendsLeague": "Liga de amigos",
+      "publicWorld": "Mundo público",
+      "reputationLabel": "Reputação",
+      "ofTotal": "de {{total}}",
       "pendingOffers_other": "{{count}} propostas"
     },
     "squadRosterTable": {
