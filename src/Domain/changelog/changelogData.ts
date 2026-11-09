@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.24",
+    date: "2026-11-09",
+    time: "15:46",
+    items: [
+      {
+        pt: "Partida: a faixa de amigos no rodapé não repete mais o jogo da partida anterior.",
+        en: "Match: the friends strip in the footer no longer repeats the game from the previous match.",
+      },
+    ],
+  },
+  {
     version: "8.8.23",
     date: "2026-11-09",
     time: "15:11",

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { readMatchInFrame } from "@/GameInterface/artPrefs";
+import { clearMatchRadioSlot } from "@/GameInterface/World/frameHost";
 
 /** The live match page (`/match-live`) inside the frame. */
 export const MATCH_PAGE = "/match-live";
@@ -16,6 +17,9 @@ export function MatchFrame({ search }: { search: string }) {
   useEffect(() => {
     if (!inFrame) window.location.replace(src);
   }, [inFrame, src]);
+
+  // Leaving the match removes the iframe; what it put in the footer has to go with it.
+  useEffect(() => clearMatchRadioSlot, []);
 
   if (!inFrame) return null;
   return (

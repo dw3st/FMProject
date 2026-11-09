@@ -2,6 +2,14 @@
 export const MATCH_RADIO_SLOT = "fm-match-radio";
 
 /**
+ * Empties the footer slot. The match's iframe is removed without React unmounting what it portalled here, and the
+ * footer stays mounted, so without this the strip of the last match would stay frozen next to the new one.
+ */
+export function clearMatchRadioSlot(): void {
+  document.getElementById(MATCH_RADIO_SLOT)?.replaceChildren();
+}
+
+/**
  * The game frame's footer slot for the live match's friends' radio, when the match page runs inside the frame (8.8.10);
  * null when the match page is on its own (preference "Match inside the game" off) or in a broadcast window.
  */
