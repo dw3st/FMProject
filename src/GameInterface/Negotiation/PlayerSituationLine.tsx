@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 import type { PlayerSituation } from "@/Domain/negotiation/situation";
 
 /** "Titular · Não está à venda · Não disponível para empréstimo": how much he matters and whether he can leave. */
-export function PlayerSituationLine({ saveId, playerId, squadId }: { saveId: string; playerId: string; squadId?: string }) {
+export function PlayerSituationLine({ saveId, playerId, squadId, listing }: {
+  saveId: string;
+  playerId: string;
+  squadId?: string;
+  /** On a bid for the manager's own player: stands out whether he had listed him, for sale or for loan (8.8.25). */
+  listing?: "transfer" | "loan";
+}) {
   const { t } = useTranslation();
   const [s, setS] = useState<PlayerSituation | null>(null);
   useEffect(() => {
@@ -18,9 +24,19 @@ export function PlayerSituationLine({ saveId, playerId, squadId }: { saveId: str
   if (!s) return null;
   const parts = [
     t(`negotiation.situation.role.${s.role}`),
-    t(s.forSale ? "negotiation.situation.forSale" : "negotiation.situation.notForSale"),
-    s.onLoan ? t("negotiation.situation.onLoan") : t(s.loanable ? "negotiation.situation.loanable" : "negotiation.situation.notLoanable"),
+    ...(listing === "transfer" ? [] : [t(s.forSale ? "negotiation.situation.forSale" : "negotiation.situation.notForSale")]),
+    ...(listing === "loan" ? [] : [s.onLoan ? t("negotiation.situation.onLoan") : t(s.loanable ? "negotiation.situation.loanable" : "negotiation.situation.notLoanable")]),
     ...(s.requested ? [t("negotiation.situation.requested")] : []),
   ];
-  return <p className="text-sm text-muted-foreground m-0">{t("negotiation.situation.label")}: {parts.join(" · ")}</p>;
+  const line = <p className="text-sm text-muted-foreground m-0">{t("negotiation.situation.label")}: {parts.join(" · ")}</p>;
+  if (!listing) return line;
+  const listed = listing === "transfer" ? s.forSale : s.loanable;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span className={`rounded border px-2 py-0.5 text-sm font-semibold whitespace-nowrap ${listed ? "border-primary/50 bg-primary/10 text-primary" : "border-chart-4/50 bg-chart-4/10 text-chart-4"}`}>
+        {t(`negotiation.situation.${listing === "transfer" ? "sale" : "loan"}${listed ? "Listed" : "NotListed"}`)}
+      </span>
+      {line}
+    </div>
+  );
 }

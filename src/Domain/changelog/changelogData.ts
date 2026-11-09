@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.25",
+    date: "2026-11-09",
+    time: "16:03",
+    items: [
+      {
+        pt: "Proposta recebida: um selo mostra se o jogador está listado à venda ou para empréstimo.",
+        en: "Incoming bids: a badge shows whether the player is listed for sale or for loan.",
+      },
+    ],
+  },
+  {
     version: "8.8.24",
     date: "2026-11-09",
     time: "15:46",

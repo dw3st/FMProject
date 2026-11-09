@@ -81,7 +81,7 @@ export function BidCard({
 
   return (
     <div className="space-y-4">
-      <PlayerSituationLine saveId={saveId} playerId={b.playerId} />
+      <PlayerSituationLine saveId={saveId} playerId={b.playerId} listing={b.kind === "transfer" ? "transfer" : "loan"} />
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 m-0">
         {b.kind === "transfer" ? (
           <>

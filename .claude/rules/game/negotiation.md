@@ -236,6 +236,10 @@ Report de tester. Uma linha na negociação, na proposta recebida e na proposta 
 
 Reports de tester. `GET /negotiation`: cada empréstimo cedido traz `report` (`loanReport`, `src/Domain/negotiation/loanReport.ts`): jogos, gols, assistências, nota, cartões e lesões somando a temporada em curso e as linhas `loan` no clube, e o OVR no início e agora, com os atributos que mudaram (`ActiveLoan.startOverall`/`startStats`; empréstimo mais antigo só mostra o OVR atual). Tela: Elenco → Emprestados. **Opção de retorno:** ao aceitar uma proposta de empréstimo da IA, `{ recall: true }` reduz a parte do salário que o clube paga em 20 pontos (`RECALL_WAGE_COST`) e grava `ActiveLoan.recall`; `POST /loans/:playerId/recall` (409 `notRecallable`, `windowClosed` com a janela do jogador fechada) traz o jogador de volta na hora, pelo mesmo caminho da data (`returnDueLoans({ recalled })`). A taxa não é devolvida. Limitação: não vale nos empréstimos pedidos pelo jogador nem nas propostas entre técnicos.
 
+## Listado ou não na proposta (8.8.25)
+
+Report de tester. O cartão de uma proposta da IA (`BidCard`) mostra um selo com o estado de hoje do jogador: "Listado à venda" ou "Não listado à venda" (na proposta de empréstimo, a lista de empréstimo), de `PlayerSituationLine listing`.
+
 ## Luvas e disputa de quem chega sem taxa (8.7.9)
 
 Pedido do usuário. Lógica pura em `src/Domain/negotiation/freeSigning.ts` (`NEGOTIATION.FREE_SIGNING`), E/S em `src/backend/freeSigningWorld.ts`.
