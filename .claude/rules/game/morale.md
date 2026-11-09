@@ -244,6 +244,10 @@ dia com um assento só, e a partida ao vivo pelo `match-setup` → `oppMorale`),
 `aiFormMorale(form)` = 65 + 2 × (pontos − 1,5 × jogos) dos últimos resultados da liga, entre 50 e 80 (`MORALE.AI_FORM_*`).
 Nada é gravado; IA × IA e humano × humano não mudam.
 
+## Renovar encerra a promessa de saída (8.8.29)
+
+Report do usuário. Renovar com um jogador (`afterRenewal`, técnico ou diretor) apaga a promessa de saída dele, sem quebrá-la: antes ela vencia meses depois e custava −15. O pedido de transferência e a lista de venda saem na segunda seguinte, pela regra de sempre (moral ≥ 50).
+
 ## Conversar pelo Elenco e a janela nova (8.7.8)
 
 Report do usuário, opção A do mock. Na tabela do próprio elenco (`SquadRosterTable`) cada jogador (fora os emprestados de outro clube) tem o botão Conversar, ou Responder em amarelo (`ATTENTION_BUTTON`) quando há pedido aberto em `squad.moraleClub.talks`; Renovar fica ao lado quando vale. O `TalkModal` tem uma cena pintada por motivo (`paintedNews("talk-<motivo|none>")`, `news/news-talk-*.webp` no volume de arte, pintadas com `data_process/assets/talk_mock.py`), com o rosto, a moral e a dica de personalidade por cima, e as respostas em cartões (`morale.answerHint` e o tom `morale.answerTone.up|mid|down`). Sem a arte, o mesmo cabeçalho numa faixa.

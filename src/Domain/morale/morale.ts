@@ -651,6 +651,8 @@ export function afterRenewal(squad: Squad, playerId: string, date: string): { sq
     ? [{ date, kind: "promise_kept", playerId, playerName: player.name, promiseKind: "renewal" }]
     : [];
   const d = MORALE.RENEWAL_ACCEPTED + (promise ? MORALE.PROMISE_KEPT : 0);
+  // He signed to stay: a promise to sell him is over, not broken (tester report, 8.8.29).
+  const closed = (p: PlayerPromise) => p === promise || (p.playerId === playerId && p.kind === "sale");
   return {
     squad: {
       ...squad,
@@ -658,7 +660,7 @@ export function afterRenewal(squad: Squad, playerId: string, date: string): { sq
       moraleClub: {
         ...state,
         talks: state.talks.filter((t) => !(t.playerId === playerId && t.reason === "contract")),
-        promises: state.promises.filter((p) => p !== promise),
+        promises: state.promises.filter((p) => !closed(p)),
       },
     },
     news,

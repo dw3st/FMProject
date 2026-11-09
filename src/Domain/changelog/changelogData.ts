@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.29",
+    date: "2026-11-09",
+    time: "18:21",
+    items: [],
+    fixes: [
+      {
+        pt: "Renovar com um jogador a quem você prometeu a saída encerra a promessa, e ele não fica mais insatisfeito por ela ter vencido.",
+        en: "Renewing a player you promised a move now ends that promise, so he no longer turns unhappy when it runs out.",
+      },
+    ],
+  },
+  {
     version: "8.8.28",
     date: "2026-11-09",
     time: "17:19",

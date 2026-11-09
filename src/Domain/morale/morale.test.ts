@@ -7,6 +7,7 @@ import {
   answerTalk,
   answersFor,
   clampMorale,
+  clubMoraleOf,
   initClubMorale,
   minutesDelta,
   moraleBand,
@@ -357,6 +358,15 @@ describe("talks and promises", () => {
     const furious = { ...fullSquad().players[0]!, morale: 10 };
     expect(refusesRenewal(squadOf([furious]), furious)).toBe(true);
     expect(refusesRenewal(squadOf([furious], { moraleClub: { talks: [], promises: [{ id: "p", playerId: furious.id, playerName: "", kind: "renewal", madeOn: "x", until: "z" }] } }), furious)).toBe(false);
+  });
+
+  test("renewing a player ends the promise to sell him, without breaking it", () => {
+    const r = answerTalk({ squad: withTalk("wants_move"), playerId: "d4", answer: "promise_sale", date: "2027-03-02", newId });
+    if ("error" in r) throw new Error(r.error);
+    expect(clubMoraleOf(r.squad).promises.map((p) => p.kind)).toEqual(["sale"]);
+    const after = afterRenewal(r.squad, "d4", "2027-03-03");
+    expect(after.news).toEqual([]);
+    expect(clubMoraleOf(after.squad).promises).toEqual([]);
   });
 
   test("praise works once a month; refusing a contract talk costs -10", () => {
