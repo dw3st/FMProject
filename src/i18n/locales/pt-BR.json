@@ -2296,6 +2296,7 @@
       "pendingOffers_other": "{{count}} propostas"
     },
     "squadRosterTable": {
+      "searchPlaceholder": "Buscar jogador",
       "noPlayers": "Nenhum jogador neste elenco.",
       "pos": "Pos",
       "name": "Nome",

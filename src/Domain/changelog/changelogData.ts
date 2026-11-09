@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.17",
+    date: "2026-11-09",
+    time: "09:13",
+    items: [
+      {
+        pt: "Elenco: campo de busca para achar um jogador pelo nome.",
+        en: "Squad: a search box to find a player by name.",
+      },
+    ],
+  },
+  {
     version: "8.8.16",
     date: "2026-11-06",
     time: "18:50",

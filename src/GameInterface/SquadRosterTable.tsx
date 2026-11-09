@@ -5,6 +5,7 @@ import { ATTENTION_BUTTON, AVAILABILITY_DOT, availabilityOf } from "@/GameInterf
 import { contractRenewalDue } from "@/Domain/contracts/contracts";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { useState, useMemo, useEffect } from "react";
+import { matchesCountryQuery } from "@/Domain/world/labels";
 import { AskingPriceModal } from "@/GameInterface/Negotiation/AskingPriceModal";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import type { SellCandidate } from "@/types/transferMarketTypes";
@@ -76,6 +77,7 @@ export function SquadRosterTable({
     return () => { alive = false; };
   }, [showMorale, session?.saveId]);
   const [onlyUnhappy, setOnlyUnhappy] = useState(false);
+  const [search, setSearch] = useState("");
 
   // One grid template shared by the header and every row, so each label sits over its values.
   // Every header has its full name in `title` (#146): the short labels (OVR, J, G, A) are explained there and in
@@ -123,10 +125,13 @@ export function SquadRosterTable({
     }));
   }, [squad, leagueSlug, clubSlug, currentDate, showMorale]);
   const players = useMemo(
-    () => (showMorale && onlyUnhappy
-      ? allPlayers.filter((p) => { const b = moraleBand(p.morale); return b === "unhappy" || b === "furious"; })
-      : allPlayers),
-    [allPlayers, showMorale, onlyUnhappy],
+    () => {
+      const byMorale = showMorale && onlyUnhappy
+        ? allPlayers.filter((p) => { const b = moraleBand(p.morale); return b === "unhappy" || b === "furious"; })
+        : allPlayers;
+      return byMorale.filter((p) => matchesCountryQuery(search, [p.name]));
+    },
+    [allPlayers, showMorale, onlyUnhappy, search],
   );
 
   const handleSort = (key: string) => {
@@ -169,16 +174,29 @@ export function SquadRosterTable({
 
   return (
     <div className="flex-1 card-arcade rounded-md overflow-hidden flex flex-col">
-      <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
-        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
+      <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between gap-4">
+        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display whitespace-nowrap">
           <span className="text-primary font-black font-display">{players.length}</span> {t("dashboard.squadRosterTable.players")}
         </span>
-        {showMorale && (
-          <Chip selected={onlyUnhappy} onClick={() => setOnlyUnhappy((v) => !v)}>
-            <Icon name="face-unhappy" size={16} />
-            {t("morale.onlyUnhappy")}
-          </Chip>
-        )}
+        <div className="flex items-center gap-3 min-w-0">
+          <label className="flex items-center gap-2 h-9 w-64 max-w-full rounded border border-border bg-transparent px-3 text-muted-foreground focus-within:border-primary">
+            <Icon name="search" size={16} className="shrink-0" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("dashboard.squadRosterTable.searchPlaceholder")}
+              aria-label={t("dashboard.squadRosterTable.searchPlaceholder")}
+              className="w-full min-w-0 bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground"
+            />
+          </label>
+          {showMorale && (
+            <Chip selected={onlyUnhappy} onClick={() => setOnlyUnhappy((v) => !v)}>
+              <Icon name="face-unhappy" size={16} />
+              {t("morale.onlyUnhappy")}
+            </Chip>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto flex-1 flex flex-col">

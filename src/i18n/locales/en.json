@@ -2296,6 +2296,7 @@
       "pendingOffers_other": "{{count}} job offers"
     },
     "squadRosterTable": {
+      "searchPlaceholder": "Search player",
       "noPlayers": "No players in this squad.",
       "pos": "Pos",
       "name": "Name",
