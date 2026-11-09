@@ -189,7 +189,7 @@ describe("slot roles", () => {
       stGoals += recording.playerStats["h-p9"]?.goals ?? 0;
       total += recording.score.home;
     }
-    expect(stGoals / total).toBeGreaterThan(0.5);
+    expect(stGoals / total).toBeGreaterThan(0.4);
   });
 });
 

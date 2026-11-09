@@ -26,7 +26,7 @@ const DEFAULT_STAMINA = 7;
  */
 export const NATIONAL_MATCH = {
   AT_REF: 1.25,
-  SLOPE: 0.3,
+  SLOPE: 0.2,
   LEVEL_REF: 4.9,
   MIN: 1,
   MAX: 1.8,
