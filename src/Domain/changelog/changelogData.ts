@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.20",
+    date: "2026-11-09",
+    time: "14:36",
+    items: [
+      {
+        pt: "Finanças em formato de contabilidade: demonstrativo conta por conta e extrato com débito, crédito e saldo, por temporada ou por mês, com setas para navegar.",
+        en: "Finances as accounts: a statement account by account and a journal with debit, credit and balance, by season or by month, with arrows to move between them.",
+      },
+    ],
+  },
+  {
     version: "8.8.19",
     date: "2026-11-09",
     time: "14:17",

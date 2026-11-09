@@ -562,6 +562,11 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
     // A season that changed club (`.claude/rules/game/jobs.md`): totals and the weekly chart are the
     // current club's only, from the last arrival on; the entries list stays complete.
     const lastArrival = entries.findLastIndex((e) => e.kind === "club_change" && e.ref?.stage === "arrive");
+    // The ledger sums to the balance, so the season's opening is the balance minus this season and the later ones.
+    let fromThisSeason = entries.reduce((sum, e) => sum + e.amount, 0);
+    for (const later of seasons.filter((s) => s > season)) {
+      fromThisSeason += (await saveService.getLedger(saveId!, later, auth.seatId)).reduce((sum, e) => sum + e.amount, 0);
+    }
     const atCurrentClub = lastArrival >= 0 ? entries.slice(lastArrival) : entries;
 
     return Response.json({
@@ -571,6 +576,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       totals: totalsByKind(atCurrentClub),
       weekly: weeklyNet(atCurrentClub.filter((e) => e.kind !== "club_change")),
       balance,
+      opening: balance - fromThisSeason,
     });
   },
 

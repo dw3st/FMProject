@@ -49,6 +49,7 @@ describe("GET /api/saves/:saveId/ledger", () => {
       totals: Record<string, number>;
       weekly: Array<{ weekStart: string; net: number }>;
       balance: number;
+      opening: number;
     };
 
     expect(body.season).toBe(leagueMeta!.year);
@@ -57,6 +58,7 @@ describe("GET /api/saves/:saveId/ledger", () => {
     expect(body.entries[0]!.kind).toBe("broadcasting");
     expect(body.totals.broadcasting).toBe(squad!.finances!.budget);
     expect(body.balance).toBe(squad!.finances!.budget);
+    expect(body.opening).toBe(body.balance - body.entries.reduce((sum, e) => sum + e.amount, 0));
     expect(body.weekly).toHaveLength(1);
     expect(body.weekly[0]!.net).toBe(squad!.finances!.budget);
   }, 60_000);

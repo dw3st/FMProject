@@ -7,6 +7,13 @@
 /** Typographic minus sign used in front of negative amounts. */
 export const MINUS = "−";
 
+/** Accounting figure, whole units, negatives in brackets: `96,020,325`, `(80,262,544)`, a dash for nothing. */
+export function formatAccounting(value: number, locale: string): string {
+  if (value === 0) return "–";
+  const text = Math.abs(value).toLocaleString(locale, { maximumFractionDigits: 0 });
+  return value < 0 ? `(${text})` : text;
+}
+
 /** Signed, compact: `−€1.2M`, `€350K`, `€900`. */
 export function formatEuros(value: number): string {
   const sign = value < 0 ? MINUS : "";

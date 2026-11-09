@@ -1,26 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatGameDate } from "@/GameInterface/formatDate";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
-import { Icon, type IconName } from "@/GameInterface/Icons";
+import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { LeagueData } from "@/types/playerTypes";
-import type { Fixture } from "@/types/calendarTypes";
-import { isCupSlug } from "@/Domain/cups/cupIds";
-import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { competitionName } from "@/Domain/world/labels";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { weeklyOperationalCost } from "@/Domain/advanceDay/financial";
 import { squadStaffWages } from "@/Domain/staff/staff";
-import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
-import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
-import { formatEuros } from "@/Domain/money";
-import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
-import { facilitiesGate, seasonFraction } from "@/Domain/facilities/facilities";
+import { averageGate, buildStatement, journalRows, lastWeekScouting, monthsOf, resolveMonth } from "@/Domain/finance/statement";
 import { BankLoanCard } from "@/GameInterface/Finances/BankLoanCard";
+import { BalanceStrip, JournalCard, PeriodControl, StatementCard, WeekCard, type StatementMode } from "@/GameInterface/Finances/FinanceStatement";
 import { navigate } from "@/GameInterface/router/navigation";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
@@ -29,69 +22,51 @@ interface LedgerApiResponse {
   season: number;
   seasons: number[];
   entries: LedgerEntry[];
-  totals: Record<LedgerKind, number>;
-  weekly: { weekStart: string; net: number }[];
+  /** The balance the season began with. */
+  opening: number;
   balance: number;
 }
 
-// ── Formatting ───────────────────────────────────────────────────────────────
-
-function formatWeekLabel(weekStart: string) {
-  const [, m, d] = weekStart.split("-");
-  return `${d}/${m}`;
-}
-
-// ── Per-kind display metadata ────────────────────────────────────────────────
-
-const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in", "board_funding"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep", "scouting", "loan_payment"];
-// `club_change` (the manager changed club) is a balance transfer, not income or expense; so is the money of a loan.
-const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change", "loan_in"];
-
-const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
-  broadcasting: { icon: "broadcast", labelKey: "financesScreen.broadcasting" },
-  commercial: { icon: "handshake", labelKey: "financesScreen.commercial" },
-  gate: { icon: "building", labelKey: "financesScreen.gate" },
-  prize: { icon: "trophy", labelKey: "financesScreen.prize" },
-  transfer_in: { icon: "arrow-down-left", labelKey: "financesScreen.transfersIn" },
-  wages: { icon: "staff", labelKey: "financesScreen.playerSalaries" },
-  staff: { icon: "staff", labelKey: "financesScreen.staffSalaries" },
-  operational: { icon: "building", labelKey: "financesScreen.operational" },
-  transfer_out: { icon: "arrow-up-right", labelKey: "financesScreen.transfersOut" },
-  club_change: { icon: "building", labelKey: "financesScreen.clubChange" },
-  facilities: { icon: "construction", labelKey: "financesScreen.facilities" },
-  facilities_upkeep: { icon: "construction", labelKey: "financesScreen.facilitiesUpkeep" },
-  scouting: { icon: "binoculars", labelKey: "financesScreen.scouting" },
-  board_funding: { icon: "handshake", labelKey: "financesScreen.boardFunding" },
-  manager: { icon: "staff", labelKey: "financesScreen.kinds.manager" },
-  loan_in: { icon: "wallet", labelKey: "financesScreen.kinds.loan_in" },
-  loan_payment: { icon: "wallet", labelKey: "financesScreen.kinds.loan_payment" },
+const KIND_LABEL: Record<LedgerKind, string> = {
+  broadcasting: "financesScreen.broadcasting",
+  commercial: "financesScreen.commercial",
+  gate: "financesScreen.gate",
+  prize: "financesScreen.prize",
+  transfer_in: "financesScreen.transfersIn",
+  board_funding: "financesScreen.boardFunding",
+  wages: "financesScreen.playerSalaries",
+  staff: "financesScreen.staffSalaries",
+  manager: "financesScreen.kinds.manager",
+  operational: "financesScreen.operational",
+  transfer_out: "financesScreen.transfersOut",
+  facilities: "financesScreen.facilities",
+  facilities_upkeep: "financesScreen.facilitiesUpkeep",
+  scouting: "financesScreen.scouting",
+  loan_payment: "financesScreen.kinds.loan_payment",
+  // `club_change` (the manager changed club) is a balance transfer, not income or expense; so is the money of a loan.
+  club_change: "financesScreen.clubChange",
+  loan_in: "financesScreen.kinds.loan_in",
 };
-
-function fixtureGateKind(competitionSlug: string): GateKind {
-  return isContinentalSlug(competitionSlug) ? "continental" : isCupSlug(competitionSlug) ? "cup" : "league";
-}
+const ALL_KINDS = Object.keys(KIND_LABEL) as LedgerKind[];
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 export function FinancesScreen() {
   const { t, i18n } = useTranslation();
-  const { session, squad, save, loading: saveLoading, fixtures, refresh } = useGameSave();
-  // Stadium fill from the fans (`.claude/rules/game/board-fans.md`), the same rate the server uses.
-  const fans = save?.board?.fans;
-  const fillRate = fans === undefined ? undefined : stadiumFillRate(fans);
+  const { session, squad, save, loading: saveLoading, refresh } = useGameSave();
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  const [mode, setMode] = useState<StatementMode>("season");
+  /** A month of the season, or "first" / "last" while the arrows cross into another season. */
+  const [monthPick, setMonthPick] = useState("last");
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
   const [ledgerVersion, setLedgerVersion] = useState(0);
   // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "facilities") navigate("/club", { replace: true });
   }, []);
-  // Attendance-based gate of the coming home games (the same model the server uses).
-  const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
 
   // Translated text of a ledger line from its kind + ref; the stored English label is only a fallback.
   const ledgerText = (entry: LedgerEntry): string => {
@@ -132,53 +107,36 @@ export function FinancesScreen() {
     return () => { cancelled = true; };
   }, [session?.saveId, selectedSeason, session?.currentDate, ledgerVersion]);
 
-  // Weekly wage bill + operational cost via the exact same pure formulas the server uses.
-  const weeklyProjection = useMemo(() => {
-    if (!squad) return null;
-    return {
-      wages: squadWeeklyWages(squad.players, wageFactorOf(squad)),
-      staff: squadStaffWages(squad.staff),
-      // The manager's own wage (`.claude/rules/game/jobs.md` → "Contrato do técnico").
-      manager: save?.managerContract?.squadId === squad.id ? save.managerContract.wage : 0,
-      loan: squad.bankLoan ? Math.min(squad.bankLoan.weekly, squad.bankLoan.remaining) : 0,
-      operational: weeklyOperationalCost(squad),
-      commercial: Math.round((squad.finances?.commercial ?? 0) / 52),
-    };
-  }, [squad, save?.managerContract]);
+  const entries = useMemo(() => ledger?.entries ?? [], [ledger]);
+  const seasons = useMemo(() => [...(ledger?.seasons ?? [])].sort((a, b) => a - b), [ledger]);
+  const seasonIndex = ledger ? seasons.indexOf(ledger.season) : -1;
+  const months = useMemo(() => monthsOf(entries), [entries]);
+  const month = mode === "month" ? resolveMonth(months, monthPick) : null;
+  const monthIndex = month ? months.indexOf(month) : -1;
 
-  // Upcoming home fixtures (any competition) with a projected gate via the same gateRevenue used
-  // server-side — see design spec §2 "Bilheteria".
-  const gateProjections = useMemo(() => {
-    if (!squad || !session) return [];
-    const capacity = squad.venue?.capacity ?? 0;
-    const today = session.currentDate ?? "";
-    return fixtures
-      .filter((f) => f.home === squad.id && !f.played && f.date >= today)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .map((f: Fixture) => {
-        const kind = fixtureGateKind(f.competition);
-        const fd = facilitiesData;
-        const projected = fd && !f.neutral
-          ? facilitiesGate(fd.facilities, {
-              ...fd.demandInput,
-              ...(fd.season ? { fraction: seasonFraction(f.date, fd.season.start, fd.season.end) } : {}),
-              date: f.date,
-            }, kind)
-          : gateRevenue(capacity, kind, f.neutral, fillRate);
-        return { fixture: f, kind, projected };
-      });
-  }, [fixtures, squad, session, fillRate, facilitiesData]);
+  const statement = useMemo(() => buildStatement(entries, ledger?.opening ?? 0, month), [entries, ledger?.opening, month]);
+  const rows = useMemo(() => {
+    const all = journalRows(statement.entries, statement.closing);
+    return kindFilter === "all" ? all : all.filter((r) => r.entry.kind === kindFilter);
+  }, [statement, kindFilter]);
 
-  const projectedRemainingGate = useMemo(
-    () => gateProjections.reduce((sum, g) => sum + g.projected, 0),
-    [gateProjections],
-  );
-
-  const filteredEntries = useMemo(() => {
-    const entries = ledger?.entries ?? [];
-    const sorted = [...entries].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-    return kindFilter === "all" ? sorted : sorted.filter((e) => e.kind === kindFilter);
-  }, [ledger, kindFilter]);
+  // The weekly lines via the exact same pure formulas the server uses.
+  const weekLines = useMemo(() => {
+    if (!squad) return [];
+    const manager = save?.managerContract?.squadId === squad.id ? save.managerContract.wage : 0;
+    const loan = squad.bankLoan ? Math.min(squad.bankLoan.weekly, squad.bankLoan.remaining) : 0;
+    const scouting = ledger && ledger.season === seasons[seasons.length - 1] ? lastWeekScouting(entries) : 0;
+    const label = (account: string) => t(`financesScreen.statement.accounts.${account}`);
+    return [
+      { label: label("commercial"), value: Math.round((squad.finances?.commercial ?? 0) / 52) },
+      { label: label("wages"), value: -squadWeeklyWages(squad.players, wageFactorOf(squad)) },
+      { label: label("staff"), value: -squadStaffWages(squad.staff) },
+      ...(manager > 0 ? [{ label: label("manager"), value: -manager }] : []),
+      { label: label("operational"), value: -weeklyOperationalCost(squad) },
+      ...(scouting !== 0 ? [{ label: label("scouting"), value: scouting }] : []),
+      ...(loan > 0 ? [{ label: label("loan_payment"), value: -loan }] : []),
+    ];
+  }, [squad, save?.managerContract, ledger, seasons, entries, t]);
 
   if (saveLoading || !session) {
     return (
@@ -188,78 +146,42 @@ export function FinancesScreen() {
     );
   }
 
-  const totals = ledger?.totals;
   const balance = ledger?.balance ?? squad?.finances?.budget ?? 0;
-  const seasonIncome = totals
-    ? INCOME_KINDS.reduce((sum, k) => sum + totals[k], 0)
-    : 0;
-  const seasonExpenses = totals
-    ? Math.abs(EXPENSE_KINDS.reduce((sum, k) => sum + totals[k], 0))
-    : 0;
-  const seasonPrizes = totals?.prize ?? 0;
 
-  const weeklyChart = (ledger?.weekly ?? []).slice(-12);
-  const maxWeeklyAbs = Math.max(...weeklyChart.map((w) => Math.abs(w.net)), 1);
+  const step = (dir: -1 | 1) => {
+    if (month) {
+      const neighbour = months[monthIndex + dir];
+      if (neighbour) { setMonthPick(neighbour); return; }
+    }
+    const season = seasons[seasonIndex + dir];
+    if (season === undefined) return;
+    setSelectedSeason(season);
+    setMonthPick(dir < 0 ? "last" : "first");
+  };
+  const canStep = (dir: -1 | 1) => (month && months[monthIndex + dir] !== undefined) || seasons[seasonIndex + dir] !== undefined;
 
-  const maxIncomeBar = totals ? Math.max(...INCOME_KINDS.map((k) => totals[k]), 1) : 1;
-  const maxExpenseBar = totals ? Math.max(...EXPENSE_KINDS.map((k) => Math.abs(totals[k])), 1) : 1;
+  const periodLabel = month
+    ? new Date(`${month}-15T12:00:00Z`).toLocaleDateString(i18n.language, { month: "short", year: "numeric", timeZone: "UTC" }).replace(".", "")
+    : String(ledger?.season ?? "–");
+  const shortDate = (date: string) => `${date.slice(8)}/${date.slice(5, 7)}`;
 
   return (
     <ScreenContainer>
         <ScreenTitle
           accent={t("screenTitles.finances.accent")}
-          trailing={
-            ledger && ledger.seasons.length > 1 ? (
-              <select
-                className="bg-foreground/5 border border-border rounded-lg text-sm text-foreground px-2 py-1.5"
-                value={ledger.season}
-                onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              >
-                {ledger.seasons.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            ) : undefined
-          }
+          trailing={ledger ? (
+            <PeriodControl
+              mode={mode}
+              onMode={(m) => { setMode(m); setMonthPick("last"); }}
+              label={periodLabel}
+              canPrev={Boolean(canStep(-1))}
+              canNext={Boolean(canStep(1))}
+              onStep={step}
+            />
+          ) : undefined}
         >
           {t("screenTitles.finances.main")}
         </ScreenTitle>
-
-        {/* KPI cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <OverviewCard
-            icon="wallet"
-            iconBg="bg-primary/20"
-            iconColor="text-primary"
-            label={t("financesScreen.budget")}
-            value={formatEuros(balance)}
-            valueColor={balance >= 0 ? "text-primary" : "text-destructive"}
-          />
-          <OverviewCard
-            icon="trend-up"
-            iconBg="bg-chart-2/20"
-            iconColor="text-chart-2"
-            label={t("financesScreen.seasonIncome")}
-            value={formatEuros(seasonIncome)}
-            valueColor="text-chart-2"
-          />
-          <OverviewCard
-            icon="trend-down"
-            iconBg="bg-destructive/20"
-            iconColor="text-destructive"
-            label={t("financesScreen.seasonExpenses")}
-            value={formatEuros(seasonExpenses)}
-            valueColor="text-destructive"
-          />
-          <OverviewCard
-            icon="trophy"
-            iconBg="bg-chart-4/20"
-            iconColor="text-chart-4"
-            label={t("financesScreen.seasonPrizes")}
-            value={formatEuros(seasonPrizes)}
-            valueColor="text-chart-4"
-          />
-        </div>
 
         {balance < 0 && (
           <div className="card-arcade rounded-md p-4 border border-destructive/50 bg-destructive/10 flex items-start gap-3">
@@ -271,291 +193,46 @@ export function FinancesScreen() {
           </div>
         )}
 
-        {squad && (
-          <BankLoanCard
-            saveId={session.saveId}
-            squad={squad}
-            {...(save?.board ? { board: save.board.board } : {})}
-            onTaken={() => { void refresh({ background: true }); setLedgerVersion((v) => v + 1); }}
-          />
+        {ledger ? (
+          <>
+            <BalanceStrip statement={statement} />
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4">
+              <StatementCard statement={statement} month={month !== null} />
+              <JournalCard
+                rows={rows}
+                describe={ledgerText}
+                dateOf={shortDate}
+                filter={
+                  <select
+                    aria-label={t("financesScreen.allKinds")}
+                    className="bg-foreground/5 border border-border rounded-lg text-sm text-foreground px-2 py-1.5"
+                    value={kindFilter}
+                    onChange={(e) => setKindFilter(e.target.value as LedgerKind | "all")}
+                  >
+                    <option value="all">{t("financesScreen.allKinds")}</option>
+                    {ALL_KINDS.map((k) => (
+                      <option key={k} value={k}>{t(KIND_LABEL[k])}</option>
+                    ))}
+                  </select>
+                }
+              />
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground m-0">{t("financesScreen.noEntries")}</p>
         )}
 
-        {/* Weekly net chart (real ledger data) */}
-        <div className="card-arcade rounded-md p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-black uppercase text-xl leading-none m-0">
-              {t("financesScreen.weeklyNet")}
-            </h3>
-            <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] bg-muted/40 px-2 py-1 rounded font-display font-bold">
-              {t("financesScreen.last12Weeks")}
-            </span>
-          </div>
-          {weeklyChart.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("financesScreen.noEntries")}</p>
-          ) : (
-            <div className="flex items-end gap-2 h-40">
-              {weeklyChart.map((w) => {
-                const h = (Math.abs(w.net) / maxWeeklyAbs) * 100;
-                return (
-                  <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                    <div className="relative w-full flex-1 flex items-end justify-center group">
-                      <div
-                        className={`w-full rounded-t ${w.net >= 0 ? "bg-chart-2/50" : "bg-destructive/50"}`}
-                        style={{ height: `${h}%` }}
-                      />
-                      <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        <div className="bg-card border border-border rounded-lg px-2 py-1 text-sm tabular-nums whitespace-nowrap">
-                          <span className={w.net >= 0 ? "text-chart-2" : "text-destructive"}>
-                            {w.net >= 0 ? "+" : ""}{formatEuros(w.net)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{formatWeekLabel(w.weekStart)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Income / expenses breakdown by kind */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <KindBreakdown
-            titleKey="financesScreen.revenueBreakdown"
-            titleColor="text-chart-2"
-            kinds={INCOME_KINDS}
-            totals={totals}
-            maxBar={maxIncomeBar}
-            barColor="bg-chart-2"
-            total={seasonIncome}
-            totalColor="text-chart-2"
-          />
-          <KindBreakdown
-            titleKey="financesScreen.expenses"
-            titleColor="text-destructive"
-            kinds={EXPENSE_KINDS}
-            totals={totals}
-            maxBar={maxExpenseBar}
-            barColor="bg-destructive"
-            total={seasonExpenses}
-            totalColor="text-destructive"
-            absolute
-          />
-        </div>
-
-        {/* Projections: weekly cost bill + upcoming gate revenue */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card-arcade rounded-md p-4">
-            <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
-              {t("financesScreen.weeklyProjection")}
-            </h3>
-            {weeklyProjection ? (
-              <div className="space-y-2">
-                <ProjectionRow icon="handshake" label={t("financesScreen.commercial")} value={weeklyProjection.commercial} positive />
-                <ProjectionRow icon="staff" label={t("financesScreen.playerSalaries")} value={-weeklyProjection.wages} />
-                <ProjectionRow icon="staff" label={t("financesScreen.staffSalaries")} value={-weeklyProjection.staff} />
-                {weeklyProjection.manager > 0 && (
-                  <ProjectionRow icon="staff" label={t("financesScreen.kinds.manager")} value={-weeklyProjection.manager} />
-                )}
-                <ProjectionRow icon="building" label={t("financesScreen.operational")} value={-weeklyProjection.operational} />
-                {weeklyProjection.loan > 0 && (
-                  <ProjectionRow icon="wallet" label={t("financesScreen.kinds.loan_payment")} value={-weeklyProjection.loan} />
-                )}
-                <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
-                  <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.weeklyProfitLoss")}</span>
-                  {(() => {
-                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.manager - weeklyProjection.operational - weeklyProjection.loan;
-                    return (
-                      <span className={`tabular-nums text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
-                        {net >= 0 ? "+" : ""}{formatEuros(net)}
-                      </span>
-                    );
-                  })()}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t("financesScreen.loading")}</p>
-            )}
-          </div>
-
-          <div className="card-arcade rounded-md p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display font-black uppercase text-xl leading-none m-0 flex items-center gap-2">
-                <Icon name="building" size={16} />
-                {t("financesScreen.gateProjection")}
-              </h3>
-              {squad?.venue && (
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Icon name="map-pin" size={12} />
-                  {squad.venue.city}
-                </span>
-              )}
-            </div>
-            {gateProjections.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("financesScreen.noUpcomingHomeGames")}</p>
-            ) : (
-              <>
-                <div className="space-y-2 max-h-56 overflow-auto">
-                  {gateProjections.slice(0, 6).map((g) => (
-                    <div key={g.fixture.id} className="flex items-center justify-between text-sm">
-                      <div className="min-w-0">
-                        <p className="text-foreground m-0 truncate">
-                          {competitionName(g.fixture.competition, leagues, i18n.language)}
-                        </p>
-                        <p className="text-sm text-muted-foreground m-0">{g.fixture.date}</p>
-                      </div>
-                      <span className="text-chart-2 font-semibold shrink-0 ml-2 tabular-nums">{formatEuros(g.projected)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
-                  <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
-                    {t("financesScreen.homeGames", { count: gateProjections.length })}
-                  </span>
-                  <span className="text-sm font-bold text-chart-2 tabular-nums">{formatEuros(projectedRemainingGate)}</span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Ledger list */}
-        <div className="card-arcade rounded-md p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h3 className="font-display font-black uppercase text-xl leading-none m-0">
-              {t("financesScreen.ledgerTitle")}
-            </h3>
-            <select
-              className="bg-foreground/5 border border-border rounded-lg text-sm text-foreground px-2 py-1.5"
-              value={kindFilter}
-              onChange={(e) => setKindFilter(e.target.value as LedgerKind | "all")}
-            >
-              <option value="all">{t("financesScreen.allKinds")}</option>
-              {ALL_KINDS.map((k) => (
-                <option key={k} value={k}>{t(KIND_META[k].labelKey)}</option>
-              ))}
-            </select>
-          </div>
-
-          {filteredEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("financesScreen.noEntries")}</p>
-          ) : (
-            <div className="space-y-1 max-h-96 overflow-auto">
-              {filteredEntries.map((entry, i) => {
-                const meta = KIND_META[entry.kind];
-                return (
-                  <div
-                    key={`${entry.date}-${entry.kind}-${i}`}
-                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-foreground/5"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
-                      <Icon name={meta.icon} size={14} className="text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-foreground m-0 truncate">{ledgerText(entry)}</p>
-                      <p className="text-sm text-muted-foreground m-0">
-                        {formatGameDate(entry.date, i18n.language)} · {t(meta.labelKey)}
-                      </p>
-                    </div>
-                    <span className={`tabular-nums text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
-                      {entry.amount >= 0 ? "+" : ""}{formatEuros(entry.amount)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4 items-start">
+          {squad && <WeekCard lines={weekLines} avgGate={averageGate(entries)} />}
+          {squad && (
+            <BankLoanCard
+              saveId={session.saveId}
+              squad={squad}
+              {...(save?.board ? { board: save.board.board } : {})}
+              onTaken={() => { void refresh({ background: true }); setLedgerVersion((v) => v + 1); }}
+            />
           )}
         </div>
     </ScreenContainer>
-  );
-}
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function OverviewCard({
-  icon, iconBg, iconColor, label, value, valueColor,
-}: {
-  icon: IconName; iconBg: string; iconColor: string;
-  label: string; value: string; valueColor: string;
-}) {
-  return (
-    <div className="card-arcade rounded-md p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
-          <Icon name={icon} size={16} className={iconColor} />
-        </div>
-        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-bold font-display">{label}</span>
-      </div>
-      <p className={`text-2xl font-black font-display tabular-nums ${valueColor} m-0`}>{value}</p>
-    </div>
-  );
-}
-
-function KindBreakdown({
-  titleKey, titleColor, kinds, totals, maxBar, barColor, total, totalColor, absolute,
-}: {
-  titleKey: string;
-  titleColor: string;
-  kinds: LedgerKind[];
-  totals: Record<LedgerKind, number> | undefined;
-  maxBar: number;
-  barColor: string;
-  total: number;
-  totalColor: string;
-  absolute?: boolean;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="card-arcade rounded-md p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-[13px] font-bold font-display uppercase tracking-[0.08em] ${titleColor}`}>{t(titleKey)}</h3>
-        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] bg-muted/40 px-2 py-1 rounded font-display font-bold">
-          {t("financesScreen.seasonBasis")}
-        </span>
-      </div>
-      <div className="space-y-4">
-        {kinds.map((k) => {
-          const meta = KIND_META[k];
-          const raw = totals?.[k] ?? 0;
-          const value = absolute ? Math.abs(raw) : raw;
-          const pct = (value / maxBar) * 100;
-          return (
-            <div key={k}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-muted/40 flex items-center justify-center">
-                    <Icon name={meta.icon} size={12} className="text-muted-foreground" />
-                  </div>
-                  <span className="text-sm text-muted-foreground">{t(meta.labelKey)}</span>
-                </div>
-                <span className="text-sm font-semibold text-foreground tabular-nums">{formatEuros(value)}</span>
-              </div>
-              <div className="h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
-                <div className={`h-full ${barColor} rounded-full`} style={{ width: `${Math.min(100, pct)}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.seasonTotal")}</span>
-        <span className={`tabular-nums text-lg font-black font-display ${totalColor}`}>{formatEuros(total)}</span>
-      </div>
-    </div>
-  );
-}
-
-function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label: string; value: number; positive?: boolean }) {
-  const { t } = useTranslation();
-  const color = positive ? "text-chart-2" : value < 0 ? "text-destructive" : "text-foreground";
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon name={icon} size={12} />
-        {label}
-      </div>
-      <span className={`tabular-nums font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatEuros(value)}{t("financesScreen.weekly")}</span>
-    </div>
   );
 }
