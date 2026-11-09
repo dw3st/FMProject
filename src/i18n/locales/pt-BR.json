@@ -2224,6 +2224,8 @@
     "trendingDownward": "Tendência de Queda",
     "trainingSetupTitle": "Configuração de Treinamento",
     "trainingSetupDescription": "Aplica-se ao seu clube nos dias de descanso: apenas jogadores com energia acima do limite participam da sessão; a intensidade escala ganhos e fadiga.",
+    "minEnergyDown": "Diminuir energia mínima",
+    "minEnergyUp": "Aumentar energia mínima",
     "minEnergyLabel": "Energia mínima para treinar",
     "minEnergyHint": "0–100 de resistência · jogadores abaixo pulam a sessão",
     "intensityLabel": "Intensidade",

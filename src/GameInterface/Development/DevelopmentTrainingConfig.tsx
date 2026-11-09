@@ -6,9 +6,12 @@ import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types
 import { updateSaveDevelopmentTraining } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { StepButton } from "@/GameInterface/ui/StepButton";
 import { familiarityKeyLabel } from "@/GameInterface/Components/FamiliarityBars";
 import { FAMILIARITY_KEYS, type FamiliarityKey } from "@/types/familiarityTypes";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
+
+const ENERGY_STEP = 5;
 
 export function DevelopmentTrainingConfig() {
   const { t } = useTranslation();
@@ -81,6 +84,8 @@ export function DevelopmentTrainingConfig() {
             {t("development.minEnergyLabel")}
           </label>
           <div className="flex items-center gap-3">
+            <StepButton dir={-1} label={t("development.minEnergyDown")} disabled={saving || !session || minEnergy <= 0}
+              onClick={() => setMinEnergy((v) => Math.max(0, v - ENERGY_STEP))} />
             <input
               id="dev-min-energy"
               type="range"
@@ -91,6 +96,8 @@ export function DevelopmentTrainingConfig() {
               onInput={(e) => setMinEnergy(Number((e.target as HTMLInputElement).value))}
               className="flex-1 min-w-0 accent-primary h-2"
             />
+            <StepButton dir={1} label={t("development.minEnergyUp")} disabled={saving || !session || minEnergy >= 100}
+              onClick={() => setMinEnergy((v) => Math.min(100, v + ENERGY_STEP))} />
             <span className="text-sm font-black font-display tabular-nums w-10 text-right text-foreground">{minEnergy}</span>
           </div>
           <p className="text-sm text-muted-foreground mt-1 m-0">{t("development.minEnergyHint")}</p>

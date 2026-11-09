@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.18",
+    date: "2026-11-09",
+    time: "09:38",
+    items: [
+      {
+        pt: "Desenvolvimento: botões de menos e mais na energia mínima para treinar (de 5 em 5) e as opções de foco do treino individual alinhadas em colunas.",
+        en: "Development: minus and plus buttons on the minimum energy to train (in steps of 5) and the individual training focus options lined up in columns.",
+      },
+    ],
+  },
+  {
     version: "8.8.17",
     date: "2026-11-09",
     time: "09:13",

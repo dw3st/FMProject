@@ -2224,6 +2224,8 @@
     "trendingDownward": "Trending Downward",
     "trainingSetupTitle": "Training setup",
     "trainingSetupDescription": "Applies to your club on rest days: only players at or above the energy floor join the session; intensity scales gains and fatigue.",
+    "minEnergyDown": "Lower minimum energy",
+    "minEnergyUp": "Raise minimum energy",
     "minEnergyLabel": "Min energy to train",
     "minEnergyHint": "0–100 fitness · players below skip the session",
     "intensityLabel": "Intensity",

@@ -52,6 +52,7 @@ export function IndividualTrainingPanel({
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.training.focus")}</span>
         <OptionChips<YouthFocus>
           aria-label={t("youth.training.focus")}
+          columns="grid-cols-2"
           value={focus}
           onChange={(v) => void save({ focus: v, position })}
           options={FOCI.map((k) => ({ key: k, label: t(`youth.training.foci.${k}`) }))}
