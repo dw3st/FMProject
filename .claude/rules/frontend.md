@@ -24,8 +24,8 @@ alwaysApply: false
   the frame a frame path changes in place, anything else loads the page. `<a href>` to a frame path is intercepted by
   the frame. Read the route with `useRoute()`; the screen remounts on every navigation (a screen that reads the URL on
   mount works as after a page load) and the save refreshes in the background.
-- In-game screens render inside `<Layout>` (`chrome`: `full` with the bars; `bare` on the whole page for the preview and
-  the result; `match` for the live match, which runs `/match-live` in an iframe so the engine's globals live and die
+- In-game screens render inside `<Layout>` (`chrome`: `full` with the bars; `bare` without the top bar for the preview and
+  the result, with the footer so the radio keeps playing; `match` for the live match, which runs `/match-live` in an iframe so the engine's globals live and die
   with it; the preference "Partida dentro do jogo", `fm.match.inFrame`, opens the match page on its own) and wrap their
   content in `<ScreenContainer>`; see `ui-standard.md`.
 - Session and save state come from `GameSaveProvider` (`useGameSave()`). There is no `App.tsx`.

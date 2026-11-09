@@ -31,7 +31,7 @@ import { navigate, useRoute } from "@/GameInterface/router/navigation";
 const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world"];
 
 /**
- * `chrome` (spa-shell phase 2): `full` draws the bars; `bare` puts the screen on the whole page (preview, result);
+ * `chrome` (spa-shell phase 2): `full` draws the bars; `bare` drops the top bar (preview, result; the footer stays so the radio keeps playing);
  * `match` also leaves friends and chat to the live match iframe, which has its own.
  */
 export function Layout({ children, chrome = "full" }: { children: ReactNode; chrome?: "full" | "bare" | "match" }) {
@@ -85,14 +85,14 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           dayAction={!lobby && session?.groupAdvance ? <ReadyControl publicWorld={save?.world?.kind === "public"} /> : undefined}
         />}
 
-        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 overflow-hidden flex flex-col" : "h-full overflow-y-auto flex flex-col"}>
+        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 overflow-hidden flex flex-col" : "h-full pb-12 overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}
         </main>
 
-        {/* The live match keeps the footer (8.8.10): its friends' radio goes in it, the friends and chat open from it. */}
-        {chrome !== "bare" && <StatusBar
+        {/* Always mounted: the radio lives in it, so it plays from screen to screen and through the match (8.8.10, 8.8.23). */}
+        <StatusBar
           onOpenInbox={() => setIsInboxOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChangelog={openChangelog}
@@ -101,7 +101,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
               ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
               : null
           }
-        />}
+        />
 
         {newVersion && chrome === "full" && (
           <div role="status" className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 rounded-md border border-primary bg-card px-4 py-2 shadow-lg">

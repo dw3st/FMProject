@@ -454,7 +454,7 @@ export function MatchResultScreen() {
 
   if (saveLoading || !session) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-full bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground text-sm">{t("common.loadingMatchResult")}</p>
@@ -465,7 +465,7 @@ export function MatchResultScreen() {
 
   if (redirectingToDashboard) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-full bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-foreground font-bold text-lg">{t("common.noMatchResult")}</p>
           <p className="text-muted-foreground text-sm">{t("common.redirectingToDashboard")}</p>
@@ -476,7 +476,7 @@ export function MatchResultScreen() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-full bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground text-sm">{t("common.loadingMatchResult")}</p>
@@ -487,7 +487,7 @@ export function MatchResultScreen() {
 
   if (error || !matchEvent) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-full bg-background flex items-center justify-center p-6">
         <div className="max-w-lg text-center space-y-4">
           <p className="text-destructive font-bold text-lg m-0">{error ?? "No data"}</p>
           {retryable && session && (
@@ -570,9 +570,9 @@ export function MatchResultScreen() {
   const awayHex = readableOnDark(kits.teamB);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+    <div className="min-h-full bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
       {/* The tester's report, on every game screen (tester report, 4.41.20). */}
-      <TesterReportButton className="fixed bottom-4 right-4 z-40" />
+      <TesterReportButton className="fixed bottom-16 right-4 z-40" />
       {pendingResult && <Notice className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">{t("world.advance.result.pending")}</Notice>}
       {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.23",
+    date: "2026-11-09",
+    time: "15:11",
+    items: [
+      {
+        pt: "Prévia e resultado da partida agora têm o rodapé: a rádio continua tocando nessas telas.",
+        en: "The match preview and result now have the footer: the radio keeps playing on those screens.",
+      },
+    ],
+  },
+  {
     version: "8.8.22",
     date: "2026-11-09",
     time: "14:52",

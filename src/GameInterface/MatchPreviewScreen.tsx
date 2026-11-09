@@ -866,7 +866,7 @@ export function MatchPreviewScreen() {
 
   if (saveLoading || loading || !session) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-full bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground text-sm">{t("matchPreview.loadingMatchPreview")}</p>
@@ -877,7 +877,7 @@ export function MatchPreviewScreen() {
 
   if (seatOpponent && !matchSetup) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-full bg-background flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("matchPreview.seatOpponentTitle")}</h2>
           <p className="text-muted-foreground text-sm m-0">{t("matchPreview.seatOpponentText")}</p>
@@ -893,7 +893,7 @@ export function MatchPreviewScreen() {
 
   if (matchSetupError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-full bg-background flex items-center justify-center p-6">
         <div className="max-w-lg text-center space-y-3">
           <p className="text-destructive font-bold text-lg">{t("matchPreview.cannotLoadMatchSetup")}</p>
           <p className="text-muted-foreground text-sm m-0">{matchSetupError}</p>
@@ -905,7 +905,7 @@ export function MatchPreviewScreen() {
 
   if (noMatchDay) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-full bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-foreground font-bold text-lg">{t("matchPreview.noMatchToday")}</p>
           <p className="text-muted-foreground text-sm">{t("matchPreview.redirectingToDashboard")}</p>
@@ -1119,9 +1119,9 @@ export function MatchPreviewScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
+    <div className="min-h-full bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
       {/* The tester's report, on every game screen (tester report, 4.41.20). */}
-      <TesterReportButton className="fixed bottom-4 right-4 z-40" />
+      <TesterReportButton className="fixed bottom-16 right-4 z-40" />
 
       {/* Match title */}
       <div className="text-center space-y-1 shrink-0">
