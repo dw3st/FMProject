@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.17",
+    date: "2026-11-10",
+    time: "19:34",
+    items: [],
+    fixes: [
+      {
+        pt: "O ícone da aba Sua liga aparece em todos os navegadores.",
+        en: "The My league tab icon shows in every browser.",
+      },
+    ],
+  },
+  {
     version: "8.9.16",
     date: "2026-11-10",
     time: "18:57",

@@ -17,6 +17,8 @@ interface NavItem {
   tone: string;
   labelKey: string;
   href: string;
+  /** Art icon file when it is not `tab-<href>` (the league tab: a cached 404 of the first name, 8.9.17). */
+  art?: string;
 }
 
 /** Top-bar icon size (#133). */
@@ -44,7 +46,7 @@ const navItems: NavItem[] = [
 ];
 
 /** The friends' world as a tab, after Stats (tester report, 8.9.14 / 8.9.16; before, an icon in the day block). */
-const WORLD_ITEM: NavItem = { icon: "users", tone: "text-chart-2", labelKey: "nav.worldTab", href: "/world" };
+const WORLD_ITEM: NavItem = { icon: "users", tone: "text-chart-2", labelKey: "nav.worldTab", href: "/world", art: "tab-league" };
 
 interface Props {
   onAdvanceDay?: () => void;
@@ -219,7 +221,7 @@ export function TopNavigation({
           >
             {items.map((item) => (
               <span key={item.labelKey} className={tabClass(false)}>
-                <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className="shrink-0" fallback={<Icon name={item.icon} size={NAV_ICON} className="shrink-0" />} />
+                <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className="shrink-0" fallback={<Icon name={item.icon} size={NAV_ICON} className="shrink-0" />} />
                 <span>{t(item.labelKey)}</span>
               </span>
             ))}
@@ -242,7 +244,7 @@ export function TopNavigation({
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
-                  <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
+                  <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
                   <span className={narrow ? "block w-full truncate text-center tracking-normal" : undefined}>{label}</span>
                 </a>
               );
