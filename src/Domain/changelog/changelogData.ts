@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.25",
+    date: "2026-11-10",
+    time: "20:44",
+    items: [
+      {
+        pt: "Pedir demissão tem multa de rescisão: metade do salário das semanas que faltam do contrato (até um ano), paga do seu dinheiro. Sem dinheiro para a multa, não dá para sair. No fim do contrato não há multa.",
+        en: "Resigning has a release fee: half the wage of the weeks left on the contract (up to a year), paid from your own money. Without the money for it you cannot leave. At the end of the contract there is no fee.",
+      },
+    ],
+  },
+  {
     version: "8.9.24",
     date: "2026-11-10",
     time: "20:39",

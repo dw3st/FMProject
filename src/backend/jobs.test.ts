@@ -342,10 +342,18 @@ describe("season-end offer validity", () => {
     seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
     expect((seat.jobOffers ?? []).length).toBeGreaterThan(0);
     expect(seat.jobSeeking?.nextOfferDate).toBe(addDays(date, 14));
+    // Resign: the release fee from his own money; without it, refused.
+    res = await call("/api/saves/:saveId/job-resign", meta.id, `/api/saves/${meta.id}/job-resign`, "POST", session.token);
+    expect(res.status).toBe(409);
+    const refusal = (await res.json()) as { error: string; fee: number };
+    expect(refusal.error).toBe("noMoney");
+    expect(refusal.fee).toBeGreaterThan(0);
+    await saveService.updateSeat(meta.id, meta.seatId, { managerEarnings: refusal.fee + 1000, managerSpent: 0 });
     // Resign: unemployed, no club, an interim at the old club with a vacancy.
     res = await call("/api/saves/:saveId/job-resign", meta.id, `/api/saves/${meta.id}/job-resign`, "POST", session.token);
     expect(res.status).toBe(200);
     seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+    expect(seat.managerSpent).toBe(refusal.fee);
     expect(seat.clubId).toBe("");
     expect(seat.unemployed?.sacking?.reason).toBe("resigned");
     expect(seat.unemployed?.lastClubId).toBe("33");

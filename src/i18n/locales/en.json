@@ -3696,8 +3696,11 @@
     "resign": {
       "button": "Resign",
       "title": "Resign",
-      "body": "You leave {{club}} now, with no severance. You will be without a club, with offers every 2 weeks.",
-      "confirm": "Resign"
+      "body": "You leave {{club}} now. You will be without a club, with offers every 2 weeks.",
+      "confirm": "Resign",
+      "fee": "Release fee: {{fee}}, paid from your own money.",
+      "noFee": "Your contract is ending: no release fee.",
+      "noMoney": "You do not have the money for the release fee ({{fee}}). In your wallet: {{wallet}}."
     }
   },
   "negotiation": {

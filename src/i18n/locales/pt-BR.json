@@ -3696,8 +3696,11 @@
     "resign": {
       "button": "Pedir demissão",
       "title": "Pedir demissão",
-      "body": "Você sai do {{club}} agora, sem multa. Fica sem clube e as propostas chegam a cada 2 semanas.",
-      "confirm": "Pedir demissão"
+      "body": "Você sai do {{club}} agora. Fica sem clube e as propostas chegam a cada 2 semanas.",
+      "confirm": "Pedir demissão",
+      "fee": "Multa de rescisão: {{fee}}, paga do seu dinheiro.",
+      "noFee": "Seu contrato está no fim: sem multa de rescisão.",
+      "noMoney": "Você não tem dinheiro para a multa de rescisão ({{fee}}). Na sua carteira: {{wallet}}."
     }
   },
   "negotiation": {

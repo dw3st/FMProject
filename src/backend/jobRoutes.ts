@@ -7,6 +7,9 @@ import { acceptJobOffer, reputationOf, resignFromClub } from "@/backend/jobWorld
 import { worldLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
 import { addDays } from "@/Domain/dates";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
+import { compensationFee } from "@/Domain/managers/managerContract";
+import { managerWallet } from "@/Domain/managers/assets";
+import { openTotal } from "@/Domain/bets/bets";
 import { nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { logError } from "@/Logger";
 
@@ -66,11 +69,15 @@ export const jobRoutes = {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
+      // The release fee (half the wage of the weeks left, as an offer's compensation) from the manager's own money.
+      const fee = compensationFee(meta.managerContract, meta.currentDate);
+      const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)));
+      if (fee > wallet) return Response.json({ error: "noMoney", fee, wallet }, { status: 409 });
       const buffer = new BufferingSaveDAL(new FileSystemDAL());
       const service = new SaveService(buffer);
       const nudges: SeatNudges = new Set();
       try {
-        await resignFromClub(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, nudges);
+        await resignFromClub(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, nudges, fee);
         await buffer.flush();
       } catch (err) {
         logError("jobs", `save ${saveId}: failed to resign`, err);
@@ -78,7 +85,7 @@ export const jobRoutes = {
       }
       nudgeSeats(saveId, nudges);
       saveService.dropSquadIndex(saveId);
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, fee });
     });
   },
 

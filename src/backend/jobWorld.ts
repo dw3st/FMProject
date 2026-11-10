@@ -579,7 +579,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
  * offers stay. The caller flushes a BufferingSaveDAL.
  */
 export async function resignFromClub(
-  service: SaveService, saveId: string, seatId: string, meta: SeatMeta, nudges?: SeatNudges,
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta, nudges?: SeatNudges, fee = 0,
 ): Promise<void> {
   const date = meta.currentDate!;
   const index = await service.getSquadIndex(saveId);
@@ -590,7 +590,8 @@ export async function resignFromClub(
   const pos = table.findIndex((r) => r.squadId === clubId);
   const board = meta.board;
   if (await standingsOn(service, saveId)) await closeSeatPassage(service, saveId, seatId, date, "club_change");
-  const unpaidDebt = await releaseHumanClub(service, saveId, seatId, { squadId: clubId, date }, { nudges });
+  // The release fee goes to the club (its transfer budget, like an offer's compensation).
+  const unpaidDebt = await releaseHumanClub(service, saveId, seatId, { squadId: clubId, date, compensation: fee }, { nudges });
   const managers = await service.getManagers(saveId);
   if (managers.length > 0) {
     await service.writeManagers(saveId, sackHumanManager(managers, { seatId, date, clubName: meta.clubName, left: "resigned", unpaidDebt }));
@@ -609,6 +610,8 @@ export async function resignFromClub(
     managerRenewal: undefined,
     managerContractNotices: undefined,
     jobSeeking: undefined,
+    // The release fee leaves the manager's own money (never the club's).
+    ...(fee > 0 ? { managerSpent: (meta.managerSpent ?? 0) + fee } : {}),
     unemployed: {
       since: date,
       lastClubId: clubId,

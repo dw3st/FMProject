@@ -7,6 +7,8 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { navigate } from "@/GameInterface/router/navigation";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
+import { compensationFee } from "@/Domain/managers/managerContract";
+import { formatFee } from "@/Domain/money";
 
 /**
  * Leaving the club (8.9.23): "available on the market" (offers every two weeks, the board loses a little each month)
@@ -20,6 +22,7 @@ export function CareerExitControls() {
   const [confirming, setConfirming] = useState(false);
   if (!session || !save || save.unemployed || !save.clubId) return null;
   const seeking = !!save.jobSeeking;
+  const fee = save.currentDate ? compensationFee(save.managerContract, save.currentDate) : 0;
 
   async function setSeeking(on: boolean) {
     setBusy(true);
@@ -42,7 +45,12 @@ export function CareerExitControls() {
     setError(null);
     try {
       const res = await fetch(`/api/saves/${session!.saveId}/job-resign`, { method: "POST" });
-      if (!res.ok) { setError(t("jobs.exitFailed")); setConfirming(false); return; }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string; fee?: number; wallet?: number };
+        setError(body.error === "noMoney" ? t("jobs.resign.noMoney", { fee: formatFee(body.fee ?? 0), wallet: formatFee(body.wallet ?? 0) }) : t("jobs.exitFailed"));
+        setConfirming(false);
+        return;
+      }
       await refresh();
       setConfirming(false);
       navigate("/dashboard");
@@ -67,6 +75,7 @@ export function CareerExitControls() {
         <div className="p-6 space-y-4">
           <DialogTitle className="font-display font-black uppercase text-xl leading-none m-0">{t("jobs.resign.title")}</DialogTitle>
           <p className="text-sm text-muted-foreground m-0">{t("jobs.resign.body", { club: save.clubName })}</p>
+          <p className="text-sm text-foreground m-0 tabular-nums">{fee > 0 ? t("jobs.resign.fee", { fee: formatFee(fee) }) : t("jobs.resign.noFee")}</p>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" disabled={busy} onClick={() => setConfirming(false)}>{t("common.cancel")}</Button>
             <Button disabled={busy} onClick={() => void resign()}>{t("jobs.resign.confirm")}</Button>
