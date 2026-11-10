@@ -14,10 +14,10 @@ describe("bets", () => {
   let saveId = "";
   let seatId = "";
   let token = "";
-  const call = async (method: string, body?: unknown) => {
+  const call = async (method: string, body?: unknown, query = "") => {
     const handler = apiRoutes["/api/saves/:saveId/bets" as keyof typeof apiRoutes] as unknown as (r: Request) => Promise<Response>;
     const res = await handler(Object.assign(
-      new Request(`http://localhost/api/saves/${saveId}/bets`, {
+      new Request(`http://localhost/api/saves/${saveId}/bets${query}`, {
         method, headers: { cookie: `fs_session=${token}`, "content-type": "application/json" },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       }),
@@ -59,6 +59,18 @@ describe("bets", () => {
     expect(after.wallet).toBe(950_000);
     expect(after.openTotal).toBe(50_000);
     expect(after.open).toHaveLength(1);
+  }, 120_000);
+
+  test("takes bets on any league of the world, never on a youth competition or an unknown folder", async () => {
+    const other = await call("GET", undefined, "?competition=of_championship");
+    expect(other.status).toBe(200);
+    expect(other.data.games.length).toBeGreaterThan(0);
+    expect(other.data.games.every((g) => g.competition === "of_championship" && g.own === null)).toBe(true);
+    const g = other.data.games[0]!;
+    const r = g.markets.result[0]!;
+    expect((await call("POST", { competition: g.competition, fixtureId: g.fixtureId, pick: { market: "result", side: r.side }, stake: 1_000, odds: r.odds })).status).toBe(200);
+    expect((await call("GET", undefined, "?competition=..%2F..%2Fsecret")).status).toBe(400);
+    expect((await call("GET", undefined, "?competition=u21_england")).status).toBe(400);
   }, 120_000);
 
   test("the day settles the bet on the game played, moves the wallet and writes to the inbox", async () => {

@@ -7,7 +7,7 @@ Versão **8.9**. Ideia de report de tester. Visual: `.claude/rules/ui-standard.m
 
 - Só o técnico humano, com o dinheiro dele. Nunca toca o clube nem `managerEarnings`, então o lucro não conta em Pé-de-meia.
 - **Carteira** = `managerWallet(ganhos, gastos em bens, betNet, abertas)`, nunca abaixo de 0. Bens e apostas usam a mesma carteira.
-- **Jogos:** os próximos 7 dias da liga do técnico e os da copa e da continental do clube dele. Seleção e base ficam fora. Fecha na véspera (`date > currentDate`). Jogos de outros técnicos valem.
+- **Jogos:** os próximos 7 dias de qualquer liga, copa nacional ou continental do mundo. A lista abre em "Minhas competições" (a liga do técnico e a copa e a continental do clube dele); o seletor da aba troca (`?competition=`, desde a 8.9.2). Seleção e base ficam fora. Fecha na véspera (`date > currentDate`). Jogos de outros técnicos valem.
 - **Mercados:** resultado em 90 minutos, placar exato em 90 minutos, marcar gol (vale prorrogação, não vale disputa de pênaltis). Uma aposta por mercado e por jogo.
 - **Próprio clube:** só a favor dele.
 - **Valor:** de €1.000 a 10% da carteira, no máximo 40 abertas.
@@ -31,7 +31,7 @@ Dados: `seats/{seatId}/bets.json` (`open`, `settled`) e `SeatState.betNet`, `bet
 
 ## Rota (`requireSeat`; escrita com `withSaveLock`; guarda de lobby)
 
-`GET /api/saves/:id/bets` devolve `BetsView` (`?summary=1`: só carteira e totais, sem cotações). `POST { competition, fixtureId, pick, stake, odds }`: 400 `invalidPick` / `invalidStake`, 409 `closed` / `alreadyBet` / `noMoney` / `tooManyBets` / `ownClubAgainst` / `oddsChanged`.
+`GET /api/saves/:id/bets` devolve `BetsView` (`?summary=1`: só carteira e totais, sem cotações). Com `?competition=<slug>` traz os jogos daquela competição (400 `invalidCompetition` fora das pastas do mundo ou de base). `POST { competition, fixtureId, pick, stake, odds }`: 400 `invalidPick` / `invalidStake`, 409 `closed` / `alreadyBet` / `noMoney` / `tooManyBets` / `ownClubAgainst` / `oddsChanged`.
 
 ## Telas
 

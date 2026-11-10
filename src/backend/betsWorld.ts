@@ -9,6 +9,7 @@ import { buildMarkets, onlyForOwnClub, scorerShares, trimMarkets } from "@/Domai
 import { addDays } from "@/Domain/dates";
 import { managerWallet } from "@/Domain/managers/assets";
 import { formationForSimId } from "@/Domain/matchFormations";
+import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { ROLE_GROUP } from "@/GameEngine/Configs/QuickSimConfig";
 import type { BetGame, BetMarkets, BetsState, BetsView } from "@/types/betTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -54,11 +55,21 @@ interface GameQuote {
   full: BetMarkets;
 }
 
-/** The games he can still bet on: after today, within `DAYS_AHEAD`, in his league and his club's competitions. */
-export async function betQuotes(service: SaveService, saveId: string, seat: BetSeat): Promise<GameQuote[]> {
+/** A competition of this world that takes bets: every league, national cup and continental, never the youth ones. */
+export async function isBettableCompetition(service: SaveService, saveId: string, slug: string): Promise<boolean> {
+  if (isYouthCompSlug(slug)) return false;
+  return (await service.listCompetitionSlugs(saveId)).includes(slug);
+}
+
+/**
+ * The games he can still bet on: after today, within `DAYS_AHEAD`. By default his league and his club's competitions;
+ * with `competition`, that one (any league in the world, tester report, 8.9.2).
+ */
+export async function betQuotes(service: SaveService, saveId: string, seat: BetSeat, competition?: string): Promise<GameQuote[]> {
   const today = seat.currentDate;
   if (!today || !seat.leagueSlug) return [];
-  const slugs = [seat.leagueSlug, await playerCupSlug(seat.leagueSlug), seat.clubId ? await playerContinentalSlug(service, saveId, seat.clubId) : null]
+  if (competition && !(await isBettableCompetition(service, saveId, competition))) return [];
+  const slugs = competition ? [competition] : [seat.leagueSlug, await playerCupSlug(seat.leagueSlug), seat.clubId ? await playerContinentalSlug(service, saveId, seat.clubId) : null]
     .filter((s): s is NonNullable<typeof s> => !!s);
   const last = addDays(today, BETS.DAYS_AHEAD);
   const squads = new Map<string, Squad | null>();
@@ -88,7 +99,7 @@ export async function betQuotes(service: SaveService, saveId: string, seat: BetS
   return out.sort((a, b) => a.game.date.localeCompare(b.game.date));
 }
 
-export async function betsView(service: SaveService, saveId: string, seatId: string, seat: BetSeat, summary: boolean): Promise<BetsView> {
+export async function betsView(service: SaveService, saveId: string, seatId: string, seat: BetSeat, summary: boolean, competition?: string): Promise<BetsView> {
   const state = await service.getBets(saveId, seatId);
   const wallet = walletOf(seat, state);
   return {
@@ -98,7 +109,7 @@ export async function betsView(service: SaveService, saveId: string, seatId: str
     maxStake: maxStake(wallet),
     open: state.open,
     settled: state.settled,
-    games: summary ? [] : (await betQuotes(service, saveId, seat)).map((q) => q.game),
+    games: summary ? [] : (await betQuotes(service, saveId, seat, competition)).map((q) => q.game),
   };
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { stepStake } from "@/Domain/bets/bets";
@@ -12,8 +12,14 @@ import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { useLeagueCatalog } from "@/GameInterface/World/useLeagueCatalog";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
+import { ALL_COMPETITIONS } from "@/Domain/stats/rankings";
+import { statsCompetitionOptions } from "@/GameInterface/statsCompetitionOptions";
+import countriesRaw from "@/Data/countries.json";
+import type { CountryEntry } from "@/types/worldTypes";
 import type { Bet, BetGame, BetPick, BetsView } from "@/types/betTypes";
 
+const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
 const KPI = "font-display font-bold tabular-nums text-2xl m-0 mt-1";
 const SECTION = "font-display font-black uppercase text-xl leading-none m-0 mb-2.5";
@@ -83,17 +89,29 @@ export function BetsTab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // "All" stands for his own competitions, the default list.
+  const [competition, setCompetition] = useState<string>(ALL_COMPETITIONS);
+  const options = useMemo(
+    () => statsCompetitionOptions(leagues, COUNTRY_BY_NAME, i18n.language, t).map((o) => (o.value === ALL_COMPETITIONS ? { ...o, label: t("bets.mine") } : o)),
+    [leagues, i18n.language, t],
+  );
+  const latest = useRef(0);
+
   const load = useCallback(async () => {
     if (!saveId) return;
+    const call = ++latest.current;
     try {
-      const res = await fetch(`/api/saves/${saveId}/bets`);
+      const q = competition === ALL_COMPETITIONS ? "" : `?competition=${encodeURIComponent(competition)}`;
+      const res = await fetch(`/api/saves/${saveId}/bets${q}`);
       if (!res.ok) throw new Error(String(res.status));
-      setView(await res.json() as BetsView);
+      const next = await res.json() as BetsView;
+      if (call !== latest.current) return;
+      setView(next);
       setFailed(false);
     } catch {
-      setFailed(true);
+      if (call === latest.current) setFailed(true);
     }
-  }, [saveId]);
+  }, [saveId, competition]);
   useEffect(() => { void load(); }, [load]);
 
   const game = useMemo(() => view?.games.find((g) => keyOf(g) === selected) ?? view?.games[0] ?? null, [view, selected]);
@@ -149,6 +167,15 @@ export function BetsTab() {
   return (
     <div className="flex flex-col gap-4">
       {kpis}
+      {options.length > 0 && (
+        <SelectCombobox
+          label={t("bets.competition")}
+          value={competition}
+          onChange={(v) => { setCompetition(v); setSelected(null); setPick(null); setError(null); }}
+          options={options}
+          className="max-w-md"
+        />
+      )}
       {view.games.length === 0 || !game ? (
         <p className="text-sm text-muted-foreground m-0">{t("bets.noGames")}</p>
       ) : (

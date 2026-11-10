@@ -1536,6 +1536,8 @@
     }
   },
   "bets": {
+    "competition": "Competição",
+    "mine": "Minhas competições",
     "wallet": "Carteira",
     "openTotal": "Em apostas abertas",
     "profit": "Lucro nas apostas",

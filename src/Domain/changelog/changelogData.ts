@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.2",
+    date: "2026-11-10",
+    time: "14:49",
+    items: [],
+    fixes: [
+      {
+        pt: "Agora dá para apostar em qualquer liga e copa do mundo: escolha a competição no topo da aba Apostas.",
+        en: "You can now bet on any league and cup in the world: pick the competition at the top of the Bets tab.",
+      },
+    ],
+  },
+  {
     version: "8.9.1",
     date: "2026-11-10",
     time: "14:40",
