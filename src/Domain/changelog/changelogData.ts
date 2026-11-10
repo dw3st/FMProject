@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.4",
+    date: "2026-11-10",
+    time: "15:07",
+    items: [],
+    fixes: [
+      {
+        pt: "Apostas: botões Mín e Máx ao lado do valor, para apostar o mínimo ou o limite com um clique.",
+        en: "Bets: Min and Max buttons next to the stake, to bet the lowest amount or the limit in one click.",
+      },
+    ],
+  },
+  {
     version: "8.9.3",
     date: "2026-11-10",
     time: "15:00",

@@ -35,7 +35,7 @@ Dados: `seats/{seatId}/bets.json` (`open`, `settled`) e `SeatState.betNet`, `bet
 
 ## Telas
 
-Aba **Apostas** em `/achievements`, depois de Patrimônio: três números, jogos por dia à esquerda, mercados do jogo escolhido à direita, valor com − e +, retorno possível. Abaixo, Abertas e Histórico. Inbox: categoria `bets`, tópico próprio, ligado por padrão, gravada depois do `clearInbox` da virada.
+Aba **Apostas** em `/achievements`, depois de Patrimônio: três números, jogos por dia à esquerda, mercados do jogo escolhido à direita, valor com − e + e os botões Mín e Máx (8.9.4), retorno possível. Abaixo, Abertas e Histórico. Inbox: categoria `bets`, tópico próprio, ligado por padrão, gravada depois do `clearInbox` da virada.
 
 ## Conquistas
 

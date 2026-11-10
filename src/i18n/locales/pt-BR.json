@@ -1538,6 +1538,8 @@
   "bets": {
     "competition": "Competição",
     "mine": "Minhas competições",
+    "min": "Mín",
+    "max": "Máx",
     "wallet": "Carteira",
     "openTotal": "Em apostas abertas",
     "profit": "Lucro nas apostas",

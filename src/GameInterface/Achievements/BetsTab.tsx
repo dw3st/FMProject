@@ -250,6 +250,18 @@ export function BetsTab() {
                 <span>{formatFee(value)}</span>
                 <button type="button" aria-label={t("bets.more")} disabled={!canBet} onClick={() => setStake(stepStake(value, 1, max))} className="w-8 h-8 text-lg hover:text-primary disabled:opacity-40">+</button>
               </div>
+              {/* Lowest and highest stake in one click (tester report, 8.9.4). */}
+              {(["min", "max"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  disabled={!canBet || value === (k === "min" ? BETS.MIN_STAKE : max)}
+                  onClick={() => setStake(k === "min" ? BETS.MIN_STAKE : max)}
+                  className="h-10 px-3 rounded border border-border bg-card font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+                >
+                  {t(`bets.${k}`)}
+                </button>
+              ))}
               <span className="text-sm text-muted-foreground tabular-nums">{canBet ? t("bets.limit", { value: formatFee(max) }) : t("bets.noMoney")}</span>
               <span className="ml-auto text-sm text-muted-foreground">
                 {t("bets.return")}

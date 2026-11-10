@@ -1538,6 +1538,8 @@
   "bets": {
     "competition": "Competition",
     "mine": "My competitions",
+    "min": "Min",
+    "max": "Max",
     "wallet": "Wallet",
     "openTotal": "In open bets",
     "profit": "Betting profit",
