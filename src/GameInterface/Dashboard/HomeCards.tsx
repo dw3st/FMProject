@@ -2,6 +2,7 @@
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
  * (`dashboardData.ts`); each card links to the screen it summarises.
  */
+import { CareerExitControls } from "@/GameInterface/Dashboard/CareerExitControls";
 import { RivalCompetitions } from "@/GameInterface/World/RivalCompetitions";
 import { rivalNation, rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
@@ -290,6 +291,7 @@ export function ClubCard({
               {t("board.ultimatumActive", { points: Math.max(0, ultimatum.pointsNeeded - ultimatum.points), matches: ultimatum.matchesLeft })}
             </p>
           )}
+          <CareerExitControls />
         </div>
       </div>
 

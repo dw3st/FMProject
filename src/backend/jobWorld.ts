@@ -19,7 +19,7 @@ import { seasonLabel } from "@/Domain/history/history";
 import {
   clubPrestiges, eligibleCandidates, employedBand, guaranteedClub, guaranteedOfferDue, managerReputation,
   midSeasonOfferCount, recentTitleBonus, moveHumanManager, pickOfferingClubs, seasonEndOfferCount, unemployedBand,
-  unemployedOfferCount, type OfferCandidate, type PrestigeBand,
+  unemployedOfferCount, seekingBand, seekingOfferCount, sackHumanManager, type OfferCandidate, type PrestigeBand,
 } from "@/Domain/jobs/jobs";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
@@ -198,6 +198,8 @@ export interface OfferRequest {
   contract?: ManagerContract;
   /** The clubs with a seat (`.claude/rules/game/multiplayer.md`): no club with a human manager offers a job. */
   excludeClubs?: ReadonlySet<string>;
+  /** "Available on the market" (8.9.23): 1..3 offers, smaller clubs allowed. */
+  seeking?: boolean;
 }
 
 /**
@@ -209,7 +211,9 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   const rep = managerReputation(req.managers, req.board, year, req.seatId);
   // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
-  const count = req.window === "season_end"
+  const count = req.seeking
+    ? seekingOfferCount(rng)
+    : req.window === "season_end"
     ? seasonEndOfferCount(rep, rng)
     : req.window === "mid_season"
       ? midSeasonOfferCount(rep, recentTitleBonus(req.managers, req.seatId, req.date), rng)
@@ -222,7 +226,9 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   const fromId = req.humanSquadId ?? req.unemployed?.lastClubId ?? "";
   const from = world.candidates.find((c) => c.squadId === fromId);
   const fromPrestige = world.prestige.get(fromId) ?? 0.5;
-  const band: PrestigeBand = req.window === "unemployed" ? unemployedBand(fromPrestige, rep) : employedBand(fromPrestige, rep);
+  const band: PrestigeBand = req.window === "unemployed"
+    ? unemployedBand(fromPrestige, rep)
+    : req.seeking ? seekingBand(fromPrestige, rep) : employedBand(fromPrestige, rep);
   const exclude = new Set([fromId, ...(req.excludeClubs ?? [])]);
   const eligible = eligibleCandidates(world.candidates, {
     band, exclude,
@@ -534,6 +540,7 @@ export async function acceptJobOffer(
     tactical_style: DEFAULT_TACTICAL_STYLE,
     board: taken.board,
     jobOffers: [],
+    jobSeeking: undefined,
     // The new league's mid-season window counts from now (never right after the switch).
     jobsMidSeason: newState ? seasonLabel(newState.year, newState.start, newState.end) : meta.jobsMidSeason,
     unemployed: undefined,
@@ -564,4 +571,56 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;
   }
+}
+
+/**
+ * The manager resigns (8.9.23): no severance, no compensation, out on the spot. The club turns AI (interim + vacancy),
+ * the seat becomes unemployed (offers every two weeks, like a sacking, but `sacking.reason` is "resigned"). Pending
+ * offers stay. The caller flushes a BufferingSaveDAL.
+ */
+export async function resignFromClub(
+  service: SaveService, saveId: string, seatId: string, meta: SeatMeta, nudges?: SeatNudges,
+): Promise<void> {
+  const date = meta.currentDate!;
+  const index = await service.getSquadIndex(saveId);
+  const clubId = meta.clubId;
+  const entry = index.byId(clubId);
+  if (!entry || meta.unemployed) throw new Error("no club");
+  const table = (await service.getLeagueStandings(saveId, entry.leagueSlug)) ?? [];
+  const pos = table.findIndex((r) => r.squadId === clubId);
+  const board = meta.board;
+  if (await standingsOn(service, saveId)) await closeSeatPassage(service, saveId, seatId, date, "club_change");
+  const unpaidDebt = await releaseHumanClub(service, saveId, seatId, { squadId: clubId, date }, { nudges });
+  const managers = await service.getManagers(saveId);
+  if (managers.length > 0) {
+    await service.writeManagers(saveId, sackHumanManager(managers, { seatId, date, clubName: meta.clubName, left: "resigned", unpaidDebt }));
+  }
+  const vacancies = { ...(meta.managerVacancies ?? {}) };
+  vacancies[clubId] = { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${clubId}:${date}:vacancy`))) };
+  await service.updateMeta(saveId, { managerVacancies: vacancies });
+  await service.updateSeat(saveId, seatId, {
+    clubId: "",
+    board: undefined,
+    press: undefined,
+    rotationOverride: undefined,
+    youthCallUps: undefined,
+    youthCallUpsSkipped: undefined,
+    managerContract: undefined,
+    managerRenewal: undefined,
+    managerContractNotices: undefined,
+    jobSeeking: undefined,
+    unemployed: {
+      since: date,
+      lastClubId: clubId,
+      lastClubName: meta.clubName,
+      lastLeagueSlug: entry.leagueSlug,
+      board: Math.round(board?.board ?? 60),
+      nextOfferDate: addDays(date, JOBS.unemployed.FIRST_OFFER_DAYS),
+      sacking: {
+        date, reason: "resigned", clubName: meta.clubName, leagueName: meta.leagueName,
+        position: pos >= 0 && table[pos]!.mp > 0 ? pos + 1 : null,
+        board: Math.round(board?.board ?? 60), fans: Math.round(board?.fans ?? 60), record: board?.record ?? { startDate: date, played: 0, wins: 0, draws: 0, losses: 0, titles: [] },
+      },
+    },
+  });
 }

@@ -17,7 +17,7 @@ export interface ManagerTitle {
 }
 
 /** Why a manager left a club (Etapa 25); `left_world`: a human manager left the world of friends (part 2). */
-export type ManagerLeftReason = "sacked" | "moved" | "contract" | "interim" | "left_world";
+export type ManagerLeftReason = "sacked" | "moved" | "contract" | "interim" | "left_world" | "resigned";
 
 /** One spell of a manager at a club. `to` is absent for the current club. */
 export interface ManagerPassage {

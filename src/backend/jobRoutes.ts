@@ -3,7 +3,10 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { acceptJobOffer, reputationOf } from "@/backend/jobWorld";
+import { acceptJobOffer, reputationOf, resignFromClub } from "@/backend/jobWorld";
+import { worldLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
+import { addDays } from "@/Domain/dates";
+import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { logError } from "@/Logger";
 
@@ -24,6 +27,58 @@ export const jobRoutes = {
       reputation: await reputationOf(saveService, saveId, meta),
       offers: (meta.jobOffers ?? []).filter((o) => o.expires >= date),
       unemployed: meta.unemployed ?? null,
+      seeking: meta.jobSeeking ?? null,
+    });
+  },
+
+  /** `PUT { on }` - "available on the market" (8.9.23). 409 `noClub` without a club, `lobby` in a lobby. */
+  "/api/saves/:saveId/job-seeking": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const lobby = await worldLobbyGuard(saveId);
+    if (lobby) return lobby;
+    const body = (await req.json().catch(() => null)) as { on?: unknown } | null;
+    if (!body || typeof body.on !== "boolean") return Response.json({ error: "on required" }, { status: 400 });
+    const on = body.on;
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
+      if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
+      const seeking = on
+        ? (meta.jobSeeking ?? { since: meta.currentDate, nextOfferDate: addDays(meta.currentDate, JOBS.seeking.FIRST_OFFER_DAYS) })
+        : undefined;
+      await saveService.updateSeat(saveId, auth.seatId, { jobSeeking: seeking });
+      return Response.json({ ok: true, seeking: seeking ?? null });
+    });
+  },
+
+  /** `POST` - resign from the club now (8.9.23): no severance, unemployed. 409 `noClub`, `lobby`. */
+  "/api/saves/:saveId/job-resign": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const lobby = await worldLobbyGuard(saveId);
+    if (lobby) return lobby;
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
+      if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
+      const buffer = new BufferingSaveDAL(new FileSystemDAL());
+      const service = new SaveService(buffer);
+      const nudges: SeatNudges = new Set();
+      try {
+        await resignFromClub(service, saveId, auth.seatId, (await service.getSeatMeta(saveId, auth.seatId))!, nudges);
+        await buffer.flush();
+      } catch (err) {
+        logError("jobs", `save ${saveId}: failed to resign`, err);
+        return Response.json({ error: "failed to resign" }, { status: 500 });
+      }
+      nudgeSeats(saveId, nudges);
+      saveService.dropSquadIndex(saveId);
+      return Response.json({ ok: true });
     });
   },
 

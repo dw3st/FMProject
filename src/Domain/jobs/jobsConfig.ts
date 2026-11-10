@@ -61,6 +61,20 @@ export const JOBS = {
     VALID_DAYS: 10,
   },
 
+  /** "Available on the market" while employed (8.9.23). */
+  seeking: {
+    MIN: 1,
+    MAX: 3,
+    /** First batch FIRST_OFFER_DAYS after switching it on, then one every EVERY_DAYS. */
+    FIRST_OFFER_DAYS: 7,
+    EVERY_DAYS: 14,
+    VALID_DAYS: 14,
+    /** Smaller clubs than in the normal band: he wants out. */
+    EXTRA_BELOW: 0.15,
+    /** Board confidence lost on the 1st of every month while it is on. */
+    BOARD_PER_MONTH: 3,
+  },
+
   unemployed: {
     MIN: 1,
     MAX: 3,

@@ -77,6 +77,8 @@ export interface SeatState {
   unemployed?: Unemployment;
   jobOffers?: JobOffer[];
   jobsMidSeason?: string;
+  /** "Available on the market" (8.9.23): offers every two weeks while employed; the board loses a little each month. */
+  jobSeeking?: { since: string; nextOfferDate: string };
   careerStart?: string;
   managerContract?: ManagerContract;
   managerEarnings?: number;
@@ -106,7 +108,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "betNet", "betExact", "betLongshot", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];

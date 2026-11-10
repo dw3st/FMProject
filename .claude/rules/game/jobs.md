@@ -225,3 +225,10 @@ Pedido do usuário. Reputação: ranking 50, diretoria 20, títulos 20, temporad
 ## Sorteio por assento (8.9.22)
 
 Report do usuário. A semente do sorteio das propostas leva o assento (`jobs:<save>:<seatId>:<data>:<janela>`): dois técnicos do mesmo mundo, no mesmo dia, não recebem mais as mesmas propostas. Na caixa de entrada, o cartão da proposta (e os de lance e de proposta entre técnicos) tem `key` pela mensagem: antes o estado "recusada" de um ficava no próximo.
+
+## Disponível no mercado e pedir demissão (8.9.23)
+
+Pedido do usuário. Controles no cartão do clube do Painel (`Dashboard/CareerExitControls.tsx`).
+
+- **Disponível no mercado:** `PUT /api/saves/:id/job-seeking { on }` grava `SeatState.jobSeeking { since, nextOfferDate }` (409 `noClub`, `lobby`). No avanço do dia, no lugar da janela mensal: no `nextOfferDate` (7 dias depois de ligar, depois a cada 14, `JOBS.seeking`) chegam 1 a 3 propostas válidas por 14 dias, numa faixa aberta para baixo (`seekingBand`: −0,15 e nunca abaixo do nível do clube atual no teto, para um técnico de reputação baixa num clube grande ainda receber); todo dia 1 a diretoria perde `BOARD_PER_MONTH` (3). A fim de temporada continua igual. Sai ao trocar de clube e ao perder o emprego.
+- **Pedir demissão:** `POST /api/saves/:id/job-resign` (`resignFromClub`, `BufferingSaveDAL`): sem multa, o clube vira IA com interino e vaga, a passagem fecha com `left: "resigned"`, o assento fica desempregado (`sacking.reason = "resigned"`, propostas a cada 2 semanas). As propostas pendentes ficam.

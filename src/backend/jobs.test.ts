@@ -308,4 +308,59 @@ describe("season-end offer validity", () => {
     expect(seasonEndExpiry("2027-05-20", "2027-05-21")).toBe("2027-05-21");
     expect(seasonEndExpiry("2027-05-20", null)).toBe("2027-06-19");
   });
-});
+
+  test("available on the market and resigning (8.9.23)", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    const call = (key: string, saveId: string, path: string, method: string, token: string, body?: unknown) => {
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost${path}`, {
+          method, headers: { cookie: `fs_session=${token}`, "content-type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+        { params: { saveId } },
+      ));
+    };
+    try {
+    const { user, session } = devAutoLogin("jobs-exit@test.local");
+    await ownSolo(meta.id, user.id);
+    const date = meta.currentDate!;
+    // On: offers every two weeks from a week later; off clears it.
+    let res = await call("/api/saves/:saveId/job-seeking", meta.id, `/api/saves/${meta.id}/job-seeking`, "PUT", session.token, { on: true });
+    expect(res.status).toBe(200);
+    let seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+    expect(seat.jobSeeking).toEqual({ since: date, nextOfferDate: addDays(date, 7) });
+    res = await call("/api/saves/:saveId/job-seeking", meta.id, `/api/saves/${meta.id}/job-seeking`, "PUT", session.token, { on: "x" });
+    expect(res.status).toBe(400);
+    // The offers day: offers arrive (smaller clubs allowed), the next date moves two weeks on.
+    await saveService.updateSeat(meta.id, meta.seatId, { jobSeeking: { since: date, nextOfferDate: date } });
+    const out = await advanceOneDay(saveService, meta.id);
+    expect(out.ok).toBe(true);
+    seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+    expect((seat.jobOffers ?? []).length).toBeGreaterThan(0);
+    expect(seat.jobSeeking?.nextOfferDate).toBe(addDays(date, 14));
+    // Resign: unemployed, no club, an interim at the old club with a vacancy.
+    res = await call("/api/saves/:saveId/job-resign", meta.id, `/api/saves/${meta.id}/job-resign`, "POST", session.token);
+    expect(res.status).toBe(200);
+    seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+    expect(seat.clubId).toBe("");
+    expect(seat.unemployed?.sacking?.reason).toBe("resigned");
+    expect(seat.unemployed?.lastClubId).toBe("33");
+    expect(seat.jobSeeking).toBeUndefined();
+    const world = (await saveService.getMeta(meta.id))!;
+    expect(world.managerVacancies?.["33"]).toBeDefined();
+    const managers = await saveService.getManagers(meta.id);
+    expect(managers.filter((m) => m.squadId === "33").length).toBe(1);
+    expect(managers.find((m) => m.seatId === meta.seatId)?.clubs?.at(-1)?.left).toBe("resigned");
+    // Again: no club.
+    res = await call("/api/saves/:saveId/job-resign", meta.id, `/api/saves/${meta.id}/job-resign`, "POST", session.token);
+    expect(res.status).toBe(409);
+    // The next day runs without a club.
+    expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+    } finally {
+      await saveService.deleteSave(meta.id);
+    }
+  }, 300_000);});

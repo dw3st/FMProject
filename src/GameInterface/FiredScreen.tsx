@@ -53,10 +53,10 @@ export function FiredScreen() {
 
           <div>
             <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-destructive">
-              {ended.reason === "contract" ? t("fired.contractEnded") : t("fired.youveFired")}
+              {ended.reason === "contract" ? t("fired.contractEnded") : ended.reason === "resigned" ? t("fired.resigned") : t("fired.youveFired")}
             </h1>
             <p className="text-muted-foreground mt-2 m-0">
-              {ended.reason === "contract" ? t("fired.contractEndedBody", { club: ended.clubName }) : t("fired.boardTerminated", { club: ended.clubName })}
+              {ended.reason === "contract" ? t("fired.contractEndedBody", { club: ended.clubName }) : ended.reason === "resigned" ? t("fired.resignedBody", { club: ended.clubName }) : t("fired.boardTerminated", { club: ended.clubName })}
             </p>
           </div>
 

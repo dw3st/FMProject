@@ -394,7 +394,9 @@
     "noAchievements": "Nenhum título",
     "seeOffers": "Ver propostas",
     "contractEnded": "Contrato encerrado",
-    "contractEndedBody": "Seu contrato com o {{club}} acabou sem renovação. Outros clubes vão fazer propostas."
+    "contractEndedBody": "Seu contrato com o {{club}} acabou sem renovação. Outros clubes vão fazer propostas.",
+    "resigned": "Você pediu demissão",
+    "resignedBody": "Você deixou o {{club}}."
   },
   "staff": {
     "tabStaff": "Comissão",
@@ -3350,7 +3352,8 @@
         "moved": "saiu para outro clube",
         "contract": "fim de contrato",
         "interim": "interino",
-        "left_world": "saiu da liga"
+        "left_world": "saiu da liga",
+        "resigned": "Pediu demissão"
       },
       "assets": "Bens: {{list}}"
     },
@@ -3683,6 +3686,18 @@
       "wageNow": "Hoje você ganha {{wage}}/sem",
       "earningGoal_one": "Próxima meta {{goal}}: faltam {{missing}}, cerca de {{count}} temporada com este salário",
       "earningGoal_other": "Próxima meta {{goal}}: faltam {{missing}}, cerca de {{count}} temporadas com este salário"
+    },
+    "exitFailed": "Não deu certo. Tente de novo.",
+    "seeking": {
+      "label": "Disponível no mercado",
+      "help": "Propostas a cada 2 semanas, também de clubes menores. A diretoria perde {{board}} pontos de confiança por mês.",
+      "on": "Você está no mercado: propostas a cada 2 semanas. A diretoria perde {{board}} pontos de confiança por mês."
+    },
+    "resign": {
+      "button": "Pedir demissão",
+      "title": "Pedir demissão",
+      "body": "Você sai do {{club}} agora, sem multa. Fica sem clube e as propostas chegam a cada 2 semanas.",
+      "confirm": "Pedir demissão"
     }
   },
   "negotiation": {

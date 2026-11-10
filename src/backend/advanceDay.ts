@@ -2996,6 +2996,22 @@ export async function advanceOneDay(
             humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
             ...(contract ? { contract } : {}),
           }));
+        } else if (ds.meta.jobSeeking) {
+          // "Available on the market" (8.9.23): offers every two weeks, the board loses a little on the 1st of each month.
+          const seeking = ds.meta.jobSeeking;
+          if (currentDate.endsWith("-01") && currentDate > seeking.since) {
+            ds.board = { ...ds.board, board: Math.max(0, ds.board.board - JOBS.seeking.BOARD_PER_MONTH) };
+          }
+          if (currentDate >= seeking.nextOfferDate) {
+            newOffers.push(...await generateJobOffers(saveService, saveId, {
+              seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.seeking.VALID_DAYS),
+              managers: await managerTracker.list(), board: ds.board.board,
+              humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs, seeking: true,
+              vacant: new Set(Object.keys(aiDesk?.vacancies() ?? world.managerVacancies ?? {})),
+              ...(contract ? { contract } : {}),
+            }));
+            ds.patch.jobSeeking = { ...seeking, nextOfferDate: addDays(currentDate, JOBS.seeking.EVERY_DAYS) };
+          }
         } else if (seatState && currentDate.endsWith("-01")) {
           // The monthly window (8.9.12): the 1st of every month once his league has started and before its last month.
           const label = seasonLabel(seatState.year, seatState.start, seatState.end);
@@ -3504,6 +3520,7 @@ export async function advanceOneDay(
         ds.patch.rotationOverride = undefined;
         ds.patch.youthCallUps = undefined;
         ds.patch.youthCallUpsSkipped = undefined;
+        ds.patch.jobSeeking = undefined;
         continue;
       }
       // The career follows the club to its new league (also repairs a seat left stale by a partial flush).

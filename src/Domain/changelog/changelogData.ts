@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.23",
+    date: "2026-11-10",
+    time: "20:34",
+    items: [
+      {
+        pt: "Disponível no mercado: no cartão do clube do Painel, um botão deixa você no mercado. Chegam propostas a cada 2 semanas, também de clubes menores, e a diretoria perde um pouco de confiança a cada mês.",
+        en: "Available on the market: a button on the Dashboard club card puts you on the market. Offers arrive every 2 weeks, smaller clubs too, and the board loses a little confidence each month.",
+      },
+      {
+        pt: "Pedir demissão: você sai do clube na hora, sem multa, e fica sem clube recebendo propostas a cada 2 semanas.",
+        en: "Resign: you leave the club right away, with no severance, and stay without a club getting offers every 2 weeks.",
+      },
+    ],
+  },
+  {
     version: "8.9.22",
     date: "2026-11-10",
     time: "20:21",

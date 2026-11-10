@@ -273,6 +273,19 @@ export function midSeasonOfferCount(rep: number, titleBonus: number, rng: () => 
   return Math.min(JOBS.midSeason.MAX, poisson(monthlyOfferLambda(rep, titleBonus), rng));
 }
 
+/** "Available on the market": 1..3 offers every two weeks, while still employed. */
+export function seekingOfferCount(rng: () => number): number {
+  const c = JOBS.seeking;
+  return c.MIN + Math.floor(rng() * (c.MAX - c.MIN + 1));
+}
+
+/** The employed band, open to smaller clubs: a manager who wants out takes a step down too. */
+export function seekingBand(currentPrestige: number, rep: number): PrestigeBand {
+  const b = employedBand(currentPrestige, rep);
+  // A low reputation at a big club would leave no club in the normal band: he can always go to one of his level.
+  return { ...b, lo: b.lo - JOBS.seeking.EXTRA_BELOW, hi: Math.max(b.hi, currentPrestige), target: currentPrestige - JOBS.band.STEP };
+}
+
 /** Unemployed: 1..3 offers every two weeks. */
 export function unemployedOfferCount(rng: () => number): number {
   const c = JOBS.unemployed;
@@ -340,7 +353,7 @@ export function moveHumanManager(
  */
 export function sackHumanManager(
   managers: ManagerRecord[],
-  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" | "left_world"; unpaidDebt?: UnpaidDebt | null },
+  args: { seatId: string; date: string; clubName: string; left?: "sacked" | "contract" | "left_world" | "resigned"; unpaidDebt?: UnpaidDebt | null },
 ): ManagerRecord[] {
   const me = managers.find((m) => m.seatId === args.seatId);
   if (!me || !me.squadId) return managers;

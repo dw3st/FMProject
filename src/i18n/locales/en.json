@@ -394,7 +394,9 @@
     "noAchievements": "No titles",
     "seeOffers": "See offers",
     "contractEnded": "Contract Ended",
-    "contractEndedBody": "Your contract at {{club}} ended without a renewal. Other clubs will make you offers."
+    "contractEndedBody": "Your contract at {{club}} ended without a renewal. Other clubs will make you offers.",
+    "resigned": "You resigned",
+    "resignedBody": "You left {{club}}."
   },
   "staff": {
     "tabStaff": "Staff",
@@ -3350,7 +3352,8 @@
         "moved": "left for another club",
         "contract": "contract ended",
         "interim": "interim spell",
-        "left_world": "left the league"
+        "left_world": "left the league",
+        "resigned": "Resigned"
       },
       "assets": "Assets: {{list}}"
     },
@@ -3683,6 +3686,18 @@
       "wageNow": "You earn {{wage}}/wk today",
       "earningGoal_one": "Next goal {{goal}}: {{missing}} to go, about {{count}} season on this wage",
       "earningGoal_other": "Next goal {{goal}}: {{missing}} to go, about {{count}} seasons on this wage"
+    },
+    "exitFailed": "It did not work. Try again.",
+    "seeking": {
+      "label": "Available on the market",
+      "help": "Offers every 2 weeks, smaller clubs too. The board loses {{board}} confidence points a month.",
+      "on": "You are on the market: offers every 2 weeks. The board loses {{board}} confidence points a month."
+    },
+    "resign": {
+      "button": "Resign",
+      "title": "Resign",
+      "body": "You leave {{club}} now, with no severance. You will be without a club, with offers every 2 weeks.",
+      "confirm": "Resign"
     }
   },
   "negotiation": {

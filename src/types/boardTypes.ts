@@ -63,7 +63,7 @@ export interface BoardState {
 }
 
 /** `contract`: the manager's contract ended without renewal (Etapa 25) — not a sacking. */
-export type SackReason = "board" | "ultimatum" | "contract";
+export type SackReason = "board" | "ultimatum" | "contract" | "resigned";
 
 /** The sacking itself (`SaveMeta.unemployed.sacking`): the news screen `/fired` shows it. */
 export interface CareerEnded {
