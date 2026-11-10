@@ -1,3 +1,4 @@
+import { FriendCompetitions } from "@/GameInterface/World/FriendCompetitions";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
@@ -335,6 +336,8 @@ export function WorldScreen() {
               </table>
             </div>
           </section>
+
+          {!isPublic && view.phase !== "lobby" && <FriendCompetitions saveId={saveId} version={social.rivalsVersion + social.worldVersion} />}
 
           {isPublic && (
             <section className="flex flex-col gap-3">

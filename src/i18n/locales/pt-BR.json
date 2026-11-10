@@ -6181,6 +6181,8 @@
       "running": "Avançando… {{date}} de {{target}}",
       "runningShort": "{{date}} → {{target}}",
       "turn": {
+        "oneReady": "{{name}} já está pronto até {{date}}.",
+        "markReady": "Marcar pronto",
         "title": "Só falta você",
         "body": "Os outros técnicos estão prontos."
       },
@@ -6314,6 +6316,7 @@
     }
   },
   "rivals": {
+    "comps": {"title": "Campeonatos dos amigos", "league": "{{position}}º de {{size}} · {{points}} pts", "group": "Grupo {{group}} · {{position}}º", "champion": "Campeão", "out": "Eliminado · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · venceu a ida {{for}}–{{against}}", "lost": "{{stage}} · perdeu a ida {{for}}–{{against}}", "drew": "{{stage}} · empatou a ida {{for}}–{{against}}"}, "cups": "Copas", "bet": "Apostar nos jogos dele"},
     "matchRound": "Rodada {{round}}",
     "tabRivals": "Rivais",
     "tabResults": "Resultados",

@@ -6181,6 +6181,8 @@
       "running": "Advancing… {{date}} of {{target}}",
       "runningShort": "{{date}} → {{target}}",
       "turn": {
+        "oneReady": "{{name}} is ready until {{date}}.",
+        "markReady": "Mark ready",
         "title": "Only you left",
         "body": "The other managers are ready."
       },
@@ -6314,6 +6316,7 @@
     }
   },
   "rivals": {
+    "comps": {"title": "Friends' competitions", "league": "#{{position}} of {{size}} · {{points}} pts", "group": "Group {{group}} · #{{position}}", "champion": "Champions", "out": "Out · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · won the first leg {{for}}–{{against}}", "lost": "{{stage}} · lost the first leg {{for}}–{{against}}", "drew": "{{stage}} · drew the first leg {{for}}–{{against}}"}, "cups": "Cups", "bet": "Bet on his games"},
     "matchRound": "Round {{round}}",
     "tabRivals": "Rivals",
     "tabResults": "Results",

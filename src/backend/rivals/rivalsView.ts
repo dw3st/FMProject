@@ -6,8 +6,11 @@ import { positionOf, standingsView } from "@/backend/standingsWorld";
 import { liveScoresOf } from "@/backend/rivals/liveScores";
 import { logError } from "@/Logger";
 import { formOf } from "@/Domain/rivals/results";
+import { knockoutComp, leagueComp, tableAround } from "@/Domain/rivals/competitionStatus";
+import { playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { rankOf } from "@/Domain/multiplayer/standings";
-import type { RivalNextMatch, RivalRow, RivalsView } from "@/types/rivalsTypes";
+import type { RivalComp, RivalNextMatch, RivalRow, RivalTableRow, RivalsView } from "@/types/rivalsTypes";
 
 async function nextMatchOf(
   service: SaveService, saveId: string, seatId: string, from: string, nameOf: (id: string) => string,
@@ -36,6 +39,26 @@ async function nextMatchOf(
   }
 }
 
+/** His club's competitions (8.9.9): display only, a read failure shows none. */
+async function compsOf(service: SaveService, saveId: string, leagueSlug: string, clubId: string): Promise<{ comps: RivalComp[]; table: RivalTableRow[] }> {
+  try {
+    const table = (await service.getLeagueStandings(saveId, leagueSlug)) ?? [];
+    const comps: RivalComp[] = [];
+    const league = leagueComp(leagueSlug, table, clubId);
+    if (league) comps.push(league);
+    for (const slug of [await playerCupSlug(leagueSlug), await playerContinentalSlug(service, saveId, clubId)]) {
+      if (!slug) continue;
+      const [meta, fixtures] = await Promise.all([service.getLeagueMeta(saveId, slug).catch(() => null), service.getAllFixturesForLeague(saveId, slug).catch(() => [])]);
+      const c = meta ? knockoutComp(slug, meta, fixtures, clubId) : null;
+      if (c) comps.push(c);
+    }
+    return { comps, table: tableAround(table, clubId) };
+  } catch (e) {
+    logError("world", `save ${saveId}: rivals competitions of ${clubId} failed`, e);
+    return { comps: [], table: [] };
+  }
+}
+
 export async function rivalsView(service: SaveService, saveId: string, viewerSeatId: string, now = Date.now()): Promise<RivalsView> {
   const meta = await service.getMeta(saveId);
   const today = meta?.currentDate ?? "";
@@ -53,6 +76,7 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
     const natId = national?.human?.[e.seatId]?.teamId;
     const myNation = natId ? nations.get(natId) ?? null : null;
     const bets = await service.getBets(saveId, e.seatId);
+    const where = employed && seat ? await compsOf(service, saveId, seat.leagueSlug, seat.clubId) : null;
     rows.push({
       seatId: e.seatId,
       nickname: e.nickname,
@@ -72,6 +96,7 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
       friendsTotal: e.total,
       live: live.find((l) => l.seatId === e.seatId) ?? null,
       bets: { open: bets.open.length, net: seat?.betNet ?? 0 },
+      ...(where ? { comps: where.comps, table: where.table } : {}),
       me: e.seatId === viewerSeatId,
     });
   }

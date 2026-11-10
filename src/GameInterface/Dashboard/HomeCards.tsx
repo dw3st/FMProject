@@ -2,6 +2,7 @@
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
  * (`dashboardData.ts`); each card links to the screen it summarises.
  */
+import { RivalCompetitions } from "@/GameInterface/World/RivalCompetitions";
 import { rivalNation, rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { BADGE_ICON, FRAME_RING, type AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import type { ManagerProfile } from "@/types/achievementTypes";
@@ -1095,6 +1096,7 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                   {t("rivals.card.next", { date: formatDay(r.next.date, i18n.language), opponent: rivalNextOpponent(r.next, i18n.language, t) })}
                 </p>
               ) : null}
+              <div className="pl-11"><RivalCompetitions row={r} /></div>
             </li>
           ))}
         </ul>

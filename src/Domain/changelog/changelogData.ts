@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.9",
+    date: "2026-11-10",
+    time: "17:51",
+    items: [
+      {
+        pt: "Liga de amigos: o cartão Rivais do Painel mostra como cada amigo está em cada campeonato (posição na liga, fase da copa e da continental), com um botão para apostar nos jogos dele. A aba Liga ganhou os campeonatos dos amigos, com a tabela em volta de cada um.",
+        en: "Friends' league: the Rivals card on the Dashboard shows how each friend is doing in each competition (league place, cup and continental stage), with a button to bet on his games. The League tab now shows the friends' competitions, with the table around each one.",
+      },
+      {
+        pt: "O aviso de que só falta você aparece logo abaixo do botão Pronto, com o botão para marcar pronto.",
+        en: "The notice that only you are left shows right below the Ready button, with a button to mark yourself ready.",
+      },
+    ],
+  },
+  {
     version: "8.9.8",
     date: "2026-11-10",
     time: "17:33",

@@ -969,3 +969,7 @@ Report do usuário. `RivalRow.nationalTeam` (a seleção que ele treina, grafia 
 ### Apostas dos amigos (8.9.7)
 
 Rivais e Resultados mostram as apostas dos outros técnicos, com provocação pelas frases `bet_won` / `bet_lost`. Ver `.claude/rules/game/bets.md` → "Apostas dos amigos".
+
+### Campeonatos dos amigos e o aviso de vez (8.9.9)
+
+Reports de tester, opção A dos mocks. `RivalRow.comps` (`RivalComp`: liga com posição, tamanho e pontos; copa e continental com fase, grupo, estado e o placar da ida) e `RivalRow.table` (cinco linhas da tabela em volta dele), de `src/Domain/rivals/competitionStatus.ts` (puro, com teste) no `rivalsView`. O cartão Rivais do Painel mostra um bloco por campeonato e o botão Apostar nos jogos dele (`World/RivalCompetitions.tsx`), que abre `/achievements?tab=bets&competition=<slug>` (a competição do próximo jogo dele, senão a liga; a aba Apostas lê `competition` da URL). A aba Liga do mundo (fora do público) ganhou a seção Campeonatos dos amigos (`World/FriendCompetitions.tsx`). O aviso Só falta você (`World/TurnNoticeCard.tsx`) fica preso abaixo do controle Pronto (`#fm-ready-slot` no `Layout`), com seta, quem está pronto e o botão Marcar pronto, que abre o menu (`fm:open-ready`).

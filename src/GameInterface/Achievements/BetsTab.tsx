@@ -90,7 +90,10 @@ export function BetsTab() {
   const [error, setError] = useState<string | null>(null);
 
   // "All" stands for his own competitions, the default list.
-  const [competition, setCompetition] = useState<string>(ALL_COMPETITIONS);
+  // A friend's card opens the tab on his competition (`?competition=`, 8.9.9).
+  const [competition, setCompetition] = useState<string>(
+    () => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("competition") : null) || ALL_COMPETITIONS,
+  );
   const options = useMemo(
     () => statsCompetitionOptions(leagues, COUNTRY_BY_NAME, i18n.language, t).map((o) => (o.value === ALL_COMPETITIONS ? { ...o, label: t("bets.mine") } : o)),
     [leagues, i18n.language, t],

@@ -192,8 +192,28 @@ export interface RivalRow {
   live: LiveScoreView | null;
   /** Open bets now and the career result of his bets. */
   bets: { open: number; net: number };
+  /** Where his club stands in each competition: league, cup, continental (8.9.9). */
+  comps?: RivalComp[];
+  /** Five rows of his league table around him (8.9.9). */
+  table?: RivalTableRow[];
   me: boolean;
 }
+
+/** A friend's club in one competition (8.9.9). League: position of size and points; knockout: stage and state. */
+export interface RivalComp {
+  slug: string;
+  kind: "league" | "cup" | "continental";
+  position?: number;
+  size?: number;
+  points?: number;
+  stage?: string;
+  group?: string;
+  state?: "alive" | "out" | "champion";
+  firstLeg?: { for: number; against: number };
+  nextDate?: string;
+}
+
+export interface RivalTableRow { position: number; squadId: string; name: string; points: number }
 
 export interface RivalsView { rows: RivalRow[] }
 export interface ResultsPage { results: SeatResult[]; hasMore: boolean }

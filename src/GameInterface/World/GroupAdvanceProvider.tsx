@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { isOnlyMe, myTurnNow, othersNowReady } from "@/Domain/groupAdvance/readyNotice";
-import { Icon } from "@/GameInterface/Icons";
+import { TurnNoticeCard } from "@/GameInterface/World/TurnNoticeCard";
 import { announceTurn } from "@/GameInterface/World/turnNotice";
 import { armReadySound, playReadySound } from "@/GameInterface/readySound";
 import { useSocial } from "@/GameInterface/Social/useSocial";
@@ -225,21 +225,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
     <GroupAdvanceContext.Provider value={value}>
       {children}
       {turnCard && !notice && isOnlyMe(view?.waitingFor, me?.nickname ?? null) && (
-        <div role="status" className="fixed top-16 right-6 z-50 w-[300px] rounded-md border border-primary bg-card shadow-lg flex items-start gap-2 p-3">
-          <Icon name="bell" size={16} className="shrink-0 text-primary mt-0.5" />
-          <span className="flex-1 min-w-0 text-sm text-muted-foreground">
-            <span className="block font-semibold text-foreground">{t("world.advance.turn.title")}</span>
-            {t("world.advance.turn.body")}
-          </span>
-          <button
-            type="button"
-            onClick={() => setTurnCard(false)}
-            aria-label={t("social.popup.dismiss")}
-            className="shrink-0 bg-transparent border-0 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <Icon name="close" size={16} />
-          </button>
-        </div>
+        <TurnNoticeCard view={view} myNickname={me?.nickname ?? null} onClose={() => setTurnCard(false)} />
       )}
       {notice && (
         <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} currentClubId={session?.clubId ?? ""} onDismiss={dismissNotice} />
