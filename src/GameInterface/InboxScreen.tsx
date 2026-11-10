@@ -1290,8 +1290,8 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
   return (
     <div className="space-y-4">
       <p className="text-sm text-foreground m-0">{t(transferTextKey(message, "body"), vars)}</p>
-      {isBid && saveId && bid !== undefined && <BidCard saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
-      {seatShown && saveId && <SeatOfferCard saveId={saveId} offer={seatOffer} onChanged={() => void refresh()} />}
+      {isBid && saveId && bid !== undefined && <BidCard key={message.id} saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
+      {seatShown && saveId && <SeatOfferCard key={message.id} saveId={saveId} offer={seatOffer} onChanged={() => void refresh()} />}
     </div>
   );
 }
@@ -1319,6 +1319,7 @@ function JobBody({
     <div className="space-y-4">
       <p className="text-sm text-foreground m-0">{t("inbox.job.offer", { club: message.clubName, league })}</p>
       <JobOfferCard
+        key={offer.id}
         saveId={session.saveId}
         offer={offer}
         leagues={leagues}

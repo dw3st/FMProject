@@ -27,6 +27,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.22",
+    date: "2026-11-10",
+    time: "20:21",
+    items: [],
+    fixes: [
+      {
+        pt: "Dois técnicos do mesmo mundo não recebem mais as mesmas propostas de emprego no mesmo dia.",
+        en: "Two managers of the same world no longer get the same job offers on the same day.",
+      },
+      {
+        pt: "Na caixa de entrada, depois de recusar uma proposta, as outras propostas voltam a mostrar os botões de aceitar e recusar.",
+        en: "In the inbox, after declining an offer, the other offers show their accept and decline buttons again.",
+      },
+    ],
+  },
+  {
     version: "8.9.21",
     date: "2026-11-10",
     time: "20:12",

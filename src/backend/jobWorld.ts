@@ -207,7 +207,8 @@ export interface OfferRequest {
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
   const rep = managerReputation(req.managers, req.board, year, req.seatId);
-  const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.date}:${req.window}`));
+  // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
+  const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
   const count = req.window === "season_end"
     ? seasonEndOfferCount(rep, rng)
     : req.window === "mid_season"

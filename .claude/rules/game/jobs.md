@@ -221,3 +221,7 @@ Pedido do usuário. Casa, carro e relógio têm 4 imagens cada (`src/example_dat
 ## Mais propostas para quem ganha (8.9.12)
 
 Pedido do usuário. Reputação: ranking 50, diretoria 20, títulos 20, temporadas 10 (carreira nova ~37). Fim da temporada: `BASE` 0,45 e até 4 propostas. A janela do meio da temporada virou mensal (`window: "mid_season"`, `JOBS.midSeason`): todo dia 1 da temporada da liga do clube (depois do início e antes do último mês), com reputação 50 ou mais, λ = 0,1 × e^(0,06 × (reputação − 50)) × bônus de título (+50% por título creditado nos últimos 365 dias, até ×2; `recentTitleBonus`), até 2 propostas, válidas por 10 dias. Reputação 60 dá 0,18 por mês, 72 dá 0,38, 76 dá 0,48, 85 dá 0,82. `SeatState.jobsMidSeason` guarda o mês já sorteado (`<temporada>:<AAAA-MM>`).
+
+## Sorteio por assento (8.9.22)
+
+Report do usuário. A semente do sorteio das propostas leva o assento (`jobs:<save>:<seatId>:<data>:<janela>`): dois técnicos do mesmo mundo, no mesmo dia, não recebem mais as mesmas propostas. Na caixa de entrada, o cartão da proposta (e os de lance e de proposta entre técnicos) tem `key` pela mensagem: antes o estado "recusada" de um ficava no próximo.
