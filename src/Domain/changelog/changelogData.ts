@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.13",
+    date: "2026-11-10",
+    time: "18:37",
+    items: [
+      {
+        pt: "No calendário da semana do Painel, cada jogo mostra o campeonato embaixo.",
+        en: "In the Dashboard's week calendar, each game shows its competition underneath.",
+      },
+    ],
+  },
+  {
     version: "8.9.12",
     date: "2026-11-10",
     time: "18:28",

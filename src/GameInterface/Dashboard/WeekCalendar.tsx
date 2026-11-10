@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
+import { competitionName } from "@/Domain/world/labels";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { HomeCard } from "@/GameInterface/Dashboard/HomeCards";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -172,6 +173,8 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
         outcome,
         youth: youthDayEntries(youthFixtures, dateStr, mySquadId),
         rescheduledFrom: myFixture?.rescheduledFrom,
+        // Which competition the game is (tester report, 8.9.13).
+        competition: myFixture ? competitionName(myFixture.competition, leagues, lang) : null,
         played: !!myFixture?.played && !myFixture.cancelled,
       };
     });
@@ -275,6 +278,9 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
                 <div className={chip} title={day.label}>
                   {content}
                 </div>
+              )}
+              {day.competition && (
+                <span className="text-sm text-muted-foreground truncate -mt-1" title={day.competition}>{day.competition}</span>
               )}
               {day.rescheduledFrom && (
                 <RescheduledNote from={day.rescheduledFrom} className="truncate" />
