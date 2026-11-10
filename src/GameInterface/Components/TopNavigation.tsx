@@ -278,7 +278,8 @@ export function TopNavigation({
 
           {/* Fixed slot: the group-advance control changes width between its states (ready, advancing, match
               day, waiting), and a block that grows and shrinks made the tabs flip between labels and icons. */}
-          {dayAction && <div className="flex w-[184px] shrink-0 items-center justify-end overflow-hidden">{dayAction}</div>}
+          {/* Fits its content, up to 184px (tester report, 8.9.18: a short state left a gap before it). */}
+          {dayAction && <div className="flex max-w-[184px] shrink-0 items-center overflow-hidden">{dayAction}</div>}
 
           {!dayAction && onFastForward && (
             <button

@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.18",
+    date: "2026-11-10",
+    time: "19:38",
+    items: [],
+    fixes: [
+      {
+        pt: "Na barra de cima, o Pronto até fica colado ao botão de treino, sem o espaço vazio entre os dois.",
+        en: "In the top bar, Ready until sits right next to the training button, with no empty space between them.",
+      },
+    ],
+  },
+  {
     version: "8.9.17",
     date: "2026-11-10",
     time: "19:34",

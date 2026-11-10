@@ -15,7 +15,7 @@ const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primar
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
 const ICON_ONLY = "flex items-center justify-center w-9 h-9 rounded-md border border-border bg-card text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 const MENU_ITEM = "w-full text-left h-10 px-3 rounded text-sm font-semibold text-foreground hover:bg-secondary/40 cursor-pointer bg-transparent border-0";
-// Every state fits the top bar's fixed 184px slot (`TopNavigation`): status texts truncate, the full text is in `title`.
+// Every state fits the top bar's slot of at most 184px (`TopNavigation`): status texts truncate, the full text is in `title`.
 const LABEL_TRUNC = "max-w-[140px] truncate";
 const RUNNING_TRUNC = "max-w-[184px] truncate";
 const MENU_ID = "ready-until-panel";
