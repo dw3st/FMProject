@@ -27,7 +27,7 @@ import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
-import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
+import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, backpedals, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
 import { STADIUM_ART, loadStadiumArt, type StadiumArt } from "@/GraficsEngine/stadiumArt";
 import { FX_ART, loadFxArt, type FxArt } from "@/GraficsEngine/fxArt";
 import { matchHasFog } from "@/Domain/matchday/matchFog";
@@ -4175,7 +4175,9 @@ export function PixiPitch({
             const prevM = spriteMotion.get(player.id) ?? newMotion(px / m.scale, py / m.scale);
             const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
             const ballPx = toPixel(drawnB.x, drawnB.y);
-            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, player.role === "GK");
+            const withBall = attackingTeam(stateRef.current);
+            const ballDist = Math.hypot(ballPx.px - px, ballPx.py - py) / m.scale;
+            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist));
             spriteMotion.set(player.id, mo);
             const action = actionOf.get(player.id) ?? null;
             // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.

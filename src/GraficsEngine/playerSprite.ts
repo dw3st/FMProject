@@ -30,6 +30,8 @@ export const PLAYER_SPRITE = {
   VEL_RATE: 12,
   /** A drawn jump longer than this (yards) is a teleport: no stride, no turn. */
   JUMP_YDS: 4,
+  /** A defender (his team without the ball) this close to the ball (yards) retreats facing it instead of turning away. */
+  BACKPEDAL_YDS: 22,
   /** Skin tones and hair colours (the crowd's), picked per player. */
   SKIN: [0xf1c9a5, 0xe0ac83, 0xc68b5e, 0x9b6a42, 0x6f4527, 0x4a2c17],
   HAIR: [0x1b1410, 0x3a2616, 0x6b4423, 0xa8742f, 0xd8c08a, 0x2b2b2b, 0x777777],
@@ -106,6 +108,14 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 function turn(angle: number, to: number, dt: number, rate: number): number {
   const d = Math.atan2(Math.sin(to - angle), Math.cos(to - angle));
   return angle + d * Math.min(1, dt * rate);
+}
+
+/**
+ * Whether a player retreats facing the ball (`stepMotion` `backpedal`): the keeper always; a field player when his team
+ * defends and the ball is within `BACKPEDAL_YDS` (he jockeys the attacker). Farther away he turns and runs.
+ */
+export function backpedals(isKeeper: boolean, defending: boolean, distToBall: number): boolean {
+  return isKeeper || (defending && distToBall <= PLAYER_SPRITE.BACKPEDAL_YDS);
 }
 
 /**

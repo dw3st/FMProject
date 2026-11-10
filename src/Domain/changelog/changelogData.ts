@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.21",
+    date: "2026-11-10",
+    time: "20:12",
+    items: [],
+    fixes: [
+      {
+        pt: "Na partida, o defensor perto da bola recua de frente para o atacante, em vez de virar as costas para a jogada.",
+        en: "In the match, a defender near the ball retreats facing the attacker instead of turning his back on the play.",
+      },
+    ],
+  },
+  {
     version: "8.9.20",
     date: "2026-11-10",
     time: "20:07",
