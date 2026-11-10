@@ -148,4 +148,4 @@ Cliente → servidor: `watch_join { saveId, seatId }`, `watch_leave`; de quem jo
 
 ## Som de mensagem (8.9.20)
 
-Pedido do usuário. Uma mensagem de outro numa sala que não está aberta na tela (ou com a aba escondida) toca um toque curto (`playChatSound`, `readySound.ts`, volume da partida), salvo desligado: botão de som no cabeçalho do painel de Amigos e bloco em Configurações (`fm.chat.sound`, `readChatSound`/`writeChatSound` em `artPrefs.ts`, ligado por padrão). O navegador só toca depois de um clique no site.
+Pedido do usuário. Uma mensagem de outro numa sala que não está aberta na tela (ou com a aba escondida) toca um "uh-oh" sintetizado (duas notas descendo, onda serra por dois formantes de vogal; não é a gravação do ICQ, que tem direito autoral) (`playChatSound`, `readySound.ts`, volume da partida), salvo desligado: botão de som no cabeçalho do painel de Amigos e bloco em Configurações (`fm.chat.sound`, `readChatSound`/`writeChatSound` em `artPrefs.ts`, ligado por padrão). O navegador só toca depois de um clique no site.
