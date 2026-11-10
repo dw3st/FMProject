@@ -1537,7 +1537,7 @@
   },
   "settling": {
     "badge": "Adaptação {{games}}/{{need}}",
-    "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos oficiais pelo clube ou o fim da temporada."
+    "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos pelo clube, amistosos inclusive, ou o fim da temporada."
   },
   "friendlies": {
     "subject": "Amistoso contra {{opponent}}",

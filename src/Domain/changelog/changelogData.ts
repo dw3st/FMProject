@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.35",
+    date: "2026-11-10",
+    time: "11:35",
+    items: [],
+    fixes: [
+      {
+        pt: "Amistosos agora contam na adaptação de quem acabou de chegar ao clube.",
+        en: "Friendlies now count towards the settling-in of new arrivals.",
+      },
+    ],
+  },
+  {
     version: "8.8.34",
     date: "2026-11-10",
     time: "08:32",

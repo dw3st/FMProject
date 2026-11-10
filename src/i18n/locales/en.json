@@ -1537,7 +1537,7 @@
   },
   "settling": {
     "badge": "Settling {{games}}/{{need}}",
-    "title": "Just arrived: plays a little below his level until {{need}} official games for the club or the end of the season."
+    "title": "Just arrived: plays a little below his level until {{need}} games for the club, friendlies included, or the end of the season."
   },
   "friendlies": {
     "subject": "Friendly against {{opponent}}",

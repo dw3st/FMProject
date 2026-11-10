@@ -174,3 +174,22 @@ describe("postponeDate", () => {
     expect(postponeDate({ date: "2026-09-02", end: "2027-05-01", busy: () => true, home: "s1", away: "s2", sameCompDates: new Map() })).toBeNull();
   });
 });
+
+describe("settling", () => {
+  const withNewcomer = (): Squad => {
+    const s = squad();
+    return { ...s, players: s.players.map((p) => (p.id === "a" ? { ...p, settling: { games: 3, need: 15 } } : p)) };
+  };
+  const opts = { date: "2027-03-06", rng: mulberry32(1), trackMorale: false };
+  const settlingOfA = (s: Squad) => s.players.find((p) => p.id === "a")!.settling;
+
+  test("a friendly counts as a game for the newcomer", () => {
+    const out = applyYouthMatch(withNewcomer(), recording(), { ...opts, friendly: { subs: new Set() } });
+    expect(settlingOfA(out.squad)).toEqual({ games: 4, need: 15 });
+  });
+
+  test("a youth game does not count", () => {
+    const out = applyYouthMatch(withNewcomer(), recording(), opts);
+    expect(settlingOfA(out.squad)).toEqual({ games: 3, need: 15 });
+  });
+});

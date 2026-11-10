@@ -7,7 +7,7 @@ Report de tester, regra aprovada pelo usuário em 2026-11-04 (a alternativa por 
 - `RosterPlayer.settling?: { games, need }` (`src/Domain/settling/settling.ts`). Ausente = adaptado, × 1 sem nenhum sorteio novo: um elenco sem contratações joga exatamente como antes. Vale para humano e IA.
 - **Quem começa:** toda chegada a outro clube (`arriving`): compra, pré-contrato, livre (humano, reposição da virada e `freeAgentTick`) e início de empréstimo. Não: quem sobe da base, a volta de empréstimo (`settled`) e os kits (mercado congelado).
 - **Efeito:** atributos × (1 − `PENALTY` × (1 − jogos / necessários)), com `PENALTY` 0,04, no motor (`withSettlingExecution`, titular e banco, depois da moral) e no quickSim (`XIPlayer.k`).
-- **Duração:** 15 jogos oficiais pelo clube; 10 com 2 ou mais companheiros da mesma língua (`languageOf`: grupos em espanhol, português, inglês, francês, alemão, árabe e servo-croata; outra nação é um grupo próprio; lidos só na chegada). Conta quem entrou em campo, em `finalizeSquadsAfterMatch`; base, seleção e amistoso não contam.
+- **Duração:** 15 jogos pelo clube, amistosos inclusive; 10 com 2 ou mais companheiros da mesma língua (`languageOf`: grupos em espanhol, português, inglês, francês, alemão, árabe e servo-croata; outra nação é um grupo próprio; lidos só na chegada). Conta quem entrou em campo, em `finalizeSquadsAfterMatch`; o amistoso do diretor também conta (titulares e quem entra no segundo tempo); base e seleção não contam.
 - **Virada do país do clube:** todos passam a adaptados (`resetSquadForNewSeason`), mesmo com poucos jogos.
 
 ## Telas

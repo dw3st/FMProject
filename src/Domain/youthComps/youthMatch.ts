@@ -7,6 +7,7 @@ import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCou
 import { moraleDpMult } from "@/Domain/morale/morale";
 import { personalDpMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
+import { afterClubGame } from "@/Domain/settling/settling";
 import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { FRIENDLY } from "@/Domain/friendlies/friendlyConfig";
@@ -112,6 +113,7 @@ export function applyYouthMatch(
         moraleLog: { ...ml, youthMinutes: [...(ml.youthMinutes ?? []), YOUTH_MATCH_MINUTES].slice(-YOUTH_COMP.MORALE_WINDOW) },
       };
     }
+    if (friendly) out = afterClubGame(out);
     // Growth only: decayMult 0 (the age decline is charged by the club's own matches, not again here).
     return applyDevelopment(out, rating, dpWeightsFor(out), friendly ? (youthDpMult(squad, out) / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT * (friendly.subs.has(p0.id) ? FRIENDLY.SUB_DP : 1) : youthDpMult(squad, out), 0, areas).updatedPlayer;
   };

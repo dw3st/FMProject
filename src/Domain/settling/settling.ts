@@ -3,13 +3,13 @@ import type { RosterPlayer, SettlingState, Squad } from "@/types/playerTypes";
 
 /**
  * A new signing is not at home yet (`.claude/rules/game/settling.md`): his attributes play a little
- * below his level until he has played enough official games for the club. Everybody else plays as
+ * below his level until he has played enough games for the club (friendlies included). Everybody else plays as
  * always: `settling` absent = × 1, no draw, so a squad without signings plays exactly the same.
  */
 export const SETTLING = {
   /** Attributes × (1 − PENALTY) in his first game; the gap closes linearly. */
   PENALTY: 0.04,
-  /** Official games he needs. */
+  /** Games he needs. */
   GAMES: 15,
   /** ...with at least `COMPANIONS` team-mates who speak his language. */
   GAMES_WITH_LANGUAGE: 10,
@@ -59,8 +59,8 @@ export function withSettlingExecution<S extends object>(stats: S, mult: number):
   return out as unknown as S;
 }
 
-/** One more official game for the club; the state goes away when he is settled. */
-export function afterOfficialGame<P extends RosterPlayer>(p: P): P {
+/** One more game for the club (official or friendly); the state goes away when he is settled. */
+export function afterClubGame<P extends RosterPlayer>(p: P): P {
   if (!p.settling) return p;
   const games = p.settling.games + 1;
   if (games < p.settling.need) return { ...p, settling: { ...p.settling, games } };

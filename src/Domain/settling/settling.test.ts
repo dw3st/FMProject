@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { afterOfficialGame, languageOf, newSettling, SETTLING, settled, settlingMult, withNewcomers, withSettlingExecution } from "@/Domain/settling/settling";
+import { afterClubGame, languageOf, newSettling, SETTLING, settled, settlingMult, withNewcomers, withSettlingExecution } from "@/Domain/settling/settling";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const p = (id: string, nationality?: string): RosterPlayer => ({ id, nationality }) as unknown as RosterPlayer;
@@ -13,9 +13,9 @@ describe("settling", () => {
   test("the penalty closes linearly and goes away with the last game", () => {
     let x: RosterPlayer = { ...p("a"), settling: { games: 0, need: 2 } };
     expect(settlingMult(x)).toBeCloseTo(1 - SETTLING.PENALTY);
-    x = afterOfficialGame(x);
+    x = afterClubGame(x);
     expect(settlingMult(x)).toBeCloseTo(1 - SETTLING.PENALTY / 2);
-    x = afterOfficialGame(x);
+    x = afterClubGame(x);
     expect(x.settling).toBeUndefined();
     expect(settlingMult(x)).toBe(1);
   });
