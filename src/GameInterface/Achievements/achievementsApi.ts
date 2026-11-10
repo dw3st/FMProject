@@ -1,3 +1,4 @@
+import type { DecorItem } from "@/types/achievementTypes";
 import type { IconName } from "@/GameInterface/Icons";
 import type {
   Badge, Frame, ManagerAttribute, ManagerAttributes, ManagerProfile, SecretView, StadiumDecor, TrackId, TrackView,
@@ -12,8 +13,8 @@ export interface AchievementsData {
   attributes: ManagerAttributes;
   effects: Record<ManagerAttribute, number>;
   profile: ManagerProfile;
-  available: { frames: Frame[]; badges: Badge[]; titles: TrackId[]; decor: Record<keyof StadiumDecor, boolean> };
-  thresholds: { frames: Record<Exclude<Frame, "none">, number>; decor: Record<keyof StadiumDecor, number>; maxBadges: number };
+  available: { frames: Frame[]; badges: Badge[]; titles: TrackId[]; decor: Record<DecorItem, boolean> };
+  thresholds: { frames: Record<Exclude<Frame, "none">, number>; decor: Record<DecorItem, number>; maxBadges: number };
   decor: StadiumDecor;
   shop: {
     costs: { created: number; legend: number };

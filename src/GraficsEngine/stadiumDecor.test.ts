@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { decorRects } from "@/GraficsEngine/stadiumDecor";
+import { decorFill, decorRects, mosaicCells } from "@/GraficsEngine/stadiumDecor";
+import { DECOR_LIGHT, decorColors, parseDecorStyle } from "@/Domain/achievements/decorStyle";
 import { standSideRects } from "@/GraficsEngine/crowd";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 
@@ -27,5 +28,35 @@ describe("stadium decorations", () => {
       if (side === "left") expect(banner.x + banner.w).toBeCloseTo(end.x + end.w);
       else expect(banner.x).toBeCloseTo(end.x);
     }
+  });
+});
+
+describe("decor colours and pixel-art mosaic (8.9.10)", () => {
+  const side = { side: "left" as const, x: 0, y: 0, w: 160, h: 400 };
+  test("palettes: club, inverted, ready pairs and two chosen colours", () => {
+    expect(decorColors({}, "#c8102e")).toEqual(["#c8102e", DECOR_LIGHT]);
+    expect(decorColors({ palette: "inverted" }, "#c8102e")).toEqual([DECOR_LIGHT, "#c8102e"]);
+    expect(decorColors({ palette: "custom", colors: ["#000000", "#ffffff"] }, "#c8102e")).toEqual(["#000000", "#ffffff"]);
+  });
+  test("the style fields are checked", () => {
+    expect(parseDecorStyle({ palette: "black_gold", pattern: "star" })).toEqual({ palette: "black_gold", pattern: "star" });
+    expect(() => parseDecorStyle({ palette: "pink" })).toThrow("invalidDecor");
+    expect(() => parseDecorStyle({ palette: "custom" })).toThrow("invalidDecor");
+    expect(() => parseDecorStyle({ colors: ["red", "#fff"] })).toThrow("invalidDecor");
+  });
+  test("square cells cover the end stand; the star and the crest use the second colour", () => {
+    const cells = mosaicCells(side, { pattern: "stripes" });
+    expect(cells.length).toBe(16 * 40);
+    expect(new Set(cells.map((c) => c.tone))).toEqual(new Set(["main", "second"]));
+    const star = mosaicCells(side, { pattern: "star" });
+    expect(star.some((c) => c.tone === "second")).toBe(true);
+  });
+  test("the crest mosaic takes the crest's pixels; transparent ones are the main colour", () => {
+    const size = 2;
+    const data = new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0]);
+    const cells = mosaicCells(side, { pattern: "crest" }, { size, data });
+    expect(cells.some((c) => c.rgb === 0xff0000)).toBe(true);
+    expect(cells.some((c) => c.rgb === 0x0000ff)).toBe(true);
+    expect(decorFill(cells.find((c) => c.rgb === undefined)!, [0x111111, 0x222222])).toBe(0x111111);
   });
 });

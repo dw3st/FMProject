@@ -4971,6 +4971,7 @@
     "noMatch": "Nenhuma seleção encontrada"
   },
   "achievements": {
+    "decorStyle": {"colors": "Cores", "main": "Principal", "second": "Segunda", "pattern": "Desenho do mosaico", "palette": {"club": "Cores do clube", "inverted": "Invertidas", "black_gold": "Preto e dourado", "blue_white": "Azul e branco", "green_yellow": "Verde e amarelo", "custom": "Escolher"}, "patterns": {"stripes": "Faixas", "check": "Xadrez", "crest": "Escudo", "star": "Estrela"}},
     "tabs": {
       "list": "Conquistas",
       "profile": "Perfil",

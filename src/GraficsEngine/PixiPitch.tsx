@@ -70,7 +70,8 @@ import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, PENALTY_AREA_DEPTH, 
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
-import { decorRects } from "@/GraficsEngine/stadiumDecor";
+import { decorRects, hexNumber, type CrestPixels } from "@/GraficsEngine/stadiumDecor";
+import { decorColors } from "@/Domain/achievements/decorStyle";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, drawnDepths, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
@@ -1031,12 +1032,28 @@ export function PixiPitch({
         crowdDecor?.destroy();
         crowdDecor = null;
         const homeSide = homeLeft ? "left" : "right";
-        if (st.decor && !st.neutral && !works.includes(homeSide)) {
-          const rects = decorRects(m.stand, homeSide, st.decor);
-          if (rects.length > 0) {
+        const decor = st.decor;
+        const stand = m.stand;
+        if (decor && stand && !st.neutral && !works.includes(homeSide)) {
+          const club = st.homeTeam === "A" ? fillA : fillB;
+          const [c1, c2] = decorColors(decor, `#${club.toString(16).padStart(6, "0")}`);
+          const drawHomeDecor = (crest: CrestPixels | null) => {
+            crowdDecor?.destroy();
+            crowdDecor = null;
+            const rects = decorRects(stand, homeSide, decor, crest);
+            if (rects.length === 0) return;
             crowdDecor = new Graphics();
-            drawDecor(crowdDecor, rects, st.homeTeam === "A" ? fillA : fillB);
+            drawDecor(crowdDecor, rects, [hexNumber(c1), hexNumber(c2)]);
             crowdLayer.addChild(crowdDecor);
+          };
+          drawHomeDecor(null);
+          // The crest mosaic reads the club crest's pixels (8.9.10): drawn again when it arrives.
+          if (decor.mosaic && decor.pattern === "crest" && st.homeCrest) {
+            void loadCrestCanvas(st.homeCrest, 64).then((canvas) => {
+              if (!canvas || bake !== crestBake || disposed) return;
+              const data = canvas.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data;
+              if (data) drawHomeDecor({ size: canvas.width, data });
+            });
           }
         }
       };

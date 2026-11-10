@@ -227,7 +227,7 @@ export function ClubCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 min-w-0">
+        <div className="flex items-center gap-4 min-w-0 md:self-stretch md:border-l md:border-border md:pl-6">
           {managerName && (
             // Face and name open the manager's profile in the ranking (user request, 4.47.11).
             <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
@@ -277,7 +277,7 @@ export function ClubCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex flex-col justify-center gap-3 min-w-0 lg:self-stretch lg:border-l lg:border-border lg:pl-6">
           <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
           <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} trend={fansTrend} />
           {objective && (

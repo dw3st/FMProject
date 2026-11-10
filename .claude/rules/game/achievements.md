@@ -172,3 +172,7 @@ Report de tester (substitui a lista completa da 8.2.12). A loja oferece a cada t
 ## Apostas (8.9)
 
 108 conquistas: trilhas `bets_profit` e `bets_exact` e a secreta `bet_longshot`. Ver `.claude/rules/game/bets.md`.
+
+## Cores e mosaico em pixel art (8.9.10)
+
+Report de tester, mock aprovado. `StadiumDecor` ganhou `palette` (`club`, `inverted`, `black_gold`, `blue_white`, `green_yellow`, `custom` com `colors` em hex) e `pattern` do mosaico (`stripes`, `check`, `crest`, `star`); ausentes = as cores do clube em faixas. Cores e validação em `src/Domain/achievements/decorStyle.ts` (`decorColors`, `parseDecorStyle`, 400 `invalidDecor`). O mosaico vira uma grade de 16 células na largura da arquibancada da casa (`mosaicCells`, `stadiumDecor.ts`); escudo e estrela se repetem ao longo dela; o escudo lê os pixels do escudo real do clube (64 px, transparente = cor principal; sem o escudo, um escudo genérico). A partida redesenha o mosaico quando o escudo chega. Tela: `DecorStylePicker` e a prévia (`StadiumDecorPreview`, mesma geometria).

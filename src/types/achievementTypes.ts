@@ -45,7 +45,19 @@ export interface ManagerProfile {
   title: TrackId | null;
 }
 
-export interface StadiumDecor { banner: boolean; flag: boolean; mosaic: boolean }
+/** The three decorations that are unlocked by points. */
+export type DecorItem = "banner" | "flag" | "mosaic";
+export type DecorPalette = "club" | "inverted" | "black_gold" | "blue_white" | "green_yellow" | "custom";
+export type MosaicPattern = "stripes" | "check" | "crest" | "star";
+/** Absent palette/pattern = the club's colours in stripes (8.9.10); `colors` only with the "custom" palette. */
+export interface StadiumDecor {
+  banner: boolean;
+  flag: boolean;
+  mosaic: boolean;
+  palette?: DecorPalette;
+  colors?: [string, string];
+  pattern?: MosaicPattern;
+}
 
 /** Counters the day step accumulates (career-wide unless noted). */
 export interface AchievementCounters {

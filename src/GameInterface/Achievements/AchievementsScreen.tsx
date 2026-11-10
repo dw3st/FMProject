@@ -1,3 +1,5 @@
+import { DecorStylePicker } from "@/GameInterface/Achievements/DecorStylePicker";
+import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { StadiumDecorPreview } from "@/GameInterface/Achievements/StadiumDecorPreview";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -337,7 +339,8 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
               </Chip>
             ))}
           </div>
-          <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} />
+          <DecorStylePicker decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} onChange={(patch) => setDecor((d) => ({ ...d, ...patch }))} />
+          <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} crestUrl={session?.clubId ? squadLogoUrl(session.clubId) : undefined} />
           <div>
             <Button onClick={() => void save("stadium", decor)}>{t("achievements.profile.saveStadium")}</Button>
           </div>

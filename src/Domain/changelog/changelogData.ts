@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.10",
+    date: "2026-11-10",
+    time: "18:06",
+    items: [
+      {
+        pt: "Enfeites do estádio: escolha as cores (as do clube, invertidas, combinações prontas ou duas à sua escolha) e o desenho do mosaico em pixel art: faixas, xadrez, o escudo do clube ou uma estrela.",
+        en: "Stadium decorations: pick the colours (the club's, inverted, ready pairs or two of your own) and the mosaic's pixel-art design: stripes, check, the club crest or a star.",
+      },
+      {
+        pt: "O cartão do clube no Painel tem uma linha separando o clube, o técnico e a diretoria.",
+        en: "The club card on the Dashboard has a line between the club, the manager and the board.",
+      },
+    ],
+  },
+  {
     version: "8.9.9",
     date: "2026-11-10",
     time: "17:51",

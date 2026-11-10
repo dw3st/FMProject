@@ -6,12 +6,11 @@ import type { Graphics } from "pixi.js";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { crowdSeats, seatCellPx, standConcreteRows, standSideRects, type CrowdInput, type CrowdSeat, type SideRect, standTunnel } from "@/GraficsEngine/crowd";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
-import type { DecorRect } from "@/GraficsEngine/stadiumDecor";
+import { decorFill, type DecorRect } from "@/GraficsEngine/stadiumDecor";
 import { standFootprint } from "@/GraficsEngine/stadiumExtras";
 import { SURROUND, surroundLayout } from "@/GraficsEngine/surroundings";
 
 /** Light tone of the decorations (stripes, the flag's band). */
-const DECOR_LIGHT = 0xf2f2f2;
 
 /** Radius of a fan dot, as a fraction of the seat cell. */
 const SEAT_DOT = 0.38;
@@ -140,9 +139,9 @@ export function goalPulseAlpha(t: number): number {
   return 1 - 0.15 * Math.sin(Math.PI * p);
 }
 
-/** The manager's decorations (`stadiumDecor.ts`) in the club's colour and a light tone. */
-export function drawDecor(g: Graphics, rects: readonly DecorRect[], clubColor: number): void {
-  for (const r of rects) g.rect(r.x, r.y, r.w, r.h).fill({ color: r.tone === "club" ? clubColor : DECOR_LIGHT, alpha: r.alpha });
+/** The manager's decorations (`stadiumDecor.ts`) in his two colours (8.9.10). */
+export function drawDecor(g: Graphics, rects: readonly DecorRect[], colors: readonly [number, number]): void {
+  for (const r of rects) g.rect(r.x, r.y, r.w, r.h).fill({ color: decorFill(r, colors), alpha: r.alpha });
 }
 
 /** Mixes `hex` towards white by `t`. */

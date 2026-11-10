@@ -4971,6 +4971,7 @@
     "noMatch": "No national team found"
   },
   "achievements": {
+    "decorStyle": {"colors": "Colours", "main": "Main", "second": "Second", "pattern": "Mosaic design", "palette": {"club": "Club colours", "inverted": "Inverted", "black_gold": "Black and gold", "blue_white": "Blue and white", "green_yellow": "Green and yellow", "custom": "Choose"}, "patterns": {"stripes": "Stripes", "check": "Check", "crest": "Crest", "star": "Star"}},
     "tabs": {
       "list": "Achievements",
       "profile": "Profile",

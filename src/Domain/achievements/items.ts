@@ -1,3 +1,5 @@
+import type { DecorItem } from "@/types/achievementTypes";
+import { parseDecorStyle } from "@/Domain/achievements/decorStyle";
 import { ACHIEVEMENTS as A } from "@/Domain/achievements/achievementsConfig";
 import { SECRETS, TRACKS } from "@/Domain/achievements/catalog";
 import { earnedPoints } from "@/Domain/achievements/progress";
@@ -25,7 +27,7 @@ export function availableTitles(state: AchievementsState): TrackId[] {
   return TRACK_IDS.filter((id) => state.unlocked[`${id}:gold`]);
 }
 
-export function availableDecor(state: AchievementsState): Record<keyof StadiumDecor, boolean> {
+export function availableDecor(state: AchievementsState): Record<DecorItem, boolean> {
   const pts = earnedPoints(state);
   return { banner: pts >= A.DECOR_POINTS.banner, flag: pts >= A.DECOR_POINTS.flag, mosaic: pts >= A.DECOR_POINTS.mosaic };
 }
@@ -46,7 +48,8 @@ export function shownProfile(state: AchievementsState): ManagerProfile {
 /** Decorations drawn at home: chosen and unlocked. */
 export function shownDecor(state: AchievementsState): StadiumDecor {
   const ok = availableDecor(state);
-  return { banner: state.decor.banner && ok.banner, flag: state.decor.flag && ok.flag, mosaic: state.decor.mosaic && ok.mosaic };
+  const d = state.decor;
+  return { ...d, banner: d.banner && ok.banner, flag: d.flag && ok.flag, mosaic: d.mosaic && ok.mosaic };
 }
 
 /** Validates a profile PUT body against what is unlocked. Throws a message on error. */
@@ -84,7 +87,7 @@ export function parseDecor(raw: unknown, state: AchievementsState): StadiumDecor
     if (v && !ok[k]) throw new Error("locked");
     out[k] = v;
   }
-  return out;
+  return { ...out, ...parseDecorStyle(r) };
 }
 
 // ── Screen views ──────────────────────────────────────────────────────────────
