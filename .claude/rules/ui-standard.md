@@ -127,7 +127,7 @@ esquerda. Espaço entre blocos `gap-6`/`mt-6`.
 mesma moldura, na mesma largura e posição, em toda tela do jogo. O que antes ficava nas colunas do
 Painel virou cartão do próprio Painel (`DashboardScreen`):
 
-- **Clube** (`ClubCard`, `Dashboard/HomeCards.tsx`), primeira linha; opção A do mock (8.8.19, report do usuário): em
+- **Clube** (`ClubCard`, `Dashboard/HomeCards.tsx`; desde a 8.9.1, botões para Conquistas, Loja, Patrimônio e Apostas abaixo do técnico), primeira linha; opção A do mock (8.8.19, report do usuário): em
   cima três blocos (escudo 64px, clube e liga; rosto, técnico, título, selos e contrato; diretoria, torcida e meta) e
   embaixo uma faixa de números (`ClubStat`): orçamento, elenco, ranking, liga de amigos, reputação e conquistas.
 - **Semana** (`WeekCard`, `Dashboard/WeekCalendar.tsx`), largura total: os 7 dias na horizontal

@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.1",
+    date: "2026-11-10",
+    time: "14:40",
+    items: [],
+    fixes: [
+      {
+        pt: "O cartão do clube no Painel agora tem botões para Conquistas, Loja, Patrimônio e Apostas.",
+        en: "The club card on the Dashboard now has buttons for Achievements, Shop, Assets and Bets.",
+      },
+    ],
+  },
+  {
     version: "8.9",
     date: "2026-11-10",
     time: "14:16",

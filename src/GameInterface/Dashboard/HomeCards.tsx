@@ -147,6 +147,9 @@ function ConfidenceBar({ label, value, trend }: { label: string; value: number; 
   );
 }
 
+/** The manager's own screens, one click from the card (tester report, 8.9.1). */
+const MANAGER_TABS = ["list", "shop", "assets", "bets"] as const;
+
 /**
  * The club header of the dashboard (#57): crest, club, league, manager (with the world ranking),
  * board / fans confidence, budget and squad size. Replaces the old left club column.
@@ -254,6 +257,17 @@ export function ClubCard({
                 {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
               </span>
             )}
+            <nav aria-label={t("achievements.link")} className="flex flex-wrap gap-2 mt-1.5">
+              {MANAGER_TABS.map((tab) => (
+                <a
+                  key={tab}
+                  href={tab === "list" ? "/achievements" : `/achievements?tab=${tab}`}
+                  className="inline-flex items-center h-9 px-3 rounded-md border border-border bg-card font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground no-underline transition-colors hover:border-primary hover:text-primary"
+                >
+                  {t(tab === "list" ? "achievements.link" : `achievements.tabs.${tab}`)}
+                </a>
+              ))}
+            </nav>
             {pendingOffers > 0 && (
               <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
                 {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
