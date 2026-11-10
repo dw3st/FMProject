@@ -13,6 +13,8 @@ import { FloatingWindow } from "@/GameInterface/ui/FloatingWindow";
 import type { FloatRect, Size } from "@/GameInterface/ui/windowGeometry";
 import type { FriendStatus, FriendView, SearchResult, SocialErrorCode } from "@/types/socialTypes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { readChatSound, writeChatSound } from "@/GameInterface/artPrefs";
+import { playChatSound } from "@/GameInterface/readySound";
 
 type PanelTab = "friends" | "requests" | "add";
 
@@ -43,6 +45,13 @@ export function FriendsPanel() {
   const [tab, setTab] = useState<PanelTab>("friends");
   const { panelOpen, setPanelOpen } = s;
   const panelRef = useRef<HTMLElement>(null);
+  const [chatSound, setChatSound] = useState(readChatSound);
+  const toggleChatSound = () => {
+    const on = !chatSound;
+    setChatSound(on);
+    writeChatSound(on);
+    if (on) playChatSound(true);
+  };
 
   // Opening moves the focus to the panel's first control; closing gives it back to the Friends button.
   useEffect(() => {
@@ -77,9 +86,21 @@ export function FriendsPanel() {
       header={
         <header className="flex items-center justify-between gap-2 px-4 pt-3">
           <h2 className="font-display font-black uppercase text-xl leading-none">{t("social.panelTitle")}</h2>
-          <button type="button" className={ICON_BUTTON} onClick={() => setPanelOpen(false)} aria-label={t("social.close")} title={t("social.close")}>
-            <Icon name="close" size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className={ICON_BUTTON}
+              onClick={toggleChatSound}
+              aria-pressed={chatSound}
+              aria-label={chatSound ? t("social.soundOn") : t("social.soundOff")}
+              title={chatSound ? t("social.soundOn") : t("social.soundOff")}
+            >
+              <Icon name={chatSound ? "volume" : "volume-off"} size={16} />
+            </button>
+            <button type="button" className={ICON_BUTTON} onClick={() => setPanelOpen(false)} aria-label={t("social.close")} title={t("social.close")}>
+              <Icon name="close" size={16} />
+            </button>
+          </div>
         </header>
       }
     >

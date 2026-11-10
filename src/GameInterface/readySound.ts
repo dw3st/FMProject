@@ -1,4 +1,4 @@
-import { readMatchVolume, readReadySound } from "@/GameInterface/artPrefs";
+import { readChatSound, readMatchVolume, readReadySound } from "@/GameInterface/artPrefs";
 
 /**
  * A short two-note chime: another manager is ready. Works with the tab in the background; the browser only lets a page
@@ -47,5 +47,28 @@ export function playReadySound(): void {
       osc.start(t);
       osc.stop(t + 0.45);
     });
+  }).catch(() => { /* no sound allowed yet */ });
+}
+
+/** A soft single "pop": a chat message arrived. Same gesture rule as the ready chime. */
+export function playChatSound(force = false): void {
+  if (!force && !readChatSound()) return;
+  const c = context();
+  if (!c) return;
+  const asked = Date.now();
+  void c.resume().then(() => {
+    if (c.state !== "running" || Date.now() - asked > 1000) return;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(1046.5, t);
+    osc.frequency.exponentialRampToValueAtTime(1318.5, t + 0.07);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.35 * readMatchVolume(), t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    osc.connect(g).connect(c.destination);
+    osc.start(t);
+    osc.stop(t + 0.2);
   }).catch(() => { /* no sound allowed yet */ });
 }

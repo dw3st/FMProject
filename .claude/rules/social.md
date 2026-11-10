@@ -145,3 +145,7 @@ Cliente → servidor: `watch_join { saveId, seatId }`, `watch_leave`; de quem jo
 `relay_frame`, `relay_state`, `relay_event`. Servidor → cliente: `watch_on` / `watch_off` (a quem joga), `watch_info`,
 `watch_frame`, `watch_state`, `watch_event`, `watch_closed { reason }` (ao espectador). Ver
 `.claude/rules/game/multiplayer.md` → "Parte 8".
+
+## Som de mensagem (8.9.20)
+
+Pedido do usuário. Uma mensagem de outro numa sala que não está aberta na tela (ou com a aba escondida) toca um toque curto (`playChatSound`, `readySound.ts`, volume da partida), salvo desligado: botão de som no cabeçalho do painel de Amigos e bloco em Configurações (`fm.chat.sound`, `readChatSound`/`writeChatSound` em `artPrefs.ts`, ligado por padrão). O navegador só toca depois de um clique no site.

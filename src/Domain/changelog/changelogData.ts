@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.20",
+    date: "2026-11-10",
+    time: "20:07",
+    items: [
+      {
+        pt: "Som de mensagem no chat: um toque curto quando chega mensagem numa conversa que não está aberta. Liga e desliga no painel de Amigos ou em Configurações.",
+        en: "Chat message sound: a short tone when a message arrives in a conversation that is not open. Turn it on or off in the Friends panel or in Settings.",
+      },
+    ],
+  },
+  {
     version: "8.9.19",
     date: "2026-11-10",
     time: "19:45",

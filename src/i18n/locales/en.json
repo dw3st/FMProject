@@ -569,7 +569,8 @@
     "makeOffer": "Make offer"
   },
   "nav": {
-    "worldTab": "My league", "world": "League",
+    "worldTab": "My league",
+    "world": "League",
     "squad": "Squad",
     "formation": "Formation",
     "development": "Development",
@@ -623,7 +624,9 @@
     "playerLook": "Players",
     "playerLookCurrent": "Current",
     "playerLookReal": "More realistic",
-    "playerLookDescription": "Proportions of the players in the match: the current ones or more realistic (smaller head, narrower shoulders). Applies from the next match."
+    "playerLookDescription": "Proportions of the players in the match: the current ones or more realistic (smaller head, narrower shoulders). Applies from the next match.",
+    "chatSound": "Chat message sound",
+    "chatSoundDescription": "A short tone when a message from a friend or the league arrives in a conversation that is not open."
   },
   "reports": {
     "title": "Send a report",
@@ -774,7 +777,9 @@
       "tooLarge": "Too much text.",
       "unauthorized": "Session expired. Sign in again.",
       "network": "No connection. Try again."
-    }
+    },
+    "soundOn": "Message sound on",
+    "soundOff": "Message sound off"
   },
   "tactics": {
     "axes": {
@@ -1556,10 +1561,27 @@
     "ownClub": "On your own team's game you can only bet in its favour.",
     "open": "Your open bets",
     "history": "History",
-    "market": { "result": "Result", "score": "Exact score", "scorer": "To score" },
-    "pick": { "win": "{{team}} to win", "score": "Score {{home}}-{{away}}", "scorer": "{{player}} to score" },
-    "status": { "won": "Won", "lost": "Lost", "refunded": "Refunded" },
-    "inbox": { "subject": "Your bets were settled", "preview_one": "{{count}} bet", "preview_other": "{{count}} bets", "net": "Day's result: {{value}}" },
+    "market": {
+      "result": "Result",
+      "score": "Exact score",
+      "scorer": "To score"
+    },
+    "pick": {
+      "win": "{{team}} to win",
+      "score": "Score {{home}}-{{away}}",
+      "scorer": "{{player}} to score"
+    },
+    "status": {
+      "won": "Won",
+      "lost": "Lost",
+      "refunded": "Refunded"
+    },
+    "inbox": {
+      "subject": "Your bets were settled",
+      "preview_one": "{{count}} bet",
+      "preview_other": "{{count}} bets",
+      "net": "Day's result: {{value}}"
+    },
     "errors": {
       "generic": "That did not work. Try again.",
       "invalidPick": "That bet is not available.",
@@ -3286,7 +3308,18 @@
       "emptyFiltered": "No retired player with these filters."
     },
     "managers": {
-      "detail": { "points": "Points", "titles": "Titles", "awards": "Awards", "clubs": "Clubs", "club": "Club", "period": "Period", "left": "Left", "assets": "Assets", "cards": "Cards", "otherTitles": "Other titles" },
+      "detail": {
+        "points": "Points",
+        "titles": "Titles",
+        "awards": "Awards",
+        "clubs": "Clubs",
+        "club": "Club",
+        "period": "Period",
+        "left": "Left",
+        "assets": "Assets",
+        "cards": "Cards",
+        "otherTitles": "Other titles"
+      },
       "humans": "Human managers",
       "tab": "Managers",
       "world": "World",
@@ -3655,7 +3688,12 @@
   "negotiation": {
     "situation": {
       "label": "Situation",
-      "thinAfter": {"GK": "If he leaves, you are left with {{count}} goalkeepers (the minimum is {{min}}).", "Defender": "If he leaves, you are left with {{count}} defenders (the minimum is {{min}}).", "Midfielder": "If he leaves, you are left with {{count}} midfielders (the minimum is {{min}}).", "Forward": "If he leaves, you are left with {{count}} forwards (the minimum is {{min}})."},
+      "thinAfter": {
+        "GK": "If he leaves, you are left with {{count}} goalkeepers (the minimum is {{min}}).",
+        "Defender": "If he leaves, you are left with {{count}} defenders (the minimum is {{min}}).",
+        "Midfielder": "If he leaves, you are left with {{count}} midfielders (the minimum is {{min}}).",
+        "Forward": "If he leaves, you are left with {{count}} forwards (the minimum is {{min}})."
+      },
       "role": {
         "key": "Key player",
         "starter": "Starter",
@@ -4971,7 +5009,26 @@
     "noMatch": "No national team found"
   },
   "achievements": {
-    "decorStyle": {"colors": "Colours", "main": "Main", "second": "Second", "pattern": "Mosaic design", "palette": {"club": "Club colours", "inverted": "Inverted", "black_gold": "Black and gold", "blue_white": "Blue and white", "green_yellow": "Green and yellow", "custom": "Choose"}, "patterns": {"stripes": "Stripes", "check": "Check", "crest": "Crest", "star": "Star"}},
+    "decorStyle": {
+      "colors": "Colours",
+      "main": "Main",
+      "second": "Second",
+      "pattern": "Mosaic design",
+      "palette": {
+        "club": "Club colours",
+        "inverted": "Inverted",
+        "black_gold": "Black and gold",
+        "blue_white": "Blue and white",
+        "green_yellow": "Green and yellow",
+        "custom": "Choose"
+      },
+      "patterns": {
+        "stripes": "Stripes",
+        "check": "Check",
+        "crest": "Crest",
+        "star": "Star"
+      }
+    },
     "tabs": {
       "list": "Achievements",
       "profile": "Profile",
@@ -6183,7 +6240,8 @@
       "runningShort": "{{date}} → {{target}}",
       "turn": {
         "oneReady": "{{name}} is ready until {{date}}.",
-        "markReady": "Ready until my next game", "seeMatch": "See today's game",
+        "markReady": "Ready until my next game",
+        "seeMatch": "See today's game",
         "title": "Only you left",
         "body": "The other managers are ready."
       },
@@ -6317,8 +6375,25 @@
     }
   },
   "rivals": {
-    "popup": {"result": "Friend's result · full time", "goal": "Friend's goal · {{minute}}'"},
-    "comps": {"title": "Friends' competitions", "league": "#{{position}} of {{size}} · {{points}} pts", "group": "Group {{group}} · #{{position}}", "champion": "Champions", "out": "Out · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · won the first leg {{for}}–{{against}}", "lost": "{{stage}} · lost the first leg {{for}}–{{against}}", "drew": "{{stage}} · drew the first leg {{for}}–{{against}}"}, "cups": "Cups", "bet": "Bet on his games"},
+    "popup": {
+      "result": "Friend's result · full time",
+      "goal": "Friend's goal · {{minute}}'"
+    },
+    "comps": {
+      "title": "Friends' competitions",
+      "league": "#{{position}} of {{size}} · {{points}} pts",
+      "group": "Group {{group}} · #{{position}}",
+      "champion": "Champions",
+      "out": "Out · {{stage}}",
+      "next": "{{stage}} · {{date}}",
+      "firstLeg": {
+        "won": "{{stage}} · won the first leg {{for}}–{{against}}",
+        "lost": "{{stage}} · lost the first leg {{for}}–{{against}}",
+        "drew": "{{stage}} · drew the first leg {{for}}–{{against}}"
+      },
+      "cups": "Cups",
+      "bet": "Bet on his games"
+    },
     "matchRound": "Round {{round}}",
     "tabRivals": "Rivals",
     "tabResults": "Results",
@@ -6336,7 +6411,24 @@
     },
     "positionValue": "#{{position}}",
     "nextValue": "{{date}} · {{opponent}}",
-    "bets": {"title": "{{name}}'s bets", "summary_one": "{{count}} open", "summary_other": "{{count}} open", "net": "betting result {{value}}", "openCount_one": "{{count}} open", "openCount_other": "{{count}} open", "seeResults": "See results", "noOpen": "No open bets right now.", "colPick": "Bet", "colGame": "Game", "colStake": "Stake", "colOdds": "Odds", "settled": "Settled", "game": "{{home}} v {{away}}", "gameOn": "{{home}} v {{away}} · {{date}}", "chatLine": "{{pick}} in {{home}} v {{away}}"},
+    "bets": {
+      "title": "{{name}}'s bets",
+      "summary_one": "{{count}} open",
+      "summary_other": "{{count}} open",
+      "net": "betting result {{value}}",
+      "openCount_one": "{{count}} open",
+      "openCount_other": "{{count}} open",
+      "seeResults": "See results",
+      "noOpen": "No open bets right now.",
+      "colPick": "Bet",
+      "colGame": "Game",
+      "colStake": "Stake",
+      "colOdds": "Odds",
+      "settled": "Settled",
+      "game": "{{home}} v {{away}}",
+      "gameOn": "{{home}} v {{away}} · {{date}}",
+      "chatLine": "{{pick}} in {{home}} v {{away}}"
+    },
     "moments": {
       "title": "Latest moments",
       "none": "Nothing yet.",

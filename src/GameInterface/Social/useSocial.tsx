@@ -40,6 +40,7 @@ import type {
   SocialMe,
 } from "@/types/socialTypes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { armReadySound, playChatSound } from "@/GameInterface/readySound";
 
 /** Close code the server uses when the session logged out: never reconnect. */
 const LOGOUT_CLOSE_CODE = 4001;
@@ -173,6 +174,8 @@ export function SocialProvider({
     writeDock(dock);
   }, [dock]);
 
+  useEffect(() => armReadySound(), []);
+
   const refreshFriends = useCallback(async () => {
     const r = await socialApi.friends();
     if (!r.ok) return;
@@ -273,6 +276,7 @@ export function SocialProvider({
             void socialApi.read(event.room, event.message.id);
           } else {
             setUnread((prev) => ({ ...prev, [event.room]: (prev[event.room] ?? 0) + 1 }));
+            playChatSound();
             showPopup({
               room: event.room, messageId: event.message.id, from: event.message.from, body: event.message.body,
               taunt: event.message.taunt,

@@ -139,6 +139,25 @@ export function writeReadySound(on: boolean): void {
   }
 }
 
+const CHAT_SOUND_KEY = "fm.chat.sound";
+
+/** Short sound when a chat message arrives: on (default) or off. */
+export function readChatSound(): boolean {
+  try {
+    return localStorage.getItem(CHAT_SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function writeChatSound(on: boolean): void {
+  try {
+    localStorage.setItem(CHAT_SOUND_KEY, on ? "1" : "0");
+  } catch {
+    // no storage: the choice lasts this page
+  }
+}
+
 const SOUND_KEY = "fm.match.sound";
 const SOUND_VOLUME_KEY = "fm.match.soundVolume";
 

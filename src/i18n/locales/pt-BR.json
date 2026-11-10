@@ -569,7 +569,8 @@
     "makeOffer": "Fazer Oferta"
   },
   "nav": {
-    "worldTab": "Sua liga", "world": "Liga",
+    "worldTab": "Sua liga",
+    "world": "Liga",
     "squad": "Elenco",
     "formation": "Formação",
     "development": "Evolução",
@@ -623,7 +624,9 @@
     "playerLook": "Jogadores",
     "playerLookCurrent": "Atual",
     "playerLookReal": "Mais realista",
-    "playerLookDescription": "Proporção dos jogadores na partida: a atual ou mais realista (cabeça menor, ombros mais estreitos). Vale na próxima partida."
+    "playerLookDescription": "Proporção dos jogadores na partida: a atual ou mais realista (cabeça menor, ombros mais estreitos). Vale na próxima partida.",
+    "chatSound": "Som de mensagem no chat",
+    "chatSoundDescription": "Um toque curto quando chega uma mensagem de um amigo ou da liga numa conversa que não está aberta."
   },
   "reports": {
     "title": "Enviar um relatório",
@@ -774,7 +777,9 @@
       "tooLarge": "Texto grande demais.",
       "unauthorized": "Sessão expirada. Entre de novo.",
       "network": "Sem conexão. Tente de novo."
-    }
+    },
+    "soundOn": "Som de mensagem ligado",
+    "soundOff": "Som de mensagem desligado"
   },
   "tactics": {
     "axes": {
@@ -1556,10 +1561,27 @@
     "ownClub": "No jogo do seu time, só dá para apostar a favor dele.",
     "open": "Suas apostas abertas",
     "history": "Histórico",
-    "market": { "result": "Resultado", "score": "Placar exato", "scorer": "Marca gol" },
-    "pick": { "win": "{{team}} vence", "score": "Placar {{home}}-{{away}}", "scorer": "{{player}} marca" },
-    "status": { "won": "Ganhou", "lost": "Perdeu", "refunded": "Devolvida" },
-    "inbox": { "subject": "Suas apostas foram resolvidas", "preview_one": "{{count}} aposta", "preview_other": "{{count}} apostas", "net": "Saldo do dia: {{value}}" },
+    "market": {
+      "result": "Resultado",
+      "score": "Placar exato",
+      "scorer": "Marca gol"
+    },
+    "pick": {
+      "win": "{{team}} vence",
+      "score": "Placar {{home}}-{{away}}",
+      "scorer": "{{player}} marca"
+    },
+    "status": {
+      "won": "Ganhou",
+      "lost": "Perdeu",
+      "refunded": "Devolvida"
+    },
+    "inbox": {
+      "subject": "Suas apostas foram resolvidas",
+      "preview_one": "{{count}} aposta",
+      "preview_other": "{{count}} apostas",
+      "net": "Saldo do dia: {{value}}"
+    },
     "errors": {
       "generic": "Não deu para concluir. Tente de novo.",
       "invalidPick": "Essa aposta não está disponível.",
@@ -3286,7 +3308,18 @@
       "emptyFiltered": "Nenhum aposentado com esses filtros."
     },
     "managers": {
-      "detail": { "points": "Pontos", "titles": "Títulos", "awards": "Prêmios", "clubs": "Clubes", "club": "Clube", "period": "Período", "left": "Saída", "assets": "Bens", "cards": "Cartões", "otherTitles": "Outros títulos" },
+      "detail": {
+        "points": "Pontos",
+        "titles": "Títulos",
+        "awards": "Prêmios",
+        "clubs": "Clubes",
+        "club": "Clube",
+        "period": "Período",
+        "left": "Saída",
+        "assets": "Bens",
+        "cards": "Cartões",
+        "otherTitles": "Outros títulos"
+      },
       "humans": "Técnicos humanos",
       "tab": "Técnicos",
       "world": "Mundo",
@@ -3655,7 +3688,12 @@
   "negotiation": {
     "situation": {
       "label": "Situação",
-      "thinAfter": {"GK": "Se ele sair, você fica com {{count}} goleiros (o mínimo é {{min}}).", "Defender": "Se ele sair, você fica com {{count}} defensores (o mínimo é {{min}}).", "Midfielder": "Se ele sair, você fica com {{count}} meias (o mínimo é {{min}}).", "Forward": "Se ele sair, você fica com {{count}} atacantes (o mínimo é {{min}})."},
+      "thinAfter": {
+        "GK": "Se ele sair, você fica com {{count}} goleiros (o mínimo é {{min}}).",
+        "Defender": "Se ele sair, você fica com {{count}} defensores (o mínimo é {{min}}).",
+        "Midfielder": "Se ele sair, você fica com {{count}} meias (o mínimo é {{min}}).",
+        "Forward": "Se ele sair, você fica com {{count}} atacantes (o mínimo é {{min}})."
+      },
       "role": {
         "key": "Peça-chave",
         "starter": "Titular",
@@ -4971,7 +5009,26 @@
     "noMatch": "Nenhuma seleção encontrada"
   },
   "achievements": {
-    "decorStyle": {"colors": "Cores", "main": "Principal", "second": "Segunda", "pattern": "Desenho do mosaico", "palette": {"club": "Cores do clube", "inverted": "Invertidas", "black_gold": "Preto e dourado", "blue_white": "Azul e branco", "green_yellow": "Verde e amarelo", "custom": "Escolher"}, "patterns": {"stripes": "Faixas", "check": "Xadrez", "crest": "Escudo", "star": "Estrela"}},
+    "decorStyle": {
+      "colors": "Cores",
+      "main": "Principal",
+      "second": "Segunda",
+      "pattern": "Desenho do mosaico",
+      "palette": {
+        "club": "Cores do clube",
+        "inverted": "Invertidas",
+        "black_gold": "Preto e dourado",
+        "blue_white": "Azul e branco",
+        "green_yellow": "Verde e amarelo",
+        "custom": "Escolher"
+      },
+      "patterns": {
+        "stripes": "Faixas",
+        "check": "Xadrez",
+        "crest": "Escudo",
+        "star": "Estrela"
+      }
+    },
     "tabs": {
       "list": "Conquistas",
       "profile": "Perfil",
@@ -6183,7 +6240,8 @@
       "runningShort": "{{date}} → {{target}}",
       "turn": {
         "oneReady": "{{name}} já está pronto até {{date}}.",
-        "markReady": "Pronto até o próximo jogo", "seeMatch": "Ver o jogo de hoje",
+        "markReady": "Pronto até o próximo jogo",
+        "seeMatch": "Ver o jogo de hoje",
         "title": "Só falta você",
         "body": "Os outros técnicos estão prontos."
       },
@@ -6317,8 +6375,25 @@
     }
   },
   "rivals": {
-    "popup": {"result": "Resultado do amigo · final", "goal": "Gol do amigo · {{minute}}'"},
-    "comps": {"title": "Campeonatos dos amigos", "league": "{{position}}º de {{size}} · {{points}} pts", "group": "Grupo {{group}} · {{position}}º", "champion": "Campeão", "out": "Eliminado · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · venceu a ida {{for}}–{{against}}", "lost": "{{stage}} · perdeu a ida {{for}}–{{against}}", "drew": "{{stage}} · empatou a ida {{for}}–{{against}}"}, "cups": "Copas", "bet": "Apostar nos jogos dele"},
+    "popup": {
+      "result": "Resultado do amigo · final",
+      "goal": "Gol do amigo · {{minute}}'"
+    },
+    "comps": {
+      "title": "Campeonatos dos amigos",
+      "league": "{{position}}º de {{size}} · {{points}} pts",
+      "group": "Grupo {{group}} · {{position}}º",
+      "champion": "Campeão",
+      "out": "Eliminado · {{stage}}",
+      "next": "{{stage}} · {{date}}",
+      "firstLeg": {
+        "won": "{{stage}} · venceu a ida {{for}}–{{against}}",
+        "lost": "{{stage}} · perdeu a ida {{for}}–{{against}}",
+        "drew": "{{stage}} · empatou a ida {{for}}–{{against}}"
+      },
+      "cups": "Copas",
+      "bet": "Apostar nos jogos dele"
+    },
     "matchRound": "Rodada {{round}}",
     "tabRivals": "Rivais",
     "tabResults": "Resultados",
@@ -6336,7 +6411,24 @@
     },
     "positionValue": "{{position}}º",
     "nextValue": "{{date}} · {{opponent}}",
-    "bets": {"title": "Apostas de {{name}}", "summary_one": "{{count}} aberta", "summary_other": "{{count}} abertas", "net": "resultado nas apostas {{value}}", "openCount_one": "{{count}} aberta", "openCount_other": "{{count}} abertas", "seeResults": "Ver resultados", "noOpen": "Nenhuma aposta aberta agora.", "colPick": "Aposta", "colGame": "Jogo", "colStake": "Valor", "colOdds": "Cotação", "settled": "Resolvidas", "game": "{{home}} x {{away}}", "gameOn": "{{home}} x {{away}} · {{date}}", "chatLine": "{{pick}} em {{home}} x {{away}}"},
+    "bets": {
+      "title": "Apostas de {{name}}",
+      "summary_one": "{{count}} aberta",
+      "summary_other": "{{count}} abertas",
+      "net": "resultado nas apostas {{value}}",
+      "openCount_one": "{{count}} aberta",
+      "openCount_other": "{{count}} abertas",
+      "seeResults": "Ver resultados",
+      "noOpen": "Nenhuma aposta aberta agora.",
+      "colPick": "Aposta",
+      "colGame": "Jogo",
+      "colStake": "Valor",
+      "colOdds": "Cotação",
+      "settled": "Resolvidas",
+      "game": "{{home}} x {{away}}",
+      "gameOn": "{{home}} x {{away}} · {{date}}",
+      "chatLine": "{{pick}} em {{home}} x {{away}}"
+    },
     "moments": {
       "title": "Últimos lances",
       "none": "Nenhum lance ainda.",

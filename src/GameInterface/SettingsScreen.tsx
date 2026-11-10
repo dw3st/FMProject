@@ -6,8 +6,8 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound } from "@/GameInterface/artPrefs";
-import { playReadySound } from "@/GameInterface/readySound";
+import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound, readChatSound, writeChatSound } from "@/GameInterface/artPrefs";
+import { playChatSound, playReadySound } from "@/GameInterface/readySound";
 import { disableTurnNotification, enableTurnNotification, readTurnNotification, turnNotificationSupported } from "@/GameInterface/World/turnNotice";
 import { readGoalReplay, readMatchCamera, readMatchInFrame, writeMatchInFrame, readNewVisual, readQuality, writeGoalReplay, writeMatchCamera, writeNewVisual, writeQuality, type QualityPref, readPlayerLook, writePlayerLook, type PlayerLookPref } from "@/GameInterface/artPrefs";
 
@@ -28,6 +28,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [matchInFrame, setMatchInFrame] = useState(readMatchInFrame);
   const [matchSound, setMatchSound] = useState(readMatchSound);
   const [readySound, setReadySound] = useState(readReadySound);
+  const [chatSound, setChatSound] = useState(readChatSound);
   const [turnNotification, setTurnNotification] = useState(readTurnNotification);
   const [turnBlocked, setTurnBlocked] = useState(false);
   const [matchVolume, setMatchVolume] = useState(readMatchVolume);
@@ -156,6 +157,21 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.readySoundDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.chatSound")}</div>
+          <OptionChips
+            value={chatSound ? "on" : "off"}
+            onChange={(k) => {
+              const on = k === "on";
+              setChatSound(on);
+              writeChatSound(on);
+              if (on) playChatSound(true);
+            }}
+            options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.chatSoundDescription")}</p>
         </div>
 
         {turnNotificationSupported() && (
