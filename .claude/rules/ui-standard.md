@@ -229,3 +229,7 @@ Pedido do usuário: o `DaySummaryModal` saiu, solo e em grupo; o dia avança sem
 ## Não lidas na caixa de entrada (8.7.11)
 
 Report do usuário. Mensagem não lida (tela Caixa de entrada e cartão do Painel): fundo `bg-primary/[0.09]`, barra de 4px em `primary`, ponto e data em `primary`, título em negrito; a lida fica apagada (título e prévia em `muted-foreground`, ícone a 60%). O rosto e o nome do técnico no cartão do clube levam à ficha dele (`/stats?tab=managers&open=me`; a rota `/managers?me=1` traz o técnico mesmo fora da página).
+
+## Aba Sua liga e abas espalhadas (8.9.14)
+
+Report de tester. Num mundo com amigos (`save.mode === "multi"`) a barra de cima ganha a aba Sua liga (`/world`) logo depois do Painel; o ícone que ficava no bloco do dia saiu. As abas ocupam a largura toda entre o logo e o bloco do dia (`justify-between`, o espaço mínimo entre elas continua o de antes), sem os vãos nas pontas.

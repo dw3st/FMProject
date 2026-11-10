@@ -569,7 +569,7 @@
     "makeOffer": "Make offer"
   },
   "nav": {
-    "world": "League",
+    "worldTab": "My league", "world": "League",
     "squad": "Squad",
     "formation": "Formation",
     "development": "Development",

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.14",
+    date: "2026-11-10",
+    time: "18:46",
+    items: [
+      {
+        pt: "Liga de amigos: a aba Sua liga entra no menu de cima, logo depois do Painel. As abas agora ocupam a barra inteira, sem os espaços vazios nas pontas.",
+        en: "Friends' league: the My league tab joins the top menu, right after the Dashboard. The tabs now fill the whole bar, with no empty space at the ends.",
+      },
+    ],
+  },
+  {
     version: "8.9.13",
     date: "2026-11-10",
     time: "18:37",

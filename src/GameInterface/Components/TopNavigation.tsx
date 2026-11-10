@@ -43,6 +43,9 @@ const navItems: NavItem[] = [
   { icon: "stats", tone: "text-primary", labelKey: "nav.stats", href: "/stats" },
 ];
 
+/** The friends' world as a tab, right after the Dashboard (tester report, 8.9.14; before, an icon in the day block). */
+const WORLD_ITEM: NavItem = { icon: "users", tone: "text-chart-2", labelKey: "nav.worldTab", href: "/world" };
+
 interface Props {
   onAdvanceDay?: () => void;
   /** Present only when the next player match is more than 2 days away. */
@@ -151,7 +154,8 @@ export function TopNavigation({
 
   // The day block has its real width once the save is in (or there is no save to wait for).
   const settled = !session || !!currentDate || unemployed;
-  const { outerRef, measureRef, mode } = useCompactTabs(navItems.length, settled);
+  const items = useMemo(() => (save?.mode === "multi" ? [navItems[0]!, WORLD_ITEM, ...navItems.slice(1)] : navItems), [save?.mode]);
+  const { outerRef, measureRef, mode } = useCompactTabs(items.length, settled);
   // Not enough room even with the tight gaps: the labels stay, each tab an equal share of the bar, cut with an ellipsis (title = full name).
   const narrow = mode === "icons";
 
@@ -213,15 +217,15 @@ export function TopNavigation({
             aria-hidden="true"
             className="invisible pointer-events-none absolute left-0 top-0 h-full flex w-max items-stretch gap-3.5"
           >
-            {navItems.map((item) => (
+            {items.map((item) => (
               <span key={item.labelKey} className={tabClass(false)}>
                 <ArtIcon art={`tab-${item.href.slice(1)}`} size={NAV_ICON} className="shrink-0" fallback={<Icon name={item.icon} size={NAV_ICON} className="shrink-0" />} />
                 <span>{t(item.labelKey)}</span>
               </span>
             ))}
           </div>
-          <div className={`flex items-stretch ${narrow ? "w-full gap-1.5" : `w-max ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
-            {navItems.map((item) => {
+          <div className={`flex items-stretch w-full ${narrow ? "gap-1.5" : `justify-between ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
+            {items.map((item) => {
               const label = t(item.labelKey);
               const active = pathname.startsWith(item.href);
               const href =
@@ -250,16 +254,6 @@ export function TopNavigation({
             costs no divider of its own), today's date and type, then the day controls (#65). */}
         <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
           <TesterReportButton />
-          {save?.mode === "multi" && (
-            <a
-              href="/world"
-              title={t("nav.world")}
-              aria-label={t("nav.world")}
-              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border bg-card text-chart-2 hover:bg-muted/50"
-            >
-              <Icon name="users" size={NAV_ICON} />
-            </a>
-          )}
           {currentDate && (
             <>
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
