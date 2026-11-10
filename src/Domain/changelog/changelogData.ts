@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.19",
+    date: "2026-11-10",
+    time: "19:45",
+    items: [],
+    fixes: [
+      {
+        pt: "O Pronto até volta a ter largura fixa, para as abas não andarem, e cada estado ocupa o espaço inteiro, sem vão.",
+        en: "Ready until has a fixed width again, so the tabs never move, and every state fills the whole space, with no gap.",
+      },
+    ],
+  },
+  {
     version: "8.9.18",
     date: "2026-11-10",
     time: "19:38",

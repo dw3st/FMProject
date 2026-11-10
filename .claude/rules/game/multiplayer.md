@@ -168,7 +168,7 @@ Spec: `docs/superpowers/specs/2026-10-15-multiplayer-world-design.md`. Plano:
   Arsenal", `worldRoomLabel`, `WorldRoomView.myClub`, 7.4.2).
 - **Clubes de outros técnicos (7.4.2):** o selo com o apelido (`World/HumanBadge.tsx`, `useHumanClubs`) aparece na
   Classificação e nos Jogos de Ligas, na tabela do Painel e no cabeçalho do elenco do clube.
-- **Barra superior:** o controle "Pronto até…" fica numa faixa de até 184px (`TopNavigation`; do tamanho do conteúdo desde a 8.9.18); cada estado cabe nela
+- **Barra superior:** o controle "Pronto até…" fica numa faixa fixa de 184px (`TopNavigation`) e cada estado a ocupa inteira, sem vão (8.9.19); cada estado cabe nela
   (textos cortados com o completo no `title`, "Avançando" curto `world.advance.runningShort`, sem "não estou pronto"
   num dia de jogo sem decisão), para a largura das abas não mudar enquanto o mundo anda (report de tester).
 - Entrada e saída viram mensagem na caixa dos outros assentos (categoria `world`, tópico `competitions`) e notícia

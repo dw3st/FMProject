@@ -11,13 +11,14 @@ import { nextSlotAt } from "@/Domain/multiplayer/publicWorld";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { navigate } from "@/GameInterface/router/navigation";
 
-const PRIMARY = "flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0";
+const PRIMARY = "flex flex-1 min-w-0 justify-center items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap";
+const BAR_SECONDARY = "flex flex-1 min-w-0 justify-center items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 const SECONDARY = "flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card text-sm font-semibold text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0";
 const ICON_ONLY = "flex items-center justify-center w-9 h-9 rounded-md border border-border bg-card text-foreground cursor-pointer hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 const MENU_ITEM = "w-full text-left h-10 px-3 rounded text-sm font-semibold text-foreground hover:bg-secondary/40 cursor-pointer bg-transparent border-0";
-// Every state fits the top bar's slot of at most 184px (`TopNavigation`): status texts truncate, the full text is in `title`.
-const LABEL_TRUNC = "max-w-[140px] truncate";
-const RUNNING_TRUNC = "max-w-[184px] truncate";
+// Every state fills the top bar's fixed 184px slot (`TopNavigation`, 8.9.19): status texts truncate, the full text is in `title`.
+const LABEL_TRUNC = "flex-1 min-w-0 truncate";
+const RUNNING_TRUNC = "w-full min-w-0 truncate";
 const MENU_ID = "ready-until-panel";
 
 /**
@@ -97,7 +98,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   const isPublic = view ? view.kind === "public" : publicWorld;
   if (!isPublic && (!view || branch === "disabled")) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2">
         {errorLine}
         <button type="button" className={PRIMARY} disabled>
           {t("world.advance.readyButton")}
@@ -126,7 +127,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   if (isPublic && !view) {
     const time = brasiliaTime(nextSlotAt(Date.now()), i18n.language);
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2">
         {errorLine}
         <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={nextStepText} aria-label={nextStepText}>
           <Icon name="clock" size={16} className="shrink-0" />
@@ -150,11 +151,11 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   const today = view.me.matchToday;
   if (branch === "match" && today) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2">
         {errorLine}
         <button
           type="button"
-          className={SECONDARY}
+          className={BAR_SECONDARY}
           onClick={() => void simulateToday()}
           disabled={busy}
           title={t("world.advance.simulateHint")}
@@ -199,7 +200,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   if (simulatedToday && marked) {
     const text = t("world.advance.simulated");
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2">
         {errorLine}
         <span className={`text-sm font-semibold whitespace-nowrap ${LABEL_TRUNC}`} title={t("world.advance.simulatedHint")}>{text}</span>
         <button
@@ -223,7 +224,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
       nextStepText,
     ].filter(Boolean).join(" · ");
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2">
         {errorLine}
         <span className={`text-sm font-semibold whitespace-nowrap tabular-nums ${LABEL_TRUNC}`} title={waiting ? `${text} · ${waiting}` : text}>
           {text}
@@ -234,7 +235,7 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full min-w-0 items-center gap-2">
       {errorLine}
       <button
         ref={triggerRef}

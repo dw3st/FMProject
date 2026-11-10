@@ -83,7 +83,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           onFastForward={!lobby && !session?.groupAdvance && canFastForward ? handleFastForward : undefined}
           advancing={advancing}
           leagues={leagues}
-          dayAction={!lobby && session?.groupAdvance ? <span id={READY_SLOT_ID} className="inline-flex min-w-0"><ReadyControl publicWorld={save?.world?.kind === "public"} /></span> : undefined}
+          dayAction={!lobby && session?.groupAdvance ? <span id={READY_SLOT_ID} className="flex w-full min-w-0"><ReadyControl publicWorld={save?.world?.kind === "public"} /></span> : undefined}
         />}
 
         <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 overflow-hidden flex flex-col" : "h-full pb-12 overflow-y-auto flex flex-col"}>
