@@ -19,7 +19,7 @@ const retired = (id: string, extra: Partial<RetiredPlayer> = {}): RetiredPlayer 
 const O = { saveId: "s1", seatId: "seat", season: "premier_league:2030", seasonStart: "2030-08-15" };
 const offer = (list: RetiredPlayer[], o: Partial<typeof O> = {}) => legendOffer(list, { ...O, ...o }).map((r) => r.id);
 const common = (id: string, extra: Partial<RetiredPlayer> = {}) => retired(id, { wasWorldClass: false, statsAtRetirement: stats(4), ...extra });
-const crowd = (n: number) => Array.from({ length: n }, (_, i) => common(`c${i}`));
+const crowd = (n: number) => Array.from({ length: n }, (_, i) => retired(`c${i}`));
 
 describe("legend offer", () => {
   test("a fixed number per season from a larger base", () => {
@@ -46,6 +46,13 @@ describe("legend offer", () => {
   test("a young world with few retirees still shows the best ones", () => {
     const pool = Array.from({ length: 20 }, (_, i) => common(`r${i}`, { statsAtRetirement: stats(2) }));
     expect(offer(pool)).toHaveLength(A.LEGEND_OFFER.SIZE);
+  });
+  test("only legends are drawn when there are enough; commons only complete a short list", () => {
+    const list = [...crowd(20), ...Array.from({ length: 200 }, (_, i) => common(`x${i}`, { statsAtRetirement: stats(5) }))];
+    expect(offer(list).every((id) => id.startsWith("c"))).toBe(true);
+    const few = [...crowd(3), ...Array.from({ length: 30 }, (_, i) => common(`x${i}`))];
+    expect(offer(few).filter((id) => id.startsWith("c"))).toHaveLength(3);
+    expect(offer(few)).toHaveLength(A.LEGEND_OFFER.SIZE);
   });
   test("the rarest come first", () => {
     const list = legendOffer([common("c"), retired("w")], O);

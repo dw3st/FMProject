@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.24",
+    date: "2026-11-10",
+    time: "20:39",
+    items: [],
+    fixes: [
+      {
+        pt: "A lista de lendas da loja de conquistas sorteia só lendas de verdade. Aposentados comuns só completam a lista num mundo que ainda tem poucas lendas.",
+        en: "The achievements shop legend list draws only real legends. Ordinary retirees only fill the list in a world that still has few legends.",
+      },
+    ],
+  },
+  {
     version: "8.9.23",
     date: "2026-11-10",
     time: "20:34",

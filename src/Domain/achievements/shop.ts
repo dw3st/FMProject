@@ -120,8 +120,12 @@ export function legendOffer(
     .sort((a, b) => retiredLevel(b) - retiredLevel(a) || a.id.localeCompare(b.id));
   const known = free.filter((r) => r.retiredOn <= o.seasonStart);
   const pool = known.length >= A.LEGEND_OFFER.SIZE ? known : free;
-  const notable = pool.filter(isNotableRetiree);
-  const base = notable.length >= A.LEGEND_OFFER.SIZE ? notable : pool.slice(0, A.LEGEND_OFFER.SIZE);
+  // Only real legends are drawn (11/2026: the notable cut let hundreds of average retirees bury the few legends);
+  // a young world with fewer legends than the list is completed with the best of the rest.
+  const legends = pool.filter(isLegend);
+  const base = legends.length >= A.LEGEND_OFFER.SIZE
+    ? legends
+    : [...legends, ...pool.filter((r) => !isLegend(r)).slice(0, A.LEGEND_OFFER.SIZE - legends.length)];
   // Weighted draw without replacement: the largest u^(1/weight), from each player's own stable number.
   const key = (r: RetiredPlayer) =>
     mulberry32(seedFrom(`legend:${o.saveId}:${o.seatId}:${o.season}:${r.id}`))() ** (1 / A.LEGEND_OFFER.WEIGHT[legendRarity(r)]);
