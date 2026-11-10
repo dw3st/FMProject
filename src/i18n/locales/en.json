@@ -6317,6 +6317,7 @@
     }
   },
   "rivals": {
+    "popup": {"result": "Friend's result · full time", "goal": "Friend's goal · {{minute}}'"},
     "comps": {"title": "Friends' competitions", "league": "#{{position}} of {{size}} · {{points}} pts", "group": "Group {{group}} · #{{position}}", "champion": "Champions", "out": "Out · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · won the first leg {{for}}–{{against}}", "lost": "{{stage}} · lost the first leg {{for}}–{{against}}", "drew": "{{stage}} · drew the first leg {{for}}–{{against}}"}, "cups": "Cups", "bet": "Bet on his games"},
     "matchRound": "Round {{round}}",
     "tabRivals": "Rivals",

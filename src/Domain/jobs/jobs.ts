@@ -253,12 +253,24 @@ export function seasonEndOfferCount(rep: number, rng: () => number): number {
   return Math.min(JOBS.seasonEnd.MAX, poisson(seasonEndLambda(rep), rng));
 }
 
-/** Mid-season: 0 or 1, only for a manager with reputation ≥ 60 or a board ≥ 80. */
-export function midSeasonOfferCount(rep: number, board: number, rng: () => number): number {
+/** Titles of the seat's manager credited in the last `TITLE_DAYS` before `date`: × (1 + 0.5 per title), up to × 2. */
+export function recentTitleBonus(managers: readonly ManagerRecord[], seatId: string, date: string): number {
   const c = JOBS.midSeason;
-  if (rep < c.MIN_REPUTATION && board < c.MIN_BOARD) return 0;
-  const p = 1 - Math.exp(-seasonEndLambda(Math.max(rep, c.MIN_REPUTATION)) / 2);
-  return rng() < p ? 1 : 0;
+  const me = managers.find((m) => m.seatId === seatId);
+  const from = new Date(Date.parse(`${date}T12:00:00Z`) - c.TITLE_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const n = (me?.titles ?? []).filter((t) => t.on && t.on > from && t.on <= date).length;
+  return Math.min(c.TITLE_MAX, 1 + c.TITLE_STEP * n);
+}
+
+/** Expected offers of the monthly window (`JOBS.midSeason`). */
+export function monthlyOfferLambda(rep: number, titleBonus: number): number {
+  const c = JOBS.midSeason;
+  return rep < c.MIN_REPUTATION ? 0 : c.BASE * Math.exp(c.K * (rep - c.PIVOT)) * titleBonus;
+}
+
+/** Monthly window (8.9.12): 0..2 offers. */
+export function midSeasonOfferCount(rep: number, titleBonus: number, rng: () => number): number {
+  return Math.min(JOBS.midSeason.MAX, poisson(monthlyOfferLambda(rep, titleBonus), rng));
 }
 
 /** Unemployed: 1..3 offers every two weeks. */

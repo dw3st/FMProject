@@ -217,3 +217,7 @@ Reports de tester. **Renovação:** `POST /manager-contract { wage, seasons }` (
 ### Fotos do patrimônio (8.4.5)
 
 Pedido do usuário. Casa, carro e relógio têm 4 imagens cada (`src/example_data/assets/manager-assets/`, `GAME_ART_FILES`), feitas com `data_process/assets/manager_assets/build_manager_assets.py` (layout em Python, FLUX img2img). Os carros seguem silhuetas de modelos reais, como o GTA: sem logo, emblema nem nome na imagem. A aba Patrimônio mostra a foto do nível comprado e, na lista, a miniatura de cada nível (cinza até comprar); só com o visual novo. Ao trocar uma imagem, troque o nome do arquivo: o cache é `immutable`.
+
+## Mais propostas para quem ganha (8.9.12)
+
+Pedido do usuário. Reputação: ranking 50, diretoria 20, títulos 20, temporadas 10 (carreira nova ~37). Fim da temporada: `BASE` 0,45 e até 4 propostas. A janela do meio da temporada virou mensal (`window: "mid_season"`, `JOBS.midSeason`): todo dia 1 da temporada da liga do clube (depois do início e antes do último mês), com reputação 50 ou mais, λ = 0,1 × e^(0,06 × (reputação − 50)) × bônus de título (+50% por título creditado nos últimos 365 dias, até ×2; `recentTitleBonus`), até 2 propostas, válidas por 10 dias. Reputação 60 dá 0,18 por mês, 72 dá 0,38, 76 dá 0,48, 85 dá 0,82. `SeatState.jobsMidSeason` guarda o mês já sorteado (`<temporada>:<AAAA-MM>`).

@@ -2,9 +2,10 @@
 export const JOBS = {
   reputation: {
     /** Shares of the 0..100 reputation. */
-    RANK_WEIGHT: 45,
-    BOARD_WEIGHT: 30,
-    TITLES_WEIGHT: 15,
+    // 8.9.12 (the user: managers who win and rank high should hear more): rank and titles up, board down.
+    RANK_WEIGHT: 50,
+    BOARD_WEIGHT: 20,
+    TITLES_WEIGHT: 20,
     SEASONS_WEIGHT: 10,
     /** Ranking points of titles (last TITLE_SEASONS seasons) that fill the titles term. */
     TITLES_SATURATION: 200,
@@ -35,20 +36,29 @@ export const JOBS = {
   location: { SAME_COUNTRY: 3, SAME_CONTINENT: 2, OTHER: 1 },
 
   seasonEnd: {
-    /** Expected offers λ = BASE × e^(K × (reputation − PIVOT)): 40 → 0.3, 80 → ~2. */
-    BASE: 0.3,
+    /** Expected offers λ = BASE × e^(K × (reputation − PIVOT)): 40 → 0.45, 80 → ~3 (8.9.12: BASE 0.3 → 0.45, MAX 3 → 4). */
+    BASE: 0.45,
     PIVOT: 40,
     K: 0.0474,
-    MAX: 3,
+    MAX: 4,
   },
 
+  /**
+   * The monthly window of an employed manager (8.9.12, in place of the one mid-season window): on the 1st of every
+   * month of his league's season, λ = BASE × e^(K × (reputation − PIVOT)) × the recent-title bonus, from MIN_REPUTATION.
+   * Reputation 60 → 0.18 a month, 72 → 0.38, 76 → 0.48, 85 → 0.82.
+   */
   midSeason: {
-    /** Only with reputation ≥ MIN_REPUTATION or board ≥ MIN_BOARD. */
-    MIN_REPUTATION: 60,
-    MIN_BOARD: 80,
-    /** Share of the league's rounds the player's club has played before the window opens. */
-    PROGRESS: 0.5,
-    VALID_DAYS: 7,
+    MIN_REPUTATION: 50,
+    BASE: 0.1,
+    PIVOT: 50,
+    K: 0.06,
+    MAX: 2,
+    /** +50% per title in the last TITLE_DAYS, up to ×TITLE_MAX. */
+    TITLE_STEP: 0.5,
+    TITLE_MAX: 2,
+    TITLE_DAYS: 365,
+    VALID_DAYS: 10,
   },
 
   unemployed: {

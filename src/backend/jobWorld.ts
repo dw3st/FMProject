@@ -18,7 +18,7 @@ import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { seasonLabel } from "@/Domain/history/history";
 import {
   clubPrestiges, eligibleCandidates, employedBand, guaranteedClub, guaranteedOfferDue, managerReputation,
-  midSeasonOfferCount, moveHumanManager, pickOfferingClubs, seasonEndOfferCount, unemployedBand,
+  midSeasonOfferCount, recentTitleBonus, moveHumanManager, pickOfferingClubs, seasonEndOfferCount, unemployedBand,
   unemployedOfferCount, type OfferCandidate, type PrestigeBand,
 } from "@/Domain/jobs/jobs";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
@@ -211,7 +211,7 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   const count = req.window === "season_end"
     ? seasonEndOfferCount(rep, rng)
     : req.window === "mid_season"
-      ? midSeasonOfferCount(rep, req.board, rng)
+      ? midSeasonOfferCount(rep, recentTitleBonus(req.managers, req.seatId, req.date), rng)
       : unemployedOfferCount(rng);
   const guaranteed = req.window === "unemployed" && !!req.unemployed
     && guaranteedOfferDue({ since: req.unemployed.since, lastOfferDate: req.unemployed.lastOfferDate, date: req.date });

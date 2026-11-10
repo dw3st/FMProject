@@ -6317,6 +6317,7 @@
     }
   },
   "rivals": {
+    "popup": {"result": "Resultado do amigo · final", "goal": "Gol do amigo · {{minute}}'"},
     "comps": {"title": "Campeonatos dos amigos", "league": "{{position}}º de {{size}} · {{points}} pts", "group": "Grupo {{group}} · {{position}}º", "champion": "Campeão", "out": "Eliminado · {{stage}}", "next": "{{stage}} · {{date}}", "firstLeg": {"won": "{{stage}} · venceu a ida {{for}}–{{against}}", "lost": "{{stage}} · perdeu a ida {{for}}–{{against}}", "drew": "{{stage}} · empatou a ida {{for}}–{{against}}"}, "cups": "Copas", "bet": "Apostar nos jogos dele"},
     "matchRound": "Rodada {{round}}",
     "tabRivals": "Rivais",

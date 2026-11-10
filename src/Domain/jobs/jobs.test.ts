@@ -7,7 +7,7 @@ import {
   guaranteedOfferDue,
   managerReputation,
   mergeOffers,
-  midSeasonOfferCount,
+  midSeasonOfferCount, monthlyOfferLambda, recentTitleBonus,
   moveHumanManager,
   pickOfferingClubs,
   pruneOffers,
@@ -44,15 +44,15 @@ describe("reputation", () => {
     expect(recentTitlePoints(titles, 2027)).toBe(70);
   });
 
-  test("weights: 45 rank, 30 board, 15 titles, 10 seasons", () => {
+  test("weights: 50 rank, 20 board, 20 titles, 10 seasons (8.9.12)", () => {
     expect(reputation({ rankPercentile: 1, board: 100, titlePoints: 999, seasons: 9 })).toBe(100);
     expect(reputation({ rankPercentile: 0, board: 0, titlePoints: 0, seasons: 0 })).toBe(0);
-    expect(reputation({ rankPercentile: 0.5, board: 60, titlePoints: 0, seasons: 0 })).toBe(40.5);
+    expect(reputation({ rankPercentile: 0.5, board: 60, titlePoints: 0, seasons: 0 })).toBe(37);
   });
 
-  test("a new career sits around 40", () => {
+  test("a new career sits a little under 40", () => {
     const all = [mgr("seat:s1", 0, { seatId: "s1" }), mgr("b", 0), mgr("c", 0)];
-    expect(managerReputation(all, 60, 2027, "s1")).toBe(40.5);
+    expect(managerReputation(all, 60, 2027, "s1")).toBe(37);
   });
 });
 
@@ -109,9 +109,9 @@ describe("prestige and band", () => {
 });
 
 describe("offer counts", () => {
-  test("season end: reputation 80 → ~2 on average, 40 → ~0.3", () => {
-    expect(seasonEndLambda(40)).toBeCloseTo(0.3);
-    expect(seasonEndLambda(80)).toBeGreaterThan(1.8);
+  test("season end: reputation 80 → ~2.7 on average, 40 → ~0.45 (8.9.12)", () => {
+    expect(seasonEndLambda(40)).toBeCloseTo(0.45);
+    expect(seasonEndLambda(80)).toBeGreaterThan(2.9);
     const rng = mulberry32(3);
     let hi = 0;
     let lo = 0;
@@ -119,20 +119,31 @@ describe("offer counts", () => {
       hi += seasonEndOfferCount(80, rng);
       lo += seasonEndOfferCount(40, rng);
     }
-    expect(hi / 4000).toBeGreaterThan(1.5);
-    expect(hi / 4000).toBeLessThan(2.1);
-    expect(lo / 4000).toBeGreaterThan(0.2);
-    expect(lo / 4000).toBeLessThan(0.4);
-    for (let i = 0; i < 200; i++) expect(seasonEndOfferCount(100, rng)).toBeLessThanOrEqual(3);
+    expect(hi / 4000).toBeGreaterThan(2.4);
+    expect(hi / 4000).toBeLessThan(3);
+    expect(lo / 4000).toBeGreaterThan(0.35);
+    expect(lo / 4000).toBeLessThan(0.55);
+    for (let i = 0; i < 200; i++) expect(seasonEndOfferCount(100, rng)).toBeLessThanOrEqual(4);
   });
 
-  test("mid-season: only with reputation 60+ or board 80+", () => {
+  test("monthly window (8.9.12): from reputation 50, more with recent titles", () => {
     const rng = mulberry32(5);
-    for (let i = 0; i < 100; i++) expect(midSeasonOfferCount(59, 79, rng)).toBe(0);
+    for (let i = 0; i < 100; i++) expect(midSeasonOfferCount(49, 2, rng)).toBe(0);
+    expect(monthlyOfferLambda(72, 1)).toBeCloseTo(0.375, 2);
+    expect(monthlyOfferLambda(72, 2)).toBeCloseTo(0.75, 2);
     let n = 0;
-    for (let i = 0; i < 1000; i++) n += midSeasonOfferCount(50, 85, rng);
-    expect(n).toBeGreaterThan(0);
-    expect(n).toBeLessThan(1000);
+    for (let i = 0; i < 4000; i++) n += midSeasonOfferCount(76, 1, rng);
+    expect(n / 4000).toBeGreaterThan(0.4);
+    expect(n / 4000).toBeLessThan(0.55);
+    for (let i = 0; i < 200; i++) expect(midSeasonOfferCount(100, 2, rng)).toBeLessThanOrEqual(2);
+  });
+
+  test("recent title bonus: +50% per title in the last year, up to double", () => {
+    const titles = [{ on: "2034-02-01" }, { on: "2033-11-01" }, { on: "2032-01-01" }].map((t) => ({ season: "2033-34", kind: "league" as const, competition: "x", squadId: "c", points: 10, ...t }));
+    const all = [mgr("seat:s1", 30, { seatId: "s1", titles })];
+    expect(recentTitleBonus(all, "s1", "2034-03-01")).toBe(2);
+    expect(recentTitleBonus(all, "s1", "2035-03-01")).toBe(1);
+    expect(recentTitleBonus(all, "s1", "2034-12-01")).toBe(1.5);
   });
 
   test("unemployed: 1 to 3", () => {

@@ -2996,13 +2996,13 @@ export async function advanceOneDay(
             humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
             ...(contract ? { contract } : {}),
           }));
-        } else if (seatState) {
+        } else if (seatState && currentDate.endsWith("-01")) {
+          // The monthly window (8.9.12): the 1st of every month once his league has started and before its last month.
           const label = seasonLabel(seatState.year, seatState.start, seatState.end);
-          if (ds.job.midSeason !== label) {
-            const table = (await saveService.getLeagueStandings(saveId, seatState.leagueSlug)) ?? [];
-            const mp = table.find((r) => r.squadId === clubId)?.mp ?? 0;
-            if (seatState.totalRounds > 0 && mp >= seatState.totalRounds * JOBS.midSeason.PROGRESS) {
-              ds.job.midSeason = label;
+          const monthKey = `${label}:${currentDate.slice(0, 7)}`;
+          if (ds.job.midSeason !== monthKey && currentDate > seatState.start && currentDate < addDays(seatState.end, -30)) {
+            {
+              ds.job.midSeason = monthKey;
               newOffers.push(...await generateJobOffers(saveService, saveId, {
                 seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
                 managers: await managerTracker.list(), board: ds.board.board,

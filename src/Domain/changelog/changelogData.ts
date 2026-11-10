@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.12",
+    date: "2026-11-10",
+    time: "18:28",
+    items: [
+      {
+        pt: "Técnico empregado recebe propostas com mais frequência: todo mês pode chegar uma, mais ainda com títulos no último ano. A reputação pesa mais o ranking de técnicos e os títulos, e o fim de temporada traz mais propostas.",
+        en: "An employed manager gets offers more often: one can arrive every month, more with titles in the last year. Reputation weighs the manager ranking and titles more, and the season end brings more offers.",
+      },
+      {
+        pt: "O resultado e o gol de um amigo aparecem no alto da tela, no centro, com o placar em destaque.",
+        en: "A friend's result and goal show at the top of the screen, centred, with the score up front.",
+      },
+    ],
+  },
+  {
     version: "8.9.11",
     date: "2026-11-10",
     time: "18:14",
