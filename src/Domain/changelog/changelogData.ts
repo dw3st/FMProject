@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.15",
+    date: "2026-11-10",
+    time: "18:54",
+    items: [],
+    fixes: [
+      {
+        pt: "A aba Sua liga ganhou o ícone.",
+        en: "The My league tab got its icon.",
+      },
+    ],
+  },
+  {
     version: "8.9.14",
     date: "2026-11-10",
     time: "18:46",
