@@ -5,7 +5,7 @@ import type { RivalRow } from "@/types/rivalsTypes";
 const row = (seatId: string, o: Partial<RivalRow> = {}): RivalRow => ({
   seatId, nickname: seatId, managerName: seatId, face: null, nationalityIso: null, clubId: `c_${seatId}`, clubName: seatId,
   clubColors: ["#000000", "#ffffff"], leagueSlug: "l", leaguePosition: 1, form: [], last: null, next: null,
-  friendsRank: 1, friendsTotal: 2, live: null, me: false, ...o,
+  friendsRank: 1, friendsTotal: 2, live: null, bets: { open: 0, net: 0 }, me: false, ...o,
 });
 const live = (status: "live" | "half" | "ended") => ({ status, minute: 30 } as unknown as RivalRow["live"]);
 const today = "2031-11-02";

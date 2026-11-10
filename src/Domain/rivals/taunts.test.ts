@@ -65,3 +65,18 @@ test("phrase tone: cheering a win, teasing a loss, neutral on a draw", () => {
   expect(tauntTone("blown_lead_1")).toBe("tease");
   expect(tauntTone("draw_3")).toBe("neutral");
 });
+
+describe("bet taunts (8.9.7)", () => {
+  test("three phrases per bet group, cheer for a win and tease for a loss", () => {
+    expect(TAUNTS.bet_won).toEqual(["bet_won_1", "bet_won_2", "bet_won_3"]);
+    expect(tauntTone("bet_won_2")).toBe("cheer");
+    expect(tauntTone("bet_lost_1")).toBe("tease");
+  });
+  test("the bet meta survives the round trip; a broken bet is not a taunt", () => {
+    const meta = tauntMeta({ kind: "phrase", id: "loss_1", from: { nickname: "f", clubId: "1", clubName: "A", opponentName: "B", home: true, score: { for: 0, against: 1 } } });
+    const withBet = { ...meta, id: "bet_lost_1", bet: { pick: { market: "score" as const, home: 2, away: 1 }, homeName: "A", awayName: "B", stake: 5, odds: 9, payout: 0, won: false } };
+    expect(parseTauntMeta(JSON.parse(JSON.stringify(withBet)))).toEqual(withBet);
+    expect(parseTauntMeta({ ...withBet, bet: { ...withBet.bet, pick: { market: "nope" } } })).toBeNull();
+    expect(tauntFallbackBody(withBet, "Never bet with your heart.")).toBe("Never bet with your heart. · bet on A x B");
+  });
+});

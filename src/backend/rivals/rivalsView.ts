@@ -52,6 +52,7 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
     const employed = !!seat?.clubId && !seat.unemployed;
     const natId = national?.human?.[e.seatId]?.teamId;
     const myNation = natId ? nations.get(natId) ?? null : null;
+    const bets = await service.getBets(saveId, e.seatId);
     rows.push({
       seatId: e.seatId,
       nickname: e.nickname,
@@ -70,6 +71,7 @@ export async function rivalsView(service: SaveService, saveId: string, viewerSea
       friendsRank: rankOf(standings.entries, e.seatId),
       friendsTotal: e.total,
       live: live.find((l) => l.seatId === e.seatId) ?? null,
+      bets: { open: bets.open.length, net: seat?.betNet ?? 0 },
       me: e.seatId === viewerSeatId,
     });
   }

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.7",
+    date: "2026-11-10",
+    time: "15:45",
+    items: [
+      {
+        pt: "Liga de amigos: em Rivais, clique num amigo para ver as apostas dele, abertas e resolvidas. As apostas ganhas e perdidas também aparecem em Resultados, e dá para zoar ou comemorar com frases prontas.",
+        en: "Friends' league: in Rivals, click a friend to see their bets, open and settled. Won and lost bets also show up in Results, with ready phrases to mock or celebrate.",
+      },
+    ],
+  },
+  {
     version: "8.9.6",
     date: "2026-11-10",
     time: "15:30",

@@ -13,7 +13,7 @@ import { scoreLineOf } from "@/Domain/rivals/results";
 import type { RivalRow } from "@/types/rivalsTypes";
 
 /** One row per friend (rivals, multiplayer part 6); a click opens the friend's results. */
-export function RivalsTable({ rows, onSelect }: { rows: RivalRow[]; onSelect: (seatId: string) => void }) {
+export function RivalsTable({ rows, onSelect, selected }: { rows: RivalRow[]; onSelect: (seatId: string) => void; selected?: string | null }) {
   const { t, i18n } = useTranslation();
   if (rows.length === 0) return <p className="text-sm text-muted-foreground m-0">{t("rivals.noRivals")}</p>;
   return (
@@ -30,11 +30,12 @@ export function RivalsTable({ rows, onSelect }: { rows: RivalRow[]; onSelect: (s
           <StatsHead>{t("rivals.col.last")}</StatsHead>
           <StatsHead>{t("rivals.col.next")}</StatsHead>
           <StatsHead>{t("rivals.col.live")}</StatsHead>
+          <StatsHead align="center">{t("rivals.col.bets")}</StatsHead>
         </>
       }
     >
       {rows.map((r) => (
-        <StatsRow key={r.seatId} highlight={r.me} onActivate={() => onSelect(r.seatId)}>
+        <StatsRow key={r.seatId} highlight={r.me || r.seatId === selected} onActivate={() => onSelect(r.seatId)}>
           <RankCell rank={r.friendsRank} />
           <StatsCell className="w-12">
             <ManagerFaceImage
@@ -66,6 +67,7 @@ export function RivalsTable({ rows, onSelect }: { rows: RivalRow[]; onSelect: (s
               ? <span className="text-sm tabular-nums text-primary">{liveText(t, r.live)}</span>
               : <span className="text-sm text-muted-foreground">—</span>}
           </StatsCell>
+          <NumberCell>{r.bets.open > 0 ? t("rivals.bets.openCount", { count: r.bets.open }) : "—"}</NumberCell>
         </StatsRow>
       ))}
     </StatsTable>

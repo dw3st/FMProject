@@ -7,10 +7,11 @@ import { Notice } from "@/GameInterface/ui/Notice";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { TauntActions } from "@/GameInterface/World/TauntActions";
+import { FriendBetItem } from "@/GameInterface/World/FriendBetItem";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
 import { penaltiesInLineOrder, scoreLineOf } from "@/Domain/rivals/results";
-import type { RivalRow, SeatResult } from "@/types/rivalsTypes";
+import type { FeedBet, RivalRow, SeatResult } from "@/types/rivalsTypes";
 
 /** The league's results by day, filtered by friend, each with the banter actions (multiplayer part 6). */
 export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
@@ -25,6 +26,7 @@ export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
   const [results, setResults] = useState<SeatResult[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<WorldApiError | null>(null);
+  const [bets, setBets] = useState<FeedBet[]>([]);
 
   const load = useCallback(async (offset: number) => {
     const r = await rivalsApi.results(saveId, { seat, offset });
@@ -35,13 +37,19 @@ export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
   }, [saveId, seat]);
 
   useEffect(() => { void load(0); }, [load, version]);
+  useEffect(() => {
+    let live = true;
+    void rivalsApi.feedBets(saveId, seat).then((r) => { if (live && r.ok) setBets(r.data.bets); });
+    return () => { live = false; };
+  }, [saveId, seat, version]);
 
-  const byDay: [string, SeatResult[]][] = [];
-  for (const r of results ?? []) {
-    const last = byDay[byDay.length - 1];
-    if (last && last[0] === r.date) last[1].push(r);
-    else byDay.push([r.date, [r]]);
-  }
+  // Results and settled bets of the same day share one block (8.9.7); bets older than the loaded results wait for "load more".
+  const oldest = hasMore ? results?.[results.length - 1]?.date ?? "" : "";
+  const days = new Map<string, { results: SeatResult[]; bets: FeedBet[] }>();
+  const dayOf = (d: string) => days.get(d) ?? days.set(d, { results: [], bets: [] }).get(d)!;
+  for (const r of results ?? []) dayOf(r.date).results.push(r);
+  for (const b of bets) if (b.bet.settledOn && b.bet.settledOn >= oldest) dayOf(b.bet.settledOn).bets.push(b);
+  const byDay = [...days.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,11 +67,16 @@ export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
       </div>
       {error && <Notice kind="error">{t(`world.errors.${error}`)}</Notice>}
       {!results && !error && <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>}
-      {results && results.length === 0 && <p className="text-sm text-muted-foreground m-0">{t("rivals.empty")}</p>}
-      {byDay.map(([date, list]) => (
+      {results && results.length === 0 && bets.length === 0 && <p className="text-sm text-muted-foreground m-0">{t("rivals.empty")}</p>}
+      {byDay.map(([date, { results: list, bets: dayBets }]) => (
         <section key={date} className="flex flex-col gap-2">
           <Label>{formatDay(date, i18n.language, "long")}</Label>
           <ul className="m-0 p-0 list-none flex flex-col divide-y divide-border/50 border border-border rounded-md">
+            {dayBets.map((b) => (
+              <li key={b.id}>
+                <FriendBetItem saveId={saveId} id={b.id} nickname={b.nickname} bet={b.bet} canTaunt={b.seatId !== mySeatId} />
+              </li>
+            ))}
             {list.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
                 <ClubLogo logoUrl={squadLogoUrl(r.clubId)} className="w-8 h-8 shrink-0" />

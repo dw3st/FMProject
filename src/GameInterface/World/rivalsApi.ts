@@ -1,6 +1,6 @@
 import { worldCall as call } from "@/GameInterface/World/worldApi";
 import type { ChatMessageView } from "@/types/socialTypes";
-import type { LiveScoreView, ResultsPage, RivalsView, TauntKind, TauntTarget } from "@/types/rivalsTypes";
+import type { FeedBet, FriendBetsView, LiveScoreView, ResultsPage, RivalsView, TauntKind, TauntTarget } from "@/types/rivalsTypes";
 
 const seg = (s: string) => encodeURIComponent(s);
 
@@ -14,6 +14,10 @@ export const rivalsApi = {
     const qs = q.toString();
     return call<ResultsPage>("GET", `/api/worlds/${seg(saveId)}/results${qs ? `?${qs}` : ""}`);
   },
+  friendBets: (saveId: string, seat: string) =>
+    call<FriendBetsView>("GET", `/api/worlds/${seg(saveId)}/friend-bets?seat=${seg(seat)}`),
+  feedBets: (saveId: string, seat?: string | null) =>
+    call<{ bets: FeedBet[] }>("GET", `/api/worlds/${seg(saveId)}/feed-bets${seat ? `?seat=${seg(seat)}` : ""}`),
   taunt: (saveId: string, body: { target: TauntTarget; kind: TauntKind; id: string }) =>
     call<{ message: ChatMessageView }>("POST", `/api/worlds/${seg(saveId)}/taunts`, body),
 };

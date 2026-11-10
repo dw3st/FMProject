@@ -6317,7 +6317,7 @@
     "tabRivals": "Rivais",
     "tabResults": "Resultados",
     "rivalsTitle": "Seus rivais",
-    "rivalsHint": "Como cada amigo está indo. Clique numa linha para ver os resultados dele.",
+    "rivalsHint": "Como cada amigo está indo. Clique numa linha para ver as apostas e os resultados dele.",
     "resultsTitle": "Resultados",
     "col": {
       "rank": "#",
@@ -6325,10 +6325,12 @@
       "form": "Forma",
       "last": "Último",
       "next": "Próximo",
-      "live": "Agora"
+      "live": "Agora",
+      "bets": "Apostas"
     },
     "positionValue": "{{position}}º",
     "nextValue": "{{date}} · {{opponent}}",
+    "bets": {"title": "Apostas de {{name}}", "summary_one": "{{count}} aberta", "summary_other": "{{count}} abertas", "net": "resultado nas apostas {{value}}", "openCount_one": "{{count}} aberta", "openCount_other": "{{count}} abertas", "seeResults": "Ver resultados", "noOpen": "Nenhuma aposta aberta agora.", "colPick": "Aposta", "colGame": "Jogo", "colStake": "Valor", "colOdds": "Cotação", "settled": "Resolvidas", "game": "{{home}} x {{away}}", "gameOn": "{{home}} x {{away}} · {{date}}", "chatLine": "{{pick}} em {{home}} x {{away}}"},
     "moments": {
       "title": "Últimos lances",
       "none": "Nenhum lance ainda.",
@@ -6456,7 +6458,13 @@
       "loss_1": "Hoje não deu.",
       "loss_2": "Faz parte.",
       "loss_3": "Semana que vem tem mais.",
-      "loss_4": "Lutou. Mais ou menos."
+      "loss_4": "Lutou. Mais ou menos.",
+      "bet_won_1": "Tá com informação privilegiada?",
+      "bet_won_2": "A banca vai pedir revisão.",
+      "bet_won_3": "Paga o churrasco.",
+      "bet_lost_1": "Doou pra banca de novo.",
+      "bet_lost_2": "Aposta de coração nunca dá certo.",
+      "bet_lost_3": "Essa cotação era armadilha."
     },
     "errors": {
       "notFound": "Esse jogo ou resultado não está mais disponível.",

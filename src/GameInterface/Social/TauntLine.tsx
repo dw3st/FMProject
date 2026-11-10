@@ -5,6 +5,8 @@ import { REACTION_COLOR, REACTION_ICON, TONE_COLOR } from "@/GameInterface/World
 import { tauntTone } from "@/Domain/rivals/taunts";
 import { scoreLineOf } from "@/Domain/rivals/results";
 import type { ReactionId, TauntMeta } from "@/types/rivalsTypes";
+import { pickLabel } from "@/GameInterface/Achievements/betText";
+import { formatFee } from "@/Domain/money";
 
 /** A taunt in the chat: crest, "Vasco 0–3 Bahia", and the reaction icon or the phrase, in the reader's language. */
 export function TauntLine({ taunt }: { taunt: TauntMeta }) {
@@ -13,7 +15,17 @@ export function TauntLine({ taunt }: { taunt: TauntMeta }) {
     <span className="flex flex-col gap-1">
       <span className="flex items-center gap-1.5">
         <ClubLogo logoUrl={squadLogoUrl(taunt.clubId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
-        <span className="tabular-nums">{scoreLineOf(taunt)}</span>
+        {taunt.bet ? (
+          <span className="tabular-nums">
+            {t("rivals.bets.chatLine", { pick: pickLabel(t, taunt.bet.pick, taunt.bet.homeName, taunt.bet.awayName), home: taunt.bet.homeName, away: taunt.bet.awayName })}
+            {" · "}
+            <span className={taunt.bet.won ? "text-primary" : "text-destructive"}>
+              {taunt.bet.won ? `+${formatFee(taunt.bet.payout - taunt.bet.stake)}` : `−${formatFee(taunt.bet.stake)}`}
+            </span>
+          </span>
+        ) : (
+          <span className="tabular-nums">{scoreLineOf(taunt)}</span>
+        )}
         {taunt.live && <span className="text-muted-foreground tabular-nums">· {t("rivals.liveMinute", { minute: taunt.minute ?? 0 })}</span>}
       </span>
       {taunt.kind === "reaction" ? (

@@ -50,3 +50,7 @@ Aba **Apostas** em `/achievements`, depois de Patrimônio: três números, jogos
 - A cotação usa o 4-3-3 automático, não a formação nem a escalação do dia.
 - Sem aposta combinada, sem encerrar antes e sem aposta durante o jogo.
 - O jogador que muda de clube continua valendo: a aposta de gol olha só o id dele.
+
+## Apostas dos amigos (8.9.7)
+
+Pedido do usuário, opção A do mock com os itens do feed. Num mundo em grupo, todo membro vê as apostas dos outros: clicar numa linha de Rivais abre o painel (`World/FriendBetsPanel.tsx`) com as abertas (aposta, jogo, valor, cotação) e as 10 últimas resolvidas, e a coluna Apostas mostra quantas estão abertas (`RivalRow.bets`). As ganhas e perdidas da liga também entram no feed de Resultados no dia em que foram resolvidas (`World/FriendBetItem.tsx`), as devolvidas não. Rotas de membro: `GET /api/worlds/:saveId/friend-bets?seat=` e `GET …/feed-bets[?seat=]` (as 30 mais recentes). Cada resolvida aceita as reações e as frases dos grupos `bet_won` e `bet_lost` (3 cada) pela rota de provocação, alvo `{ bet: "<seatId>:<betId>" }`; no chat a linha mostra a aposta, o jogo e o dinheiro (`TauntMeta.bet`).

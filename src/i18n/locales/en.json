@@ -6317,7 +6317,7 @@
     "tabRivals": "Rivals",
     "tabResults": "Results",
     "rivalsTitle": "Your rivals",
-    "rivalsHint": "How each friend is doing. Click a row to see their results.",
+    "rivalsHint": "How each friend is doing. Click a row to see their bets and results.",
     "resultsTitle": "Results",
     "col": {
       "rank": "#",
@@ -6325,10 +6325,12 @@
       "form": "Form",
       "last": "Last",
       "next": "Next",
-      "live": "Now"
+      "live": "Now",
+      "bets": "Bets"
     },
     "positionValue": "#{{position}}",
     "nextValue": "{{date}} · {{opponent}}",
+    "bets": {"title": "{{name}}'s bets", "summary_one": "{{count}} open", "summary_other": "{{count}} open", "net": "betting result {{value}}", "openCount_one": "{{count}} open", "openCount_other": "{{count}} open", "seeResults": "See results", "noOpen": "No open bets right now.", "colPick": "Bet", "colGame": "Game", "colStake": "Stake", "colOdds": "Odds", "settled": "Settled", "game": "{{home}} v {{away}}", "gameOn": "{{home}} v {{away}} · {{date}}", "chatLine": "{{pick}} in {{home}} v {{away}}"},
     "moments": {
       "title": "Latest moments",
       "none": "Nothing yet.",
@@ -6456,7 +6458,13 @@
       "loss_1": "Not your day.",
       "loss_2": "It happens.",
       "loss_3": "There's always next week.",
-      "loss_4": "Fought. Sort of."
+      "loss_4": "Fought. Sort of.",
+      "bet_won_1": "Inside information?",
+      "bet_won_2": "The bookies want a review.",
+      "bet_won_3": "Drinks are on you.",
+      "bet_lost_1": "Another donation to the bookies.",
+      "bet_lost_2": "Never bet with your heart.",
+      "bet_lost_3": "Those odds were a trap."
     },
     "errors": {
       "notFound": "That game or result is no longer available.",

@@ -965,3 +965,7 @@ Report de tester, opção B do mock. No Painel de um mundo em grupo, sem jogo se
 ### Seleção na linha do rival (8.8.7)
 
 Report do usuário. `RivalRow.nationalTeam` (a seleção que ele treina, grafia dos dados) aparece ao lado do clube; um próximo jogo da seleção traz `RivalNextMatch.national` e o adversário pelo nome do país (`rivalNextOpponent`, `World/rivalNext.ts`), sem escudos na faixa da partida.
+
+### Apostas dos amigos (8.9.7)
+
+Rivais e Resultados mostram as apostas dos outros técnicos, com provocação pelas frases `bet_won` / `bet_lost`. Ver `.claude/rules/game/bets.md` → "Apostas dos amigos".

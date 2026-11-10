@@ -21,6 +21,7 @@ import { worldApi, type WorldApiError } from "@/GameInterface/World/worldApi";
 import { joinLink, worldTabOf, type WorldTab } from "@/GameInterface/World/worldNav";
 import { RivalsTable } from "@/GameInterface/World/RivalsTable";
 import { ResultsFeed } from "@/GameInterface/World/ResultsFeed";
+import { FriendBetsPanel } from "@/GameInterface/World/FriendBetsPanel";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { RivalsView } from "@/types/rivalsTypes";
 import { InviteFriendsModal } from "@/GameInterface/World/InviteFriendsModal";
@@ -67,6 +68,7 @@ export function WorldScreen() {
   const [rivals, setRivals] = useState<RivalsView | null>(null);
   const [rivalsError, setRivalsError] = useState<WorldApiError | null>(null);
   const [resultsSeat, setResultsSeat] = useState<string | null>(null);
+  const [betsSeat, setBetsSeat] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!saveId) return;
@@ -229,7 +231,16 @@ export function WorldScreen() {
           {rivals && (
             <RivalsTable
               rows={rivals.rows}
-              onSelect={(seatId) => { setResultsSeat(seatId); changeTab("results"); }}
+              selected={betsSeat}
+              onSelect={(seatId) => setBetsSeat((s) => (s === seatId ? null : seatId))}
+            />
+          )}
+          {rivals && betsSeat && rivals.rows.some((r) => r.seatId === betsSeat) && (
+            <FriendBetsPanel
+              saveId={saveId}
+              row={rivals.rows.find((r) => r.seatId === betsSeat)!}
+              version={social.rivalsVersion}
+              onResults={() => { setResultsSeat(betsSeat); changeTab("results"); }}
             />
           )}
         </section>

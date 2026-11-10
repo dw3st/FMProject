@@ -1,5 +1,6 @@
 // Rivals in a friends' league (multiplayer part 6). Nicknames only: never an e-mail or a user id.
 import type { ManagerFace } from "@/Domain/faces/managerFace";
+import type { Bet, BetPick } from "@/types/betTypes";
 
 export type ResultSituation =
   | "win" | "draw" | "loss"
@@ -8,7 +9,9 @@ export type ResultSituation =
   | "shootout_win" | "shootout_loss";
 
 export type LiveSituation = "live_goal_for" | "live_goal_against";
-export type TauntGroup = ResultSituation | LiveSituation;
+/** A friend's settled bet (8.9.7). */
+export type BetSituation = "bet_won" | "bet_lost";
+export type TauntGroup = ResultSituation | LiveSituation | BetSituation;
 
 export interface SeatResultGoal {
   minute: number;
@@ -110,7 +113,8 @@ export interface LiveScoreView extends LiveBase {
 
 export type ReactionId = "applause" | "fire" | "laugh" | "sorry";
 export type TauntKind = "reaction" | "phrase";
-export type TauntTarget = { result: string } | { live: string };
+/** `bet` = `<seatId>:<betId>` of a settled bet. */
+export type TauntTarget = { result: string } | { live: string } | { bet: string };
 
 /** Stored in `chat_messages.meta` as `{ taunt }`: ids and the real score only. */
 export interface TauntMeta {
@@ -125,6 +129,36 @@ export interface TauntMeta {
   score: { for: number; against: number };
   live?: true;
   minute?: number;
+  /** A taunt on a settled bet: the pick and the money (the score fields are unused). */
+  bet?: TauntBet;
+}
+
+export interface TauntBet {
+  pick: BetPick;
+  homeName: string;
+  awayName: string;
+  stake: number;
+  odds: number;
+  payout: number;
+  won: boolean;
+}
+
+/** A friend's bets, seen by the league (8.9.7). */
+export interface FriendBetsView {
+  seatId: string;
+  open: Bet[];
+  /** Won and lost, newest first (refunds left out). */
+  settled: Bet[];
+  net: number;
+}
+
+/** A settled bet in the results feed. */
+export interface FeedBet {
+  /** `<seatId>:<betId>`. */
+  id: string;
+  seatId: string;
+  nickname: string;
+  bet: Bet;
 }
 
 export interface RivalNextMatch {
@@ -156,6 +190,8 @@ export interface RivalRow {
   friendsRank: number;
   friendsTotal: number;
   live: LiveScoreView | null;
+  /** Open bets now and the career result of his bets. */
+  bets: { open: number; net: number };
   me: boolean;
 }
 
