@@ -6183,7 +6183,7 @@
       "runningShort": "{{date}} → {{target}}",
       "turn": {
         "oneReady": "{{name}} is ready until {{date}}.",
-        "markReady": "Mark ready",
+        "markReady": "Ready until my next game", "seeMatch": "See today's game",
         "title": "Only you left",
         "body": "The other managers are ready."
       },

@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { formatGameDate } from "@/GameInterface/formatDate";
-import { OPEN_READY_EVENT } from "@/GameInterface/World/TurnNoticeCard";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
 import { addDays, isRealIsoDate } from "@/Domain/dates";
 import { readyBranch } from "@/GameInterface/World/groupAdvanceText";
@@ -41,13 +40,6 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
     const r = triggerRef.current?.getBoundingClientRect();
     if (r) setPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
   }, []);
-
-  // The "Só falta você" card's button opens the menu (8.9.9).
-  useEffect(() => {
-    const onOpen = () => { place(); setOpen(true); };
-    window.addEventListener(OPEN_READY_EVENT, onOpen);
-    return () => window.removeEventListener(OPEN_READY_EVENT, onOpen);
-  }, [place]);
 
   const close = useCallback((restoreFocus: boolean) => {
     setOpen(false);

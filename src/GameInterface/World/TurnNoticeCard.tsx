@@ -2,13 +2,13 @@ import { useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
+import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
+import { navigate } from "@/GameInterface/router/navigation";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 
 /** The top bar's slot around "Pronto até" (Layout): the card hangs from it. */
 export const READY_SLOT_ID = "fm-ready-slot";
-/** Asks the ready control to open its menu. */
-export const OPEN_READY_EVENT = "fm:open-ready";
 
 const WIDTH = 320;
 
@@ -18,6 +18,8 @@ const WIDTH = 320;
  */
 export function TurnNoticeCard({ view, myNickname, onClose }: { view: GroupAdvanceView | null; myNickname: string | null; onClose: () => void }) {
   const { t, i18n } = useTranslation();
+  const { markReady, busy } = useGroupAdvance();
+  const matchToday = !!view?.me.matchToday && !view.me.decision;
   const [anchor, setAnchor] = useState<{ top: number; right: number; arrow: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -54,11 +56,18 @@ export function TurnNoticeCard({ view, myNickname, onClose }: { view: GroupAdvan
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <span className="font-display font-black uppercase text-xl leading-none text-foreground">{t("world.advance.turn.title")}</span>
           <span className="text-sm text-muted-foreground">{body}</span>
+          {/* A game today to decide goes to its preview; otherwise ready until his next game (8.9.11: it opened a menu
+              the top bar does not show on a match day). */}
           <Button
             className="h-9 self-start mt-2"
-            onClick={() => { window.dispatchEvent(new Event(OPEN_READY_EVENT)); onClose(); }}
+            disabled={busy}
+            onClick={() => {
+              if (matchToday) navigate("/match-preview");
+              else void markReady("next_match");
+              onClose();
+            }}
           >
-            {t("world.advance.turn.markReady")}
+            {t(matchToday ? "world.advance.turn.seeMatch" : "world.advance.turn.markReady")}
           </Button>
         </div>
         <button

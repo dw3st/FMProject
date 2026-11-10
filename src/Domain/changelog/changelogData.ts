@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.11",
+    date: "2026-11-10",
+    time: "18:14",
+    items: [],
+    fixes: [
+      {
+        pt: "O botão do aviso de que só falta você funciona: marca pronto até o próximo jogo ou, com jogo hoje, abre a prévia.",
+        en: "The button on the only-you-left notice works: it marks you ready until your next game or, with a game today, opens the preview.",
+      },
+    ],
+  },
+  {
     version: "8.9.10",
     date: "2026-11-10",
     time: "18:06",
