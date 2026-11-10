@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { ScoutingInboxMessage } from "@/types/inboxTypes";
 import type { ScoutTarget } from "@/types/scoutingTypes";
 import type { LeagueData } from "@/types/playerTypes";
-import { competitionName } from "@/Domain/world/labels";
+import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { formatFee } from "@/Domain/money";
 import { GemBadge, GradeBadge } from "@/GameInterface/Scouting/Badges";
 import { playerHref } from "@/GameInterface/Scouting/scoutingApi";
@@ -15,7 +15,7 @@ export function targetLabel(target: ScoutTarget | undefined, t: T, leagues: Leag
   if (target.kind === "player") return `${target.playerName ?? ""}${target.knowledgeTarget ? ` · ${target.knowledgeTarget}%` : ""}`;
   if (target.kind === "league") return competitionName(target.league ?? "", leagues, lang);
   if (target.kind === "continent") return t(`scouting.continents.${target.continent ?? ""}`, { defaultValue: target.continent ?? "" });
-  const country = target.country ?? "";
+  const country = nationalityDisplayName(target.country ?? "", lang, t);
   return target.kind === "youth" ? t("scouting.target.youthOf", { country }) : country;
 }
 

@@ -4567,7 +4567,9 @@
       "shortlist": "Observado: {{name}} ({{reason}})"
     },
     "reports": {
-      "moved": "mudou de clube"
+      "moved": "mudou de clube",
+      "onMission": "Olheiros em missão",
+      "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} sem."
     }
   },
   "scoutCountries": {

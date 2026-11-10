@@ -324,6 +324,10 @@ Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da E
   missions (#157)": técnico não cria, o avanço do dia por uma segunda cria com o chefe, o cancelamento segura uma
   semana); `src/backend/responsibilities.routes.test.ts` (validação do `PUT`).
 
+## Olheiros em missão nos Relatórios (8.8.34)
+
+Report de tester (só via os relatórios chegando, sem saber onde cada olheiro estava). A aba Relatórios mostra uma linha de chips com cada missão ativa (olheiro, alvo, semana); clicar filtra os relatórios dela, e o seletor Missão lista também as missões que ainda não têm relatório. O país do alvo sai no idioma do jogador (`targetLabel`, também na caixa de entrada).
+
 ## Joia uma vez por jogador (7.9)
 
 Análise do mundo dos testers: 58 avisos de joia em 28 semanas, 26 jogadores (R. Navarro 8 vezes), com notas C e D. A

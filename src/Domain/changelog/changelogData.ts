@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.34",
+    date: "2026-11-10",
+    time: "08:32",
+    items: [],
+    fixes: [
+      {
+        pt: "Olheiros: a aba Relatórios mostra onde cada olheiro está em missão, e clicar filtra os relatórios dela.",
+        en: "Scouting: the Reports tab shows where each scout is on a mission, and clicking one filters its reports.",
+      },
+    ],
+  },
+  {
     version: "8.8.33",
     date: "2026-11-10",
     time: "07:58",

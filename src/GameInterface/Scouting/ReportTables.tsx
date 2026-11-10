@@ -16,6 +16,7 @@ import { playerHref, scoutingCall, type ScoutingData } from "@/GameInterface/Sco
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
 import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
 import { Chip } from "@/GameInterface/ui/Chip";
+import { Label } from "@/GameInterface/ui/Label";
 import { Icon } from "@/GameInterface/Icons";
 import {
   REPORT_GRADES, defaultDir, filterReports, sortReports, type ReportSortKey, type SortDir,
@@ -118,7 +119,7 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
   const [mission, setMission] = useState("all");
   const shortlisted = useMemo(() => new Set(data.shortlist.map((e) => e.playerId)), [data.shortlist]);
   const missionOptions = useMemo(() => {
-    const ids = [...new Set(data.reports.map((r) => r.missionId).filter((x): x is string => !!x))];
+    const ids = [...new Set([...data.reports.map((r) => r.missionId), ...data.missions.map((m) => m.id)].filter((x): x is string => !!x))];
     const label = (id: string) => {
       if (id === RECOMMENDATION_ORIGIN) return t("scouting.recommendationReports");
       const m = data.missions.find((x) => x.id === id);
@@ -146,6 +147,29 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
   );
   return (
     <div className="flex flex-col gap-4">
+      {data.missions.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <Label>{t("scouting.reports.onMission")}</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {data.missions.map((m) => (
+              <Chip
+                key={m.id}
+                selected={mission === m.id}
+                aria-pressed={mission === m.id}
+                onClick={() => setMission(mission === m.id ? "all" : m.id)}
+                title={m.byChief ? t("scouting.chiefPlans.byChief") : undefined}
+              >
+                {t("scouting.reports.missionChip", {
+                  scout: data.scouts.find((s) => s.id === m.scoutId)?.name ?? "",
+                  target: targetLabel(m.target, t, leagues, i18n.language),
+                  done: m.weeksDone,
+                  total: m.weeks,
+                })}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-end gap-4">
         <div className="w-full sm:w-72">
           <SelectCombobox label={t("scouting.mission")} value={mission} onChange={setMission} options={missionOptions} />

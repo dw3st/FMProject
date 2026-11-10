@@ -4567,7 +4567,9 @@
       "shortlist": "Shortlist: {{name}} ({{reason}})"
     },
     "reports": {
-      "moved": "changed clubs"
+      "moved": "changed clubs",
+      "onMission": "Scouts on mission",
+      "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} wk"
     }
   },
   "scoutCountries": {
