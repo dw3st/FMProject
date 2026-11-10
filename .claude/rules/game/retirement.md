@@ -116,3 +116,7 @@ Report do usuário. `GET /api/saves/:id/retired/:retiredId` (dono, 404 sem o reg
 ## Lenda pela nota precisa de carreira (8.8.1)
 
 Report de tester (um zagueiro de nota 50, 33 jogos e nenhum título era lenda). Pela nota da posição (`LEGEND_LEVEL`) só é lenda quem também tem carreira no jogo: 150 jogos ou um título (`LEGEND_LEVEL_CAREER`, `careerInGame`). Classe mundial continua automática. Super raro (`legendRarity`) também precisa ser lenda; sem isso é comum.
+
+## Nome da lenda renascida (8.8.36)
+
+Report de tester, opção B do mock. Todo jogador com `reborn` (renascido aceito, lenda da loja ou trazida com dinheiro) aparece com o nome dourado e uma coroa de louros (`LegendLaurel`, pintada no FLUX, `medals/legend-laurel.png`) no Elenco, na Base e na ficha.

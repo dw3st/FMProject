@@ -3289,6 +3289,7 @@
       "green": "Prodígio"
     },
     "reborn": "Renascido",
+    "rebornLegend": "Lenda renascida",
     "suspended": "Suspenso",
     "suspendedMatches_one": "Suspenso para o próximo jogo",
     "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"

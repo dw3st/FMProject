@@ -3289,6 +3289,7 @@
       "green": "Prodigy"
     },
     "reborn": "Reborn",
+    "rebornLegend": "Reborn legend",
     "suspended": "Suspended",
     "suspendedMatches_one": "Suspended for the next match",
     "suspendedMatches_other": "Suspended for the next {{count}} matches"

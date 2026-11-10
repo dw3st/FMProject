@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.36",
+    date: "2026-11-10",
+    time: "13:45",
+    items: [],
+    fixes: [
+      {
+        pt: "Lendas renascidas agora têm o nome dourado e uma coroa de louros no Elenco, na Base e na ficha.",
+        en: "Reborn legends now have a golden name and a laurel wreath in the Squad, the Academy and on the player page.",
+      },
+    ],
+  },
+  {
     version: "8.8.35",
     date: "2026-11-10",
     time: "11:35",

@@ -31,6 +31,7 @@ import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { moraleBand, moraleOf } from "@/Domain/morale/morale";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { LEGEND_NAME_CLASS, LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
@@ -262,11 +263,12 @@ export function SquadRosterTable({
               <a
                 href={playerDetailHref(player)}
                 title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}
-                className="text-foreground hover:text-primary hover:underline no-underline"
+                className={`${player.reborn ? LEGEND_NAME_CLASS : "text-foreground"} hover:text-primary hover:underline no-underline`}
                 onClick={followLinkOnly}
               >
                 {player.name}
               </a>
+              {player.reborn && <LegendLaurel className="ml-1.5" />}
               {stars.get(player.id) && <StarBadge kind={stars.get(player.id)} className="ml-1.5 align-middle" />}
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
