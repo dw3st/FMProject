@@ -1,3 +1,5 @@
+import type { BetsState } from "@/types/betTypes";
+import { emptyBets } from "@/Domain/bets/bets";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { initClubMorale } from "@/Domain/morale/morale";
 import { fileURLToPath } from "node:url";
@@ -381,6 +383,14 @@ export class SaveService {
   // ── Scouting (`.claude/rules/game/scouting.md`) ─────────────────────────────
 
   /** The seat's scouting state; an empty one when nothing was ever observed. */
+  async getBets(saveId: string, seatId: string): Promise<BetsState> {
+    return (await this.dal.readSeatBets(saveId, seatId)) ?? emptyBets();
+  }
+
+  writeBets(saveId: string, state: BetsState, seatId: string): Promise<void> {
+    return this.dal.writeSeatBets(saveId, seatId, state);
+  }
+
   async getScouting(saveId: string, seatId: string): Promise<ScoutingState> {
     return (await this.dal.readSeatScouting(saveId, seatId)) ?? emptyScoutingState();
   }

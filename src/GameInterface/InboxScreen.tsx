@@ -1,3 +1,4 @@
+import { BetsInboxBody } from "@/GameInterface/Achievements/BetsInboxBody";
 import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import { inboxAction } from "@/GameInterface/Inbox/inboxAction";
 import { AchievementInboxBody } from "@/GameInterface/Achievements/AchievementInboxBody";
@@ -227,6 +228,13 @@ const CATEGORY_META: Record<
     color: "text-chart-3",
     bg: "bg-chart-3/15",
     border: "border-chart-3/30",
+    Icon: CalendarIcon,
+  },
+  bets: {
+    labelKey: "inbox.categories.bets",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
     Icon: CalendarIcon,
   },
   friendly: {
@@ -762,6 +770,9 @@ function leaguePrizeTexts(
     const vars = { manager: message.managerName, club: message.clubName };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
   }
+  if (message.category === "bets") {
+    return { subject: t("bets.inbox.subject"), preview: t("bets.inbox.preview", { count: message.bets.length }) };
+  }
   if (message.category === "friendly") {
     return {
       subject: t("friendlies.subject", { opponent: message.opponentName }),
@@ -974,6 +985,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
     {message.category === "national" && <NationalInboxBody message={message} />}
     {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
+    {message.category === "bets" && <BetsInboxBody bets={message.bets} net={message.net} />}
     {message.category === "achievement" && <AchievementInboxBody keys={message.keys} points={message.points} />}
     {message.category === "board" && (
       <p className="text-sm text-foreground m-0">
@@ -1643,7 +1655,7 @@ export function InboxCategoryTile({ message, large = false }: { message: InboxMe
   const ink = meta.color;
   return (
     <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${tile} border flex items-center justify-center shrink-0`}>
-      <ArtIcon art={`inbox-${(message.category === "friendly" ? "schedule" : message.category).replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
+      <ArtIcon art={`inbox-${(message.category === "friendly" ? "schedule" : message.category === "bets" ? "achievement" : message.category).replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
     </div>
   );
 }

@@ -6,6 +6,8 @@ describe("manager's money", () => {
     expect(managerWallet(1_000_000, 300_000)).toBe(700_000);
     expect(managerWallet(undefined, undefined)).toBe(0);
     expect(managerWallet(100, 500)).toBe(0);
+    expect(managerWallet(1_000, 100, 50, 200)).toBe(750);
+    expect(managerWallet(1_000, 100, -2_000, 0)).toBe(0);
   });
 
   test("levels go one by one, up to the top", () => {

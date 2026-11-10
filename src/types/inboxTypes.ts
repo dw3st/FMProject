@@ -9,6 +9,7 @@ import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 import type { RegCounts, RegistrationNotice } from "@/types/registrationTypes";
 
 export type InboxCategory =
+  | "bets"
   | "development"
   | "transfer_in"
   | "transfer_out"
@@ -512,6 +513,7 @@ export type InboxMessage =
   | NationalInboxMessage
   | NationalCoachInboxMessage
   | AchievementInboxMessage
+  | BetsInboxMessage
   | WorldInboxMessage
   | WorldAdvanceInboxMessage
   | WorldLiveRefusedInboxMessage
@@ -613,6 +615,14 @@ export interface NationalCoachInboxMessage extends InboxMessageBase {
 }
 
 /** Achievements unlocked today (`.claude/rules/game/achievements.md`): one message per day. */
+/** The manager's bets resolved today. */
+export interface BetsInboxMessage extends InboxMessageBase {
+  category: "bets";
+  kind: "settled";
+  bets: import("@/types/betTypes").Bet[];
+  net: number;
+}
+
 export interface AchievementInboxMessage extends InboxMessageBase {
   category: "achievement";
   kind: "unlocked";

@@ -1535,6 +1535,38 @@
       "finished": "The work with the assistant is over: {{player}}'s {{trait}} reached its best, {{band}}."
     }
   },
+  "bets": {
+    "wallet": "Wallet",
+    "openTotal": "In open bets",
+    "profit": "Betting profit",
+    "loading": "Loading...",
+    "noGames": "No games open for betting in the next 7 days.",
+    "noMoney": "No money to bet",
+    "limit": "Up to {{value}}",
+    "return": "Possible return",
+    "place": "Place bet",
+    "less": "Lower the stake",
+    "more": "Raise the stake",
+    "draw": "Draw",
+    "ownClub": "On your own team's game you can only bet in its favour.",
+    "open": "Open",
+    "history": "History",
+    "market": { "result": "Result", "score": "Exact score", "scorer": "To score" },
+    "pick": { "win": "{{team}} to win", "score": "Score {{home}}-{{away}}", "scorer": "{{player}} to score" },
+    "status": { "won": "Won", "lost": "Lost", "refunded": "Refunded" },
+    "inbox": { "subject": "Your bets were settled", "preview_one": "{{count}} bet", "preview_other": "{{count}} bets", "net": "Day's result: {{value}}" },
+    "errors": {
+      "generic": "That did not work. Try again.",
+      "invalidPick": "That bet is not available.",
+      "invalidStake": "Invalid stake.",
+      "ownClubAgainst": "You cannot bet against your own team.",
+      "closed": "Betting on this game has closed.",
+      "alreadyBet": "You already placed this type of bet on this game.",
+      "noMoney": "That stake is over your wallet limit.",
+      "tooManyBets": "You have too many open bets.",
+      "oddsChanged": "The price changed. Check it and bet again."
+    }
+  },
   "settling": {
     "badge": "Settling {{games}}/{{need}}",
     "title": "Just arrived: plays a little below his level until {{need}} games for the club, friendlies included, or the end of the season."
@@ -1678,6 +1710,10 @@
           "label": "Manager news",
           "description": "Managers sacked and hired in your league"
         },
+        "bets": {
+          "label": "Bets",
+          "description": "The results of your bets"
+        },
         "achievements": {
           "label": "Achievements",
           "description": "Achievements unlocked"
@@ -1728,6 +1764,7 @@
       "registration": "Registration",
       "schedule": "Schedule",
       "friendly": "Friendlies",
+      "bets": "Bets",
       "press": "Press",
       "world": "League",
       "discipline": "Discipline",
@@ -4932,7 +4969,8 @@
       "profile": "Profile",
       "manager": "Manager",
       "shop": "Shop",
-      "assets": "Assets"
+      "assets": "Assets",
+      "bets": "Bets"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",
@@ -5067,6 +5105,14 @@
         "name": "National hero",
         "desc": "Wins with the national team you coach"
       },
+      "bets_profit": {
+        "name": "Sharp eye",
+        "desc": "Total betting profit"
+      },
+      "bets_exact": {
+        "name": "Fortune teller",
+        "desc": "Exact scores called"
+      },
       "career_earnings": {
         "name": "Nest egg",
         "desc": "What you earned over your career"
@@ -5100,6 +5146,8 @@
       "top_scorer": "Goal factory",
       "league_unbeaten": "The invincible",
       "national_wins": "National hero",
+      "bets_profit": "The punter",
+      "bets_exact": "The seer",
       "career_earnings": "Nest egg"
     },
     "secrets": {
@@ -5166,6 +5214,10 @@
       "world_champion": {
         "name": "World champion",
         "desc": "Win the World Cup with your national team"
+      },
+      "bet_longshot": {
+        "name": "Long shot",
+        "desc": "Win a bet at odds of 8 or more"
       },
       "against_homeland": {
         "name": "Against the homeland",

@@ -27,6 +27,8 @@ Toda etapa concluída do roadmap entra no changelog do jogo ("Novidades") antes 
 
 ## Onde estamos (em produção)
 
+- **Apostas do técnico (8.9):** o técnico aposta o dinheiro da carreira no resultado, no placar exato e em quem marca, numa aba de Conquistas, com três conquistas novas.
+
 - **Mundo público (7.5):** um mundo do servidor onde qualquer técnico entra num clube das 10 ligas principais; anda quatro vezes por dia (9h, 13h, 18h e 22h, Brasília) e guarda um hall da fama por edição.
 
 - **Mundo aberto 2026/27:** 83 ligas, 1.273 clubes, ~36,4 mil jogadores. Elencos, composição e

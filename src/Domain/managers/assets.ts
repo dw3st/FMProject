@@ -20,9 +20,9 @@ export function isAssetKind(k: unknown): k is AssetKind {
   return (ASSET_KINDS as readonly unknown[]).includes(k);
 }
 
-/** What he can still spend: everything earned minus what the assets cost. */
-export function managerWallet(earned: number | undefined, spent: number | undefined): number {
-  return Math.max(0, (earned ?? 0) - (spent ?? 0));
+/** What he can still spend: everything earned, minus the assets, plus the result of his bets, minus the open ones. */
+export function managerWallet(earned: number | undefined, spent: number | undefined, betNet = 0, openBets = 0): number {
+  return Math.max(0, (earned ?? 0) - (spent ?? 0) + (betNet ?? 0) - openBets);
 }
 
 /** Price of the next level of an asset; null at the top. */

@@ -1,3 +1,5 @@
+import { buildBetsMessage } from "@/Domain/inbox/betsMessage";
+import { settleSeatBets } from "@/backend/betsWorld";
 import { addManagerCards } from "@/Domain/managers/managerRecords";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { worldTopIds } from "@/Domain/squad/starLimit";
@@ -3372,6 +3374,16 @@ export async function advanceOneDay(
     }
 
     // ── Achievements of each seat's manager (`.claude/rules/game/achievements.md`): last, over the whole day ──
+    // Bets on today's games, per seat, before the achievements read them (`.claude/rules/game/bets.md`).
+    for (const ds of options.marketFrozen ? [] : daySeats) {
+      const bets = await settleSeatBets(saveService, saveId, ds.seatId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"));
+      if (!bets) continue;
+      ds.patch.betNet = (ds.meta.betNet ?? 0) + bets.net;
+      if (bets.exact > 0) ds.patch.betExact = (ds.meta.betExact ?? 0) + bets.exact;
+      if (bets.longshot) ds.patch.betLongshot = true;
+      // This step runs after the rollover's `clearInbox`, so the message goes straight in.
+      await emitInboxMessage(saveId, buildBetsMessage(currentDate, bets.settled, bets.net), saveService, ds.seatId);
+    }
     for (const ds of options.marketFrozen ? [] : daySeats) {
       // The seat's national game of the day.
       const natDay = nationalDay.bySeat[ds.seatId];
@@ -3386,6 +3398,7 @@ export async function advanceOneDay(
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
         earnings: (ds.meta.managerEarnings ?? 0) + ds.managerEarned,
+        bets: { net: ds.patch.betNet ?? ds.meta.betNet ?? 0, exact: ds.patch.betExact ?? ds.meta.betExact ?? 0, longshot: ds.patch.betLongshot ?? ds.meta.betLongshot ?? false },
         ...(ds.rollover.seasonEnded ? { rollover: { championOf: ds.rollover.championOf, moves: ds.rollover.moves, objectiveMet: ds.rollover.objectiveMet } } : {}),
         sacked: !!ds.job.ended && ds.job.ended.reason !== "contract",
         leftClub: !!ds.job.ended,

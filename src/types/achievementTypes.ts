@@ -15,7 +15,7 @@ export type AchievementTier = "bronze" | "silver" | "gold" | "secret";
 export const TRACK_IDS = [
   "league_titles", "cup_titles", "continental_titles", "promotions",
   "wins", "win_streak", "unbeaten_run", "thrashings",
-  "comebacks", "ten_men_wins", "shootout_wins", "derby_wins", "national_wins", "career_earnings",
+  "comebacks", "ten_men_wins", "shootout_wins", "derby_wins", "national_wins", "career_earnings", "bets_profit", "bets_exact",
   "youth_promoted", "young_award",
   "sales_profit", "big_signing", "free_starter",
   "balance", "stadium", "facilities",
@@ -26,7 +26,7 @@ export type TrackId = (typeof TRACK_IDS)[number];
 
 export const SECRET_IDS = [
   "fortress", "cheapest_champion", "keeper_goal", "sacked_early", "double", "treble", "great_escape", "nine_men",
-  "seven_up", "bounce_back", "last_gasp", "humbled", "perfect_month", "one_club", "wall", "world_champion", "against_homeland",
+  "seven_up", "bounce_back", "last_gasp", "humbled", "perfect_month", "one_club", "wall", "world_champion", "against_homeland", "bet_longshot",
 ] as const;
 export type SecretId = (typeof SECRET_IDS)[number];
 

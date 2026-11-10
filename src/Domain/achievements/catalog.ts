@@ -39,6 +39,8 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   clubs:              { category: "career", attribute: "discipline", thresholds: [2, 4, 6] },
   ranking:            { category: "career", attribute: "discipline", thresholds: [100, 20, 1], kind: "rank" },
   career_earnings:    { category: "career", attribute: "negotiation", thresholds: [1_000_000, 10_000_000, 50_000_000] },
+  bets_profit:        { category: "career", attribute: "negotiation", thresholds: [100_000, 1_000_000, 5_000_000] },
+  bets_exact:         { category: "career", attribute: "tactics", thresholds: [1, 5, 15] },
   manager_awards:     { category: "career", attribute: "discipline", thresholds: [1, 3, 1], goldRule: "world_manager" },
   top_scorer:         { category: "squad", attribute: "tactics", thresholds: [1, 3, 5] },
   league_unbeaten:    { category: "squad", attribute: "tactics", thresholds: [10, 19, 1], goldRule: "invincible" },
@@ -46,6 +48,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
 
 export const SECRETS: Record<SecretId, { attribute: ManagerAttribute }> = {
   fortress:          { attribute: "tactics" },
+  bet_longshot:      { attribute: "motivation" },
   cheapest_champion: { attribute: "negotiation" },
   keeper_goal:       { attribute: "motivation" },
   sacked_early:      { attribute: "discipline" },

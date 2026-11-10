@@ -49,8 +49,10 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
   const club = await humanClub(saveId, seatId);
   const { season, start: seasonStart } = await nextSeasonEndOf(saveId, seatId);
   const managers = await saveService.getManagers(saveId);
-  const earnings = (await saveService.getSeatMeta(saveId, seatId))?.managerEarnings ?? 0;
-  const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId, earnings));
+  const seat = await saveService.getSeatMeta(saveId, seatId);
+  const earnings = seat?.managerEarnings ?? 0;
+  const bets = { net: seat?.betNet ?? 0, exact: seat?.betExact ?? 0, longshot: seat?.betLongshot ?? false };
+  const values = trackValues(state, achievementSnapshot(state, club?.squad ?? null, managers, seatId, earnings, bets));
   const a = state.attributes;
   const retired = await saveService.getRetired(saveId);
   return {

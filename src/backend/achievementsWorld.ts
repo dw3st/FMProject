@@ -31,6 +31,7 @@ export interface AchievementsDayArgs {
   squadOf: (id: string) => Promise<Squad | null>;
   /** Career earnings including today's. */
   earnings?: number;
+  bets?: { net: number; exact: number; longshot: boolean };
   /** The human club's country rolled today. */
   rollover?: {
     championOf: string | null;
@@ -69,7 +70,7 @@ async function cheapestOfLeague(args: AchievementsDayArgs, clubId: string, leagu
 }
 
 /** What the game keeps that the tracks read (titles, ranking, money, stadium, facilities). */
-export function achievementSnapshot(state: AchievementsState, club: Squad | null, managers: ManagerRecord[], seatId: string, earnings = 0): AchievementSnapshot {
+export function achievementSnapshot(state: AchievementsState, club: Squad | null, managers: ManagerRecord[], seatId: string, earnings = 0, bets?: AchievementSnapshot["bets"]): AchievementSnapshot {
   const player = managers.find((m) => m.seatId === seatId) ?? null;
   const ranked = rankManagers(managers.filter((m) => !m.retired));
   const pos = ranked.findIndex((m) => m.seatId === seatId);
@@ -78,6 +79,7 @@ export function achievementSnapshot(state: AchievementsState, club: Squad | null
     rank: pos >= 0 && (player?.points ?? 0) > 0 ? pos + 1 : null,
     ...builtSince(state, club),
     earnings,
+    ...(bets ? { bets } : {}),
   };
 }
 
@@ -143,7 +145,7 @@ export async function achievementsDay(service: SaveService, saveId: string, seat
 
   const transfers: DayTransfer[] = (await service.getDayLog(saveId, args.date))?.transfers ?? [];
 
-  const snapshot = achievementSnapshot(state, club, args.managers, seatId, args.earnings ?? 0);
+  const snapshot = achievementSnapshot(state, club, args.managers, seatId, args.earnings ?? 0, args.bets);
 
   // Season awards of the club's players (recorded at the club's rollover).
   const awards: { key: string; kind: "young_player" | "top_scorer" }[] = [];

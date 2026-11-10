@@ -1535,6 +1535,38 @@
       "finished": "O trabalho com o auxiliar terminou: {{trait}} de {{player}} chegou ao melhor nível, {{band}}."
     }
   },
+  "bets": {
+    "wallet": "Carteira",
+    "openTotal": "Em apostas abertas",
+    "profit": "Lucro nas apostas",
+    "loading": "Carregando...",
+    "noGames": "Nenhum jogo aberto para apostar nos próximos 7 dias.",
+    "noMoney": "Sem dinheiro para apostar",
+    "limit": "Até {{value}}",
+    "return": "Retorno possível",
+    "place": "Apostar",
+    "less": "Diminuir o valor",
+    "more": "Aumentar o valor",
+    "draw": "Empate",
+    "ownClub": "No jogo do seu time, só dá para apostar a favor dele.",
+    "open": "Abertas",
+    "history": "Histórico",
+    "market": { "result": "Resultado", "score": "Placar exato", "scorer": "Marca gol" },
+    "pick": { "win": "{{team}} vence", "score": "Placar {{home}}-{{away}}", "scorer": "{{player}} marca" },
+    "status": { "won": "Ganhou", "lost": "Perdeu", "refunded": "Devolvida" },
+    "inbox": { "subject": "Suas apostas foram resolvidas", "preview_one": "{{count}} aposta", "preview_other": "{{count}} apostas", "net": "Saldo do dia: {{value}}" },
+    "errors": {
+      "generic": "Não deu para concluir. Tente de novo.",
+      "invalidPick": "Essa aposta não está disponível.",
+      "invalidStake": "Valor inválido.",
+      "ownClubAgainst": "Você não pode apostar contra o seu time.",
+      "closed": "As apostas desse jogo já fecharam.",
+      "alreadyBet": "Você já apostou nesse tipo neste jogo.",
+      "noMoney": "Esse valor passa do limite da carteira.",
+      "tooManyBets": "Você já tem apostas abertas demais.",
+      "oddsChanged": "A cotação mudou. Confira e aposte de novo."
+    }
+  },
   "settling": {
     "badge": "Adaptação {{games}}/{{need}}",
     "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos pelo clube, amistosos inclusive, ou o fim da temporada."
@@ -1681,6 +1713,10 @@
         "achievements": {
           "label": "Conquistas",
           "description": "Conquistas desbloqueadas"
+        },
+        "bets": {
+          "label": "Apostas",
+          "description": "Resultado das suas apostas"
         }
       }
     },
@@ -1728,6 +1764,7 @@
       "registration": "Inscrição",
       "schedule": "Calendário",
       "friendly": "Amistosos",
+      "bets": "Apostas",
       "press": "Imprensa",
       "world": "Liga",
       "discipline": "Disciplina",
@@ -4932,7 +4969,8 @@
       "profile": "Perfil",
       "manager": "Técnico",
       "shop": "Loja",
-      "assets": "Patrimônio"
+      "assets": "Patrimônio",
+      "bets": "Apostas"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
@@ -5070,6 +5108,14 @@
       "career_earnings": {
         "name": "Pé-de-meia",
         "desc": "Quanto você ganhou na carreira"
+      },
+      "bets_profit": {
+        "name": "Olho clínico",
+        "desc": "Lucro acumulado nas apostas"
+      },
+      "bets_exact": {
+        "name": "Vidente",
+        "desc": "Placares exatos acertados"
       }
     },
     "titles": {
@@ -5100,7 +5146,9 @@
       "top_scorer": "Fábrica de gols",
       "league_unbeaten": "O invencível",
       "national_wins": "Herói nacional",
-      "career_earnings": "Pé-de-meia"
+      "career_earnings": "Pé-de-meia",
+      "bets_profit": "O apostador",
+      "bets_exact": "O vidente"
     },
     "secrets": {
       "fortress": {
@@ -5170,6 +5218,10 @@
       "against_homeland": {
         "name": "Contra a pátria",
         "desc": "Vença a seleção da sua nacionalidade treinando outra"
+      },
+      "bet_longshot": {
+        "name": "Zebra",
+        "desc": "Ganhe uma aposta com cotação de 8 ou mais"
       }
     },
     "secretsTitle": "Conquistas secretas",

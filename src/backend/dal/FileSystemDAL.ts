@@ -1,3 +1,4 @@
+import type { BetsState } from "@/types/betTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -661,6 +662,15 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void> {
     const dir = seatDir(saveId, seatId);
     await writeJsonFile(dir, `${dir}/achievements.json`, state);
+  }
+
+  async readSeatBets(saveId: string, seatId: string): Promise<BetsState | null> {
+    return readJsonFile<BetsState>(`${seatDir(saveId, seatId)}/bets.json`);
+  }
+
+  async writeSeatBets(saveId: string, seatId: string, state: BetsState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/bets.json`, state);
   }
 
   async readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {

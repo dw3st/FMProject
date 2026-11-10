@@ -84,6 +84,10 @@ export interface SeatState {
   managerSpent?: number;
   /** Level bought of each personal asset. */
   managerAssets?: import("@/Domain/managers/assets").ManagerAssets;
+  /** Payout minus stake of the resolved bets (`.claude/rules/game/bets.md`); never touches the earnings. */
+  betNet?: number;
+  betExact?: number;
+  betLongshot?: boolean;
   managerRenewal?: ManagerRenewalOffer;
   managerContractNotices?: string[];
   inboxPrefs?: InboxPrefs;
@@ -102,7 +106,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];

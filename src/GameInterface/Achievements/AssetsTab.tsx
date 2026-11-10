@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
 import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
@@ -19,7 +19,16 @@ export function AssetsTab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const earned = save?.managerEarnings ?? 0;
-  const wallet = managerWallet(earned, save?.managerSpent);
+  // With the bets: the same wallet the purchase route checks.
+  const [betWallet, setBetWallet] = useState<number | null>(null);
+  useEffect(() => {
+    if (!session?.saveId) return;
+    fetch(`/api/saves/${session.saveId}/bets?summary=1`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: { wallet: number } | null) => setBetWallet(v?.wallet ?? null))
+      .catch(() => setBetWallet(null));
+  }, [session?.saveId, save?.managerSpent]);
+  const wallet = betWallet ?? managerWallet(earned, save?.managerSpent);
   const assets = save?.managerAssets;
   const art = newVisualOn();
 

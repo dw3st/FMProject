@@ -1,3 +1,4 @@
+import type { BetsState } from "@/types/betTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { StaffPool } from "@/Domain/staff/staffPool";
@@ -160,6 +161,8 @@ export interface ISaveDAL {
   writeSeatAchievements(saveId: string, seatId: string, state: AchievementsState): Promise<void>;
   readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null>;
   writeSeatScouting(saveId: string, seatId: string, state: ScoutingState): Promise<void>;
+  readSeatBets(saveId: string, seatId: string): Promise<BetsState | null>;
+  writeSeatBets(saveId: string, seatId: string, state: BetsState): Promise<void>;
   readSeatInbox(saveId: string, seatId: string): Promise<InboxMessage[]>;
   writeSeatInbox(saveId: string, seatId: string, messages: InboxMessage[]): Promise<void>;
   appendSeatInboxMessage(saveId: string, seatId: string, message: InboxMessage): Promise<void>;

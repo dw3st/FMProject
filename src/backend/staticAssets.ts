@@ -62,6 +62,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "player/player-atlas.png": "image/png",
   "player/disc-rim.png": "image/png",
   "medals/legend-laurel.png": "image/png",
+  "bets/bets-hero.webp": "image/webp",
   "flag/corner-cloth.png": "image/png",
   "flag/corner-pole.png": "image/png",
   "manager-assets/home-1.webp": "image/webp",

@@ -7,7 +7,7 @@ import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
  */
 export const INBOX_TOPICS = [
   "actions", "contracts", "transfer_news", "injuries", "development", "youth", "retirement",
-  "competitions", "club_records", "facilities", "scouting_alerts", "scouting_reports", "manager_news", "achievements",
+  "competitions", "club_records", "facilities", "scouting_alerts", "scouting_reports", "manager_news", "achievements", "bets",
 ] as const;
 export type InboxTopic = (typeof INBOX_TOPICS)[number];
 export type InboxPrefs = Partial<Record<InboxTopic, boolean>>;
@@ -46,6 +46,7 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   // The manager's ban: health & discipline news, like the players' suspensions.
   discipline: "injuries",
   achievement: "achievements",
+  bets: "bets",
   // A press conference invite asks for an answer: never dropped.
   press: "actions",
   // Board (objective, warnings, manager contract offer...), job offers and player talks ask for an answer.

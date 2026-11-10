@@ -68,6 +68,8 @@ export interface AchievementSnapshot {
   facilityLevels: number;
   /** What the manager earned over his career (wages, severance). */
   earnings?: number;
+  /** His bets (`.claude/rules/game/bets.md`). */
+  bets?: { net: number; exact: number; longshot: boolean };
 }
 
 export function titleCounts(m: ManagerRecord | null): Record<"league" | "cup" | "continental" | "promotion", number> {
@@ -103,6 +105,8 @@ export function trackValues(state: AchievementsState, snap: AchievementSnapshot)
     derby_wins: c.derbyWins,
     national_wins: c.nationalWins ?? 0,
     career_earnings: snap.earnings ?? 0,
+    bets_profit: Math.max(0, snap.bets?.net ?? 0),
+    bets_exact: snap.bets?.exact ?? 0,
     youth_promoted: state.promotedIds.length,
     young_award: c.youngAwards,
     sales_profit: c.salesProfit,

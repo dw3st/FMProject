@@ -1,3 +1,4 @@
+import { openTotal } from "@/Domain/bets/bets";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { saveService } from "@/backend/SaveService";
@@ -18,7 +19,8 @@ export const managerAssetRoutes = {
     return withSaveLock(saveId, async () => {
       const seat = await saveService.getSeat(saveId, auth.seatId);
       if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
-      const refusal = assetRefusal(seat.managerAssets, kind, managerWallet(seat.managerEarnings, seat.managerSpent));
+      const bets = await saveService.getBets(saveId, auth.seatId);
+      const refusal = assetRefusal(seat.managerAssets, kind, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)));
       if (refusal) return Response.json({ error: refusal }, { status: 409 });
       const managerAssets = { ...seat.managerAssets, [kind]: (seat.managerAssets?.[kind] ?? 0) + 1 };
       const managerSpent = (seat.managerSpent ?? 0) + nextAssetPrice(seat.managerAssets, kind)!;

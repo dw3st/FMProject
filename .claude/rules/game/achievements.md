@@ -168,3 +168,7 @@ molduras são cartões com o rosto do técnico em cada moldura (bloqueadas em ci
 ## Rodízio das lendas na loja (8.2.21)
 
 Report de tester (substitui a lista completa da 8.2.12). A loja oferece a cada técnico e temporada `LEGEND_OFFER.SIZE` (12) aposentados sorteados de todos os notáveis (`legendOffer`, sorteio ponderado, peso comum 1, raro 3, super raro 2; só quem se aposentou até o início da temporada, para a lista não mudar quando outros países viram; quem outro técnico trouxe dá lugar ao próximo). Raro = lenda (nota 45+), super raro = classe mundial ou nota 55+, custando +200 e +500 pontos (`legendExtraPrice`, gravado no preço da compra). A lista de lendas em Estatísticas (trazer com dinheiro) não muda.
+
+## Apostas (8.9)
+
+108 conquistas: trilhas `bets_profit` e `bets_exact` e a secreta `bet_longshot`. Ver `.claude/rules/game/bets.md`.

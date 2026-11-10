@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9",
+    date: "2026-11-10",
+    time: "14:16",
+    items: [
+      {
+        pt: "Apostas do técnico: use o dinheiro da sua carreira para apostar no resultado, no placar exato e em quem marca gol. Fica em Conquistas, na aba Apostas, com três conquistas novas.",
+        en: "Manager bets: use your career money to bet on the result, the exact score and who scores. It is in Achievements, on the Bets tab, with three new achievements.",
+      },
+    ],
+  },
+  {
     version: "8.8.36",
     date: "2026-11-10",
     time: "13:45",

@@ -101,6 +101,7 @@ export function applyAchievementDay(
   if (input.rollover?.objectiveMet) s = addCampaign(s, `objective:${input.rollover.squadId}:${date}`, ACHIEVEMENTS.CAMPAIGN.OBJECTIVE);
   if (input.rollover) s = applyRollover(s, input.rollover, date);
   if (input.sacked && sackedEarly(input.sacked.hiredOn, date)) s = unlockSecret(s, "sacked_early", date);
+  if (input.snapshot.bets?.longshot) s = unlockSecret(s, "bet_longshot", date);
   s = unlockReachedTiers(s, trackValues(s, input.snapshot), date, input.snapshot);
   s = { ...s, lastDay: date };
   return { state: s, unlocked: newlyUnlocked(state, s) };
