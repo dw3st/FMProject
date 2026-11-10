@@ -52,8 +52,8 @@ describe("familiarity → tactic weights", () => {
   });
 
   test("high_line_trap only moves the line when the line is high", () => {
-    const highBase = snapshot("high_press");
-    expect(snapshot("high_press", { high_line_trap: 100 }).def.DEFENSIVE_LINE_HEIGHT)
+    const highBase = snapshot("possession");
+    expect(snapshot("possession", { high_line_trap: 100 }).def.DEFENSIVE_LINE_HEIGHT)
       .toBeCloseTo(highBase.def.DEFENSIVE_LINE_HEIGHT + 0.03);
     expect(snapshot("balanced", { high_line_trap: 100 }).def.DEFENSIVE_LINE_HEIGHT)
       .toBe(snapshot("balanced").def.DEFENSIVE_LINE_HEIGHT);

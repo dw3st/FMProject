@@ -78,7 +78,9 @@ for (let i = 0; i < STYLES.length; i++) for (let j = i; j < STYLES.length; j++) 
 
 const realRandom = Math.random;
 let k = -1;
+const only = flag("--only")?.split(",");
 for (const p of pairs) {
+  if (only && !only.includes(p.x) && !only.includes(p.y)) { k += perPair; continue; }
   for (let m = 0; m < perPair; m++) {
     k++;
     if (k % parts !== part) continue;

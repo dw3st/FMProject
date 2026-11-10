@@ -230,3 +230,11 @@ tabela `STYLE_FAMILIARITY_EFFECTS` (`src/GameEngine/Configs/FamiliarityConfig.ts
 ausente = pesos idênticos. `DefenseConfigValues.PRESS_STAMINA_MULT` (1,10 em `high_press`) é o custo de
 fôlego do press. O mesmo `applyTeamAttackConfig` define o multiplicador de execução do time (atributos), lido
 na montagem do estado. Ver `.claude/rules/game/style-training.md`.
+
+## Estilos entre si e a pressão alta (8.8.32)
+
+`bun scripts/style-matrix.ts` (cada estilo contra cada outro, mesmo clube, 4-3-3, entrosamento 50, semente por jogo; `--only a,b` só refaz os pares que envolvem esses estilos). Até a 8.8.31 a pressão alta perdia de todos: vantagem média −21,8 (Premier) e −16,8 (Championship). Em separado, contra o Equilibrado (450 jogos, erro ±4): nenhum dos três riscos pesa sozinho, juntos pesam. Tirar o exagero da saída para pressionar com a linha alta e o jogo direto deu −16; só com linha normal −11; só com construção equilibrada −11; com os dois e uma saída ainda forte, −2,7.
+
+`STYLE_TO_AXES.high_press` passou a linha `normal` e construção `balanced`, e `INTENT_PRESSING_STYLE.high_press` (0,5 / 0,8 / 1,8 / 1,2) a 0,75 / 0,9 / 1,4 / 1,1 (forma, marcação, pressão, passo). A mentalidade ofensiva e a intenção `press_now` do contra-ataque leem a mesma tabela. O jogador ainda pode escolher linha alta ou jogo direto nos eixos.
+
+Vantagem média contra os outros quatro depois (Premier / Championship): Equilibrado +10,7 / +3,5, Posse +11,3 / +10,3, Pressão alta −6,4 / −7,2, Contra-ataque −8,8 / −3,7, Jogo direto −6,7 / −3,0. Maior confronto isolado: Posse × Contra-ataque, +25 / +23. O mundo não muda: a IA joga sempre Equilibrado.

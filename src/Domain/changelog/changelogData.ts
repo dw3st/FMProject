@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.32",
+    date: "2026-11-09",
+    time: "21:45",
+    items: [],
+    fixes: [
+      {
+        pt: "A pressão alta não deixa mais o time tão exposto: agora ela pressiona com a linha normal e a saída de bola equilibrada. Linha alta e jogo direto continuam disponíveis nos ajustes da tática.",
+        en: "The high press no longer leaves the team so exposed: it now presses with a normal line and a balanced build-up. A high line and direct play are still available in the tactic settings.",
+      },
+    ],
+  },
+  {
     version: "8.8.31",
     date: "2026-11-09",
     time: "20:14",

@@ -174,7 +174,7 @@ Each intent is scored from role weights × tactic multipliers × context signals
 |---|---|---|---|---|
 | `low_block` | 1.4 | 1.2 | 0.3 | 0.6 |
 | `mid_block` | 1.0 | 1.0 | 1.0 | 1.0 |
-| `high_press` | 0.5 | 0.8 | 1.8 | 1.2 |
+| `high_press` | 0.75 | 0.9 | 1.4 | 1.1 |
 
 **`defensive_line`:**
 

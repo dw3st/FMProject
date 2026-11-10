@@ -64,7 +64,7 @@ export const TACTICAL_STYLE_OPTIONS: TacticalStyleMeta[] = [
     description:
       "Hunt the ball high up the pitch. Win possession close to the opponent's goal.",
     strengths: ["Wins ball in dangerous areas", "Disrupts build-up"],
-    weaknesses: ["Exposed to long balls", "Stamina intensive", "Risky defensive line"],
+    weaknesses: ["Exposed to long balls", "Stamina intensive", "Leaves gaps when the press is beaten"],
   },
   {
     value: "possession",
@@ -120,7 +120,7 @@ export function getTacticalStyleMeta(
  */
 export const STYLE_TO_AXES: Record<TacticalStyle, TacticalAxes> = {
   counter_attack: { pressing_style: "low_block",  defensive_line: "deep",   width: "narrow", build_up: "direct"     },
-  high_press:     { pressing_style: "high_press", defensive_line: "high",   width: "normal", build_up: "direct"     },
+  high_press:     { pressing_style: "high_press", defensive_line: "normal", width: "normal", build_up: "balanced"   },
   possession:     { pressing_style: "mid_block",  defensive_line: "high",   width: "narrow", build_up: "possession" },
   direct_play:    { pressing_style: "mid_block",  defensive_line: "normal", width: "wide",   build_up: "direct"     },
   balanced:       { pressing_style: "mid_block",  defensive_line: "normal", width: "normal", build_up: "balanced"   },

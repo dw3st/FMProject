@@ -29,7 +29,7 @@ describe("axesWithMentality — attacking", () => {
   });
 
   test("saturates at high_press / high instead of overflowing", () => {
-    // high_press style base is already pressing_style=high_press, defensive_line=high
+    // high_press style base is already pressing_style=high_press; its normal line steps up to high
     const axes = axesWithMentality("high_press", "attacking");
     expect(axes.pressing_style).toBe("high_press");
     expect(axes.defensive_line).toBe("high");
@@ -72,12 +72,12 @@ describe("axesWithMentality — defensive", () => {
     expect(axes.width).toBe("narrow");
   });
 
-  test("high_press (high_press/high) steps down exactly one notch, not to the bottom", () => {
+  test("high_press (high_press/normal) steps down exactly one notch, not to the bottom", () => {
     const axes = axesWithMentality("high_press", "defensive");
     expect(axesFor("high_press").pressing_style).toBe("high_press");
-    expect(axesFor("high_press").defensive_line).toBe("high");
+    expect(axesFor("high_press").defensive_line).toBe("normal");
     expect(axes.pressing_style).toBe("mid_block");
-    expect(axes.defensive_line).toBe("normal");
+    expect(axes.defensive_line).toBe("deep");
   });
 
   test("preserves the base style's build_up unchanged for every style", () => {

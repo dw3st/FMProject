@@ -10,7 +10,7 @@ type DefIntentMultMap = Record<DefIntentKey, number>;
 export const INTENT_PRESSING_STYLE: Record<PressingStyle, DefIntentMultMap> = {
   low_block:  { hold_shape: 1.4, track_mark: 1.2, press_holder: 0.3, step_into_carry_lane: 0.6 },
   mid_block:  { hold_shape: 1.0, track_mark: 1.0, press_holder: 1.0, step_into_carry_lane: 1.0 },
-  high_press: { hold_shape: 0.5, track_mark: 0.8, press_holder: 1.8, step_into_carry_lane: 1.2 },
+  high_press: { hold_shape: 0.75, track_mark: 0.9, press_holder: 1.4, step_into_carry_lane: 1.1 },
 };
 
 export const INTENT_DEFENSIVE_LINE: Record<DefensiveLine, DefIntentMultMap> = {
