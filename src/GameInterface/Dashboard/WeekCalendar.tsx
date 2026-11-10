@@ -131,7 +131,8 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
     const monday = getMondayOf(currentDate);
     monday.setDate(monday.getDate() + weekOffset * 7);
 
-    return Array.from({ length: 7 }, (_, i) => {
+    // Two weeks, one per row (tester report, 8.9.16: see further ahead without paging).
+    return Array.from({ length: 14 }, (_, i) => {
       const d = new Date(monday);
       d.setDate(d.getDate() + i);
       const dateStr = toDateStr(d);
@@ -184,7 +185,7 @@ export function WeekCard({ fixtures, youthFixtures = [], restDays, mySquadId, cu
 
   const fmt = (date: string) =>
     new Date(`${date}T12:00:00`).toLocaleDateString(lang, { day: "numeric", month: "short" });
-  const weekLabel = `${fmt(weekDays[0]!.dateStr)} – ${fmt(weekDays[6]!.dateStr)}`;
+  const weekLabel = `${fmt(weekDays[0]!.dateStr)} – ${fmt(weekDays[weekDays.length - 1]!.dateStr)}`;
   const navButton =
     "inline-flex items-center justify-center w-8 h-8 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer bg-transparent border-0";
 

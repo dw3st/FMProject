@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.16",
+    date: "2026-11-10",
+    time: "18:57",
+    items: [
+      {
+        pt: "O calendário do Painel mostra duas semanas, uma por linha.",
+        en: "The Dashboard calendar shows two weeks, one per row.",
+      },
+      {
+        pt: "A aba Sua liga fica no fim do menu, depois de Estatísticas.",
+        en: "The My league tab sits at the end of the menu, after Stats.",
+      },
+    ],
+  },
+  {
     version: "8.9.15",
     date: "2026-11-10",
     time: "18:54",

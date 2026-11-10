@@ -130,7 +130,7 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 - **Clube** (`ClubCard`, `Dashboard/HomeCards.tsx`; desde a 8.9.1, botões para Conquistas, Loja, Patrimônio e Apostas abaixo do técnico), primeira linha; opção A do mock (8.8.19, report do usuário): em
   cima três blocos (escudo 64px, clube e liga; rosto, técnico, título, selos e contrato; diretoria, torcida e meta) e
   embaixo uma faixa de números (`ClubStat`): orçamento, elenco, ranking, liga de amigos, reputação e conquistas.
-- **Semana** (`WeekCard`, `Dashboard/WeekCalendar.tsx`), largura total: os 7 dias na horizontal
+- **Semana** (`WeekCard`, `Dashboard/WeekCalendar.tsx`), largura total: duas semanas, uma por linha (8.9.16), os 7 dias na horizontal
   (`lg:grid-cols-7`, 4/2 colunas abaixo), semana anterior/próxima/"esta semana", hoje destacado,
   jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
@@ -232,4 +232,4 @@ Report do usuário. Mensagem não lida (tela Caixa de entrada e cartão do Paine
 
 ## Aba Sua liga e abas espalhadas (8.9.14)
 
-Report de tester. Num mundo com amigos (`save.mode === "multi"`) a barra de cima ganha a aba Sua liga (`/world`) logo depois do Painel; o ícone que ficava no bloco do dia saiu. As abas ocupam a largura toda entre o logo e o bloco do dia (`justify-between`, o espaço mínimo entre elas continua o de antes), sem os vãos nas pontas.
+Report de tester. Num mundo com amigos (`save.mode === "multi"`) a barra de cima ganha a aba Sua liga (`/world`) no fim, depois de Estatísticas (8.9.16); o ícone que ficava no bloco do dia saiu. As abas ocupam a largura toda entre o logo e o bloco do dia (`justify-between`, o espaço mínimo entre elas continua o de antes), sem os vãos nas pontas.

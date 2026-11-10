@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   { icon: "stats", tone: "text-primary", labelKey: "nav.stats", href: "/stats" },
 ];
 
-/** The friends' world as a tab, right after the Dashboard (tester report, 8.9.14; before, an icon in the day block). */
+/** The friends' world as a tab, after Stats (tester report, 8.9.14 / 8.9.16; before, an icon in the day block). */
 const WORLD_ITEM: NavItem = { icon: "users", tone: "text-chart-2", labelKey: "nav.worldTab", href: "/world" };
 
 interface Props {
@@ -154,7 +154,7 @@ export function TopNavigation({
 
   // The day block has its real width once the save is in (or there is no save to wait for).
   const settled = !session || !!currentDate || unemployed;
-  const items = useMemo(() => (save?.mode === "multi" ? [navItems[0]!, WORLD_ITEM, ...navItems.slice(1)] : navItems), [save?.mode]);
+  const items = useMemo(() => (save?.mode === "multi" ? [...navItems, WORLD_ITEM] : navItems), [save?.mode]);
   const { outerRef, measureRef, mode } = useCompactTabs(items.length, settled);
   // Not enough room even with the tight gaps: the labels stay, each tab an equal share of the bar, cut with an ellipsis (title = full name).
   const narrow = mode === "icons";
