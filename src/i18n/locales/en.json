@@ -6368,6 +6368,8 @@
     "aggregateLine": "Aggregate {{home}}–{{away}}",
     "nextShort": "next",
     "friendsBadge": "Friends",
+    "moreFriends_one": "{{count}} more friend",
+    "moreFriends_other": "{{count}} more friends",
     "noNext": "no match scheduled",
     "pens": "pens {{home}}–{{away}}",
     "filterLabel": "Friend",

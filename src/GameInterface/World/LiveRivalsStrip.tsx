@@ -1,5 +1,5 @@
 import { rivalNextOpponent } from "@/GameInterface/World/rivalNext";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -34,6 +34,26 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   const [openLeft, setOpenLeft] = useState(0);
   const [rows, setRows] = useState<RivalRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Footer (8.9.3): how many friends fit on the line; the rest open from "+N" (left of the list, px), never a scrollbar.
+  const [shown, setShown] = useState(Number.POSITIVE_INFINITY);
+  const [moreLeft, setMoreLeft] = useState<number | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  useLayoutEffect(() => {
+    const ul = listRef.current;
+    if (!footer || !ul) return;
+    const measure = () => {
+      const items = [...ul.querySelectorAll<HTMLElement>("li[data-friend]")];
+      const cut = items.find((li) => li.offsetLeft + li.offsetWidth > ul.clientWidth);
+      const n = cut ? Number(cut.dataset.friend) : items.length;
+      setShown((v) => (v === n ? v : n));
+    };
+    measure();
+    // The strip is drawn into the frame's footer from the match iframe: observe with the footer's own window.
+    const RO = (ul.ownerDocument.defaultView as (Window & typeof globalThis) | null)?.ResizeObserver ?? ResizeObserver;
+    const ro = new RO(measure);
+    ro.observe(ul);
+    return () => ro.disconnect();
+  });
   // Friends who are not playing right now still show their next match (report): reloaded every minute.
   useEffect(() => {
     let cancelled = false;
@@ -46,31 +66,10 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   const idle = rows.filter((r) => !r.me && !liveSeats.has(r.seatId) && !excludeClubIds.includes(r.clubId));
   // Kept while loading: the strip showing up later would push the pitch down.
   if (loaded && live.length === 0 && idle.length === 0 && viewers.length === 0) return null;
-  // In the footer each friend is set apart like everything else on the bar (8.8.27).
-  const sep = footer ? <li aria-hidden="true" className="w-px h-5 bg-border shrink-0" /> : null;
-  return (
-    <div className={footer ? "h-full flex items-center" : "shrink-0 border-b border-border bg-card/60 px-4 py-1.5"} aria-label={t("rivals.stripLabel")} role="region">
-      {/* The space on the right is always kept: someone joining or leaving never moves the strip or the pitch below (tester report). */}
-      <div className={footer ? "flex items-center gap-4" : "relative max-w-7xl mx-auto"}>
-      {viewers.length > 0 && !footer && (
-        <div role="status" title={viewers.join(", ")} className="absolute right-0 top-0 h-8 w-60 flex items-center justify-end gap-2 text-sm text-muted-foreground">
-          <Icon name="eye" size={16} className="text-primary shrink-0" />
-          <span className="truncate">{t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}</span>
-        </div>
-      )}
-      <ul className={footer ? "m-0 p-0 list-none flex flex-nowrap items-center gap-x-4 whitespace-nowrap" : "m-0 p-0 pr-64 list-none flex flex-wrap items-center gap-x-4 gap-y-1"}>
-        <li className={`flex items-center gap-1.5 ${live.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
-          {live.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-destructive motion-safe:animate-pulse" aria-hidden="true" />}
-          <Icon name="radio" size={16} />
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px]">{t(live.length > 0 ? "rivals.liveBadge" : "rivals.friendsBadge")}</span>
-        </li>
-        {live.map((l) => {
-          const lit = !!highlight[l.seatId];
-          const sides = homeAwayOf(l);
-          return (
-            <Fragment key={l.seatId}>
-            {sep}
-            <li className="relative">
+  const liveBody = (l: LiveScoreView) => {
+    const lit = !!highlight[l.seatId];
+    const sides = homeAwayOf(l);
+    return (<>
               <button
                 type="button"
                 onClick={(e) => { setOpenLeft(e.currentTarget.getBoundingClientRect().left); setOpen(open === l.seatId ? null : l.seatId); }}
@@ -98,18 +97,13 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                   </div>
                 </div>
               )}
-            </li>
-            </Fragment>
-          );
-        })}
-        {idle.map((r) => {
-          const n = r.next;
+</>);
+  };
+  const idleBody = (r: RivalRow) => {
+    const n = r.next;
           const homeId = n ? (n.home ? r.clubId : n.opponentId) : null;
           const awayId = n ? (n.home ? n.opponentId : r.clubId) : null;
-          return (
-            <Fragment key={r.seatId}>
-            {sep}
-            <li className="flex items-center gap-1.5 min-h-8 px-2 text-sm tabular-nums text-muted-foreground">
+    return (<>
               <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
               <span aria-hidden="true">·</span>
               {n?.national ? (
@@ -129,16 +123,68 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                   <span>{t("rivals.noNext")}</span>
                 </>
               )}
-            </li>
-            </Fragment>
-          );
-        })}
-      </ul>
-      {footer && viewers.length > 0 && <span aria-hidden="true" className="w-px h-5 bg-border shrink-0" />}
-      {footer && viewers.length > 0 && (
-        <span role="status" title={viewers.join(", ")} className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
+</>);
+  };
+  const IDLE_LI = "flex items-center gap-1.5 min-h-8 px-2 text-sm tabular-nums text-muted-foreground";
+  const items: { key: string; className: string; body: ReactNode }[] = [
+    ...live.map((l) => ({ key: l.seatId, className: "relative", body: liveBody(l) })),
+    ...idle.map((r) => ({ key: r.seatId, className: IDLE_LI, body: idleBody(r) })),
+  ];
+  const hiddenCount = footer && shown < items.length ? items.length - shown : 0;
+  // In the footer each friend is set apart like everything else on the bar (8.8.27).
+  const sep = (i: number) => (footer ? <li aria-hidden="true" className={`w-px h-5 bg-border shrink-0 ${i >= shown ? "invisible" : ""}`} /> : null);
+  return (
+    <div className={footer ? "h-full w-full min-w-0 flex items-center" : "shrink-0 border-b border-border bg-card/60 px-4 py-1.5"} aria-label={t("rivals.stripLabel")} role="region">
+      {/* The space on the right is always kept: someone joining or leaving never moves the strip or the pitch below (tester report). */}
+      <div className={footer ? "w-full min-w-0 flex items-center gap-4" : "relative max-w-7xl mx-auto"}>
+      {viewers.length > 0 && !footer && (
+        <div role="status" title={viewers.join(", ")} className="absolute right-0 top-0 h-8 w-60 flex items-center justify-end gap-2 text-sm text-muted-foreground">
           <Icon name="eye" size={16} className="text-primary shrink-0" />
-          {t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}
+          <span className="truncate">{t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}</span>
+        </div>
+      )}
+      <ul ref={listRef} className={footer ? "relative min-w-0 flex-1 overflow-hidden m-0 p-0 list-none flex flex-nowrap items-center gap-x-4 whitespace-nowrap" : "m-0 p-0 pr-64 list-none flex flex-wrap items-center gap-x-4 gap-y-1"}>
+        <li className={`flex items-center gap-1.5 ${live.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+          {live.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-destructive motion-safe:animate-pulse" aria-hidden="true" />}
+          <Icon name="radio" size={16} />
+          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px]">{t(live.length > 0 ? "rivals.liveBadge" : "rivals.friendsBadge")}</span>
+        </li>
+        {items.map((it, i) => (
+          <Fragment key={it.key}>
+            {sep(i)}
+            <li data-friend={i} className={`${it.className} ${footer && i >= shown ? "invisible" : ""}`}>{it.body}</li>
+          </Fragment>
+        ))}
+      </ul>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          aria-expanded={moreLeft !== null}
+          title={t("rivals.moreFriends", { count: hiddenCount })}
+          onClick={(e) => setMoreLeft(moreLeft === null ? e.currentTarget.getBoundingClientRect().left : null)}
+          className="shrink-0 h-8 px-2 rounded-md border border-border bg-card font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground tabular-nums cursor-pointer hover:border-primary"
+        >
+          +{hiddenCount}
+        </button>
+      )}
+      {hiddenCount > 0 && moreLeft !== null && (
+        <ul
+          className="fixed bottom-14 z-[60] m-0 p-2 list-none rounded-md border border-border bg-card shadow-lg flex flex-col gap-1 whitespace-nowrap"
+          style={{ left: Math.max(8, Math.min(moreLeft - 200, window.innerWidth - 420)) }}
+        >
+          {items.slice(shown).map((it) => <li key={it.key} className={it.className}>{it.body}</li>)}
+        </ul>
+      )}
+      {/* Who watches this match: an eye and the count, the names on hover (tester report, 8.9.3). */}
+      {footer && viewers.length > 0 && (
+        <span
+          role="status"
+          title={t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}
+          aria-label={t("watch.viewers", { count: viewers.length, names: viewers.join(", ") })}
+          className="shrink-0 flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums"
+        >
+          <Icon name="eye" size={16} className="text-primary shrink-0" />
+          {viewers.length}
         </span>
       )}
       </div>

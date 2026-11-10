@@ -25,7 +25,10 @@ export function StatusBar({
   onOpenSettings,
   onOpenChangelog,
   changelogNotice,
+  matchMode = false,
 }: {
+  /** The live match (chrome `match`): no club numbers, the friends' strip takes their room (tester report, 8.9.3). */
+  matchMode?: boolean;
   onOpenInbox: () => void;
   onOpenSettings: () => void;
   onOpenChangelog: () => void;
@@ -49,8 +52,8 @@ export function StatusBar({
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
     <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6`}>
-        <div className="flex items-center gap-4">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid ${matchMode ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"} items-center gap-6`}>
+        {!matchMode && <div className="flex items-center gap-4">
           <span className={ITEM} title={t("status.budget")}>
             <Icon name="finances" size={18} />
             {budgetLabel}
@@ -70,10 +73,10 @@ export function StatusBar({
             <Icon name="staff" size={18} />
             {playersLabel}
           </span>
-        </div>
+        </div>}
         {/* The live match draws its friends' radio here (in the frame); the owner's credit lives on the login and start
             screens (user's choice, 8.8.10). */}
-        <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-x-auto overflow-y-visible px-6 bg-[linear-gradient(var(--color-border),var(--color-border)),linear-gradient(var(--color-border),var(--color-border))] bg-no-repeat bg-[length:1px_20px] bg-[position:left_center,right_center] empty:bg-none" />
+        <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-hidden px-6 bg-[linear-gradient(var(--color-border),var(--color-border)),linear-gradient(var(--color-border),var(--color-border))] bg-no-repeat bg-[length:1px_20px] bg-[position:left_center,right_center] empty:bg-none" />
         <div className="flex items-center justify-end gap-4">
           <RadioPlayer />
           <Divider />

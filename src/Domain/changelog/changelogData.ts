@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.3",
+    date: "2026-11-10",
+    time: "15:00",
+    items: [],
+    fixes: [
+      {
+        pt: "Na partida, a barra de baixo fica só com os amigos: os que não cabem viram um botão \"+N\" e quem assiste aparece como um olho com o número, sem barra de rolagem.",
+        en: "During the match the bottom bar shows only your friends: those who do not fit become a \"+N\" button and viewers show as an eye with a count, with no scrollbar.",
+      },
+    ],
+  },
+  {
     version: "8.9.2",
     date: "2026-11-10",
     time: "14:49",

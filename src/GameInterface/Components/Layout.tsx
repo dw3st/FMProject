@@ -93,6 +93,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
 
         {/* Always mounted: the radio lives in it, so it plays from screen to screen and through the match (8.8.10, 8.8.23). */}
         <StatusBar
+          matchMode={chrome === "match"}
           onOpenInbox={() => setIsInboxOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChangelog={openChangelog}

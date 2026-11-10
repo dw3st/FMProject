@@ -6368,6 +6368,8 @@
     "aggregateLine": "Agregado {{home}}–{{away}}",
     "nextShort": "próx.",
     "friendsBadge": "Amigos",
+    "moreFriends_one": "Mais {{count}} amigo",
+    "moreFriends_other": "Mais {{count}} amigos",
     "noNext": "sem jogo marcado",
     "pens": "pên. {{home}}–{{away}}",
     "filterLabel": "Amigo",
