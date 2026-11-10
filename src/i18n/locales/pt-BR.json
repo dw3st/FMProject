@@ -3285,6 +3285,7 @@
       "emptyFiltered": "Nenhum aposentado com esses filtros."
     },
     "managers": {
+      "detail": { "points": "Pontos", "titles": "Títulos", "awards": "Prêmios", "clubs": "Clubes", "club": "Clube", "period": "Período", "left": "Saída", "assets": "Bens", "cards": "Cartões", "otherTitles": "Outros títulos" },
       "humans": "Técnicos humanos",
       "tab": "Técnicos",
       "world": "Mundo",

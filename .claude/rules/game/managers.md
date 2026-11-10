@@ -195,3 +195,7 @@ Report de tester. A rota aceita `scope=humans` (assentos vivos) e devolve `human
 ## Títulos por passagem (8.8.5)
 
 Report de tester. Ao abrir um técnico, cada clube da carreira mostra os títulos ganhos lá (competição, ×N, pontos; temporadas no `title`), por `titlesByPassage` (`src/Domain/managers/careerTitles.ts`: a passagem do clube cujas datas contêm `on`; sem data, a última do clube). Só os títulos sem passagem (seleção) continuam na lista de baixo.
+
+## Ficha do técnico (8.9.5)
+
+Report de tester, opção B do mock. Ao abrir um técnico: rosto, clube e pontos com os prêmios à direita; quatro números (pontos, títulos, prêmios, clubes); a carreira numa tabela (`TABLE_STYLE`: clube, período, saída, títulos ganhos lá); os títulos sem passagem em "Outros títulos"; bens (com os ganhos do técnico do jogador) e cartões em caixas lado a lado; dívidas não pagas no fim.

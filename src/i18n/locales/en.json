@@ -3285,6 +3285,7 @@
       "emptyFiltered": "No retired player with these filters."
     },
     "managers": {
+      "detail": { "points": "Points", "titles": "Titles", "awards": "Awards", "clubs": "Clubs", "club": "Club", "period": "Period", "left": "Left", "assets": "Assets", "cards": "Cards", "otherTitles": "Other titles" },
       "humans": "Human managers",
       "tab": "Managers",
       "world": "World",

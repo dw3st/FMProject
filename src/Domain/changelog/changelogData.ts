@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.5",
+    date: "2026-11-10",
+    time: "15:25",
+    items: [],
+    fixes: [
+      {
+        pt: "A ficha do técnico em Estatísticas ficou organizada: números no topo, a carreira numa tabela com período, saída e títulos, e bens e cartões em caixas.",
+        en: "The manager profile in Stats is now organised: numbers at the top, the career in a table with period, departure and titles, and assets and cards in boxes.",
+      },
+    ],
+  },
+  {
     version: "8.9.4",
     date: "2026-11-10",
     time: "15:07",
