@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.8.33",
+    date: "2026-11-10",
+    time: "07:58",
+    items: [],
+    fixes: [
+      {
+        pt: "Times recuados marcam melhor: o Contra-ataque ficou mais competitivo, principalmente contra a Posse.",
+        en: "Deep-lying teams mark better: Counter attack is more competitive, especially against Possession.",
+      },
+    ],
+  },
+  {
     version: "8.8.32",
     date: "2026-11-09",
     time: "21:45",

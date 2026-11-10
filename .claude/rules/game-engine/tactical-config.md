@@ -238,3 +238,9 @@ na montagem do estado. Ver `.claude/rules/game/style-training.md`.
 `STYLE_TO_AXES.high_press` passou a linha `normal` e construção `balanced`, e `INTENT_PRESSING_STYLE.high_press` (0,5 / 0,8 / 1,8 / 1,2) a 0,75 / 0,9 / 1,4 / 1,1 (forma, marcação, pressão, passo). A mentalidade ofensiva e a intenção `press_now` do contra-ataque leem a mesma tabela. O jogador ainda pode escolher linha alta ou jogo direto nos eixos.
 
 Vantagem média contra os outros quatro depois (Premier / Championship): Equilibrado +10,7 / +3,5, Posse +11,3 / +10,3, Pressão alta −6,4 / −7,2, Contra-ataque −8,8 / −3,7, Jogo direto −6,7 / −3,0. Maior confronto isolado: Posse × Contra-ataque, +25 / +23. O mundo não muda: a IA joga sempre Equilibrado.
+
+## Contra-ataque e a marcação do bloco baixo (8.8.33)
+
+O Contra-ataque perdia da Posse (−23, Premier, 450 jogos, erro ±4) porque os defensores do bloco baixo ficavam longe de quem deveriam marcar (`MARK_LANE_T_*` 0,15 / 0,40, `MARK_PULL_*` 0,50 / 0,80), e o adversário paciente achava os atacantes livres. Medido contra a Posse, uma peça por vez: agressividade igual à do bloco médio −23, linha normal −28, largura normal −17, construção equilibrada −16, marcação do bloco médio −7,6. O `low_block` passou a usar a marcação do `mid_block` (0,30 / 0,65, 0,40 / 0,88); continuam dele a altura, a pressão, a agressividade, o alcance e os pesos de intenção. Vale também para a mentalidade Defensiva, que desce a marcação até o bloco baixo.
+
+Vantagem média contra os outros quatro depois (Premier / Championship): Equilibrado +8,4 / +4,8, Posse +7,5 / +9,5, Contra-ataque −0,4 / −3,2 (antes −8,8 / −3,7), Jogo direto −5,0 / −2,8, Pressão alta −10,5 / −8,3. Posse × Contra-ataque: +10,3 / +20,0 (antes +25 / +23; erro ±4,8 / ±6,8). A pressão alta perde mais do Contra-ataque agora (−16,0 / −16,7). O mundo não muda: a IA joga sempre Equilibrado.

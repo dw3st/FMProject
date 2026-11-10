@@ -124,10 +124,10 @@ function mapAxesToDefense(t: TacticalAxes): Partial<DefenseConfigValues> {
   const pressingMap: Record<PressingStyle, Partial<DefenseConfigValues>> = {
     // MARK_LANE_T: how far along ball→mark line the defender positions (0=at ball, 1=at mark)
     // MARK_PULL:   how strongly they commit to that position vs shape anchor
-    // low_block  → block passing lane, stay back from mark (small laneT)
+    // low_block  → sits deep and rarely presses, but marks like mid_block (8.8.33: staying far from the mark left attackers free)
     // high_press → tight man-marking, very close to mark (large laneT)
     low_block:  { PRESSING_LINE_HEIGHT: 0.28, PRESS_INTENSITY: 0.20, TACKLE_AGGRESSION: 0.25, PRESS_STAMINA_MULT: 1,
-                  MARK_LANE_T_FAR: 0.15, MARK_LANE_T_CLOSE: 0.40, MARK_PULL_MIN: 0.50, MARK_PULL_MAX: 0.80 },
+                  MARK_LANE_T_FAR: 0.30, MARK_LANE_T_CLOSE: 0.65, MARK_PULL_MIN: 0.40, MARK_PULL_MAX: 0.88 },
     mid_block:  { PRESSING_LINE_HEIGHT: 0.55, PRESS_INTENSITY: 0.50, TACKLE_AGGRESSION: 0.40, PRESS_STAMINA_MULT: 1,
                   MARK_LANE_T_FAR: 0.30, MARK_LANE_T_CLOSE: 0.65, MARK_PULL_MIN: 0.40, MARK_PULL_MAX: 0.88 },
     high_press: { PRESSING_LINE_HEIGHT: 0.80, PRESS_INTENSITY: 0.85, TACKLE_AGGRESSION: 0.65, PRESS_STAMINA_MULT: HIGH_PRESS_STAMINA_MULT,
