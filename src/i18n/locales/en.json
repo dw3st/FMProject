@@ -3655,6 +3655,7 @@
   "negotiation": {
     "situation": {
       "label": "Situation",
+      "thinAfter": {"GK": "If he leaves, you are left with {{count}} goalkeepers (the minimum is {{min}}).", "Defender": "If he leaves, you are left with {{count}} defenders (the minimum is {{min}}).", "Midfielder": "If he leaves, you are left with {{count}} midfielders (the minimum is {{min}}).", "Forward": "If he leaves, you are left with {{count}} forwards (the minimum is {{min}})."},
       "role": {
         "key": "Key player",
         "starter": "Starter",

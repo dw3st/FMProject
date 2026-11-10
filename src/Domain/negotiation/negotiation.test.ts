@@ -339,10 +339,11 @@ describe("transfer request pricing (morale)", () => {
 });
 
 describe("review fixes", () => {
-  test("bids skip a player the human club could not let go", () => {
+  test("bids skip the human club's players once its squad is down to 14 (8.9.8: line minimums only warn)", () => {
     const thin = squad("h");
     const gks = thin.players.filter((p) => p.positions[0] === "GK");
-    const threeGk = { ...thin, players: thin.players.filter((p) => p.id !== gks[3]!.id) };
+    const others = thin.players.filter((p) => p.positions[0] !== "GK");
+    const threeGk = { ...thin, players: [...gks.slice(0, 2), ...others.slice(0, 12)] };
     const buyer = squad("b", 6, { financialTier: "HIGH" });
     const profiles = {
       b: {

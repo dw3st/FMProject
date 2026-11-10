@@ -16,7 +16,7 @@ import { liveBids } from "@/Domain/negotiation/bids";
 import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
-import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { humanSaleBlocked, thinAfterSale } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
@@ -57,7 +57,7 @@ export const negotiationRoutes = {
         forSale: !!listed,
         loanable: (market?.playerLoanList ?? []).includes(playerId),
         // His morale and the role he was given stay with his own manager.
-        ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}) } : {}),
+        ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}), thinAfter: thinAfterSale(player, squad) } : {}),
       }));
     }
     const sellList = (await saveService.getWorldMarket(saveId))?.profiles?.[squad.id]?.sellList ?? [];
@@ -179,8 +179,8 @@ export const negotiationRoutes = {
       const seller = await saveService.getSquadById(saveId, meta.clubId);
       const buyer = await saveService.getSquadById(saveId, bid.clubId);
       const player = seller?.players.find((p) => p.id === bid.playerId && !p.loan);
-      // The human club never lets a player go below its squad / position / role minimums.
-      if (seller && player && squadDepthBlocked(player, seller, false)) return json({ error: "squadDepth" }, 409);
+      // The human club keeps a squad of 15; below a line's minimum it is only warned (8.9.8).
+      if (seller && player && humanSaleBlocked(seller)) return json({ error: "squadDepth" }, 409);
       if (!seller || !buyer || !player || buyer.players.length >= MAX_SQUAD) {
         await saveService.saveMarket(saveId, withoutBid, auth.seatId);
         return json({ error: "offerClosed" }, 409);

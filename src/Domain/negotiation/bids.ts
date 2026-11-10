@@ -7,7 +7,7 @@ import { aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { buildAiLoanBid } from "@/Domain/negotiation/loans";
-import { feeForSaleScore, saleContext, squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { feeForSaleScore, humanSaleBlocked, saleContext } from "@/Domain/transfer/transferAcceptance";
 
 /** Score at which a seller accepts (`evaluateTransferOffer`). */
 const ACCEPT_SCORE = 0.8;
@@ -133,9 +133,9 @@ export function generateBidsForHuman(args: {
   };
   const all = () => [...args.pending, ...pushed];
   const room = () => all().length < B.MAX_PENDING;
-  // Never a player the human club could not let go (squad of 15+, cover at the position, role minimums: the strict, AI-seller rule).
+  // Never a player the human club could not let go (squad of 15+, 8.9.8).
   const owned = (id: string) =>
-    humanSquad.players.find((p) => p.id === id && !p.loan && !squadDepthBlocked(p, humanSquad, false)) ?? null;
+    humanSquad.players.find((p) => p.id === id && !p.loan && !humanSaleBlocked(humanSquad)) ?? null;
   const buyersFor = (player: RosterPlayer, needKind?: "cover_need") =>
     Object.entries(profiles)
       .filter(([id]) => id !== humanSquad.id && !args.humanClubIds?.has(id) && squads.has(id) && !bidClubs(all(), player.id).has(id))
@@ -199,7 +199,7 @@ export function generateBidsForHuman(args: {
 
   // Unlisted standout: a bigger club tries its luck — twice as often, and for him, with an award winner (`awards.md`).
   if (room()) {
-    const free = humanSquad.players.filter((p) => !p.loan && !squadDepthBlocked(p, humanSquad, false) && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
+    const free = humanSquad.players.filter((p) => !p.loan && !humanSaleBlocked(humanSquad) && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
     const byRating = free.sort((a, b) => playerOverallRating(b) - playerOverallRating(a));
     const awarded = byRating.find((p) => p.awardBoost);
     const best = rng() < B.UNLISTED_CHANCE * (awarded ? AWARDS.BIG_CLUB_BID_MULT : 1) ? (awarded ?? byRating[0]) : undefined;

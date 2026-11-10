@@ -3655,6 +3655,7 @@
   "negotiation": {
     "situation": {
       "label": "Situação",
+      "thinAfter": {"GK": "Se ele sair, você fica com {{count}} goleiros (o mínimo é {{min}}).", "Defender": "Se ele sair, você fica com {{count}} defensores (o mínimo é {{min}}).", "Midfielder": "Se ele sair, você fica com {{count}} meias (o mínimo é {{min}}).", "Forward": "Se ele sair, você fica com {{count}} atacantes (o mínimo é {{min}})."},
       "role": {
         "key": "Peça-chave",
         "starter": "Titular",

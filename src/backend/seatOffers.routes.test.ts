@@ -7,9 +7,9 @@ import { emptyMarket } from "@/backend/negotiationWorld";
 import { loadWindowContext, seatWindowRef } from "@/backend/marketWindowWorld";
 import { callApi, createMultiWorld } from "@/backend/worlds/worldTestUtils";
 import { contractDemand, evaluateContractOffer } from "@/Domain/contracts/contracts";
-import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { humanSaleBlocked, squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { addDays } from "@/Domain/dates";
-import { HUMAN_MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { clubWage, wageFactorOf } from "@/Domain/finance/wages";
 import { SEAT_OFFERS } from "@/Domain/seatOffers/seatOfferConfig";
@@ -270,13 +270,11 @@ describe("seat offers: routes", () => {
     }
   }, 300_000);
 
-  test("squadDepth: the sale would leave the seller below a line's minimum", async () => {
+  test("squadDepth: the seller's squad is down to 14 (8.9.8: a line below its minimum only warns)", async () => {
     const original = (await saveService.getSquadById(id, clubB))!;
-    const keepers = original.players.filter((p) => roleOf(p) === "GK" && !p.loan);
-    const kept = new Set(keepers.slice(0, MIN_BY_ROLE.GK).map((p) => p.id));
-    const trimmed = { ...original, players: original.players.filter((p) => roleOf(p) !== "GK" || kept.has(p.id)) };
-    const target = trimmed.players.find((p) => kept.has(p.id))!;
-    expect(squadDepthBlocked(target, trimmed, false)).toBe(true);
+    const trimmed = { ...original, players: original.players.filter((p) => !p.loan).slice(0, 14) };
+    const target = trimmed.players[trimmed.players.length - 1]!;
+    expect(humanSaleBlocked(trimmed)).toBe(true);
     await saveService.saveSquadById(id, trimmed);
     try {
       const r = await post(a.session.token, LIST, { kind: "transfer", playerId: target.id, fromSquadId: clubB, fee: 1_000_000, wage: 100_000, years: 2 });

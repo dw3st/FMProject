@@ -31,12 +31,16 @@ export function PlayerSituationLine({ saveId, playerId, squadId, listing }: {
   const line = <p className="text-sm text-muted-foreground m-0">{t("negotiation.situation.label")}: {parts.join(" · ")}</p>;
   if (!listing) return line;
   const listed = listing === "transfer" ? s.forSale : s.loanable;
+  const thin = s.thinAfter
+    ? <p className="text-sm text-chart-4 m-0 w-full">{t(`negotiation.situation.thinAfter.${s.thinAfter.line}`, { count: s.thinAfter.left, min: s.thinAfter.min })}</p>
+    : null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className={`rounded border px-2 py-0.5 text-sm font-semibold whitespace-nowrap ${listed ? "border-primary/50 bg-primary/10 text-primary" : "border-chart-4/50 bg-chart-4/10 text-chart-4"}`}>
         {t(`negotiation.situation.${listing === "transfer" ? "sale" : "loan"}${listed ? "Listed" : "NotListed"}`)}
       </span>
       {line}
+      {thin}
     </div>
   );
 }

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.8",
+    date: "2026-11-10",
+    time: "17:33",
+    items: [
+      {
+        pt: "Você pode vender ou emprestar um jogador mesmo que a posição dele fique abaixo do mínimo do elenco. A proposta avisa quantos sobram na linha; só um elenco de 15 jogadores continua travado.",
+        en: "You can sell or loan a player even if his line drops below the squad minimum. The offer tells you how many are left; only a squad of 15 is still locked.",
+      },
+    ],
+  },
+  {
     version: "8.9.7",
     date: "2026-11-10",
     time: "15:45",

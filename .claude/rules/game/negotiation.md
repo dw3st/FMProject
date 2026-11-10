@@ -257,3 +257,7 @@ Report do usuário. A contraproposta de uma proposta da IA (`BidCard`) e a de um
 Vender pelo Elenco (8.8.7, report de tester): na tabela do próprio elenco, a etiqueta (âmbar quando já está à venda) abre o `AskingPriceModal` ali mesmo, com a lista de venda de `GET /sell-list`.
 
 Saldo para as luvas (8.8.9, revisão de código): contratar um livre com luvas exige o saldo (409 `noMoney`); um pré-contrato exige o saldo para as luvas dele somadas às dos pré-contratos já assinados (pagas na chegada, então podem deixar o saldo negativo se ele gastar o dinheiro antes).
+
+## Vender abaixo do mínimo da linha (8.9.8)
+
+Report de tester. O técnico humano vende ou empresta um jogador dele (proposta da IA, proposta entre técnicos) mesmo que a linha fique abaixo do mínimo ou sem outro jogador na posição: só o elenco de 14 ou menos trava (`humanSaleBlocked`, 409 `squadDepth`), e as propostas da IA também chegam por esses jogadores. A linha de situação da proposta avisa quantos sobram (`thinAfterSale` → `PlayerSituation.thinAfter`). A IA vendendo mantém os mínimos (`squadDepthBlocked`); a rescisão amigável não mudou.

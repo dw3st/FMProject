@@ -3,6 +3,7 @@ import type { PlayerArrival } from "@/types/playerTypes";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { closePartialSeason } from "@/Domain/history/history";
 import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import type { MainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer, PlayerContract, SellOnClause } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { playerValueModel } from "@/Domain/awards/awardValue";
@@ -85,6 +86,21 @@ export function squadDepthBlocked(player: RosterPlayer, fromSquad: Squad, humanS
   if (inRole <= 1) return true;
   if (!humanSeller && inRole - 1 < MIN_BY_ROLE[role]) return true;
   return false;
+}
+
+/**
+ * The human manager selling or lending one of his own players (report, 8.9.8): only the floor of 15 for the match day
+ * squad. Below a line's minimum he is warned (`thinAfterSale`), never stopped.
+ */
+export function humanSaleBlocked(fromSquad: Squad): boolean {
+  return fromSquad.players.length <= 14;
+}
+
+/** The line the sale would leave below its minimum, with the count left, or null. */
+export function thinAfterSale(player: RosterPlayer, fromSquad: Squad): { line: MainRole; left: number; min: number } | null {
+  const role = roleOf(player);
+  const left = fromSquad.players.filter((p) => roleOf(p) === role).length - 1;
+  return left < MIN_BY_ROLE[role] ? { line: role, left, min: MIN_BY_ROLE[role] } : null;
 }
 
 /**

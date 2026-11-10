@@ -14,7 +14,7 @@ import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import {
   dropFromLineup, emptyMarket, historyFromOf, humanRosterSize, seasonEndOf, sellOnFor, settleSellOn, startLoan,
 } from "@/backend/negotiationWorld";
-import { squadsAfterAcceptedTransfer, squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { humanSaleBlocked, squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
 import { contractEndFor } from "@/Domain/contracts/contracts";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { splitMarket } from "@/Domain/market/seatMarket";
@@ -132,7 +132,7 @@ export async function checkOfferWorld(
   if (!seller || !buyer || !player) return { ok: false, status: 409, error: "offerClosed" };
   if (player.loan) return { ok: false, status: 400, error: "onLoan" };
   if ((await humanRosterSize(service, saveId, o.buyer.seatId, buyer)) >= HUMAN_MAX_SQUAD) return { ok: false, status: 409, error: "squadFull" };
-  if (squadDepthBlocked(player, seller, false)) return { ok: false, status: 409, error: "squadDepth" };
+  if (humanSaleBlocked(seller)) return { ok: false, status: 409, error: "squadDepth" };
   if (breaksStarLimit(buyer, player.id, await topIdsOf(saveId))) return { ok: false, status: 409, error: "starLimit" };
   return { ok: true, seller, buyer, player };
 }
