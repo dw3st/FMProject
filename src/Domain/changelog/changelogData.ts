@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.6",
+    date: "2026-11-10",
+    time: "15:30",
+    items: [],
+    fixes: [
+      {
+        pt: "Apostas: quando a competição não tem jogo nos próximos 7 dias, a aba diz quando é o próximo. A lista das suas apostas agora se chama \"Suas apostas abertas\".",
+        en: "Bets: when a competition has no game in the next 7 days, the tab says when the next one is. Your list is now called \"Your open bets\".",
+      },
+    ],
+  },
+  {
     version: "8.9.5",
     date: "2026-11-10",
     time: "15:25",

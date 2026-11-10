@@ -61,6 +61,27 @@ export async function isBettableCompetition(service: SaveService, saveId: string
   return (await service.listCompetitionSlugs(saveId)).includes(slug);
 }
 
+/** The competitions a list shows: the one asked, else his league and his club's cup and continental. */
+async function betSlugs(service: SaveService, saveId: string, seat: BetSeat, competition?: string): Promise<string[]> {
+  if (!seat.leagueSlug) return [];
+  if (competition) return (await isBettableCompetition(service, saveId, competition)) ? [competition] : [];
+  return [seat.leagueSlug, await playerCupSlug(seat.leagueSlug), seat.clubId ? await playerContinentalSlug(service, saveId, seat.clubId) : null]
+    .filter((s): s is NonNullable<typeof s> => !!s);
+}
+
+/** The first match day after the betting window, for "the next game is on ...". */
+async function nextGameDate(service: SaveService, saveId: string, seat: BetSeat, competition?: string): Promise<string | null> {
+  const today = seat.currentDate;
+  if (!today) return null;
+  let best: string | null = null;
+  for (const slug of await betSlugs(service, saveId, seat, competition)) {
+    for (const d of Object.keys((await service.getDateIndex(saveId, slug)) ?? {})) {
+      if (d > today && (best === null || d < best)) best = d;
+    }
+  }
+  return best;
+}
+
 /**
  * The games he can still bet on: after today, within `DAYS_AHEAD`. By default his league and his club's competitions;
  * with `competition`, that one (any league in the world, tester report, 8.9.2).
@@ -68,9 +89,7 @@ export async function isBettableCompetition(service: SaveService, saveId: string
 export async function betQuotes(service: SaveService, saveId: string, seat: BetSeat, competition?: string): Promise<GameQuote[]> {
   const today = seat.currentDate;
   if (!today || !seat.leagueSlug) return [];
-  if (competition && !(await isBettableCompetition(service, saveId, competition))) return [];
-  const slugs = competition ? [competition] : [seat.leagueSlug, await playerCupSlug(seat.leagueSlug), seat.clubId ? await playerContinentalSlug(service, saveId, seat.clubId) : null]
-    .filter((s): s is NonNullable<typeof s> => !!s);
+  const slugs = await betSlugs(service, saveId, seat, competition);
   const last = addDays(today, BETS.DAYS_AHEAD);
   const squads = new Map<string, Squad | null>();
   const squadOf = async (id: string) => {
@@ -102,6 +121,7 @@ export async function betQuotes(service: SaveService, saveId: string, seat: BetS
 export async function betsView(service: SaveService, saveId: string, seatId: string, seat: BetSeat, summary: boolean, competition?: string): Promise<BetsView> {
   const state = await service.getBets(saveId, seatId);
   const wallet = walletOf(seat, state);
+  const games = summary ? [] : (await betQuotes(service, saveId, seat, competition)).map((q) => q.game);
   return {
     wallet,
     openTotal: openTotal(state),
@@ -109,7 +129,8 @@ export async function betsView(service: SaveService, saveId: string, seatId: str
     maxStake: maxStake(wallet),
     open: state.open,
     settled: state.settled,
-    games: summary ? [] : (await betQuotes(service, saveId, seat, competition)).map((q) => q.game),
+    games,
+    nextDate: summary || games.length > 0 ? null : await nextGameDate(service, saveId, seat, competition),
   };
 }
 

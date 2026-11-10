@@ -69,6 +69,9 @@ describe("bets", () => {
     const g = other.data.games[0]!;
     const r = g.markets.result[0]!;
     expect((await call("POST", { competition: g.competition, fixtureId: g.fixtureId, pick: { market: "result", side: r.side }, stake: 1_000, odds: r.odds })).status).toBe(200);
+    // A competition with no game in the window says when the next one is.
+    const far = await call("GET", undefined, "?competition=ucl");
+    if (far.data.games.length === 0) expect(far.data.nextDate === null || far.data.nextDate! > (await saveService.getMeta(saveId))!.currentDate!).toBe(true);
     expect((await call("GET", undefined, "?competition=..%2F..%2Fsecret")).status).toBe(400);
     expect((await call("GET", undefined, "?competition=u21_england")).status).toBe(400);
   }, 120_000);

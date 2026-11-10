@@ -177,7 +177,7 @@ export function BetsTab() {
         />
       )}
       {view.games.length === 0 || !game ? (
-        <p className="text-sm text-muted-foreground m-0">{t("bets.noGames")}</p>
+        <p className="text-sm text-muted-foreground m-0">{view.nextDate ? t("bets.noGamesNext", { date: day(view.nextDate) }) : t("bets.noGames")}</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-4 items-start">
           <div className="card-arcade rounded-md overflow-hidden">

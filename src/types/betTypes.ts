@@ -56,4 +56,6 @@ export interface BetsView {
   open: Bet[];
   settled: Bet[];
   games: BetGame[];
+  /** With no game in the window: the date of the next game of those competitions (tester report, 8.9.6). */
+  nextDate?: string | null;
 }
