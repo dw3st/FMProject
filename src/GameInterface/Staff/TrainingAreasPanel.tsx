@@ -59,6 +59,7 @@ export function TrainingAreasPanel({
                   <td className={`${TABLE_CELL.body} text-sm`}>
                     {isCoachArea(area) && coaches.length > 0 ? (
                       <SelectCombobox<string>
+                        floating
                         className="min-w-48"
                         value={manual ?? AUTO}
                         disabled={busy}

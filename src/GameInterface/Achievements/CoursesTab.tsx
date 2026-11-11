@@ -106,9 +106,15 @@ export function CoursesTab() {
         <p className="text-sm text-muted-foreground tabular-nums m-0">
           {t("courses.languagesNote", { price: formatFee(COURSES.LANGUAGE.price), months: Math.round(COURSES.LANGUAGE.days / 30) })}
         </p>
-        <div className="flex flex-wrap gap-2">
+        {course && (
+          <p className="text-sm text-chart-4 tabular-nums m-0">
+            {t("courses.oneAtATime", { course: courseLabel(course.kind, course.language), date: formatGameDate(course.until, i18n.language) })}
+          </p>
+        )}
+        {/* Equal columns, so the rows line up (tester report, 9.6.1); a course in progress still lets him pick. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {languages.map((k) => (
-            <Chip key={k} selected={picked === k} onClick={() => setPicked(picked === k ? null : k)} disabled={busy || !!course}>
+            <Chip key={k} className="w-full justify-center truncate" selected={picked === k} onClick={() => setPicked(picked === k ? null : k)} disabled={busy}>
               {languageName(k, i18n.language, t)}
             </Chip>
           ))}
@@ -146,7 +152,7 @@ export function CoursesTab() {
                     <Button
                       className="tabular-nums"
                       disabled={busy || !!course || needsA || wallet < c.price}
-                      title={needsA ? t("courses.errors.needsA") : wallet < c.price ? t("courses.errors.noMoney") : undefined}
+                      title={course ? t("courses.oneAtATime", { course: courseLabel(course.kind, course.language), date: formatGameDate(course.until, i18n.language) }) : needsA ? t("courses.errors.needsA") : wallet < c.price ? t("courses.errors.noMoney") : undefined}
                       onClick={() => void buy(k)}
                     >
                       {formatFee(c.price)}

@@ -7179,7 +7179,8 @@
       "noMoney": "Dinheiro insuficiente na carteira.",
       "invalidCourse": "Curso inválido.",
       "generic": "Não foi possível começar o curso."
-    }
+    },
+    "oneAtATime": "Um curso por vez: {{course}} termina em {{date}}."
   },
   "seatFriendly": {
     "invite": "Marcar amistoso",

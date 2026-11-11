@@ -179,6 +179,7 @@ export function YouthTable() {
       cell: (r) => (
         <SelectCombobox<string>
           labelId={`yt-focus-${r.player.id}`}
+          floating
           className="min-w-36"
           value={data.training.players?.[r.player.id]?.focus ?? ""}
           onChange={(v) => setPlayer(r.player.id, { focus: (v || null) as YouthFocus | null })}
@@ -192,6 +193,7 @@ export function YouthTable() {
       cell: (r) => (
         <SelectCombobox<string>
           labelId={`yt-pos-${r.player.id}`}
+          floating
           className="min-w-32"
           value={data.training.players?.[r.player.id]?.position ?? ""}
           onChange={(v) => setPlayer(r.player.id, { position: v || null })}

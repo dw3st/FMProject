@@ -144,7 +144,8 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             </div>
           }
         >
-          <span className="inline-flex items-center gap-3">
+          {/* The crest centred on the capitals (tester report, 9.6.1: the inline-flex box sat on its own baseline). */}
+          <span className="inline-block align-[-0.16em] mr-3">
             <ClubLogo
               logoUrl={squadLogoUrl(squad.id)}
               primaryColor={squad.colors[0]}
@@ -152,8 +153,8 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
               className="w-8 h-8 rounded-full shrink-0"
               imgClassName="w-full h-full object-contain p-0.5"
             />
-            {t("screenTitles.squad.main")}
           </span>
+          {t("screenTitles.squad.main")}
         </ScreenTitle>
 
         <SegmentedTabs

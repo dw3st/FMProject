@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.6.1",
+    date: "2026-11-11",
+    time: "20:05",
+    items: [],
+    fixes: [
+      { pt: "Cursos: com um curso em andamento a tela avisa até quando ele vai, e os idiomas ficam em colunas alinhadas.", en: "Courses: with a course in progress the screen says when it ends, and the languages line up in columns." },
+      { pt: "Base e Equipe técnica: as listas de escolha dentro das tabelas abrem inteiras, sem ficar cortadas.", en: "Academy and Coaching staff: the pick lists inside the tables open in full instead of being cut off." },
+      { pt: "Elenco: o escudo do clube alinhado com o título.", en: "Squad: the club crest lined up with the title." },
+    ],
+  },
+  {
     version: "9.6",
     date: "2026-11-11",
     time: "19:30",

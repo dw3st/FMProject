@@ -7179,7 +7179,8 @@
       "noMoney": "Not enough money in the wallet.",
       "invalidCourse": "Invalid course.",
       "generic": "The course could not start."
-    }
+    },
+    "oneAtATime": "One course at a time: {{course}} ends on {{date}}."
   },
   "seatFriendly": {
     "invite": "Set up a friendly",

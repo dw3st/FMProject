@@ -29,6 +29,7 @@ export function SelectCombobox<T extends string>({
   className,
   disabled,
   emptyMessage,
+  floating,
 }: {
   label?: string;
   labelId?: string;
@@ -40,6 +41,8 @@ export function SelectCombobox<T extends string>({
   className?: string;
   disabled?: boolean;
   emptyMessage?: string;
+  /** Open the list over the page (a select inside a scrolling table, whose box would clip it). */
+  floating?: boolean;
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -90,7 +93,10 @@ export function SelectCombobox<T extends string>({
               <Icon name="chevron-down" className="w-4 h-4" />
             </ComboboxButton>
           </div>
-          <ComboboxOptions className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg bg-card border border-border py-1 text-sm focus:outline-none">
+          <ComboboxOptions
+            anchor={floating ? { to: "bottom start", gap: 4 } : undefined}
+            className={`${floating ? "min-w-[calc(var(--input-width)+3rem)]" : "absolute mt-1 w-full"} z-50 max-h-60 overflow-auto rounded-lg bg-card border border-border py-1 text-sm focus:outline-none`}
+          >
             {filtered.length === 0 && (
               <div className="px-3 py-2.5 text-sm text-muted-foreground text-center">{finalEmptyMessage}</div>
             )}
