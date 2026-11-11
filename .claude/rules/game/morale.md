@@ -262,3 +262,7 @@ Report do usuário, regra aprovada por ele. Duas respostas novas, uma vez a cada
 
 - **Dar uma dura (`confront`):** chance de reagir bem = 0,5 + 0,35 × (t profissionalismo − t temperamento), entre 0,1 e 0,9, sorteada por jogador e dia. Bem: +10. Mal: −12 e pedido de transferência (vai à lista de venda como pedido). Um cabeça quente (temperamento 15 ou mais) já revoltado, quando reage mal, rompe o contrato com 10% de chance: sai livre pela mesma rotina da rescisão amigável, sem multa (`releaseToFreePool`, `src/backend/playerRelease.ts`), com a mensagem de contrato.
 - **Desafio com prêmio (`challenge`):** +4 agora e uma promessa `challenge` com o bônus de 4 semanas de salário (`PlayerPromise.bonus`). Contam só os jogos em que ele entra; depois de 5, nota média 7 ou mais paga o bônus (linha `wages` com `ref.stage = "bonus"`, `playerBonus`) e dá +6, abaixo dá −3 sem pedido de transferência. Sem os 5 jogos em 60 dias, −3.
+
+## Conversar com emprestado (10.1)
+
+Pedido do usuário. O jogador emprestado ao clube aceita a conversa livre (elogiar, cobrar, dar uma dura, desafio): o botão aparece no Elenco e a ficha mostra o painel de moral. Ele nunca pede conversa. Uma dura que dá errado só tira a moral: sem pedido de transferência, sem lista de venda e sem rompimento (o contrato é do clube dono).

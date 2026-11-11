@@ -313,7 +313,7 @@ export function SquadRosterTable({
                   <Icon name="tag" className="w-4 h-4" />
                 </button>
               )}
-              {showMorale && !player.loan && talkedRest(player.id) && (
+              {showMorale && talkedRest(player.id) && (
                 <span
                   title={t("morale.talk.talkedRest", {
                     on: formatGameDate(talkedRest(player.id)!.on, i18n.language),
@@ -328,7 +328,7 @@ export function SquadRosterTable({
                   </span>
                 </span>
               )}
-              {showMorale && !player.loan && !talkedRest(player.id) && (
+              {showMorale && !talkedRest(player.id) && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setTalkWith(player); }}

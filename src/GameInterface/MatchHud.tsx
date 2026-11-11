@@ -28,6 +28,8 @@ export function MatchHud({ players, mySide, holderId, roster, faces, numbers, ra
   const { t } = useTranslation();
   const roleAbbr = (role: string) => t(`roles.detailedAbbr.${role}`, { defaultValue: role });
   const [shownId, setShownId] = useState<number | null>(null);
+  /** After the linger the last player stays on the band, dimmed (10.1: the band went black between touches). */
+  const [idle, setIdle] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holder = holderId !== null ? players.find((p) => p.id === holderId && p.team === mySide) ?? null : null;
 
@@ -35,10 +37,11 @@ export function MatchHud({ players, mySide, holderId, roster, faces, numbers, ra
     if (holder) {
       if (timer.current) { clearTimeout(timer.current); timer.current = null; }
       setShownId(holder.id);
-    } else if (shownId !== null && !timer.current) {
-      timer.current = setTimeout(() => { timer.current = null; setShownId(null); }, HUD.LINGER_S * 1000);
+      setIdle(false);
+    } else if (shownId !== null && !idle && !timer.current) {
+      timer.current = setTimeout(() => { timer.current = null; setIdle(true); }, HUD.LINGER_S * 1000);
     }
-  }, [holder?.id, shownId]);
+  }, [holder?.id, shownId, idle]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   const p = shownId !== null ? players.find((q) => q.id === shownId) ?? null : null;
@@ -49,7 +52,7 @@ export function MatchHud({ players, mySide, holderId, roster, faces, numbers, ra
       {p && (
         <div
           key={p.id}
-          className="h-full flex items-center justify-center gap-8 px-4 border-l-[6px] animate-[tvGoalIn_.25s_ease-out]"
+          className={`h-full flex items-center justify-center gap-8 px-4 border-l-[6px] animate-[tvGoalIn_.25s_ease-out] transition-opacity duration-500 ${idle ? "opacity-45" : ""}`}
           style={{ borderLeftColor: color }}
         >
           <div className="flex items-center gap-3 min-w-0 w-64 shrink-0">
@@ -97,7 +100,7 @@ function HudToday({ player, rating }: { player: GamePlayer; rating: number }) {
         <span className="text-muted-foreground">{t("match.hud.fitness")} <span className="font-display font-bold text-lg tabular-nums text-foreground">{Math.round(player.energy)}</span></span>
       </span>
       <span className="text-muted-foreground tabular-nums">
-        {t("match.hud.today", { passes: s.passesCompleted, shots: s.shots, goals: s.goals })}
+        {t("match.hud.today", { passes: s.passesCompleted + s.throughBallsCompleted + s.crossesCompleted + s.longBallsCompleted, shots: s.shots, goals: s.goals })}
       </span>
     </div>
   );

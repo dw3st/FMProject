@@ -546,3 +546,7 @@ frame sends the browser to `/match-live`, as before.
 ## Formações do técnico na partida (8.9.37)
 
 Report de tester. A aba Formação do painel ao vivo lista "Minhas formações": a formação livre salva (`user:free`) e a de cada escalação salva (`user:A|B|C`, `userFormationsOf`, `src/GameInterface/userFormations.ts`). Só a formação muda (a reorganização de sempre); só na partida sozinho (o servidor do jogo entre técnicos só conhece as prontas). As bolas paradas dessas formações são geradas das vagas.
+
+# Live match polish (10.1)
+
+User request after a measured audit (60 FPS at 1x and 4x, no long task). The feed also lists shots saved and off target (`shotSaved`, `shotWide`, from `shotResolved`); the summary and the HUD count passes of every kind (short + through + cross + long ball completed); `MatchHud` keeps the last player dimmed after the linger instead of an empty band; `SegmentedTabs` labels never wrap (`fill` + `compact` uses `px-2`).

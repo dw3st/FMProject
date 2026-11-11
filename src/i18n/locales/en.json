@@ -1171,7 +1171,9 @@
         "varOverturned": "{{what}}",
         "goalDisallowed": "Goal ruled out — {{player}}",
         "managerYellow": "Yellow for the manager",
-        "managerRed": "Manager sent off"
+        "managerRed": "Manager sent off",
+        "shotSaved": "Shot saved — {{player}}",
+        "shotWide": "Shot off target — {{player}}"
       },
       "manager": "Manager: {{name}}",
       "managerNoName": "Manager",

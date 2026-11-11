@@ -272,7 +272,7 @@ export function PlayerScreen({
         <PersonalityPanel player={player} />
         {isOwnPlayer && !player.loan && session && <MentoringPanel key={player.id} saveId={session.saveId} player={player} />}
 
-        {isOwnPlayer && !player.loan && session && (
+        {isOwnPlayer && session && (
           <PlayerMoralePanel
             saveId={session.saveId}
             playerId={player.id}

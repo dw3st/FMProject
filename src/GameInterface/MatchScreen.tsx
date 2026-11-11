@@ -1071,6 +1071,12 @@ export function MatchScreen() {
         setPaused(true);
         setShowSubPanel(true);
       }),
+      // Chances that did not go in (10.1): the feed was empty for an hour with shots on both sides.
+      gameBus.on("shotResolved", (e) => {
+        if (e.isGoal) return;
+        const shooter = gameStateRef.current?.players.find((p) => p.id === e.player);
+        if (shooter) push({ minute: minuteNow(), team: shooter.team, kind: e.inPosts ? "shotSaved" : "shotWide", player: shooter.name });
+      }),
       gameBus.on("offsideCalled", (e) => {
         push({ minute: minuteNow(), team: e.team, kind: "offside", player: nameOf(e.receiverId) });
         showNotice(t("match.notice.offside", { player: shirtName(nameOf(e.receiverId)), team: team(e.team) }), "info");
@@ -1868,7 +1874,10 @@ export function MatchScreen() {
   const summaryStats = (tm: TeamId): SummaryTeamStats => {
     const st = getTeamStats(tm);
     return {
-      shots: st.shots, passesCompleted: st.passesCompleted, passesAttempted: st.passesAttempted,
+      // Every kind of pass (10.1): short passes alone read 10 x 7 after an hour.
+      shots: st.shots,
+      passesCompleted: st.passesCompleted + st.throughBallsCompleted + st.crossesCompleted + st.longBallsCompleted,
+      passesAttempted: st.passesAttempted,
       fouls: st.fouls, yellowCards: st.yellowCards, redCards: st.redCards, offsides: st.offsides,
       corners: st.corners, freeKicks: st.freeKicks,
     };

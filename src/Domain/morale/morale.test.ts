@@ -517,6 +517,19 @@ describe("tougher talks (10.0)", () => {
     }
   });
 
+  test("a player on loan at the club talks too, and a bad confront never lists him nor breaks his contract (10.1)", () => {
+    const loan = { fromClubId: "x", fromClubName: "X", until: "2027-06-30", wageShare: 50 };
+    const praise = answerTalk({ squad: withPlayer({ loan }), playerId: "d4", answer: "praise", date: "2027-03-02", newId });
+    if ("error" in praise) throw new Error(praise.error);
+    expect(praise.change).toBeGreaterThan(0);
+    for (let d = 1; d <= 28; d++) {
+      const r = answerTalk({ squad: withPlayer({ loan, morale: 10, personality: { ambition: 10, loyalty: 10, professionalism: 1, temperament: 20 } }), playerId: "d4", answer: "confront", date: `2027-03-${String(d).padStart(2, "0")}`, newId });
+      if ("error" in r) throw new Error(r.error);
+      expect(r.listRequested).toBeUndefined();
+      expect(r.broke).toBeUndefined();
+    }
+  });
+
   test("challenge: a promise with the bonus; met over 5 played matches pays it, missed costs a little", () => {
     const sq = withPlayer({ contract: { until: "2029-06-30", wage: 10_000 } });
     const r = answerTalk({ squad: sq, playerId: "d4", answer: "challenge", date: "2027-03-02", newId });

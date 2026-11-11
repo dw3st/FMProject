@@ -29,7 +29,7 @@ export interface MatchFeedItem {
   minute: number;
   team: TeamId;
   kind:
-    | "goal" | "penaltyGoal" | "penaltyMissed" | "yellow" | "red" | "offside" | "sub" | "injury"
+    | "goal" | "penaltyGoal" | "penaltyMissed" | "shotSaved" | "shotWide" | "yellow" | "red" | "offside" | "sub" | "injury"
     /** VAR (`var.md`): a call checked and kept / changed, a goal ruled out; the manager's cards. */
     | "varConfirmed" | "varOverturned" | "goalDisallowed" | "managerYellow" | "managerRed";
   player: string;
@@ -43,6 +43,8 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
   goal: "bg-primary",
   penaltyGoal: "bg-primary",
   penaltyMissed: "bg-muted-foreground",
+  shotSaved: "bg-chart-2",
+  shotWide: "bg-muted-foreground",
   yellow: "bg-card-yellow",
   red: "bg-destructive",
   offside: "bg-muted-foreground",

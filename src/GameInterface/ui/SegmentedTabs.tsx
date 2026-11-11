@@ -47,7 +47,7 @@ export function SegmentedTabs<K extends string>({
             disabled={tab.disabled}
             onClick={() => onChange(tab.key)}
             {...tabProps?.(tab.key)}
-            className={`${compact ? "px-3" : "px-4"} ${fill ? "flex-1" : ""} inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`${compact ? (fill ? "px-2" : "px-3") : "px-4"} ${fill ? "flex-1" : ""} whitespace-nowrap inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
               on
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground bg-transparent"

@@ -600,9 +600,10 @@ export function answerTalk(args: {
   const { squad, playerId, answer, date } = args;
   const player = squad.players.find((p) => p.id === playerId);
   if (!player) return { error: "notYourPlayer" };
-  if (player.loan) return { error: "onLoan" };
   const state = clubMoraleOf(squad);
   const talk = state.talks.find((t) => t.playerId === playerId) ?? null;
+  // A player on loan at the club (10.1) talks like the others, but he is not ours to list or to lose.
+  const borrowed = !!player.loan;
   if (!answersFor(talk?.reason ?? null).includes(answer)) return { error: "invalidAnswer" };
 
   let change = 0;
@@ -655,6 +656,7 @@ export function answerTalk(args: {
       nextLog = { ...nextLog, talkedOn: date };
       if (rng() < good) { change = MORALE.CONFRONT_GOOD; break; }
       change = MORALE.CONFRONT_BAD;
+      if (borrowed) break;
       listRequested = true;
       nextLog = { ...nextLog, transferRequest: nextLog.transferRequest ?? date };
       if (traits.temperament >= MORALE.BREAK_TEMPERAMENT && moraleBand(moraleOf(player)) === "furious" && rng() < MORALE.BREAK_CHANCE) broke = true;

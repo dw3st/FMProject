@@ -1171,7 +1171,9 @@
         "varOverturned": "{{what}}",
         "goalDisallowed": "Gol anulado — {{player}}",
         "managerYellow": "Amarelo para o técnico",
-        "managerRed": "Técnico expulso"
+        "managerRed": "Técnico expulso",
+        "shotSaved": "Chute defendido — {{player}}",
+        "shotWide": "Chute para fora — {{player}}"
       },
       "manager": "Técnico: {{name}}",
       "managerNoName": "Técnico",
