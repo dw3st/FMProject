@@ -556,3 +556,7 @@ Pedido do usuário, opção D de quatro renderizações reais do campo. Com os b
 ## Arquibancada mais cheia (10.3)
 
 Pedido do usuário, opção D de quatro renderizações reais. `STADIUM.ROW_DEPTH` 2 → 1,25 (com 2 havia uma fileira vazia entre cada duas e um bom público parecia estádio vazio), `MAX_SEATS` 6000 → 11000, torcedor 10% maior (`CROWD_MOTION.FIGURE` 1,375) e a ocupação desenhada é `fill ^ FILL_POW` (0,7; `drawnFill`, `crowd.ts`, com teste: 66% aparece como ~75%, 0 e 100% iguais). Só desenho: público e bilheteria não mudam. Medido na partida real: 60 quadros por segundo, antes e depois.
+
+## Bonecos separados quando se cobrem (10.4)
+
+Pedido do usuário, opção D de quatro renderizações reais. Os bonecos são desenhados bem mais largos que o espaço real de um jogador, então dois jogadores a 1 ou 2 jardas se cobriam. `markerSpread.ts` (puro, com teste): `spreadOffsets` empurra cada par mais perto que `MATCH_LOOK.SPREAD.MIN_DIST` (2,1 raios do marcador) ao longo da linha entre eles, no máximo `MAX_SHIFT` (1 raio, cerca de 2 jardas) da posição real; `easeOffsets` entra e sai aos poucos (`RATE` 10 por segundo). Ficam no lugar real os goleiros, a barreira, quem tem a bola e quem vai receber o passe (a bola nunca salta). Aplicado ao `drawnPos` no fim, depois da gravação do replay, então vale ao vivo, no replay, na transmissão e no jogo entre técnicos. Só desenho: o motor não vê essas posições. Medido: 60 quadros por segundo, antes e depois.

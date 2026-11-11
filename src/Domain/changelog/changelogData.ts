@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.4",
+    date: "2026-11-11",
+    time: "20:41",
+    items: [
+      { pt: "Partida ao vivo: jogadores que ficavam um em cima do outro agora aparecem lado a lado. Quando dois ou mais se juntam, cada um é desenhado um pouco afastado, e ninguém some atrás de outro. O jogo em si não muda.", en: "Live match: players who used to sit on top of each other now show side by side. When two or more bunch up, each one is drawn slightly apart, and nobody disappears behind another. The game itself does not change." },
+    ],
+  },
+  {
     version: "10.3",
     date: "2026-11-11",
     time: "19:43",

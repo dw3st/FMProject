@@ -24,6 +24,7 @@ import { gameArtUrl, newVisualOn, paintedBackdrop, paintedSurround } from "@/Dom
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
 import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
+import { easeOffsets, spreadOffsets } from "@/GraficsEngine/markerSpread";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
@@ -1497,6 +1498,7 @@ export function PixiPitch({
       let transition: SetPieceTransition | null = null;
       let setPieceStartPending = false;
       let lastDrawnPos: Map<number, Pos> | null = null;
+      let spreadOffs = new Map<number, Pos>();
       /** Bounce of a loose high ball: which landing it is (its start time) and when it was first drawn. */
       let bounceKey: number | null = null;
       /** Box jostling of this frame (engine yards per player), drawn on the marker. */
@@ -4061,6 +4063,25 @@ export function PixiPitch({
               replayRun = { clip, started: replayClock };
               onReplayRef.current?.(true);
             }
+          }
+        }
+        {
+          // Markers that cover each other are drawn pushed apart (10.4, option D): drawing only. The keepers, a
+          // free-kick wall, the ball holder and the receiver of a pass stay where they are (the ball never jumps).
+          const S = MATCH_LOOK.SPREAD;
+          const rYd = markerR / m.scale;
+          const stp = stateRef.current;
+          const fixedIds = new Set<number>(stp.setPiece?.wallIds ?? []);
+          for (const p of stp.players) if (p.role === "GK") fixedIds.add(p.id);
+          if (!stp.pass && !stp.shot && !stp.looseBall) fixedIds.add(stp.ballHolderId);
+          if (stp.pass?.toId != null) fixedIds.add(stp.pass.toId);
+          const pts = stp.players.map((p) => { const a = drawnPos.get(p.id) ?? p; return { id: p.id, x: a.x, y: a.y }; });
+          const target = spreadOffsets(pts, rYd * S.MIN_DIST, rYd * S.MAX_SHIFT, fixedIds);
+          spreadOffs = easeOffsets(spreadOffs, target, app.ticker.deltaMS / 1000, S.RATE);
+          if (spreadOffs.size) {
+            const next = new Map(drawnPos);
+            for (const [id, o] of spreadOffs) { const p = next.get(id); if (p) next.set(id, { x: p.x + o.x, y: p.y + o.y }); }
+            drawnPos = next;
           }
         }
         lastDrawnPos = drawnPos;
