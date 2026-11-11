@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.33",
+    date: "2026-11-11",
+    time: "08:48",
+    items: [
+      {
+        pt: "A estrela do jogador criado fica à direita do nome, como as outras estrelas, e o Elenco ganhou a legenda das estrelas: top 25 do mundo, grande fase, prodígio e criado na loja.",
+        en: "The created player's star sits right of the name, like the other stars, and the Squad got a legend of the stars: world top 25, great form, prodigy and made in the shop.",
+      },
+      {
+        pt: "Nomes de jogadores com link para a ficha também nas negociações, nos empréstimos, nas propostas e na aba Inscritos.",
+        en: "Player names link to their page in negotiations, loans, bids and the Registration tab too.",
+      },
+    ],
+  },
+  {
     version: "8.9.32",
     date: "2026-11-11",
     time: "08:43",

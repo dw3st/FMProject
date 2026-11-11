@@ -30,7 +30,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { moraleBand, moraleOf } from "@/Domain/morale/morale";
-import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { StarBadge, StarLegend } from "@/GameInterface/Components/StarBadge";
 import { LEGEND_NAME_CLASS, LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
 import { CreatedStar, isCreatedPlayer } from "@/GameInterface/Components/CreatedStar";
 import { Flag } from "@/GameInterface/Components/Flag";
@@ -261,7 +261,6 @@ export function SquadRosterTable({
                   <Flag code={player.flagCode} />
                 </span>
               )}
-              {isCreatedPlayer(player.id) && <CreatedStar className="mr-1.5 align-middle" />}
               <a
                 href={playerDetailHref(player)}
                 title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}
@@ -271,6 +270,7 @@ export function SquadRosterTable({
                 {player.name}
               </a>
               {player.reborn && <LegendLaurel className="ml-1.5" />}
+              {isCreatedPlayer(player.id) && <CreatedStar className="ml-1.5 align-middle" />}
               {stars.get(player.id) && <StarBadge kind={stars.get(player.id)} className="ml-1.5 align-middle" />}
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
@@ -376,7 +376,10 @@ export function SquadRosterTable({
       </div>
       </div>
       </div>
-      <p className="m-0 px-4 py-2.5 border-t border-border text-sm text-muted-foreground">{t("dashboard.squadRosterTable.legend")}</p>
+      <div className="m-0 px-4 py-2.5 border-t border-border text-sm text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span>{t("dashboard.squadRosterTable.legend")}</span>
+        <StarLegend />
+      </div>
       {selling && session && (
         <AskingPriceModal
           saveId={session.saveId}

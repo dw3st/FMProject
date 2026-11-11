@@ -1,3 +1,4 @@
+import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
 import type { LoanReport } from "@/Domain/negotiation/loanReport";
 import { useAttributeName } from "@/GameInterface/Components/AttributeChangeRow";
 import { useEffect, useState } from "react";
@@ -138,7 +139,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                 rowKey={(o) => o.id}
                 isHighlighted={(o) => o.id === openOfferId}
                 columns={[
-                  { key: "p", header: t("negotiation.overview.player"), cell: (o) => <span className="font-semibold text-foreground">{o.playerName}</span> },
+                  { key: "p", header: t("negotiation.overview.player"), cell: (o) => <PlayerNameLink player={{ id: o.playerId, name: o.playerName }} /> },
                   { key: "k", header: t("seatOffers.kind"), cell: (o) => t(o.kind === "transfer" ? "seatOffers.transfer" : "seatOffers.loan") },
                   { key: "c", header: t("negotiation.overview.club"), cell: (o) => `${otherClub(o)}${o.otherManager ? ` · ${o.otherManager}` : ""}` },
                   { key: "t", header: t("negotiation.overview.offer"), cell: terms, className: "tabular-nums" },
@@ -179,7 +180,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={rivals}
               rowKey={(r) => `${r.playerId}:${r.clubId}`}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (r) => <span className="font-semibold text-foreground">{r.playerName}</span> },
+                { key: "p", header: t("negotiation.overview.player"), cell: (r) => <PlayerNameLink player={{ id: r.playerId, name: r.playerName }} /> },
                 { key: "c", header: t("negotiation.rival.club"), cell: (r) => r.clubName },
                 { key: "f", header: t("negotiation.overview.offer"), cell: (r) => formatFee(r.fee), className: "tabular-nums" },
                 { key: "d", header: t("negotiation.rival.deadline"), cell: (r) => fmtDate(r.deadline), className: "tabular-nums" },
@@ -205,7 +206,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                     return (
                       <span className="inline-flex items-center gap-2">
                         {code && <span title={nationalityDisplayName(p.nationality ?? "", i18n.language, t)} className="inline-flex"><Flag code={code} /></span>}
-                        <span className="font-semibold text-foreground">{p.playerName}</span>
+                        <PlayerNameLink player={{ id: p.playerId, name: p.playerName }} />
                       </span>
                     );
                   },
@@ -225,7 +226,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={out}
               rowKey={(l) => l.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <span className="font-semibold text-foreground">{l.playerName}</span> },
+                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
                 { key: "c", header: t("negotiation.overview.club"), cell: (l) => l.toClubName },
                 { key: "s", header: t("negotiation.overview.theyPay"), cell: (l) => share(l), className: "tabular-nums" },
                 { key: "u", header: t("negotiation.returns"), cell: (l) => fmtDate(l.until), className: "tabular-nums" },
@@ -260,7 +261,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={inn}
               rowKey={(l) => l.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <span className="font-semibold text-foreground">{l.playerName}</span> },
+                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
                 { key: "c", header: t("negotiation.overview.from"), cell: (l) => l.fromClubName },
                 { key: "s", header: t("negotiation.overview.youPay"), cell: (l) => share(l), className: "tabular-nums" },
                 { key: "u", header: t("negotiation.returns"), cell: (l) => fmtDate(l.until), className: "tabular-nums" },
@@ -274,7 +275,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={data.sellOnHeld}
               rowKey={(h) => h.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (h) => <span className="font-semibold text-foreground">{h.playerName}</span> },
+                { key: "p", header: t("negotiation.overview.player"), cell: (h) => <PlayerNameLink player={{ id: h.playerId, name: h.playerName }} /> },
                 { key: "c", header: t("negotiation.overview.soldTo"), cell: (h) => h.toClubName },
                 { key: "pct", header: t("negotiation.sellOn"), cell: (h) => `${h.pct}%`, className: "tabular-nums" },
                 { key: "d", header: t("negotiation.overview.date"), cell: (h) => fmtDate(h.date), className: "tabular-nums" },
@@ -287,7 +288,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
             rows={data.bids}
             rowKey={(b) => b.id}
             columns={[
-              { key: "p", header: t("negotiation.overview.player"), cell: (b) => <span className="font-semibold text-foreground">{b.playerName}</span> },
+              { key: "p", header: t("negotiation.overview.player"), cell: (b) => <PlayerNameLink player={{ id: b.playerId, name: b.playerName }} /> },
               { key: "c", header: t("negotiation.overview.club"), cell: (b) => b.clubName },
               {
                 key: "o", header: t("negotiation.overview.offer"), className: "tabular-nums",

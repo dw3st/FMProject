@@ -127,9 +127,9 @@ export function YouthTable() {
       header: t("youth.player"),
       cell: (r) => (
         <span className="inline-flex items-center gap-1.5 font-semibold">
-          {isCreatedPlayer(r.player.id) && <CreatedStar />}
           <span className={r.player.reborn ? LEGEND_NAME_CLASS : undefined}>{r.player.name}</span>
           {r.player.reborn && <LegendLaurel />}
+          {isCreatedPlayer(r.player.id) && <CreatedStar />}
           {r.player.reborn && <RebornBadge />}
         </span>
       ),

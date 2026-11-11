@@ -176,9 +176,9 @@ export function PlayerCard({
 
           <div className="flex-1 min-w-0 text-center sm:text-left">
             <h2 className="font-display font-black uppercase text-xl leading-none m-0 inline-flex items-center gap-2">
-              {isCreatedPlayer(player.id) && <CreatedStar />}
               <span className={player.reborn ? LEGEND_NAME_CLASS : undefined}>{player.name}</span>
               {player.reborn && <LegendLaurel size={28} />}
+              {isCreatedPlayer(player.id) && <CreatedStar />}
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
               {player.reborn && <RebornBadge className="mt-0.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="mt-0.5" />}

@@ -190,3 +190,5 @@ Pedido do usuário. A loja oferece só lendas reais, do Wikidata (CC0): `bun scr
 ## Estrela do jogador criado (8.9.28)
 
 Report de tester, opção B do mock, só a estrela. `CreatedStar` (`Components/CreatedStar.tsx`, `isCreatedPlayer`: id `created_…`) antes do nome no Elenco, na Base e na ficha, em `chart-2`.
+
+Legenda e lado da estrela (8.9.33): a estrela do jogador criado vai à direita do nome (depois da coroa de louros), e o rodapé do Elenco mostra `StarLegend` (`StarBadge.tsx`: as três estrelas e a do criado).

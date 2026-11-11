@@ -1,3 +1,4 @@
+import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -217,7 +218,7 @@ export function RegistrationView() {
                       {t(`roles.detailedAbbr.${r.role}`)}
                     </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.name}`}>
-                      {r.name}
+                      <PlayerNameLink player={{ id: r.id, name: r.name }} />
                       {stars.get(r.id) && <StarBadge kind={stars.get(r.id)} className="ml-1.5 align-middle" />}
                     </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{r.age}</td>
