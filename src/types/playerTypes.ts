@@ -495,6 +495,8 @@ export interface RetiredPlayer {
   history?: PlayerHistoryRow[];
   /** National-team career at retirement (`national-teams.md`). */
   national?: import("@/types/nationalTypes").NationalCareer;
+  /** A real football legend from Wikidata (`realLegends.json`, 8.9.26), not a retiree of the game's world. */
+  real?: { wikidata: string; birthYear: number; ballonDor: number; worldCups: number[] };
 }
 
 /** One closed season (or partial stint) of a player at one club. */

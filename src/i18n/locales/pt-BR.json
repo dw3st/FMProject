@@ -5420,7 +5420,11 @@
           "super": "Super raro"
         },
         "career": "Carreira: {{apps}} jogos · {{goals}} gols",
-        "done": "{{name}} voltou, na sua base."
+        "done": "{{name}} voltou, na sua base.",
+        "born": "nasceu em {{year}}",
+        "ballonDor_one": "Bola de Ouro",
+        "ballonDor_other": "{{count}} Bolas de Ouro",
+        "worldCups": "Copa {{years}}"
       },
       "history": {
         "title": "Histórico de compras",

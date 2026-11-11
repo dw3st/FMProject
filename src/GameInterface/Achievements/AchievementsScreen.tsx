@@ -477,7 +477,13 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
                           {l.rarity !== "common" && <span className={`text-sm ${l.rarity === "super" ? "text-chart-4" : "text-primary"}`}>{t(`achievements.shop.legend.rarity.${l.rarity}`)}</span>}
                         </span>
                         <span className="text-sm text-muted-foreground tabular-nums">
-                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {l.level.toFixed(1)} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}
+                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {l.real
+                            ? [
+                                t("achievements.shop.legend.born", { year: l.real.birthYear }),
+                                l.real.ballonDor > 0 ? t("achievements.shop.legend.ballonDor", { count: l.real.ballonDor }) : null,
+                                l.real.worldCups.length > 0 ? t("achievements.shop.legend.worldCups", { years: l.real.worldCups.join(", ") }) : null,
+                              ].filter(Boolean).join(" · ")
+                            : <>{l.level.toFixed(1)} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}</>}
                         </span>
                       </div>
                       <Button

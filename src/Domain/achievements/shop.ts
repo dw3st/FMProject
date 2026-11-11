@@ -95,6 +95,7 @@ export type LegendRarity = "common" | "rare" | "super";
 /** Rarity of a retiree in the shop: super rare (world class or a very high level), rare (a legend), common. */
 export function legendRarity(r: RetiredPlayer): LegendRarity {
   if (r.wasWorldClass) return "super";
+  if (r.real) return "rare";
   if (!isLegend(r)) return "common";
   return retiredLevel(r) >= RETIREMENT.SUPER_LEVEL[getMainRole(r.positions[0] ?? "CM")] ? "super" : "rare";
 }
@@ -144,6 +145,7 @@ export function legendOffer(
  * decent level). The cut is by line because defenders and keepers keep their level far longer than attackers.
  */
 export function isLegend(r: RetiredPlayer): boolean {
+  if (r.real) return true;
   if (r.freeAgent) return false;
   if (r.wasWorldClass) return true;
   const level = retiredLevel(r);

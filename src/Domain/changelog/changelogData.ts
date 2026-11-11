@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.26",
+    date: "2026-11-10",
+    time: "21:06",
+    items: [
+      {
+        pt: "Lendas de verdade na loja de conquistas: vencedores da Bola de Ouro, campeões de Copa do Mundo desde 1930 e craques conhecidos que jogaram pela seleção, mais de mil nomes. Cada um volta uma vez por mundo, com 17 anos, na sua base.",
+        en: "Real legends in the achievements shop: Ballon d'Or winners, World Cup winners since 1930 and well-known stars capped by their country, over a thousand names. Each one comes back once per world, aged 17, in your academy.",
+      },
+    ],
+  },
+  {
     version: "8.9.25",
     date: "2026-11-10",
     time: "20:44",

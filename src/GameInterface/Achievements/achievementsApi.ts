@@ -33,6 +33,8 @@ export interface AchievementsData {
       id: string; rarity: "common" | "rare" | "super"; price: number;
       name: string; positions: string[]; nationality: string | null; age: number;
       wasWorldClass: boolean; level: number; appearances: number; goals: number;
+      /** A real legend (8.9.26): his honours. */
+      real: { birthYear: number; ballonDor: number; worldCups: number[] } | null;
     }[];
   };
   hasClub: boolean;

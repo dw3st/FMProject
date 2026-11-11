@@ -5420,7 +5420,11 @@
           "super": "Super rare"
         },
         "career": "Career: {{apps}} games · {{goals}} goals",
-        "done": "{{name}} is back, in your academy."
+        "done": "{{name}} is back, in your academy.",
+        "born": "born {{year}}",
+        "ballonDor_one": "Ballon d'Or",
+        "ballonDor_other": "{{count}} Ballons d'Or",
+        "worldCups": "World Cup {{years}}"
       },
       "history": {
         "title": "Purchase history",

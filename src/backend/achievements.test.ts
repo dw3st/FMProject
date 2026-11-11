@@ -136,16 +136,20 @@ describe("achievements", () => {
     await saveService.writeRetired(saveId, retired);
     const shop = await call("", "GET", token);
     expect(shop.status).toBe(200);
+    // Since 8.9.26 the shop offers the real legends (Wikidata), never the world's retirees.
     const legends = ((await shop.json()) as any).shop.legends;
-    expect(legends).toHaveLength(5);
-    expect(legends[0].wasWorldClass).toBe(true);
-    expect((await call("/shop/legend", "POST", token, { retiredId: "not_offered" })).status).toBe(400);
+    expect(legends).toHaveLength(12);
+    expect(legends.every((l: any) => l.id.startsWith("rl_") && l.real)).toBe(true);
+    expect(legends.some((l: any) => l.id.startsWith("ret_"))).toBe(false);
+    expect((await call("/shop/legend", "POST", token, { retiredId: "ret_0" })).status).toBe(400);
     const pick = await call("/shop/legend", "POST", token, { retiredId: legends[0].id });
     expect(pick.status).toBe(200);
     const picked = await pick.json() as any;
     expect(picked.player.age).toBe(17);
     expect(picked.player.reborn.fromId).toBe(legends[0].id);
-    expect(picked.points.spent).toBe(1300); // 300 + 500 + 500 extra of a super rare
+    expect(picked.points.spent).toBe(300 + legends[0].price);
+    // Brought back: written into the world's list, marked, so it is never offered again.
+    expect((await saveService.getRetired(saveId)).find((r) => r.id === legends[0].id)?.legendBy).toBe(seatId);
     expect((await call("/shop/legend", "POST", token, { retiredId: legends[1].id })).status).toBe(409);
 
     // A legend bought before the purchase log, now at another club: found by his id prefix (tester report).
