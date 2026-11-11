@@ -5414,19 +5414,27 @@
       },
       "legend": {
         "title": "Retired legend",
-        "desc": "A new list of retirees for you every season: the one you pick comes back at 17 as a reborn star. Rare ones cost more.",
-        "from": "From {{n}} pts",
-        "pick": "Bring back · {{n}} pts",
-        "rarity": {
-          "rare": "Rare",
-          "super": "Super rare"
-        },
-        "career": "Career: {{apps}} games · {{goals}} goals",
+        "desc": "Once a season, spin the roulette: a real legend comes out and returns to your academy at 17. The rarer, the lower the chance.",
+        "from": "Spin: {{n}} pts",
         "done": "{{name}} is back, in your academy.",
         "born": "born {{year}}",
         "ballonDor_one": "Ballon d'Or",
         "ballonDor_other": "{{count}} Ballons d'Or",
-        "worldCups": "World Cup {{years}}"
+        "worldCups": "World Cup {{years}}",
+        "spin": "Spin · {{n}} pts",
+        "accept": "Bring to the academy",
+        "rerollPoints": "Spin again · {{n}} pts",
+        "rerollMoney": "Spin again · {{money}}",
+        "rerollFree": "Spin again (free)",
+        "taken": "Another manager took this legend. The next spin is free.",
+        "paid": "You have spent {{n}} pts on this legend.",
+        "tier": {
+          "normal": "Common",
+          "rare": "Rare",
+          "epic": "Epic",
+          "legend": "Legendary",
+          "super": "Icon"
+        }
       },
       "history": {
         "title": "Purchase history",
@@ -5461,7 +5469,9 @@
       "invalidPlayer": "Check the name (2 to 30 letters) and the other fields.",
       "locked": "That item is still locked.",
       "noLegends": "No retired star to bring back yet.",
-      "notOffered": "That legend is not on offer."
+      "notOffered": "That legend is not on offer.",
+      "noMoney": "You do not have the money to spin again.",
+      "offerClosed": "Another manager took this legend. Spin again."
     },
     "link": "Achievements",
     "summary": "{{unlocked}}/{{total}} · {{points}} pts",

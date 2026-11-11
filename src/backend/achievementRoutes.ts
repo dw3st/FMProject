@@ -1,5 +1,4 @@
 import { realLegendPool } from "@/Domain/legends/realLegends";
-import { careerTotals } from "@/Domain/history/history";
 import { saveService } from "@/backend/SaveService";
 import { achievementSnapshot } from "@/backend/achievementsWorld";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -12,9 +11,12 @@ import {
 import { attributeBoost, attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { achievementPoints, earnedPoints, pointsBalance, trackValues } from "@/Domain/achievements/progress";
 import {
-  boughtThisSeason, createdPlayer, legendExtraPrice, legendOffer, legendPlayer, legendRarity, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
+  boughtThisSeason, createdPlayer, legendAvailable, legendPlayer, parseCreatedPlayer, recordPurchase, shopPrice, CREATED_POSITIONS,
 } from "@/Domain/achievements/shop";
-import { weightedScore } from "@/Domain/playerRating";
+import { legendTier, spinLegend, spinReel } from "@/Domain/achievements/legendSpin";
+import { managerWallet } from "@/Domain/managers/assets";
+import { openTotal } from "@/Domain/bets/bets";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { AchievementsState } from "@/types/achievementTypes";
 import type { RetiredPlayer, Squad } from "@/types/playerTypes";
@@ -40,15 +42,33 @@ export async function nextSeasonEndOf(saveId: string, seatId: string): Promise<{
   return { year, start: state?.start ?? date, end: state?.end ?? `${year + 1}-05-31`, date, season: `${meta?.leagueSlug ?? ""}:${year}` };
 }
 
-/** A retiree with no history row (kept from before the rows) falls back to the season of the record. */
-function legendCareer(r: RetiredPlayer): { appearances: number; goals: number } {
-  const { apps, goals } = careerTotals(r.history);
-  return apps > 0 ? { appearances: apps, goals } : { appearances: r.appearances, goals: r.goals };
+/** A legend as the roulette shows him. */
+function legendCard(r: RetiredPlayer) {
+  return {
+    id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, tier: legendTier(r),
+    real: r.real ? { birthYear: r.real.birthYear, ballonDor: r.real.ballonDor, worldCups: r.real.worldCups } : null,
+  };
+}
+
+/** The current season's pending draw (with the reel it slid through), the prices and the odds. */
+function spinView(saveId: string, seatId: string, state: AchievementsState, season: string, pool: RetiredPlayer[]) {
+  const pending = state.legendSpin?.season === season ? state.legendSpin : null;
+  const winner = pending ? pool.find((r) => r.id === pending.id) ?? null : null;
+  const reel = pending && winner ? spinReel(pool, winner, mulberry32(seedFrom(`reel:${saveId}:${seatId}:${pending.id}:${pending.rerolls}`))) : [];
+  return {
+    price: shopPrice(state, "legend"),
+    rerollPoints: ACHIEVEMENTS.LEGEND_SPIN.REROLL_POINTS,
+    rerollMoney: ACHIEVEMENTS.LEGEND_SPIN.REROLL_MONEY,
+    odds: ACHIEVEMENTS.LEGEND_SPIN.ODDS,
+    reelAt: ACHIEVEMENTS.LEGEND_SPIN.REEL_AT,
+    pending: pending && winner ? { ...legendCard(winner), rerolls: pending.rerolls, paid: pending.paid, available: legendAvailable(winner) } : null,
+    reel: reel.map(legendCard),
+  };
 }
 
 async function view(saveId: string, seatId: string, state: AchievementsState) {
   const club = await humanClub(saveId, seatId);
-  const { season, start: seasonStart } = await nextSeasonEndOf(saveId, seatId);
+  const { season } = await nextSeasonEndOf(saveId, seatId);
   const managers = await saveService.getManagers(saveId);
   const seat = await saveService.getSeatMeta(saveId, seatId);
   const earnings = seat?.managerEarnings ?? 0;
@@ -86,17 +106,8 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       thisSeason: { created: boughtThisSeason(state, "created", season), legend: boughtThisSeason(state, "legend", season) },
       positions: CREATED_POSITIONS,
       history: await shopHistory(saveId, state, retired, club, seatId),
-      // The shop offers the real legends (8.9.26), not the world's retirees.
-      legends: legendOffer(realLegendPool(retired), { saveId, seatId, season, seasonStart }).map((r) => ({
-        rarity: legendRarity(r),
-        price: shopPrice(state, "legend") + legendExtraPrice(r),
-        id: r.id, name: r.name, positions: r.positions, nationality: r.nationality, age: r.age,
-        wasWorldClass: r.wasWorldClass, level: Math.round(weightedScore(r.statsAtRetirement, r.positions[0] ?? "CM") * 100) / 100,
-        // Career totals (tester question): the retirement record alone holds just his last season.
-        ...legendCareer(r),
-        // A real legend: his honours in place of the game career (8.9.26).
-        real: r.real ? { birthYear: r.real.birthYear, ballonDor: r.real.ballonDor, worldCups: r.real.worldCups } : null,
-      })),
+      // The legend roulette (tester report, option B, 8.9.34): the pending draw and its reel.
+      spin: spinView(saveId, seatId, state, season, realLegendPool(retired)),
     },
     hasClub: !!club,
   };
@@ -239,38 +250,90 @@ export const achievementRoutes = {
     });
   },
 
-  /** `POST { retiredId }`: one of the shop's legends comes back as a 17-year-old academy player. */
+  /**
+   * `POST { pay?: "points" | "money" }` - the legend roulette (8.9.34). No pending draw this season: pays the shop's
+   * price in points and draws. A pending one: draws again for `REROLL_POINTS` points or `REROLL_MONEY` of the manager's
+   * money (a drawn legend another manager took meanwhile is drawn again for free). 409 `alreadyBought`, `noClub`,
+   * `notEnoughPoints`, `noMoney`, `noLegends`.
+   */
+  "/api/saves/:saveId/achievements/shop/legend/spin": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return bad("method not allowed", 405);
+    const body = (await req.json().catch(() => ({}))) as { pay?: unknown } | null;
+    const pay = body?.pay === "money" ? "money" : "points";
+    return withSaveLock(saveId, async () => {
+      const state = await saveService.getAchievements(saveId, auth.seatId);
+      const season = await nextSeasonEndOf(saveId, auth.seatId);
+      if (boughtThisSeason(state, "legend", season.season)) return bad("alreadyBought", 409);
+      const club = await humanClub(saveId, auth.seatId);
+      if (!club) return bad("noClub", 409);
+      const pool = realLegendPool(await saveService.getRetired(saveId));
+      const pending = state.legendSpin?.season === season.season ? state.legendSpin : null;
+      const drawnBefore = pending ? pool.find((r) => r.id === pending.id) : undefined;
+      const pendingTaken = !!pending && !(drawnBefore && legendAvailable(drawnBefore));
+      let spent = state.spent;
+      let paid = pending?.paid ?? 0;
+      if (!pending) {
+        const price = shopPrice(state, "legend");
+        if (pointsBalance(state) < price) return bad("notEnoughPoints", 409);
+        spent += price;
+        paid = price;
+      } else if (!pendingTaken && pay === "points") {
+        if (pointsBalance(state) < ACHIEVEMENTS.LEGEND_SPIN.REROLL_POINTS) return bad("notEnoughPoints", 409);
+        spent += ACHIEVEMENTS.LEGEND_SPIN.REROLL_POINTS;
+        paid += ACHIEVEMENTS.LEGEND_SPIN.REROLL_POINTS;
+      } else if (!pendingTaken) {
+        const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+        const wallet = managerWallet(meta?.managerEarnings, meta?.managerSpent, meta?.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)));
+        if (wallet < ACHIEVEMENTS.LEGEND_SPIN.REROLL_MONEY) return bad("noMoney", 409);
+        await saveService.updateSeat(saveId, auth.seatId, { managerSpent: (meta?.managerSpent ?? 0) + ACHIEVEMENTS.LEGEND_SPIN.REROLL_MONEY });
+      }
+      const rerolls = pending ? pending.rerolls + 1 : 0;
+      const drawn = spinLegend(pool, mulberry32(seedFrom(`spin:${saveId}:${auth.seatId}:${season.season}:${rerolls}:${pending?.id ?? ""}`)));
+      if (!drawn) return bad("noLegends", 409);
+      const next: AchievementsState = {
+        ...state, spent,
+        legendSpin: { season: season.season, id: drawn.retired.id, tier: drawn.tier, rerolls, paid },
+      };
+      await saveService.writeAchievements(saveId, next, auth.seatId);
+      return Response.json(await view(saveId, auth.seatId, next));
+    });
+  },
+
+  /** `POST` - brings the roulette's pending legend back as a 17-year-old academy player (already paid by the spins). */
   "/api/saves/:saveId/achievements/shop/legend": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
-    const body = (await req.json().catch(() => null)) as { retiredId?: unknown } | null;
-    if (!body || typeof body.retiredId !== "string") return bad("retiredId required");
-    const retiredId = body.retiredId;
     return withSaveLock(saveId, async () => {
       const state = await saveService.getAchievements(saveId, auth.seatId);
-      const { season: seasonKey } = await nextSeasonEndOf(saveId, auth.seatId);
-      if (boughtThisSeason(state, "legend", seasonKey)) return bad("alreadyBought", 409);
+      const season = await nextSeasonEndOf(saveId, auth.seatId);
+      if (boughtThisSeason(state, "legend", season.season)) return bad("alreadyBought", 409);
       const club = await humanClub(saveId, auth.seatId);
       if (!club) return bad("noClub", 409);
       if ((club.squad.youth ?? []).length >= YOUTH.MAX_SIZE) return bad("youthFull");
+      const spin = state.legendSpin?.season === season.season ? state.legendSpin : null;
+      if (!spin) return bad("notOffered");
       const allRetired = await saveService.getRetired(saveId);
-      // Brought back already (by any seat, or as a reborn) is off the list: one comeback per player in the world.
-      const season = await nextSeasonEndOf(saveId, auth.seatId);
-      const retired = legendOffer(realLegendPool(allRetired), { saveId, seatId: auth.seatId, season: season.season, seasonStart: season.start }).find((r) => r.id === retiredId);
-      if (!retired) return bad("notOffered");
-      const extra = legendExtraPrice(retired);
-      if (pointsBalance(state) < shopPrice(state, "legend") + extra) return bad("notEnoughPoints", 409);
+      const retired = realLegendPool(allRetired).find((r) => r.id === spin.id);
+      // Taken by another manager since the draw: the next spin is free.
+      if (!retired || !legendAvailable(retired)) return bad("offerClosed", 409);
       const player = legendPlayer({ retired, squad: club.squad, year: season.year, nextSeasonEnd: season.end });
       await saveService.saveSquad(saveId, club.leagueSlug, club.clubSlug, { ...club.squad, youth: [...(club.squad.youth ?? []), player] });
       // Marked in the world's list: never a legend again, and a pending reborn offer for him closes.
       // A real legend is not in the list yet: his record joins it, marked (`realLegendPool` reads it back).
       const marked = { ...retired, legendBy: auth.seatId, legendOn: season.date, legendVia: "points" as const, ...(retired.rebornOffer === "pending" ? { rebornOffer: "expired" as const } : {}) };
-      await saveService.writeRetired(saveId, allRetired.some((r) => r.id === retiredId)
-        ? allRetired.map((r) => (r.id === retiredId ? marked : r))
+      await saveService.writeRetired(saveId, allRetired.some((r) => r.id === spin.id)
+        ? allRetired.map((r) => (r.id === spin.id ? marked : r))
         : [...allRetired, marked]);
-      const next: AchievementsState = recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: retiredId }, extra);
+      // The points were spent by the spins: the purchase records the player, the season and the count, at what he cost.
+      const bought = recordPurchase(state, "legend", season.date, season.season, { ...player, fromId: spin.id });
+      const purchases = (bought.purchases ?? []).map((p, i, all) => (i === all.length - 1 ? { ...p, price: spin.paid } : p));
+      const { legendSpin: _done, ...rest } = bought;
+      const next: AchievementsState = { ...rest, spent: state.spent, purchases };
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json({ player, ...(await view(saveId, auth.seatId, next)) });
     });

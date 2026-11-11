@@ -139,6 +139,17 @@ export interface AchievementsState {
     /** Season (`league:year`) of the last legend brought back for money (one per season). */
     legendMoneySeason?: string;
   };
+  /**
+   * The legend roulette's pending result (8.9.34): paid and drawn, waiting for "bring him" or a new spin. Only the
+   * current season's counts; `paid` is every point spent on this draw (the price and the point re-spins).
+   */
+  legendSpin?: {
+    season: string;
+    id: string;
+    tier: "normal" | "rare" | "epic" | "legend" | "super";
+    rerolls: number;
+    paid: number;
+  };
   /** Shop purchases, oldest first (the history on the shop tab). */
   purchases?: ShopPurchase[];
   /** Points from the campaign (titles, stages, objective, awards): total and the events counted, by key. */

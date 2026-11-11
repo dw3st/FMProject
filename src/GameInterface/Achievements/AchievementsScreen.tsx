@@ -16,6 +16,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { LegendRoulette } from "@/GameInterface/Achievements/LegendRoulette";
 import { AssetsTab } from "@/GameInterface/Achievements/AssetsTab";
 import { BetsTab } from "@/GameInterface/Achievements/BetsTab";
 import { TextField } from "@/GameInterface/ui/TextField";
@@ -403,9 +404,10 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
     setBusy(false);
     if (r.ok) { onChange(r.data); if (done) setMsg({ kind: "info", text: done(r.data) }); }
     else setMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
+    return r.ok;
   }
 
-  const { costs, bought, legends, thisSeason } = data.shop;
+  const { costs, bought, spin, thisSeason } = data.shop;
   const canCreated = !thisSeason.created && data.points.balance >= costs.created && data.hasClub;
   const canLegend = !thisSeason.legend && data.hasClub;
   const card = "rounded-md border border-border bg-card p-4 flex flex-col gap-3";
@@ -458,45 +460,22 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
         <section className={card}>
           <div className="flex items-baseline justify-between gap-2">
             <SectionTitle>{t("achievements.shop.legend.title")}</SectionTitle>
-            <span className="font-display font-bold tabular-nums text-primary">{t("achievements.shop.legend.from", { n: costs.legend })}</span>
+            <span className="font-display font-bold tabular-nums text-primary">{t("achievements.shop.legend.from", { n: spin.price })}</span>
           </div>
           <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.legend.desc")}</p>
           {thisSeason.legend && bought.legend
             ? <p className="text-sm m-0">{t("achievements.shop.bought", { date: formatDate(bought.legend, i18n.language) })}</p>
-            : legends.length === 0
-              ? <p className="text-sm text-muted-foreground m-0">{t("achievements.errors.noLegends")}</p>
-              : (
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto pr-1">
-                  {legends.map((l) => (
-                    <div key={l.id} className="flex items-center justify-between gap-3 border-b border-border/50 py-2">
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="flex items-center gap-2 font-semibold text-foreground truncate">
-                          {l.nationality && nationalityFlagCode(l.nationality) && <Flag code={nationalityFlagCode(l.nationality)!} />}
-                          {l.name}
-                          {l.rarity !== "common" && <span className={`text-sm ${l.rarity === "super" ? "text-chart-4" : "text-primary"}`}>{t(`achievements.shop.legend.rarity.${l.rarity}`)}</span>}
-                        </span>
-                        <span className="text-sm text-muted-foreground tabular-nums">
-                          {positionLabel(t, l.positions[0], l.positions[0] ?? "")} · {l.real
-                            ? [
-                                t("achievements.shop.legend.born", { year: l.real.birthYear }),
-                                l.real.ballonDor > 0 ? t("achievements.shop.legend.ballonDor", { count: l.real.ballonDor }) : null,
-                                l.real.worldCups.length > 0 ? t("achievements.shop.legend.worldCups", { years: l.real.worldCups.join(", ") }) : null,
-                              ].filter(Boolean).join(" · ")
-                            : <>{l.level.toFixed(1)} · {t("achievements.shop.legend.career", { apps: l.appearances, goals: l.goals })}</>}
-                        </span>
-                      </div>
-                      <Button
-                        disabled={!canLegend || busy || data.points.balance < l.price}
-                        onClick={() => void call("shop/legend", { retiredId: l.id }, () => t("achievements.shop.legend.done", { name: l.name }))}
-                      >
-                        {t("achievements.shop.legend.pick", { n: l.price })}
-                      </Button>
-                    </div>
-                  ))}
-                  </div>
-                </div>
-              )}
+            : (
+              <LegendRoulette
+                spin={spin}
+                balance={data.points.balance}
+                wallet={null}
+                canSpin={canLegend}
+                busy={busy}
+                onSpin={(pay) => call("shop/legend/spin", { pay })}
+                onAccept={() => void call("shop/legend", {}, (d) => t("achievements.shop.legend.done", { name: d.player?.name ?? spin.pending?.name ?? "" }))}
+              />
+            )}
         </section>
       </div>
       <ShopHistory history={data.shop.history} />

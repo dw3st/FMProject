@@ -29,15 +29,23 @@ export interface AchievementsData {
       /** His club now, when he plays for another one. */
       clubName: string | null;
     }[];
-    legends: {
-      id: string; rarity: "common" | "rare" | "super"; price: number;
-      name: string; positions: string[]; nationality: string | null; age: number;
-      wasWorldClass: boolean; level: number; appearances: number; goals: number;
-      /** A real legend (8.9.26): his honours. */
-      real: { birthYear: number; ballonDor: number; worldCups: number[] } | null;
-    }[];
+    /** The legend roulette (8.9.34): the season's pending draw and the reel it slid through. */
+    spin: {
+      price: number; rerollPoints: number; rerollMoney: number; reelAt: number;
+      odds: Record<LegendTier, number>;
+      pending: (LegendCard & { rerolls: number; paid: number; available: boolean }) | null;
+      reel: LegendCard[];
+    };
   };
   hasClub: boolean;
+}
+
+export type LegendTier = "normal" | "rare" | "epic" | "legend" | "super";
+
+export interface LegendCard {
+  id: string; name: string; positions: string[]; nationality: string | null; tier: LegendTier;
+  /** A real legend (8.9.26): his honours. */
+  real: { birthYear: number; ballonDor: number; worldCups: number[] } | null;
 }
 
 export async function achievementsCall<T>(url: string, method: "GET" | "POST" | "PUT" = "GET", body?: unknown): Promise<{ ok: true; data: T } | { ok: false; error: string }> {

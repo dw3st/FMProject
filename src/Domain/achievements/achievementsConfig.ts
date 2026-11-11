@@ -62,4 +62,16 @@ export const ACHIEVEMENTS = {
     WEIGHT: { common: 1, rare: 3, super: 2 },
     EXTRA: { common: 0, rare: 200, super: 500 },
   },
+  /**
+   * The legend roulette (tester report, option B, 8.9.34): the shop's price draws a tier by these odds, then a legend
+   * of that tier still available in the world. Spinning again costs points or the manager's money.
+   */
+  LEGEND_SPIN: {
+    ODDS: { normal: 0.5, rare: 0.28, epic: 0.14, legend: 0.06, super: 0.02 },
+    REROLL_POINTS: 150,
+    REROLL_MONEY: 2_000_000,
+    /** Cards on the reel and the place of the drawn one. */
+    REEL: 28,
+    REEL_AT: 23,
+  },
 } as const;

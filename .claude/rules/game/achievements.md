@@ -192,3 +192,7 @@ Pedido do usuário. A loja oferece só lendas reais, do Wikidata (CC0): `bun scr
 Report de tester, opção B do mock, só a estrela. `CreatedStar` (`Components/CreatedStar.tsx`, `isCreatedPlayer`: id `created_…`) antes do nome no Elenco, na Base e na ficha, em `chart-2`.
 
 Legenda e lado da estrela (8.9.33): a estrela do jogador criado vai à direita do nome (depois da coroa de louros), e o rodapé do Elenco mostra `StarLegend` (`StarBadge.tsx`: as três estrelas e a do criado).
+
+## Roleta das lendas (8.9.34)
+
+Report de tester, opção B do mock. A lenda da loja sai de uma roleta (`src/Domain/achievements/legendSpin.ts`, `ACHIEVEMENTS.LEGEND_SPIN`): faixas comum 50%, rara 28%, épica 14%, lendária 6%, ícone 2% (`legendTier` pela fama e honrarias da lenda real: ícone = Bola de Ouro ou fama 120+), uma lenda disponível sorteada dentro da faixa (faixa vazia cai para a mais perto). `POST /achievements/shop/legend/spin { pay? }`: o primeiro giro da temporada custa o preço da loja; girar de novo custa 150 pontos ou €2M da carteira do técnico (`managerSpent`); se outro técnico levou a lenda sorteada, o próximo giro é grátis. O sorteio fica em `AchievementsState.legendSpin`; `POST /shop/legend` traz a sorteada (409 `offerClosed` se foi levada), sem cobrar de novo, com o preço da compra = o que os giros custaram. Tela: `LegendRoulette` (faixa de cartões deslizando até o marcador). Trazer lenda com dinheiro (Estatísticas, Aposentados) continua com a lista da temporada.

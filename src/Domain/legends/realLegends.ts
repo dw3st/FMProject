@@ -44,7 +44,7 @@ export function realLegendRetiree(e: RealLegendEntry): RetiredPlayer {
     profile: { summary: "", archetype: "Legend" }, retiredOn: RETIRED_ON, squadId: "", age: 36,
     wasWorldClass: realWorldClass(e), statsAtRetirement: statsFor(e.id, e.position, realLegendLevel(e)),
     appearances: 0, goals: 0,
-    real: { wikidata: e.wikidata, birthYear: e.birthYear, ballonDor: e.ballonDor, worldCups: e.worldCups },
+    real: { wikidata: e.wikidata, birthYear: e.birthYear, ballonDor: e.ballonDor, worldCups: e.worldCups, fame: e.fame },
   };
 }
 

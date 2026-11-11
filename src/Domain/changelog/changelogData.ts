@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.34",
+    date: "2026-11-11",
+    time: "09:06",
+    items: [
+      {
+        pt: "A lenda da loja agora sai numa roleta: um giro por temporada, com chance menor para as mais raras (comum, rara, épica, lendária e ícone). Não gostou? Gire de novo com 150 pontos ou €2 mi do seu dinheiro.",
+        en: "The shop's legend now comes from a roulette: one spin a season, with lower odds for the rarer ones (common, rare, epic, legendary and icon). Not happy? Spin again for 150 points or €2M of your own money.",
+      },
+    ],
+  },
+  {
     version: "8.9.33",
     date: "2026-11-11",
     time: "08:48",

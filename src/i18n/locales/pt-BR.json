@@ -5414,19 +5414,27 @@
       },
       "legend": {
         "title": "Lenda aposentada",
-        "desc": "A cada temporada, uma lista nova de aposentados para você: o escolhido volta com 17 anos, como um craque renascido. Os raros custam mais.",
-        "from": "A partir de {{n}} pts",
-        "pick": "Trazer · {{n}} pts",
-        "rarity": {
-          "rare": "Raro",
-          "super": "Super raro"
-        },
-        "career": "Carreira: {{apps}} jogos · {{goals}} gols",
+        "desc": "Uma vez por temporada, gire a roleta: sai uma lenda real, que volta para a sua base com 17 anos. Quanto mais rara, menor a chance.",
+        "from": "Giro: {{n}} pts",
         "done": "{{name}} voltou, na sua base.",
         "born": "nasceu em {{year}}",
         "ballonDor_one": "Bola de Ouro",
         "ballonDor_other": "{{count}} Bolas de Ouro",
-        "worldCups": "Copa {{years}}"
+        "worldCups": "Copa {{years}}",
+        "spin": "Girar · {{n}} pts",
+        "accept": "Trazer para a base",
+        "rerollPoints": "Girar de novo · {{n}} pts",
+        "rerollMoney": "Girar de novo · {{money}}",
+        "rerollFree": "Girar de novo (grátis)",
+        "taken": "Outro técnico levou essa lenda. O próximo giro sai de graça.",
+        "paid": "Você já gastou {{n}} pts nesta lenda.",
+        "tier": {
+          "normal": "Comum",
+          "rare": "Rara",
+          "epic": "Épica",
+          "legend": "Lendária",
+          "super": "Ícone"
+        }
       },
       "history": {
         "title": "Histórico de compras",
@@ -5461,7 +5469,9 @@
       "invalidPlayer": "Confira o nome (2 a 30 letras) e os outros campos.",
       "locked": "Esse item ainda está bloqueado.",
       "noLegends": "Ainda não há craque aposentado para trazer.",
-      "notOffered": "Essa lenda não está na lista."
+      "notOffered": "Essa lenda não está na lista.",
+      "noMoney": "Você não tem dinheiro para girar de novo.",
+      "offerClosed": "Outro técnico levou essa lenda. Gire de novo."
     },
     "link": "Conquistas",
     "summary": "{{unlocked}}/{{total}} · {{points}} pts",
