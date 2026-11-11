@@ -9,7 +9,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
-const ICON: Record<AssetKind, IconName> = { home: "home", car: "car", watch: "watch" };
+const ICON: Record<AssetKind, IconName> = { home: "home", car: "car", watch: "watch", boat: "boat", plane: "plane", suit: "suit", art: "art" };
 
 /** The manager's own money: what he earned over the career and the assets it buys. */
 export function AssetsTab() {

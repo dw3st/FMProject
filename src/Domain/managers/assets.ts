@@ -4,7 +4,7 @@ import { TRACKS } from "@/Domain/achievements/catalog";
  * The manager's own money (`.claude/rules/game/jobs.md` → "Dinheiro do técnico"): wages and severance earned over the
  * career buy personal assets, and earning goals are an achievement track. Prestige only: nothing here touches the club.
  */
-export const ASSET_KINDS = ["home", "car", "watch"] as const;
+export const ASSET_KINDS = ["home", "car", "watch", "boat", "plane", "suit", "art"] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 /** Price of each level, EUR; a level is bought after the one below it. */
@@ -12,6 +12,11 @@ export const ASSET_PRICES: Record<AssetKind, readonly number[]> = {
   home: [300_000, 1_500_000, 6_000_000, 25_000_000],
   car: [50_000, 250_000, 1_000_000, 4_000_000],
   watch: [10_000, 100_000, 500_000, 2_000_000],
+  // More places to spend it (user request, 8.9.36): up to ~€60M at the top.
+  boat: [400_000, 3_000_000, 15_000_000, 60_000_000],
+  plane: [600_000, 4_000_000, 18_000_000, 50_000_000],
+  suit: [3_000, 20_000, 120_000, 1_000_000],
+  art: [50_000, 800_000, 6_000_000, 40_000_000],
 };
 
 export type ManagerAssets = Partial<Record<AssetKind, number>>;

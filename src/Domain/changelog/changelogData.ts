@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.36",
+    date: "2026-11-11",
+    time: "09:56",
+    items: [
+      {
+        pt: "Tudo do seu técnico numa tela só, aberta pelo rosto dele na barra de cima: Perfil (moldura, título, atributos), Conquistas, Loja e Apostas. A Loja junta o que se compra com pontos (roleta de lendas, jogador criado), a lenda paga pelo clube e os bens do técnico.",
+        en: "Everything about your manager in one screen, opened from his face in the top bar: Profile (frame, title, attributes), Achievements, Shop and Bets. The Shop gathers what points buy (legend roulette, created player), the legend the club pays for and the manager's belongings.",
+      },
+      {
+        pt: "Mais onde gastar o dinheiro do técnico: barco (até o superiate), avião (até o jato de longo alcance), roupa (até o closet de grife) e arte e adega (até a obra de museu), cada um com 4 níveis.",
+        en: "More ways to spend the manager's money: boat (up to a superyacht), plane (up to a long-range jet), clothes (up to a designer wardrobe) and art and wine (up to a museum piece), each with 4 levels.",
+      },
+    ],
+  },
+  {
     version: "8.9.35",
     date: "2026-11-11",
     time: "09:32",

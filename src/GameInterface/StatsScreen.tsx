@@ -165,9 +165,10 @@ type RetiredFilter = "mine" | "legends" | "favorites" | "all";
 const RETIRED_PAGE = 50;
 const NO_RETIRED: RetiredRow[] = [];
 
-function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[] }) {
+/** The retired players; `legendsOnly` shows just the legends, without the filter chips (the manager's shop, 8.9.36). */
+export function RetiredList({ saveId, leagues, legendsOnly = false }: { saveId: string; leagues: LeagueData[]; legendsOnly?: boolean }) {
   const { t, i18n } = useTranslation();
-  const [filter, setFilter] = useState<RetiredFilter>("mine");
+  const [filter, setFilter] = useState<RetiredFilter>(legendsOnly ? "legends" : "mine");
   const mine = filter === "mine";
   const legends = filter === "legends";
   // Name search (debounced), nationality and "highlights only", on by default (tester reports).
@@ -271,7 +272,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   ];
   const filters = (
     <div className="mb-3 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
+      {!legendsOnly && <div className="flex flex-wrap items-center gap-3">
         <OptionChips
           options={[
             { key: "mine", label: t("statsScreen.retired.mine") },
@@ -287,7 +288,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
             {t("statsScreen.retired.notable")}
           </Chip>
         )}
-      </div>
+      </div>}
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("statsScreen.retired.searchLabel")}</span>

@@ -1,3 +1,5 @@
+import { RetiredList } from "@/GameInterface/StatsScreen";
+import type { LeagueData } from "@/types/playerTypes";
 import { DecorStylePicker } from "@/GameInterface/Achievements/DecorStylePicker";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
@@ -36,13 +38,17 @@ import {
   ACHIEVEMENT_CATEGORIES, MANAGER_ATTRIBUTES, type Badge, type Frame, type StadiumDecor, type TrackId, type TrackView,
 } from "@/types/achievementTypes";
 
-type Tab = "list" | "profile" | "manager" | "shop" | "assets" | "bets";
-const TABS: Tab[] = ["list", "profile", "manager", "shop", "assets", "bets"];
+// The manager's screen (user request, option A, 8.9.36): profile, achievements, shop (points and money), bets.
+type Tab = "profile" | "list" | "shop" | "bets";
+const TABS: Tab[] = ["profile", "list", "shop", "bets"];
+/** Links from before the regrouping. */
+const OLD_TABS: Record<string, Tab> = { manager: "profile", assets: "shop" };
 const TIERS = ["bronze", "silver", "gold"] as const;
 
 function initialTab(): Tab {
   const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
-  return (TABS as string[]).includes(q ?? "") ? (q as Tab) : "list";
+  if (q && OLD_TABS[q]) return OLD_TABS[q]!;
+  return (TABS as string[]).includes(q ?? "") ? (q as Tab) : "profile";
 }
 
 /** Achievements of the career (`.claude/rules/game/achievements.md`): tracks, secrets, profile items, attributes, shop. */
@@ -53,6 +59,16 @@ export function AchievementsScreen() {
   const [data, setData] = useState<AchievementsData | null>(null);
   const [error, setError] = useState(false);
   const [tab, setTab] = useState<Tab>(initialTab);
+  const { save } = useGameSave();
+  // The manager's money, with the bets: the same wallet the shop's money purchases check.
+  const [wallet, setWallet] = useState<number | null>(null);
+  useEffect(() => {
+    if (!saveId) return;
+    fetch(`/api/saves/${saveId}/bets?summary=1`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: { wallet: number } | null) => setWallet(v?.wallet ?? null))
+      .catch(() => setWallet(null));
+  }, [saveId, save?.managerSpent]);
 
   const load = useCallback(async () => {
     if (!saveId) return;
@@ -90,6 +106,12 @@ export function AchievementsScreen() {
           <Label>{t("achievements.kpi.balance")}</Label>
           <span className={`${kpi} text-primary`}>{data.points.balance}</span>
         </div>
+        {wallet !== null && (
+          <div className="flex flex-col gap-1">
+            <Label>{t("achievements.kpi.wallet")}</Label>
+            <span className={`${kpi} text-star-green tabular-nums`}>{formatEuros(wallet)}</span>
+          </div>
+        )}
       </div>
       <SegmentedTabs
         tabs={TABS.map((k) => ({ key: k, label: t(`achievements.tabs.${k}`) }))}
@@ -97,9 +119,15 @@ export function AchievementsScreen() {
         onChange={setTab}
       />
       {tab === "list" && <ListTab data={data} />}
-      {tab === "profile" && <ProfileTab data={data} saveId={saveId} onChange={setData} />}
-      {tab === "manager" && <ManagerTab data={data} />}
-      {tab === "assets" && <AssetsTab />}
+      {tab === "profile" && (
+        <div className="flex flex-col gap-8">
+          <ProfileTab data={data} saveId={saveId} onChange={setData} />
+          <section className="flex flex-col gap-3">
+            <SectionTitle>{t("achievements.tabs.manager")}</SectionTitle>
+            <ManagerTab data={data} />
+          </section>
+        </div>
+      )}
       {tab === "bets" && <BetsTab />}
       {tab === "shop" && <ShopTab data={data} saveId={saveId} onChange={(d) => { setData(d); void refresh(); }} />}
     </ScreenContainer>
@@ -393,6 +421,10 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
   const [foot, setFoot] = useState<"left" | "right">("right");
   const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  useEffect(() => {
+    void fetch("/api/leagues").then((r) => (r.ok ? r.json() : [])).then((d: LeagueData[]) => setLeagues(Array.isArray(d) ? d : [])).catch(() => setLeagues([]));
+  }, []);
   const natOptions = useMemo(() => NATIONALITY_NAMES
     .map((n) => ({ value: n, label: nationalityDisplayName(n, i18n.language, t) }))
     .sort((a, b) => a.label.localeCompare(b.label, i18n.language)), [i18n.language, t]);
@@ -478,6 +510,15 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
             )}
         </section>
       </div>
+      <section className="flex flex-col gap-3">
+        <SectionTitle>{t("achievements.shop.clubLegend.title")}</SectionTitle>
+        <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.clubLegend.desc")}</p>
+        <RetiredList saveId={saveId} leagues={leagues} legendsOnly />
+      </section>
+      <section className="flex flex-col gap-3">
+        <SectionTitle>{t("achievements.shop.belongings")}</SectionTitle>
+        <AssetsTab />
+      </section>
       <ShopHistory history={data.shop.history} />
     </div>
   );

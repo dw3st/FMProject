@@ -3635,7 +3635,7 @@
     },
     "achievements": {
       "main": "YOUR",
-      "accent": "ACHIEVEMENTS"
+      "accent": "MANAGER"
     },
     "news": {
       "main": "WORLD",
@@ -5052,7 +5052,7 @@
     "tabs": {
       "list": "Achievements",
       "profile": "Profile",
-      "manager": "Manager",
+      "manager": "Manager attributes",
       "shop": "Shop",
       "assets": "Assets",
       "bets": "Bets"
@@ -5063,7 +5063,8 @@
       "unlocked": "Unlocked",
       "earned": "Points earned",
       "split": "{{achievements}} from achievements · {{campaign}} from the campaign",
-      "balance": "Points to spend"
+      "balance": "Points to spend",
+      "wallet": "Wallet"
     },
     "categories": {
       "titles": "Titles",
@@ -5458,7 +5459,12 @@
           "retired": "Retired: he no longer plays"
         }
       },
-      "createdMark": "Made in the achievements shop"
+      "createdMark": "Made in the achievements shop",
+      "clubLegend": {
+        "title": "Legend paid by the club",
+        "desc": "One of the legends on your list this season returns to the academy at 17; the club pays the compensation."
+      },
+      "belongings": "Manager's belongings"
     },
     "errors": {
       "generic": "Something went wrong.",
@@ -5496,7 +5502,11 @@
       "kind": {
         "home": "Home",
         "car": "Car",
-        "watch": "Watch"
+        "watch": "Watch",
+        "boat": "Boat",
+        "plane": "Plane",
+        "suit": "Clothes",
+        "art": "Art and wine"
       },
       "level": {
         "home": {
@@ -5516,6 +5526,30 @@
           "2": "Chronograph",
           "3": "Gold watch",
           "4": "Collector watch"
+        },
+        "boat": {
+          "1": "Speedboat",
+          "2": "Sailing yacht",
+          "3": "Motor yacht",
+          "4": "Superyacht"
+        },
+        "plane": {
+          "1": "Light aircraft",
+          "2": "Turboprop",
+          "3": "Business jet",
+          "4": "Long-range jet"
+        },
+        "suit": {
+          "1": "Off-the-rack suit",
+          "2": "Made-to-measure suit",
+          "3": "Italian tailoring",
+          "4": "Designer wardrobe"
+        },
+        "art": {
+          "1": "Framed print",
+          "2": "Modern painting and wine rack",
+          "3": "Private gallery",
+          "4": "Museum piece and cellar"
         }
       },
       "errors": {
@@ -5523,7 +5557,8 @@
         "maxLevel": "Already at the top level.",
         "generic": "The purchase failed. Try again."
       }
-    }
+    },
+    "hub": "Your manager"
   },
   "nations": {
     "wales": "Wales",

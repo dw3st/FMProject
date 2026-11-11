@@ -1,4 +1,4 @@
-import { Car as CarIcon, Watch as WatchIcon } from "lucide-react";
+import { Car as CarIcon, Watch as WatchIcon, Sailboat as SailboatIcon, Plane as PlaneIcon, Shirt as ShirtIcon, Palette as PaletteIcon } from "lucide-react";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import {
   Lock,
@@ -157,6 +157,10 @@ export type IconName =
   | "gem"
   | "car"
   | "watch"
+  | "boat"
+  | "plane"
+  | "suit"
+  | "art"
   | "play"
   | "pause"
   | "debug"
@@ -306,6 +310,10 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "gem":          Gem,
   "car": CarIcon,
   "watch": WatchIcon,
+  "boat": SailboatIcon,
+  "plane": PlaneIcon,
+  "suit": ShirtIcon,
+  "art": PaletteIcon,
   "play":         Play,
   "pause":        Pause,
   "debug":        Bug,

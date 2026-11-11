@@ -1,3 +1,4 @@
+import { ASSET_KINDS, type ManagerAssets } from "@/Domain/managers/assets";
 import { titlesByPassage } from "@/Domain/managers/careerTitles";
 import { Icon } from "@/GameInterface/Icons";
 import { BADGE_ICON, FRAME_RING } from "@/GameInterface/Achievements/achievementsApi";
@@ -35,7 +36,7 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   /** The human manager: wages and severance received in the career. */
   earnings?: number;
   /** Bank loans he left unpaid at a club. */
-  assets?: Partial<Record<"home" | "car" | "watch", number>>;
+  assets?: ManagerAssets;
   cards?: { yellow: number; red: number };
   unpaidDebts?: { squadId: string; clubName: string; amount: number; date: string; penalty: number }[];
   /** Face (Etapa 31b): current club's colours, nationality, and the human manager's saved avatar. */
@@ -296,7 +297,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
                           {m.isPlayer && m.earnings !== undefined && (
                             <p className="text-sm m-0 mb-1.5 tabular-nums">{t("statsScreen.managers.earnings", { amount: formatFee(m.earnings) })}</p>
                           )}
-                          {(["home", "car", "watch"] as const).filter((k) => m.assets?.[k]).map((k) => (
+                          {ASSET_KINDS.filter((k) => m.assets?.[k]).map((k) => (
                             <p key={k} className="text-sm m-0 mb-1">{t(`achievements.assets.level.${k}.${m.assets![k]}`)}</p>
                           ))}
                         </div>

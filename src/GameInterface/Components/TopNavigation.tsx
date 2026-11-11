@@ -1,3 +1,6 @@
+import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
+import { managerFaceCountry } from "@/Domain/faces/managerFace";
+import { seatManagerId } from "@/Domain/seats/seats";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@/GameInterface/router/navigation";
@@ -255,6 +258,22 @@ export function TopNavigation({
         {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
             costs no divider of its own), today's date and type, then the day controls (#65). */}
         <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
+          {/* The manager's screen (profile, achievements, shop, bets; 8.9.36): his face opens it. */}
+          {session?.manager && (
+            <a
+              href="/achievements"
+              title={t("achievements.hub")}
+              aria-label={t("achievements.hub")}
+              aria-current={pathname.startsWith("/achievements") ? "page" : undefined}
+              className={`shrink-0 inline-flex rounded-full ring-2 ${pathname.startsWith("/achievements") ? "ring-primary" : "ring-border hover:ring-primary"}`}
+            >
+              <ManagerFaceImage
+                manager={{ id: session.seatId ? seatManagerId(session.seatId) : "", name: session.manager.name, face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) }}
+                clubColors={session.clubColors}
+                size={32}
+              />
+            </a>
+          )}
           <TesterReportButton />
           {currentDate && (
             <>

@@ -3634,8 +3634,8 @@
       "accent": "Clube"
     },
     "achievements": {
-      "main": "SUAS",
-      "accent": "CONQUISTAS"
+      "main": "SEU",
+      "accent": "TÉCNICO"
     },
     "news": {
       "main": "NOTÍCIAS DO",
@@ -5052,7 +5052,7 @@
     "tabs": {
       "list": "Conquistas",
       "profile": "Perfil",
-      "manager": "Técnico",
+      "manager": "Atributos do técnico",
       "shop": "Loja",
       "assets": "Patrimônio",
       "bets": "Apostas"
@@ -5063,7 +5063,8 @@
       "unlocked": "Desbloqueadas",
       "earned": "Pontos ganhos",
       "split": "{{achievements}} das conquistas · {{campaign}} da campanha",
-      "balance": "Pontos para gastar"
+      "balance": "Pontos para gastar",
+      "wallet": "Carteira"
     },
     "categories": {
       "titles": "Títulos",
@@ -5458,7 +5459,12 @@
           "retired": "Aposentado: não joga mais"
         }
       },
-      "createdMark": "Criado na loja de conquistas"
+      "createdMark": "Criado na loja de conquistas",
+      "clubLegend": {
+        "title": "Lenda paga pelo clube",
+        "desc": "Uma das lendas da sua lista desta temporada volta para a base com 17 anos; quem paga a compensação é o clube."
+      },
+      "belongings": "Bens do técnico"
     },
     "errors": {
       "generic": "Algo deu errado.",
@@ -5496,7 +5502,11 @@
       "kind": {
         "home": "Casa",
         "car": "Carro",
-        "watch": "Relógio"
+        "watch": "Relógio",
+        "boat": "Barco",
+        "plane": "Avião",
+        "suit": "Roupa",
+        "art": "Arte e adega"
       },
       "level": {
         "home": {
@@ -5516,6 +5526,30 @@
           "2": "Cronógrafo",
           "3": "Relógio de ouro",
           "4": "Relógio de coleção"
+        },
+        "boat": {
+          "1": "Lancha",
+          "2": "Veleiro",
+          "3": "Iate",
+          "4": "Superiate"
+        },
+        "plane": {
+          "1": "Monomotor",
+          "2": "Turbo-hélice",
+          "3": "Jatinho executivo",
+          "4": "Jato de longo alcance"
+        },
+        "suit": {
+          "1": "Terno de loja",
+          "2": "Terno sob medida",
+          "3": "Alfaiataria italiana",
+          "4": "Closet de grife"
+        },
+        "art": {
+          "1": "Gravura emoldurada",
+          "2": "Pintura moderna e adega",
+          "3": "Galeria particular",
+          "4": "Obra de museu e cave"
         }
       },
       "errors": {
@@ -5523,7 +5557,8 @@
         "maxLevel": "Já está no nível máximo.",
         "generic": "Não foi possível comprar. Tente de novo."
       }
-    }
+    },
+    "hub": "Seu técnico"
   },
   "nations": {
     "wales": "País de Gales",
