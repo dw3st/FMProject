@@ -3,6 +3,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { clubFacts, clubLegends, emptyClubHistory, titleGallery, topPlayers } from "@/Domain/clubHistory/clubHistory";
 import { seasonLabel } from "@/Domain/history/history";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
+import { clubOverview } from "@/backend/clubOverviewWorld";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -11,6 +12,21 @@ const SQUAD_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** Club history and records (`.claude/rules/game/club-history.md`). */
 export const clubHistoryRoutes = {
+  /** `GET` — overview of any club for the club page (8.9.30): `ClubOverview`. 404 for a club not in the save. */
+  "/api/saves/:saveId/clubs/:squadId/overview": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const squadId = req.params.squadId ?? "";
+    if (!SQUAD_ID.test(squadId)) return Response.json({ error: "club not found" }, { status: 404 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const squad = await saveService.getSquadById(saveId, squadId);
+    if (!squad) return Response.json({ error: "club not found" }, { status: 404 });
+    return Response.json(await clubOverview(saveService, saveId, meta, squad));
+  },
+
   /**
    * `GET` — any club of the save (owner only), 404 when the club is not in the save. The history
    * starts empty: only seasons played since the career began.

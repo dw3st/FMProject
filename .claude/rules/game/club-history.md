@@ -121,3 +121,7 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
   copa e continental pendentes que entram na virada), o painel "Ídolos e lendas" (cartões: coroa = lenda, estrela =
   ídolo; situação: no elenco com link, aposentado ou saiu; jogos · gols · títulos; a regra numa linha) e "Fatos e
   curiosidades" (só com alguma temporada fechada). Os recordes continuam no fim.
+
+## Visão geral do clube (8.9.31)
+
+Report de tester, opção A do mock. Aba Visão geral na página de qualquer clube que não é o seu (a primeira; `?tab=` escolhe outra), `Components/ClubOverviewView.tsx` sobre `GET /api/saves/:id/clubs/:squadId/overview` (`clubOverview`, `src/backend/clubOverviewWorld.ts`, tipo `ClubOverview`): técnico (rosto, desde quando, interino), situação do cargo e meta pela mesma regra de Cargos (`jobPosts`, que passou a devolver `target`) com o botão Candidatar-se; estádio (pintura pelo nível, capacidade e a condição de gramado, arquibancadas e estrutura: os itens do clube humano, ou os de largada da IA por receita e tier, `startingFacilities`, com o gramado da IA do dia); dinheiro da IA (`buildClubFinanceRows`; nada de um clube humano); temporada (posição, pontos, forma); 5 destaques pelo nível visto (links para a ficha); títulos e lendas (link pelo `/where`). A ficha de um jogador que saiu do clube do link procura onde ele joga (`/players/:id/where`) e abre lá.

@@ -6745,5 +6745,42 @@
       "notFound": "Clube não encontrado.",
       "generic": "Não foi possível enviar. Tente de novo."
     }
+  },
+  "clubOverview": {
+    "manager": "Técnico",
+    "interim": "Interino, à espera do novo técnico",
+    "since": "No cargo desde {{date}}",
+    "noManager": "Sem técnico no momento.",
+    "target": "Meta da diretoria: {{target}}º",
+    "apply": "Candidatar-se ao cargo",
+    "applyHint": "A resposta chega pela caixa de entrada em 3 a 6 dias.",
+    "applied": "Você se candidatou a este cargo. Resposta até {{date}}.",
+    "money": "Dinheiro",
+    "tier": "Nível financeiro",
+    "transferBudget": "Verba de transferências",
+    "wageBill": "Folha semanal",
+    "wageCap": "Teto da folha",
+    "hiring": "Contratações",
+    "popularity": "Popularidade",
+    "honours": "Títulos",
+    "noTitles": "Nenhum título desde o começo do mundo.",
+    "legends": "Lendas e ídolos:",
+    "stadium": "Estádio",
+    "capacity": "{{city}} · {{seats}} lugares",
+    "pitch": "Gramado",
+    "seats": "Arquibancadas",
+    "structure": "Estrutura e luz",
+    "season": "Temporada",
+    "table": "na {{league}} · {{points}} pts em {{played}} jogos",
+    "form": "Forma",
+    "result": {
+      "W": "V",
+      "D": "E",
+      "L": "D"
+    },
+    "noSeason": "A temporada ainda não começou.",
+    "highlights": "Destaques do elenco",
+    "fullSquad": "Ver o elenco inteiro ({{count}})",
+    "tabOverview": "Visão geral"
   }
 }

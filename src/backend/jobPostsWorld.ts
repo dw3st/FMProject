@@ -22,6 +22,8 @@ export interface JobPostRow {
   /** 1..5, "vacant" (an interim waiting for the hire), null for a club with a human manager. */
   level: SecurityLevel | "vacant" | null;
   position: number | null;
+  /** The board's target position (AI clubs only). */
+  target: number | null;
   /** The human holding the club (another seat or this one). */
   human: boolean;
   /** This seat cannot apply: its own club, a human club, an open application or a recent refusal. */
@@ -67,12 +69,13 @@ export async function jobPosts(service: SaveService, saveId: string, meta: SeatM
     const m = managers.find((x) => x.squadId === t.squadId);
     const human = humanClubs.has(t.squadId);
     let level: JobPostRow["level"] = null;
+    const target = human ? null : await targetOf(t.squadId);
     if (!human) {
       if (vacancies[t.squadId] || m?.interim) level = "vacant";
       else {
         level = securityLevel({
           ...(row && row.mp > 0 ? { position: i + 1 } : {}),
-          target: await targetOf(t.squadId), size: teams.length,
+          target: target!, size: teams.length,
           form: formPpg(row?.form), progress,
           ...(m?.hiredOn ? { daysInCharge: daysBetween(m.hiredOn, date) } : {}),
         });
@@ -80,7 +83,7 @@ export async function jobPosts(service: SaveService, saveId: string, meta: SeatM
     }
     rows.push({
       squadId: t.squadId, clubName: t.name, managerId: m?.id ?? null, managerName: m?.name ?? null, level,
-      position: row && row.mp > 0 ? i + 1 : null, human,
+      position: row && row.mp > 0 ? i + 1 : null, target, human,
       blocked: t.squadId === meta.clubId ? "own" : human ? "human" : refused[t.squadId] ? "refused" : null,
     });
   }

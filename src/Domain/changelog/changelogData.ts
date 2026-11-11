@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.31",
+    date: "2026-11-11",
+    time: "08:18",
+    items: [
+      {
+        pt: "Página do clube: a aba Visão geral, primeira ao abrir outro clube, mostra o técnico com a situação do cargo e o botão Candidatar-se, o estádio com a condição do gramado, das arquibancadas e da estrutura, o dinheiro, a temporada, os destaques do elenco e os títulos.",
+        en: "Club page: the Overview tab, the first when you open another club, shows the manager with his job security and the Apply button, the stadium with the condition of the pitch, stands and structure, the money, the season, the squad highlights and the honours.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Abrir um jogador que mudou de clube (pelas Estatísticas, história ou caixa de entrada) dizia que o perfil não foi encontrado; agora abre a ficha no clube atual.",
+        en: "Opening a player who changed clubs (from Stats, history or the inbox) said the profile was not found; it now opens him at his current club.",
+      },
+    ],
+  },
+  {
     version: "8.9.30",
     date: "2026-11-11",
     time: "07:32",

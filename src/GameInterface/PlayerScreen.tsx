@@ -87,10 +87,20 @@ export function PlayerScreen({
       setLoading(false);
       return;
     }
+    // A player who moved since the link was made (stats, history, inbox): open him at his current club (tester report, 8.9.30).
+    const relocate = async (): Promise<boolean> => {
+      const res = await fetch(`/api/saves/${session.saveId}/players/${encodeURIComponent(playerId)}/where`).catch(() => null);
+      if (!res?.ok) return false;
+      const at = (await res.json()) as { league: string; squadId: string };
+      if (at.squadId === club && at.league === league) return false;
+      navigate(`/player/${encodeURIComponent(at.league)}/${encodeURIComponent(at.squadId)}/${encodeURIComponent(playerId)}`, { replace: true });
+      return true;
+    };
     fetch(`/api/saves/${session.saveId}/squad/${league}/${club}?scouted=1`)
-      .then((r) => r.json())
-      .then((data: Squad) => {
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(async (data: Squad) => {
         const found = data.players.find((p) => p.id === playerId) ?? null;
+        if (!found && await relocate()) return;
         setPlayer(found);
         setSquadId(data.id);
         setSquadName(data.name);
@@ -98,7 +108,7 @@ export function PlayerScreen({
         setSquadWageFactor(wageFactorOf(data));
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(async () => { if (!(await relocate())) setLoading(false); });
   }, [league, club, playerId, session, mySquad, saveLoading]);
 
   const displayPlayer = useMemo((): DisplayPlayer | null => {

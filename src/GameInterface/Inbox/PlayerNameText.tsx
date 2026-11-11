@@ -26,7 +26,7 @@ export function splitByNames(text: string, players: readonly NamedPlayer[]): (st
 }
 
 /** A player's name that opens his page, wherever he plays now. */
-function PlayerNameLink({ player }: { player: NamedPlayer }) {
+export function PlayerNameLink({ player }: { player: NamedPlayer }) {
   const { session } = useGameSave();
   const [gone, setGone] = useState(false);
   if (gone || !session) return <span className="font-semibold">{player.name}</span>;

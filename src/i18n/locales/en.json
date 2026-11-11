@@ -6745,5 +6745,42 @@
       "notFound": "Club not found.",
       "generic": "Could not send it. Try again."
     }
+  },
+  "clubOverview": {
+    "manager": "Manager",
+    "interim": "Interim, waiting for the new manager",
+    "since": "In charge since {{date}}",
+    "noManager": "No manager right now.",
+    "target": "Board target: {{target}}",
+    "apply": "Apply for the job",
+    "applyHint": "The answer comes through the inbox in 3 to 6 days.",
+    "applied": "You applied for this job. Answer by {{date}}.",
+    "money": "Money",
+    "tier": "Financial level",
+    "transferBudget": "Transfer budget",
+    "wageBill": "Weekly wage bill",
+    "wageCap": "Wage cap",
+    "hiring": "Signings",
+    "popularity": "Popularity",
+    "honours": "Honours",
+    "noTitles": "No titles since the world began.",
+    "legends": "Legends and idols:",
+    "stadium": "Stadium",
+    "capacity": "{{city}} · {{seats}} seats",
+    "pitch": "Pitch",
+    "seats": "Stands",
+    "structure": "Structure and lights",
+    "season": "Season",
+    "table": "in the {{league}} · {{points}} pts in {{played}} games",
+    "form": "Form",
+    "result": {
+      "W": "W",
+      "D": "D",
+      "L": "L"
+    },
+    "noSeason": "The season has not started yet.",
+    "highlights": "Squad highlights",
+    "fullSquad": "See the whole squad ({{count}})",
+    "tabOverview": "Overview"
   }
 }

@@ -20,6 +20,7 @@ import { RegistrationView } from "@/GameInterface/Squad/RegistrationView";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOverview";
 import { MoralePromises } from "@/GameInterface/Morale/MoralePromises";
+import { ClubOverviewView } from "@/GameInterface/Components/ClubOverviewView";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import { navigate } from "@/GameInterface/router/navigation";
@@ -31,9 +32,10 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
-  const [tab, setTab] = useState<"squad" | "depth" | "registration" | "youth" | "loans" | "history">(() => {
+  // Another club's page opens on its overview (tester report, 8.9.30); the own club on the squad.
+  const [tab, setTab] = useState<"overview" | "squad" | "depth" | "registration" | "youth" | "loans" | "history" | null>(() => {
     const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
-    return q === "youth" || q === "history" || q === "loans" || q === "depth" || q === "registration" ? q : "squad";
+    return q === "youth" || q === "history" || q === "loans" || q === "depth" || q === "registration" || q === "squad" || q === "overview" ? q : null;
   });
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
@@ -115,6 +117,9 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
     );
   }
 
+  const own = squad.id === mySquadId;
+  const activeTab = tab ?? (own ? "squad" : "overview");
+
   return (
     <>
     <ScreenContainer fill>
@@ -153,6 +158,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
 
         <SegmentedTabs
           tabs={[
+            ...(!own ? [{ key: "overview" as const, label: t("clubOverview.tabOverview") }] : []),
             { key: "squad", label: t("squadScreen.tabSquad") },
             ...(squad.id === mySquadId ? [{ key: "depth" as const, label: t("squadScreen.tabDepth") }] : []),
             ...(squad.id === mySquadId ? [{ key: "registration" as const, label: t("squadScreen.tabRegistration") }] : []),
@@ -160,22 +166,24 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             ...(squad.id === mySquadId ? [{ key: "loans" as const, label: t("negotiation.overview.loanedOutTab") }] : []),
             { key: "history", label: t("squadScreen.tabHistory") },
           ]}
-          active={tab}
+          active={activeTab}
           onChange={setTab}
         />
 
-        {tab === "history" && session ? (
+        {activeTab === "overview" && !own && session ? (
+          <div className="overflow-y-auto min-h-0"><ClubOverviewView saveId={session.saveId} squad={squad} onSquadTab={() => setTab("squad")} /></div>
+        ) : activeTab === "history" && session ? (
           <ClubHistoryView saveId={session.saveId} squadId={squad.id} leagueSlug={league} />
-        ) : tab === "depth" && squad.id === mySquadId ? (
+        ) : activeTab === "depth" && squad.id === mySquadId ? (
           <SquadDepthView squad={squad} leagueSlug={league} clubSlug={club} />
-        ) : tab === "registration" && squad.id === mySquadId ? (
+        ) : activeTab === "registration" && squad.id === mySquadId ? (
           <RegistrationView />
-        ) : tab === "youth" && squad.id === mySquadId ? (
+        ) : activeTab === "youth" && squad.id === mySquadId ? (
           <div className="space-y-6">
             <YouthCallUpsPanel />
             <YouthTable />
           </div>
-        ) : tab === "loans" && squad.id === mySquadId && session ? (
+        ) : activeTab === "loans" && squad.id === mySquadId && session ? (
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (
           <>
