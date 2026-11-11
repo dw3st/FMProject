@@ -239,8 +239,11 @@ describe("negotiation routes", () => {
     expect(body.loans.some((l) => l.playerId === p.id)).toBe(true);
     // The contract is still ours: renewing him writes into the borrower's squad.
     const until0 = there.contract!.until;
+    // Since 8.9.37 `years` is the new contract's length from today: ask for more than he has left.
+    const left = parseInt(until0.slice(0, 4), 10) - parseInt(meta.currentDate!.slice(0, 4), 10);
+    const years = Math.min(5, left + 1, 36 - there.age);
     const renew = await route("/api/saves/:saveId/players/:playerId/renew")(
-      req(`/api/saves/${saveId}/players/${p.id}/renew`, "POST", { saveId, playerId: p.id }, { wage: (there.contract?.wage ?? 0) * 3, years: 1 }),
+      req(`/api/saves/${saveId}/players/${p.id}/renew`, "POST", { saveId, playerId: p.id }, { wage: (there.contract?.wage ?? 0) * 3, years }),
     );
     expect(renew.status).toBe(200);
     const renewed = (await saveService.getSquadById(saveId, borrower.id))!.players.find((q) => q.id === p.id)!;
