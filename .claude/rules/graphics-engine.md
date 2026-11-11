@@ -552,3 +552,7 @@ Report do usuário. `backpedals` (`playerSprite.ts`): além do goleiro, um jogad
 ## Bonecos maiores com anel no chão (10.2)
 
 Pedido do usuário, opção D de quatro renderizações reais do campo. Com os bonecos, o corpo é desenhado × `MATCH_LOOK.FIGURE_SCALE` (1,35) dentro do marcador (a etiqueta e o cartão não escalam; barra de fôlego, seta, nome, anel do portador e bola nos pés seguem `drawnR`). No lugar do brilho da 8.2.18 (virava uma mancha com jogadores juntos): sombra de contato escura e um anel fino na cor do uniforme no chão (`TEAM_RING`). Uniforme mais escuro que `DARK_LUMA` usa a segunda cor do clube, senão cinza claro (`groundRingColor`, `playerSprite.ts`, com teste). Árbitro, bandeirinhas, técnicos, médicos e o jogador na maca crescem junto; fotógrafos não. Os discos não mudam.
+
+## Arquibancada mais cheia (10.3)
+
+Pedido do usuário, opção D de quatro renderizações reais. `STADIUM.ROW_DEPTH` 2 → 1,25 (com 2 havia uma fileira vazia entre cada duas e um bom público parecia estádio vazio), `MAX_SEATS` 6000 → 11000, torcedor 10% maior (`CROWD_MOTION.FIGURE` 1,375) e a ocupação desenhada é `fill ^ FILL_POW` (0,7; `drawnFill`, `crowd.ts`, com teste: 66% aparece como ~75%, 0 e 100% iguais). Só desenho: público e bilheteria não mudam. Medido na partida real: 60 quadros por segundo, antes e depois.

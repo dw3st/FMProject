@@ -195,7 +195,13 @@ export const STADIUM = {
    * Seats: SEAT_PX wide, ROW_DEPTH seat widths deep (the stand texture shows between the rows, as in the preview).
    * Every BLOCK_SEATS seats along a row share a fill (some blocks fuller than others).
    */
-  SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4, ROW_DEPTH: 2, BLOCK_SEATS: 16,
+  SEAT_PX: 5, MAX_SEATS: 11000, CONCRETE_EVERY: 4, ROW_DEPTH: 1.25, BLOCK_SEATS: 16,
+  /**
+   * 10.3 (option D of the user's choice): rows close together (ROW_DEPTH 2 left an empty row between every two, so a
+   * good crowd read as an empty ground) and the drawn fill is `fill ^ FILL_POW` (66% is drawn as ~75%). Drawing only:
+   * the attendance and the gate are untouched.
+   */
+  FILL_POW: 0.7,
   /** The players' tunnel (tester report): mid bottom stand, TUNNEL_FRAC of the inner width, no fans in it. */
   TUNNEL_FRAC: 0.045, TUNNEL_FLOOR: 0x0b0f14, TUNNEL_WALL: 0x4a5664,
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,

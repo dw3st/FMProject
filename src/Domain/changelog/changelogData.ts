@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.3",
+    date: "2026-11-11",
+    time: "19:43",
+    items: [
+      { pt: "Partida ao vivo: arquibancada mais cheia. As fileiras de torcedores ficam juntas, sem a fileira vazia entre elas, os torcedores são um pouco maiores e um bom público enche o estádio na tela.", en: "Live match: fuller stands. The rows of fans sit close together, without the empty row between them, the fans are a little bigger and a good crowd fills the ground on screen." },
+    ],
+  },
+  {
     version: "10.2",
     date: "2026-11-11",
     time: "19:20",

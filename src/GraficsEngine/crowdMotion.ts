@@ -9,7 +9,7 @@ import { mulberry32, seedFrom } from "@/Domain/rng";
 
 export const CROWD_MOTION = {
   /** A figure's size (its scale `s`, px) in seat cells. */
-  FIGURE: 1.25,
+  FIGURE: 1.375,
   /** Section side in seat cells: the fans of a section bounce in close phase (plus JITTER rad). */
   SECTION_CELLS: 7, JITTER: 0.8,
   /** Bounce: up to BOUNCE × s, BOUNCE_HZ per second (× each fan's own speed, SPEED_SPREAD around 1). */

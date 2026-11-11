@@ -73,7 +73,7 @@ import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDe
 import { decorRects, hexNumber, type CrestPixels } from "@/GraficsEngine/stadiumDecor";
 import { decorColors } from "@/Domain/achievements/decorStyle";
 import type { StadiumDecor } from "@/types/achievementTypes";
-import { crowdSeats, drawnDepths, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
+import { crowdSeats, drawnDepths, drawnFill, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
 import {
   ATMOSPHERE, burstAreas, burstLength, fireworks, flareSmoke, phoneAlpha, phoneLights, towerFoot, towerPanel, towerShadow, towerSpots,
   type CelebrationBurst, type PhoneLight,
@@ -968,7 +968,7 @@ export function PixiPitch({
         }
         const seats = crowdSeats({
           stand: m.stand,
-          fill: st.fill,
+          fill: drawnFill(st.fill),
           homeColor: st.homeTeam === "A" ? fillA : fillB,
           awayColor: st.homeTeam === "A" ? fillB : fillA,
           homeSide: homeLeft ? "left" : "right",

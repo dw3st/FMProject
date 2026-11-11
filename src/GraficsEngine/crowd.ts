@@ -195,6 +195,12 @@ export function crowdBaseColor(hex: number): number {
  * opposite the home side, starting at its top corner (AWAY_SHARE of the fans); a neutral venue
  * splits the stand at the drawn halfway line.
  */
+/** Share of the seats drawn as taken for a real `fill` (0..1): a little fuller than the truth, 0 and 1 unchanged. */
+export function drawnFill(fill: number): number {
+  const f = Math.max(0, Math.min(1, Number.isFinite(fill) ? fill : 0));
+  return Math.pow(f, STADIUM.FILL_POW);
+}
+
 export function crowdSeats(input: CrowdInput): CrowdSeat[] {
   const fill = Math.max(0, Math.min(1, Number.isFinite(input.fill) ? input.fill : 0));
   const closed = new Set(input.works ?? []);

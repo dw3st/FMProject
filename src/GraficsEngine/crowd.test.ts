@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
-import { crowdBaseColor, crowdSeats, standConcreteRows, standSeatGrid, standSideOf, worksSides } from "@/GraficsEngine/crowd";
+import { crowdBaseColor, crowdSeats, standConcreteRows, standSeatGrid, standSideOf, worksSides, drawnFill } from "@/GraficsEngine/crowd";
 import { contrastRatio } from "@/GraficsEngine/playerFaces";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 
@@ -99,5 +99,16 @@ describe("stands under works (#137)", () => {
     const seats = crowdSeats({ ...base, fill: 0.8, works: ["right"] });
     expect(seats.some((s) => s.side === "right")).toBe(false);
     expect(seats.filter((s) => s.team === "away").length).toBeGreaterThan(0);
+  });
+});
+
+describe("drawn fill (10.3)", () => {
+  test("a little fuller than the real crowd, empty and full unchanged, never backwards", () => {
+    expect(drawnFill(0)).toBe(0);
+    expect(drawnFill(1)).toBe(1);
+    expect(drawnFill(0.66)).toBeGreaterThan(0.7);
+    expect(drawnFill(0.66)).toBeLessThan(0.8);
+    expect(drawnFill(0.3)).toBeLessThan(drawnFill(0.5));
+    expect(drawnFill(Number.NaN)).toBe(0);
   });
 });
