@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
 import { DECOR_ITEMS, DECOR_ITEM_IDS, type DecorItemId } from "@/Domain/achievements/decorShop";
-import { bannerRects, decorFill, hexNumber, mosaicCells } from "@/GraficsEngine/stadiumDecor";
-import type { BannerPattern, MosaicPattern } from "@/types/achievementTypes";
-import { Icon, type IconName } from "@/GameInterface/Icons";
+import { DecorPreview } from "@/GameInterface/Achievements/DecorPreview";
+import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -12,38 +11,6 @@ import { managerWallet } from "@/Domain/managers/assets";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] m-0";
 const RARITY_CLASS = { common: "text-muted-foreground", rare: "text-chart-2", legendary: "text-star-gold" } as const;
-const BANNER_OF: Partial<Record<DecorItemId, BannerPattern>> = { bannerCheck: "check", bannerPinstripe: "pinstripe", bannerChevron: "chevron" };
-const EFFECT_ICON: Partial<Record<DecorItemId, IconName>> = { sideFlags: "report", flares: "sparkles", doubleEnd: "copy", fireworks: "sparkles", goalFlash: "zap" };
-const TW = 160;
-const TH = 96;
-const SHOWCASE = ["#1f4fa8", "#ffc93c"] as const;
-const toHex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
-
-/** A small picture of the item: the mosaic or the banner in a showcase palette, an icon for the effects. */
-function DecorThumb({ id }: { id: DecorItemId }) {
-  const item = DECOR_ITEMS[id];
-  // A fixed, contrasting showcase palette (report 9.1.1: in the club colours a white club showed only blank grids).
-  const colors: [number, number] = [hexNumber(SHOWCASE[0]), hexNumber(SHOWCASE[1])];
-  if (item.kind === "effect") {
-    return (
-      <div className="w-full aspect-[5/3] rounded bg-secondary/40 border border-border flex items-center justify-center">
-        <Icon name={EFFECT_ICON[id] ?? "star"} size={32} className={RARITY_CLASS[item.rarity]} />
-      </div>
-    );
-  }
-  const rects = item.kind === "mosaic"
-    ? mosaicCells({ side: "left", x: 0, y: 0, w: TW, h: TH }, { pattern: id as MosaicPattern, titleStars: 3 })
-    : bannerRects(TW / 2 - 16, 4, 32, TH - 8, BANNER_OF[id] ?? "plain");
-  return (
-    <svg viewBox={`0 0 ${TW} ${TH}`} className="w-full aspect-[5/3] rounded border border-border" shapeRendering="crispEdges" role="img" aria-hidden="true">
-      <rect x={0} y={0} width={TW} height={TH} fill="#2b3240" />
-      {rects.map((r, i) => (
-        <rect key={i} x={r.x} y={r.y} width={r.w + 0.3} height={r.h + 0.3} fill={toHex(decorFill(r, colors))} />
-      ))}
-    </svg>
-  );
-}
-
 /** The stadium decorations shop (9.1): bought once with the manager's own money. */
 export function DecorShop({ saveId, owned, wallet, onBought }: {
   saveId: string | undefined;
@@ -93,7 +60,7 @@ export function DecorShop({ saveId, owned, wallet, onBought }: {
           const has = owned.includes(id);
           return (
             <div key={id} className={`card-arcade rounded-md p-4 flex flex-col gap-2 ${item.rarity === "legendary" ? "ring-1 ring-star-gold/60" : ""}`}>
-              <DecorThumb id={id} />
+              <DecorPreview id={id} />
               <p className={`${LABEL} ${RARITY_CLASS[item.rarity]}`}>
                 {t(`achievements.decorShop.kind.${item.kind}`)} · {t(`achievements.decorShop.rarity.${item.rarity}`)}
               </p>

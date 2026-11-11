@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.4.1",
+    date: "2026-11-11",
+    time: "16:45",
+    items: [],
+    fixes: [
+      {
+        pt: "Loja do estádio: cada item aparece num estádio visto de cima, com o mosaico erguido pela torcida no fundo da casa e a faixa na beira do campo. Os efeitos agora são animados (bandeiras, sinalizadores com fumaça, fogos, o mosaico que acende no gol) e o mosaico dos títulos não fica mais só azul.",
+        en: "Stadium shop: each item shows in a stadium seen from above, the mosaic held up by the home fans in their end and the banner along the pitch. The effects are animated now (flags, flares with smoke, fireworks, the mosaic lighting up on a goal) and the titles mosaic is no longer plain blue.",
+      },
+    ],
+  },
+  {
     version: "9.4",
     date: "2026-11-11",
     time: "16:20",
