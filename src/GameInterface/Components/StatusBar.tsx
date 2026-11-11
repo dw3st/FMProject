@@ -11,7 +11,7 @@ import { useSocial } from "@/GameInterface/Social/useSocial";
 import { MATCH_RADIO_SLOT } from "@/GameInterface/World/frameHost";
 import { RadioPlayer } from "@/GameInterface/Components/RadioPlayer";
 
-const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
+const ITEM = "flex items-center gap-2 text-base phone:text-sm text-muted-foreground tabular-nums";
 const ICON_BTN =
   "flex items-center justify-center w-10 h-10 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
 
@@ -51,9 +51,9 @@ export function StatusBar({
 
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
-    <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid ${matchMode ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"} items-center gap-6`}>
-        {!matchMode && <div className="flex items-center gap-4">
+    <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 phone:h-9 border-t border-border bg-background px-6 phone:px-3 overflow-hidden [scrollbar-gutter:stable]">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid ${matchMode ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"} items-center gap-6 phone:gap-3`}>
+        {!matchMode && <div className="flex items-center gap-4 phone:gap-2">
           <span className={ITEM} title={t("status.budget")}>
             <Icon name="finances" size={18} />
             {budgetLabel}
@@ -77,9 +77,9 @@ export function StatusBar({
         {/* The live match draws its friends' radio here (in the frame); the owner's credit lives on the login and start
             screens (user's choice, 8.8.10). */}
         <div id={MATCH_RADIO_SLOT} className="min-w-0 h-full flex items-center overflow-hidden px-6 bg-[linear-gradient(var(--color-border),var(--color-border)),linear-gradient(var(--color-border),var(--color-border))] bg-no-repeat bg-[length:1px_20px] bg-[position:left_center,right_center] empty:bg-none" />
-        <div className="flex items-center justify-end gap-4">
-          <RadioPlayer />
-          <Divider />
+        <div className="flex items-center justify-end gap-4 phone:gap-2">
+          {/* The radio needs room; a phone lying down (9.8) keeps the essentials. */}
+          <span className="contents phone:hidden"><RadioPlayer /><Divider /></span>
           <FriendsButton online={online} />
           <Divider />
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).

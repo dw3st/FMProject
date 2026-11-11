@@ -130,7 +130,9 @@
   "unsupportedScreen": {
     "title": "Use uma janela maior",
     "minimum": "mínimo",
-    "current": "atual"
+    "current": "atual",
+    "rotateTitle": "Gire o celular",
+    "rotateText": "O jogo é jogado com o celular deitado."
   },
   "startScreen": {
     "newGame": "Novo Jogo",
@@ -1263,7 +1265,16 @@
       "soundOn": "Som ligado: torcida, apito e bola (clique para desligar)",
       "soundOff": "Som desligado (clique para ligar)"
     },
-    "replaySkip": "Pular"
+    "replaySkip": "Pular",
+    "phone": {
+      "team": "Escalação",
+      "summary": "Resumo"
+    },
+    "mentalityShort": {
+      "attacking": "Ataque",
+      "balanced": "Equil.",
+      "defensive": "Defesa"
+    }
   },
   "broadcast": {
     "teamLabel": "Time {{team}}",

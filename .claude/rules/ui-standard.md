@@ -237,3 +237,7 @@ Report de tester. Num mundo com amigos (`save.mode === "multi"`) a barra de cima
 ## Ordenar tabelas (8.9.35)
 
 Report de tester. `useTableSort` (`src/GameInterface/ui/tableSort.ts`, com teste): coluna = chave + valor; o primeiro clique ordena números do maior e texto de A a Z, o segundo inverte; vazios sempre no fim; ordem estável. `StatsHead sort={head(key)}`, `DataTableColumn.sortValue` e `SortButton` (`ui/SortButton.tsx`) desenham o cabeçalho clicável com a seta. Tabela nova de lista usa isso; tabelas de classificação por regra (grupos, tabela da liga) ficam na ordem delas.
+
+## Celular deitado (9.8)
+
+Pedido do usuário: um código só, com modo compacto. Variante `phone:` do Tailwind (`index.css`: `@custom-variant phone (@media (orientation: landscape) and (max-height: 520px))`). `ScreenSizeGate` aceita celular deitado a partir de 640 × 320 e, em pé, pede para girar (`unsupportedScreen.rotate*`). No `phone:`: barra de cima de 44px só com ícones (sem logo, data nem rótulo do dia), barra de baixo de 36px sem a rádio, `ScreenContainer` com `px-3 py-3 gap-3`, título `text-2xl` sem subtítulo, caixa de entrada em duas colunas. Partida ao vivo: placar e controles numa linha (rótulos curtos da mentalidade, `match.mentalityShort.*`, botões só com ícone), sem a linha do jogo/estádio, o HUD e a faixa de narração; escalação e resumo viram gavetas sobre o campo (`phoneDrawer`, botões `match.phone.*`), e a medida do campo ignora um painel absoluto. Testado com Chromium em emulação móvel (844 × 390 e 740 × 360).

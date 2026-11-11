@@ -130,7 +130,9 @@
   "unsupportedScreen": {
     "title": "Use a larger window",
     "minimum": "minimum",
-    "current": "current"
+    "current": "current",
+    "rotateTitle": "Turn your phone",
+    "rotateText": "The game plays with the phone lying down."
   },
   "startScreen": {
     "newGame": "New Game",
@@ -1263,7 +1265,16 @@
       "soundOn": "Sound on: crowd, whistle and ball (click to turn off)",
       "soundOff": "Sound off (click to turn on)"
     },
-    "replaySkip": "Skip"
+    "replaySkip": "Skip",
+    "phone": {
+      "team": "Line-up",
+      "summary": "Summary"
+    },
+    "mentalityShort": {
+      "attacking": "Attack",
+      "balanced": "Bal.",
+      "defensive": "Defend"
+    }
   },
   "broadcast": {
     "teamLabel": "Team {{team}}",

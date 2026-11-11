@@ -89,7 +89,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           dayAction={!lobby && session?.groupAdvance ? <span id={READY_SLOT_ID} className="flex w-full min-w-0"><ReadyControl publicWorld={save?.world?.kind === "public"} /></span> : undefined}
         />}
 
-        <main className={chrome === "full" ? "h-full pt-14 pb-12 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 overflow-hidden flex flex-col" : "h-full pb-12 overflow-y-auto flex flex-col"}>
+        <main className={chrome === "full" ? "h-full pt-14 pb-12 phone:pt-11 phone:pb-9 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 phone:pb-9 overflow-hidden flex flex-col" : "h-full pb-12 phone:pb-9 overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}

@@ -28,10 +28,10 @@ export function ScreenContainer({
   return (
     <div
       data-screen-container=""
-      className={`flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-6 py-5${fill ? " flex flex-col" : ""}`}
+      className={`flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-6 py-5 phone:px-3 phone:py-3${fill ? " flex flex-col" : ""}`}
     >
       <div
-        className={`w-full ${SCREEN_MAX_WIDTH} mx-auto flex flex-col gap-6${fill ? " flex-1 min-h-0" : ""}${
+        className={`w-full ${SCREEN_MAX_WIDTH} mx-auto flex flex-col gap-6 phone:gap-3${fill ? " flex-1 min-h-0" : ""}${
           className ? ` ${className}` : ""
         }`}
       >

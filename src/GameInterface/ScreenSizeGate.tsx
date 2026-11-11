@@ -4,17 +4,28 @@ import { Wordmark } from "@/GameInterface/Components/Wordmark";
 
 const MIN_WIDTH = 1024;
 const MIN_HEIGHT = 600;
+/** A phone lying down plays the compact layout (9.8): landscape, at least this size. */
+const PHONE_MIN_WIDTH = 640;
+const PHONE_MIN_HEIGHT = 320;
 
-function isScreenTooSmall(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.innerWidth < MIN_WIDTH || window.innerHeight < MIN_HEIGHT;
+type Fit = "ok" | "rotate" | "small";
+
+function screenFit(): Fit {
+  if (typeof window === "undefined") return "ok";
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (w >= MIN_WIDTH && h >= MIN_HEIGHT) return "ok";
+  if (w > h && w >= PHONE_MIN_WIDTH && h >= PHONE_MIN_HEIGHT) return "ok";
+  // A phone held upright: it fits once turned.
+  if (h > w && h >= PHONE_MIN_WIDTH && w >= PHONE_MIN_HEIGHT) return "rotate";
+  return "small";
 }
 
 export function ScreenSizeGate({ children }: { children: ReactNode }) {
-  const [tooSmall, setTooSmall] = useState<boolean>(() => isScreenTooSmall());
+  const [fit, setFit] = useState<Fit>(() => screenFit());
 
   useEffect(() => {
-    const check = () => setTooSmall(isScreenTooSmall());
+    const check = () => setFit(screenFit());
     check();
     window.addEventListener("resize", check);
     window.addEventListener("orientationchange", check);
@@ -24,11 +35,11 @@ export function ScreenSizeGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (tooSmall) return <UnsupportedScreen />;
+  if (fit !== "ok") return <UnsupportedScreen rotate={fit === "rotate"} />;
   return <>{children}</>;
 }
 
-function UnsupportedScreen() {
+function UnsupportedScreen({ rotate }: { rotate: boolean }) {
   const { t } = useTranslation();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
@@ -46,9 +57,13 @@ function UnsupportedScreen() {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background text-foreground p-6 overflow-auto">
       <div className="max-w-md w-full text-center">
         <Wordmark size="lg" className="block mb-8" />
-        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none mb-3">{t("unsupportedScreen.title")}</h1>
+        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none mb-3">
+          {t(rotate ? "unsupportedScreen.rotateTitle" : "unsupportedScreen.title")}
+        </h1>
         <p className="text-sm text-muted-foreground m-0">
-          {t("unsupportedScreen.current")} {size.w} × {size.h} · {t("unsupportedScreen.minimum")} {MIN_WIDTH} × {MIN_HEIGHT}
+          {rotate
+            ? t("unsupportedScreen.rotateText")
+            : <>{t("unsupportedScreen.current")} {size.w} × {size.h} · {t("unsupportedScreen.minimum")} {MIN_WIDTH} × {MIN_HEIGHT}</>}
         </p>
       </div>
     </div>

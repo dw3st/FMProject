@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* A phone lying down (9.8): the compact layout (thin bars, icon tabs, tight screens). */
+@custom-variant phone (@media (orientation: landscape) and (max-height: 520px));
+
 :root {
   --team-hue: 262;
   /* Lightness of the primary/accent colour; darker themes lower it and switch the on-primary text to white. */

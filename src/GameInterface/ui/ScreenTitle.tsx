@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 
 const TITLE_CLASS = {
-  lg: "font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none text-foreground m-0",
+  lg: "font-display font-black uppercase tracking-tight text-3xl md:text-4xl phone:text-2xl leading-none text-foreground m-0",
   md: "text-xl font-black font-display text-foreground m-0 uppercase tracking-[0.08em]",
 } as const;
 
@@ -40,7 +40,7 @@ export function ScreenTitle({
         </h1>
       )}
       {subtitle != null && subtitle !== false && (
-        <div className="text-sm text-muted-foreground mt-2 m-0">{subtitle}</div>
+        <div className="text-sm text-muted-foreground mt-2 m-0 phone:hidden">{subtitle}</div>
       )}
     </div>
   );

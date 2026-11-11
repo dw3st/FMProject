@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.8",
+    date: "2026-11-11",
+    time: "17:50",
+    items: [
+      { pt: "Jogo no celular deitado: barras mais baixas, abas só com ícone e telas mais compactas. Em pé, o jogo pede para girar o celular.", en: "Play on a phone lying down: slimmer bars, icon-only tabs and more compact screens. Held upright, the game asks you to turn the phone." },
+      { pt: "Partida no celular: placar e controles numa linha, o campo ocupa a tela e a escalação e o resumo abrem por botões.", en: "Match on a phone: score and controls on one row, the pitch fills the screen and the line-up and summary open from buttons." },
+    ],
+  },
+  {
     version: "9.7",
     date: "2026-11-11",
     time: "21:50",
@@ -5797,5 +5806,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Jogador emprestado: ver o contrato dele e o que dá para tentar (pré-contrato, compra)", en: "Loaned player: see his contract and what you can try (pre-contract, purchase)" },
+  { pt: "Celular: jogo em tela cheia, instalável como app", en: "Phone: full-screen game, installable as an app" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

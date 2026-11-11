@@ -205,9 +205,9 @@ export function TopNavigation({
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62): the logo lines up with
     // the cards' left edge, Continue with their right edge, the tabs centred in between (#65).
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto flex items-center gap-4`}>
-        <a href="/dashboard" className="no-underline shrink-0 mr-3">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 phone:h-11 border-b border-border bg-background px-6 phone:px-3 overflow-hidden [scrollbar-gutter:stable]">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto flex items-center gap-4 phone:gap-2`}>
+        <a href="/dashboard" className="no-underline shrink-0 mr-3 phone:hidden">
           <Wordmark size="sm" />
         </a>
 
@@ -248,7 +248,7 @@ export function TopNavigation({
                   aria-current={active ? "page" : undefined}
                 >
                   <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
-                  <span className={narrow ? "block w-full truncate text-center tracking-normal" : undefined}>{label}</span>
+                  <span className={narrow ? "block w-full truncate text-center tracking-normal phone:hidden" : "phone:hidden"}>{label}</span>
                 </a>
               );
             })}
@@ -257,7 +257,7 @@ export function TopNavigation({
 
         {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
             costs no divider of its own), today's date and type, then the day controls (#65). */}
-        <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
+        <div className="flex items-center gap-2 shrink-0 h-8 pl-4 phone:pl-2 border-l border-border">
           {/* The manager's screen (profile, achievements, shop, bets; 8.9.36): his face opens it. */}
           {session?.manager && (
             <a
@@ -277,7 +277,7 @@ export function TopNavigation({
           <TesterReportButton />
           {currentDate && (
             <>
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums phone:hidden">
                 <Icon name="calendar" size={16} className="shrink-0" />
                 {formatTopBarDate(currentDate, lang)}
               </span>
@@ -290,7 +290,7 @@ export function TopNavigation({
                 className={`${dayButton} px-3 ${isMatch ? "text-destructive disabled:opacity-100" : ""}`}
               >
                 <Icon name={dayIcon} size={16} className={`shrink-0 ${isRest ? "text-chart-3" : ""}`} />
-                <span className="max-w-[160px] truncate">{dayLabel}</span>
+                <span className="max-w-[160px] truncate phone:hidden">{dayLabel}</span>
               </button>}
             </>
           )}
@@ -298,7 +298,7 @@ export function TopNavigation({
           {/* Fixed slot: the group-advance control changes width between its states (ready, advancing, match
               day, waiting), and a block that grows and shrinks made the tabs flip between labels and icons. */}
           {/* Fixed 184px so the tabs never move; every state fills it (8.9.19, no gap before it). */}
-          {dayAction && <div className="flex w-[184px] shrink-0 items-center overflow-hidden">{dayAction}</div>}
+          {dayAction && <div className="flex w-[184px] phone:w-[150px] shrink-0 items-center overflow-hidden">{dayAction}</div>}
 
           {!dayAction && onFastForward && (
             <button

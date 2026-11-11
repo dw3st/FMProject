@@ -385,6 +385,8 @@ export function MatchScreen() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [pitchSize, setPitchSize] = useState<{ w: number; h: number } | null>(null);
+  // On a phone lying down the team list and the summary open as drawers over the pitch (9.8).
+  const [phoneDrawer, setPhoneDrawer] = useState<"team" | "summary" | null>(null);
   // Two-phase render: layout paints first with a loader in the host slot, then we measure on the
   // next animation frame (once the layout has settled) and mount PixiPitch with the measured size.
   // ResizeObserver is intentionally avoided — it can fire during PixiPitch's own layout reflow and
@@ -398,9 +400,10 @@ export function MatchScreen() {
     // pitch is the whole row minus the two side cards, not the (already shrunk) column itself.
     const column = host.parentElement;
     const row = column?.parentElement;
-    const sides =
-      (column?.previousElementSibling?.getBoundingClientRect().width ?? 0) +
-      (column?.nextElementSibling?.getBoundingClientRect().width ?? 0);
+    // A side drawer floating over the pitch on a phone (9.8) takes no room from it.
+    const sideWidth = (el: Element | null | undefined) =>
+      el && getComputedStyle(el).position !== "absolute" ? el.getBoundingClientRect().width : 0;
+    const sides = sideWidth(column?.previousElementSibling) + sideWidth(column?.nextElementSibling);
     const availableWidth = row ? row.getBoundingClientRect().width - sides : rect.width;
     const next = fitPitch(availableWidth, rect.height);
     if (!next) return;
@@ -1915,6 +1918,27 @@ export function MatchScreen() {
       ? matchEndProgress
       : undefined;
 
+  const phoneDrawerButton = (kind: "team" | "summary", icon: "users" | "stats", label: string) => (
+    <button
+      type="button"
+      onClick={() => setPhoneDrawer((d) => (d === kind ? null : kind))}
+      aria-pressed={phoneDrawer === kind}
+      aria-label={label}
+      title={label}
+      className={`hidden phone:flex items-center justify-center w-10 h-9 rounded-lg border cursor-pointer ${
+        phoneDrawer === kind ? "bg-primary/15 border-primary text-primary" : "bg-secondary/50 border-border text-foreground"
+      }`}
+    >
+      <Icon name={icon} size={16} />
+    </button>
+  );
+  const phoneDrawerButtons = (
+    <>
+      {phoneDrawerButton("team", "users", t("match.phone.team"))}
+      {phoneDrawerButton("summary", "stats", t("match.phone.summary"))}
+    </>
+  );
+
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
       {/* 2D penalty (`docs/superpowers/specs/2026-10-28-penalty-2d-design.md`): the manager kicks or saves. */}
@@ -1956,8 +1980,10 @@ export function MatchScreen() {
 
       {/* Scoreboard Header */}
       {/* Scoreboard on its own row so the score + clock is centred on the page (#60); controls below. */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-2 shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-2 phone:px-2 phone:py-1 shrink-0">
+        {/* A phone lying down (9.8): scoreboard and controls on one row, the side panels as drawers. */}
+        <div className="max-w-7xl mx-auto flex flex-col gap-2 phone:flex-row phone:items-center phone:max-w-none">
+          <div className="contents phone:block phone:w-[250px] phone:shrink-0">
           <ScoreBar
             scoreA={shownScore.A}
             scoreB={shownScore.B}
@@ -1969,12 +1995,13 @@ export function MatchScreen() {
             scoreColorB={shownKits.B}
             aggregate={gameState.aggregate ? toDisplayPair(gameState.aggregate, awayView) : undefined}
           />
+          </div>
 
           {matchHeadingText && (
-            <p className="m-0 -mt-1 text-center text-sm text-muted-foreground truncate">{matchHeadingText}</p>
+            <p className="m-0 -mt-1 text-center text-sm text-muted-foreground truncate phone:hidden">{matchHeadingText}</p>
           )}
           {(stadiumLine || pitchInfo) && (
-            <p className="m-0 -mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground truncate">
+            <p className="m-0 -mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground truncate phone:hidden">
               <Icon name="stadium" size={16} aria-label={t("match.stadium.label")} />
               <span className="truncate tabular-nums">{stadiumLine}</span>
               {pitchInfo && setupPitch && (
@@ -1996,14 +2023,15 @@ export function MatchScreen() {
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-2 flex-wrap phone:flex-1 phone:justify-end phone:gap-1.5">
+            {phoneDrawerButtons}
             {h2hMode ? (
               // Live match between two managers: fixed speed, a few pauses each (the bar below shows a pause).
               <button
                 type="button"
                 onClick={() => h2h.requestPause()}
                 disabled={!!h2h.pause || myPausesLeft <= 0 || !isLivePhase(gameState.matchPhase)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Icon name="pause" className="w-4 h-4" />
                 <span className="tabular-nums">{t("h2h.pausesLeft", { count: myPausesLeft })}</span>
@@ -2015,10 +2043,10 @@ export function MatchScreen() {
                     panelPauseRef.current = manualToggle();
                     setPaused((p) => !p);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
+                  className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
                 >
                   {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
-                  {paused ? t("match.play") : t("match.pause")}
+                  <span className="phone:hidden">{paused ? t("match.play") : t("match.pause")}</span>
                 </button>
                 <SegmentedTabs
                   compact
@@ -2030,7 +2058,7 @@ export function MatchScreen() {
             )}
             {managerOut && (
               <span
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm"
+                className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive font-semibold text-sm"
                 title={t("complaint.ordersHint")}
               >
                 <Icon name="alert" className="w-4 h-4" />
@@ -2039,14 +2067,14 @@ export function MatchScreen() {
             )}
             <SegmentedTabs
               compact
-              tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
+              tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: <><span className="phone:hidden">{t(`match.mentality.${m}`)}</span><span className="hidden phone:inline">{t(`match.mentalityShort.${m}`)}</span></> }))}
               active={mentality}
               onChange={(m) => (managerOut ? orderMentality(m as Mentality) : handleMentalityChange(m as Mentality))}
             />
             {(
             <button
               onClick={handleOpenSubPanel}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
                 myPendingSubs > 0
                   ? "bg-chart-4/20 text-chart-4 border-chart-4/50"
                   : mySubsRemaining > 0
@@ -2055,7 +2083,8 @@ export function MatchScreen() {
               }`}
             >
               <Icon name="arrow-right-left" className="w-4 h-4" />
-              {t("match.subs", { remaining: mySubsRemaining })}
+              <span className="phone:hidden">{t("match.subs", { remaining: mySubsRemaining })}</span>
+              <span className="hidden phone:inline tabular-nums">{mySubsRemaining}</span>
             </button>
             )}
             {!managerOut && (
@@ -2067,16 +2096,16 @@ export function MatchScreen() {
                 disabled={!complaint}
                 aria-hidden={!complaint}
                 tabIndex={complaint ? 0 : -1}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-chart-4/60 bg-chart-4/15 text-chart-4 font-semibold text-sm cursor-pointer hover:bg-chart-4/25 ${complaint ? "" : "invisible"}`}
+                className={`flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg border border-chart-4/60 bg-chart-4/15 text-chart-4 font-semibold text-sm cursor-pointer hover:bg-chart-4/25 ${complaint ? "" : "invisible"}`}
               >
                 <Icon name="message-square" className="w-4 h-4" />
-                {t("complaint.button")}
+                <span className="phone:hidden">{t("complaint.button")}</span>
               </button>
             )}
             {DEV_TOOLS && (
             <button
               onClick={() => setShowStats((s) => !s)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
+              className={`flex phone:hidden items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
                 showStats
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
@@ -2089,7 +2118,7 @@ export function MatchScreen() {
             {DEV_TOOLS && !h2hMode && (
             <button
               onClick={() => setDebug((d) => !d)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
+              className={`flex phone:hidden items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
                 debug
                   ? "bg-chart-4/20 text-chart-4 border-chart-4/50"
                   : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
@@ -2139,9 +2168,9 @@ export function MatchScreen() {
       </div>
 
       {/* Main Match View */}
-      <main className="flex-1 flex justify-center overflow-hidden min-h-0">
+      <main className="relative flex-1 flex justify-center overflow-hidden min-h-0">
         {/* View switches above the team list, apart from the match controls (tester report, 4.41.20). */}
-        <div className="w-72 shrink-0 flex flex-col min-h-0">
+        <div className={`w-72 shrink-0 flex flex-col min-h-0 ${phoneDrawer === "team" ? "phone:absolute phone:inset-y-0 phone:left-0 phone:z-30 phone:bg-background phone:shadow-lg" : "phone:hidden"}`}>
           <div className="shrink-0 p-2 card-arcade border-r border-b border-border">
             <MatchViewToggles
               fill
@@ -2273,6 +2302,7 @@ export function MatchScreen() {
             )}
           </div>
           {gameState && (
+            <div className="contents phone:hidden">
             <MatchHud
               players={gameState.players}
               mySide={mySide}
@@ -2283,9 +2313,10 @@ export function MatchScreen() {
               ratings={ratings}
               color={mySide === "A" ? matchKitColors.teamA : matchKitColors.teamB}
             />
+            </div>
           )}
           {/* Broadcast ticker */}
-          <div className="px-4 py-2 border-t border-border bg-card/40">
+          <div className="px-4 py-2 border-t border-border bg-card/40 phone:hidden">
             <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mr-2 font-display">{t("common.broadcast")}</span>
             <span className="text-sm text-foreground">
               {broadcastLine || <span className="text-muted-foreground">{t("common.waitingForAction")}</span>}
@@ -2310,7 +2341,7 @@ export function MatchScreen() {
         </div>
 
         {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
-        <div className="w-64 shrink-0 flex flex-col min-h-0">
+        <div className={`w-64 shrink-0 flex flex-col min-h-0 ${phoneDrawer === "summary" ? "phone:absolute phone:inset-y-0 phone:right-0 phone:z-30 phone:bg-background phone:shadow-lg" : "phone:hidden"}`}>
           {(!radioSlot || isTester) && (
           <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
             {!radioSlot && <FriendsButton variant="toolbar" />}

@@ -385,7 +385,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Modal header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
+      <div className="flex items-center gap-3 px-5 py-4 phone:px-3 phone:py-2 border-b border-border shrink-0">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex-1">
           <TitleParts accent={t("screenTitles.inbox.accent")}>{t("screenTitles.inbox.main")}</TitleParts>
         </h2>
@@ -439,7 +439,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 p-4">
+      <div className="flex-1 min-h-0 p-4 phone:p-2">
         {showPrefs && session ? (
           <InboxPrefsPanel saveId={session.saveId} />
         ) : loading ? (
@@ -449,7 +449,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
         ) : messages.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 phone:grid-cols-2 gap-4 phone:gap-2 h-full">
             <div className="card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               <OptionChips<ThemeFilter>
                 aria-label={t("inbox.themes.label")}
