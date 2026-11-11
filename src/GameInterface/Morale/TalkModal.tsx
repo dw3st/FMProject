@@ -123,7 +123,7 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
         <div className="px-6 pb-6 pt-4 space-y-5">
           {result ? (
             <div className="space-y-4">
-              <p className="text-sm text-foreground m-0">
+              <p className="text-sm text-foreground m-0 tabular-nums">
                 {result.noEffect
                   ? t("morale.talk.noEffect")
                   : t("morale.talk.done", { change: result.change > 0 ? `+${result.change}` : String(result.change) })}

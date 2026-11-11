@@ -7,7 +7,13 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { formatFee, formatWageShort } from "@/Domain/money";
-import { positionLabel } from "@/GameInterface/positionHelpers";
+import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import type { LeagueData } from "@/types/playerTypes";
 import type { ScoutReport } from "@/types/scoutingTypes";
 import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
@@ -49,6 +55,28 @@ const money = (r: [number, number]) => {
   return r[0] === r[1] ? `${f(r[0])}M` : `${f(r[0])}–${f(r[1])}M`;
 };
 
+/** Level badge of a seen range, as in the scout search (one number when the scouts know him well). */
+function LevelBadge({ range: r }: { range: [number, number] }) {
+  const mid = (r[0] + r[1]) / 2;
+  return r[0] === r[1] ? <AvgBadge value={mid} /> : <AvgBadge value={mid} range={r} />;
+}
+
+/** Flag of a nationality written as in the data; nothing when unknown. */
+function NationFlag({ nationality }: { nationality?: string | undefined }) {
+  const code = nationality ? nationalityFlagCode(nationality) : null;
+  return code ? <span title={nationality} className="shrink-0 inline-flex"><Flag code={code} /></span> : null;
+}
+
+/** Crest and name of a club, the name opening the club (the scout search's club cell). */
+function ClubCell({ squadId, league, name }: { squadId: string; league?: string | undefined; name: string }) {
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      <ClubLogo logoUrl={squadLogoUrl(squadId)} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
+      <ClubLink id={squadId} league={league ?? null} className="truncate text-foreground font-medium">{name}</ClubLink>
+    </span>
+  );
+}
+
 function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
   reports: ScoutReport[];
   saveId: string;
@@ -68,45 +96,51 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
       <table className="w-full text-sm border-collapse tabular-nums">
         <thead className={TABLE_STYLE.head}>
           <tr>
-            {head("grade", t("scouting.col.grade"))}
+            <th className={th}>{t("scout.table.columns.pos")}</th>
             <th className={th}>{t("scouting.col.player")}</th>
             {head("age", t("scouting.col.age"))}
             <th className={th}>{t("scouting.col.club")}</th>
+            {head("grade", t("scouting.col.grade"))}
             {head("overall", t("scouting.col.overall"))}
             {head("potential", t("scouting.col.potential"))}
-            {head("value", t("scouting.col.value"))}
-            {head("wage", t("scouting.col.wage"))}
             {head("knowledge", t("scouting.knowledge"))}
+            {head("wage", t("scouting.col.wage"))}
+            {head("value", t("scouting.col.value"))}
             <th className={th}>{t("scouting.col.verdict")}</th>
           </tr>
         </thead>
         <tbody className={TABLE_STYLE.body}>
           {reports.map((r) => (
             <tr key={r.id} className={TABLE_STYLE.row}>
-              <td className={td}><GradeBadge grade={r.grade} /></td>
+              <td className={`${td} font-black ${positionLabelColor(r.position, r.position)}`}>{positionLabel(t, r.position, r.position)}</td>
               <td className={td}>
-                <span className="inline-flex items-center gap-1">
+                <span className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
                   {!r.prospectId && (
                     <ShortlistStar saveId={saveId} playerId={r.playerId} squadId={r.squadId} on={shortlisted.has(r.playerId)} onChange={onShortlist} />
                   )}
+                  <NationFlag nationality={r.nationality} />
                   {r.prospectId || !r.squadId || r.gone ? (
-                    <span className={`${TABLE_STYLE.name} text-base`}>{r.name}</span>
+                    <span className="font-semibold text-foreground">{r.name}</span>
                   ) : (
-                    <a href={playerHref(r.playerId, r.squadId, r.league)} className={`${TABLE_STYLE.name} text-base no-underline hover:text-primary`}>{r.name}</a>
+                    <a href={playerHref(r.playerId, r.squadId, r.league)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{r.name}</a>
                   )}
                   {r.gem && <GemBadge />}
                   {r.gone && <span className="text-sm text-muted-foreground">{t("scouting.reports.moved")}</span>}
+                  {!r.prospectId && r.availability && <AvailabilityChips inline value={r.availability} />}
                 </span>
-                <span className="block text-sm text-muted-foreground">{positionLabel(t, r.position, r.position)}</span>
-                <AvailabilityChips value={r.prospectId ? undefined : r.availability} />
               </td>
-              <td className={`${td} text-muted-foreground`}>{r.age}</td>
-              <td className={`${td} text-muted-foreground`}>{r.prospectId ? t("scouting.noClubProspect", { country: r.country }) : r.club}</td>
-              <td className={`${td} font-display font-bold text-primary`}>{range(r.overall)}</td>
-              <td className={`${td} text-muted-foreground`}>{range(r.potential)}</td>
-              <td className={`${td} text-muted-foreground`}>{money(r.value)}</td>
-              <td className={`${td} text-muted-foreground`}>{formatWageShort(r.wageDemand)}</td>
+              <td className={`${td} text-muted-foreground font-medium`}>{r.age}</td>
+              <td className={td}>
+                {r.prospectId || !r.squadId
+                  ? <span className="text-muted-foreground">{r.prospectId ? t("scouting.noClubProspect", { country: r.country }) : r.club}</span>
+                  : <ClubCell squadId={r.squadId} league={r.league} name={r.club} />}
+              </td>
+              <td className={td}><GradeBadge grade={r.grade} /></td>
+              <td className={td}><LevelBadge range={r.overall} /></td>
+              <td className={`${td} text-muted-foreground font-medium`}>{range(r.potential)}</td>
               <td className={td}><KnowledgeBar value={r.k} /></td>
+              <td className={`${td} whitespace-nowrap text-muted-foreground font-medium`}>{formatWageShort(r.wageDemand)}</td>
+              <td className={`${td} whitespace-nowrap font-bold ${ratingTextClass10((r.overall[0] + r.overall[1]) / 2)}`}>{money(r.value)}</td>
               <td className={`${td} text-muted-foreground`}>{t(`scouting.text.${r.text}`)}</td>
             </tr>
           ))}
@@ -212,10 +246,13 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
         <table className="w-full text-sm border-collapse tabular-nums">
           <thead className={TABLE_STYLE.head}>
             <tr>
+              <th className={th}>{t("scout.table.columns.pos")}</th>
               <th className={th}>{t("scouting.col.player")}</th>
+              <th className={th}>{t("scouting.col.age")}</th>
               <th className={th}>{t("scouting.col.club")}</th>
               <th className={th}>{t("scouting.col.overall")}</th>
               <th className={th}>{t("scouting.knowledge")}</th>
+              <th className={th}>{t("scouting.col.value")}</th>
               <th className={th}>{t("scouting.col.status")}</th>
               <th className={th}>{t("scouting.col.note")}</th>
             </tr>
@@ -229,21 +266,30 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
               ].filter(Boolean).join(" · ");
               return (
                 <tr key={e.playerId} className={TABLE_STYLE.row}>
-                  <td className={td}>
-                    <span className="inline-flex items-center gap-1">
-                      <ShortlistStar saveId={saveId} playerId={e.playerId} squadId={e.squadId} on onChange={onChanged} />
-                      {e.squadId ? (
-                        <a href={playerHref(e.playerId, e.squadId, e.leagueSlug)} className={`${TABLE_STYLE.name} text-base no-underline hover:text-primary`}>{e.name}</a>
-                      ) : (
-                        <span className={`${TABLE_STYLE.name} text-base`}>{e.name}</span>
-                      )}
-                    </span>
-                    {e.position && <span className="block text-sm text-muted-foreground">{positionLabel(t, e.position, e.position)} · {e.age}</span>}
-                    <AvailabilityChips value={e.availability} />
+                  <td className={`${td} font-black ${e.position ? positionLabelColor(e.natural, e.position) : "text-muted-foreground"}`}>
+                    {e.position ? positionLabel(t, e.natural, e.position) : "—"}
                   </td>
-                  <td className={`${td} text-muted-foreground`}>{e.missing ? "—" : e.club || t("scouting.status.free")}</td>
-                  <td className={`${td} font-display font-bold text-primary`}>{e.overall ? range(e.overall) : "—"}</td>
+                  <td className={td}>
+                    <span className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
+                      <ShortlistStar saveId={saveId} playerId={e.playerId} squadId={e.squadId} on onChange={onChanged} />
+                      <NationFlag nationality={e.nationality} />
+                      {e.squadId ? (
+                        <a href={playerHref(e.playerId, e.squadId, e.leagueSlug)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{e.name}</a>
+                      ) : (
+                        <span className="font-semibold text-foreground">{e.name}</span>
+                      )}
+                      {e.availability && <AvailabilityChips inline value={e.availability} />}
+                    </span>
+                  </td>
+                  <td className={`${td} text-muted-foreground font-medium`}>{e.age ?? "—"}</td>
+                  <td className={td}>
+                    {e.missing || !e.club || !e.squadId
+                      ? <span className="text-muted-foreground">{e.missing ? "—" : t("scouting.status.free")}</span>
+                      : <ClubCell squadId={e.squadId} league={e.leagueSlug} name={e.club} />}
+                  </td>
+                  <td className={td}>{e.overall ? <LevelBadge range={e.overall} /> : "—"}</td>
                   <td className={td}>{e.knowledge !== undefined ? <KnowledgeBar value={e.knowledge} /> : "—"}</td>
+                  <td className={`${td} whitespace-nowrap font-bold ${e.overall ? ratingTextClass10((e.overall[0] + e.overall[1]) / 2) : "text-muted-foreground"}`}>{e.value ? money(e.value) : "—"}</td>
                   <td className={`${td} text-muted-foreground`}>{status || "—"}</td>
                   <td className={td}>
                     <input

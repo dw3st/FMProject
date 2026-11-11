@@ -375,3 +375,7 @@ Report de tester. Os filtros prontos ficam abaixo dos atributos, em três grupos
 ## O que dá para fazer com cada jogador (9.9)
 
 Report do usuário. `playerAvailability` (`src/Domain/scout/availability.ts`, com teste): à venda (lista do clube), empréstimo (`loanAvailability`), pré-contrato (`preContractEligible`), livre; só clubes da IA (de outro técnico, só a lista). `GET /scouting` devolve `availability` nos relatórios e nos observados; a busca usa as marcas que já tinha (`loanable`, `preContract`, lista de venda). Tela: `AvailabilityChips` (`Scout/AvailabilityChips.tsx`) abaixo do nome nos Relatórios, Joias e Observados, e ao lado do nome na busca (no lugar do ícone de etiqueta).
+
+## Tabelas no padrão da busca (10.1.1)
+
+Reports do usuário. Relatórios, Joias e Observados (`ReportTables.tsx`) usam as mesmas colunas e células da busca: posição colorida, estrela, bandeira, nome com joia e etiquetas de disponibilidade na mesma linha, idade, escudo e nome do clube (link), nota, nível em `AvgBadge` (faixa quando incerto), potencial, conhecimento, salário e valor. A lista de observados devolve `natural` e `nationality`.

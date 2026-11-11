@@ -39,6 +39,9 @@ interface ShortlistView extends ShortlistEntry {
   clubSlug?: string;
   age?: number;
   position?: string;
+  /** Natural position and nationality (10.1.1: the list follows the scout search's layout). */
+  natural?: string;
+  nationality?: string;
   knowledge?: number;
   overall?: [number, number];
   value?: [number, number];

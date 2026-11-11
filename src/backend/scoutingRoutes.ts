@@ -1,3 +1,4 @@
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { randomUUID } from "crypto";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -231,6 +232,8 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
       clubSlug: found.squad ? (index.byId(found.squad.id)?.stem ?? found.squad.id) : "",
       age: found.player.age,
       position: found.player.positions[0] ?? "—",
+      natural: preferredRole(found.player),
+      nationality: found.player.nationality ?? "",
       knowledge: view.knowledge,
       overall: seen.overall,
       value: seen.value,
